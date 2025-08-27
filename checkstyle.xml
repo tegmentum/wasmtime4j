@@ -191,7 +191,8 @@
             <property name="format" value="(^[A-Z][0-9]?)$|([A-Z][a-zA-Z0-9]*[T]$)"/>
             <message key="name.invalidPattern" value="Interface type name ''{0}'' must match pattern ''{1}''."/>
         </module>
-        <module name="NoFinalizer"/>
+        <!-- NoFinalizer disabled for JNI classes that need finalizers for native resource cleanup -->
+        <!-- <module name="NoFinalizer"/> -->
         <module name="GenericWhitespace">
             <message key="ws.followed" value="GenericWhitespace ''{0}'' is followed by whitespace."/>
             <message key="ws.preceded" value="GenericWhitespace ''{0}'' is preceded with whitespace."/>

@@ -157,7 +157,7 @@ java -cp wasmtime4j-benchmarks.jar BenchmarkRunner [options] [category]
 Categories:
   all         - Run all benchmarks (default)
   runtime     - Runtime initialization benchmarks
-  module      - Module operation benchmarks  
+  module      - Module operation benchmarks
   function    - Function execution benchmarks
   memory      - Memory operation benchmarks
   comparison  - JNI vs Panama comparison benchmarks
@@ -176,7 +176,7 @@ Options:
 Benchmark runs generate several output files in the `benchmark-results/` directory:
 
 - **JSON Results**: Detailed JMH results in JSON format
-- **Summary Report**: Human-readable performance summary  
+- **Summary Report**: Human-readable performance summary
 - **Log File**: Complete execution log
 - **System Info**: Hardware and software environment details
 
@@ -229,7 +229,7 @@ The benchmarks are designed for CI/CD integration:
 # Quick regression testing
 ./run-benchmarks.sh all quick --output ci-results.json
 
-# Performance monitoring  
+# Performance monitoring
 ./run-benchmarks.sh comparison standard --output nightly-results.json
 ```
 
