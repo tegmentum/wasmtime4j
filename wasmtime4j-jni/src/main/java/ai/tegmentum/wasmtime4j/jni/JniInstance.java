@@ -182,61 +182,25 @@ public final class JniInstance implements AutoCloseable {
     }
   }
 
-  /**
-   * Gets the native handle for internal use.
-   *
-   * @return the native handle
-   * @throws IllegalStateException if this instance is closed
-   */
-  long getNativeHandle() {
-    validateNotClosed();
-    return nativeHandle;
-  }
 
   /**
-   * Closes this instance and releases all associated native resources.
+   * Gets the resource type name for logging and error messages.
    *
-   * <p>After calling this method, all operations on this instance will throw {@link
-   * IllegalStateException}. This method is idempotent.
+   * @return the resource type name
    */
   @Override
-  public void close() {
-    if (closed.compareAndSet(false, true)) {
-      if (nativeHandle != 0) {
-        try {
-          nativeDestroyInstance(nativeHandle);
-          LOGGER.fine("Destroyed JNI instance with handle: " + nativeHandle);
-        } catch (final Exception e) {
-          LOGGER.warning("Error destroying native instance: " + e.getMessage());
-        } finally {
-          nativeHandle = 0;
-        }
-      }
-    }
-  }
-
-  /** Finalizer to ensure native resources are released if close() wasn't called. */
-  @Override
-  protected void finalize() throws Throwable {
-    try {
-      if (!closed.get()) {
-        LOGGER.warning("JniInstance was finalized without being closed");
-        close();
-      }
-    } finally {
-      super.finalize();
-    }
+  protected String getResourceType() {
+    return "Instance";
   }
 
   /**
-   * Validates that this instance is not closed.
+   * Performs the actual native resource cleanup.
    *
-   * @throws IllegalStateException if this instance is closed
+   * @throws Exception if there's an error during cleanup
    */
-  private void validateNotClosed() {
-    if (closed.get()) {
-      throw new IllegalStateException("Instance is closed");
-    }
+  @Override
+  protected void doClose() throws Exception {
+    nativeDestroyInstance(nativeHandle);
   }
 
   // Native method declarations

@@ -1,6 +1,8 @@
 package ai.tegmentum.wasmtime4j.jni;
 
-import java.util.concurrent.atomic.AtomicBoolean;
+import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
+import ai.tegmentum.wasmtime4j.jni.util.JniResource;
+import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import java.util.logging.Logger;
 
 /**
@@ -10,43 +12,34 @@ import java.util.logging.Logger;
  * Wasmtime library. Globals can store various value types and may be mutable or immutable.
  *
  * <p>This implementation ensures defensive programming to prevent JVM crashes and provides
- * comprehensive type checking for global variable access.
+ * comprehensive type checking for global variable access using JniValidation and the JniResource base class.
  */
-public final class JniGlobal implements AutoCloseable {
+public final class JniGlobal extends JniResource {
 
   private static final Logger LOGGER = Logger.getLogger(JniGlobal.class.getName());
-
-  /** Native global handle. */
-  private volatile long nativeHandle;
-
-  /** Flag to track if this global has been closed. */
-  private final AtomicBoolean closed = new AtomicBoolean(false);
 
   /**
    * Creates a new JNI global with the given native handle.
    *
    * @param nativeHandle the native global handle
-   * @throws IllegalArgumentException if nativeHandle is 0
+   * @throws JniResourceException if nativeHandle is invalid
    */
   JniGlobal(final long nativeHandle) {
-    if (nativeHandle == 0) {
-      throw new IllegalArgumentException("Native handle cannot be 0");
-    }
-    this.nativeHandle = nativeHandle;
-    LOGGER.fine("Created JNI global with handle: " + nativeHandle);
+    super(nativeHandle);
+    LOGGER.fine("Created JNI global with handle: 0x" + Long.toHexString(nativeHandle));
   }
 
   /**
    * Gets the value type of this global.
    *
    * @return the value type name (e.g., "i32", "i64", "f32", "f64")
-   * @throws IllegalStateException if this global is closed
+   * @throws JniResourceException if this global is closed
    * @throws RuntimeException if the type cannot be retrieved
    */
   public String getValueType() {
-    validateNotClosed();
+    ensureNotClosed();
     try {
-      final String type = nativeGetValueType(nativeHandle);
+      final String type = nativeGetValueType(getNativeHandle());
       return type != null ? type : "unknown";
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error getting global value type", e);
@@ -57,13 +50,13 @@ public final class JniGlobal implements AutoCloseable {
    * Checks if this global is mutable.
    *
    * @return true if the global is mutable, false if immutable
-   * @throws IllegalStateException if this global is closed
+   * @throws JniResourceException if this global is closed
    * @throws RuntimeException if the mutability cannot be determined
    */
   public boolean isMutable() {
-    validateNotClosed();
+    ensureNotClosed();
     try {
-      return nativeIsMutable(nativeHandle);
+      return nativeIsMutable(getNativeHandle());
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error checking global mutability", e);
     }
@@ -73,13 +66,13 @@ public final class JniGlobal implements AutoCloseable {
    * Gets the current value of this global as a generic Object.
    *
    * @return the global value (Integer, Long, Float, or Double)
-   * @throws IllegalStateException if this global is closed
+   * @throws JniResourceException if this global is closed
    * @throws RuntimeException if the value cannot be retrieved
    */
   public Object getValue() {
-    validateNotClosed();
+    ensureNotClosed();
     try {
-      return nativeGetValue(nativeHandle);
+      return nativeGetValue(getNativeHandle());
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error getting global value", e);
     }
@@ -89,13 +82,13 @@ public final class JniGlobal implements AutoCloseable {
    * Gets the current value of this global as an integer.
    *
    * @return the global value as an integer
-   * @throws IllegalStateException if this global is closed
+   * @throws JniResourceException if this global is closed
    * @throws RuntimeException if the value cannot be retrieved or is not an integer
    */
   public int getIntValue() {
-    validateNotClosed();
+    ensureNotClosed();
     try {
-      return nativeGetIntValue(nativeHandle);
+      return nativeGetIntValue(getNativeHandle());
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -107,13 +100,13 @@ public final class JniGlobal implements AutoCloseable {
    * Gets the current value of this global as a long.
    *
    * @return the global value as a long
-   * @throws IllegalStateException if this global is closed
+   * @throws JniResourceException if this global is closed
    * @throws RuntimeException if the value cannot be retrieved or is not a long
    */
   public long getLongValue() {
-    validateNotClosed();
+    ensureNotClosed();
     try {
-      return nativeGetLongValue(nativeHandle);
+      return nativeGetLongValue(getNativeHandle());
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -125,13 +118,13 @@ public final class JniGlobal implements AutoCloseable {
    * Gets the current value of this global as a float.
    *
    * @return the global value as a float
-   * @throws IllegalStateException if this global is closed
+   * @throws JniResourceException if this global is closed
    * @throws RuntimeException if the value cannot be retrieved or is not a float
    */
   public float getFloatValue() {
-    validateNotClosed();
+    ensureNotClosed();
     try {
-      return nativeGetFloatValue(nativeHandle);
+      return nativeGetFloatValue(getNativeHandle());
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -143,13 +136,13 @@ public final class JniGlobal implements AutoCloseable {
    * Gets the current value of this global as a double.
    *
    * @return the global value as a double
-   * @throws IllegalStateException if this global is closed
+   * @throws JniResourceException if this global is closed
    * @throws RuntimeException if the value cannot be retrieved or is not a double
    */
   public double getDoubleValue() {
-    validateNotClosed();
+    ensureNotClosed();
     try {
-      return nativeGetDoubleValue(nativeHandle);
+      return nativeGetDoubleValue(getNativeHandle());
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -161,19 +154,16 @@ public final class JniGlobal implements AutoCloseable {
    * Sets the value of this global (only if mutable).
    *
    * @param value the new value (must match the global's type)
-   * @throws IllegalArgumentException if value is null or wrong type
-   * @throws IllegalStateException if this global is closed or immutable
+   * @throws JniResourceException if value is null, wrong type, this global is closed, or immutable
    * @throws RuntimeException if the value cannot be set
    */
   public void setValue(final Object value) {
-    if (value == null) {
-      throw new IllegalArgumentException("Value cannot be null");
-    }
-    validateNotClosed();
+    JniValidation.requireNonNull(value, "value");
+    ensureNotClosed();
     validateMutable();
 
     try {
-      final boolean success = nativeSetValue(nativeHandle, value);
+      final boolean success = nativeSetValue(getNativeHandle(), value);
       if (!success) {
         throw new RuntimeException("Failed to set global value");
       }
@@ -188,15 +178,15 @@ public final class JniGlobal implements AutoCloseable {
    * Sets the value of this global to an integer (only if mutable and compatible type).
    *
    * @param value the new integer value
-   * @throws IllegalStateException if this global is closed or immutable
+   * @throws JniResourceException if this global is closed or immutable
    * @throws RuntimeException if the value cannot be set or type is incompatible
    */
   public void setIntValue(final int value) {
-    validateNotClosed();
+    ensureNotClosed();
     validateMutable();
 
     try {
-      final boolean success = nativeSetIntValue(nativeHandle, value);
+      final boolean success = nativeSetIntValue(getNativeHandle(), value);
       if (!success) {
         throw new RuntimeException("Failed to set global int value");
       }
@@ -211,15 +201,15 @@ public final class JniGlobal implements AutoCloseable {
    * Sets the value of this global to a long (only if mutable and compatible type).
    *
    * @param value the new long value
-   * @throws IllegalStateException if this global is closed or immutable
+   * @throws JniResourceException if this global is closed or immutable
    * @throws RuntimeException if the value cannot be set or type is incompatible
    */
   public void setLongValue(final long value) {
-    validateNotClosed();
+    ensureNotClosed();
     validateMutable();
 
     try {
-      final boolean success = nativeSetLongValue(nativeHandle, value);
+      final boolean success = nativeSetLongValue(getNativeHandle(), value);
       if (!success) {
         throw new RuntimeException("Failed to set global long value");
       }
@@ -234,15 +224,15 @@ public final class JniGlobal implements AutoCloseable {
    * Sets the value of this global to a float (only if mutable and compatible type).
    *
    * @param value the new float value
-   * @throws IllegalStateException if this global is closed or immutable
+   * @throws JniResourceException if this global is closed or immutable
    * @throws RuntimeException if the value cannot be set or type is incompatible
    */
   public void setFloatValue(final float value) {
-    validateNotClosed();
+    ensureNotClosed();
     validateMutable();
 
     try {
-      final boolean success = nativeSetFloatValue(nativeHandle, value);
+      final boolean success = nativeSetFloatValue(getNativeHandle(), value);
       if (!success) {
         throw new RuntimeException("Failed to set global float value");
       }
@@ -257,15 +247,15 @@ public final class JniGlobal implements AutoCloseable {
    * Sets the value of this global to a double (only if mutable and compatible type).
    *
    * @param value the new double value
-   * @throws IllegalStateException if this global is closed or immutable
+   * @throws JniResourceException if this global is closed or immutable
    * @throws RuntimeException if the value cannot be set or type is incompatible
    */
   public void setDoubleValue(final double value) {
-    validateNotClosed();
+    ensureNotClosed();
     validateMutable();
 
     try {
-      final boolean success = nativeSetDoubleValue(nativeHandle, value);
+      final boolean success = nativeSetDoubleValue(getNativeHandle(), value);
       if (!success) {
         throw new RuntimeException("Failed to set global double value");
       }
@@ -277,71 +267,34 @@ public final class JniGlobal implements AutoCloseable {
   }
 
   /**
-   * Gets the native handle for internal use.
+   * Gets the resource type name for logging and error messages.
    *
-   * @return the native handle
-   * @throws IllegalStateException if this global is closed
+   * @return the resource type name
    */
-  long getNativeHandle() {
-    validateNotClosed();
-    return nativeHandle;
+  @Override
+  protected String getResourceType() {
+    return "Global";
   }
 
   /**
    * Validates that this global is mutable.
    *
-   * @throws IllegalStateException if this global is immutable
+   * @throws JniResourceException if this global is immutable
    */
   private void validateMutable() {
     if (!isMutable()) {
-      throw new IllegalStateException("Global is immutable");
+      throw new JniResourceException("Global is immutable");
     }
   }
 
   /**
-   * Closes this global and releases all associated native resources.
+   * Performs the actual native resource cleanup.
    *
-   * <p>After calling this method, all operations on this global will throw {@link
-   * IllegalStateException}. This method is idempotent.
+   * @throws Exception if there's an error during cleanup
    */
   @Override
-  public void close() {
-    if (closed.compareAndSet(false, true)) {
-      if (nativeHandle != 0) {
-        try {
-          nativeDestroyGlobal(nativeHandle);
-          LOGGER.fine("Destroyed JNI global with handle: " + nativeHandle);
-        } catch (final Exception e) {
-          LOGGER.warning("Error destroying native global: " + e.getMessage());
-        } finally {
-          nativeHandle = 0;
-        }
-      }
-    }
-  }
-
-  /** Finalizer to ensure native resources are released if close() wasn't called. */
-  @Override
-  protected void finalize() throws Throwable {
-    try {
-      if (!closed.get()) {
-        LOGGER.warning("JniGlobal was finalized without being closed");
-        close();
-      }
-    } finally {
-      super.finalize();
-    }
-  }
-
-  /**
-   * Validates that this global is not closed.
-   *
-   * @throws IllegalStateException if this global is closed
-   */
-  private void validateNotClosed() {
-    if (closed.get()) {
-      throw new IllegalStateException("Global is closed");
-    }
+  protected void doClose() throws Exception {
+    nativeDestroyGlobal(nativeHandle);
   }
 
   // Native method declarations

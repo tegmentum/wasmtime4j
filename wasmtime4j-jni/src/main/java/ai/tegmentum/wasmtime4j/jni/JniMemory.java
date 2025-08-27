@@ -1,7 +1,9 @@
 package ai.tegmentum.wasmtime4j.jni;
 
+import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
+import ai.tegmentum.wasmtime4j.jni.util.JniResource;
+import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import java.nio.ByteBuffer;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
 
 /**
@@ -12,43 +14,34 @@ import java.util.logging.Logger;
  * space.
  *
  * <p>This implementation ensures defensive programming to prevent buffer overflows and JVM crashes
- * through extensive bounds checking.
+ * through extensive bounds checking using JniValidation and the JniResource base class.
  */
-public final class JniMemory implements AutoCloseable {
+public final class JniMemory extends JniResource {
 
   private static final Logger LOGGER = Logger.getLogger(JniMemory.class.getName());
-
-  /** Native memory handle. */
-  private volatile long nativeHandle;
-
-  /** Flag to track if this memory has been closed. */
-  private final AtomicBoolean closed = new AtomicBoolean(false);
 
   /**
    * Creates a new JNI memory with the given native handle.
    *
    * @param nativeHandle the native memory handle
-   * @throws IllegalArgumentException if nativeHandle is 0
+   * @throws JniResourceException if nativeHandle is invalid
    */
   JniMemory(final long nativeHandle) {
-    if (nativeHandle == 0) {
-      throw new IllegalArgumentException("Native handle cannot be 0");
-    }
-    this.nativeHandle = nativeHandle;
-    LOGGER.fine("Created JNI memory with handle: " + nativeHandle);
+    super(nativeHandle);
+    LOGGER.fine("Created JNI memory with handle: 0x" + Long.toHexString(nativeHandle));
   }
 
   /**
    * Gets the current size of the memory in bytes.
    *
    * @return the memory size in bytes
-   * @throws IllegalStateException if this memory is closed
+   * @throws JniResourceException if this memory is closed
    * @throws RuntimeException if the size cannot be retrieved
    */
   public long size() {
-    validateNotClosed();
+    ensureNotClosed();
     try {
-      return nativeGetSize(nativeHandle);
+      return nativeGetSize(getNativeHandle());
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error getting memory size", e);
     }
@@ -70,18 +63,15 @@ public final class JniMemory implements AutoCloseable {
    *
    * @param pages the number of pages to grow by
    * @return the previous size in pages, or -1 if growth failed
-   * @throws IllegalArgumentException if pages is negative
-   * @throws IllegalStateException if this memory is closed
+   * @throws JniResourceException if pages is negative or this memory is closed
    * @throws RuntimeException if the operation fails
    */
   public long grow(final long pages) {
-    if (pages < 0) {
-      throw new IllegalArgumentException("Pages must be non-negative");
-    }
-    validateNotClosed();
+    JniValidation.requireNonNegative(pages, "pages");
+    ensureNotClosed();
 
     try {
-      return nativeGrow(nativeHandle, pages);
+      return nativeGrow(getNativeHandle(), pages);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -94,20 +84,17 @@ public final class JniMemory implements AutoCloseable {
    *
    * @param offset the byte offset
    * @return the byte value
-   * @throws IllegalArgumentException if offset is negative
-   * @throws IllegalStateException if this memory is closed
+   * @throws JniResourceException if offset is negative or this memory is closed
    * @throws IndexOutOfBoundsException if offset is beyond memory bounds
    * @throws RuntimeException if the read fails
    */
   public byte readByte(final long offset) {
-    if (offset < 0) {
-      throw new IllegalArgumentException("Offset must be non-negative");
-    }
-    validateNotClosed();
+    JniValidation.requireNonNegative(offset, "offset");
+    ensureNotClosed();
     validateOffset(offset, 1);
 
     try {
-      return nativeReadByte(nativeHandle, offset);
+      return nativeReadByte(getNativeHandle(), offset);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -120,20 +107,17 @@ public final class JniMemory implements AutoCloseable {
    *
    * @param offset the byte offset
    * @param value the byte value to write
-   * @throws IllegalArgumentException if offset is negative
-   * @throws IllegalStateException if this memory is closed
+   * @throws JniResourceException if offset is negative or this memory is closed
    * @throws IndexOutOfBoundsException if offset is beyond memory bounds
    * @throws RuntimeException if the write fails
    */
   public void writeByte(final long offset, final byte value) {
-    if (offset < 0) {
-      throw new IllegalArgumentException("Offset must be non-negative");
-    }
-    validateNotClosed();
+    JniValidation.requireNonNegative(offset, "offset");
+    ensureNotClosed();
     validateOffset(offset, 1);
 
     try {
-      nativeWriteByte(nativeHandle, offset, value);
+      nativeWriteByte(getNativeHandle(), offset, value);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -147,23 +131,18 @@ public final class JniMemory implements AutoCloseable {
    * @param offset the starting byte offset
    * @param buffer the buffer to read into
    * @return the number of bytes read
-   * @throws IllegalArgumentException if offset is negative or buffer is null
-   * @throws IllegalStateException if this memory is closed
+   * @throws JniResourceException if offset is negative, buffer is null, or this memory is closed
    * @throws IndexOutOfBoundsException if the read would exceed memory bounds
    * @throws RuntimeException if the read fails
    */
   public int readBytes(final long offset, final byte[] buffer) {
-    if (offset < 0) {
-      throw new IllegalArgumentException("Offset must be non-negative");
-    }
-    if (buffer == null) {
-      throw new IllegalArgumentException("Buffer cannot be null");
-    }
-    validateNotClosed();
+    JniValidation.requireNonNegative(offset, "offset");
+    JniValidation.requireNonNull(buffer, "buffer");
+    ensureNotClosed();
     validateOffset(offset, buffer.length);
 
     try {
-      return nativeReadBytes(nativeHandle, offset, buffer);
+      return nativeReadBytes(getNativeHandle(), offset, buffer);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -177,23 +156,18 @@ public final class JniMemory implements AutoCloseable {
    * @param offset the starting byte offset
    * @param buffer the buffer to write from
    * @return the number of bytes written
-   * @throws IllegalArgumentException if offset is negative or buffer is null
-   * @throws IllegalStateException if this memory is closed
+   * @throws JniResourceException if offset is negative, buffer is null, or this memory is closed
    * @throws IndexOutOfBoundsException if the write would exceed memory bounds
    * @throws RuntimeException if the write fails
    */
   public int writeBytes(final long offset, final byte[] buffer) {
-    if (offset < 0) {
-      throw new IllegalArgumentException("Offset must be non-negative");
-    }
-    if (buffer == null) {
-      throw new IllegalArgumentException("Buffer cannot be null");
-    }
-    validateNotClosed();
+    JniValidation.requireNonNegative(offset, "offset");
+    JniValidation.requireNonNull(buffer, "buffer");
+    ensureNotClosed();
     validateOffset(offset, buffer.length);
 
     try {
-      return nativeWriteBytes(nativeHandle, offset, buffer);
+      return nativeWriteBytes(getNativeHandle(), offset, buffer);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -210,27 +184,26 @@ public final class JniMemory implements AutoCloseable {
    * <p><strong>Warning:</strong> The buffer becomes invalid if the memory is grown.
    *
    * @return a direct ByteBuffer view of the memory
-   * @throws IllegalStateException if this memory is closed
+   * @throws JniResourceException if this memory is closed
    * @throws RuntimeException if the buffer cannot be created
    */
   public ByteBuffer getBuffer() {
-    validateNotClosed();
+    ensureNotClosed();
     try {
-      return nativeGetBuffer(nativeHandle);
+      return nativeGetBuffer(getNativeHandle());
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error getting buffer", e);
     }
   }
 
   /**
-   * Gets the native handle for internal use.
+   * Gets the resource type name for logging and error messages.
    *
-   * @return the native handle
-   * @throws IllegalStateException if this memory is closed
+   * @return the resource type name
    */
-  long getNativeHandle() {
-    validateNotClosed();
-    return nativeHandle;
+  @Override
+  protected String getResourceType() {
+    return "Memory";
   }
 
   /**
@@ -249,49 +222,13 @@ public final class JniMemory implements AutoCloseable {
   }
 
   /**
-   * Closes this memory and releases all associated native resources.
+   * Performs the actual native resource cleanup.
    *
-   * <p>After calling this method, all operations on this memory will throw {@link
-   * IllegalStateException}. This method is idempotent.
+   * @throws Exception if there's an error during cleanup
    */
   @Override
-  public void close() {
-    if (closed.compareAndSet(false, true)) {
-      if (nativeHandle != 0) {
-        try {
-          nativeDestroyMemory(nativeHandle);
-          LOGGER.fine("Destroyed JNI memory with handle: " + nativeHandle);
-        } catch (final Exception e) {
-          LOGGER.warning("Error destroying native memory: " + e.getMessage());
-        } finally {
-          nativeHandle = 0;
-        }
-      }
-    }
-  }
-
-  /** Finalizer to ensure native resources are released if close() wasn't called. */
-  @Override
-  protected void finalize() throws Throwable {
-    try {
-      if (!closed.get()) {
-        LOGGER.warning("JniMemory was finalized without being closed");
-        close();
-      }
-    } finally {
-      super.finalize();
-    }
-  }
-
-  /**
-   * Validates that this memory is not closed.
-   *
-   * @throws IllegalStateException if this memory is closed
-   */
-  private void validateNotClosed() {
-    if (closed.get()) {
-      throw new IllegalStateException("Memory is closed");
-    }
+  protected void doClose() throws Exception {
+    nativeDestroyMemory(nativeHandle);
   }
 
   // Native method declarations
