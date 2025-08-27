@@ -18,7 +18,8 @@
         <!-- Java version properties -->
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.build.inputEncoding>UTF-8</project.build.inputEncoding>
+        <project.build.putputEncoding>UTF-8</project.build.putputEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         
         <!-- JNI minimum Java version -->
@@ -364,7 +365,8 @@
                     </dependencies>
                     <configuration>
                         <configLocation>${checkstyle.config.location}</configLocation>
-                        <sourceEncoding>${project.build.sourceEncoding}</sourceEncoding>
+                        <inputEncoding>${project.build.inputEncoding}</inputEncoding>
+                        <outputEncoding>${project.build.outputEncoding}</outputEncoding>
                         <consoleOutput>${checkstyle.consoleOutput}</consoleOutput>
                         <failsOnError>${checkstyle.failOnViolation}</failsOnError>
                         <violationSeverity>${checkstyle.violationSeverity}</violationSeverity>
@@ -485,7 +487,8 @@
                         </dependency>
                     </dependencies>
                     <configuration>
-                        <sourceEncoding>${project.build.sourceEncoding}</sourceEncoding>
+                        <inputEncoding>${project.build.inputEncoding}</inputEncoding>
+                        <outputEncoding>${project.build.outputEncoding}</outputEncoding>
                         <minimumTokens>100</minimumTokens>
                         <targetJdk>${maven.compiler.target}</targetJdk>
                         <includeTests>true</includeTests>

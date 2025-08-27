@@ -18,6 +18,8 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
+PURPLE='\033[0;35m'
+CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # Logging functions
@@ -35,6 +37,16 @@ log_error() {
 
 log_success() {
     echo -e "${GREEN}[SUCCESS]${NC} $1"
+}
+
+log_debug() {
+    if [[ "${DEBUG:-}" == "true" ]]; then
+        echo -e "${PURPLE}[DEBUG]${NC} $1"
+    fi
+}
+
+log_step() {
+    echo -e "${CYAN}[STEP]${NC} $1"
 }
 
 # Check prerequisites
@@ -138,34 +150,337 @@ build_target() {
     fi
 }
 
-# Main build function
+# Cross-compilation target mapping
+TARGETS_LIST=(
+    "x86_64-unknown-linux-gnu:linux-x64"
+    "aarch64-unknown-linux-gnu:linux-aarch64"
+    "x86_64-pc-windows-gnu:windows-x64"
+    "x86_64-apple-darwin:macos-x64"
+    "aarch64-apple-darwin:macos-aarch64"
+)
+
+# Library configuration per platform
+LIB_CONFIG_LIST=(
+    "linux-x64:lib:so"
+    "linux-aarch64:lib:so"
+    "windows-x64::dll"
+    "macos-x64:lib:dylib"
+    "macos-aarch64:lib:dylib"
+)
+
+# Helper functions
+get_platform_for_target() {
+    local target="$1"
+    for entry in "${TARGETS_LIST[@]}"; do
+        if [[ "${entry%:*}" == "$target" ]]; then
+            echo "${entry#*:}"
+            return
+        fi
+    done
+}
+
+get_lib_config_for_platform() {
+    local platform="$1"
+    for entry in "${LIB_CONFIG_LIST[@]}"; do
+        if [[ "${entry%%:*}" == "$platform" ]]; then
+            echo "${entry#*:}"
+            return
+        fi
+    done
+}
+
+# Source environment for cross-compilation
+source_build_env() {
+    local target="${1:-}"
+    
+    # Load cross-compilation environment if available
+    local env_file="$PROJECT_ROOT/.cross-compilation/environment.sh"
+    if [[ -f "$env_file" ]]; then
+        log_debug "Loading cross-compilation environment from $env_file"
+        source "$env_file" "$target"
+    else
+        log_warn "Cross-compilation environment not found. Run setup-cross-compilation.sh first."
+    fi
+    
+    # Set build reproducibility variables
+    export SOURCE_DATE_EPOCH="${SOURCE_DATE_EPOCH:-$(date +%s)}"
+    export RUSTFLAGS="${RUSTFLAGS} -C embed-bitcode=no"
+    export CARGO_NET_RETRY="${CARGO_NET_RETRY:-10}"
+    export CARGO_HTTP_TIMEOUT="${CARGO_HTTP_TIMEOUT:-300}"
+}
+
+# Verify build environment
+verify_build_env() {
+    log_info "Verifying build environment..."
+    
+    # Check if cross-compilation setup exists
+    if [[ ! -d "$PROJECT_ROOT/.cross-compilation" ]]; then
+        log_warn "Cross-compilation setup not found. Run setup-cross-compilation.sh first."
+        return 1
+    fi
+    
+    # Verify all required targets are installed
+    local installed_targets=$(rustup target list --installed)
+    local missing_targets=()
+    
+    for entry in "${TARGETS_LIST[@]}"; do
+        local target="${entry%:*}"
+        if ! echo "$installed_targets" | grep -q "^$target$"; then
+            missing_targets+=("$target")
+        fi
+    done
+    
+    if [[ ${#missing_targets[@]} -gt 0 ]]; then
+        log_error "Missing cross-compilation targets: ${missing_targets[*]}"
+        log_info "Run: ./scripts/setup-cross-compilation.sh"
+        return 1
+    fi
+    
+    log_success "Build environment verification passed"
+    return 0
+}
+
+# Build for specific target with enhanced error handling
+build_target_enhanced() {
+    local target=$1
+    local platform=$(get_platform_for_target "$target")
+    local build_mode="${2:-release}"
+    
+    if [[ -z "$platform" ]]; then
+        log_error "Unknown target: $target"
+        return 1
+    fi
+    
+    log_info "Building for target: $target (platform: $platform, mode: $build_mode)"
+    
+    # Parse library configuration
+    local lib_config=$(get_lib_config_for_platform "$platform")
+    local lib_prefix="${lib_config%:*}"
+    local lib_extension="${lib_config#*:}"
+    
+    # Setup build environment
+    source_build_env "$target"
+    
+    # Determine output directory
+    local output_dir="$NATIVE_DIR/$platform"
+    mkdir -p "$output_dir"
+    
+    # Build arguments
+    local build_args=(
+        "build"
+        "--target" "$target"
+    )
+    
+    if [[ "$build_mode" == "release" ]]; then
+        build_args+=("--release")
+    fi
+    
+    # Add features if specified
+    if [[ -n "${CARGO_FEATURES:-}" ]]; then
+        build_args+=("--features" "$CARGO_FEATURES")
+    fi
+    
+    # Build the library with detailed logging
+    log_info "Executing: cargo ${build_args[*]}"
+    
+    local build_start_time=$(date +%s)
+    
+    if cargo "${build_args[@]}" 2>&1 | tee "$PROJECT_ROOT/.cross-compilation/build-cache/build-$platform-$build_mode.log"; then
+        local build_end_time=$(date +%s)
+        local build_duration=$((build_end_time - build_start_time))
+        
+        # Locate and copy the built library
+        local source_lib="$PROJECT_ROOT/target/$target/$build_mode/${lib_prefix}wasmtime4j.$lib_extension"
+        local dest_lib="$output_dir/${lib_prefix}wasmtime4j.$lib_extension"
+        
+        if [[ -f "$source_lib" ]]; then
+            cp "$source_lib" "$dest_lib"
+            
+            # Get library info
+            local lib_size=$(ls -lh "$dest_lib" | awk '{print $5}')
+            
+            log_success "Built library for $target in ${build_duration}s (size: $lib_size)"
+            log_info "Library location: $dest_lib"
+            
+            # Verify library
+            if verify_library "$dest_lib" "$platform"; then
+                log_success "Library verification passed for $target"
+            else
+                log_warn "Library verification failed for $target (may still be usable)"
+            fi
+            
+        else
+            log_error "Built library not found: $source_lib"
+            return 1
+        fi
+    else
+        log_error "Failed to build for target: $target"
+        log_info "Build log available at: $PROJECT_ROOT/.cross-compilation/build-cache/build-$platform-$build_mode.log"
+        return 1
+    fi
+}
+
+# Verify library integrity
+verify_library() {
+    local lib_path="$1"
+    local platform="$2"
+    
+    log_debug "Verifying library: $lib_path"
+    
+    # Basic file checks
+    if [[ ! -f "$lib_path" ]]; then
+        log_error "Library file does not exist: $lib_path"
+        return 1
+    fi
+    
+    local file_size=$(stat -c%s "$lib_path" 2>/dev/null || stat -f%z "$lib_path" 2>/dev/null)
+    if [[ $file_size -eq 0 ]]; then
+        log_error "Library file is empty: $lib_path"
+        return 1
+    fi
+    
+    # Platform-specific verification
+    case "$platform" in
+        linux-*)
+            if command -v file &> /dev/null; then
+                if file "$lib_path" | grep -q "ELF.*shared object"; then
+                    log_debug "Library format verification passed (ELF shared object)"
+                else
+                    log_warn "Unexpected library format for Linux platform"
+                fi
+            fi
+            ;;
+        windows-*)
+            if command -v file &> /dev/null; then
+                if file "$lib_path" | grep -q "PE32.*DLL"; then
+                    log_debug "Library format verification passed (PE32 DLL)"
+                else
+                    log_warn "Unexpected library format for Windows platform"
+                fi
+            fi
+            ;;
+        macos-*)
+            if command -v file &> /dev/null; then
+                if file "$lib_path" | grep -q "Mach-O.*dynamically linked shared library"; then
+                    log_debug "Library format verification passed (Mach-O dylib)"
+                else
+                    log_warn "Unexpected library format for macOS platform"
+                fi
+            fi
+            ;;
+    esac
+    
+    return 0
+}
+
+# Main build function with multiple modes
 build_all() {
-    log_info "Starting native library build process..."
+    local mode="${1:-auto}"
+    local specific_target="${2:-}"
+    local build_mode="${3:-release}"
+    
+    log_info "Starting native library build process (mode: $mode)..."
     
     cd "$PROJECT_ROOT"
     
-    # For now, this is a placeholder that creates empty placeholder files
-    # TODO: Replace with actual Rust compilation when Rust source is ready
+    # Setup build cache directory
+    mkdir -p "$PROJECT_ROOT/.cross-compilation/build-cache"
     
-    log_warn "Native compilation is currently a placeholder"
-    log_info "Creating placeholder native libraries..."
-    
-    # Create placeholder libraries for testing
-    local platforms=("linux-x64" "linux-aarch64" "windows-x64" "macos-x64" "macos-aarch64")
-    local extensions=("so" "so" "dll" "dylib" "dylib")
-    local prefixes=("lib" "lib" "" "lib" "lib")
-    
-    for i in "${!platforms[@]}"; do
-        local platform="${platforms[$i]}"
-        local extension="${extensions[$i]}"
-        local prefix="${prefixes[$i]}"
-        local output_dir="$NATIVE_DIR/$platform"
-        local lib_file="$output_dir/${prefix}wasmtime4j.$extension"
-        
-        mkdir -p "$output_dir"
-        echo "# Placeholder native library for $platform" > "$lib_file"
-        log_info "Created placeholder: $lib_file"
-    done
+    case "$mode" in
+        auto|placeholder)
+            # Create placeholder libraries for initial testing
+            log_warn "Using placeholder mode - no actual Rust compilation"
+            log_info "Creating placeholder native libraries..."
+            
+            for entry in "${TARGETS_LIST[@]}"; do
+                local target="${entry%:*}"
+                local platform="${entry#*:}"
+                local lib_config=$(get_lib_config_for_platform "$platform")
+                local lib_prefix="${lib_config%:*}"
+                local lib_extension="${lib_config#*:}"
+                local output_dir="$NATIVE_DIR/$platform"
+                local lib_file="$output_dir/${lib_prefix}wasmtime4j.$lib_extension"
+                
+                mkdir -p "$output_dir"
+                echo "# Placeholder native library for $platform ($(date))" > "$lib_file"
+                log_info "Created placeholder: $lib_file"
+            done
+            ;;
+            
+        compile)
+            # Actual Rust compilation
+            log_info "Using compilation mode - actual Rust compilation"
+            
+            # Verify build environment first
+            if ! verify_build_env; then
+                log_error "Build environment verification failed"
+                exit 1
+            fi
+            
+            if [[ -n "$specific_target" ]]; then
+                # Build specific target
+                if ! build_target_enhanced "$specific_target" "$build_mode"; then
+                    log_error "Failed to build target: $specific_target"
+                    exit 1
+                fi
+            else
+                # Build all targets
+                local failed_targets=()
+                local successful_targets=()
+                
+                for entry in "${TARGETS_LIST[@]}"; do
+                    local target="${entry%:*}"
+                    if build_target_enhanced "$target" "$build_mode"; then
+                        successful_targets+=("$target")
+                    else
+                        failed_targets+=("$target")
+                    fi
+                done
+                
+                # Report results
+                if [[ ${#successful_targets[@]} -gt 0 ]]; then
+                    log_success "Successfully built ${#successful_targets[@]} targets: ${successful_targets[*]}"
+                fi
+                
+                if [[ ${#failed_targets[@]} -gt 0 ]]; then
+                    log_error "Failed to build ${#failed_targets[@]} targets: ${failed_targets[*]}"
+                    exit 1
+                fi
+            fi
+            ;;
+            
+        verify)
+            # Verify existing libraries
+            log_info "Verifying existing native libraries..."
+            
+            local verification_failed=false
+            
+            for entry in "${TARGETS_LIST[@]}"; do
+                local target="${entry%:*}"
+                local platform="${entry#*:}"
+                local lib_config=$(get_lib_config_for_platform "$platform")
+                local lib_prefix="${lib_config%:*}"
+                local lib_extension="${lib_config#*:}"
+                local lib_file="$NATIVE_DIR/$platform/${lib_prefix}wasmtime4j.$lib_extension"
+                
+                if verify_library "$lib_file" "$platform"; then
+                    log_success "Verification passed: $platform"
+                else
+                    log_error "Verification failed: $platform"
+                    verification_failed=true
+                fi
+            done
+            
+            if [[ "$verification_failed" == "true" ]]; then
+                exit 1
+            fi
+            ;;
+            
+        *)
+            log_error "Unknown build mode: $mode"
+            exit 1
+            ;;
+    esac
     
     log_success "Native library build process completed"
 }
@@ -192,37 +507,135 @@ clean() {
 
 # Print usage
 usage() {
-    echo "Usage: $0 [OPTION]"
+    echo "Usage: $0 [COMMAND] [OPTIONS]"
     echo "Build native libraries for Wasmtime4j"
     echo ""
+    echo "Commands:"
+    echo "  build         Build native libraries (default)"
+    echo "  compile       Build using actual Rust compilation"
+    echo "  verify        Verify existing native libraries"
+    echo "  clean         Clean build artifacts"
+    echo "  clean-cache   Clean build cache only"
+    echo "  check         Check prerequisites only"
+    echo "  help          Show this help message"
+    echo ""
     echo "Options:"
-    echo "  build     Build native libraries for all platforms (default)"
-    echo "  clean     Clean build artifacts"
-    echo "  check     Check prerequisites only"
-    echo "  help      Show this help message"
+    echo "  --target TARGET     Build for specific target (e.g., x86_64-unknown-linux-gnu)"
+    echo "  --mode MODE         Build mode: debug or release (default: release)"
+    echo "  --all-platforms     Build for all supported platforms"
+    echo "  --placeholder       Create placeholder libraries (default for 'build')"
+    echo "  --features FEATURES Cargo features to enable"
+    echo ""
+    echo "Examples:"
+    echo "  $0                                          # Create placeholder libraries"
+    echo "  $0 compile                                  # Compile all platforms"
+    echo "  $0 compile --target x86_64-unknown-linux-gnu # Compile specific target"
+    echo "  $0 compile --mode debug                     # Compile in debug mode"
+    echo "  $0 verify                                   # Verify existing libraries"
     echo ""
     echo "Environment variables:"
     echo "  WASMTIME4J_SKIP_NATIVE  Skip native compilation if set to 'true'"
+    echo "  CARGO_FEATURES          Cargo features to enable during build"
+    echo "  DEBUG                   Enable debug output if set to 'true'"
 }
 
 # Main script logic
 main() {
     local command="${1:-build}"
+    local specific_target=""
+    local build_mode="release"
+    local build_mode_set=""
+    local all_platforms=false
+    local placeholder_mode=false
+    
+    # Parse command line arguments
+    shift || true
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            --target)
+                specific_target="$2"
+                shift 2
+                ;;
+            --mode)
+                build_mode="$2"
+                build_mode_set="true"
+                shift 2
+                ;;
+            --all-platforms)
+                all_platforms=true
+                shift
+                ;;
+            --placeholder)
+                placeholder_mode=true
+                shift
+                ;;
+            --features)
+                export CARGO_FEATURES="$2"
+                shift 2
+                ;;
+            --help|-h)
+                usage
+                exit 0
+                ;;
+            *)
+                log_error "Unknown option: $1"
+                usage
+                exit 1
+                ;;
+        esac
+    done
+    
+    # Handle skip native environment variable
+    if [[ "$WASMTIME4J_SKIP_NATIVE" == "true" ]]; then
+        log_warn "Native compilation skipped (WASMTIME4J_SKIP_NATIVE=true)"
+        exit 0
+    fi
     
     case "$command" in
         build)
-            if [[ "$WASMTIME4J_SKIP_NATIVE" == "true" ]]; then
-                log_warn "Native compilation skipped (WASMTIME4J_SKIP_NATIVE=true)"
-                exit 0
-            fi
             check_prerequisites
-            build_all
+            if [[ "$placeholder_mode" == "true" ]]; then
+                build_all "placeholder"
+            else
+                build_all "auto"
+            fi
+            ;;
+        compile)
+            check_prerequisites
+            if [[ -n "$specific_target" ]]; then
+                if [[ "$all_platforms" == "true" ]]; then
+                    log_error "Cannot specify both --target and --all-platforms"
+                    exit 1
+                fi
+                build_all "compile" "$specific_target" "$build_mode"
+            else
+                build_all "compile" "" "$build_mode"
+            fi
+            ;;
+        verify)
+            build_all "verify"
             ;;
         clean)
             clean
             ;;
+        clean-cache)
+            if [[ -d "$PROJECT_ROOT/.cross-compilation/build-cache" ]]; then
+                log_info "Cleaning build cache..."
+                rm -rf "$PROJECT_ROOT/.cross-compilation/build-cache"
+                mkdir -p "$PROJECT_ROOT/.cross-compilation/build-cache"
+                log_success "Build cache cleaned"
+            else
+                log_info "No build cache to clean"
+            fi
+            ;;
         check)
             check_prerequisites
+            if verify_build_env; then
+                log_success "Build environment is ready"
+            else
+                log_error "Build environment needs setup"
+                exit 1
+            fi
             ;;
         help|--help|-h)
             usage
