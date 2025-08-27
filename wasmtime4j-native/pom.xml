@@ -224,9 +224,124 @@
                             <Native-Library-Name>${native.library.name}</Native-Library-Name>
                             <Wasmtime-Version>${wasmtime.version}</Wasmtime-Version>
                             <Build-Platform>${os.name}-${os.arch}</Build-Platform>
+                            <Supported-Platforms>linux-x86_64,linux-aarch64,windows-x86_64,macos-x86_64,macos-aarch64</Supported-Platforms>
                         </manifestEntries>
                     </archive>
                 </configuration>
+                <executions>
+                    <!-- Default JAR with all platforms -->
+                    <execution>
+                        <id>default-jar</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                            <classifier>all-platforms</classifier>
+                        </configuration>
+                    </execution>
+                    
+                    <!-- Platform-specific JARs -->
+                    <execution>
+                        <id>linux-x86_64-jar</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                            <classifier>linux-x86_64</classifier>
+                            <includes>
+                                <include>natives/linux-x86_64/**</include>
+                                <include>META-INF/**</include>
+                            </includes>
+                            <archive>
+                                <manifestEntries>
+                                    <Target-Platform>linux-x86_64</Target-Platform>
+                                </manifestEntries>
+                            </archive>
+                        </configuration>
+                    </execution>
+                    
+                    <execution>
+                        <id>linux-aarch64-jar</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                            <classifier>linux-aarch64</classifier>
+                            <includes>
+                                <include>natives/linux-aarch64/**</include>
+                                <include>META-INF/**</include>
+                            </includes>
+                            <archive>
+                                <manifestEntries>
+                                    <Target-Platform>linux-aarch64</Target-Platform>
+                                </manifestEntries>
+                            </archive>
+                        </configuration>
+                    </execution>
+                    
+                    <execution>
+                        <id>windows-x86_64-jar</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                            <classifier>windows-x86_64</classifier>
+                            <includes>
+                                <include>natives/windows-x86_64/**</include>
+                                <include>META-INF/**</include>
+                            </includes>
+                            <archive>
+                                <manifestEntries>
+                                    <Target-Platform>windows-x86_64</Target-Platform>
+                                </manifestEntries>
+                            </archive>
+                        </configuration>
+                    </execution>
+                    
+                    <execution>
+                        <id>macos-x86_64-jar</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                            <classifier>macos-x86_64</classifier>
+                            <includes>
+                                <include>natives/macos-x86_64/**</include>
+                                <include>META-INF/**</include>
+                            </includes>
+                            <archive>
+                                <manifestEntries>
+                                    <Target-Platform>macos-x86_64</Target-Platform>
+                                </manifestEntries>
+                            </archive>
+                        </configuration>
+                    </execution>
+                    
+                    <execution>
+                        <id>macos-aarch64-jar</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                            <classifier>macos-aarch64</classifier>
+                            <includes>
+                                <include>natives/macos-aarch64/**</include>
+                                <include>META-INF/**</include>
+                            </includes>
+                            <archive>
+                                <manifestEntries>
+                                    <Target-Platform>macos-aarch64</Target-Platform>
+                                </manifestEntries>
+                            </archive>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
 
             <!-- Clean plugin to clean native build artifacts -->
