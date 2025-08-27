@@ -25,9 +25,9 @@ Using the test-runner agent ensures:
 
 ## Project Overview
 
-This project provides unified Java bindings for the Wasmtime WebAssembly runtime. The core mission is to build a common interface for interacting with Wasmtime and interfaces using both JNI and Panama bindings. The panama bindings should target the latest stable panama release Java 23 and JNI for older pre 23 java releases. 
+This project provides unified Java bindings for the Wasmtime WebAssembly runtime. The core mission is to build a common interface for interacting with Wasmtime and interfaces using both JNI and Panama bindings. The panama bindings should target the latest stable panama release Java 23 and JNI for older pre 23 java releases.
 
-The wasmtime github repository is located at https://github.com/bytecodealliance/wasmtime and should target the latest wasmtime release. JNI bindings should use the Rust API. 
+The wasmtime github repository is located at https://github.com/bytecodealliance/wasmtime and should target the latest wasmtime release. JNI bindings should use the Rust API.
 
 The project uses Maven as the build tool with the maven wrapper and provides both JNI and Panama Foreign Function API implementations for native runtimes, with a unified API layer that abstracts engine-specific details.
 
@@ -35,7 +35,7 @@ The git repository is checked out into the wasmtime4j directory
 
 Working trees should be created in the root working directory
 
-Do not initlize a new git repo in the root working directory. 
+Do not initlize a new git repo in the root working directory.
 
 Share as much code between wasmtime4j-panama and wasmtime4j-jni
 
@@ -150,7 +150,7 @@ JAVA_HOME=/path/to/java ./mvnw test -q
 
 **Test Requirements:**
 - All tests must pass on both JNI and Panama implementations
-- Tests should not depend on specific runtime behavior differences  
+- Tests should not depend on specific runtime behavior differences
 - Native library loading tests must work across all supported platforms
 - WebAssembly test files should match official Wasmtime test specifications
 - **Build System**: Uses Maven with the Maven wrapper (mvnw) - avoid using make directly
@@ -286,7 +286,7 @@ The project includes comprehensive static analysis tools:
 
 ## Development Best Practices
 
-- **Test Verification**: 
+- **Test Verification**:
   - Verify that source files and tests compile after making changes
 
 ## Style Guide Compliance
@@ -314,7 +314,7 @@ The project maintains a focused approach to security:
 
 **Basic Security Features:**
 - Input validation for WebAssembly modules
-- Memory safety through runtime sandboxing 
+- Memory safety through runtime sandboxing
 - Resource limiting and timeout controls
 - Standard Java security practices
 
