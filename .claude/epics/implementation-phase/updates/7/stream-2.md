@@ -111,6 +111,7 @@
 ## Commits
 - `758a3ef`: Issue #7: implement core WebAssembly wrapper classes (Engine, Module, Store)
 - `1d816cf`: Issue #7: fix checkstyle violations in core WebAssembly wrapper classes
+- `96cfe39`: Issue #7: apply spotless formatting and fix checkstyle violations
 
 ## Next Steps
 Stream 2 is complete and ready for:
