@@ -198,7 +198,6 @@
                             <executable>cargo</executable>
                             <arguments>
                                 <argument>build</argument>
-                                <argument>--${cargo.build.mode}</argument>
                                 <argument>--target</argument>
                                 <argument>${native.target}</argument>
                                 <argument>--features</argument>
@@ -309,6 +308,28 @@
                                 <RUSTFLAGS>-C target-cpu=native -C lto=fat</RUSTFLAGS>
                             </environmentVariables>
                         </configuration>
+                        <executions>
+                            <!-- Override cargo build for release mode -->
+                            <execution>
+                                <id>cargo-build</id>
+                                <phase>compile</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>cargo</executable>
+                                    <arguments>
+                                        <argument>build</argument>
+                                        <argument>--release</argument>
+                                        <argument>--target</argument>
+                                        <argument>${native.target}</argument>
+                                        <argument>--features</argument>
+                                        <argument>${cargo.features}</argument>
+                                    </arguments>
+                                    <skip>${native.compile.skip}</skip>
+                                </configuration>
+                            </execution>
+                        </executions>
                     </plugin>
                 </plugins>
             </build>
@@ -422,10 +443,14 @@
                         <executions>
                             <execution>
                                 <id>cargo-build</id>
+                                <phase>compile</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
                                 <configuration>
+                                    <executable>cargo</executable>
                                     <arguments>
                                         <argument>build</argument>
-                                        <argument>--${cargo.build.mode}</argument>
                                         <argument>--target</argument>
                                         <argument>${native.target}</argument>
                                         <argument>--features</argument>
@@ -437,6 +462,7 @@
                                         <RUST_BACKTRACE>1</RUST_BACKTRACE>
                                         <CARGO_TARGET_DIR>${native.cargo.target.dir}</CARGO_TARGET_DIR>
                                     </environmentVariables>
+                                    <skip>${native.compile.skip}</skip>
                                 </configuration>
                             </execution>
                         </executions>
