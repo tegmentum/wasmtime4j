@@ -9,11 +9,27 @@ extern "C" {
 #endif
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniEngine
- * Method:    nativeInstantiate
- * Signature: (JJ)J
+ * Method:    nativeCreateEngine
+ * Signature: ()J
  */
-JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeInstantiate
-  (JNIEnv *, jclass, jlong, jlong);
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeCreateEngine
+  (JNIEnv *, jclass);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniEngine
+ * Method:    nativeCompileModule
+ * Signature: (J[B)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeCompileModule
+  (JNIEnv *, jclass, jlong, jbyteArray);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniEngine
+ * Method:    nativeCreateStore
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeCreateStore
+  (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniEngine

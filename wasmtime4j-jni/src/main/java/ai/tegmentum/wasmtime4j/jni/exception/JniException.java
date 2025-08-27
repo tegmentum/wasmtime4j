@@ -89,6 +89,7 @@ public class JniException extends RuntimeException {
     return nativeErrorCode != null;
   }
 
+  @Override
   public String toString() {
     final StringBuilder sb = new StringBuilder(super.toString());
     if (hasNativeErrorCode()) {
