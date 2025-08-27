@@ -11,35 +11,37 @@ import java.util.logging.Logger;
  * JNI implementation of the WebAssembly Module.
  *
  * <p>This class represents a compiled WebAssembly module and provides access to its metadata,
- * imports, and exports through JNI calls to the native Wasmtime library. A module contains
- * the compiled WebAssembly bytecode and can be instantiated multiple times to create
- * independent execution contexts.
+ * imports, and exports through JNI calls to the native Wasmtime library. A module contains the
+ * compiled WebAssembly bytecode and can be instantiated multiple times to create independent
+ * execution contexts.
  *
  * <p>Key features:
+ *
  * <ul>
- *   <li>Automatic resource management with {@link AutoCloseable}</li>
- *   <li>Defensive programming to prevent JVM crashes</li>
- *   <li>Comprehensive parameter validation</li>
- *   <li>Thread-safe operations</li>
- *   <li>Module metadata inspection (exports, imports, size)</li>
- *   <li>Static bytecode validation without compilation</li>
+ *   <li>Automatic resource management with {@link AutoCloseable}
+ *   <li>Defensive programming to prevent JVM crashes
+ *   <li>Comprehensive parameter validation
+ *   <li>Thread-safe operations
+ *   <li>Module metadata inspection (exports, imports, size)
+ *   <li>Static bytecode validation without compilation
  * </ul>
  *
  * <p>Usage Example:
+ *
  * <pre>{@code
  * try (JniEngine engine = JniEngine.create()) {
  *   // Validate bytecode first (optional but recommended)
  *   if (!JniModule.validate(wasmBytes)) {
  *     throw new IllegalArgumentException("Invalid WebAssembly bytecode");
  *   }
- *   
+ *
  *   // Compile module
  *   try (JniModule module = engine.compileModule(wasmBytes)) {
  *     // Inspect module metadata
  *     String[] functions = module.getExportedFunctions();
  *     String[] imports = module.getImportedFunctions();
  *     long moduleSize = module.getSize();
- *     
+ *
  *     // Create instances from this module
  *     try (JniStore store = engine.createStore()) {
  *       JniInstance instance = module.instantiate(store);
@@ -60,9 +62,8 @@ public final class JniModule extends JniResource {
   /**
    * Creates a new JNI module with the given native handle.
    *
-   * <p>This constructor is package-private and should only be used by the JniEngine
-   * or other JNI classes. External code should create modules through
-   * {@link JniEngine#compileModule(byte[])}.
+   * <p>This constructor is package-private and should only be used by the JniEngine or other JNI
+   * classes. External code should create modules through {@link JniEngine#compileModule(byte[])}.
    *
    * @param nativeHandle the native module handle from Wasmtime
    * @throws JniResourceException if nativeHandle is invalid
@@ -75,9 +76,9 @@ public final class JniModule extends JniResource {
   /**
    * Creates an instance of this module within the specified store.
    *
-   * <p>This method instantiates the compiled WebAssembly module, creating a new execution
-   * context. The instance will have access to all exports defined by the module and
-   * must satisfy all import requirements.
+   * <p>This method instantiates the compiled WebAssembly module, creating a new execution context.
+   * The instance will have access to all exports defined by the module and must satisfy all import
+   * requirements.
    *
    * @param store the store context for the new instance
    * @return a new module instance
@@ -89,7 +90,8 @@ public final class JniModule extends JniResource {
     ensureNotClosed();
 
     try {
-      final long instanceHandle = nativeInstantiateModule(getNativeHandle(), store.getNativeHandle());
+      final long instanceHandle =
+          nativeInstantiateModule(getNativeHandle(), store.getNativeHandle());
       JniValidation.requireValidHandle(instanceHandle, "instanceHandle");
       return new JniInstance(instanceHandle);
     } catch (final Exception e) {
@@ -103,8 +105,8 @@ public final class JniModule extends JniResource {
   /**
    * Gets the names of all functions exported by this module.
    *
-   * <p>This method returns a defensive copy of the export names to prevent
-   * external modification of the internal data structures.
+   * <p>This method returns a defensive copy of the export names to prevent external modification of
+   * the internal data structures.
    *
    * @return array of exported function names (never null, may be empty)
    * @throws JniException if the exports cannot be retrieved
@@ -112,7 +114,7 @@ public final class JniModule extends JniResource {
    */
   public String[] getExportedFunctions() {
     ensureNotClosed();
-    
+
     try {
       final String[] functions = nativeGetExportedFunctions(getNativeHandle());
       return functions != null ? functions.clone() : new String[0];
@@ -124,8 +126,8 @@ public final class JniModule extends JniResource {
   /**
    * Gets the names of all memories exported by this module.
    *
-   * <p>This method returns a defensive copy of the export names to prevent
-   * external modification of the internal data structures.
+   * <p>This method returns a defensive copy of the export names to prevent external modification of
+   * the internal data structures.
    *
    * @return array of exported memory names (never null, may be empty)
    * @throws JniException if the exports cannot be retrieved
@@ -133,7 +135,7 @@ public final class JniModule extends JniResource {
    */
   public String[] getExportedMemories() {
     ensureNotClosed();
-    
+
     try {
       final String[] memories = nativeGetExportedMemories(getNativeHandle());
       return memories != null ? memories.clone() : new String[0];
@@ -145,8 +147,8 @@ public final class JniModule extends JniResource {
   /**
    * Gets the names of all tables exported by this module.
    *
-   * <p>This method returns a defensive copy of the export names to prevent
-   * external modification of the internal data structures.
+   * <p>This method returns a defensive copy of the export names to prevent external modification of
+   * the internal data structures.
    *
    * @return array of exported table names (never null, may be empty)
    * @throws JniException if the exports cannot be retrieved
@@ -154,7 +156,7 @@ public final class JniModule extends JniResource {
    */
   public String[] getExportedTables() {
     ensureNotClosed();
-    
+
     try {
       final String[] tables = nativeGetExportedTables(getNativeHandle());
       return tables != null ? tables.clone() : new String[0];
@@ -166,8 +168,8 @@ public final class JniModule extends JniResource {
   /**
    * Gets the names of all globals exported by this module.
    *
-   * <p>This method returns a defensive copy of the export names to prevent
-   * external modification of the internal data structures.
+   * <p>This method returns a defensive copy of the export names to prevent external modification of
+   * the internal data structures.
    *
    * @return array of exported global names (never null, may be empty)
    * @throws JniException if the exports cannot be retrieved
@@ -175,7 +177,7 @@ public final class JniModule extends JniResource {
    */
   public String[] getExportedGlobals() {
     ensureNotClosed();
-    
+
     try {
       final String[] globals = nativeGetExportedGlobals(getNativeHandle());
       return globals != null ? globals.clone() : new String[0];
@@ -187,11 +189,11 @@ public final class JniModule extends JniResource {
   /**
    * Gets the names of all functions imported by this module.
    *
-   * <p>Import names are returned in "module::name" format, where "module" is the
-   * import module name and "name" is the imported function name.
+   * <p>Import names are returned in "module::name" format, where "module" is the import module name
+   * and "name" is the imported function name.
    *
-   * <p>This method returns a defensive copy of the import names to prevent
-   * external modification of the internal data structures.
+   * <p>This method returns a defensive copy of the import names to prevent external modification of
+   * the internal data structures.
    *
    * @return array of imported function names in "module::name" format (never null, may be empty)
    * @throws JniException if the imports cannot be retrieved
@@ -199,7 +201,7 @@ public final class JniModule extends JniResource {
    */
   public String[] getImportedFunctions() {
     ensureNotClosed();
-    
+
     try {
       final String[] functions = nativeGetImportedFunctions(getNativeHandle());
       return functions != null ? functions.clone() : new String[0];
@@ -211,12 +213,12 @@ public final class JniModule extends JniResource {
   /**
    * Validates WebAssembly bytecode without compiling it.
    *
-   * <p>This static method performs structural validation of WebAssembly bytecode to check
-   * if it conforms to the WebAssembly specification. This is useful for quick validation
-   * before attempting compilation, which can be expensive.
+   * <p>This static method performs structural validation of WebAssembly bytecode to check if it
+   * conforms to the WebAssembly specification. This is useful for quick validation before
+   * attempting compilation, which can be expensive.
    *
-   * <p>Note: This method only validates the structure and format of the bytecode.
-   * It does not check import/export compatibility or other runtime concerns.
+   * <p>Note: This method only validates the structure and format of the bytecode. It does not check
+   * import/export compatibility or other runtime concerns.
    *
    * @param bytecode the WebAssembly bytecode to validate
    * @return true if the bytecode is structurally valid, false otherwise
@@ -227,7 +229,7 @@ public final class JniModule extends JniResource {
     NativeMethodBindings.ensureInitialized();
 
     final byte[] bytecodeCopy = JniValidation.defensiveCopy(bytecode);
-    
+
     try {
       return nativeValidateModule(bytecodeCopy);
     } catch (final Exception e) {
@@ -239,9 +241,9 @@ public final class JniModule extends JniResource {
   /**
    * Gets the size of the compiled module in bytes.
    *
-   * <p>This returns the size of the internal representation of the compiled module,
-   * which may differ from the original WebAssembly bytecode size due to compilation
-   * optimizations and internal data structures.
+   * <p>This returns the size of the internal representation of the compiled module, which may
+   * differ from the original WebAssembly bytecode size due to compilation optimizations and
+   * internal data structures.
    *
    * @return the module size in bytes (always >= 0)
    * @throws JniException if the size cannot be retrieved
@@ -249,7 +251,7 @@ public final class JniModule extends JniResource {
    */
   public long getSize() {
     ensureNotClosed();
-    
+
     try {
       final long size = nativeGetModuleSize(getNativeHandle());
       JniValidation.requireNonNegative(size, "moduleSize");

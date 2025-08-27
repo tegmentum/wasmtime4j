@@ -2,7 +2,6 @@ package ai.tegmentum.wasmtime4j.jni;
 
 import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
-import ai.tegmentum.wasmtime4j.jni.nativelib.NativeMethodBindings;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import java.util.logging.Logger;
@@ -12,27 +11,29 @@ import java.util.logging.Logger;
  *
  * <p>This class represents a WebAssembly store, which serves as an execution context for
  * WebAssembly instances. A store manages the runtime state of WebAssembly instances including
- * memory, globals, tables, and functions. All WebAssembly instances must be created within
- * a store context, and instances from different stores cannot interact directly.
+ * memory, globals, tables, and functions. All WebAssembly instances must be created within a store
+ * context, and instances from different stores cannot interact directly.
  *
  * <p>Key features:
+ *
  * <ul>
- *   <li>Automatic resource management with {@link AutoCloseable}</li>
- *   <li>Defensive programming to prevent JVM crashes</li>
- *   <li>Comprehensive parameter validation</li>
- *   <li>Thread-safe operations</li>
- *   <li>Execution context management for WebAssembly instances</li>
- *   <li>Resource isolation between different stores</li>
+ *   <li>Automatic resource management with {@link AutoCloseable}
+ *   <li>Defensive programming to prevent JVM crashes
+ *   <li>Comprehensive parameter validation
+ *   <li>Thread-safe operations
+ *   <li>Execution context management for WebAssembly instances
+ *   <li>Resource isolation between different stores
  * </ul>
  *
  * <p>Usage Example:
+ *
  * <pre>{@code
  * try (JniEngine engine = JniEngine.create();
  *      JniStore store = engine.createStore()) {
- *   
+ *
  *   // Compile module
  *   JniModule module = engine.compileModule(wasmBytes);
- *   
+ *
  *   // Create instance within this store
  *   try (JniInstance instance = module.instantiate(store)) {
  *     // All operations on the instance are within this store context
@@ -43,11 +44,12 @@ import java.util.logging.Logger;
  * }</pre>
  *
  * <p>Store Lifecycle:
+ *
  * <ul>
- *   <li>Stores are created by engines using {@link JniEngine#createStore()}</li>
- *   <li>Instances created within a store are tied to that store's lifetime</li>
- *   <li>Closing a store invalidates all instances created within it</li>
- *   <li>Stores cannot be shared between threads safely</li>
+ *   <li>Stores are created by engines using {@link JniEngine#createStore()}
+ *   <li>Instances created within a store are tied to that store's lifetime
+ *   <li>Closing a store invalidates all instances created within it
+ *   <li>Stores cannot be shared between threads safely
  * </ul>
  *
  * <p>This implementation extends {@link JniResource} to provide automatic native resource
@@ -62,9 +64,8 @@ public final class JniStore extends JniResource {
   /**
    * Creates a new JNI store with the given native handle.
    *
-   * <p>This constructor is package-private and should only be used by the JniEngine
-   * or other JNI classes. External code should create stores through
-   * {@link JniEngine#createStore()}.
+   * <p>This constructor is package-private and should only be used by the JniEngine or other JNI
+   * classes. External code should create stores through {@link JniEngine#createStore()}.
    *
    * @param nativeHandle the native store handle from Wasmtime
    * @throws JniResourceException if nativeHandle is invalid
@@ -77,9 +78,9 @@ public final class JniStore extends JniResource {
   /**
    * Gets runtime information about this store.
    *
-   * <p>This method provides diagnostic information about the store's current state,
-   * including memory usage, number of active instances, and other runtime metrics
-   * that can be useful for debugging and monitoring.
+   * <p>This method provides diagnostic information about the store's current state, including
+   * memory usage, number of active instances, and other runtime metrics that can be useful for
+   * debugging and monitoring.
    *
    * @return a string containing store runtime information
    * @throws JniException if information cannot be retrieved
@@ -87,7 +88,7 @@ public final class JniStore extends JniResource {
    */
   public String getRuntimeInfo() {
     ensureNotClosed();
-    
+
     try {
       final String info = nativeGetStoreInfo(getNativeHandle());
       return info != null ? info : "No information available";
@@ -99,25 +100,26 @@ public final class JniStore extends JniResource {
   /**
    * Performs garbage collection within this store.
    *
-   * <p>This method triggers garbage collection of unused WebAssembly resources
-   * within this store context. This can help reclaim memory from instances,
-   * functions, and other WebAssembly objects that are no longer reachable.
+   * <p>This method triggers garbage collection of unused WebAssembly resources within this store
+   * context. This can help reclaim memory from instances, functions, and other WebAssembly objects
+   * that are no longer reachable.
    *
-   * <p>Note: This is separate from Java's garbage collection and only affects
-   * WebAssembly-specific resources managed by this store.
+   * <p>Note: This is separate from Java's garbage collection and only affects WebAssembly-specific
+   * resources managed by this store.
    *
    * @throws JniException if garbage collection fails
    * @throws JniResourceException if this store has been closed
    */
   public void gc() {
     ensureNotClosed();
-    
+
     try {
       final boolean success = nativeStoreGc(getNativeHandle());
       if (!success) {
         throw new JniException("Store garbage collection failed");
       }
-      LOGGER.fine("Performed garbage collection for store 0x" + Long.toHexString(getNativeHandle()));
+      LOGGER.fine(
+          "Performed garbage collection for store 0x" + Long.toHexString(getNativeHandle()));
     } catch (final Exception e) {
       if (e instanceof JniException) {
         throw e;
@@ -129,9 +131,9 @@ public final class JniStore extends JniResource {
   /**
    * Sets the fuel limit for this store.
    *
-   * <p>Fuel is a mechanism for limiting WebAssembly execution time. When fuel
-   * is enabled, WebAssembly execution will be interrupted when the fuel limit
-   * is reached. This can be used to prevent runaway computations.
+   * <p>Fuel is a mechanism for limiting WebAssembly execution time. When fuel is enabled,
+   * WebAssembly execution will be interrupted when the fuel limit is reached. This can be used to
+   * prevent runaway computations.
    *
    * @param fuel the fuel limit (must be positive)
    * @throws JniException if the fuel limit cannot be set
@@ -140,13 +142,14 @@ public final class JniStore extends JniResource {
   public void setFuelLimit(final long fuel) {
     JniValidation.requirePositive(fuel, "fuel");
     ensureNotClosed();
-    
+
     try {
       final boolean success = nativeSetFuelLimit(getNativeHandle(), fuel);
       if (!success) {
         throw new JniException("Failed to set fuel limit to " + fuel);
       }
-      LOGGER.fine("Set fuel limit to " + fuel + " for store 0x" + Long.toHexString(getNativeHandle()));
+      LOGGER.fine(
+          "Set fuel limit to " + fuel + " for store 0x" + Long.toHexString(getNativeHandle()));
     } catch (final Exception e) {
       if (e instanceof JniException) {
         throw e;
@@ -158,8 +161,8 @@ public final class JniStore extends JniResource {
   /**
    * Gets the remaining fuel for this store.
    *
-   * <p>Returns the amount of fuel remaining for WebAssembly execution in this store.
-   * If fuel is not enabled, this method returns -1.
+   * <p>Returns the amount of fuel remaining for WebAssembly execution in this store. If fuel is not
+   * enabled, this method returns -1.
    *
    * @return the remaining fuel, or -1 if fuel is not enabled
    * @throws JniException if the fuel amount cannot be retrieved
@@ -167,7 +170,7 @@ public final class JniStore extends JniResource {
    */
   public long getRemainingFuel() {
     ensureNotClosed();
-    
+
     try {
       return nativeGetRemainingFuel(getNativeHandle());
     } catch (final Exception e) {
@@ -178,8 +181,8 @@ public final class JniStore extends JniResource {
   /**
    * Adds fuel to this store.
    *
-   * <p>This method adds additional fuel to the store's fuel limit. This can be
-   * used to extend execution time for long-running WebAssembly computations.
+   * <p>This method adds additional fuel to the store's fuel limit. This can be used to extend
+   * execution time for long-running WebAssembly computations.
    *
    * @param additionalFuel the amount of fuel to add (must be positive)
    * @throws JniException if fuel cannot be added
@@ -188,13 +191,14 @@ public final class JniStore extends JniResource {
   public void addFuel(final long additionalFuel) {
     JniValidation.requirePositive(additionalFuel, "additionalFuel");
     ensureNotClosed();
-    
+
     try {
       final boolean success = nativeAddFuel(getNativeHandle(), additionalFuel);
       if (!success) {
         throw new JniException("Failed to add fuel: " + additionalFuel);
       }
-      LOGGER.fine("Added " + additionalFuel + " fuel to store 0x" + Long.toHexString(getNativeHandle()));
+      LOGGER.fine(
+          "Added " + additionalFuel + " fuel to store 0x" + Long.toHexString(getNativeHandle()));
     } catch (final Exception e) {
       if (e instanceof JniException) {
         throw e;

@@ -27,7 +27,8 @@ class JniValidationExceptionTest {
     final String message = "Parameter validation failed";
     final String parameterName = "testParam";
     final Object parameterValue = "invalidValue";
-    final JniValidationException exception = new JniValidationException(message, parameterName, parameterValue);
+    final JniValidationException exception =
+        new JniValidationException(message, parameterName, parameterValue);
 
     assertThat(exception.getMessage()).isEqualTo(message);
     assertThat(exception.getParameterName()).isEqualTo(parameterName);
@@ -51,7 +52,8 @@ class JniValidationExceptionTest {
     final String message = "Validation failed";
     final String parameterName = "testParam";
     final String parameterValue = "badValue";
-    final JniValidationException exception = new JniValidationException(message, parameterName, parameterValue);
+    final JniValidationException exception =
+        new JniValidationException(message, parameterName, parameterValue);
     final String toString = exception.toString();
 
     assertThat(toString).contains(message);
@@ -64,7 +66,8 @@ class JniValidationExceptionTest {
     final String message = "Validation failed";
     final String parameterName = "nullParam";
     final Object parameterValue = null;
-    final JniValidationException exception = new JniValidationException(message, parameterName, parameterValue);
+    final JniValidationException exception =
+        new JniValidationException(message, parameterName, parameterValue);
 
     assertThat(exception.getParameterName()).isEqualTo(parameterName);
     assertThat(exception.getParameterValue()).isNull();

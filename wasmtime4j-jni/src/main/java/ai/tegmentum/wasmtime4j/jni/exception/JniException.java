@@ -10,12 +10,13 @@ import ai.tegmentum.wasmtime4j.exception.WasmException;
  * JNI operations.
  *
  * <p>JNI exceptions typically occur during:
+ *
  * <ul>
- *   <li>Native library loading failures</li>
- *   <li>JNI method invocation errors</li>
- *   <li>Native resource allocation failures</li>
- *   <li>Parameter validation errors before native calls</li>
- *   <li>Native-to-Java error translation</li>
+ *   <li>Native library loading failures
+ *   <li>JNI method invocation errors
+ *   <li>Native resource allocation failures
+ *   <li>Parameter validation errors before native calls
+ *   <li>Native-to-Java error translation
  * </ul>
  *
  * @since 1.0.0

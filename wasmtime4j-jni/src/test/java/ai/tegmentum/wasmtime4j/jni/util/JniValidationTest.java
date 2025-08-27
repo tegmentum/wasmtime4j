@@ -20,8 +20,9 @@ class JniValidationTest {
 
   @Test
   void testRequireNonNullWithNullObject() {
-    final JniValidationException exception = assertThrows(JniValidationException.class,
-        () -> JniValidation.requireNonNull(null, "nullParam"));
+    final JniValidationException exception =
+        assertThrows(
+            JniValidationException.class, () -> JniValidation.requireNonNull(null, "nullParam"));
 
     assertThat(exception.getMessage()).contains("nullParam");
     assertThat(exception.getMessage()).contains("must not be null");
@@ -37,14 +38,16 @@ class JniValidationTest {
 
   @Test
   void testRequireNonEmptyStringWithNullString() {
-    assertThrows(JniValidationException.class,
+    assertThrows(
+        JniValidationException.class,
         () -> JniValidation.requireNonEmpty((String) null, "nullString"));
   }
 
   @Test
   void testRequireNonEmptyStringWithEmptyString() {
-    final JniValidationException exception = assertThrows(JniValidationException.class,
-        () -> JniValidation.requireNonEmpty("", "emptyString"));
+    final JniValidationException exception =
+        assertThrows(
+            JniValidationException.class, () -> JniValidation.requireNonEmpty("", "emptyString"));
 
     assertThat(exception.getMessage()).contains("emptyString");
     assertThat(exception.getMessage()).contains("must not be empty");
@@ -60,15 +63,18 @@ class JniValidationTest {
 
   @Test
   void testRequireNonEmptyArrayWithNullArray() {
-    assertThrows(JniValidationException.class,
+    assertThrows(
+        JniValidationException.class,
         () -> JniValidation.requireNonEmpty((byte[]) null, "nullArray"));
   }
 
   @Test
   void testRequireNonEmptyArrayWithEmptyArray() {
     final byte[] emptyArray = {};
-    final JniValidationException exception = assertThrows(JniValidationException.class,
-        () -> JniValidation.requireNonEmpty(emptyArray, "emptyArray"));
+    final JniValidationException exception =
+        assertThrows(
+            JniValidationException.class,
+            () -> JniValidation.requireNonEmpty(emptyArray, "emptyArray"));
 
     assertThat(exception.getMessage()).contains("emptyArray");
     assertThat(exception.getMessage()).contains("must not be empty");
@@ -85,8 +91,10 @@ class JniValidationTest {
 
   @Test
   void testRequireInRangeIntWithInvalidValue() {
-    final JniValidationException exception = assertThrows(JniValidationException.class,
-        () -> JniValidation.requireInRange(-1, 0, 10, "belowMin"));
+    final JniValidationException exception =
+        assertThrows(
+            JniValidationException.class,
+            () -> JniValidation.requireInRange(-1, 0, 10, "belowMin"));
 
     assertThat(exception.getMessage()).contains("belowMin");
     assertThat(exception.getMessage()).contains("must be in range [0, 10]");
@@ -94,8 +102,10 @@ class JniValidationTest {
     assertThat(exception.getParameterName()).isEqualTo("belowMin");
     assertThat(exception.getParameterValue()).isEqualTo(-1);
 
-    final JniValidationException exception2 = assertThrows(JniValidationException.class,
-        () -> JniValidation.requireInRange(11, 0, 10, "aboveMax"));
+    final JniValidationException exception2 =
+        assertThrows(
+            JniValidationException.class,
+            () -> JniValidation.requireInRange(11, 0, 10, "aboveMax"));
 
     assertThat(exception2.getMessage()).contains("aboveMax");
     assertThat(exception2.getMessage()).contains("got 11");
@@ -110,8 +120,10 @@ class JniValidationTest {
 
   @Test
   void testRequireInRangeLongWithInvalidValue() {
-    final JniValidationException exception = assertThrows(JniValidationException.class,
-        () -> JniValidation.requireInRange(-1L, 0L, 10L, "belowMin"));
+    final JniValidationException exception =
+        assertThrows(
+            JniValidationException.class,
+            () -> JniValidation.requireInRange(-1L, 0L, 10L, "belowMin"));
 
     assertThat(exception.getMessage()).contains("belowMin");
     assertThat(exception.getMessage()).contains("must be in range [0, 10]");
@@ -126,15 +138,16 @@ class JniValidationTest {
 
   @Test
   void testRequirePositiveIntWithInvalidValue() {
-    final JniValidationException exception = assertThrows(JniValidationException.class,
-        () -> JniValidation.requirePositive(0, "zeroInt"));
+    final JniValidationException exception =
+        assertThrows(
+            JniValidationException.class, () -> JniValidation.requirePositive(0, "zeroInt"));
 
     assertThat(exception.getMessage()).contains("zeroInt");
     assertThat(exception.getMessage()).contains("must be positive");
     assertThat(exception.getMessage()).contains("got 0");
 
-    assertThrows(JniValidationException.class,
-        () -> JniValidation.requirePositive(-1, "negativeInt"));
+    assertThrows(
+        JniValidationException.class, () -> JniValidation.requirePositive(-1, "negativeInt"));
   }
 
   @Test
@@ -145,15 +158,16 @@ class JniValidationTest {
 
   @Test
   void testRequirePositiveLongWithInvalidValue() {
-    final JniValidationException exception = assertThrows(JniValidationException.class,
-        () -> JniValidation.requirePositive(0L, "zeroLong"));
+    final JniValidationException exception =
+        assertThrows(
+            JniValidationException.class, () -> JniValidation.requirePositive(0L, "zeroLong"));
 
     assertThat(exception.getMessage()).contains("zeroLong");
     assertThat(exception.getMessage()).contains("must be positive");
     assertThat(exception.getMessage()).contains("got 0");
 
-    assertThrows(JniValidationException.class,
-        () -> JniValidation.requirePositive(-1L, "negativeLong"));
+    assertThrows(
+        JniValidationException.class, () -> JniValidation.requirePositive(-1L, "negativeLong"));
   }
 
   @Test
@@ -165,8 +179,10 @@ class JniValidationTest {
 
   @Test
   void testRequireNonNegativeIntWithInvalidValue() {
-    final JniValidationException exception = assertThrows(JniValidationException.class,
-        () -> JniValidation.requireNonNegative(-1, "negativeInt"));
+    final JniValidationException exception =
+        assertThrows(
+            JniValidationException.class,
+            () -> JniValidation.requireNonNegative(-1, "negativeInt"));
 
     assertThat(exception.getMessage()).contains("negativeInt");
     assertThat(exception.getMessage()).contains("must be non-negative");
@@ -182,8 +198,10 @@ class JniValidationTest {
 
   @Test
   void testRequireNonNegativeLongWithInvalidValue() {
-    final JniValidationException exception = assertThrows(JniValidationException.class,
-        () -> JniValidation.requireNonNegative(-1L, "negativeLong"));
+    final JniValidationException exception =
+        assertThrows(
+            JniValidationException.class,
+            () -> JniValidation.requireNonNegative(-1L, "negativeLong"));
 
     assertThat(exception.getMessage()).contains("negativeLong");
     assertThat(exception.getMessage()).contains("must be non-negative");
@@ -194,13 +212,17 @@ class JniValidationTest {
   void testRequireValidHandleWithValidHandle() {
     assertDoesNotThrow(() -> JniValidation.requireValidHandle(1L, "validHandle"));
     assertDoesNotThrow(() -> JniValidation.requireValidHandle(Long.MAX_VALUE, "maxHandle"));
-    assertDoesNotThrow(() -> JniValidation.requireValidHandle(-1L, "negativeHandle")); // Negative handles can be valid
+    assertDoesNotThrow(
+        () ->
+            JniValidation.requireValidHandle(
+                -1L, "negativeHandle")); // Negative handles can be valid
   }
 
   @Test
   void testRequireValidHandleWithInvalidHandle() {
-    final JniValidationException exception = assertThrows(JniValidationException.class,
-        () -> JniValidation.requireValidHandle(0L, "nullHandle"));
+    final JniValidationException exception =
+        assertThrows(
+            JniValidationException.class, () -> JniValidation.requireValidHandle(0L, "nullHandle"));
 
     assertThat(exception.getMessage()).contains("nullHandle");
     assertThat(exception.getMessage()).contains("invalid native handle");
@@ -221,25 +243,32 @@ class JniValidationTest {
     final byte[] array = {1, 2, 3, 4, 5};
 
     // Test null array
-    assertThrows(JniValidationException.class,
+    assertThrows(
+        JniValidationException.class,
         () -> JniValidation.requireValidBounds(null, 0, 1, "nullArray"));
 
     // Test negative offset
-    assertThrows(JniValidationException.class,
+    assertThrows(
+        JniValidationException.class,
         () -> JniValidation.requireValidBounds(array, -1, 1, "negativeOffset"));
 
     // Test negative length
-    assertThrows(JniValidationException.class,
+    assertThrows(
+        JniValidationException.class,
         () -> JniValidation.requireValidBounds(array, 0, -1, "negativeLength"));
 
     // Test offset beyond array
-    final JniValidationException exception = assertThrows(JniValidationException.class,
-        () -> JniValidation.requireValidBounds(array, 6, 1, "offsetBeyond"));
+    final JniValidationException exception =
+        assertThrows(
+            JniValidationException.class,
+            () -> JniValidation.requireValidBounds(array, 6, 1, "offsetBeyond"));
     assertThat(exception.getMessage()).contains("Offset 6 exceeds array length 5");
 
     // Test offset + length beyond array
-    final JniValidationException exception2 = assertThrows(JniValidationException.class,
-        () -> JniValidation.requireValidBounds(array, 3, 3, "lengthBeyond"));
+    final JniValidationException exception2 =
+        assertThrows(
+            JniValidationException.class,
+            () -> JniValidation.requireValidBounds(array, 3, 3, "lengthBeyond"));
     assertThat(exception2.getMessage()).contains("Offset 3 + length 3 exceeds array length 5");
   }
 
@@ -250,8 +279,10 @@ class JniValidationTest {
 
   @Test
   void testRequireConditionWithInvalidCondition() {
-    final JniValidationException exception = assertThrows(JniValidationException.class,
-        () -> JniValidation.require(false, "Custom error message"));
+    final JniValidationException exception =
+        assertThrows(
+            JniValidationException.class,
+            () -> JniValidation.require(false, "Custom error message"));
 
     assertThat(exception.getMessage()).isEqualTo("Custom error message");
   }
@@ -263,8 +294,10 @@ class JniValidationTest {
 
   @Test
   void testRequireConditionWithParameterDetailsWithInvalidCondition() {
-    final JniValidationException exception = assertThrows(JniValidationException.class,
-        () -> JniValidation.require(false, "Custom error message", "paramName", "paramValue"));
+    final JniValidationException exception =
+        assertThrows(
+            JniValidationException.class,
+            () -> JniValidation.require(false, "Custom error message", "paramName", "paramValue"));
 
     assertThat(exception.getMessage()).isEqualTo("Custom error message");
     assertThat(exception.getParameterName()).isEqualTo("paramName");
@@ -300,8 +333,7 @@ class JniValidationTest {
 
   @Test
   void testToBytesWithNullString() {
-    assertThrows(JniValidationException.class,
-        () -> JniValidation.toBytes(null, "nullString"));
+    assertThrows(JniValidationException.class, () -> JniValidation.toBytes(null, "nullString"));
   }
 
   @Test
@@ -322,17 +354,20 @@ class JniValidationTest {
   @Test
   void testUtilityClassCannotBeInstantiated() {
     // Ensure utility class cannot be instantiated
-    assertThrows(AssertionError.class, () -> {
-      try {
-        final java.lang.reflect.Constructor<?> constructor = JniValidation.class.getDeclaredConstructor();
-        constructor.setAccessible(true);
-        constructor.newInstance();
-      } catch (Exception e) {
-        if (e.getCause() instanceof AssertionError) {
-          throw (AssertionError) e.getCause();
-        }
-        throw new RuntimeException(e);
-      }
-    });
+    assertThrows(
+        AssertionError.class,
+        () -> {
+          try {
+            final java.lang.reflect.Constructor<?> constructor =
+                JniValidation.class.getDeclaredConstructor();
+            constructor.setAccessible(true);
+            constructor.newInstance();
+          } catch (Exception e) {
+            if (e.getCause() instanceof AssertionError) {
+              throw (AssertionError) e.getCause();
+            }
+            throw new RuntimeException(e);
+          }
+        });
   }
 }

@@ -4,16 +4,17 @@ package ai.tegmentum.wasmtime4j.jni.exception;
  * Exception thrown when parameter validation fails before making JNI calls.
  *
  * <p>This exception is thrown when:
+ *
  * <ul>
- *   <li>Required parameters are null or invalid</li>
- *   <li>Parameter values are out of valid range</li>
- *   <li>Parameter combinations are invalid</li>
- *   <li>Buffer sizes or array lengths are invalid</li>
- *   <li>Native handles are invalid or expired</li>
+ *   <li>Required parameters are null or invalid
+ *   <li>Parameter values are out of valid range
+ *   <li>Parameter combinations are invalid
+ *   <li>Buffer sizes or array lengths are invalid
+ *   <li>Native handles are invalid or expired
  * </ul>
  *
- * <p>This exception is part of the defensive programming strategy to prevent JVM crashes
- * by validating all parameters before making native calls.
+ * <p>This exception is part of the defensive programming strategy to prevent JVM crashes by
+ * validating all parameters before making native calls.
  *
  * @since 1.0.0
  */
@@ -45,7 +46,8 @@ public final class JniValidationException extends RuntimeException {
    * @param parameterName the name of the parameter that failed validation
    * @param parameterValue the invalid parameter value
    */
-  public JniValidationException(final String message, final String parameterName, final Object parameterValue) {
+  public JniValidationException(
+      final String message, final String parameterName, final Object parameterValue) {
     super(message);
     this.parameterName = parameterName;
     this.parameterValue = parameterValue;
@@ -82,7 +84,11 @@ public final class JniValidationException extends RuntimeException {
   public String toString() {
     final StringBuilder sb = new StringBuilder(super.toString());
     if (hasParameterDetails()) {
-      sb.append(" (parameter: ").append(parameterName).append(" = ").append(parameterValue).append(")");
+      sb.append(" (parameter: ")
+          .append(parameterName)
+          .append(" = ")
+          .append(parameterValue)
+          .append(")");
     }
     return sb.toString();
   }

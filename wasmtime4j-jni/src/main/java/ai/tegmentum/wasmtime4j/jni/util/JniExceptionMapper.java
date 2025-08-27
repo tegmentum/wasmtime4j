@@ -1,8 +1,5 @@
 package ai.tegmentum.wasmtime4j.jni.util;
 
-import ai.tegmentum.wasmtime4j.exception.CompilationException;
-import ai.tegmentum.wasmtime4j.exception.RuntimeException;
-import ai.tegmentum.wasmtime4j.exception.ValidationException;
 import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
 import java.util.logging.Logger;
@@ -132,8 +129,7 @@ public final class JniExceptionMapper {
    * @param cause the underlying exception
    * @return a JniException wrapping the cause
    */
-  public static JniException wrapNativeException(
-      final String operation, final Throwable cause) {
+  public static JniException wrapNativeException(final String operation, final Throwable cause) {
     final String message =
         operation != null ? "Native operation failed: " + operation : "Native operation failed";
 

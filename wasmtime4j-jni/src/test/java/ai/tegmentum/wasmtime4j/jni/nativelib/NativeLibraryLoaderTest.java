@@ -15,11 +15,11 @@ class NativeLibraryLoaderTest {
   @Test
   void testGetLibraryResourcePath() {
     final String resourcePath = NativeLibraryLoader.getLibraryResourcePath();
-    
+
     assertThat(resourcePath).isNotNull();
     assertThat(resourcePath).startsWith("/natives/");
     assertThat(resourcePath).contains("wasmtime4j");
-    
+
     // Should contain platform and architecture
     if (System.getProperty("os.name").toLowerCase().contains("mac")) {
       assertThat(resourcePath).contains("macos");
@@ -31,7 +31,7 @@ class NativeLibraryLoaderTest {
       assertThat(resourcePath).contains("windows");
       assertThat(resourcePath).endsWith(".dll");
     }
-    
+
     // Should contain architecture
     final String arch = System.getProperty("os.arch").toLowerCase();
     if (arch.equals("amd64") || arch.equals("x86_64")) {
@@ -44,12 +44,12 @@ class NativeLibraryLoaderTest {
   @Test
   void testGetPlatformInfo() {
     final String platformInfo = NativeLibraryLoader.getPlatformInfo();
-    
+
     assertThat(platformInfo).isNotNull();
     assertThat(platformInfo).contains("Platform:");
     assertThat(platformInfo).contains("Library:");
     assertThat(platformInfo).contains("Loaded:");
-    
+
     // Should contain current platform info
     if (System.getProperty("os.name").toLowerCase().contains("mac")) {
       assertThat(platformInfo).contains("macos");
@@ -73,7 +73,7 @@ class NativeLibraryLoaderTest {
     // Should not throw exception even if called multiple times
     // Note: This will likely fail because the actual native library doesn't exist yet,
     // but it tests the method structure and exception handling
-    
+
     // First call - may fail but shouldn't crash
     try {
       NativeLibraryLoader.loadLibrary();
@@ -90,29 +90,32 @@ class NativeLibraryLoaderTest {
   @Test
   void testUtilityClassCannotBeInstantiated() {
     // Ensure utility class cannot be instantiated
-    assertThrows(AssertionError.class, () -> {
-      try {
-        final java.lang.reflect.Constructor<?> constructor = NativeLibraryLoader.class.getDeclaredConstructor();
-        constructor.setAccessible(true);
-        constructor.newInstance();
-      } catch (Exception e) {
-        if (e.getCause() instanceof AssertionError) {
-          throw (AssertionError) e.getCause();
-        }
-        throw new RuntimeException(e);
-      }
-    });
+    assertThrows(
+        AssertionError.class,
+        () -> {
+          try {
+            final java.lang.reflect.Constructor<?> constructor =
+                NativeLibraryLoader.class.getDeclaredConstructor();
+            constructor.setAccessible(true);
+            constructor.newInstance();
+          } catch (Exception e) {
+            if (e.getCause() instanceof AssertionError) {
+              throw (AssertionError) e.getCause();
+            }
+            throw new RuntimeException(e);
+          }
+        });
   }
 
   @Test
   void testResourcePathFormat() {
     final String resourcePath = NativeLibraryLoader.getLibraryResourcePath();
-    
+
     // Should follow expected format: /natives/{os}-{arch}/wasmtime4j{extension}
     final String[] parts = resourcePath.split("/");
     assertThat(parts).hasSizeGreaterThanOrEqualTo(3);
     assertThat(parts[1]).isEqualTo("natives");
-    
+
     // Last part should be the library file
     final String libraryFile = parts[parts.length - 1];
     assertThat(libraryFile).startsWith("wasmtime4j");
