@@ -1,4 +1,4 @@
-package ai.tegmentum.wasmtime4j.jni.native;
+package ai.tegmentum.wasmtime4j.jni.nativelib;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
