@@ -47,7 +47,7 @@ class NativeLibraryLoaderTest {
 
     assertThat(platformInfo).isNotNull();
     assertThat(platformInfo).contains("Platform:");
-    assertThat(platformInfo).contains("Library:");
+    assertThat(platformInfo).contains("Library path:");
     assertThat(platformInfo).contains("Loaded:");
 
     // Should contain current platform info
@@ -118,8 +118,17 @@ class NativeLibraryLoaderTest {
 
     // Last part should be the library file
     final String libraryFile = parts[parts.length - 1];
-    assertThat(libraryFile).startsWith("wasmtime4j");
+    assertThat(libraryFile).contains("wasmtime4j");
     assertThat(libraryFile).containsAnyOf(".so", ".dll", ".dylib");
+    
+    // Check platform-specific naming conventions
+    if (libraryFile.endsWith(".dll")) {
+      // Windows: wasmtime4j.dll (no prefix)
+      assertThat(libraryFile).startsWith("wasmtime4j");
+    } else {
+      // Unix-like: libwasmtime4j.so/.dylib (with lib prefix)
+      assertThat(libraryFile).startsWith("lib");
+    }
   }
 
   @Test
