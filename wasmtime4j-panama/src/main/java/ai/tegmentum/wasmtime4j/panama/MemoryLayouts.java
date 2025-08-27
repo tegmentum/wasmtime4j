@@ -450,6 +450,40 @@ public final class MemoryLayouts {
         };
     }
 
+    // External type constants for Wasmtime
+    public static final int WASMTIME_EXTERN_FUNC = 0;
+    public static final int WASMTIME_EXTERN_GLOBAL = 1;
+    public static final int WASMTIME_EXTERN_MEMORY = 2;
+    public static final int WASMTIME_EXTERN_TABLE = 3;
+
+    /**
+     * Layout for Wasmtime export structure.
+     * 
+     * <pre>
+     * typedef struct wasmtime_extern {
+     *     uint8_t kind;
+     *     // padding for alignment
+     *     union {
+     *         void* func;
+     *         void* global;
+     *         void* table;
+     *         void* memory;
+     *     } of;
+     * } wasmtime_extern_t;
+     * </pre>
+     */
+    public static final StructLayout WASMTIME_EXPORT_LAYOUT = MemoryLayout.structLayout(
+        ValueLayout.JAVA_BYTE.withName("kind"),
+        MemoryLayout.paddingLayout(7), // Padding for 8-byte alignment
+        ValueLayout.ADDRESS.withName("of") // Union represented as single pointer
+    ).withName("wasmtime_extern_t");
+
+    // VarHandles for WASMTIME_EXPORT_LAYOUT
+    public static final VarHandle WASMTIME_EXPORT_KIND = WASMTIME_EXPORT_LAYOUT.varHandle(
+        MemoryLayout.PathElement.groupElement("kind"));
+    public static final VarHandle WASMTIME_EXPORT_OF = WASMTIME_EXPORT_LAYOUT.varHandle(
+        MemoryLayout.PathElement.groupElement("of"));
+
     /**
      * Gets the string representation of an external type kind.
      *
