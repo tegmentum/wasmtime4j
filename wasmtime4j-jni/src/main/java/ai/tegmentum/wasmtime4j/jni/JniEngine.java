@@ -203,7 +203,8 @@ public final class JniEngine extends JniResource {
       if (!success) {
         throw new JniException("Failed to " + (enabled ? "enable" : "disable") + " debug information");
       }
-      LOGGER.fine((enabled ? "Enabled" : "Disabled") + " debug info for engine 0x" + Long.toHexString(getNativeHandle()));
+      LOGGER.fine((enabled ? "Enabled" : "Disabled") + " debug info for engine 0x" 
+          + Long.toHexString(getNativeHandle()));
     } catch (final Exception e) {
       if (e instanceof JniException) {
         throw e;

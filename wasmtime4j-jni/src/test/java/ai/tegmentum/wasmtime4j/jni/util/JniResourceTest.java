@@ -250,7 +250,9 @@ class JniResourceTest {
     final long[] testHandles = {1L, -1L, Long.MAX_VALUE, Long.MIN_VALUE, 0xDEADBEEFL};
 
     for (long handle : testHandles) {
-      if (handle == 0L) continue; // Skip invalid handle
+      if (handle == 0L) {
+        continue; // Skip invalid handle
+      }
 
       final TestResource resource = new TestResource(handle, "Test");
       assertThat(resource.getNativeHandle()).isEqualTo(handle);
