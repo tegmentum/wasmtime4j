@@ -47,16 +47,16 @@ public final class PanamaExceptionMapper {
     }
 
     /**
-     * Maps a Java exception to the appropriate WebAssembly exception.
+     * Maps a Java throwable to the appropriate WebAssembly exception.
      * 
-     * <p>This method examines the input exception and maps it to the most
-     * appropriate WebAssembly exception type based on the exception type
+     * <p>This method examines the input throwable and maps it to the most
+     * appropriate WebAssembly exception type based on the throwable type
      * and message content.</p>
      * 
-     * @param exception the exception to map
+     * @param exception the throwable to map
      * @return the mapped WebAssembly exception
      */
-    public WasmException mapException(final Exception exception) {
+    public WasmException mapException(final Throwable exception) {
         if (exception == null) {
             return new WasmException("Unknown error occurred");
         }

@@ -12,6 +12,7 @@ import java.util.concurrent.TimeUnit;
 import org.openjdk.jmh.results.RunResult;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
+import org.openjdk.jmh.runner.options.ChainedOptionsBuilder;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 import org.openjdk.jmh.runner.options.TimeValue;
@@ -236,41 +237,26 @@ public final class BenchmarkRunner {
      * @return JMH options
      */
     private static Options buildJmhOptions(final BenchmarkConfiguration config) {
-        OptionsBuilder builder = new OptionsBuilder()
+        ChainedOptionsBuilder builder = new OptionsBuilder()
                 .include(config.category.getPattern())
                 .mode(org.openjdk.jmh.annotations.Mode.Throughput)
-                .timeUnit(TimeUnit.SECONDS);
-        
-        // Apply profile settings or custom settings
-        if (config.customIterations != null) {
-            builder.measurementIterations(config.customIterations);
-        } else {
-            builder.measurementIterations(config.profile.getIterations());
-        }
-        
-        if (config.customWarmupIterations != null) {
-            builder.warmupIterations(config.customWarmupIterations);
-        } else {
-            builder.warmupIterations(config.profile.getWarmupIterations());
-        }
-        
-        if (config.customForks != null) {
-            builder.forks(config.customForks);
-        } else {
-            builder.forks(config.profile.getForks());
-        }
-        
-        builder.measurementTime(config.profile.getTimePerIteration());
-        builder.warmupTime(config.profile.getTimePerIteration());
+                .timeUnit(TimeUnit.SECONDS)
+                // Apply profile settings or custom settings
+                .measurementIterations(config.customIterations != null ? 
+                    config.customIterations : config.profile.getIterations())
+                .warmupIterations(config.customWarmupIterations != null ? 
+                    config.customWarmupIterations : config.profile.getWarmupIterations())
+                .forks(config.customForks != null ? 
+                    config.customForks : config.profile.getForks())
+                .measurementTime(config.profile.getTimePerIteration())
+                .warmupTime(config.profile.getTimePerIteration())
+                .jvmArgs("-Xms2g", "-Xmx4g", "-XX:+UseG1GC");
         
         // Set output file if specified
         if (config.outputFile != null) {
-            builder.result(config.outputFile);
-            builder.resultFormat(org.openjdk.jmh.results.format.ResultFormatType.JSON);
+            builder = builder.result(config.outputFile)
+                            .resultFormat(org.openjdk.jmh.results.format.ResultFormatType.JSON);
         }
-        
-        // Add JVM arguments for consistent execution
-        builder.jvmArgs("-Xms2g", "-Xmx4g", "-XX:+UseG1GC");
         
         return builder.build();
     }

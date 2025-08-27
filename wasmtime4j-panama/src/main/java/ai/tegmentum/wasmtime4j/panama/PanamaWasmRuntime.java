@@ -70,8 +70,10 @@ public final class PanamaWasmRuntime implements WasmRuntime {
     public PanamaWasmRuntime() throws WasmException {
         logger.info("Initializing Panama WebAssembly runtime");
         
+        Arena tempArena = null;
         try {
-            this.arena = Arena.ofConfined();
+            tempArena = Arena.ofConfined();
+            this.arena = tempArena;
             this.nativeLibrary = loadNativeLibrary();
             this.bindings = new WasmtimeBindings(nativeLibrary);
             this.memoryManager = new PanamaMemoryManager(arena);
@@ -84,8 +86,13 @@ public final class PanamaWasmRuntime implements WasmRuntime {
             logger.info("Panama WebAssembly runtime initialized successfully");
         } catch (Exception e) {
             // Ensure cleanup if initialization fails
-            if (arena != null) {
-                arena.close();
+            try {
+                if (tempArena != null) {
+                    tempArena.close();
+                }
+            } catch (Exception cleanupEx) {
+                // Log but don't throw cleanup exception
+                logger.warning("Failed to cleanup arena during initialization failure: " + cleanupEx.getMessage());
             }
             throw new WasmException("Failed to initialize Panama WebAssembly runtime", e);
         }

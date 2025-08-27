@@ -27,20 +27,16 @@
 
     <dependencies>
         <!-- Public API interfaces dependency -->
-        <!-- 
         <dependency>
             <groupId>ai.tegmentum</groupId>
             <artifactId>wasmtime4j</artifactId>
         </dependency>
-        -->
 
         <!-- Native library dependency -->
-        <!-- 
         <dependency>
             <groupId>ai.tegmentum</groupId>
             <artifactId>wasmtime4j-native</artifactId>
         </dependency>
-        -->
 
         <!-- Test dependencies -->
         <dependency>
@@ -73,7 +69,8 @@
                         <arg>--enable-preview</arg>
                         <arg>-Xlint:all</arg>
                         <arg>-Xlint:-preview</arg>
-                        <arg>-Werror</arg>
+                        <!-- Don't treat warnings as errors for Panama restricted methods -->
+                        <!-- <arg>-Werror</arg> -->
                     </compilerArgs>
                 </configuration>
             </plugin>

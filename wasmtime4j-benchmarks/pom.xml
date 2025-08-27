@@ -87,6 +87,10 @@
                             <version>${jmh.version}</version>
                         </path>
                     </annotationProcessorPaths>
+                    <compilerArgs>
+                        <arg>-Xlint:all</arg>
+                        <!-- Remove -Werror for benchmarks to allow warnings -->
+                    </compilerArgs>
                 </configuration>
             </plugin>
 
