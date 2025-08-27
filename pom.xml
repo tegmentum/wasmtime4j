@@ -78,11 +78,11 @@
     <!-- Modules will be added as they are created -->
     <modules>
         <module>wasmtime4j-native</module>
+        <module>wasmtime4j-benchmarks</module>
         <!-- 
         <module>wasmtime4j</module>
         <module>wasmtime4j-jni</module>
         <module>wasmtime4j-panama</module>
-        <module>wasmtime4j-benchmarks</module>
         <module>wasmtime4j-tests</module>
         -->
     </modules>
