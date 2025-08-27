@@ -94,7 +94,7 @@ public final class JniExceptionMapper {
                 return new RuntimeException("System error: " + safeMessage);
                 
             case NATIVE_ERROR_OUT_OF_MEMORY:
-                return new OutOfMemoryError("Native out of memory: " + safeMessage);
+                return new RuntimeException("Native out of memory: " + safeMessage);
                 
             case NATIVE_ERROR_TRAP:
                 return new RuntimeException("WebAssembly trap: " + safeMessage);

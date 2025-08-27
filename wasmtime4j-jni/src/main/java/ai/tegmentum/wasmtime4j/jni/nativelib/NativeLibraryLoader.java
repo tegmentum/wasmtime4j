@@ -1,4 +1,4 @@
-package ai.tegmentum.wasmtime4j.jni.native;
+package ai.tegmentum.wasmtime4j.jni.nativelib;
 
 import java.io.IOException;
 import java.io.InputStream;
