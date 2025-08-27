@@ -1,6 +1,8 @@
 package ai.tegmentum.wasmtime4j.jni;
 
-import java.util.concurrent.atomic.AtomicBoolean;
+import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
+import ai.tegmentum.wasmtime4j.jni.util.JniResource;
+import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import java.util.logging.Logger;
 
 /**
@@ -10,38 +12,27 @@ import java.util.logging.Logger;
  * library. It supports calling functions with various parameter and return types.
  *
  * <p>This implementation ensures defensive programming to prevent JVM crashes and provides
- * comprehensive type checking for function calls.
+ * comprehensive type checking for function calls using JniValidation and the JniResource base class.
  */
-public final class JniFunction implements AutoCloseable {
+public final class JniFunction extends JniResource {
 
   private static final Logger LOGGER = Logger.getLogger(JniFunction.class.getName());
 
-  /** Native function handle. */
-  private volatile long nativeHandle;
-
   /** Function name for debugging. */
   private final String name;
-
-  /** Flag to track if this function has been closed. */
-  private final AtomicBoolean closed = new AtomicBoolean(false);
 
   /**
    * Creates a new JNI function with the given native handle and name.
    *
    * @param nativeHandle the native function handle
    * @param name the function name
-   * @throws IllegalArgumentException if nativeHandle is 0 or name is null
+   * @throws JniResourceException if nativeHandle is invalid or name is null
    */
   JniFunction(final long nativeHandle, final String name) {
-    if (nativeHandle == 0) {
-      throw new IllegalArgumentException("Native handle cannot be 0");
-    }
-    if (name == null) {
-      throw new IllegalArgumentException("Name cannot be null");
-    }
-    this.nativeHandle = nativeHandle;
+    super(nativeHandle);
+    JniValidation.requireNonNull(name, "name");
     this.name = name;
-    LOGGER.fine("Created JNI function '" + name + "' with handle: " + nativeHandle);
+    LOGGER.fine("Created JNI function '" + name + "' with handle: 0x" + Long.toHexString(nativeHandle));
   }
 
   /**
@@ -57,13 +48,13 @@ public final class JniFunction implements AutoCloseable {
    * Gets the parameter types for this function.
    *
    * @return array of parameter type names
-   * @throws IllegalStateException if this function is closed
+   * @throws JniResourceException if this function is closed
    * @throws RuntimeException if the types cannot be retrieved
    */
   public String[] getParameterTypes() {
-    validateNotClosed();
+    ensureNotClosed();
     try {
-      final String[] types = nativeGetParameterTypes(nativeHandle);
+      final String[] types = nativeGetParameterTypes(getNativeHandle());
       return types != null ? types : new String[0];
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error getting parameter types", e);
@@ -74,13 +65,13 @@ public final class JniFunction implements AutoCloseable {
    * Gets the return types for this function.
    *
    * @return array of return type names
-   * @throws IllegalStateException if this function is closed
+   * @throws JniResourceException if this function is closed
    * @throws RuntimeException if the types cannot be retrieved
    */
   public String[] getReturnTypes() {
-    validateNotClosed();
+    ensureNotClosed();
     try {
-      final String[] types = nativeGetReturnTypes(nativeHandle);
+      final String[] types = nativeGetReturnTypes(getNativeHandle());
       return types != null ? types : new String[0];
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error getting return types", e);
@@ -91,7 +82,7 @@ public final class JniFunction implements AutoCloseable {
    * Calls this function with no parameters.
    *
    * @return the return value (null if function returns void)
-   * @throws IllegalStateException if this function is closed
+   * @throws JniResourceException if this function is closed
    * @throws RuntimeException if the call fails or types don't match
    */
   public Object call() {
@@ -103,18 +94,15 @@ public final class JniFunction implements AutoCloseable {
    *
    * @param parameters the function parameters
    * @return the return value (null if function returns void)
-   * @throws IllegalArgumentException if parameters is null
-   * @throws IllegalStateException if this function is closed
+   * @throws JniResourceException if parameters is null or this function is closed
    * @throws RuntimeException if the call fails or types don't match
    */
   public Object call(final Object... parameters) {
-    if (parameters == null) {
-      throw new IllegalArgumentException("Parameters cannot be null");
-    }
-    validateNotClosed();
+    JniValidation.requireNonNull(parameters, "parameters");
+    ensureNotClosed();
 
     try {
-      return nativeCall(nativeHandle, parameters);
+      return nativeCall(getNativeHandle(), parameters);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -127,18 +115,15 @@ public final class JniFunction implements AutoCloseable {
    *
    * @param parameters the integer parameters
    * @return the return value as an integer (0 if function returns void)
-   * @throws IllegalArgumentException if parameters is null
-   * @throws IllegalStateException if this function is closed
+   * @throws JniResourceException if parameters is null or this function is closed
    * @throws RuntimeException if the call fails or types don't match
    */
   public int callInt(final int... parameters) {
-    if (parameters == null) {
-      throw new IllegalArgumentException("Parameters cannot be null");
-    }
-    validateNotClosed();
+    JniValidation.requireNonNull(parameters, "parameters");
+    ensureNotClosed();
 
     try {
-      return nativeCallInt(nativeHandle, parameters);
+      return nativeCallInt(getNativeHandle(), parameters);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -151,18 +136,15 @@ public final class JniFunction implements AutoCloseable {
    *
    * @param parameters the long parameters
    * @return the return value as a long (0 if function returns void)
-   * @throws IllegalArgumentException if parameters is null
-   * @throws IllegalStateException if this function is closed
+   * @throws JniResourceException if parameters is null or this function is closed
    * @throws RuntimeException if the call fails or types don't match
    */
   public long callLong(final long... parameters) {
-    if (parameters == null) {
-      throw new IllegalArgumentException("Parameters cannot be null");
-    }
-    validateNotClosed();
+    JniValidation.requireNonNull(parameters, "parameters");
+    ensureNotClosed();
 
     try {
-      return nativeCallLong(nativeHandle, parameters);
+      return nativeCallLong(getNativeHandle(), parameters);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -175,18 +157,15 @@ public final class JniFunction implements AutoCloseable {
    *
    * @param parameters the float parameters
    * @return the return value as a float (0.0 if function returns void)
-   * @throws IllegalArgumentException if parameters is null
-   * @throws IllegalStateException if this function is closed
+   * @throws JniResourceException if parameters is null or this function is closed
    * @throws RuntimeException if the call fails or types don't match
    */
   public float callFloat(final float... parameters) {
-    if (parameters == null) {
-      throw new IllegalArgumentException("Parameters cannot be null");
-    }
-    validateNotClosed();
+    JniValidation.requireNonNull(parameters, "parameters");
+    ensureNotClosed();
 
     try {
-      return nativeCallFloat(nativeHandle, parameters);
+      return nativeCallFloat(getNativeHandle(), parameters);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -199,18 +178,15 @@ public final class JniFunction implements AutoCloseable {
    *
    * @param parameters the double parameters
    * @return the return value as a double (0.0 if function returns void)
-   * @throws IllegalArgumentException if parameters is null
-   * @throws IllegalStateException if this function is closed
+   * @throws JniResourceException if parameters is null or this function is closed
    * @throws RuntimeException if the call fails or types don't match
    */
   public double callDouble(final double... parameters) {
-    if (parameters == null) {
-      throw new IllegalArgumentException("Parameters cannot be null");
-    }
-    validateNotClosed();
+    JniValidation.requireNonNull(parameters, "parameters");
+    ensureNotClosed();
 
     try {
-      return nativeCallDouble(nativeHandle, parameters);
+      return nativeCallDouble(getNativeHandle(), parameters);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -219,60 +195,23 @@ public final class JniFunction implements AutoCloseable {
   }
 
   /**
-   * Gets the native handle for internal use.
+   * Gets the resource type name for logging and error messages.
    *
-   * @return the native handle
-   * @throws IllegalStateException if this function is closed
+   * @return the resource type name
    */
-  long getNativeHandle() {
-    validateNotClosed();
-    return nativeHandle;
+  @Override
+  protected String getResourceType() {
+    return "Function[" + name + "]";
   }
 
   /**
-   * Closes this function and releases all associated native resources.
+   * Performs the actual native resource cleanup.
    *
-   * <p>After calling this method, all operations on this function will throw {@link
-   * IllegalStateException}. This method is idempotent.
+   * @throws Exception if there's an error during cleanup
    */
   @Override
-  public void close() {
-    if (closed.compareAndSet(false, true)) {
-      if (nativeHandle != 0) {
-        try {
-          nativeDestroyFunction(nativeHandle);
-          LOGGER.fine("Destroyed JNI function '" + name + "' with handle: " + nativeHandle);
-        } catch (final Exception e) {
-          LOGGER.warning("Error destroying native function: " + e.getMessage());
-        } finally {
-          nativeHandle = 0;
-        }
-      }
-    }
-  }
-
-  /** Finalizer to ensure native resources are released if close() wasn't called. */
-  @Override
-  protected void finalize() throws Throwable {
-    try {
-      if (!closed.get()) {
-        LOGGER.warning("JniFunction '" + name + "' was finalized without being closed");
-        close();
-      }
-    } finally {
-      super.finalize();
-    }
-  }
-
-  /**
-   * Validates that this function is not closed.
-   *
-   * @throws IllegalStateException if this function is closed
-   */
-  private void validateNotClosed() {
-    if (closed.get()) {
-      throw new IllegalStateException("Function '" + name + "' is closed");
-    }
+  protected void doClose() throws Exception {
+    nativeDestroyFunction(nativeHandle);
   }
 
   // Native method declarations
