@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 
+         http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>ai.tegmentum</groupId>
+        <artifactId>wasmtime4j-parent</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>wasmtime4j-native</artifactId>
+    <packaging>jar</packaging>
+
+    <name>Wasmtime4j Native</name>
+    <description>Native library integration for Wasmtime WebAssembly runtime</description>
+
+    <properties>
+        <!-- Rust toolchain configuration -->
+        <rust.version>1.75.0</rust.version>
+        <cargo.version>1.75.0</cargo.version>
+        
+        <!-- Cross-compilation targets -->
+        <native.targets>
+            x86_64-unknown-linux-gnu,
+            aarch64-unknown-linux-gnu,
+            x86_64-pc-windows-gnu,
+            x86_64-apple-darwin,
+            aarch64-apple-darwin
+        </native.targets>
+        
+        <!-- Native library paths -->
+        <native.resources.path>${project.basedir}/src/main/resources/natives</native.resources.path>
+        <native.build.path>${project.build.directory}/native</native.build.path>
+        
+        <!-- Skip native compilation by default for CI/CD compatibility -->
+        <native.compile.skip>false</native.compile.skip>
+    </properties>
+
+    <build>
+        <plugins>
+            <!-- Maven compiler plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+            </plugin>
+
+            <!-- Resources plugin for native library packaging -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-native-libraries</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.outputDirectory}/natives</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${native.resources.path}</directory>
+                                    <filtering>false</filtering>
+                                    <includes>
+                                        <include>**/*.dll</include>
+                                        <include>**/*.so</include>
+                                        <include>**/*.dylib</include>
+                                    </includes>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Exec plugin for Rust/Cargo integration -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <!-- Check Rust toolchain -->
+                    <execution>
+                        <id>check-rust</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>rustc</executable>
+                            <arguments>
+                                <argument>--version</argument>
+                            </arguments>
+                            <skip>${native.compile.skip}</skip>
+                        </configuration>
+                    </execution>
+
+                    <!-- Check Cargo -->
+                    <execution>
+                        <id>check-cargo</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>cargo</executable>
+                            <arguments>
+                                <argument>--version</argument>
+                            </arguments>
+                            <skip>${native.compile.skip}</skip>
+                        </configuration>
+                    </execution>
+
+                    <!-- Build native libraries (placeholder for now) -->
+                    <execution>
+                        <id>build-native</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>./scripts/build-native.sh</executable>
+                            <workingDirectory>${project.basedir}</workingDirectory>
+                            <skip>${native.compile.skip}</skip>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- JAR plugin to package native libraries -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+                            <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
+                        </manifest>
+                        <manifestEntries>
+                            <Native-Library-Name>${native.library.name}</Native-Library-Name>
+                            <Wasmtime-Version>${wasmtime.version}</Wasmtime-Version>
+                            <Build-Platform>${os.name}-${os.arch}</Build-Platform>
+                        </manifestEntries>
+                    </archive>
+                </configuration>
+            </plugin>
+
+            <!-- Clean plugin to clean native build artifacts -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-clean-plugin</artifactId>
+                <configuration>
+                    <filesets>
+                        <fileset>
+                            <directory>${native.build.path}</directory>
+                        </fileset>
+                        <fileset>
+                            <directory>${project.basedir}/target</directory>
+                            <includes>
+                                <include>**/*.dll</include>
+                                <include>**/*.so</include>
+                                <include>**/*.dylib</include>
+                            </includes>
+                        </fileset>
+                    </filesets>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
+        <!-- Profile for native development -->
+        <profile>
+            <id>native-dev</id>
+            <properties>
+                <native.compile.skip>false</native.compile.skip>
+            </properties>
+        </profile>
+
+        <!-- Profile for CI/CD without native compilation -->
+        <profile>
+            <id>skip-native</id>
+            <properties>
+                <native.compile.skip>true</native.compile.skip>
+            </properties>
+        </profile>
+
+        <!-- Platform-specific profiles for library naming -->
+        <profile>
+            <id>linux</id>
+            <activation>
+                <os>
+                    <family>unix</family>
+                    <name>!Mac OS X</name>
+                </os>
+            </activation>
+            <properties>
+                <native.library.extension>so</native.library.extension>
+                <native.library.prefix>lib</native.library.prefix>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>macos</id>
+            <activation>
+                <os>
+                    <family>mac</family>
+                </os>
+            </activation>
+            <properties>
+                <native.library.extension>dylib</native.library.extension>
+                <native.library.prefix>lib</native.library.prefix>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>windows</id>
+            <activation>
+                <os>
+                    <family>windows</family>
+                </os>
+            </activation>
+            <properties>
+                <native.library.extension>dll</native.library.extension>
+                <native.library.prefix></native.library.prefix>
+            </properties>
+        </profile>
+    </profiles>
+</project>
