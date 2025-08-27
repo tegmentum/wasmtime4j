@@ -1,7 +1,6 @@
 package ai.tegmentum.wasmtime4j.jni.util;
 
 import ai.tegmentum.wasmtime4j.jni.exception.JniValidationException;
-
 import java.util.Objects;
 
 /**
@@ -182,7 +181,8 @@ public final class JniValidation {
    * @param parameterName the parameter name for error messages
    * @throws JniValidationException if the bounds are invalid
    */
-  public static void requireValidBounds(final byte[] array, final int offset, final int length, final String parameterName) {
+  public static void requireValidBounds(final byte[] array, final int offset, final int length, 
+      final String parameterName) {
     requireNonNull(array, parameterName);
     requireNonNegative(offset, "offset");
     requireNonNegative(length, "length");
@@ -222,7 +222,8 @@ public final class JniValidation {
    * @param parameterValue the parameter value for error messages
    * @throws JniValidationException if the condition is false
    */
-  public static void require(final boolean condition, final String message, final String parameterName, final Object parameterValue) {
+  public static void require(final boolean condition, final String message, 
+      final String parameterName, final Object parameterValue) {
     if (!condition) {
       throw new JniValidationException(message, parameterName, parameterValue);
     }

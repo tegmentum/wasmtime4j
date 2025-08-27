@@ -20,7 +20,7 @@ import ai.tegmentum.wasmtime4j.exception.WasmException;
  *
  * @since 1.0.0
  */
-public class JniException extends WasmException {
+public class JniException extends RuntimeException {
 
   private static final long serialVersionUID = 1L;
 
@@ -89,7 +89,6 @@ public class JniException extends WasmException {
     return nativeErrorCode != null;
   }
 
-  @Override
   public String toString() {
     final StringBuilder sb = new StringBuilder(super.toString());
     if (hasNativeErrorCode()) {
