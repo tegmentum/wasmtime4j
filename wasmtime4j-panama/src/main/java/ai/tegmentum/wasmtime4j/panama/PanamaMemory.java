@@ -18,13 +18,13 @@ package ai.tegmentum.wasmtime4j.panama;
 
 import ai.tegmentum.wasmtime4j.Memory;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.panama.ffi.WasmtimeBindings;
-import ai.tegmentum.wasmtime4j.panama.util.PanamaExceptionMapper;
-import ai.tegmentum.wasmtime4j.panama.util.PanamaMemoryManager;
-import ai.tegmentum.wasmtime4j.panama.util.PanamaResourceTracker;
 
+import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.MemorySegment;
+import java.lang.foreign.ValueLayout;
+import java.lang.invoke.MethodHandle;
 import java.nio.ByteBuffer;
+import java.util.Objects;
 import java.util.logging.Logger;
 
 /**
@@ -32,53 +32,62 @@ import java.util.logging.Logger;
  * 
  * <p>WebAssembly linear memory provides a resizable array of bytes that can be
  * accessed by both WebAssembly code and host code. This implementation uses
- * Panama FFI MemorySegment for zero-copy access to the underlying native memory.</p>
+ * Panama FFI with Stream 1 & 2 infrastructure for zero-copy access to the 
+ * underlying native memory through direct MemorySegment operations.</p>
  * 
  * <p>This implementation provides efficient memory access through direct memory
  * segment operations, avoiding the overhead of copying data between native and
- * Java heap memory.</p>
+ * Java heap memory. All operations include comprehensive bounds checking and
+ * memory safety validation.</p>
  * 
  * @since 1.0.0
  */
-public final class PanamaMemory implements Memory {
-    private static final Logger logger = Logger.getLogger(PanamaMemory.class.getName());
+public final class PanamaMemory implements Memory, AutoCloseable {
+    private static final Logger LOGGER = Logger.getLogger(PanamaMemory.class.getName());
     
-    private final MemorySegment memoryHandle;
-    private final WasmtimeBindings bindings;
-    private final PanamaMemoryManager memoryManager;
-    private final PanamaResourceTracker resourceTracker;
-    private final PanamaExceptionMapper exceptionMapper;
+    // Core infrastructure from Streams 1 & 2
+    private final ArenaResourceManager resourceManager;
+    private final NativeFunctionBindings nativeFunctions;
+    private final ArenaResourceManager.ManagedNativeResource memoryResource;
+    private final PanamaInstance parentInstance;
     
+    // Memory state
     private volatile boolean closed = false;
 
     /**
-     * Creates a new Panama memory instance.
+     * Creates a new Panama memory instance using Stream 1 & 2 infrastructure.
      * 
-     * @param memoryHandle the native memory handle
-     * @param bindings the Wasmtime FFI bindings
-     * @param memoryManager the memory manager for native resources
-     * @param resourceTracker the resource tracker for cleanup
-     * @param exceptionMapper the exception mapper for error handling
+     * @param memoryPtr the native memory pointer from export
+     * @param resourceManager the arena resource manager for lifecycle management
+     * @param parentInstance the parent instance that owns this memory
      * @throws WasmException if the memory cannot be created
      */
-    PanamaMemory(final MemorySegment memoryHandle,
-                 final WasmtimeBindings bindings,
-                 final PanamaMemoryManager memoryManager,
-                 final PanamaResourceTracker resourceTracker,
-                 final PanamaExceptionMapper exceptionMapper) throws WasmException {
-        this.memoryHandle = memoryHandle;
-        this.bindings = bindings;
-        this.memoryManager = memoryManager;
-        this.resourceTracker = resourceTracker;
-        this.exceptionMapper = exceptionMapper;
-        
+    public PanamaMemory(final MemorySegment memoryPtr,
+                        final ArenaResourceManager resourceManager,
+                        final PanamaInstance parentInstance) throws WasmException {
+        // Defensive parameter validation
+        PanamaErrorHandler.requireValidPointer(memoryPtr, "memoryPtr");
+        this.resourceManager = Objects.requireNonNull(resourceManager, "Resource manager cannot be null");
+        this.parentInstance = Objects.requireNonNull(parentInstance, "Parent instance cannot be null");
+        this.nativeFunctions = NativeFunctionBindings.getInstance();
+
+        if (!nativeFunctions.isInitialized()) {
+            throw new WasmException("Native function bindings not initialized");
+        }
+
         try {
-            // Register for cleanup tracking
-            resourceTracker.trackResource(this, memoryHandle);
-            
-            logger.fine("Created Panama memory instance");
+            // Create managed resource with cleanup for memory
+            // Note: Memory is typically owned by the instance, so cleanup is light
+            this.memoryResource = resourceManager.manageNativeResource(
+                memoryPtr,
+                () -> destroyNativeMemoryInternal(memoryPtr),
+                "Wasmtime Memory"
+            );
+
+            LOGGER.fine("Created Panama memory with managed resource");
+
         } catch (Exception e) {
-            throw exceptionMapper.mapException(e);
+            throw new WasmException("Failed to create memory wrapper", e);
         }
     }
 
@@ -87,11 +96,25 @@ public final class PanamaMemory implements Memory {
         ensureNotClosed();
         
         try {
-            // TODO: Implement memory size query through FFI
-            logger.fine("Getting memory size - placeholder implementation");
-            return 0L;
+            // Get memory size through optimized FFI call
+            MethodHandle memorySize = nativeFunctions.getFunction(
+                "wasmtime_memory_size",
+                FunctionDescriptor.of(
+                    ValueLayout.JAVA_LONG,
+                    ValueLayout.ADDRESS // memory
+                )
+            );
+            
+            long sizeInBytes = (long) memorySize.invoke(memoryResource.getNativePointer());
+            return sizeInBytes;
+            
         } catch (Exception e) {
-            throw exceptionMapper.mapException(e);
+            String detailedMessage = PanamaErrorHandler.createDetailedErrorMessage(
+                "Memory size query", 
+                "memory=" + memoryResource.getNativePointer(), 
+                e.getMessage()
+            );
+            throw new WasmException(detailedMessage, e);
         }
     }
 
@@ -100,11 +123,17 @@ public final class PanamaMemory implements Memory {
         ensureNotClosed();
         
         try {
-            // TODO: Implement memory pages query through FFI
-            logger.fine("Getting memory pages - placeholder implementation");
-            return 0L;
+            // WebAssembly memory pages are 64KB (65536 bytes)
+            long sizeInBytes = size();
+            return sizeInBytes / 65536L;
+            
         } catch (Exception e) {
-            throw exceptionMapper.mapException(e);
+            String detailedMessage = PanamaErrorHandler.createDetailedErrorMessage(
+                "Memory pages query", 
+                "memory=" + memoryResource.getNativePointer(), 
+                e.getMessage()
+            );
+            throw new WasmException(detailedMessage, e);
         }
     }
 
@@ -112,16 +141,38 @@ public final class PanamaMemory implements Memory {
     public boolean grow(final long pages) throws WasmException {
         ensureNotClosed();
         
-        if (pages < 0) {
-            throw new IllegalArgumentException("Pages cannot be negative");
-        }
+        // Parameter validation with defensive programming
+        PanamaErrorHandler.requireNonNegative(pages, "pages");
 
         try {
-            // TODO: Implement memory growth through FFI
-            logger.fine("Growing memory by " + pages + " pages - placeholder implementation");
-            return false;
+            // Grow memory through optimized FFI call
+            MethodHandle memoryGrow = nativeFunctions.getFunction(
+                "wasmtime_memory_grow",
+                FunctionDescriptor.of(
+                    ValueLayout.JAVA_BOOLEAN,
+                    ValueLayout.ADDRESS, // memory
+                    ValueLayout.JAVA_LONG // delta_pages
+                )
+            );
+            
+            boolean success = (boolean) memoryGrow.invoke(
+                memoryResource.getNativePointer(),
+                pages
+            );
+            
+            if (success) {
+                LOGGER.fine("Successfully grew memory by " + pages + " pages");
+            }
+            
+            return success;
+            
         } catch (Exception e) {
-            throw exceptionMapper.mapException(e);
+            String detailedMessage = PanamaErrorHandler.createDetailedErrorMessage(
+                "Memory growth", 
+                "memory=" + memoryResource.getNativePointer() + ", pages=" + pages, 
+                e.getMessage()
+            );
+            throw new WasmException(detailedMessage, e);
         }
     }
 
@@ -129,16 +180,29 @@ public final class PanamaMemory implements Memory {
     public byte readByte(final long offset) throws WasmException {
         ensureNotClosed();
         
-        if (offset < 0) {
-            throw new IllegalArgumentException("Offset cannot be negative");
-        }
+        // Parameter validation with defensive programming
+        PanamaErrorHandler.requireNonNegative(offset, "offset");
 
         try {
-            // TODO: Implement direct memory read through MemorySegment
-            logger.fine("Reading byte at offset " + offset + " - placeholder implementation");
-            return 0;
+            // Get direct memory access through FFI
+            MemorySegment memoryData = getDirectMemoryAccess();
+            
+            // Bounds checking for memory safety
+            long memorySize = size();
+            if (offset >= memorySize) {
+                throw new IndexOutOfBoundsException("Offset " + offset + " exceeds memory size " + memorySize);
+            }
+            
+            // Direct memory access with zero-copy
+            return memoryData.get(ValueLayout.JAVA_BYTE, offset);
+            
         } catch (Exception e) {
-            throw exceptionMapper.mapException(e);
+            String detailedMessage = PanamaErrorHandler.createDetailedErrorMessage(
+                "Memory byte read", 
+                "offset=" + offset + ", memory=" + memoryResource.getNativePointer(), 
+                e.getMessage()
+            );
+            throw new WasmException(detailedMessage, e);
         }
     }
 
@@ -146,15 +210,29 @@ public final class PanamaMemory implements Memory {
     public void writeByte(final long offset, final byte value) throws WasmException {
         ensureNotClosed();
         
-        if (offset < 0) {
-            throw new IllegalArgumentException("Offset cannot be negative");
-        }
+        // Parameter validation with defensive programming
+        PanamaErrorHandler.requireNonNegative(offset, "offset");
 
         try {
-            // TODO: Implement direct memory write through MemorySegment
-            logger.fine("Writing byte " + value + " at offset " + offset + " - placeholder implementation");
+            // Get direct memory access through FFI
+            MemorySegment memoryData = getDirectMemoryAccess();
+            
+            // Bounds checking for memory safety
+            long memorySize = size();
+            if (offset >= memorySize) {
+                throw new IndexOutOfBoundsException("Offset " + offset + " exceeds memory size " + memorySize);
+            }
+            
+            // Direct memory access with zero-copy
+            memoryData.set(ValueLayout.JAVA_BYTE, offset, value);
+            
         } catch (Exception e) {
-            throw exceptionMapper.mapException(e);
+            String detailedMessage = PanamaErrorHandler.createDetailedErrorMessage(
+                "Memory byte write", 
+                "offset=" + offset + ", value=" + value + ", memory=" + memoryResource.getNativePointer(), 
+                e.getMessage()
+            );
+            throw new WasmException(detailedMessage, e);
         }
     }
 
@@ -162,19 +240,11 @@ public final class PanamaMemory implements Memory {
     public void read(final long offset, final byte[] buffer) throws WasmException {
         ensureNotClosed();
         
-        if (offset < 0) {
-            throw new IllegalArgumentException("Offset cannot be negative");
-        }
-        if (buffer == null) {
-            throw new IllegalArgumentException("Buffer cannot be null");
-        }
+        // Parameter validation with defensive programming
+        PanamaErrorHandler.requireNonNegative(offset, "offset");
+        Objects.requireNonNull(buffer, "Buffer cannot be null");
 
-        try {
-            // TODO: Implement bulk memory read through MemorySegment
-            logger.fine("Reading " + buffer.length + " bytes at offset " + offset + " - placeholder implementation");
-        } catch (Exception e) {
-            throw exceptionMapper.mapException(e);
-        }
+        read(offset, buffer, 0, buffer.length);
     }
 
     @Override
@@ -182,25 +252,41 @@ public final class PanamaMemory implements Memory {
             throws WasmException {
         ensureNotClosed();
         
-        if (offset < 0) {
-            throw new IllegalArgumentException("Offset cannot be negative");
-        }
-        if (buffer == null) {
-            throw new IllegalArgumentException("Buffer cannot be null");
-        }
-        if (bufferOffset < 0 || bufferOffset >= buffer.length) {
-            throw new IllegalArgumentException("Buffer offset out of bounds");
-        }
-        if (length < 0 || bufferOffset + length > buffer.length) {
-            throw new IllegalArgumentException("Length out of bounds");
+        // Parameter validation with defensive programming
+        PanamaErrorHandler.requireNonNegative(offset, "offset");
+        Objects.requireNonNull(buffer, "Buffer cannot be null");
+        PanamaErrorHandler.requireNonNegative(bufferOffset, "bufferOffset");
+        PanamaErrorHandler.requireNonNegative(length, "length");
+        
+        if (bufferOffset + length > buffer.length) {
+            throw new IndexOutOfBoundsException("Buffer overflow: bufferOffset=" + bufferOffset + 
+                                              ", length=" + length + ", buffer.length=" + buffer.length);
         }
 
         try {
-            // TODO: Implement partial memory read through MemorySegment
-            logger.fine("Reading " + length + " bytes at offset " + offset + 
-                        " to buffer[" + bufferOffset + "] - placeholder implementation");
+            // Get direct memory access through FFI
+            MemorySegment memoryData = getDirectMemoryAccess();
+            
+            // Bounds checking for memory safety
+            long memorySize = size();
+            if (offset + length > memorySize) {
+                throw new IndexOutOfBoundsException("Read overflow: offset=" + offset + 
+                                                  ", length=" + length + ", memory size=" + memorySize);
+            }
+            
+            // Zero-copy bulk memory read using MemorySegment
+            MemorySegment bufferSegment = MemorySegment.ofArray(buffer);
+            MemorySegment sourceSegment = memoryData.asSlice(offset, length);
+            bufferSegment.asSlice(bufferOffset, length).copyFrom(sourceSegment);
+            
         } catch (Exception e) {
-            throw exceptionMapper.mapException(e);
+            String detailedMessage = PanamaErrorHandler.createDetailedErrorMessage(
+                "Memory bulk read", 
+                "offset=" + offset + ", bufferOffset=" + bufferOffset + ", length=" + length +
+                ", memory=" + memoryResource.getNativePointer(), 
+                e.getMessage()
+            );
+            throw new WasmException(detailedMessage, e);
         }
     }
 
@@ -208,19 +294,11 @@ public final class PanamaMemory implements Memory {
     public void write(final long offset, final byte[] buffer) throws WasmException {
         ensureNotClosed();
         
-        if (offset < 0) {
-            throw new IllegalArgumentException("Offset cannot be negative");
-        }
-        if (buffer == null) {
-            throw new IllegalArgumentException("Buffer cannot be null");
-        }
+        // Parameter validation with defensive programming
+        PanamaErrorHandler.requireNonNegative(offset, "offset");
+        Objects.requireNonNull(buffer, "Buffer cannot be null");
 
-        try {
-            // TODO: Implement bulk memory write through MemorySegment
-            logger.fine("Writing " + buffer.length + " bytes at offset " + offset + " - placeholder implementation");
-        } catch (Exception e) {
-            throw exceptionMapper.mapException(e);
-        }
+        write(offset, buffer, 0, buffer.length);
     }
 
     @Override
@@ -228,25 +306,42 @@ public final class PanamaMemory implements Memory {
             throws WasmException {
         ensureNotClosed();
         
-        if (offset < 0) {
-            throw new IllegalArgumentException("Offset cannot be negative");
-        }
-        if (buffer == null) {
-            throw new IllegalArgumentException("Buffer cannot be null");
-        }
-        if (bufferOffset < 0 || bufferOffset >= buffer.length) {
-            throw new IllegalArgumentException("Buffer offset out of bounds");
-        }
-        if (length < 0 || bufferOffset + length > buffer.length) {
-            throw new IllegalArgumentException("Length out of bounds");
+        // Parameter validation with defensive programming
+        PanamaErrorHandler.requireNonNegative(offset, "offset");
+        Objects.requireNonNull(buffer, "Buffer cannot be null");
+        PanamaErrorHandler.requireNonNegative(bufferOffset, "bufferOffset");
+        PanamaErrorHandler.requireNonNegative(length, "length");
+        
+        if (bufferOffset + length > buffer.length) {
+            throw new IndexOutOfBoundsException("Buffer overflow: bufferOffset=" + bufferOffset + 
+                                              ", length=" + length + ", buffer.length=" + buffer.length);
         }
 
         try {
-            // TODO: Implement partial memory write through MemorySegment
-            logger.fine("Writing " + length + " bytes at offset " + offset + 
-                        " from buffer[" + bufferOffset + "] - placeholder implementation");
+            // Get direct memory access through FFI
+            MemorySegment memoryData = getDirectMemoryAccess();
+            
+            // Bounds checking for memory safety
+            long memorySize = size();
+            if (offset + length > memorySize) {
+                throw new IndexOutOfBoundsException("Write overflow: offset=" + offset + 
+                                                  ", length=" + length + ", memory size=" + memorySize);
+            }
+            
+            // Zero-copy bulk memory write using MemorySegment
+            MemorySegment bufferSegment = MemorySegment.ofArray(buffer);
+            MemorySegment sourceSegment = bufferSegment.asSlice(bufferOffset, length);
+            MemorySegment targetSegment = memoryData.asSlice(offset, length);
+            targetSegment.copyFrom(sourceSegment);
+            
         } catch (Exception e) {
-            throw exceptionMapper.mapException(e);
+            String detailedMessage = PanamaErrorHandler.createDetailedErrorMessage(
+                "Memory bulk write", 
+                "offset=" + offset + ", bufferOffset=" + bufferOffset + ", length=" + length +
+                ", memory=" + memoryResource.getNativePointer(), 
+                e.getMessage()
+            );
+            throw new WasmException(detailedMessage, e);
         }
     }
 
@@ -255,11 +350,47 @@ public final class PanamaMemory implements Memory {
         ensureNotClosed();
         
         try {
-            // TODO: Implement direct ByteBuffer mapping through MemorySegment
-            logger.fine("Creating ByteBuffer view - placeholder implementation");
-            return ByteBuffer.allocate(0);
+            // Get direct memory access through FFI
+            MemorySegment memoryData = getDirectMemoryAccess();
+            
+            // Create a ByteBuffer view of the memory segment for compatibility
+            // Note: This creates a direct ByteBuffer that shares the same memory
+            return memoryData.asByteBuffer();
+            
         } catch (Exception e) {
-            throw exceptionMapper.mapException(e);
+            String detailedMessage = PanamaErrorHandler.createDetailedErrorMessage(
+                "ByteBuffer creation", 
+                "memory=" + memoryResource.getNativePointer(), 
+                e.getMessage()
+            );
+            throw new WasmException(detailedMessage, e);
+        }
+    }
+
+    /**
+     * Gets a direct MemorySegment view of the WebAssembly memory.
+     * 
+     * <p>This provides zero-copy access to the underlying native memory,
+     * allowing for efficient bulk operations without data copying. This is
+     * the preferred method for high-performance memory operations.</p>
+     * 
+     * @return a MemorySegment representing the WebAssembly memory
+     * @throws WasmException if the memory segment cannot be created
+     */
+    public MemorySegment asMemorySegment() throws WasmException {
+        ensureNotClosed();
+        
+        try {
+            // Return direct memory access - this is the zero-copy advantage of Panama
+            return getDirectMemoryAccess();
+            
+        } catch (Exception e) {
+            String detailedMessage = PanamaErrorHandler.createDetailedErrorMessage(
+                "MemorySegment access", 
+                "memory=" + memoryResource.getNativePointer(), 
+                e.getMessage()
+            );
+            throw new WasmException(detailedMessage, e);
         }
     }
 
@@ -275,13 +406,13 @@ public final class PanamaMemory implements Memory {
             }
             
             try {
-                // Unregister from resource tracker
-                resourceTracker.untrackResource(this);
+                // Close the managed native resource (automatic cleanup)
+                memoryResource.close();
                 
-                // Note: Memory is typically owned by the instance, so we don't destroy it here
-                logger.fine("Closed Panama memory instance");
+                LOGGER.fine("Closed Panama memory");
+                
             } catch (Exception e) {
-                throw exceptionMapper.mapException(e);
+                throw new WasmException("Failed to close memory", e);
             } finally {
                 closed = true;
             }
@@ -292,33 +423,73 @@ public final class PanamaMemory implements Memory {
      * Gets the native memory handle for this memory.
      * 
      * @return the native memory handle
+     * @throws IllegalStateException if the memory is closed
      */
     public MemorySegment getMemoryHandle() {
         ensureNotClosed();
-        return memoryHandle;
+        return memoryResource.getNativePointer();
     }
 
     /**
-     * Gets a direct MemorySegment view of the WebAssembly memory.
+     * Gets the parent instance that owns this memory.
      * 
-     * <p>This provides zero-copy access to the underlying native memory,
-     * allowing for efficient bulk operations without data copying.</p>
-     * 
-     * @return a MemorySegment representing the WebAssembly memory
-     * @throws WasmException if the memory segment cannot be created
+     * @return the parent instance
      */
-    public MemorySegment asMemorySegment() throws WasmException {
+    public PanamaInstance getParentInstance() {
         ensureNotClosed();
+        return parentInstance;
+    }
+    
+    // Private helper methods for memory operations
+    
+    /**
+     * Gets direct access to the memory data through FFI calls.
+     * This is the core zero-copy operation that provides MemorySegment access.
+     */
+    private MemorySegment getDirectMemoryAccess() throws Exception {
+        // Get memory data pointer and size through FFI
+        MemorySegment memoryPtr = getMemoryDataPointer();
+        long memorySize = size();
         
+        // Create memory segment view with proper size
+        return memoryPtr.reinterpret(memorySize);
+    }
+    
+    /**
+     * Gets the memory data pointer through FFI calls.
+     */
+    private MemorySegment getMemoryDataPointer() throws Exception {
+        // Call wasmtime_memory_data through cached method handle
+        MethodHandle memoryData = nativeFunctions.getFunction(
+            "wasmtime_memory_data",
+            FunctionDescriptor.of(
+                ValueLayout.ADDRESS,
+                ValueLayout.ADDRESS // memory
+            )
+        );
+        
+        MemorySegment dataPtr = (MemorySegment) memoryData.invoke(memoryResource.getNativePointer());
+        PanamaErrorHandler.requireValidPointer(dataPtr, "memory data pointer");
+        
+        return dataPtr;
+    }
+    
+    /**
+     * Internal cleanup method called by managed resource.
+     * 
+     * @param memoryPtr the native memory pointer to destroy
+     */
+    private void destroyNativeMemoryInternal(final MemorySegment memoryPtr) {
         try {
-            // TODO: Implement direct MemorySegment access
-            logger.fine("Creating MemorySegment view - placeholder implementation");
-            return MemorySegment.NULL;
+            // Memory is typically owned by the instance, so no specific cleanup needed
+            LOGGER.fine("Destroying native memory: " + memoryPtr);
+            
         } catch (Exception e) {
-            throw exceptionMapper.mapException(e);
+            LOGGER.warning("Error during memory cleanup: " + e.getMessage());
+            // Don't throw exceptions from cleanup methods
         }
     }
-
+    
     /**
      * Ensures that this memory instance is not closed.
      * 
