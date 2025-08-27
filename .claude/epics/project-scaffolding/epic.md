@@ -1,8 +1,9 @@
 ---
 name: project-scaffolding
-status: backlog
+status: completed
 created: 2025-08-27T00:44:02Z
-progress: 0%
+completed: 2025-08-27T02:05:33Z
+progress: 100%
 prd: .claude/prds/project-scaffolding.md
 github: https://github.com/tegmentum/wasmtime4j/issues/1
 ---
