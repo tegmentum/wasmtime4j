@@ -83,7 +83,6 @@
                     <argLine>
                         --enable-preview
                         --enable-native-access=ALL-UNNAMED
-                        --add-modules=jdk.incubator.foreign
                     </argLine>
                     <systemPropertyVariables>
                         <java.util.logging.config.file>src/test/resources/logging.properties</java.util.logging.config.file>
@@ -100,7 +99,6 @@
                     <argLine>
                         --enable-preview
                         --enable-native-access=ALL-UNNAMED
-                        --add-modules=jdk.incubator.foreign
                     </argLine>
                     <systemPropertyVariables>
                         <wasmtime4j.runtime>panama</wasmtime4j.runtime>
