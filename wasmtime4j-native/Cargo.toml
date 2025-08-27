@@ -15,9 +15,10 @@ crate-type = ["cdylib", "staticlib"]
 [dependencies]
 # Wasmtime WebAssembly runtime
 wasmtime = "36.0.2"
+wasmtime-wasi = { version = "36.0.2", optional = true }
 
 # JNI support for Java 8-22 compatibility
-jni = "0.21.1"
+jni = { version = "0.21.1", optional = true }
 
 # Async runtime for WASI and other async operations
 tokio = { version = "1.35", features = ["full"] }
@@ -51,8 +52,8 @@ jni-bindings = ["jni"]
 # Panama Foreign Function Interface for Java 23+
 panama-ffi = []
 
-# WASI support
-wasi = ["wasmtime/wasi"]
+# WASI support (using wasmtime-wasi crate)
+wasi = ["wasmtime-wasi"]
 
 # Component model support
 component-model = ["wasmtime/component-model"]
@@ -60,14 +61,10 @@ component-model = ["wasmtime/component-model"]
 # Async support
 async = ["wasmtime/async"]
 
-# Debugging features
-debug = ["wasmtime/debug-builtins"]
-
-# Profiling support
+# Profiling support  
 profiling = ["wasmtime/profiling"]
 
-# Memory64 support
-memory64 = ["wasmtime/memory64"]
+# Note: Memory64 support not available in Wasmtime 36.0.2
 
 [profile.release]
 # Optimize for size and speed in release builds
