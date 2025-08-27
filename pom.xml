@@ -75,6 +75,8 @@
         <line.length>120</line.length>
     </properties>
 
+    <!-- Modules will be added as they are created -->
+    <!-- 
     <modules>
         <module>wasmtime4j</module>
         <module>wasmtime4j-jni</module>
@@ -83,6 +85,7 @@
         <module>wasmtime4j-benchmarks</module>
         <module>wasmtime4j-tests</module>
     </modules>
+    -->
 
     <dependencyManagement>
         <dependencies>
@@ -427,6 +430,7 @@
                         <xmlOutput>true</xmlOutput>
                         <failOnError>true</failOnError>
                         <includeTests>true</includeTests>
+                        <excludeFilterFile>spotbugs-exclude.xml</excludeFilterFile>
                         <plugins>
                             <plugin>
                                 <groupId>com.h3xstream.findsecbugs</groupId>
@@ -468,6 +472,9 @@
                         <includeTests>true</includeTests>
                         <failOnViolation>true</failOnViolation>
                         <printFailingErrors>true</printFailingErrors>
+                        <rulesets>
+                            <ruleset>pmd-ruleset.xml</ruleset>
+                        </rulesets>
                     </configuration>
                     <executions>
                         <execution>

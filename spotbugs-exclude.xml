@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+    <!-- 
+        SpotBugs exclusions for the Wasmtime4j project
+        
+        This file defines exclusions for specific classes of issues that are:
+        1. False positives due to JNI/Panama native method patterns
+        2. Intentional design decisions for performance or compatibility
+        3. Generated code that cannot be modified
+    -->
+    
+    <!-- Exclude specific packages from certain checks -->
+    <Match>
+        <Package name="ai.tegmentum.wasmtime4j.generated"/>
+        <!-- Generated code should not be analyzed -->
+    </Match>
+    
+    <!-- JNI-specific exclusions -->
+    <Match>
+        <Class name="~.*\.jni\..*"/>
+        <Bug pattern="UWF_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR"/>
+        <!-- Native fields are initialized by JNI, not in constructors -->
+    </Match>
+    
+    <Match>
+        <Class name="~.*\.jni\..*"/>
+        <Bug pattern="URF_UNREAD_FIELD"/>
+        <!-- JNI fields may be read by native code -->
+    </Match>
+    
+    <Match>
+        <Method name="~native.*"/>
+        <Bug pattern="UPM_UNCALLED_PRIVATE_METHOD"/>
+        <!-- Native methods are called by JNI runtime -->
+    </Match>
+    
+    <!-- Panama FFI-specific exclusions -->
+    <Match>
+        <Class name="~.*\.panama\..*"/>
+        <Bug pattern="UWF_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR"/>
+        <!-- Panama fields may be initialized through FFI -->
+    </Match>
+    
+    <!-- Memory management exclusions for native resource handling -->
+    <Match>
+        <Class name="~.*\.memory\..*"/>
+        <Bug pattern="DM_GC"/>
+        <!-- Explicit GC calls may be necessary for native resource cleanup -->
+    </Match>
+    
+    <Match>
+        <Class name="~.*Native.*"/>
+        <Bug pattern="DM_GC"/>
+        <!-- Native resource classes may need explicit GC -->
+    </Match>
+    
+    <!-- Performance-related exclusions -->
+    <Match>
+        <Bug pattern="WMI_WRONG_MAP_ITERATOR"/>
+        <!-- In performance-critical code, iterator choice may be intentional -->
+        <Class name="~.*\.benchmarks\..*"/>
+    </Match>
+    
+    <!-- Test-specific exclusions -->
+    <Match>
+        <Class name="~.*Test.*"/>
+        <Bug pattern="DM_NUMBER_CTOR"/>
+        <!-- Test code may use constructors for clarity -->
+    </Match>
+    
+    <Match>
+        <Class name="~.*Test.*"/>
+        <Bug pattern="DMI_HARDCODED_ABSOLUTE_FILENAME"/>
+        <!-- Tests may need hardcoded paths for test resources -->
+    </Match>
+    
+    <!-- Exclude null pointer warnings for defensive programming -->
+    <Match>
+        <Bug pattern="RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE"/>
+        <!-- Defensive null checks are intentional -->
+    </Match>
+    
+    <!-- Security exclusions - carefully considered -->
+    <Match>
+        <Bug pattern="PATH_TRAVERSAL_IN"/>
+        <Class name="~.*\.tests\..*"/>
+        <!-- Test code may intentionally test path traversal scenarios -->
+    </Match>
+    
+    <!-- Serialization exclusions -->
+    <Match>
+        <Bug pattern="SE_BAD_FIELD"/>
+        <Class name="~.*Exception.*"/>
+        <!-- Exception classes may have non-serializable fields by design -->
+    </Match>
+    
+    <!-- WASM module loading exclusions -->
+    <Match>
+        <Bug pattern="COMMAND_INJECTION"/>
+        <Method name="~.*loadModule.*"/>
+        <!-- Module loading from controlled sources is intentional -->
+    </Match>
+    
+    <!-- Resource leak exclusions for managed resources -->
+    <Match>
+        <Bug pattern="OBL_UNSATISFIED_OBLIGATION"/>
+        <Class name="~.*\.AutoCloseable.*"/>
+        <!-- AutoCloseable resources are managed by try-with-resources -->
+    </Match>
+    
+    <!-- Suppress finalize warnings for native resource cleanup -->
+    <Match>
+        <Bug pattern="FI_FINALIZER_ONLY_NULLS_FIELDS"/>
+        <Class name="~.*Native.*"/>
+        <!-- Native resource finalizers may only null fields after cleanup -->
+    </Match>
+    
+    <!-- Thread safety exclusions for single-threaded contexts -->
+    <Match>
+        <Bug pattern="IS2_INCONSISTENT_SYNC"/>
+        <Class name="~.*\.benchmarks\..*"/>
+        <!-- Benchmark code is typically single-threaded -->
+    </Match>
+    
+    <!-- Method naming exclusions for JNI conventions -->
+    <Match>
+        <Bug pattern="NM_METHOD_NAMING_CONVENTION"/>
+        <Method name="~Java_.*"/>
+        <!-- JNI method names follow C naming conventions -->
+    </Match>
+</FindBugsFilter>

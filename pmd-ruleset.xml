@@ -1,0 +1,150 @@
+<?xml version="1.0"?>
+<ruleset name="Wasmtime4j PMD Ruleset"
+         xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 
+         https://pmd.sourceforge.io/ruleset_2_0_0.xsd">
+
+    <description>
+        PMD rules for the Wasmtime4j project focused on maintainability,
+        performance, and defensive programming practices.
+    </description>
+
+    <!-- Best Practices Rules -->
+    <rule ref="category/java/bestpractices.xml">
+        <!-- Exclude rules that conflict with JNI/Panama patterns -->
+        <exclude name="UseVarargs"/><!-- JNI methods may require array parameters -->
+        <exclude name="AccessorMethodGeneration"/><!-- May be needed for native field access -->
+        <exclude name="GuardLogStatement"/><!-- java.util.logging doesn't require guards -->
+    </rule>
+
+    <!-- Code Style Rules -->
+    <rule ref="category/java/codestyle.xml">
+        <!-- Exclude overly strict rules -->
+        <exclude name="OnlyOneReturn"/><!-- Multiple returns can improve readability -->
+        <exclude name="AtLeastOneConstructor"/><!-- Utility classes may not need constructors -->
+        <exclude name="CommentDefaultAccessModifier"/><!-- Default access is intentional -->
+        <exclude name="ConfusingTernary"/><!-- Ternary operators can be clear when used properly -->
+        <exclude name="TooManyStaticImports"/><!-- Static imports can improve readability -->
+        <exclude name="UseUnderscoresInNumericLiterals"/><!-- Not always necessary -->
+        <exclude name="ShortClassName"/><!-- Some short names are appropriate (e.g., IO, VM) -->
+        <exclude name="LongVariable"/><!-- Descriptive names are preferred -->
+        <exclude name="ShortVariable"/><!-- Conflicts with standard abbreviations -->
+        <exclude name="CallSuperInConstructor"/><!-- Not always required -->
+        <exclude name="DefaultPackage"/><!-- Default package usage may be intentional -->
+    </rule>
+
+    <!-- Customize line length for code style -->
+    <rule ref="category/java/codestyle.xml/LongVariable">
+        <properties>
+            <property name="minimum" value="30"/><!-- Allow longer descriptive names -->
+        </properties>
+    </rule>
+
+    <!-- Design Rules -->
+    <rule ref="category/java/design.xml">
+        <!-- Exclude rules that may not apply to JNI/native patterns -->
+        <exclude name="LawOfDemeter"/><!-- May not apply to fluent APIs or native wrappers -->
+        <exclude name="LoosePackageCoupling"/><!-- Acceptable for internal API coupling -->
+        <exclude name="DataClass"/><!-- DTOs and value objects are acceptable -->
+        <exclude name="TooManyMethods"/><!-- Native wrapper classes may have many methods -->
+        <exclude name="TooManyFields"/><!-- Native structures may have many fields -->
+        <exclude name="ExcessivePublicCount"/><!-- Public APIs may be extensive -->
+        <exclude name="GodClass"/><!-- Main API classes may be larger by design -->
+    </rule>
+
+    <!-- Customize design rules -->
+    <rule ref="category/java/design.xml/TooManyMethods">
+        <properties>
+            <property name="maxmethods" value="30"/><!-- Allow more methods for API classes -->
+        </properties>
+    </rule>
+
+    <rule ref="category/java/design.xml/TooManyFields">
+        <properties>
+            <property name="maxfields" value="20"/><!-- Allow more fields for native structures -->
+        </properties>
+    </rule>
+
+    <rule ref="category/java/design.xml/ExcessiveMethodLength">
+        <properties>
+            <property name="minimum" value="100"/><!-- Allow longer methods for complex native operations -->
+        </properties>
+    </rule>
+
+    <rule ref="category/java/design.xml/ExcessiveParameterList">
+        <properties>
+            <property name="minimum" value="8"/><!-- Native methods may need many parameters -->
+        </properties>
+    </rule>
+
+    <rule ref="category/java/design.xml/NcssCount">
+        <properties>
+            <property name="methodReportLevel" value="50"/>
+            <property name="classReportLevel" value="500"/><!-- Allow larger classes for comprehensive APIs -->
+        </properties>
+    </rule>
+
+    <rule ref="category/java/design.xml/CyclomaticComplexity">
+        <properties>
+            <property name="methodReportLevel" value="15"/><!-- Allow higher complexity for native operations -->
+        </properties>
+    </rule>
+
+    <!-- Error Prone Rules -->
+    <rule ref="category/java/errorprone.xml">
+        <!-- Exclude rules that may conflict with defensive programming -->
+        <exclude name="DataflowAnomalyAnalysis"/><!-- May produce false positives with native code -->
+        <exclude name="NullAssignment"/><!-- Explicit null assignment can be defensive -->
+        <exclude name="AvoidLiteralsInIfCondition"/><!-- Sometimes literals in conditions are clearer -->
+        <exclude name="MissingBreakInSwitch"/><!-- Fall-through may be intentional -->
+        <exclude name="EmptyIfStmt"/><!-- May be used for defensive programming -->
+        <exclude name="AvoidFieldNameMatchingMethodName"/><!-- May be acceptable for properties -->
+    </rule>
+
+    <!-- Multithreading Rules -->
+    <rule ref="category/java/multithreading.xml">
+        <!-- These are important for native code safety -->
+    </rule>
+
+    <!-- Performance Rules -->
+    <rule ref="category/java/performance.xml">
+        <!-- Exclude rules that may conflict with defensive programming -->
+        <exclude name="AvoidInstantiatingObjectsInLoops"/><!-- May be necessary for native resource management -->
+        <exclude name="UseStringBufferForStringAppends"/><!-- StringBuilder is preferred anyway -->
+    </rule>
+
+    <!-- Security Rules -->
+    <rule ref="category/java/security.xml">
+        <!-- Keep all security rules - very important for native code -->
+    </rule>
+
+    <!-- Custom rules for the project -->
+    
+    <!-- Require logging for native method failures -->
+    <rule name="LogNativeFailures"
+          language="java"
+          message="Native method calls should include error logging"
+          class="net.sourceforge.pmd.lang.rule.xpath.XPathRule">
+        <description>
+            Native method calls should include appropriate error logging for debugging.
+        </description>
+        <priority>3</priority>
+        <properties>
+            <property name="xpath">
+                <value><![CDATA[
+                    //MethodDeclaration[contains(@Name, 'native')]
+                    [not(descendant::PrimaryExpression[ends-with(@Image, 'log')])]
+                ]]></value>
+            </property>
+        </properties>
+    </rule>
+
+    <!-- Exclude generated code and test utilities -->
+    <exclude-pattern>.*/generated/.*</exclude-pattern>
+    <exclude-pattern>.*/target/.*</exclude-pattern>
+    <exclude-pattern>.*Test\.java</exclude-pattern>
+    <exclude-pattern>.*IT\.java</exclude-pattern>
+    <exclude-pattern>.*/test/.*</exclude-pattern>
+    <exclude-pattern>.*BenchmarkRunner\.java</exclude-pattern>
+</ruleset>
