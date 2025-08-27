@@ -1,93 +1,169 @@
 package ai.tegmentum.wasmtime4j.jni;
 
-import java.util.concurrent.atomic.AtomicBoolean;
+import ai.tegmentum.wasmtime4j.jni.exception.JniException;
+import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
+import ai.tegmentum.wasmtime4j.jni.nativelib.NativeMethodBindings;
+import ai.tegmentum.wasmtime4j.jni.util.JniResource;
+import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import java.util.logging.Logger;
 
 /**
- * JNI implementation of the Engine interface.
+ * JNI implementation of the WebAssembly Engine.
  *
  * <p>This class manages the configuration and lifecycle of a WebAssembly execution engine through
  * JNI calls to the native Wasmtime library. The engine controls compilation settings, optimization
  * levels, and resource management for WebAssembly modules.
  *
- * <p>This implementation provides defensive programming to prevent native resource leaks and JVM
- * crashes.
+ * <p>Key features:
+ * <ul>
+ *   <li>Automatic resource management with {@link AutoCloseable}</li>
+ *   <li>Defensive programming to prevent JVM crashes</li>
+ *   <li>Comprehensive parameter validation</li>
+ *   <li>Thread-safe operations</li>
+ *   <li>Configuration management for optimization and debug settings</li>
+ * </ul>
+ *
+ * <p>Usage Example:
+ * <pre>{@code
+ * try (JniEngine engine = JniEngine.create()) {
+ *   engine.setOptimizationLevel(2); // Optimize for speed and size
+ *   engine.setDebugInfo(true);      // Enable debug information
+ *   
+ *   // Compile and instantiate modules using this engine
+ *   JniModule module = engine.compileModule(wasmBytes);
+ *   JniInstance instance = engine.instantiate(module, store);
+ * }
+ * }</pre>
+ *
+ * <p>This implementation extends {@link JniResource} to provide automatic native resource
+ * management and follows defensive programming practices to prevent native crashes.
+ *
+ * @since 1.0.0
  */
-public final class JniEngine implements AutoCloseable {
+public final class JniEngine extends JniResource {
 
   private static final Logger LOGGER = Logger.getLogger(JniEngine.class.getName());
-
-  /** Native engine handle. */
-  private volatile long nativeHandle;
-
-  /** Flag to track if this engine has been closed. */
-  private final AtomicBoolean closed = new AtomicBoolean(false);
 
   /**
    * Creates a new JNI engine with the given native handle.
    *
-   * @param nativeHandle the native engine handle
-   * @throws IllegalArgumentException if nativeHandle is 0
+   * <p>This constructor is package-private and should only be used by factory methods
+   * or other JNI classes. External code should use {@link #create()} or similar factory methods.
+   *
+   * @param nativeHandle the native engine handle from Wasmtime
+   * @throws JniResourceException if nativeHandle is invalid
    */
   JniEngine(final long nativeHandle) {
-    if (nativeHandle == 0) {
-      throw new IllegalArgumentException("Native handle cannot be 0");
-    }
-    this.nativeHandle = nativeHandle;
-    LOGGER.fine("Created JNI engine with handle: " + nativeHandle);
+    super(nativeHandle);
+    LOGGER.fine("Created JNI engine with handle: 0x" + Long.toHexString(nativeHandle));
   }
 
   /**
-   * Creates a new instance of a compiled module using this engine.
+   * Creates a new default engine with standard configuration.
    *
-   * @param module the compiled module to instantiate
-   * @return a new module instance
-   * @throws IllegalArgumentException if module is null
-   * @throws IllegalStateException if this engine is closed
-   * @throws RuntimeException if instantiation fails
+   * <p>This factory method creates an engine with default Wasmtime settings suitable for most
+   * use cases. For custom configuration, use {@link #createWithConfig(EngineConfig)}.
+   *
+   * @return a new engine instance
+   * @throws JniException if engine creation fails
    */
-  public JniInstance instantiate(final JniModule module) {
-    if (module == null) {
-      throw new IllegalArgumentException("Module cannot be null");
-    }
-    validateNotClosed();
-
+  public static JniEngine create() {
+    NativeMethodBindings.ensureInitialized();
+    
     try {
-      final long instanceHandle = nativeInstantiate(nativeHandle, module.getNativeHandle());
-      if (instanceHandle == 0) {
-        throw new RuntimeException("Failed to instantiate module");
-      }
-      return new JniInstance(instanceHandle);
-    } catch (final RuntimeException e) {
-      throw e;
+      final long engineHandle = nativeCreateEngine();
+      JniValidation.requireValidHandle(engineHandle, "engineHandle");
+      return new JniEngine(engineHandle);
     } catch (final Exception e) {
-      throw new RuntimeException("Unexpected error instantiating module", e);
+      throw new JniException("Failed to create Wasmtime engine", e);
+    }
+  }
+
+  /**
+   * Compiles WebAssembly bytecode into a module using this engine.
+   *
+   * <p>This method validates and compiles the provided WebAssembly bytecode into a module
+   * that can be instantiated and executed. The compilation process includes validation
+   * of the WebAssembly format and optimization based on the engine's configuration.
+   *
+   * @param wasmBytes the WebAssembly bytecode to compile
+   * @return a compiled module
+   * @throws JniException if compilation fails
+   * @throws JniResourceException if this engine has been closed
+   */
+  public JniModule compileModule(final byte[] wasmBytes) {
+    JniValidation.requireNonEmpty(wasmBytes, "wasmBytes");
+    ensureNotClosed();
+
+    final byte[] wasmBytesCopy = JniValidation.defensiveCopy(wasmBytes);
+    
+    try {
+      final long moduleHandle = nativeCompileModule(getNativeHandle(), wasmBytesCopy);
+      JniValidation.requireValidHandle(moduleHandle, "moduleHandle");
+      return new JniModule(moduleHandle);
+    } catch (final Exception e) {
+      if (e instanceof JniException) {
+        throw e;
+      }
+      throw new JniException("Failed to compile WebAssembly module", e);
+    }
+  }
+
+  /**
+   * Creates a new store associated with this engine.
+   *
+   * <p>A store represents an execution context for WebAssembly instances. All instances
+   * created from modules compiled with this engine must use a store from the same engine.
+   *
+   * @return a new store instance
+   * @throws JniException if store creation fails
+   * @throws JniResourceException if this engine has been closed
+   */
+  public JniStore createStore() {
+    ensureNotClosed();
+    
+    try {
+      final long storeHandle = nativeCreateStore(getNativeHandle());
+      JniValidation.requireValidHandle(storeHandle, "storeHandle");
+      return new JniStore(storeHandle);
+    } catch (final Exception e) {
+      if (e instanceof JniException) {
+        throw e;
+      }
+      throw new JniException("Failed to create store", e);
     }
   }
 
   /**
    * Sets the optimization level for this engine.
    *
-   * @param level the optimization level (0 = none, 1 = speed, 2 = speed + size)
-   * @throws IllegalArgumentException if level is not valid (0-2)
-   * @throws IllegalStateException if this engine is closed
-   * @throws RuntimeException if the configuration cannot be changed
+   * <p>This method controls how aggressively the Wasmtime engine optimizes compiled WebAssembly
+   * code. Higher optimization levels produce faster code but may increase compilation time.
+   *
+   * @param level the optimization level:
+   *              <ul>
+   *                <li>0 = No optimization (fastest compilation)</li>
+   *                <li>1 = Optimize for speed</li>
+   *                <li>2 = Optimize for both speed and size</li>
+   *              </ul>
+   * @throws JniException if the configuration cannot be changed
+   * @throws JniResourceException if this engine has been closed
    */
   public void setOptimizationLevel(final int level) {
-    if (level < 0 || level > 2) {
-      throw new IllegalArgumentException("Optimization level must be 0, 1, or 2");
-    }
-    validateNotClosed();
+    JniValidation.requireInRange(level, 0, 2, "level");
+    ensureNotClosed();
 
     try {
-      final boolean success = nativeSetOptimizationLevel(nativeHandle, level);
+      final boolean success = nativeSetOptimizationLevel(getNativeHandle(), level);
       if (!success) {
-        throw new RuntimeException("Failed to set optimization level");
+        throw new JniException("Failed to set optimization level to " + level);
       }
-    } catch (final RuntimeException e) {
-      throw e;
+      LOGGER.fine("Set optimization level to " + level + " for engine 0x" + Long.toHexString(getNativeHandle()));
     } catch (final Exception e) {
-      throw new RuntimeException("Unexpected error setting optimization level", e);
+      if (e instanceof JniException) {
+        throw e;
+      }
+      throw new JniException("Unexpected error setting optimization level", e);
     }
   }
 
@@ -95,122 +171,102 @@ public final class JniEngine implements AutoCloseable {
    * Gets the current optimization level for this engine.
    *
    * @return the optimization level (0-2)
-   * @throws IllegalStateException if this engine is closed
-   * @throws RuntimeException if the configuration cannot be retrieved
+   * @throws JniException if the configuration cannot be retrieved
+   * @throws JniResourceException if this engine has been closed
    */
   public int getOptimizationLevel() {
-    validateNotClosed();
+    ensureNotClosed();
+    
     try {
-      return nativeGetOptimizationLevel(nativeHandle);
+      return nativeGetOptimizationLevel(getNativeHandle());
     } catch (final Exception e) {
-      throw new RuntimeException("Unexpected error getting optimization level", e);
+      throw new JniException("Failed to get optimization level", e);
     }
   }
 
   /**
    * Enables or disables debug information generation.
    *
-   * @param enabled true to enable debug information
-   * @throws IllegalStateException if this engine is closed
-   * @throws RuntimeException if the configuration cannot be changed
+   * <p>When enabled, the engine will generate additional debug information during compilation
+   * which can be useful for debugging WebAssembly modules but may increase compilation time
+   * and memory usage.
+   *
+   * @param enabled true to enable debug information, false to disable
+   * @throws JniException if the configuration cannot be changed
+   * @throws JniResourceException if this engine has been closed
    */
   public void setDebugInfo(final boolean enabled) {
-    validateNotClosed();
+    ensureNotClosed();
+    
     try {
-      final boolean success = nativeSetDebugInfo(nativeHandle, enabled);
+      final boolean success = nativeSetDebugInfo(getNativeHandle(), enabled);
       if (!success) {
-        throw new RuntimeException("Failed to set debug info configuration");
+        throw new JniException("Failed to " + (enabled ? "enable" : "disable") + " debug information");
       }
-    } catch (final RuntimeException e) {
-      throw e;
+      LOGGER.fine((enabled ? "Enabled" : "Disabled") + " debug info for engine 0x" + Long.toHexString(getNativeHandle()));
     } catch (final Exception e) {
-      throw new RuntimeException("Unexpected error setting debug info", e);
+      if (e instanceof JniException) {
+        throw e;
+      }
+      throw new JniException("Unexpected error setting debug info", e);
     }
   }
 
   /**
    * Checks if debug information generation is enabled.
    *
-   * @return true if debug information is enabled
-   * @throws IllegalStateException if this engine is closed
-   * @throws RuntimeException if the configuration cannot be retrieved
+   * @return true if debug information is enabled, false otherwise
+   * @throws JniException if the configuration cannot be retrieved
+   * @throws JniResourceException if this engine has been closed
    */
   public boolean isDebugInfo() {
-    validateNotClosed();
+    ensureNotClosed();
+    
     try {
-      return nativeIsDebugInfo(nativeHandle);
+      return nativeIsDebugInfo(getNativeHandle());
     } catch (final Exception e) {
-      throw new RuntimeException("Unexpected error getting debug info configuration", e);
+      throw new JniException("Failed to get debug info configuration", e);
     }
   }
 
-  /**
-   * Gets the native handle for internal use.
-   *
-   * @return the native handle
-   * @throws IllegalStateException if this engine is closed
-   */
-  long getNativeHandle() {
-    validateNotClosed();
-    return nativeHandle;
-  }
-
-  /**
-   * Closes this engine and releases all associated native resources.
-   *
-   * <p>After calling this method, all operations on this engine will throw {@link
-   * IllegalStateException}. This method is idempotent.
-   */
   @Override
-  public void close() {
-    if (closed.compareAndSet(false, true)) {
-      if (nativeHandle != 0) {
-        try {
-          nativeDestroyEngine(nativeHandle);
-          LOGGER.fine("Destroyed JNI engine with handle: " + nativeHandle);
-        } catch (final Exception e) {
-          LOGGER.warning("Error destroying native engine: " + e.getMessage());
-        } finally {
-          nativeHandle = 0;
-        }
-      }
+  protected void doClose() throws Exception {
+    if (getNativeHandle() != 0) {
+      nativeDestroyEngine(getNativeHandle());
+      LOGGER.fine("Destroyed JNI engine with handle: 0x" + Long.toHexString(getNativeHandle()));
     }
   }
 
-  /** Finalizer to ensure native resources are released if close() wasn't called. */
   @Override
-  protected void finalize() throws Throwable {
-    try {
-      if (!closed.get()) {
-        LOGGER.warning("JniEngine was finalized without being closed");
-        close();
-      }
-    } finally {
-      super.finalize();
-    }
-  }
-
-  /**
-   * Validates that this engine is not closed.
-   *
-   * @throws IllegalStateException if this engine is closed
-   */
-  private void validateNotClosed() {
-    if (closed.get()) {
-      throw new IllegalStateException("Engine is closed");
-    }
+  protected String getResourceType() {
+    return "Engine";
   }
 
   // Native method declarations
+  
+  /**
+   * Creates a new native Wasmtime engine with default configuration.
+   *
+   * @return native engine handle or 0 on failure
+   */
+  private static native long nativeCreateEngine();
 
   /**
-   * Instantiates a module using this engine.
+   * Compiles WebAssembly bytecode into a module using the specified engine.
    *
    * @param engineHandle the native engine handle
-   * @param moduleHandle the native module handle
-   * @return native instance handle or 0 on failure
+   * @param wasmBytes the WebAssembly bytecode
+   * @return native module handle or 0 on failure
    */
-  private static native long nativeInstantiate(long engineHandle, long moduleHandle);
+  private static native long nativeCompileModule(long engineHandle, byte[] wasmBytes);
+
+  /**
+   * Creates a new store associated with the specified engine.
+   *
+   * @param engineHandle the native engine handle
+   * @return native store handle or 0 on failure
+   */
+  private static native long nativeCreateStore(long engineHandle);
 
   /**
    * Sets the optimization level for an engine.
@@ -247,7 +303,7 @@ public final class JniEngine implements AutoCloseable {
   private static native boolean nativeIsDebugInfo(long engineHandle);
 
   /**
-   * Destroys a native engine.
+   * Destroys a native engine and releases all associated resources.
    *
    * @param engineHandle the native engine handle
    */
