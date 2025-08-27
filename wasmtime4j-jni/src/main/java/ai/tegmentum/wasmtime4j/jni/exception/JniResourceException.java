@@ -4,12 +4,13 @@ package ai.tegmentum.wasmtime4j.jni.exception;
  * Exception thrown when there are issues with native resource management.
  *
  * <p>This exception is thrown when:
+ *
  * <ul>
- *   <li>Native resource allocation fails</li>
- *   <li>Native resource deallocation fails</li>
- *   <li>Native resource is accessed after being freed</li>
- *   <li>Native resource limits are exceeded</li>
- *   <li>Memory management operations fail</li>
+ *   <li>Native resource allocation fails
+ *   <li>Native resource deallocation fails
+ *   <li>Native resource is accessed after being freed
+ *   <li>Native resource limits are exceeded
+ *   <li>Memory management operations fail
  * </ul>
  *
  * @since 1.0.0
@@ -54,7 +55,8 @@ public final class JniResourceException extends JniException {
    * @param cause the underlying cause
    * @param nativeErrorCode the native error code
    */
-  public JniResourceException(final String message, final Throwable cause, final int nativeErrorCode) {
+  public JniResourceException(
+      final String message, final Throwable cause, final int nativeErrorCode) {
     super(message, cause, nativeErrorCode);
   }
 }

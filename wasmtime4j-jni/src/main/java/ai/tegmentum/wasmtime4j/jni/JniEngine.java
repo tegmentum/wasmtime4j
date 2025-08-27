@@ -15,20 +15,22 @@ import java.util.logging.Logger;
  * levels, and resource management for WebAssembly modules.
  *
  * <p>Key features:
+ *
  * <ul>
- *   <li>Automatic resource management with {@link AutoCloseable}</li>
- *   <li>Defensive programming to prevent JVM crashes</li>
- *   <li>Comprehensive parameter validation</li>
- *   <li>Thread-safe operations</li>
- *   <li>Configuration management for optimization and debug settings</li>
+ *   <li>Automatic resource management with {@link AutoCloseable}
+ *   <li>Defensive programming to prevent JVM crashes
+ *   <li>Comprehensive parameter validation
+ *   <li>Thread-safe operations
+ *   <li>Configuration management for optimization and debug settings
  * </ul>
  *
  * <p>Usage Example:
+ *
  * <pre>{@code
  * try (JniEngine engine = JniEngine.create()) {
  *   engine.setOptimizationLevel(2); // Optimize for speed and size
  *   engine.setDebugInfo(true);      // Enable debug information
- *   
+ *
  *   // Compile and instantiate modules using this engine
  *   JniModule module = engine.compileModule(wasmBytes);
  *   JniInstance instance = engine.instantiate(module, store);
@@ -47,8 +49,8 @@ public final class JniEngine extends JniResource {
   /**
    * Creates a new JNI engine with the given native handle.
    *
-   * <p>This constructor is package-private and should only be used by factory methods
-   * or other JNI classes. External code should use {@link #create()} or similar factory methods.
+   * <p>This constructor is package-private and should only be used by factory methods or other JNI
+   * classes. External code should use {@link #create()} or similar factory methods.
    *
    * @param nativeHandle the native engine handle from Wasmtime
    * @throws JniResourceException if nativeHandle is invalid
@@ -61,15 +63,15 @@ public final class JniEngine extends JniResource {
   /**
    * Creates a new default engine with standard configuration.
    *
-   * <p>This factory method creates an engine with default Wasmtime settings suitable for most
-   * use cases. For custom configuration, use {@link #createWithConfig(EngineConfig)}.
+   * <p>This factory method creates an engine with default Wasmtime settings suitable for most use
+   * cases. For custom configuration, use {@link #createWithConfig(EngineConfig)}.
    *
    * @return a new engine instance
    * @throws JniException if engine creation fails
    */
   public static JniEngine create() {
     NativeMethodBindings.ensureInitialized();
-    
+
     try {
       final long engineHandle = nativeCreateEngine();
       JniValidation.requireValidHandle(engineHandle, "engineHandle");
@@ -82,9 +84,9 @@ public final class JniEngine extends JniResource {
   /**
    * Compiles WebAssembly bytecode into a module using this engine.
    *
-   * <p>This method validates and compiles the provided WebAssembly bytecode into a module
-   * that can be instantiated and executed. The compilation process includes validation
-   * of the WebAssembly format and optimization based on the engine's configuration.
+   * <p>This method validates and compiles the provided WebAssembly bytecode into a module that can
+   * be instantiated and executed. The compilation process includes validation of the WebAssembly
+   * format and optimization based on the engine's configuration.
    *
    * @param wasmBytes the WebAssembly bytecode to compile
    * @return a compiled module
@@ -96,7 +98,7 @@ public final class JniEngine extends JniResource {
     ensureNotClosed();
 
     final byte[] wasmBytesCopy = JniValidation.defensiveCopy(wasmBytes);
-    
+
     try {
       final long moduleHandle = nativeCompileModule(getNativeHandle(), wasmBytesCopy);
       JniValidation.requireValidHandle(moduleHandle, "moduleHandle");
@@ -112,8 +114,8 @@ public final class JniEngine extends JniResource {
   /**
    * Creates a new store associated with this engine.
    *
-   * <p>A store represents an execution context for WebAssembly instances. All instances
-   * created from modules compiled with this engine must use a store from the same engine.
+   * <p>A store represents an execution context for WebAssembly instances. All instances created
+   * from modules compiled with this engine must use a store from the same engine.
    *
    * @return a new store instance
    * @throws JniException if store creation fails
@@ -121,7 +123,7 @@ public final class JniEngine extends JniResource {
    */
   public JniStore createStore() {
     ensureNotClosed();
-    
+
     try {
       final long storeHandle = nativeCreateStore(getNativeHandle());
       JniValidation.requireValidHandle(storeHandle, "storeHandle");
@@ -141,11 +143,12 @@ public final class JniEngine extends JniResource {
    * code. Higher optimization levels produce faster code but may increase compilation time.
    *
    * @param level the optimization level:
-   *              <ul>
-   *                <li>0 = No optimization (fastest compilation)</li>
-   *                <li>1 = Optimize for speed</li>
-   *                <li>2 = Optimize for both speed and size</li>
-   *              </ul>
+   *     <ul>
+   *       <li>0 = No optimization (fastest compilation)
+   *       <li>1 = Optimize for speed
+   *       <li>2 = Optimize for both speed and size
+   *     </ul>
+   *
    * @throws JniException if the configuration cannot be changed
    * @throws JniResourceException if this engine has been closed
    */
@@ -158,7 +161,11 @@ public final class JniEngine extends JniResource {
       if (!success) {
         throw new JniException("Failed to set optimization level to " + level);
       }
-      LOGGER.fine("Set optimization level to " + level + " for engine 0x" + Long.toHexString(getNativeHandle()));
+      LOGGER.fine(
+          "Set optimization level to "
+              + level
+              + " for engine 0x"
+              + Long.toHexString(getNativeHandle()));
     } catch (final Exception e) {
       if (e instanceof JniException) {
         throw e;
@@ -176,7 +183,7 @@ public final class JniEngine extends JniResource {
    */
   public int getOptimizationLevel() {
     ensureNotClosed();
-    
+
     try {
       return nativeGetOptimizationLevel(getNativeHandle());
     } catch (final Exception e) {
@@ -187,9 +194,9 @@ public final class JniEngine extends JniResource {
   /**
    * Enables or disables debug information generation.
    *
-   * <p>When enabled, the engine will generate additional debug information during compilation
-   * which can be useful for debugging WebAssembly modules but may increase compilation time
-   * and memory usage.
+   * <p>When enabled, the engine will generate additional debug information during compilation which
+   * can be useful for debugging WebAssembly modules but may increase compilation time and memory
+   * usage.
    *
    * @param enabled true to enable debug information, false to disable
    * @throws JniException if the configuration cannot be changed
@@ -197,14 +204,17 @@ public final class JniEngine extends JniResource {
    */
   public void setDebugInfo(final boolean enabled) {
     ensureNotClosed();
-    
+
     try {
       final boolean success = nativeSetDebugInfo(getNativeHandle(), enabled);
       if (!success) {
-        throw new JniException("Failed to " + (enabled ? "enable" : "disable") + " debug information");
+        throw new JniException(
+            "Failed to " + (enabled ? "enable" : "disable") + " debug information");
       }
-      LOGGER.fine((enabled ? "Enabled" : "Disabled") + " debug info for engine 0x" 
-          + Long.toHexString(getNativeHandle()));
+      LOGGER.fine(
+          (enabled ? "Enabled" : "Disabled")
+              + " debug info for engine 0x"
+              + Long.toHexString(getNativeHandle()));
     } catch (final Exception e) {
       if (e instanceof JniException) {
         throw e;
@@ -222,7 +232,7 @@ public final class JniEngine extends JniResource {
    */
   public boolean isDebugInfo() {
     ensureNotClosed();
-    
+
     try {
       return nativeIsDebugInfo(getNativeHandle());
     } catch (final Exception e) {
@@ -244,7 +254,7 @@ public final class JniEngine extends JniResource {
   }
 
   // Native method declarations
-  
+
   /**
    * Creates a new native Wasmtime engine with default configuration.
    *

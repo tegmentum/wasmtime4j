@@ -4,11 +4,12 @@ package ai.tegmentum.wasmtime4j.jni.exception;
  * Exception thrown when there are issues with native library loading or initialization.
  *
  * <p>This exception is thrown when:
+ *
  * <ul>
- *   <li>Native library cannot be found or loaded</li>
- *   <li>Native library is incompatible with the current platform</li>
- *   <li>Native library fails to initialize properly</li>
- *   <li>Required native methods are missing from the library</li>
+ *   <li>Native library cannot be found or loaded
+ *   <li>Native library is incompatible with the current platform
+ *   <li>Native library fails to initialize properly
+ *   <li>Required native methods are missing from the library
  * </ul>
  *
  * @since 1.0.0

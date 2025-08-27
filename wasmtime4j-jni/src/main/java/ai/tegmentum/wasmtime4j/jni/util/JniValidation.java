@@ -1,7 +1,6 @@
 package ai.tegmentum.wasmtime4j.jni.util;
 
 import ai.tegmentum.wasmtime4j.jni.exception.JniValidationException;
-import java.util.Objects;
 
 /**
  * Utility class providing defensive programming validation methods for JNI operations.
@@ -75,10 +74,12 @@ public final class JniValidation {
    * @param parameterName the parameter name for error messages
    * @throws JniValidationException if the value is out of range
    */
-  public static void requireInRange(final int value, final int min, final int max, final String parameterName) {
+  public static void requireInRange(
+      final int value, final int min, final int max, final String parameterName) {
     if (value < min || value > max) {
       throw new JniValidationException(
-          String.format("Parameter '%s' must be in range [%d, %d], got %d", parameterName, min, max, value),
+          String.format(
+              "Parameter '%s' must be in range [%d, %d], got %d", parameterName, min, max, value),
           parameterName,
           value);
     }
@@ -93,10 +94,12 @@ public final class JniValidation {
    * @param parameterName the parameter name for error messages
    * @throws JniValidationException if the value is out of range
    */
-  public static void requireInRange(final long value, final long min, final long max, final String parameterName) {
+  public static void requireInRange(
+      final long value, final long min, final long max, final String parameterName) {
     if (value < min || value > max) {
       throw new JniValidationException(
-          String.format("Parameter '%s' must be in range [%d, %d], got %d", parameterName, min, max, value),
+          String.format(
+              "Parameter '%s' must be in range [%d, %d], got %d", parameterName, min, max, value),
           parameterName,
           value);
     }
@@ -140,7 +143,9 @@ public final class JniValidation {
   public static void requireNonNegative(final int value, final String parameterName) {
     if (value < 0) {
       throw new JniValidationException(
-          "Parameter '" + parameterName + "' must be non-negative, got " + value, parameterName, value);
+          "Parameter '" + parameterName + "' must be non-negative, got " + value,
+          parameterName,
+          value);
     }
   }
 
@@ -154,7 +159,9 @@ public final class JniValidation {
   public static void requireNonNegative(final long value, final String parameterName) {
     if (value < 0L) {
       throw new JniValidationException(
-          "Parameter '" + parameterName + "' must be non-negative, got " + value, parameterName, value);
+          "Parameter '" + parameterName + "' must be non-negative, got " + value,
+          parameterName,
+          value);
     }
   }
 
@@ -168,7 +175,9 @@ public final class JniValidation {
   public static void requireValidHandle(final long handle, final String parameterName) {
     if (handle == 0L) {
       throw new JniValidationException(
-          "Parameter '" + parameterName + "' is an invalid native handle (null pointer)", parameterName, handle);
+          "Parameter '" + parameterName + "' is an invalid native handle (null pointer)",
+          parameterName,
+          handle);
     }
   }
 
@@ -181,20 +190,23 @@ public final class JniValidation {
    * @param parameterName the parameter name for error messages
    * @throws JniValidationException if the bounds are invalid
    */
-  public static void requireValidBounds(final byte[] array, final int offset, final int length, 
-      final String parameterName) {
+  public static void requireValidBounds(
+      final byte[] array, final int offset, final int length, final String parameterName) {
     requireNonNull(array, parameterName);
     requireNonNegative(offset, "offset");
     requireNonNegative(length, "length");
 
     if (offset > array.length) {
       throw new JniValidationException(
-          String.format("Offset %d exceeds array length %d", offset, array.length), "offset", offset);
+          String.format("Offset %d exceeds array length %d", offset, array.length),
+          "offset",
+          offset);
     }
 
     if (offset + length > array.length) {
       throw new JniValidationException(
-          String.format("Offset %d + length %d exceeds array length %d", offset, length, array.length),
+          String.format(
+              "Offset %d + length %d exceeds array length %d", offset, length, array.length),
           "length",
           length);
     }
@@ -222,8 +234,11 @@ public final class JniValidation {
    * @param parameterValue the parameter value for error messages
    * @throws JniValidationException if the condition is false
    */
-  public static void require(final boolean condition, final String message, 
-      final String parameterName, final Object parameterValue) {
+  public static void require(
+      final boolean condition,
+      final String message,
+      final String parameterName,
+      final Object parameterValue) {
     if (!condition) {
       throw new JniValidationException(message, parameterName, parameterValue);
     }

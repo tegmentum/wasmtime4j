@@ -12,17 +12,19 @@ import java.util.logging.Logger;
  * leaks and double-free errors.
  *
  * <p>Key features:
+ *
  * <ul>
- *   <li>Automatic resource cleanup via finalizer as safety net</li>
- *   <li>Thread-safe resource state management</li>
- *   <li>Defensive programming with validation checks</li>
- *   <li>Logging for resource lifecycle debugging</li>
+ *   <li>Automatic resource cleanup via finalizer as safety net
+ *   <li>Thread-safe resource state management
+ *   <li>Defensive programming with validation checks
+ *   <li>Logging for resource lifecycle debugging
  * </ul>
  *
  * <p>Subclasses must implement:
+ *
  * <ul>
- *   <li>{@link #doClose()} - Actual native resource cleanup</li>
- *   <li>{@link #getResourceType()} - Resource type for logging</li>
+ *   <li>{@link #doClose()} - Actual native resource cleanup
+ *   <li>{@link #getResourceType()} - Resource type for logging
  * </ul>
  *
  * @since 1.0.0
@@ -49,7 +51,8 @@ public abstract class JniResource implements AutoCloseable {
   protected JniResource(final long nativeHandle) {
     JniValidation.requireValidHandle(nativeHandle, "nativeHandle");
     this.nativeHandle = nativeHandle;
-    LOGGER.fine(String.format("Created %s resource with handle: 0x%x", getResourceType(), nativeHandle));
+    LOGGER.fine(
+        String.format("Created %s resource with handle: 0x%x", getResourceType(), nativeHandle));
   }
 
   /**
@@ -80,25 +83,28 @@ public abstract class JniResource implements AutoCloseable {
   protected final void ensureNotClosed() {
     if (isClosed()) {
       throw new JniResourceException(
-          String.format("%s resource has been closed (handle: 0x%x)", getResourceType(), nativeHandle));
+          String.format(
+              "%s resource has been closed (handle: 0x%x)", getResourceType(), nativeHandle));
     }
   }
 
   /**
    * Closes this resource and releases any native resources.
    *
-   * <p>This method is idempotent - calling it multiple times has no additional effect.
-   * It is thread-safe and can be called from multiple threads simultaneously.
+   * <p>This method is idempotent - calling it multiple times has no additional effect. It is
+   * thread-safe and can be called from multiple threads simultaneously.
    */
   @Override
   public final void close() {
     if (closed.compareAndSet(false, true)) {
       try {
         doClose();
-        LOGGER.fine(String.format("Closed %s resource with handle: 0x%x", getResourceType(), nativeHandle));
+        LOGGER.fine(
+            String.format("Closed %s resource with handle: 0x%x", getResourceType(), nativeHandle));
       } catch (final Exception e) {
         LOGGER.warning(
-            String.format("Error closing %s resource with handle: 0x%x: %s", 
+            String.format(
+                "Error closing %s resource with handle: 0x%x: %s",
                 getResourceType(), nativeHandle, e.getMessage()));
         // Don't re-throw exceptions from close() to avoid issues in try-with-resources
       }
@@ -117,7 +123,9 @@ public abstract class JniResource implements AutoCloseable {
     try {
       if (!isClosed() && finalizedCleanup.compareAndSet(false, true)) {
         LOGGER.warning(
-            String.format("Finalizing unclosed %s resource with handle: 0x%x - close() should be called explicitly",
+            String.format(
+                "Finalizing unclosed %s resource with handle: 0x%x - close() should be called"
+                    + " explicitly",
                 getResourceType(), nativeHandle));
         close();
       }
@@ -129,12 +137,11 @@ public abstract class JniResource implements AutoCloseable {
   /**
    * Performs the actual native resource cleanup.
    *
-   * <p>This method is called by {@link #close()} and should release any native resources
-   * associated with this object. It will only be called once, even if close() is called
-   * multiple times.
+   * <p>This method is called by {@link #close()} and should release any native resources associated
+   * with this object. It will only be called once, even if close() is called multiple times.
    *
-   * <p>Implementations should be defensive and handle cases where the native resource
-   * may have already been freed or is invalid.
+   * <p>Implementations should be defensive and handle cases where the native resource may have
+   * already been freed or is invalid.
    *
    * @throws Exception if there's an error during cleanup
    */

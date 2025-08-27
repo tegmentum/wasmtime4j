@@ -16,9 +16,7 @@ import org.junit.jupiter.api.Test;
  */
 class JniResourceTest {
 
-  /**
-   * Test implementation of JniResource for testing purposes.
-   */
+  /** Test implementation of JniResource for testing purposes. */
   private static class TestResource extends JniResource {
     private final AtomicBoolean cleanupCalled = new AtomicBoolean(false);
     private final String resourceType;
@@ -65,8 +63,8 @@ class JniResourceTest {
 
   @Test
   void testConstructorWithInvalidHandle() {
-    final JniValidationException exception = assertThrows(JniValidationException.class,
-        () -> new TestResource(0L, "Test"));
+    final JniValidationException exception =
+        assertThrows(JniValidationException.class, () -> new TestResource(0L, "Test"));
 
     assertThat(exception.getMessage()).contains("nativeHandle");
     assertThat(exception.getMessage()).contains("invalid native handle");
@@ -85,8 +83,8 @@ class JniResourceTest {
     final TestResource resource = new TestResource(12345L, "Test");
     resource.close();
 
-    final JniResourceException exception = assertThrows(JniResourceException.class,
-        resource::getNativeHandle);
+    final JniResourceException exception =
+        assertThrows(JniResourceException.class, resource::getNativeHandle);
 
     assertThat(exception.getMessage()).contains("Test resource has been closed");
     assertThat(exception.getMessage()).contains("0x" + Long.toHexString(12345L));
@@ -156,8 +154,8 @@ class JniResourceTest {
     final TestResource resource = new TestResource(12345L, "Test");
     resource.close();
 
-    final JniResourceException exception = assertThrows(JniResourceException.class,
-        resource::ensureNotClosed);
+    final JniResourceException exception =
+        assertThrows(JniResourceException.class, resource::ensureNotClosed);
 
     assertThat(exception.getMessage()).contains("Test resource has been closed");
   }
@@ -192,16 +190,17 @@ class JniResourceTest {
 
   @Test
   void testMultipleResourcesWithTryWithResources() {
-    assertDoesNotThrow(() -> {
-      try (TestResource resource1 = new TestResource(11111L, "Test1");
-           TestResource resource2 = new TestResource(22222L, "Test2")) {
+    assertDoesNotThrow(
+        () -> {
+          try (TestResource resource1 = new TestResource(11111L, "Test1");
+              TestResource resource2 = new TestResource(22222L, "Test2")) {
 
-        assertFalse(resource1.isClosed());
-        assertFalse(resource2.isClosed());
-        assertThat(resource1.getNativeHandle()).isEqualTo(11111L);
-        assertThat(resource2.getNativeHandle()).isEqualTo(22222L);
-      }
-    });
+            assertFalse(resource1.isClosed());
+            assertFalse(resource2.isClosed());
+            assertThat(resource1.getNativeHandle()).isEqualTo(11111L);
+            assertThat(resource2.getNativeHandle()).isEqualTo(22222L);
+          }
+        });
   }
 
   @Test
@@ -209,8 +208,8 @@ class JniResourceTest {
     final TestResource resource = new TestResource(12345L, "CustomType");
     resource.close();
 
-    final JniResourceException exception = assertThrows(JniResourceException.class,
-        resource::getNativeHandle);
+    final JniResourceException exception =
+        assertThrows(JniResourceException.class, resource::getNativeHandle);
 
     assertThat(exception.getMessage()).contains("CustomType resource has been closed");
   }
