@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 
+         http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>ai.tegmentum</groupId>
+        <artifactId>wasmtime4j-parent</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>wasmtime4j-benchmarks</artifactId>
+    <packaging>jar</packaging>
+
+    <name>Wasmtime4j Benchmarks</name>
+    <description>JMH benchmarks for Wasmtime4j performance testing and comparison</description>
+
+    <properties>
+        <!-- Benchmark-specific properties -->
+        <jmh.benchmarks>.*</jmh.benchmarks>
+        <jmh.iterations>5</jmh.iterations>
+        <jmh.warmupIterations>3</jmh.warmupIterations>
+        <jmh.forks>2</jmh.forks>
+        <jmh.threads>1</jmh.threads>
+        <jmh.mode>thrpt</jmh.mode>
+        <jmh.timeUnit>s</jmh.timeUnit>
+        <jmh.output>benchmarks.txt</jmh.output>
+        <jmh.resultFormat>TEXT</jmh.resultFormat>
+        
+        <!-- Skip quality checks for benchmark module by default -->
+        <skipQuality>true</skipQuality>
+    </properties>
+
+    <dependencies>
+        <!-- JMH Core Dependencies -->
+        <dependency>
+            <groupId>org.openjdk.jmh</groupId>
+            <artifactId>jmh-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.openjdk.jmh</groupId>
+            <artifactId>jmh-generator-annprocess</artifactId>
+        </dependency>
+
+        <!-- Project Dependencies - will be added when other modules exist -->
+        <!-- 
+        <dependency>
+            <groupId>ai.tegmentum</groupId>
+            <artifactId>wasmtime4j</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>ai.tegmentum</groupId>
+            <artifactId>wasmtime4j-jni</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>ai.tegmentum</groupId>
+            <artifactId>wasmtime4j-panama</artifactId>
+        </dependency>
+        -->
+
+        <!-- Test Dependencies -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!-- Compiler plugin with JMH annotation processing -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.openjdk.jmh</groupId>
+                            <artifactId>jmh-generator-annprocess</artifactId>
+                            <version>${jmh.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
+                </configuration>
+            </plugin>
+
+            <!-- Exec plugin for running benchmarks -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.1.0</version>
+                <configuration>
+                    <mainClass>org.openjdk.jmh.Main</mainClass>
+                    <commandlineArgs>
+                        -i ${jmh.iterations} 
+                        -wi ${jmh.warmupIterations} 
+                        -f ${jmh.forks} 
+                        -t ${jmh.threads} 
+                        -bm ${jmh.mode} 
+                        -tu ${jmh.timeUnit}
+                        -o ${jmh.output}
+                        -rf ${jmh.resultFormat}
+                        ${jmh.benchmarks}
+                    </commandlineArgs>
+                </configuration>
+            </plugin>
+
+            <!-- Shade plugin for creating uber JAR for benchmarks -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.5.1</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <finalName>wasmtime4j-benchmarks</finalName>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>org.openjdk.jmh.Main</mainClass>
+                                </transformer>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                            </transformers>
+                            <filters>
+                                <filter>
+                                    <!-- Shading signed JARs will fail without this. http://stackoverflow.com/questions/999489/invalid-signature-file-when-attempting-to-run-a-jar -->
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
+        <!-- Profile for running all benchmarks -->
+        <profile>
+            <id>benchmarks</id>
+            <properties>
+                <jmh.benchmarks>.*</jmh.benchmarks>
+            </properties>
+        </profile>
+
+        <!-- Profile for running only runtime initialization benchmarks -->
+        <profile>
+            <id>runtime-benchmarks</id>
+            <properties>
+                <jmh.benchmarks>.*RuntimeInitializationBenchmark.*</jmh.benchmarks>
+            </properties>
+        </profile>
+
+        <!-- Profile for running only module operation benchmarks -->
+        <profile>
+            <id>module-benchmarks</id>
+            <properties>
+                <jmh.benchmarks>.*ModuleOperationBenchmark.*</jmh.benchmarks>
+            </properties>
+        </profile>
+
+        <!-- Profile for running only function execution benchmarks -->
+        <profile>
+            <id>function-benchmarks</id>
+            <properties>
+                <jmh.benchmarks>.*FunctionExecutionBenchmark.*</jmh.benchmarks>
+            </properties>
+        </profile>
+
+        <!-- Profile for running only memory operation benchmarks -->
+        <profile>
+        <id>memory-benchmarks</id>
+            <properties>
+                <jmh.benchmarks>.*MemoryOperationBenchmark.*</jmh.benchmarks>
+            </properties>
+        </profile>
+
+        <!-- Profile for comparison benchmarks between JNI and Panama -->
+        <profile>
+            <id>comparison-benchmarks</id>
+            <properties>
+                <jmh.benchmarks>.*ComparisonBenchmark.*</jmh.benchmarks>
+            </properties>
+        </profile>
+
+        <!-- Profile for quick benchmarks (fewer iterations) -->
+        <profile>
+            <id>quick-benchmarks</id>
+            <properties>
+                <jmh.iterations>1</jmh.iterations>
+                <jmh.warmupIterations>1</jmh.warmupIterations>
+                <jmh.forks>1</jmh.forks>
+            </properties>
+        </profile>
+
+        <!-- Profile for production benchmarks (more iterations) -->
+        <profile>
+            <id>production-benchmarks</id>
+            <properties>
+                <jmh.iterations>10</jmh.iterations>
+                <jmh.warmupIterations>5</jmh.warmupIterations>
+                <jmh.forks>3</jmh.forks>
+            </properties>
+        </profile>
+    </profiles>
+</project>
