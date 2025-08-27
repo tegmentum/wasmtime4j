@@ -5,7 +5,6 @@ import ai.tegmentum.wasmtime4j.exception.RuntimeException;
 import ai.tegmentum.wasmtime4j.exception.ValidationException;
 import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
-
 import java.util.logging.Logger;
 
 /**

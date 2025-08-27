@@ -1,7 +1,6 @@
 package ai.tegmentum.wasmtime4j.jni.util;
 
 import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
-
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
 
