@@ -258,6 +258,10 @@ public final class NativeLibraryUtils {
   public static Path extractLibraryFromJar(final String libraryName,
                                           final PlatformDetector.PlatformInfo platformInfo,
                                           final String resourcePath) throws IOException {
+    Objects.requireNonNull(libraryName, "libraryName must not be null");
+    Objects.requireNonNull(platformInfo, "platformInfo must not be null");
+    Objects.requireNonNull(resourcePath, "resourcePath must not be null");
+    
     // Check cache first to avoid duplicate extractions
     final String cacheKey = platformInfo.getPlatformId() + ":" + libraryName;
     final Path cachedPath = extractedLibrariesCache.get(cacheKey);
