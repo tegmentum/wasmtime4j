@@ -6,6 +6,19 @@
 //!
 //! The library is designed to be consumed by both wasmtime4j-jni and wasmtime4j-panama
 //! modules, providing a single source of truth for native Wasmtime functionality.
+//!
+//! ## Architecture
+//!
+//! - **Core Modules**: Engine, Module, Store, Instance - Core WebAssembly runtime functionality
+//! - **Interface Modules**: JNI and Panama FFI bindings for Java integration  
+//! - **Error System**: Comprehensive error handling with defensive programming patterns
+//! - **WASI Support**: WebAssembly System Interface for file I/O and system operations
+//!
+//! ## Safety and Defensive Programming
+//!
+//! This library implements defensive programming patterns throughout to prevent JVM crashes
+//! and ensure robust operation in production environments. All public APIs validate inputs
+//! and handle errors gracefully.
 
 #![deny(missing_docs)]
 #![warn(clippy::all)]
@@ -13,14 +26,25 @@
 use std::ffi::CStr;
 use std::os::raw::c_char;
 
-pub mod engine;
+// Core modules - foundational WebAssembly runtime components
 pub mod error;
-pub mod instance;
-pub mod jni_bindings;
+pub mod engine;
 pub mod module;
-pub mod panama_ffi;
 pub mod store;
+pub mod instance;
+
+// Interface modules - will be implemented in later streams
+pub mod jni_bindings;
+pub mod panama_ffi;
+
+// Advanced modules - will be implemented in later tasks
 pub mod wasi;
+
+// Re-export core types for convenience
+pub use engine::{Engine, EngineBuilder, WasmFeature};
+pub use error::{WasmtimeError, WasmtimeResult, ErrorCode};
+pub use module::{Module, ModuleMetadata, ValueType, ImportKind, ExportKind, FunctionSignature};
+pub use store::{Store, StoreBuilder, StoreData, StoreMetadata, ResourceLimits, ExecutionState, MemoryUsage};
 
 /// Library version information
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
