@@ -64,7 +64,7 @@
         <wasmtime.version>36.0.2</wasmtime.version>
 
         <!-- Code quality properties -->
-        <checkstyle.config.location>google_checks.xml</checkstyle.config.location>
+        <checkstyle.config.location>checkstyle.xml</checkstyle.config.location>
         <checkstyle.violationSeverity>warning</checkstyle.violationSeverity>
         <checkstyle.consoleOutput>true</checkstyle.consoleOutput>
         <checkstyle.failOnViolation>true</checkstyle.failOnViolation>
