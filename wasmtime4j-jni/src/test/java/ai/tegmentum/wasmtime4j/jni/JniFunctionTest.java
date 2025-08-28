@@ -8,7 +8,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.when;
 
 import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
 import ai.tegmentum.wasmtime4j.jni.exception.JniValidationException;
@@ -117,9 +116,7 @@ class JniFunctionTest {
   @Test
   void testCallWithNoParameters() {
     try (MockedStatic<JniFunction> mockedStatic = mockStatic(JniFunction.class)) {
-      mockedStatic
-          .when(() -> JniFunction.nativeCall(VALID_HANDLE, new Object[0]))
-          .thenReturn(42);
+      mockedStatic.when(() -> JniFunction.nativeCall(VALID_HANDLE, new Object[0])).thenReturn(42);
 
       final JniFunction function = new JniFunction(VALID_HANDLE, FUNCTION_NAME);
       final Object result = function.call();
@@ -306,13 +303,14 @@ class JniFunctionTest {
           .when(() -> JniFunction.nativeDestroyFunction(VALID_HANDLE))
           .then(invocation -> null);
 
-      assertDoesNotThrow(() -> {
-        try (JniFunction function = new JniFunction(VALID_HANDLE, FUNCTION_NAME)) {
-          assertFalse(function.isClosed());
-          assertThat(function.getNativeHandle()).isEqualTo(VALID_HANDLE);
-          assertThat(function.getName()).isEqualTo(FUNCTION_NAME);
-        }
-      });
+      assertDoesNotThrow(
+          () -> {
+            try (JniFunction function = new JniFunction(VALID_HANDLE, FUNCTION_NAME)) {
+              assertFalse(function.isClosed());
+              assertThat(function.getNativeHandle()).isEqualTo(VALID_HANDLE);
+              assertThat(function.getName()).isEqualTo(FUNCTION_NAME);
+            }
+          });
 
       mockedStatic.verify(() -> JniFunction.nativeDestroyFunction(VALID_HANDLE));
     }
@@ -356,8 +354,7 @@ class JniFunctionTest {
 
       final JniFunction function = new JniFunction(VALID_HANDLE, FUNCTION_NAME);
 
-      final RuntimeException exception =
-          assertThrows(RuntimeException.class, function::call);
+      final RuntimeException exception = assertThrows(RuntimeException.class, function::call);
 
       assertThat(exception.getMessage())
           .contains("Unexpected error calling function '" + FUNCTION_NAME + "'");
@@ -379,8 +376,9 @@ class JniFunctionTest {
       // Test concurrent access doesn't cause issues
       final Thread[] threads = new Thread[5];
       for (int i = 0; i < threads.length; i++) {
-        threads[i] = new Thread(() -> 
-            assertThat(function.getParameterTypes()).containsExactly("i32", "i32"));
+        threads[i] =
+            new Thread(
+                () -> assertThat(function.getParameterTypes()).containsExactly("i32", "i32"));
       }
 
       for (Thread thread : threads) {
@@ -398,7 +396,9 @@ class JniFunctionTest {
     try (MockedStatic<JniFunction> mockedStatic = mockStatic(JniFunction.class)) {
       // Test all optimized call variants with empty arrays
       mockedStatic.when(() -> JniFunction.nativeCallInt(VALID_HANDLE, new int[0])).thenReturn(42);
-      mockedStatic.when(() -> JniFunction.nativeCallLong(VALID_HANDLE, new long[0])).thenReturn(42L);
+      mockedStatic
+          .when(() -> JniFunction.nativeCallLong(VALID_HANDLE, new long[0]))
+          .thenReturn(42L);
       mockedStatic
           .when(() -> JniFunction.nativeCallFloat(VALID_HANDLE, new float[0]))
           .thenReturn(42.0f);
@@ -425,7 +425,7 @@ class JniFunctionTest {
       final JniFunction function = new JniFunction(VALID_HANDLE, FUNCTION_NAME);
 
       final RuntimeException exception =
-          assertThrows(RuntimeException.class, () -> function.callInt(new int[]{1, 2}));
+          assertThrows(RuntimeException.class, () -> function.callInt(new int[] {1, 2}));
 
       assertThat(exception.getMessage())
           .contains("Unexpected error calling function '" + FUNCTION_NAME + "'");

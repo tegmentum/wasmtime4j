@@ -8,7 +8,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.when;
 
 import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
 import ai.tegmentum.wasmtime4j.jni.exception.JniValidationException;
@@ -229,7 +228,9 @@ class JniInstanceTest {
   @Test
   void testClose() {
     try (MockedStatic<JniInstance> mockedStatic = mockStatic(JniInstance.class)) {
-      mockedStatic.when(() -> JniInstance.nativeDestroyInstance(VALID_HANDLE)).then(invocation -> null);
+      mockedStatic
+          .when(() -> JniInstance.nativeDestroyInstance(VALID_HANDLE))
+          .then(invocation -> null);
 
       final JniInstance instance = new JniInstance(VALID_HANDLE);
       assertFalse(instance.isClosed());
@@ -244,7 +245,9 @@ class JniInstanceTest {
   @Test
   void testCloseIsIdempotent() {
     try (MockedStatic<JniInstance> mockedStatic = mockStatic(JniInstance.class)) {
-      mockedStatic.when(() -> JniInstance.nativeDestroyInstance(VALID_HANDLE)).then(invocation -> null);
+      mockedStatic
+          .when(() -> JniInstance.nativeDestroyInstance(VALID_HANDLE))
+          .then(invocation -> null);
 
       final JniInstance instance = new JniInstance(VALID_HANDLE);
 
@@ -260,14 +263,17 @@ class JniInstanceTest {
   @Test
   void testTryWithResources() {
     try (MockedStatic<JniInstance> mockedStatic = mockStatic(JniInstance.class)) {
-      mockedStatic.when(() -> JniInstance.nativeDestroyInstance(VALID_HANDLE)).then(invocation -> null);
+      mockedStatic
+          .when(() -> JniInstance.nativeDestroyInstance(VALID_HANDLE))
+          .then(invocation -> null);
 
-      assertDoesNotThrow(() -> {
-        try (JniInstance instance = new JniInstance(VALID_HANDLE)) {
-          assertFalse(instance.isClosed());
-          assertThat(instance.getNativeHandle()).isEqualTo(VALID_HANDLE);
-        }
-      });
+      assertDoesNotThrow(
+          () -> {
+            try (JniInstance instance = new JniInstance(VALID_HANDLE)) {
+              assertFalse(instance.isClosed());
+              assertThat(instance.getNativeHandle()).isEqualTo(VALID_HANDLE);
+            }
+          });
 
       mockedStatic.verify(() -> JniInstance.nativeDestroyInstance(VALID_HANDLE));
     }
@@ -296,9 +302,7 @@ class JniInstanceTest {
   @Test
   void testConcurrentAccess() {
     try (MockedStatic<JniInstance> mockedStatic = mockStatic(JniInstance.class)) {
-      mockedStatic
-          .when(() -> JniInstance.nativeHasExport(VALID_HANDLE, "test"))
-          .thenReturn(true);
+      mockedStatic.when(() -> JniInstance.nativeHasExport(VALID_HANDLE, "test")).thenReturn(true);
 
       final JniInstance instance = new JniInstance(VALID_HANDLE);
 

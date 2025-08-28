@@ -22,28 +22,25 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 
-/**
- * Tests for {@link NativeLibraryUtils}.
- */
+/** Tests for {@link NativeLibraryUtils}. */
 final class NativeLibraryUtilsTest {
 
   @Test
   void testLoadNativeLibraryReturnsNonNull() {
-    final NativeLibraryUtils.LibraryLoadInfo info = NativeLibraryUtils.loadNativeLibrary("nonexistent");
+    final NativeLibraryUtils.LibraryLoadInfo info =
+        NativeLibraryUtils.loadNativeLibrary("nonexistent");
     assertNotNull(info, "Library load info should never be null");
   }
 
   @Test
   void testLibraryLoadInfoFields() {
     final NativeLibraryUtils.LibraryLoadInfo info = NativeLibraryUtils.loadNativeLibrary("test");
-    
+
     assertNotNull(info.getLibraryName(), "Library name should not be null");
     assertEquals("test", info.getLibraryName(), "Library name should match requested");
-    
+
     if (info.getPlatformInfo() != null) {
       assertNotNull(info.getPlatformInfo().getPlatformId(), "Platform ID should not be null");
       assertNotNull(info.getResourcePath(), "Resource path should not be null");
@@ -52,26 +49,26 @@ final class NativeLibraryUtilsTest {
 
   @Test
   void testLibraryLoadInfoWithNullLibraryNameThrows() {
-    assertThrows(NullPointerException.class, 
-        () -> NativeLibraryUtils.loadNativeLibrary(null));
+    assertThrows(NullPointerException.class, () -> NativeLibraryUtils.loadNativeLibrary(null));
   }
 
   @Test
   void testCheckResourceExistsWithNull() {
-    assertFalse(NativeLibraryUtils.checkResourceExists(null), 
-        "Null resource path should return false");
+    assertFalse(
+        NativeLibraryUtils.checkResourceExists(null), "Null resource path should return false");
   }
 
   @Test
   void testCheckResourceExistsWithNonexistent() {
-    assertFalse(NativeLibraryUtils.checkResourceExists("/nonexistent/resource"), 
+    assertFalse(
+        NativeLibraryUtils.checkResourceExists("/nonexistent/resource"),
         "Nonexistent resource should return false");
   }
 
   @Test
   void testGetDiagnosticInfo() {
     final String diagnostics = NativeLibraryUtils.getDiagnosticInfo();
-    
+
     assertNotNull(diagnostics, "Diagnostics should not be null");
     assertFalse(diagnostics.isEmpty(), "Diagnostics should not be empty");
     assertTrue(diagnostics.contains("Platform:"), "Diagnostics should contain platform info");
@@ -81,21 +78,24 @@ final class NativeLibraryUtilsTest {
   @Test
   void testExtractLibraryFromJarWithNullThrows() {
     final PlatformDetector.PlatformInfo platformInfo = PlatformDetector.detect();
-    
-    assertThrows(NullPointerException.class, 
+
+    assertThrows(
+        NullPointerException.class,
         () -> NativeLibraryUtils.extractLibraryFromJar(null, platformInfo, "/test"));
-    assertThrows(NullPointerException.class, 
+    assertThrows(
+        NullPointerException.class,
         () -> NativeLibraryUtils.extractLibraryFromJar("test", null, "/test"));
-    assertThrows(NullPointerException.class, 
+    assertThrows(
+        NullPointerException.class,
         () -> NativeLibraryUtils.extractLibraryFromJar("test", platformInfo, null));
   }
 
   @Test
   void testLibraryLoadInfoLoadingMethodValues() {
     // Verify all enum values are present
-    final NativeLibraryUtils.LibraryLoadInfo.LoadingMethod[] methods = 
+    final NativeLibraryUtils.LibraryLoadInfo.LoadingMethod[] methods =
         NativeLibraryUtils.LibraryLoadInfo.LoadingMethod.values();
-    
+
     assertEquals(2, methods.length, "Should have exactly 2 loading methods");
     assertNotNull(NativeLibraryUtils.LibraryLoadInfo.LoadingMethod.SYSTEM_LIBRARY_PATH);
     assertNotNull(NativeLibraryUtils.LibraryLoadInfo.LoadingMethod.EXTRACTED_FROM_JAR);
@@ -105,74 +105,74 @@ final class NativeLibraryUtilsTest {
   void testLibraryLoadInfoSuccessfulCheck() {
     // Test successful load info
     final PlatformDetector.PlatformInfo platformInfo = PlatformDetector.detect();
-    final NativeLibraryUtils.LibraryLoadInfo successInfo = 
+    final NativeLibraryUtils.LibraryLoadInfo successInfo =
         new NativeLibraryUtils.LibraryLoadInfo(
-            "test", 
-            platformInfo, 
-            "/test/path", 
-            true, 
-            null, 
-            NativeLibraryUtils.LibraryLoadInfo.LoadingMethod.SYSTEM_LIBRARY_PATH, 
+            "test",
+            platformInfo,
+            "/test/path",
+            true,
+            null,
+            NativeLibraryUtils.LibraryLoadInfo.LoadingMethod.SYSTEM_LIBRARY_PATH,
             null);
-    
-    assertTrue(successInfo.isSuccessful(), "Load info should be successful with no error and valid method");
-    
+
+    assertTrue(
+        successInfo.isSuccessful(),
+        "Load info should be successful with no error and valid method");
+
     // Test failed load info
-    final NativeLibraryUtils.LibraryLoadInfo failedInfo = 
+    final NativeLibraryUtils.LibraryLoadInfo failedInfo =
         new NativeLibraryUtils.LibraryLoadInfo(
-            "test", 
-            platformInfo, 
-            "/test/path", 
-            false, 
-            null, 
-            null, 
+            "test",
+            platformInfo,
+            "/test/path",
+            false,
+            null,
+            null,
             new RuntimeException("Test error"));
-    
+
     assertFalse(failedInfo.isSuccessful(), "Load info should not be successful with error");
   }
 
   @Test
   void testLibraryLoadInfoToString() {
     final PlatformDetector.PlatformInfo platformInfo = PlatformDetector.detect();
-    
+
     // Test successful info toString
-    final NativeLibraryUtils.LibraryLoadInfo successInfo = 
+    final NativeLibraryUtils.LibraryLoadInfo successInfo =
         new NativeLibraryUtils.LibraryLoadInfo(
-            "test", 
-            platformInfo, 
-            "/test/path", 
-            true, 
-            null, 
-            NativeLibraryUtils.LibraryLoadInfo.LoadingMethod.SYSTEM_LIBRARY_PATH, 
+            "test",
+            platformInfo,
+            "/test/path",
+            true,
+            null,
+            NativeLibraryUtils.LibraryLoadInfo.LoadingMethod.SYSTEM_LIBRARY_PATH,
             null);
-    
+
     final String successString = successInfo.toString();
     assertNotNull(successString, "toString should not return null");
-    assertTrue(successString.contains(platformInfo.getPlatformId()), "toString should contain platform ID");
-    assertTrue(successString.contains("SYSTEM_LIBRARY_PATH"), "toString should contain loading method");
-    
+    assertTrue(
+        successString.contains(platformInfo.getPlatformId()),
+        "toString should contain platform ID");
+    assertTrue(
+        successString.contains("SYSTEM_LIBRARY_PATH"), "toString should contain loading method");
+
     // Test failed info toString
     final RuntimeException testError = new RuntimeException("Test error");
-    final NativeLibraryUtils.LibraryLoadInfo failedInfo = 
+    final NativeLibraryUtils.LibraryLoadInfo failedInfo =
         new NativeLibraryUtils.LibraryLoadInfo(
-            "test", 
-            platformInfo, 
-            "/test/path", 
-            false, 
-            null, 
-            null, 
-            testError);
-    
+            "test", platformInfo, "/test/path", false, null, null, testError);
+
     final String failedString = failedInfo.toString();
     assertNotNull(failedString, "toString should not return null");
-    assertTrue(failedString.contains(platformInfo.getPlatformId()), "toString should contain platform ID");
+    assertTrue(
+        failedString.contains(platformInfo.getPlatformId()), "toString should contain platform ID");
     assertTrue(failedString.contains("Test error"), "toString should contain error message");
   }
 
   @Test
   void testLoadNativeLibraryDefaultName() {
     final NativeLibraryUtils.LibraryLoadInfo info = NativeLibraryUtils.loadNativeLibrary();
-    
+
     assertNotNull(info, "Load info should not be null");
     assertEquals("wasmtime4j", info.getLibraryName(), "Default library name should be wasmtime4j");
   }
@@ -182,13 +182,18 @@ final class NativeLibraryUtilsTest {
     // Multiple calls with same library name should behave consistently
     final NativeLibraryUtils.LibraryLoadInfo info1 = NativeLibraryUtils.loadNativeLibrary("test");
     final NativeLibraryUtils.LibraryLoadInfo info2 = NativeLibraryUtils.loadNativeLibrary("test");
-    
+
     assertEquals(info1.getLibraryName(), info2.getLibraryName(), "Library names should match");
-    assertEquals(info1.isFoundInResources(), info2.isFoundInResources(), "Resource found status should match");
-    
+    assertEquals(
+        info1.isFoundInResources(),
+        info2.isFoundInResources(),
+        "Resource found status should match");
+
     if (info1.getPlatformInfo() != null && info2.getPlatformInfo() != null) {
-      assertEquals(info1.getPlatformInfo().getPlatformId(), 
-                  info2.getPlatformInfo().getPlatformId(), "Platform IDs should match");
+      assertEquals(
+          info1.getPlatformInfo().getPlatformId(),
+          info2.getPlatformInfo().getPlatformId(),
+          "Platform IDs should match");
     }
   }
 }

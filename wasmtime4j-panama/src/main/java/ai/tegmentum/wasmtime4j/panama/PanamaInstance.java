@@ -23,7 +23,6 @@ import ai.tegmentum.wasmtime4j.Memory;
 import ai.tegmentum.wasmtime4j.Table;
 import ai.tegmentum.wasmtime4j.exception.RuntimeException;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
@@ -35,474 +34,452 @@ import java.util.logging.Logger;
 
 /**
  * Panama FFI implementation of the WebAssembly instance interface.
- * 
- * <p>A WebAssembly instance represents an instantiated module with its own
- * execution context, memory, and exported functions. This implementation uses
- * Panama FFI with Stream 1 & 2 infrastructure for direct access to the 
- * underlying Wasmtime instance structure with zero-copy optimization.</p>
- * 
- * <p>Instances provide access to exported functions, globals, memory, and tables
- * through optimized FFI calls with comprehensive bounds checking and memory safety.
- * All operations use Arena-based resource management for automatic cleanup.</p>
- * 
+ *
+ * <p>A WebAssembly instance represents an instantiated module with its own execution context,
+ * memory, and exported functions. This implementation uses Panama FFI with Stream 1 & 2
+ * infrastructure for direct access to the underlying Wasmtime instance structure with zero-copy
+ * optimization.
+ *
+ * <p>Instances provide access to exported functions, globals, memory, and tables through optimized
+ * FFI calls with comprehensive bounds checking and memory safety. All operations use Arena-based
+ * resource management for automatic cleanup.
+ *
  * @since 1.0.0
  */
 public final class PanamaInstance implements Instance, AutoCloseable {
-    private static final Logger LOGGER = Logger.getLogger(PanamaInstance.class.getName());
-    
-    // Core infrastructure from Streams 1 & 2
-    private final ArenaResourceManager resourceManager;
-    private final NativeFunctionBindings nativeFunctions;
-    private final PanamaModule module;
-    private final ArenaResourceManager.ManagedNativeResource instanceResource;
-    
-    // Instance state
-    private volatile boolean closed = false;
+  private static final Logger LOGGER = Logger.getLogger(PanamaInstance.class.getName());
 
-    /**
-     * Creates a new Panama instance using Stream 1 & 2 infrastructure.
-     * 
-     * @param instancePtr the native instance pointer from instantiation
-     * @param resourceManager the arena resource manager for lifecycle management
-     * @param module the parent module instance
-     * @throws WasmException if the instance cannot be created
-     */
-    public PanamaInstance(final MemorySegment instancePtr,
-                          final ArenaResourceManager resourceManager,
-                          final PanamaModule module) throws WasmException {
-        // Defensive parameter validation
-        PanamaErrorHandler.requireValidPointer(instancePtr, "instancePtr");
-        this.resourceManager = Objects.requireNonNull(resourceManager, "Resource manager cannot be null");
-        this.module = Objects.requireNonNull(module, "Module cannot be null");
-        this.nativeFunctions = NativeFunctionBindings.getInstance();
+  // Core infrastructure from Streams 1 & 2
+  private final ArenaResourceManager resourceManager;
+  private final NativeFunctionBindings nativeFunctions;
+  private final PanamaModule module;
+  private final ArenaResourceManager.ManagedNativeResource instanceResource;
 
-        if (!nativeFunctions.isInitialized()) {
-            throw new WasmException("Native function bindings not initialized");
-        }
+  // Instance state
+  private volatile boolean closed = false;
 
-        try {
-            // Create managed resource with cleanup for instance
-            this.instanceResource = resourceManager.manageNativeResource(
-                instancePtr,
-                () -> destroyNativeInstanceInternal(instancePtr),
-                "Wasmtime Instance"
-            );
+  /**
+   * Creates a new Panama instance using Stream 1 & 2 infrastructure.
+   *
+   * @param instancePtr the native instance pointer from instantiation
+   * @param resourceManager the arena resource manager for lifecycle management
+   * @param module the parent module instance
+   * @throws WasmException if the instance cannot be created
+   */
+  public PanamaInstance(
+      final MemorySegment instancePtr,
+      final ArenaResourceManager resourceManager,
+      final PanamaModule module)
+      throws WasmException {
+    // Defensive parameter validation
+    PanamaErrorHandler.requireValidPointer(instancePtr, "instancePtr");
+    this.resourceManager =
+        Objects.requireNonNull(resourceManager, "Resource manager cannot be null");
+    this.module = Objects.requireNonNull(module, "Module cannot be null");
+    this.nativeFunctions = NativeFunctionBindings.getInstance();
 
-            LOGGER.fine("Created Panama instance with managed resource");
-
-        } catch (Exception e) {
-            throw new WasmException("Failed to create instance wrapper", e);
-        }
+    if (!nativeFunctions.isInitialized()) {
+      throw new WasmException("Native function bindings not initialized");
     }
 
-    @Override
-    public Function getFunction(final String name) throws WasmException {
-        ensureNotClosed();
-        
-        // Parameter validation with defensive programming
-        Objects.requireNonNull(name, "Function name cannot be null");
-        PanamaErrorHandler.requireNotEmpty(name, "Function name cannot be empty");
+    try {
+      // Create managed resource with cleanup for instance
+      this.instanceResource =
+          resourceManager.manageNativeResource(
+              instancePtr, () -> destroyNativeInstanceInternal(instancePtr), "Wasmtime Instance");
 
-        try {
-            // Get the export by name through optimized FFI
-            MemorySegment exportPtr = findExportByName(name);
-            if (exportPtr == null || exportPtr.equals(MemorySegment.NULL)) {
-                return null; // Export not found
-            }
-            
-            // Verify export is a function
-            if (!isExportFunction(exportPtr)) {
-                return null; // Export exists but is not a function
-            }
-            
-            // Extract function pointer from export
-            MemorySegment functionPtr = extractFunctionFromExport(exportPtr);
-            PanamaErrorHandler.requireValidPointer(functionPtr, "functionPtr");
-            
-            // Create managed function wrapper
-            return new PanamaFunction(functionPtr, resourceManager, this);
-            
-        } catch (Exception e) {
-            String detailedMessage = PanamaErrorHandler.createDetailedErrorMessage(
-                "Function lookup", 
-                "name=" + name + ", instance=" + instanceResource.getNativePointer(), 
-                e.getMessage()
-            );
-            throw new WasmException(detailedMessage, e);
+      LOGGER.fine("Created Panama instance with managed resource");
+
+    } catch (Exception e) {
+      throw new WasmException("Failed to create instance wrapper", e);
+    }
+  }
+
+  @Override
+  public Function getFunction(final String name) throws WasmException {
+    ensureNotClosed();
+
+    // Parameter validation with defensive programming
+    Objects.requireNonNull(name, "Function name cannot be null");
+    PanamaErrorHandler.requireNotEmpty(name, "Function name cannot be empty");
+
+    try {
+      // Get the export by name through optimized FFI
+      MemorySegment exportPtr = findExportByName(name);
+      if (exportPtr == null || exportPtr.equals(MemorySegment.NULL)) {
+        return null; // Export not found
+      }
+
+      // Verify export is a function
+      if (!isExportFunction(exportPtr)) {
+        return null; // Export exists but is not a function
+      }
+
+      // Extract function pointer from export
+      MemorySegment functionPtr = extractFunctionFromExport(exportPtr);
+      PanamaErrorHandler.requireValidPointer(functionPtr, "functionPtr");
+
+      // Create managed function wrapper
+      return new PanamaFunction(functionPtr, resourceManager, this);
+
+    } catch (Exception e) {
+      String detailedMessage =
+          PanamaErrorHandler.createDetailedErrorMessage(
+              "Function lookup",
+              "name=" + name + ", instance=" + instanceResource.getNativePointer(),
+              e.getMessage());
+      throw new WasmException(detailedMessage, e);
+    }
+  }
+
+  @Override
+  public Memory getMemory(final String name) throws WasmException {
+    ensureNotClosed();
+
+    // Parameter validation with defensive programming
+    Objects.requireNonNull(name, "Memory name cannot be null");
+    PanamaErrorHandler.requireNotEmpty(name, "Memory name cannot be empty");
+
+    try {
+      // Get the export by name through optimized FFI
+      MemorySegment exportPtr = findExportByName(name);
+      if (exportPtr == null || exportPtr.equals(MemorySegment.NULL)) {
+        return null; // Export not found
+      }
+
+      // Verify export is a memory
+      if (!isExportMemory(exportPtr)) {
+        return null; // Export exists but is not a memory
+      }
+
+      // Extract memory pointer from export
+      MemorySegment memoryPtr = extractMemoryFromExport(exportPtr);
+      PanamaErrorHandler.requireValidPointer(memoryPtr, "memoryPtr");
+
+      // Create managed memory wrapper
+      return new PanamaMemory(memoryPtr, resourceManager, this);
+
+    } catch (Exception e) {
+      String detailedMessage =
+          PanamaErrorHandler.createDetailedErrorMessage(
+              "Memory lookup",
+              "name=" + name + ", instance=" + instanceResource.getNativePointer(),
+              e.getMessage());
+      throw new WasmException(detailedMessage, e);
+    }
+  }
+
+  @Override
+  public Global getGlobal(final String name) throws WasmException {
+    ensureNotClosed();
+
+    // Parameter validation with defensive programming
+    Objects.requireNonNull(name, "Global name cannot be null");
+    PanamaErrorHandler.requireNotEmpty(name, "Global name cannot be empty");
+
+    try {
+      // Get the export by name through optimized FFI
+      MemorySegment exportPtr = findExportByName(name);
+      if (exportPtr == null || exportPtr.equals(MemorySegment.NULL)) {
+        return null; // Export not found
+      }
+
+      // Verify export is a global
+      if (!isExportGlobal(exportPtr)) {
+        return null; // Export exists but is not a global
+      }
+
+      // Extract global pointer from export
+      MemorySegment globalPtr = extractGlobalFromExport(exportPtr);
+      PanamaErrorHandler.requireValidPointer(globalPtr, "globalPtr");
+
+      // Create managed global wrapper
+      return new PanamaGlobal(globalPtr, resourceManager, this);
+
+    } catch (Exception e) {
+      String detailedMessage =
+          PanamaErrorHandler.createDetailedErrorMessage(
+              "Global lookup",
+              "name=" + name + ", instance=" + instanceResource.getNativePointer(),
+              e.getMessage());
+      throw new WasmException(detailedMessage, e);
+    }
+  }
+
+  @Override
+  public Table getTable(final String name) throws WasmException {
+    ensureNotClosed();
+
+    // Parameter validation with defensive programming
+    Objects.requireNonNull(name, "Table name cannot be null");
+    PanamaErrorHandler.requireNotEmpty(name, "Table name cannot be empty");
+
+    try {
+      // Get the export by name through optimized FFI
+      MemorySegment exportPtr = findExportByName(name);
+      if (exportPtr == null || exportPtr.equals(MemorySegment.NULL)) {
+        return null; // Export not found
+      }
+
+      // Verify export is a table
+      if (!isExportTable(exportPtr)) {
+        return null; // Export exists but is not a table
+      }
+
+      // Extract table pointer from export
+      MemorySegment tablePtr = extractTableFromExport(exportPtr);
+      PanamaErrorHandler.requireValidPointer(tablePtr, "tablePtr");
+
+      // Create managed table wrapper
+      return new PanamaTable(tablePtr, resourceManager, this);
+
+    } catch (Exception e) {
+      String detailedMessage =
+          PanamaErrorHandler.createDetailedErrorMessage(
+              "Table lookup",
+              "name=" + name + ", instance=" + instanceResource.getNativePointer(),
+              e.getMessage());
+      throw new WasmException(detailedMessage, e);
+    }
+  }
+
+  @Override
+  public Object[] invokeFunction(final String name, final Object... args)
+      throws RuntimeException, WasmException {
+    ensureNotClosed();
+
+    // Parameter validation with defensive programming
+    Objects.requireNonNull(name, "Function name cannot be null");
+    PanamaErrorHandler.requireNotEmpty(name, "Function name cannot be empty");
+
+    try {
+      // Get the function first
+      final Function function = getFunction(name);
+      if (function == null) {
+        throw new WasmException("Function '" + name + "' not found in instance");
+      }
+
+      // Invoke the function with proper error handling
+      return function.invoke(args);
+
+    } catch (RuntimeException re) {
+      // Re-throw runtime exceptions directly
+      throw re;
+    } catch (Exception e) {
+      String detailedMessage =
+          PanamaErrorHandler.createDetailedErrorMessage(
+              "Function invocation",
+              "name=" + name + ", args.length=" + (args != null ? args.length : 0),
+              e.getMessage());
+      throw new WasmException(detailedMessage, e);
+    }
+  }
+
+  @Override
+  public void close() throws WasmException {
+    if (closed) {
+      return;
+    }
+
+    synchronized (this) {
+      if (closed) {
+        return;
+      }
+
+      try {
+        // Close the managed native resource (automatic cleanup)
+        instanceResource.close();
+
+        LOGGER.fine("Closed Panama instance");
+
+      } catch (Exception e) {
+        throw new WasmException("Failed to close instance", e);
+      } finally {
+        closed = true;
+      }
+    }
+  }
+
+  /**
+   * Gets the native instance handle for this instance.
+   *
+   * @return the native instance handle
+   * @throws IllegalStateException if the instance is closed
+   */
+  public MemorySegment getInstanceHandle() {
+    ensureNotClosed();
+    return instanceResource.getNativePointer();
+  }
+
+  /**
+   * Gets the parent module instance.
+   *
+   * @return the module instance
+   */
+  public PanamaModule getModule() {
+    ensureNotClosed();
+    return module;
+  }
+
+  /**
+   * Gets all export names from this instance.
+   *
+   * @return list of export names
+   * @throws WasmException if export enumeration fails
+   */
+  public List<String> getExportNames() throws WasmException {
+    ensureNotClosed();
+
+    try {
+      // Get export count through FFI
+      int exportCount = getExportCount();
+      if (exportCount <= 0) {
+        return new ArrayList<>();
+      }
+
+      // Allocate memory for export names
+      List<String> exportNames = new ArrayList<>(exportCount);
+
+      // Iterate through exports and collect names
+      for (int i = 0; i < exportCount; i++) {
+        String exportName = getExportNameAt(i);
+        if (exportName != null && !exportName.isEmpty()) {
+          exportNames.add(exportName);
         }
+      }
+
+      return exportNames;
+
+    } catch (Exception e) {
+      String detailedMessage =
+          PanamaErrorHandler.createDetailedErrorMessage(
+              "Export enumeration",
+              "instance=" + instanceResource.getNativePointer(),
+              e.getMessage());
+      throw new WasmException(detailedMessage, e);
     }
+  }
 
-    @Override
-    public Memory getMemory(final String name) throws WasmException {
-        ensureNotClosed();
-        
-        // Parameter validation with defensive programming
-        Objects.requireNonNull(name, "Memory name cannot be null");
-        PanamaErrorHandler.requireNotEmpty(name, "Memory name cannot be empty");
+  // Private FFI helper methods for export access
 
-        try {
-            // Get the export by name through optimized FFI
-            MemorySegment exportPtr = findExportByName(name);
-            if (exportPtr == null || exportPtr.equals(MemorySegment.NULL)) {
-                return null; // Export not found
-            }
-            
-            // Verify export is a memory
-            if (!isExportMemory(exportPtr)) {
-                return null; // Export exists but is not a memory
-            }
-            
-            // Extract memory pointer from export
-            MemorySegment memoryPtr = extractMemoryFromExport(exportPtr);
-            PanamaErrorHandler.requireValidPointer(memoryPtr, "memoryPtr");
-            
-            // Create managed memory wrapper
-            return new PanamaMemory(memoryPtr, resourceManager, this);
-            
-        } catch (Exception e) {
-            String detailedMessage = PanamaErrorHandler.createDetailedErrorMessage(
-                "Memory lookup", 
-                "name=" + name + ", instance=" + instanceResource.getNativePointer(), 
-                e.getMessage()
-            );
-            throw new WasmException(detailedMessage, e);
-        }
-    }
+  /** Finds an export by name using FFI calls. */
+  private MemorySegment findExportByName(final String name) throws Exception {
+    // Allocate memory for export name string
+    ArenaResourceManager.ManagedMemorySegment nameMemory =
+        resourceManager.allocate((name.length() + 1) * Character.BYTES);
+    MemorySegment nameSegment = nameMemory.getSegment();
+    nameSegment.setString(0, name);
 
-    @Override
-    public Global getGlobal(final String name) throws WasmException {
-        ensureNotClosed();
-        
-        // Parameter validation with defensive programming
-        Objects.requireNonNull(name, "Global name cannot be null");
-        PanamaErrorHandler.requireNotEmpty(name, "Global name cannot be empty");
+    // Allocate memory for export result
+    ArenaResourceManager.ManagedMemorySegment exportMemory =
+        resourceManager.allocate(MemoryLayouts.WASMTIME_EXPORT_LAYOUT);
+    MemorySegment exportSegment = exportMemory.getSegment();
 
-        try {
-            // Get the export by name through optimized FFI
-            MemorySegment exportPtr = findExportByName(name);
-            if (exportPtr == null || exportPtr.equals(MemorySegment.NULL)) {
-                return null; // Export not found
-            }
-            
-            // Verify export is a global
-            if (!isExportGlobal(exportPtr)) {
-                return null; // Export exists but is not a global
-            }
-            
-            // Extract global pointer from export
-            MemorySegment globalPtr = extractGlobalFromExport(exportPtr);
-            PanamaErrorHandler.requireValidPointer(globalPtr, "globalPtr");
-            
-            // Create managed global wrapper
-            return new PanamaGlobal(globalPtr, resourceManager, this);
-            
-        } catch (Exception e) {
-            String detailedMessage = PanamaErrorHandler.createDetailedErrorMessage(
-                "Global lookup", 
-                "name=" + name + ", instance=" + instanceResource.getNativePointer(), 
-                e.getMessage()
-            );
-            throw new WasmException(detailedMessage, e);
-        }
-    }
-
-    @Override
-    public Table getTable(final String name) throws WasmException {
-        ensureNotClosed();
-        
-        // Parameter validation with defensive programming
-        Objects.requireNonNull(name, "Table name cannot be null");
-        PanamaErrorHandler.requireNotEmpty(name, "Table name cannot be empty");
-
-        try {
-            // Get the export by name through optimized FFI
-            MemorySegment exportPtr = findExportByName(name);
-            if (exportPtr == null || exportPtr.equals(MemorySegment.NULL)) {
-                return null; // Export not found
-            }
-            
-            // Verify export is a table
-            if (!isExportTable(exportPtr)) {
-                return null; // Export exists but is not a table
-            }
-            
-            // Extract table pointer from export
-            MemorySegment tablePtr = extractTableFromExport(exportPtr);
-            PanamaErrorHandler.requireValidPointer(tablePtr, "tablePtr");
-            
-            // Create managed table wrapper
-            return new PanamaTable(tablePtr, resourceManager, this);
-            
-        } catch (Exception e) {
-            String detailedMessage = PanamaErrorHandler.createDetailedErrorMessage(
-                "Table lookup", 
-                "name=" + name + ", instance=" + instanceResource.getNativePointer(), 
-                e.getMessage()
-            );
-            throw new WasmException(detailedMessage, e);
-        }
-    }
-
-    @Override
-    public Object[] invokeFunction(final String name, final Object... args) throws RuntimeException, WasmException {
-        ensureNotClosed();
-        
-        // Parameter validation with defensive programming
-        Objects.requireNonNull(name, "Function name cannot be null");
-        PanamaErrorHandler.requireNotEmpty(name, "Function name cannot be empty");
-
-        try {
-            // Get the function first
-            final Function function = getFunction(name);
-            if (function == null) {
-                throw new WasmException("Function '" + name + "' not found in instance");
-            }
-
-            // Invoke the function with proper error handling
-            return function.invoke(args);
-            
-        } catch (RuntimeException re) {
-            // Re-throw runtime exceptions directly
-            throw re;
-        } catch (Exception e) {
-            String detailedMessage = PanamaErrorHandler.createDetailedErrorMessage(
-                "Function invocation", 
-                "name=" + name + ", args.length=" + (args != null ? args.length : 0), 
-                e.getMessage()
-            );
-            throw new WasmException(detailedMessage, e);
-        }
-    }
-
-    @Override
-    public void close() throws WasmException {
-        if (closed) {
-            return;
-        }
-
-        synchronized (this) {
-            if (closed) {
-                return;
-            }
-            
-            try {
-                // Close the managed native resource (automatic cleanup)
-                instanceResource.close();
-                
-                LOGGER.fine("Closed Panama instance");
-                
-            } catch (Exception e) {
-                throw new WasmException("Failed to close instance", e);
-            } finally {
-                closed = true;
-            }
-        }
-    }
-
-    /**
-     * Gets the native instance handle for this instance.
-     * 
-     * @return the native instance handle
-     * @throws IllegalStateException if the instance is closed
-     */
-    public MemorySegment getInstanceHandle() {
-        ensureNotClosed();
-        return instanceResource.getNativePointer();
-    }
-
-    /**
-     * Gets the parent module instance.
-     * 
-     * @return the module instance
-     */
-    public PanamaModule getModule() {
-        ensureNotClosed();
-        return module;
-    }
-
-    /**
-     * Gets all export names from this instance.
-     * 
-     * @return list of export names
-     * @throws WasmException if export enumeration fails
-     */
-    public List<String> getExportNames() throws WasmException {
-        ensureNotClosed();
-        
-        try {
-            // Get export count through FFI
-            int exportCount = getExportCount();
-            if (exportCount <= 0) {
-                return new ArrayList<>();
-            }
-            
-            // Allocate memory for export names
-            List<String> exportNames = new ArrayList<>(exportCount);
-            
-            // Iterate through exports and collect names
-            for (int i = 0; i < exportCount; i++) {
-                String exportName = getExportNameAt(i);
-                if (exportName != null && !exportName.isEmpty()) {
-                    exportNames.add(exportName);
-                }
-            }
-            
-            return exportNames;
-            
-        } catch (Exception e) {
-            String detailedMessage = PanamaErrorHandler.createDetailedErrorMessage(
-                "Export enumeration", 
-                "instance=" + instanceResource.getNativePointer(), 
-                e.getMessage()
-            );
-            throw new WasmException(detailedMessage, e);
-        }
-    }
-    
-    // Private FFI helper methods for export access
-    
-    /**
-     * Finds an export by name using FFI calls.
-     */
-    private MemorySegment findExportByName(final String name) throws Exception {
-        // Allocate memory for export name string
-        ArenaResourceManager.ManagedMemorySegment nameMemory = 
-            resourceManager.allocate((name.length() + 1) * Character.BYTES);
-        MemorySegment nameSegment = nameMemory.getSegment();
-        nameSegment.setString(0, name);
-        
-        // Allocate memory for export result
-        ArenaResourceManager.ManagedMemorySegment exportMemory = 
-            resourceManager.allocate(MemoryLayouts.WASMTIME_EXPORT_LAYOUT);
-        MemorySegment exportSegment = exportMemory.getSegment();
-        
-        // Call wasmtime_instance_export_get through cached method handle
-        MethodHandle instanceExportGet = nativeFunctions.getFunction(
+    // Call wasmtime_instance_export_get through cached method handle
+    MethodHandle instanceExportGet =
+        nativeFunctions.getFunction(
             "wasmtime_instance_export_get",
             FunctionDescriptor.of(
                 ValueLayout.JAVA_BOOLEAN,
                 ValueLayout.ADDRESS, // instance
                 ValueLayout.ADDRESS, // name
                 ValueLayout.JAVA_LONG, // name_len
-                ValueLayout.ADDRESS  // export (out)
-            )
-        );
-        
-        boolean found = (boolean) instanceExportGet.invoke(
-            instanceResource.getNativePointer(),
-            nameSegment,
-            name.length(),
-            exportSegment
-        );
-        
-        return found ? exportSegment : null;
+                ValueLayout.ADDRESS // export (out)
+                ));
+
+    boolean found =
+        (boolean)
+            instanceExportGet.invoke(
+                instanceResource.getNativePointer(), nameSegment, name.length(), exportSegment);
+
+    return found ? exportSegment : null;
+  }
+
+  /** Checks if export is a function type. */
+  private boolean isExportFunction(final MemorySegment exportPtr) {
+    // Check export kind field in wasmtime_extern_t structure
+    byte exportKind = exportPtr.get(ValueLayout.JAVA_BYTE, 0);
+    return exportKind == MemoryLayouts.WASMTIME_EXTERN_FUNC;
+  }
+
+  /** Checks if export is a memory type. */
+  private boolean isExportMemory(final MemorySegment exportPtr) {
+    byte exportKind = exportPtr.get(ValueLayout.JAVA_BYTE, 0);
+    return exportKind == MemoryLayouts.WASMTIME_EXTERN_MEMORY;
+  }
+
+  /** Checks if export is a global type. */
+  private boolean isExportGlobal(final MemorySegment exportPtr) {
+    byte exportKind = exportPtr.get(ValueLayout.JAVA_BYTE, 0);
+    return exportKind == MemoryLayouts.WASMTIME_EXTERN_GLOBAL;
+  }
+
+  /** Checks if export is a table type. */
+  private boolean isExportTable(final MemorySegment exportPtr) {
+    byte exportKind = exportPtr.get(ValueLayout.JAVA_BYTE, 0);
+    return exportKind == MemoryLayouts.WASMTIME_EXTERN_TABLE;
+  }
+
+  /** Extracts function pointer from export structure. */
+  private MemorySegment extractFunctionFromExport(final MemorySegment exportPtr) {
+    // Extract function pointer from union field at offset 8
+    return exportPtr.get(ValueLayout.ADDRESS, 8);
+  }
+
+  /** Extracts memory pointer from export structure. */
+  private MemorySegment extractMemoryFromExport(final MemorySegment exportPtr) {
+    return exportPtr.get(ValueLayout.ADDRESS, 8);
+  }
+
+  /** Extracts global pointer from export structure. */
+  private MemorySegment extractGlobalFromExport(final MemorySegment exportPtr) {
+    return exportPtr.get(ValueLayout.ADDRESS, 8);
+  }
+
+  /** Extracts table pointer from export structure. */
+  private MemorySegment extractTableFromExport(final MemorySegment exportPtr) {
+    return exportPtr.get(ValueLayout.ADDRESS, 8);
+  }
+
+  /** Gets the total number of exports. */
+  private int getExportCount() throws Exception {
+    // This would require calling wasmtime_instance_export_nth or similar
+    // For now, return a placeholder - full implementation needed
+    return 0;
+  }
+
+  /** Gets the export name at the specified index. */
+  private String getExportNameAt(final int index) throws Exception {
+    // This would require iterating through exports
+    // For now, return null - full implementation needed
+    return null;
+  }
+
+  /**
+   * Internal cleanup method called by managed resource.
+   *
+   * @param instancePtr the native instance pointer to destroy
+   */
+  private void destroyNativeInstanceInternal(final MemorySegment instancePtr) {
+    try {
+      // Wasmtime instances are typically destroyed when the store is closed
+      // Individual instance destruction is not always required
+      LOGGER.fine("Destroying native instance: " + instancePtr);
+
+    } catch (Exception e) {
+      LOGGER.warning("Error during instance cleanup: " + e.getMessage());
+      // Don't throw exceptions from cleanup methods
     }
-    
-    /**
-     * Checks if export is a function type.
-     */
-    private boolean isExportFunction(final MemorySegment exportPtr) {
-        // Check export kind field in wasmtime_extern_t structure
-        byte exportKind = exportPtr.get(ValueLayout.JAVA_BYTE, 0);
-        return exportKind == MemoryLayouts.WASMTIME_EXTERN_FUNC;
+  }
+
+  /**
+   * Ensures that this instance is not closed.
+   *
+   * @throws IllegalStateException if the instance is closed
+   */
+  private void ensureNotClosed() {
+    if (closed) {
+      throw new IllegalStateException("Instance has been closed");
     }
-    
-    /**
-     * Checks if export is a memory type.
-     */
-    private boolean isExportMemory(final MemorySegment exportPtr) {
-        byte exportKind = exportPtr.get(ValueLayout.JAVA_BYTE, 0);
-        return exportKind == MemoryLayouts.WASMTIME_EXTERN_MEMORY;
-    }
-    
-    /**
-     * Checks if export is a global type.
-     */
-    private boolean isExportGlobal(final MemorySegment exportPtr) {
-        byte exportKind = exportPtr.get(ValueLayout.JAVA_BYTE, 0);
-        return exportKind == MemoryLayouts.WASMTIME_EXTERN_GLOBAL;
-    }
-    
-    /**
-     * Checks if export is a table type.
-     */
-    private boolean isExportTable(final MemorySegment exportPtr) {
-        byte exportKind = exportPtr.get(ValueLayout.JAVA_BYTE, 0);
-        return exportKind == MemoryLayouts.WASMTIME_EXTERN_TABLE;
-    }
-    
-    /**
-     * Extracts function pointer from export structure.
-     */
-    private MemorySegment extractFunctionFromExport(final MemorySegment exportPtr) {
-        // Extract function pointer from union field at offset 8
-        return exportPtr.get(ValueLayout.ADDRESS, 8);
-    }
-    
-    /**
-     * Extracts memory pointer from export structure.
-     */
-    private MemorySegment extractMemoryFromExport(final MemorySegment exportPtr) {
-        return exportPtr.get(ValueLayout.ADDRESS, 8);
-    }
-    
-    /**
-     * Extracts global pointer from export structure.
-     */
-    private MemorySegment extractGlobalFromExport(final MemorySegment exportPtr) {
-        return exportPtr.get(ValueLayout.ADDRESS, 8);
-    }
-    
-    /**
-     * Extracts table pointer from export structure.
-     */
-    private MemorySegment extractTableFromExport(final MemorySegment exportPtr) {
-        return exportPtr.get(ValueLayout.ADDRESS, 8);
-    }
-    
-    /**
-     * Gets the total number of exports.
-     */
-    private int getExportCount() throws Exception {
-        // This would require calling wasmtime_instance_export_nth or similar
-        // For now, return a placeholder - full implementation needed
-        return 0;
-    }
-    
-    /**
-     * Gets the export name at the specified index.
-     */
-    private String getExportNameAt(final int index) throws Exception {
-        // This would require iterating through exports
-        // For now, return null - full implementation needed
-        return null;
-    }
-    
-    /**
-     * Internal cleanup method called by managed resource.
-     * 
-     * @param instancePtr the native instance pointer to destroy
-     */
-    private void destroyNativeInstanceInternal(final MemorySegment instancePtr) {
-        try {
-            // Wasmtime instances are typically destroyed when the store is closed
-            // Individual instance destruction is not always required
-            LOGGER.fine("Destroying native instance: " + instancePtr);
-            
-        } catch (Exception e) {
-            LOGGER.warning("Error during instance cleanup: " + e.getMessage());
-            // Don't throw exceptions from cleanup methods
-        }
-    }
-    
-    /**
-     * Ensures that this instance is not closed.
-     * 
-     * @throws IllegalStateException if the instance is closed
-     */
-    private void ensureNotClosed() {
-        if (closed) {
-            throw new IllegalStateException("Instance has been closed");
-        }
-    }
+  }
 }

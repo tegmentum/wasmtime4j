@@ -12,7 +12,8 @@ import java.util.logging.Logger;
  * library. Tables store references to functions or other objects that can be called indirectly.
  *
  * <p>This implementation ensures defensive programming to prevent JVM crashes and provides
- * comprehensive bounds checking for table access using JniValidation and the JniResource base class.
+ * comprehensive bounds checking for table access using JniValidation and the JniResource base
+ * class.
  */
 public final class JniTable extends JniResource {
 
@@ -93,7 +94,7 @@ public final class JniTable extends JniResource {
    */
   public Object get(final int index) {
     JniValidation.requireNonNegative(index, "index");
-    
+
     final long handle = getNativeHandle(); // This validates not closed
     validateIndex(index);
 
@@ -118,7 +119,7 @@ public final class JniTable extends JniResource {
    */
   public void set(final int index, final Object value) {
     JniValidation.requireNonNegative(index, "index");
-    
+
     final long handle = getNativeHandle(); // This validates not closed
     validateIndex(index);
 
@@ -170,7 +171,7 @@ public final class JniTable extends JniResource {
   public void fill(final int start, final int count, final Object value) {
     JniValidation.requireNonNegative(start, "start");
     JniValidation.requireNonNegative(count, "count");
-    
+
     final long handle = getNativeHandle(); // This validates not closed
     validateRange(start, count);
 
@@ -185,7 +186,6 @@ public final class JniTable extends JniResource {
       throw new RuntimeException("Unexpected error filling table", e);
     }
   }
-
 
   /**
    * Validates that an index is within table bounds.

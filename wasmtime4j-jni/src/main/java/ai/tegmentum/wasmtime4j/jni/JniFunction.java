@@ -12,7 +12,8 @@ import java.util.logging.Logger;
  * library. It supports calling functions with various parameter and return types.
  *
  * <p>This implementation ensures defensive programming to prevent JVM crashes and provides
- * comprehensive type checking for function calls using JniValidation and the JniResource base class.
+ * comprehensive type checking for function calls using JniValidation and the JniResource base
+ * class.
  */
 public final class JniFunction extends JniResource {
 
@@ -32,7 +33,8 @@ public final class JniFunction extends JniResource {
     super(nativeHandle);
     JniValidation.requireNonNull(name, "name");
     this.name = name;
-    LOGGER.fine("Created JNI function '" + name + "' with handle: 0x" + Long.toHexString(nativeHandle));
+    LOGGER.fine(
+        "Created JNI function '" + name + "' with handle: 0x" + Long.toHexString(nativeHandle));
   }
 
   /**

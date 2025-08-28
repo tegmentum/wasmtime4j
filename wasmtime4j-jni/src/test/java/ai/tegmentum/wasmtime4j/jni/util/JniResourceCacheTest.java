@@ -66,7 +66,7 @@ class JniResourceCacheTest {
     @DisplayName("Should create cache with custom max size")
     void shouldCreateCacheWithCustomMaxSize() {
       final int customSize = 500;
-      
+
       try (final JniResourceCache<String, String> testCache = new JniResourceCache<>(customSize)) {
         assertEquals(customSize, testCache.getMaxSize());
         assertEquals(0, testCache.size());
@@ -96,7 +96,7 @@ class JniResourceCacheTest {
     @DisplayName("Should store and retrieve value")
     void shouldStoreAndRetrieveValue() {
       cache.put("key1", "value1");
-      
+
       final String retrieved = cache.get("key1", key -> "factory-" + key);
       assertEquals("value1", retrieved);
     }
@@ -112,7 +112,7 @@ class JniResourceCacheTest {
     @DisplayName("Should return cached value instead of using factory")
     void shouldReturnCachedValueInsteadOfUsingFactory() {
       cache.put("existingKey", "cachedValue");
-      
+
       final String result = cache.get("existingKey", key -> "factory-" + key);
       assertEquals("cachedValue", result);
     }
@@ -129,7 +129,7 @@ class JniResourceCacheTest {
     void shouldRemoveCachedValue() {
       cache.put("removeKey", "removeValue");
       assertEquals(1, cache.size());
-      
+
       final String removed = cache.remove("removeKey");
       assertEquals("removeValue", removed);
       assertEquals(0, cache.size());
@@ -149,7 +149,7 @@ class JniResourceCacheTest {
       cache.put("key2", "value2");
       cache.put("key3", "value3");
       assertEquals(3, cache.size());
-      
+
       cache.clear();
       assertEquals(0, cache.size());
     }
@@ -200,11 +200,11 @@ class JniResourceCacheTest {
     @DisplayName("Should track hit count")
     void shouldTrackHitCount() {
       cache.put("hitKey", "hitValue");
-      
+
       assertEquals(0, cache.getHitCount());
       cache.get("hitKey", key -> "factory");
       assertEquals(1, cache.getHitCount());
-      
+
       cache.get("hitKey", key -> "factory");
       assertEquals(2, cache.getHitCount());
     }
@@ -215,7 +215,7 @@ class JniResourceCacheTest {
       assertEquals(0, cache.getMissCount());
       cache.get("missKey", key -> "factory");
       assertEquals(1, cache.getMissCount());
-      
+
       cache.get("anotherMissKey", key -> "factory");
       assertEquals(2, cache.getMissCount());
     }
@@ -224,11 +224,11 @@ class JniResourceCacheTest {
     @DisplayName("Should calculate hit rate correctly")
     void shouldCalculateHitRateCorrectly() {
       assertEquals(0.0, cache.getHitRate(), 0.001);
-      
+
       cache.put("key", "value");
       cache.get("key", k -> "factory"); // Hit
       cache.get("missKey", k -> "factory"); // Miss
-      
+
       assertEquals(0.5, cache.getHitRate(), 0.001);
     }
 
@@ -242,20 +242,21 @@ class JniResourceCacheTest {
     @DisplayName("Should track evictions")
     void shouldTrackEvictions() {
       final int smallCacheSize = 3;
-      
-      try (final JniResourceCache<String, String> smallCache = new JniResourceCache<>(smallCacheSize)) {
+
+      try (final JniResourceCache<String, String> smallCache =
+          new JniResourceCache<>(smallCacheSize)) {
         // Fill cache to capacity
         for (int i = 0; i < smallCacheSize; i++) {
           smallCache.put("key" + i, "value" + i);
         }
-        
+
         assertEquals(0, smallCache.getEvictionCount());
-        
+
         // Add more entries to trigger eviction
         for (int i = smallCacheSize; i < smallCacheSize + 2; i++) {
           smallCache.put("key" + i, "value" + i);
         }
-        
+
         assertTrue(smallCache.getEvictionCount() > 0, "Should have evicted some entries");
       }
     }
@@ -271,17 +272,17 @@ class JniResourceCacheTest {
       // Create some objects that can be garbage collected
       cache.put("gc1", new String("gcValue1"));
       cache.put("gc2", new String("gcValue2"));
-      
+
       assertEquals(2, cache.size());
-      
+
       // Force garbage collection
       System.gc();
       System.runFinalization();
-      
+
       // Try to access cached values and trigger cleanup
       cache.get("gc1", key -> "new1");
       cache.get("gc2", key -> "new2");
-      
+
       // Size might be reduced due to GC
       assertTrue(cache.size() >= 0, "Cache size should be non-negative after GC");
     }
@@ -293,17 +294,17 @@ class JniResourceCacheTest {
       for (int i = 0; i < 10; i++) {
         cache.put("key" + i, new String("value" + i));
       }
-      
+
       final int initialSize = cache.size();
       assertTrue(initialSize > 0);
-      
+
       // Force GC and access cache to trigger cleanup
       System.gc();
       System.runFinalization();
-      
+
       // Access cache to trigger cleanup
       cache.get("newKey", key -> "newValue");
-      
+
       // Size may have changed due to cleanup
       assertTrue(cache.size() >= 0);
     }
@@ -317,13 +318,13 @@ class JniResourceCacheTest {
     @DisplayName("Should respect maximum size limit")
     void shouldRespectMaximumSizeLimit() {
       final int maxSize = 5;
-      
+
       try (final JniResourceCache<String, String> limitedCache = new JniResourceCache<>(maxSize)) {
         // Fill beyond capacity
         for (int i = 0; i < maxSize * 2; i++) {
           limitedCache.put("key" + i, "value" + i);
         }
-        
+
         // Cache should not exceed max size (accounting for eviction)
         assertTrue(limitedCache.size() <= maxSize, "Cache size should not exceed maximum");
       }
@@ -333,18 +334,18 @@ class JniResourceCacheTest {
     @DisplayName("Should evict entries when at capacity")
     void shouldEvictEntriesWhenAtCapacity() {
       final int maxSize = 3;
-      
+
       try (final JniResourceCache<String, String> limitedCache = new JniResourceCache<>(maxSize)) {
         // Fill to capacity
         for (int i = 0; i < maxSize; i++) {
           limitedCache.put("key" + i, "value" + i);
         }
-        
+
         assertEquals(maxSize, limitedCache.size());
-        
+
         // Add one more to trigger eviction
         limitedCache.put("extraKey", "extraValue");
-        
+
         // Size should still be within limits
         assertTrue(limitedCache.size() <= maxSize);
         assertTrue(limitedCache.getEvictionCount() > 0);
@@ -360,13 +361,17 @@ class JniResourceCacheTest {
     @DisplayName("Should handle factory exceptions")
     void shouldHandleFactoryExceptions() {
       final RuntimeException expectedException = new RuntimeException("Factory error");
-      
-      final RuntimeException actualException = assertThrows(
-          RuntimeException.class,
-          () -> cache.get("errorKey", key -> {
-            throw expectedException;
-          }));
-      
+
+      final RuntimeException actualException =
+          assertThrows(
+              RuntimeException.class,
+              () ->
+                  cache.get(
+                      "errorKey",
+                      key -> {
+                        throw expectedException;
+                      }));
+
       assertEquals(expectedException, actualException);
     }
 
@@ -374,7 +379,7 @@ class JniResourceCacheTest {
     @DisplayName("Should reject operations on closed cache")
     void shouldRejectOperationsOnClosedCache() {
       cache.close();
-      
+
       assertThrows(
           RuntimeException.class,
           () -> cache.get("key", k -> "value"),
@@ -396,7 +401,7 @@ class JniResourceCacheTest {
     void shouldCloseGracefully() {
       cache.put("closeKey", "closeValue");
       assertFalse(cache.isClosed());
-      
+
       cache.close();
       assertTrue(cache.isClosed());
       assertEquals(0, cache.size());
@@ -407,7 +412,7 @@ class JniResourceCacheTest {
     void shouldBeIdempotentOnClose() {
       cache.close();
       assertTrue(cache.isClosed());
-      
+
       // Second close should not throw
       cache.close();
       assertTrue(cache.isClosed());
@@ -417,15 +422,18 @@ class JniResourceCacheTest {
     @DisplayName("Should work with try-with-resources")
     void shouldWorkWithTryWithResources() {
       final AtomicInteger factoryCalls = new AtomicInteger(0);
-      
+
       try (final JniResourceCache<String, String> autoCloseCache = new JniResourceCache<>(10)) {
-        final String result = autoCloseCache.get("autoKey", key -> {
-          factoryCalls.incrementAndGet();
-          return "autoValue";
-        });
+        final String result =
+            autoCloseCache.get(
+                "autoKey",
+                key -> {
+                  factoryCalls.incrementAndGet();
+                  return "autoValue";
+                });
         assertEquals("autoValue", result);
       }
-      
+
       assertEquals(1, factoryCalls.get());
     }
   }
@@ -446,17 +454,18 @@ class JniResourceCacheTest {
       try (final JniResourceCache<String, String> concurrentCache = new JniResourceCache<>(200)) {
         for (int t = 0; t < threadCount; t++) {
           final int threadIndex = t;
-          executor.submit(() -> {
-            try {
-              for (int i = 0; i < operationsPerThread; i++) {
-                final String key = "thread" + threadIndex + "-key" + i;
-                final String value = concurrentCache.get(key, k -> "value-" + k);
-                results.put(key, value);
-              }
-            } finally {
-              latch.countDown();
-            }
-          });
+          executor.submit(
+              () -> {
+                try {
+                  for (int i = 0; i < operationsPerThread; i++) {
+                    final String key = "thread" + threadIndex + "-key" + i;
+                    final String value = concurrentCache.get(key, k -> "value-" + k);
+                    results.put(key, value);
+                  }
+                } finally {
+                  latch.countDown();
+                }
+              });
         }
 
         assertTrue(latch.await(10, TimeUnit.SECONDS), "All operations should complete");
@@ -483,34 +492,36 @@ class JniResourceCacheTest {
         // Submit put operations
         for (int i = 0; i < operationCount; i++) {
           final int index = i;
-          executor.submit(() -> {
-            try {
-              concurrentCache.put("concurrentKey" + index, "concurrentValue" + index);
-              successCount.incrementAndGet();
-            } catch (final Exception e) {
-              // Handle any synchronization issues
-            } finally {
-              latch.countDown();
-            }
-          });
+          executor.submit(
+              () -> {
+                try {
+                  concurrentCache.put("concurrentKey" + index, "concurrentValue" + index);
+                  successCount.incrementAndGet();
+                } catch (final Exception e) {
+                  // Handle any synchronization issues
+                } finally {
+                  latch.countDown();
+                }
+              });
         }
 
         // Submit get operations
         for (int i = 0; i < operationCount; i++) {
           final int index = i;
-          executor.submit(() -> {
-            try {
-              final String value = concurrentCache.get("concurrentKey" + index, 
-                  key -> "factoryValue" + index);
-              if (value != null) {
-                successCount.incrementAndGet();
-              }
-            } catch (final Exception e) {
-              // Handle any synchronization issues
-            } finally {
-              latch.countDown();
-            }
-          });
+          executor.submit(
+              () -> {
+                try {
+                  final String value =
+                      concurrentCache.get("concurrentKey" + index, key -> "factoryValue" + index);
+                  if (value != null) {
+                    successCount.incrementAndGet();
+                  }
+                } catch (final Exception e) {
+                  // Handle any synchronization issues
+                } finally {
+                  latch.countDown();
+                }
+              });
         }
 
         assertTrue(latch.await(15, TimeUnit.SECONDS), "All operations should complete");
@@ -533,13 +544,16 @@ class JniResourceCacheTest {
 
         for (int t = 0; t < threadCount; t++) {
           final int threadIndex = t;
-          final CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
-            for (int i = 0; i < operationsPerThread; i++) {
-              final String key = "evictKey-" + threadIndex + "-" + i;
-              evictionCache.put(key, "evictValue-" + threadIndex + "-" + i);
-            }
-          }, executor);
-          
+          final CompletableFuture<Void> future =
+              CompletableFuture.runAsync(
+                  () -> {
+                    for (int i = 0; i < operationsPerThread; i++) {
+                      final String key = "evictKey-" + threadIndex + "-" + i;
+                      evictionCache.put(key, "evictValue-" + threadIndex + "-" + i);
+                    }
+                  },
+                  executor);
+
           futures.add(future);
         }
 

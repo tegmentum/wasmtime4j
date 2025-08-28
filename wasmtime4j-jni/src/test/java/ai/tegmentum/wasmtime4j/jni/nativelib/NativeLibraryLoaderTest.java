@@ -7,9 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.junit.jupiter.api.Test;
 
-/**
- * Unit tests for {@link NativeLibraryLoader}.
- */
+/** Unit tests for {@link NativeLibraryLoader}. */
 class NativeLibraryLoaderTest {
 
   @Test
@@ -120,7 +118,7 @@ class NativeLibraryLoaderTest {
     final String libraryFile = parts[parts.length - 1];
     assertThat(libraryFile).contains("wasmtime4j");
     assertThat(libraryFile).containsAnyOf(".so", ".dll", ".dylib");
-    
+
     // Check platform-specific naming conventions
     if (libraryFile.endsWith(".dll")) {
       // Windows: wasmtime4j.dll (no prefix)

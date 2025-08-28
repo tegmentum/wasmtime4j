@@ -12,7 +12,8 @@ import java.util.logging.Logger;
  * Wasmtime library. Globals can store various value types and may be mutable or immutable.
  *
  * <p>This implementation ensures defensive programming to prevent JVM crashes and provides
- * comprehensive type checking for global variable access using JniValidation and the JniResource base class.
+ * comprehensive type checking for global variable access using JniValidation and the JniResource
+ * base class.
  */
 public final class JniGlobal extends JniResource {
 

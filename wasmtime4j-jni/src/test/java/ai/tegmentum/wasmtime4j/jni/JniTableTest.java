@@ -6,12 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyObject;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.when;
 
 import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
 import org.junit.jupiter.api.AfterEach;
@@ -132,7 +128,7 @@ class JniTableTest {
     @DisplayName("Should throw exception when closed")
     void shouldThrowExceptionWhenClosed() {
       table.close();
-      
+
       assertThrows(
           JniResourceException.class,
           () -> table.getSize(),
@@ -159,7 +155,8 @@ class JniTableTest {
     @DisplayName("Should handle null element type")
     void shouldHandleNullElementType() {
       mockStatic.when(() -> JniTable.nativeGetElementType(VALID_HANDLE)).thenReturn(null);
-      assertEquals("unknown", table.getElementType(), "Should return 'unknown' for null element type");
+      assertEquals(
+          "unknown", table.getElementType(), "Should return 'unknown' for null element type");
     }
 
     @Test
@@ -173,7 +170,7 @@ class JniTableTest {
     @DisplayName("Should throw exception when closed")
     void shouldThrowExceptionWhenClosed() {
       table.close();
-      
+
       assertThrows(
           JniResourceException.class,
           () -> table.getElementType(),
@@ -220,7 +217,7 @@ class JniTableTest {
     @DisplayName("Should throw exception when closed")
     void shouldThrowExceptionWhenClosed() {
       table.close();
-      
+
       assertThrows(
           JniResourceException.class,
           () -> table.get(0),
@@ -269,7 +266,7 @@ class JniTableTest {
     @DisplayName("Should handle native set failure")
     void shouldHandleNativeSetFailure() {
       mockStatic.when(() -> JniTable.nativeSet(VALID_HANDLE, 0, "badValue")).thenReturn(false);
-      
+
       assertThrows(
           RuntimeException.class,
           () -> table.set(0, "badValue"),
@@ -280,7 +277,7 @@ class JniTableTest {
     @DisplayName("Should throw exception when closed")
     void shouldThrowExceptionWhenClosed() {
       table.close();
-      
+
       assertThrows(
           JniResourceException.class,
           () -> table.set(0, "value"),
@@ -336,7 +333,7 @@ class JniTableTest {
     @DisplayName("Should throw exception when closed")
     void shouldThrowExceptionWhenClosed() {
       table.close();
-      
+
       assertThrows(
           JniResourceException.class,
           () -> table.grow(1, null),
@@ -402,7 +399,7 @@ class JniTableTest {
     @DisplayName("Should handle native fill failure")
     void shouldHandleNativeFillFailure() {
       mockStatic.when(() -> JniTable.nativeFill(VALID_HANDLE, 0, 1, "badValue")).thenReturn(false);
-      
+
       assertThrows(
           RuntimeException.class,
           () -> table.fill(0, 1, "badValue"),
@@ -413,7 +410,7 @@ class JniTableTest {
     @DisplayName("Should throw exception when closed")
     void shouldThrowExceptionWhenClosed() {
       table.close();
-      
+
       assertThrows(
           JniResourceException.class,
           () -> table.fill(0, 1, "value"),
@@ -444,7 +441,7 @@ class JniTableTest {
     void shouldBeIdempotentOnClose() {
       table.close();
       assertTrue(table.isClosed(), "Should be closed after first call");
-      
+
       // Second close should not throw
       table.close();
       assertTrue(table.isClosed(), "Should remain closed after second call");
@@ -454,9 +451,10 @@ class JniTableTest {
     @DisplayName("Should handle native cleanup failure gracefully")
     void shouldHandleNativeCleanupFailureGracefully() {
       // Make native destroy throw an exception
-      mockStatic.when(() -> JniTable.nativeDestroyTable(VALID_HANDLE))
+      mockStatic
+          .when(() -> JniTable.nativeDestroyTable(VALID_HANDLE))
           .thenThrow(new RuntimeException("Native cleanup failed"));
-      
+
       // Close should still complete successfully
       table.close();
       assertTrue(table.isClosed(), "Should be marked as closed even if native cleanup fails");
@@ -467,7 +465,7 @@ class JniTableTest {
     void shouldWorkWithTryWithResources() {
       final long testHandle = 0xABCDEF00L;
       mockStatic.when(() -> JniTable.nativeDestroyTable(testHandle)).thenAnswer(invocation -> null);
-      
+
       try (final JniTable autoClosedTable = new JniTable(testHandle)) {
         assertFalse(autoClosedTable.isClosed(), "Should not be closed inside try block");
       }
@@ -482,14 +480,16 @@ class JniTableTest {
     @Test
     @DisplayName("Should handle native exceptions gracefully")
     void shouldHandleNativeExceptionsGracefully() {
-      mockStatic.when(() -> JniTable.nativeGetSize(VALID_HANDLE))
+      mockStatic
+          .when(() -> JniTable.nativeGetSize(VALID_HANDLE))
           .thenThrow(new RuntimeException("Native error"));
-      
-      final RuntimeException exception = assertThrows(
-          RuntimeException.class,
-          () -> table.getSize(),
-          "Should propagate native RuntimeException");
-      
+
+      final RuntimeException exception =
+          assertThrows(
+              RuntimeException.class,
+              () -> table.getSize(),
+              "Should propagate native RuntimeException");
+
       assertEquals("Unexpected error getting table size", exception.getMessage());
     }
 
@@ -498,26 +498,29 @@ class JniTableTest {
     void shouldPreserveRuntimeExceptionsInGetOperations() {
       final RuntimeException nativeException = new RuntimeException("Native get error");
       mockStatic.when(() -> JniTable.nativeGet(VALID_HANDLE, 0)).thenThrow(nativeException);
-      
-      final RuntimeException thrown = assertThrows(
-          RuntimeException.class,
-          () -> table.get(0),
-          "Should propagate RuntimeException from native get");
-      
+
+      final RuntimeException thrown =
+          assertThrows(
+              RuntimeException.class,
+              () -> table.get(0),
+              "Should propagate RuntimeException from native get");
+
       assertEquals(nativeException, thrown, "Should preserve the original RuntimeException");
     }
 
     @Test
     @DisplayName("Should wrap checked exceptions")
     void shouldWrapCheckedExceptions() {
-      mockStatic.when(() -> JniTable.nativeGetElementType(VALID_HANDLE))
+      mockStatic
+          .when(() -> JniTable.nativeGetElementType(VALID_HANDLE))
           .thenThrow(new Exception("Checked exception"));
-      
-      final RuntimeException exception = assertThrows(
-          RuntimeException.class,
-          () -> table.getElementType(),
-          "Should wrap checked exceptions in RuntimeException");
-      
+
+      final RuntimeException exception =
+          assertThrows(
+              RuntimeException.class,
+              () -> table.getElementType(),
+              "Should wrap checked exceptions in RuntimeException");
+
       assertEquals("Unexpected error getting table element type", exception.getMessage());
     }
   }
@@ -535,14 +538,16 @@ class JniTableTest {
 
       for (int i = 0; i < numThreads; i++) {
         final int threadIndex = i;
-        threads[i] = new Thread(() -> {
-          try {
-            final int size = table.getSize();
-            results[threadIndex] = (size == 10);
-          } catch (final Exception e) {
-            results[threadIndex] = false;
-          }
-        });
+        threads[i] =
+            new Thread(
+                () -> {
+                  try {
+                    final int size = table.getSize();
+                    results[threadIndex] = (size == 10);
+                  } catch (final Exception e) {
+                    results[threadIndex] = false;
+                  }
+                });
         threads[i].start();
       }
 
@@ -562,13 +567,15 @@ class JniTableTest {
       final Thread[] threads = new Thread[numThreads];
 
       for (int i = 0; i < numThreads; i++) {
-        threads[i] = new Thread(() -> {
-          try {
-            table.close();
-          } catch (final Exception e) {
-            // Should not throw
-          }
-        });
+        threads[i] =
+            new Thread(
+                () -> {
+                  try {
+                    table.close();
+                  } catch (final Exception e) {
+                    // Should not throw
+                  }
+                });
         threads[i].start();
       }
 
@@ -590,7 +597,8 @@ class JniTableTest {
       final String toString = table.toString();
       assertNotNull(toString, "toString should not be null");
       assertTrue(toString.contains("Table"), "toString should contain resource type");
-      assertTrue(toString.contains(Long.toHexString(VALID_HANDLE)), "toString should contain handle");
+      assertTrue(
+          toString.contains(Long.toHexString(VALID_HANDLE)), "toString should contain handle");
       assertTrue(toString.contains("false"), "toString should show not closed");
     }
 

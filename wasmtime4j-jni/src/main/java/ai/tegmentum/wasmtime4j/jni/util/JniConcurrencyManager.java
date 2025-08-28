@@ -60,12 +60,11 @@ public final class JniConcurrencyManager implements AutoCloseable {
 
   /** Statistics. */
   private final AtomicLong totalOperations = new AtomicLong(0);
+
   private final AtomicLong timeoutOperations = new AtomicLong(0);
   private final AtomicLong failedOperations = new AtomicLong(0);
 
-  /**
-   * Creates a new concurrency manager with default settings.
-   */
+  /** Creates a new concurrency manager with default settings. */
   public JniConcurrencyManager() {
     this(DEFAULT_MAX_CONCURRENT_OPERATIONS, DEFAULT_OPERATION_TIMEOUT_MS);
   }
@@ -75,7 +74,8 @@ public final class JniConcurrencyManager implements AutoCloseable {
    *
    * @param maxConcurrentOperations maximum concurrent operations per resource
    * @param operationTimeoutMs operation timeout in milliseconds
-   * @throws IllegalArgumentException if maxConcurrentOperations is less than 1 or timeout is negative
+   * @throws IllegalArgumentException if maxConcurrentOperations is less than 1 or timeout is
+   *     negative
    */
   public JniConcurrencyManager(final int maxConcurrentOperations, final long operationTimeoutMs) {
     JniValidation.requirePositive(maxConcurrentOperations, "maxConcurrentOperations");
@@ -84,7 +84,7 @@ public final class JniConcurrencyManager implements AutoCloseable {
     this.maxConcurrentOperations = maxConcurrentOperations;
     this.operationTimeoutMs = operationTimeoutMs;
     this.resourceControls = new ConcurrentHashMap<>();
-    
+
     // Global semaphore to limit total concurrent operations across all resources
     this.globalSemaphore = new Semaphore(maxConcurrentOperations * 4, true); // Fair semaphore
 
@@ -142,7 +142,8 @@ public final class JniConcurrencyManager implements AutoCloseable {
     }
 
     resourceControls.computeIfAbsent(resourceHandle, h -> new ResourceConcurrencyControl(h));
-    LOGGER.fine("Registered resource for concurrency management: 0x" + Long.toHexString(resourceHandle));
+    LOGGER.fine(
+        "Registered resource for concurrency management: 0x" + Long.toHexString(resourceHandle));
   }
 
   /**
@@ -157,7 +158,9 @@ public final class JniConcurrencyManager implements AutoCloseable {
     final ResourceConcurrencyControl control = resourceControls.remove(resourceHandle);
     if (control != null) {
       control.close();
-      LOGGER.fine("Unregistered resource from concurrency management: 0x" + Long.toHexString(resourceHandle));
+      LOGGER.fine(
+          "Unregistered resource from concurrency management: 0x"
+              + Long.toHexString(resourceHandle));
     }
   }
 
@@ -226,7 +229,10 @@ public final class JniConcurrencyManager implements AutoCloseable {
       LOGGER.info(
           String.format(
               "Closing JniConcurrencyManager: resources=%d, totalOps=%d, timeouts=%d, failures=%d",
-              resourceControls.size(), totalOperations.get(), timeoutOperations.get(), failedOperations.get()));
+              resourceControls.size(),
+              totalOperations.get(),
+              timeoutOperations.get(),
+              failedOperations.get()));
 
       // Close all resource controls
       for (final ResourceConcurrencyControl control : resourceControls.values()) {
@@ -251,13 +257,14 @@ public final class JniConcurrencyManager implements AutoCloseable {
    * @param readLock true for read lock, false for write lock
    * @return the result of the operation
    */
-  private <T> T executeWithLock(final long resourceHandle, final Supplier<T> operation, final boolean readLock) {
+  private <T> T executeWithLock(
+      final long resourceHandle, final Supplier<T> operation, final boolean readLock) {
     if (closed.get()) {
       throw new RuntimeException("Concurrency manager is closed");
     }
 
     // Get or create resource control
-    final ResourceConcurrencyControl control = 
+    final ResourceConcurrencyControl control =
         resourceControls.computeIfAbsent(resourceHandle, h -> new ResourceConcurrencyControl(h));
 
     totalOperations.incrementAndGet();
@@ -293,9 +300,7 @@ public final class JniConcurrencyManager implements AutoCloseable {
     }
   }
 
-  /**
-   * Resource-specific concurrency control.
-   */
+  /** Resource-specific concurrency control. */
   private static final class ResourceConcurrencyControl {
     private final long resourceHandle;
     private final ReentrantReadWriteLock lock;
@@ -309,9 +314,11 @@ public final class JniConcurrencyManager implements AutoCloseable {
       this.closed = new AtomicBoolean(false);
     }
 
-    <T> T executeWithLock(final Supplier<T> operation, final boolean readLock, final long timeoutMs) {
+    <T> T executeWithLock(
+        final Supplier<T> operation, final boolean readLock, final long timeoutMs) {
       if (closed.get()) {
-        throw new RuntimeException("Resource control is closed for handle: 0x" + Long.toHexString(resourceHandle));
+        throw new RuntimeException(
+            "Resource control is closed for handle: 0x" + Long.toHexString(resourceHandle));
       }
 
       final ReentrantReadWriteLock.ReadLock rLock = readLock ? lock.readLock() : null;
@@ -370,8 +377,9 @@ public final class JniConcurrencyManager implements AutoCloseable {
         // Wait for active operations to complete with timeout
         final long startTime = System.currentTimeMillis();
         final long maxWaitTime = 5000; // 5 seconds
-        
-        while (activeOperations.get() > 0 && (System.currentTimeMillis() - startTime) < maxWaitTime) {
+
+        while (activeOperations.get() > 0
+            && (System.currentTimeMillis() - startTime) < maxWaitTime) {
           try {
             Thread.sleep(10);
           } catch (final InterruptedException e) {
@@ -394,6 +402,9 @@ public final class JniConcurrencyManager implements AutoCloseable {
   public String toString() {
     return String.format(
         "JniConcurrencyManager{resources=%d, totalOps=%d, timeouts=%d, failures=%d}",
-        resourceControls.size(), totalOperations.get(), timeoutOperations.get(), failedOperations.get());
+        resourceControls.size(),
+        totalOperations.get(),
+        timeoutOperations.get(),
+        failedOperations.get());
   }
 }

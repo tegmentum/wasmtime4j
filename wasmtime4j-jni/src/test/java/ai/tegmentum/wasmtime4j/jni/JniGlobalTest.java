@@ -5,13 +5,11 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyDouble;
 import static org.mockito.ArgumentMatchers.anyFloat;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.when;
 
 import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
 import ai.tegmentum.wasmtime4j.jni.exception.JniValidationException;
@@ -289,8 +287,12 @@ class JniGlobalTest {
       mockedStatic.when(() -> JniGlobal.nativeIsMutable(VALID_HANDLE)).thenReturn(true);
       mockedStatic.when(() -> JniGlobal.nativeSetIntValue(anyLong(), anyInt())).thenReturn(false);
       mockedStatic.when(() -> JniGlobal.nativeSetLongValue(anyLong(), anyLong())).thenReturn(false);
-      mockedStatic.when(() -> JniGlobal.nativeSetFloatValue(anyLong(), anyFloat())).thenReturn(false);
-      mockedStatic.when(() -> JniGlobal.nativeSetDoubleValue(anyLong(), anyDouble())).thenReturn(false);
+      mockedStatic
+          .when(() -> JniGlobal.nativeSetFloatValue(anyLong(), anyFloat()))
+          .thenReturn(false);
+      mockedStatic
+          .when(() -> JniGlobal.nativeSetDoubleValue(anyLong(), anyDouble()))
+          .thenReturn(false);
 
       final JniGlobal global = new JniGlobal(VALID_HANDLE);
 
@@ -357,12 +359,13 @@ class JniGlobalTest {
     try (MockedStatic<JniGlobal> mockedStatic = mockStatic(JniGlobal.class)) {
       mockedStatic.when(() -> JniGlobal.nativeDestroyGlobal(VALID_HANDLE)).then(invocation -> null);
 
-      assertDoesNotThrow(() -> {
-        try (JniGlobal global = new JniGlobal(VALID_HANDLE)) {
-          assertFalse(global.isClosed());
-          assertThat(global.getNativeHandle()).isEqualTo(VALID_HANDLE);
-        }
-      });
+      assertDoesNotThrow(
+          () -> {
+            try (JniGlobal global = new JniGlobal(VALID_HANDLE)) {
+              assertFalse(global.isClosed());
+              assertThat(global.getNativeHandle()).isEqualTo(VALID_HANDLE);
+            }
+          });
 
       mockedStatic.verify(() -> JniGlobal.nativeDestroyGlobal(VALID_HANDLE));
     }
@@ -397,8 +400,7 @@ class JniGlobalTest {
 
       final JniGlobal global = new JniGlobal(VALID_HANDLE);
 
-      final RuntimeException exception =
-          assertThrows(RuntimeException.class, global::getValue);
+      final RuntimeException exception = assertThrows(RuntimeException.class, global::getValue);
 
       assertThat(exception.getMessage()).contains("Unexpected error getting global value");
       assertThat(exception.getCause()).isNotNull();
@@ -417,10 +419,12 @@ class JniGlobalTest {
       // Test concurrent access doesn't cause issues
       final Thread[] threads = new Thread[5];
       for (int i = 0; i < threads.length; i++) {
-        threads[i] = new Thread(() -> {
-          assertThat(global.getValueType()).isEqualTo("i32");
-          assertTrue(global.isMutable());
-        });
+        threads[i] =
+            new Thread(
+                () -> {
+                  assertThat(global.getValueType()).isEqualTo("i32");
+                  assertTrue(global.isMutable());
+                });
       }
 
       for (Thread thread : threads) {
@@ -456,8 +460,7 @@ class JniGlobalTest {
 
       final JniGlobal global = new JniGlobal(VALID_HANDLE);
 
-      final RuntimeException exception =
-          assertThrows(RuntimeException.class, global::getIntValue);
+      final RuntimeException exception = assertThrows(RuntimeException.class, global::getIntValue);
 
       assertThat(exception).isInstanceOf(RuntimeException.class);
       assertThat(exception.getCause().getMessage()).isEqualTo("Type mismatch");

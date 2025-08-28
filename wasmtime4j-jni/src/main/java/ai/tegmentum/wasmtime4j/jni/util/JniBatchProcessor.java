@@ -11,8 +11,8 @@ import java.util.logging.Logger;
 /**
  * Utility for batching JNI calls to improve performance.
  *
- * <p>This class allows batching multiple JNI operations together to reduce the overhead of
- * crossing the JNI boundary. It provides both synchronous and asynchronous batching capabilities.
+ * <p>This class allows batching multiple JNI operations together to reduce the overhead of crossing
+ * the JNI boundary. It provides both synchronous and asynchronous batching capabilities.
  *
  * <p>Key features:
  *
@@ -53,9 +53,7 @@ public final class JniBatchProcessor implements AutoCloseable {
   /** Background thread for processing batches. */
   private Thread processingThread;
 
-  /**
-   * Creates a new batch processor with default settings.
-   */
+  /** Creates a new batch processor with default settings. */
   public JniBatchProcessor() {
     this(DEFAULT_MAX_BATCH_SIZE, DEFAULT_BATCH_TIMEOUT_MS);
   }
@@ -168,25 +166,22 @@ public final class JniBatchProcessor implements AutoCloseable {
     }
   }
 
-  /**
-   * Starts the background processing thread.
-   */
+  /** Starts the background processing thread. */
   private void startProcessingThread() {
     processingThread = new Thread(this::processOperations, "JniBatchProcessor");
     processingThread.setDaemon(true);
     processingThread.start();
   }
 
-  /**
-   * Main processing loop for batching operations.
-   */
+  /** Main processing loop for batching operations. */
   private void processOperations() {
     final List<BatchOperation<?>> batch = new ArrayList<>();
 
     while (!closed.get() && !Thread.currentThread().isInterrupted()) {
       try {
         // Wait for the first operation
-        final BatchOperation<?> firstOp = operationQueue.poll(batchTimeoutMs, java.util.concurrent.TimeUnit.MILLISECONDS);
+        final BatchOperation<?> firstOp =
+            operationQueue.poll(batchTimeoutMs, java.util.concurrent.TimeUnit.MILLISECONDS);
         if (firstOp == null) {
           continue; // Timeout, check for shutdown
         }
@@ -202,7 +197,8 @@ public final class JniBatchProcessor implements AutoCloseable {
             break;
           }
 
-          final BatchOperation<?> op = operationQueue.poll(timeRemaining, java.util.concurrent.TimeUnit.MILLISECONDS);
+          final BatchOperation<?> op =
+              operationQueue.poll(timeRemaining, java.util.concurrent.TimeUnit.MILLISECONDS);
           if (op == null) {
             break; // Timeout
           }
@@ -243,9 +239,7 @@ public final class JniBatchProcessor implements AutoCloseable {
     }
   }
 
-  /**
-   * Processes any remaining operations during shutdown.
-   */
+  /** Processes any remaining operations during shutdown. */
   private void processRemainingOperations() {
     final List<BatchOperation<?>> remaining = new ArrayList<>();
     operationQueue.drainTo(remaining);
