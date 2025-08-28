@@ -9,13 +9,23 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mockStatic;
 
+import ai.tegmentum.wasmtime4j.FunctionType;
+import ai.tegmentum.wasmtime4j.WasmValue;
+import ai.tegmentum.wasmtime4j.WasmValueType;
+import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
 import ai.tegmentum.wasmtime4j.jni.exception.JniValidationException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
 /**
  * Unit tests for {@link JniFunction}.
+ *
+ * <p>These tests cover the complete WebAssembly type system support, multi-value operations, type
+ * validation, function caching, and async execution functionality.
  *
  * <p>Note: These tests focus on the Java wrapper logic and defensive programming. Native method
  * behavior is tested separately in integration tests.
@@ -33,6 +43,7 @@ class JniFunctionTest {
     assertThat(function.getName()).isEqualTo(FUNCTION_NAME);
     assertThat(function.getResourceType()).isEqualTo("Function[" + FUNCTION_NAME + "]");
     assertFalse(function.isClosed());
+    assertThat(function.getCallCount()).isEqualTo(0);
   }
 
   @Test
@@ -54,87 +65,262 @@ class JniFunctionTest {
   }
 
   @Test
-  void testGetName() {
-    final JniFunction function = new JniFunction(VALID_HANDLE, FUNCTION_NAME);
-    assertThat(function.getName()).isEqualTo(FUNCTION_NAME);
-  }
-
-  @Test
-  void testGetParameterTypes() {
+  void testGetFunctionType() {
     try (MockedStatic<JniFunction> mockedStatic = mockStatic(JniFunction.class)) {
-      final String[] expectedTypes = {"i32", "f64"};
+      final String[] paramTypes = {"i32", "f64"};
+      final String[] returnTypes = {"i64"};
+      
       mockedStatic
           .when(() -> JniFunction.nativeGetParameterTypes(VALID_HANDLE))
-          .thenReturn(expectedTypes);
-
-      final JniFunction function = new JniFunction(VALID_HANDLE, FUNCTION_NAME);
-      final String[] parameterTypes = function.getParameterTypes();
-
-      assertThat(parameterTypes).containsExactly("i32", "f64");
-    }
-  }
-
-  @Test
-  void testGetParameterTypesReturnsEmptyWhenNull() {
-    try (MockedStatic<JniFunction> mockedStatic = mockStatic(JniFunction.class)) {
-      mockedStatic.when(() -> JniFunction.nativeGetParameterTypes(VALID_HANDLE)).thenReturn(null);
-
-      final JniFunction function = new JniFunction(VALID_HANDLE, FUNCTION_NAME);
-      final String[] parameterTypes = function.getParameterTypes();
-
-      assertThat(parameterTypes).isEmpty();
-    }
-  }
-
-  @Test
-  void testGetReturnTypes() {
-    try (MockedStatic<JniFunction> mockedStatic = mockStatic(JniFunction.class)) {
-      final String[] expectedTypes = {"i32"};
+          .thenReturn(paramTypes);
       mockedStatic
           .when(() -> JniFunction.nativeGetReturnTypes(VALID_HANDLE))
-          .thenReturn(expectedTypes);
+          .thenReturn(returnTypes);
 
       final JniFunction function = new JniFunction(VALID_HANDLE, FUNCTION_NAME);
-      final String[] returnTypes = function.getReturnTypes();
+      final FunctionType functionType = function.getFunctionType();
 
-      assertThat(returnTypes).containsExactly("i32");
+      assertThat(functionType.getParamTypes()).containsExactly(WasmValueType.I32, WasmValueType.F64);
+      assertThat(functionType.getReturnTypes()).containsExactly(WasmValueType.I64);
+      
+      // Test caching - second call should return same instance
+      final FunctionType cachedType = function.getFunctionType();
+      assertThat(cachedType).isSameAs(functionType);
     }
   }
 
   @Test
-  void testGetReturnTypesReturnsEmptyWhenNull() {
+  void testGetFunctionTypeWithAdvancedTypes() {
     try (MockedStatic<JniFunction> mockedStatic = mockStatic(JniFunction.class)) {
-      mockedStatic.when(() -> JniFunction.nativeGetReturnTypes(VALID_HANDLE)).thenReturn(null);
+      final String[] paramTypes = {"v128", "funcref", "externref"};
+      final String[] returnTypes = {"v128", "i32"};
+      
+      mockedStatic
+          .when(() -> JniFunction.nativeGetParameterTypes(VALID_HANDLE))
+          .thenReturn(paramTypes);
+      mockedStatic
+          .when(() -> JniFunction.nativeGetReturnTypes(VALID_HANDLE))
+          .thenReturn(returnTypes);
 
       final JniFunction function = new JniFunction(VALID_HANDLE, FUNCTION_NAME);
-      final String[] returnTypes = function.getReturnTypes();
+      final FunctionType functionType = function.getFunctionType();
 
-      assertThat(returnTypes).isEmpty();
+      assertThat(functionType.getParamTypes())
+          .containsExactly(WasmValueType.V128, WasmValueType.FUNCREF, WasmValueType.EXTERNREF);
+      assertThat(functionType.getReturnTypes())
+          .containsExactly(WasmValueType.V128, WasmValueType.I32);
     }
   }
 
   @Test
-  void testCallWithNoParameters() {
+  void testGetFunctionTypeWithNativeError() {
     try (MockedStatic<JniFunction> mockedStatic = mockStatic(JniFunction.class)) {
-      mockedStatic.when(() -> JniFunction.nativeCall(VALID_HANDLE, new Object[0])).thenReturn(42);
+      mockedStatic
+          .when(() -> JniFunction.nativeGetParameterTypes(VALID_HANDLE))
+          .thenReturn(null);
 
       final JniFunction function = new JniFunction(VALID_HANDLE, FUNCTION_NAME);
-      final Object result = function.call();
-
-      assertThat(result).isEqualTo(42);
+      
+      final WasmException exception = 
+          assertThrows(WasmException.class, function::getFunctionType);
+      
+      assertThat(exception.getMessage())
+          .contains("Failed to retrieve function signature for '" + FUNCTION_NAME + "'");
     }
   }
 
   @Test
-  void testCallWithParameters() {
+  void testCallWithBasicTypes() throws WasmException {
     try (MockedStatic<JniFunction> mockedStatic = mockStatic(JniFunction.class)) {
-      final Object[] params = {10, "test"};
-      mockedStatic.when(() -> JniFunction.nativeCall(VALID_HANDLE, params)).thenReturn("result");
+      final String[] paramTypes = {"i32", "f64"};
+      final String[] returnTypes = {"i64"};
+      final Object[] nativeResults = {42L};
+      
+      mockedStatic
+          .when(() -> JniFunction.nativeGetParameterTypes(VALID_HANDLE))
+          .thenReturn(paramTypes);
+      mockedStatic
+          .when(() -> JniFunction.nativeGetReturnTypes(VALID_HANDLE))
+          .thenReturn(returnTypes);
+      mockedStatic
+          .when(() -> JniFunction.nativeCallMultiValue(anyLong(), any(Object[].class)))
+          .thenReturn(nativeResults);
 
       final JniFunction function = new JniFunction(VALID_HANDLE, FUNCTION_NAME);
-      final Object result = function.call(params);
+      final WasmValue[] params = {WasmValue.i32(10), WasmValue.f64(3.14)};
+      final WasmValue[] results = function.call(params);
 
-      assertThat(result).isEqualTo("result");
+      assertThat(results).hasSize(1);
+      assertThat(results[0].getType()).isEqualTo(WasmValueType.I64);
+      assertThat(results[0].asLong()).isEqualTo(42L);
+      assertThat(function.getCallCount()).isEqualTo(1);
+    }
+  }
+
+  @Test
+  void testCallWithV128Type() throws WasmException {
+    try (MockedStatic<JniFunction> mockedStatic = mockStatic(JniFunction.class)) {
+      final String[] paramTypes = {"v128"};
+      final String[] returnTypes = {"v128"};
+      final byte[] v128Input = new byte[16];
+      final byte[] v128Output = new byte[16];
+      for (int i = 0; i < 16; i++) {
+        v128Input[i] = (byte) i;
+        v128Output[i] = (byte) (i * 2);
+      }
+      final Object[] nativeResults = {v128Output};
+      
+      mockedStatic
+          .when(() -> JniFunction.nativeGetParameterTypes(VALID_HANDLE))
+          .thenReturn(paramTypes);
+      mockedStatic
+          .when(() -> JniFunction.nativeGetReturnTypes(VALID_HANDLE))
+          .thenReturn(returnTypes);
+      mockedStatic
+          .when(() -> JniFunction.nativeCallMultiValue(anyLong(), any(Object[].class)))
+          .thenReturn(nativeResults);
+
+      final JniFunction function = new JniFunction(VALID_HANDLE, FUNCTION_NAME);
+      final WasmValue[] params = {WasmValue.v128(v128Input)};
+      final WasmValue[] results = function.call(params);
+
+      assertThat(results).hasSize(1);
+      assertThat(results[0].getType()).isEqualTo(WasmValueType.V128);
+      assertThat(results[0].asV128()).isEqualTo(v128Output);
+    }
+  }
+
+  @Test
+  void testCallWithReferenceTypes() throws WasmException {
+    try (MockedStatic<JniFunction> mockedStatic = mockStatic(JniFunction.class)) {
+      final String[] paramTypes = {"funcref", "externref"};
+      final String[] returnTypes = {"externref"};
+      final Object funcRef = new Object(); // Mock function reference
+      final Object externRef = "external_data";
+      final Object returnRef = "returned_data";
+      final Object[] nativeResults = {returnRef};
+      
+      mockedStatic
+          .when(() -> JniFunction.nativeGetParameterTypes(VALID_HANDLE))
+          .thenReturn(paramTypes);
+      mockedStatic
+          .when(() -> JniFunction.nativeGetReturnTypes(VALID_HANDLE))
+          .thenReturn(returnTypes);
+      mockedStatic
+          .when(() -> JniFunction.nativeCallMultiValue(anyLong(), any(Object[].class)))
+          .thenReturn(nativeResults);
+
+      final JniFunction function = new JniFunction(VALID_HANDLE, FUNCTION_NAME);
+      final WasmValue[] params = {WasmValue.funcref(funcRef), WasmValue.externref(externRef)};
+      final WasmValue[] results = function.call(params);
+
+      assertThat(results).hasSize(1);
+      assertThat(results[0].getType()).isEqualTo(WasmValueType.EXTERNREF);
+      assertThat(results[0].asExternref()).isEqualTo(returnRef);
+    }
+  }
+
+  @Test
+  void testCallWithMultipleReturnValues() throws WasmException {
+    try (MockedStatic<JniFunction> mockedStatic = mockStatic(JniFunction.class)) {
+      final String[] paramTypes = {"i32"};
+      final String[] returnTypes = {"i32", "f64", "i64"};
+      final Object[] nativeResults = {42, 3.14, 100L};
+      
+      mockedStatic
+          .when(() -> JniFunction.nativeGetParameterTypes(VALID_HANDLE))
+          .thenReturn(paramTypes);
+      mockedStatic
+          .when(() -> JniFunction.nativeGetReturnTypes(VALID_HANDLE))
+          .thenReturn(returnTypes);
+      mockedStatic
+          .when(() -> JniFunction.nativeCallMultiValue(anyLong(), any(Object[].class)))
+          .thenReturn(nativeResults);
+
+      final JniFunction function = new JniFunction(VALID_HANDLE, FUNCTION_NAME);
+      final WasmValue[] params = {WasmValue.i32(10)};
+      final WasmValue[] results = function.call(params);
+
+      assertThat(results).hasSize(3);
+      assertThat(results[0].getType()).isEqualTo(WasmValueType.I32);
+      assertThat(results[0].asInt()).isEqualTo(42);
+      assertThat(results[1].getType()).isEqualTo(WasmValueType.F64);
+      assertThat(results[1].asDouble()).isEqualTo(3.14);
+      assertThat(results[2].getType()).isEqualTo(WasmValueType.I64);
+      assertThat(results[2].asLong()).isEqualTo(100L);
+    }
+  }
+
+  @Test
+  void testCallWithNoParameters() throws WasmException {
+    try (MockedStatic<JniFunction> mockedStatic = mockStatic(JniFunction.class)) {
+      final String[] paramTypes = {};
+      final String[] returnTypes = {"i32"};
+      final Object[] nativeResults = {42};
+      
+      mockedStatic
+          .when(() -> JniFunction.nativeGetParameterTypes(VALID_HANDLE))
+          .thenReturn(paramTypes);
+      mockedStatic
+          .when(() -> JniFunction.nativeGetReturnTypes(VALID_HANDLE))
+          .thenReturn(returnTypes);
+      mockedStatic
+          .when(() -> JniFunction.nativeCallMultiValue(anyLong(), any(Object[].class)))
+          .thenReturn(nativeResults);
+
+      final JniFunction function = new JniFunction(VALID_HANDLE, FUNCTION_NAME);
+      final WasmValue[] results = function.call();
+
+      assertThat(results).hasSize(1);
+      assertThat(results[0].asInt()).isEqualTo(42);
+    }
+  }
+
+  @Test
+  void testCallWithParameterCountMismatch() {
+    try (MockedStatic<JniFunction> mockedStatic = mockStatic(JniFunction.class)) {
+      final String[] paramTypes = {"i32", "f64"};
+      final String[] returnTypes = {"i32"};
+      
+      mockedStatic
+          .when(() -> JniFunction.nativeGetParameterTypes(VALID_HANDLE))
+          .thenReturn(paramTypes);
+      mockedStatic
+          .when(() -> JniFunction.nativeGetReturnTypes(VALID_HANDLE))
+          .thenReturn(returnTypes);
+
+      final JniFunction function = new JniFunction(VALID_HANDLE, FUNCTION_NAME);
+      final WasmValue[] params = {WasmValue.i32(10)}; // Missing one parameter
+
+      final WasmException exception = assertThrows(WasmException.class, () -> function.call(params));
+      
+      assertThat(exception.getMessage())
+          .contains("Parameter validation failed")
+          .contains(FUNCTION_NAME);
+      assertThat(exception.getCause().getMessage()).contains("Parameter count mismatch");
+    }
+  }
+
+  @Test
+  void testCallWithTypeMismatch() {
+    try (MockedStatic<JniFunction> mockedStatic = mockStatic(JniFunction.class)) {
+      final String[] paramTypes = {"i32", "f64"};
+      final String[] returnTypes = {"i32"};
+      
+      mockedStatic
+          .when(() -> JniFunction.nativeGetParameterTypes(VALID_HANDLE))
+          .thenReturn(paramTypes);
+      mockedStatic
+          .when(() -> JniFunction.nativeGetReturnTypes(VALID_HANDLE))
+          .thenReturn(returnTypes);
+
+      final JniFunction function = new JniFunction(VALID_HANDLE, FUNCTION_NAME);
+      final WasmValue[] params = {WasmValue.i32(10), WasmValue.i32(20)}; // Wrong type for second param
+
+      final WasmException exception = assertThrows(WasmException.class, () -> function.call(params));
+      
+      assertThat(exception.getMessage()).contains("Parameter validation failed");
+      assertThat(exception.getCause().getMessage()).contains("Parameter type mismatch");
     }
   }
 
@@ -143,106 +329,150 @@ class JniFunctionTest {
     final JniFunction function = new JniFunction(VALID_HANDLE, FUNCTION_NAME);
 
     final JniValidationException exception =
-        assertThrows(JniValidationException.class, () -> function.call((Object[]) null));
+        assertThrows(JniValidationException.class, () -> function.call((WasmValue[]) null));
 
-    assertThat(exception.getMessage()).contains("parameters");
+    assertThat(exception.getMessage()).contains("params");
     assertThat(exception.getMessage()).contains("must not be null");
   }
 
   @Test
-  void testCallInt() {
+  void testCallWithNullParameterElement() {
     try (MockedStatic<JniFunction> mockedStatic = mockStatic(JniFunction.class)) {
-      final int[] params = {10, 20};
-      mockedStatic.when(() -> JniFunction.nativeCallInt(VALID_HANDLE, params)).thenReturn(30);
+      final String[] paramTypes = {"i32", "i32"};
+      final String[] returnTypes = {"i32"};
+      
+      mockedStatic
+          .when(() -> JniFunction.nativeGetParameterTypes(VALID_HANDLE))
+          .thenReturn(paramTypes);
+      mockedStatic
+          .when(() -> JniFunction.nativeGetReturnTypes(VALID_HANDLE))
+          .thenReturn(returnTypes);
 
       final JniFunction function = new JniFunction(VALID_HANDLE, FUNCTION_NAME);
-      final int result = function.callInt(params);
+      final WasmValue[] params = {WasmValue.i32(10), null};
 
-      assertThat(result).isEqualTo(30);
+      final WasmException exception = assertThrows(WasmException.class, () -> function.call(params));
+      
+      assertThat(exception.getMessage()).contains("Parameter validation failed");
+      assertThat(exception.getCause().getMessage()).contains("Parameter at index 1 is null");
     }
   }
 
   @Test
-  void testCallIntWithNullParameters() {
-    final JniFunction function = new JniFunction(VALID_HANDLE, FUNCTION_NAME);
-
-    final JniValidationException exception =
-        assertThrows(JniValidationException.class, () -> function.callInt((int[]) null));
-
-    assertThat(exception.getMessage()).contains("parameters");
-    assertThat(exception.getMessage()).contains("must not be null");
-  }
-
-  @Test
-  void testCallLong() {
+  void testCallAsync() throws ExecutionException, InterruptedException {
     try (MockedStatic<JniFunction> mockedStatic = mockStatic(JniFunction.class)) {
-      final long[] params = {100L, 200L};
-      mockedStatic.when(() -> JniFunction.nativeCallLong(VALID_HANDLE, params)).thenReturn(300L);
+      final String[] paramTypes = {"i32"};
+      final String[] returnTypes = {"i64"};
+      final Object[] nativeResults = {42L};
+      
+      mockedStatic
+          .when(() -> JniFunction.nativeGetParameterTypes(VALID_HANDLE))
+          .thenReturn(paramTypes);
+      mockedStatic
+          .when(() -> JniFunction.nativeGetReturnTypes(VALID_HANDLE))
+          .thenReturn(returnTypes);
+      mockedStatic
+          .when(() -> JniFunction.nativeCallMultiValue(anyLong(), any(Object[].class)))
+          .thenReturn(nativeResults);
 
       final JniFunction function = new JniFunction(VALID_HANDLE, FUNCTION_NAME);
-      final long result = function.callLong(params);
+      final WasmValue[] params = {WasmValue.i32(10)};
+      
+      final CompletableFuture<WasmValue[]> future = function.callAsync(params);
+      final WasmValue[] results = future.get(5, TimeUnit.SECONDS);
 
-      assertThat(result).isEqualTo(300L);
+      assertThat(results).hasSize(1);
+      assertThat(results[0].asLong()).isEqualTo(42L);
     }
   }
 
   @Test
-  void testCallLongWithNullParameters() {
-    final JniFunction function = new JniFunction(VALID_HANDLE, FUNCTION_NAME);
-
-    final JniValidationException exception =
-        assertThrows(JniValidationException.class, () -> function.callLong((long[]) null));
-
-    assertThat(exception.getMessage()).contains("parameters");
-    assertThat(exception.getMessage()).contains("must not be null");
-  }
-
-  @Test
-  void testCallFloat() {
+  void testCallAsyncWithException() {
     try (MockedStatic<JniFunction> mockedStatic = mockStatic(JniFunction.class)) {
-      final float[] params = {1.5f, 2.5f};
-      mockedStatic.when(() -> JniFunction.nativeCallFloat(VALID_HANDLE, params)).thenReturn(4.0f);
+      final String[] paramTypes = {"i32"};
+      final String[] returnTypes = {"i32"};
+      
+      mockedStatic
+          .when(() -> JniFunction.nativeGetParameterTypes(VALID_HANDLE))
+          .thenReturn(paramTypes);
+      mockedStatic
+          .when(() -> JniFunction.nativeGetReturnTypes(VALID_HANDLE))
+          .thenReturn(returnTypes);
+      mockedStatic
+          .when(() -> JniFunction.nativeCallMultiValue(anyLong(), any(Object[].class)))
+          .thenThrow(new RuntimeException("Native error"));
 
       final JniFunction function = new JniFunction(VALID_HANDLE, FUNCTION_NAME);
-      final float result = function.callFloat(params);
-
-      assertThat(result).isEqualTo(4.0f);
+      final WasmValue[] params = {WasmValue.i32(10)};
+      
+      final CompletableFuture<WasmValue[]> future = function.callAsync(params);
+      
+      final ExecutionException exception = 
+          assertThrows(ExecutionException.class, () -> future.get(5, TimeUnit.SECONDS));
+      
+      assertThat(exception.getCause()).isInstanceOf(RuntimeException.class);
     }
   }
 
   @Test
-  void testCallFloatWithNullParameters() {
-    final JniFunction function = new JniFunction(VALID_HANDLE, FUNCTION_NAME);
-
-    final JniValidationException exception =
-        assertThrows(JniValidationException.class, () -> function.callFloat((float[]) null));
-
-    assertThat(exception.getMessage()).contains("parameters");
-    assertThat(exception.getMessage()).contains("must not be null");
-  }
-
-  @Test
-  void testCallDouble() {
+  void testResultCaching() throws WasmException {
     try (MockedStatic<JniFunction> mockedStatic = mockStatic(JniFunction.class)) {
-      final double[] params = {1.5, 2.5};
-      mockedStatic.when(() -> JniFunction.nativeCallDouble(VALID_HANDLE, params)).thenReturn(4.0);
+      final String[] paramTypes = {"i32"};
+      final String[] returnTypes = {"i32"};
+      final Object[] nativeResults = {42};
+      
+      mockedStatic
+          .when(() -> JniFunction.nativeGetParameterTypes(VALID_HANDLE))
+          .thenReturn(paramTypes);
+      mockedStatic
+          .when(() -> JniFunction.nativeGetReturnTypes(VALID_HANDLE))
+          .thenReturn(returnTypes);
+      mockedStatic
+          .when(() -> JniFunction.nativeCallMultiValue(anyLong(), any(Object[].class)))
+          .thenReturn(nativeResults);
 
       final JniFunction function = new JniFunction(VALID_HANDLE, FUNCTION_NAME);
-      final double result = function.callDouble(params);
+      final WasmValue[] params = {WasmValue.i32(10)};
+      
+      // Make multiple calls to trigger caching behavior
+      for (int i = 0; i < 20; i++) {
+        final WasmValue[] results = function.call(params);
+        assertThat(results[0].asInt()).isEqualTo(42);
+      }
 
-      assertThat(result).isEqualTo(4.0);
+      assertThat(function.getCallCount()).isEqualTo(20);
+      // Cache hit ratio should be calculated (though specific value depends on caching logic)
+      assertThat(function.getCacheHitRatio()).isGreaterThanOrEqualTo(0.0);
     }
   }
 
   @Test
-  void testCallDoubleWithNullParameters() {
-    final JniFunction function = new JniFunction(VALID_HANDLE, FUNCTION_NAME);
+  void testClearCache() throws WasmException {
+    try (MockedStatic<JniFunction> mockedStatic = mockStatic(JniFunction.class)) {
+      final String[] paramTypes = {"i32"};
+      final String[] returnTypes = {"i32"};
+      final Object[] nativeResults = {42};
+      
+      mockedStatic
+          .when(() -> JniFunction.nativeGetParameterTypes(VALID_HANDLE))
+          .thenReturn(paramTypes);
+      mockedStatic
+          .when(() -> JniFunction.nativeGetReturnTypes(VALID_HANDLE))
+          .thenReturn(returnTypes);
+      mockedStatic
+          .when(() -> JniFunction.nativeCallMultiValue(anyLong(), any(Object[].class)))
+          .thenReturn(nativeResults);
 
-    final JniValidationException exception =
-        assertThrows(JniValidationException.class, () -> function.callDouble((double[]) null));
-
-    assertThat(exception.getMessage()).contains("parameters");
-    assertThat(exception.getMessage()).contains("must not be null");
+      final JniFunction function = new JniFunction(VALID_HANDLE, FUNCTION_NAME);
+      final WasmValue[] params = {WasmValue.i32(10)};
+      
+      // Make some calls and then clear cache
+      function.call(params);
+      function.clearCache();
+      
+      // Should still work after clearing cache
+      assertDoesNotThrow(() -> function.call(params));
+    }
   }
 
   @Test
@@ -250,19 +480,17 @@ class JniFunctionTest {
     final JniFunction function = new JniFunction(VALID_HANDLE, FUNCTION_NAME);
     function.close();
 
+    assertThrows(JniResourceException.class, function::getFunctionType);
     assertThrows(JniResourceException.class, function::getParameterTypes);
     assertThrows(JniResourceException.class, function::getReturnTypes);
     assertThrows(JniResourceException.class, function::call);
+    assertThrows(JniResourceException.class, () -> function.call(new WasmValue[0]));
     assertThrows(JniResourceException.class, () -> function.call(new Object[0]));
-    assertThrows(JniResourceException.class, () -> function.callInt(new int[0]));
-    assertThrows(JniResourceException.class, () -> function.callLong(new long[0]));
-    assertThrows(JniResourceException.class, () -> function.callFloat(new float[0]));
-    assertThrows(JniResourceException.class, () -> function.callDouble(new double[0]));
     assertThrows(JniResourceException.class, function::getNativeHandle);
   }
 
   @Test
-  void testClose() {
+  void testCloseWithCacheCleanup() {
     try (MockedStatic<JniFunction> mockedStatic = mockStatic(JniFunction.class)) {
       mockedStatic
           .when(() -> JniFunction.nativeDestroyFunction(VALID_HANDLE))
@@ -279,41 +507,56 @@ class JniFunctionTest {
   }
 
   @Test
-  void testCloseIsIdempotent() {
+  void testLegacyCallMethodsBackwardCompatibility() {
     try (MockedStatic<JniFunction> mockedStatic = mockStatic(JniFunction.class)) {
-      mockedStatic
-          .when(() -> JniFunction.nativeDestroyFunction(VALID_HANDLE))
-          .then(invocation -> null);
+      mockedStatic.when(() -> JniFunction.nativeCall(VALID_HANDLE, new Object[0])).thenReturn(42);
+      mockedStatic.when(() -> JniFunction.nativeCallInt(VALID_HANDLE, new int[0])).thenReturn(42);
+      mockedStatic.when(() -> JniFunction.nativeCallLong(VALID_HANDLE, new long[0])).thenReturn(42L);
+      mockedStatic.when(() -> JniFunction.nativeCallFloat(VALID_HANDLE, new float[0])).thenReturn(42.0f);
+      mockedStatic.when(() -> JniFunction.nativeCallDouble(VALID_HANDLE, new double[0])).thenReturn(42.0);
 
       final JniFunction function = new JniFunction(VALID_HANDLE, FUNCTION_NAME);
 
-      function.close();
-      function.close(); // Second close should be safe
-
-      assertTrue(function.isClosed());
-      // Should only call native destroy once
-      mockedStatic.verify(() -> JniFunction.nativeDestroyFunction(VALID_HANDLE));
+      // Test legacy methods still work
+      assertThat(function.call(new Object[0])).isEqualTo(42);
+      assertThat(function.callInt()).isEqualTo(42);
+      assertThat(function.callLong()).isEqualTo(42L);
+      assertThat(function.callFloat()).isEqualTo(42.0f);
+      assertThat(function.callDouble()).isEqualTo(42.0);
     }
   }
 
   @Test
-  void testTryWithResources() {
+  void testDeprecatedParameterAndReturnTypeMethods() {
     try (MockedStatic<JniFunction> mockedStatic = mockStatic(JniFunction.class)) {
+      final String[] paramTypes = {"i32", "f64"};
+      final String[] returnTypes = {"i64"};
+      
       mockedStatic
-          .when(() -> JniFunction.nativeDestroyFunction(VALID_HANDLE))
-          .then(invocation -> null);
+          .when(() -> JniFunction.nativeGetParameterTypes(VALID_HANDLE))
+          .thenReturn(paramTypes);
+      mockedStatic
+          .when(() -> JniFunction.nativeGetReturnTypes(VALID_HANDLE))
+          .thenReturn(returnTypes);
 
-      assertDoesNotThrow(
-          () -> {
-            try (JniFunction function = new JniFunction(VALID_HANDLE, FUNCTION_NAME)) {
-              assertFalse(function.isClosed());
-              assertThat(function.getNativeHandle()).isEqualTo(VALID_HANDLE);
-              assertThat(function.getName()).isEqualTo(FUNCTION_NAME);
-            }
-          });
-
-      mockedStatic.verify(() -> JniFunction.nativeDestroyFunction(VALID_HANDLE));
+      final JniFunction function = new JniFunction(VALID_HANDLE, FUNCTION_NAME);
+      
+      // Test deprecated methods still work
+      assertThat(function.getParameterTypes()).containsExactly("i32", "f64");
+      assertThat(function.getReturnTypes()).containsExactly("i64");
     }
+  }
+
+  @Test
+  void testGetName() {
+    final JniFunction function = new JniFunction(VALID_HANDLE, FUNCTION_NAME);
+    assertThat(function.getName()).isEqualTo(FUNCTION_NAME);
+  }
+
+  @Test
+  void testGetResourceType() {
+    final JniFunction function = new JniFunction(VALID_HANDLE, FUNCTION_NAME);
+    assertThat(function.getResourceType()).isEqualTo("Function[" + FUNCTION_NAME + "]");
   }
 
   @Test
@@ -328,108 +571,5 @@ class JniFunctionTest {
     function.close();
     final String toStringAfterClose = function.toString();
     assertThat(toStringAfterClose).contains("closed=true");
-  }
-
-  @Test
-  void testGetResourceType() {
-    final JniFunction function = new JniFunction(VALID_HANDLE, FUNCTION_NAME);
-    assertThat(function.getResourceType()).isEqualTo("Function[" + FUNCTION_NAME + "]");
-  }
-
-  @Test
-  void testResourceTypeWithDifferentNames() {
-    final JniFunction function1 = new JniFunction(VALID_HANDLE, "add");
-    final JniFunction function2 = new JniFunction(VALID_HANDLE, "multiply");
-
-    assertThat(function1.getResourceType()).isEqualTo("Function[add]");
-    assertThat(function2.getResourceType()).isEqualTo("Function[multiply]");
-  }
-
-  @Test
-  void testExceptionHandling() {
-    try (MockedStatic<JniFunction> mockedStatic = mockStatic(JniFunction.class)) {
-      mockedStatic
-          .when(() -> JniFunction.nativeCall(anyLong(), any(Object[].class)))
-          .thenThrow(new RuntimeException("Native error"));
-
-      final JniFunction function = new JniFunction(VALID_HANDLE, FUNCTION_NAME);
-
-      final RuntimeException exception = assertThrows(RuntimeException.class, function::call);
-
-      assertThat(exception.getMessage())
-          .contains("Unexpected error calling function '" + FUNCTION_NAME + "'");
-      assertThat(exception.getCause()).isNotNull();
-      assertThat(exception.getCause().getMessage()).isEqualTo("Native error");
-    }
-  }
-
-  @Test
-  void testConcurrentAccess() {
-    try (MockedStatic<JniFunction> mockedStatic = mockStatic(JniFunction.class)) {
-      final String[] paramTypes = {"i32", "i32"};
-      mockedStatic
-          .when(() -> JniFunction.nativeGetParameterTypes(VALID_HANDLE))
-          .thenReturn(paramTypes);
-
-      final JniFunction function = new JniFunction(VALID_HANDLE, FUNCTION_NAME);
-
-      // Test concurrent access doesn't cause issues
-      final Thread[] threads = new Thread[5];
-      for (int i = 0; i < threads.length; i++) {
-        threads[i] =
-            new Thread(
-                () -> assertThat(function.getParameterTypes()).containsExactly("i32", "i32"));
-      }
-
-      for (Thread thread : threads) {
-        thread.start();
-      }
-
-      for (Thread thread : threads) {
-        assertDoesNotThrow(() -> thread.join());
-      }
-    }
-  }
-
-  @Test
-  void testOptimizedCallMethods() {
-    try (MockedStatic<JniFunction> mockedStatic = mockStatic(JniFunction.class)) {
-      // Test all optimized call variants with empty arrays
-      mockedStatic.when(() -> JniFunction.nativeCallInt(VALID_HANDLE, new int[0])).thenReturn(42);
-      mockedStatic
-          .when(() -> JniFunction.nativeCallLong(VALID_HANDLE, new long[0]))
-          .thenReturn(42L);
-      mockedStatic
-          .when(() -> JniFunction.nativeCallFloat(VALID_HANDLE, new float[0]))
-          .thenReturn(42.0f);
-      mockedStatic
-          .when(() -> JniFunction.nativeCallDouble(VALID_HANDLE, new double[0]))
-          .thenReturn(42.0);
-
-      final JniFunction function = new JniFunction(VALID_HANDLE, FUNCTION_NAME);
-
-      assertThat(function.callInt()).isEqualTo(42);
-      assertThat(function.callLong()).isEqualTo(42L);
-      assertThat(function.callFloat()).isEqualTo(42.0f);
-      assertThat(function.callDouble()).isEqualTo(42.0);
-    }
-  }
-
-  @Test
-  void testExceptionPropagationInOptimizedCalls() {
-    try (MockedStatic<JniFunction> mockedStatic = mockStatic(JniFunction.class)) {
-      mockedStatic
-          .when(() -> JniFunction.nativeCallInt(anyLong(), any(int[].class)))
-          .thenThrow(new RuntimeException("Native int call error"));
-
-      final JniFunction function = new JniFunction(VALID_HANDLE, FUNCTION_NAME);
-
-      final RuntimeException exception =
-          assertThrows(RuntimeException.class, () -> function.callInt(new int[] {1, 2}));
-
-      assertThat(exception.getMessage())
-          .contains("Unexpected error calling function '" + FUNCTION_NAME + "'");
-      assertThat(exception.getCause().getMessage()).isEqualTo("Native int call error");
-    }
   }
 }

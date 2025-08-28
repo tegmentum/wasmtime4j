@@ -11,7 +11,9 @@ import ai.tegmentum.wasmtime4j.jni.exception.JniValidationException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.Test;
 
-/** Unit tests for {@link JniResource}. */
+/**
+ * Unit tests for {@link JniResource}.
+ */
 class JniResourceTest {
 
   /** Test implementation of JniResource for testing purposes. */
