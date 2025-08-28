@@ -67,7 +67,7 @@ public final class WasiContext extends JniResource {
     this.permissionManager = builder.getPermissionManager();
     this.securityValidator = builder.getSecurityValidator();
     this.environment = new ConcurrentHashMap<>(builder.getEnvironment());
-    this.arguments = builder.getArguments().clone();
+    this.arguments = builder.getArguments().toArray(new String[0]);
     this.preopenedDirectories = new ConcurrentHashMap<>(builder.getPreopenedDirectories());
     this.workingDirectory = builder.getWorkingDirectory();
 

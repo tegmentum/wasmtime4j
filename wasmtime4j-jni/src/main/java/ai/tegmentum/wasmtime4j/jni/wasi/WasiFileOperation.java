@@ -102,10 +102,16 @@ public enum WasiFileOperation {
    * @return true if read access is required, false otherwise
    */
   public boolean requiresReadAccess() {
-    return switch (this) {
-      case READ, METADATA, LIST_DIRECTORY, FOLLOW_SYMLINKS, POLL -> true;
-      default -> false;
-    };
+    switch (this) {
+      case READ:
+      case METADATA:
+      case LIST_DIRECTORY:
+      case FOLLOW_SYMLINKS:
+      case POLL:
+        return true;
+      default:
+        return false;
+    }
   }
 
   /**
@@ -114,11 +120,20 @@ public enum WasiFileOperation {
    * @return true if write access is required, false otherwise
    */
   public boolean requiresWriteAccess() {
-    return switch (this) {
-      case WRITE, CREATE_DIRECTORY, DELETE, RENAME, CHANGE_PERMISSIONS, 
-           CREATE_LINK, SET_TIMES, TRUNCATE, SYNC -> true;
-      default -> false;
-    };
+    switch (this) {
+      case WRITE:
+      case CREATE_DIRECTORY:
+      case DELETE:
+      case RENAME:
+      case CHANGE_PERMISSIONS:
+      case CREATE_LINK:
+      case SET_TIMES:
+      case TRUNCATE:
+      case SYNC:
+        return true;
+      default:
+        return false;
+    }
   }
 
   /**
@@ -136,11 +151,19 @@ public enum WasiFileOperation {
    * @return true if the operation modifies the file system, false otherwise
    */
   public boolean isModifyingOperation() {
-    return switch (this) {
-      case WRITE, CREATE_DIRECTORY, DELETE, RENAME, CHANGE_PERMISSIONS, 
-           CREATE_LINK, SET_TIMES, TRUNCATE -> true;
-      default -> false;
-    };
+    switch (this) {
+      case WRITE:
+      case CREATE_DIRECTORY:
+      case DELETE:
+      case RENAME:
+      case CHANGE_PERMISSIONS:
+      case CREATE_LINK:
+      case SET_TIMES:
+      case TRUNCATE:
+        return true;
+      default:
+        return false;
+    }
   }
 
   /**
@@ -149,10 +172,16 @@ public enum WasiFileOperation {
    * @return true if the operation is potentially dangerous, false otherwise
    */
   public boolean isDangerous() {
-    return switch (this) {
-      case EXECUTE, DELETE, RENAME, CHANGE_PERMISSIONS, CREATE_LINK -> true;
-      default -> false;
-    };
+    switch (this) {
+      case EXECUTE:
+      case DELETE:
+      case RENAME:
+      case CHANGE_PERMISSIONS:
+      case CREATE_LINK:
+        return true;
+      default:
+        return false;
+    }
   }
 
   /**
