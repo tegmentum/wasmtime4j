@@ -7,7 +7,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.junit.jupiter.api.Test;
 
-/** Unit tests for {@link NativeLibraryLoader}. */
+/**
+ * Unit tests for {@link NativeLibraryLoader}.
+ */
 class NativeLibraryLoaderTest {
 
   @Test
