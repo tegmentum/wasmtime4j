@@ -1,6 +1,8 @@
 package ai.tegmentum.wasmtime4j.jni;
 
-import java.util.concurrent.atomic.AtomicBoolean;
+import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
+import ai.tegmentum.wasmtime4j.jni.util.JniResource;
+import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import java.util.logging.Logger;
 
 /**
@@ -10,45 +12,54 @@ import java.util.logging.Logger;
  * library. Tables store references to functions or other objects that can be called indirectly.
  *
  * <p>This implementation ensures defensive programming to prevent JVM crashes and provides
- * comprehensive bounds checking for table access.
+ * comprehensive bounds checking for table access using JniValidation and the JniResource base class.
  */
-public final class JniTable implements AutoCloseable {
+public final class JniTable extends JniResource {
 
   private static final Logger LOGGER = Logger.getLogger(JniTable.class.getName());
-
-  /** Native table handle. */
-  private volatile long nativeHandle;
-
-  /** Flag to track if this table has been closed. */
-  private final AtomicBoolean closed = new AtomicBoolean(false);
 
   /**
    * Creates a new JNI table with the given native handle.
    *
    * @param nativeHandle the native table handle
-   * @throws IllegalArgumentException if nativeHandle is 0
+   * @throws JniResourceException if nativeHandle is invalid
    */
   JniTable(final long nativeHandle) {
-    if (nativeHandle == 0) {
-      throw new IllegalArgumentException("Native handle cannot be 0");
-    }
-    this.nativeHandle = nativeHandle;
-    LOGGER.fine("Created JNI table with handle: " + nativeHandle);
+    super(nativeHandle);
+    LOGGER.fine("Created JNI table with handle: 0x" + Long.toHexString(nativeHandle));
   }
 
   /**
    * Gets the current size of the table.
    *
    * @return the number of elements in the table
-   * @throws IllegalStateException if this table is closed
+   * @throws JniResourceException if this table is closed
    * @throws RuntimeException if the size cannot be retrieved
    */
-  public int size() {
-    validateNotClosed();
+  public int getSize() {
     try {
-      return nativeGetSize(nativeHandle);
+      return nativeGetSize(getNativeHandle());
+    } catch (final JniResourceException e) {
+      throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error getting table size", e);
+    }
+  }
+
+  /**
+   * Gets the maximum size of the table.
+   *
+   * @return the maximum number of elements, or -1 if unlimited
+   * @throws JniResourceException if this table is closed
+   * @throws RuntimeException if the max size cannot be retrieved
+   */
+  public int getMaxSize() {
+    try {
+      return nativeGetMaxSize(getNativeHandle());
+    } catch (final JniResourceException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error getting table max size", e);
     }
   }
 
@@ -56,14 +67,15 @@ public final class JniTable implements AutoCloseable {
    * Gets the element type of this table.
    *
    * @return the element type name (e.g., "funcref", "externref")
-   * @throws IllegalStateException if this table is closed
+   * @throws JniResourceException if this table is closed
    * @throws RuntimeException if the type cannot be retrieved
    */
   public String getElementType() {
-    validateNotClosed();
     try {
-      final String type = nativeGetElementType(nativeHandle);
+      final String type = nativeGetElementType(getNativeHandle());
       return type != null ? type : "unknown";
+    } catch (final JniResourceException e) {
+      throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error getting table element type", e);
     }
@@ -75,20 +87,19 @@ public final class JniTable implements AutoCloseable {
    * @param index the table index
    * @return the element at the index (may be null for uninitialized slots)
    * @throws IllegalArgumentException if index is negative
-   * @throws IllegalStateException if this table is closed
+   * @throws JniResourceException if this table is closed
    * @throws IndexOutOfBoundsException if index is beyond table bounds
    * @throws RuntimeException if the element cannot be retrieved
    */
   public Object get(final int index) {
-    if (index < 0) {
-      throw new IllegalArgumentException("Index must be non-negative");
-    }
-    validateNotClosed();
+    JniValidation.requireNonNegative(index, "index");
+    
+    final long handle = getNativeHandle(); // This validates not closed
     validateIndex(index);
 
     try {
-      return nativeGet(nativeHandle, index);
-    } catch (final RuntimeException e) {
+      return nativeGet(handle, index);
+    } catch (final JniResourceException | IllegalArgumentException | IndexOutOfBoundsException e) {
       throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error getting table element", e);
@@ -101,23 +112,22 @@ public final class JniTable implements AutoCloseable {
    * @param index the table index
    * @param value the value to set (must be compatible with element type)
    * @throws IllegalArgumentException if index is negative
-   * @throws IllegalStateException if this table is closed
+   * @throws JniResourceException if this table is closed
    * @throws IndexOutOfBoundsException if index is beyond table bounds
    * @throws RuntimeException if the element cannot be set
    */
   public void set(final int index, final Object value) {
-    if (index < 0) {
-      throw new IllegalArgumentException("Index must be non-negative");
-    }
-    validateNotClosed();
+    JniValidation.requireNonNegative(index, "index");
+    
+    final long handle = getNativeHandle(); // This validates not closed
     validateIndex(index);
 
     try {
-      final boolean success = nativeSet(nativeHandle, index, value);
+      final boolean success = nativeSet(handle, index, value);
       if (!success) {
         throw new RuntimeException("Failed to set table element");
       }
-    } catch (final RuntimeException e) {
+    } catch (final JniResourceException | IllegalArgumentException | IndexOutOfBoundsException e) {
       throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error setting table element", e);
@@ -131,18 +141,15 @@ public final class JniTable implements AutoCloseable {
    * @param init the initial value for new elements (may be null)
    * @return the previous size of the table, or -1 if growth failed
    * @throws IllegalArgumentException if delta is negative
-   * @throws IllegalStateException if this table is closed
+   * @throws JniResourceException if this table is closed
    * @throws RuntimeException if the growth operation fails
    */
   public int grow(final int delta, final Object init) {
-    if (delta < 0) {
-      throw new IllegalArgumentException("Delta must be non-negative");
-    }
-    validateNotClosed();
+    JniValidation.requireNonNegative(delta, "delta");
 
     try {
-      return nativeGrow(nativeHandle, delta, init);
-    } catch (final RuntimeException e) {
+      return nativeGrow(getNativeHandle(), delta, init);
+    } catch (final JniResourceException | IllegalArgumentException e) {
       throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error growing table", e);
@@ -156,42 +163,29 @@ public final class JniTable implements AutoCloseable {
    * @param count the number of elements to fill
    * @param value the value to fill with
    * @throws IllegalArgumentException if start or count is negative
-   * @throws IllegalStateException if this table is closed
+   * @throws JniResourceException if this table is closed
    * @throws IndexOutOfBoundsException if the range exceeds table bounds
    * @throws RuntimeException if the fill operation fails
    */
   public void fill(final int start, final int count, final Object value) {
-    if (start < 0) {
-      throw new IllegalArgumentException("Start must be non-negative");
-    }
-    if (count < 0) {
-      throw new IllegalArgumentException("Count must be non-negative");
-    }
-    validateNotClosed();
+    JniValidation.requireNonNegative(start, "start");
+    JniValidation.requireNonNegative(count, "count");
+    
+    final long handle = getNativeHandle(); // This validates not closed
     validateRange(start, count);
 
     try {
-      final boolean success = nativeFill(nativeHandle, start, count, value);
+      final boolean success = nativeFill(handle, start, count, value);
       if (!success) {
         throw new RuntimeException("Failed to fill table range");
       }
-    } catch (final RuntimeException e) {
+    } catch (final JniResourceException | IllegalArgumentException | IndexOutOfBoundsException e) {
       throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error filling table", e);
     }
   }
 
-  /**
-   * Gets the native handle for internal use.
-   *
-   * @return the native handle
-   * @throws IllegalStateException if this table is closed
-   */
-  long getNativeHandle() {
-    validateNotClosed();
-    return nativeHandle;
-  }
 
   /**
    * Validates that an index is within table bounds.
@@ -200,7 +194,7 @@ public final class JniTable implements AutoCloseable {
    * @throws IndexOutOfBoundsException if the index is invalid
    */
   private void validateIndex(final int index) {
-    final int tableSize = size();
+    final int tableSize = getSize();
     if (index >= tableSize) {
       throw new IndexOutOfBoundsException("Index " + index + " exceeds table size " + tableSize);
     }
@@ -214,57 +208,21 @@ public final class JniTable implements AutoCloseable {
    * @throws IndexOutOfBoundsException if the range is invalid
    */
   private void validateRange(final int start, final int count) {
-    final int tableSize = size();
+    final int tableSize = getSize();
     if (start + count > tableSize) {
       throw new IndexOutOfBoundsException(
           "Range [" + start + ", " + (start + count) + ") exceeds table size " + tableSize);
     }
   }
 
-  /**
-   * Closes this table and releases all associated native resources.
-   *
-   * <p>After calling this method, all operations on this table will throw {@link
-   * IllegalStateException}. This method is idempotent.
-   */
   @Override
-  public void close() {
-    if (closed.compareAndSet(false, true)) {
-      if (nativeHandle != 0) {
-        try {
-          nativeDestroyTable(nativeHandle);
-          LOGGER.fine("Destroyed JNI table with handle: " + nativeHandle);
-        } catch (final Exception e) {
-          LOGGER.warning("Error destroying native table: " + e.getMessage());
-        } finally {
-          nativeHandle = 0;
-        }
-      }
-    }
+  protected void doClose() throws Exception {
+    nativeDestroyTable(nativeHandle);
   }
 
-  /** Finalizer to ensure native resources are released if close() wasn't called. */
   @Override
-  protected void finalize() throws Throwable {
-    try {
-      if (!closed.get()) {
-        LOGGER.warning("JniTable was finalized without being closed");
-        close();
-      }
-    } finally {
-      super.finalize();
-    }
-  }
-
-  /**
-   * Validates that this table is not closed.
-   *
-   * @throws IllegalStateException if this table is closed
-   */
-  private void validateNotClosed() {
-    if (closed.get()) {
-      throw new IllegalStateException("Table is closed");
-    }
+  protected String getResourceType() {
+    return "Table";
   }
 
   // Native method declarations
@@ -276,6 +234,14 @@ public final class JniTable implements AutoCloseable {
    * @return the number of elements in the table
    */
   private static native int nativeGetSize(long tableHandle);
+
+  /**
+   * Gets the maximum size of a table.
+   *
+   * @param tableHandle the native table handle
+   * @return the maximum number of elements, or -1 if unlimited
+   */
+  private static native int nativeGetMaxSize(long tableHandle);
 
   /**
    * Gets the element type of a table.
