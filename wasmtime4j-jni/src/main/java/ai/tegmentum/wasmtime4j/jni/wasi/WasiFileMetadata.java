@@ -1,7 +1,6 @@
 package ai.tegmentum.wasmtime4j.jni.wasi;
 
 import java.nio.file.attribute.FileTime;
-import java.time.Instant;
 
 /**
  * File metadata information for WASI file system operations.
@@ -57,10 +56,17 @@ public final class WasiFileMetadata {
    * @param writable whether the file is writable
    * @param executable whether the file is executable
    */
-  public WasiFileMetadata(final long size, final FileTime lastModifiedTime,
-      final FileTime lastAccessTime, final FileTime creationTime, final boolean isRegularFile,
-      final boolean isDirectory, final boolean isSymbolicLink, final boolean readable,
-      final boolean writable, final boolean executable) {
+  public WasiFileMetadata(
+      final long size,
+      final FileTime lastModifiedTime,
+      final FileTime lastAccessTime,
+      final FileTime creationTime,
+      final boolean isRegularFile,
+      final boolean isDirectory,
+      final boolean isSymbolicLink,
+      final boolean readable,
+      final boolean writable,
+      final boolean executable) {
     this.size = size;
     this.lastModifiedTime = lastModifiedTime;
     this.lastAccessTime = lastAccessTime;
@@ -220,8 +226,8 @@ public final class WasiFileMetadata {
   @Override
   public String toString() {
     return String.format(
-        "WasiFileMetadata{size=%d, lastModified=%s, lastAccess=%s, creation=%s, "
-            + "regularFile=%s, directory=%s, symbolicLink=%s, readable=%s, writable=%s, executable=%s}",
+        "WasiFileMetadata{size=%d, lastModified=%s, lastAccess=%s, creation=%s, regularFile=%s,"
+            + " directory=%s, symbolicLink=%s, readable=%s, writable=%s, executable=%s}",
         size,
         lastModifiedTime,
         lastAccessTime,

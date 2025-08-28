@@ -9,9 +9,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 
 /**
- * Configurable permission system for controlling WASI capabilities with fine-grained controls in Panama FFI implementation.
+ * Configurable permission system for controlling WASI capabilities with fine-grained controls in
+ * Panama FFI implementation.
  *
- * <p>This class provides comprehensive permission management for WASI operations in the Panama FFI context, including:
+ * <p>This class provides comprehensive permission management for WASI operations in the Panama FFI
+ * context, including:
  *
  * <ul>
  *   <li>Fine-grained file system access controls
@@ -149,7 +151,8 @@ public final class WasiPermissionManager {
     if (!hasPermission) {
       final String operationStr = operation != null ? operation.toString() : "general access";
       throw new RuntimeException(
-          String.format("File system access denied for %s on path: %s", operationStr, normalizedPath));
+          String.format(
+              "File system access denied for %s on path: %s", operationStr, normalizedPath));
     }
 
     LOGGER.fine(String.format("File system access granted for path: %s", normalizedPath));
@@ -195,7 +198,8 @@ public final class WasiPermissionManager {
 
     // If allow list is empty, grant access (permissive mode)
     LOGGER.fine(
-        String.format("Environment access granted (permissive mode) for variable: %s", variableName));
+        String.format(
+            "Environment access granted (permissive mode) for variable: %s", variableName));
   }
 
   /**
@@ -288,7 +292,8 @@ public final class WasiPermissionManager {
     } catch (final Exception e) {
       LOGGER.warning(
           String.format(
-              "Error checking if path %s is within directory %s: %s", path, directory, e.getMessage()));
+              "Error checking if path %s is within directory %s: %s",
+              path, directory, e.getMessage()));
       return false;
     }
   }
@@ -311,13 +316,12 @@ public final class WasiPermissionManager {
     return false;
   }
 
-  /**
-   * Builder for creating WASI permission managers.
-   */
+  /** Builder for creating WASI permission managers. */
   public static final class Builder {
 
     private final Map<Path, Set<WasiFileOperation>> pathPermissions = new ConcurrentHashMap<>();
-    private final Set<WasiFileOperation> globalPermissions = EnumSet.noneOf(WasiFileOperation.class);
+    private final Set<WasiFileOperation> globalPermissions =
+        EnumSet.noneOf(WasiFileOperation.class);
     private final Set<String> allowedEnvironmentVariables = ConcurrentHashMap.newKeySet();
     private final Set<String> deniedEnvironmentVariables = ConcurrentHashMap.newKeySet();
     private WasiResourceLimits resourceLimits = WasiResourceLimits.defaultLimits();
@@ -341,7 +345,9 @@ public final class WasiPermissionManager {
         throw new IllegalArgumentException("Operation cannot be null");
       }
 
-      pathPermissions.computeIfAbsent(path.normalize().toAbsolutePath(), k -> EnumSet.noneOf(WasiFileOperation.class))
+      pathPermissions
+          .computeIfAbsent(
+              path.normalize().toAbsolutePath(), k -> EnumSet.noneOf(WasiFileOperation.class))
           .add(operation);
 
       return this;
@@ -362,8 +368,9 @@ public final class WasiPermissionManager {
         throw new IllegalArgumentException("Operations cannot be null");
       }
 
-      final Set<WasiFileOperation> pathOps = pathPermissions.computeIfAbsent(
-          path.normalize().toAbsolutePath(), k -> EnumSet.noneOf(WasiFileOperation.class));
+      final Set<WasiFileOperation> pathOps =
+          pathPermissions.computeIfAbsent(
+              path.normalize().toAbsolutePath(), k -> EnumSet.noneOf(WasiFileOperation.class));
 
       for (final WasiFileOperation operation : operations) {
         pathOps.add(operation);

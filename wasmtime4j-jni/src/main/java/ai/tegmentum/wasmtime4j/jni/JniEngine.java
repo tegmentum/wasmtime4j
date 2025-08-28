@@ -1,5 +1,6 @@
 package ai.tegmentum.wasmtime4j.jni;
 
+import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
 import ai.tegmentum.wasmtime4j.jni.nativelib.NativeMethodBindings;
@@ -42,7 +43,7 @@ import java.util.logging.Logger;
  *
  * @since 1.0.0
  */
-public final class JniEngine extends JniResource {
+public final class JniEngine extends JniResource implements Engine {
 
   private static final Logger LOGGER = Logger.getLogger(JniEngine.class.getName());
 

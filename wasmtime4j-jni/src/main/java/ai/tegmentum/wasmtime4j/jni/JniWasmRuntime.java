@@ -5,6 +5,7 @@ import ai.tegmentum.wasmtime4j.EngineConfig;
 import ai.tegmentum.wasmtime4j.ImportMap;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.PlatformDetector;
 import ai.tegmentum.wasmtime4j.RuntimeInfo;
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.WasmRuntime;
@@ -168,7 +169,7 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
               throw new WasmException("Failed to compile WebAssembly module");
             }
 
-            final JniModule module = new JniModule(moduleHandle);
+            final JniModule module = new JniModule(moduleHandle, (JniEngine) engine);
 
             // Register module for concurrency management and cleanup
             concurrencyManager.registerResource(moduleHandle);
@@ -241,50 +242,22 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
         () -> {
           try {
             final String version = nativeGetWasmtimeVersion();
-            return new RuntimeInfo() {
-              @Override
-              public RuntimeType getRuntimeType() {
-                return RuntimeType.JNI;
-              }
-
-              @Override
-              public String getVersion() {
-                return version != null ? version : "unknown";
-              }
-
-              @Override
-              public String getImplementationName() {
-                return "wasmtime4j-jni";
-              }
-
-              @Override
-              public boolean isNativeOptimized() {
-                return true;
-              }
-            };
+            return new RuntimeInfo(
+                "wasmtime4j-jni",
+                "1.0.0-SNAPSHOT",
+                version != null ? version : "unknown",
+                RuntimeType.JNI,
+                System.getProperty("java.version"),
+                PlatformDetector.getPlatformDescription());
           } catch (final Exception e) {
             LOGGER.warning("Failed to get runtime info: " + e.getMessage());
-            return new RuntimeInfo() {
-              @Override
-              public RuntimeType getRuntimeType() {
-                return RuntimeType.JNI;
-              }
-
-              @Override
-              public String getVersion() {
-                return "unknown";
-              }
-
-              @Override
-              public String getImplementationName() {
-                return "wasmtime4j-jni";
-              }
-
-              @Override
-              public boolean isNativeOptimized() {
-                return true;
-              }
-            };
+            return new RuntimeInfo(
+                "wasmtime4j-jni",
+                "1.0.0-SNAPSHOT",
+                "unknown",
+                RuntimeType.JNI,
+                System.getProperty("java.version"),
+                PlatformDetector.getPlatformDescription());
           }
         });
   }

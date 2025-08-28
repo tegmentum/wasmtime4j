@@ -89,13 +89,18 @@ public final class WasiFileSystem {
    * @return the file descriptor for the opened file
    * @throws WasiFileSystemException if the file cannot be opened
    */
-  public int openFile(final String path, final WasiFileOperation operation,
-      final boolean createIfNotExists, final boolean truncate) {
+  public int openFile(
+      final String path,
+      final WasiFileOperation operation,
+      final boolean createIfNotExists,
+      final boolean truncate) {
     JniValidation.requireNonEmpty(path, "path");
     JniValidation.requireNonNull(operation, "operation");
 
-    LOGGER.fine(String.format("Opening file: %s, operation: %s, create: %s, truncate: %s",
-        path, operation, createIfNotExists, truncate));
+    LOGGER.fine(
+        String.format(
+            "Opening file: %s, operation: %s, create: %s, truncate: %s",
+            path, operation, createIfNotExists, truncate));
 
     try {
       // Validate path access through WASI context
@@ -109,24 +114,23 @@ public final class WasiFileSystem {
         }
 
         // Build open options based on operation and flags
-        final Set<StandardOpenOption> openOptions = buildOpenOptions(operation, createIfNotExists,
-            truncate);
+        final Set<StandardOpenOption> openOptions =
+            buildOpenOptions(operation, createIfNotExists, truncate);
 
         // Open the file using Java NIO
         final SeekableByteChannel channel = Files.newByteChannel(validatedPath, openOptions);
-        final FileChannel fileChannel = channel instanceof FileChannel 
-            ? (FileChannel) channel 
-            : null;
+        final FileChannel fileChannel =
+            channel instanceof FileChannel ? (FileChannel) channel : null;
 
         // Create file handle wrapper
-        final WasiFileHandle handle = new WasiFileHandle(nextFileDescriptor, validatedPath,
-            channel, fileChannel, operation);
+        final WasiFileHandle handle =
+            new WasiFileHandle(nextFileDescriptor, validatedPath, channel, fileChannel, operation);
 
         openHandles.put(nextFileDescriptor, handle);
         final int fileDescriptor = nextFileDescriptor++;
 
-        LOGGER.fine(String.format("File opened successfully: %s, fd: %d", validatedPath,
-            fileDescriptor));
+        LOGGER.fine(
+            String.format("File opened successfully: %s, fd: %d", validatedPath, fileDescriptor));
 
         return fileDescriptor;
 
@@ -136,8 +140,8 @@ public final class WasiFileSystem {
 
     } catch (final IOException e) {
       LOGGER.warning(String.format("Failed to open file: %s", e.getMessage()));
-      throw new WasiFileSystemException("Failed to open file: " + e.getMessage(),
-          mapIOExceptionToWasiError(e));
+      throw new WasiFileSystemException(
+          "Failed to open file: " + e.getMessage(), mapIoExceptionToWasiError(e));
     } catch (final SecurityException e) {
       LOGGER.warning(String.format("Security violation opening file: %s", e.getMessage()));
       throw new WasiFileSystemException("Access denied: " + e.getMessage(), "EACCES");
@@ -154,8 +158,8 @@ public final class WasiFileSystem {
    * @return the number of bytes actually read, or -1 if end of file
    * @throws WasiFileSystemException if the read operation fails
    */
-  public int readFile(final int fileDescriptor, final byte[] buffer, final int offset,
-      final int length) {
+  public int readFile(
+      final int fileDescriptor, final byte[] buffer, final int offset, final int length) {
     JniValidation.requireNonNull(buffer, "buffer");
     JniValidation.requireNonNegative(offset, "offset");
     JniValidation.requirePositive(length, "length");
@@ -164,8 +168,8 @@ public final class WasiFileSystem {
       throw new IllegalArgumentException("Buffer overflow: offset + length > buffer.length");
     }
 
-    LOGGER.fine(String.format("Reading from file descriptor: %d, length: %d", fileDescriptor,
-        length));
+    LOGGER.fine(
+        String.format("Reading from file descriptor: %d, length: %d", fileDescriptor, length));
 
     final WasiFileHandle handle = getFileHandle(fileDescriptor);
     if (!handle.getOperation().requiresReadAccess()) {
@@ -176,15 +180,15 @@ public final class WasiFileSystem {
       final ByteBuffer byteBuffer = ByteBuffer.wrap(buffer, offset, length);
       final int bytesRead = handle.getChannel().read(byteBuffer);
 
-      LOGGER.fine(String.format("Read %d bytes from file descriptor: %d", bytesRead,
-          fileDescriptor));
+      LOGGER.fine(
+          String.format("Read %d bytes from file descriptor: %d", bytesRead, fileDescriptor));
 
       return bytesRead;
 
     } catch (final IOException e) {
       LOGGER.warning(String.format("Failed to read from file: %s", e.getMessage()));
-      throw new WasiFileSystemException("Failed to read file: " + e.getMessage(),
-          mapIOExceptionToWasiError(e));
+      throw new WasiFileSystemException(
+          "Failed to read file: " + e.getMessage(), mapIoExceptionToWasiError(e));
     }
   }
 
@@ -198,8 +202,8 @@ public final class WasiFileSystem {
    * @return the number of bytes actually written
    * @throws WasiFileSystemException if the write operation fails
    */
-  public int writeFile(final int fileDescriptor, final byte[] buffer, final int offset,
-      final int length) {
+  public int writeFile(
+      final int fileDescriptor, final byte[] buffer, final int offset, final int length) {
     JniValidation.requireNonNull(buffer, "buffer");
     JniValidation.requireNonNegative(offset, "offset");
     JniValidation.requirePositive(length, "length");
@@ -208,8 +212,8 @@ public final class WasiFileSystem {
       throw new IllegalArgumentException("Buffer overflow: offset + length > buffer.length");
     }
 
-    LOGGER.fine(String.format("Writing to file descriptor: %d, length: %d", fileDescriptor,
-        length));
+    LOGGER.fine(
+        String.format("Writing to file descriptor: %d, length: %d", fileDescriptor, length));
 
     final WasiFileHandle handle = getFileHandle(fileDescriptor);
     if (!handle.getOperation().requiresWriteAccess()) {
@@ -220,15 +224,15 @@ public final class WasiFileSystem {
       final ByteBuffer byteBuffer = ByteBuffer.wrap(buffer, offset, length);
       final int bytesWritten = handle.getChannel().write(byteBuffer);
 
-      LOGGER.fine(String.format("Wrote %d bytes to file descriptor: %d", bytesWritten,
-          fileDescriptor));
+      LOGGER.fine(
+          String.format("Wrote %d bytes to file descriptor: %d", bytesWritten, fileDescriptor));
 
       return bytesWritten;
 
     } catch (final IOException e) {
       LOGGER.warning(String.format("Failed to write to file: %s", e.getMessage()));
-      throw new WasiFileSystemException("Failed to write file: " + e.getMessage(),
-          mapIOExceptionToWasiError(e));
+      throw new WasiFileSystemException(
+          "Failed to write file: " + e.getMessage(), mapIoExceptionToWasiError(e));
     }
   }
 
@@ -242,8 +246,10 @@ public final class WasiFileSystem {
    * @throws WasiFileSystemException if the seek operation fails
    */
   public long seekFile(final int fileDescriptor, final long position, final int whence) {
-    LOGGER.fine(String.format("Seeking file descriptor: %d, position: %d, whence: %d",
-        fileDescriptor, position, whence));
+    LOGGER.fine(
+        String.format(
+            "Seeking file descriptor: %d, position: %d, whence: %d",
+            fileDescriptor, position, whence));
 
     final WasiFileHandle handle = getFileHandle(fileDescriptor);
     final FileChannel fileChannel = handle.getFileChannel();
@@ -268,15 +274,16 @@ public final class WasiFileSystem {
           throw new WasiFileSystemException("Invalid seek whence: " + whence, "EINVAL");
       }
 
-      LOGGER.fine(String.format("Seeked to position: %d in file descriptor: %d", newPosition,
-          fileDescriptor));
+      LOGGER.fine(
+          String.format(
+              "Seeked to position: %d in file descriptor: %d", newPosition, fileDescriptor));
 
       return newPosition;
 
     } catch (final IOException e) {
       LOGGER.warning(String.format("Failed to seek file: %s", e.getMessage()));
-      throw new WasiFileSystemException("Failed to seek file: " + e.getMessage(),
-          mapIOExceptionToWasiError(e));
+      throw new WasiFileSystemException(
+          "Failed to seek file: " + e.getMessage(), mapIoExceptionToWasiError(e));
     }
   }
 
@@ -288,8 +295,8 @@ public final class WasiFileSystem {
    * @throws WasiFileSystemException if the sync operation fails
    */
   public void syncFile(final int fileDescriptor, final boolean dataOnly) {
-    LOGGER.fine(String.format("Syncing file descriptor: %d, data only: %s", fileDescriptor,
-        dataOnly));
+    LOGGER.fine(
+        String.format("Syncing file descriptor: %d, data only: %s", fileDescriptor, dataOnly));
 
     final WasiFileHandle handle = getFileHandle(fileDescriptor);
     final FileChannel fileChannel = handle.getFileChannel();
@@ -307,8 +314,8 @@ public final class WasiFileSystem {
 
     } catch (final IOException e) {
       LOGGER.warning(String.format("Failed to sync file: %s", e.getMessage()));
-      throw new WasiFileSystemException("Failed to sync file: " + e.getMessage(),
-          mapIOExceptionToWasiError(e));
+      throw new WasiFileSystemException(
+          "Failed to sync file: " + e.getMessage(), mapIoExceptionToWasiError(e));
     }
   }
 
@@ -341,8 +348,8 @@ public final class WasiFileSystem {
 
     } catch (final IOException e) {
       LOGGER.warning(String.format("Failed to truncate file: %s", e.getMessage()));
-      throw new WasiFileSystemException("Failed to truncate file: " + e.getMessage(),
-          mapIOExceptionToWasiError(e));
+      throw new WasiFileSystemException(
+          "Failed to truncate file: " + e.getMessage(), mapIoExceptionToWasiError(e));
     }
   }
 
@@ -388,20 +395,21 @@ public final class WasiFileSystem {
       final Path validatedPath = wasiContext.validatePath(path, WasiFileOperation.METADATA);
 
       // Read basic file attributes
-      final BasicFileAttributes attributes = Files.readAttributes(validatedPath,
-          BasicFileAttributes.class);
+      final BasicFileAttributes attributes =
+          Files.readAttributes(validatedPath, BasicFileAttributes.class);
 
-      final WasiFileMetadata metadata = new WasiFileMetadata(
-          attributes.size(),
-          attributes.lastModifiedTime(),
-          attributes.lastAccessTime(),
-          attributes.creationTime(),
-          attributes.isRegularFile(),
-          attributes.isDirectory(),
-          attributes.isSymbolicLink(),
-          Files.isReadable(validatedPath),
-          Files.isWritable(validatedPath),
-          Files.isExecutable(validatedPath));
+      final WasiFileMetadata metadata =
+          new WasiFileMetadata(
+              attributes.size(),
+              attributes.lastModifiedTime(),
+              attributes.lastAccessTime(),
+              attributes.creationTime(),
+              attributes.isRegularFile(),
+              attributes.isDirectory(),
+              attributes.isSymbolicLink(),
+              Files.isReadable(validatedPath),
+              Files.isWritable(validatedPath),
+              Files.isExecutable(validatedPath));
 
       LOGGER.fine(String.format("Retrieved metadata for: %s", validatedPath));
 
@@ -409,8 +417,8 @@ public final class WasiFileSystem {
 
     } catch (final IOException e) {
       LOGGER.warning(String.format("Failed to get file metadata: %s", e.getMessage()));
-      throw new WasiFileSystemException("Failed to get file metadata: " + e.getMessage(),
-          mapIOExceptionToWasiError(e));
+      throw new WasiFileSystemException(
+          "Failed to get file metadata: " + e.getMessage(), mapIoExceptionToWasiError(e));
     } catch (final SecurityException e) {
       LOGGER.warning(String.format("Security violation getting metadata: %s", e.getMessage()));
       throw new WasiFileSystemException("Access denied: " + e.getMessage(), "EACCES");
@@ -442,30 +450,31 @@ public final class WasiFileSystem {
       try (final DirectoryStream<Path> stream = Files.newDirectoryStream(validatedPath)) {
         for (final Path entry : stream) {
           final String entryName = entry.getFileName().toString();
-          final BasicFileAttributes attributes = Files.readAttributes(entry,
-              BasicFileAttributes.class);
+          final BasicFileAttributes attributes =
+              Files.readAttributes(entry, BasicFileAttributes.class);
 
-          final WasiDirectoryEntry directoryEntry = new WasiDirectoryEntry(
-              entryName,
-              attributes.isRegularFile(),
-              attributes.isDirectory(),
-              attributes.isSymbolicLink(),
-              attributes.size(),
-              attributes.lastModifiedTime());
+          final WasiDirectoryEntry directoryEntry =
+              new WasiDirectoryEntry(
+                  entryName,
+                  attributes.isRegularFile(),
+                  attributes.isDirectory(),
+                  attributes.isSymbolicLink(),
+                  attributes.size(),
+                  attributes.lastModifiedTime());
 
           entries.add(directoryEntry);
         }
       }
 
-      LOGGER.fine(String.format("Listed %d entries in directory: %s", entries.size(),
-          validatedPath));
+      LOGGER.fine(
+          String.format("Listed %d entries in directory: %s", entries.size(), validatedPath));
 
       return entries;
 
     } catch (final IOException e) {
       LOGGER.warning(String.format("Failed to list directory: %s", e.getMessage()));
-      throw new WasiFileSystemException("Failed to list directory: " + e.getMessage(),
-          mapIOExceptionToWasiError(e));
+      throw new WasiFileSystemException(
+          "Failed to list directory: " + e.getMessage(), mapIoExceptionToWasiError(e));
     } catch (final SecurityException e) {
       LOGGER.warning(String.format("Security violation listing directory: %s", e.getMessage()));
       throw new WasiFileSystemException("Access denied: " + e.getMessage(), "EACCES");
@@ -496,8 +505,8 @@ public final class WasiFileSystem {
       throw new WasiFileSystemException("Directory already exists", "EEXIST");
     } catch (final IOException e) {
       LOGGER.warning(String.format("Failed to create directory: %s", e.getMessage()));
-      throw new WasiFileSystemException("Failed to create directory: " + e.getMessage(),
-          mapIOExceptionToWasiError(e));
+      throw new WasiFileSystemException(
+          "Failed to create directory: " + e.getMessage(), mapIoExceptionToWasiError(e));
     } catch (final SecurityException e) {
       LOGGER.warning(String.format("Security violation creating directory: %s", e.getMessage()));
       throw new WasiFileSystemException("Access denied: " + e.getMessage(), "EACCES");
@@ -528,8 +537,8 @@ public final class WasiFileSystem {
       throw new WasiFileSystemException("File or directory does not exist", "ENOENT");
     } catch (final IOException e) {
       LOGGER.warning(String.format("Failed to remove file or directory: %s", e.getMessage()));
-      throw new WasiFileSystemException("Failed to remove file or directory: " + e.getMessage(),
-          mapIOExceptionToWasiError(e));
+      throw new WasiFileSystemException(
+          "Failed to remove file or directory: " + e.getMessage(), mapIoExceptionToWasiError(e));
     } catch (final SecurityException e) {
       LOGGER.warning(String.format("Security violation removing file: %s", e.getMessage()));
       throw new WasiFileSystemException("Access denied: " + e.getMessage(), "EACCES");
@@ -556,13 +565,14 @@ public final class WasiFileSystem {
 
       Files.move(validatedOldPath, validatedNewPath);
 
-      LOGGER.fine(String.format("File renamed successfully from: %s to: %s", validatedOldPath,
-          validatedNewPath));
+      LOGGER.fine(
+          String.format(
+              "File renamed successfully from: %s to: %s", validatedOldPath, validatedNewPath));
 
     } catch (final IOException e) {
       LOGGER.warning(String.format("Failed to rename file: %s", e.getMessage()));
-      throw new WasiFileSystemException("Failed to rename file: " + e.getMessage(),
-          mapIOExceptionToWasiError(e));
+      throw new WasiFileSystemException(
+          "Failed to rename file: " + e.getMessage(), mapIoExceptionToWasiError(e));
     } catch (final SecurityException e) {
       LOGGER.warning(String.format("Security violation renaming file: %s", e.getMessage()));
       throw new WasiFileSystemException("Access denied: " + e.getMessage(), "EACCES");
@@ -577,8 +587,8 @@ public final class WasiFileSystem {
    * @param lastModifiedTime the last modified time (null to leave unchanged)
    * @throws WasiFileSystemException if the timestamps cannot be set
    */
-  public void setFileTimes(final String path, final FileTime lastAccessTime,
-      final FileTime lastModifiedTime) {
+  public void setFileTimes(
+      final String path, final FileTime lastAccessTime, final FileTime lastModifiedTime) {
     JniValidation.requireNonEmpty(path, "path");
 
     LOGGER.fine(String.format("Setting file times for: %s", path));
@@ -599,17 +609,15 @@ public final class WasiFileSystem {
 
     } catch (final IOException e) {
       LOGGER.warning(String.format("Failed to set file times: %s", e.getMessage()));
-      throw new WasiFileSystemException("Failed to set file times: " + e.getMessage(),
-          mapIOExceptionToWasiError(e));
+      throw new WasiFileSystemException(
+          "Failed to set file times: " + e.getMessage(), mapIoExceptionToWasiError(e));
     } catch (final SecurityException e) {
       LOGGER.warning(String.format("Security violation setting file times: %s", e.getMessage()));
       throw new WasiFileSystemException("Access denied: " + e.getMessage(), "EACCES");
     }
   }
 
-  /**
-   * Closes all open file handles and releases resources.
-   */
+  /** Closes all open file handles and releases resources. */
   public void closeAll() {
     LOGGER.fine("Closing all file handles");
 
@@ -661,8 +669,8 @@ public final class WasiFileSystem {
   }
 
   /** Builds StandardOpenOptions based on operation and flags. */
-  private Set<StandardOpenOption> buildOpenOptions(final WasiFileOperation operation,
-      final boolean createIfNotExists, final boolean truncate) {
+  private Set<StandardOpenOption> buildOpenOptions(
+      final WasiFileOperation operation, final boolean createIfNotExists, final boolean truncate) {
     final Set<StandardOpenOption> options = ConcurrentHashMap.newKeySet();
 
     if (operation.requiresReadAccess()) {
@@ -685,7 +693,7 @@ public final class WasiFileSystem {
   }
 
   /** Maps IOException to appropriate WASI error codes. */
-  private String mapIOExceptionToWasiError(final IOException e) {
+  private String mapIoExceptionToWasiError(final IOException e) {
     if (e instanceof NoSuchFileException) {
       return "ENOENT";
     } else if (e instanceof FileAlreadyExistsException) {

@@ -151,7 +151,8 @@ public final class WasiFileSystemException extends WasiException {
    * @param filePath the file path that was not found
    * @return a new file not found exception
    */
-  public static WasiFileSystemException fileNotFound(final String operation, final String filePath) {
+  public static WasiFileSystemException fileNotFound(
+      final String operation, final String filePath) {
     return new WasiFileSystemException(WasiErrorCode.ENOENT, operation, filePath);
   }
 
@@ -162,7 +163,8 @@ public final class WasiFileSystemException extends WasiException {
    * @param filePath the file path with denied access
    * @return a new permission denied exception
    */
-  public static WasiFileSystemException permissionDenied(final String operation, final String filePath) {
+  public static WasiFileSystemException permissionDenied(
+      final String operation, final String filePath) {
     return new WasiFileSystemException(WasiErrorCode.EACCES, operation, filePath);
   }
 
@@ -195,7 +197,8 @@ public final class WasiFileSystemException extends WasiException {
    * @param fileDescriptor the invalid file descriptor
    * @return a new bad file descriptor exception
    */
-  public static WasiFileSystemException badFileDescriptor(final String operation, final int fileDescriptor) {
+  public static WasiFileSystemException badFileDescriptor(
+      final String operation, final int fileDescriptor) {
     return new WasiFileSystemException(WasiErrorCode.EBADF, operation, fileDescriptor);
   }
 
@@ -217,7 +220,8 @@ public final class WasiFileSystemException extends WasiException {
    * @param filePath the directory path that is not empty
    * @return a new directory not empty exception
    */
-  public static WasiFileSystemException directoryNotEmpty(final String operation, final String filePath) {
+  public static WasiFileSystemException directoryNotEmpty(
+      final String operation, final String filePath) {
     return new WasiFileSystemException(WasiErrorCode.ENOTEMPTY, operation, filePath);
   }
 
@@ -228,7 +232,8 @@ public final class WasiFileSystemException extends WasiException {
    * @param filePath the file path on read-only file system
    * @return a new read-only file system exception
    */
-  public static WasiFileSystemException readOnlyFileSystem(final String operation, final String filePath) {
+  public static WasiFileSystemException readOnlyFileSystem(
+      final String operation, final String filePath) {
     return new WasiFileSystemException(WasiErrorCode.EROFS, operation, filePath);
   }
 
@@ -239,7 +244,8 @@ public final class WasiFileSystemException extends WasiException {
    * @param filePath the file path that is too long
    * @return a new file name too long exception
    */
-  public static WasiFileSystemException fileNameTooLong(final String operation, final String filePath) {
+  public static WasiFileSystemException fileNameTooLong(
+      final String operation, final String filePath) {
     return new WasiFileSystemException(WasiErrorCode.ENAMETOOLONG, operation, filePath);
   }
 
@@ -250,7 +256,8 @@ public final class WasiFileSystemException extends WasiException {
    * @param filePath the file path with too many symbolic links
    * @return a new too many symbolic links exception
    */
-  public static WasiFileSystemException tooManySymbolicLinks(final String operation, final String filePath) {
+  public static WasiFileSystemException tooManySymbolicLinks(
+      final String operation, final String filePath) {
     return new WasiFileSystemException(WasiErrorCode.ELOOP, operation, filePath);
   }
 }

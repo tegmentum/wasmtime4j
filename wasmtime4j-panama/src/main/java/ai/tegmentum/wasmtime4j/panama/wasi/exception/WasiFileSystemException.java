@@ -5,8 +5,8 @@ import ai.tegmentum.wasmtime4j.panama.exception.PanamaException;
 /**
  * Exception thrown when WASI file system operations fail in Panama FFI implementation.
  *
- * <p>This exception provides detailed error information for file system operations that fail due
- * to various reasons such as permission denied, file not found, or I/O errors.
+ * <p>This exception provides detailed error information for file system operations that fail due to
+ * various reasons such as permission denied, file not found, or I/O errors.
  *
  * @since 1.0.0
  */
@@ -33,8 +33,8 @@ public class WasiFileSystemException extends PanamaException {
    * @param wasiErrorCode the WASI error code
    * @param cause the underlying cause
    */
-  public WasiFileSystemException(final String message, final String wasiErrorCode,
-      final Throwable cause) {
+  public WasiFileSystemException(
+      final String message, final String wasiErrorCode, final Throwable cause) {
     super(message, cause);
     this.wasiErrorCode = wasiErrorCode;
   }

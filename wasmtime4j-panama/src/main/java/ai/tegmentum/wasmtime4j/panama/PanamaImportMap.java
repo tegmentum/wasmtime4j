@@ -31,9 +31,9 @@ import java.util.logging.Logger;
 /**
  * Panama FFI implementation of the WebAssembly import map interface.
  *
- * <p>This implementation provides a high-performance, thread-safe import map specifically
- * optimized for Panama FFI operations. It maintains compatibility with the public ImportMap
- * interface while providing enhanced features for Panama-specific optimizations.
+ * <p>This implementation provides a high-performance, thread-safe import map specifically optimized
+ * for Panama FFI operations. It maintains compatibility with the public ImportMap interface while
+ * providing enhanced features for Panama-specific optimizations.
  *
  * <p>Key features:
  *
@@ -55,19 +55,18 @@ public final class PanamaImportMap implements ImportMap {
   // Performance optimizations
   private volatile int totalImports = 0;
 
-  /**
-   * Creates a new empty Panama import map.
-   */
+  /** Creates a new empty Panama import map. */
   public PanamaImportMap() {
     this.imports = new ConcurrentHashMap<>();
-    
+
     if (logger.isLoggable(Level.FINE)) {
       logger.fine("Created new PanamaImportMap");
     }
   }
 
   @Override
-  public ImportMap addFunction(final String moduleName, final String name, final WasmFunction function) {
+  public ImportMap addFunction(
+      final String moduleName, final String name, final WasmFunction function) {
     Objects.requireNonNull(moduleName, "Module name cannot be null");
     Objects.requireNonNull(name, "Import name cannot be null");
     Objects.requireNonNull(function, "Function cannot be null");
@@ -76,11 +75,11 @@ public final class PanamaImportMap implements ImportMap {
     validateFunction(function);
 
     addImport(moduleName, name, function);
-    
+
     if (logger.isLoggable(Level.FINE)) {
       logger.fine(String.format("Added function import: %s.%s", moduleName, name));
     }
-    
+
     return this;
   }
 
@@ -94,11 +93,11 @@ public final class PanamaImportMap implements ImportMap {
     validateMemory(memory);
 
     addImport(moduleName, name, memory);
-    
+
     if (logger.isLoggable(Level.FINE)) {
       logger.fine(String.format("Added memory import: %s.%s", moduleName, name));
     }
-    
+
     return this;
   }
 
@@ -112,11 +111,11 @@ public final class PanamaImportMap implements ImportMap {
     validateGlobal(global);
 
     addImport(moduleName, name, global);
-    
+
     if (logger.isLoggable(Level.FINE)) {
       logger.fine(String.format("Added global import: %s.%s", moduleName, name));
     }
-    
+
     return this;
   }
 
@@ -130,11 +129,11 @@ public final class PanamaImportMap implements ImportMap {
     validateTable(table);
 
     addImport(moduleName, name, table);
-    
+
     if (logger.isLoggable(Level.FINE)) {
       logger.fine(String.format("Added table import: %s.%s", moduleName, name));
     }
-    
+
     return this;
   }
 
@@ -147,7 +146,7 @@ public final class PanamaImportMap implements ImportMap {
     if (import_ instanceof WasmFunction function) {
       return Optional.of(function);
     }
-    
+
     return Optional.empty();
   }
 
@@ -155,12 +154,13 @@ public final class PanamaImportMap implements ImportMap {
   public Map<String, Map<String, Object>> getImports() {
     // Return a defensive copy to prevent external modification
     final Map<String, Map<String, Object>> result = new ConcurrentHashMap<>();
-    
-    for (final Map.Entry<String, ConcurrentHashMap<String, Object>> moduleEntry : imports.entrySet()) {
+
+    for (final Map.Entry<String, ConcurrentHashMap<String, Object>> moduleEntry :
+        imports.entrySet()) {
       final Map<String, Object> moduleImports = new ConcurrentHashMap<>(moduleEntry.getValue());
       result.put(moduleEntry.getKey(), moduleImports);
     }
-    
+
     return result;
   }
 
@@ -188,7 +188,7 @@ public final class PanamaImportMap implements ImportMap {
     if (import_ instanceof WasmMemory memory) {
       return Optional.of(memory);
     }
-    
+
     return Optional.empty();
   }
 
@@ -207,7 +207,7 @@ public final class PanamaImportMap implements ImportMap {
     if (import_ instanceof WasmGlobal global) {
       return Optional.of(global);
     }
-    
+
     return Optional.empty();
   }
 
@@ -226,7 +226,7 @@ public final class PanamaImportMap implements ImportMap {
     if (import_ instanceof WasmTable table) {
       return Optional.of(table);
     }
-    
+
     return Optional.empty();
   }
 
@@ -248,13 +248,11 @@ public final class PanamaImportMap implements ImportMap {
     return imports.size();
   }
 
-  /**
-   * Clears all imports from this map.
-   */
+  /** Clears all imports from this map. */
   public void clear() {
     imports.clear();
     totalImports = 0;
-    
+
     if (logger.isLoggable(Level.FINE)) {
       logger.fine("Cleared all imports from PanamaImportMap");
     }
@@ -272,14 +270,14 @@ public final class PanamaImportMap implements ImportMap {
     final ConcurrentHashMap<String, Object> removed = imports.remove(moduleName);
     if (removed != null) {
       totalImports -= removed.size();
-      
+
       if (logger.isLoggable(Level.FINE)) {
         logger.fine("Removed module from import map: " + moduleName);
       }
-      
+
       return true;
     }
-    
+
     return false;
   }
 
@@ -299,20 +297,20 @@ public final class PanamaImportMap implements ImportMap {
       final Object removed = moduleImports.remove(name);
       if (removed != null) {
         totalImports--;
-        
+
         // Remove the module map if it's now empty
         if (moduleImports.isEmpty()) {
           imports.remove(moduleName);
         }
-        
+
         if (logger.isLoggable(Level.FINE)) {
           logger.fine(String.format("Removed import: %s.%s", moduleName, name));
         }
-        
+
         return true;
       }
     }
-    
+
     return false;
   }
 
@@ -324,9 +322,9 @@ public final class PanamaImportMap implements ImportMap {
    * @param import_ the import object
    */
   private void addImport(final String moduleName, final String name, final Object import_) {
-    final ConcurrentHashMap<String, Object> moduleImports = imports.computeIfAbsent(
-        moduleName, k -> new ConcurrentHashMap<>());
-    
+    final ConcurrentHashMap<String, Object> moduleImports =
+        imports.computeIfAbsent(moduleName, k -> new ConcurrentHashMap<>());
+
     final Object previous = moduleImports.put(name, import_);
     if (previous == null) {
       totalImports++;
@@ -354,16 +352,17 @@ public final class PanamaImportMap implements ImportMap {
   private void validateFunction(final WasmFunction function) {
     // For now, accept all WasmFunction implementations
     // In the future, we might want to ensure Panama-specific optimizations
-    
+
     if (function instanceof PanamaFunction || function instanceof PanamaHostFunction) {
       // These are preferred for optimal performance
       return;
     }
-    
+
     // Log a performance warning for non-Panama functions
     if (logger.isLoggable(Level.FINE)) {
-      logger.fine("Non-Panama function added to import map. This may impact performance: " + 
-                  function.getClass().getName());
+      logger.fine(
+          "Non-Panama function added to import map. This may impact performance: "
+              + function.getClass().getName());
     }
   }
 
@@ -378,10 +377,11 @@ public final class PanamaImportMap implements ImportMap {
     if (memory instanceof PanamaMemory) {
       return;
     }
-    
+
     if (logger.isLoggable(Level.FINE)) {
-      logger.fine("Non-Panama memory added to import map. This may impact performance: " + 
-                  memory.getClass().getName());
+      logger.fine(
+          "Non-Panama memory added to import map. This may impact performance: "
+              + memory.getClass().getName());
     }
   }
 
@@ -396,10 +396,11 @@ public final class PanamaImportMap implements ImportMap {
     if (global instanceof PanamaGlobal) {
       return;
     }
-    
+
     if (logger.isLoggable(Level.FINE)) {
-      logger.fine("Non-Panama global added to import map. This may impact performance: " + 
-                  global.getClass().getName());
+      logger.fine(
+          "Non-Panama global added to import map. This may impact performance: "
+              + global.getClass().getName());
     }
   }
 
@@ -414,17 +415,17 @@ public final class PanamaImportMap implements ImportMap {
     if (table instanceof PanamaTable) {
       return;
     }
-    
+
     if (logger.isLoggable(Level.FINE)) {
-      logger.fine("Non-Panama table added to import map. This may impact performance: " + 
-                  table.getClass().getName());
+      logger.fine(
+          "Non-Panama table added to import map. This may impact performance: "
+              + table.getClass().getName());
     }
   }
 
   @Override
   public String toString() {
     return String.format(
-        "PanamaImportMap{modules=%d, totalImports=%d}",
-        imports.size(), totalImports);
+        "PanamaImportMap{modules=%d, totalImports=%d}", imports.size(), totalImports);
   }
 }

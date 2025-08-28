@@ -1,7 +1,8 @@
 package ai.tegmentum.wasmtime4j.panama.wasi.exception;
 
 /**
- * Exception thrown when WASI operations are denied due to insufficient permissions in Panama FFI implementation.
+ * Exception thrown when WASI operations are denied due to insufficient permissions in Panama FFI
+ * implementation.
  *
  * <p>This exception is thrown when a WASI operation is attempted but the current security context
  * does not have sufficient permissions to perform the operation.

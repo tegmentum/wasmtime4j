@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousFileChannel;
 import java.nio.channels.CompletionHandler;
-import java.nio.channels.FileChannel;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -96,13 +95,14 @@ public final class WasiAsyncFileOperations implements AutoCloseable {
 
     try {
       // Create executor service for async operations
-      this.asyncExecutor = Executors.newFixedThreadPool(
-          Math.min(Runtime.getRuntime().availableProcessors() * 2, 16),
-          r -> {
-            final Thread thread = new Thread(r, "WasiAsyncFileOps");
-            thread.setDaemon(true);
-            return thread;
-          });
+      this.asyncExecutor =
+          Executors.newFixedThreadPool(
+              Math.min(Runtime.getRuntime().availableProcessors() * 2, 16),
+              r -> {
+                final Thread thread = new Thread(r, "WasiAsyncFileOps");
+                thread.setDaemon(true);
+                return thread;
+              });
 
       // Create selector for non-blocking I/O
       this.selector = Selector.open();
@@ -112,12 +112,12 @@ public final class WasiAsyncFileOperations implements AutoCloseable {
       this.selectorThread.setDaemon(true);
       this.selectorThread.start();
 
-      LOGGER.info(String.format("Created async file operations handler: timeout=%ds",
-          defaultTimeoutSeconds));
+      LOGGER.info(
+          String.format(
+              "Created async file operations handler: timeout=%ds", defaultTimeoutSeconds));
 
     } catch (final IOException e) {
-      throw new WasiFileSystemException("Failed to initialize async file operations",
-          "EIO", e);
+      throw new WasiFileSystemException("Failed to initialize async file operations", "EIO", e);
     }
   }
 
@@ -129,8 +129,8 @@ public final class WasiAsyncFileOperations implements AutoCloseable {
    * @param bufferSize the buffer size for reading
    * @return a CompletableFuture containing the read data
    */
-  public CompletableFuture<ByteBuffer> readAsync(final Path path, final long position,
-      final int bufferSize) {
+  public CompletableFuture<ByteBuffer> readAsync(
+      final Path path, final long position, final int bufferSize) {
     JniValidation.requireNonNull(path, "path");
     JniValidation.requireNonNegative(position, "position");
     JniValidation.requirePositive(bufferSize, "bufferSize");
@@ -147,8 +147,8 @@ public final class WasiAsyncFileOperations implements AutoCloseable {
    * @param timeoutMs the timeout in milliseconds
    * @return a CompletableFuture containing the read data
    */
-  public CompletableFuture<ByteBuffer> readAsync(final Path path, final long position,
-      final int bufferSize, final long timeoutMs) {
+  public CompletableFuture<ByteBuffer> readAsync(
+      final Path path, final long position, final int bufferSize, final long timeoutMs) {
     JniValidation.requireNonNull(path, "path");
     JniValidation.requireNonNegative(position, "position");
     JniValidation.requirePositive(bufferSize, "bufferSize");
@@ -164,70 +164,81 @@ public final class WasiAsyncFileOperations implements AutoCloseable {
           new WasiFileSystemException("Too many concurrent operations", "EAGAIN"));
     }
 
-    LOGGER.fine(String.format("Starting async read: path=%s, position=%d, bufferSize=%d",
-        path, position, bufferSize));
+    LOGGER.fine(
+        String.format(
+            "Starting async read: path=%s, position=%d, bufferSize=%d",
+            path, position, bufferSize));
 
     final CompletableFuture<ByteBuffer> future = new CompletableFuture<>();
     activeOperations.incrementAndGet();
 
     // Set up timeout
-    final Future<?> timeoutTask = asyncExecutor.schedule(() -> {
-      if (future.cancel(true)) {
-        LOGGER.warning(String.format("Async read timeout: path=%s, timeout=%dms",
-            path, timeoutMs));
-      }
-    }, timeoutMs, TimeUnit.MILLISECONDS);
+    final Future<?> timeoutTask =
+        asyncExecutor.schedule(
+            () -> {
+              if (future.cancel(true)) {
+                LOGGER.warning(
+                    String.format("Async read timeout: path=%s, timeout=%dms", path, timeoutMs));
+              }
+            },
+            timeoutMs,
+            TimeUnit.MILLISECONDS);
 
     try {
-      final AsynchronousFileChannel asyncChannel = AsynchronousFileChannel.open(path,
-          Set.of(StandardOpenOption.READ), asyncExecutor);
+      final AsynchronousFileChannel asyncChannel =
+          AsynchronousFileChannel.open(path, Set.of(StandardOpenOption.READ), asyncExecutor);
 
       final ByteBuffer buffer = ByteBuffer.allocateDirect(bufferSize);
 
-      asyncChannel.read(buffer, position, buffer, new CompletionHandler<Integer, ByteBuffer>() {
-        @Override
-        public void completed(final Integer bytesRead, final ByteBuffer attachment) {
-          try {
-            timeoutTask.cancel(false);
-            asyncChannel.close();
-            attachment.flip();
-            future.complete(attachment);
+      asyncChannel.read(
+          buffer,
+          position,
+          buffer,
+          new CompletionHandler<Integer, ByteBuffer>() {
+            @Override
+            public void completed(final Integer bytesRead, final ByteBuffer attachment) {
+              try {
+                timeoutTask.cancel(false);
+                asyncChannel.close();
+                attachment.flip();
+                future.complete(attachment);
 
-            LOGGER.fine(String.format("Async read completed: path=%s, bytesRead=%d",
-                path, bytesRead));
-          } catch (final Exception e) {
-            failed(e, attachment);
-          } finally {
-            activeOperations.decrementAndGet();
-          }
-        }
+                LOGGER.fine(
+                    String.format("Async read completed: path=%s, bytesRead=%d", path, bytesRead));
+              } catch (final Exception e) {
+                failed(e, attachment);
+              } finally {
+                activeOperations.decrementAndGet();
+              }
+            }
 
-        @Override
-        public void failed(final Throwable exc, final ByteBuffer attachment) {
-          try {
-            timeoutTask.cancel(false);
-            asyncChannel.close();
-          } catch (final IOException e) {
-            LOGGER.warning(String.format("Error closing async channel: %s", e.getMessage()));
-          } finally {
-            activeOperations.decrementAndGet();
-          }
+            @Override
+            public void failed(final Throwable exc, final ByteBuffer attachment) {
+              try {
+                timeoutTask.cancel(false);
+                asyncChannel.close();
+              } catch (final IOException e) {
+                LOGGER.warning(String.format("Error closing async channel: %s", e.getMessage()));
+              } finally {
+                activeOperations.decrementAndGet();
+              }
 
-          LOGGER.warning(String.format("Async read failed: path=%s, error=%s",
-              path, exc.getMessage()));
-          future.completeExceptionally(new WasiFileSystemException(
-              "Async read failed: " + exc.getMessage(), "EIO", exc));
-        }
-      });
+              LOGGER.warning(
+                  String.format("Async read failed: path=%s, error=%s", path, exc.getMessage()));
+              future.completeExceptionally(
+                  new WasiFileSystemException(
+                      "Async read failed: " + exc.getMessage(), "EIO", exc));
+            }
+          });
 
     } catch (final IOException e) {
       timeoutTask.cancel(false);
       activeOperations.decrementAndGet();
 
-      LOGGER.warning(String.format("Failed to start async read: path=%s, error=%s",
-          path, e.getMessage()));
-      future.completeExceptionally(new WasiFileSystemException(
-          "Failed to start async read: " + e.getMessage(), "EIO", e));
+      LOGGER.warning(
+          String.format("Failed to start async read: path=%s, error=%s", path, e.getMessage()));
+      future.completeExceptionally(
+          new WasiFileSystemException("Failed to start async read: " + e.getMessage(), "EIO", e));
     }
 
     return future;
@@ -241,8 +252,8 @@ public final class WasiAsyncFileOperations implements AutoCloseable {
    * @param data the data to write
    * @return a CompletableFuture containing the number of bytes written
    */
-  public CompletableFuture<Integer> writeAsync(final Path path, final long position,
-      final ByteBuffer data) {
+  public CompletableFuture<Integer> writeAsync(
+      final Path path, final long position, final ByteBuffer data) {
     JniValidation.requireNonNull(path, "path");
     JniValidation.requireNonNegative(position, "position");
     JniValidation.requireNonNull(data, "data");
@@ -259,8 +270,8 @@ public final class WasiAsyncFileOperations implements AutoCloseable {
    * @param timeoutMs the timeout in milliseconds
    * @return a CompletableFuture containing the number of bytes written
    */
-  public CompletableFuture<Integer> writeAsync(final Path path, final long position,
-      final ByteBuffer data, final long timeoutMs) {
+  public CompletableFuture<Integer> writeAsync(
+      final Path path, final long position, final ByteBuffer data, final long timeoutMs) {
     JniValidation.requireNonNull(path, "path");
     JniValidation.requireNonNegative(position, "position");
     JniValidation.requireNonNull(data, "data");
@@ -276,67 +287,80 @@ public final class WasiAsyncFileOperations implements AutoCloseable {
           new WasiFileSystemException("Too many concurrent operations", "EAGAIN"));
     }
 
-    LOGGER.fine(String.format("Starting async write: path=%s, position=%d, dataSize=%d",
-        path, position, data.remaining()));
+    LOGGER.fine(
+        String.format(
+            "Starting async write: path=%s, position=%d, dataSize=%d",
+            path, position, data.remaining()));
 
     final CompletableFuture<Integer> future = new CompletableFuture<>();
     activeOperations.incrementAndGet();
 
     // Set up timeout
-    final Future<?> timeoutTask = asyncExecutor.schedule(() -> {
-      if (future.cancel(true)) {
-        LOGGER.warning(String.format("Async write timeout: path=%s, timeout=%dms",
-            path, timeoutMs));
-      }
-    }, timeoutMs, TimeUnit.MILLISECONDS);
+    final Future<?> timeoutTask =
+        asyncExecutor.schedule(
+            () -> {
+              if (future.cancel(true)) {
+                LOGGER.warning(
+                    String.format("Async write timeout: path=%s, timeout=%dms", path, timeoutMs));
+              }
+            },
+            timeoutMs,
+            TimeUnit.MILLISECONDS);
 
     try {
-      final AsynchronousFileChannel asyncChannel = AsynchronousFileChannel.open(path,
-          Set.of(StandardOpenOption.WRITE, StandardOpenOption.CREATE), asyncExecutor);
+      final AsynchronousFileChannel asyncChannel =
+          AsynchronousFileChannel.open(
+              path, Set.of(StandardOpenOption.WRITE, StandardOpenOption.CREATE), asyncExecutor);
 
-      asyncChannel.write(data, position, data, new CompletionHandler<Integer, ByteBuffer>() {
-        @Override
-        public void completed(final Integer bytesWritten, final ByteBuffer attachment) {
-          try {
-            timeoutTask.cancel(false);
-            asyncChannel.close();
-            future.complete(bytesWritten);
+      asyncChannel.write(
+          data,
+          position,
+          data,
+          new CompletionHandler<Integer, ByteBuffer>() {
+            @Override
+            public void completed(final Integer bytesWritten, final ByteBuffer attachment) {
+              try {
+                timeoutTask.cancel(false);
+                asyncChannel.close();
+                future.complete(bytesWritten);
 
-            LOGGER.fine(String.format("Async write completed: path=%s, bytesWritten=%d",
-                path, bytesWritten));
-          } catch (final Exception e) {
-            failed(e, attachment);
-          } finally {
-            activeOperations.decrementAndGet();
-          }
-        }
+                LOGGER.fine(
+                    String.format(
+                        "Async write completed: path=%s, bytesWritten=%d", path, bytesWritten));
+              } catch (final Exception e) {
+                failed(e, attachment);
+              } finally {
+                activeOperations.decrementAndGet();
+              }
+            }
 
-        @Override
-        public void failed(final Throwable exc, final ByteBuffer attachment) {
-          try {
-            timeoutTask.cancel(false);
-            asyncChannel.close();
-          } catch (final IOException e) {
-            LOGGER.warning(String.format("Error closing async channel: %s", e.getMessage()));
-          } finally {
-            activeOperations.decrementAndGet();
-          }
+            @Override
+            public void failed(final Throwable exc, final ByteBuffer attachment) {
+              try {
+                timeoutTask.cancel(false);
+                asyncChannel.close();
+              } catch (final IOException e) {
+                LOGGER.warning(String.format("Error closing async channel: %s", e.getMessage()));
+              } finally {
+                activeOperations.decrementAndGet();
+              }
 
-          LOGGER.warning(String.format("Async write failed: path=%s, error=%s",
-              path, exc.getMessage()));
-          future.completeExceptionally(new WasiFileSystemException(
-              "Async write failed: " + exc.getMessage(), "EIO", exc));
-        }
-      });
+              LOGGER.warning(
+                  String.format("Async write failed: path=%s, error=%s", path, exc.getMessage()));
+              future.completeExceptionally(
+                  new WasiFileSystemException(
+                      "Async write failed: " + exc.getMessage(), "EIO", exc));
+            }
+          });
 
     } catch (final IOException e) {
       timeoutTask.cancel(false);
       activeOperations.decrementAndGet();
 
-      LOGGER.warning(String.format("Failed to start async write: path=%s, error=%s",
-          path, e.getMessage()));
-      future.completeExceptionally(new WasiFileSystemException(
-          "Failed to start async write: " + e.getMessage(), "EIO", e));
+      LOGGER.warning(
+          String.format("Failed to start async write: path=%s, error=%s", path, e.getMessage()));
+      future.completeExceptionally(
+          new WasiFileSystemException("Failed to start async write: " + e.getMessage(), "EIO", e));
     }
 
     return future;
@@ -350,8 +374,8 @@ public final class WasiAsyncFileOperations implements AutoCloseable {
    * @param attachment optional attachment for the selection key
    * @return a CompletableFuture that completes when the operation is ready
    */
-  public CompletableFuture<SelectionKey> registerChannel(final SelectableChannel channel,
-      final int operations, final Object attachment) {
+  public CompletableFuture<SelectionKey> registerChannel(
+      final SelectableChannel channel, final int operations, final Object attachment) {
     JniValidation.requireNonNull(channel, "channel");
 
     if (closed.get()) {
@@ -373,8 +397,8 @@ public final class WasiAsyncFileOperations implements AutoCloseable {
 
     } catch (final IOException e) {
       LOGGER.warning(String.format("Failed to register channel: %s", e.getMessage()));
-      future.completeExceptionally(new WasiFileSystemException(
-          "Failed to register channel: " + e.getMessage(), "EIO", e));
+      future.completeExceptionally(
+          new WasiFileSystemException("Failed to register channel: " + e.getMessage(), "EIO", e));
     }
 
     return future;
@@ -400,13 +424,12 @@ public final class WasiAsyncFileOperations implements AutoCloseable {
       if (channel instanceof SocketChannel) {
         return ((SocketChannel) channel).read(buffer);
       } else {
-        throw new WasiFileSystemException("Channel type not supported for non-blocking read",
-            "ENOTSUP");
+        throw new WasiFileSystemException(
+            "Channel type not supported for non-blocking read", "ENOTSUP");
       }
     } catch (final IOException e) {
       LOGGER.warning(String.format("Non-blocking read failed: %s", e.getMessage()));
-      throw new WasiFileSystemException("Non-blocking read failed: " + e.getMessage(),
-          "EIO", e);
+      throw new WasiFileSystemException("Non-blocking read failed: " + e.getMessage(), "EIO", e);
     }
   }
 
@@ -430,13 +453,12 @@ public final class WasiAsyncFileOperations implements AutoCloseable {
       if (channel instanceof SocketChannel) {
         return ((SocketChannel) channel).write(buffer);
       } else {
-        throw new WasiFileSystemException("Channel type not supported for non-blocking write",
-            "ENOTSUP");
+        throw new WasiFileSystemException(
+            "Channel type not supported for non-blocking write", "ENOTSUP");
       }
     } catch (final IOException e) {
       LOGGER.warning(String.format("Non-blocking write failed: %s", e.getMessage()));
-      throw new WasiFileSystemException("Non-blocking write failed: " + e.getMessage(),
-          "EIO", e);
+      throw new WasiFileSystemException("Non-blocking write failed: " + e.getMessage(), "EIO", e);
     }
   }
 
@@ -458,9 +480,7 @@ public final class WasiAsyncFileOperations implements AutoCloseable {
     return closed.get();
   }
 
-  /**
-   * Closes the async file operations handler and releases all resources.
-   */
+  /** Closes the async file operations handler and releases all resources. */
   @Override
   public void close() {
     if (closed.compareAndSet(false, true)) {

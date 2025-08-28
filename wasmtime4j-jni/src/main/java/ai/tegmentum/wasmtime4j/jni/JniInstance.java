@@ -1,5 +1,6 @@
 package ai.tegmentum.wasmtime4j.jni;
 
+import ai.tegmentum.wasmtime4j.Instance;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
 
@@ -13,7 +14,7 @@ import java.util.logging.Logger;
  * <p>This implementation ensures defensive programming to prevent native resource leaks and JVM
  * crashes.
  */
-public final class JniInstance implements AutoCloseable {
+public final class JniInstance implements Instance, AutoCloseable {
 
   private static final Logger LOGGER = Logger.getLogger(JniInstance.class.getName());
 

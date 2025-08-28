@@ -2,7 +2,6 @@ package ai.tegmentum.wasmtime4j.jni.wasi.security;
 
 import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
-import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Set;
@@ -44,10 +43,30 @@ public final class WasiSecurityValidator {
   /** System directories that should be blocked by default. */
   private static final Set<String> SYSTEM_DIRECTORIES =
       Set.of(
-          "/bin", "/sbin", "/usr/bin", "/usr/sbin", "/boot", "/dev", "/proc", "/sys", "/run",
-          "/lib", "/usr/lib", "/lib64", "/usr/lib64", "/etc/passwd", "/etc/shadow", "/etc/sudoers",
-          "C:\\Windows", "C:\\Program Files", "C:\\Program Files (x86)", "C:\\System32",
-          "/System", "/Library", "/Applications", "/Users/.Trash");
+          "/bin",
+          "/sbin",
+          "/usr/bin",
+          "/usr/sbin",
+          "/boot",
+          "/dev",
+          "/proc",
+          "/sys",
+          "/run",
+          "/lib",
+          "/usr/lib",
+          "/lib64",
+          "/usr/lib64",
+          "/etc/passwd",
+          "/etc/shadow",
+          "/etc/sudoers",
+          "C:\\Windows",
+          "C:\\Program Files",
+          "C:\\Program Files (x86)",
+          "C:\\System32",
+          "/System",
+          "/Library",
+          "/Applications",
+          "/Users/.Trash");
 
   /** Dangerous path patterns to detect and block. */
   private static final Set<Pattern> DANGEROUS_PATH_PATTERNS =
@@ -62,8 +81,20 @@ public final class WasiSecurityValidator {
   /** Blocked environment variable names for security. */
   private static final Set<String> BLOCKED_ENVIRONMENT_VARIABLES =
       Set.of(
-          "PATH", "LD_LIBRARY_PATH", "DYLD_LIBRARY_PATH", "JAVA_HOME", "CLASSPATH", "HOME",
-          "USER", "USERNAME", "SUDO_USER", "SHELL", "TERM", "DISPLAY", "PWD", "OLDPWD");
+          "PATH",
+          "LD_LIBRARY_PATH",
+          "DYLD_LIBRARY_PATH",
+          "JAVA_HOME",
+          "CLASSPATH",
+          "HOME",
+          "USER",
+          "USERNAME",
+          "SUDO_USER",
+          "SHELL",
+          "TERM",
+          "DISPLAY",
+          "PWD",
+          "OLDPWD");
 
   /** Whether to enforce strict security policies. */
   private final boolean strictMode;
@@ -279,8 +310,7 @@ public final class WasiSecurityValidator {
     // Check for traversal patterns
     for (final Pattern pattern : DANGEROUS_PATH_PATTERNS) {
       if (pattern.matcher(pathString).find() || pattern.matcher(normalizedString).find()) {
-        throw new JniException(
-            String.format("Path contains dangerous pattern: %s", pathString));
+        throw new JniException(String.format("Path contains dangerous pattern: %s", pathString));
       }
     }
 
@@ -316,15 +346,13 @@ public final class WasiSecurityValidator {
 
     for (final String systemDir : SYSTEM_DIRECTORIES) {
       if (pathString.startsWith(systemDir)) {
-        throw new JniException(
-            String.format("Access to system directory denied: %s", pathString));
+        throw new JniException(String.format("Access to system directory denied: %s", pathString));
       }
     }
 
     for (final String customBlockedDir : customBlockedDirectories) {
       if (pathString.startsWith(customBlockedDir)) {
-        throw new JniException(
-            String.format("Access to blocked directory denied: %s", pathString));
+        throw new JniException(String.format("Access to blocked directory denied: %s", pathString));
       }
     }
   }
@@ -353,8 +381,7 @@ public final class WasiSecurityValidator {
     if (!allowHiddenFiles) {
       final Path fileName = path.getFileName();
       if (fileName != null && fileName.toString().startsWith(".")) {
-        throw new JniException(
-            String.format("Hidden file access not allowed: %s", path));
+        throw new JniException(String.format("Hidden file access not allowed: %s", path));
       }
     }
   }
@@ -363,16 +390,13 @@ public final class WasiSecurityValidator {
   private void validateSymbolicLinks(final Path path) {
     try {
       if (java.nio.file.Files.isSymbolicLink(path)) {
-        throw new JniException(
-            String.format("Symbolic link access not allowed: %s", path));
+        throw new JniException(String.format("Symbolic link access not allowed: %s", path));
       }
     } catch (final SecurityException e) {
       // If we can't check due to security restrictions, be conservative
-      LOGGER.warning(
-          String.format("Cannot check symbolic link status for path: %s", path));
+      LOGGER.warning(String.format("Cannot check symbolic link status for path: %s", path));
       if (strictMode) {
-        throw new JniException(
-            String.format("Cannot verify symbolic link status: %s", path));
+        throw new JniException(String.format("Cannot verify symbolic link status: %s", path));
       }
     }
   }
@@ -387,14 +411,11 @@ public final class WasiSecurityValidator {
 
     // Check for excessively long variable names
     if (variableName.length() > 128) {
-      throw new JniException(
-          String.format("Environment variable name too long: %s", variableName));
+      throw new JniException(String.format("Environment variable name too long: %s", variableName));
     }
   }
 
-  /**
-   * Builder for creating WASI security validators.
-   */
+  /** Builder for creating WASI security validators. */
   public static final class Builder {
 
     private boolean strictMode = false;

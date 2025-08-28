@@ -54,15 +54,18 @@ import java.util.logging.Logger;
  * @since 1.0.0
  */
 public final class ConcurrentAccessCoordinator {
-  private static final Logger logger = Logger.getLogger(ConcurrentAccessCoordinator.class.getName());
+  private static final Logger logger =
+      Logger.getLogger(ConcurrentAccessCoordinator.class.getName());
 
   // Coordination locks for different resource types
   private final StampedLock arenaLock = new StampedLock();
   private final ReadWriteLock resourceLock = new ReentrantReadWriteLock();
-  private final ConcurrentHashMap<String, StampedLock> resourceTypeLocks = new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<String, StampedLock> resourceTypeLocks =
+      new ConcurrentHashMap<>();
 
   // Bulk operation coordination
-  private final ConcurrentLinkedQueue<BulkOperation> pendingOperations = new ConcurrentLinkedQueue<>();
+  private final ConcurrentLinkedQueue<BulkOperation> pendingOperations =
+      new ConcurrentLinkedQueue<>();
   private final AtomicInteger activeBulkOperations = new AtomicInteger(0);
   private final AtomicLong totalOperations = new AtomicLong(0);
 
@@ -74,9 +77,7 @@ public final class ConcurrentAccessCoordinator {
   private final long operationTimeoutMs;
   private volatile boolean shutdownRequested = false;
 
-  /**
-   * Creates a new concurrent access coordinator with default configuration.
-   */
+  /** Creates a new concurrent access coordinator with default configuration. */
   public ConcurrentAccessCoordinator() {
     this(ForkJoinPool.commonPool(), 100, 30000L);
   }
@@ -95,7 +96,8 @@ public final class ConcurrentAccessCoordinator {
     this.operationTimeoutMs = operationTimeoutMs;
 
     if (logger.isLoggable(Level.FINE)) {
-      logger.fine("Created ConcurrentAccessCoordinator with max operations: " + maxConcurrentOperations);
+      logger.fine(
+          "Created ConcurrentAccessCoordinator with max operations: " + maxConcurrentOperations);
     }
   }
 
@@ -136,8 +138,8 @@ public final class ConcurrentAccessCoordinator {
   /**
    * Executes an operation with optimistic arena coordination.
    *
-   * <p>Uses StampedLock optimistic reading to minimize contention while ensuring consistency.
-   * Falls back to pessimistic locking if optimistic validation fails.
+   * <p>Uses StampedLock optimistic reading to minimize contention while ensuring consistency. Falls
+   * back to pessimistic locking if optimistic validation fails.
    *
    * @param <T> the return type
    * @param arena the arena to coordinate access to
@@ -166,7 +168,8 @@ public final class ConcurrentAccessCoordinator {
       } catch (Exception e) {
         // Fall through to pessimistic approach
         if (logger.isLoggable(Level.FINE)) {
-          logger.fine("Optimistic arena operation failed, falling back to pessimistic: " + e.getMessage());
+          logger.fine(
+              "Optimistic arena operation failed, falling back to pessimistic: " + e.getMessage());
         }
       }
     }
@@ -187,8 +190,8 @@ public final class ConcurrentAccessCoordinator {
   /**
    * Executes a bulk operation on multiple resources with batching optimization.
    *
-   * <p>This method coordinates access to multiple resources and executes the operation in a
-   * single batch to minimize FFI boundary crossings and synchronization overhead.
+   * <p>This method coordinates access to multiple resources and executes the operation in a single
+   * batch to minimize FFI boundary crossings and synchronization overhead.
    *
    * @param <T> the return type
    * @param resources the resources to operate on
@@ -233,17 +236,18 @@ public final class ConcurrentAccessCoordinator {
    */
   public <T> CompletableFuture<T> executeAsync(final Supplier<T> operation) {
     if (shutdownRequested) {
-      return CompletableFuture.failedFuture(new IllegalStateException("Coordinator is shutting down"));
+      return CompletableFuture.failedFuture(
+          new IllegalStateException("Coordinator is shutting down"));
     }
 
-    return CompletableFuture
-        .supplyAsync(operation, executor)
+    return CompletableFuture.supplyAsync(operation, executor)
         .orTimeout(operationTimeoutMs, TimeUnit.MILLISECONDS)
-        .whenComplete((result, throwable) -> {
-          if (throwable != null) {
-            logger.log(Level.WARNING, "Async operation failed", throwable);
-          }
-        });
+        .whenComplete(
+            (result, throwable) -> {
+              if (throwable != null) {
+                logger.log(Level.WARNING, "Async operation failed", throwable);
+              }
+            });
   }
 
   /**
@@ -259,7 +263,8 @@ public final class ConcurrentAccessCoordinator {
   @SafeVarargs
   public final <T> CompletableFuture<T[]> executeBatch(final Supplier<T>... operations) {
     if (shutdownRequested) {
-      return CompletableFuture.failedFuture(new IllegalStateException("Coordinator is shutting down"));
+      return CompletableFuture.failedFuture(
+          new IllegalStateException("Coordinator is shutting down"));
     }
 
     if (operations.length == 0) {
@@ -271,14 +276,16 @@ public final class ConcurrentAccessCoordinator {
       futures[i] = executeAsync(operations[i]);
     }
 
-    return CompletableFuture.allOf(futures).thenApply(void_ -> {
-      @SuppressWarnings("unchecked")
-      final T[] results = (T[]) new Object[futures.length];
-      for (int i = 0; i < futures.length; i++) {
-        results[i] = futures[i].join();
-      }
-      return results;
-    });
+    return CompletableFuture.allOf(futures)
+        .thenApply(
+            void_ -> {
+              @SuppressWarnings("unchecked")
+              final T[] results = (T[]) new Object[futures.length];
+              for (int i = 0; i < futures.length; i++) {
+                results[i] = futures[i].join();
+              }
+              return results;
+            });
   }
 
   /**
@@ -310,8 +317,8 @@ public final class ConcurrentAccessCoordinator {
   /**
    * Initiates shutdown of the coordinator.
    *
-   * <p>This method prevents new operations from starting and allows existing operations to complete.
-   * It does not block waiting for completion.
+   * <p>This method prevents new operations from starting and allows existing operations to
+   * complete. It does not block waiting for completion.
    */
   public void shutdown() {
     shutdownRequested = true;
@@ -369,9 +376,7 @@ public final class ConcurrentAccessCoordinator {
     }
   }
 
-  /**
-   * Represents a bulk operation to be coordinated.
-   */
+  /** Represents a bulk operation to be coordinated. */
   private static final class BulkOperation {
     private final Runnable operation;
     private final long submissionTime;
@@ -390,9 +395,7 @@ public final class ConcurrentAccessCoordinator {
     }
   }
 
-  /**
-   * Statistics about coordination operations.
-   */
+  /** Statistics about coordination operations. */
   public static final class CoordinationStatistics {
     private final long totalOperations;
     private final int activeBulkOperations;

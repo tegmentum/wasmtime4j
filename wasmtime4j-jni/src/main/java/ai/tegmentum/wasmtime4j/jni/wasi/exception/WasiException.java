@@ -90,7 +90,8 @@ public class WasiException extends JniException {
    * @param operation the system operation that failed
    * @param resource the resource associated with the error
    */
-  public WasiException(final WasiErrorCode errorCode, final String operation, final String resource) {
+  public WasiException(
+      final WasiErrorCode errorCode, final String operation, final String resource) {
     this(errorCode.getDescription(), errorCode, operation, resource);
   }
 

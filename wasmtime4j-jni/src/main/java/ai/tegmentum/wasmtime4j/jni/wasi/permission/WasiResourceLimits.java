@@ -1,6 +1,5 @@
 package ai.tegmentum.wasmtime4j.jni.wasi.permission;
 
-import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import java.time.Duration;
 
 /**
@@ -374,9 +373,7 @@ public final class WasiResourceLimits {
     return String.format("%.1f %s", size, units[unitIndex]);
   }
 
-  /**
-   * Builder for creating WASI resource limits.
-   */
+  /** Builder for creating WASI resource limits. */
   public static final class Builder {
 
     private long maxMemoryBytes = UNLIMITED;
@@ -441,7 +438,8 @@ public final class WasiResourceLimits {
     /**
      * Sets the maximum bytes read from disk per second.
      *
-     * @param maxDiskReadBytesPerSecond the maximum disk read bytes per second (negative for unlimited)
+     * @param maxDiskReadBytesPerSecond the maximum disk read bytes per second (negative for
+     *     unlimited)
      * @return this builder for method chaining
      */
     public Builder withMaxDiskReadBytesPerSecond(final long maxDiskReadBytesPerSecond) {
@@ -452,7 +450,8 @@ public final class WasiResourceLimits {
     /**
      * Sets the maximum bytes written to disk per second.
      *
-     * @param maxDiskWriteBytesPerSecond the maximum disk write bytes per second (negative for unlimited)
+     * @param maxDiskWriteBytesPerSecond the maximum disk write bytes per second (negative for
+     *     unlimited)
      * @return this builder for method chaining
      */
     public Builder withMaxDiskWriteBytesPerSecond(final long maxDiskWriteBytesPerSecond) {

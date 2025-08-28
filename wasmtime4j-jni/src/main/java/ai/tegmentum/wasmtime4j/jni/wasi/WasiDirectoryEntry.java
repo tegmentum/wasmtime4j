@@ -41,8 +41,12 @@ public final class WasiDirectoryEntry {
    * @param size the size of the file in bytes
    * @param lastModifiedTime the last modified time
    */
-  public WasiDirectoryEntry(final String name, final boolean isRegularFile,
-      final boolean isDirectory, final boolean isSymbolicLink, final long size,
+  public WasiDirectoryEntry(
+      final String name,
+      final boolean isRegularFile,
+      final boolean isDirectory,
+      final boolean isSymbolicLink,
+      final long size,
       final FileTime lastModifiedTime) {
     JniValidation.requireNonEmpty(name, "name");
     JniValidation.requireNonNull(lastModifiedTime, "lastModifiedTime");
@@ -168,7 +172,8 @@ public final class WasiDirectoryEntry {
       type = "UNKNOWN";
     }
 
-    return String.format("WasiDirectoryEntry{name='%s', type=%s, size=%d, lastModified=%s}",
+    return String.format(
+        "WasiDirectoryEntry{name='%s', type=%s, size=%d, lastModified=%s}",
         name, type, size, lastModifiedTime);
   }
 }

@@ -24,7 +24,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
-/** Tests for {@link NativeLibraryUtils}. */
+/**
+ * Tests for {@link NativeLibraryUtils}.
+ */
 final class NativeLibraryUtilsTest {
 
   @Test

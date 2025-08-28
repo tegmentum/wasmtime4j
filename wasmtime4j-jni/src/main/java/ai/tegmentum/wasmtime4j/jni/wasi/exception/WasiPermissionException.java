@@ -86,7 +86,11 @@ public final class WasiPermissionException extends WasiException {
       final String operation,
       final String resource,
       final boolean useAccessDeniedCode) {
-    super(message, useAccessDeniedCode ? WasiErrorCode.EACCES : WasiErrorCode.EPERM, operation, resource);
+    super(
+        message,
+        useAccessDeniedCode ? WasiErrorCode.EACCES : WasiErrorCode.EPERM,
+        operation,
+        resource);
     this.violationType = violationType;
     this.attemptedResource = resource;
     this.violatedPolicy = null;
@@ -155,7 +159,8 @@ public final class WasiPermissionException extends WasiException {
    * @param filePath the file path that was denied access
    * @return a new file system access denied exception
    */
-  public static WasiPermissionException fileSystemAccessDenied(final String operation, final String filePath) {
+  public static WasiPermissionException fileSystemAccessDenied(
+      final String operation, final String filePath) {
     return new WasiPermissionException(
         String.format("File system access denied: %s", filePath),
         PermissionViolationType.FILE_SYSTEM_ACCESS,
@@ -171,7 +176,8 @@ public final class WasiPermissionException extends WasiException {
    * @param filePath the file path that would escape the sandbox
    * @return a new sandbox escape exception
    */
-  public static WasiPermissionException sandboxEscape(final String operation, final String filePath) {
+  public static WasiPermissionException sandboxEscape(
+      final String operation, final String filePath) {
     return new WasiPermissionException(
         String.format("Sandbox escape attempt detected: %s", filePath),
         PermissionViolationType.SANDBOX_ESCAPE,
@@ -186,7 +192,8 @@ public final class WasiPermissionException extends WasiException {
    * @param filePath the file path with traversal attempt
    * @return a new path traversal exception
    */
-  public static WasiPermissionException pathTraversal(final String operation, final String filePath) {
+  public static WasiPermissionException pathTraversal(
+      final String operation, final String filePath) {
     return new WasiPermissionException(
         String.format("Path traversal attack detected: %s", filePath),
         PermissionViolationType.PATH_TRAVERSAL,
@@ -201,7 +208,8 @@ public final class WasiPermissionException extends WasiException {
    * @param variableName the environment variable that was denied access
    * @return a new environment access denied exception
    */
-  public static WasiPermissionException environmentAccessDenied(final String operation, final String variableName) {
+  public static WasiPermissionException environmentAccessDenied(
+      final String operation, final String variableName) {
     return new WasiPermissionException(
         String.format("Environment variable access denied: %s", variableName),
         PermissionViolationType.ENVIRONMENT_ACCESS,
@@ -217,7 +225,8 @@ public final class WasiPermissionException extends WasiException {
    * @param resource the resource involved in the dangerous operation
    * @return a new dangerous operation exception
    */
-  public static WasiPermissionException dangerousOperation(final String operation, final String resource) {
+  public static WasiPermissionException dangerousOperation(
+      final String operation, final String resource) {
     return new WasiPermissionException(
         String.format("Dangerous operation not permitted: %s", operation),
         PermissionViolationType.DANGEROUS_OPERATION,
@@ -250,7 +259,8 @@ public final class WasiPermissionException extends WasiException {
    * @param capability the capability that was not granted
    * @return a new capability not granted exception
    */
-  public static WasiPermissionException capabilityNotGranted(final String operation, final String capability) {
+  public static WasiPermissionException capabilityNotGranted(
+      final String operation, final String capability) {
     return new WasiPermissionException(
         String.format("Required capability not granted: %s", capability),
         PermissionViolationType.CAPABILITY_NOT_GRANTED,
@@ -258,9 +268,7 @@ public final class WasiPermissionException extends WasiException {
         capability);
   }
 
-  /**
-   * Enumeration of permission violation types.
-   */
+  /** Enumeration of permission violation types. */
   public enum PermissionViolationType {
 
     /** File system access violation. */
