@@ -102,7 +102,7 @@ public final class JniEngine extends JniResource {
     try {
       final long moduleHandle = nativeCompileModule(getNativeHandle(), wasmBytesCopy);
       JniValidation.requireValidHandle(moduleHandle, "moduleHandle");
-      return new JniModule(moduleHandle);
+      return new JniModule(moduleHandle, this);
     } catch (final Exception e) {
       if (e instanceof JniException) {
         throw e;
