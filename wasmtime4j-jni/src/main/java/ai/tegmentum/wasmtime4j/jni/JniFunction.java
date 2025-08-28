@@ -24,13 +24,14 @@ import java.util.logging.Logger;
  * (i32, i64, f32, f64), SIMD types (v128), and reference types (funcref, externref).
  *
  * <p>Features include:
+ *
  * <ul>
- *   <li>Complete WebAssembly type system support</li>
- *   <li>Multi-value parameter and return handling</li>
- *   <li>Type validation and conversion between Java and WebAssembly</li>
- *   <li>Function result caching for frequently called functions</li>
- *   <li>Asynchronous execution support with CompletableFuture</li>
- *   <li>Optimized call paths for common type combinations</li>
+ *   <li>Complete WebAssembly type system support
+ *   <li>Multi-value parameter and return handling
+ *   <li>Type validation and conversion between Java and WebAssembly
+ *   <li>Function result caching for frequently called functions
+ *   <li>Asynchronous execution support with CompletableFuture
+ *   <li>Optimized call paths for common type combinations
  * </ul>
  *
  * <p>This implementation ensures defensive programming to prevent JVM crashes and provides
@@ -180,7 +181,7 @@ public final class JniFunction extends JniResource implements WasmFunction {
 
     try {
       final FunctionType functionType = getFunctionType();
-      
+
       // Validate parameter types
       JniTypeConverter.validateParameterTypes(params, functionType.getParamTypes());
 
@@ -202,8 +203,8 @@ public final class JniFunction extends JniResource implements WasmFunction {
       }
 
       // Convert native results back to WasmValue array
-      final WasmValue[] results = JniTypeConverter.nativeResultsToWasmValues(
-          nativeResults, functionType.getReturnTypes());
+      final WasmValue[] results =
+          JniTypeConverter.nativeResultsToWasmValues(nativeResults, functionType.getReturnTypes());
 
       // Cache result for frequently called functions
       if (shouldCacheResult(currentCall)) {
@@ -263,13 +264,14 @@ public final class JniFunction extends JniResource implements WasmFunction {
    * @return a CompletableFuture containing the results
    */
   public CompletableFuture<WasmValue[]> callAsync(final WasmValue... params) {
-    return CompletableFuture.supplyAsync(() -> {
-      try {
-        return call(params);
-      } catch (final WasmException e) {
-        throw new RuntimeException(e);
-      }
-    });
+    return CompletableFuture.supplyAsync(
+        () -> {
+          try {
+            return call(params);
+          } catch (final WasmException e) {
+            throw new RuntimeException(e);
+          }
+        });
   }
 
   /**
@@ -375,13 +377,15 @@ public final class JniFunction extends JniResource implements WasmFunction {
   protected void doClose() throws Exception {
     // Clear cache before closing
     clearCache();
-    
+
     // Log performance stats
     if (LOGGER.isLoggable(Level.FINE)) {
-      LOGGER.fine(String.format("Closing function '%s': %d calls, %.2f%% cache hit ratio", 
-          name, getCallCount(), getCacheHitRatio() * 100));
+      LOGGER.fine(
+          String.format(
+              "Closing function '%s': %d calls, %.2f%% cache hit ratio",
+              name, getCallCount(), getCacheHitRatio() * 100));
     }
-    
+
     nativeDestroyFunction(nativeHandle);
   }
 
@@ -395,7 +399,7 @@ public final class JniFunction extends JniResource implements WasmFunction {
     if (params.length == 0) {
       return "empty";
     }
-    
+
     final StringBuilder key = new StringBuilder();
     for (int i = 0; i < params.length; i++) {
       if (i > 0) {
@@ -403,7 +407,7 @@ public final class JniFunction extends JniResource implements WasmFunction {
       }
       final WasmValue param = params[i];
       key.append(param.getType()).append(":");
-      
+
       // Create a simple hash for the value to avoid storing large objects in keys
       if (param.getType() == WasmValueType.V128) {
         key.append(java.util.Arrays.hashCode(param.asV128()));
@@ -447,22 +451,21 @@ public final class JniFunction extends JniResource implements WasmFunction {
     final CachedResult existing = resultCache.get(key);
     final int hitCount = existing != null ? existing.hitCount + 1 : 1;
     resultCache.put(key, new CachedResult(result.clone(), System.currentTimeMillis(), hitCount));
-    
+
     // Simple cache eviction
     if (resultCache.size() > MAX_CACHE_SIZE) {
-      final String oldestKey = resultCache.entrySet().stream()
-          .min((e1, e2) -> Long.compare(e1.getValue().timestamp, e2.getValue().timestamp))
-          .map(java.util.Map.Entry::getKey)
-          .orElse(null);
+      final String oldestKey =
+          resultCache.entrySet().stream()
+              .min((e1, e2) -> Long.compare(e1.getValue().timestamp, e2.getValue().timestamp))
+              .map(java.util.Map.Entry::getKey)
+              .orElse(null);
       if (oldestKey != null) {
         resultCache.remove(oldestKey);
       }
     }
   }
 
-  /**
-   * Clears the function result cache.
-   */
+  /** Clears the function result cache. */
   public void clearCache() {
     resultCache.clear();
     LOGGER.fine("Cleared result cache for function '" + name + "'");

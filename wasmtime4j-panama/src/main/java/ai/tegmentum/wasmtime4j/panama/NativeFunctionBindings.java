@@ -390,7 +390,8 @@ public final class NativeFunctionBindings {
             ValueLayout.JAVA_LONG)); // return_count
 
     addFunctionBinding(
-        "wasmtime4j_functype_destroy", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // functype_ptr
+        "wasmtime4j_functype_destroy",
+        FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // functype_ptr
   }
 
   /**

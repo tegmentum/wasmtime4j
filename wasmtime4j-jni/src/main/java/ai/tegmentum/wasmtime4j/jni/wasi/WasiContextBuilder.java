@@ -253,7 +253,8 @@ public final class WasiContextBuilder {
   public WasiContext build() throws JniException {
     LOGGER.info(
         String.format(
-            "Building WASI context with %d environment variables, %d arguments, %d preopen directories",
+            "Building WASI context with %d environment variables, %d arguments, %d preopen"
+                + " directories",
             environment.size(), arguments.size(), preopenedDirectories.size()));
 
     // Validate configuration before creating native context

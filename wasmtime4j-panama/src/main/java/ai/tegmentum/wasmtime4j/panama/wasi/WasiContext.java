@@ -78,7 +78,7 @@ public final class WasiContext implements AutoCloseable {
       final MemorySegment nativeHandle,
       final ArenaResourceManager resourceManager,
       final WasiContextBuilder builder) {
-    
+
     if (nativeHandle == null || nativeHandle.equals(MemorySegment.NULL)) {
       throw new IllegalArgumentException("Native handle cannot be null");
     }
@@ -104,7 +104,8 @@ public final class WasiContext implements AutoCloseable {
 
     LOGGER.info(
         String.format(
-            "Created Panama WASI context with %d preopen directories, %d environment variables, %d arguments",
+            "Created Panama WASI context with %d preopen directories, %d environment variables, %d"
+                + " arguments",
             preopenedDirectories.size(), environment.size(), arguments.length));
   }
 
@@ -151,7 +152,7 @@ public final class WasiContext implements AutoCloseable {
    */
   public String getEnvironmentVariable(final String name) {
     ensureNotClosed();
-    
+
     if (name == null || name.isEmpty()) {
       throw new IllegalArgumentException("Environment variable name cannot be null or empty");
     }
@@ -223,7 +224,7 @@ public final class WasiContext implements AutoCloseable {
    */
   public Path validatePath(final String path) {
     ensureNotClosed();
-    
+
     if (path == null || path.isEmpty()) {
       throw new IllegalArgumentException("Path cannot be null or empty");
     }
@@ -251,7 +252,7 @@ public final class WasiContext implements AutoCloseable {
    */
   public Path validatePath(final String path, final WasiFileOperation operation) {
     ensureNotClosed();
-    
+
     if (path == null || path.isEmpty()) {
       throw new IllegalArgumentException("Path cannot be null or empty");
     }
@@ -279,8 +280,8 @@ public final class WasiContext implements AutoCloseable {
   /**
    * Closes this WASI context and releases all associated resources.
    *
-   * <p>This method is idempotent and thread-safe. After calling this method, all other methods
-   * will throw IllegalStateException.
+   * <p>This method is idempotent and thread-safe. After calling this method, all other methods will
+   * throw IllegalStateException.
    */
   @Override
   public void close() {

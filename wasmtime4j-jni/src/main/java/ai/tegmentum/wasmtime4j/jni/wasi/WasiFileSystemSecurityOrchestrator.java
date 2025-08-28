@@ -28,14 +28,15 @@ import java.util.logging.Logger;
  *   <li>Defense-in-depth security architecture
  * </ul>
  *
- * <p>Security validation follows a strict deny-by-default policy where all operations must
- * pass multiple validation layers before being allowed to proceed.
+ * <p>Security validation follows a strict deny-by-default policy where all operations must pass
+ * multiple validation layers before being allowed to proceed.
  *
  * @since 1.0.0
  */
 public final class WasiFileSystemSecurityOrchestrator {
 
-  private static final Logger LOGGER = Logger.getLogger(WasiFileSystemSecurityOrchestrator.class.getName());
+  private static final Logger LOGGER =
+      Logger.getLogger(WasiFileSystemSecurityOrchestrator.class.getName());
 
   /** The security validator for path traversal protection. */
   private final WasiSecurityValidator securityValidator;
@@ -68,7 +69,8 @@ public final class WasiFileSystemSecurityOrchestrator {
    * @param enableAuditLogging whether to enable audit logging
    * @param strictValidationMode whether to use strict validation mode
    */
-  public WasiFileSystemSecurityOrchestrator(final WasiSecurityValidator securityValidator,
+  public WasiFileSystemSecurityOrchestrator(
+      final WasiSecurityValidator securityValidator,
       final WasiPermissionManager permissionManager,
       final WasiDirectoryAccessControl directoryAccessControl,
       final boolean enablePathCaching,
@@ -85,15 +87,17 @@ public final class WasiFileSystemSecurityOrchestrator {
     this.enableAuditLogging = enableAuditLogging;
     this.strictValidationMode = strictValidationMode;
 
-    LOGGER.info(String.format(
-        "Created security orchestrator: caching=%s, audit=%s, strict=%s",
-        enablePathCaching, enableAuditLogging, strictValidationMode));
+    LOGGER.info(
+        String.format(
+            "Created security orchestrator: caching=%s, audit=%s, strict=%s",
+            enablePathCaching, enableAuditLogging, strictValidationMode));
   }
 
   /**
    * Validates comprehensive security for a file system operation.
    *
    * <p>This method performs multi-layer security validation including:
+   *
    * <ul>
    *   <li>Path normalization and traversal attack prevention
    *   <li>Permission-based access control validation
@@ -112,8 +116,8 @@ public final class WasiFileSystemSecurityOrchestrator {
     JniValidation.requireNonNull(operation, "operation");
 
     if (enableAuditLogging) {
-      LOGGER.info(String.format("Security validation started: path=%s, operation=%s",
-          path, operation));
+      LOGGER.info(
+          String.format("Security validation started: path=%s, operation=%s", path, operation));
     }
 
     final long startTime = System.nanoTime();
@@ -127,8 +131,10 @@ public final class WasiFileSystemSecurityOrchestrator {
         final String cacheKey = normalizedPath.toString() + ":" + operation.name();
         if (validatedPathCache.contains(cacheKey)) {
           if (enableAuditLogging) {
-            LOGGER.fine(String.format("Security validation cached: path=%s, operation=%s",
-                normalizedPath, operation));
+            LOGGER.fine(
+                String.format(
+                    "Security validation cached: path=%s, operation=%s",
+                    normalizedPath, operation));
           }
           return normalizedPath;
         }
@@ -152,7 +158,7 @@ public final class WasiFileSystemSecurityOrchestrator {
       if (enablePathCaching) {
         final String cacheKey = normalizedPath.toString() + ":" + operation.name();
         validatedPathCache.add(cacheKey);
-        
+
         // Prevent cache from growing too large
         if (validatedPathCache.size() > 10000) {
           validatedPathCache.clear();
@@ -162,27 +168,29 @@ public final class WasiFileSystemSecurityOrchestrator {
 
       final long elapsedNanos = System.nanoTime() - startTime;
       if (enableAuditLogging) {
-        LOGGER.info(String.format(
-            "Security validation completed: path=%s, operation=%s, elapsed=%dus",
-            normalizedPath, operation, elapsedNanos / 1000));
+        LOGGER.info(
+            String.format(
+                "Security validation completed: path=%s, operation=%s, elapsed=%dus",
+                normalizedPath, operation, elapsedNanos / 1000));
       }
 
       return normalizedPath;
 
     } catch (final WasiFileSystemException e) {
       final long elapsedNanos = System.nanoTime() - startTime;
-      LOGGER.warning(String.format(
-          "Security validation failed: path=%s, operation=%s, error=%s, elapsed=%dus",
-          path, operation, e.getMessage(), elapsedNanos / 1000));
+      LOGGER.warning(
+          String.format(
+              "Security validation failed: path=%s, operation=%s, error=%s, elapsed=%dus",
+              path, operation, e.getMessage(), elapsedNanos / 1000));
       throw e;
 
     } catch (final Exception e) {
       final long elapsedNanos = System.nanoTime() - startTime;
-      LOGGER.warning(String.format(
-          "Security validation error: path=%s, operation=%s, error=%s, elapsed=%dus",
-          path, operation, e.getMessage(), elapsedNanos / 1000));
-      throw new WasiFileSystemException("Security validation error: " + e.getMessage(),
-          "EIO", e);
+      LOGGER.warning(
+          String.format(
+              "Security validation error: path=%s, operation=%s, error=%s, elapsed=%dus",
+              path, operation, e.getMessage(), elapsedNanos / 1000));
+      throw new WasiFileSystemException("Security validation error: " + e.getMessage(), "EIO", e);
     }
   }
 
@@ -207,15 +215,15 @@ public final class WasiFileSystemSecurityOrchestrator {
       }
 
     } catch (final Exception e) {
-      LOGGER.warning(String.format("Environment variable access denied: name=%s, error=%s",
-          variableName, e.getMessage()));
+      LOGGER.warning(
+          String.format(
+              "Environment variable access denied: name=%s, error=%s",
+              variableName, e.getMessage()));
       throw new WasiPermissionException("Environment variable access denied: " + e.getMessage(), e);
     }
   }
 
-  /**
-   * Clears the path validation cache.
-   */
+  /** Clears the path validation cache. */
   public void clearValidationCache() {
     if (enablePathCaching) {
       validatedPathCache.clear();
@@ -247,8 +255,8 @@ public final class WasiFileSystemSecurityOrchestrator {
       final Path pathObj = Paths.get(path);
       return pathObj.normalize().toAbsolutePath();
     } catch (final Exception e) {
-      LOGGER.warning(String.format("Path normalization failed: path=%s, error=%s",
-          path, e.getMessage()));
+      LOGGER.warning(
+          String.format("Path normalization failed: path=%s, error=%s", path, e.getMessage()));
       throw new WasiFileSystemException("Invalid path: " + path, "EINVAL", e);
     }
   }
@@ -258,10 +266,10 @@ public final class WasiFileSystemSecurityOrchestrator {
     try {
       securityValidator.validatePath(path);
     } catch (final Exception e) {
-      LOGGER.warning(String.format("Path security validation failed: path=%s, error=%s",
-          path, e.getMessage()));
-      throw new WasiFileSystemException("Path security violation: " + e.getMessage(),
-          "EACCES", e);
+      LOGGER.warning(
+          String.format(
+              "Path security validation failed: path=%s, error=%s", path, e.getMessage()));
+      throw new WasiFileSystemException("Path security violation: " + e.getMessage(), "EACCES", e);
     }
   }
 
@@ -270,8 +278,10 @@ public final class WasiFileSystemSecurityOrchestrator {
     try {
       permissionManager.validateFileSystemAccess(path, operation);
     } catch (final Exception e) {
-      LOGGER.warning(String.format("Permission validation failed: path=%s, operation=%s, error=%s",
-          path, operation, e.getMessage()));
+      LOGGER.warning(
+          String.format(
+              "Permission validation failed: path=%s, operation=%s, error=%s",
+              path, operation, e.getMessage()));
       throw new WasiPermissionException("Permission denied: " + e.getMessage(), e);
     }
   }
@@ -285,8 +295,10 @@ public final class WasiFileSystemSecurityOrchestrator {
         directoryAccessControl.validateDirectoryAccess(directoryPath, operation);
       }
     } catch (final Exception e) {
-      LOGGER.warning(String.format("Directory access validation failed: path=%s, operation=%s, error=%s",
-          path, operation, e.getMessage()));
+      LOGGER.warning(
+          String.format(
+              "Directory access validation failed: path=%s, operation=%s, error=%s",
+              path, operation, e.getMessage()));
       throw new WasiPermissionException("Directory access denied: " + e.getMessage(), e);
     }
   }
@@ -312,9 +324,9 @@ public final class WasiFileSystemSecurityOrchestrator {
 
       // Additional security checks for dangerous operations
       if (operation.isDangerous()) {
-        LOGGER.warning(String.format("Dangerous operation attempted: path=%s, operation=%s",
-            path, operation));
-        
+        LOGGER.warning(
+            String.format("Dangerous operation attempted: path=%s, operation=%s", path, operation));
+
         // Extra validation for dangerous operations
         if (operation == WasiFileOperation.EXECUTE) {
           if (!Files.isExecutable(path)) {
@@ -324,20 +336,18 @@ public final class WasiFileSystemSecurityOrchestrator {
       }
 
     } catch (final IOException e) {
-      LOGGER.warning(String.format("Strict validation I/O error: path=%s, error=%s",
-          path, e.getMessage()));
-      throw new WasiFileSystemException("Strict validation failed: " + e.getMessage(),
-          "EIO", e);
+      LOGGER.warning(
+          String.format("Strict validation I/O error: path=%s, error=%s", path, e.getMessage()));
+      throw new WasiFileSystemException("Strict validation failed: " + e.getMessage(), "EIO", e);
     }
   }
 
-  /**
-   * Builder for creating security orchestrator configurations.
-   */
+  /** Builder for creating security orchestrator configurations. */
   public static final class Builder {
     private WasiSecurityValidator securityValidator = WasiSecurityValidator.defaultValidator();
     private WasiPermissionManager permissionManager;
-    private WasiDirectoryAccessControl directoryAccessControl = WasiDirectoryAccessControl.builder().build();
+    private WasiDirectoryAccessControl directoryAccessControl =
+        WasiDirectoryAccessControl.builder().build();
     private boolean enablePathCaching = true;
     private boolean enableAuditLogging = false;
     private boolean strictValidationMode = true;
@@ -374,7 +384,8 @@ public final class WasiFileSystemSecurityOrchestrator {
      * @param directoryAccessControl the directory access control
      * @return this builder for method chaining
      */
-    public Builder withDirectoryAccessControl(final WasiDirectoryAccessControl directoryAccessControl) {
+    public Builder withDirectoryAccessControl(
+        final WasiDirectoryAccessControl directoryAccessControl) {
       JniValidation.requireNonNull(directoryAccessControl, "directoryAccessControl");
       this.directoryAccessControl = directoryAccessControl;
       return this;

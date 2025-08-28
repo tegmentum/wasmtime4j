@@ -26,8 +26,8 @@ import java.util.logging.Logger;
  *
  * <p>This utility provides comprehensive detection of Panama Foreign Function API capabilities,
  * including Java version validation, native access permissions, preview feature detection, and
- * graceful fallback recommendations. It serves as the foundation for runtime selection logic
- * and provides detailed diagnostics for troubleshooting Panama availability issues.
+ * graceful fallback recommendations. It serves as the foundation for runtime selection logic and
+ * provides detailed diagnostics for troubleshooting Panama availability issues.
  *
  * <p>Key features:
  *
@@ -50,25 +50,19 @@ public final class PanamaCapabilityDetector {
 
   // Required Panama classes for detection
   private static final String[] REQUIRED_PANAMA_CLASSES = {
-      "java.lang.foreign.MemorySegment",
-      "java.lang.foreign.Arena", 
-      "java.lang.foreign.SymbolLookup",
-      "java.lang.foreign.FunctionDescriptor",
-      "java.lang.foreign.ValueLayout",
-      "java.lang.foreign.Linker"
+    "java.lang.foreign.MemorySegment",
+    "java.lang.foreign.Arena",
+    "java.lang.foreign.SymbolLookup",
+    "java.lang.foreign.FunctionDescriptor",
+    "java.lang.foreign.ValueLayout",
+    "java.lang.foreign.Linker"
   };
 
   // Preview feature system properties to check
-  private static final String[] PREVIEW_PROPERTIES = {
-      "jdk.preview.enable",
-      "jdk.foreign.enable"
-  };
+  private static final String[] PREVIEW_PROPERTIES = {"jdk.preview.enable", "jdk.foreign.enable"};
 
   // Native access related properties
-  private static final String[] NATIVE_ACCESS_PROPERTIES = {
-      "native.encoding",
-      "java.library.path"
-  };
+  private static final String[] NATIVE_ACCESS_PROPERTIES = {"native.encoding", "java.library.path"};
 
   // Prevent instantiation
   private PanamaCapabilityDetector() {
@@ -78,9 +72,9 @@ public final class PanamaCapabilityDetector {
   /**
    * Performs comprehensive Panama FFI capability detection.
    *
-   * <p>This method performs a thorough analysis of the current Java environment to determine
-   * Panama FFI availability and provides detailed diagnostic information. Results are cached
-   * for performance on subsequent calls.
+   * <p>This method performs a thorough analysis of the current Java environment to determine Panama
+   * FFI availability and provides detailed diagnostic information. Results are cached for
+   * performance on subsequent calls.
    *
    * @return detailed detection results including availability status and diagnostics
    */
@@ -161,7 +155,7 @@ public final class PanamaCapabilityDetector {
    */
   private static DetectionResult performDetection() {
     final long startTime = System.nanoTime();
-    
+
     try {
       final DetectionResult.Builder builder = new DetectionResult.Builder();
 
@@ -202,9 +196,10 @@ public final class PanamaCapabilityDetector {
       builder.setFunctionalTestInfo(functionalInfo);
 
       // Determine overall availability
-      boolean available = versionInfo.isJava23OrHigher() 
-                       && classInfo.areAllClassesAvailable()
-                       && functionalInfo.areBasicTestsPassing();
+      boolean available =
+          versionInfo.isJava23OrHigher()
+              && classInfo.areAllClassesAvailable()
+              && functionalInfo.areBasicTestsPassing();
 
       if (!available && functionalInfo.hasNativeAccessIssues()) {
         return builder
@@ -216,12 +211,13 @@ public final class PanamaCapabilityDetector {
 
       return builder
           .setAvailable(available)
-          .setFallbackRecommendation(available ? FallbackRecommendation.NONE : FallbackRecommendation.USE_JNI)
+          .setFallbackRecommendation(
+              available ? FallbackRecommendation.NONE : FallbackRecommendation.USE_JNI)
           .build();
 
     } catch (Exception e) {
       logger.log(Level.WARNING, "Error during Panama capability detection", e);
-      
+
       return new DetectionResult.Builder()
           .setAvailable(false)
           .setFailureReason("Detection error: " + e.getMessage())
@@ -230,32 +226,30 @@ public final class PanamaCapabilityDetector {
     } finally {
       final long duration = System.nanoTime() - startTime;
       if (logger.isLoggable(Level.FINE)) {
-        logger.fine(String.format("Panama capability detection completed in %.2f ms", 
-                                  duration / 1_000_000.0));
+        logger.fine(
+            String.format(
+                "Panama capability detection completed in %.2f ms", duration / 1_000_000.0));
       }
     }
   }
 
-  /**
-   * Analyzes Java version information.
-   */
+  /** Analyzes Java version information. */
   private static JavaVersionInfo analyzeJavaVersion() {
     final String javaVersion = System.getProperty("java.version");
     final String javaVendor = System.getProperty("java.vendor");
     final String runtimeName = System.getProperty("java.runtime.name");
-    
+
     final int majorVersion = parseMajorVersion(javaVersion);
     final boolean isJava23OrHigher = majorVersion >= 23;
-    
-    return new JavaVersionInfo(javaVersion, javaVendor, runtimeName, majorVersion, isJava23OrHigher);
+
+    return new JavaVersionInfo(
+        javaVersion, javaVendor, runtimeName, majorVersion, isJava23OrHigher);
   }
 
-  /**
-   * Analyzes Panama class availability.
-   */
+  /** Analyzes Panama class availability. */
   private static ClassAvailabilityInfo analyzePanamaClasses() {
     final ClassAvailabilityInfo.Builder builder = new ClassAvailabilityInfo.Builder();
-    
+
     for (String className : REQUIRED_PANAMA_CLASSES) {
       try {
         Class.forName(className);
@@ -264,16 +258,14 @@ public final class PanamaCapabilityDetector {
         builder.addMissingClass(className);
       }
     }
-    
+
     return builder.build();
   }
 
-  /**
-   * Analyzes native access configuration.
-   */
+  /** Analyzes native access configuration. */
   private static NativeAccessInfo analyzeNativeAccess() {
     final NativeAccessInfo.Builder builder = new NativeAccessInfo.Builder();
-    
+
     // Check relevant system properties
     for (String property : NATIVE_ACCESS_PROPERTIES) {
       final String value = System.getProperty(property);
@@ -281,17 +273,17 @@ public final class PanamaCapabilityDetector {
         builder.addProperty(property, value);
       }
     }
-    
+
     // Try to detect native access restrictions
     boolean nativeAccessEnabled = true;
     String restrictionReason = null;
-    
+
     try {
       // Attempt to access a native method that requires permissions
       final Class<?> runtimeClass = Class.forName("java.lang.Runtime");
-      final Method loadLibraryMethod = runtimeClass.getDeclaredMethod("loadLibrary0", 
-                                                                     Class.class, String.class);
-      
+      final Method loadLibraryMethod =
+          runtimeClass.getDeclaredMethod("loadLibrary0", Class.class, String.class);
+
       // If we can access this method, native access is likely enabled
       if (loadLibraryMethod != null) {
         builder.setNativeAccessEnabled(true);
@@ -300,35 +292,31 @@ public final class PanamaCapabilityDetector {
       nativeAccessEnabled = false;
       restrictionReason = e.getMessage();
     }
-    
+
     return builder
         .setNativeAccessEnabled(nativeAccessEnabled)
         .setRestrictionReason(restrictionReason)
         .build();
   }
 
-  /**
-   * Analyzes preview feature configuration.
-   */
+  /** Analyzes preview feature configuration. */
   private static PreviewFeatureInfo analyzePreviewFeatures() {
     final PreviewFeatureInfo.Builder builder = new PreviewFeatureInfo.Builder();
-    
+
     for (String property : PREVIEW_PROPERTIES) {
       final String value = System.getProperty(property);
       if (value != null) {
         builder.addPreviewProperty(property, value);
       }
     }
-    
+
     return builder.build();
   }
 
-  /**
-   * Performs functional tests of Panama FFI capabilities.
-   */
+  /** Performs functional tests of Panama FFI capabilities. */
   private static FunctionalTestInfo performFunctionalTests() {
     final FunctionalTestInfo.Builder builder = new FunctionalTestInfo.Builder();
-    
+
     // Test 1: Basic class loading
     try {
       Class.forName("java.lang.foreign.MemorySegment");
@@ -336,7 +324,7 @@ public final class PanamaCapabilityDetector {
     } catch (Exception e) {
       builder.addFailingTest("Basic MemorySegment class loading", e.getMessage());
     }
-    
+
     // Test 2: Arena creation
     try {
       final Class<?> arenaClass = Class.forName("java.lang.foreign.Arena");
@@ -344,7 +332,7 @@ public final class PanamaCapabilityDetector {
       final Object arena = ofConfinedMethod.invoke(null);
       if (arena != null) {
         builder.addPassingTest("Arena creation");
-        
+
         // Clean up
         final Method closeMethod = arena.getClass().getMethod("close");
         closeMethod.invoke(arena);
@@ -355,7 +343,7 @@ public final class PanamaCapabilityDetector {
         builder.setHasNativeAccessIssues(true);
       }
     }
-    
+
     // Test 3: Native linker access
     try {
       final Class<?> linkerClass = Class.forName("java.lang.foreign.Linker");
@@ -370,24 +358,22 @@ public final class PanamaCapabilityDetector {
         builder.setHasNativeAccessIssues(true);
       }
     }
-    
+
     return builder.build();
   }
 
-  /**
-   * Parses the major version number from a Java version string.
-   */
+  /** Parses the major version number from a Java version string. */
   private static int parseMajorVersion(final String version) {
     try {
       // Handle old format like "1.8.0_261"
       if (version.startsWith("1.")) {
         return Integer.parseInt(version.substring(2, version.indexOf('.', 2)));
       }
-      
+
       // Handle new format like "17.0.1", "23-ea", etc.
       final int dotIndex = version.indexOf('.');
       final int dashIndex = version.indexOf('-');
-      
+
       int endIndex = version.length();
       if (dotIndex > 0) {
         endIndex = Math.min(endIndex, dotIndex);
@@ -395,7 +381,7 @@ public final class PanamaCapabilityDetector {
       if (dashIndex > 0) {
         endIndex = Math.min(endIndex, dashIndex);
       }
-      
+
       return Integer.parseInt(version.substring(0, endIndex));
     } catch (Exception e) {
       logger.warning("Failed to parse Java version: " + version);
@@ -403,9 +389,7 @@ public final class PanamaCapabilityDetector {
     }
   }
 
-  /**
-   * Represents the result of Panama capability detection.
-   */
+  /** Represents the result of Panama capability detection. */
   public static final class DetectionResult {
     private final boolean available;
     private final String failureReason;
@@ -436,18 +420,20 @@ public final class PanamaCapabilityDetector {
     }
 
     public FallbackRecommendation getFallbackRecommendation() {
-      return fallbackRecommendation != null ? fallbackRecommendation : FallbackRecommendation.USE_JNI;
+      return fallbackRecommendation != null
+          ? fallbackRecommendation
+          : FallbackRecommendation.USE_JNI;
     }
 
     public String getStatusDescription() {
       if (available) {
         return "Panama FFI is available and functional";
       }
-      
+
       if (failureReason != null) {
         return "Panama FFI not available: " + failureReason;
       }
-      
+
       return "Panama FFI availability unknown";
     }
 
@@ -455,30 +441,38 @@ public final class PanamaCapabilityDetector {
       final StringBuilder sb = new StringBuilder();
       sb.append("Panama FFI Diagnostic Information:\n");
       sb.append("Available: ").append(available).append("\n");
-      
+
       if (failureReason != null) {
         sb.append("Failure Reason: ").append(failureReason).append("\n");
       }
-      
+
       if (javaVersionInfo != null) {
         sb.append("Java Version: ").append(javaVersionInfo.getFullVersion()).append("\n");
         sb.append("Java Vendor: ").append(javaVersionInfo.getVendor()).append("\n");
         sb.append("Runtime: ").append(javaVersionInfo.getRuntimeName()).append("\n");
         sb.append("Major Version: ").append(javaVersionInfo.getMajorVersion()).append("\n");
       }
-      
+
       if (classAvailabilityInfo != null) {
-        sb.append("Available Classes: ").append(classAvailabilityInfo.getAvailableClasses().size()).append("\n");
-        sb.append("Missing Classes: ").append(classAvailabilityInfo.getMissingClasses().size()).append("\n");
+        sb.append("Available Classes: ")
+            .append(classAvailabilityInfo.getAvailableClasses().size())
+            .append("\n");
+        sb.append("Missing Classes: ")
+            .append(classAvailabilityInfo.getMissingClasses().size())
+            .append("\n");
       }
-      
+
       if (functionalTestInfo != null) {
-        sb.append("Passing Tests: ").append(functionalTestInfo.getPassingTests().size()).append("\n");
-        sb.append("Failing Tests: ").append(functionalTestInfo.getFailingTests().size()).append("\n");
+        sb.append("Passing Tests: ")
+            .append(functionalTestInfo.getPassingTests().size())
+            .append("\n");
+        sb.append("Failing Tests: ")
+            .append(functionalTestInfo.getFailingTests().size())
+            .append("\n");
       }
-      
+
       sb.append("Fallback Recommendation: ").append(getFallbackRecommendation()).append("\n");
-      
+
       return sb.toString();
     }
 
@@ -558,25 +552,23 @@ public final class PanamaCapabilityDetector {
     }
   }
 
-  /**
-   * Recommendations for fallback strategies when Panama is not available.
-   */
+  /** Recommendations for fallback strategies when Panama is not available. */
   public enum FallbackRecommendation {
     /** No fallback needed - Panama is available. */
     NONE("Panama FFI is available"),
-    
+
     /** Use JNI implementation instead. */
     USE_JNI("Use JNI implementation for Java < 23 or when Panama is unavailable"),
-    
+
     /** Enable preview features to access Panama. */
     ENABLE_PREVIEW("Add --enable-preview to JVM arguments"),
-    
+
     /** Enable native access for Panama operations. */
     ENABLE_NATIVE_ACCESS("Add --enable-native-access=ALL-UNNAMED to JVM arguments"),
-    
+
     /** Upgrade to Java 23 or higher. */
     UPGRADE_JAVA("Upgrade to Java 23 or higher for Panama FFI support"),
-    
+
     /** Manual configuration required. */
     MANUAL_CONFIGURATION("Manual JVM configuration required - see documentation");
 
@@ -596,7 +588,8 @@ public final class PanamaCapabilityDetector {
     }
   }
 
-  // Additional info classes would be implemented here (JavaVersionInfo, ClassAvailabilityInfo, etc.)
+  // Additional info classes would be implemented here (JavaVersionInfo, ClassAvailabilityInfo,
+  // etc.)
   // For brevity, showing just the structure
 
   public static final class JavaVersionInfo {
@@ -606,8 +599,12 @@ public final class PanamaCapabilityDetector {
     private final int majorVersion;
     private final boolean java23OrHigher;
 
-    public JavaVersionInfo(final String fullVersion, final String vendor, final String runtimeName,
-                          final int majorVersion, final boolean java23OrHigher) {
+    public JavaVersionInfo(
+        final String fullVersion,
+        final String vendor,
+        final String runtimeName,
+        final int majorVersion,
+        final boolean java23OrHigher) {
       this.fullVersion = fullVersion;
       this.vendor = vendor;
       this.runtimeName = runtimeName;
@@ -615,16 +612,31 @@ public final class PanamaCapabilityDetector {
       this.java23OrHigher = java23OrHigher;
     }
 
-    public String getFullVersion() { return fullVersion; }
-    public String getVendor() { return vendor; }
-    public String getRuntimeName() { return runtimeName; }
-    public int getMajorVersion() { return majorVersion; }
-    public boolean isJava23OrHigher() { return java23OrHigher; }
+    public String getFullVersion() {
+      return fullVersion;
+    }
+
+    public String getVendor() {
+      return vendor;
+    }
+
+    public String getRuntimeName() {
+      return runtimeName;
+    }
+
+    public int getMajorVersion() {
+      return majorVersion;
+    }
+
+    public boolean isJava23OrHigher() {
+      return java23OrHigher;
+    }
   }
 
-  // Additional info classes (ClassAvailabilityInfo, NativeAccessInfo, etc.) would be implemented similarly
+  // Additional info classes (ClassAvailabilityInfo, NativeAccessInfo, etc.) would be implemented
+  // similarly
   // For brevity, showing minimal structure
-  
+
   public static final class ClassAvailabilityInfo {
     private final java.util.List<String> availableClasses;
     private final java.util.List<String> missingClasses;
@@ -634,9 +646,17 @@ public final class PanamaCapabilityDetector {
       this.missingClasses = java.util.List.copyOf(builder.missingClasses);
     }
 
-    public java.util.List<String> getAvailableClasses() { return availableClasses; }
-    public java.util.List<String> getMissingClasses() { return missingClasses; }
-    public boolean areAllClassesAvailable() { return missingClasses.isEmpty(); }
+    public java.util.List<String> getAvailableClasses() {
+      return availableClasses;
+    }
+
+    public java.util.List<String> getMissingClasses() {
+      return missingClasses;
+    }
+
+    public boolean areAllClassesAvailable() {
+      return missingClasses.isEmpty();
+    }
 
     static final class Builder {
       private final java.util.List<String> availableClasses = new java.util.ArrayList<>();
@@ -652,7 +672,9 @@ public final class PanamaCapabilityDetector {
         return this;
       }
 
-      public ClassAvailabilityInfo build() { return new ClassAvailabilityInfo(this); }
+      public ClassAvailabilityInfo build() {
+        return new ClassAvailabilityInfo(this);
+      }
     }
   }
 
@@ -668,9 +690,17 @@ public final class PanamaCapabilityDetector {
       this.properties = java.util.Map.copyOf(builder.properties);
     }
 
-    public boolean isNativeAccessEnabled() { return nativeAccessEnabled; }
-    public String getRestrictionReason() { return restrictionReason; }
-    public java.util.Map<String, String> getProperties() { return properties; }
+    public boolean isNativeAccessEnabled() {
+      return nativeAccessEnabled;
+    }
+
+    public String getRestrictionReason() {
+      return restrictionReason;
+    }
+
+    public java.util.Map<String, String> getProperties() {
+      return properties;
+    }
 
     static final class Builder {
       private boolean nativeAccessEnabled = true;
@@ -692,7 +722,9 @@ public final class PanamaCapabilityDetector {
         return this;
       }
 
-      public NativeAccessInfo build() { return new NativeAccessInfo(this); }
+      public NativeAccessInfo build() {
+        return new NativeAccessInfo(this);
+      }
     }
   }
 
@@ -703,7 +735,9 @@ public final class PanamaCapabilityDetector {
       this.previewProperties = java.util.Map.copyOf(builder.previewProperties);
     }
 
-    public java.util.Map<String, String> getPreviewProperties() { return previewProperties; }
+    public java.util.Map<String, String> getPreviewProperties() {
+      return previewProperties;
+    }
 
     static final class Builder {
       private final java.util.Map<String, String> previewProperties = new java.util.HashMap<>();
@@ -713,7 +747,9 @@ public final class PanamaCapabilityDetector {
         return this;
       }
 
-      public PreviewFeatureInfo build() { return new PreviewFeatureInfo(this); }
+      public PreviewFeatureInfo build() {
+        return new PreviewFeatureInfo(this);
+      }
     }
   }
 
@@ -728,10 +764,21 @@ public final class PanamaCapabilityDetector {
       this.hasNativeAccessIssues = builder.hasNativeAccessIssues;
     }
 
-    public java.util.List<String> getPassingTests() { return passingTests; }
-    public java.util.Map<String, String> getFailingTests() { return failingTests; }
-    public boolean hasNativeAccessIssues() { return hasNativeAccessIssues; }
-    public boolean areBasicTestsPassing() { return !passingTests.isEmpty() && passingTests.size() > failingTests.size(); }
+    public java.util.List<String> getPassingTests() {
+      return passingTests;
+    }
+
+    public java.util.Map<String, String> getFailingTests() {
+      return failingTests;
+    }
+
+    public boolean hasNativeAccessIssues() {
+      return hasNativeAccessIssues;
+    }
+
+    public boolean areBasicTestsPassing() {
+      return !passingTests.isEmpty() && passingTests.size() > failingTests.size();
+    }
 
     static final class Builder {
       private final java.util.List<String> passingTests = new java.util.ArrayList<>();
@@ -753,7 +800,9 @@ public final class PanamaCapabilityDetector {
         return this;
       }
 
-      public FunctionalTestInfo build() { return new FunctionalTestInfo(this); }
+      public FunctionalTestInfo build() {
+        return new FunctionalTestInfo(this);
+      }
     }
   }
 }

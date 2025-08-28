@@ -3,7 +3,6 @@ package ai.tegmentum.wasmtime4j.panama.wasi;
 import ai.tegmentum.wasmtime4j.panama.exception.PanamaException;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
 import ai.tegmentum.wasmtime4j.panama.wasi.exception.WasiPermissionException;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -47,7 +46,8 @@ public final class WasiDirectoryAccessControl {
   private final Map<Path, DirectoryAccessRule> directoryRules = new ConcurrentHashMap<>();
 
   /** Global default permissions for directories not explicitly configured. */
-  private final Set<WasiFileOperation> globalDefaultPermissions = EnumSet.noneOf(WasiFileOperation.class);
+  private final Set<WasiFileOperation> globalDefaultPermissions =
+      EnumSet.noneOf(WasiFileOperation.class);
 
   /** Whether to allow access to subdirectories by inheritance. */
   private final boolean allowInheritance;
@@ -70,9 +70,10 @@ public final class WasiDirectoryAccessControl {
     this.strictPathValidation = builder.strictPathValidation;
     this.auditLogging = builder.auditLogging;
 
-    LOGGER.info(String.format(
-        "Created directory access control: %d rules, inheritance=%s, strict=%s, audit=%s",
-        directoryRules.size(), allowInheritance, strictPathValidation, auditLogging));
+    LOGGER.info(
+        String.format(
+            "Created directory access control: %d rules, inheritance=%s, strict=%s, audit=%s",
+            directoryRules.size(), allowInheritance, strictPathValidation, auditLogging));
   }
 
   /**
@@ -87,10 +88,11 @@ public final class WasiDirectoryAccessControl {
     PanamaValidation.requireNonNull(operation, "operation");
 
     final Path normalizedPath = normalizePath(path);
-    
+
     if (auditLogging) {
-      LOGGER.info(String.format("Directory access validation: path=%s, operation=%s",
-          normalizedPath, operation));
+      LOGGER.info(
+          String.format(
+              "Directory access validation: path=%s, operation=%s", normalizedPath, operation));
     }
 
     // Basic path validation
@@ -115,15 +117,19 @@ public final class WasiDirectoryAccessControl {
     // Check global default permissions
     if (globalDefaultPermissions.contains(operation)) {
       if (auditLogging) {
-        LOGGER.info(String.format("Directory access granted by global default: path=%s, operation=%s",
-            normalizedPath, operation));
+        LOGGER.info(
+            String.format(
+                "Directory access granted by global default: path=%s, operation=%s",
+                normalizedPath, operation));
       }
       return;
     }
 
     // Access denied - no explicit permission found
-    final String message = String.format(
-        "Directory access denied: no permission for operation %s on path %s", operation, normalizedPath);
+    final String message =
+        String.format(
+            "Directory access denied: no permission for operation %s on path %s",
+            operation, normalizedPath);
     LOGGER.warning(message);
     throw new WasiPermissionException(message);
   }
@@ -135,25 +141,30 @@ public final class WasiDirectoryAccessControl {
    * @param permissions the permissions to grant
    * @param recursive whether permissions apply recursively to subdirectories
    */
-  public void grantDirectoryPermissions(final String directoryPath,
-      final Set<WasiFileOperation> permissions, final boolean recursive) {
+  public void grantDirectoryPermissions(
+      final String directoryPath,
+      final Set<WasiFileOperation> permissions,
+      final boolean recursive) {
     PanamaValidation.requireNonEmpty(directoryPath, "directoryPath");
     PanamaValidation.requireNonNull(permissions, "permissions");
 
     if (directoryRules.size() >= MAX_DIRECTORY_RULES) {
-      throw new PanamaException("Too many directory rules - maximum " + MAX_DIRECTORY_RULES + " exceeded");
+      throw new PanamaException(
+          "Too many directory rules - maximum " + MAX_DIRECTORY_RULES + " exceeded");
     }
 
     final Path normalizedPath = normalizePath(Paths.get(directoryPath));
     validatePathBasics(normalizedPath);
 
-    final DirectoryAccessRule rule = new DirectoryAccessRule(
-        EnumSet.copyOf(permissions), recursive, true);
+    final DirectoryAccessRule rule =
+        new DirectoryAccessRule(EnumSet.copyOf(permissions), recursive, true);
 
     directoryRules.put(normalizedPath, rule);
 
-    LOGGER.info(String.format("Granted directory permissions: path=%s, permissions=%s, recursive=%s",
-        normalizedPath, permissions, recursive));
+    LOGGER.info(
+        String.format(
+            "Granted directory permissions: path=%s, permissions=%s, recursive=%s",
+            normalizedPath, permissions, recursive));
   }
 
   /**
@@ -162,8 +173,8 @@ public final class WasiDirectoryAccessControl {
    * @param directoryPath the directory path
    * @param permissions the permissions to revoke
    */
-  public void revokeDirectoryPermissions(final String directoryPath,
-      final Set<WasiFileOperation> permissions) {
+  public void revokeDirectoryPermissions(
+      final String directoryPath, final Set<WasiFileOperation> permissions) {
     PanamaValidation.requireNonEmpty(directoryPath, "directoryPath");
     PanamaValidation.requireNonNull(permissions, "permissions");
 
@@ -178,11 +189,14 @@ public final class WasiDirectoryAccessControl {
         directoryRules.remove(normalizedPath);
         LOGGER.info(String.format("Removed all directory permissions: path=%s", normalizedPath));
       } else {
-        final DirectoryAccessRule updatedRule = new DirectoryAccessRule(
-            remainingPermissions, existingRule.recursive, existingRule.enabled);
+        final DirectoryAccessRule updatedRule =
+            new DirectoryAccessRule(
+                remainingPermissions, existingRule.recursive, existingRule.enabled);
         directoryRules.put(normalizedPath, updatedRule);
-        LOGGER.info(String.format("Revoked directory permissions: path=%s, revoked=%s, remaining=%s",
-            normalizedPath, permissions, remainingPermissions));
+        LOGGER.info(
+            String.format(
+                "Revoked directory permissions: path=%s, revoked=%s, remaining=%s",
+                normalizedPath, permissions, remainingPermissions));
       }
     }
   }
@@ -200,12 +214,13 @@ public final class WasiDirectoryAccessControl {
 
     final DirectoryAccessRule existingRule = directoryRules.get(normalizedPath);
     if (existingRule != null) {
-      final DirectoryAccessRule updatedRule = new DirectoryAccessRule(
-          existingRule.permissions, existingRule.recursive, enabled);
+      final DirectoryAccessRule updatedRule =
+          new DirectoryAccessRule(existingRule.permissions, existingRule.recursive, enabled);
       directoryRules.put(normalizedPath, updatedRule);
 
-      LOGGER.info(String.format("Directory rule %s: path=%s",
-          enabled ? "enabled" : "disabled", normalizedPath));
+      LOGGER.info(
+          String.format(
+              "Directory rule %s: path=%s", enabled ? "enabled" : "disabled", normalizedPath));
     }
   }
 
@@ -255,9 +270,7 @@ public final class WasiDirectoryAccessControl {
     return result;
   }
 
-  /**
-   * Clears all directory access rules.
-   */
+  /** Clears all directory access rules. */
   public void clearAllRules() {
     directoryRules.clear();
     LOGGER.info("Cleared all directory access rules");
@@ -296,9 +309,10 @@ public final class WasiDirectoryAccessControl {
     final String pathString = path.toString();
 
     if (pathString.length() > MAX_DIRECTORY_PATH_LENGTH) {
-      throw new PanamaException(String.format(
-          "Directory path too long: %d characters (maximum: %d)",
-          pathString.length(), MAX_DIRECTORY_PATH_LENGTH));
+      throw new PanamaException(
+          String.format(
+              "Directory path too long: %d characters (maximum: %d)",
+              pathString.length(), MAX_DIRECTORY_PATH_LENGTH));
     }
 
     if (strictPathValidation) {
@@ -317,25 +331,26 @@ public final class WasiDirectoryAccessControl {
   }
 
   /** Validates that an operation is allowed by the given rule. */
-  private void validateOperationAccess(final DirectoryAccessRule rule,
-      final WasiFileOperation operation, final Path path) {
+  private void validateOperationAccess(
+      final DirectoryAccessRule rule, final WasiFileOperation operation, final Path path) {
     if (!rule.enabled) {
-      final String message = String.format(
-          "Directory access denied: rule disabled for path %s", path);
+      final String message =
+          String.format("Directory access denied: rule disabled for path %s", path);
       LOGGER.warning(message);
       throw new WasiPermissionException(message);
     }
 
     if (!rule.permissions.contains(operation)) {
-      final String message = String.format(
-          "Directory access denied: operation %s not permitted on path %s", operation, path);
+      final String message =
+          String.format(
+              "Directory access denied: operation %s not permitted on path %s", operation, path);
       LOGGER.warning(message);
       throw new WasiPermissionException(message);
     }
 
     if (auditLogging) {
-      LOGGER.info(String.format("Directory access granted: path=%s, operation=%s",
-          path, operation));
+      LOGGER.info(
+          String.format("Directory access granted: path=%s, operation=%s", path, operation));
     }
   }
 
@@ -347,8 +362,8 @@ public final class WasiDirectoryAccessControl {
       final DirectoryAccessRule rule = directoryRules.get(currentPath);
       if (rule != null && rule.enabled && rule.recursive) {
         if (auditLogging) {
-          LOGGER.fine(String.format("Found inherited rule: child=%s, parent=%s",
-              path, currentPath));
+          LOGGER.fine(
+              String.format("Found inherited rule: child=%s, parent=%s", path, currentPath));
         }
         return rule;
       }
@@ -358,28 +373,25 @@ public final class WasiDirectoryAccessControl {
     return null;
   }
 
-  /**
-   * Represents a directory access rule with permissions and configuration.
-   */
+  /** Represents a directory access rule with permissions and configuration. */
   private static final class DirectoryAccessRule {
     final Set<WasiFileOperation> permissions;
     final boolean recursive;
     final boolean enabled;
 
-    DirectoryAccessRule(final Set<WasiFileOperation> permissions, final boolean recursive,
-        final boolean enabled) {
+    DirectoryAccessRule(
+        final Set<WasiFileOperation> permissions, final boolean recursive, final boolean enabled) {
       this.permissions = EnumSet.copyOf(permissions);
       this.recursive = recursive;
       this.enabled = enabled;
     }
   }
 
-  /**
-   * Builder for creating directory access control configurations.
-   */
+  /** Builder for creating directory access control configurations. */
   public static final class Builder {
     private final Map<Path, DirectoryAccessRule> directoryRules = new ConcurrentHashMap<>();
-    private final Set<WasiFileOperation> globalDefaultPermissions = EnumSet.noneOf(WasiFileOperation.class);
+    private final Set<WasiFileOperation> globalDefaultPermissions =
+        EnumSet.noneOf(WasiFileOperation.class);
     private boolean allowInheritance = true;
     private boolean strictPathValidation = true;
     private boolean auditLogging = false;
@@ -439,14 +451,16 @@ public final class WasiDirectoryAccessControl {
      * @param recursive whether permissions apply recursively
      * @return this builder for method chaining
      */
-    public Builder withDirectoryPermissions(final String directoryPath,
-        final Set<WasiFileOperation> permissions, final boolean recursive) {
+    public Builder withDirectoryPermissions(
+        final String directoryPath,
+        final Set<WasiFileOperation> permissions,
+        final boolean recursive) {
       PanamaValidation.requireNonEmpty(directoryPath, "directoryPath");
       PanamaValidation.requireNonNull(permissions, "permissions");
 
       final Path path = Paths.get(directoryPath).toAbsolutePath().normalize();
-      final DirectoryAccessRule rule = new DirectoryAccessRule(
-          EnumSet.copyOf(permissions), recursive, true);
+      final DirectoryAccessRule rule =
+          new DirectoryAccessRule(EnumSet.copyOf(permissions), recursive, true);
       directoryRules.put(path, rule);
       return this;
     }

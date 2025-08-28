@@ -1,7 +1,8 @@
 package ai.tegmentum.wasmtime4j.panama.wasi;
 
 /**
- * Enumeration of WASI file system operations for permission validation in Panama FFI implementation.
+ * Enumeration of WASI file system operations for permission validation in Panama FFI
+ * implementation.
  *
  * <p>This enum defines the types of file system operations that can be performed through WASI,
  * allowing for fine-grained permission control and security validation in the Panama FFI context.
@@ -115,8 +116,15 @@ public enum WasiFileOperation {
    */
   public boolean requiresWriteAccess() {
     return switch (this) {
-      case WRITE, CREATE_DIRECTORY, DELETE, RENAME, CHANGE_PERMISSIONS, 
-           CREATE_LINK, SET_TIMES, TRUNCATE, SYNC -> true;
+      case WRITE,
+          CREATE_DIRECTORY,
+          DELETE,
+          RENAME,
+          CHANGE_PERMISSIONS,
+          CREATE_LINK,
+          SET_TIMES,
+          TRUNCATE,
+          SYNC -> true;
       default -> false;
     };
   }
@@ -137,8 +145,14 @@ public enum WasiFileOperation {
    */
   public boolean isModifyingOperation() {
     return switch (this) {
-      case WRITE, CREATE_DIRECTORY, DELETE, RENAME, CHANGE_PERMISSIONS, 
-           CREATE_LINK, SET_TIMES, TRUNCATE -> true;
+      case WRITE,
+          CREATE_DIRECTORY,
+          DELETE,
+          RENAME,
+          CHANGE_PERMISSIONS,
+          CREATE_LINK,
+          SET_TIMES,
+          TRUNCATE -> true;
       default -> false;
     };
   }

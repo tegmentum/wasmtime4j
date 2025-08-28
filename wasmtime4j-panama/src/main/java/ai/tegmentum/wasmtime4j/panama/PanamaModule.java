@@ -22,10 +22,7 @@ import ai.tegmentum.wasmtime4j.exception.CompilationException;
 import ai.tegmentum.wasmtime4j.exception.ValidationException;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.lang.foreign.MemorySegment;
-import java.lang.foreign.ValueLayout;
-import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Path;
@@ -35,7 +32,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -49,16 +45,14 @@ import java.util.logging.Logger;
  * execution contexts. They contain metadata about imports, exports, and internal structure accessed
  * through zero-copy operations.
  *
- * <p>Stream 1 High-Performance Features:
- * - Zero-copy compilation and validation using direct MemorySegment access
- * - Direct memory segment module operations for maximum throughput
- * - Memory-mapped file support for large WebAssembly modules
- * - Performance-optimized import/export metadata extraction with caching
- * - Module bytecode caching with MemorySegment storage
- * - Bulk module operations for batch processing scenarios
+ * <p>Stream 1 High-Performance Features: - Zero-copy compilation and validation using direct
+ * MemorySegment access - Direct memory segment module operations for maximum throughput -
+ * Memory-mapped file support for large WebAssembly modules - Performance-optimized import/export
+ * metadata extraction with caching - Module bytecode caching with MemorySegment storage - Bulk
+ * module operations for batch processing scenarios
  *
- * <p>Performance optimizations include pre-allocated memory pools, cached metadata extraction,
- * and specialized bulk operation paths designed to achieve 20%+ performance improvement over JNI.
+ * <p>Performance optimizations include pre-allocated memory pools, cached metadata extraction, and
+ * specialized bulk operation paths designed to achieve 20%+ performance improvement over JNI.
  */
 public final class PanamaModule implements Module, AutoCloseable {
   private static final Logger LOGGER = Logger.getLogger(PanamaModule.class.getName());
@@ -75,15 +69,16 @@ public final class PanamaModule implements Module, AutoCloseable {
   private volatile List<String> cachedImports = null;
   private volatile List<String> cachedExports = null;
   private volatile Map<String, Object> cachedMetadata = null;
-  
+
   // High-performance caching for Stream 1 operations
-  private static final ConcurrentHashMap<String, CachedModuleData> MODULE_CACHE = new ConcurrentHashMap<>();
+  private static final ConcurrentHashMap<String, CachedModuleData> MODULE_CACHE =
+      new ConcurrentHashMap<>();
   private static final int MAX_CACHE_SIZE = 1000;
   private static final long CACHE_TTL_MS = 300_000; // 5 minutes
-  
+
   // Performance optimization: Reusable memory segments for bulk operations
   private final ArenaResourceManager.ManagedMemorySegment bulkOperationBuffer;
-  
+
   /** Cached module data for performance optimization. */
   private static final class CachedModuleData {
     final byte[] serializedModule;
@@ -91,16 +86,19 @@ public final class PanamaModule implements Module, AutoCloseable {
     final List<String> exports;
     final Map<String, Object> metadata;
     final long timestamp;
-    
-    CachedModuleData(final byte[] serializedModule, final List<String> imports, 
-                     final List<String> exports, final Map<String, Object> metadata) {
+
+    CachedModuleData(
+        final byte[] serializedModule,
+        final List<String> imports,
+        final List<String> exports,
+        final Map<String, Object> metadata) {
       this.serializedModule = serializedModule.clone();
       this.imports = List.copyOf(imports);
       this.exports = List.copyOf(exports);
       this.metadata = Map.copyOf(metadata);
       this.timestamp = System.currentTimeMillis();
     }
-    
+
     boolean isExpired() {
       return System.currentTimeMillis() - timestamp > CACHE_TTL_MS;
     }
@@ -135,14 +133,15 @@ public final class PanamaModule implements Module, AutoCloseable {
       this.moduleResource =
           resourceManager.manageNativeResource(
               modulePtr, () -> destroyNativeModuleInternal(modulePtr), "Wasmtime Module");
-      
+
       // Allocate reusable buffer for bulk operations (Stream 1 optimization)
       this.bulkOperationBuffer = resourceManager.allocate(64 * 1024); // 64KB buffer
-      
+
       // Initialize cached metadata lazily for performance
       this.cachedMetadata = new ConcurrentHashMap<>();
 
-      LOGGER.fine("Created Panama module instance with managed resource and performance optimizations");
+      LOGGER.fine(
+          "Created Panama module instance with managed resource and performance optimizations");
 
     } catch (Exception e) {
       throw new WasmException("Failed to create module wrapper", e);
@@ -237,7 +236,7 @@ public final class PanamaModule implements Module, AutoCloseable {
       // Performance-optimized import extraction with caching
       List<String> imports = extractImportsOptimized();
       cachedImports = Collections.unmodifiableList(imports);
-      
+
       LOGGER.fine("Extracted and cached module imports, count=" + imports.size());
       return cachedImports;
 
@@ -265,7 +264,7 @@ public final class PanamaModule implements Module, AutoCloseable {
       // Performance-optimized export extraction with caching
       List<String> exports = extractExportsOptimized();
       cachedExports = Collections.unmodifiableList(exports);
-      
+
       LOGGER.fine("Extracted and cached module exports, count=" + exports.size());
       return cachedExports;
 
@@ -299,7 +298,7 @@ public final class PanamaModule implements Module, AutoCloseable {
 
   /**
    * High-performance module serialization using MemorySegment storage.
-   * 
+   *
    * @return the serialized module bytecode
    * @throws WasmException if serialization fails
    */
@@ -309,7 +308,7 @@ public final class PanamaModule implements Module, AutoCloseable {
     try {
       // Use bulk operation buffer for serialization (Stream 1 optimization)
       MemorySegment serializationBuffer = bulkOperationBuffer.getSegment();
-      
+
       // TODO: Implement native wasmtime4j_module_serialize function
       // For now, return a placeholder to maintain API compatibility
       LOGGER.fine("High-performance module serialization using MemorySegment storage");
@@ -397,9 +396,9 @@ public final class PanamaModule implements Module, AutoCloseable {
 
   /**
    * Zero-copy module compilation with direct MemorySegment access.
-   * 
-   * <p>This method provides optimal performance for compiling WebAssembly modules by using
-   * direct memory segment operations without intermediate byte array copies.
+   *
+   * <p>This method provides optimal performance for compiling WebAssembly modules by using direct
+   * memory segment operations without intermediate byte array copies.
    *
    * @param engine the engine for compilation
    * @param wasmData the WebAssembly bytecode as a MemorySegment
@@ -408,9 +407,8 @@ public final class PanamaModule implements Module, AutoCloseable {
    * @throws CompilationException if compilation fails
    * @throws WasmException if a native error occurs
    */
-  public static PanamaModule compileZeroCopy(final PanamaEngine engine, 
-                                           final MemorySegment wasmData, 
-                                           final long length) 
+  public static PanamaModule compileZeroCopy(
+      final PanamaEngine engine, final MemorySegment wasmData, final long length)
       throws CompilationException, WasmException {
     Objects.requireNonNull(engine, "Engine cannot be null");
     PanamaErrorHandler.requireValidPointer(wasmData, "wasmData");
@@ -419,14 +417,15 @@ public final class PanamaModule implements Module, AutoCloseable {
     try {
       ArenaResourceManager resourceManager = engine.getResourceManager();
       NativeFunctionBindings nativeFunctions = NativeFunctionBindings.getInstance();
-      
+
       // Allocate memory for module pointer output
       ArenaResourceManager.ManagedMemorySegment moduleOutPtr =
           resourceManager.allocate(MemoryLayouts.C_POINTER);
 
       // Call native compilation function with zero-copy approach
-      int result = nativeFunctions.moduleCompile(
-          engine.getEnginePointer(), wasmData, length, moduleOutPtr.getSegment());
+      int result =
+          nativeFunctions.moduleCompile(
+              engine.getEnginePointer(), wasmData, length, moduleOutPtr.getSegment());
 
       // Check for compilation errors
       PanamaErrorHandler.safeCheckError(
@@ -438,7 +437,10 @@ public final class PanamaModule implements Module, AutoCloseable {
 
       PanamaErrorHandler.requireValidPointer(modulePtr, "compiled module pointer");
 
-      LOGGER.fine("Successfully compiled WebAssembly module using zero-copy approach, size=" + length + " bytes");
+      LOGGER.fine(
+          "Successfully compiled WebAssembly module using zero-copy approach, size="
+              + length
+              + " bytes");
       return new PanamaModule(modulePtr, resourceManager, engine);
 
     } catch (Exception e) {
@@ -447,8 +449,8 @@ public final class PanamaModule implements Module, AutoCloseable {
       }
       String detailedMessage =
           PanamaErrorHandler.createDetailedErrorMessage(
-              "Zero-copy module compilation", 
-              "engine=" + engine + ", size=" + length, 
+              "Zero-copy module compilation",
+              "engine=" + engine + ", size=" + length,
               e.getMessage());
       throw new CompilationException(detailedMessage, e);
     }
@@ -456,9 +458,9 @@ public final class PanamaModule implements Module, AutoCloseable {
 
   /**
    * Memory-mapped file compilation for large WebAssembly modules.
-   * 
-   * <p>This method provides optimal performance for large WebAssembly files by using
-   * memory-mapped I/O to avoid loading the entire file into memory.
+   *
+   * <p>This method provides optimal performance for large WebAssembly files by using memory-mapped
+   * I/O to avoid loading the entire file into memory.
    *
    * @param engine the engine for compilation
    * @param wasmFilePath path to the WebAssembly file
@@ -467,8 +469,8 @@ public final class PanamaModule implements Module, AutoCloseable {
    * @throws WasmException if a native error occurs
    * @throws IOException if file operations fail
    */
-  public static PanamaModule compileFromMappedFile(final PanamaEngine engine, 
-                                                 final Path wasmFilePath) 
+  public static PanamaModule compileFromMappedFile(
+      final PanamaEngine engine, final Path wasmFilePath)
       throws CompilationException, WasmException, IOException {
     Objects.requireNonNull(engine, "Engine cannot be null");
     Objects.requireNonNull(wasmFilePath, "WASM file path cannot be null");
@@ -486,7 +488,8 @@ public final class PanamaModule implements Module, AutoCloseable {
       MappedByteBuffer mappedBuffer = fileChannel.map(FileChannel.MapMode.READ_ONLY, 0, fileSize);
       MemorySegment mappedSegment = MemorySegment.ofBuffer(mappedBuffer);
 
-      LOGGER.fine("Memory-mapped WebAssembly file: " + wasmFilePath + ", size=" + fileSize + " bytes");
+      LOGGER.fine(
+          "Memory-mapped WebAssembly file: " + wasmFilePath + ", size=" + fileSize + " bytes");
       return compileZeroCopy(engine, mappedSegment, fileSize);
 
     } catch (Exception e) {
@@ -495,23 +498,21 @@ public final class PanamaModule implements Module, AutoCloseable {
       }
       String detailedMessage =
           PanamaErrorHandler.createDetailedErrorMessage(
-              "Memory-mapped module compilation",
-              "file=" + wasmFilePath,
-              e.getMessage());
+              "Memory-mapped module compilation", "file=" + wasmFilePath, e.getMessage());
       throw new CompilationException(detailedMessage, e);
     }
   }
 
   /**
    * High-performance module validation without full compilation.
-   * 
+   *
    * @param wasmData the WebAssembly bytecode as a MemorySegment
    * @param length the length of the bytecode
    * @return true if valid, false otherwise
    * @throws ValidationException if validation fails with errors
    * @throws WasmException if a native error occurs
    */
-  public boolean validateZeroCopy(final MemorySegment wasmData, final long length) 
+  public boolean validateZeroCopy(final MemorySegment wasmData, final long length)
       throws ValidationException, WasmException {
     ensureNotClosed();
     PanamaErrorHandler.requireValidPointer(wasmData, "wasmData");
@@ -526,7 +527,7 @@ public final class PanamaModule implements Module, AutoCloseable {
       // For now, use compilation as validation - in a full implementation,
       // this would call a dedicated validation function
       // TODO: Add native wasmtime4j_module_validate function
-      
+
       // Mark as validated on success
       validated = true;
       LOGGER.fine("Successfully validated WebAssembly module using zero-copy approach");
@@ -535,18 +536,16 @@ public final class PanamaModule implements Module, AutoCloseable {
     } catch (Exception e) {
       String detailedMessage =
           PanamaErrorHandler.createDetailedErrorMessage(
-              "Zero-copy module validation",
-              "size=" + length,
-              e.getMessage());
+              "Zero-copy module validation", "size=" + length, e.getMessage());
       throw new ValidationException(detailedMessage, e);
     }
   }
 
   /**
    * Bulk module operations for batch processing scenarios.
-   * 
-   * <p>This method provides optimized processing for multiple modules with shared
-   * resource allocation and batch compilation.
+   *
+   * <p>This method provides optimized processing for multiple modules with shared resource
+   * allocation and batch compilation.
    *
    * @param engine the engine for compilation
    * @param modules array of WebAssembly bytecode modules
@@ -554,11 +553,11 @@ public final class PanamaModule implements Module, AutoCloseable {
    * @throws CompilationException if any compilation fails
    * @throws WasmException if a native error occurs
    */
-  public static PanamaModule[] compileBulk(final PanamaEngine engine, final byte[]... modules) 
+  public static PanamaModule[] compileBulk(final PanamaEngine engine, final byte[]... modules)
       throws CompilationException, WasmException {
     Objects.requireNonNull(engine, "Engine cannot be null");
     Objects.requireNonNull(modules, "Modules array cannot be null");
-    
+
     if (modules.length == 0) {
       return new PanamaModule[0];
     }
@@ -566,20 +565,21 @@ public final class PanamaModule implements Module, AutoCloseable {
     try {
       PanamaModule[] compiledModules = new PanamaModule[modules.length];
       ArenaResourceManager resourceManager = engine.getResourceManager();
-      
+
       // Pre-allocate resources for bulk operation (Stream 1 optimization)
       long totalSize = 0;
       for (byte[] module : modules) {
         totalSize += module.length;
       }
-      
-      LOGGER.fine("Bulk compiling " + modules.length + " modules, total size=" + totalSize + " bytes");
-      
+
+      LOGGER.fine(
+          "Bulk compiling " + modules.length + " modules, total size=" + totalSize + " bytes");
+
       // Compile each module with shared resource optimization
       for (int i = 0; i < modules.length; i++) {
         compiledModules[i] = (PanamaModule) engine.compileModule(modules[i]);
       }
-      
+
       LOGGER.fine("Successfully bulk compiled " + modules.length + " modules");
       return compiledModules;
 
@@ -598,18 +598,19 @@ public final class PanamaModule implements Module, AutoCloseable {
 
   /**
    * Module bytecode caching with MemorySegment storage.
-   * 
+   *
    * @param cacheKey unique key for the cached module
    * @param serializedModule the serialized module data
    * @param imports the module imports
    * @param exports the module exports
    * @param metadata additional metadata
    */
-  public static void cacheModule(final String cacheKey, 
-                                final byte[] serializedModule,
-                                final List<String> imports,
-                                final List<String> exports,
-                                final Map<String, Object> metadata) {
+  public static void cacheModule(
+      final String cacheKey,
+      final byte[] serializedModule,
+      final List<String> imports,
+      final List<String> exports,
+      final Map<String, Object> metadata) {
     Objects.requireNonNull(cacheKey, "Cache key cannot be null");
     Objects.requireNonNull(serializedModule, "Serialized module cannot be null");
     Objects.requireNonNull(imports, "Imports cannot be null");
@@ -622,15 +623,21 @@ public final class PanamaModule implements Module, AutoCloseable {
     }
 
     // Cache the module data with timestamp
-    CachedModuleData cachedData = new CachedModuleData(serializedModule, imports, exports, metadata);
+    CachedModuleData cachedData =
+        new CachedModuleData(serializedModule, imports, exports, metadata);
     MODULE_CACHE.put(cacheKey, cachedData);
-    
-    LOGGER.fine("Cached module with key: " + cacheKey + ", serialized size=" + serializedModule.length + " bytes");
+
+    LOGGER.fine(
+        "Cached module with key: "
+            + cacheKey
+            + ", serialized size="
+            + serializedModule.length
+            + " bytes");
   }
 
   /**
    * Retrieves a cached module.
-   * 
+   *
    * @param cacheKey the cache key
    * @return the cached module data, or null if not found or expired
    */
@@ -643,17 +650,17 @@ public final class PanamaModule implements Module, AutoCloseable {
       LOGGER.fine("Evicted expired cached module with key: " + cacheKey);
       return null;
     }
-    
+
     if (cachedData != null) {
       LOGGER.fine("Retrieved cached module with key: " + cacheKey);
     }
-    
+
     return cachedData;
   }
 
   /**
    * Performance-optimized import extraction with caching.
-   * 
+   *
    * @return list of module imports
    * @throws WasmException if extraction fails
    */
@@ -661,7 +668,7 @@ public final class PanamaModule implements Module, AutoCloseable {
     try {
       // Use bulk operation buffer for metadata extraction (Stream 1 optimization)
       MemorySegment metadataBuffer = bulkOperationBuffer.getSegment();
-      
+
       // TODO: Implement native wasmtime4j_module_imports function
       // For now, return empty list to maintain API compatibility
       LOGGER.fine("Optimized import extraction using MemorySegment operations");
@@ -679,7 +686,7 @@ public final class PanamaModule implements Module, AutoCloseable {
 
   /**
    * Performance-optimized export extraction with caching.
-   * 
+   *
    * @return list of module exports
    * @throws WasmException if extraction fails
    */
@@ -687,7 +694,7 @@ public final class PanamaModule implements Module, AutoCloseable {
     try {
       // Use bulk operation buffer for metadata extraction (Stream 1 optimization)
       MemorySegment metadataBuffer = bulkOperationBuffer.getSegment();
-      
+
       // TODO: Implement native wasmtime4j_module_exports function
       // For now, return empty list to maintain API compatibility
       LOGGER.fine("Optimized export extraction using MemorySegment operations");
@@ -703,17 +710,18 @@ public final class PanamaModule implements Module, AutoCloseable {
     }
   }
 
-  /**
-   * Evicts expired entries from the module cache.
-   */
+  /** Evicts expired entries from the module cache. */
   private static void evictExpiredEntries() {
-    MODULE_CACHE.entrySet().removeIf(entry -> {
-      boolean expired = entry.getValue().isExpired();
-      if (expired) {
-        LOGGER.fine("Evicted expired cached module with key: " + entry.getKey());
-      }
-      return expired;
-    });
+    MODULE_CACHE
+        .entrySet()
+        .removeIf(
+            entry -> {
+              boolean expired = entry.getValue().isExpired();
+              if (expired) {
+                LOGGER.fine("Evicted expired cached module with key: " + entry.getKey());
+              }
+              return expired;
+            });
   }
 
   /**

@@ -20,9 +20,7 @@ import ai.tegmentum.wasmtime4j.FunctionType;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
-import ai.tegmentum.wasmtime4j.exception.RuntimeException;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.Linker;
 import java.lang.foreign.MemorySegment;
@@ -50,7 +48,7 @@ import java.util.logging.Logger;
  */
 public final class PanamaHostFunction implements WasmFunction {
   private static final Logger logger = Logger.getLogger(PanamaHostFunction.class.getName());
-  
+
   // Global registry for host function callbacks to prevent GC
   private static final ConcurrentHashMap<Long, PanamaHostFunction> hostFunctionRegistry =
       new ConcurrentHashMap<>();
@@ -132,7 +130,7 @@ public final class PanamaHostFunction implements WasmFunction {
   @Override
   public WasmValue[] call(final WasmValue... params) throws WasmException {
     ensureNotClosed();
-    
+
     // Host functions are called FROM WebAssembly, not TO WebAssembly
     // This method shouldn't be used directly for host functions
     throw new UnsupportedOperationException(
@@ -153,8 +151,8 @@ public final class PanamaHostFunction implements WasmFunction {
   /**
    * Gets the native function handle for use in WebAssembly import operations.
    *
-   * <p>This handle can be passed to WebAssembly runtime functions to create function imports
-   * that reference this host function.
+   * <p>This handle can be passed to WebAssembly runtime functions to create function imports that
+   * reference this host function.
    *
    * @return the native function handle
    * @throws IllegalStateException if the host function has been closed
@@ -167,8 +165,8 @@ public final class PanamaHostFunction implements WasmFunction {
   /**
    * Gets the upcall stub for direct FFI integration.
    *
-   * <p>This method is intended for internal use by Panama FFI components and should not be
-   * used by application code.
+   * <p>This method is intended for internal use by Panama FFI components and should not be used by
+   * application code.
    *
    * @return the upcall stub memory segment
    * @throws IllegalStateException if the host function has been closed
@@ -219,8 +217,8 @@ public final class PanamaHostFunction implements WasmFunction {
   /**
    * Creates the Panama upcall stub for this host function.
    *
-   * <p>The upcall stub provides a native function pointer that can be called from WebAssembly
-   * code, which will then invoke the Java callback implementation.
+   * <p>The upcall stub provides a native function pointer that can be called from WebAssembly code,
+   * which will then invoke the Java callback implementation.
    *
    * @throws WasmException if upcall stub creation fails
    */
@@ -228,10 +226,10 @@ public final class PanamaHostFunction implements WasmFunction {
     try {
       // Create method handle for the callback wrapper
       final MethodHandle callbackHandle = createCallbackMethodHandle();
-      
+
       // Create function descriptor based on WebAssembly function type
       final FunctionDescriptor descriptor = createFunctionDescriptor();
-      
+
       // Create the upcall stub using Panama's Linker
       final Linker linker = Linker.nativeLinker();
       this.upcallStub = linker.upcallStub(callbackHandle, descriptor, arenaManager.getArena());
@@ -255,29 +253,32 @@ public final class PanamaHostFunction implements WasmFunction {
    * @throws NoSuchMethodException if the callback method cannot be found
    * @throws IllegalAccessException if the callback method cannot be accessed
    */
-  private MethodHandle createCallbackMethodHandle() throws NoSuchMethodException, IllegalAccessException {
+  private MethodHandle createCallbackMethodHandle()
+      throws NoSuchMethodException, IllegalAccessException {
     final MethodHandles.Lookup lookup = MethodHandles.lookup();
-    
+
     // Get the parameter types for the native callback
     final WasmValueType[] paramTypes = functionType.getParamTypes();
     final WasmValueType[] returnTypes = functionType.getReturnTypes();
-    
+
     // Build method type for native callback (long parameters + return)
     final Class<?>[] nativeParams = new Class[paramTypes.length + 1]; // +1 for host function ID
     nativeParams[0] = long.class; // host function ID
     for (int i = 0; i < paramTypes.length; i++) {
       nativeParams[i + 1] = getNativeType(paramTypes[i]);
     }
-    
-    final Class<?> nativeReturn = returnTypes.length == 0 ? void.class 
-        : (returnTypes.length == 1 ? getNativeType(returnTypes[0]) : MemorySegment.class);
-    
+
+    final Class<?> nativeReturn =
+        returnTypes.length == 0
+            ? void.class
+            : (returnTypes.length == 1 ? getNativeType(returnTypes[0]) : MemorySegment.class);
+
     final MethodType methodType = MethodType.methodType(nativeReturn, nativeParams);
-    
+
     // Find the static callback method
-    final MethodHandle baseHandle = lookup.findStatic(
-        PanamaHostFunction.class, "nativeCallback", methodType);
-    
+    final MethodHandle baseHandle =
+        lookup.findStatic(PanamaHostFunction.class, "nativeCallback", methodType);
+
     // Bind the host function ID to the method handle
     return MethodHandles.insertArguments(baseHandle, 0, hostFunctionId);
   }
@@ -290,13 +291,13 @@ public final class PanamaHostFunction implements WasmFunction {
   private FunctionDescriptor createFunctionDescriptor() {
     final WasmValueType[] paramTypes = functionType.getParamTypes();
     final WasmValueType[] returnTypes = functionType.getReturnTypes();
-    
+
     // Build parameter layouts
     final ValueLayout[] paramLayouts = new ValueLayout[paramTypes.length];
     for (int i = 0; i < paramTypes.length; i++) {
       paramLayouts[i] = getNativeLayout(paramTypes[i]);
     }
-    
+
     // Build return layout
     if (returnTypes.length == 0) {
       return FunctionDescriptor.ofVoid(paramLayouts);
@@ -344,9 +345,9 @@ public final class PanamaHostFunction implements WasmFunction {
   /**
    * Static callback method invoked by native code through upcall stub.
    *
-   * <p>This method serves as the bridge between native WebAssembly execution and Java host
-   * function implementation. It marshals parameters, invokes the callback, and marshals results
-   * back to native code.
+   * <p>This method serves as the bridge between native WebAssembly execution and Java host function
+   * implementation. It marshals parameters, invokes the callback, and marshals results back to
+   * native code.
    *
    * @param hostFunctionId the ID of the host function to invoke
    * @param nativeParams variable arguments representing the native parameters
@@ -397,12 +398,12 @@ public final class PanamaHostFunction implements WasmFunction {
   private WasmValue[] marshalParameters(final Object[] nativeParams) {
     final WasmValueType[] paramTypes = functionType.getParamTypes();
     final WasmValue[] wasmParams = new WasmValue[paramTypes.length];
-    
+
     for (int i = 0; i < paramTypes.length; i++) {
       final Object nativeParam = nativeParams[i];
       wasmParams[i] = createWasmValue(paramTypes[i], nativeParam);
     }
-    
+
     return wasmParams;
   }
 
@@ -414,7 +415,7 @@ public final class PanamaHostFunction implements WasmFunction {
    */
   private Object marshalResults(final WasmValue[] wasmResults) {
     final WasmValueType[] returnTypes = functionType.getReturnTypes();
-    
+
     if (returnTypes.length == 0) {
       return null;
     } else if (returnTypes.length == 1) {
@@ -475,9 +476,7 @@ public final class PanamaHostFunction implements WasmFunction {
     };
   }
 
-  /**
-   * Native cleanup method called by the arena manager.
-   */
+  /** Native cleanup method called by the arena manager. */
   private void closeNative() {
     try {
       if (upcallStub != null && !upcallStub.equals(MemorySegment.NULL)) {

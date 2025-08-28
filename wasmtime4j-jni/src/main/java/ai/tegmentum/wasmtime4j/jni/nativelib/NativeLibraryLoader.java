@@ -71,6 +71,29 @@ public final class NativeLibraryLoader {
   }
 
   /**
+   * Loads the native library and returns load information.
+   *
+   * <p>This is an alias for loadLibrary() but returns the load information instead of throwing on
+   * failure.
+   *
+   * @return the library load information
+   */
+  public static NativeLibraryUtils.LibraryLoadInfo loadNativeLibrary() {
+    try {
+      loadLibrary();
+      return loadInfo;
+    } catch (final RuntimeException e) {
+      // If we have load info with error details, return it; otherwise create a new one
+      if (loadInfo != null && !loadInfo.isSuccessful()) {
+        return loadInfo;
+      }
+      // Create a failure load info
+      return new NativeLibraryUtils.LibraryLoadInfo(
+          "wasmtime4j", PlatformDetector.detect(), null, false, null, null, e);
+    }
+  }
+
+  /**
    * Checks if the native library has been loaded.
    *
    * @return true if the library is loaded, false otherwise

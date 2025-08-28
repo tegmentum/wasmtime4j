@@ -3,7 +3,8 @@ package ai.tegmentum.wasmtime4j.panama.wasi.permission;
 import java.time.Duration;
 
 /**
- * Resource limiting and quota enforcement configuration for WASI contexts in Panama FFI implementation.
+ * Resource limiting and quota enforcement configuration for WASI contexts in Panama FFI
+ * implementation.
  *
  * <p>This class defines various resource limits that can be enforced for WASI operations to prevent
  * resource exhaustion and ensure fair resource allocation. All limits are optional and can be set
@@ -373,9 +374,7 @@ public final class WasiResourceLimits {
     return String.format("%.1f %s", size, units[unitIndex]);
   }
 
-  /**
-   * Builder for creating WASI resource limits.
-   */
+  /** Builder for creating WASI resource limits. */
   public static final class Builder {
 
     private long maxMemoryBytes = UNLIMITED;
@@ -440,7 +439,8 @@ public final class WasiResourceLimits {
     /**
      * Sets the maximum bytes read from disk per second.
      *
-     * @param maxDiskReadBytesPerSecond the maximum disk read bytes per second (negative for unlimited)
+     * @param maxDiskReadBytesPerSecond the maximum disk read bytes per second (negative for
+     *     unlimited)
      * @return this builder for method chaining
      */
     public Builder withMaxDiskReadBytesPerSecond(final long maxDiskReadBytesPerSecond) {
@@ -451,7 +451,8 @@ public final class WasiResourceLimits {
     /**
      * Sets the maximum bytes written to disk per second.
      *
-     * @param maxDiskWriteBytesPerSecond the maximum disk write bytes per second (negative for unlimited)
+     * @param maxDiskWriteBytesPerSecond the maximum disk write bytes per second (negative for
+     *     unlimited)
      * @return this builder for method chaining
      */
     public Builder withMaxDiskWriteBytesPerSecond(final long maxDiskWriteBytesPerSecond) {

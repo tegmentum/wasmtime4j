@@ -149,7 +149,8 @@ public final class WasiPermissionManager {
     if (!hasPermission) {
       final String operationStr = operation != null ? operation.toString() : "general access";
       throw new JniException(
-          String.format("File system access denied for %s on path: %s", operationStr, normalizedPath));
+          String.format(
+              "File system access denied for %s on path: %s", operationStr, normalizedPath));
     }
 
     LOGGER.fine(String.format("File system access granted for path: %s", normalizedPath));
@@ -168,8 +169,7 @@ public final class WasiPermissionManager {
 
     // Check if explicitly denied
     if (deniedEnvironmentVariables.contains(variableName)) {
-      throw new JniException(
-          String.format("Environment variable access denied: %s", variableName));
+      throw new JniException(String.format("Environment variable access denied: %s", variableName));
     }
 
     // Check if explicitly allowed
@@ -187,13 +187,13 @@ public final class WasiPermissionManager {
 
     // If no explicit permission and not empty allow list, deny access
     if (!allowedEnvironmentVariables.isEmpty()) {
-      throw new JniException(
-          String.format("Environment variable access denied: %s", variableName));
+      throw new JniException(String.format("Environment variable access denied: %s", variableName));
     }
 
     // If allow list is empty, grant access (permissive mode)
     LOGGER.fine(
-        String.format("Environment access granted (permissive mode) for variable: %s", variableName));
+        String.format(
+            "Environment access granted (permissive mode) for variable: %s", variableName));
   }
 
   /**
@@ -286,7 +286,8 @@ public final class WasiPermissionManager {
     } catch (final Exception e) {
       LOGGER.warning(
           String.format(
-              "Error checking if path %s is within directory %s: %s", path, directory, e.getMessage()));
+              "Error checking if path %s is within directory %s: %s",
+              path, directory, e.getMessage()));
       return false;
     }
   }
@@ -309,13 +310,12 @@ public final class WasiPermissionManager {
     return false;
   }
 
-  /**
-   * Builder for creating WASI permission managers.
-   */
+  /** Builder for creating WASI permission managers. */
   public static final class Builder {
 
     private final Map<Path, Set<WasiFileOperation>> pathPermissions = new ConcurrentHashMap<>();
-    private final Set<WasiFileOperation> globalPermissions = EnumSet.noneOf(WasiFileOperation.class);
+    private final Set<WasiFileOperation> globalPermissions =
+        EnumSet.noneOf(WasiFileOperation.class);
     private final Set<String> allowedEnvironmentVariables = ConcurrentHashMap.newKeySet();
     private final Set<String> deniedEnvironmentVariables = ConcurrentHashMap.newKeySet();
     private WasiResourceLimits resourceLimits = WasiResourceLimits.defaultLimits();
@@ -335,7 +335,9 @@ public final class WasiPermissionManager {
       JniValidation.requireNonNull(path, "path");
       JniValidation.requireNonNull(operation, "operation");
 
-      pathPermissions.computeIfAbsent(path.normalize().toAbsolutePath(), k -> EnumSet.noneOf(WasiFileOperation.class))
+      pathPermissions
+          .computeIfAbsent(
+              path.normalize().toAbsolutePath(), k -> EnumSet.noneOf(WasiFileOperation.class))
           .add(operation);
 
       return this;
@@ -352,8 +354,9 @@ public final class WasiPermissionManager {
       JniValidation.requireNonNull(path, "path");
       JniValidation.requireNonNull(operations, "operations");
 
-      final Set<WasiFileOperation> pathOps = pathPermissions.computeIfAbsent(
-          path.normalize().toAbsolutePath(), k -> EnumSet.noneOf(WasiFileOperation.class));
+      final Set<WasiFileOperation> pathOps =
+          pathPermissions.computeIfAbsent(
+              path.normalize().toAbsolutePath(), k -> EnumSet.noneOf(WasiFileOperation.class));
 
       for (final WasiFileOperation operation : operations) {
         pathOps.add(operation);

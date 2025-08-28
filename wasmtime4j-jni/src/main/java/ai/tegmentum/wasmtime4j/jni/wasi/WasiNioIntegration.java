@@ -16,7 +16,6 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.logging.Logger;
 
 /**
@@ -58,15 +57,17 @@ public final class WasiNioIntegration {
   /** Whether to use memory mapping for large files. */
   private final boolean useMemoryMapping;
 
-  /**
-   * Creates a new NIO integration with default settings.
-   */
+  /** Creates a new NIO integration with default settings. */
   public WasiNioIntegration() {
-    this(true, true, Executors.newCachedThreadPool(r -> {
-      final Thread thread = new Thread(r, "WasiNioIntegration");
-      thread.setDaemon(true);
-      return thread;
-    }));
+    this(
+        true,
+        true,
+        Executors.newCachedThreadPool(
+            r -> {
+              final Thread thread = new Thread(r, "WasiNioIntegration");
+              thread.setDaemon(true);
+              return thread;
+            }));
   }
 
   /**
@@ -76,7 +77,9 @@ public final class WasiNioIntegration {
    * @param useMemoryMapping whether to use memory mapping for large files
    * @param asyncExecutor the executor service for asynchronous operations
    */
-  public WasiNioIntegration(final boolean useDirectBuffers, final boolean useMemoryMapping,
+  public WasiNioIntegration(
+      final boolean useDirectBuffers,
+      final boolean useMemoryMapping,
       final ExecutorService asyncExecutor) {
     JniValidation.requireNonNull(asyncExecutor, "asyncExecutor");
 
@@ -84,8 +87,10 @@ public final class WasiNioIntegration {
     this.useMemoryMapping = useMemoryMapping;
     this.asyncExecutor = asyncExecutor;
 
-    LOGGER.info(String.format("Created WASI NIO integration: directBuffers=%s, memoryMapping=%s",
-        useDirectBuffers, useMemoryMapping));
+    LOGGER.info(
+        String.format(
+            "Created WASI NIO integration: directBuffers=%s, memoryMapping=%s",
+            useDirectBuffers, useMemoryMapping));
   }
 
   /**
@@ -97,14 +102,14 @@ public final class WasiNioIntegration {
    * @return a ByteBuffer containing the read data
    * @throws WasiFileSystemException if the read operation fails
    */
-  public ByteBuffer bulkRead(final FileChannel fileChannel, final long position,
-      final int bufferSize) {
+  public ByteBuffer bulkRead(
+      final FileChannel fileChannel, final long position, final int bufferSize) {
     JniValidation.requireNonNull(fileChannel, "fileChannel");
     JniValidation.requireNonNegative(position, "position");
     JniValidation.requirePositive(bufferSize, "bufferSize");
 
-    LOGGER.fine(String.format("Performing bulk read: position=%d, bufferSize=%d", position,
-        bufferSize));
+    LOGGER.fine(
+        String.format("Performing bulk read: position=%d, bufferSize=%d", position, bufferSize));
 
     try {
       final ByteBuffer buffer = allocateBuffer(bufferSize);
@@ -144,8 +149,9 @@ public final class WasiNioIntegration {
     JniValidation.requireNonNegative(position, "position");
     JniValidation.requireNonNull(data, "data");
 
-    LOGGER.fine(String.format("Performing bulk write: position=%d, dataSize=%d", position,
-        data.remaining()));
+    LOGGER.fine(
+        String.format(
+            "Performing bulk write: position=%d, dataSize=%d", position, data.remaining()));
 
     try {
       final long originalPosition = fileChannel.position();
@@ -177,14 +183,15 @@ public final class WasiNioIntegration {
    * @return the total number of bytes read
    * @throws WasiFileSystemException if the read operation fails
    */
-  public long vectoredRead(final FileChannel fileChannel, final ByteBuffer[] buffers,
-      final long position) {
+  public long vectoredRead(
+      final FileChannel fileChannel, final ByteBuffer[] buffers, final long position) {
     JniValidation.requireNonNull(fileChannel, "fileChannel");
     JniValidation.requireNonNull(buffers, "buffers");
     JniValidation.requireNonNegative(position, "position");
 
-    LOGGER.fine(String.format("Performing vectored read: position=%d, bufferCount=%d", position,
-        buffers.length));
+    LOGGER.fine(
+        String.format(
+            "Performing vectored read: position=%d, bufferCount=%d", position, buffers.length));
 
     try {
       final long originalPosition = fileChannel.position();
@@ -216,14 +223,15 @@ public final class WasiNioIntegration {
    * @return the total number of bytes written
    * @throws WasiFileSystemException if the write operation fails
    */
-  public long vectoredWrite(final FileChannel fileChannel, final ByteBuffer[] buffers,
-      final long position) {
+  public long vectoredWrite(
+      final FileChannel fileChannel, final ByteBuffer[] buffers, final long position) {
     JniValidation.requireNonNull(fileChannel, "fileChannel");
     JniValidation.requireNonNull(buffers, "buffers");
     JniValidation.requireNonNegative(position, "position");
 
-    LOGGER.fine(String.format("Performing vectored write: position=%d, bufferCount=%d", position,
-        buffers.length));
+    LOGGER.fine(
+        String.format(
+            "Performing vectored write: position=%d, bufferCount=%d", position, buffers.length));
 
     try {
       final long originalPosition = fileChannel.position();
@@ -254,55 +262,61 @@ public final class WasiNioIntegration {
    * @param bufferSize the buffer size to use
    * @return a CompletableFuture containing the read data
    */
-  public CompletableFuture<ByteBuffer> asyncRead(final Path path, final long position,
-      final int bufferSize) {
+  public CompletableFuture<ByteBuffer> asyncRead(
+      final Path path, final long position, final int bufferSize) {
     JniValidation.requireNonNull(path, "path");
     JniValidation.requireNonNegative(position, "position");
     JniValidation.requirePositive(bufferSize, "bufferSize");
 
-    LOGGER.fine(String.format("Starting async read: path=%s, position=%d, bufferSize=%d",
-        path, position, bufferSize));
+    LOGGER.fine(
+        String.format(
+            "Starting async read: path=%s, position=%d, bufferSize=%d",
+            path, position, bufferSize));
 
     final CompletableFuture<ByteBuffer> future = new CompletableFuture<>();
 
     try {
-      final AsynchronousFileChannel asyncChannel = AsynchronousFileChannel.open(path,
-          Set.of(StandardOpenOption.READ), asyncExecutor);
+      final AsynchronousFileChannel asyncChannel =
+          AsynchronousFileChannel.open(path, Set.of(StandardOpenOption.READ), asyncExecutor);
 
       final ByteBuffer buffer = allocateBuffer(bufferSize);
 
-      asyncChannel.read(buffer, position, buffer, new CompletionHandler<Integer, ByteBuffer>() {
-        @Override
-        public void completed(final Integer bytesRead, final ByteBuffer attachment) {
-          try {
-            asyncChannel.close();
-            attachment.flip();
-            future.complete(attachment);
+      asyncChannel.read(
+          buffer,
+          position,
+          buffer,
+          new CompletionHandler<Integer, ByteBuffer>() {
+            @Override
+            public void completed(final Integer bytesRead, final ByteBuffer attachment) {
+              try {
+                asyncChannel.close();
+                attachment.flip();
+                future.complete(attachment);
 
-            LOGGER.fine(String.format("Async read completed: %d bytes read", bytesRead));
-          } catch (final Exception e) {
-            failed(e, attachment);
-          }
-        }
+                LOGGER.fine(String.format("Async read completed: %d bytes read", bytesRead));
+              } catch (final Exception e) {
+                failed(e, attachment);
+              }
+            }
 
-        @Override
-        public void failed(final Throwable exc, final ByteBuffer attachment) {
-          try {
-            asyncChannel.close();
-          } catch (final IOException e) {
-            LOGGER.warning(String.format("Error closing async channel: %s", e.getMessage()));
-          }
+            @Override
+            public void failed(final Throwable exc, final ByteBuffer attachment) {
+              try {
+                asyncChannel.close();
+              } catch (final IOException e) {
+                LOGGER.warning(String.format("Error closing async channel: %s", e.getMessage()));
+              }
 
-          LOGGER.warning(String.format("Async read failed: %s", exc.getMessage()));
-          future.completeExceptionally(new WasiFileSystemException(
-              "Async read failed: " + exc.getMessage(), "EIO"));
-        }
-      });
+              LOGGER.warning(String.format("Async read failed: %s", exc.getMessage()));
+              future.completeExceptionally(
+                  new WasiFileSystemException("Async read failed: " + exc.getMessage(), "EIO"));
+            }
+          });
 
     } catch (final IOException e) {
       LOGGER.warning(String.format("Failed to start async read: %s", e.getMessage()));
-      future.completeExceptionally(new WasiFileSystemException(
-          "Failed to start async read: " + e.getMessage(), "EIO"));
+      future.completeExceptionally(
+          new WasiFileSystemException("Failed to start async read: " + e.getMessage(), "EIO"));
     }
 
     return future;
@@ -316,52 +330,59 @@ public final class WasiNioIntegration {
    * @param data the data to write
    * @return a CompletableFuture containing the number of bytes written
    */
-  public CompletableFuture<Integer> asyncWrite(final Path path, final long position,
-      final ByteBuffer data) {
+  public CompletableFuture<Integer> asyncWrite(
+      final Path path, final long position, final ByteBuffer data) {
     JniValidation.requireNonNull(path, "path");
     JniValidation.requireNonNegative(position, "position");
     JniValidation.requireNonNull(data, "data");
 
-    LOGGER.fine(String.format("Starting async write: path=%s, position=%d, dataSize=%d",
-        path, position, data.remaining()));
+    LOGGER.fine(
+        String.format(
+            "Starting async write: path=%s, position=%d, dataSize=%d",
+            path, position, data.remaining()));
 
     final CompletableFuture<Integer> future = new CompletableFuture<>();
 
     try {
-      final AsynchronousFileChannel asyncChannel = AsynchronousFileChannel.open(path,
-          Set.of(StandardOpenOption.WRITE, StandardOpenOption.CREATE), asyncExecutor);
+      final AsynchronousFileChannel asyncChannel =
+          AsynchronousFileChannel.open(
+              path, Set.of(StandardOpenOption.WRITE, StandardOpenOption.CREATE), asyncExecutor);
 
-      asyncChannel.write(data, position, data, new CompletionHandler<Integer, ByteBuffer>() {
-        @Override
-        public void completed(final Integer bytesWritten, final ByteBuffer attachment) {
-          try {
-            asyncChannel.close();
-            future.complete(bytesWritten);
+      asyncChannel.write(
+          data,
+          position,
+          data,
+          new CompletionHandler<Integer, ByteBuffer>() {
+            @Override
+            public void completed(final Integer bytesWritten, final ByteBuffer attachment) {
+              try {
+                asyncChannel.close();
+                future.complete(bytesWritten);
 
-            LOGGER.fine(String.format("Async write completed: %d bytes written", bytesWritten));
-          } catch (final Exception e) {
-            failed(e, attachment);
-          }
-        }
+                LOGGER.fine(String.format("Async write completed: %d bytes written", bytesWritten));
+              } catch (final Exception e) {
+                failed(e, attachment);
+              }
+            }
 
-        @Override
-        public void failed(final Throwable exc, final ByteBuffer attachment) {
-          try {
-            asyncChannel.close();
-          } catch (final IOException e) {
-            LOGGER.warning(String.format("Error closing async channel: %s", e.getMessage()));
-          }
+            @Override
+            public void failed(final Throwable exc, final ByteBuffer attachment) {
+              try {
+                asyncChannel.close();
+              } catch (final IOException e) {
+                LOGGER.warning(String.format("Error closing async channel: %s", e.getMessage()));
+              }
 
-          LOGGER.warning(String.format("Async write failed: %s", exc.getMessage()));
-          future.completeExceptionally(new WasiFileSystemException(
-              "Async write failed: " + exc.getMessage(), "EIO"));
-        }
-      });
+              LOGGER.warning(String.format("Async write failed: %s", exc.getMessage()));
+              future.completeExceptionally(
+                  new WasiFileSystemException("Async write failed: " + exc.getMessage(), "EIO"));
+            }
+          });
 
     } catch (final IOException e) {
       LOGGER.warning(String.format("Failed to start async write: %s", e.getMessage()));
-      future.completeExceptionally(new WasiFileSystemException(
-          "Failed to start async write: " + e.getMessage(), "EIO"));
+      future.completeExceptionally(
+          new WasiFileSystemException("Failed to start async write: " + e.getMessage(), "EIO"));
     }
 
     return future;
@@ -377,15 +398,18 @@ public final class WasiNioIntegration {
    * @return the number of bytes transferred
    * @throws WasiFileSystemException if the transfer fails
    */
-  public long transferFile(final ReadableByteChannel sourceChannel, final long sourcePosition,
-      final long count, final WritableByteChannel targetChannel) {
+  public long transferFile(
+      final ReadableByteChannel sourceChannel,
+      final long sourcePosition,
+      final long count,
+      final WritableByteChannel targetChannel) {
     JniValidation.requireNonNull(sourceChannel, "sourceChannel");
     JniValidation.requireNonNegative(sourcePosition, "sourcePosition");
     JniValidation.requireNonNegative(count, "count");
     JniValidation.requireNonNull(targetChannel, "targetChannel");
 
-    LOGGER.fine(String.format("Starting file transfer: sourcePos=%d, count=%d",
-        sourcePosition, count));
+    LOGGER.fine(
+        String.format("Starting file transfer: sourcePos=%d, count=%d", sourcePosition, count));
 
     try {
       if (sourceChannel instanceof FileChannel && targetChannel instanceof FileChannel) {
@@ -393,11 +417,11 @@ public final class WasiNioIntegration {
         final FileChannel sourceFileChannel = (FileChannel) sourceChannel;
         final FileChannel targetFileChannel = (FileChannel) targetChannel;
 
-        final long bytesTransferred = sourceFileChannel.transferTo(sourcePosition, count,
-            targetFileChannel);
+        final long bytesTransferred =
+            sourceFileChannel.transferTo(sourcePosition, count, targetFileChannel);
 
-        LOGGER.fine(String.format("File transfer completed: %d bytes transferred",
-            bytesTransferred));
+        LOGGER.fine(
+            String.format("File transfer completed: %d bytes transferred", bytesTransferred));
         return bytesTransferred;
 
       } else {
@@ -421,27 +445,29 @@ public final class WasiNioIntegration {
    * @return the acquired file lock
    * @throws WasiFileSystemException if the lock cannot be acquired
    */
-  public FileLock lockFile(final FileChannel fileChannel, final long position, final long size,
-      final boolean shared) {
+  public FileLock lockFile(
+      final FileChannel fileChannel, final long position, final long size, final boolean shared) {
     JniValidation.requireNonNull(fileChannel, "fileChannel");
     JniValidation.requireNonNegative(position, "position");
     JniValidation.requirePositive(size, "size");
 
-    LOGGER.fine(String.format("Acquiring file lock: position=%d, size=%d, shared=%s",
-        position, size, shared));
+    LOGGER.fine(
+        String.format(
+            "Acquiring file lock: position=%d, size=%d, shared=%s", position, size, shared));
 
     try {
       final FileLock lock = fileChannel.lock(position, size, shared);
 
-      LOGGER.fine(String.format("File lock acquired: position=%d, size=%d, shared=%s",
-          lock.position(), lock.size(), lock.isShared()));
+      LOGGER.fine(
+          String.format(
+              "File lock acquired: position=%d, size=%d, shared=%s",
+              lock.position(), lock.size(), lock.isShared()));
 
       return lock;
 
     } catch (final IOException e) {
       LOGGER.warning(String.format("Failed to acquire file lock: %s", e.getMessage()));
-      throw new WasiFileSystemException("Failed to acquire file lock: " + e.getMessage(),
-          "EAGAIN");
+      throw new WasiFileSystemException("Failed to acquire file lock: " + e.getMessage(), "EAGAIN");
     }
   }
 
@@ -455,21 +481,25 @@ public final class WasiNioIntegration {
    * @return the acquired file lock, or null if the lock cannot be acquired immediately
    * @throws WasiFileSystemException if an error occurs while attempting to lock
    */
-  public FileLock tryLockFile(final FileChannel fileChannel, final long position, final long size,
-      final boolean shared) {
+  public FileLock tryLockFile(
+      final FileChannel fileChannel, final long position, final long size, final boolean shared) {
     JniValidation.requireNonNull(fileChannel, "fileChannel");
     JniValidation.requireNonNegative(position, "position");
     JniValidation.requirePositive(size, "size");
 
-    LOGGER.fine(String.format("Attempting non-blocking file lock: position=%d, size=%d, shared=%s",
-        position, size, shared));
+    LOGGER.fine(
+        String.format(
+            "Attempting non-blocking file lock: position=%d, size=%d, shared=%s",
+            position, size, shared));
 
     try {
       final FileLock lock = fileChannel.tryLock(position, size, shared);
 
       if (lock != null) {
-        LOGGER.fine(String.format("Non-blocking file lock acquired: position=%d, size=%d, shared=%s",
-            lock.position(), lock.size(), lock.isShared()));
+        LOGGER.fine(
+            String.format(
+                "Non-blocking file lock acquired: position=%d, size=%d, shared=%s",
+                lock.position(), lock.size(), lock.isShared()));
       } else {
         LOGGER.fine("Non-blocking file lock not available");
       }
@@ -482,9 +512,7 @@ public final class WasiNioIntegration {
     }
   }
 
-  /**
-   * Shuts down the NIO integration and releases resources.
-   */
+  /** Shuts down the NIO integration and releases resources. */
   public void shutdown() {
     LOGGER.info("Shutting down WASI NIO integration");
 
@@ -512,11 +540,14 @@ public final class WasiNioIntegration {
   }
 
   /** Performs manual transfer between channels when efficient transfer is not available. */
-  private long manualTransfer(final ReadableByteChannel sourceChannel, final long count,
-      final WritableByteChannel targetChannel) throws IOException {
-    final ByteBuffer buffer = allocateBuffer(
-        Math.min(DEFAULT_BUFFER_SIZE, (int) Math.min(count, Integer.MAX_VALUE)));
-    
+  private long manualTransfer(
+      final ReadableByteChannel sourceChannel,
+      final long count,
+      final WritableByteChannel targetChannel)
+      throws IOException {
+    final ByteBuffer buffer =
+        allocateBuffer(Math.min(DEFAULT_BUFFER_SIZE, (int) Math.min(count, Integer.MAX_VALUE)));
+
     long totalTransferred = 0;
     long remaining = count;
 

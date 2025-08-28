@@ -15,7 +15,8 @@ import java.util.Map;
 import java.util.logging.Logger;
 
 /**
- * Builder for creating WASI contexts with comprehensive configuration options in Panama FFI implementation.
+ * Builder for creating WASI contexts with comprehensive configuration options in Panama FFI
+ * implementation.
  *
  * <p>This builder provides a fluent API for configuring WASI contexts with security, permissions,
  * and resource management. It includes:
@@ -274,7 +275,8 @@ public final class WasiContextBuilder {
   public WasiContext build() {
     LOGGER.info(
         String.format(
-            "Building Panama WASI context with %d environment variables, %d arguments, %d preopen directories",
+            "Building Panama WASI context with %d environment variables, %d arguments, %d preopen"
+                + " directories",
             environment.size(), arguments.size(), preopenedDirectories.size()));
 
     // Validate configuration before creating native context
@@ -291,7 +293,8 @@ public final class WasiContextBuilder {
       final String workingDirStr = workingDirectory.toString();
 
       // Create native WASI context using Panama FFI
-      final MemorySegment nativeHandle = nativeCreate(envArray, argArray, preopenArray, workingDirStr);
+      final MemorySegment nativeHandle =
+          nativeCreate(envArray, argArray, preopenArray, workingDirStr);
 
       // Create and return Java wrapper
       return new WasiContext(nativeHandle, resourceManager, this);
@@ -301,11 +304,12 @@ public final class WasiContextBuilder {
       try {
         resourceManager.close();
       } catch (final Exception cleanupException) {
-        LOGGER.warning("Error cleaning up resource manager after failed context creation: " 
-                      + cleanupException.getMessage());
+        LOGGER.warning(
+            "Error cleaning up resource manager after failed context creation: "
+                + cleanupException.getMessage());
         e.addSuppressed(cleanupException);
       }
-      
+
       throw new RuntimeException("Failed to create Panama WASI context: " + e.getMessage(), e);
     }
   }
@@ -420,17 +424,18 @@ public final class WasiContextBuilder {
    * @throws RuntimeException if the context cannot be created
    */
   private static MemorySegment nativeCreate(
-      final String[] environment, 
-      final String[] arguments, 
-      final String[] preopenDirs, 
+      final String[] environment,
+      final String[] arguments,
+      final String[] preopenDirs,
       final String workingDir) {
-    
+
     // TODO: Implement native WASI context creation when native library is ready
     // This would call into the Panama FFI bindings to create a native WASI context
-    LOGGER.fine(String.format(
-        "Native WASI context creation called with %d env vars, %d args, %d preopen dirs",
-        environment.length, arguments.length, preopenDirs.length / 2));
-    
+    LOGGER.fine(
+        String.format(
+            "Native WASI context creation called with %d env vars, %d args, %d preopen dirs",
+            environment.length, arguments.length, preopenDirs.length / 2));
+
     // For now, return a mock handle - this will be replaced with actual Panama FFI calls
     return MemorySegment.ofAddress(0x1234L);
   }

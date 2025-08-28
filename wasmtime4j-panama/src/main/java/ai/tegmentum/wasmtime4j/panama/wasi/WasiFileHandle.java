@@ -8,7 +8,8 @@ import java.nio.file.Path;
 import java.util.logging.Logger;
 
 /**
- * File handle wrapper for WASI file system operations with resource management in Panama FFI context.
+ * File handle wrapper for WASI file system operations with resource management in Panama FFI
+ * context.
  *
  * <p>This class encapsulates an open file handle in the WASI context, providing proper resource
  * management and metadata tracking. It ensures that native file resources are properly cleaned up
@@ -47,8 +48,11 @@ public final class WasiFileHandle implements AutoCloseable {
    * @param fileChannel the file channel for advanced operations (may be null)
    * @param operation the file operation type
    */
-  public WasiFileHandle(final int fileDescriptor, final Path path,
-      final SeekableByteChannel channel, final FileChannel fileChannel,
+  public WasiFileHandle(
+      final int fileDescriptor,
+      final Path path,
+      final SeekableByteChannel channel,
+      final FileChannel fileChannel,
       final WasiFileOperation operation) {
     PanamaValidation.requireNonNull(path, "path");
     PanamaValidation.requireNonNull(channel, "channel");
@@ -60,8 +64,9 @@ public final class WasiFileHandle implements AutoCloseable {
     this.fileChannel = fileChannel;
     this.operation = operation;
 
-    LOGGER.fine(String.format("Created file handle: fd=%d, path=%s, operation=%s",
-        fileDescriptor, path, operation));
+    LOGGER.fine(
+        String.format(
+            "Created file handle: fd=%d, path=%s, operation=%s", fileDescriptor, path, operation));
   }
 
   /**
@@ -145,8 +150,9 @@ public final class WasiFileHandle implements AutoCloseable {
         channel.close();
         LOGGER.fine(String.format("File handle closed successfully: fd=%d", fileDescriptor));
       } catch (final IOException e) {
-        LOGGER.warning(String.format("Error closing file handle: fd=%d, error=%s", fileDescriptor,
-            e.getMessage()));
+        LOGGER.warning(
+            String.format(
+                "Error closing file handle: fd=%d, error=%s", fileDescriptor, e.getMessage()));
       } finally {
         closed = true;
       }
@@ -169,8 +175,10 @@ public final class WasiFileHandle implements AutoCloseable {
   protected void finalize() throws Throwable {
     try {
       if (!closed) {
-        LOGGER.warning(String.format("File handle not properly closed, cleaning up: fd=%d, path=%s",
-            fileDescriptor, path));
+        LOGGER.warning(
+            String.format(
+                "File handle not properly closed, cleaning up: fd=%d, path=%s",
+                fileDescriptor, path));
         close();
       }
     } finally {
@@ -180,7 +188,8 @@ public final class WasiFileHandle implements AutoCloseable {
 
   @Override
   public String toString() {
-    return String.format("WasiFileHandle{fd=%d, path=%s, operation=%s, closed=%s}",
+    return String.format(
+        "WasiFileHandle{fd=%d, path=%s, operation=%s, closed=%s}",
         fileDescriptor, path, operation, closed);
   }
 }

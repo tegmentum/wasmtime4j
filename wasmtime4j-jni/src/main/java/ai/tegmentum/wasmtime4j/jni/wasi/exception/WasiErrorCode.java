@@ -81,7 +81,8 @@ public enum WasiErrorCode {
   ECANCELED(89, "Operation canceled", false, false, false, false, false),
   EIDRM(82, "Identifier removed", false, false, false, false, false),
   ENOMSG(91, "No message of desired type", false, false, false, false, true),
-  EILSEQ(92, "Invalid or incomplete multibyte or wide character", false, false, false, false, false),
+  EILSEQ(
+      92, "Invalid or incomplete multibyte or wide character", false, false, false, false, false),
   EBADMSG(74, "Bad message", false, false, false, false, false),
   EMULTIHOP(95, "Multihop attempted", false, true, false, false, false),
   ENODATA(96, "No data available", false, false, false, false, true),
@@ -243,8 +244,8 @@ public enum WasiErrorCode {
    * @return a generic error code with the errno value
    */
   public static WasiErrorCode createGeneric(final int errno) {
-    return new WasiErrorCode(errno, "Unknown error (errno " + errno + ")", 
-                            false, false, false, false, false) {
+    return new WasiErrorCode(
+        errno, "Unknown error (errno " + errno + ")", false, false, false, false, false) {
       // Anonymous subclass for unknown error codes
     };
   }

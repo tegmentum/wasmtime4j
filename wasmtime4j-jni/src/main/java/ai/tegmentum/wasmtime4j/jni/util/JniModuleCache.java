@@ -3,7 +3,6 @@ package ai.tegmentum.wasmtime4j.jni.util;
 import ai.tegmentum.wasmtime4j.jni.JniEngine;
 import ai.tegmentum.wasmtime4j.jni.JniModule;
 import ai.tegmentum.wasmtime4j.jni.exception.JniException;
-import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.ConcurrentHashMap;
@@ -13,8 +12,8 @@ import java.util.logging.Logger;
 /**
  * Advanced module cache with bytecode validation and serialization support.
  *
- * <p>This cache provides efficient storage and retrieval of compiled WebAssembly modules
- * with the following features:
+ * <p>This cache provides efficient storage and retrieval of compiled WebAssembly modules with the
+ * following features:
  *
  * <ul>
  *   <li>SHA-256 based content hashing for cache keys
@@ -29,13 +28,13 @@ import java.util.logging.Logger;
  *
  * <pre>{@code
  * JniModuleCache cache = new JniModuleCache(100); // Max 100 modules
- * 
+ *
  * // Compile or retrieve from cache
  * JniModule module = cache.getOrCompile(engine, wasmBytes);
- * 
+ *
  * // Explicitly cache a pre-compiled module
  * cache.put(wasmBytes, module);
- * 
+ *
  * // Clear invalid modules
  * cache.cleanup();
  * }</pre>
@@ -45,39 +44,37 @@ import java.util.logging.Logger;
 public final class JniModuleCache {
 
   private static final Logger LOGGER = Logger.getLogger(JniModuleCache.class.getName());
-  
+
   /** Default maximum cache size. */
   private static final int DEFAULT_MAX_SIZE = 50;
-  
+
   /** Cache entry containing module and metadata. */
   private static final class CacheEntry {
     final JniModule module;
     final long timestamp;
     final int bytecodeHash;
-    
+
     CacheEntry(final JniModule module, final int bytecodeHash) {
       this.module = module;
       this.timestamp = System.currentTimeMillis();
       this.bytecodeHash = bytecodeHash;
     }
-    
+
     boolean isValid() {
       return module != null && module.isValid();
     }
   }
-  
+
   /** Thread-safe cache storage. */
   private final ConcurrentMap<String, CacheEntry> cache = new ConcurrentHashMap<>();
-  
+
   /** Maximum cache size. */
   private final int maxSize;
-  
+
   /** Message digest for creating content hashes. */
   private final MessageDigest digest;
 
-  /**
-   * Creates a new module cache with default maximum size.
-   */
+  /** Creates a new module cache with default maximum size. */
   public JniModuleCache() {
     this(DEFAULT_MAX_SIZE);
   }
@@ -92,23 +89,23 @@ public final class JniModuleCache {
     if (maxSize <= 0) {
       throw new IllegalArgumentException("Cache size must be positive, got: " + maxSize);
     }
-    
+
     this.maxSize = maxSize;
-    
+
     try {
       this.digest = MessageDigest.getInstance("SHA-256");
     } catch (final NoSuchAlgorithmException e) {
       throw new JniException("SHA-256 algorithm not available", e);
     }
-    
+
     LOGGER.fine("Created JNI module cache with max size: " + maxSize);
   }
 
   /**
    * Gets a module from cache or compiles it if not found.
    *
-   * <p>This method first validates the bytecode, then checks the cache using a content-based
-   * hash. If not found, compiles the module and caches the result.
+   * <p>This method first validates the bytecode, then checks the cache using a content-based hash.
+   * If not found, compiles the module and caches the result.
    *
    * @param engine the engine to use for compilation
    * @param bytecode the WebAssembly bytecode
@@ -126,21 +123,21 @@ public final class JniModuleCache {
 
     final String cacheKey = createCacheKey(bytecode);
     final int bytecodeHash = bytecode.hashCode();
-    
+
     // Check cache first
     final CacheEntry cached = cache.get(cacheKey);
     if (cached != null && cached.isValid() && cached.bytecodeHash == bytecodeHash) {
       LOGGER.fine("Cache hit for module: " + cacheKey);
       return cached.module;
     }
-    
+
     // Compile new module
     LOGGER.fine("Cache miss, compiling module: " + cacheKey);
     final JniModule module = engine.compileModule(bytecode);
-    
+
     // Add to cache with size limit enforcement
     put(cacheKey, module, bytecodeHash);
-    
+
     return module;
   }
 
@@ -154,30 +151,28 @@ public final class JniModuleCache {
   public void put(final byte[] bytecode, final JniModule module) {
     JniValidation.requireNonEmpty(bytecode, "bytecode");
     JniValidation.requireNonNull(module, "module");
-    
+
     final String cacheKey = createCacheKey(bytecode);
     final int bytecodeHash = bytecode.hashCode();
-    
+
     put(cacheKey, module, bytecodeHash);
   }
 
-  /**
-   * Internal put method with cache key.
-   */
+  /** Internal put method with cache key. */
   private void put(final String cacheKey, final JniModule module, final int bytecodeHash) {
     if (!module.isValid()) {
       LOGGER.warning("Attempting to cache invalid module: " + cacheKey);
       return;
     }
-    
+
     // Enforce cache size limit
     if (cache.size() >= maxSize) {
       evictOldest();
     }
-    
+
     final CacheEntry entry = new CacheEntry(module, bytecodeHash);
     cache.put(cacheKey, entry);
-    
+
     LOGGER.fine("Cached module: " + cacheKey + " (size: " + cache.size() + "/" + maxSize + ")");
   }
 
@@ -189,15 +184,15 @@ public final class JniModuleCache {
    */
   public JniModule get(final byte[] bytecode) {
     JniValidation.requireNonEmpty(bytecode, "bytecode");
-    
+
     final String cacheKey = createCacheKey(bytecode);
     final int bytecodeHash = bytecode.hashCode();
-    
+
     final CacheEntry cached = cache.get(cacheKey);
     if (cached != null && cached.isValid() && cached.bytecodeHash == bytecodeHash) {
       return cached.module;
     }
-    
+
     return null;
   }
 
@@ -209,15 +204,15 @@ public final class JniModuleCache {
    */
   public boolean remove(final byte[] bytecode) {
     JniValidation.requireNonEmpty(bytecode, "bytecode");
-    
+
     final String cacheKey = createCacheKey(bytecode);
     final CacheEntry removed = cache.remove(cacheKey);
-    
+
     if (removed != null) {
       LOGGER.fine("Removed cached module: " + cacheKey);
       return true;
     }
-    
+
     return false;
   }
 
@@ -228,7 +223,7 @@ public final class JniModuleCache {
    */
   public int cleanup() {
     int removedCount = 0;
-    
+
     for (final String key : cache.keySet()) {
       final CacheEntry entry = cache.get(key);
       if (entry == null || !entry.isValid()) {
@@ -238,17 +233,15 @@ public final class JniModuleCache {
         }
       }
     }
-    
+
     if (removedCount > 0) {
       LOGGER.fine("Cleaned up " + removedCount + " invalid modules");
     }
-    
+
     return removedCount;
   }
 
-  /**
-   * Clears all modules from the cache.
-   */
+  /** Clears all modules from the cache. */
   public void clear() {
     final int size = cache.size();
     cache.clear();
@@ -282,32 +275,28 @@ public final class JniModuleCache {
     return cache.isEmpty();
   }
 
-  /**
-   * Creates a content-based cache key from bytecode.
-   */
+  /** Creates a content-based cache key from bytecode. */
   private String createCacheKey(final byte[] bytecode) {
     synchronized (digest) {
       digest.reset();
       digest.update(bytecode);
       final byte[] hash = digest.digest();
-      
+
       // Convert hash to hex string
       final StringBuilder sb = new StringBuilder();
       for (final byte b : hash) {
         sb.append(String.format("%02x", b));
       }
-      
+
       return sb.toString();
     }
   }
 
-  /**
-   * Evicts the oldest entry from the cache.
-   */
+  /** Evicts the oldest entry from the cache. */
   private void evictOldest() {
     String oldestKey = null;
     long oldestTime = Long.MAX_VALUE;
-    
+
     for (final String key : cache.keySet()) {
       final CacheEntry entry = cache.get(key);
       if (entry != null && entry.timestamp < oldestTime) {
@@ -315,7 +304,7 @@ public final class JniModuleCache {
         oldestKey = key;
       }
     }
-    
+
     if (oldestKey != null) {
       final CacheEntry removed = cache.remove(oldestKey);
       if (removed != null) {

@@ -73,7 +73,8 @@ public final class WasiContext extends JniResource {
 
     LOGGER.info(
         String.format(
-            "Created WASI context with %d preopen directories, %d environment variables, %d arguments",
+            "Created WASI context with %d preopen directories, %d environment variables, %d"
+                + " arguments",
             preopenedDirectories.size(), environment.size(), arguments.length));
   }
 

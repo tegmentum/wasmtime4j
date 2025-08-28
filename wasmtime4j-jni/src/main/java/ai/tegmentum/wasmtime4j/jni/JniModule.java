@@ -1,9 +1,9 @@
 package ai.tegmentum.wasmtime4j.jni;
 
 import ai.tegmentum.wasmtime4j.ExportType;
-import ai.tegmentum.wasmtime4j.FunctionType;
 import ai.tegmentum.wasmtime4j.ImportMap;
 import ai.tegmentum.wasmtime4j.ImportType;
+import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.WasmType;
 import ai.tegmentum.wasmtime4j.WasmTypeKind;
 import ai.tegmentum.wasmtime4j.jni.exception.JniException;
@@ -13,7 +13,6 @@ import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -22,7 +21,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 
 /**
@@ -73,10 +71,10 @@ import java.util.logging.Logger;
  *
  * @since 1.0.0
  */
-public final class JniModule extends JniResource {
+public final class JniModule extends JniResource implements Module {
 
   private static final Logger LOGGER = Logger.getLogger(JniModule.class.getName());
-  
+
   /** WebAssembly features that may be supported by modules. */
   public enum WasmFeature {
     SIMD("simd", "SIMD operations support"),
@@ -87,15 +85,15 @@ public final class JniModule extends JniResource {
     MULTI_VALUE("multi-value", "Multi-value function returns"),
     EXCEPTION_HANDLING("exception-handling", "Exception handling support"),
     RELAXED_SIMD("relaxed-simd", "Relaxed SIMD operations");
-    
+
     private final String name;
     private final String description;
-    
+
     WasmFeature(final String name, final String description) {
       this.name = name;
       this.description = description;
     }
-    
+
     public String getName() {
       return name;
     }
@@ -104,13 +102,13 @@ public final class JniModule extends JniResource {
       return description;
     }
   }
-  
+
   /** Information about module linking capabilities. */
   public static final class LinkingInfo {
     private final String name;
     private final List<String> dependencies;
     private final Map<String, String> symbols;
-    
+
     /**
      * Creates linking information with specified dependencies and symbols.
      *
@@ -118,12 +116,13 @@ public final class JniModule extends JniResource {
      * @param dependencies the list of module dependencies
      * @param symbols the symbol mapping
      */
-    public LinkingInfo(final String name, final List<String> dependencies, final Map<String, String> symbols) {
+    public LinkingInfo(
+        final String name, final List<String> dependencies, final Map<String, String> symbols) {
       this.name = name;
       this.dependencies = Collections.unmodifiableList(new ArrayList<>(dependencies));
       this.symbols = Collections.unmodifiableMap(new HashMap<>(symbols));
     }
-    
+
     public String getName() {
       return name;
     }
@@ -136,19 +135,19 @@ public final class JniModule extends JniResource {
       return symbols;
     }
   }
-  
+
   /** Cache for import metadata to avoid repeated native calls. */
   private volatile List<ImportType> importCache = null;
-  
+
   /** Cache for export metadata to avoid repeated native calls. */
   private volatile List<ExportType> exportCache = null;
-  
+
   /** Cache for module features to avoid repeated native calls. */
   private volatile Set<WasmFeature> featuresCache = null;
-  
+
   /** Cache for module linking information. */
   private volatile Map<String, LinkingInfo> linkingCache = null;
-  
+
   /** Reference to the engine used to compile this module. */
   private final JniEngine engine;
 
@@ -188,7 +187,8 @@ public final class JniModule extends JniResource {
    * Creates an instance of this module with the provided imports.
    *
    * <p>This method instantiates the compiled WebAssembly module with specific import bindings,
-   * creating a new execution context. All required imports must be provided or instantiation will fail.
+   * creating a new execution context. All required imports must be provided or instantiation will
+   * fail.
    *
    * @param store the store context for the new instance
    * @param imports the import definitions for the module (null for no imports)
@@ -207,12 +207,13 @@ public final class JniModule extends JniResource {
         if (!validateImports(imports)) {
           throw new JniException("Provided imports do not satisfy module requirements");
         }
-        
+
         // Convert imports to native representation
         final long importMapHandle = convertImportMapToNative(imports, store);
         try {
-          instanceHandle = nativeInstantiateModuleWithImports(getNativeHandle(),
-            store.getNativeHandle(), importMapHandle);
+          instanceHandle =
+              nativeInstantiateModuleWithImports(
+                  getNativeHandle(), store.getNativeHandle(), importMapHandle);
         } finally {
           // Clean up the temporary import map handle
           if (importMapHandle != 0) {
@@ -222,7 +223,7 @@ public final class JniModule extends JniResource {
       } else {
         instanceHandle = nativeInstantiateModule(getNativeHandle(), store.getNativeHandle());
       }
-      
+
       JniValidation.requireValidHandle(instanceHandle, "instanceHandle");
       return new JniInstance(instanceHandle);
     } catch (final Exception e) {
@@ -345,7 +346,8 @@ public final class JniModule extends JniResource {
    * Gets comprehensive export metadata for this module.
    *
    * <p>This method provides detailed information about all exports including their types,
-   * signatures, and metadata. Results are cached to avoid expensive native calls on repeated access.
+   * signatures, and metadata. Results are cached to avoid expensive native calls on repeated
+   * access.
    *
    * @return immutable list of export type information (never null, may be empty)
    * @throws JniException if export metadata cannot be retrieved
@@ -358,12 +360,12 @@ public final class JniModule extends JniResource {
     }
 
     ensureNotClosed();
-    
+
     try {
       // Get comprehensive export metadata from native layer
       final String[] exportData = nativeGetExportMetadata(getNativeHandle());
       final List<ExportType> exports = parseExportMetadata(exportData);
-      
+
       exportCache = Collections.unmodifiableList(exports);
       return exportCache;
     } catch (final Exception e) {
@@ -375,7 +377,8 @@ public final class JniModule extends JniResource {
    * Gets comprehensive import metadata for this module.
    *
    * <p>This method provides detailed information about all required imports including their types,
-   * signatures, and metadata. Results are cached to avoid expensive native calls on repeated access.
+   * signatures, and metadata. Results are cached to avoid expensive native calls on repeated
+   * access.
    *
    * @return immutable list of import type information (never null, may be empty)
    * @throws JniException if import metadata cannot be retrieved
@@ -388,12 +391,12 @@ public final class JniModule extends JniResource {
     }
 
     ensureNotClosed();
-    
+
     try {
       // Get comprehensive import metadata from native layer
       final String[] importData = nativeGetImportMetadata(getNativeHandle());
       final List<ImportType> imports = parseImportMetadata(importData);
-      
+
       importCache = Collections.unmodifiableList(imports);
       return importCache;
     } catch (final Exception e) {
@@ -404,8 +407,8 @@ public final class JniModule extends JniResource {
   /**
    * Validates that provided imports satisfy this module's requirements.
    *
-   * <p>This method checks that all required imports are provided with compatible types.
-   * It performs comprehensive type checking to ensure runtime compatibility.
+   * <p>This method checks that all required imports are provided with compatible types. It performs
+   * comprehensive type checking to ensure runtime compatibility.
    *
    * @param imports the import definitions to validate (null means no imports)
    * @return true if imports satisfy module requirements, false otherwise
@@ -414,7 +417,7 @@ public final class JniModule extends JniResource {
    */
   public boolean validateImports(final ImportMap imports) {
     ensureNotClosed();
-    
+
     if (imports == null) {
       // Check if module requires no imports
       return getImports().isEmpty();
@@ -422,7 +425,7 @@ public final class JniModule extends JniResource {
 
     try {
       final List<ImportType> requiredImports = getImports();
-      
+
       // Check that all required imports are provided
       for (final ImportType required : requiredImports) {
         final String key = required.getModuleName() + "::" + required.getName();
@@ -430,11 +433,11 @@ public final class JniModule extends JniResource {
           LOGGER.fine("Missing required import: " + key);
           return false;
         }
-        
+
         // TODO: Add comprehensive type compatibility checking
         // This would involve checking function signatures, memory types, etc.
       }
-      
+
       return true;
     } catch (final Exception e) {
       if (e instanceof JniException) {
@@ -456,8 +459,8 @@ public final class JniModule extends JniResource {
   /**
    * Gets the name of this module if it has one.
    *
-   * <p>Module names are optional in WebAssembly and may be embedded in the bytecode
-   * or provided during compilation.
+   * <p>Module names are optional in WebAssembly and may be embedded in the bytecode or provided
+   * during compilation.
    *
    * @return the module name, or null if unnamed
    * @throws JniException if module name cannot be retrieved
@@ -465,7 +468,7 @@ public final class JniModule extends JniResource {
    */
   public String getName() {
     ensureNotClosed();
-    
+
     try {
       return nativeGetModuleName(getNativeHandle());
     } catch (final Exception e) {
@@ -485,9 +488,9 @@ public final class JniModule extends JniResource {
   /**
    * Gets the WebAssembly features supported by this module.
    *
-   * <p>This method detects which advanced WebAssembly features are used by the module,
-   * such as SIMD operations, multi-memory, reference types, etc. Results are cached
-   * to avoid expensive native calls on repeated access.
+   * <p>This method detects which advanced WebAssembly features are used by the module, such as SIMD
+   * operations, multi-memory, reference types, etc. Results are cached to avoid expensive native
+   * calls on repeated access.
    *
    * @return immutable set of WebAssembly features used by this module (never null, may be empty)
    * @throws JniException if feature detection fails
@@ -500,11 +503,11 @@ public final class JniModule extends JniResource {
     }
 
     ensureNotClosed();
-    
+
     try {
       final String[] featureNames = nativeGetModuleFeatures(getNativeHandle());
       final Set<WasmFeature> features = parseFeatureNames(featureNames);
-      
+
       featuresCache = Collections.unmodifiableSet(features);
       return featuresCache;
     } catch (final Exception e) {
@@ -515,8 +518,8 @@ public final class JniModule extends JniResource {
   /**
    * Gets module linking information for complex WebAssembly applications.
    *
-   * <p>This method provides information about module dependencies, symbols, and
-   * linking requirements for advanced multi-module WebAssembly applications.
+   * <p>This method provides information about module dependencies, symbols, and linking
+   * requirements for advanced multi-module WebAssembly applications.
    *
    * @return map of linking information by dependency name (never null, may be empty)
    * @throws JniException if linking information cannot be retrieved
@@ -529,11 +532,11 @@ public final class JniModule extends JniResource {
     }
 
     ensureNotClosed();
-    
+
     try {
       final String[] linkingData = nativeGetModuleLinkingInfo(getNativeHandle());
       final Map<String, LinkingInfo> linkingInfo = parseLinkingInfo(linkingData);
-      
+
       linkingCache = Collections.unmodifiableMap(linkingInfo);
       return linkingCache;
     } catch (final Exception e) {
@@ -544,9 +547,8 @@ public final class JniModule extends JniResource {
   /**
    * Serializes this compiled module to bytes for storage or transmission.
    *
-   * <p>This method exports the compiled module in Wasmtime's internal format,
-   * which can be deserialized later for faster loading. The serialized format
-   * is platform and version specific.
+   * <p>This method exports the compiled module in Wasmtime's internal format, which can be
+   * deserialized later for faster loading. The serialized format is platform and version specific.
    *
    * @return serialized module bytes (never null)
    * @throws JniException if serialization fails
@@ -554,7 +556,7 @@ public final class JniModule extends JniResource {
    */
   public byte[] serialize() {
     ensureNotClosed();
-    
+
     try {
       final byte[] serializedData = nativeSerializeModule(getNativeHandle());
       JniValidation.requireNonNull(serializedData, "serializedData");
@@ -657,24 +659,24 @@ public final class JniModule extends JniResource {
     }
 
     final List<ExportType> exports = new ArrayList<>();
-    
+
     // Parse export data format: name|type|signature
     for (final String entry : exportData) {
       if (entry == null || entry.trim().isEmpty()) {
         continue;
       }
-      
+
       final String[] parts = entry.split("\\|");
       if (parts.length >= 2) {
         final String name = parts[0];
         final String typeString = parts[1];
-        
+
         // Create appropriate WasmType based on type string
         final WasmType type = createWasmType(typeString, parts.length > 2 ? parts[2] : null);
         exports.add(new ExportType(name, type));
       }
     }
-    
+
     return exports;
   }
 
@@ -690,31 +692,29 @@ public final class JniModule extends JniResource {
     }
 
     final List<ImportType> imports = new ArrayList<>();
-    
+
     // Parse import data format: module|name|type|signature
     for (final String entry : importData) {
       if (entry == null || entry.trim().isEmpty()) {
         continue;
       }
-      
+
       final String[] parts = entry.split("\\|");
       if (parts.length >= 3) {
         final String moduleName = parts[0];
         final String name = parts[1];
         final String typeString = parts[2];
-        
+
         // Create appropriate WasmType based on type string
         final WasmType type = createWasmType(typeString, parts.length > 3 ? parts[3] : null);
         imports.add(new ImportType(moduleName, name, type));
       }
     }
-    
+
     return imports;
   }
 
-  /**
-   * Creates a WasmType instance from type string and optional signature.
-   */
+  /** Creates a WasmType instance from type string and optional signature. */
   private WasmType createWasmType(final String typeString, final String signature) {
     // This is a simplified implementation - in reality would need to parse
     // complex function signatures, memory types, etc.
@@ -722,31 +722,34 @@ public final class JniModule extends JniResource {
       @Override
       public WasmTypeKind getKind() {
         switch (typeString.toLowerCase()) {
-          case "function": return WasmTypeKind.FUNCTION;
-          case "memory": return WasmTypeKind.MEMORY;
-          case "table": return WasmTypeKind.TABLE;
-          case "global": return WasmTypeKind.GLOBAL;
-          default: return WasmTypeKind.FUNCTION;
+          case "function":
+            return WasmTypeKind.FUNCTION;
+          case "memory":
+            return WasmTypeKind.MEMORY;
+          case "table":
+            return WasmTypeKind.TABLE;
+          case "global":
+            return WasmTypeKind.GLOBAL;
+          default:
+            return WasmTypeKind.FUNCTION;
         }
       }
     };
   }
 
-  /**
-   * Parses feature names into WasmFeature set.
-   */
+  /** Parses feature names into WasmFeature set. */
   private Set<WasmFeature> parseFeatureNames(final String[] featureNames) {
     if (featureNames == null || featureNames.length == 0) {
       return EnumSet.noneOf(WasmFeature.class);
     }
 
     final Set<WasmFeature> features = EnumSet.noneOf(WasmFeature.class);
-    
+
     for (final String featureName : featureNames) {
       if (featureName == null) {
         continue;
       }
-      
+
       for (final WasmFeature feature : WasmFeature.values()) {
         if (feature.getName().equals(featureName)) {
           features.add(feature);
@@ -754,31 +757,29 @@ public final class JniModule extends JniResource {
         }
       }
     }
-    
+
     return features;
   }
 
-  /**
-   * Parses linking information from native string array format.
-   */
+  /** Parses linking information from native string array format. */
   private Map<String, LinkingInfo> parseLinkingInfo(final String[] linkingData) {
     if (linkingData == null || linkingData.length == 0) {
       return new HashMap<>();
     }
 
     final Map<String, LinkingInfo> linkingInfo = new HashMap<>();
-    
+
     // Parse linking data format: name|dependencies|symbols
     for (final String entry : linkingData) {
       if (entry == null || entry.trim().isEmpty()) {
         continue;
       }
-      
+
       final String[] parts = entry.split("\\|");
       if (parts.length >= 3) {
         final String name = parts[0];
         final List<String> dependencies = Arrays.asList(parts[1].split(","));
-        
+
         // Parse symbols map from key=value pairs
         final Map<String, String> symbols = new HashMap<>();
         if (!parts[2].trim().isEmpty()) {
@@ -790,26 +791,22 @@ public final class JniModule extends JniResource {
             }
           }
         }
-        
+
         linkingInfo.put(name, new LinkingInfo(name, dependencies, symbols));
       }
     }
-    
+
     return linkingInfo;
   }
 
-  /**
-   * Converts ImportMap to native representation.
-   */
+  /** Converts ImportMap to native representation. */
   private long convertImportMapToNative(final ImportMap imports, final JniStore store) {
     // This would convert the ImportMap to a native handle
     // Implementation depends on native method signature
     return nativeCreateImportMap(store.getNativeHandle(), serializeImportMap(imports));
   }
 
-  /**
-   * Serializes ImportMap to byte array for native consumption.
-   */
+  /** Serializes ImportMap to byte array for native consumption. */
   private byte[] serializeImportMap(final ImportMap imports) {
     try (final ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
       // Simplified serialization - would need proper protocol
@@ -967,8 +964,8 @@ public final class JniModule extends JniResource {
    * @param importMapHandle the native import map handle
    * @return native instance handle or 0 on failure
    */
-  private static native long nativeInstantiateModuleWithImports(long moduleHandle, long storeHandle,
-      long importMapHandle);
+  private static native long nativeInstantiateModuleWithImports(
+      long moduleHandle, long storeHandle, long importMapHandle);
 
   /**
    * Creates a native import map from serialized data.

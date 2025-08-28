@@ -65,7 +65,7 @@ class PanamaTableTest {
   @BeforeEach
   void setUp() throws Exception {
     mockTableHandle = MemorySegment.ofAddress(0x1000L);
-    
+
     // Setup mock method handles
     when(mockNativeBindings.getTableSize()).thenReturn(mockSizeHandle);
     when(mockNativeBindings.getTableGet()).thenReturn(mockGetHandle);
@@ -74,7 +74,8 @@ class PanamaTableTest {
     when(mockNativeBindings.getTableDelete()).thenReturn(mockDeleteHandle);
 
     // Create the table instance
-    panamaTable = new PanamaTable(mockTableHandle, mockArenaManager, mockNativeBindings, mockErrorHandler);
+    panamaTable =
+        new PanamaTable(mockTableHandle, mockArenaManager, mockNativeBindings, mockErrorHandler);
   }
 
   @Nested
@@ -85,7 +86,8 @@ class PanamaTableTest {
     @DisplayName("Should create table with valid parameters")
     void shouldCreateTableWithValidParameters() throws Exception {
       // Verify the table was registered with arena manager
-      verify(mockArenaManager).registerManagedNativeResource(eq(panamaTable), eq(mockTableHandle), any());
+      verify(mockArenaManager)
+          .registerManagedNativeResource(eq(panamaTable), eq(mockTableHandle), any());
     }
 
     @Test
@@ -176,7 +178,7 @@ class PanamaTableTest {
       final long index = 5L;
       final long tableSize = 10L;
       final MemorySegment mockElementHandle = MemorySegment.ofAddress(0x2000L);
-      
+
       when(mockSizeHandle.invokeExact(mockTableHandle)).thenReturn(tableSize);
       when(mockGetHandle.invokeExact(mockTableHandle, index)).thenReturn(mockElementHandle);
 
@@ -195,7 +197,7 @@ class PanamaTableTest {
       // Arrange
       final long index = 5L;
       final long tableSize = 10L;
-      
+
       when(mockSizeHandle.invokeExact(mockTableHandle)).thenReturn(tableSize);
       when(mockGetHandle.invokeExact(mockTableHandle, index)).thenReturn(MemorySegment.NULL);
 
@@ -222,7 +224,7 @@ class PanamaTableTest {
       // Arrange
       final long index = 10L;
       final long tableSize = 5L;
-      
+
       when(mockSizeHandle.invokeExact(mockTableHandle)).thenReturn(tableSize);
 
       // Act & Assert
@@ -236,10 +238,11 @@ class PanamaTableTest {
       final long index = 3L;
       final long tableSize = 10L;
       final RuntimeException cause = new RuntimeException("Native get failed");
-      
+
       when(mockSizeHandle.invokeExact(mockTableHandle)).thenReturn(tableSize);
       when(mockGetHandle.invokeExact(mockTableHandle, index)).thenThrow(cause);
-      when(mockErrorHandler.mapToWasmException(cause, "Failed to get table element at index " + index))
+      when(mockErrorHandler.mapToWasmException(
+              cause, "Failed to get table element at index " + index))
           .thenReturn(new WasmException("Mapped exception"));
 
       // Act & Assert
@@ -248,7 +251,7 @@ class PanamaTableTest {
   }
 
   @Nested
-  @DisplayName("Set Element Tests")  
+  @DisplayName("Set Element Tests")
   class SetElementTests {
 
     @Test
@@ -259,7 +262,7 @@ class PanamaTableTest {
       final long tableSize = 10L;
       final PanamaFunction mockFunction = mock(PanamaFunction.class);
       final MemorySegment mockFunctionHandle = MemorySegment.ofAddress(0x3000L);
-      
+
       when(mockSizeHandle.invokeExact(mockTableHandle)).thenReturn(tableSize);
       when(mockFunction.getFunctionHandle()).thenReturn(mockFunctionHandle);
       when(mockSetHandle.invokeExact(mockTableHandle, index, mockFunctionHandle)).thenReturn(true);
@@ -277,7 +280,7 @@ class PanamaTableTest {
       // Arrange
       final long index = 3L;
       final long tableSize = 10L;
-      
+
       when(mockSizeHandle.invokeExact(mockTableHandle)).thenReturn(tableSize);
       when(mockSetHandle.invokeExact(mockTableHandle, index, MemorySegment.NULL)).thenReturn(true);
 
@@ -304,7 +307,7 @@ class PanamaTableTest {
       // Arrange
       final long index = 15L;
       final long tableSize = 10L;
-      
+
       when(mockSizeHandle.invokeExact(mockTableHandle)).thenReturn(tableSize);
 
       // Act & Assert
@@ -318,7 +321,7 @@ class PanamaTableTest {
       final long index = 3L;
       final long tableSize = 10L;
       final Object invalidFunction = new Object();
-      
+
       when(mockSizeHandle.invokeExact(mockTableHandle)).thenReturn(tableSize);
 
       // Act & Assert
@@ -331,7 +334,7 @@ class PanamaTableTest {
       // Arrange
       final long index = 3L;
       final long tableSize = 10L;
-      
+
       when(mockSizeHandle.invokeExact(mockTableHandle)).thenReturn(tableSize);
       when(mockSetHandle.invokeExact(mockTableHandle, index, MemorySegment.NULL)).thenReturn(false);
 
@@ -350,7 +353,7 @@ class PanamaTableTest {
       // Arrange
       final long delta = 5L;
       final long previousSize = 10L;
-      
+
       when(mockSizeHandle.invokeExact(mockTableHandle)).thenReturn(previousSize);
       when(mockGrowHandle.invokeExact(mockTableHandle, delta, MemorySegment.NULL)).thenReturn(true);
 
@@ -370,7 +373,7 @@ class PanamaTableTest {
       final long previousSize = 7L;
       final PanamaFunction mockInitialFunction = mock(PanamaFunction.class);
       final MemorySegment mockInitialHandle = MemorySegment.ofAddress(0x4000L);
-      
+
       when(mockSizeHandle.invokeExact(mockTableHandle)).thenReturn(previousSize);
       when(mockInitialFunction.getFunctionHandle()).thenReturn(mockInitialHandle);
       when(mockGrowHandle.invokeExact(mockTableHandle, delta, mockInitialHandle)).thenReturn(true);
@@ -399,9 +402,10 @@ class PanamaTableTest {
       // Arrange
       final long delta = 5L;
       final long previousSize = 10L;
-      
+
       when(mockSizeHandle.invokeExact(mockTableHandle)).thenReturn(previousSize);
-      when(mockGrowHandle.invokeExact(mockTableHandle, delta, MemorySegment.NULL)).thenReturn(false);
+      when(mockGrowHandle.invokeExact(mockTableHandle, delta, MemorySegment.NULL))
+          .thenReturn(false);
 
       // Act & Assert
       assertThrows(RuntimeException.class, () -> panamaTable.grow(delta, null));
@@ -522,19 +526,21 @@ class PanamaTableTest {
     void shouldHandleConcurrentAccessSafely() throws Exception {
       // Arrange
       when(mockSizeHandle.invokeExact(mockTableHandle)).thenReturn(10L);
-      when(mockGetHandle.invokeExact(eq(mockTableHandle), anyLong())).thenReturn(MemorySegment.NULL);
+      when(mockGetHandle.invokeExact(eq(mockTableHandle), anyLong()))
+          .thenReturn(MemorySegment.NULL);
       when(mockSetHandle.invokeExact(eq(mockTableHandle), anyLong(), any())).thenReturn(true);
 
       // Act - simulate concurrent access from multiple threads
-      final Runnable operation = () -> {
-        try {
-          panamaTable.size();
-          panamaTable.get(0);
-          panamaTable.set(0, null);
-        } catch (Exception e) {
-          // Expected in concurrent environment
-        }
-      };
+      final Runnable operation =
+          () -> {
+            try {
+              panamaTable.size();
+              panamaTable.get(0);
+              panamaTable.set(0, null);
+            } catch (Exception e) {
+              // Expected in concurrent environment
+            }
+          };
 
       final Thread thread1 = new Thread(operation);
       final Thread thread2 = new Thread(operation);
@@ -553,13 +559,14 @@ class PanamaTableTest {
     @DisplayName("Should handle concurrent close safely")
     void shouldHandleConcurrentCloseSafely() throws Exception {
       // Act
-      final Runnable closeOperation = () -> {
-        try {
-          panamaTable.close();
-        } catch (Exception e) {
-          // Expected in concurrent environment
-        }
-      };
+      final Runnable closeOperation =
+          () -> {
+            try {
+              panamaTable.close();
+            } catch (Exception e) {
+              // Expected in concurrent environment
+            }
+          };
 
       final Thread thread1 = new Thread(closeOperation);
       final Thread thread2 = new Thread(closeOperation);

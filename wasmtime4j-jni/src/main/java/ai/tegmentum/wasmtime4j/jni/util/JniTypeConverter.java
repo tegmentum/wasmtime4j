@@ -3,7 +3,6 @@ package ai.tegmentum.wasmtime4j.jni.util;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.jni.exception.JniValidationException;
-import java.util.Arrays;
 import java.util.logging.Logger;
 
 /**
@@ -93,7 +92,7 @@ public final class JniTypeConverter {
    */
   public static Object[] wasmValuesToNativeParams(final WasmValue[] values) {
     JniValidation.requireNonNull(values, "values");
-    
+
     final Object[] params = new Object[values.length];
     for (int i = 0; i < values.length; i++) {
       if (values[i] == null) {
@@ -113,7 +112,7 @@ public final class JniTypeConverter {
    */
   public static Object wasmValueToNativeParam(final WasmValue value) {
     JniValidation.requireNonNull(value, "value");
-    
+
     final WasmValueType type = value.getType();
     switch (type) {
       case I32:
@@ -151,7 +150,7 @@ public final class JniTypeConverter {
       final Object[] results, final WasmValueType[] expectedTypes) {
     JniValidation.requireNonNull(results, "results");
     JniValidation.requireNonNull(expectedTypes, "expectedTypes");
-    
+
     if (results.length != expectedTypes.length) {
       throw new JniValidationException(
           "Result count mismatch: got " + results.length + ", expected " + expectedTypes.length);
@@ -172,7 +171,8 @@ public final class JniTypeConverter {
    * @return the WebAssembly value
    * @throws JniValidationException if result type doesn't match expected
    */
-  public static WasmValue nativeResultToWasmValue(final Object result, final WasmValueType expectedType) {
+  public static WasmValue nativeResultToWasmValue(
+      final Object result, final WasmValueType expectedType) {
     JniValidation.requireNonNull(expectedType, "expectedType");
 
     switch (expectedType) {
@@ -203,7 +203,10 @@ public final class JniTypeConverter {
         final byte[] v128Bytes = (byte[]) result;
         if (v128Bytes.length != V128_SIZE_BYTES) {
           throw new JniValidationException(
-              "v128 result has invalid size: " + v128Bytes.length + ", expected " + V128_SIZE_BYTES);
+              "v128 result has invalid size: "
+                  + v128Bytes.length
+                  + ", expected "
+                  + V128_SIZE_BYTES);
         }
         return WasmValue.v128(v128Bytes);
       case FUNCREF:
@@ -240,7 +243,12 @@ public final class JniTypeConverter {
       final WasmValueType expectedType = expectedTypes[i];
       if (actualType != expectedType) {
         throw new JniValidationException(
-            "Parameter type mismatch at index " + i + ": got " + actualType + ", expected " + expectedType);
+            "Parameter type mismatch at index "
+                + i
+                + ": got "
+                + actualType
+                + ", expected "
+                + expectedType);
       }
     }
   }
@@ -296,7 +304,7 @@ public final class JniTypeConverter {
    */
   public static String[] typesToStrings(final WasmValueType[] types) {
     JniValidation.requireNonNull(types, "types");
-    
+
     final String[] strings = new String[types.length];
     for (int i = 0; i < types.length; i++) {
       if (types[i] == null) {
@@ -316,7 +324,7 @@ public final class JniTypeConverter {
    */
   public static WasmValueType[] stringsToTypes(final String[] typeStrings) {
     JniValidation.requireNonNull(typeStrings, "typeStrings");
-    
+
     final WasmValueType[] types = new WasmValueType[typeStrings.length];
     for (int i = 0; i < typeStrings.length; i++) {
       if (typeStrings[i] == null) {

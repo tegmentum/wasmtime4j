@@ -19,7 +19,6 @@ package ai.tegmentum.wasmtime4j.panama.util;
 import java.lang.foreign.MemorySegment;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -27,7 +26,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
@@ -80,11 +78,13 @@ public final class PerformanceOptimizer {
   private volatile boolean optimizationEnabled = true;
   private volatile boolean shutdownRequested = false;
 
-  /**
-   * Creates a new performance optimizer with default settings.
-   */
+  /** Creates a new performance optimizer with default settings. */
   public PerformanceOptimizer() {
-    this(ForkJoinPool.commonPool(), DEFAULT_BATCH_SIZE, DEFAULT_BATCH_TIMEOUT_MS, DEFAULT_QUEUE_SIZE);
+    this(
+        ForkJoinPool.commonPool(),
+        DEFAULT_BATCH_SIZE,
+        DEFAULT_BATCH_TIMEOUT_MS,
+        DEFAULT_QUEUE_SIZE);
   }
 
   /**
@@ -174,7 +174,8 @@ public final class PerformanceOptimizer {
   public <T> CompletableFuture<T> executeBatched(
       final MethodHandle handle, final Object[] params, final BatchedFFIOperation<T> operation) {
     if (shutdownRequested) {
-      return CompletableFuture.failedFuture(new IllegalStateException("Optimizer is shutting down"));
+      return CompletableFuture.failedFuture(
+          new IllegalStateException("Optimizer is shutting down"));
     }
 
     totalOperations.incrementAndGet();
@@ -200,8 +201,8 @@ public final class PerformanceOptimizer {
   /**
    * Optimizes memory access patterns for bulk operations.
    *
-   * <p>This method provides optimized memory access patterns for operations that work with
-   * multiple memory segments, reducing cache misses and improving throughput.
+   * <p>This method provides optimized memory access patterns for operations that work with multiple
+   * memory segments, reducing cache misses and improving throughput.
    *
    * @param <T> the return type
    * @param segments the memory segments to access
@@ -272,9 +273,7 @@ public final class PerformanceOptimizer {
     }
   }
 
-  /**
-   * Initiates shutdown of the performance optimizer.
-   */
+  /** Initiates shutdown of the performance optimizer. */
   public void shutdown() {
     shutdownRequested = true;
     // Process remaining operations
@@ -293,24 +292,27 @@ public final class PerformanceOptimizer {
       final MethodHandle originalHandle, final UsagePattern pattern) {
     try {
       final MethodHandle optimized;
-      
+
       switch (pattern) {
         case HIGH_FREQUENCY_SIMPLE -> {
           // Optimize for frequent calls with simple parameters
-          optimized = MethodHandles.foldArguments(
-              originalHandle, 
-              MethodHandles.identity(originalHandle.type().parameterType(0)));
+          optimized =
+              MethodHandles.foldArguments(
+                  originalHandle, MethodHandles.identity(originalHandle.type().parameterType(0)));
         }
         case BULK_OPERATIONS -> {
           // Optimize for bulk operations with array parameters
-          optimized = originalHandle.asCollector(Object[].class, originalHandle.type().parameterCount());
+          optimized =
+              originalHandle.asCollector(Object[].class, originalHandle.type().parameterCount());
         }
         case MEMORY_INTENSIVE -> {
           // Optimize for memory-intensive operations
-          optimized = MethodHandles.permuteArguments(
-              originalHandle, 
-              originalHandle.type(),
-              java.util.stream.IntStream.range(0, originalHandle.type().parameterCount()).toArray());
+          optimized =
+              MethodHandles.permuteArguments(
+                  originalHandle,
+                  originalHandle.type(),
+                  java.util.stream.IntStream.range(0, originalHandle.type().parameterCount())
+                      .toArray());
         }
         default -> optimized = originalHandle;
       }
@@ -322,18 +324,14 @@ public final class PerformanceOptimizer {
     }
   }
 
-  /**
-   * Processes batched operations if a batch is ready.
-   */
+  /** Processes batched operations if a batch is ready. */
   private void processBatchIfReady() {
     if (operationQueue.size() >= batchSize || shouldProcessTimeout()) {
       batchExecutor.execute(this::processBatch);
     }
   }
 
-  /**
-   * Processes a batch of operations.
-   */
+  /** Processes a batch of operations. */
   private void processBatch() {
     final List<BatchedOperation<?>> batch = new ArrayList<>(batchSize);
     operationQueue.drainTo(batch, batchSize);
@@ -349,7 +347,8 @@ public final class PerformanceOptimizer {
       // Execute all operations in the batch
       for (final BatchedOperation<?> operation : batch) {
         try {
-          final Object result = operation.getOperation().execute(operation.getHandle(), operation.getParams());
+          final Object result =
+              operation.getOperation().execute(operation.getHandle(), operation.getParams());
           operation.complete(result);
         } catch (Throwable t) {
           operation.completeExceptionally(t);
@@ -360,9 +359,7 @@ public final class PerformanceOptimizer {
     }
   }
 
-  /**
-   * Processes all pending operations during shutdown.
-   */
+  /** Processes all pending operations during shutdown. */
   private void processPendingOperations() {
     while (!operationQueue.isEmpty()) {
       processBatch();
@@ -379,9 +376,7 @@ public final class PerformanceOptimizer {
     return !operationQueue.isEmpty() && operationQueue.size() > batchSize / 4;
   }
 
-  /**
-   * Usage patterns for method handle optimization.
-   */
+  /** Usage patterns for method handle optimization. */
   public enum UsagePattern {
     /** High-frequency calls with simple parameters. */
     HIGH_FREQUENCY_SIMPLE,
@@ -393,15 +388,14 @@ public final class PerformanceOptimizer {
     GENERAL
   }
 
-  /**
-   * Represents a specialized method handle with optimization metadata.
-   */
+  /** Represents a specialized method handle with optimization metadata. */
   private static final class SpecializedMethodHandle {
     private final MethodHandle handle;
     private final UsagePattern pattern;
     private final long creationTime;
 
-    SpecializedMethodHandle(final MethodHandle handle, final UsagePattern pattern, final long creationTime) {
+    SpecializedMethodHandle(
+        final MethodHandle handle, final UsagePattern pattern, final long creationTime) {
       this.handle = handle;
       this.pattern = pattern;
       this.creationTime = creationTime;
@@ -420,16 +414,15 @@ public final class PerformanceOptimizer {
     }
   }
 
-  /**
-   * Represents a batched operation waiting for execution.
-   */
+  /** Represents a batched operation waiting for execution. */
   private static final class BatchedOperation<T> {
     private final MethodHandle handle;
     private final Object[] params;
     private final BatchedFFIOperation<T> operation;
     private final CompletableFuture<T> future = new CompletableFuture<>();
 
-    BatchedOperation(final MethodHandle handle, final Object[] params, final BatchedFFIOperation<T> operation) {
+    BatchedOperation(
+        final MethodHandle handle, final Object[] params, final BatchedFFIOperation<T> operation) {
       this.handle = handle;
       this.params = params;
       this.operation = operation;
@@ -461,15 +454,14 @@ public final class PerformanceOptimizer {
     }
   }
 
-  /**
-   * Asynchronous operation pipeline for high-throughput processing.
-   */
+  /** Asynchronous operation pipeline for high-throughput processing. */
   public static final class OperationPipeline<T, R> {
     private final Function<T, R> processor;
     private final Executor executor;
     private final int parallelism;
 
-    OperationPipeline(final Function<T, R> processor, final int parallelism, final Executor executor) {
+    OperationPipeline(
+        final Function<T, R> processor, final int parallelism, final Executor executor) {
       this.processor = processor;
       this.parallelism = parallelism;
       this.executor = executor;
@@ -492,22 +484,17 @@ public final class PerformanceOptimizer {
       for (int i = 0; i < items.size(); i += chunkSize) {
         final int end = Math.min(i + chunkSize, items.size());
         final List<T> chunk = items.subList(i, end);
-        
-        futures.add(CompletableFuture.supplyAsync(
-            () -> chunk.stream().map(processor).toList(),
-            executor));
+
+        futures.add(
+            CompletableFuture.supplyAsync(() -> chunk.stream().map(processor).toList(), executor));
       }
 
       return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
-          .thenApply(void_ -> futures.stream()
-              .flatMap(future -> future.join().stream())
-              .toList());
+          .thenApply(void_ -> futures.stream().flatMap(future -> future.join().stream()).toList());
     }
   }
 
-  /**
-   * Performance statistics for monitoring.
-   */
+  /** Performance statistics for monitoring. */
   public static final class PerformanceStatistics {
     private final long totalOperations;
     private final long batchedOperations;
