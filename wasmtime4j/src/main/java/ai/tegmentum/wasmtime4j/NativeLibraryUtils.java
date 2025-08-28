@@ -21,8 +21,6 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
@@ -33,11 +31,12 @@ import java.util.logging.Logger;
  * Shared utilities for native library loading across JNI and Panama implementations.
  *
  * <p>This class provides common functionality for:
+ *
  * <ul>
- *   <li>Platform detection and resource path generation</li>
- *   <li>Native library extraction from JAR resources</li>
- *   <li>Temporary file management and cleanup</li>
- *   <li>Error handling and diagnostics</li>
+ *   <li>Platform detection and resource path generation
+ *   <li>Native library extraction from JAR resources
+ *   <li>Temporary file management and cleanup
+ *   <li>Error handling and diagnostics
  * </ul>
  *
  * <p>The utilities ensure consistent behavior between JNI and Panama implementations while
@@ -57,14 +56,13 @@ public final class NativeLibraryUtils {
   private static final String TEMP_DIR_SUFFIX = "-wasmtime4j";
 
   /** Cache for extracted library paths to avoid multiple extractions. */
-  private static final ConcurrentHashMap<String, Path> extractedLibrariesCache = new ConcurrentHashMap<>();
+  private static final ConcurrentHashMap<String, Path> extractedLibrariesCache =
+      new ConcurrentHashMap<>();
 
   /** Reference to the cleanup thread for proper shutdown handling. */
   private static final AtomicReference<Thread> cleanupThreadRef = new AtomicReference<>();
 
-  /**
-   * Information about a native library loading attempt.
-   */
+  /** Information about a native library loading attempt. */
   public static final class LibraryLoadInfo {
     private final String libraryName;
     private final PlatformDetector.PlatformInfo platformInfo;
@@ -74,21 +72,20 @@ public final class NativeLibraryUtils {
     private final LoadingMethod loadingMethod;
     private final Exception error;
 
-    /**
-     * The method used to load the library.
-     */
+    /** The method used to load the library. */
     public enum LoadingMethod {
       SYSTEM_LIBRARY_PATH,
       EXTRACTED_FROM_JAR
     }
 
-    LibraryLoadInfo(final String libraryName,
-                   final PlatformDetector.PlatformInfo platformInfo,
-                   final String resourcePath,
-                   final boolean foundInResources,
-                   final Path extractedPath,
-                   final LoadingMethod loadingMethod,
-                   final Exception error) {
+    LibraryLoadInfo(
+        final String libraryName,
+        final PlatformDetector.PlatformInfo platformInfo,
+        final String resourcePath,
+        final boolean foundInResources,
+        final Path extractedPath,
+        final LoadingMethod loadingMethod,
+        final Exception error) {
       this.libraryName = libraryName;
       this.platformInfo = platformInfo;
       this.resourcePath = resourcePath;
@@ -173,11 +170,14 @@ public final class NativeLibraryUtils {
     @Override
     public String toString() {
       if (isSuccessful()) {
-        return String.format("LibraryLoadInfo{platform=%s, method=%s, path=%s}",
-            platformInfo.getPlatformId(), loadingMethod, 
+        return String.format(
+            "LibraryLoadInfo{platform=%s, method=%s, path=%s}",
+            platformInfo.getPlatformId(),
+            loadingMethod,
             extractedPath != null ? extractedPath : "system");
       } else {
-        return String.format("LibraryLoadInfo{platform=%s, error=%s}",
+        return String.format(
+            "LibraryLoadInfo{platform=%s, error=%s}",
             platformInfo.getPlatformId(), error != null ? error.getMessage() : "unknown");
       }
     }
@@ -192,9 +192,10 @@ public final class NativeLibraryUtils {
    * Attempts to load the wasmtime4j native library using multiple strategies.
    *
    * <p>This method tries the following loading strategies in order:
+   *
    * <ol>
-   *   <li>Load from system library path using {@code System.loadLibrary()}</li>
-   *   <li>Extract from JAR resources and load from temporary location</li>
+   *   <li>Load from system library path using {@code System.loadLibrary()}
+   *   <li>Extract from JAR resources and load from temporary location
    * </ol>
    *
    * @return information about the loading attempt
@@ -226,8 +227,14 @@ public final class NativeLibraryUtils {
     try {
       System.loadLibrary(libraryName);
       LOGGER.info("Successfully loaded native library from system library path: " + libraryName);
-      return new LibraryLoadInfo(libraryName, platformInfo, resourcePath, false, null, 
-          LibraryLoadInfo.LoadingMethod.SYSTEM_LIBRARY_PATH, null);
+      return new LibraryLoadInfo(
+          libraryName,
+          platformInfo,
+          resourcePath,
+          false,
+          null,
+          LibraryLoadInfo.LoadingMethod.SYSTEM_LIBRARY_PATH,
+          null);
     } catch (final UnsatisfiedLinkError e) {
       LOGGER.fine("Failed to load from system library path: " + e.getMessage());
     }
@@ -236,13 +243,26 @@ public final class NativeLibraryUtils {
     try {
       final Path extractedPath = extractLibraryFromJar(libraryName, platformInfo, resourcePath);
       System.load(extractedPath.toAbsolutePath().toString());
-      LOGGER.info("Successfully loaded native library from JAR: " + resourcePath + " -> " + extractedPath);
-      return new LibraryLoadInfo(libraryName, platformInfo, resourcePath, true, extractedPath, 
-          LibraryLoadInfo.LoadingMethod.EXTRACTED_FROM_JAR, null);
+      LOGGER.info(
+          "Successfully loaded native library from JAR: " + resourcePath + " -> " + extractedPath);
+      return new LibraryLoadInfo(
+          libraryName,
+          platformInfo,
+          resourcePath,
+          true,
+          extractedPath,
+          LibraryLoadInfo.LoadingMethod.EXTRACTED_FROM_JAR,
+          null);
     } catch (final Exception e) {
       LOGGER.log(Level.SEVERE, "Failed to load native library from JAR", e);
-      return new LibraryLoadInfo(libraryName, platformInfo, resourcePath, 
-          checkResourceExists(resourcePath), null, null, e);
+      return new LibraryLoadInfo(
+          libraryName,
+          platformInfo,
+          resourcePath,
+          checkResourceExists(resourcePath),
+          null,
+          null,
+          e);
     }
   }
 
@@ -255,13 +275,15 @@ public final class NativeLibraryUtils {
    * @return the path to the extracted library
    * @throws IOException if extraction fails
    */
-  public static Path extractLibraryFromJar(final String libraryName,
-                                          final PlatformDetector.PlatformInfo platformInfo,
-                                          final String resourcePath) throws IOException {
+  public static Path extractLibraryFromJar(
+      final String libraryName,
+      final PlatformDetector.PlatformInfo platformInfo,
+      final String resourcePath)
+      throws IOException {
     Objects.requireNonNull(libraryName, "libraryName must not be null");
     Objects.requireNonNull(platformInfo, "platformInfo must not be null");
     Objects.requireNonNull(resourcePath, "resourcePath must not be null");
-    
+
     // Check cache first to avoid duplicate extractions
     final String cacheKey = platformInfo.getPlatformId() + ":" + libraryName;
     final Path cachedPath = extractedLibrariesCache.get(cacheKey);
@@ -271,13 +293,16 @@ public final class NativeLibraryUtils {
     }
 
     // Extract the library
-    try (final InputStream inputStream = NativeLibraryUtils.class.getResourceAsStream(resourcePath)) {
+    try (final InputStream inputStream =
+        NativeLibraryUtils.class.getResourceAsStream(resourcePath)) {
       if (inputStream == null) {
         throw new IOException("Native library not found in JAR resources: " + resourcePath);
       }
 
       // Create temporary directory with unique name
-      final Path tempDir = Files.createTempDirectory(TEMP_FILE_PREFIX + platformInfo.getPlatformId() + TEMP_DIR_SUFFIX);
+      final Path tempDir =
+          Files.createTempDirectory(
+              TEMP_FILE_PREFIX + platformInfo.getPlatformId() + TEMP_DIR_SUFFIX);
       final String libraryFileName = platformInfo.getLibraryFileName(libraryName);
       final Path extractedLibrary = tempDir.resolve(libraryFileName);
 
@@ -331,7 +356,7 @@ public final class NativeLibraryUtils {
     sb.append("Native Library Diagnostics:\n");
     sb.append("  Platform: ").append(PlatformDetector.getPlatformDescription()).append("\n");
     sb.append("  Library path: ").append(System.getProperty("java.library.path")).append("\n");
-    
+
     try {
       final PlatformDetector.PlatformInfo info = PlatformDetector.detect();
       final String resourcePath = info.getLibraryResourcePath(LIBRARY_NAME);
@@ -340,9 +365,9 @@ public final class NativeLibraryUtils {
     } catch (final RuntimeException e) {
       sb.append("  Platform detection error: ").append(e.getMessage()).append("\n");
     }
-    
+
     sb.append("  Cached extractions: ").append(extractedLibrariesCache.size()).append("\n");
-    
+
     return sb.toString();
   }
 
@@ -352,8 +377,8 @@ public final class NativeLibraryUtils {
    * @param libraryPath the path to the library
    * @param platformInfo the platform information
    */
-  private static void setLibraryPermissions(final Path libraryPath,
-                                           final PlatformDetector.PlatformInfo platformInfo) {
+  private static void setLibraryPermissions(
+      final Path libraryPath, final PlatformDetector.PlatformInfo platformInfo) {
     try {
       // On Unix-like systems, make the library executable
       if (platformInfo.getOperatingSystem() != PlatformDetector.OperatingSystem.WINDOWS) {
@@ -373,39 +398,45 @@ public final class NativeLibraryUtils {
   private static void registerForCleanup(final Path path) {
     // Use deleteOnExit as the primary cleanup mechanism
     path.toFile().deleteOnExit();
-    
+
     // Also register a shutdown hook for more thorough cleanup
     if (cleanupThreadRef.get() == null) {
-      final Thread cleanupThread = new Thread(() -> {
-        try {
-          // Clean up extracted libraries cache
-          for (final Path extractedPath : extractedLibrariesCache.values()) {
-            try {
-              if (Files.exists(extractedPath)) {
-                Files.deleteIfExists(extractedPath);
-                // Also try to delete parent directory if empty
-                final Path parent = extractedPath.getParent();
-                if (parent != null && Files.exists(parent)) {
-                  try {
-                    Files.deleteIfExists(parent);
-                  } catch (final Exception e) {
-                    // Ignore - directory might not be empty
+      final Thread cleanupThread =
+          new Thread(
+              () -> {
+                try {
+                  // Clean up extracted libraries cache
+                  for (final Path extractedPath : extractedLibrariesCache.values()) {
+                    try {
+                      if (Files.exists(extractedPath)) {
+                        Files.deleteIfExists(extractedPath);
+                        // Also try to delete parent directory if empty
+                        final Path parent = extractedPath.getParent();
+                        if (parent != null && Files.exists(parent)) {
+                          try {
+                            Files.deleteIfExists(parent);
+                          } catch (final Exception e) {
+                            // Ignore - directory might not be empty
+                          }
+                        }
+                      }
+                    } catch (final Exception e) {
+                      LOGGER.log(
+                          Level.FINE,
+                          "Error during cleanup of extracted library: " + extractedPath,
+                          e);
+                    }
                   }
+                  extractedLibrariesCache.clear();
+                  LOGGER.fine("Completed native library cleanup");
+                } catch (final Exception e) {
+                  LOGGER.log(Level.WARNING, "Error during native library cleanup", e);
                 }
-              }
-            } catch (final Exception e) {
-              LOGGER.log(Level.FINE, "Error during cleanup of extracted library: " + extractedPath, e);
-            }
-          }
-          extractedLibrariesCache.clear();
-          LOGGER.fine("Completed native library cleanup");
-        } catch (final Exception e) {
-          LOGGER.log(Level.WARNING, "Error during native library cleanup", e);
-        }
-      }, "wasmtime4j-cleanup");
-      
+              },
+              "wasmtime4j-cleanup");
+
       cleanupThread.setDaemon(true);
-      
+
       if (cleanupThreadRef.compareAndSet(null, cleanupThread)) {
         Runtime.getRuntime().addShutdownHook(cleanupThread);
         LOGGER.fine("Registered native library cleanup shutdown hook");

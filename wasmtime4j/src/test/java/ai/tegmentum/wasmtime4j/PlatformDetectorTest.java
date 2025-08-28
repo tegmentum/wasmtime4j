@@ -25,9 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
-/**
- * Tests for {@link PlatformDetector}.
- */
+/** Tests for {@link PlatformDetector}. */
 final class PlatformDetectorTest {
 
   @Test
@@ -46,13 +44,14 @@ final class PlatformDetectorTest {
   @Test
   void testPlatformInfoFields() {
     final PlatformDetector.PlatformInfo info = PlatformDetector.detect();
-    
+
     assertNotNull(info.getOperatingSystem(), "Operating system should not be null");
     assertNotNull(info.getArchitecture(), "Architecture should not be null");
     assertNotNull(info.getPlatformId(), "Platform ID should not be null");
-    
+
     // Platform ID should match expected format
-    final String expectedId = info.getOperatingSystem().getName() + "-" + info.getArchitecture().getName();
+    final String expectedId =
+        info.getOperatingSystem().getName() + "-" + info.getArchitecture().getName();
     assertEquals(expectedId, info.getPlatformId(), "Platform ID should match expected format");
   }
 
@@ -63,7 +62,8 @@ final class PlatformDetectorTest {
       assertFalse(os.getName().isEmpty(), "OS name should not be empty");
       assertNotNull(os.getLibraryExtension(), "Library extension should not be null");
       assertFalse(os.getLibraryExtension().isEmpty(), "Library extension should not be empty");
-      assertTrue(os.getLibraryExtension().startsWith("."), "Library extension should start with dot");
+      assertTrue(
+          os.getLibraryExtension().startsWith("."), "Library extension should start with dot");
       assertNotNull(os.getLibraryPrefix(), "Library prefix should not be null");
     }
   }
@@ -80,15 +80,17 @@ final class PlatformDetectorTest {
   void testGetLibraryFileName() {
     final PlatformDetector.PlatformInfo info = PlatformDetector.detect();
     final String fileName = info.getLibraryFileName("wasmtime4j");
-    
+
     assertNotNull(fileName, "Library file name should not be null");
     assertFalse(fileName.isEmpty(), "Library file name should not be empty");
     assertTrue(fileName.contains("wasmtime4j"), "Library file name should contain library name");
-    assertTrue(fileName.endsWith(info.getOperatingSystem().getLibraryExtension()),
+    assertTrue(
+        fileName.endsWith(info.getOperatingSystem().getLibraryExtension()),
         "Library file name should end with correct extension");
-    
+
     if (!info.getOperatingSystem().getLibraryPrefix().isEmpty()) {
-      assertTrue(fileName.startsWith(info.getOperatingSystem().getLibraryPrefix()),
+      assertTrue(
+          fileName.startsWith(info.getOperatingSystem().getLibraryPrefix()),
           "Library file name should start with correct prefix");
     }
   }
@@ -97,12 +99,14 @@ final class PlatformDetectorTest {
   void testGetLibraryResourcePath() {
     final PlatformDetector.PlatformInfo info = PlatformDetector.detect();
     final String resourcePath = info.getLibraryResourcePath("wasmtime4j");
-    
+
     assertNotNull(resourcePath, "Library resource path should not be null");
     assertFalse(resourcePath.isEmpty(), "Library resource path should not be empty");
     assertTrue(resourcePath.startsWith("/natives/"), "Resource path should start with /natives/");
-    assertTrue(resourcePath.contains(info.getPlatformId()), "Resource path should contain platform ID");
-    assertTrue(resourcePath.endsWith(info.getLibraryFileName("wasmtime4j")),
+    assertTrue(
+        resourcePath.contains(info.getPlatformId()), "Resource path should contain platform ID");
+    assertTrue(
+        resourcePath.endsWith(info.getLibraryFileName("wasmtime4j")),
         "Resource path should end with library file name");
   }
 
@@ -122,16 +126,17 @@ final class PlatformDetectorTest {
   void testPlatformInfoEqualsAndHashCode() {
     final PlatformDetector.PlatformInfo info1 = PlatformDetector.detect();
     final PlatformDetector.PlatformInfo info2 = PlatformDetector.detect();
-    
+
     assertEquals(info1, info2, "Same platform info should be equal");
-    assertEquals(info1.hashCode(), info2.hashCode(), "Same platform info should have same hash code");
+    assertEquals(
+        info1.hashCode(), info2.hashCode(), "Same platform info should have same hash code");
   }
 
   @Test
   void testPlatformInfoToString() {
     final PlatformDetector.PlatformInfo info = PlatformDetector.detect();
     final String string = info.toString();
-    
+
     assertNotNull(string, "toString should not return null");
     assertFalse(string.isEmpty(), "toString should not return empty string");
     assertEquals(info.getPlatformId(), string, "toString should return platform ID");
@@ -145,7 +150,7 @@ final class PlatformDetectorTest {
   @Test
   void testGetPlatformDescription() {
     final String description = PlatformDetector.getPlatformDescription();
-    
+
     assertNotNull(description, "Platform description should not be null");
     assertFalse(description.isEmpty(), "Platform description should not be empty");
     assertTrue(description.contains("Platform:"), "Description should contain platform label");

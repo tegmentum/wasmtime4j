@@ -182,7 +182,6 @@ public final class JniInstance implements AutoCloseable {
     }
   }
 
-
   /**
    * Gets the resource type name for logging and error messages.
    *

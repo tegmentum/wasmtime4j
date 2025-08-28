@@ -12,8 +12,8 @@ import java.util.logging.Logger;
  * Manager for phantom references to ensure automatic cleanup of native resources.
  *
  * <p>This class provides a robust mechanism for tracking native resources and ensuring their
- * cleanup even if explicit close() calls are missed. It uses phantom references to detect when
- * Java objects are being garbage collected and triggers appropriate native resource cleanup.
+ * cleanup even if explicit close() calls are missed. It uses phantom references to detect when Java
+ * objects are being garbage collected and triggers appropriate native resource cleanup.
  *
  * <p>Key features:
  *
@@ -54,6 +54,7 @@ public final class JniPhantomReferenceManager implements AutoCloseable {
 
   /** Statistics. */
   private final AtomicLong registeredCount = new AtomicLong(0);
+
   private final AtomicLong cleanedUpCount = new AtomicLong(0);
   private final AtomicLong failedCleanupCount = new AtomicLong(0);
 
@@ -73,9 +74,7 @@ public final class JniPhantomReferenceManager implements AutoCloseable {
     return instance;
   }
 
-  /**
-   * Private constructor for singleton pattern.
-   */
+  /** Private constructor for singleton pattern. */
   private JniPhantomReferenceManager() {
     this.referenceQueue = new ReferenceQueue<>();
     this.referenceMap = new ConcurrentHashMap<>();
@@ -104,14 +103,13 @@ public final class JniPhantomReferenceManager implements AutoCloseable {
 
     final CleanupHandler handler = new CleanupHandler(nativeHandle, cleanupMethod);
     final PhantomReference<Object> phantomRef = new PhantomReference<>(obj, referenceQueue);
-    
+
     referenceMap.put(phantomRef, handler);
     registeredCount.incrementAndGet();
 
     LOGGER.fine(
         String.format(
-            "Registered phantom reference for %s with handle: 0x%x",
-            cleanupMethod, nativeHandle));
+            "Registered phantom reference for %s with handle: 0x%x", cleanupMethod, nativeHandle));
   }
 
   /**
@@ -130,8 +128,9 @@ public final class JniPhantomReferenceManager implements AutoCloseable {
     // phantom reference approach - we rely on the cleanup happening eventually.
     // In practice, explicit close() calls should handle the cleanup, and phantom
     // references serve as a safety net.
-    
-    LOGGER.fine("Unregister request received (phantom references will be cleaned up automatically)");
+
+    LOGGER.fine(
+        "Unregister request received (phantom references will be cleaned up automatically)");
   }
 
   /**
@@ -172,7 +171,7 @@ public final class JniPhantomReferenceManager implements AutoCloseable {
 
   /**
    * Forces processing of any pending phantom references.
-   * 
+   *
    * <p>This method is primarily intended for testing and debugging.
    */
   public void processPendingReferences() {
@@ -221,9 +220,7 @@ public final class JniPhantomReferenceManager implements AutoCloseable {
     }
   }
 
-  /**
-   * Starts the background cleanup thread.
-   */
+  /** Starts the background cleanup thread. */
   private void startCleanupThread() {
     cleanupThread = new Thread(this::cleanupLoop, "JniPhantomReferenceCleanup");
     cleanupThread.setDaemon(true);
@@ -231,9 +228,7 @@ public final class JniPhantomReferenceManager implements AutoCloseable {
     cleanupThread.start();
   }
 
-  /**
-   * Main cleanup loop for processing phantom references.
-   */
+  /** Main cleanup loop for processing phantom references. */
   private void cleanupLoop() {
     while (!closed.get() && !Thread.currentThread().isInterrupted()) {
       try {
@@ -282,7 +277,8 @@ public final class JniPhantomReferenceManager implements AutoCloseable {
           failedCleanupCount.incrementAndGet();
           LOGGER.warning(
               String.format(
-                  "Failed to cleanup native resource via phantom reference for %s (handle: 0x%x): %s",
+                  "Failed to cleanup native resource via phantom reference for %s (handle: 0x%x):"
+                      + " %s",
                   handler.cleanupMethod, handler.nativeHandle, e.getMessage()));
         }
       }
@@ -292,9 +288,7 @@ public final class JniPhantomReferenceManager implements AutoCloseable {
     }
   }
 
-  /**
-   * Processes any remaining phantom references during shutdown.
-   */
+  /** Processes any remaining phantom references during shutdown. */
   private void processRemainingReferences() {
     try {
       processReferences(0); // Process immediately
@@ -320,9 +314,7 @@ public final class JniPhantomReferenceManager implements AutoCloseable {
     referenceMap.clear();
   }
 
-  /**
-   * Handler for native resource cleanup.
-   */
+  /** Handler for native resource cleanup. */
   private static final class CleanupHandler {
     final long nativeHandle;
     final String cleanupMethod;
@@ -337,12 +329,11 @@ public final class JniPhantomReferenceManager implements AutoCloseable {
       // For now, we just log the cleanup attempt
       // In a real implementation, this would call specific native cleanup methods
       // based on the cleanup method name or resource type
-      
+
       LOGGER.fine(
           String.format(
-              "Native resource cleanup called for %s (handle: 0x%x)",
-              cleanupMethod, nativeHandle));
-              
+              "Native resource cleanup called for %s (handle: 0x%x)", cleanupMethod, nativeHandle));
+
       // TODO: Implement actual native cleanup calls based on cleanupMethod
       // For example:
       // switch (cleanupMethod) {

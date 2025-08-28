@@ -64,7 +64,7 @@ class JniBatchProcessorTest {
     void shouldCreateProcessorWithCustomSettings() {
       final int maxBatchSize = 50;
       final long timeoutMs = 100;
-      
+
       try (final JniBatchProcessor processor = new JniBatchProcessor(maxBatchSize, timeoutMs)) {
         assertEquals(maxBatchSize, processor.getMaxBatchSize());
         assertEquals(timeoutMs, processor.getBatchTimeoutMs());
@@ -174,13 +174,16 @@ class JniBatchProcessorTest {
 
         for (int i = 0; i < batchSize; i++) {
           final int index = i;
-          final CompletableFuture<String> future = CompletableFuture.supplyAsync(
-              () -> processor.execute(() -> {
-                executionCount.incrementAndGet();
-                latch.countDown();
-                return "result" + index;
-              }),
-              executor);
+          final CompletableFuture<String> future =
+              CompletableFuture.supplyAsync(
+                  () ->
+                      processor.execute(
+                          () -> {
+                            executionCount.incrementAndGet();
+                            latch.countDown();
+                            return "result" + index;
+                          }),
+                  executor);
           futures.add(future);
         }
 
@@ -205,10 +208,12 @@ class JniBatchProcessorTest {
 
       try (final JniBatchProcessor processor = new JniBatchProcessor(100, shortTimeout)) {
         // Submit a single operation
-        final String result = processor.execute(() -> {
-          executionCount.incrementAndGet();
-          return "timeout result";
-        });
+        final String result =
+            processor.execute(
+                () -> {
+                  executionCount.incrementAndGet();
+                  return "timeout result";
+                });
 
         assertEquals("timeout result", result);
         assertEquals(1, executionCount.get());
@@ -225,11 +230,14 @@ class JniBatchProcessorTest {
     void shouldPropagateOperationExceptions() {
       final RuntimeException expectedException = new RuntimeException("Test exception");
 
-      final RuntimeException actualException = assertThrows(
-          RuntimeException.class,
-          () -> batchProcessor.execute(() -> {
-            throw expectedException;
-          }));
+      final RuntimeException actualException =
+          assertThrows(
+              RuntimeException.class,
+              () ->
+                  batchProcessor.execute(
+                      () -> {
+                        throw expectedException;
+                      }));
 
       assertEquals(expectedException, actualException);
     }
@@ -242,16 +250,22 @@ class JniBatchProcessorTest {
 
       for (int i = 0; i < 3; i++) {
         final int index = i;
-        final CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
-          final RuntimeException exception = assertThrows(
-              RuntimeException.class,
-              () -> batchProcessor.execute(() -> {
-                throw new RuntimeException("Exception " + index);
-              }));
-          
-          assertTrue(exception.getMessage().contains("Exception " + index));
-        }, executor);
-        
+        final CompletableFuture<Void> future =
+            CompletableFuture.runAsync(
+                () -> {
+                  final RuntimeException exception =
+                      assertThrows(
+                          RuntimeException.class,
+                          () ->
+                              batchProcessor.execute(
+                                  () -> {
+                                    throw new RuntimeException("Exception " + index);
+                                  }));
+
+                  assertTrue(exception.getMessage().contains("Exception " + index));
+                },
+                executor);
+
         futures.add(future);
       }
 
@@ -263,12 +277,15 @@ class JniBatchProcessorTest {
     @Test
     @DisplayName("Should handle checked exceptions")
     void shouldHandleCheckedExceptions() {
-      final RuntimeException exception = assertThrows(
-          RuntimeException.class,
-          () -> batchProcessor.execute(() -> {
-            // This would normally be a checked exception
-            throw new RuntimeException(new Exception("Checked exception"));
-          }));
+      final RuntimeException exception =
+          assertThrows(
+              RuntimeException.class,
+              () ->
+                  batchProcessor.execute(
+                      () -> {
+                        // This would normally be a checked exception
+                        throw new RuntimeException(new Exception("Checked exception"));
+                      }));
 
       assertTrue(exception.getCause() instanceof Exception);
     }
@@ -315,30 +332,34 @@ class JniBatchProcessorTest {
       final CountDownLatch latch = new CountDownLatch(1);
 
       // Submit operation but don't wait for completion
-      final Thread operationThread = new Thread(() -> {
-        try {
-          batchProcessor.execute(() -> {
-            executionCount.incrementAndGet();
-            latch.countDown();
-            return "processed on close";
-          });
-        } catch (final Exception e) {
-          // Expected if processor is closed during operation
-        }
-      });
+      final Thread operationThread =
+          new Thread(
+              () -> {
+                try {
+                  batchProcessor.execute(
+                      () -> {
+                        executionCount.incrementAndGet();
+                        latch.countDown();
+                        return "processed on close";
+                      });
+                } catch (final Exception e) {
+                  // Expected if processor is closed during operation
+                }
+              });
 
       operationThread.start();
-      
+
       // Give some time for operation to be queued
       Thread.sleep(50);
-      
+
       // Close processor
       batchProcessor.close();
-      
+
       // Wait for operation to complete or timeout
-      assertTrue(latch.await(2, TimeUnit.SECONDS) || batchProcessor.isClosed(),
+      assertTrue(
+          latch.await(2, TimeUnit.SECONDS) || batchProcessor.isClosed(),
           "Operation should complete or processor should be closed");
-      
+
       operationThread.join();
     }
 
@@ -348,10 +369,12 @@ class JniBatchProcessorTest {
       final AtomicInteger executionCount = new AtomicInteger(0);
 
       try (final JniBatchProcessor processor = new JniBatchProcessor(10, 50)) {
-        final String result = processor.execute(() -> {
-          executionCount.incrementAndGet();
-          return "auto-close test";
-        });
+        final String result =
+            processor.execute(
+                () -> {
+                  executionCount.incrementAndGet();
+                  return "auto-close test";
+                });
         assertEquals("auto-close test", result);
       }
 
@@ -376,12 +399,15 @@ class JniBatchProcessorTest {
 
         for (int i = 0; i < operationCount; i++) {
           final int index = i;
-          final CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
-            final String result = processor.execute(() -> "result" + index);
-            assertEquals("result" + index, result);
-            completedCount.incrementAndGet();
-          }, executor);
-          
+          final CompletableFuture<Void> future =
+              CompletableFuture.runAsync(
+                  () -> {
+                    final String result = processor.execute(() -> "result" + index);
+                    assertEquals("result" + index, result);
+                    completedCount.incrementAndGet();
+                  },
+                  executor);
+
           futures.add(future);
         }
 
@@ -397,7 +423,7 @@ class JniBatchProcessorTest {
     @DisplayName("Should maintain queue size bounds")
     void shouldMaintainQueueSizeBounds() {
       final int maxBatchSize = 10;
-      
+
       try (final JniBatchProcessor processor = new JniBatchProcessor(maxBatchSize, 100)) {
         // Submit operations that will take some time
         final ExecutorService executor = Executors.newFixedThreadPool(5);
@@ -405,17 +431,20 @@ class JniBatchProcessorTest {
 
         for (int i = 0; i < 20; i++) {
           final int index = i;
-          final CompletableFuture<String> future = CompletableFuture.supplyAsync(
-              () -> processor.execute(() -> {
-                try {
-                  Thread.sleep(10); // Small delay
-                } catch (final InterruptedException e) {
-                  Thread.currentThread().interrupt();
-                }
-                return "delayed" + index;
-              }),
-              executor);
-          
+          final CompletableFuture<String> future =
+              CompletableFuture.supplyAsync(
+                  () ->
+                      processor.execute(
+                          () -> {
+                            try {
+                              Thread.sleep(10); // Small delay
+                            } catch (final InterruptedException e) {
+                              Thread.currentThread().interrupt();
+                            }
+                            return "delayed" + index;
+                          }),
+                  executor);
+
           futures.add(future);
         }
 
@@ -446,22 +475,25 @@ class JniBatchProcessorTest {
       try (final JniBatchProcessor processor = new JniBatchProcessor(25, 50)) {
         for (int t = 0; t < threadCount; t++) {
           final int threadIndex = t;
-          executor.submit(() -> {
-            for (int i = 0; i < operationsPerThread; i++) {
-              try {
-                final String result = processor.execute(() -> {
-                  totalExecutions.incrementAndGet();
-                  return "thread" + threadIndex + "-op" + i;
-                });
-                
-                assertTrue(result.startsWith("thread" + threadIndex + "-op"));
-                latch.countDown();
-              } catch (final Exception e) {
-                // Handle any exceptions
-                latch.countDown();
-              }
-            }
-          });
+          executor.submit(
+              () -> {
+                for (int i = 0; i < operationsPerThread; i++) {
+                  try {
+                    final String result =
+                        processor.execute(
+                            () -> {
+                              totalExecutions.incrementAndGet();
+                              return "thread" + threadIndex + "-op" + i;
+                            });
+
+                    assertTrue(result.startsWith("thread" + threadIndex + "-op"));
+                    latch.countDown();
+                  } catch (final Exception e) {
+                    // Handle any exceptions
+                    latch.countDown();
+                  }
+                }
+              });
         }
 
         assertTrue(latch.await(10, TimeUnit.SECONDS), "All operations should complete");
@@ -477,25 +509,29 @@ class JniBatchProcessorTest {
       final CountDownLatch startLatch = new CountDownLatch(1);
       final CountDownLatch interruptLatch = new CountDownLatch(1);
 
-      final Thread operationThread = new Thread(() -> {
-        try {
-          startLatch.countDown();
-          batchProcessor.execute(() -> {
-            try {
-              // Wait for interruption
-              interruptLatch.await();
-            } catch (final InterruptedException e) {
-              Thread.currentThread().interrupt();
-              throw new RuntimeException("Interrupted", e);
-            }
-            return "completed";
-          });
-        } catch (final RuntimeException e) {
-          // Expected when interrupted
-          assertTrue(e.getMessage().contains("interrupted") || 
-                    e.getMessage().contains("Interrupted"));
-        }
-      });
+      final Thread operationThread =
+          new Thread(
+              () -> {
+                try {
+                  startLatch.countDown();
+                  batchProcessor.execute(
+                      () -> {
+                        try {
+                          // Wait for interruption
+                          interruptLatch.await();
+                        } catch (final InterruptedException e) {
+                          Thread.currentThread().interrupt();
+                          throw new RuntimeException("Interrupted", e);
+                        }
+                        return "completed";
+                      });
+                } catch (final RuntimeException e) {
+                  // Expected when interrupted
+                  assertTrue(
+                      e.getMessage().contains("interrupted")
+                          || e.getMessage().contains("Interrupted"));
+                }
+              });
 
       operationThread.start();
       startLatch.await(); // Wait for operation to start

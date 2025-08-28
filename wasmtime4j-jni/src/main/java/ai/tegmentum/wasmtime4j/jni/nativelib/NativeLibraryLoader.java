@@ -9,12 +9,12 @@ import java.util.logging.Logger;
 /**
  * JNI-specific wrapper for native library loading.
  *
- * <p>This class provides a simplified interface for JNI operations while using the shared
- * {@link NativeLibraryUtils} for the actual loading logic. It maintains thread-safety and
- * prevents multiple loading attempts.
+ * <p>This class provides a simplified interface for JNI operations while using the shared {@link
+ * NativeLibraryUtils} for the actual loading logic. It maintains thread-safety and prevents
+ * multiple loading attempts.
  *
- * <p>The loader automatically detects the current platform and loads the appropriate
- * native library for JNI operations.
+ * <p>The loader automatically detects the current platform and loads the appropriate native library
+ * for JNI operations.
  */
 public final class NativeLibraryLoader {
 
@@ -56,8 +56,12 @@ public final class NativeLibraryLoader {
           LIBRARY_LOADED.set(true);
           LOGGER.info("Successfully loaded native library for JNI: " + loadInfo);
         } else {
-          LOGGER.log(Level.SEVERE, "Failed to load native library for JNI: " + loadInfo, loadInfo.getError());
-          throw new RuntimeException("Failed to load native library for JNI operations", loadInfo.getError());
+          LOGGER.log(
+              Level.SEVERE,
+              "Failed to load native library for JNI: " + loadInfo,
+              loadInfo.getError());
+          throw new RuntimeException(
+              "Failed to load native library for JNI operations", loadInfo.getError());
         }
       } catch (final Exception e) {
         LOGGER.log(Level.SEVERE, "Unexpected error during native library loading", e);
@@ -109,11 +113,11 @@ public final class NativeLibraryLoader {
     final StringBuilder sb = new StringBuilder();
     sb.append("JNI Native Library Status:\n");
     sb.append("  Loaded: ").append(isLibraryLoaded()).append("\n");
-    
+
     if (loadInfo != null) {
       sb.append("  Load info: ").append(loadInfo).append("\n");
     }
-    
+
     sb.append(NativeLibraryUtils.getDiagnosticInfo());
     return sb.toString();
   }

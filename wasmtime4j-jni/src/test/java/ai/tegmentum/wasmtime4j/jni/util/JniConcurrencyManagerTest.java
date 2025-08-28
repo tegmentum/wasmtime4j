@@ -68,8 +68,9 @@ class JniConcurrencyManagerTest {
     void shouldCreateManagerWithCustomSettings() {
       final int maxConcurrent = 5;
       final long timeout = 5000;
-      
-      try (final JniConcurrencyManager manager = new JniConcurrencyManager(maxConcurrent, timeout)) {
+
+      try (final JniConcurrencyManager manager =
+          new JniConcurrencyManager(maxConcurrent, timeout)) {
         assertFalse(manager.isClosed());
         assertEquals(0, manager.getResourceCount());
       }
@@ -115,7 +116,7 @@ class JniConcurrencyManagerTest {
     @DisplayName("Should register resource successfully")
     void shouldRegisterResourceSuccessfully() {
       assertEquals(0, concurrencyManager.getResourceCount());
-      
+
       concurrencyManager.registerResource(VALID_HANDLE);
       assertEquals(1, concurrencyManager.getResourceCount());
     }
@@ -125,7 +126,7 @@ class JniConcurrencyManagerTest {
     void shouldRegisterMultipleResources() {
       concurrencyManager.registerResource(VALID_HANDLE);
       concurrencyManager.registerResource(ANOTHER_HANDLE);
-      
+
       assertEquals(2, concurrencyManager.getResourceCount());
     }
 
@@ -134,7 +135,7 @@ class JniConcurrencyManagerTest {
     void shouldHandleDuplicateRegistration() {
       concurrencyManager.registerResource(VALID_HANDLE);
       concurrencyManager.registerResource(VALID_HANDLE); // Duplicate
-      
+
       assertEquals(1, concurrencyManager.getResourceCount());
     }
 
@@ -152,7 +153,7 @@ class JniConcurrencyManagerTest {
     void shouldUnregisterResource() {
       concurrencyManager.registerResource(VALID_HANDLE);
       assertEquals(1, concurrencyManager.getResourceCount());
-      
+
       concurrencyManager.unregisterResource(VALID_HANDLE);
       assertEquals(0, concurrencyManager.getResourceCount());
     }
@@ -169,7 +170,7 @@ class JniConcurrencyManagerTest {
     @DisplayName("Should reject operations on closed manager")
     void shouldRejectOperationsOnClosedManager() {
       concurrencyManager.close();
-      
+
       assertThrows(
           RuntimeException.class,
           () -> concurrencyManager.registerResource(VALID_HANDLE),
@@ -185,10 +186,10 @@ class JniConcurrencyManagerTest {
     @DisplayName("Should execute operation with read lock")
     void shouldExecuteOperationWithReadLock() {
       concurrencyManager.registerResource(VALID_HANDLE);
-      
-      final String result = concurrencyManager.executeWithReadLock(VALID_HANDLE, 
-          () -> "read operation result");
-      
+
+      final String result =
+          concurrencyManager.executeWithReadLock(VALID_HANDLE, () -> "read operation result");
+
       assertEquals("read operation result", result);
       assertEquals(1, concurrencyManager.getTotalOperationCount());
     }
@@ -197,10 +198,10 @@ class JniConcurrencyManagerTest {
     @DisplayName("Should auto-register resource for read operations")
     void shouldAutoRegisterResourceForReadOperations() {
       assertEquals(0, concurrencyManager.getResourceCount());
-      
-      final String result = concurrencyManager.executeWithReadLock(VALID_HANDLE,
-          () -> "auto-registered read");
-      
+
+      final String result =
+          concurrencyManager.executeWithReadLock(VALID_HANDLE, () -> "auto-registered read");
+
       assertEquals("auto-registered read", result);
       assertEquals(1, concurrencyManager.getResourceCount());
     }
@@ -218,29 +219,32 @@ class JniConcurrencyManagerTest {
       concurrencyManager.registerResource(VALID_HANDLE);
 
       for (int i = 0; i < threadCount; i++) {
-        executor.submit(() -> {
-          try {
-            startLatch.await();
-            
-            concurrencyManager.executeWithReadLock(VALID_HANDLE, () -> {
-              final int current = concurrentReads.incrementAndGet();
-              maxConcurrentReads.updateAndGet(max -> Math.max(max, current));
-              
+        executor.submit(
+            () -> {
               try {
-                Thread.sleep(100); // Hold lock for a bit
+                startLatch.await();
+
+                concurrencyManager.executeWithReadLock(
+                    VALID_HANDLE,
+                    () -> {
+                      final int current = concurrentReads.incrementAndGet();
+                      maxConcurrentReads.updateAndGet(max -> Math.max(max, current));
+
+                      try {
+                        Thread.sleep(100); // Hold lock for a bit
+                      } catch (final InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                      }
+
+                      concurrentReads.decrementAndGet();
+                      return "concurrent read";
+                    });
               } catch (final InterruptedException e) {
                 Thread.currentThread().interrupt();
+              } finally {
+                completeLatch.countDown();
               }
-              
-              concurrentReads.decrementAndGet();
-              return "concurrent read";
             });
-          } catch (final InterruptedException e) {
-            Thread.currentThread().interrupt();
-          } finally {
-            completeLatch.countDown();
-          }
-        });
       }
 
       startLatch.countDown(); // Start all threads
@@ -249,7 +253,7 @@ class JniConcurrencyManagerTest {
       // Multiple read operations should be able to execute concurrently
       assertTrue(maxConcurrentReads.get() > 1, "Should allow concurrent reads");
       assertEquals(threadCount, concurrencyManager.getTotalOperationCount());
-      
+
       executor.shutdown();
     }
 
@@ -280,10 +284,10 @@ class JniConcurrencyManagerTest {
     @DisplayName("Should execute operation with write lock")
     void shouldExecuteOperationWithWriteLock() {
       concurrencyManager.registerResource(VALID_HANDLE);
-      
-      final String result = concurrencyManager.executeWithWriteLock(VALID_HANDLE,
-          () -> "write operation result");
-      
+
+      final String result =
+          concurrencyManager.executeWithWriteLock(VALID_HANDLE, () -> "write operation result");
+
       assertEquals("write operation result", result);
       assertEquals(1, concurrencyManager.getTotalOperationCount());
     }
@@ -292,10 +296,10 @@ class JniConcurrencyManagerTest {
     @DisplayName("Should auto-register resource for write operations")
     void shouldAutoRegisterResourceForWriteOperations() {
       assertEquals(0, concurrencyManager.getResourceCount());
-      
-      final String result = concurrencyManager.executeWithWriteLock(VALID_HANDLE,
-          () -> "auto-registered write");
-      
+
+      final String result =
+          concurrencyManager.executeWithWriteLock(VALID_HANDLE, () -> "auto-registered write");
+
       assertEquals("auto-registered write", result);
       assertEquals(1, concurrencyManager.getResourceCount());
     }
@@ -315,33 +319,36 @@ class JniConcurrencyManagerTest {
 
       for (int i = 0; i < threadCount; i++) {
         final int threadIndex = i;
-        executor.submit(() -> {
-          try {
-            startLatch.await();
-            
-            concurrencyManager.executeWithWriteLock(VALID_HANDLE, () -> {
-              final int current = concurrentWrites.incrementAndGet();
-              maxConcurrentWrites.updateAndGet(max -> Math.max(max, current));
-              
-              synchronized (executionOrder) {
-                executionOrder.add("write-" + threadIndex);
-              }
-              
+        executor.submit(
+            () -> {
               try {
-                Thread.sleep(50); // Hold lock briefly
+                startLatch.await();
+
+                concurrencyManager.executeWithWriteLock(
+                    VALID_HANDLE,
+                    () -> {
+                      final int current = concurrentWrites.incrementAndGet();
+                      maxConcurrentWrites.updateAndGet(max -> Math.max(max, current));
+
+                      synchronized (executionOrder) {
+                        executionOrder.add("write-" + threadIndex);
+                      }
+
+                      try {
+                        Thread.sleep(50); // Hold lock briefly
+                      } catch (final InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                      }
+
+                      concurrentWrites.decrementAndGet();
+                      return "write-" + threadIndex;
+                    });
               } catch (final InterruptedException e) {
                 Thread.currentThread().interrupt();
+              } finally {
+                completeLatch.countDown();
               }
-              
-              concurrentWrites.decrementAndGet();
-              return "write-" + threadIndex;
             });
-          } catch (final InterruptedException e) {
-            Thread.currentThread().interrupt();
-          } finally {
-            completeLatch.countDown();
-          }
-        });
       }
 
       startLatch.countDown();
@@ -351,7 +358,7 @@ class JniConcurrencyManagerTest {
       assertEquals(1, maxConcurrentWrites.get(), "Should serialize write operations");
       assertEquals(threadCount, executionOrder.size());
       assertEquals(threadCount, concurrencyManager.getTotalOperationCount());
-      
+
       executor.shutdown();
     }
 
@@ -366,24 +373,32 @@ class JniConcurrencyManagerTest {
       concurrencyManager.registerResource(VALID_HANDLE);
 
       // Start write operation that holds the lock
-      final CompletableFuture<String> writeFuture = CompletableFuture.supplyAsync(() -> 
-          concurrencyManager.executeWithWriteLock(VALID_HANDLE, () -> {
-            readStartLatch.countDown();
-            try {
-              writeLatch.await(5, TimeUnit.SECONDS);
-            } catch (final InterruptedException e) {
-              Thread.currentThread().interrupt();
-            }
-            return "write completed";
-          }), executor);
+      final CompletableFuture<String> writeFuture =
+          CompletableFuture.supplyAsync(
+              () ->
+                  concurrencyManager.executeWithWriteLock(
+                      VALID_HANDLE,
+                      () -> {
+                        readStartLatch.countDown();
+                        try {
+                          writeLatch.await(5, TimeUnit.SECONDS);
+                        } catch (final InterruptedException e) {
+                          Thread.currentThread().interrupt();
+                        }
+                        return "write completed";
+                      }),
+              executor);
 
       // Start read operation after write starts
       readStartLatch.await();
-      final CompletableFuture<Void> readFuture = CompletableFuture.runAsync(() -> {
-        final String result = concurrencyManager.executeWithReadLock(VALID_HANDLE,
-            () -> "read completed");
-        readResult.set(result);
-      }, executor);
+      final CompletableFuture<Void> readFuture =
+          CompletableFuture.runAsync(
+              () -> {
+                final String result =
+                    concurrencyManager.executeWithReadLock(VALID_HANDLE, () -> "read completed");
+                readResult.set(result);
+              },
+              executor);
 
       // Release write lock
       Thread.sleep(100); // Ensure read is waiting
@@ -393,7 +408,7 @@ class JniConcurrencyManagerTest {
       assertEquals("write completed", writeFuture.get(5, TimeUnit.SECONDS));
       readFuture.get(5, TimeUnit.SECONDS);
       assertEquals("read completed", readResult.get());
-      
+
       executor.shutdown();
     }
   }
@@ -412,23 +427,27 @@ class JniConcurrencyManagerTest {
       concurrencyManager.registerResource(VALID_HANDLE);
 
       // Start long-running operation
-      final Thread operationThread = new Thread(() ->
-          concurrencyManager.executeWithReadLock(VALID_HANDLE, () -> {
-            checkLatch.countDown();
-            try {
-              operationLatch.await();
-            } catch (final InterruptedException e) {
-              Thread.currentThread().interrupt();
-            }
-            return "long operation";
-          }));
+      final Thread operationThread =
+          new Thread(
+              () ->
+                  concurrencyManager.executeWithReadLock(
+                      VALID_HANDLE,
+                      () -> {
+                        checkLatch.countDown();
+                        try {
+                          operationLatch.await();
+                        } catch (final InterruptedException e) {
+                          Thread.currentThread().interrupt();
+                        }
+                        return "long operation";
+                      }));
 
       operationThread.start();
       checkLatch.await();
 
       // Check active operation count
       activeCount.set(concurrencyManager.getActiveOperationCount(VALID_HANDLE));
-      
+
       // Release operation
       operationLatch.countDown();
       operationThread.join();
@@ -448,7 +467,7 @@ class JniConcurrencyManagerTest {
     void shouldHandleActiveCountAfterUnregister() {
       concurrencyManager.registerResource(VALID_HANDLE);
       concurrencyManager.unregisterResource(VALID_HANDLE);
-      
+
       final int count = concurrencyManager.getActiveOperationCount(VALID_HANDLE);
       assertEquals(-1, count, "Should return -1 after unregister");
     }
@@ -462,15 +481,19 @@ class JniConcurrencyManagerTest {
     @DisplayName("Should propagate operation exceptions")
     void shouldPropagateOperationExceptions() {
       final RuntimeException expectedException = new RuntimeException("Test exception");
-      
+
       concurrencyManager.registerResource(VALID_HANDLE);
-      
-      final RuntimeException actualException = assertThrows(
-          RuntimeException.class,
-          () -> concurrencyManager.executeWithReadLock(VALID_HANDLE, () -> {
-            throw expectedException;
-          }));
-      
+
+      final RuntimeException actualException =
+          assertThrows(
+              RuntimeException.class,
+              () ->
+                  concurrencyManager.executeWithReadLock(
+                      VALID_HANDLE,
+                      () -> {
+                        throw expectedException;
+                      }));
+
       assertEquals(expectedException, actualException);
       assertEquals(1, concurrencyManager.getFailedOperationCount());
     }
@@ -483,33 +506,38 @@ class JniConcurrencyManagerTest {
 
       concurrencyManager.registerResource(VALID_HANDLE);
 
-      final Thread operationThread = new Thread(() -> {
-        try {
-          concurrencyManager.executeWithReadLock(VALID_HANDLE, () -> {
-            interruptLatch.countDown();
-            try {
-              Thread.sleep(5000); // Long operation
-            } catch (final InterruptedException e) {
-              Thread.currentThread().interrupt();
-              throw new RuntimeException("Interrupted", e);
-            }
-            return "completed";
-          });
-        } catch (final Exception e) {
-          caughtException.set(e);
-        }
-      });
+      final Thread operationThread =
+          new Thread(
+              () -> {
+                try {
+                  concurrencyManager.executeWithReadLock(
+                      VALID_HANDLE,
+                      () -> {
+                        interruptLatch.countDown();
+                        try {
+                          Thread.sleep(5000); // Long operation
+                        } catch (final InterruptedException e) {
+                          Thread.currentThread().interrupt();
+                          throw new RuntimeException("Interrupted", e);
+                        }
+                        return "completed";
+                      });
+                } catch (final Exception e) {
+                  caughtException.set(e);
+                }
+              });
 
       operationThread.start();
       interruptLatch.await();
-      
+
       // Interrupt the operation
       operationThread.interrupt();
       operationThread.join(1000);
 
       assertNotNull(caughtException.get(), "Should catch interruption exception");
-      assertTrue(caughtException.get().getMessage().contains("interrupted") ||
-                 caughtException.get().getMessage().contains("Interrupted"));
+      assertTrue(
+          caughtException.get().getMessage().contains("interrupted")
+              || caughtException.get().getMessage().contains("Interrupted"));
     }
 
     @Test
@@ -518,11 +546,11 @@ class JniConcurrencyManagerTest {
       // Create manager with short timeout
       try (final JniConcurrencyManager timeoutManager = new JniConcurrencyManager(2, 100)) {
         timeoutManager.registerResource(VALID_HANDLE);
-        
+
         // This test is tricky as we'd need to create actual contention
         // For now, just verify the manager handles operations normally with timeout set
-        final String result = timeoutManager.executeWithReadLock(VALID_HANDLE, 
-            () -> "timeout test");
+        final String result =
+            timeoutManager.executeWithReadLock(VALID_HANDLE, () -> "timeout test");
         assertEquals("timeout test", result);
       }
     }
@@ -537,9 +565,9 @@ class JniConcurrencyManagerTest {
     void shouldCloseGracefully() {
       concurrencyManager.registerResource(VALID_HANDLE);
       concurrencyManager.registerResource(ANOTHER_HANDLE);
-      
+
       assertFalse(concurrencyManager.isClosed());
-      
+
       concurrencyManager.close();
       assertTrue(concurrencyManager.isClosed());
       assertEquals(0, concurrencyManager.getResourceCount());
@@ -550,7 +578,7 @@ class JniConcurrencyManagerTest {
     void shouldBeIdempotentOnClose() {
       concurrencyManager.close();
       assertTrue(concurrencyManager.isClosed());
-      
+
       // Second close should not throw
       concurrencyManager.close();
       assertTrue(concurrencyManager.isClosed());
@@ -560,7 +588,7 @@ class JniConcurrencyManagerTest {
     @DisplayName("Should reject operations after close")
     void shouldRejectOperationsAfterClose() {
       concurrencyManager.close();
-      
+
       assertThrows(
           RuntimeException.class,
           () -> concurrencyManager.executeWithReadLock(VALID_HANDLE, () -> "test"),
@@ -576,15 +604,18 @@ class JniConcurrencyManagerTest {
     @DisplayName("Should work with try-with-resources")
     void shouldWorkWithTryWithResources() {
       final AtomicInteger operationCount = new AtomicInteger(0);
-      
+
       try (final JniConcurrencyManager autoCloseManager = new JniConcurrencyManager(5, 1000)) {
-        final String result = autoCloseManager.executeWithReadLock(VALID_HANDLE, () -> {
-          operationCount.incrementAndGet();
-          return "auto-close test";
-        });
+        final String result =
+            autoCloseManager.executeWithReadLock(
+                VALID_HANDLE,
+                () -> {
+                  operationCount.incrementAndGet();
+                  return "auto-close test";
+                });
         assertEquals("auto-close test", result);
       }
-      
+
       assertEquals(1, operationCount.get());
     }
 
@@ -597,29 +628,33 @@ class JniConcurrencyManagerTest {
       concurrencyManager.registerResource(VALID_HANDLE);
 
       // Start long-running operation
-      final Thread operationThread = new Thread(() -> {
-        try {
-          concurrencyManager.executeWithReadLock(VALID_HANDLE, () -> {
-            startLatch.countDown();
-            try {
-              operationLatch.await(5, TimeUnit.SECONDS);
-            } catch (final InterruptedException e) {
-              Thread.currentThread().interrupt();
-            }
-            return "active operation";
-          });
-        } catch (final RuntimeException e) {
-          // Expected if manager is closed during operation
-        }
-      });
+      final Thread operationThread =
+          new Thread(
+              () -> {
+                try {
+                  concurrencyManager.executeWithReadLock(
+                      VALID_HANDLE,
+                      () -> {
+                        startLatch.countDown();
+                        try {
+                          operationLatch.await(5, TimeUnit.SECONDS);
+                        } catch (final InterruptedException e) {
+                          Thread.currentThread().interrupt();
+                        }
+                        return "active operation";
+                      });
+                } catch (final RuntimeException e) {
+                  // Expected if manager is closed during operation
+                }
+              });
 
       operationThread.start();
       startLatch.await();
-      
+
       // Close manager while operation is active
       concurrencyManager.close();
       operationLatch.countDown();
-      
+
       operationThread.join(2000);
       assertTrue(concurrencyManager.isClosed());
     }
@@ -634,7 +669,7 @@ class JniConcurrencyManagerTest {
     void shouldProvideMeaningfulToString() {
       concurrencyManager.registerResource(VALID_HANDLE);
       concurrencyManager.registerResource(ANOTHER_HANDLE);
-      
+
       // Execute some operations to generate statistics
       concurrencyManager.executeWithReadLock(VALID_HANDLE, () -> "test1");
       concurrencyManager.executeWithWriteLock(ANOTHER_HANDLE, () -> "test2");

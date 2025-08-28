@@ -8,7 +8,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.when;
 
 import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
 import ai.tegmentum.wasmtime4j.jni.exception.JniValidationException;
@@ -290,12 +289,13 @@ class JniMemoryTest {
     try (MockedStatic<JniMemory> mockedStatic = mockStatic(JniMemory.class)) {
       mockedStatic.when(() -> JniMemory.nativeDestroyMemory(VALID_HANDLE)).then(invocation -> null);
 
-      assertDoesNotThrow(() -> {
-        try (JniMemory memory = new JniMemory(VALID_HANDLE)) {
-          assertFalse(memory.isClosed());
-          assertThat(memory.getNativeHandle()).isEqualTo(VALID_HANDLE);
-        }
-      });
+      assertDoesNotThrow(
+          () -> {
+            try (JniMemory memory = new JniMemory(VALID_HANDLE)) {
+              assertFalse(memory.isClosed());
+              assertThat(memory.getNativeHandle()).isEqualTo(VALID_HANDLE);
+            }
+          });
 
       mockedStatic.verify(() -> JniMemory.nativeDestroyMemory(VALID_HANDLE));
     }
@@ -350,8 +350,7 @@ class JniMemoryTest {
 
       final JniMemory memory = new JniMemory(VALID_HANDLE);
 
-      final RuntimeException exception =
-          assertThrows(RuntimeException.class, memory::size);
+      final RuntimeException exception = assertThrows(RuntimeException.class, memory::size);
 
       assertThat(exception.getMessage()).contains("Unexpected error getting memory size");
       assertThat(exception.getCause()).isNotNull();

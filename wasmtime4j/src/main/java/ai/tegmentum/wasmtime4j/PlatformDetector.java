@@ -104,7 +104,8 @@ public final class PlatformDetector {
     private final Architecture architecture;
 
     PlatformInfo(final OperatingSystem operatingSystem, final Architecture architecture) {
-      this.operatingSystem = Objects.requireNonNull(operatingSystem, "operatingSystem must not be null");
+      this.operatingSystem =
+          Objects.requireNonNull(operatingSystem, "operatingSystem must not be null");
       this.architecture = Objects.requireNonNull(architecture, "architecture must not be null");
     }
 
@@ -143,7 +144,9 @@ public final class PlatformDetector {
      */
     public String getLibraryFileName(final String libraryName) {
       Objects.requireNonNull(libraryName, "libraryName must not be null");
-      return operatingSystem.getLibraryPrefix() + libraryName + operatingSystem.getLibraryExtension();
+      return operatingSystem.getLibraryPrefix()
+          + libraryName
+          + operatingSystem.getLibraryExtension();
     }
 
     /**
@@ -256,10 +259,12 @@ public final class PlatformDetector {
 
     try {
       final PlatformInfo info = detect();
-      return String.format("Platform: %s (detected as %s), Java: %s",
+      return String.format(
+          "Platform: %s (detected as %s), Java: %s",
           osName + " " + osArch, info.getPlatformId(), javaVersion);
     } catch (final RuntimeException e) {
-      return String.format("Platform: %s %s (unsupported), Java: %s, Error: %s",
+      return String.format(
+          "Platform: %s %s (unsupported), Java: %s, Error: %s",
           osName, osArch, javaVersion, e.getMessage());
     }
   }

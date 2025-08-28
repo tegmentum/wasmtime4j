@@ -51,15 +51,14 @@ public final class JniResourceCache<K, V> implements AutoCloseable {
 
   /** Cache statistics. */
   private final AtomicLong hits = new AtomicLong(0);
+
   private final AtomicLong misses = new AtomicLong(0);
   private final AtomicLong evictions = new AtomicLong(0);
 
   /** Flag to track if the cache is closed. */
   private final AtomicBoolean closed = new AtomicBoolean(false);
 
-  /**
-   * Creates a new resource cache with default settings.
-   */
+  /** Creates a new resource cache with default settings. */
   public JniResourceCache() {
     this(DEFAULT_MAX_SIZE);
   }
@@ -115,7 +114,7 @@ public final class JniResourceCache<K, V> implements AutoCloseable {
     // Cache miss, create new resource
     misses.incrementAndGet();
     final V newResource = factory.apply(key);
-    
+
     if (newResource != null) {
       put(key, newResource);
     }
@@ -140,7 +139,7 @@ public final class JniResourceCache<K, V> implements AutoCloseable {
     }
 
     cleanupCollectedReferences();
-    
+
     // Check if we need to evict entries
     if (cache.size() >= maxSize) {
       evictOldestEntries();
@@ -166,9 +165,7 @@ public final class JniResourceCache<K, V> implements AutoCloseable {
     return null;
   }
 
-  /**
-   * Clears all entries from the cache.
-   */
+  /** Clears all entries from the cache. */
   public void clear() {
     cache.clear();
     cleanupCollectedReferences();
@@ -254,9 +251,7 @@ public final class JniResourceCache<K, V> implements AutoCloseable {
     }
   }
 
-  /**
-   * Cleans up collected weak references.
-   */
+  /** Cleans up collected weak references. */
   private void cleanupCollectedReferences() {
     java.lang.ref.Reference<? extends V> ref;
     while ((ref = referenceQueue.poll()) != null) {
@@ -267,9 +262,9 @@ public final class JniResourceCache<K, V> implements AutoCloseable {
 
   /**
    * Evicts oldest entries to make room for new ones.
-   * 
-   * <p>This is a simple implementation that removes a portion of entries.
-   * A more sophisticated LRU implementation could be added if needed.
+   *
+   * <p>This is a simple implementation that removes a portion of entries. A more sophisticated LRU
+   * implementation could be added if needed.
    */
   private void evictOldestEntries() {
     final int entriesToEvict = maxSize / 4; // Remove 25% of entries
@@ -279,7 +274,7 @@ public final class JniResourceCache<K, V> implements AutoCloseable {
       if (evicted >= entriesToEvict) {
         break;
       }
-      
+
       final WeakReference<V> removed = cache.remove(key);
       if (removed != null) {
         evicted++;
