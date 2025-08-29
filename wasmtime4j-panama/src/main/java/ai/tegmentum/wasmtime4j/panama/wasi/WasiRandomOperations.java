@@ -209,21 +209,6 @@ public final class WasiRandomOperations {
   }
 
   /**
-   * Generates a random long using secure random generation.
-   *
-   * <p>This is a convenience method that generates 8 random bytes and converts them to a long.
-   * The resulting long is uniformly distributed across the full long range.
-   *
-   * @return a random long
-   * @throws WasiException if the random generation fails
-   * @throws PanamaException if a Panama FFI error occurs
-   */
-  public long generateRandomLong() {
-    final byte[] randomBytes = generateRandomBytes(8);
-    return ByteBuffer.wrap(randomBytes).getLong();
-  }
-
-  /**
    * Generates a random integer within the specified range [0, bound).
    *
    * <p>This method generates a uniformly distributed random integer in the range from 0 (inclusive)
@@ -248,6 +233,21 @@ public final class WasiRandomOperations {
     } while (bits - value + (bound - 1) < 0);
 
     return value;
+  }
+
+  /**
+   * Generates a random long using secure random generation.
+   *
+   * <p>This is a convenience method that generates 8 random bytes and converts them to a long.
+   * The resulting long is uniformly distributed across the full long range.
+   *
+   * @return a random long
+   * @throws WasiException if the random generation fails
+   * @throws PanamaException if a Panama FFI error occurs
+   */
+  public long generateRandomLong() {
+    final byte[] randomBytes = generateRandomBytes(8);
+    return ByteBuffer.wrap(randomBytes).getLong();
   }
 
   /**
@@ -301,8 +301,8 @@ public final class WasiRandomOperations {
    */
   private void validateBufferSize(final int size) {
     if (size > MAX_BUFFER_SIZE) {
-      throw new PanamaException("Buffer size too large: " + size + 
-                               " bytes (maximum: " + MAX_BUFFER_SIZE + " bytes)");
+      throw new PanamaException("Buffer size too large: " + size 
+                               + " bytes (maximum: " + MAX_BUFFER_SIZE + " bytes)");
     }
   }
 
