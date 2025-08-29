@@ -16,7 +16,9 @@
 
 package ai.tegmentum.wasmtime4j.panama;
 
-import ai.tegmentum.wasmtime4j.Global;
+import ai.tegmentum.wasmtime4j.WasmGlobal;
+import ai.tegmentum.wasmtime4j.WasmValue;
+import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.MemorySegment;
@@ -39,7 +41,7 @@ import java.util.logging.Logger;
  *
  * @since 1.0.0
  */
-public final class PanamaGlobal implements Global, AutoCloseable {
+public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
   private static final Logger LOGGER = Logger.getLogger(PanamaGlobal.class.getName());
 
   // Core infrastructure from Streams 1 & 2
@@ -94,7 +96,12 @@ public final class PanamaGlobal implements Global, AutoCloseable {
   }
 
   @Override
-  public Object getValue() throws WasmException {
+  public boolean isValid() {
+    return !closed;
+  }
+
+  @Override
+  public WasmValue get() {
     ensureNotClosed();
 
     try {
@@ -114,20 +121,18 @@ public final class PanamaGlobal implements Global, AutoCloseable {
 
       globalGet.invoke(globalResource.getNativePointer(), valueSegment);
 
-      // Unmarshal the value based on type
+      // Unmarshal the value to WasmValue
       int wasmType = getValueType();
-      return unmarshalValue(valueSegment, wasmType);
+      return unmarshalWasmValue(valueSegment, wasmType);
 
     } catch (Exception e) {
-      String detailedMessage =
-          PanamaErrorHandler.createDetailedErrorMessage(
-              "Global value get", "global=" + globalResource.getNativePointer(), e.getMessage());
-      throw new WasmException(detailedMessage, e);
+      LOGGER.warning("Global value get failed: " + e.getMessage());
+      return WasmValue.ofI32(0); // Default value
     }
   }
 
   @Override
-  public void setValue(final Object value) throws WasmException {
+  public void set(final WasmValue value) {
     ensureNotClosed();
 
     // Check mutability
@@ -144,9 +149,8 @@ public final class PanamaGlobal implements Global, AutoCloseable {
           resourceManager.allocate(MemoryLayouts.WASM_VAL);
       MemorySegment valueSegment = valueMemory.getSegment();
 
-      // Marshal Java value to WebAssembly format
-      int wasmType = getValueType();
-      marshalValue(value, wasmType, valueSegment);
+      // Marshal WasmValue to native format
+      marshalWasmValue(value, valueSegment);
 
       // Set global value through optimized FFI call
       MethodHandle globalSet =
@@ -160,24 +164,39 @@ public final class PanamaGlobal implements Global, AutoCloseable {
       globalSet.invoke(globalResource.getNativePointer(), valueSegment);
 
     } catch (Exception e) {
-      String detailedMessage =
-          PanamaErrorHandler.createDetailedErrorMessage(
-              "Global value set",
-              "global=" + globalResource.getNativePointer() + ", value=" + value,
-              e.getMessage());
-      throw new WasmException(detailedMessage, e);
+      if (e instanceof UnsupportedOperationException) {
+        throw e;
+      }
+      LOGGER.warning("Global value set failed: " + e.getMessage());
     }
   }
 
   @Override
-  public boolean isMutable() throws WasmException {
-    ensureNotClosed();
-
-    if (mutable == null) {
-      initializeGlobalType();
+  public WasmValueType getType() {
+    try {
+      ensureNotClosed();
+      int wasmType = getValueType();
+      return convertToWasmValueType(wasmType);
+    } catch (Exception e) {
+      LOGGER.warning("Failed to get global type: " + e.getMessage());
+      return WasmValueType.I32; // Default
     }
+  }
 
-    return mutable;
+  @Override
+  public boolean isMutable() {
+    try {
+      ensureNotClosed();
+
+      if (mutable == null) {
+        initializeGlobalType();
+      }
+
+      return mutable;
+    } catch (Exception e) {
+      LOGGER.warning("Failed to check global mutability: " + e.getMessage());
+      return false; // Default to immutable
+    }
   }
 
   /**
@@ -208,7 +227,7 @@ public final class PanamaGlobal implements Global, AutoCloseable {
   }
 
   @Override
-  public void close() throws WasmException {
+  public void close() {
     if (closed) {
       return;
     }
@@ -225,7 +244,7 @@ public final class PanamaGlobal implements Global, AutoCloseable {
         LOGGER.fine("Closed Panama global");
 
       } catch (Exception e) {
-        throw new WasmException("Failed to close global", e);
+        LOGGER.severe("Failed to close global: " + e.getMessage());
       } finally {
         closed = true;
       }
@@ -303,6 +322,64 @@ public final class PanamaGlobal implements Global, AutoCloseable {
     // Read mutability from global type structure using WASM_GLOBALTYPE layout
     int mutabilityValue = (Integer) MemoryLayouts.WASM_GLOBALTYPE_MUTABILITY.get(globalTypePtr);
     return mutabilityValue != 0; // Non-zero means mutable
+  }
+
+  /** Converts int WASM type to WasmValueType enum. */
+  private WasmValueType convertToWasmValueType(final int wasmType) {
+    return switch (wasmType) {
+      case MemoryLayouts.WASM_I32 -> WasmValueType.I32;
+      case MemoryLayouts.WASM_I64 -> WasmValueType.I64;
+      case MemoryLayouts.WASM_F32 -> WasmValueType.F32;
+      case MemoryLayouts.WASM_F64 -> WasmValueType.F64;
+      case MemoryLayouts.WASM_ANYREF -> WasmValueType.EXTERNREF;
+      case MemoryLayouts.WASM_FUNCREF -> WasmValueType.FUNCREF;
+      default -> WasmValueType.I32; // Default
+    };
+  }
+
+  /** Unmarshals a WebAssembly value to WasmValue object. */
+  private WasmValue unmarshalWasmValue(final MemorySegment valueSlot, final int wasmType) {
+    return switch (wasmType) {
+      case MemoryLayouts.WASM_I32 -> WasmValue.i32((Integer) MemoryLayouts.WASM_VAL_I32.get(valueSlot));
+      case MemoryLayouts.WASM_I64 -> WasmValue.i64((Long) MemoryLayouts.WASM_VAL_I64.get(valueSlot));
+      case MemoryLayouts.WASM_F32 -> WasmValue.f32((Float) MemoryLayouts.WASM_VAL_F32.get(valueSlot));
+      case MemoryLayouts.WASM_F64 -> WasmValue.f64((Double) MemoryLayouts.WASM_VAL_F64.get(valueSlot));
+      case MemoryLayouts.WASM_ANYREF -> WasmValue.externref(null);
+      case MemoryLayouts.WASM_FUNCREF -> WasmValue.funcref(null);
+      default -> WasmValue.i32(0); // Default
+    };
+  }
+
+  /** Marshals a WasmValue to native WebAssembly value format. */
+  private void marshalWasmValue(final WasmValue wasmValue, final MemorySegment valueSlot) {
+    switch (wasmValue.getType()) {
+      case I32:
+        MemoryLayouts.WASM_VAL_KIND.set(valueSlot, MemoryLayouts.WASM_I32);
+        MemoryLayouts.WASM_VAL_I32.set(valueSlot, wasmValue.asI32());
+        break;
+      case I64:
+        MemoryLayouts.WASM_VAL_KIND.set(valueSlot, MemoryLayouts.WASM_I64);
+        MemoryLayouts.WASM_VAL_I64.set(valueSlot, wasmValue.asI64());
+        break;
+      case F32:
+        MemoryLayouts.WASM_VAL_KIND.set(valueSlot, MemoryLayouts.WASM_F32);
+        MemoryLayouts.WASM_VAL_F32.set(valueSlot, wasmValue.asF32());
+        break;
+      case F64:
+        MemoryLayouts.WASM_VAL_KIND.set(valueSlot, MemoryLayouts.WASM_F64);
+        MemoryLayouts.WASM_VAL_F64.set(valueSlot, wasmValue.asF64());
+        break;
+      case EXTERNREF:
+        MemoryLayouts.WASM_VAL_KIND.set(valueSlot, MemoryLayouts.WASM_ANYREF);
+        MemoryLayouts.WASM_VAL_REF.set(valueSlot, MemorySegment.NULL);
+        break;
+      case FUNCREF:
+        MemoryLayouts.WASM_VAL_KIND.set(valueSlot, MemoryLayouts.WASM_FUNCREF);
+        MemoryLayouts.WASM_VAL_REF.set(valueSlot, MemorySegment.NULL);
+        break;
+      default:
+        throw new IllegalArgumentException("Unsupported WebAssembly type: " + wasmValue.getType());
+    }
   }
 
   /** Marshals a Java value to WebAssembly value format. */

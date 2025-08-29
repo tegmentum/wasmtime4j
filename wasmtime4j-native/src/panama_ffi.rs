@@ -33,7 +33,7 @@ pub mod engine {
     pub extern "C" fn wasmtime4j_engine_configure(
         engine_ptr: *mut c_void,
         option_name: *const c_char,
-        option_value: *const c_char,
+        _option_value: *const c_char,
     ) -> c_int {
         // Placeholder implementation
         // Returns 0 for success, negative for error
@@ -52,7 +52,7 @@ pub mod module {
     pub extern "C" fn wasmtime4j_module_compile(
         engine_ptr: *mut c_void,
         wasm_bytes: *const u8,
-        wasm_size: usize,
+        _wasm_size: usize,
         module_ptr: *mut *mut c_void,
     ) -> c_int {
         // Placeholder implementation

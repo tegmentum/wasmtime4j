@@ -49,6 +49,14 @@ JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeAddFu
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniStore
+ * Method:    nativeSetEpochDeadline
+ * Signature: (JJ)Z
+ */
+JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeSetEpochDeadline
+  (JNIEnv *, jclass, jlong, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniStore
  * Method:    nativeDestroyStore
  * Signature: (J)V
  */

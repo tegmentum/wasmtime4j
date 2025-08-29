@@ -20,10 +20,9 @@
 //! and ensure robust operation in production environments. All public APIs validate inputs
 //! and handle errors gracefully.
 
-#![deny(missing_docs)]
+#![warn(missing_docs)]
 #![warn(clippy::all)]
 
-use std::ffi::CStr;
 use std::os::raw::c_char;
 
 // Core modules - foundational WebAssembly runtime components

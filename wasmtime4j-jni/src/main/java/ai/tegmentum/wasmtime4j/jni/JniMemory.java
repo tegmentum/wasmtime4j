@@ -1,5 +1,6 @@
 package ai.tegmentum.wasmtime4j.jni;
 
+import ai.tegmentum.wasmtime4j.WasmMemory;
 import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
@@ -16,7 +17,7 @@ import java.util.logging.Logger;
  * <p>This implementation ensures defensive programming to prevent buffer overflows and JVM crashes
  * through extensive bounds checking using JniValidation and the JniResource base class.
  */
-public final class JniMemory extends JniResource {
+public final class JniMemory extends JniResource implements WasmMemory {
 
   private static final Logger LOGGER = Logger.getLogger(JniMemory.class.getName());
 
@@ -79,6 +80,11 @@ public final class JniMemory extends JniResource {
     }
   }
 
+  @Override
+  public int grow(final int pages) {
+    return (int) grow((long) pages);
+  }
+
   /**
    * Reads a single byte from the memory.
    *
@@ -102,6 +108,11 @@ public final class JniMemory extends JniResource {
     }
   }
 
+  @Override
+  public byte readByte(final int offset) {
+    return readByte((long) offset);
+  }
+
   /**
    * Writes a single byte to the memory.
    *
@@ -123,6 +134,11 @@ public final class JniMemory extends JniResource {
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error writing byte", e);
     }
+  }
+
+  @Override
+  public void writeByte(final int offset, final byte value) {
+    writeByte((long) offset, value);
   }
 
   /**
@@ -150,6 +166,24 @@ public final class JniMemory extends JniResource {
     }
   }
 
+  @Override
+  public void readBytes(final int offset, final byte[] dest, final int destOffset, final int length) {
+    ensureNotClosed();
+    JniValidation.requireNonNull(dest, "dest");
+    JniValidation.requireNonNegative(offset, "offset");
+    JniValidation.requireNonNegative(destOffset, "destOffset");
+    JniValidation.requireNonNegative(length, "length");
+    
+    if (destOffset + length > dest.length) {
+      throw new IndexOutOfBoundsException("destOffset + length exceeds dest array length");
+    }
+
+    // Create a temporary buffer for the native call
+    final byte[] tempBuffer = new byte[length];
+    final int bytesRead = nativeReadBytes(getNativeHandle(), offset, tempBuffer);
+    System.arraycopy(tempBuffer, 0, dest, destOffset, Math.min(bytesRead, length));
+  }
+
   /**
    * Writes bytes from a buffer to the memory.
    *
@@ -175,6 +209,24 @@ public final class JniMemory extends JniResource {
     }
   }
 
+  @Override
+  public void writeBytes(final int offset, final byte[] src, final int srcOffset, final int length) {
+    ensureNotClosed();
+    JniValidation.requireNonNull(src, "src");
+    JniValidation.requireNonNegative(offset, "offset");
+    JniValidation.requireNonNegative(srcOffset, "srcOffset");
+    JniValidation.requireNonNegative(length, "length");
+    
+    if (srcOffset + length > src.length) {
+      throw new IndexOutOfBoundsException("srcOffset + length exceeds src array length");
+    }
+
+    // Create a temporary buffer for the native call
+    final byte[] tempBuffer = new byte[length];
+    System.arraycopy(src, srcOffset, tempBuffer, 0, length);
+    nativeWriteBytes(getNativeHandle(), offset, tempBuffer);
+  }
+
   /**
    * Gets a direct ByteBuffer view of the memory.
    *
@@ -194,6 +246,19 @@ public final class JniMemory extends JniResource {
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error getting buffer", e);
     }
+  }
+
+  // Interface implementation methods for WasmMemory
+
+  @Override
+  public int getSize() {
+    return (int) sizeInPages();
+  }
+
+  @Override
+  public int getMaxSize() {
+    // TODO: Implement native method to get max size
+    return -1;
   }
 
   /**

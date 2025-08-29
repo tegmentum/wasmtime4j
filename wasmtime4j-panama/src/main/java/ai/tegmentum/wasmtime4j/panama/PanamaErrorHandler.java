@@ -19,6 +19,7 @@ package ai.tegmentum.wasmtime4j.panama;
 import ai.tegmentum.wasmtime4j.exception.CompilationException;
 import ai.tegmentum.wasmtime4j.exception.ValidationException;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.panama.util.PanamaExceptionMapper;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 import java.util.logging.Level;
@@ -394,5 +395,92 @@ public final class PanamaErrorHandler {
       case WASMTIME_ERROR_MEMORY, WASMTIME_ERROR_INVALID_ARGUMENT -> true;
       default -> false;
     };
+  }
+
+  /**
+   * Maps a throwable to an appropriate WebAssembly exception with context.
+   *
+   * @param throwable the throwable to map
+   * @param context additional context information
+   * @return the mapped WebAssembly exception
+   */
+  public static WasmException mapToWasmException(final Throwable throwable, final String context) {
+    if (throwable instanceof WasmException) {
+      return (WasmException) throwable;
+    }
+
+    // Use PanamaExceptionMapper for consistent exception mapping
+    final PanamaExceptionMapper mapper = new PanamaExceptionMapper();
+    final WasmException mappedException = mapper.mapException(throwable);
+
+    // Add context if provided
+    if (context != null && !context.trim().isEmpty()) {
+      final String message = context + ": " + mappedException.getMessage();
+      return switch (mappedException) {
+        case CompilationException ce -> new CompilationException(message, mappedException);
+        case ValidationException ve -> new ValidationException(message, mappedException);
+        case ai.tegmentum.wasmtime4j.exception.RuntimeException re ->
+            new ai.tegmentum.wasmtime4j.exception.RuntimeException(message, mappedException);
+        default -> new WasmException(message, mappedException);
+      };
+    }
+
+    return mappedException;
+  }
+
+  /**
+   * Maps an exception to an appropriate WebAssembly exception.
+   *
+   * @param exception the exception to map
+   * @param context additional context information
+   * @return the mapped WebAssembly exception
+   */
+  public static WasmException mapToWasmException(final Exception exception, final String context) {
+    return mapToWasmException((Throwable) exception, context);
+  }
+
+  /**
+   * Validates that a numeric value is non-negative.
+   *
+   * @param value the value to validate
+   * @param paramName the parameter name for error messages
+   * @return the value if valid
+   * @throws IllegalArgumentException if the value is negative
+   */
+  public static long requireNonNegative(final long value, final String paramName) {
+    if (value < 0) {
+      throw new IllegalArgumentException(paramName + " must be non-negative: " + value);
+    }
+    return value;
+  }
+
+  /**
+   * Validates that a numeric value is non-negative.
+   *
+   * @param value the value to validate
+   * @param paramName the parameter name for error messages
+   * @return the value if valid
+   * @throws IllegalArgumentException if the value is negative
+   */
+  public static int requireNonNegative(final int value, final String paramName) {
+    if (value < 0) {
+      throw new IllegalArgumentException(paramName + " must be non-negative: " + value);
+    }
+    return value;
+  }
+
+  /**
+   * Validates that a string is not null or empty.
+   *
+   * @param value the string to validate
+   * @param paramName the parameter name for error messages
+   * @return the value if valid
+   * @throws IllegalArgumentException if the string is null or empty
+   */
+  public static String requireNotEmpty(final String value, final String paramName) {
+    if (value == null || value.trim().isEmpty()) {
+      throw new IllegalArgumentException(paramName + " cannot be null or empty");
+    }
+    return value;
   }
 }

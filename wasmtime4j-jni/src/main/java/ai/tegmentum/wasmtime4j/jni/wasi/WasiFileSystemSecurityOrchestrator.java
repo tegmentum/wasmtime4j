@@ -304,41 +304,35 @@ public final class WasiFileSystemSecurityOrchestrator {
   }
 
   /** Performs additional strict mode validation. */
-  private void performStrictValidation(final Path path, final WasiFileOperation operation) {
-    try {
-      // Validate file existence for read operations
-      if (operation.requiresReadAccess() && !Files.exists(path)) {
-        throw new WasiFileSystemException("File does not exist", "ENOENT");
+  private void performStrictValidation(final Path path, final WasiFileOperation operation)
+      throws IOException {
+    // Validate file existence for read operations
+    if (operation.requiresReadAccess() && !Files.exists(path)) {
+      throw new WasiFileSystemException("File does not exist", "ENOENT");
+    }
+
+    // Validate file type consistency
+    if (Files.exists(path)) {
+      if (operation == WasiFileOperation.LIST_DIRECTORY && !Files.isDirectory(path)) {
+        throw new WasiFileSystemException("Path is not a directory", "ENOTDIR");
       }
 
-      // Validate file type consistency
-      if (Files.exists(path)) {
-        if (operation == WasiFileOperation.LIST_DIRECTORY && !Files.isDirectory(path)) {
-          throw new WasiFileSystemException("Path is not a directory", "ENOTDIR");
-        }
-
-        if (operation.requiresWriteAccess() && !Files.isWritable(path.getParent())) {
-          throw new WasiFileSystemException("Parent directory not writable", "EACCES");
-        }
+      if (operation.requiresWriteAccess() && !Files.isWritable(path.getParent())) {
+        throw new WasiFileSystemException("Parent directory not writable", "EACCES");
       }
+    }
 
-      // Additional security checks for dangerous operations
-      if (operation.isDangerous()) {
-        LOGGER.warning(
-            String.format("Dangerous operation attempted: path=%s, operation=%s", path, operation));
-
-        // Extra validation for dangerous operations
-        if (operation == WasiFileOperation.EXECUTE) {
-          if (!Files.isExecutable(path)) {
-            throw new WasiFileSystemException("File is not executable", "EACCES");
-          }
-        }
-      }
-
-    } catch (final IOException e) {
+    // Additional security checks for dangerous operations
+    if (operation.isDangerous()) {
       LOGGER.warning(
-          String.format("Strict validation I/O error: path=%s, error=%s", path, e.getMessage()));
-      throw new WasiFileSystemException("Strict validation failed: " + e.getMessage(), "EIO", e);
+          String.format("Dangerous operation attempted: path=%s, operation=%s", path, operation));
+
+      // Extra validation for dangerous operations
+      if (operation == WasiFileOperation.EXECUTE) {
+        if (!Files.isExecutable(path)) {
+          throw new WasiFileSystemException("File is not executable", "EACCES");
+        }
+      }
     }
   }
 

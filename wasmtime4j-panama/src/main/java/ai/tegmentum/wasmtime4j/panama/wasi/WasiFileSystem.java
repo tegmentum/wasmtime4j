@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.SeekableByteChannel;
+import java.nio.file.AccessDeniedException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
@@ -259,16 +260,20 @@ public final class WasiFileSystem {
     }
 
     try {
-      final long newPosition =
-          switch (whence) {
-            case 0 -> fileChannel.position(position).position(); // SEEK_SET
-            case 1 -> fileChannel
-                .position(fileChannel.position() + position)
-                .position(); // SEEK_CUR
-            case 2 -> fileChannel.position(fileChannel.size() + position).position(); // SEEK_END
-            default -> throw new WasiFileSystemException(
-                "Invalid seek whence: " + whence, "EINVAL");
-          };
+      final long newPosition;
+      switch (whence) {
+        case 0: // SEEK_SET
+          newPosition = fileChannel.position(position).position();
+          break;
+        case 1: // SEEK_CUR
+          newPosition = fileChannel.position(fileChannel.position() + position).position();
+          break;
+        case 2: // SEEK_END
+          newPosition = fileChannel.position(fileChannel.size() + position).position();
+          break;
+        default:
+          throw new WasiFileSystemException("Invalid seek whence: " + whence, "EINVAL");
+      }
 
       LOGGER.fine(
           String.format(
@@ -694,7 +699,7 @@ public final class WasiFileSystem {
       return "ENOENT";
     } else if (e instanceof FileAlreadyExistsException) {
       return "EEXIST";
-    } else if (e instanceof SecurityException) {
+    } else if (e instanceof AccessDeniedException) {
       return "EACCES";
     } else {
       return "EIO";

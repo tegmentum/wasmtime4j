@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.SeekableByteChannel;
+import java.nio.file.AccessDeniedException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
@@ -698,7 +699,7 @@ public final class WasiFileSystem {
       return "ENOENT";
     } else if (e instanceof FileAlreadyExistsException) {
       return "EEXIST";
-    } else if (e instanceof SecurityException) {
+    } else if (e instanceof AccessDeniedException) {
       return "EACCES";
     } else {
       return "EIO";

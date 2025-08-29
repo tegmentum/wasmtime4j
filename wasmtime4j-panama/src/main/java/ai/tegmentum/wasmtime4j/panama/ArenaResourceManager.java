@@ -465,4 +465,62 @@ public final class ArenaResourceManager implements AutoCloseable {
       return creationTime;
     }
   }
+
+  /**
+   * Registers a managed native resource with a cleanup action.
+   *
+   * @param owner the resource owner
+   * @param nativeHandle the native handle
+   * @param cleanupAction the cleanup action to run when the resource is closed
+   * @return a managed native resource
+   */
+  public ManagedNativeResource registerManagedNativeResource(
+      final Object owner, 
+      final MemorySegment nativeHandle, 
+      final Runnable cleanupAction) {
+    checkNotClosed();
+    
+    if (owner == null) {
+      throw new IllegalArgumentException("Owner cannot be null");
+    }
+    if (nativeHandle == null || nativeHandle.equals(MemorySegment.NULL)) {
+      throw new IllegalArgumentException("Native handle cannot be null");
+    }
+    if (cleanupAction == null) {
+      throw new IllegalArgumentException("Cleanup action cannot be null");
+    }
+    
+    ManagedNativeResource resource = new ManagedNativeResource(nativeHandle, cleanupAction, 
+                                                               owner.getClass().getSimpleName());
+    
+    synchronized (managedResources) {
+      managedResources.add(resource);
+    }
+    
+    LOGGER.fine("Registered managed native resource: " + owner.getClass().getSimpleName());
+    return resource;
+  }
+  
+  /**
+   * Unregisters a managed resource.
+   *
+   * @param owner the resource owner to unregister
+   */
+  public void unregisterManagedResource(final Object owner) {
+    if (owner == null) {
+      return;
+    }
+    
+    String ownerName = owner.getClass().getSimpleName();
+    synchronized (managedResources) {
+      managedResources.removeIf(resource -> {
+        if (resource instanceof ManagedNativeResource managedNativeResource) {
+          return ownerName.equals(managedNativeResource.getDescription());
+        }
+        return false;
+      });
+    }
+    
+    LOGGER.fine("Unregistered managed resource: " + ownerName);
+  }
 }

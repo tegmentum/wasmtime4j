@@ -12,6 +12,8 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -277,7 +279,7 @@ public final class WasiNioIntegration {
 
     try {
       final AsynchronousFileChannel asyncChannel =
-          AsynchronousFileChannel.open(path, Set.of(StandardOpenOption.READ), asyncExecutor);
+          AsynchronousFileChannel.open(path, Collections.singleton(StandardOpenOption.READ), asyncExecutor);
 
       final ByteBuffer buffer = allocateBuffer(bufferSize);
 
@@ -344,9 +346,11 @@ public final class WasiNioIntegration {
     final CompletableFuture<Integer> future = new CompletableFuture<>();
 
     try {
+      final Set<StandardOpenOption> options = new HashSet<>();
+      options.add(StandardOpenOption.WRITE);
+      options.add(StandardOpenOption.CREATE);
       final AsynchronousFileChannel asyncChannel =
-          AsynchronousFileChannel.open(
-              path, Set.of(StandardOpenOption.WRITE, StandardOpenOption.CREATE), asyncExecutor);
+          AsynchronousFileChannel.open(path, options, asyncExecutor);
 
       asyncChannel.write(
           data,

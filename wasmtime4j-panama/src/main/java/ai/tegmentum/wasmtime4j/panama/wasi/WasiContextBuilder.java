@@ -283,7 +283,7 @@ public final class WasiContextBuilder {
     validateConfiguration();
 
     // Create resource manager for native memory management
-    final ArenaResourceManager resourceManager = new ArenaResourceManager(Arena.ofConfined());
+    final ArenaResourceManager resourceManager = new ArenaResourceManager(Arena.ofConfined(), true);
 
     try {
       // Convert configuration to native format

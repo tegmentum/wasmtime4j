@@ -1,5 +1,7 @@
 package ai.tegmentum.wasmtime4j.jni;
 
+import ai.tegmentum.wasmtime4j.WasmTable;
+import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
@@ -15,7 +17,7 @@ import java.util.logging.Logger;
  * comprehensive bounds checking for table access using JniValidation and the JniResource base
  * class.
  */
-public final class JniTable extends JniResource {
+public final class JniTable extends JniResource implements WasmTable {
 
   private static final Logger LOGGER = Logger.getLogger(JniTable.class.getName());
 
@@ -71,10 +73,21 @@ public final class JniTable extends JniResource {
    * @throws JniResourceException if this table is closed
    * @throws RuntimeException if the type cannot be retrieved
    */
-  public String getElementType() {
+  public WasmValueType getElementType() {
     try {
-      final String type = nativeGetElementType(getNativeHandle());
-      return type != null ? type : "unknown";
+      final String typeString = nativeGetElementType(getNativeHandle());
+      if (typeString == null) {
+        return WasmValueType.EXTERNREF;
+      }
+      // Convert string type to WasmValueType enum
+      switch (typeString.toLowerCase()) {
+        case "funcref":
+          return WasmValueType.FUNCREF;
+        case "externref":
+          return WasmValueType.EXTERNREF;
+        default:
+          return WasmValueType.EXTERNREF; // Default fallback
+      }
     } catch (final JniResourceException e) {
       throw e;
     } catch (final Exception e) {
@@ -186,6 +199,7 @@ public final class JniTable extends JniResource {
       throw new RuntimeException("Unexpected error filling table", e);
     }
   }
+
 
   /**
    * Validates that an index is within table bounds.

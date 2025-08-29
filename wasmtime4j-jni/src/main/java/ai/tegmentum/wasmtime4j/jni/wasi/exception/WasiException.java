@@ -205,4 +205,13 @@ public class WasiException extends JniException {
 
     return sb.toString();
   }
+
+  /**
+   * Creates a new WASI exception with just a message.
+   *
+   * @param message the error message
+   */
+  public WasiException(final String message) {
+    this(message, WasiErrorCode.EIO, "operation", "resource");
+  }
 }

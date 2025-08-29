@@ -4,7 +4,7 @@
 //! with proper resource management and JVM crash prevention.
 
 use std::sync::Arc;
-use wasmtime::{Config, Engine as WasmtimeEngine, OptLevel, Strategy, WasmFeatures};
+use wasmtime::{Config, Engine as WasmtimeEngine, OptLevel, Strategy};
 use crate::error::{WasmtimeError, WasmtimeResult};
 
 /// Thread-safe wrapper around Wasmtime engine with defensive programming
@@ -34,7 +34,7 @@ pub struct EngineBuilder {
     strategy: Option<Strategy>,
     opt_level: Option<OptLevel>,
     debug_info: bool,
-    wasm_features: WasmFeatures,
+    // Note: WasmFeatures removed, using Config directly
 }
 
 impl Engine {
@@ -101,28 +101,22 @@ impl EngineBuilder {
     /// Create new engine builder with safe defaults
     fn new() -> Self {
         let mut config = Config::new();
-        let mut features = WasmFeatures::default();
 
         // Set production-optimized defaults
         config.strategy(Strategy::Cranelift);
         config.cranelift_opt_level(OptLevel::Speed);
         
-        // Enable commonly used WebAssembly features
-        features.reference_types(true);
-        features.bulk_memory(true);
-        features.multi_value(true);
-        
-        // Enable SIMD if available (defensive - may fail on some platforms)
-        features.simd(true);
-        
-        config.wasm_features(features.clone());
+        // Enable commonly used WebAssembly features directly on Config
+        config.wasm_reference_types(true);
+        config.wasm_bulk_memory(true);
+        config.wasm_multi_value(true);
+        config.wasm_simd(true);
 
         EngineBuilder {
             config,
             strategy: Some(Strategy::Cranelift),
             opt_level: Some(OptLevel::Speed),
             debug_info: false,
-            wasm_features: features,
         }
     }
 
@@ -149,36 +143,31 @@ impl EngineBuilder {
 
     /// Configure WebAssembly threads support
     pub fn wasm_threads(mut self, enable: bool) -> Self {
-        self.wasm_features.threads(enable);
-        self.config.wasm_features(self.wasm_features.clone());
+        self.config.wasm_threads(enable);
         self
     }
 
     /// Configure WebAssembly reference types support
     pub fn wasm_reference_types(mut self, enable: bool) -> Self {
-        self.wasm_features.reference_types(enable);
-        self.config.wasm_features(self.wasm_features.clone());
+        self.config.wasm_reference_types(enable);
         self
     }
 
     /// Configure WebAssembly SIMD support
     pub fn wasm_simd(mut self, enable: bool) -> Self {
-        self.wasm_features.simd(enable);
-        self.config.wasm_features(self.wasm_features.clone());
+        self.config.wasm_simd(enable);
         self
     }
 
     /// Configure WebAssembly bulk memory support
     pub fn wasm_bulk_memory(mut self, enable: bool) -> Self {
-        self.wasm_features.bulk_memory(enable);
-        self.config.wasm_features(self.wasm_features.clone());
+        self.config.wasm_bulk_memory(enable);
         self
     }
 
     /// Configure WebAssembly multi-value support  
     pub fn wasm_multi_value(mut self, enable: bool) -> Self {
-        self.wasm_features.multi_value(enable);
-        self.config.wasm_features(self.wasm_features.clone());
+        self.config.wasm_multi_value(enable);
         self
     }
 
@@ -189,7 +178,7 @@ impl EngineBuilder {
 }
 
 impl EngineConfigSummary {
-    fn from_config(config: &Config) -> Self {
+    fn from_config(_config: &Config) -> Self {
         // Note: Wasmtime Config doesn't expose all settings for introspection
         // We track what we can and make reasonable assumptions
         EngineConfigSummary {

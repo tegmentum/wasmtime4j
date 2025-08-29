@@ -256,7 +256,8 @@ public final class JniResourceCache<K, V> implements AutoCloseable {
     java.lang.ref.Reference<? extends V> ref;
     while ((ref = referenceQueue.poll()) != null) {
       // Find and remove the corresponding cache entry
-      cache.entrySet().removeIf(entry -> entry.getValue() == ref);
+      final java.lang.ref.Reference<? extends V> finalRef = ref;
+      cache.entrySet().removeIf(entry -> entry.getValue() == finalRef);
     }
   }
 

@@ -8,9 +8,9 @@ pub struct Instance {
 impl Instance {
     /// Create a new WebAssembly instance
     pub fn new(
-        store: &mut crate::store::Store,
-        module: &crate::module::Module,
-        imports: &[],
+        _store: &mut crate::store::Store,
+        _module: &crate::module::Module,
+        _imports: &[&str],
     ) -> Result<Self, Box<dyn std::error::Error>> {
         // Placeholder implementation
         Ok(Instance {})

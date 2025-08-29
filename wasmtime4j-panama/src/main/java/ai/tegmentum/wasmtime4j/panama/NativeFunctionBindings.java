@@ -228,6 +228,30 @@ public final class NativeFunctionBindings {
   }
 
   /**
+   * Gets the method handle for a specific function with descriptor verification.
+   *
+   * @param functionName the name of the function
+   * @param descriptor the expected function descriptor
+   * @return the method handle, or null if not available or descriptor mismatch
+   */
+  public MethodHandle getFunction(final String functionName, final FunctionDescriptor descriptor) {
+    FunctionBinding binding = functionBindings.get(functionName);
+    if (binding == null) {
+      LOGGER.warning("Function binding not found: " + functionName);
+      return null;
+    }
+
+    // Verify descriptor matches (optional but recommended for safety)
+    FunctionDescriptor bindingDescriptor = binding.getDescriptor();
+    if (bindingDescriptor != null && !bindingDescriptor.equals(descriptor)) {
+      LOGGER.warning("Function descriptor mismatch for " + functionName 
+                    + ": expected " + descriptor + ", got " + bindingDescriptor);
+    }
+
+    return binding.getMethodHandle().orElse(null);
+  }
+
+  /**
    * Gets the method handle for table size query.
    *
    * @return the method handle, or null if not available

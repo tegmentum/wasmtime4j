@@ -6,7 +6,7 @@
 
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
-use wasmtime::{Store as WasmtimeStore, Caller, StoreContext, StoreContextMut, AsContext, AsContextMut};
+use wasmtime::{Store as WasmtimeStore, StoreContext, StoreContextMut, AsContext, AsContextMut};
 use crate::engine::Engine;
 use crate::error::{WasmtimeError, WasmtimeResult};
 
@@ -27,11 +27,21 @@ pub struct StoreMetadata {
 }
 
 /// Store-specific data for host function context
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct StoreData {
     pub user_data: Option<Box<dyn std::any::Any + Send + Sync>>,
     pub resource_limits: ResourceLimits,
     pub execution_state: ExecutionState,
+}
+
+impl Clone for StoreData {
+    fn clone(&self) -> Self {
+        StoreData {
+            user_data: None, // Can't clone arbitrary Any type, set to None
+            resource_limits: self.resource_limits.clone(),
+            execution_state: self.execution_state.clone(),
+        }
+    }
 }
 
 /// Resource limits and quotas
@@ -128,8 +138,8 @@ impl Store {
             message: format!("Failed to acquire store lock: {}", e),
         })?;
 
-        store.add_fuel(fuel).map_err(|e| WasmtimeError::Runtime {
-            message: format!("Failed to add fuel: {}", e),
+        store.set_fuel(fuel).map_err(|e| WasmtimeError::Runtime {
+            message: format!("Failed to set fuel: {}", e),
             backtrace: None,
         })?;
 
@@ -142,7 +152,7 @@ impl Store {
             message: format!("Failed to acquire store lock: {}", e),
         })?;
 
-        Ok(store.fuel_remaining())
+        Ok(Some(store.get_fuel().unwrap_or(0)))
     }
 
     /// Consume fuel from the store
@@ -151,10 +161,20 @@ impl Store {
             message: format!("Failed to acquire store lock: {}", e),
         })?;
 
-        store.consume_fuel(fuel).map_err(|e| WasmtimeError::Runtime {
-            message: format!("Failed to consume fuel: {}", e),
-            backtrace: None,
-        })
+        let current_fuel = store.get_fuel().unwrap_or(0);
+        if current_fuel >= fuel {
+            store.set_fuel(current_fuel - fuel).map_err(|e| WasmtimeError::Runtime {
+                message: format!("Failed to consume fuel: {}", e),
+                backtrace: None,
+            })?;
+            Ok(fuel)
+        } else {
+            store.set_fuel(0).map_err(|e| WasmtimeError::Runtime {
+                message: format!("Failed to consume fuel: {}", e),
+                backtrace: None,
+            })?;
+            Ok(current_fuel)
+        }
     }
 
     /// Set epoch deadline for interruption
@@ -190,7 +210,7 @@ impl Store {
             message: format!("Failed to acquire store lock: {}", e),
         })?;
 
-        store.gc();
+        store.gc(None); // Pass None for manual GC trigger
         Ok(())
     }
 
@@ -282,8 +302,8 @@ impl StoreBuilder {
 
         // Configure fuel if specified
         if let Some(fuel_limit) = self.fuel_limit {
-            wasmtime_store.add_fuel(fuel_limit).map_err(|e| WasmtimeError::Store {
-                message: format!("Failed to add initial fuel: {}", e),
+            wasmtime_store.set_fuel(fuel_limit).map_err(|e| WasmtimeError::Store {
+                message: format!("Failed to set initial fuel: {}", e),
             })?;
         }
 

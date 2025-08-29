@@ -49,6 +49,14 @@ JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeHa
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniInstance
+ * Method:    nativeGetExportNames
+ * Signature: (J)[Ljava/lang/String;
+ */
+JNIEXPORT jobjectArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeGetExportNames
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniInstance
  * Method:    nativeDestroyInstance
  * Signature: (J)V
  */

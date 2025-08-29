@@ -278,7 +278,7 @@ public final class ConcurrentAccessCoordinator {
 
     return CompletableFuture.allOf(futures)
         .thenApply(
-            void_ -> {
+            ignored -> {
               @SuppressWarnings("unchecked")
               final T[] results = (T[]) new Object[futures.length];
               for (int i = 0; i < futures.length; i++) {
@@ -350,8 +350,14 @@ public final class ConcurrentAccessCoordinator {
     java.util.Arrays.sort(sortedResources, (a, b) -> Long.compare(a.address(), b.address()));
 
     // Execute with coordinated resource access
-    final long stamp = resourceLock.readLock().tryLock(operationTimeoutMs, TimeUnit.MILLISECONDS);
-    if (!stamp) {
+    final long stamp;
+    try {
+      stamp = resourceLock.readLock().tryLock(operationTimeoutMs, TimeUnit.MILLISECONDS) ? 1L : 0L;
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new RuntimeException("Thread interrupted while waiting for resource lock", e);
+    }
+    if (stamp == 0L) {
       throw new RuntimeException("Failed to acquire resource lock within timeout");
     }
 

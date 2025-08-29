@@ -17,7 +17,9 @@
 package ai.tegmentum.wasmtime4j.panama;
 
 import ai.tegmentum.wasmtime4j.Engine;
+import ai.tegmentum.wasmtime4j.EngineConfig;
 import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.exception.CompilationException;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.lang.foreign.MemorySegment;
@@ -46,6 +48,11 @@ public final class PanamaEngine implements Engine, AutoCloseable {
 
   // Engine state
   private volatile boolean closed = false;
+
+  @Override
+  public boolean isValid() {
+    return !closed;
+  }
 
   /**
    * Creates a new Panama engine instance using Stream 1 infrastructure.
@@ -113,7 +120,19 @@ public final class PanamaEngine implements Engine, AutoCloseable {
     }
   }
 
-  @Override
+  /**
+   * Compiles WebAssembly bytecode from a ByteBuffer into a module using this engine.
+   *
+   * <p>This method provides an alternative interface for compilation when the WebAssembly
+   * bytecode is available as a ByteBuffer. This can be more efficient for direct ByteBuffer
+   * operations.
+   *
+   * @param wasmBuffer the WebAssembly bytecode buffer to compile
+   * @return a compiled Module
+   * @throws CompilationException if compilation fails due to invalid bytecode
+   * @throws WasmException if engine issues occur during compilation
+   * @throws IllegalArgumentException if wasmBuffer is null or empty
+   */
   public Module compileModule(final ByteBuffer wasmBuffer)
       throws CompilationException, WasmException {
     ensureNotClosed();
@@ -159,7 +178,25 @@ public final class PanamaEngine implements Engine, AutoCloseable {
   }
 
   @Override
-  public void close() throws WasmException {
+  public Store createStore() throws WasmException {
+    // TODO: Implement store creation
+    throw new UnsupportedOperationException("Store creation not yet implemented");
+  }
+
+  @Override
+  public Store createStore(final Object data) throws WasmException {
+    // TODO: Implement store creation with data
+    throw new UnsupportedOperationException("Store creation with data not yet implemented");
+  }
+
+  @Override
+  public EngineConfig getConfig() {
+    // TODO: Implement config retrieval
+    throw new UnsupportedOperationException("Config retrieval not yet implemented");
+  }
+
+  @Override
+  public void close() {
     if (closed) {
       return;
     }
@@ -175,7 +212,7 @@ public final class PanamaEngine implements Engine, AutoCloseable {
 
         LOGGER.fine("Closed Panama engine instance");
       } catch (Exception e) {
-        throw new WasmException("Failed to close engine", e);
+        LOGGER.severe("Failed to close engine: " + e.getMessage());
       } finally {
         closed = true;
       }

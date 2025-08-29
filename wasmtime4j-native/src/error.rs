@@ -3,7 +3,7 @@
 //! This module provides defensive error handling that prevents JVM crashes
 //! and provides consistent error reporting across JNI and Panama FFI interfaces.
 
-use std::ffi::{CStr, CString};
+use std::ffi::CString;
 use std::os::raw::c_char;
 use thiserror::Error;
 use wasmtime::{Trap, WasmBacktrace};
@@ -18,6 +18,10 @@ pub enum WasmtimeError {
     /// WebAssembly validation errors
     #[error("Module validation failed: {message}")]
     Validation { message: String },
+
+    /// WebAssembly module errors
+    #[error("Module error: {message}")]
+    Module { message: String },
 
     /// WebAssembly runtime errors and traps
     #[error("Runtime error: {message}")]
@@ -109,6 +113,7 @@ impl WasmtimeError {
         match self {
             WasmtimeError::Compilation { .. } => ErrorCode::CompilationError,
             WasmtimeError::Validation { .. } => ErrorCode::ValidationError,
+            WasmtimeError::Module { .. } => ErrorCode::ValidationError,
             WasmtimeError::Runtime { .. } => ErrorCode::RuntimeError,
             WasmtimeError::EngineConfig { .. } => ErrorCode::EngineConfigError,
             WasmtimeError::Store { .. } => ErrorCode::StoreError,
@@ -136,7 +141,7 @@ impl WasmtimeError {
     pub fn from_trap(trap: Trap) -> Self {
         WasmtimeError::Runtime {
             message: trap.to_string(),
-            backtrace: trap.trace(),
+            backtrace: None, // trace() method removed in wasmtime 36.0.2
         }
     }
 

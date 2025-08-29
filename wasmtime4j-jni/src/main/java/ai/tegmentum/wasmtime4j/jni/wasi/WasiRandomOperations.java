@@ -111,7 +111,7 @@ public final class WasiRandomOperations {
         final WasiErrorCode errorCode = WasiErrorCode.fromErrnoOrNull(result);
         if (errorCode != null) {
           throw new WasiException("Failed to generate random bytes: " 
-                                  + errorCode.getDescription(), errorCode);
+                                  + errorCode.getDescription(), errorCode, "random_get", "buffer");
         } else {
           throw new WasiException("Failed to generate random bytes with unknown error code: " 
                                   + result);
@@ -155,7 +155,7 @@ public final class WasiRandomOperations {
         final WasiErrorCode errorCode = WasiErrorCode.fromErrnoOrNull(result);
         if (errorCode != null) {
           throw new WasiException("Failed to generate random bytes: " 
-                                  + errorCode.getDescription(), errorCode);
+                                  + errorCode.getDescription(), errorCode, "random_get", "buffer");
         } else {
           throw new WasiException("Failed to generate random bytes with unknown error code: " 
                                   + result);
