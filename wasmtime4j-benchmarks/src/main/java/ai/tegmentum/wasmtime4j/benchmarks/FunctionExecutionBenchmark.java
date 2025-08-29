@@ -1,5 +1,13 @@
 package ai.tegmentum.wasmtime4j.benchmarks;
 
+import ai.tegmentum.wasmtime4j.Engine;
+import ai.tegmentum.wasmtime4j.Instance;
+import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.Store;
+import ai.tegmentum.wasmtime4j.WasmFunction;
+import ai.tegmentum.wasmtime4j.WasmRuntime;
+import ai.tegmentum.wasmtime4j.WasmValue;
+import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.util.concurrent.TimeUnit;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -54,179 +62,104 @@ public class FunctionExecutionBenchmark extends BenchmarkBase {
   /** Number of parameters to pass to the function. */
   @Param({"1", "2", "4"})
   private int parameterCount;
+  
+  /** WebAssembly runtime components. */
+  private WasmRuntime runtime;
+  private Engine engine;
+  private Store store;
+  private Module module;
+  private Instance instance;
+  
+  /** Function to benchmark. */
+  private WasmFunction targetFunction;
 
-  /** Mock WebAssembly function representation for testing. */
-  private static final class MockWasmFunction {
-    private final String name;
-    private final String type;
-    private final RuntimeType runtimeType;
-    private final int parameterCount;
-    private long executionCount;
-    private long totalExecutionTime;
+  /** Test parameters for function calls with current parameter count. */
+  private WasmValue[] testParams;
+  
+  /** Current module bytecode. */
+  private byte[] moduleBytes;
 
-    MockWasmFunction(
-        final String name,
-        final String type,
-        final RuntimeType runtimeType,
-        final int parameterCount) {
-      this.name = name;
-      this.type = type;
-      this.runtimeType = runtimeType;
-      this.parameterCount = parameterCount;
-      this.executionCount = 0;
-      this.totalExecutionTime = 0;
-    }
-
-    int call(final int... params) {
-      if (params.length != parameterCount) {
-        throw new IllegalArgumentException("Parameter count mismatch");
-      }
-
-      final long startTime = System.nanoTime();
-      final int result = executeFunction(params);
-      final long endTime = System.nanoTime();
-
-      executionCount++;
-      totalExecutionTime += (endTime - startTime);
-
-      return result;
-    }
-
-    private int executeFunction(final int[] params) {
-      switch (type) {
-        case "SIMPLE":
-          return executeSimpleFunction(params);
-        case "COMPLEX":
-          return executeComplexFunction(params);
-        case "RECURSIVE":
-          return executeRecursiveFunction(params);
-        default:
-          return executeSimpleFunction(params);
-      }
-    }
-
-    private int executeSimpleFunction(final int[] params) {
-      // Simulate simple arithmetic operation
-      int result = 0;
-      for (final int param : params) {
-        result += param;
-      }
-
-      // Add runtime-specific overhead
-      if (runtimeType == RuntimeType.JNI) {
-        // Simulate JNI call overhead
-        for (int i = 0; i < 10; i++) {
-          result += Math.abs(i);
-        }
-      } else {
-        // Simulate Panama FFI call overhead
-        for (int i = 0; i < 15; i++) {
-          result += Math.abs(i * 2);
-        }
-      }
-
-      return result;
-    }
-
-    private int executeComplexFunction(final int[] params) {
-      // Simulate complex computation
-      int result = 1;
-      for (final int param : params) {
-        for (int i = 1; i <= Math.min(param, 10); i++) {
-          result = (result * i) % 1000000;
-        }
-      }
-
-      // Add floating point operations
-      double floatResult = result;
-      for (int i = 0; i < 20; i++) {
-        floatResult = Math.sqrt(floatResult + i);
-      }
-
-      return (int) floatResult;
-    }
-
-    private int executeRecursiveFunction(final int[] params) {
-      final int n = Math.min(params[0], 15); // Limit recursion depth
-      return fibonacci(n);
-    }
-
-    private int fibonacci(final int n) {
-      if (n <= 1) {
-        return n;
-      }
-      return fibonacci(n - 1) + fibonacci(n - 2);
-    }
-
-    public String getName() {
-      return name;
-    }
-
-    public String getType() {
-      return type;
-    }
-
-    public RuntimeType getRuntimeType() {
-      return runtimeType;
-    }
-
-    public int getParameterCount() {
-      return parameterCount;
-    }
-
-    public long getExecutionCount() {
-      return executionCount;
-    }
-
-    public long getTotalExecutionTime() {
-      return totalExecutionTime;
-    }
-
-    public double getAverageExecutionTime() {
-      return executionCount > 0 ? (double) totalExecutionTime / executionCount : 0;
-    }
-
-    public void resetStats() {
-      executionCount = 0;
-      totalExecutionTime = 0;
-    }
-  }
-
-  /** Function instance being benchmarked. */
-  private MockWasmFunction function;
-
-  /** Test parameters for function calls. */
-  private int[] testParams;
 
   /** Setup performed before each benchmark iteration. */
   @Setup(Level.Iteration)
-  public void setupIteration() {
-    // Create function instance
-    final String functionName =
-        String.format(
-            "%s_%s_%d",
-            functionType.toLowerCase(), runtimeType.name().toLowerCase(), parameterCount);
-
-    function = new MockWasmFunction(functionName, functionType, runtimeType, parameterCount);
-
-    // Setup test parameters
-    testParams = new int[parameterCount];
-    for (int i = 0; i < parameterCount; i++) {
-      testParams[i] = i + 1; // Use simple sequential values
+  public void setupIteration() throws WasmException {
+    // Create runtime components
+    runtime = createRuntime(runtimeType);
+    engine = createEngine(runtime);
+    store = createStore(engine);
+    
+    // Select appropriate module based on function type
+    switch (functionType) {
+      case "SIMPLE":
+        moduleBytes = SIMPLE_WASM_MODULE.clone();
+        break;
+      case "COMPLEX":
+        moduleBytes = COMPLEX_WASM_MODULE.clone();
+        break;
+      case "RECURSIVE":
+        moduleBytes = COMPLEX_WASM_MODULE.clone(); // Uses fibonacci
+        break;
+      default:
+        moduleBytes = SIMPLE_WASM_MODULE.clone();
+        break;
     }
-
-    // Reset function statistics
-    function.resetStats();
+    
+    // Compile and instantiate module
+    module = compileModule(engine, moduleBytes);
+    instance = instantiateModule(store, module);
+    
+    // Get the target function
+    final String functionName = getFunctionNameForType(functionType);
+    targetFunction = instance.getExportedFunction(functionName);
+    if (targetFunction == null) {
+      throw new WasmException("Target function not found: " + functionName);
+    }
+    
+    // Setup test parameters based on parameter count
+    testParams = new WasmValue[Math.min(parameterCount, 2)]; // Limit to available params
+    for (int i = 0; i < testParams.length; i++) {
+      testParams[i] = WasmValue.i32(i + 1); // Use simple sequential values
+    }
   }
 
   /** Cleanup performed after each benchmark iteration. */
   @TearDown(Level.Iteration)
   public void teardownIteration() {
-    if (function != null) {
-      function.resetStats();
-      function = null;
-    }
+    cleanup();
     testParams = null;
+    moduleBytes = null;
+  }
+  
+  /** Helper method to clean up WebAssembly resources. */
+  private void cleanup() {
+    try {
+      if (targetFunction != null) {
+        targetFunction.close();
+        targetFunction = null;
+      }
+      if (instance != null) {
+        instance.close();
+        instance = null;
+      }
+      if (module != null) {
+        module.close();
+        module = null;
+      }
+      if (store != null) {
+        store.close();
+        store = null;
+      }
+      if (engine != null) {
+        engine.close();
+        engine = null;
+      }
+      if (runtime != null) {
+        runtime.close();
+        runtime = null;
+      }
+    } catch (final Exception e) {
+      // Ignore cleanup errors in benchmarks
+    }
   }
 
   /**
@@ -236,10 +169,14 @@ public class FunctionExecutionBenchmark extends BenchmarkBase {
    * @return the function result
    */
   @Benchmark
-  public int benchmarkSingleFunctionCall(final Blackhole blackhole) {
-    final int result = function.call(testParams);
-    blackhole.consume(function.getExecutionCount());
-    return result;
+  public WasmValue[] benchmarkSingleFunctionCall(final Blackhole blackhole) {
+    try {
+      final WasmValue[] result = targetFunction.call(testParams);
+      blackhole.consume(result.length);
+      return result;
+    } catch (final WasmException e) {
+      throw new RuntimeException("Function call failed", e);
+    }
   }
 
   /**
@@ -249,16 +186,19 @@ public class FunctionExecutionBenchmark extends BenchmarkBase {
    * @return the last function result
    */
   @Benchmark
-  public int benchmarkRepeatedFunctionCalls(final Blackhole blackhole) {
+  public WasmValue[] benchmarkRepeatedFunctionCalls(final Blackhole blackhole) {
     final int iterations = functionType.equals("RECURSIVE") ? 5 : 10;
-    int lastResult = 0;
+    WasmValue[] lastResult = null;
 
-    for (int i = 0; i < iterations; i++) {
-      lastResult = function.call(testParams);
-      blackhole.consume(lastResult);
+    try {
+      for (int i = 0; i < iterations; i++) {
+        lastResult = targetFunction.call(testParams);
+        blackhole.consume(lastResult.length);
+      }
+    } catch (final WasmException e) {
+      throw new RuntimeException("Repeated function calls failed", e);
     }
 
-    blackhole.consume(function.getExecutionCount());
     return lastResult;
   }
 
@@ -269,16 +209,18 @@ public class FunctionExecutionBenchmark extends BenchmarkBase {
    */
   @Benchmark
   public void benchmarkParameterVariations(final Blackhole blackhole) {
-    final int[][] paramVariations = generateParameterVariations();
+    final WasmValue[][] paramVariations = generateParameterVariations();
 
-    for (final int[] params : paramVariations) {
-      if (params.length == parameterCount) {
-        final int result = function.call(params);
-        blackhole.consume(result);
+    try {
+      for (final WasmValue[] params : paramVariations) {
+        if (params.length <= testParams.length) {
+          final WasmValue[] result = targetFunction.call(params);
+          blackhole.consume(result.length);
+        }
       }
+    } catch (final WasmException e) {
+      throw new RuntimeException("Parameter variations benchmark failed", e);
     }
-
-    blackhole.consume(function.getExecutionCount());
   }
 
   /**
@@ -288,12 +230,16 @@ public class FunctionExecutionBenchmark extends BenchmarkBase {
    */
   @Benchmark
   public void benchmarkFunctionCallWithValidation(final Blackhole blackhole) {
-    final int result = function.call(testParams);
+    try {
+      final WasmValue[] result = targetFunction.call(testParams);
 
-    // Validate result based on function type
-    final boolean isValidResult = validateResult(result);
-    blackhole.consume(isValidResult);
-    blackhole.consume(result);
+      // Validate result based on function type
+      final boolean isValidResult = validateResult(result);
+      blackhole.consume(isValidResult);
+      blackhole.consume(result.length);
+    } catch (final WasmException e) {
+      throw new RuntimeException("Function call with validation failed", e);
+    }
   }
 
   /**
@@ -304,21 +250,23 @@ public class FunctionExecutionBenchmark extends BenchmarkBase {
   @Benchmark
   public void benchmarkBatchFunctionExecution(final Blackhole blackhole) {
     final int batchSize = functionType.equals("RECURSIVE") ? 3 : 8;
-    final int[] results = new int[batchSize];
 
-    for (int i = 0; i < batchSize; i++) {
-      // Modify parameters slightly for each call
-      final int[] batchParams = testParams.clone();
-      for (int j = 0; j < batchParams.length; j++) {
-        batchParams[j] += i;
+    try {
+      for (int i = 0; i < batchSize; i++) {
+        // Modify parameters slightly for each call
+        final WasmValue[] batchParams = testParams.clone();
+        for (int j = 0; j < batchParams.length; j++) {
+          final int currentValue = batchParams[j].asI32();
+          batchParams[j] = WasmValue.i32(currentValue + i);
+        }
+
+        final WasmValue[] result = targetFunction.call(batchParams);
+        blackhole.consume(result.length);
       }
-
-      results[i] = function.call(batchParams);
-      blackhole.consume(results[i]);
+      blackhole.consume(batchSize);
+    } catch (final WasmException e) {
+      throw new RuntimeException("Batch function execution failed", e);
     }
-
-    blackhole.consume(results.length);
-    blackhole.consume(function.getExecutionCount());
   }
 
   /**
@@ -334,14 +282,17 @@ public class FunctionExecutionBenchmark extends BenchmarkBase {
       memoryPressure[i] = new int[256]; // 1KB per allocation
     }
 
-    final int result = function.call(testParams);
-
-    blackhole.consume(result);
-    blackhole.consume(memoryPressure.length);
-
-    // Clear memory pressure
-    for (int i = 0; i < memoryPressure.length; i++) {
-      memoryPressure[i] = null;
+    try {
+      final WasmValue[] result = targetFunction.call(testParams);
+      blackhole.consume(result.length);
+      blackhole.consume(memoryPressure.length);
+    } catch (final WasmException e) {
+      throw new RuntimeException("Function call with memory pressure failed", e);
+    } finally {
+      // Clear memory pressure
+      for (int i = 0; i < memoryPressure.length; i++) {
+        memoryPressure[i] = null;
+      }
     }
   }
 
@@ -359,15 +310,17 @@ public class FunctionExecutionBenchmark extends BenchmarkBase {
     for (int i = 0; i < 5; i++) {
       try {
         if (i % 3 == 0) {
-          // Invalid call with wrong parameter count
-          final int[] wrongParams = new int[parameterCount + 1];
-          function.call(wrongParams);
+          // Invalid call with wrong parameter count - create extra parameters
+          final WasmValue[] wrongParams = new WasmValue[testParams.length + 1];
+          System.arraycopy(testParams, 0, wrongParams, 0, testParams.length);
+          wrongParams[testParams.length] = WasmValue.i32(999);
+          targetFunction.call(wrongParams);
         } else {
           // Valid call
-          function.call(testParams);
+          targetFunction.call(testParams);
           successfulCalls++;
         }
-      } catch (final IllegalArgumentException e) {
+      } catch (final WasmException e) {
         errorCalls++;
         blackhole.consume(e.getMessage());
       }
@@ -384,12 +337,18 @@ public class FunctionExecutionBenchmark extends BenchmarkBase {
    */
   @Benchmark
   public void benchmarkCallStatistics(final Blackhole blackhole) {
-    final int result = function.call(testParams);
+    try {
+      final long startTime = System.nanoTime();
+      final WasmValue[] result = targetFunction.call(testParams);
+      final long endTime = System.nanoTime();
+      final long executionTime = endTime - startTime;
 
-    blackhole.consume(result);
-    blackhole.consume(function.getExecutionCount());
-    blackhole.consume(function.getTotalExecutionTime());
-    blackhole.consume(function.getAverageExecutionTime());
+      blackhole.consume(result.length);
+      blackhole.consume(executionTime);
+      blackhole.consume(functionType);
+    } catch (final WasmException e) {
+      throw new RuntimeException("Function call statistics failed", e);
+    }
   }
 
   /**
@@ -397,40 +356,44 @@ public class FunctionExecutionBenchmark extends BenchmarkBase {
    *
    * @return array of parameter combinations
    */
-  private int[][] generateParameterVariations() {
-    final int[][] variations = new int[6][];
+  private WasmValue[][] generateParameterVariations() {
+    final int actualParamCount = Math.min(parameterCount, testParams.length);
+    final WasmValue[][] variations = new WasmValue[6][];
 
     // Variation 1: All zeros
-    variations[0] = new int[parameterCount];
+    variations[0] = new WasmValue[actualParamCount];
+    for (int i = 0; i < actualParamCount; i++) {
+      variations[0][i] = WasmValue.i32(0);
+    }
 
     // Variation 2: Sequential numbers
-    variations[1] = new int[parameterCount];
-    for (int i = 0; i < parameterCount; i++) {
-      variations[1][i] = i + 1;
+    variations[1] = new WasmValue[actualParamCount];
+    for (int i = 0; i < actualParamCount; i++) {
+      variations[1][i] = WasmValue.i32(i + 1);
     }
 
     // Variation 3: All same value
-    variations[2] = new int[parameterCount];
-    for (int i = 0; i < parameterCount; i++) {
-      variations[2][i] = 42;
+    variations[2] = new WasmValue[actualParamCount];
+    for (int i = 0; i < actualParamCount; i++) {
+      variations[2][i] = WasmValue.i32(42);
     }
 
     // Variation 4: Large values
-    variations[3] = new int[parameterCount];
-    for (int i = 0; i < parameterCount; i++) {
-      variations[3][i] = 1000 + i;
+    variations[3] = new WasmValue[actualParamCount];
+    for (int i = 0; i < actualParamCount; i++) {
+      variations[3][i] = WasmValue.i32(1000 + i);
     }
 
-    // Variation 5: Negative values
-    variations[4] = new int[parameterCount];
-    for (int i = 0; i < parameterCount; i++) {
-      variations[4][i] = -(i + 1);
+    // Variation 5: Small positive values
+    variations[4] = new WasmValue[actualParamCount];
+    for (int i = 0; i < actualParamCount; i++) {
+      variations[4][i] = WasmValue.i32(i + 1);
     }
 
     // Variation 6: Mixed values
-    variations[5] = new int[parameterCount];
-    for (int i = 0; i < parameterCount; i++) {
-      variations[5][i] = (i % 2 == 0) ? i : -i;
+    variations[5] = new WasmValue[actualParamCount];
+    for (int i = 0; i < actualParamCount; i++) {
+      variations[5][i] = WasmValue.i32((i % 2 == 0) ? i : i + 10);
     }
 
     return variations;
@@ -442,26 +405,50 @@ public class FunctionExecutionBenchmark extends BenchmarkBase {
    * @param result the result to validate
    * @return true if the result is valid
    */
-  private boolean validateResult(final int result) {
+  private boolean validateResult(final WasmValue[] result) {
+    if (result == null || result.length == 0) {
+      return false;
+    }
+    
+    final int value = result[0].asI32();
+    
     switch (functionType) {
       case "SIMPLE":
         // For simple addition, result should be sum of parameters
         int expectedSum = 0;
-        for (final int param : testParams) {
-          expectedSum += param;
+        for (final WasmValue param : testParams) {
+          expectedSum += param.asI32();
         }
-        return result >= expectedSum; // Account for runtime overhead
+        return value >= expectedSum; // Account for any overhead
 
       case "COMPLEX":
         // Complex function should return non-zero for positive inputs
-        return result != 0;
+        return value != 0;
 
       case "RECURSIVE":
         // Fibonacci results should be non-negative
-        return result >= 0;
+        return value >= 0;
 
       default:
         return true;
+    }
+  }
+  
+  /**
+   * Gets the function name for the specified function type.
+   *
+   * @param type the function type
+   * @return the WebAssembly function name
+   */
+  private String getFunctionNameForType(final String type) {
+    switch (type) {
+      case "SIMPLE":
+        return "add";
+      case "COMPLEX":
+      case "RECURSIVE":
+        return "fibonacci";
+      default:
+        return "add";
     }
   }
 }

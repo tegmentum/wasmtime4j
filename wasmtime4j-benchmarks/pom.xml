@@ -44,8 +44,7 @@
             <artifactId>jmh-generator-annprocess</artifactId>
         </dependency>
 
-        <!-- Project Dependencies - will be added when other modules exist -->
-        <!-- 
+        <!-- Project Dependencies -->
         <dependency>
             <groupId>ai.tegmentum</groupId>
             <artifactId>wasmtime4j</artifactId>
@@ -58,7 +57,6 @@
             <groupId>ai.tegmentum</groupId>
             <artifactId>wasmtime4j-panama</artifactId>
         </dependency>
-        -->
 
         <!-- Test Dependencies -->
         <dependency>

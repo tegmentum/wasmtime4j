@@ -1,5 +1,13 @@
 package ai.tegmentum.wasmtime4j.benchmarks;
 
+import ai.tegmentum.wasmtime4j.Engine;
+import ai.tegmentum.wasmtime4j.Instance;
+import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.Store;
+import ai.tegmentum.wasmtime4j.WasmMemory;
+import ai.tegmentum.wasmtime4j.WasmRuntime;
+import ai.tegmentum.wasmtime4j.exception.WasmException;
+import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -55,157 +63,18 @@ public class MemoryOperationBenchmark extends BenchmarkBase {
   @Param({"SEQUENTIAL", "RANDOM", "BULK"})
   private String operationPattern;
 
-  /** Mock WebAssembly memory representation for testing. */
-  private static final class MockWasmMemory {
-    private final RuntimeType runtimeType;
-    private byte[] memory;
-    private int currentSize;
-    private final int pageSize = 65536; // 64KB per page
-    private long totalAllocations;
-    private long totalReads;
-    private long totalWrites;
-
-    MockWasmMemory(final RuntimeType runtimeType, final int initialSize) {
-      this.runtimeType = runtimeType;
-      this.currentSize = initialSize;
-      this.memory = new byte[initialSize];
-      this.totalAllocations = 1;
-      this.totalReads = 0;
-      this.totalWrites = 0;
-    }
-
-    void write(final int offset, final byte[] data) {
-      if (offset < 0 || offset + data.length > currentSize) {
-        throw new IndexOutOfBoundsException("Memory access out of bounds");
-      }
-
-      // Simulate write overhead based on runtime type
-      final int writeOverhead = runtimeType == RuntimeType.PANAMA ? 5 : 3;
-      for (int i = 0; i < writeOverhead; i++) {
-        Math.abs(data.length + i);
-      }
-
-      System.arraycopy(data, 0, memory, offset, data.length);
-      totalWrites++;
-    }
-
-    void writeInt(final int offset, final int value) {
-      final byte[] bytes = new byte[4];
-      bytes[0] = (byte) (value & 0xFF);
-      bytes[1] = (byte) ((value >> 8) & 0xFF);
-      bytes[2] = (byte) ((value >> 16) & 0xFF);
-      bytes[3] = (byte) ((value >> 24) & 0xFF);
-      write(offset, bytes);
-    }
-
-    byte[] read(final int offset, final int length) {
-      if (offset < 0 || offset + length > currentSize) {
-        throw new IndexOutOfBoundsException("Memory access out of bounds");
-      }
-
-      // Simulate read overhead based on runtime type
-      final int readOverhead = runtimeType == RuntimeType.PANAMA ? 7 : 4;
-      for (int i = 0; i < readOverhead; i++) {
-        Math.sqrt(length + i);
-      }
-
-      final byte[] result = new byte[length];
-      System.arraycopy(memory, offset, result, 0, length);
-      totalReads++;
-      return result;
-    }
-
-    int readInt(final int offset) {
-      final byte[] bytes = read(offset, 4);
-      return (bytes[0] & 0xFF)
-          | ((bytes[1] & 0xFF) << 8)
-          | ((bytes[2] & 0xFF) << 16)
-          | ((bytes[3] & 0xFF) << 24);
-    }
-
-    void grow(final int additionalPages) {
-      final int additionalSize = additionalPages * pageSize;
-      final byte[] newMemory = new byte[currentSize + additionalSize];
-
-      // Simulate growth overhead
-      final int growthOverhead = runtimeType == RuntimeType.PANAMA ? 20 : 15;
-      for (int i = 0; i < growthOverhead; i++) {
-        Math.log(currentSize + additionalSize + i);
-      }
-
-      System.arraycopy(memory, 0, newMemory, 0, currentSize);
-      memory = newMemory;
-      currentSize += additionalSize;
-      totalAllocations++;
-    }
-
-    void fill(final int offset, final int length, final byte value) {
-      if (offset < 0 || offset + length > currentSize) {
-        throw new IndexOutOfBoundsException("Memory fill out of bounds");
-      }
-
-      // Simulate fill overhead
-      final int fillOverhead = runtimeType == RuntimeType.PANAMA ? 3 : 2;
-      for (int i = 0; i < fillOverhead; i++) {
-        Math.pow(length, 0.5);
-      }
-
-      for (int i = 0; i < length; i++) {
-        memory[offset + i] = value;
-      }
-      totalWrites++;
-    }
-
-    void copy(final int srcOffset, final int dstOffset, final int length) {
-      if (srcOffset < 0
-          || srcOffset + length > currentSize
-          || dstOffset < 0
-          || dstOffset + length > currentSize) {
-        throw new IndexOutOfBoundsException("Memory copy out of bounds");
-      }
-
-      // Simulate copy overhead
-      final int copyOverhead = runtimeType == RuntimeType.PANAMA ? 8 : 5;
-      for (int i = 0; i < copyOverhead; i++) {
-        Math.abs(length * i);
-      }
-
-      System.arraycopy(memory, srcOffset, memory, dstOffset, length);
-      totalReads++;
-      totalWrites++;
-    }
-
-    void reset() {
-      for (int i = 0; i < memory.length; i++) {
-        memory[i] = 0;
-      }
-      totalReads = 0;
-      totalWrites = 0;
-    }
-
-    public int getCurrentSize() {
-      return currentSize;
-    }
-
-    public long getTotalAllocations() {
-      return totalAllocations;
-    }
-
-    public long getTotalReads() {
-      return totalReads;
-    }
-
-    public long getTotalWrites() {
-      return totalWrites;
-    }
-
-    public RuntimeType getRuntimeType() {
-      return runtimeType;
-    }
-  }
-
-  /** Memory instance being benchmarked. */
-  private MockWasmMemory memory;
+  /** WebAssembly runtime components. */
+  private WasmRuntime runtime;
+  private Engine engine;
+  private Store store;
+  private Module module;
+  private Instance instance;
+  
+  /** WebAssembly memory instance. */
+  private WasmMemory wasmMemory;
+  
+  /** Current module bytecode. */
+  private byte[] moduleBytes;
 
   /** Test data for memory operations. */
   private byte[] testData;
@@ -215,35 +84,78 @@ public class MemoryOperationBenchmark extends BenchmarkBase {
 
   /** Setup performed before each benchmark iteration. */
   @Setup(Level.Iteration)
-  public void setupIteration() {
-    // Create memory instance
-    memory = new MockWasmMemory(runtimeType, memorySize * 2); // Allocate 2x for growth tests
+  public void setupIteration() throws WasmException {
+    // Create runtime components
+    runtime = createRuntime(runtimeType);
+    engine = createEngine(runtime);
+    store = createStore(engine);
+    
+    // Use complex module which includes memory
+    moduleBytes = COMPLEX_WASM_MODULE.clone();
+    
+    // Compile and instantiate module
+    module = compileModule(engine, moduleBytes);
+    instance = instantiateModule(store, module);
+    
+    // Get WebAssembly memory
+    wasmMemory = instance.getExportedMemory("memory");
+    if (wasmMemory == null) {
+      throw new WasmException("WebAssembly memory not found");
+    }
 
     // Initialize test data
-    testData = new byte[memorySize];
+    testData = new byte[Math.min(memorySize, (int) wasmMemory.getSize())];
     for (int i = 0; i < testData.length; i++) {
       testData[i] = (byte) (i % 256);
     }
 
     // Generate random offsets for random access patterns
     randomOffsets = new int[100];
+    final int maxOffset = Math.max(1, (int) wasmMemory.getSize() - 1024);
     for (int i = 0; i < randomOffsets.length; i++) {
-      randomOffsets[i] = (int) (Math.random() * (memorySize - 1024));
+      randomOffsets[i] = (int) (Math.random() * maxOffset);
     }
-
-    // Reset memory statistics
-    memory.reset();
   }
 
   /** Cleanup performed after each benchmark iteration. */
   @TearDown(Level.Iteration)
   public void teardownIteration() {
-    if (memory != null) {
-      memory.reset();
-      memory = null;
-    }
+    cleanup();
     testData = null;
     randomOffsets = null;
+    moduleBytes = null;
+  }
+  
+  /** Helper method to clean up WebAssembly resources. */
+  private void cleanup() {
+    try {
+      if (wasmMemory != null) {
+        wasmMemory.close();
+        wasmMemory = null;
+      }
+      if (instance != null) {
+        instance.close();
+        instance = null;
+      }
+      if (module != null) {
+        module.close();
+        module = null;
+      }
+      if (store != null) {
+        store.close();
+        store = null;
+      }
+      if (engine != null) {
+        engine.close();
+        engine = null;
+      }
+      if (runtime != null) {
+        runtime.close();
+        runtime = null;
+      }
+    } catch (final Exception e) {
+      // Ignore cleanup errors in benchmarks
+    }
   }
 
   /**
@@ -253,35 +165,40 @@ public class MemoryOperationBenchmark extends BenchmarkBase {
    */
   @Benchmark
   public void benchmarkMemoryWrite(final Blackhole blackhole) {
-    switch (operationPattern) {
-      case "SEQUENTIAL":
-        memory.write(0, testData);
-        break;
-      case "RANDOM":
-        final int chunkSize = 256;
-        for (final int offset : randomOffsets) {
-          if (offset + chunkSize <= testData.length) {
-            final byte[] chunk = new byte[chunkSize];
-            System.arraycopy(testData, offset, chunk, 0, chunkSize);
-            memory.write(offset, chunk);
+    try {
+      switch (operationPattern) {
+        case "SEQUENTIAL":
+          wasmMemory.write(0, testData);
+          break;
+        case "RANDOM":
+          final int chunkSize = 256;
+          for (final int offset : randomOffsets) {
+            if (offset + chunkSize <= testData.length && offset + chunkSize <= wasmMemory.getSize()) {
+              final byte[] chunk = new byte[chunkSize];
+              System.arraycopy(testData, 0, chunk, 0, chunkSize);
+              wasmMemory.write(offset, chunk);
+            }
           }
-        }
-        break;
-      case "BULK":
-        // Write in large chunks
-        final int bulkSize = memorySize / 4;
-        for (int i = 0; i < 4; i++) {
-          final int offset = i * bulkSize;
-          final byte[] bulk = new byte[bulkSize];
-          System.arraycopy(testData, 0, bulk, 0, Math.min(bulkSize, testData.length));
-          memory.write(offset, bulk);
-        }
-        break;
-      default:
-        throw new IllegalArgumentException("Unknown operation pattern: " + operationPattern);
+          break;
+        case "BULK":
+          // Write in large chunks
+          final int bulkSize = (int) Math.min(memorySize / 4, wasmMemory.getSize() / 4);
+          for (int i = 0; i < 4; i++) {
+            final int offset = i * bulkSize;
+            if (offset + bulkSize <= wasmMemory.getSize()) {
+              final byte[] bulk = new byte[bulkSize];
+              System.arraycopy(testData, 0, bulk, 0, Math.min(bulkSize, testData.length));
+              wasmMemory.write(offset, bulk);
+            }
+          }
+          break;
+        default:
+          throw new IllegalArgumentException("Unknown operation pattern: " + operationPattern);
+      }
+      blackhole.consume(wasmMemory.getSize());
+    } catch (final WasmException e) {
+      throw new RuntimeException("Memory write failed", e);
     }
-
-    blackhole.consume(memory.getTotalWrites());
   }
 
   /**
@@ -291,40 +208,43 @@ public class MemoryOperationBenchmark extends BenchmarkBase {
    */
   @Benchmark
   public void benchmarkMemoryRead(final Blackhole blackhole) {
-    // First write data
-    memory.write(0, testData);
+    try {
+      // First write data
+      wasmMemory.write(0, testData);
 
-    switch (operationPattern) {
-      case "SEQUENTIAL":
-        final byte[] allData = memory.read(0, testData.length);
-        blackhole.consume(allData.length);
-        break;
-      case "RANDOM":
-        final int chunkSize = 128;
-        for (final int offset : randomOffsets) {
-          if (offset + chunkSize <= memory.getCurrentSize()) {
-            final byte[] chunk = memory.read(offset, chunkSize);
-            blackhole.consume(chunk.length);
+      switch (operationPattern) {
+        case "SEQUENTIAL":
+          final byte[] allData = wasmMemory.read(0, testData.length);
+          blackhole.consume(allData.length);
+          break;
+        case "RANDOM":
+          final int chunkSize = 128;
+          for (final int offset : randomOffsets) {
+            if (offset + chunkSize <= wasmMemory.getSize()) {
+              final byte[] chunk = wasmMemory.read(offset, chunkSize);
+              blackhole.consume(chunk.length);
+            }
           }
-        }
-        break;
-      case "BULK":
-        // Read in large chunks
-        final int bulkSize = memorySize / 3;
-        for (int i = 0; i < 3; i++) {
-          final int offset = i * bulkSize;
-          final int readSize = Math.min(bulkSize, memory.getCurrentSize() - offset);
-          if (readSize > 0) {
-            final byte[] bulk = memory.read(offset, readSize);
-            blackhole.consume(bulk.length);
+          break;
+        case "BULK":
+          // Read in large chunks
+          final int bulkSize = (int) Math.min(memorySize / 3, wasmMemory.getSize() / 3);
+          for (int i = 0; i < 3; i++) {
+            final int offset = i * bulkSize;
+            final int readSize = (int) Math.min(bulkSize, wasmMemory.getSize() - offset);
+            if (readSize > 0) {
+              final byte[] bulk = wasmMemory.read(offset, readSize);
+              blackhole.consume(bulk.length);
+            }
           }
-        }
-        break;
-      default:
-        throw new IllegalArgumentException("Unknown operation pattern: " + operationPattern);
+          break;
+        default:
+          throw new IllegalArgumentException("Unknown operation pattern: " + operationPattern);
+      }
+      blackhole.consume(wasmMemory.getSize());
+    } catch (final WasmException e) {
+      throw new RuntimeException("Memory read failed", e);
     }
-
-    blackhole.consume(memory.getTotalReads());
   }
 
   /**
@@ -334,22 +254,30 @@ public class MemoryOperationBenchmark extends BenchmarkBase {
    */
   @Benchmark
   public void benchmarkIntegerOperations(final Blackhole blackhole) {
-    final int numInts = memorySize / 4;
+    try {
+      final int numInts = (int) Math.min(memorySize / 4, wasmMemory.getSize() / 4);
 
-    // Write integers
-    for (int i = 0; i < numInts && i * 4 < memory.getCurrentSize() - 4; i++) {
-      memory.writeInt(i * 4, i * 1000);
+      // Write integers using ByteBuffer
+      final ByteBuffer writeBuffer = ByteBuffer.allocate(4);
+      for (int i = 0; i < numInts && i * 4 < wasmMemory.getSize() - 4; i++) {
+        writeBuffer.clear();
+        writeBuffer.putInt(i * 1000);
+        wasmMemory.write(i * 4, writeBuffer.array());
+      }
+
+      // Read integers back
+      long sum = 0;
+      for (int i = 0; i < numInts && i * 4 < wasmMemory.getSize() - 4; i++) {
+        final byte[] intBytes = wasmMemory.read(i * 4, 4);
+        final ByteBuffer readBuffer = ByteBuffer.wrap(intBytes);
+        sum += readBuffer.getInt();
+      }
+
+      blackhole.consume(sum);
+      blackhole.consume(numInts);
+    } catch (final WasmException e) {
+      throw new RuntimeException("Integer operations failed", e);
     }
-
-    // Read integers back
-    int sum = 0;
-    for (int i = 0; i < numInts && i * 4 < memory.getCurrentSize() - 4; i++) {
-      sum += memory.readInt(i * 4);
-    }
-
-    blackhole.consume(sum);
-    blackhole.consume(memory.getTotalReads());
-    blackhole.consume(memory.getTotalWrites());
   }
 
   /**
@@ -359,29 +287,49 @@ public class MemoryOperationBenchmark extends BenchmarkBase {
    */
   @Benchmark
   public void benchmarkMemoryFill(final Blackhole blackhole) {
-    switch (operationPattern) {
-      case "SEQUENTIAL":
-        memory.fill(0, memorySize, (byte) 0x42);
-        break;
-      case "RANDOM":
-        final int fillSize = 512;
-        for (final int offset : randomOffsets) {
-          if (offset + fillSize <= memory.getCurrentSize()) {
-            memory.fill(offset, fillSize, (byte) (offset % 256));
+    try {
+      switch (operationPattern) {
+        case "SEQUENTIAL":
+          final int fillSize = (int) Math.min(memorySize, wasmMemory.getSize());
+          final byte[] fillData = new byte[fillSize];
+          for (int i = 0; i < fillData.length; i++) {
+            fillData[i] = (byte) 0x42;
           }
-        }
-        break;
-      case "BULK":
-        // Fill in large sections
-        final int sectionSize = memorySize / 2;
-        memory.fill(0, sectionSize, (byte) 0xAA);
-        memory.fill(sectionSize, sectionSize, (byte) 0x55);
-        break;
-      default:
-        throw new IllegalArgumentException("Unknown operation pattern: " + operationPattern);
+          wasmMemory.write(0, fillData);
+          break;
+        case "RANDOM":
+          final int chunkFillSize = 512;
+          final byte[] chunkFillData = new byte[chunkFillSize];
+          for (final int offset : randomOffsets) {
+            if (offset + chunkFillSize <= wasmMemory.getSize()) {
+              for (int i = 0; i < chunkFillData.length; i++) {
+                chunkFillData[i] = (byte) (offset % 256);
+              }
+              wasmMemory.write(offset, chunkFillData);
+            }
+          }
+          break;
+        case "BULK":
+          // Fill in large sections
+          final int sectionSize = (int) Math.min(memorySize / 2, wasmMemory.getSize() / 2);
+          final byte[] section1 = new byte[sectionSize];
+          final byte[] section2 = new byte[sectionSize];
+          for (int i = 0; i < sectionSize; i++) {
+            section1[i] = (byte) 0xAA;
+            section2[i] = (byte) 0x55;
+          }
+          wasmMemory.write(0, section1);
+          if (sectionSize * 2 <= wasmMemory.getSize()) {
+            wasmMemory.write(sectionSize, section2);
+          }
+          break;
+        default:
+          throw new IllegalArgumentException("Unknown operation pattern: " + operationPattern);
+      }
+      blackhole.consume(wasmMemory.getSize());
+    } catch (final WasmException e) {
+      throw new RuntimeException("Memory fill failed", e);
     }
-
-    blackhole.consume(memory.getTotalWrites());
   }
 
   /**
@@ -391,38 +339,48 @@ public class MemoryOperationBenchmark extends BenchmarkBase {
    */
   @Benchmark
   public void benchmarkMemoryCopy(final Blackhole blackhole) {
-    // First write some data to copy
-    memory.write(0, testData);
+    try {
+      // First write some data to copy
+      wasmMemory.write(0, testData);
 
-    switch (operationPattern) {
-      case "SEQUENTIAL":
-        // Copy first half to second half
-        final int halfSize = memorySize / 2;
-        memory.copy(0, halfSize, halfSize);
-        break;
-      case "RANDOM":
-        final int copySize = 256;
-        for (int i = 0; i < randomOffsets.length / 2; i += 2) {
-          final int srcOffset = randomOffsets[i];
-          final int dstOffset = randomOffsets[i + 1];
-          if (srcOffset + copySize <= memory.getCurrentSize()
-              && dstOffset + copySize <= memory.getCurrentSize()) {
-            memory.copy(srcOffset, dstOffset, copySize);
+      switch (operationPattern) {
+        case "SEQUENTIAL":
+          // Copy first half to second half
+          final int halfSize = (int) Math.min(memorySize / 2, wasmMemory.getSize() / 2);
+          if (halfSize * 2 <= wasmMemory.getSize()) {
+            final byte[] copyData = wasmMemory.read(0, halfSize);
+            wasmMemory.write(halfSize, copyData);
           }
-        }
-        break;
-      case "BULK":
-        // Copy in overlapping blocks
-        final int blockSize = memorySize / 4;
-        memory.copy(0, blockSize, blockSize);
-        memory.copy(blockSize, blockSize * 2, blockSize);
-        break;
-      default:
-        throw new IllegalArgumentException("Unknown operation pattern: " + operationPattern);
+          break;
+        case "RANDOM":
+          final int copySize = 256;
+          for (int i = 0; i < randomOffsets.length / 2; i += 2) {
+            final int srcOffset = randomOffsets[i];
+            final int dstOffset = randomOffsets[i + 1];
+            if (srcOffset + copySize <= wasmMemory.getSize()
+                && dstOffset + copySize <= wasmMemory.getSize()) {
+              final byte[] copyData = wasmMemory.read(srcOffset, copySize);
+              wasmMemory.write(dstOffset, copyData);
+            }
+          }
+          break;
+        case "BULK":
+          // Copy in non-overlapping blocks
+          final int blockSize = (int) Math.min(memorySize / 4, wasmMemory.getSize() / 4);
+          if (blockSize * 3 <= wasmMemory.getSize()) {
+            final byte[] block1 = wasmMemory.read(0, blockSize);
+            final byte[] block2 = wasmMemory.read(blockSize, blockSize);
+            wasmMemory.write(blockSize, block1);
+            wasmMemory.write(blockSize * 2, block2);
+          }
+          break;
+        default:
+          throw new IllegalArgumentException("Unknown operation pattern: " + operationPattern);
+      }
+      blackhole.consume(wasmMemory.getSize());
+    } catch (final WasmException e) {
+      throw new RuntimeException("Memory copy failed", e);
     }
-
-    blackhole.consume(memory.getTotalReads());
-    blackhole.consume(memory.getTotalWrites());
   }
 
   /**
@@ -432,28 +390,35 @@ public class MemoryOperationBenchmark extends BenchmarkBase {
    */
   @Benchmark
   public void benchmarkMemoryGrowth(final Blackhole blackhole) {
-    final int initialSize = memory.getCurrentSize();
+    try {
+      final long initialSize = wasmMemory.getSize();
 
-    // Grow memory by 1-3 pages depending on pattern
-    switch (operationPattern) {
-      case "SEQUENTIAL":
-        memory.grow(1);
-        break;
-      case "RANDOM":
-        // Random growth between 1-2 pages
-        final int pages = 1 + (int) (Math.random() * 2);
-        memory.grow(pages);
-        break;
-      case "BULK":
-        memory.grow(3);
-        break;
-      default:
-        throw new IllegalArgumentException("Unknown operation pattern: " + operationPattern);
+      // Grow memory by 1-3 pages depending on pattern
+      int pages;
+      switch (operationPattern) {
+        case "SEQUENTIAL":
+          pages = 1;
+          break;
+        case "RANDOM":
+          // Random growth between 1-2 pages
+          pages = 1 + (int) (Math.random() * 2);
+          break;
+        case "BULK":
+          pages = 3;
+          break;
+        default:
+          throw new IllegalArgumentException("Unknown operation pattern: " + operationPattern);
+      }
+      
+      final long oldSize = wasmMemory.getSize();
+      final boolean growthSuccess = wasmMemory.grow(pages);
+      final long newSize = wasmMemory.getSize();
+      
+      blackhole.consume(newSize - oldSize);
+      blackhole.consume(growthSuccess);
+    } catch (final WasmException e) {
+      throw new RuntimeException("Memory growth failed", e);
     }
-
-    final int newSize = memory.getCurrentSize();
-    blackhole.consume(newSize - initialSize);
-    blackhole.consume(memory.getTotalAllocations());
   }
 
   /**
@@ -463,36 +428,59 @@ public class MemoryOperationBenchmark extends BenchmarkBase {
    */
   @Benchmark
   public void benchmarkMixedOperations(final Blackhole blackhole) {
-    // Write initial data
-    memory.write(0, testData);
+    try {
+      // Write initial data
+      wasmMemory.write(0, testData);
 
-    // Perform mixed operations
-    final int quarterSize = memorySize / 4;
+      // Perform mixed operations
+      final int quarterSize = (int) Math.min(memorySize / 4, wasmMemory.getSize() / 4);
 
-    // 1. Read some data
-    final byte[] readData = memory.read(0, quarterSize);
-    blackhole.consume(readData.length);
+      // 1. Read some data
+      final byte[] readData = wasmMemory.read(0, quarterSize);
+      blackhole.consume(readData.length);
 
-    // 2. Fill a section
-    memory.fill(quarterSize, quarterSize, (byte) 0xFF);
+      // 2. Fill a section
+      if (quarterSize * 2 <= wasmMemory.getSize()) {
+        final byte[] fillData = new byte[quarterSize];
+        for (int i = 0; i < fillData.length; i++) {
+          fillData[i] = (byte) 0xFF;
+        }
+        wasmMemory.write(quarterSize, fillData);
+      }
 
-    // 3. Copy data
-    memory.copy(0, quarterSize * 2, quarterSize);
+      // 3. Copy data
+      if (quarterSize * 3 <= wasmMemory.getSize()) {
+        final byte[] copyData = wasmMemory.read(0, quarterSize);
+        wasmMemory.write(quarterSize * 2, copyData);
+      }
 
-    // 4. Write integers
-    for (int i = 0; i < 10; i++) {
-      memory.writeInt((quarterSize * 3) + (i * 4), i * 100);
+      // 4. Write integers
+      final ByteBuffer intBuffer = ByteBuffer.allocate(4);
+      for (int i = 0; i < 10; i++) {
+        final int offset = (quarterSize * 3) + (i * 4);
+        if (offset + 4 <= wasmMemory.getSize()) {
+          intBuffer.clear();
+          intBuffer.putInt(i * 100);
+          wasmMemory.write(offset, intBuffer.array());
+        }
+      }
+
+      // 5. Read integers back
+      long sum = 0;
+      for (int i = 0; i < 10; i++) {
+        final int offset = (quarterSize * 3) + (i * 4);
+        if (offset + 4 <= wasmMemory.getSize()) {
+          final byte[] intBytes = wasmMemory.read(offset, 4);
+          final ByteBuffer readBuffer = ByteBuffer.wrap(intBytes);
+          sum += readBuffer.getInt();
+        }
+      }
+
+      blackhole.consume(sum);
+      blackhole.consume(quarterSize);
+    } catch (final WasmException e) {
+      throw new RuntimeException("Mixed operations failed", e);
     }
-
-    // 5. Read integers back
-    int sum = 0;
-    for (int i = 0; i < 10; i++) {
-      sum += memory.readInt((quarterSize * 3) + (i * 4));
-    }
-
-    blackhole.consume(sum);
-    blackhole.consume(memory.getTotalReads());
-    blackhole.consume(memory.getTotalWrites());
   }
 
   /**
@@ -508,17 +496,24 @@ public class MemoryOperationBenchmark extends BenchmarkBase {
       pressure[i] = new byte[4096]; // 4KB per allocation
     }
 
-    // Perform operations under pressure
-    memory.write(0, testData);
-    final byte[] readBack = memory.read(0, testData.length);
-    memory.fill(0, memorySize / 2, (byte) 0x00);
+    try {
+      // Perform operations under pressure
+      wasmMemory.write(0, testData);
+      final byte[] readBack = wasmMemory.read(0, testData.length);
+      
+      final int fillSize = (int) Math.min(memorySize / 2, wasmMemory.getSize() / 2);
+      final byte[] fillData = new byte[fillSize];
+      wasmMemory.write(0, fillData);
 
-    blackhole.consume(readBack.length);
-    blackhole.consume(pressure.length);
-
-    // Clear pressure
-    for (int i = 0; i < pressure.length; i++) {
-      pressure[i] = null;
+      blackhole.consume(readBack.length);
+      blackhole.consume(pressure.length);
+    } catch (final WasmException e) {
+      throw new RuntimeException("Memory operations with pressure failed", e);
+    } finally {
+      // Clear pressure
+      for (int i = 0; i < pressure.length; i++) {
+        pressure[i] = null;
+      }
     }
   }
 
@@ -537,19 +532,19 @@ public class MemoryOperationBenchmark extends BenchmarkBase {
       try {
         if (i % 4 == 0) {
           // Invalid: out of bounds write
-          memory.write(memory.getCurrentSize(), testData);
+          wasmMemory.write((int) wasmMemory.getSize(), testData);
         } else if (i % 4 == 1) {
           // Invalid: out of bounds read
-          memory.read(memory.getCurrentSize(), 1024);
+          wasmMemory.read((int) wasmMemory.getSize(), 1024);
         } else {
           // Valid operations
           final int safeOffset = i * 100;
-          if (safeOffset + 100 < memory.getCurrentSize()) {
-            memory.write(safeOffset, new byte[100]);
+          if (safeOffset + 100 < wasmMemory.getSize()) {
+            wasmMemory.write(safeOffset, new byte[100]);
             validOperations++;
           }
         }
-      } catch (final IndexOutOfBoundsException e) {
+      } catch (final WasmException e) {
         invalidOperations++;
         blackhole.consume(e.getMessage());
       }
