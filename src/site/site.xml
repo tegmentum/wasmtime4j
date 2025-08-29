@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="Wasmtime4j" 
+         xmlns="http://maven.apache.org/DECORATION/1.8.0" 
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/DECORATION/1.8.0 
+                             https://maven.apache.org/xsd/decoration-1.8.0.xsd">
+
+  <custom>
+    <fluidoSkin>
+      <topBarEnabled>true</topBarEnabled>
+      <sideBarEnabled>true</sideBarEnabled>
+      <searchEnabled>true</searchEnabled>
+      <gitHub>
+        <projectId>tegmentum/wasmtime4j</projectId>
+        <ribbonOrientation>right</ribbonOrientation>
+        <ribbonColor>black</ribbonColor>
+      </gitHub>
+      <twitter>
+        <user>wasmtime4j</user>
+        <showUser>false</showUser>
+        <showFollowers>false</showFollowers>
+      </twitter>
+      <plusOne>false</plusOne>
+      <facebookLike>false</facebookLike>
+      <sourceLineNumbersEnabled>true</sourceLineNumbersEnabled>
+    </fluidoSkin>
+  </custom>
+
+  <bannerLeft>
+    <name>Wasmtime4j</name>
+    <alt>Wasmtime4j</alt>
+    <href>https://wasmtime4j.tegmentum.ai/</href>
+  </bannerLeft>
+
+  <version position="right"/>
+
+  <publishDate position="right" format="yyyy-MM-dd"/>
+
+  <skin>
+    <groupId>org.apache.maven.skins</groupId>
+    <artifactId>maven-fluido-skin</artifactId>
+    <version>1.11.1</version>
+  </skin>
+
+  <body>
+    <head>
+      <meta name="description" content="Java bindings for the Wasmtime WebAssembly runtime" />
+      <meta name="keywords" content="WebAssembly, Wasmtime, Java, WASM, JNI, Panama, FFI" />
+    </head>
+
+    <menu name="Getting Started">
+      <item name="Overview" href="index.html"/>
+      <item name="Quick Start" href="getting-started.html"/>
+      <item name="Installation" href="installation.html"/>
+      <item name="Examples" href="examples.html"/>
+    </menu>
+
+    <menu name="User Guide">
+      <item name="Basic Usage" href="basic-usage.html"/>
+      <item name="Advanced Features" href="advanced-usage.html"/>
+      <item name="WASI Integration" href="wasi-guide.html"/>
+      <item name="Performance" href="performance.html"/>
+      <item name="Security" href="security.html"/>
+      <item name="Troubleshooting" href="troubleshooting.html"/>
+    </menu>
+
+    <menu name="API Documentation">
+      <item name="Javadoc" href="apidocs/index.html"/>
+      <item name="Cross Reference" href="xref/index.html"/>
+      <item name="Test Coverage" href="jacoco/index.html"/>
+    </menu>
+
+    <menu name="Development">
+      <item name="Architecture" href="architecture.html"/>
+      <item name="Building" href="building.html"/>
+      <item name="Contributing" href="contributing.html"/>
+      <item name="Migration Guide" href="migration.html"/>
+    </menu>
+
+    <menu name="Reference">
+      <item name="Configuration" href="configuration.html"/>
+      <item name="WebAssembly Modules" href="wasm-modules.html"/>
+      <item name="Platform Support" href="platforms.html"/>
+      <item name="FAQ" href="faq.html"/>
+    </menu>
+
+    <menu name="Project Information">
+      <item name="About" href="project-info.html"/>
+      <item name="Team" href="team.html"/>
+      <item name="Source Repository" href="scm.html"/>
+      <item name="Issue Tracking" href="issue-tracking.html"/>
+      <item name="Continuous Integration" href="ci-management.html"/>
+      <item name="Dependencies" href="dependencies.html"/>
+      <item name="Plugin Management" href="plugin-management.html"/>
+      <item name="Project Reports" href="project-reports.html"/>
+    </menu>
+
+    <menu name="Project Reports">
+      <item name="Code Quality" href="code-quality.html"/>
+      <item name="Test Reports" href="surefire-report.html"/>
+      <item name="Code Coverage" href="jacoco/index.html"/>
+      <item name="Static Analysis" href="spotbugs.html"/>
+      <item name="Dependency Check" href="dependency-check-report.html"/>
+    </menu>
+
+    <footer>
+      <div class="row-fluid">
+        <div class="span12">
+          <div class="span3">
+            <h5>Quick Links</h5>
+            <ul>
+              <li><a href="getting-started.html">Getting Started</a></li>
+              <li><a href="apidocs/index.html">API Documentation</a></li>
+              <li><a href="examples.html">Examples</a></li>
+              <li><a href="troubleshooting.html">Troubleshooting</a></li>
+            </ul>
+          </div>
+          <div class="span3">
+            <h5>Community</h5>
+            <ul>
+              <li><a href="https://github.com/tegmentum/wasmtime4j">GitHub</a></li>
+              <li><a href="https://github.com/tegmentum/wasmtime4j/issues">Issue Tracker</a></li>
+              <li><a href="https://github.com/tegmentum/wasmtime4j/discussions">Discussions</a></li>
+            </ul>
+          </div>
+          <div class="span3">
+            <h5>Related Projects</h5>
+            <ul>
+              <li><a href="https://wasmtime.dev/">Wasmtime</a></li>
+              <li><a href="https://webassembly.org/">WebAssembly</a></li>
+              <li><a href="https://wasi.dev/">WASI</a></li>
+            </ul>
+          </div>
+          <div class="span3">
+            <h5>Legal</h5>
+            <ul>
+              <li><a href="license.html">License</a></li>
+              <li><a href="privacy.html">Privacy Policy</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <hr/>
+      <div class="row-fluid">
+        <div class="span12">
+          <p class="center">
+            Copyright ©2024 Tegmentum AI. All rights reserved.
+            Licensed under the <a href="license.html">Apache License 2.0</a>.
+          </p>
+        </div>
+      </div>
+    </footer>
+
+  </body>
+</project>
