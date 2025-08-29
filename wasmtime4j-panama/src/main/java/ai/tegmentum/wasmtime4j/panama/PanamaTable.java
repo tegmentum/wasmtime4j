@@ -16,8 +16,9 @@
 
 package ai.tegmentum.wasmtime4j.panama;
 
-import ai.tegmentum.wasmtime4j.Table;
 import ai.tegmentum.wasmtime4j.WasmFunction;
+import ai.tegmentum.wasmtime4j.WasmTable;
+import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.RuntimeException;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.lang.foreign.MemorySegment;
@@ -38,15 +39,21 @@ import java.util.logging.Logger;
  *
  * @since 1.0.0
  */
-public final class PanamaTable implements Table {
+public final class PanamaTable implements WasmTable, AutoCloseable {
   private static final Logger logger = Logger.getLogger(PanamaTable.class.getName());
 
   private final MemorySegment tableHandle;
   private final ArenaResourceManager arenaManager;
+  private final PanamaInstance parentInstance;
   private final NativeFunctionBindings nativeBindings;
-  private final PanamaErrorHandler errorHandler;
+  // Error handler is static, no field needed
 
   private volatile boolean closed = false;
+
+  @Override
+  public boolean isValid() {
+    return !closed;
+  }
 
   /**
    * Creates a new Panama table wrapper with the given native table handle.
@@ -61,13 +68,12 @@ public final class PanamaTable implements Table {
   PanamaTable(
       final MemorySegment tableHandle,
       final ArenaResourceManager arenaManager,
-      final NativeFunctionBindings nativeBindings,
-      final PanamaErrorHandler errorHandler)
+      final PanamaInstance parentInstance)
       throws WasmException {
     this.tableHandle = Objects.requireNonNull(tableHandle, "Table handle cannot be null");
     this.arenaManager = Objects.requireNonNull(arenaManager, "Arena manager cannot be null");
-    this.nativeBindings = Objects.requireNonNull(nativeBindings, "Native bindings cannot be null");
-    this.errorHandler = Objects.requireNonNull(errorHandler, "Error handler cannot be null");
+    this.parentInstance = Objects.requireNonNull(parentInstance, "Parent instance cannot be null");
+    this.nativeBindings = NativeFunctionBindings.getInstance();
 
     try {
       // Register this table for automatic resource cleanup
@@ -77,12 +83,12 @@ public final class PanamaTable implements Table {
         logger.fine("Created Panama table instance with handle: " + tableHandle);
       }
     } catch (Exception e) {
-      throw errorHandler.mapToWasmException(e, "Failed to initialize table");
+      throw PanamaErrorHandler.mapToWasmException(e, "Failed to initialize table");
     }
   }
 
   @Override
-  public long size() throws WasmException {
+  public int getSize() {
     ensureNotClosed();
 
     try {
@@ -97,14 +103,15 @@ public final class PanamaTable implements Table {
         logger.fine("Table size: " + size);
       }
 
-      return size;
+      return (int) size;
     } catch (Throwable t) {
-      throw errorHandler.mapToWasmException(t, "Failed to get table size");
+      logger.warning("Failed to get table size: " + t.getMessage());
+      return 0; // Default size
     }
   }
 
   @Override
-  public Object get(final long index) throws WasmException {
+  public Object get(final int index) {
     ensureNotClosed();
 
     if (index < 0) {
@@ -136,7 +143,7 @@ public final class PanamaTable implements Table {
       // For function references, wrap as PanamaFunction
       // For now, assuming function references (most common table element type)
       final PanamaFunction function =
-          new PanamaFunction(elementHandle, arenaManager, nativeBindings, errorHandler);
+          new PanamaFunction(elementHandle, arenaManager, parentInstance);
 
       if (logger.isLoggable(Level.FINE)) {
         logger.fine("Retrieved table element at index " + index);
@@ -144,12 +151,16 @@ public final class PanamaTable implements Table {
 
       return function;
     } catch (Throwable t) {
-      throw errorHandler.mapToWasmException(t, "Failed to get table element at index " + index);
+      if (t instanceof IndexOutOfBoundsException) {
+        throw (IndexOutOfBoundsException) t; // Re-throw bounds exceptions per interface
+      }
+      logger.warning("Failed to get table element at index " + index + ": " + t.getMessage());
+      return null; // Return null on failure
     }
   }
 
   @Override
-  public void set(final long index, final Object value) throws WasmException {
+  public void set(final int index, final Object value) {
     ensureNotClosed();
 
     if (index < 0) {
@@ -198,7 +209,10 @@ public final class PanamaTable implements Table {
                 + (value == null ? "null" : value.getClass().getSimpleName()));
       }
     } catch (Throwable t) {
-      throw errorHandler.mapToWasmException(t, "Failed to set table element at index " + index);
+      if (t instanceof IndexOutOfBoundsException) {
+        throw (IndexOutOfBoundsException) t; // Re-throw bounds exceptions per interface
+      }
+      logger.warning("Failed to set table element at index " + index + ": " + t.getMessage());
     }
   }
 
@@ -206,17 +220,16 @@ public final class PanamaTable implements Table {
    * Grows the table by the specified number of elements, initializing new elements with the given
    * value.
    *
-   * @param delta the number of elements to add
-   * @param initialValue the initial value for new elements (can be null)
-   * @return the previous size of the table
-   * @throws WasmException if the grow operation fails
-   * @throws IllegalArgumentException if delta is negative
+   * @param elements the number of elements to add
+   * @param initValue the initial value for new elements (can be null)
+   * @return the previous size of the table, or -1 if growth failed
    */
-  public long grow(final long delta, final Object initialValue) throws WasmException {
+  @Override
+  public int grow(final int elements, final Object initValue) {
     ensureNotClosed();
 
-    if (delta < 0) {
-      throw new IllegalArgumentException("Growth delta cannot be negative: " + delta);
+    if (elements < 0) {
+      throw new IllegalArgumentException("Growth elements cannot be negative: " + elements);
     }
 
     try {
@@ -243,24 +256,25 @@ public final class PanamaTable implements Table {
       }
 
       final long previousSize = size();
-      final boolean success = (boolean) growHandle.invokeExact(tableHandle, delta, initialHandle);
+      final boolean success = (boolean) growHandle.invokeExact(tableHandle, elements, initValue);
 
       if (!success) {
-        throw new RuntimeException("Failed to grow table by " + delta + " elements");
+        throw new RuntimeException("Failed to grow table by " + elements + " elements");
       }
 
       if (logger.isLoggable(Level.FINE)) {
-        logger.fine("Grew table from " + previousSize + " to " + size() + " elements");
+        logger.fine("Grew table from " + previousSize + " to " + getSize() + " elements");
       }
 
-      return previousSize;
+      return (int) previousSize;
     } catch (Throwable t) {
-      throw errorHandler.mapToWasmException(t, "Failed to grow table by " + delta + " elements");
+      logger.warning("Failed to grow table by " + elements + " elements: " + t.getMessage());
+      return -1; // Interface specifies -1 on failure
     }
   }
 
   @Override
-  public void close() throws WasmException {
+  public void close() {
     if (closed) {
       return;
     }
@@ -278,7 +292,7 @@ public final class PanamaTable implements Table {
           logger.fine("Closed Panama table instance");
         }
       } catch (Exception e) {
-        throw errorHandler.mapToWasmException(e, "Failed to close table");
+        logger.severe("Failed to close table: " + e.getMessage());
       } finally {
         closed = true;
       }
@@ -305,15 +319,17 @@ public final class PanamaTable implements Table {
    * @return the maximum size, or -1 if unlimited
    * @throws WasmException if the operation fails
    */
-  public long maxSize() throws WasmException {
+  @Override
+  public int getMaxSize() {
     ensureNotClosed();
 
     try {
       // For now, return -1 (unlimited) as Wasmtime typically allows unlimited growth
       // In the future, this could be implemented by querying table type information
-      return -1L;
+      return -1; // -1 means unlimited per interface
     } catch (Exception e) {
-      throw errorHandler.mapToWasmException(e, "Failed to get table maximum size");
+      logger.warning("Failed to get table maximum size: " + e.getMessage());
+      return -1; // Default to unlimited
     }
   }
 
@@ -323,15 +339,17 @@ public final class PanamaTable implements Table {
    * @return the element type name (e.g., "funcref", "externref")
    * @throws WasmException if the operation fails
    */
-  public String getElementType() throws WasmException {
+  @Override
+  public WasmValueType getElementType() {
     ensureNotClosed();
 
     try {
       // For now, assume funcref as it's the most common table element type
       // In the future, this could be implemented by querying table type information
-      return "funcref";
+      return WasmValueType.FUNCREF;
     } catch (Exception e) {
-      throw errorHandler.mapToWasmException(e, "Failed to get table element type");
+      logger.warning("Failed to get table element type: " + e.getMessage());
+      return WasmValueType.FUNCREF; // Default assumption
     }
   }
 

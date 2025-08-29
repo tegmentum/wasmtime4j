@@ -324,4 +324,32 @@ public final class WasiPermissionException extends WasiException {
       return description;
     }
   }
+
+  /**
+   * Creates a new WASI permission exception with message and cause.
+   *
+   * @param message the error message
+   * @param cause the underlying cause
+   */
+  public WasiPermissionException(final String message, final Throwable cause) {
+    this(
+        message,
+        PermissionViolationType.UNKNOWN,
+        "operation",
+        "resource");
+    initCause(cause);
+  }
+
+  /**
+   * Creates a new WASI permission exception with just a message.
+   *
+   * @param message the error message
+   */
+  public WasiPermissionException(final String message) {
+    this(
+        message,
+        PermissionViolationType.UNKNOWN,
+        "operation",
+        "resource");
+  }
 }

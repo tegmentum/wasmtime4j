@@ -419,12 +419,20 @@ public final class PanamaCapabilityDetector {
       return failureReason;
     }
 
+    /** Gets the fallback recommendation for this platform.
+     *
+     * @return the fallback recommendation
+     */
     public FallbackRecommendation getFallbackRecommendation() {
       return fallbackRecommendation != null
           ? fallbackRecommendation
           : FallbackRecommendation.USE_JNI;
     }
 
+    /** Gets a human-readable description of the Panama status.
+     *
+     * @return status description
+     */
     public String getStatusDescription() {
       if (available) {
         return "Panama FFI is available and functional";
@@ -437,6 +445,10 @@ public final class PanamaCapabilityDetector {
       return "Panama FFI availability unknown";
     }
 
+    /** Gets detailed diagnostic information about Panama capabilities.
+     *
+     * @return diagnostic information string
+     */
     public String getDiagnosticInfo() {
       final StringBuilder sb = new StringBuilder();
       sb.append("Panama FFI Diagnostic Information:\n");
@@ -592,6 +604,7 @@ public final class PanamaCapabilityDetector {
   // etc.)
   // For brevity, showing just the structure
 
+  /** Information about the Java version and vendor. */
   public static final class JavaVersionInfo {
     private final String fullVersion;
     private final String vendor;
@@ -599,6 +612,14 @@ public final class PanamaCapabilityDetector {
     private final int majorVersion;
     private final boolean java23OrHigher;
 
+    /** Creates a new JavaVersionInfo instance.
+     *
+     * @param fullVersion the full version string
+     * @param vendor the vendor name
+     * @param runtimeName the runtime name
+     * @param majorVersion the major version number
+     * @param java23OrHigher whether this is Java 23 or higher
+     */
     public JavaVersionInfo(
         final String fullVersion,
         final String vendor,
@@ -637,6 +658,7 @@ public final class PanamaCapabilityDetector {
   // similarly
   // For brevity, showing minimal structure
 
+  /** Information about class availability for Panama features. */
   public static final class ClassAvailabilityInfo {
     private final java.util.List<String> availableClasses;
     private final java.util.List<String> missingClasses;
@@ -679,6 +701,7 @@ public final class PanamaCapabilityDetector {
   }
 
   // Stub classes for other info types
+  /** Information about native access capabilities. */
   public static final class NativeAccessInfo {
     private final boolean nativeAccessEnabled;
     private final String restrictionReason;
@@ -728,6 +751,7 @@ public final class PanamaCapabilityDetector {
     }
   }
 
+  /** Information about preview features. */
   public static final class PreviewFeatureInfo {
     private final java.util.Map<String, String> previewProperties;
 
@@ -753,6 +777,7 @@ public final class PanamaCapabilityDetector {
     }
   }
 
+  /** Information about functional test results. */
   public static final class FunctionalTestInfo {
     private final java.util.List<String> passingTests;
     private final java.util.Map<String, String> failingTests;

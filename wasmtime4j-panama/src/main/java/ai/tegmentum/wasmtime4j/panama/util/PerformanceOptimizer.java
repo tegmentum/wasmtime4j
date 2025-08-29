@@ -117,7 +117,7 @@ public final class PerformanceOptimizer {
    * @param <T> the return type of the operation
    */
   @FunctionalInterface
-  public interface BatchedFFIOperation<T> {
+  public interface BatchedFfiOperation<T> {
     /**
      * Executes the operation with the provided parameters.
      *
@@ -172,7 +172,7 @@ public final class PerformanceOptimizer {
    * @return a CompletableFuture containing the result
    */
   public <T> CompletableFuture<T> executeBatched(
-      final MethodHandle handle, final Object[] params, final BatchedFFIOperation<T> operation) {
+      final MethodHandle handle, final Object[] params, final BatchedFfiOperation<T> operation) {
     if (shutdownRequested) {
       return CompletableFuture.failedFuture(
           new IllegalStateException("Optimizer is shutting down"));
@@ -418,11 +418,11 @@ public final class PerformanceOptimizer {
   private static final class BatchedOperation<T> {
     private final MethodHandle handle;
     private final Object[] params;
-    private final BatchedFFIOperation<T> operation;
+    private final BatchedFfiOperation<T> operation;
     private final CompletableFuture<T> future = new CompletableFuture<>();
 
     BatchedOperation(
-        final MethodHandle handle, final Object[] params, final BatchedFFIOperation<T> operation) {
+        final MethodHandle handle, final Object[] params, final BatchedFfiOperation<T> operation) {
       this.handle = handle;
       this.params = params;
       this.operation = operation;
@@ -436,7 +436,7 @@ public final class PerformanceOptimizer {
       return params;
     }
 
-    BatchedFFIOperation<T> getOperation() {
+    BatchedFfiOperation<T> getOperation() {
       return operation;
     }
 
@@ -490,7 +490,7 @@ public final class PerformanceOptimizer {
       }
 
       return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
-          .thenApply(void_ -> futures.stream().flatMap(future -> future.join().stream()).toList());
+          .thenApply(ignored -> futures.stream().flatMap(future -> future.join().stream()).toList());
     }
   }
 

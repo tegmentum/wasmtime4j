@@ -1,5 +1,7 @@
 package ai.tegmentum.wasmtime4j.jni;
 
+import ai.tegmentum.wasmtime4j.Engine;
+import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
@@ -57,9 +59,15 @@ import java.util.logging.Logger;
  *
  * @since 1.0.0
  */
-public final class JniStore extends JniResource {
+public final class JniStore extends JniResource implements Store {
 
   private static final Logger LOGGER = Logger.getLogger(JniStore.class.getName());
+
+  /** Custom data associated with this store. */
+  private volatile Object customData;
+
+  /** The engine that created this store. */
+  private final Engine engine;
 
   /**
    * Creates a new JNI store with the given native handle.
@@ -68,10 +76,12 @@ public final class JniStore extends JniResource {
    * classes. External code should create stores through {@link JniEngine#createStore()}.
    *
    * @param nativeHandle the native store handle from Wasmtime
+   * @param engine the engine that created this store
    * @throws JniResourceException if nativeHandle is invalid
    */
-  JniStore(final long nativeHandle) {
+  JniStore(final long nativeHandle, final Engine engine) {
     super(nativeHandle);
+    this.engine = engine;
     LOGGER.fine("Created JNI store with handle: 0x" + Long.toHexString(nativeHandle));
   }
 
@@ -207,6 +217,54 @@ public final class JniStore extends JniResource {
     }
   }
 
+  // Interface implementation methods
+
+  @Override
+  public Engine getEngine() {
+    return engine;
+  }
+
+  @Override
+  public Object getData() {
+    return customData;
+  }
+
+  @Override
+  public void setData(final Object data) {
+    this.customData = data;
+  }
+
+  @Override
+  public void setFuel(final long fuel) {
+    setFuelLimit(fuel);
+  }
+
+  @Override
+  public long getFuel() {
+    return getRemainingFuel();
+  }
+
+  @Override
+  public void setEpochDeadline(final long ticks) {
+    ensureNotClosed();
+    try {
+      final boolean success = nativeSetEpochDeadline(getNativeHandle(), ticks);
+      if (!success) {
+        throw new JniException("Failed to set epoch deadline to " + ticks);
+      }
+    } catch (final Exception e) {
+      if (e instanceof JniException) {
+        throw e;
+      }
+      throw new JniException("Unexpected error setting epoch deadline", e);
+    }
+  }
+
+  @Override
+  public boolean isValid() {
+    return !isClosed() && getNativeHandle() != 0;
+  }
+
   @Override
   protected void doClose() throws Exception {
     if (getNativeHandle() != 0) {
@@ -263,6 +321,15 @@ public final class JniStore extends JniResource {
    * @return true on success, false on failure
    */
   private static native boolean nativeAddFuel(long storeHandle, long additionalFuel);
+
+  /**
+   * Sets the epoch deadline for a store.
+   *
+   * @param storeHandle the native store handle
+   * @param ticks the number of epoch ticks before interruption
+   * @return true on success, false on failure
+   */
+  private static native boolean nativeSetEpochDeadline(long storeHandle, long ticks);
 
   /**
    * Destroys a native store and releases all associated resources.

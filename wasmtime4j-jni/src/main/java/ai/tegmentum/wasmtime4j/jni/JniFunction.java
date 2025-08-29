@@ -101,7 +101,7 @@ public final class JniFunction extends JniResource implements WasmFunction {
    * @throws WasmException if the function type cannot be retrieved
    */
   @Override
-  public FunctionType getFunctionType() throws WasmException {
+  public FunctionType getFunctionType() {
     // Use cached type if available
     if (cachedFunctionType != null) {
       return cachedFunctionType;
@@ -113,7 +113,7 @@ public final class JniFunction extends JniResource implements WasmFunction {
       final String[] returnTypeStrings = nativeGetReturnTypes(getNativeHandle());
 
       if (paramTypeStrings == null || returnTypeStrings == null) {
-        throw new WasmException("Failed to retrieve function signature for '" + name + "'");
+        throw new RuntimeException("Failed to retrieve function signature for '" + name + "'");
       }
 
       final WasmValueType[] paramTypes = JniTypeConverter.stringsToTypes(paramTypeStrings);
@@ -122,9 +122,9 @@ public final class JniFunction extends JniResource implements WasmFunction {
       cachedFunctionType = new FunctionType(paramTypes, returnTypes);
       return cachedFunctionType;
     } catch (final JniValidationException e) {
-      throw new WasmException("Invalid function signature for '" + name + "'", e);
+      throw new RuntimeException("Invalid function signature for '" + name + "'", e);
     } catch (final Exception e) {
-      throw new WasmException("Unexpected error getting function type for '" + name + "'", e);
+      throw new RuntimeException("Unexpected error getting function type for '" + name + "'", e);
     }
   }
 
@@ -141,7 +141,7 @@ public final class JniFunction extends JniResource implements WasmFunction {
     try {
       final FunctionType funcType = getFunctionType();
       return JniTypeConverter.typesToStrings(funcType.getParamTypes());
-    } catch (final WasmException e) {
+    } catch (final RuntimeException e) {
       throw new RuntimeException("Error getting parameter types", e);
     }
   }
@@ -159,7 +159,7 @@ public final class JniFunction extends JniResource implements WasmFunction {
     try {
       final FunctionType funcType = getFunctionType();
       return JniTypeConverter.typesToStrings(funcType.getReturnTypes());
-    } catch (final WasmException e) {
+    } catch (final RuntimeException e) {
       throw new RuntimeException("Error getting return types", e);
     }
   }
@@ -215,9 +215,6 @@ public final class JniFunction extends JniResource implements WasmFunction {
     } catch (final JniValidationException e) {
       throw new WasmException("Parameter validation failed for function '" + name + "'", e);
     } catch (final RuntimeException e) {
-      if (e instanceof WasmException) {
-        throw e;
-      }
       throw new WasmException("Native function call failed for '" + name + "'", e);
     } catch (final Exception e) {
       throw new WasmException("Unexpected error calling function '" + name + "'", e);
@@ -386,7 +383,7 @@ public final class JniFunction extends JniResource implements WasmFunction {
               name, getCallCount(), getCacheHitRatio() * 100));
     }
 
-    nativeDestroyFunction(nativeHandle);
+    nativeDestroyFunction(getNativeHandle());
   }
 
   /**

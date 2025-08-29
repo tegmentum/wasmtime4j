@@ -319,13 +319,13 @@ public final class PanamaImportMap implements ImportMap {
    *
    * @param moduleName the module name
    * @param name the import name
-   * @param import_ the import object
+   * @param importObject the import object
    */
-  private void addImport(final String moduleName, final String name, final Object import_) {
+  private void addImport(final String moduleName, final String name, final Object importObject) {
     final ConcurrentHashMap<String, Object> moduleImports =
         imports.computeIfAbsent(moduleName, k -> new ConcurrentHashMap<>());
 
-    final Object previous = moduleImports.put(name, import_);
+    final Object previous = moduleImports.put(name, importObject);
     if (previous == null) {
       totalImports++;
     }
@@ -353,7 +353,8 @@ public final class PanamaImportMap implements ImportMap {
     // For now, accept all WasmFunction implementations
     // In the future, we might want to ensure Panama-specific optimizations
 
-    if (function instanceof PanamaFunction || function instanceof PanamaHostFunction) {
+    if ((function != null && PanamaFunction.class.isInstance(function))
+        || (function != null && PanamaHostFunction.class.isInstance(function))) {
       // These are preferred for optimal performance
       return;
     }
@@ -374,7 +375,7 @@ public final class PanamaImportMap implements ImportMap {
    */
   private void validateMemory(final WasmMemory memory) {
     // Similar validation for memory
-    if (memory instanceof PanamaMemory) {
+    if (memory != null && PanamaMemory.class.isInstance(memory)) {
       return;
     }
 
@@ -393,7 +394,7 @@ public final class PanamaImportMap implements ImportMap {
    */
   private void validateGlobal(final WasmGlobal global) {
     // Similar validation for global
-    if (global instanceof PanamaGlobal) {
+    if (global != null && PanamaGlobal.class.isInstance(global)) {
       return;
     }
 
@@ -412,7 +413,7 @@ public final class PanamaImportMap implements ImportMap {
    */
   private void validateTable(final WasmTable table) {
     // Similar validation for table
-    if (table instanceof PanamaTable) {
+    if (table != null && PanamaTable.class.isInstance(table)) {
       return;
     }
 

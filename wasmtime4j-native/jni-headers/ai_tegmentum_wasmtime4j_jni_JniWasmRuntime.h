@@ -33,6 +33,14 @@ JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeCo
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniWasmRuntime
+ * Method:    nativeInstantiateModule
+ * Signature: (JJ)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeInstantiateModule
+  (JNIEnv *, jclass, jlong, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniWasmRuntime
  * Method:    nativeGetWasmtimeVersion
  * Signature: ()Ljava/lang/String;
  */

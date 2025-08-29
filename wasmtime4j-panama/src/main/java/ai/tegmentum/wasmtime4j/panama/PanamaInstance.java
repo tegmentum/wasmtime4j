@@ -16,20 +16,22 @@
 
 package ai.tegmentum.wasmtime4j.panama;
 
-import ai.tegmentum.wasmtime4j.Function;
-import ai.tegmentum.wasmtime4j.Global;
 import ai.tegmentum.wasmtime4j.Instance;
-import ai.tegmentum.wasmtime4j.Memory;
-import ai.tegmentum.wasmtime4j.Table;
+import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.Store;
+import ai.tegmentum.wasmtime4j.WasmFunction;
+import ai.tegmentum.wasmtime4j.WasmGlobal;
+import ai.tegmentum.wasmtime4j.WasmMemory;
+import ai.tegmentum.wasmtime4j.WasmTable;
+import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.exception.RuntimeException;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.logging.Logger;
 
 /**
@@ -57,6 +59,11 @@ public final class PanamaInstance implements Instance, AutoCloseable {
 
   // Instance state
   private volatile boolean closed = false;
+
+  @Override
+  public boolean isValid() {
+    return !closed;
+  }
 
   /**
    * Creates a new Panama instance using Stream 1 & 2 infrastructure.
@@ -96,7 +103,7 @@ public final class PanamaInstance implements Instance, AutoCloseable {
   }
 
   @Override
-  public Function getFunction(final String name) throws WasmException {
+  public Optional<WasmFunction> getFunction(final String name) {
     ensureNotClosed();
 
     // Parameter validation with defensive programming
@@ -107,12 +114,12 @@ public final class PanamaInstance implements Instance, AutoCloseable {
       // Get the export by name through optimized FFI
       MemorySegment exportPtr = findExportByName(name);
       if (exportPtr == null || exportPtr.equals(MemorySegment.NULL)) {
-        return null; // Export not found
+        return Optional.empty(); // Export not found
       }
 
       // Verify export is a function
       if (!isExportFunction(exportPtr)) {
-        return null; // Export exists but is not a function
+        return Optional.empty(); // Export exists but is not a function
       }
 
       // Extract function pointer from export
@@ -120,20 +127,16 @@ public final class PanamaInstance implements Instance, AutoCloseable {
       PanamaErrorHandler.requireValidPointer(functionPtr, "functionPtr");
 
       // Create managed function wrapper
-      return new PanamaFunction(functionPtr, resourceManager, this);
+      return Optional.of(new PanamaFunction(functionPtr, resourceManager, this));
 
     } catch (Exception e) {
-      String detailedMessage =
-          PanamaErrorHandler.createDetailedErrorMessage(
-              "Function lookup",
-              "name=" + name + ", instance=" + instanceResource.getNativePointer(),
-              e.getMessage());
-      throw new WasmException(detailedMessage, e);
+      LOGGER.warning("Function lookup failed for '" + name + "': " + e.getMessage());
+      return Optional.empty();
     }
   }
 
   @Override
-  public Memory getMemory(final String name) throws WasmException {
+  public Optional<WasmMemory> getMemory(final String name) {
     ensureNotClosed();
 
     // Parameter validation with defensive programming
@@ -144,12 +147,12 @@ public final class PanamaInstance implements Instance, AutoCloseable {
       // Get the export by name through optimized FFI
       MemorySegment exportPtr = findExportByName(name);
       if (exportPtr == null || exportPtr.equals(MemorySegment.NULL)) {
-        return null; // Export not found
+        return Optional.empty(); // Export not found
       }
 
       // Verify export is a memory
       if (!isExportMemory(exportPtr)) {
-        return null; // Export exists but is not a memory
+        return Optional.empty(); // Export exists but is not a memory
       }
 
       // Extract memory pointer from export
@@ -157,20 +160,16 @@ public final class PanamaInstance implements Instance, AutoCloseable {
       PanamaErrorHandler.requireValidPointer(memoryPtr, "memoryPtr");
 
       // Create managed memory wrapper
-      return new PanamaMemory(memoryPtr, resourceManager, this);
+      return Optional.of(new PanamaMemory(memoryPtr, resourceManager, this));
 
     } catch (Exception e) {
-      String detailedMessage =
-          PanamaErrorHandler.createDetailedErrorMessage(
-              "Memory lookup",
-              "name=" + name + ", instance=" + instanceResource.getNativePointer(),
-              e.getMessage());
-      throw new WasmException(detailedMessage, e);
+      LOGGER.warning("Memory lookup failed for '" + name + "': " + e.getMessage());
+      return Optional.empty();
     }
   }
 
   @Override
-  public Global getGlobal(final String name) throws WasmException {
+  public Optional<WasmGlobal> getGlobal(final String name) {
     ensureNotClosed();
 
     // Parameter validation with defensive programming
@@ -181,12 +180,12 @@ public final class PanamaInstance implements Instance, AutoCloseable {
       // Get the export by name through optimized FFI
       MemorySegment exportPtr = findExportByName(name);
       if (exportPtr == null || exportPtr.equals(MemorySegment.NULL)) {
-        return null; // Export not found
+        return Optional.empty(); // Export not found
       }
 
       // Verify export is a global
       if (!isExportGlobal(exportPtr)) {
-        return null; // Export exists but is not a global
+        return Optional.empty(); // Export exists but is not a global
       }
 
       // Extract global pointer from export
@@ -194,20 +193,16 @@ public final class PanamaInstance implements Instance, AutoCloseable {
       PanamaErrorHandler.requireValidPointer(globalPtr, "globalPtr");
 
       // Create managed global wrapper
-      return new PanamaGlobal(globalPtr, resourceManager, this);
+      return Optional.of(new PanamaGlobal(globalPtr, resourceManager, this));
 
     } catch (Exception e) {
-      String detailedMessage =
-          PanamaErrorHandler.createDetailedErrorMessage(
-              "Global lookup",
-              "name=" + name + ", instance=" + instanceResource.getNativePointer(),
-              e.getMessage());
-      throw new WasmException(detailedMessage, e);
+      LOGGER.warning("Global lookup failed for '" + name + "': " + e.getMessage());
+      return Optional.empty();
     }
   }
 
   @Override
-  public Table getTable(final String name) throws WasmException {
+  public Optional<WasmTable> getTable(final String name) {
     ensureNotClosed();
 
     // Parameter validation with defensive programming
@@ -218,12 +213,12 @@ public final class PanamaInstance implements Instance, AutoCloseable {
       // Get the export by name through optimized FFI
       MemorySegment exportPtr = findExportByName(name);
       if (exportPtr == null || exportPtr.equals(MemorySegment.NULL)) {
-        return null; // Export not found
+        return Optional.empty(); // Export not found
       }
 
       // Verify export is a table
       if (!isExportTable(exportPtr)) {
-        return null; // Export exists but is not a table
+        return Optional.empty(); // Export exists but is not a table
       }
 
       // Extract table pointer from export
@@ -231,52 +226,115 @@ public final class PanamaInstance implements Instance, AutoCloseable {
       PanamaErrorHandler.requireValidPointer(tablePtr, "tablePtr");
 
       // Create managed table wrapper
-      return new PanamaTable(tablePtr, resourceManager, this);
+      return Optional.of(new PanamaTable(tablePtr, resourceManager, this));
 
     } catch (Exception e) {
-      String detailedMessage =
-          PanamaErrorHandler.createDetailedErrorMessage(
-              "Table lookup",
-              "name=" + name + ", instance=" + instanceResource.getNativePointer(),
-              e.getMessage());
-      throw new WasmException(detailedMessage, e);
+      LOGGER.warning("Table lookup failed for '" + name + "': " + e.getMessage());
+      return Optional.empty();
     }
   }
 
   @Override
-  public Object[] invokeFunction(final String name, final Object... args)
-      throws RuntimeException, WasmException {
+  public Optional<WasmMemory> getDefaultMemory() {
+    // Try to get memory named "memory" first
+    Optional<WasmMemory> memory = getMemory("memory");
+    if (memory.isPresent()) {
+      return memory;
+    }
+    
+    // If no "memory" export, try getting the first available memory
+    String[] exports = getExportNames();
+    for (String exportName : exports) {
+      Optional<WasmMemory> mem = getMemory(exportName);
+      if (mem.isPresent()) {
+        return mem;
+      }
+    }
+    
+    return Optional.empty();
+  }
+
+  @Override
+  public String[] getExportNames() {
+    try {
+      ensureNotClosed();
+
+      // Get export count through FFI
+      int exportCount = getExportCount();
+      if (exportCount <= 0) {
+        return new String[0];
+      }
+
+      // Create array for export names
+      String[] exportNames = new String[exportCount];
+      int actualCount = 0;
+
+      // Iterate through exports and collect names
+      for (int i = 0; i < exportCount; i++) {
+        String exportName = getExportNameAt(i);
+        if (exportName != null && !exportName.isEmpty()) {
+          exportNames[actualCount++] = exportName;
+        }
+      }
+
+      // Return trimmed array with actual count
+      if (actualCount < exportCount) {
+        String[] trimmedNames = new String[actualCount];
+        System.arraycopy(exportNames, 0, trimmedNames, 0, actualCount);
+        return trimmedNames;
+      }
+
+      return exportNames;
+
+    } catch (Exception e) {
+      LOGGER.warning("Export enumeration failed: " + e.getMessage());
+      return new String[0];
+    }
+  }
+
+  @Override
+  public Module getModule() {
+    ensureNotClosed();
+    return module;
+  }
+
+  @Override
+  public Store getStore() {
+    ensureNotClosed();
+    return module.getEngine().createStore();
+  }
+
+  @Override
+  public WasmValue[] callFunction(final String functionName, final WasmValue... params)
+      throws WasmException {
     ensureNotClosed();
 
     // Parameter validation with defensive programming
-    Objects.requireNonNull(name, "Function name cannot be null");
-    PanamaErrorHandler.requireNotEmpty(name, "Function name cannot be empty");
+    Objects.requireNonNull(functionName, "Function name cannot be null");
+    PanamaErrorHandler.requireNotEmpty(functionName, "Function name cannot be empty");
 
     try {
       // Get the function first
-      final Function function = getFunction(name);
-      if (function == null) {
-        throw new WasmException("Function '" + name + "' not found in instance");
+      Optional<WasmFunction> functionOpt = getFunction(functionName);
+      if (!functionOpt.isPresent()) {
+        throw new WasmException("Function '" + functionName + "' not found in instance");
       }
 
       // Invoke the function with proper error handling
-      return function.invoke(args);
+      return functionOpt.get().call(params);
 
-    } catch (RuntimeException re) {
-      // Re-throw runtime exceptions directly
-      throw re;
     } catch (Exception e) {
       String detailedMessage =
           PanamaErrorHandler.createDetailedErrorMessage(
               "Function invocation",
-              "name=" + name + ", args.length=" + (args != null ? args.length : 0),
+              "name=" + functionName + ", params.length=" + (params != null ? params.length : 0),
               e.getMessage());
       throw new WasmException(detailedMessage, e);
     }
   }
 
   @Override
-  public void close() throws WasmException {
+  public void close() {
     if (closed) {
       return;
     }
@@ -293,7 +351,7 @@ public final class PanamaInstance implements Instance, AutoCloseable {
         LOGGER.fine("Closed Panama instance");
 
       } catch (Exception e) {
-        throw new WasmException("Failed to close instance", e);
+        LOGGER.severe("Failed to close instance: " + e.getMessage());
       } finally {
         closed = true;
       }
@@ -312,53 +370,15 @@ public final class PanamaInstance implements Instance, AutoCloseable {
   }
 
   /**
-   * Gets the parent module instance.
+   * Gets the parent module instance as Panama implementation.
    *
    * @return the module instance
    */
-  public PanamaModule getModule() {
+  public PanamaModule getPanamaModule() {
     ensureNotClosed();
     return module;
   }
 
-  /**
-   * Gets all export names from this instance.
-   *
-   * @return list of export names
-   * @throws WasmException if export enumeration fails
-   */
-  public List<String> getExportNames() throws WasmException {
-    ensureNotClosed();
-
-    try {
-      // Get export count through FFI
-      int exportCount = getExportCount();
-      if (exportCount <= 0) {
-        return new ArrayList<>();
-      }
-
-      // Allocate memory for export names
-      List<String> exportNames = new ArrayList<>(exportCount);
-
-      // Iterate through exports and collect names
-      for (int i = 0; i < exportCount; i++) {
-        String exportName = getExportNameAt(i);
-        if (exportName != null && !exportName.isEmpty()) {
-          exportNames.add(exportName);
-        }
-      }
-
-      return exportNames;
-
-    } catch (Exception e) {
-      String detailedMessage =
-          PanamaErrorHandler.createDetailedErrorMessage(
-              "Export enumeration",
-              "instance=" + instanceResource.getNativePointer(),
-              e.getMessage());
-      throw new WasmException(detailedMessage, e);
-    }
-  }
 
   // Private FFI helper methods for export access
 

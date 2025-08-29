@@ -90,7 +90,7 @@ public final class WasiTimeOperations {
         final WasiErrorCode errorCode = WasiErrorCode.fromErrnoOrNull((int) -resolution);
         if (errorCode != null) {
           throw new WasiException("Failed to get clock resolution: " 
-                                + errorCode.getDescription(), errorCode);
+                                + errorCode.getDescription(), errorCode, "clock_res_get", String.valueOf(clockId));
         } else {
           throw new WasiException("Failed to get clock resolution with unknown error code: " 
                                   + (-resolution));
@@ -132,7 +132,7 @@ public final class WasiTimeOperations {
         final WasiErrorCode errorCode = WasiErrorCode.fromErrnoOrNull((int) -timestamp);
         if (errorCode != null) {
           throw new WasiException("Failed to get current time: " 
-                                + errorCode.getDescription(), errorCode);
+                                + errorCode.getDescription(), errorCode, "clock_time_get", String.valueOf(clockId));
         } else {
           throw new WasiException("Failed to get current time with unknown error code: " 
                                   + (-timestamp));

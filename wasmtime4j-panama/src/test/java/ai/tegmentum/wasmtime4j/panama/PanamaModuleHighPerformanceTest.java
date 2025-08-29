@@ -16,7 +16,15 @@
 
 package ai.tegmentum.wasmtime4j.panama;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.lang.foreign.MemorySegment;
@@ -258,9 +266,9 @@ class PanamaModuleHighPerformanceTest {
     byte[][] modules = {SIMPLE_WASM, SIMPLE_WASM.clone(), SIMPLE_WASM.clone()};
 
     // Test bulk compilation
-    long startTime = System.nanoTime();
+    final long startTime = System.nanoTime();
     PanamaModule[] compiledModules = PanamaModule.compileBulk(engine, modules);
-    long bulkCompileTime = System.nanoTime() - startTime;
+    final long bulkCompileTime = System.nanoTime() - startTime;
 
     assertEquals(modules.length, compiledModules.length, "Should compile all modules");
 
@@ -436,14 +444,14 @@ class PanamaModuleHighPerformanceTest {
     }
 
     // Benchmark standard operations
-    long startTime = System.nanoTime();
+    final long startTime = System.nanoTime();
     for (int i = 0; i < iterations; i++) {
       try (PanamaModule module = (PanamaModule) engine.compileModule(testModule)) {
         module.getImports();
         module.getExports();
       }
     }
-    long standardTime = System.nanoTime() - startTime;
+    final long standardTime = System.nanoTime() - startTime;
 
     // Benchmark optimized operations (with caching benefits)
     PanamaModule cachedModule = (PanamaModule) engine.compileModule(testModule);

@@ -3,9 +3,12 @@ package ai.tegmentum.wasmtime4j.jni;
 import ai.tegmentum.wasmtime4j.ExportType;
 import ai.tegmentum.wasmtime4j.ImportMap;
 import ai.tegmentum.wasmtime4j.ImportType;
+import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmType;
 import ai.tegmentum.wasmtime4j.WasmTypeKind;
+import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
 import ai.tegmentum.wasmtime4j.jni.nativelib.NativeMethodBindings;
@@ -163,7 +166,8 @@ public final class JniModule extends JniResource implements Module {
    */
   JniModule(final long nativeHandle, final JniEngine engine) {
     super(nativeHandle);
-    this.engine = JniValidation.requireNonNull(engine, "engine");
+    JniValidation.requireNonNull(engine, "engine");
+    this.engine = engine;
     LOGGER.fine("Created JNI module with handle: 0x" + Long.toHexString(nativeHandle));
   }
 
@@ -181,6 +185,24 @@ public final class JniModule extends JniResource implements Module {
    */
   public JniInstance instantiate(final JniStore store) {
     return instantiate(store, null);
+  }
+
+  @Override
+  public Instance instantiate(final Store store) throws WasmException {
+    JniValidation.requireNonNull(store, "store");
+    if (!(store instanceof JniStore)) {
+      throw new WasmException("Store must be a JniStore instance");
+    }
+    return instantiate((JniStore) store);
+  }
+
+  @Override
+  public Instance instantiate(final Store store, final ImportMap imports) throws WasmException {
+    JniValidation.requireNonNull(store, "store");
+    if (!(store instanceof JniStore)) {
+      throw new WasmException("Store must be a JniStore instance");
+    }
+    return instantiate((JniStore) store, imports);
   }
 
   /**

@@ -4,6 +4,9 @@ import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
@@ -35,14 +38,14 @@ public final class WasiSecurityValidator {
 
   /** Dangerous file extensions that should be blocked by default. */
   private static final Set<String> DANGEROUS_EXTENSIONS =
-      Set.of(
+      Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
           ".exe", ".com", ".bat", ".cmd", ".pif", ".scr", ".vbs", ".js", ".jar", ".war", ".ear",
           ".sh", ".bash", ".zsh", ".fish", ".csh", ".tcsh", ".py", ".pl", ".rb", ".php", ".jsp",
-          ".asp", ".aspx", ".dll", ".so", ".dylib");
+          ".asp", ".aspx", ".dll", ".so", ".dylib")));
 
   /** System directories that should be blocked by default. */
   private static final Set<String> SYSTEM_DIRECTORIES =
-      Set.of(
+      Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
           "/bin",
           "/sbin",
           "/usr/bin",
@@ -66,21 +69,21 @@ public final class WasiSecurityValidator {
           "/System",
           "/Library",
           "/Applications",
-          "/Users/.Trash");
+          "/Users/.Trash")));
 
   /** Dangerous path patterns to detect and block. */
   private static final Set<Pattern> DANGEROUS_PATH_PATTERNS =
-      Set.of(
+      Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
           Pattern.compile("\\.\\.[\\\\/]"), // Path traversal attempts
           Pattern.compile("[\\\\/]\\.\\.[^\\\\/]"), // Hidden path traversal
           Pattern.compile("^[a-zA-Z]:[^\\\\/]"), // Windows drive without slash
           Pattern.compile("[\0\r\n]"), // Null bytes and line breaks
           Pattern.compile("[\u202E\u202D]"), // Unicode direction override attacks
-          Pattern.compile(".*\\.(lnk|url)$", Pattern.CASE_INSENSITIVE)); // Windows shortcuts
+          Pattern.compile(".*\\.(lnk|url)$", Pattern.CASE_INSENSITIVE)))); // Windows shortcuts
 
   /** Blocked environment variable names for security. */
   private static final Set<String> BLOCKED_ENVIRONMENT_VARIABLES =
-      Set.of(
+      Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
           "PATH",
           "LD_LIBRARY_PATH",
           "DYLD_LIBRARY_PATH",
@@ -94,7 +97,7 @@ public final class WasiSecurityValidator {
           "TERM",
           "DISPLAY",
           "PWD",
-          "OLDPWD");
+          "OLDPWD")));
 
   /** Whether to enforce strict security policies. */
   private final boolean strictMode;
@@ -129,9 +132,10 @@ public final class WasiSecurityValidator {
     this.strictMode = builder.strictMode;
     this.allowSymbolicLinks = builder.allowSymbolicLinks;
     this.allowHiddenFiles = builder.allowHiddenFiles;
-    this.customDangerousExtensions = Set.copyOf(builder.customDangerousExtensions);
-    this.customBlockedDirectories = Set.copyOf(builder.customBlockedDirectories);
-    this.customAllowedEnvironmentVariables = Set.copyOf(builder.customAllowedEnvironmentVariables);
+    this.customDangerousExtensions = Collections.unmodifiableSet(new HashSet<>(builder.customDangerousExtensions));
+    this.customBlockedDirectories = Collections.unmodifiableSet(new HashSet<>(builder.customBlockedDirectories));
+    this.customAllowedEnvironmentVariables =
+        Collections.unmodifiableSet(new HashSet<>(builder.customAllowedEnvironmentVariables));
     this.maxPathLength = builder.maxPathLength;
     this.maxFileNameLength = builder.maxFileNameLength;
 

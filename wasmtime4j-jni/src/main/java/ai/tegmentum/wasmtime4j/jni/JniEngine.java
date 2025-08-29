@@ -1,6 +1,10 @@
 package ai.tegmentum.wasmtime4j.jni;
 
 import ai.tegmentum.wasmtime4j.Engine;
+import ai.tegmentum.wasmtime4j.EngineConfig;
+import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.Store;
+import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
 import ai.tegmentum.wasmtime4j.jni.nativelib.NativeMethodBindings;
@@ -94,7 +98,8 @@ public final class JniEngine extends JniResource implements Engine {
    * @throws JniException if compilation fails
    * @throws JniResourceException if this engine has been closed
    */
-  public JniModule compileModule(final byte[] wasmBytes) {
+  @Override
+  public Module compileModule(final byte[] wasmBytes) throws WasmException {
     JniValidation.requireNonEmpty(wasmBytes, "wasmBytes");
     ensureNotClosed();
 
@@ -106,9 +111,9 @@ public final class JniEngine extends JniResource implements Engine {
       return new JniModule(moduleHandle, this);
     } catch (final Exception e) {
       if (e instanceof JniException) {
-        throw e;
+        throw new WasmException(e.getMessage(), e);
       }
-      throw new JniException("Failed to compile WebAssembly module", e);
+      throw new WasmException("Failed to compile WebAssembly module", e);
     }
   }
 
@@ -122,19 +127,27 @@ public final class JniEngine extends JniResource implements Engine {
    * @throws JniException if store creation fails
    * @throws JniResourceException if this engine has been closed
    */
-  public JniStore createStore() {
+  @Override
+  public Store createStore() {
     ensureNotClosed();
 
     try {
       final long storeHandle = nativeCreateStore(getNativeHandle());
       JniValidation.requireValidHandle(storeHandle, "storeHandle");
-      return new JniStore(storeHandle);
+      return new JniStore(storeHandle, this);
     } catch (final Exception e) {
       if (e instanceof JniException) {
         throw e;
       }
       throw new JniException("Failed to create store", e);
     }
+  }
+
+  @Override
+  public Store createStore(final Object data) {
+    // TODO: Implement support for custom store data
+    // For now, just create a regular store and ignore the data
+    return createStore();
   }
 
   /**
@@ -252,6 +265,18 @@ public final class JniEngine extends JniResource implements Engine {
   @Override
   protected String getResourceType() {
     return "Engine";
+  }
+
+  @Override
+  public boolean isValid() {
+    return !isClosed() && getNativeHandle() != 0;
+  }
+
+  @Override
+  public EngineConfig getConfig() {
+    // TODO: This should return the actual configuration used to create this engine
+    // For now, return null as a placeholder - this needs proper implementation
+    throw new UnsupportedOperationException("getConfig() not yet implemented");
   }
 
   // Native method declarations

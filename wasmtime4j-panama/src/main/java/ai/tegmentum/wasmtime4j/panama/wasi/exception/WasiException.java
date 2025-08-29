@@ -52,19 +52,14 @@ public class WasiException extends PanamaException {
   }
 
   /**
-   * Constructs a new WASI exception with the specified detail message, cause, suppression enabled
-   * or disabled, and writable stack trace enabled or disabled.
+   * Constructs a new WASI exception with the specified detail message and cause.
    *
    * @param message the detail message
    * @param cause the cause
-   * @param enableSuppression whether or not suppression is enabled or disabled
-   * @param writableStackTrace whether or not the stack trace should be writable
    */
   protected WasiException(
       final String message,
-      final Throwable cause,
-      final boolean enableSuppression,
-      final boolean writableStackTrace) {
-    super(message, cause, enableSuppression, writableStackTrace);
+      final Throwable cause) {
+    super(message, cause);
   }
 }

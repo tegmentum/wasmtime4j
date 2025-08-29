@@ -133,7 +133,12 @@ public final class JniModuleCache {
 
     // Compile new module
     LOGGER.fine("Cache miss, compiling module: " + cacheKey);
-    final JniModule module = engine.compileModule(bytecode);
+    final JniModule module;
+    try {
+      module = (JniModule) engine.compileModule(bytecode);
+    } catch (final Exception e) {
+      throw new JniException("Failed to compile module for cache", e);
+    }
 
     // Add to cache with size limit enforcement
     put(cacheKey, module, bytecodeHash);

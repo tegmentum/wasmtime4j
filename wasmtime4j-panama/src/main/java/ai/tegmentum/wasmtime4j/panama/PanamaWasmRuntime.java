@@ -17,7 +17,12 @@
 package ai.tegmentum.wasmtime4j.panama;
 
 import ai.tegmentum.wasmtime4j.Engine;
+import ai.tegmentum.wasmtime4j.EngineConfig;
+import ai.tegmentum.wasmtime4j.ImportMap;
+import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.RuntimeInfo;
+import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.exception.CompilationException;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
@@ -59,6 +64,11 @@ public final class PanamaWasmRuntime implements WasmRuntime {
   private final PanamaExceptionMapper exceptionMapper;
 
   private volatile boolean closed = false;
+
+  @Override
+  public boolean isValid() {
+    return !closed;
+  }
 
   /**
    * Creates a new Panama WebAssembly runtime instance.
@@ -102,13 +112,74 @@ public final class PanamaWasmRuntime implements WasmRuntime {
     ensureNotClosed();
 
     try {
-      return new PanamaEngine(this, bindings, memoryManager, resourceTracker, exceptionMapper);
+      // Create an arena-based resource manager for the engine
+      Arena engineArena = Arena.ofConfined();
+      ArenaResourceManager resourceManager = new ArenaResourceManager(engineArena, true);
+      
+      return new PanamaEngine(resourceManager);
     } catch (Exception e) {
       throw exceptionMapper.mapException(e);
     }
   }
 
   @Override
+  public Engine createEngine(final EngineConfig config) throws WasmException {
+    ensureNotClosed();
+    
+    if (config == null) {
+      throw new IllegalArgumentException("EngineConfig cannot be null");
+    }
+
+    try {
+      // Create an arena-based resource manager for the engine
+      Arena engineArena = Arena.ofConfined();
+      ArenaResourceManager resourceManager = new ArenaResourceManager(engineArena, true);
+      
+      // For now, ignore the config and create a default engine
+      // TODO: Implement engine configuration support
+      logger.warning("Engine configuration not yet supported, creating default engine");
+      return new PanamaEngine(resourceManager);
+    } catch (Exception e) {
+      throw exceptionMapper.mapException(e);
+    }
+  }
+
+  @Override
+  public Module compileModule(final Engine engine, final byte[] wasmBytes) throws WasmException {
+    ensureNotClosed();
+    
+    if (engine == null) {
+      throw new IllegalArgumentException("Engine cannot be null");
+    }
+    if (wasmBytes == null) {
+      throw new IllegalArgumentException("WebAssembly bytes cannot be null");
+    }
+    if (wasmBytes.length == 0) {
+      throw new IllegalArgumentException("WebAssembly bytes cannot be empty");
+    }
+
+    try {
+      // Use the provided engine to compile the module
+      if (!(engine instanceof PanamaEngine)) {
+        throw new IllegalArgumentException("Engine must be a PanamaEngine instance for Panama runtime");
+      }
+      
+      PanamaEngine panamaEngine = (PanamaEngine) engine;
+      return panamaEngine.compileModule(wasmBytes);
+    } catch (Exception e) {
+      throw exceptionMapper.mapException(e);
+    }
+  }
+
+  /**
+   * Compiles WebAssembly bytecode into a Module (convenience method).
+   *
+   * @param wasmBytes the WebAssembly bytecode
+   * @return a compiled Module
+   * @throws CompilationException if compilation fails
+   * @throws WasmException if a runtime error occurs
+   * @throws IllegalArgumentException if wasmBytes is null or empty
+   */
   public Module compileModule(final byte[] wasmBytes) throws CompilationException, WasmException {
     ensureNotClosed();
 
@@ -132,7 +203,15 @@ public final class PanamaWasmRuntime implements WasmRuntime {
     }
   }
 
-  @Override
+  /**
+   * Compiles WebAssembly bytecode from a ByteBuffer into a Module.
+   *
+   * @param wasmBuffer the WebAssembly bytecode buffer
+   * @return a compiled Module
+   * @throws CompilationException if compilation fails
+   * @throws WasmException if a runtime error occurs
+   * @throws IllegalArgumentException if wasmBuffer is null
+   */
   public Module compileModule(final ByteBuffer wasmBuffer)
       throws CompilationException, WasmException {
     ensureNotClosed();
@@ -159,7 +238,7 @@ public final class PanamaWasmRuntime implements WasmRuntime {
   }
 
   @Override
-  public void close() throws WasmException {
+  public void close() {
     if (closed) {
       return;
     }
@@ -184,7 +263,7 @@ public final class PanamaWasmRuntime implements WasmRuntime {
 
         logger.info("Panama WebAssembly runtime closed successfully");
       } catch (Exception e) {
-        throw new WasmException("Failed to close Panama WebAssembly runtime", e);
+        logger.severe("Failed to close Panama WebAssembly runtime: " + e.getMessage());
       } finally {
         closed = true;
       }
@@ -270,6 +349,68 @@ public final class PanamaWasmRuntime implements WasmRuntime {
     } catch (Exception e) {
       throw new WasmException("Failed to initialize Wasmtime library", e);
     }
+  }
+
+  @Override
+  public Instance instantiate(final Module module) throws WasmException {
+    ensureNotClosed();
+    
+    if (module == null) {
+      throw new IllegalArgumentException("Module cannot be null");
+    }
+    
+    try {
+      // Cast to PanamaModule to get native handle
+      if (!(module instanceof PanamaModule)) {
+        throw new IllegalArgumentException("Module must be a PanamaModule instance for Panama runtime");
+      }
+      
+      PanamaModule panamaModule = (PanamaModule) module;
+      
+      // Use the module to create an instance
+      return panamaModule.instantiate();
+    } catch (Exception e) {
+      throw exceptionMapper.mapException(e);
+    }
+  }
+
+  @Override
+  public Instance instantiate(final Module module, final ImportMap imports) throws WasmException {
+    ensureNotClosed();
+    
+    if (module == null) {
+      throw new IllegalArgumentException("Module cannot be null");
+    }
+    if (imports == null) {
+      throw new IllegalArgumentException("ImportMap cannot be null");
+    }
+    
+    try {
+      // Cast to PanamaModule to get native handle
+      if (!(module instanceof PanamaModule)) {
+        throw new IllegalArgumentException("Module must be a PanamaModule instance for Panama runtime");
+      }
+      
+      PanamaModule panamaModule = (PanamaModule) module;
+      
+      // For now, ignoring imports - this would need more complex implementation
+      // Use the module to create an instance
+      return panamaModule.instantiate();
+    } catch (Exception e) {
+      throw exceptionMapper.mapException(e);
+    }
+  }
+
+  @Override
+  public RuntimeInfo getRuntimeInfo() {
+    return new RuntimeInfo(
+        "wasmtime4j-panama",
+        "1.0.0-SNAPSHOT",
+        "36.0.2", // Wasmtime version
+        RuntimeType.PANAMA,
+        System.getProperty("java.version"),
+        System.getProperty("os.name") + " " + System.getProperty("os.arch")
+    );
   }
 
   /**

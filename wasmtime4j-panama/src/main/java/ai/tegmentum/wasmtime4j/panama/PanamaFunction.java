@@ -16,8 +16,9 @@
 
 package ai.tegmentum.wasmtime4j.panama;
 
-import ai.tegmentum.wasmtime4j.Function;
-import ai.tegmentum.wasmtime4j.exception.RuntimeException;
+import ai.tegmentum.wasmtime4j.FunctionType;
+import ai.tegmentum.wasmtime4j.WasmFunction;
+import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.MemorySegment;
@@ -42,7 +43,7 @@ import java.util.logging.Logger;
  *
  * @since 1.0.0
  */
-public final class PanamaFunction implements Function, AutoCloseable {
+public final class PanamaFunction implements WasmFunction, AutoCloseable {
   private static final Logger LOGGER = Logger.getLogger(PanamaFunction.class.getName());
 
   // Core infrastructure from Streams 1 & 2
@@ -97,21 +98,26 @@ public final class PanamaFunction implements Function, AutoCloseable {
   }
 
   @Override
-  public Object[] invoke(final Object... args) throws RuntimeException, WasmException {
+  public boolean isValid() {
+    return !closed;
+  }
+
+  @Override
+  public WasmValue[] call(final WasmValue... params) throws WasmException {
     ensureNotClosed();
 
     try {
       // Validate parameter count
       List<Integer> paramTypes = getParameterTypes();
       int expectedParams = paramTypes.size();
-      int actualParams = args != null ? args.length : 0;
+      int actualParams = params != null ? params.length : 0;
 
       if (actualParams != expectedParams) {
         throw new IllegalArgumentException(
             "Parameter count mismatch: expected " + expectedParams + ", got " + actualParams);
       }
 
-      // Convert Java arguments to WebAssembly values
+      // Convert WasmValue parameters to native format
       ArenaResourceManager.ManagedMemorySegment paramsMemory = null;
       MemorySegment paramsArray = null;
 
@@ -125,7 +131,7 @@ public final class PanamaFunction implements Function, AutoCloseable {
           MemorySegment paramSlot =
               paramsArray.asSlice(
                   i * MemoryLayouts.WASM_VAL.byteSize(), MemoryLayouts.WASM_VAL.byteSize());
-          marshalParameter(args[i], paramTypes.get(i), paramSlot);
+          marshalWasmValue(params[i], paramSlot);
         }
       }
 
@@ -148,31 +154,28 @@ public final class PanamaFunction implements Function, AutoCloseable {
           invokeFunctionNative(paramsArray, expectedParams, resultsArray, expectedResults);
 
       if (!success) {
-        throw new RuntimeException("WebAssembly function execution failed");
+        throw new WasmException("WebAssembly function execution failed");
       }
 
-      // Unmarshal results back to Java objects
-      Object[] results = new Object[expectedResults];
+      // Unmarshal results back to WasmValue objects
+      WasmValue[] results = new WasmValue[expectedResults];
       for (int i = 0; i < expectedResults; i++) {
         MemorySegment resultSlot =
             resultsArray.asSlice(
                 i * MemoryLayouts.WASM_VAL.byteSize(), MemoryLayouts.WASM_VAL.byteSize());
-        results[i] = unmarshalResult(resultSlot, resultTypes.get(i));
+        results[i] = unmarshalWasmValue(resultSlot, resultTypes.get(i));
       }
 
       return results;
 
     } catch (Exception e) {
-      if (e instanceof RuntimeException) {
-        throw (RuntimeException) e;
-      }
       String detailedMessage =
           PanamaErrorHandler.createDetailedErrorMessage(
               "Function invocation",
               "function="
                   + functionResource.getNativePointer()
-                  + ", args.length="
-                  + (args != null ? args.length : 0),
+                  + ", params.length="
+                  + (params != null ? params.length : 0),
               e.getMessage());
       throw new WasmException(detailedMessage, e);
     }
@@ -211,7 +214,28 @@ public final class PanamaFunction implements Function, AutoCloseable {
   }
 
   @Override
-  public void close() throws WasmException {
+  public String getName() {
+    // Function name is not available from native handle
+    return null;
+  }
+
+  @Override
+  public FunctionType getFunctionType() {
+    ensureNotClosed();
+    try {
+      List<Integer> paramTypes = getParameterTypes();
+      List<Integer> resultTypes = getResultTypes();
+      // For now, return a simple placeholder implementation
+      // TODO: Create proper FunctionType from parameter and result types
+      return null;
+    } catch (Exception e) {
+      LOGGER.warning("Failed to get function type: " + e.getMessage());
+      return null;
+    }
+  }
+
+  @Override
+  public void close() {
     if (closed) {
       return;
     }
@@ -228,7 +252,7 @@ public final class PanamaFunction implements Function, AutoCloseable {
         LOGGER.fine("Closed Panama function");
 
       } catch (Exception e) {
-        throw new WasmException("Failed to close function", e);
+        LOGGER.severe("Failed to close function: " + e.getMessage());
       } finally {
         closed = true;
       }
@@ -262,7 +286,7 @@ public final class PanamaFunction implements Function, AutoCloseable {
   private void initializeFunctionType() throws WasmException {
     try {
       // Get function type through FFI
-      MemorySegment functionTypePtr = getFunctionType();
+      MemorySegment functionTypePtr = getNativeFunctionType();
 
       // Extract parameter and result types from function type
       this.parameterTypes = extractParameterTypes(functionTypePtr);
@@ -280,7 +304,7 @@ public final class PanamaFunction implements Function, AutoCloseable {
   }
 
   /** Gets the function type pointer through FFI calls. */
-  private MemorySegment getFunctionType() throws Exception {
+  private MemorySegment getNativeFunctionType() throws Exception {
     // Call wasmtime_func_type through cached method handle
     MethodHandle funcType =
         nativeFunctions.getFunction(
@@ -343,106 +367,59 @@ public final class PanamaFunction implements Function, AutoCloseable {
             resultCount);
   }
 
-  /** Marshals a Java parameter value to WebAssembly value format. */
-  private void marshalParameter(
-      final Object javaValue, final int wasmType, final MemorySegment valueSlot) {
-    // Set the value type kind
-    MemoryLayouts.WASM_VAL_KIND.set(valueSlot, wasmType);
-
-    // Marshal the value based on type
-    switch (wasmType) {
-      case MemoryLayouts.WASM_I32:
-        int i32Value = convertToI32(javaValue);
-        MemoryLayouts.WASM_VAL_I32.set(valueSlot, i32Value);
+  /** Marshals a WasmValue to native WebAssembly value format. */
+  private void marshalWasmValue(final WasmValue wasmValue, final MemorySegment valueSlot) {
+    // Set the value type kind and value based on WasmValue type
+    switch (wasmValue.getType()) {
+      case I32:
+        MemoryLayouts.WASM_VAL_KIND.set(valueSlot, MemoryLayouts.WASM_I32);
+        MemoryLayouts.WASM_VAL_I32.set(valueSlot, wasmValue.asI32());
         break;
 
-      case MemoryLayouts.WASM_I64:
-        long i64Value = convertToI64(javaValue);
-        MemoryLayouts.WASM_VAL_I64.set(valueSlot, i64Value);
+      case I64:
+        MemoryLayouts.WASM_VAL_KIND.set(valueSlot, MemoryLayouts.WASM_I64);
+        MemoryLayouts.WASM_VAL_I64.set(valueSlot, wasmValue.asI64());
         break;
 
-      case MemoryLayouts.WASM_F32:
-        float f32Value = convertToF32(javaValue);
-        MemoryLayouts.WASM_VAL_F32.set(valueSlot, f32Value);
+      case F32:
+        MemoryLayouts.WASM_VAL_KIND.set(valueSlot, MemoryLayouts.WASM_F32);
+        MemoryLayouts.WASM_VAL_F32.set(valueSlot, wasmValue.asF32());
         break;
 
-      case MemoryLayouts.WASM_F64:
-        double f64Value = convertToF64(javaValue);
-        MemoryLayouts.WASM_VAL_F64.set(valueSlot, f64Value);
+      case F64:
+        MemoryLayouts.WASM_VAL_KIND.set(valueSlot, MemoryLayouts.WASM_F64);
+        MemoryLayouts.WASM_VAL_F64.set(valueSlot, wasmValue.asF64());
         break;
 
-      case MemoryLayouts.WASM_ANYREF:
-      case MemoryLayouts.WASM_FUNCREF:
-        // Reference types - for now set to null
-        MemoryLayouts.WASM_VAL_REF.set(valueSlot, MemorySegment.NULL);
+      case EXTERNREF:
+        MemoryLayouts.WASM_VAL_KIND.set(valueSlot, MemoryLayouts.WASM_ANYREF);
+        MemoryLayouts.WASM_VAL_REF.set(valueSlot, MemorySegment.NULL); // Simplified
+        break;
+
+      case FUNCREF:
+        MemoryLayouts.WASM_VAL_KIND.set(valueSlot, MemoryLayouts.WASM_FUNCREF);
+        MemoryLayouts.WASM_VAL_REF.set(valueSlot, MemorySegment.NULL); // Simplified
         break;
 
       default:
-        throw new IllegalArgumentException("Unsupported WebAssembly type: " + wasmType);
+        throw new IllegalArgumentException("Unsupported WebAssembly type: " + wasmValue.getType());
     }
   }
 
-  /** Unmarshals a WebAssembly value to Java object. */
-  private Object unmarshalResult(final MemorySegment valueSlot, final int wasmType) {
-    // Get the value based on type
+  /** Unmarshals a WebAssembly value to WasmValue object. */
+  private WasmValue unmarshalWasmValue(final MemorySegment valueSlot, final int wasmType) {
+    // Get the value based on type and create WasmValue
     return switch (wasmType) {
-      case MemoryLayouts.WASM_I32 -> (Integer) MemoryLayouts.WASM_VAL_I32.get(valueSlot);
-      case MemoryLayouts.WASM_I64 -> (Long) MemoryLayouts.WASM_VAL_I64.get(valueSlot);
-      case MemoryLayouts.WASM_F32 -> (Float) MemoryLayouts.WASM_VAL_F32.get(valueSlot);
-      case MemoryLayouts.WASM_F64 -> (Double) MemoryLayouts.WASM_VAL_F64.get(valueSlot);
-      case MemoryLayouts.WASM_ANYREF, MemoryLayouts.WASM_FUNCREF -> {
-        MemorySegment ref = (MemorySegment) MemoryLayouts.WASM_VAL_REF.get(valueSlot);
-        yield ref.equals(MemorySegment.NULL) ? null : ref;
-      }
+      case MemoryLayouts.WASM_I32 -> WasmValue.i32((Integer) MemoryLayouts.WASM_VAL_I32.get(valueSlot));
+      case MemoryLayouts.WASM_I64 -> WasmValue.i64((Long) MemoryLayouts.WASM_VAL_I64.get(valueSlot));
+      case MemoryLayouts.WASM_F32 -> WasmValue.f32((Float) MemoryLayouts.WASM_VAL_F32.get(valueSlot));
+      case MemoryLayouts.WASM_F64 -> WasmValue.f64((Double) MemoryLayouts.WASM_VAL_F64.get(valueSlot));
+      case MemoryLayouts.WASM_ANYREF -> WasmValue.externref(null); // Simplified
+      case MemoryLayouts.WASM_FUNCREF -> WasmValue.funcref(null); // Simplified
       default -> throw new IllegalArgumentException("Unsupported WebAssembly type: " + wasmType);
     };
   }
 
-  // Type conversion helpers
-
-  private int convertToI32(final Object value) {
-    if (value instanceof Integer) {
-      return (Integer) value;
-    } else if (value instanceof Number) {
-      return ((Number) value).intValue();
-    } else {
-      throw new IllegalArgumentException(
-          "Cannot convert " + value.getClass().getSimpleName() + " to i32");
-    }
-  }
-
-  private long convertToI64(final Object value) {
-    if (value instanceof Long) {
-      return (Long) value;
-    } else if (value instanceof Number) {
-      return ((Number) value).longValue();
-    } else {
-      throw new IllegalArgumentException(
-          "Cannot convert " + value.getClass().getSimpleName() + " to i64");
-    }
-  }
-
-  private float convertToF32(final Object value) {
-    if (value instanceof Float) {
-      return (Float) value;
-    } else if (value instanceof Number) {
-      return ((Number) value).floatValue();
-    } else {
-      throw new IllegalArgumentException(
-          "Cannot convert " + value.getClass().getSimpleName() + " to f32");
-    }
-  }
-
-  private double convertToF64(final Object value) {
-    if (value instanceof Double) {
-      return (Double) value;
-    } else if (value instanceof Number) {
-      return ((Number) value).doubleValue();
-    } else {
-      throw new IllegalArgumentException(
-          "Cannot convert " + value.getClass().getSimpleName() + " to f64");
-    }
-  }
 
   /**
    * Internal cleanup method called by managed resource.

@@ -1,5 +1,8 @@
 package ai.tegmentum.wasmtime4j.jni;
 
+import ai.tegmentum.wasmtime4j.WasmGlobal;
+import ai.tegmentum.wasmtime4j.WasmValue;
+import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
@@ -15,7 +18,7 @@ import java.util.logging.Logger;
  * comprehensive type checking for global variable access using JniValidation and the JniResource
  * base class.
  */
-public final class JniGlobal extends JniResource {
+public final class JniGlobal extends JniResource implements WasmGlobal {
 
   private static final Logger LOGGER = Logger.getLogger(JniGlobal.class.getName());
 
@@ -264,6 +267,94 @@ public final class JniGlobal extends JniResource {
       throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error setting global double value", e);
+    }
+  }
+
+  // Interface implementation methods for WasmGlobal
+
+  @Override
+  public WasmValue get() {
+    ensureNotClosed();
+    try {
+      final Object value = getValue();
+      final String typeString = getValueType();
+      
+      // Convert Object value and type string to WasmValue
+      return convertToWasmValue(value, typeString);
+    } catch (final Exception e) {
+      throw new RuntimeException("Failed to get global value as WasmValue", e);
+    }
+  }
+
+  @Override
+  public void set(final WasmValue value) {
+    JniValidation.requireNonNull(value, "value");
+    ensureNotClosed();
+    validateMutable();
+    
+    try {
+      final Object objectValue = convertFromWasmValue(value);
+      setValue(objectValue);
+    } catch (final Exception e) {
+      throw new RuntimeException("Failed to set global value from WasmValue", e);
+    }
+  }
+
+  @Override
+  public WasmValueType getType() {
+    final String typeString = getValueType();
+    // Convert string type to WasmValueType enum
+    switch (typeString.toLowerCase()) {
+      case "i32":
+        return WasmValueType.I32;
+      case "i64":
+        return WasmValueType.I64;
+      case "f32":
+        return WasmValueType.F32;
+      case "f64":
+        return WasmValueType.F64;
+      case "v128":
+        return WasmValueType.V128;
+      case "funcref":
+        return WasmValueType.FUNCREF;
+      case "externref":
+        return WasmValueType.EXTERNREF;
+      default:
+        return WasmValueType.I32; // Default fallback
+    }
+  }
+
+  private WasmValue convertToWasmValue(final Object value, final String typeString) {
+    if (value == null) {
+      return WasmValue.i32(0); // Default for null
+    }
+    
+    switch (typeString.toLowerCase()) {
+      case "i32":
+        return WasmValue.i32(((Number) value).intValue());
+      case "i64":
+        return WasmValue.i64(((Number) value).longValue());
+      case "f32":
+        return WasmValue.f32(((Number) value).floatValue());
+      case "f64":
+        return WasmValue.f64(((Number) value).doubleValue());
+      default:
+        return WasmValue.i32(0); // Default fallback
+    }
+  }
+
+  private Object convertFromWasmValue(final WasmValue value) {
+    switch (value.getType()) {
+      case I32:
+        return value.asInt();
+      case I64:
+        return value.asLong();
+      case F32:
+        return value.asFloat();
+      case F64:
+        return value.asDouble();
+      default:
+        return value.getValue();
     }
   }
 

@@ -73,6 +73,86 @@ JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetModu
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniModule
+ * Method:    nativeGetExportMetadata
+ * Signature: (J)[Ljava/lang/String;
+ */
+JNIEXPORT jobjectArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetExportMetadata
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniModule
+ * Method:    nativeGetImportMetadata
+ * Signature: (J)[Ljava/lang/String;
+ */
+JNIEXPORT jobjectArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetImportMetadata
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniModule
+ * Method:    nativeGetModuleName
+ * Signature: (J)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetModuleName
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniModule
+ * Method:    nativeGetModuleFeatures
+ * Signature: (J)[Ljava/lang/String;
+ */
+JNIEXPORT jobjectArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetModuleFeatures
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniModule
+ * Method:    nativeGetModuleLinkingInfo
+ * Signature: (J)[Ljava/lang/String;
+ */
+JNIEXPORT jobjectArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetModuleLinkingInfo
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniModule
+ * Method:    nativeSerializeModule
+ * Signature: (J)[B
+ */
+JNIEXPORT jbyteArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeSerializeModule
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniModule
+ * Method:    nativeDeserializeModule
+ * Signature: (J[B)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeDeserializeModule
+  (JNIEnv *, jclass, jlong, jbyteArray);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniModule
+ * Method:    nativeInstantiateModuleWithImports
+ * Signature: (JJJ)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeInstantiateModuleWithImports
+  (JNIEnv *, jclass, jlong, jlong, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniModule
+ * Method:    nativeCreateImportMap
+ * Signature: (J[B)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeCreateImportMap
+  (JNIEnv *, jclass, jlong, jbyteArray);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniModule
+ * Method:    nativeDestroyImportMap
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeDestroyImportMap
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniModule
  * Method:    nativeDestroyModule
  * Signature: (J)V
  */

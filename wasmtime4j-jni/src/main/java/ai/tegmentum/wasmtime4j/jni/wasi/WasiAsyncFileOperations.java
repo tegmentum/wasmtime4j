@@ -12,11 +12,14 @@ import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -55,8 +58,24 @@ public final class WasiAsyncFileOperations implements AutoCloseable {
   /** Maximum number of concurrent operations to prevent resource exhaustion. */
   private static final int MAX_CONCURRENT_OPERATIONS = 256;
 
+  /**
+   * Creates a failed CompletableFuture with the given exception (Java 8 compatible).
+   *
+   * @param <T> the return type
+   * @param exception the exception to wrap
+   * @return a failed CompletableFuture
+   */
+  private static <T> CompletableFuture<T> failedFuture(final Throwable exception) {
+    final CompletableFuture<T> future = new CompletableFuture<>();
+    future.completeExceptionally(exception);
+    return future;
+  }
+
   /** Executor service for asynchronous operations. */
   private final ExecutorService asyncExecutor;
+
+  /** Scheduled executor service for timeouts. */
+  private final ScheduledExecutorService scheduledExecutor;
 
   /** Selector for non-blocking operations. */
   private final Selector selector;
@@ -103,6 +122,13 @@ public final class WasiAsyncFileOperations implements AutoCloseable {
                 thread.setDaemon(true);
                 return thread;
               });
+
+      // Create scheduled executor for timeouts
+      this.scheduledExecutor = Executors.newScheduledThreadPool(2, r -> {
+        final Thread thread = new Thread(r, "WasiAsyncTimeout");
+        thread.setDaemon(true);
+        return thread;
+      });
 
       // Create selector for non-blocking I/O
       this.selector = Selector.open();
@@ -155,12 +181,12 @@ public final class WasiAsyncFileOperations implements AutoCloseable {
     JniValidation.requirePositive(timeoutMs, "timeoutMs");
 
     if (closed.get()) {
-      return CompletableFuture.failedFuture(
+      return failedFuture(
           new WasiFileSystemException("Async file operations closed", "EIO"));
     }
 
     if (activeOperations.get() >= MAX_CONCURRENT_OPERATIONS) {
-      return CompletableFuture.failedFuture(
+      return failedFuture(
           new WasiFileSystemException("Too many concurrent operations", "EAGAIN"));
     }
 
@@ -174,7 +200,7 @@ public final class WasiAsyncFileOperations implements AutoCloseable {
 
     // Set up timeout
     final Future<?> timeoutTask =
-        asyncExecutor.schedule(
+        scheduledExecutor.schedule(
             () -> {
               if (future.cancel(true)) {
                 LOGGER.warning(
@@ -186,7 +212,7 @@ public final class WasiAsyncFileOperations implements AutoCloseable {
 
     try {
       final AsynchronousFileChannel asyncChannel =
-          AsynchronousFileChannel.open(path, Set.of(StandardOpenOption.READ), asyncExecutor);
+          AsynchronousFileChannel.open(path, Collections.singleton(StandardOpenOption.READ), asyncExecutor);
 
       final ByteBuffer buffer = ByteBuffer.allocateDirect(bufferSize);
 
@@ -278,12 +304,12 @@ public final class WasiAsyncFileOperations implements AutoCloseable {
     JniValidation.requirePositive(timeoutMs, "timeoutMs");
 
     if (closed.get()) {
-      return CompletableFuture.failedFuture(
+      return failedFuture(
           new WasiFileSystemException("Async file operations closed", "EIO"));
     }
 
     if (activeOperations.get() >= MAX_CONCURRENT_OPERATIONS) {
-      return CompletableFuture.failedFuture(
+      return failedFuture(
           new WasiFileSystemException("Too many concurrent operations", "EAGAIN"));
     }
 
@@ -297,7 +323,7 @@ public final class WasiAsyncFileOperations implements AutoCloseable {
 
     // Set up timeout
     final Future<?> timeoutTask =
-        asyncExecutor.schedule(
+        scheduledExecutor.schedule(
             () -> {
               if (future.cancel(true)) {
                 LOGGER.warning(
@@ -308,9 +334,11 @@ public final class WasiAsyncFileOperations implements AutoCloseable {
             TimeUnit.MILLISECONDS);
 
     try {
+      final Set<StandardOpenOption> options = new HashSet<>();
+      options.add(StandardOpenOption.WRITE);
+      options.add(StandardOpenOption.CREATE);
       final AsynchronousFileChannel asyncChannel =
-          AsynchronousFileChannel.open(
-              path, Set.of(StandardOpenOption.WRITE, StandardOpenOption.CREATE), asyncExecutor);
+          AsynchronousFileChannel.open(path, options, asyncExecutor);
 
       asyncChannel.write(
           data,
@@ -379,7 +407,7 @@ public final class WasiAsyncFileOperations implements AutoCloseable {
     JniValidation.requireNonNull(channel, "channel");
 
     if (closed.get()) {
-      return CompletableFuture.failedFuture(
+      return failedFuture(
           new WasiFileSystemException("Async file operations closed", "EIO"));
     }
 
@@ -502,15 +530,21 @@ public final class WasiAsyncFileOperations implements AutoCloseable {
         Thread.currentThread().interrupt();
       }
 
-      // Shutdown executor
+      // Shutdown executors
       asyncExecutor.shutdown();
+      scheduledExecutor.shutdown();
       try {
         if (!asyncExecutor.awaitTermination(10, TimeUnit.SECONDS)) {
           asyncExecutor.shutdownNow();
           LOGGER.warning("Forced shutdown of async executor");
         }
+        if (!scheduledExecutor.awaitTermination(10, TimeUnit.SECONDS)) {
+          scheduledExecutor.shutdownNow();
+          LOGGER.warning("Forced shutdown of scheduled executor");
+        }
       } catch (final InterruptedException e) {
         asyncExecutor.shutdownNow();
+        scheduledExecutor.shutdownNow();
         Thread.currentThread().interrupt();
       }
 

@@ -7,6 +7,10 @@ import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmMemory;
 import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import java.lang.management.GarbageCollectorMXBean;
+import java.lang.management.ManagementFactory;
+import java.lang.management.MemoryMXBean;
+import java.lang.management.MemoryUsage;
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -82,6 +86,10 @@ public class MemoryOperationBenchmark extends BenchmarkBase {
   /** Random offsets for random access patterns. */
   private int[] randomOffsets;
 
+  /** GC monitoring beans for analyzing garbage collection impact. */
+  private MemoryMXBean memoryBean;
+  private java.util.List<GarbageCollectorMXBean> gcBeans;
+
   /** Setup performed before each benchmark iteration. */
   @Setup(Level.Iteration)
   public void setupIteration() throws WasmException {
@@ -115,6 +123,10 @@ public class MemoryOperationBenchmark extends BenchmarkBase {
     for (int i = 0; i < randomOffsets.length; i++) {
       randomOffsets[i] = (int) (Math.random() * maxOffset);
     }
+
+    // Initialize GC monitoring beans
+    memoryBean = ManagementFactory.getMemoryMXBean();
+    gcBeans = ManagementFactory.getGarbageCollectorMXBeans();
   }
 
   /** Cleanup performed after each benchmark iteration. */
@@ -552,5 +564,240 @@ public class MemoryOperationBenchmark extends BenchmarkBase {
 
     blackhole.consume(validOperations);
     blackhole.consume(invalidOperations);
+  }
+
+  /**
+   * Benchmarks memory operations with GC impact analysis.
+   *
+   * @param blackhole JMH blackhole to prevent dead code elimination
+   */
+  @Benchmark
+  public void benchmarkMemoryWithGcAnalysis(final Blackhole blackhole) {
+    // Capture GC state before operations
+    final GcStatistics gcBefore = captureGcStatistics();
+    final MemoryUsage heapBefore = memoryBean.getHeapMemoryUsage();
+
+    try {
+      // Perform intensive memory operations that may trigger GC
+      final int iterations = 1000;
+      final byte[] buffer = new byte[4096];
+
+      for (int i = 0; i < iterations; i++) {
+        // Write data
+        final int offset = i % ((int) wasmMemory.getSize() - buffer.length);
+        for (int j = 0; j < buffer.length; j++) {
+          buffer[j] = (byte) ((i + j) % 256);
+        }
+        wasmMemory.write(offset, buffer);
+
+        // Read data back
+        final byte[] readData = wasmMemory.read(offset, buffer.length);
+        
+        // Create some garbage to stress GC
+        if (i % 50 == 0) {
+          final byte[] garbage = new byte[8192];
+          blackhole.consume(garbage.length);
+        }
+
+        blackhole.consume(readData.length);
+      }
+
+      // Capture GC state after operations
+      final GcStatistics gcAfter = captureGcStatistics();
+      final MemoryUsage heapAfter = memoryBean.getHeapMemoryUsage();
+
+      // Calculate GC impact metrics
+      final long gcCollections = gcAfter.totalCollections - gcBefore.totalCollections;
+      final long gcTime = gcAfter.totalGcTime - gcBefore.totalGcTime;
+      final long heapUsedChange = heapAfter.getUsed() - heapBefore.getUsed();
+
+      blackhole.consume(gcCollections);
+      blackhole.consume(gcTime);
+      blackhole.consume(heapUsedChange);
+      blackhole.consume(iterations);
+
+    } catch (final WasmException e) {
+      throw new RuntimeException("Memory operations with GC analysis failed", e);
+    }
+  }
+
+  /**
+   * Benchmarks memory allocation patterns and GC pressure.
+   *
+   * @param blackhole JMH blackhole to prevent dead code elimination
+   */
+  @Benchmark
+  public void benchmarkAllocationPatternsWithGc(final Blackhole blackhole) {
+    final GcStatistics gcBefore = captureGcStatistics();
+
+    try {
+      switch (operationPattern) {
+        case "SEQUENTIAL":
+          benchmarkSequentialAllocations(blackhole);
+          break;
+        case "RANDOM":
+          benchmarkRandomAllocations(blackhole);
+          break;
+        case "BULK":
+          benchmarkBulkAllocations(blackhole);
+          break;
+        default:
+          throw new IllegalArgumentException("Unknown pattern: " + operationPattern);
+      }
+
+      final GcStatistics gcAfter = captureGcStatistics();
+      final long gcImpact = gcAfter.totalCollections - gcBefore.totalCollections;
+
+      blackhole.consume(gcImpact);
+      blackhole.consume(operationPattern);
+
+    } catch (final WasmException e) {
+      throw new RuntimeException("Allocation patterns with GC failed", e);
+    }
+  }
+
+  /**
+   * Benchmarks memory operations under different GC strategies.
+   *
+   * @param blackhole JMH blackhole to prevent dead code elimination
+   */
+  @Benchmark
+  public void benchmarkGcResistantOperations(final Blackhole blackhole) {
+    try {
+      // Strategy 1: Reuse buffers to minimize allocations
+      final byte[] reusableBuffer = new byte[1024];
+      for (int i = 0; i < 100; i++) {
+        // Modify buffer in place
+        for (int j = 0; j < reusableBuffer.length; j++) {
+          reusableBuffer[j] = (byte) ((i + j) % 256);
+        }
+        
+        final int offset = i * 512;
+        if (offset + reusableBuffer.length <= wasmMemory.getSize()) {
+          wasmMemory.write(offset, reusableBuffer);
+          
+          // Read back using same buffer space
+          final byte[] readData = wasmMemory.read(offset, Math.min(512, reusableBuffer.length));
+          blackhole.consume(readData.length);
+        }
+      }
+
+      // Strategy 2: Batch operations to reduce call overhead
+      final int batchSize = 10;
+      final byte[][] batches = new byte[batchSize][];
+      for (int i = 0; i < batchSize; i++) {
+        batches[i] = new byte[512];
+        for (int j = 0; j < batches[i].length; j++) {
+          batches[i][j] = (byte) ((i * 100 + j) % 256);
+        }
+      }
+
+      // Write all batches
+      for (int i = 0; i < batchSize; i++) {
+        final int offset = i * 512;
+        if (offset + batches[i].length <= wasmMemory.getSize()) {
+          wasmMemory.write(offset, batches[i]);
+        }
+      }
+
+      // Read all batches
+      for (int i = 0; i < batchSize; i++) {
+        final int offset = i * 512;
+        if (offset + 512 <= wasmMemory.getSize()) {
+          final byte[] readData = wasmMemory.read(offset, 512);
+          blackhole.consume(readData.length);
+        }
+      }
+
+      blackhole.consume(batchSize);
+      blackhole.consume(reusableBuffer.length);
+
+    } catch (final WasmException e) {
+      throw new RuntimeException("GC resistant operations failed", e);
+    }
+  }
+
+  /** Helper method for sequential allocation pattern. */
+  private void benchmarkSequentialAllocations(final Blackhole blackhole) throws WasmException {
+    for (int i = 0; i < 200; i++) {
+      final byte[] data = new byte[256];
+      for (int j = 0; j < data.length; j++) {
+        data[j] = (byte) (i + j);
+      }
+      
+      final int offset = i * 128;
+      if (offset + data.length <= wasmMemory.getSize()) {
+        wasmMemory.write(offset, data);
+        final byte[] readBack = wasmMemory.read(offset, data.length);
+        blackhole.consume(readBack.length);
+      }
+    }
+  }
+
+  /** Helper method for random allocation pattern. */
+  private void benchmarkRandomAllocations(final Blackhole blackhole) throws WasmException {
+    for (int i = 0; i < 150; i++) {
+      // Random size allocation
+      final int size = 128 + (int) (Math.random() * 512);
+      final byte[] data = new byte[size];
+      
+      for (int j = 0; j < data.length; j++) {
+        data[j] = (byte) (Math.random() * 256);
+      }
+      
+      final int offset = randomOffsets[i % randomOffsets.length];
+      if (offset + data.length <= wasmMemory.getSize()) {
+        wasmMemory.write(offset, data);
+        final byte[] readBack = wasmMemory.read(offset, Math.min(size, 256));
+        blackhole.consume(readBack.length);
+      }
+    }
+  }
+
+  /** Helper method for bulk allocation pattern. */
+  private void benchmarkBulkAllocations(final Blackhole blackhole) throws WasmException {
+    // Large allocations
+    final int bulkCount = 20;
+    final int bulkSize = Math.min(8192, (int) wasmMemory.getSize() / bulkCount);
+    
+    for (int i = 0; i < bulkCount; i++) {
+      final byte[] bulkData = new byte[bulkSize];
+      for (int j = 0; j < bulkData.length; j++) {
+        bulkData[j] = (byte) ((i * 10 + j) % 256);
+      }
+      
+      final int offset = i * bulkSize;
+      if (offset + bulkSize <= wasmMemory.getSize()) {
+        wasmMemory.write(offset, bulkData);
+        
+        // Read back a portion to verify
+        final byte[] sample = wasmMemory.read(offset, Math.min(1024, bulkSize));
+        blackhole.consume(sample.length);
+      }
+    }
+  }
+
+  /** Captures current garbage collection statistics. */
+  private GcStatistics captureGcStatistics() {
+    long totalCollections = 0;
+    long totalGcTime = 0;
+    
+    for (final GarbageCollectorMXBean gcBean : gcBeans) {
+      totalCollections += gcBean.getCollectionCount();
+      totalGcTime += gcBean.getCollectionTime();
+    }
+    
+    return new GcStatistics(totalCollections, totalGcTime);
+  }
+
+  /** Helper class to hold GC statistics. */
+  private static final class GcStatistics {
+    final long totalCollections;
+    final long totalGcTime;
+    
+    GcStatistics(final long totalCollections, final long totalGcTime) {
+      this.totalCollections = totalCollections;
+      this.totalGcTime = totalGcTime;
+    }
   }
 }

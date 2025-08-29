@@ -92,7 +92,10 @@ public enum WasiErrorCode {
   EPROTO(100, "Protocol error", false, true, false, false, false),
   ETIME(101, "Timer expired", false, false, false, false, true),
   ETXTBSY(26, "Text file busy", true, false, false, true, true),
-  ENOTTY(25, "Inappropriate ioctl for device", false, false, false, false, false);
+  ENOTTY(25, "Inappropriate ioctl for device", false, false, false, false, false),
+
+  /** Unknown error code for unrecognized errno values. */
+  UNKNOWN(-1, "Unknown error", false, false, false, false, false);
 
   /** The errno value for this error code. */
   private final int errno;
@@ -240,14 +243,12 @@ public enum WasiErrorCode {
   /**
    * Creates a generic error code for unknown errno values.
    *
-   * @param errno the unknown errno value
-   * @return a generic error code with the errno value
+   * @param errno the unknown errno value (note: ignored, always returns UNKNOWN)
+   * @return the UNKNOWN error code
    */
   public static WasiErrorCode createGeneric(final int errno) {
-    return new WasiErrorCode(
-        errno, "Unknown error (errno " + errno + ")", false, false, false, false, false) {
-      // Anonymous subclass for unknown error codes
-    };
+    // Return the UNKNOWN enum value since we can't create new enum instances
+    return UNKNOWN;
   }
 
   @Override

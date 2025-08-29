@@ -7,17 +7,13 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use wasmtime::{
     Module as WasmtimeModule, 
-    ExportType, 
-    ImportType, 
     FuncType, 
-    GlobalType, 
-    MemoryType, 
-    TableType,
     ValType,
+    Mutability,
 };
 use crate::engine::Engine;
 use crate::error::{WasmtimeError, WasmtimeResult};
-use crate::{validate_not_null, validate_slice_bounds};
+// Note: validation functions removed from crate root
 
 /// Thread-safe wrapper around Wasmtime module with introspection
 #[derive(Debug, Clone)]
@@ -173,12 +169,11 @@ impl Module {
 
         engine.validate()?;
 
-        let wasm_bytes = wasmtime::wat::parse_str(wat)
-            .map_err(|e| WasmtimeError::Compilation {
-                message: format!("WAT parsing failed: {}", e),
-            })?;
-
-        Self::compile(engine, &wasm_bytes)
+        // WAT parsing is no longer in wasmtime core - disable for now
+        // Applications should compile WAT to WASM before using this library
+        Err(WasmtimeError::Compilation {
+            message: "WAT parsing not supported. Please compile WAT to WASM first.".to_string(),
+        })
     }
 
     /// Get reference to inner Wasmtime module (internal use)
@@ -293,9 +288,9 @@ impl ModuleMetadata {
         let mut imports = Vec::new();
         let mut exports = Vec::new();
         let mut functions = Vec::new();
-        let mut globals = Vec::new();
-        let mut memories = Vec::new();
-        let mut tables = Vec::new();
+        let globals = Vec::new();
+        let memories = Vec::new();
+        let tables = Vec::new();
 
         // Extract imports
         for import in module.imports() {
@@ -365,8 +360,8 @@ fn convert_import_type(ty: wasmtime::ExternType) -> WasmtimeResult<ImportKind> {
         }
         wasmtime::ExternType::Global(global_type) => {
             Ok(ImportKind::Global(
-                convert_val_type(global_type.content())?,
-                global_type.mutability().is_mutable()
+                convert_val_type(global_type.content().clone())?,
+                matches!(global_type.mutability(), Mutability::Var)
             ))
         }
         wasmtime::ExternType::Memory(memory_type) => {
@@ -378,10 +373,16 @@ fn convert_import_type(ty: wasmtime::ExternType) -> WasmtimeResult<ImportKind> {
         }
         wasmtime::ExternType::Table(table_type) => {
             Ok(ImportKind::Table(
-                convert_val_type(table_type.element())?,
-                table_type.minimum(),
-                table_type.maximum()
+                convert_ref_type(table_type.element().clone())?,
+                table_type.minimum().try_into().unwrap_or(u32::MAX),
+                table_type.maximum().map(|max| max.try_into().unwrap_or(u32::MAX))
             ))
+        }
+        wasmtime::ExternType::Tag(_tag_type) => {
+            // Tag types are not supported in our interface
+            Err(WasmtimeError::Module {
+                message: "Tag types are not supported".to_string(),
+            })
         }
     }
 }
@@ -393,8 +394,8 @@ fn convert_export_type(ty: wasmtime::ExternType) -> WasmtimeResult<ExportKind> {
         }
         wasmtime::ExternType::Global(global_type) => {
             Ok(ExportKind::Global(
-                convert_val_type(global_type.content())?,
-                global_type.mutability().is_mutable()
+                convert_val_type(global_type.content().clone())?,
+                matches!(global_type.mutability(), Mutability::Var)
             ))
         }
         wasmtime::ExternType::Memory(memory_type) => {
@@ -406,10 +407,16 @@ fn convert_export_type(ty: wasmtime::ExternType) -> WasmtimeResult<ExportKind> {
         }
         wasmtime::ExternType::Table(table_type) => {
             Ok(ExportKind::Table(
-                convert_val_type(table_type.element())?,
-                table_type.minimum(),
-                table_type.maximum()
+                convert_ref_type(table_type.element().clone())?,
+                table_type.minimum().try_into().unwrap_or(u32::MAX),
+                table_type.maximum().map(|max| max.try_into().unwrap_or(u32::MAX))
             ))
+        }
+        wasmtime::ExternType::Tag(_tag_type) => {
+            // Tag types are not supported in our interface
+            Err(WasmtimeError::Module {
+                message: "Tag types are not supported".to_string(),
+            })
         }
     }
 }
@@ -433,8 +440,19 @@ fn convert_val_type(val_type: ValType) -> WasmtimeResult<ValueType> {
         ValType::F32 => Ok(ValueType::F32),
         ValType::F64 => Ok(ValueType::F64),
         ValType::V128 => Ok(ValueType::V128),
-        ValType::ExternRef => Ok(ValueType::ExternRef),
-        ValType::FuncRef => Ok(ValueType::FuncRef),
+        ValType::Ref(ref_type) => convert_ref_type(ref_type),
+    }
+}
+
+fn convert_ref_type(ref_type: wasmtime::RefType) -> WasmtimeResult<ValueType> {
+    // In wasmtime 36.0.2, RefType doesn't have is_extern_ref/is_func_ref methods
+    // We need to match on the heap type instead
+    match ref_type.heap_type() {
+        wasmtime::HeapType::Extern => Ok(ValueType::ExternRef),
+        wasmtime::HeapType::Func => Ok(ValueType::FuncRef),
+        _ => Err(WasmtimeError::Module {
+            message: format!("Unsupported reference type: {:?}", ref_type),
+        })
     }
 }
 

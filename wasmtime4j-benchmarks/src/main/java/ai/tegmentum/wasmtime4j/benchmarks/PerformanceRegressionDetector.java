@@ -1,5 +1,9 @@
 package ai.tegmentum.wasmtime4j.benchmarks;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -7,9 +11,12 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 /**
  * Performance regression detection framework for WebAssembly benchmarks.
@@ -48,19 +55,31 @@ public final class PerformanceRegressionDetector {
     private final LocalDateTime timestamp;
     private final Map<String, Object> metadata;
 
+    @JsonCreator
+    public PerformanceMeasurement(
+        @JsonProperty("benchmarkName") final String benchmarkName,
+        @JsonProperty("runtimeType") final String runtimeType,
+        @JsonProperty("throughput") final double throughput,
+        @JsonProperty("latency") final double latency,
+        @JsonProperty("memoryUsage") final long memoryUsage,
+        @JsonProperty("timestamp") final LocalDateTime timestamp,
+        @JsonProperty("metadata") final Map<String, Object> metadata) {
+      this.benchmarkName = benchmarkName;
+      this.runtimeType = runtimeType;
+      this.throughput = throughput;
+      this.latency = latency;
+      this.memoryUsage = memoryUsage;
+      this.timestamp = timestamp != null ? timestamp : LocalDateTime.now();
+      this.metadata = metadata != null ? new HashMap<>(metadata) : new HashMap<>();
+    }
+
     public PerformanceMeasurement(
         final String benchmarkName,
         final String runtimeType,
         final double throughput,
         final double latency,
         final long memoryUsage) {
-      this.benchmarkName = benchmarkName;
-      this.runtimeType = runtimeType;
-      this.throughput = throughput;
-      this.latency = latency;
-      this.memoryUsage = memoryUsage;
-      this.timestamp = LocalDateTime.now();
-      this.metadata = new HashMap<>();
+      this(benchmarkName, runtimeType, throughput, latency, memoryUsage, LocalDateTime.now(), new HashMap<>());
     }
 
     public PerformanceMeasurement withMetadata(final String key, final Object value) {
@@ -300,18 +319,24 @@ public final class PerformanceRegressionDetector {
     }
   }
 
+  /** Logger for performance regression detection. */
+  private static final Logger LOGGER = Logger.getLogger(PerformanceRegressionDetector.class.getName());
+
   /** Performance baseline storage and management. */
   private final Map<String, List<PerformanceMeasurement>> baselineData;
   private final Path baselineStoragePath;
+  private final ObjectMapper objectMapper;
 
   public PerformanceRegressionDetector() {
     this.baselineData = new HashMap<>();
     this.baselineStoragePath = Paths.get(System.getProperty("user.home"), ".wasmtime4j-benchmarks");
+    this.objectMapper = createObjectMapper();
   }
 
   public PerformanceRegressionDetector(final Path baselineStoragePath) {
     this.baselineData = new HashMap<>();
     this.baselineStoragePath = baselineStoragePath;
+    this.objectMapper = createObjectMapper();
   }
 
   /**
@@ -325,6 +350,7 @@ public final class PerformanceRegressionDetector {
       baselineData.computeIfAbsent(key, k -> new ArrayList<>()).add(measurement);
     }
     saveBaselines();
+    LOGGER.info("Established baseline with " + measurements.size() + " measurements");
   }
 
   /**
@@ -372,9 +398,7 @@ public final class PerformanceRegressionDetector {
     final StringBuilder report = new StringBuilder();
     report.append("WebAssembly Performance Report\n");
     report.append("Generated: ").append(LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)).append("\n");
-    report.append("="
-
-).append("\n\n");
+    report.append("==========================================================").append("\n\n");
 
     final Map<String, List<PerformanceMeasurement>> groupedData = groupMeasurements(measurements);
 
@@ -485,17 +509,119 @@ public final class PerformanceRegressionDetector {
   }
 
   private void saveBaselines() {
-    // In a real implementation, this would serialize the baseline data to disk
-    // For now, we'll just ensure the storage directory exists
     try {
       Files.createDirectories(baselineStoragePath);
+      final Path dataFile = baselineStoragePath.resolve("baseline-data.json");
+      final ObjectMapper mapper = createObjectMapper();
+      mapper.writeValue(dataFile.toFile(), baselineData);
+      LOGGER.info("Saved baseline data to: " + dataFile);
     } catch (final IOException e) {
-      // Ignore storage errors for benchmark purposes
+      LOGGER.warning("Failed to save baseline data: " + e.getMessage());
     }
   }
 
   private void loadBaselines() {
-    // In a real implementation, this would load baseline data from disk
-    // For now, we'll use in-memory storage only
+    try {
+      final Path dataFile = baselineStoragePath.resolve("baseline-data.json");
+      if (Files.exists(dataFile)) {
+        final ObjectMapper mapper = createObjectMapper();
+        final Map<String, List<PerformanceMeasurement>> loadedData = 
+            mapper.readValue(dataFile.toFile(), 
+                mapper.getTypeFactory().constructParametricType(
+                    Map.class, String.class, 
+                    mapper.getTypeFactory().constructCollectionType(List.class, PerformanceMeasurement.class)));
+        baselineData.clear();
+        baselineData.putAll(loadedData);
+        LOGGER.info("Loaded baseline data from: " + dataFile);
+      }
+    } catch (final IOException e) {
+      LOGGER.warning("Failed to load baseline data: " + e.getMessage());
+    }
+  }
+
+  /**
+   * Creates and configures the JSON object mapper for serialization.
+   *
+   * @return configured ObjectMapper instance
+   */
+  private ObjectMapper createObjectMapper() {
+    final ObjectMapper mapper = new ObjectMapper();
+    mapper.registerModule(new JavaTimeModule());
+    return mapper;
+  }
+
+  /**
+   * Generates CI/CD integration report in JSON format.
+   *
+   * @param regressions the regression analysis results
+   * @return JSON report for CI/CD consumption
+   */
+  public String generateCiCdReport(final List<RegressionResult> regressions) {
+    final Map<String, Object> report = new HashMap<>();
+    report.put("timestamp", LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+    report.put("regressionCount", regressions.stream().mapToLong(r -> r.isRegression() ? 1 : 0).sum());
+    report.put("totalBenchmarks", regressions.size());
+    report.put("hasRegressions", regressions.stream().anyMatch(RegressionResult::isRegression));
+    
+    final List<Map<String, Object>> regressionDetails = regressions.stream()
+        .filter(RegressionResult::isRegression)
+        .map(r -> {
+          final Map<String, Object> details = new HashMap<>();
+          details.put("benchmarkName", r.getBenchmarkName());
+          details.put("runtimeType", r.getRuntimeType());
+          details.put("performanceChange", r.getPerformanceChange());
+          details.put("description", r.getDescription());
+          return details;
+        })
+        .collect(Collectors.toList());
+    
+    report.put("regressions", regressionDetails);
+    
+    try {
+      return objectMapper.writeValueAsString(report);
+    } catch (final Exception e) {
+      LOGGER.warning("Failed to generate CI/CD report: " + e.getMessage());
+      return "{\"error\": \"Failed to generate report\"}";
+    }
+  }
+
+  /**
+   * Gets performance trend analysis for a specific benchmark and runtime.
+   *
+   * @param benchmarkName the benchmark name
+   * @param runtimeType the runtime type
+   * @param lookbackDays number of days to analyze
+   * @return performance trend statistics
+   */
+  public PerformanceStatistics getPerformanceTrend(
+      final String benchmarkName, final String runtimeType, final int lookbackDays) {
+    final String key = getBaselineKey(benchmarkName, runtimeType);
+    final List<PerformanceMeasurement> measurements = baselineData.get(key);
+    
+    if (measurements == null || measurements.isEmpty()) {
+      return new PerformanceStatistics(Collections.emptyList(), CONFIDENCE_LEVEL);
+    }
+    
+    final LocalDateTime cutoff = LocalDateTime.now().minusDays(lookbackDays);
+    final List<PerformanceMeasurement> recentMeasurements = measurements.stream()
+        .filter(m -> m.getTimestamp().isAfter(cutoff))
+        .collect(Collectors.toList());
+    
+    return new PerformanceStatistics(recentMeasurements, CONFIDENCE_LEVEL);
+  }
+
+  /**
+   * Clears all baseline data (useful for testing).
+   */
+  public void clearBaselines() {
+    baselineData.clear();
+    try {
+      final Path dataFile = baselineStoragePath.resolve("baseline-data.json");
+      if (Files.exists(dataFile)) {
+        Files.delete(dataFile);
+      }
+    } catch (final IOException e) {
+      LOGGER.warning("Failed to clear baseline data file: " + e.getMessage());
+    }
   }
 }

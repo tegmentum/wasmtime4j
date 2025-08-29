@@ -510,6 +510,38 @@ public final class MemoryLayouts {
     };
   }
 
+  /**
+   * Converts value kind to string representation.
+   *
+   * @param kind the value type kind
+   * @return string representation
+   */
+  public static String valkindToString(final int kind) {
+    return switch (kind) {
+      case 0 -> "i32";    // WASM_I32
+      case 1 -> "i64";    // WASM_I64
+      case 2 -> "f32";    // WASM_F32
+      case 3 -> "f64";    // WASM_F64
+      case 4 -> "v128";   // WASM_V128
+      case 5 -> "funcref"; // WASM_FUNCREF
+      case 6 -> "externref"; // WASM_EXTERNREF
+      default -> "unknown(" + kind + ")";
+    };
+  }
+
+  /**
+   * Converts value kind to string representation (Integer version).
+   *
+   * @param kind the value type kind
+   * @return string representation
+   */
+  public static String valkindToString(final Integer kind) {
+    if (kind == null) {
+      return "null";
+    }
+    return valkindToString(kind.intValue());
+  }
+
   static {
     LOGGER.fine("Initialized Wasmtime memory layouts");
   }

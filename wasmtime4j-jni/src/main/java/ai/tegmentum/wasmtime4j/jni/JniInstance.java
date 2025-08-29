@@ -1,6 +1,16 @@
 package ai.tegmentum.wasmtime4j.jni;
 
 import ai.tegmentum.wasmtime4j.Instance;
+import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.Store;
+import ai.tegmentum.wasmtime4j.WasmFunction;
+import ai.tegmentum.wasmtime4j.WasmGlobal;
+import ai.tegmentum.wasmtime4j.WasmMemory;
+import ai.tegmentum.wasmtime4j.WasmTable;
+import ai.tegmentum.wasmtime4j.WasmValue;
+import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.jni.util.JniResource;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
 
@@ -14,12 +24,9 @@ import java.util.logging.Logger;
  * <p>This implementation ensures defensive programming to prevent native resource leaks and JVM
  * crashes.
  */
-public final class JniInstance implements Instance, AutoCloseable {
+public final class JniInstance extends JniResource implements Instance {
 
   private static final Logger LOGGER = Logger.getLogger(JniInstance.class.getName());
-
-  /** Native instance handle. */
-  private volatile long nativeHandle;
 
   /** Flag to track if this instance has been closed. */
   private final AtomicBoolean closed = new AtomicBoolean(false);
@@ -31,10 +38,7 @@ public final class JniInstance implements Instance, AutoCloseable {
    * @throws IllegalArgumentException if nativeHandle is 0
    */
   JniInstance(final long nativeHandle) {
-    if (nativeHandle == 0) {
-      throw new IllegalArgumentException("Native handle cannot be 0");
-    }
-    this.nativeHandle = nativeHandle;
+    super(nativeHandle);
     LOGGER.fine("Created JNI instance with handle: " + nativeHandle);
   }
 
@@ -42,23 +46,23 @@ public final class JniInstance implements Instance, AutoCloseable {
    * Gets a function export by name.
    *
    * @param name the name of the exported function
-   * @return the function wrapper
+   * @return the function wrapper, or empty if not found
    * @throws IllegalArgumentException if name is null or empty
    * @throws IllegalStateException if this instance is closed
-   * @throws RuntimeException if the function is not found
    */
-  public JniFunction getFunction(final String name) {
+  @Override
+  public Optional<WasmFunction> getFunction(final String name) {
     if (name == null || name.trim().isEmpty()) {
       throw new IllegalArgumentException("Function name cannot be null or empty");
     }
-    validateNotClosed();
+    ensureNotClosed();
 
     try {
-      final long functionHandle = nativeGetFunction(nativeHandle, name);
+      final long functionHandle = nativeGetFunction(getNativeHandle(), name);
       if (functionHandle == 0) {
-        throw new RuntimeException("Function not found: " + name);
+        return Optional.empty();
       }
-      return new JniFunction(functionHandle, name);
+      return Optional.of(new JniFunction(functionHandle, name));
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -70,23 +74,23 @@ public final class JniInstance implements Instance, AutoCloseable {
    * Gets a memory export by name.
    *
    * @param name the name of the exported memory
-   * @return the memory wrapper
+   * @return the memory wrapper, or empty if not found
    * @throws IllegalArgumentException if name is null or empty
    * @throws IllegalStateException if this instance is closed
-   * @throws RuntimeException if the memory is not found
    */
-  public JniMemory getMemory(final String name) {
+  @Override
+  public Optional<WasmMemory> getMemory(final String name) {
     if (name == null || name.trim().isEmpty()) {
       throw new IllegalArgumentException("Memory name cannot be null or empty");
     }
-    validateNotClosed();
+    ensureNotClosed();
 
     try {
-      final long memoryHandle = nativeGetMemory(nativeHandle, name);
+      final long memoryHandle = nativeGetMemory(getNativeHandle(), name);
       if (memoryHandle == 0) {
-        throw new RuntimeException("Memory not found: " + name);
+        return Optional.empty();
       }
-      return new JniMemory(memoryHandle);
+      return Optional.of(new JniMemory(memoryHandle));
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -98,23 +102,23 @@ public final class JniInstance implements Instance, AutoCloseable {
    * Gets a table export by name.
    *
    * @param name the name of the exported table
-   * @return the table wrapper
+   * @return the table wrapper, or empty if not found
    * @throws IllegalArgumentException if name is null or empty
    * @throws IllegalStateException if this instance is closed
-   * @throws RuntimeException if the table is not found
    */
-  public JniTable getTable(final String name) {
+  @Override
+  public Optional<WasmTable> getTable(final String name) {
     if (name == null || name.trim().isEmpty()) {
       throw new IllegalArgumentException("Table name cannot be null or empty");
     }
-    validateNotClosed();
+    ensureNotClosed();
 
     try {
-      final long tableHandle = nativeGetTable(nativeHandle, name);
+      final long tableHandle = nativeGetTable(getNativeHandle(), name);
       if (tableHandle == 0) {
-        throw new RuntimeException("Table not found: " + name);
+        return Optional.empty();
       }
-      return new JniTable(tableHandle);
+      return Optional.of(new JniTable(tableHandle));
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -126,23 +130,23 @@ public final class JniInstance implements Instance, AutoCloseable {
    * Gets a global export by name.
    *
    * @param name the name of the exported global
-   * @return the global wrapper
+   * @return the global wrapper, or empty if not found
    * @throws IllegalArgumentException if name is null or empty
    * @throws IllegalStateException if this instance is closed
-   * @throws RuntimeException if the global is not found
    */
-  public JniGlobal getGlobal(final String name) {
+  @Override
+  public Optional<WasmGlobal> getGlobal(final String name) {
     if (name == null || name.trim().isEmpty()) {
       throw new IllegalArgumentException("Global name cannot be null or empty");
     }
-    validateNotClosed();
+    ensureNotClosed();
 
     try {
-      final long globalHandle = nativeGetGlobal(nativeHandle, name);
+      final long globalHandle = nativeGetGlobal(getNativeHandle(), name);
       if (globalHandle == 0) {
-        throw new RuntimeException("Global not found: " + name);
+        return Optional.empty();
       }
-      return new JniGlobal(globalHandle);
+      return Optional.of(new JniGlobal(globalHandle));
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -153,11 +157,11 @@ public final class JniInstance implements Instance, AutoCloseable {
   /**
    * Gets the default memory export (named "memory").
    *
-   * @return the default memory wrapper
+   * @return the default memory wrapper, or empty if not found
    * @throws IllegalStateException if this instance is closed
-   * @throws RuntimeException if no default memory is found
    */
-  public JniMemory getDefaultMemory() {
+  @Override
+  public Optional<WasmMemory> getDefaultMemory() {
     return getMemory("memory");
   }
 
@@ -173,10 +177,10 @@ public final class JniInstance implements Instance, AutoCloseable {
     if (name == null || name.trim().isEmpty()) {
       throw new IllegalArgumentException("Export name cannot be null or empty");
     }
-    validateNotClosed();
+    ensureNotClosed();
 
     try {
-      return nativeHasExport(nativeHandle, name);
+      return nativeHasExport(getNativeHandle(), name);
     } catch (final Exception e) {
       LOGGER.warning("Error checking export existence: " + e.getMessage());
       return false;
@@ -200,7 +204,42 @@ public final class JniInstance implements Instance, AutoCloseable {
    */
   @Override
   protected void doClose() throws Exception {
-    nativeDestroyInstance(nativeHandle);
+    nativeDestroyInstance(getNativeHandle());
+  }
+
+  @Override
+  public String[] getExportNames() {
+    ensureNotClosed();
+    return nativeGetExportNames(getNativeHandle());
+  }
+
+  @Override
+  public Module getModule() {
+    // Note: This would require storing a reference to the module during construction
+    // For now, return null as a placeholder - this needs proper implementation
+    throw new UnsupportedOperationException("getModule() not yet implemented");
+  }
+
+  @Override
+  public Store getStore() {
+    // Note: This would require storing a reference to the store during construction
+    // For now, return null as a placeholder - this needs proper implementation
+    throw new UnsupportedOperationException("getStore() not yet implemented");
+  }
+
+  @Override
+  public boolean isValid() {
+    return !isClosed() && getNativeHandle() != 0;
+  }
+
+  @Override
+  public WasmValue[] callFunction(final String functionName, final WasmValue... params)
+      throws WasmException {
+    final Optional<WasmFunction> function = getFunction(functionName);
+    if (!function.isPresent()) {
+      throw new WasmException("Function not found: " + functionName);
+    }
+    return function.get().call(params);
   }
 
   // Native method declarations
@@ -249,6 +288,14 @@ public final class JniInstance implements Instance, AutoCloseable {
    * @return true if the export exists
    */
   private static native boolean nativeHasExport(long instanceHandle, String name);
+
+  /**
+   * Gets all export names from an instance.
+   *
+   * @param instanceHandle the native instance handle
+   * @return array of export names
+   */
+  private static native String[] nativeGetExportNames(long instanceHandle);
 
   /**
    * Destroys a native instance.

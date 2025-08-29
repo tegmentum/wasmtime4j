@@ -83,13 +83,13 @@ public final class NativeLibraryLoader {
       loadLibrary();
       return loadInfo;
     } catch (final RuntimeException e) {
-      // If we have load info with error details, return it; otherwise create a new one
+      // If we have load info with error details, return it; otherwise return null
       if (loadInfo != null && !loadInfo.isSuccessful()) {
         return loadInfo;
       }
-      // Create a failure load info
-      return new NativeLibraryUtils.LibraryLoadInfo(
-          "wasmtime4j", PlatformDetector.detect(), null, false, null, null, e);
+      // Log the error and return null since we can't create LibraryLoadInfo from outside package
+      LOGGER.log(Level.SEVERE, "Failed to load native library: " + e.getMessage(), e);
+      return null;
     }
   }
 

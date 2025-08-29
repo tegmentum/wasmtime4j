@@ -260,4 +260,41 @@ public final class WasiFileSystemException extends WasiException {
       final String operation, final String filePath) {
     return new WasiFileSystemException(WasiErrorCode.ELOOP, operation, filePath);
   }
+
+  /**
+   * Creates a new WASI file system exception with message and error code string.
+   *
+   * @param message the error message
+   * @param errorCode the WASI error code as string
+   */
+  public WasiFileSystemException(final String message, final String errorCode) {
+    this(message, parseErrorCode(errorCode), "operation", "");
+  }
+
+  /**
+   * Creates a new WASI file system exception with message, error code string, and cause.
+   *
+   * @param message the error message
+   * @param errorCode the WASI error code as string
+   * @param cause the underlying cause
+   */
+  public WasiFileSystemException(
+      final String message, final String errorCode, final Throwable cause) {
+    this(message, parseErrorCode(errorCode), "operation", "", cause);
+  }
+
+  /**
+   * Parses error code string to WasiErrorCode enum.
+   *
+   * @param errorCode the error code string
+   * @return the corresponding WasiErrorCode
+   */
+  private static WasiErrorCode parseErrorCode(final String errorCode) {
+    try {
+      return WasiErrorCode.valueOf(errorCode);
+    } catch (final IllegalArgumentException e) {
+      // Return a generic error code if parsing fails
+      return WasiErrorCode.EIO;
+    }
+  }
 }

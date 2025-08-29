@@ -175,7 +175,12 @@ public final class JniPhantomReferenceManager implements AutoCloseable {
    * <p>This method is primarily intended for testing and debugging.
    */
   public void processPendingReferences() {
-    processReferences(0); // Process immediately without timeout
+    try {
+      processReferences(0); // Process immediately without timeout
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+      LOGGER.warning("Interrupted while processing pending references");
+    }
   }
 
   /**

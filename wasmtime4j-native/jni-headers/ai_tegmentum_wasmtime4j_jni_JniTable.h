@@ -17,6 +17,14 @@ JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeGetSize
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniTable
+ * Method:    nativeGetMaxSize
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeGetMaxSize
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniTable
  * Method:    nativeGetElementType
  * Signature: (J)Ljava/lang/String;
  */

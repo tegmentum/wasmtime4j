@@ -6,7 +6,7 @@ use std::path::PathBuf;
 
 fn main() {
     let target = env::var("TARGET").unwrap();
-    let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
+    let _out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
     
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-changed=src/");
@@ -20,35 +20,29 @@ fn main() {
     
     // Configure linking
     configure_linking(&target);
-    
-    println!("cargo:rustc-link-lib=static=wasmtime");
 }
 
 fn configure_target(target: &str) {
-    match target {
-        t if t.contains("linux") => {
-            println!("cargo:rustc-cfg=target_os=\"linux\"");
-            if t.contains("aarch64") {
-                println!("cargo:rustc-cfg=target_arch=\"aarch64\"");
-            } else {
-                println!("cargo:rustc-cfg=target_arch=\"x86_64\"");
-            }
+    // Note: Using rustc-env instead of rustc-cfg to avoid conflicts
+    if target.contains("linux") {
+        println!("cargo:rustc-env=TARGET_OS=linux");
+        if target.contains("aarch64") {
+            println!("cargo:rustc-env=TARGET_ARCH=aarch64");
+        } else {
+            println!("cargo:rustc-env=TARGET_ARCH=x86_64");
         }
-        t if t.contains("windows") => {
-            println!("cargo:rustc-cfg=target_os=\"windows\"");
-            println!("cargo:rustc-cfg=target_arch=\"x86_64\"");
+    } else if target.contains("windows") {
+        println!("cargo:rustc-env=TARGET_OS=windows");
+        println!("cargo:rustc-env=TARGET_ARCH=x86_64");
+    } else if target.contains("darwin") {
+        println!("cargo:rustc-env=TARGET_OS=macos");
+        if target.contains("aarch64") {
+            println!("cargo:rustc-env=TARGET_ARCH=aarch64");
+        } else {
+            println!("cargo:rustc-env=TARGET_ARCH=x86_64");
         }
-        t if t.contains("darwin") => {
-            println!("cargo:rustc-cfg=target_os=\"macos\"");
-            if t.contains("aarch64") {
-                println!("cargo:rustc-cfg=target_arch=\"aarch64\"");
-            } else {
-                println!("cargo:rustc-cfg=target_arch=\"x86_64\"");
-            }
-        }
-        _ => {
-            println!("cargo:warning=Unknown target: {}", target);
-        }
+    } else {
+        println!("cargo:warning=Unknown target: {}", target);
     }
 }
 

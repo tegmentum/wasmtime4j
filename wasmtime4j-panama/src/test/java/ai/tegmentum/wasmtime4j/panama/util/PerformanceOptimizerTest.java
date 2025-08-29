@@ -193,7 +193,7 @@ class PerformanceOptimizerTest {
                 return null;
               });
 
-      final PerformanceOptimizer.BatchedFFIOperation<Integer> operation =
+      final PerformanceOptimizer.BatchedFfiOperation<Integer> operation =
           (handle, params) -> (Integer) params[0] + (Integer) params[1];
 
       // Act
@@ -218,7 +218,7 @@ class PerformanceOptimizerTest {
                 return null;
               });
 
-      final PerformanceOptimizer.BatchedFFIOperation<Integer> failingOperation =
+      final PerformanceOptimizer.BatchedFfiOperation<Integer> failingOperation =
           (handle, params) -> {
             throw new RuntimeException("Operation failed");
           };
@@ -237,7 +237,7 @@ class PerformanceOptimizerTest {
       // Arrange
       optimizer.shutdown();
 
-      final PerformanceOptimizer.BatchedFFIOperation<Integer> operation = (handle, params) -> 42;
+      final PerformanceOptimizer.BatchedFfiOperation<Integer> operation = (handle, params) -> 42;
 
       // Act
       final CompletableFuture<Integer> future =
@@ -374,7 +374,7 @@ class PerformanceOptimizerTest {
       optimizer.optimizeMethodHandle("test1", testMethodHandle, UsagePattern.HIGH_FREQUENCY_SIMPLE);
       optimizer.optimizeMethodHandle("test2", testMethodHandle, UsagePattern.BULK_OPERATIONS);
 
-      final PerformanceOptimizer.BatchedFFIOperation<Integer> operation = (handle, params) -> 42;
+      final PerformanceOptimizer.BatchedFfiOperation<Integer> operation = (handle, params) -> 42;
       optimizer.executeBatched(testMethodHandle, new Object[] {}, operation);
 
       final PerformanceOptimizer.PerformanceStatistics stats = optimizer.getStatistics();
@@ -526,7 +526,7 @@ class PerformanceOptimizerTest {
                 return null;
               });
 
-      final PerformanceOptimizer.BatchedFFIOperation<Integer> operation = (handle, params) -> 42;
+      final PerformanceOptimizer.BatchedFfiOperation<Integer> operation = (handle, params) -> 42;
 
       // Act - submit multiple operations to overflow queue
       final CompletableFuture<Integer> future1 =

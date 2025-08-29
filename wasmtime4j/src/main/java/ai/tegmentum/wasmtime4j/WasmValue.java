@@ -114,6 +114,46 @@ public final class WasmValue {
   }
 
   /**
+   * Gets this value as a 32-bit integer (alias for asInt()).
+   *
+   * @return the integer value
+   * @throws ClassCastException if this value is not an integer
+   */
+  public int asI32() {
+    return asInt();
+  }
+
+  /**
+   * Gets this value as a 64-bit integer (alias for asLong()).
+   *
+   * @return the long value
+   * @throws ClassCastException if this value is not a long
+   */
+  public long asI64() {
+    return asLong();
+  }
+
+  /**
+   * Gets this value as a 32-bit float (alias for asFloat()).
+   *
+   * @return the float value
+   * @throws ClassCastException if this value is not a float
+   */
+  public float asF32() {
+    return asFloat();
+  }
+
+  /**
+   * Gets this value as a 64-bit double (alias for asDouble()).
+   *
+   * @return the double value
+   * @throws ClassCastException if this value is not a double
+   */
+  public double asF64() {
+    return asDouble();
+  }
+
+  /**
    * Creates a 32-bit integer value.
    *
    * @param value the integer value

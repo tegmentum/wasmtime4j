@@ -44,6 +44,8 @@ pub mod module {
     use super::*;
     
     /// Placeholder for JNI module bindings
+    #[allow(dead_code)]
+    pub struct PlaceholderModule;
 }
 
 #[cfg(feature = "jni-bindings")]
@@ -51,6 +53,8 @@ pub mod instance {
     use super::*;
     
     /// Placeholder for JNI instance bindings
+    #[allow(dead_code)]
+    pub struct PlaceholderInstance;
 }
 
 #[cfg(not(feature = "jni-bindings"))]

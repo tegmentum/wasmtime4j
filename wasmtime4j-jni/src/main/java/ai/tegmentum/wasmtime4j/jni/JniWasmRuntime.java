@@ -113,9 +113,10 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
   public Engine createEngine() throws WasmException {
     JniValidation.requireNonNull(this, "runtime");
 
-    return concurrencyManager.executeWithReadLock(
-        getNativeHandle(),
-        () -> {
+    try {
+      return concurrencyManager.executeWithReadLock(
+          getNativeHandle(),
+          () -> {
           try {
             final long engineHandle = nativeCreateEngine(nativeHandle);
             if (engineHandle == 0) {
@@ -134,11 +135,17 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
             LOGGER.fine("Created engine with handle: 0x" + Long.toHexString(engineHandle));
             return engine;
           } catch (final WasmException e) {
-            throw e;
+            throw new RuntimeException(e);
           } catch (final Exception e) {
-            throw new WasmException("Unexpected error creating engine", e);
+            throw new RuntimeException(new WasmException("Unexpected error creating engine", e));
           }
         });
+    } catch (final RuntimeException e) {
+      if (e.getCause() instanceof WasmException) {
+        throw (WasmException) e.getCause();
+      }
+      throw new WasmException("Unexpected error creating engine", e);
+    }
   }
 
   @Override
@@ -160,33 +167,40 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
       throw new WasmException("WebAssembly bytecode cannot be empty");
     }
 
-    return concurrencyManager.executeWithReadLock(
-        getNativeHandle(),
-        () -> {
-          try {
-            final long moduleHandle = nativeCompileModule(nativeHandle, wasmBytes);
-            if (moduleHandle == 0) {
-              throw new WasmException("Failed to compile WebAssembly module");
+    try {
+      return concurrencyManager.executeWithReadLock(
+          getNativeHandle(),
+          () -> {
+            try {
+              final long moduleHandle = nativeCompileModule(nativeHandle, wasmBytes);
+              if (moduleHandle == 0) {
+                throw new WasmException("Failed to compile WebAssembly module");
+              }
+
+              final JniModule module = new JniModule(moduleHandle, (JniEngine) engine);
+
+              // Register module for concurrency management and cleanup
+              concurrencyManager.registerResource(moduleHandle);
+              phantomManager.register(module, moduleHandle, "nativeDestroyModule");
+
+              // Cache the module (using bytecode hash as key for potential reuse)
+              final String cacheKey = "module-" + java.util.Arrays.hashCode(wasmBytes);
+              resourceCache.put(cacheKey, module);
+
+              LOGGER.fine("Compiled module with handle: 0x" + Long.toHexString(moduleHandle));
+              return module;
+            } catch (final WasmException e) {
+              throw new RuntimeException(e);
+            } catch (final Exception e) {
+              throw new RuntimeException(new WasmException("Unexpected error compiling module", e));
             }
-
-            final JniModule module = new JniModule(moduleHandle, (JniEngine) engine);
-
-            // Register module for concurrency management and cleanup
-            concurrencyManager.registerResource(moduleHandle);
-            phantomManager.register(module, moduleHandle, "nativeDestroyModule");
-
-            // Cache the module (using bytecode hash as key for potential reuse)
-            final String cacheKey = "module-" + java.util.Arrays.hashCode(wasmBytes);
-            resourceCache.put(cacheKey, module);
-
-            LOGGER.fine("Compiled module with handle: 0x" + Long.toHexString(moduleHandle));
-            return module;
-          } catch (final WasmException e) {
-            throw e;
-          } catch (final Exception e) {
-            throw new WasmException("Unexpected error compiling module", e);
-          }
-        });
+          });
+    } catch (final RuntimeException e) {
+      if (e.getCause() instanceof WasmException) {
+        throw (WasmException) e.getCause();
+      }
+      throw new WasmException("Unexpected error compiling module", e);
+    }
   }
 
   @Override
@@ -198,41 +212,48 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
   public Instance instantiate(final Module module, final ImportMap imports) throws WasmException {
     JniValidation.requireNonNull(module, "module");
 
-    return concurrencyManager.executeWithWriteLock(
-        getNativeHandle(),
-        () -> {
-          try {
-            // For now, we'll create a basic instance without imports
-            // Full import support will be added when ImportMap interface is implemented
-            if (imports != null) {
+    try {
+      return concurrencyManager.executeWithWriteLock(
+          getNativeHandle(),
+          () -> {
+            try {
+              // For now, we'll create a basic instance without imports
+              // Full import support will be added when ImportMap interface is implemented
+              if (imports != null) {
+                LOGGER.fine(
+                    "Instantiating module with imports (import details will be implemented in"
+                        + " future)");
+              }
+
+              // This is a simplified instantiation - actual implementation would use JniStore
+              // and handle imports properly
+              final long instanceHandle =
+                  nativeInstantiateModule(nativeHandle, ((JniModule) module).getNativeHandle());
+              if (instanceHandle == 0) {
+                throw new WasmException("Failed to instantiate WebAssembly module");
+              }
+
+              final JniInstance instance = new JniInstance(instanceHandle);
+
+              // Register instance for concurrency management and cleanup
+              concurrencyManager.registerResource(instanceHandle);
+              phantomManager.register(instance, instanceHandle, "nativeDestroyInstance");
+
               LOGGER.fine(
-                  "Instantiating module with imports (import details will be implemented in"
-                      + " future)");
+                  "Instantiated module with instance handle: 0x" + Long.toHexString(instanceHandle));
+              return instance;
+            } catch (final WasmException e) {
+              throw new RuntimeException(e);
+            } catch (final Exception e) {
+              throw new RuntimeException(new WasmException("Unexpected error instantiating module", e));
             }
-
-            // This is a simplified instantiation - actual implementation would use JniStore
-            // and handle imports properly
-            final long instanceHandle =
-                nativeInstantiateModule(nativeHandle, ((JniModule) module).getNativeHandle());
-            if (instanceHandle == 0) {
-              throw new WasmException("Failed to instantiate WebAssembly module");
-            }
-
-            final JniInstance instance = new JniInstance(instanceHandle);
-
-            // Register instance for concurrency management and cleanup
-            concurrencyManager.registerResource(instanceHandle);
-            phantomManager.register(instance, instanceHandle, "nativeDestroyInstance");
-
-            LOGGER.fine(
-                "Instantiated module with instance handle: 0x" + Long.toHexString(instanceHandle));
-            return instance;
-          } catch (final WasmException e) {
-            throw e;
-          } catch (final Exception e) {
-            throw new WasmException("Unexpected error instantiating module", e);
-          }
-        });
+          });
+    } catch (final RuntimeException e) {
+      if (e.getCause() instanceof WasmException) {
+        throw (WasmException) e.getCause();
+      }
+      throw new WasmException("Unexpected error instantiating module", e);
+    }
   }
 
   @Override
@@ -268,7 +289,7 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
   }
 
   @Override
-  public void close() {
+  protected void doClose() throws Exception {
     // Close utility managers first
     if (resourceCache != null && !resourceCache.isClosed()) {
       try {
@@ -297,12 +318,7 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
       }
     }
 
-    // Call parent close to handle native resource cleanup
-    super.close();
-  }
-
-  @Override
-  protected void doClose() throws Exception {
+    // Close native resource
     nativeDestroyRuntime(nativeHandle);
   }
 
