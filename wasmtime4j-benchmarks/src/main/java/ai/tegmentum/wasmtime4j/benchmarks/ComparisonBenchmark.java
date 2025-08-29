@@ -379,27 +379,54 @@ public class ComparisonBenchmark extends BenchmarkBase {
 
   /** Panama workload executor. */
   private WorkloadExecutor panamaExecutor;
+  
+  /** Module bytecode for benchmarks. */
+  private byte[] moduleBytes;
 
   /** Setup performed before each benchmark iteration. */
   @Setup(Level.Iteration)
   public void setupIteration() {
-    jniExecutor = new WorkloadExecutor(RuntimeType.JNI, operationCategory, workloadIntensity);
-    panamaExecutor = new WorkloadExecutor(RuntimeType.PANAMA, operationCategory, workloadIntensity);
-
-    // Force garbage collection for clean comparison
-    System.gc();
     try {
-      Thread.sleep(50);
-    } catch (final InterruptedException e) {
-      Thread.currentThread().interrupt();
+      // Select appropriate module based on operation category
+      if (operationCategory.equals("MEMORY_ACCESS") || operationCategory.equals("MIXED_WORKLOAD")) {
+        moduleBytes = COMPLEX_WASM_MODULE.clone(); // Has memory
+      } else {
+        moduleBytes = SIMPLE_WASM_MODULE.clone();
+      }
+      
+      jniExecutor = new WorkloadExecutor(RuntimeType.JNI, operationCategory, workloadIntensity);
+      panamaExecutor = new WorkloadExecutor(RuntimeType.PANAMA, operationCategory, workloadIntensity);
+      
+      // Initialize executors if not initialization benchmark
+      if (!operationCategory.equals("INITIALIZATION")) {
+        jniExecutor.initialize(moduleBytes);
+        panamaExecutor.initialize(moduleBytes);
+      }
+
+      // Force garbage collection for clean comparison
+      System.gc();
+      try {
+        Thread.sleep(50);
+      } catch (final InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
+    } catch (final WasmException e) {
+      throw new RuntimeException("Failed to setup executors", e);
     }
   }
 
   /** Cleanup performed after each benchmark iteration. */
   @TearDown(Level.Iteration)
   public void teardownIteration() {
-    jniExecutor = null;
-    panamaExecutor = null;
+    if (jniExecutor != null) {
+      jniExecutor.cleanup();
+      jniExecutor = null;
+    }
+    if (panamaExecutor != null) {
+      panamaExecutor.cleanup();
+      panamaExecutor = null;
+    }
+    moduleBytes = null;
 
     // Final cleanup
     System.gc();
@@ -413,13 +440,27 @@ public class ComparisonBenchmark extends BenchmarkBase {
    */
   @Benchmark
   public PerformanceResult benchmarkJniPerformance(final Blackhole blackhole) {
-    final PerformanceResult result = jniExecutor.execute();
+    try {
+      // For initialization benchmarks, initialize on each call
+      if (operationCategory.equals("INITIALIZATION")) {
+        jniExecutor.initialize(moduleBytes);
+      }
+      
+      final PerformanceResult result = jniExecutor.execute();
 
-    blackhole.consume(result.getExecutionTime());
-    blackhole.consume(result.getThroughput());
-    blackhole.consume(result.getMemoryUsed());
+      blackhole.consume(result.getExecutionTime());
+      blackhole.consume(result.getThroughput());
+      blackhole.consume(result.getMemoryUsed());
 
-    return result;
+      // Cleanup initialization resources immediately
+      if (operationCategory.equals("INITIALIZATION")) {
+        jniExecutor.cleanup();
+      }
+
+      return result;
+    } catch (final WasmException e) {
+      throw new RuntimeException("JNI benchmark failed", e);
+    }
   }
 
   /**
@@ -430,13 +471,27 @@ public class ComparisonBenchmark extends BenchmarkBase {
    */
   @Benchmark
   public PerformanceResult benchmarkPanamaPerformance(final Blackhole blackhole) {
-    final PerformanceResult result = panamaExecutor.execute();
+    try {
+      // For initialization benchmarks, initialize on each call
+      if (operationCategory.equals("INITIALIZATION")) {
+        panamaExecutor.initialize(moduleBytes);
+      }
+      
+      final PerformanceResult result = panamaExecutor.execute();
 
-    blackhole.consume(result.getExecutionTime());
-    blackhole.consume(result.getThroughput());
-    blackhole.consume(result.getMemoryUsed());
+      blackhole.consume(result.getExecutionTime());
+      blackhole.consume(result.getThroughput());
+      blackhole.consume(result.getMemoryUsed());
 
-    return result;
+      // Cleanup initialization resources immediately
+      if (operationCategory.equals("INITIALIZATION")) {
+        panamaExecutor.cleanup();
+      }
+
+      return result;
+    } catch (final WasmException e) {
+      throw new RuntimeException("Panama benchmark failed", e);
+    }
   }
 
   /**
@@ -446,20 +501,38 @@ public class ComparisonBenchmark extends BenchmarkBase {
    */
   @Benchmark
   public void benchmarkSideBySideComparison(final Blackhole blackhole) {
-    final PerformanceResult jniResult = jniExecutor.execute();
-    final PerformanceResult panamaResult = panamaExecutor.execute();
+    try {
+      // For initialization benchmarks, initialize on each call
+      if (operationCategory.equals("INITIALIZATION")) {
+        jniExecutor.initialize(moduleBytes);
+        panamaExecutor.initialize(moduleBytes);
+      }
+      
+      final PerformanceResult jniResult = jniExecutor.execute();
+      final PerformanceResult panamaResult = panamaExecutor.execute();
 
-    // Calculate comparison metrics
-    final double throughputRatio = panamaResult.getThroughput() / jniResult.getThroughput();
-    final double memoryRatio = (double) panamaResult.getMemoryUsed() / jniResult.getMemoryUsed();
-    final double efficiencyComparison =
-        panamaResult.getEfficiencyScore() / jniResult.getEfficiencyScore();
+      // Calculate comparison metrics
+      final double throughputRatio = jniResult.getThroughput() > 0 ? 
+          panamaResult.getThroughput() / jniResult.getThroughput() : 1.0;
+      final double memoryRatio = jniResult.getMemoryUsed() > 0 ? 
+          (double) panamaResult.getMemoryUsed() / jniResult.getMemoryUsed() : 1.0;
+      final double efficiencyComparison = jniResult.getEfficiencyScore() > 0 ?
+          panamaResult.getEfficiencyScore() / jniResult.getEfficiencyScore() : 1.0;
 
-    blackhole.consume(throughputRatio);
-    blackhole.consume(memoryRatio);
-    blackhole.consume(efficiencyComparison);
-    blackhole.consume(jniResult.getExecutionTime());
-    blackhole.consume(panamaResult.getExecutionTime());
+      blackhole.consume(throughputRatio);
+      blackhole.consume(memoryRatio);
+      blackhole.consume(efficiencyComparison);
+      blackhole.consume(jniResult.getExecutionTime());
+      blackhole.consume(panamaResult.getExecutionTime());
+      
+      // Cleanup initialization resources immediately
+      if (operationCategory.equals("INITIALIZATION")) {
+        jniExecutor.cleanup();
+        panamaExecutor.cleanup();
+      }
+    } catch (final WasmException e) {
+      throw new RuntimeException("Side-by-side comparison failed", e);
+    }
   }
 
   /**
