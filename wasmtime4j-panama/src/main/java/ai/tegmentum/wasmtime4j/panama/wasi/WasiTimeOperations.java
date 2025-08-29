@@ -126,8 +126,8 @@ public final class WasiTimeOperations {
       final int result = (int) clockResGetHandle.invoke(clockId, resolutionOut);
 
       if (result != 0) {
-        throw new WasiException("Failed to get clock resolution for clock " + clockId + 
-                                ": error code " + result);
+        throw new WasiException("Failed to get clock resolution for clock " + clockId 
+                                + ": error code " + result);
       }
 
       final long resolution = resolutionOut.get(ValueLayout.JAVA_LONG, 0);
@@ -171,8 +171,8 @@ public final class WasiTimeOperations {
       final int result = (int) clockTimeGetHandle.invoke(clockId, precision, timestampOut);
 
       if (result != 0) {
-        throw new WasiException("Failed to get current time for clock " + clockId + 
-                                ": error code " + result);
+        throw new WasiException("Failed to get current time for clock " + clockId 
+                                + ": error code " + result);
       }
 
       final long timestamp = timestampOut.get(ValueLayout.JAVA_LONG, 0);
@@ -317,8 +317,8 @@ public final class WasiTimeOperations {
    */
   private void validateClockId(final int clockId) {
     if (!isClockSupported(clockId)) {
-      throw new PanamaException("Invalid clock ID: " + clockId + 
-                               " (valid range: 0-" + MAX_CLOCK_ID + ")");
+      throw new PanamaException("Invalid clock ID: " + clockId 
+                               + " (valid range: 0-" + MAX_CLOCK_ID + ")");
     }
   }
 

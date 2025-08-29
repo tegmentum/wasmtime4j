@@ -89,11 +89,11 @@ public final class WasiTimeOperations {
       if (resolution < 0) {
         final WasiErrorCode errorCode = WasiErrorCode.fromErrnoOrNull((int) -resolution);
         if (errorCode != null) {
-          throw new WasiException("Failed to get clock resolution: " + errorCode.getDescription(), 
-                                  errorCode);
+          throw new WasiException("Failed to get clock resolution: " 
+                                + errorCode.getDescription(), errorCode);
         } else {
-          throw new WasiException("Failed to get clock resolution with unknown error code: " + 
-                                  (-resolution));
+          throw new WasiException("Failed to get clock resolution with unknown error code: " 
+                                  + (-resolution));
         }
       }
 
@@ -131,11 +131,11 @@ public final class WasiTimeOperations {
       if (timestamp < 0) {
         final WasiErrorCode errorCode = WasiErrorCode.fromErrnoOrNull((int) -timestamp);
         if (errorCode != null) {
-          throw new WasiException("Failed to get current time: " + errorCode.getDescription(), 
-                                  errorCode);
+          throw new WasiException("Failed to get current time: " 
+                                + errorCode.getDescription(), errorCode);
         } else {
-          throw new WasiException("Failed to get current time with unknown error code: " + 
-                                  (-timestamp));
+          throw new WasiException("Failed to get current time with unknown error code: " 
+                                  + (-timestamp));
         }
       }
 
@@ -276,8 +276,8 @@ public final class WasiTimeOperations {
    */
   private void validateClockId(final int clockId) {
     if (!isClockSupported(clockId)) {
-      throw new JniException("Invalid clock ID: " + clockId + 
-                            " (valid range: 0-" + MAX_CLOCK_ID + ")");
+      throw new JniException("Invalid clock ID: " + clockId 
+                            + " (valid range: 0-" + MAX_CLOCK_ID + ")");
     }
   }
 
