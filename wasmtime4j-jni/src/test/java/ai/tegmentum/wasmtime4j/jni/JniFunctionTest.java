@@ -88,7 +88,7 @@ class JniFunctionTest {
     final JniFunction function = new JniFunction(VALID_HANDLE, FUNCTION_NAME);
 
     final JniValidationException exception =
-        assertThrows(JniValidationException.class, () -> function.call((Object[]) null));
+        assertThrows(JniValidationException.class, () -> function.call((WasmValue[]) null));
 
     assertThat(exception.getMessage()).contains("parameters");
     assertThat(exception.getMessage()).contains("must not be null");
@@ -125,11 +125,11 @@ class JniFunctionTest {
     function.close();
 
     assertThrows(JniResourceException.class, function::getFunctionType);
-    assertThrows(JniResourceException.class, function::getParameterTypes);
-    assertThrows(JniResourceException.class, function::getReturnTypes);
+    assertThrows(JniResourceException.class, () -> function.getFunctionType().getParamTypes());
+    assertThrows(JniResourceException.class, () -> function.getFunctionType().getReturnTypes());
     assertThrows(JniResourceException.class, function::call);
     assertThrows(JniResourceException.class, () -> function.call(new WasmValue[0]));
-    assertThrows(JniResourceException.class, () -> function.call(new Object[0]));
+    assertThrows(JniResourceException.class, () -> function.call(new WasmValue[0]));
     assertThrows(JniResourceException.class, function::getNativeHandle);
   }
 

@@ -195,7 +195,7 @@ public class MemoryOperationBenchmark extends BenchmarkBase {
         break;
       case "BULK":
         // Write in large chunks
-        final int bulkSize = Math.min(memorySize / 4, (int) wasmMemory.getSize() / 4);
+        final int bulkSize = Math.min(memorySize / 4, wasmMemory.getSize() / 4);
         for (int i = 0; i < 4; i++) {
           final int offset = i * bulkSize;
           if (offset + bulkSize <= wasmMemory.getSize()) {
@@ -237,10 +237,10 @@ public class MemoryOperationBenchmark extends BenchmarkBase {
         break;
       case "BULK":
         // Read in large chunks
-        final int bulkSize = Math.min(memorySize / 3, (int) wasmMemory.getSize() / 3);
+        final int bulkSize = Math.min(memorySize / 3, wasmMemory.getSize() / 3);
         for (int i = 0; i < 3; i++) {
           final int offset = i * bulkSize;
-          final int readSize = Math.min(bulkSize, (int) wasmMemory.getSize() - offset);
+          final int readSize = Math.min(bulkSize, wasmMemory.getSize() - offset);
           if (readSize > 0) {
             final byte[] bulk = readFromMemory(wasmMemory, offset, readSize);
             blackhole.consume(bulk.length);
@@ -260,7 +260,7 @@ public class MemoryOperationBenchmark extends BenchmarkBase {
    */
   @Benchmark
   public void benchmarkIntegerOperations(final Blackhole blackhole) {
-    final int numInts = Math.min(memorySize / 4, (int) wasmMemory.getSize() / 4);
+    final int numInts = Math.min(memorySize / 4, wasmMemory.getSize() / 4);
 
     // Write integers using ByteBuffer
     final ByteBuffer writeBuffer = ByteBuffer.allocate(4);
@@ -291,7 +291,7 @@ public class MemoryOperationBenchmark extends BenchmarkBase {
   public void benchmarkMemoryFill(final Blackhole blackhole) {
     switch (operationPattern) {
       case "SEQUENTIAL":
-        final int fillSize = Math.min(memorySize, (int) wasmMemory.getSize());
+        final int fillSize = Math.min(memorySize, wasmMemory.getSize());
         final byte[] fillData = new byte[fillSize];
         for (int i = 0; i < fillData.length; i++) {
           fillData[i] = (byte) 0x42;
@@ -312,7 +312,7 @@ public class MemoryOperationBenchmark extends BenchmarkBase {
         break;
       case "BULK":
         // Fill in large sections
-        final int sectionSize = Math.min(memorySize / 2, (int) wasmMemory.getSize() / 2);
+        final int sectionSize = Math.min(memorySize / 2, wasmMemory.getSize() / 2);
         final byte[] section1 = new byte[sectionSize];
         final byte[] section2 = new byte[sectionSize];
         for (int i = 0; i < sectionSize; i++) {
@@ -343,7 +343,7 @@ public class MemoryOperationBenchmark extends BenchmarkBase {
     switch (operationPattern) {
       case "SEQUENTIAL":
         // Copy first half to second half
-        final int halfSize = Math.min(memorySize / 2, (int) wasmMemory.getSize() / 2);
+        final int halfSize = Math.min(memorySize / 2, wasmMemory.getSize() / 2);
         if (halfSize * 2 <= wasmMemory.getSize()) {
           final byte[] copyData = readFromMemory(wasmMemory, 0, halfSize);
           writeToMemory(wasmMemory, halfSize, copyData);
@@ -363,7 +363,7 @@ public class MemoryOperationBenchmark extends BenchmarkBase {
         break;
       case "BULK":
         // Copy in non-overlapping blocks
-        final int blockSize = Math.min(memorySize / 4, (int) wasmMemory.getSize() / 4);
+        final int blockSize = Math.min(memorySize / 4, wasmMemory.getSize() / 4);
         if (blockSize * 3 <= wasmMemory.getSize()) {
           final byte[] block1 = readFromMemory(wasmMemory, 0, blockSize);
           final byte[] block2 = readFromMemory(wasmMemory, blockSize, blockSize);
@@ -422,7 +422,7 @@ public class MemoryOperationBenchmark extends BenchmarkBase {
     writeToMemory(wasmMemory, 0, testData);
 
     // Perform mixed operations
-    final int quarterSize = Math.min(memorySize / 4, (int) wasmMemory.getSize() / 4);
+    final int quarterSize = Math.min(memorySize / 4, wasmMemory.getSize() / 4);
 
     // 1. Read some data
     final byte[] readData = readFromMemory(wasmMemory, 0, quarterSize);
@@ -487,7 +487,7 @@ public class MemoryOperationBenchmark extends BenchmarkBase {
       writeToMemory(wasmMemory, 0, testData);
       final byte[] readBack = readFromMemory(wasmMemory, 0, testData.length);
       
-      final int fillSize = Math.min(memorySize / 2, (int) wasmMemory.getSize() / 2);
+      final int fillSize = Math.min(memorySize / 2, wasmMemory.getSize() / 2);
       final byte[] fillData = new byte[fillSize];
       writeToMemory(wasmMemory, 0, fillData);
 

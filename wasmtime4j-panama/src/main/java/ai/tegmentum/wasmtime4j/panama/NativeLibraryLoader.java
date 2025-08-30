@@ -63,12 +63,15 @@ public final class NativeLibraryLoader {
     this.loadInfo = NativeLibraryUtils.loadNativeLibrary();
 
     if (!loadInfo.isSuccessful()) {
+      final String errorMessage = loadInfo.getErrorMessage();
+      final RuntimeException cause = errorMessage != null 
+          ? new RuntimeException(errorMessage) 
+          : new RuntimeException("Unknown error");
       LOGGER.log(
           Level.SEVERE,
           "Failed to load native library for Panama: " + loadInfo,
-          loadInfo.getError());
-      throw new IllegalStateException(
-          "Failed to load native library for Panama FFI", loadInfo.getError());
+          cause);
+      throw new IllegalStateException("Failed to load native library for Panama FFI", cause);
     }
 
     // Initialize symbol lookup
@@ -109,6 +112,7 @@ public final class NativeLibraryLoader {
    *
    * @return the loading error, or null if no error occurred
    */
+  @SuppressWarnings("deprecation")
   public Optional<Exception> getLoadingError() {
     return loadInfo != null ? Optional.ofNullable(loadInfo.getError()) : Optional.empty();
   }
