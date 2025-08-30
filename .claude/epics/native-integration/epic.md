@@ -1,11 +1,12 @@
 ---
 name: native-integration
-status: backlog
+status: completed
 created: 2025-08-30T00:49:09Z
-progress: 0%
+completed: 2025-08-30T19:54:56Z
+progress: 100%
 prd: .claude/prds/native-integration.md
 github: https://github.com/tegmentum/wasmtime4j/issues/28
-updated: 2025-08-30T01:05:22Z
+updated: 2025-08-30T19:54:56Z
 ---
 # Epic: native-integration
 
