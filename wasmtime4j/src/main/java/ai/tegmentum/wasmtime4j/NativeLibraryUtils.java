@@ -153,9 +153,29 @@ public final class NativeLibraryUtils {
      * Gets the error that occurred during loading (if any).
      *
      * @return the error, or null if no error
+     * @deprecated Use {@link #getErrorMessage()} or {@link #getErrorType()} for safer access
      */
+    @Deprecated
     public Exception getError() {
       return error;
+    }
+
+    /**
+     * Gets the error message from the exception that occurred during loading.
+     *
+     * @return the error message, or null if no error
+     */
+    public String getErrorMessage() {
+      return error != null ? error.getMessage() : null;
+    }
+
+    /**
+     * Gets the type of error that occurred during loading.
+     *
+     * @return the error type name, or null if no error
+     */
+    public String getErrorType() {
+      return error != null ? error.getClass().getSimpleName() : null;
     }
 
     /**
@@ -178,7 +198,7 @@ public final class NativeLibraryUtils {
       } else {
         return String.format(
             "LibraryLoadInfo{platform=%s, error=%s}",
-            platformInfo.getPlatformId(), error != null ? error.getMessage() : "unknown");
+            platformInfo.getPlatformId(), getErrorMessage() != null ? getErrorMessage() : "unknown");
       }
     }
   }
@@ -226,7 +246,7 @@ public final class NativeLibraryUtils {
     // Strategy 1: Try loading from system library path
     try {
       System.loadLibrary(libraryName);
-      LOGGER.info("Successfully loaded native library from system library path: " + libraryName);
+      LOGGER.info("Successfully loaded native library from system library path: " + sanitizeForLog(libraryName));
       return new LibraryLoadInfo(
           libraryName,
           platformInfo,
@@ -236,7 +256,7 @@ public final class NativeLibraryUtils {
           LibraryLoadInfo.LoadingMethod.SYSTEM_LIBRARY_PATH,
           null);
     } catch (final UnsatisfiedLinkError e) {
-      LOGGER.fine("Failed to load from system library path: " + e.getMessage());
+      LOGGER.fine("Failed to load from system library path: " + sanitizeForLog(e.getMessage()));
     }
 
     // Strategy 2: Extract from JAR resources and load
@@ -244,7 +264,8 @@ public final class NativeLibraryUtils {
       final Path extractedPath = extractLibraryFromJar(libraryName, platformInfo, resourcePath);
       System.load(extractedPath.toAbsolutePath().toString());
       LOGGER.info(
-          "Successfully loaded native library from JAR: " + resourcePath + " -> " + extractedPath);
+          "Successfully loaded native library from JAR: " + sanitizeForLog(resourcePath) 
+              + " -> " + sanitizeForLog(extractedPath.toString()));
       return new LibraryLoadInfo(
           libraryName,
           platformInfo,
@@ -288,7 +309,7 @@ public final class NativeLibraryUtils {
     final String cacheKey = platformInfo.getPlatformId() + ":" + libraryName;
     final Path cachedPath = extractedLibrariesCache.get(cacheKey);
     if (cachedPath != null && Files.exists(cachedPath)) {
-      LOGGER.fine("Using cached extracted library: " + cachedPath);
+      LOGGER.fine("Using cached extracted library: " + sanitizeForLog(cachedPath.toString()));
       return cachedPath;
     }
 
@@ -299,10 +320,13 @@ public final class NativeLibraryUtils {
         throw new IOException("Native library not found in JAR resources: " + resourcePath);
       }
 
+      // Sanitize platform ID to prevent path traversal attacks
+      final String sanitizedPlatformId = sanitizePlatformId(platformInfo.getPlatformId());
+      
       // Create temporary directory with unique name
       final Path tempDir =
           Files.createTempDirectory(
-              TEMP_FILE_PREFIX + platformInfo.getPlatformId() + TEMP_DIR_SUFFIX);
+              TEMP_FILE_PREFIX + sanitizedPlatformId + TEMP_DIR_SUFFIX);
       final String libraryFileName = platformInfo.getLibraryFileName(libraryName);
       final Path extractedLibrary = tempDir.resolve(libraryFileName);
 
@@ -324,7 +348,8 @@ public final class NativeLibraryUtils {
       // Cache the path
       extractedLibrariesCache.put(cacheKey, extractedLibrary);
 
-      LOGGER.fine("Extracted native library: " + resourcePath + " -> " + extractedLibrary);
+      LOGGER.fine("Extracted native library: " + sanitizeForLog(resourcePath) 
+          + " -> " + sanitizeForLog(extractedLibrary.toString()));
       return extractedLibrary;
     }
   }
@@ -372,6 +397,50 @@ public final class NativeLibraryUtils {
   }
 
   /**
+   * Sanitizes a string for safe logging by removing CRLF injection characters.
+   * 
+   * <p>This method removes carriage return and line feed characters that could be used
+   * for log injection attacks.
+   *
+   * @param input the string to sanitize for logging
+   * @return the sanitized string safe for logging
+   */
+  private static String sanitizeForLog(final String input) {
+    if (input == null) {
+      return "null";
+    }
+    return input.replaceAll("[\r\n]", "_");
+  }
+
+  /**
+   * Sanitizes a platform ID string to prevent path traversal attacks.
+   * 
+   * <p>This method removes any characters that could be used for directory traversal
+   * and validates that the result contains only safe characters.
+   *
+   * @param platformId the platform ID to sanitize
+   * @return the sanitized platform ID
+   * @throws IllegalArgumentException if the platform ID cannot be safely sanitized
+   */
+  private static String sanitizePlatformId(final String platformId) {
+    if (platformId == null || platformId.trim().isEmpty()) {
+      throw new IllegalArgumentException("Platform ID cannot be null or empty");
+    }
+    
+    // Remove any path traversal sequences and unsafe characters
+    final String sanitized = platformId
+        .replaceAll("\\.\\.", "")  // Remove .. sequences
+        .replaceAll("[\\\\/:]", "-")  // Replace path separators and colons with dashes
+        .replaceAll("[^a-zA-Z0-9\\-_]", "");  // Keep only alphanumeric, dashes, and underscores
+    
+    if (sanitized.isEmpty()) {
+      throw new IllegalArgumentException("Platform ID contains no valid characters: " + platformId);
+    }
+    
+    return sanitized;
+  }
+
+  /**
    * Sets appropriate permissions on the extracted library file.
    *
    * @param libraryPath the path to the library
@@ -386,7 +455,7 @@ public final class NativeLibraryUtils {
         libraryPath.toFile().setReadable(true, false);
       }
     } catch (final Exception e) {
-      LOGGER.log(Level.WARNING, "Failed to set library permissions: " + libraryPath, e);
+      LOGGER.log(Level.WARNING, "Failed to set library permissions: " + sanitizeForLog(libraryPath.toString()), e);
     }
   }
 
@@ -416,14 +485,19 @@ public final class NativeLibraryUtils {
                           try {
                             Files.deleteIfExists(parent);
                           } catch (final Exception e) {
-                            // Ignore - directory might not be empty
+                            // Expected - directory might not be empty or have permission issues
+                            LOGGER.log(
+                                Level.FINE,
+                                "Could not delete parent directory (expected if not empty): " 
+                                    + sanitizeForLog(parent.toString()),
+                                e);
                           }
                         }
                       }
                     } catch (final Exception e) {
                       LOGGER.log(
                           Level.FINE,
-                          "Error during cleanup of extracted library: " + extractedPath,
+                          "Error during cleanup of extracted library: " + sanitizeForLog(extractedPath.toString()),
                           e);
                     }
                   }
