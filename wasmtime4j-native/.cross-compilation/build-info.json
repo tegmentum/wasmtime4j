@@ -1,0 +1,11 @@
+{
+  "version": "1.0.0",
+  "wasmtime_version": "36.0.2",
+  "host_platform": "macos-aarch64",
+  "git_commit": "da502acc4bb0f8f1570f15844d2766fbf38ec5cb",
+  "git_dirty": "-dirty",
+  "source_date_epoch": 1756333903,
+  "generated_at": "Wed Aug 27 22:31:43 UTC 2025",
+  "rust_version": "rustc 1.89.0 (29483883e 2025-08-04)",
+  "cargo_version": "cargo 1.89.0 (c24e10642 2025-06-23)"
+}

@@ -19,6 +19,7 @@
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.build.outputEncoding>UTF-8</project.build.outputEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         
         <!-- JNI minimum Java version -->
@@ -47,21 +48,40 @@
         <maven.install.plugin.version>3.1.1</maven.install.plugin.version>
         <maven.deploy.plugin.version>3.1.1</maven.deploy.plugin.version>
         <maven.site.plugin.version>4.0.0-M9</maven.site.plugin.version>
+        
+        <!-- Native build plugin versions -->
+        <exec.plugin.version>3.1.0</exec.plugin.version>
+        <cargo.plugin.version>1.10.0</cargo.plugin.version>
+        <os.detector.plugin.version>1.7.1</os.detector.plugin.version>
 
         <!-- Quality tool plugin versions -->
         <checkstyle.plugin.version>3.3.0</checkstyle.plugin.version>
         <checkstyle.version>10.12.3</checkstyle.version>
         <spotless.plugin.version>2.40.0</spotless.plugin.version>
-        <spotbugs.plugin.version>4.7.3.6</spotbugs.plugin.version>
-        <spotbugs.version>4.7.3</spotbugs.version>
+        <spotbugs.plugin.version>4.8.6.4</spotbugs.plugin.version>
+        <spotbugs.version>4.8.6</spotbugs.version>
         <findsecbugs.version>1.12.0</findsecbugs.version>
-        <pmd.plugin.version>3.21.0</pmd.plugin.version>
-        <pmd.version>6.55.0</pmd.version>
+        <pmd.plugin.version>3.25.0</pmd.plugin.version>
+        <pmd.version>7.6.0</pmd.version>
         <jacoco.plugin.version>0.8.10</jacoco.plugin.version>
 
         <!-- Native build properties -->
         <native.library.name>wasmtime4j</native.library.name>
         <wasmtime.version>36.0.2</wasmtime.version>
+        <rust.version>1.75.0</rust.version>
+        <cargo.version>1.75.0</cargo.version>
+        
+        <!-- Cross-compilation target properties -->
+        <target.linux.x86_64>x86_64-unknown-linux-gnu</target.linux.x86_64>
+        <target.linux.aarch64>aarch64-unknown-linux-gnu</target.linux.aarch64>
+        <target.windows.x86_64>x86_64-pc-windows-gnu</target.windows.x86_64>
+        <target.macos.x86_64>x86_64-apple-darwin</target.macos.x86_64>
+        <target.macos.aarch64>aarch64-apple-darwin</target.macos.aarch64>
+        
+        <!-- Native compilation control -->
+        <native.compile.skip>false</native.compile.skip>
+        <native.compile.parallel>true</native.compile.parallel>
+        <native.incremental.build>true</native.incremental.build>
 
         <!-- Code quality properties -->
         <checkstyle.config.location>checkstyle.xml</checkstyle.config.location>
@@ -80,9 +100,9 @@
         <module>wasmtime4j</module>
         <module>wasmtime4j-jni</module>
         <module>wasmtime4j-native</module>
+        <module>wasmtime4j-panama</module>
         <module>wasmtime4j-benchmarks</module>
         <!-- 
-        <module>wasmtime4j-panama</module>
         <module>wasmtime4j-tests</module>
         -->
     </modules>
@@ -345,7 +365,8 @@
                     </dependencies>
                     <configuration>
                         <configLocation>${checkstyle.config.location}</configLocation>
-                        <sourceEncoding>${project.build.sourceEncoding}</sourceEncoding>
+                        <inputEncoding>${project.build.inputEncoding}</inputEncoding>
+                        <outputEncoding>${project.build.outputEncoding}</outputEncoding>
                         <consoleOutput>${checkstyle.consoleOutput}</consoleOutput>
                         <failsOnError>${checkstyle.failOnViolation}</failsOnError>
                         <violationSeverity>${checkstyle.violationSeverity}</violationSeverity>
@@ -468,7 +489,9 @@
                     <configuration>
                         <sourceEncoding>${project.build.sourceEncoding}</sourceEncoding>
                         <minimumTokens>100</minimumTokens>
-                        <targetJdk>${maven.compiler.target}</targetJdk>
+                        <compileSourceRoots>
+                            <compileSourceRoot>${project.build.sourceDirectory}</compileSourceRoot>
+                        </compileSourceRoots>
                         <includeTests>true</includeTests>
                         <failOnViolation>true</failOnViolation>
                         <printFailingErrors>true</printFailingErrors>
@@ -544,6 +567,34 @@
                         </execution>
                     </executions>
                 </plugin>
+
+                <!-- OS detector plugin for platform-specific builds -->
+                <plugin>
+                    <groupId>kr.motd.maven</groupId>
+                    <artifactId>os-maven-plugin</artifactId>
+                    <version>${os.detector.plugin.version}</version>
+                    <executions>
+                        <execution>
+                            <phase>initialize</phase>
+                            <goals>
+                                <goal>detect</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+
+                <!-- Enhanced exec plugin for native compilation -->
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>exec-maven-plugin</artifactId>
+                    <version>${exec.plugin.version}</version>
+                    <configuration>
+                        <environmentVariables>
+                            <RUST_BACKTRACE>1</RUST_BACKTRACE>
+                            <CARGO_TARGET_DIR>${project.build.directory}/cargo</CARGO_TARGET_DIR>
+                        </environmentVariables>
+                    </configuration>
+                </plugin>
             </plugins>
         </pluginManagement>
 
@@ -572,6 +623,12 @@
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
+            </plugin>
+
+            <!-- Enable OS detection for cross-platform builds -->
+            <plugin>
+                <groupId>kr.motd.maven</groupId>
+                <artifactId>os-maven-plugin</artifactId>
             </plugin>
         </plugins>
     </build>
@@ -674,6 +731,154 @@
                     </plugin>
                 </plugins>
             </build>
+        </profile>
+
+        <!-- Native build control profiles -->
+        <profile>
+            <id>skip-native</id>
+            <properties>
+                <native.compile.skip>true</native.compile.skip>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>native-dev</id>
+            <properties>
+                <native.compile.skip>false</native.compile.skip>
+                <native.incremental.build>true</native.incremental.build>
+            </properties>
+        </profile>
+
+        <!-- Cross-compilation target profiles for all platforms -->
+        <profile>
+            <id>linux-x86_64</id>
+            <properties>
+                <native.target>${target.linux.x86_64}</native.target>
+                <native.platform>linux-x86_64</native.platform>
+                <native.library.extension>so</native.library.extension>
+                <native.library.prefix>lib</native.library.prefix>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>linux-aarch64</id>
+            <properties>
+                <native.target>${target.linux.aarch64}</native.target>
+                <native.platform>linux-aarch64</native.platform>
+                <native.library.extension>so</native.library.extension>
+                <native.library.prefix>lib</native.library.prefix>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>windows-x86_64</id>
+            <properties>
+                <native.target>${target.windows.x86_64}</native.target>
+                <native.platform>windows-x86_64</native.platform>
+                <native.library.extension>dll</native.library.extension>
+                <native.library.prefix></native.library.prefix>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>macos-x86_64</id>
+            <properties>
+                <native.target>${target.macos.x86_64}</native.target>
+                <native.platform>macos-x86_64</native.platform>
+                <native.library.extension>dylib</native.library.extension>
+                <native.library.prefix>lib</native.library.prefix>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>macos-aarch64</id>
+            <properties>
+                <native.target>${target.macos.aarch64}</native.target>
+                <native.platform>macos-aarch64</native.platform>
+                <native.library.extension>dylib</native.library.extension>
+                <native.library.prefix>lib</native.library.prefix>
+            </properties>
+        </profile>
+
+        <!-- Auto-activated profiles based on OS detection -->
+        <profile>
+            <id>native-linux-x86_64</id>
+            <activation>
+                <os>
+                    <family>unix</family>
+                    <arch>x86_64</arch>
+                    <name>!Mac OS X</name>
+                </os>
+            </activation>
+            <properties>
+                <native.host.target>${target.linux.x86_64}</native.host.target>
+                <native.host.platform>linux-x86_64</native.host.platform>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>native-linux-aarch64</id>
+            <activation>
+                <os>
+                    <family>unix</family>
+                    <arch>aarch64</arch>
+                    <name>!Mac OS X</name>
+                </os>
+            </activation>
+            <properties>
+                <native.host.target>${target.linux.aarch64}</native.host.target>
+                <native.host.platform>linux-aarch64</native.host.platform>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>native-windows-x86_64</id>
+            <activation>
+                <os>
+                    <family>windows</family>
+                    <arch>amd64</arch>
+                </os>
+            </activation>
+            <properties>
+                <native.host.target>${target.windows.x86_64}</native.host.target>
+                <native.host.platform>windows-x86_64</native.host.platform>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>native-macos-x86_64</id>
+            <activation>
+                <os>
+                    <family>mac</family>
+                    <arch>x86_64</arch>
+                </os>
+            </activation>
+            <properties>
+                <native.host.target>${target.macos.x86_64}</native.host.target>
+                <native.host.platform>macos-x86_64</native.host.platform>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>native-macos-aarch64</id>
+            <activation>
+                <os>
+                    <family>mac</family>
+                    <arch>aarch64</arch>
+                </os>
+            </activation>
+            <properties>
+                <native.host.target>${target.macos.aarch64}</native.host.target>
+                <native.host.platform>macos-aarch64</native.host.platform>
+            </properties>
+        </profile>
+
+        <!-- Profile for building all platforms (CI/CD) -->
+        <profile>
+            <id>all-platforms</id>
+            <properties>
+                <native.build.all>true</native.build.all>
+            </properties>
         </profile>
     </profiles>
 

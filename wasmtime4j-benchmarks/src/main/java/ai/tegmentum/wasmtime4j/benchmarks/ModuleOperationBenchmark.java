@@ -1,5 +1,12 @@
 package ai.tegmentum.wasmtime4j.benchmarks;
 
+import ai.tegmentum.wasmtime4j.Engine;
+import ai.tegmentum.wasmtime4j.Instance;
+import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.RuntimeType;
+import ai.tegmentum.wasmtime4j.Store;
+import ai.tegmentum.wasmtime4j.WasmRuntime;
+import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.util.concurrent.TimeUnit;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -44,150 +51,35 @@ public class ModuleOperationBenchmark extends BenchmarkBase {
 
   /** Runtime implementation to benchmark. */
   @Param({"JNI", "PANAMA"})
-  private RuntimeType runtimeType;
+  private String runtimeTypeName;
 
   /** Module type to test with different complexity levels. */
   @Param({"SIMPLE", "COMPLEX", "LARGE"})
   private String moduleType;
 
-  /** Mock WebAssembly module representation for testing. */
-  private static final class MockWasmModule {
-    private final byte[] bytecode;
-    private final String type;
-    private final RuntimeType runtimeType;
-    private boolean compiled;
-    private boolean instantiated;
-    private long compilationTime;
-
-    MockWasmModule(final byte[] bytecode, final String type, final RuntimeType runtimeType) {
-      this.bytecode = bytecode.clone();
-      this.type = type;
-      this.runtimeType = runtimeType;
-      this.compiled = false;
-      this.instantiated = false;
-      this.compilationTime = 0;
-    }
-
-    void compile() {
-      if (!compiled) {
-        final long startTime = System.nanoTime();
-
-        // Simulate compilation work based on module type and runtime
-        validateWasmModule(bytecode);
-        final int workAmount = getCompilationWorkAmount();
-
-        for (int i = 0; i < workAmount; i++) {
-          Math.pow(i % 100, 2);
-        }
-
-        this.compilationTime = System.nanoTime() - startTime;
-        this.compiled = true;
-      }
-    }
-
-    void instantiate() {
-      if (!compiled) {
-        compile();
-      }
-
-      if (!instantiated) {
-        // Simulate instantiation work
-        final int instantiationWork = getInstantiationWorkAmount();
-
-        for (int i = 0; i < instantiationWork; i++) {
-          Math.sqrt(i + 1.0);
-        }
-
-        this.instantiated = true;
-      }
-    }
-
-    void cleanup() {
-      this.instantiated = false;
-      this.compiled = false;
-      this.compilationTime = 0;
-    }
-
-    private int getCompilationWorkAmount() {
-      int baseWork = 100;
-
-      // Adjust based on module type
-      switch (type) {
-        case "SIMPLE":
-          baseWork = 50;
-          break;
-        case "COMPLEX":
-          baseWork = 200;
-          break;
-        case "LARGE":
-          baseWork = 500;
-          break;
-        default:
-          break;
-      }
-
-      // Adjust based on runtime type
-      if (runtimeType == RuntimeType.PANAMA) {
-        baseWork = (int) (baseWork * 1.2); // Panama has slight overhead
-      }
-
-      return baseWork;
-    }
-
-    private int getInstantiationWorkAmount() {
-      int baseWork = 25;
-
-      switch (type) {
-        case "SIMPLE":
-          baseWork = 15;
-          break;
-        case "COMPLEX":
-          baseWork = 50;
-          break;
-        case "LARGE":
-          baseWork = 100;
-          break;
-        default:
-          break;
-      }
-
-      return baseWork;
-    }
-
-    public byte[] getBytecode() {
-      return bytecode.clone();
-    }
-
-    public String getType() {
-      return type;
-    }
-
-    public RuntimeType getRuntimeType() {
-      return runtimeType;
-    }
-
-    public boolean isCompiled() {
-      return compiled;
-    }
-
-    public boolean isInstantiated() {
-      return instantiated;
-    }
-
-    public long getCompilationTime() {
-      return compilationTime;
-    }
-  }
-
-  /** Current module being benchmarked. */
-  private MockWasmModule module;
+  /** WebAssembly runtime components. */
+  private WasmRuntime runtime;
+  private Engine engine;
+  private Store store;
 
   /** Module bytecode based on the selected type. */
   private byte[] moduleBytes;
+  
+  /** Compiled WebAssembly module. */
+  private Module compiledModule;
+  
+  /** WebAssembly instance. */
+  private Instance wasmInstance;
 
   /** Setup performed before each benchmark iteration. */
   @Setup(Level.Iteration)
-  public void setupIteration() {
+  public void setupIteration() throws WasmException {
+    // Create runtime components
+    final RuntimeType runtimeType = RuntimeType.valueOf(runtimeTypeName);
+    runtime = createRuntime(runtimeType);
+    engine = createEngine(runtime);
+    store = createStore(engine);
+    
     // Select appropriate module bytes based on type
     switch (moduleType) {
       case "SIMPLE":
@@ -204,11 +96,8 @@ public class ModuleOperationBenchmark extends BenchmarkBase {
         break;
     }
 
-    // Clean up any existing module
-    if (module != null) {
-      module.cleanup();
-    }
-    module = null;
+    // Clean up any existing compiled resources
+    cleanup();
 
     // Force GC to ensure clean state
     System.gc();
@@ -217,11 +106,36 @@ public class ModuleOperationBenchmark extends BenchmarkBase {
   /** Cleanup performed after each benchmark iteration. */
   @TearDown(Level.Iteration)
   public void teardownIteration() {
-    if (module != null) {
-      module.cleanup();
-      module = null;
-    }
+    cleanup();
     moduleBytes = null;
+  }
+  
+  /** Helper method to clean up WebAssembly resources. */
+  private void cleanup() {
+    try {
+      if (wasmInstance != null) {
+        wasmInstance.close();
+        wasmInstance = null;
+      }
+      if (compiledModule != null) {
+        compiledModule.close();
+        compiledModule = null;
+      }
+      if (store != null) {
+        store.close();
+        store = null;
+      }
+      if (engine != null) {
+        engine.close();
+        engine = null;
+      }
+      if (runtime != null) {
+        runtime.close();
+        runtime = null;
+      }
+    } catch (final Exception e) {
+      // Ignore cleanup errors in benchmarks
+    }
   }
 
   /**
@@ -231,14 +145,15 @@ public class ModuleOperationBenchmark extends BenchmarkBase {
    * @return the compiled module
    */
   @Benchmark
-  public MockWasmModule benchmarkModuleCompilation(final Blackhole blackhole) {
-    final MockWasmModule newModule = new MockWasmModule(moduleBytes, moduleType, runtimeType);
-    newModule.compile();
-
-    blackhole.consume(newModule.isCompiled());
-    blackhole.consume(newModule.getCompilationTime());
-
-    return newModule;
+  public Module benchmarkModuleCompilation(final Blackhole blackhole) {
+    try {
+      final Module module = compileModule(engine, moduleBytes);
+      blackhole.consume(module.getName());
+      blackhole.consume(moduleBytes.length);
+      return module;
+    } catch (final WasmException e) {
+      throw new RuntimeException("Module compilation failed", e);
+    }
   }
 
   /**
@@ -248,15 +163,10 @@ public class ModuleOperationBenchmark extends BenchmarkBase {
    */
   @Benchmark
   public void benchmarkModuleValidation(final Blackhole blackhole) {
-    // Simulate validation work
-    validateWasmModule(moduleBytes);
-
-    // Additional validation checks
-    final int validationWork = moduleType.equals("LARGE") ? 50 : 25;
-    for (int i = 0; i < validationWork; i++) {
-      Math.log(moduleBytes.length + i);
-    }
-
+    // Validate the WebAssembly module
+    // TODO: Uncomment when engine.validateModule() API is implemented
+    final boolean isValid = true; // engine.validateModule(moduleBytes);
+    blackhole.consume(isValid);
     blackhole.consume(moduleBytes.length);
     blackhole.consume(moduleType);
   }
@@ -268,15 +178,23 @@ public class ModuleOperationBenchmark extends BenchmarkBase {
    * @return the instantiated module
    */
   @Benchmark
-  public MockWasmModule benchmarkModuleInstantiation(final Blackhole blackhole) {
-    final MockWasmModule newModule = new MockWasmModule(moduleBytes, moduleType, runtimeType);
-    newModule.instantiate();
-
-    blackhole.consume(newModule.isCompiled());
-    blackhole.consume(newModule.isInstantiated());
-    blackhole.consume(newModule.getCompilationTime());
-
-    return newModule;
+  public Instance benchmarkModuleInstantiation(final Blackhole blackhole) {
+    try {
+      final Module module = compileModule(engine, moduleBytes);
+      final Instance instance = instantiateModule(store, module);
+      
+      blackhole.consume(module.getName());
+      // TODO: Replace with actual export counting when getExports() API is implemented
+      blackhole.consume(1); // Assume at least one export
+      
+      // Clean up for next iteration
+      instance.close();
+      module.close();
+      
+      return instance;
+    } catch (final WasmException e) {
+      throw new RuntimeException("Module instantiation failed", e);
+    }
   }
 
   /**
@@ -286,18 +204,25 @@ public class ModuleOperationBenchmark extends BenchmarkBase {
    * @return the processed module
    */
   @Benchmark
-  public MockWasmModule benchmarkCompileThenInstantiate(final Blackhole blackhole) {
-    final MockWasmModule newModule = new MockWasmModule(moduleBytes, moduleType, runtimeType);
+  public Instance benchmarkCompileThenInstantiate(final Blackhole blackhole) {
+    try {
+      // First compile
+      final Module module = compileModule(engine, moduleBytes);
+      blackhole.consume(module.getName());
 
-    // First compile
-    newModule.compile();
-    blackhole.consume(newModule.isCompiled());
+      // Then instantiate
+      final Instance instance = instantiateModule(store, module);
+      // TODO: Replace with actual export counting when getExports() API is implemented
+      blackhole.consume(1); // Assume at least one export
 
-    // Then instantiate
-    newModule.instantiate();
-    blackhole.consume(newModule.isInstantiated());
-
-    return newModule;
+      // Clean up
+      instance.close();
+      module.close();
+      
+      return instance;
+    } catch (final WasmException e) {
+      throw new RuntimeException("Compile-then-instantiate failed", e);
+    }
   }
 
   /**
@@ -308,17 +233,26 @@ public class ModuleOperationBenchmark extends BenchmarkBase {
   @Benchmark
   public void benchmarkBatchModuleCompilation(final Blackhole blackhole) {
     final int batchSize = moduleType.equals("LARGE") ? 3 : 5;
-    final MockWasmModule[] modules = new MockWasmModule[batchSize];
+    final Module[] modules = new Module[batchSize];
 
-    for (int i = 0; i < batchSize; i++) {
-      modules[i] = new MockWasmModule(moduleBytes, moduleType, runtimeType);
-      modules[i].compile();
-      blackhole.consume(modules[i].isCompiled());
-    }
-
-    // Cleanup
-    for (final MockWasmModule mod : modules) {
-      mod.cleanup();
+    try {
+      for (int i = 0; i < batchSize; i++) {
+        modules[i] = compileModule(engine, moduleBytes);
+        blackhole.consume(modules[i].getName());
+      }
+    } catch (final WasmException e) {
+      throw new RuntimeException("Batch module compilation failed", e);
+    } finally {
+      // Cleanup
+      for (final Module module : modules) {
+        if (module != null) {
+          try {
+            module.close();
+          } catch (final Exception e) {
+            // Ignore cleanup errors
+          }
+        }
+      }
     }
   }
 
@@ -335,17 +269,18 @@ public class ModuleOperationBenchmark extends BenchmarkBase {
       memoryPressure[i] = new byte[2048]; // 2KB per allocation
     }
 
-    final MockWasmModule newModule = new MockWasmModule(moduleBytes, moduleType, runtimeType);
-    newModule.compile();
-
-    blackhole.consume(newModule.isCompiled());
-    blackhole.consume(memoryPressure.length);
-
-    newModule.cleanup();
-
-    // Clear memory pressure
-    for (int i = 0; i < memoryPressure.length; i++) {
-      memoryPressure[i] = null;
+    try {
+      final Module module = compileModule(engine, moduleBytes);
+      blackhole.consume(module.getName());
+      blackhole.consume(memoryPressure.length);
+      module.close();
+    } catch (final WasmException e) {
+      throw new RuntimeException("Compilation with memory pressure failed", e);
+    } finally {
+      // Clear memory pressure
+      for (int i = 0; i < memoryPressure.length; i++) {
+        memoryPressure[i] = null;
+      }
     }
   }
 
@@ -356,22 +291,25 @@ public class ModuleOperationBenchmark extends BenchmarkBase {
    */
   @Benchmark
   public void benchmarkModuleSerialization(final Blackhole blackhole) {
-    final MockWasmModule newModule = new MockWasmModule(moduleBytes, moduleType, runtimeType);
-    newModule.compile();
+    try {
+      final Module module = compileModule(engine, moduleBytes);
+      
+      // Serialize compiled module
+      // TODO: Uncomment when module.serialize() API is implemented
+      final byte[] serialized = new byte[0]; // module.serialize();
+      blackhole.consume(serialized.length);
 
-    // Simulate serialization
-    final byte[] serialized = newModule.getBytecode();
-    blackhole.consume(serialized.length);
+      // Deserialize from bytes
+      // TODO: Uncomment when engine.deserializeModule() API is implemented
+      final Module deserializedModule = module; // engine.deserializeModule(serialized);
+      blackhole.consume(deserializedModule.getName());
 
-    // Simulate deserialization
-    final MockWasmModule deserializedModule =
-        new MockWasmModule(serialized, moduleType, runtimeType);
-    deserializedModule.compile();
-
-    blackhole.consume(deserializedModule.isCompiled());
-
-    newModule.cleanup();
-    deserializedModule.cleanup();
+      // Clean up
+      module.close();
+      // deserializedModule.close(); // Same as module now
+    } catch (final WasmException e) {
+      throw new RuntimeException("Module serialization failed", e);
+    }
   }
 
   /**

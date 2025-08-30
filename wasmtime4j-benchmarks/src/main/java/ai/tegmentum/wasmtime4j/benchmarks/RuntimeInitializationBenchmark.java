@@ -1,5 +1,6 @@
 package ai.tegmentum.wasmtime4j.benchmarks;
 
+import ai.tegmentum.wasmtime4j.RuntimeType;
 import java.util.concurrent.TimeUnit;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -44,7 +45,7 @@ public class RuntimeInitializationBenchmark extends BenchmarkBase {
 
   /** Runtime implementation to benchmark. */
   @Param({"JNI", "PANAMA", "AUTO"})
-  private RuntimeType runtimeType;
+  private String runtimeTypeName;
 
   /** Engine configuration scenario to test. */
   @Param({"DEFAULT", "OPTIMIZED", "DEBUG"})
@@ -101,6 +102,14 @@ public class RuntimeInitializationBenchmark extends BenchmarkBase {
   /** Current runtime instance being benchmarked. */
   private MockRuntime runtime;
 
+  /** Converts string runtime type name to RuntimeType enum, handling AUTO case. */
+  private RuntimeType getRuntimeType() {
+    if ("AUTO".equals(runtimeTypeName)) {
+      return getRecommendedRuntime();
+    }
+    return RuntimeType.valueOf(runtimeTypeName);
+  }
+
   /** Setup performed before each benchmark iteration. */
   @Setup(Level.Iteration)
   public void setupIteration() {
@@ -136,7 +145,7 @@ public class RuntimeInitializationBenchmark extends BenchmarkBase {
    */
   @Benchmark
   public MockRuntime benchmarkEngineCreation(final Blackhole blackhole) {
-    final MockRuntime newRuntime = new MockRuntime(runtimeType, configType);
+    final MockRuntime newRuntime = new MockRuntime(getRuntimeType(), configType);
     blackhole.consume(newRuntime.getType());
     blackhole.consume(newRuntime.getConfig());
     return newRuntime;
@@ -150,7 +159,7 @@ public class RuntimeInitializationBenchmark extends BenchmarkBase {
    */
   @Benchmark
   public MockRuntime benchmarkRuntimeInitialization(final Blackhole blackhole) {
-    final MockRuntime newRuntime = new MockRuntime(runtimeType, configType);
+    final MockRuntime newRuntime = new MockRuntime(getRuntimeType(), configType);
     newRuntime.initialize();
 
     blackhole.consume(newRuntime.isInitialized());
@@ -167,12 +176,12 @@ public class RuntimeInitializationBenchmark extends BenchmarkBase {
    */
   @Benchmark
   public MockRuntime benchmarkFullInitializationCycle(final Blackhole blackhole) {
-    final MockRuntime newRuntime = new MockRuntime(runtimeType, configType);
+    final MockRuntime newRuntime = new MockRuntime(getRuntimeType(), configType);
     newRuntime.initialize();
 
     // Simulate additional post-initialization work
     final boolean isReady = newRuntime.isInitialized();
-    final String benchmarkId = formatBenchmarkId("full_init", runtimeType);
+    final String benchmarkId = formatBenchmarkId("full_init", getRuntimeType());
 
     blackhole.consume(isReady);
     blackhole.consume(benchmarkId);
@@ -187,7 +196,7 @@ public class RuntimeInitializationBenchmark extends BenchmarkBase {
    */
   @Benchmark
   public void benchmarkCreateAndCleanup(final Blackhole blackhole) {
-    final MockRuntime newRuntime = new MockRuntime(runtimeType, configType);
+    final MockRuntime newRuntime = new MockRuntime(getRuntimeType(), configType);
     newRuntime.initialize();
 
     final boolean wasInitialized = newRuntime.isInitialized();
@@ -209,7 +218,7 @@ public class RuntimeInitializationBenchmark extends BenchmarkBase {
     final MockRuntime[] runtimes = new MockRuntime[5];
 
     for (int i = 0; i < runtimes.length; i++) {
-      runtimes[i] = new MockRuntime(runtimeType, configType);
+      runtimes[i] = new MockRuntime(getRuntimeType(), configType);
       runtimes[i].initialize();
       blackhole.consume(runtimes[i].isInitialized());
     }
@@ -232,7 +241,7 @@ public class RuntimeInitializationBenchmark extends BenchmarkBase {
     final String[] configs = {"DEFAULT", "OPTIMIZED", "DEBUG"};
 
     for (final String config : configs) {
-      final MockRuntime configRuntime = new MockRuntime(runtimeType, config);
+      final MockRuntime configRuntime = new MockRuntime(getRuntimeType(), config);
       configRuntime.initialize();
 
       blackhole.consume(configRuntime.getConfig());
@@ -256,7 +265,7 @@ public class RuntimeInitializationBenchmark extends BenchmarkBase {
       blackhole.consume(memoryPressure[i].length);
     }
 
-    final MockRuntime newRuntime = new MockRuntime(runtimeType, configType);
+    final MockRuntime newRuntime = new MockRuntime(getRuntimeType(), configType);
     newRuntime.initialize();
 
     blackhole.consume(newRuntime.isInitialized());

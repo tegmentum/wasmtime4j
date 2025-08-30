@@ -3,6 +3,7 @@ package ai.tegmentum.wasmtime4j.benchmarks;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import ai.tegmentum.wasmtime4j.RuntimeType;
 import org.junit.jupiter.api.Test;
 
 /** Unit tests for BenchmarkBase utility methods and constants. */
@@ -37,8 +38,8 @@ final class BenchmarkBaseTest {
 
   @Test
   void testGetRecommendedRuntime() {
-    final BenchmarkBase.RuntimeType runtime = BenchmarkBase.getRecommendedRuntime();
-    assertThat(runtime).isIn(BenchmarkBase.RuntimeType.JNI, BenchmarkBase.RuntimeType.PANAMA);
+    final RuntimeType runtime = BenchmarkBase.getRecommendedRuntime();
+    assertThat(runtime).isIn(RuntimeType.JNI, RuntimeType.PANAMA);
   }
 
   @Test
@@ -74,7 +75,7 @@ final class BenchmarkBaseTest {
   @Test
   void testFormatBenchmarkId() {
     final String id =
-        BenchmarkBase.formatBenchmarkId("test_operation", BenchmarkBase.RuntimeType.JNI);
+        BenchmarkBase.formatBenchmarkId("test_operation", RuntimeType.JNI);
     assertThat(id).startsWith("test_operation_jni_");
     assertThat(id)
         .hasSizeGreaterThanOrEqualTo("test_operation_jni_".length() + 1); // Variable suffix
@@ -105,10 +106,9 @@ final class BenchmarkBaseTest {
   @Test
   void testRuntimeTypeValues() {
     // Test that all expected runtime types exist
-    assertThat(BenchmarkBase.RuntimeType.values())
+    assertThat(RuntimeType.values())
         .containsExactly(
-            BenchmarkBase.RuntimeType.JNI,
-            BenchmarkBase.RuntimeType.PANAMA,
-            BenchmarkBase.RuntimeType.AUTO);
+            RuntimeType.JNI,
+            RuntimeType.PANAMA);
   }
 }

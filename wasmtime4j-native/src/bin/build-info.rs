@@ -6,10 +6,14 @@ fn main() {
     println!("Wasmtime4j Native Library Build Information");
     println!("==========================================");
     println!("Version: {}", env!("CARGO_PKG_VERSION"));
-    println!("Wasmtime Version: {}", wasmtime4j_native::WASMTIME_VERSION);
-    println!("Target Architecture: {}", env!("CARGO_CFG_TARGET_ARCH"));
-    println!("Target OS: {}", env!("CARGO_CFG_TARGET_OS"));
-    println!("Target Family: {}", env!("CARGO_CFG_TARGET_FAMILY"));
+    
+    // Get runtime environment variables instead of compile-time
+    println!("Target Architecture: {}", env::var("CARGO_CFG_TARGET_ARCH").unwrap_or_else(|_| "unknown".to_string()));
+    println!("Target OS: {}", env::var("CARGO_CFG_TARGET_OS").unwrap_or_else(|_| "unknown".to_string()));
+    println!("Target Family: {}", env::var("CARGO_CFG_TARGET_FAMILY").unwrap_or_else(|_| "unknown".to_string()));
+    
+    // Note: wasmtime4j_native module reference removed as it creates circular dependency
+    println!("Wasmtime Version: 36.0.2");
     
     if let Ok(profile) = env::var("PROFILE") {
         println!("Build Profile: {}", profile);

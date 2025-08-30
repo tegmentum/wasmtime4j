@@ -39,6 +39,20 @@ public final class WasmRuntimeFactory {
   }
 
   /**
+   * Sanitizes a string for safe logging by removing CRLF injection characters.
+   *
+   * @param input the string to sanitize for logging
+   *
+   * @return the sanitized string safe for logging
+   */
+  private static String sanitizeForLog(final String input) {
+    if (input == null) {
+      return "null";
+    }
+    return input.replaceAll("[\r\n]", "_");
+  }
+
+  /**
    * Creates a new WebAssembly runtime with automatic implementation selection.
    *
    * <p>This method automatically selects the best available runtime implementation based on the
@@ -66,7 +80,7 @@ public final class WasmRuntimeFactory {
       throw new IllegalArgumentException("Runtime type cannot be null");
     }
 
-    logger.info("Creating WebAssembly runtime with type: " + runtimeType);
+    logger.info("Creating WebAssembly runtime with type: " + sanitizeForLog(runtimeType.toString()));
 
     switch (runtimeType) {
       case JNI:
@@ -105,7 +119,8 @@ public final class WasmRuntimeFactory {
       }
     } catch (final Exception e) {
       logger.warning(
-          "Error checking runtime availability for " + runtimeType + ": " + e.getMessage());
+          "Error checking runtime availability for " + sanitizeForLog(runtimeType.toString()) 
+              + ": " + sanitizeForLog(e.getMessage()));
       return false;
     }
   }
@@ -141,7 +156,7 @@ public final class WasmRuntimeFactory {
         return RuntimeType.PANAMA;
       } else {
         logger.warning(
-            "Unknown runtime type in system property: " + override + ", using automatic selection");
+            "Unknown runtime type in system property: " + sanitizeForLog(override) + ", using automatic selection");
       }
     }
 
@@ -149,10 +164,10 @@ public final class WasmRuntimeFactory {
     final int javaVersion = getJavaVersion();
 
     if (javaVersion >= 23 && isPanamaRuntimeAvailable()) {
-      logger.info("Auto-selected Panama runtime for Java " + javaVersion);
+      logger.info("Auto-selected Panama runtime for Java " + sanitizeForLog(String.valueOf(javaVersion)));
       return RuntimeType.PANAMA;
     } else {
-      logger.info("Auto-selected JNI runtime for Java " + javaVersion);
+      logger.info("Auto-selected JNI runtime for Java " + sanitizeForLog(String.valueOf(javaVersion)));
       return RuntimeType.JNI;
     }
   }

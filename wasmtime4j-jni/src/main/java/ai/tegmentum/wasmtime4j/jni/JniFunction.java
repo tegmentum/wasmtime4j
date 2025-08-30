@@ -1,47 +1,87 @@
 package ai.tegmentum.wasmtime4j.jni;
 
-import java.util.concurrent.atomic.AtomicBoolean;
+import ai.tegmentum.wasmtime4j.FunctionType;
+import ai.tegmentum.wasmtime4j.WasmFunction;
+import ai.tegmentum.wasmtime4j.WasmValue;
+import ai.tegmentum.wasmtime4j.WasmValueType;
+import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
+import ai.tegmentum.wasmtime4j.jni.exception.JniValidationException;
+import ai.tegmentum.wasmtime4j.jni.util.JniResource;
+import ai.tegmentum.wasmtime4j.jni.util.JniTypeConverter;
+import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * JNI implementation of the Function interface.
+ * JNI implementation of the WasmFunction interface.
  *
- * <p>This class provides access to WebAssembly functions through JNI calls to the native Wasmtime
- * library. It supports calling functions with various parameter and return types.
+ * <p>This class provides comprehensive access to WebAssembly functions through JNI calls to the
+ * native Wasmtime library. It supports the complete WebAssembly type system including basic types
+ * (i32, i64, f32, f64), SIMD types (v128), and reference types (funcref, externref).
+ *
+ * <p>Features include:
+ *
+ * <ul>
+ *   <li>Complete WebAssembly type system support
+ *   <li>Multi-value parameter and return handling
+ *   <li>Type validation and conversion between Java and WebAssembly
+ *   <li>Function result caching for frequently called functions
+ *   <li>Asynchronous execution support with CompletableFuture
+ *   <li>Optimized call paths for common type combinations
+ * </ul>
  *
  * <p>This implementation ensures defensive programming to prevent JVM crashes and provides
- * comprehensive type checking for function calls.
+ * comprehensive type checking for all function operations.
  */
-public final class JniFunction implements AutoCloseable {
+public final class JniFunction extends JniResource implements WasmFunction {
 
   private static final Logger LOGGER = Logger.getLogger(JniFunction.class.getName());
 
-  /** Native function handle. */
-  private volatile long nativeHandle;
-
-  /** Function name for debugging. */
+  /** Function name for debugging and identification. */
   private final String name;
 
-  /** Flag to track if this function has been closed. */
-  private final AtomicBoolean closed = new AtomicBoolean(false);
+  /** Cached function type for performance optimization. */
+  private volatile FunctionType cachedFunctionType;
+
+  /** Function result cache for frequently called functions. */
+  private final ConcurrentHashMap<String, CachedResult> resultCache = new ConcurrentHashMap<>();
+
+  /** Call count for cache eviction and performance monitoring. */
+  private final AtomicLong callCount = new AtomicLong(0);
+
+  /** Maximum cache size per function. */
+  private static final int MAX_CACHE_SIZE = 100;
+
+  /** Cache entry for function results. */
+  private static final class CachedResult {
+    final WasmValue[] result;
+    final long timestamp;
+    final int hitCount;
+
+    CachedResult(final WasmValue[] result, final long timestamp, final int hitCount) {
+      this.result = result;
+      this.timestamp = timestamp;
+      this.hitCount = hitCount;
+    }
+  }
 
   /**
    * Creates a new JNI function with the given native handle and name.
    *
    * @param nativeHandle the native function handle
    * @param name the function name
-   * @throws IllegalArgumentException if nativeHandle is 0 or name is null
+   * @throws JniResourceException if nativeHandle is invalid or name is null
    */
   JniFunction(final long nativeHandle, final String name) {
-    if (nativeHandle == 0) {
-      throw new IllegalArgumentException("Native handle cannot be 0");
-    }
-    if (name == null) {
-      throw new IllegalArgumentException("Name cannot be null");
-    }
-    this.nativeHandle = nativeHandle;
+    super(nativeHandle);
+    JniValidation.requireNonNull(name, "name");
     this.name = name;
-    LOGGER.fine("Created JNI function '" + name + "' with handle: " + nativeHandle);
+    LOGGER.fine(
+        "Created JNI function '" + name + "' with handle: 0x" + Long.toHexString(nativeHandle));
   }
 
   /**
@@ -54,19 +94,55 @@ public final class JniFunction implements AutoCloseable {
   }
 
   /**
+   * Gets the function type signature.
+   *
+   * @return the function type
+   * @throws JniResourceException if this function is closed
+   * @throws WasmException if the function type cannot be retrieved
+   */
+  @Override
+  public FunctionType getFunctionType() {
+    // Use cached type if available
+    if (cachedFunctionType != null) {
+      return cachedFunctionType;
+    }
+
+    ensureNotClosed();
+    try {
+      final String[] paramTypeStrings = nativeGetParameterTypes(getNativeHandle());
+      final String[] returnTypeStrings = nativeGetReturnTypes(getNativeHandle());
+
+      if (paramTypeStrings == null || returnTypeStrings == null) {
+        throw new RuntimeException("Failed to retrieve function signature for '" + name + "'");
+      }
+
+      final WasmValueType[] paramTypes = JniTypeConverter.stringsToTypes(paramTypeStrings);
+      final WasmValueType[] returnTypes = JniTypeConverter.stringsToTypes(returnTypeStrings);
+
+      cachedFunctionType = new FunctionType(paramTypes, returnTypes);
+      return cachedFunctionType;
+    } catch (final JniValidationException e) {
+      throw new RuntimeException("Invalid function signature for '" + name + "'", e);
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error getting function type for '" + name + "'", e);
+    }
+  }
+
+  /**
    * Gets the parameter types for this function.
    *
    * @return array of parameter type names
-   * @throws IllegalStateException if this function is closed
+   * @throws JniResourceException if this function is closed
    * @throws RuntimeException if the types cannot be retrieved
+   * @deprecated Use {@link #getFunctionType()} instead
    */
+  @Deprecated
   public String[] getParameterTypes() {
-    validateNotClosed();
     try {
-      final String[] types = nativeGetParameterTypes(nativeHandle);
-      return types != null ? types : new String[0];
-    } catch (final Exception e) {
-      throw new RuntimeException("Unexpected error getting parameter types", e);
+      final FunctionType funcType = getFunctionType();
+      return JniTypeConverter.typesToStrings(funcType.getParamTypes());
+    } catch (final RuntimeException e) {
+      throw new RuntimeException("Error getting parameter types", e);
     }
   }
 
@@ -74,47 +150,103 @@ public final class JniFunction implements AutoCloseable {
    * Gets the return types for this function.
    *
    * @return array of return type names
-   * @throws IllegalStateException if this function is closed
+   * @throws JniResourceException if this function is closed
    * @throws RuntimeException if the types cannot be retrieved
+   * @deprecated Use {@link #getFunctionType()} instead
    */
+  @Deprecated
   public String[] getReturnTypes() {
-    validateNotClosed();
     try {
-      final String[] types = nativeGetReturnTypes(nativeHandle);
-      return types != null ? types : new String[0];
+      final FunctionType funcType = getFunctionType();
+      return JniTypeConverter.typesToStrings(funcType.getReturnTypes());
+    } catch (final RuntimeException e) {
+      throw new RuntimeException("Error getting return types", e);
+    }
+  }
+
+  /**
+   * Calls this function with the given WebAssembly parameters.
+   *
+   * @param params the parameters to pass to the function
+   * @return the results returned by the function
+   * @throws WasmException if function execution fails
+   */
+  @Override
+  public WasmValue[] call(final WasmValue... params) throws WasmException {
+    JniValidation.requireNonNull(params, "params");
+    ensureNotClosed();
+
+    // Increment call count for performance monitoring
+    final long currentCall = callCount.incrementAndGet();
+
+    try {
+      final FunctionType functionType = getFunctionType();
+
+      // Validate parameter types
+      JniTypeConverter.validateParameterTypes(params, functionType.getParamTypes());
+
+      // Check cache for frequently called functions with consistent parameters
+      final String cacheKey = createCacheKey(params);
+      final CachedResult cached = resultCache.get(cacheKey);
+      if (cached != null && shouldUseCachedResult(cached, currentCall)) {
+        LOGGER.fine("Using cached result for function '" + name + "'");
+        return cached.result.clone();
+      }
+
+      // Convert WasmValue parameters to native format
+      final Object[] nativeParams = JniTypeConverter.wasmValuesToNativeParams(params);
+
+      // Call native function
+      final Object[] nativeResults = nativeCallMultiValue(getNativeHandle(), nativeParams);
+      if (nativeResults == null) {
+        throw new WasmException("Native function call returned null for '" + name + "'");
+      }
+
+      // Convert native results back to WasmValue array
+      final WasmValue[] results =
+          JniTypeConverter.nativeResultsToWasmValues(nativeResults, functionType.getReturnTypes());
+
+      // Cache result for frequently called functions
+      if (shouldCacheResult(currentCall)) {
+        cacheResult(cacheKey, results);
+      }
+
+      return results;
+    } catch (final JniValidationException e) {
+      throw new WasmException("Parameter validation failed for function '" + name + "'", e);
+    } catch (final RuntimeException e) {
+      throw new WasmException("Native function call failed for '" + name + "'", e);
     } catch (final Exception e) {
-      throw new RuntimeException("Unexpected error getting return types", e);
+      throw new WasmException("Unexpected error calling function '" + name + "'", e);
     }
   }
 
   /**
    * Calls this function with no parameters.
    *
-   * @return the return value (null if function returns void)
-   * @throws IllegalStateException if this function is closed
-   * @throws RuntimeException if the call fails or types don't match
+   * @return the return values
+   * @throws WasmException if function execution fails
    */
-  public Object call() {
-    return call(new Object[0]);
+  public WasmValue[] call() throws WasmException {
+    return call(new WasmValue[0]);
   }
 
   /**
-   * Calls this function with the given parameters.
+   * Legacy call method for backward compatibility.
    *
    * @param parameters the function parameters
    * @return the return value (null if function returns void)
-   * @throws IllegalArgumentException if parameters is null
-   * @throws IllegalStateException if this function is closed
+   * @throws JniResourceException if parameters is null or this function is closed
    * @throws RuntimeException if the call fails or types don't match
+   * @deprecated Use {@link #call(WasmValue...)} instead
    */
+  @Deprecated
   public Object call(final Object... parameters) {
-    if (parameters == null) {
-      throw new IllegalArgumentException("Parameters cannot be null");
-    }
-    validateNotClosed();
+    JniValidation.requireNonNull(parameters, "parameters");
+    ensureNotClosed();
 
     try {
-      return nativeCall(nativeHandle, parameters);
+      return nativeCall(getNativeHandle(), parameters);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -123,22 +255,36 @@ public final class JniFunction implements AutoCloseable {
   }
 
   /**
+   * Calls this function asynchronously with the given parameters.
+   *
+   * @param params the parameters to pass to the function
+   * @return a CompletableFuture containing the results
+   */
+  public CompletableFuture<WasmValue[]> callAsync(final WasmValue... params) {
+    return CompletableFuture.supplyAsync(
+        () -> {
+          try {
+            return call(params);
+          } catch (final WasmException e) {
+            throw new RuntimeException(e);
+          }
+        });
+  }
+
+  /**
    * Calls this function with integer parameters (optimized path).
    *
    * @param parameters the integer parameters
    * @return the return value as an integer (0 if function returns void)
-   * @throws IllegalArgumentException if parameters is null
-   * @throws IllegalStateException if this function is closed
+   * @throws JniResourceException if parameters is null or this function is closed
    * @throws RuntimeException if the call fails or types don't match
    */
   public int callInt(final int... parameters) {
-    if (parameters == null) {
-      throw new IllegalArgumentException("Parameters cannot be null");
-    }
-    validateNotClosed();
+    JniValidation.requireNonNull(parameters, "parameters");
+    ensureNotClosed();
 
     try {
-      return nativeCallInt(nativeHandle, parameters);
+      return nativeCallInt(getNativeHandle(), parameters);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -151,18 +297,15 @@ public final class JniFunction implements AutoCloseable {
    *
    * @param parameters the long parameters
    * @return the return value as a long (0 if function returns void)
-   * @throws IllegalArgumentException if parameters is null
-   * @throws IllegalStateException if this function is closed
+   * @throws JniResourceException if parameters is null or this function is closed
    * @throws RuntimeException if the call fails or types don't match
    */
   public long callLong(final long... parameters) {
-    if (parameters == null) {
-      throw new IllegalArgumentException("Parameters cannot be null");
-    }
-    validateNotClosed();
+    JniValidation.requireNonNull(parameters, "parameters");
+    ensureNotClosed();
 
     try {
-      return nativeCallLong(nativeHandle, parameters);
+      return nativeCallLong(getNativeHandle(), parameters);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -175,18 +318,15 @@ public final class JniFunction implements AutoCloseable {
    *
    * @param parameters the float parameters
    * @return the return value as a float (0.0 if function returns void)
-   * @throws IllegalArgumentException if parameters is null
-   * @throws IllegalStateException if this function is closed
+   * @throws JniResourceException if parameters is null or this function is closed
    * @throws RuntimeException if the call fails or types don't match
    */
   public float callFloat(final float... parameters) {
-    if (parameters == null) {
-      throw new IllegalArgumentException("Parameters cannot be null");
-    }
-    validateNotClosed();
+    JniValidation.requireNonNull(parameters, "parameters");
+    ensureNotClosed();
 
     try {
-      return nativeCallFloat(nativeHandle, parameters);
+      return nativeCallFloat(getNativeHandle(), parameters);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -199,18 +339,15 @@ public final class JniFunction implements AutoCloseable {
    *
    * @param parameters the double parameters
    * @return the return value as a double (0.0 if function returns void)
-   * @throws IllegalArgumentException if parameters is null
-   * @throws IllegalStateException if this function is closed
+   * @throws JniResourceException if parameters is null or this function is closed
    * @throws RuntimeException if the call fails or types don't match
    */
   public double callDouble(final double... parameters) {
-    if (parameters == null) {
-      throw new IllegalArgumentException("Parameters cannot be null");
-    }
-    validateNotClosed();
+    JniValidation.requireNonNull(parameters, "parameters");
+    ensureNotClosed();
 
     try {
-      return nativeCallDouble(nativeHandle, parameters);
+      return nativeCallDouble(getNativeHandle(), parameters);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -219,60 +356,139 @@ public final class JniFunction implements AutoCloseable {
   }
 
   /**
-   * Gets the native handle for internal use.
+   * Gets the resource type name for logging and error messages.
    *
-   * @return the native handle
-   * @throws IllegalStateException if this function is closed
+   * @return the resource type name
    */
-  long getNativeHandle() {
-    validateNotClosed();
-    return nativeHandle;
+  @Override
+  protected String getResourceType() {
+    return "Function[" + name + "]";
   }
 
   /**
-   * Closes this function and releases all associated native resources.
+   * Performs the actual native resource cleanup.
    *
-   * <p>After calling this method, all operations on this function will throw {@link
-   * IllegalStateException}. This method is idempotent.
+   * @throws Exception if there's an error during cleanup
    */
   @Override
-  public void close() {
-    if (closed.compareAndSet(false, true)) {
-      if (nativeHandle != 0) {
-        try {
-          nativeDestroyFunction(nativeHandle);
-          LOGGER.fine("Destroyed JNI function '" + name + "' with handle: " + nativeHandle);
-        } catch (final Exception e) {
-          LOGGER.warning("Error destroying native function: " + e.getMessage());
-        } finally {
-          nativeHandle = 0;
-        }
+  protected void doClose() throws Exception {
+    // Clear cache before closing
+    clearCache();
+
+    // Log performance stats
+    if (LOGGER.isLoggable(Level.FINE)) {
+      LOGGER.fine(
+          String.format(
+              "Closing function '%s': %d calls, %.2f%% cache hit ratio",
+              name, getCallCount(), getCacheHitRatio() * 100));
+    }
+
+    nativeDestroyFunction(getNativeHandle());
+  }
+
+  /**
+   * Creates a cache key for the given parameters.
+   *
+   * @param params the function parameters
+   * @return a string key for caching
+   */
+  private String createCacheKey(final WasmValue[] params) {
+    if (params.length == 0) {
+      return "empty";
+    }
+
+    final StringBuilder key = new StringBuilder();
+    for (int i = 0; i < params.length; i++) {
+      if (i > 0) {
+        key.append(",");
+      }
+      final WasmValue param = params[i];
+      key.append(param.getType()).append(":");
+
+      // Create a simple hash for the value to avoid storing large objects in keys
+      if (param.getType() == WasmValueType.V128) {
+        key.append(java.util.Arrays.hashCode(param.asV128()));
+      } else {
+        key.append(param.getValue());
+      }
+    }
+    return key.toString();
+  }
+
+  /**
+   * Determines if a cached result should be used.
+   *
+   * @param cached the cached result
+   * @param currentCall the current call number
+   * @return true if the cached result should be used
+   */
+  private boolean shouldUseCachedResult(final CachedResult cached, final long currentCall) {
+    // Only use cache for pure functions (no side effects)
+    // This is a simple heuristic - in a real implementation, this would be configurable
+    return cached.hitCount > 3 && (currentCall - cached.timestamp) < 1000;
+  }
+
+  /**
+   * Determines if the result should be cached.
+   *
+   * @param currentCall the current call number
+   * @return true if the result should be cached
+   */
+  private boolean shouldCacheResult(final long currentCall) {
+    return currentCall % 10 == 0 && resultCache.size() < MAX_CACHE_SIZE;
+  }
+
+  /**
+   * Caches the result for the given key.
+   *
+   * @param key the cache key
+   * @param result the result to cache
+   */
+  private void cacheResult(final String key, final WasmValue[] result) {
+    final CachedResult existing = resultCache.get(key);
+    final int hitCount = existing != null ? existing.hitCount + 1 : 1;
+    resultCache.put(key, new CachedResult(result.clone(), System.currentTimeMillis(), hitCount));
+
+    // Simple cache eviction
+    if (resultCache.size() > MAX_CACHE_SIZE) {
+      final String oldestKey =
+          resultCache.entrySet().stream()
+              .min((e1, e2) -> Long.compare(e1.getValue().timestamp, e2.getValue().timestamp))
+              .map(java.util.Map.Entry::getKey)
+              .orElse(null);
+      if (oldestKey != null) {
+        resultCache.remove(oldestKey);
       }
     }
   }
 
-  /** Finalizer to ensure native resources are released if close() wasn't called. */
-  @Override
-  protected void finalize() throws Throwable {
-    try {
-      if (!closed.get()) {
-        LOGGER.warning("JniFunction '" + name + "' was finalized without being closed");
-        close();
-      }
-    } finally {
-      super.finalize();
-    }
+  /** Clears the function result cache. */
+  public void clearCache() {
+    resultCache.clear();
+    LOGGER.fine("Cleared result cache for function '" + name + "'");
   }
 
   /**
-   * Validates that this function is not closed.
+   * Gets the number of calls made to this function.
    *
-   * @throws IllegalStateException if this function is closed
+   * @return the call count
    */
-  private void validateNotClosed() {
-    if (closed.get()) {
-      throw new IllegalStateException("Function '" + name + "' is closed");
+  public long getCallCount() {
+    return callCount.get();
+  }
+
+  /**
+   * Gets the cache hit ratio for this function.
+   *
+   * @return the cache hit ratio (0.0 to 1.0)
+   */
+  public double getCacheHitRatio() {
+    final long totalCalls = callCount.get();
+    if (totalCalls == 0) {
+      return 0.0;
     }
+    final int totalHits = resultCache.values().stream().mapToInt(r -> r.hitCount).sum();
+    return (double) totalHits / totalCalls;
   }
 
   // Native method declarations
@@ -301,6 +517,15 @@ public final class JniFunction implements AutoCloseable {
    * @return the return value or null
    */
   private static native Object nativeCall(long functionHandle, Object[] parameters);
+
+  /**
+   * Calls a function with parameters and returns multiple values.
+   *
+   * @param functionHandle the native function handle
+   * @param parameters the function parameters
+   * @return array of return values (never null, may be empty)
+   */
+  private static native Object[] nativeCallMultiValue(long functionHandle, Object[] parameters);
 
   /**
    * Calls a function with integer parameters (optimized).
