@@ -633,5 +633,108 @@
                 </plugins>
             </build>
         </profile>
+
+        <!-- Profile for Wasmtime source code integration -->
+        <profile>
+            <id>wasmtime.source.build</id>
+            <properties>
+                <!-- Wasmtime source properties -->
+                <wasmtime.source.url>https://github.com/bytecodealliance/wasmtime/releases/download/v${wasmtime.version}/wasmtime-v${wasmtime.version}-src.tar.gz</wasmtime.source.url>
+                <wasmtime.source.sha256>54fa6d06813710c6609677848c345a2ee81f03660d585aafda7bdbc6465c96a4</wasmtime.source.sha256>
+                <wasmtime.source.dir>${project.build.directory}/wasmtime-source</wasmtime.source.dir>
+                <wasmtime.source.tarball>${project.build.directory}/wasmtime-source.tar.gz</wasmtime.source.tarball>
+            </properties>
+            <build>
+                <plugins>
+                    <!-- Download Maven plugin for fetching Wasmtime source -->
+                    <plugin>
+                        <groupId>com.googlecode.maven-download-plugin</groupId>
+                        <artifactId>download-maven-plugin</artifactId>
+                        <version>1.7.1</version>
+                        <executions>
+                            <execution>
+                                <id>download-wasmtime-source</id>
+                                <phase>initialize</phase>
+                                <goals>
+                                    <goal>wget</goal>
+                                </goals>
+                                <configuration>
+                                    <url>${wasmtime.source.url}</url>
+                                    <outputFileName>wasmtime-source.tar.gz</outputFileName>
+                                    <outputDirectory>${project.build.directory}</outputDirectory>
+                                    <skipCache>false</skipCache>
+                                    <sha256>${wasmtime.source.sha256}</sha256>
+                                    <unpack>true</unpack>
+                                    <unpackDirectory>${wasmtime.source.dir}</unpackDirectory>
+                                    <skipExisting>true</skipExisting>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <!-- Maven Antrun plugin for additional source processing -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <version>3.1.0</version>
+                        <executions>
+                            <execution>
+                                <id>verify-wasmtime-source</id>
+                                <phase>validate</phase>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <configuration>
+                                    <target>
+                                        <echo message="Verifying Wasmtime source download for version ${wasmtime.version}"/>
+                                        <echo message="Source URL: ${wasmtime.source.url}"/>
+                                        <echo message="Expected SHA256: ${wasmtime.source.sha256}"/>
+                                        <echo message="Target directory: ${wasmtime.source.dir}"/>
+                                        
+                                        <available file="${wasmtime.source.dir}" type="dir" property="wasmtime.source.exists"/>
+                                        
+                                        <condition property="wasmtime.source.ready">
+                                            <and>
+                                                <isset property="wasmtime.source.exists"/>
+                                                <available file="${wasmtime.source.dir}/Cargo.toml" type="file"/>
+                                            </and>
+                                        </condition>
+                                        
+                                        <echo message="Wasmtime source ready: ${wasmtime.source.ready}" level="info"/>
+                                    </target>
+                                </configuration>
+                            </execution>
+                            
+                            <execution>
+                                <id>prepare-wasmtime-build-environment</id>
+                                <phase>generate-sources</phase>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <configuration>
+                                    <target>
+                                        <echo message="Preparing Wasmtime build environment"/>
+                                        
+                                        <!-- Set up the source working directory -->
+                                        <mkdir dir="${wasmtime.source.dir}"/>
+                                        
+                                        <!-- Verify the extracted source has the expected structure -->
+                                        <fail message="Wasmtime source not properly extracted - missing Cargo.toml">
+                                            <condition>
+                                                <not>
+                                                    <available file="${wasmtime.source.dir}/Cargo.toml" type="file"/>
+                                                </not>
+                                            </condition>
+                                        </fail>
+                                        
+                                        <echo message="Wasmtime source prepared successfully in ${wasmtime.source.dir}"/>
+                                    </target>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
     </profiles>
 </project>
