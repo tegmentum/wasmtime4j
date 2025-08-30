@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="Wasmtime4j" 
+         xmlns="http://maven.apache.org/DECORATION/1.8.0" 
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/DECORATION/1.8.0 
+                             https://maven.apache.org/xsd/decoration-1.8.0.xsd">
+
+  <bannerLeft>
+    <name>Wasmtime4j</name>
+    <alt>Wasmtime4j</alt>
+    <href>https://wasmtime4j.tegmentum.ai/</href>
+  </bannerLeft>
+
+  <version position="right"/>
+  <publishDate position="right" format="yyyy-MM-dd"/>
+
+  <skin>
+    <groupId>org.apache.maven.skins</groupId>
+    <artifactId>maven-fluido-skin</artifactId>
+    <version>1.11.1</version>
+  </skin>
+
+  <body>
+    <menu name="Getting Started">
+      <item name="Overview" href="index.html"/>
+      <item name="Quick Start" href="getting-started.html"/>
+      <item name="Installation" href="installation.html"/>
+      <item name="Examples" href="examples.html"/>
+    </menu>
+
+    <menu name="API Documentation">
+      <item name="Javadoc" href="apidocs/index.html"/>
+      <item name="Cross Reference" href="xref/index.html"/>
+      <item name="Test Coverage" href="jacoco/index.html"/>
+    </menu>
+
+    <menu name="Project Reports">
+      <item name="Test Reports" href="surefire-report.html"/>
+      <item name="Code Coverage" href="jacoco/index.html"/>
+      <item name="Static Analysis" href="spotbugs.html"/>
+    </menu>
+  </body>
+</project>

@@ -18,25 +18,22 @@
     <description>Native library integration for Wasmtime WebAssembly runtime</description>
 
     <properties>
-        <!-- Rust toolchain configuration -->
-        <rust.version>1.75.0</rust.version>
-        <cargo.version>1.75.0</cargo.version>
-        
-        <!-- Cross-compilation targets -->
-        <native.targets>
-            x86_64-unknown-linux-gnu,
-            aarch64-unknown-linux-gnu,
-            x86_64-pc-windows-gnu,
-            x86_64-apple-darwin,
-            aarch64-apple-darwin
-        </native.targets>
-        
         <!-- Native library paths -->
         <native.resources.path>${project.basedir}/src/main/resources/natives</native.resources.path>
         <native.build.path>${project.build.directory}/native</native.build.path>
+        <native.cargo.target.dir>${project.build.directory}/cargo</native.cargo.target.dir>
         
-        <!-- Skip native compilation by default for CI/CD compatibility -->
-        <native.compile.skip>false</native.compile.skip>
+        <!-- Build output paths -->
+        <native.output.dir>${project.build.outputDirectory}/natives</native.output.dir>
+        <native.source.libs.dir>${native.cargo.target.dir}</native.source.libs.dir>
+        
+        <!-- Default to building for host platform -->
+        <native.target>${native.host.target}</native.target>
+        <native.platform>${native.host.platform}</native.platform>
+        
+        <!-- Cargo build configuration -->
+        <cargo.build.mode>release</cargo.build.mode>
+        <cargo.features>default</cargo.features>
     </properties>
 
     <build>
@@ -52,14 +49,15 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-resources-plugin</artifactId>
                 <executions>
+                    <!-- Copy pre-built native libraries from resources -->
                     <execution>
-                        <id>copy-native-libraries</id>
+                        <id>copy-prebuilt-native-libraries</id>
                         <phase>process-resources</phase>
                         <goals>
                             <goal>copy-resources</goal>
                         </goals>
                         <configuration>
-                            <outputDirectory>${project.build.outputDirectory}/natives</outputDirectory>
+                            <outputDirectory>${native.output.dir}</outputDirectory>
                             <resources>
                                 <resource>
                                     <directory>${native.resources.path}</directory>
@@ -71,6 +69,30 @@
                                     </includes>
                                 </resource>
                             </resources>
+                            <skip>${native.compile.skip}</skip>
+                        </configuration>
+                    </execution>
+
+                    <!-- Copy built native library for single platform builds -->
+                    <execution>
+                        <id>copy-built-native-library</id>
+                        <phase>process-classes</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${native.output.dir}/${native.platform}</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${native.cargo.target.dir}/${native.target}/${cargo.build.mode}</directory>
+                                    <filtering>false</filtering>
+                                    <includes>
+                                        <include>${native.library.prefix}${native.library.name}.${native.library.extension}</include>
+                                    </includes>
+                                </resource>
+                            </resources>
+                            <skip>${native.compile.skip}</skip>
+                            <overwrite>true</overwrite>
                         </configuration>
                     </execution>
                 </executions>
@@ -80,11 +102,18 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
-                <version>3.1.0</version>
+                <configuration>
+                    <environmentVariables>
+                        <RUST_BACKTRACE>1</RUST_BACKTRACE>
+                        <CARGO_TARGET_DIR>${native.cargo.target.dir}</CARGO_TARGET_DIR>
+                        <RUSTFLAGS>-C target-cpu=native</RUSTFLAGS>
+                    </environmentVariables>
+                    <workingDirectory>${project.basedir}</workingDirectory>
+                </configuration>
                 <executions>
                     <!-- Check Rust toolchain -->
                     <execution>
-                        <id>check-rust</id>
+                        <id>check-rust-toolchain</id>
                         <phase>validate</phase>
                         <goals>
                             <goal>exec</goal>
@@ -95,12 +124,15 @@
                                 <argument>--version</argument>
                             </arguments>
                             <skip>${native.compile.skip}</skip>
+                            <successCodes>
+                                <successCode>0</successCode>
+                            </successCodes>
                         </configuration>
                     </execution>
 
                     <!-- Check Cargo -->
                     <execution>
-                        <id>check-cargo</id>
+                        <id>check-cargo-toolchain</id>
                         <phase>validate</phase>
                         <goals>
                             <goal>exec</goal>
@@ -111,22 +143,70 @@
                                 <argument>--version</argument>
                             </arguments>
                             <skip>${native.compile.skip}</skip>
+                            <successCodes>
+                                <successCode>0</successCode>
+                            </successCodes>
                         </configuration>
                     </execution>
 
-                    <!-- Build native libraries (placeholder for now) -->
+                    <!-- Install required Rust target if cross-compiling -->
                     <execution>
-                        <id>build-native</id>
+                        <id>install-rust-target</id>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>rustup</executable>
+                            <arguments>
+                                <argument>target</argument>
+                                <argument>add</argument>
+                                <argument>${native.target}</argument>
+                            </arguments>
+                            <skip>${native.compile.skip}</skip>
+                            <successCodes>
+                                <successCode>0</successCode>
+                                <successCode>1</successCode> <!-- Already installed -->
+                            </successCodes>
+                        </configuration>
+                    </execution>
+
+                    <!-- Clean previous build artifacts -->
+                    <execution>
+                        <id>cargo-clean</id>
+                        <phase>clean</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>cargo</executable>
+                            <arguments>
+                                <argument>clean</argument>
+                            </arguments>
+                            <skip>${native.compile.skip}</skip>
+                        </configuration>
+                    </execution>
+
+                    <!-- Build native library with Cargo -->
+                    <execution>
+                        <id>cargo-build</id>
                         <phase>compile</phase>
                         <goals>
                             <goal>exec</goal>
                         </goals>
                         <configuration>
-                            <executable>./scripts/build-native.sh</executable>
-                            <workingDirectory>${project.basedir}</workingDirectory>
+                            <executable>cargo</executable>
+                            <arguments>
+                                <argument>build</argument>
+                                <argument>--target</argument>
+                                <argument>${native.target}</argument>
+                                <argument>--features</argument>
+                                <argument>${cargo.features}</argument>
+                            </arguments>
                             <skip>${native.compile.skip}</skip>
                         </configuration>
                     </execution>
+
                 </executions>
             </plugin>
 
@@ -144,9 +224,136 @@
                             <Native-Library-Name>${native.library.name}</Native-Library-Name>
                             <Wasmtime-Version>${wasmtime.version}</Wasmtime-Version>
                             <Build-Platform>${os.name}-${os.arch}</Build-Platform>
+                            <Supported-Platforms>linux-x86_64,linux-aarch64,windows-x86_64,macos-x86_64,macos-aarch64</Supported-Platforms>
                         </manifestEntries>
                     </archive>
                 </configuration>
+                <executions>
+                    <!-- Default JAR with all platforms - no classifier for main artifact -->
+                    <execution>
+                        <id>default-jar</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                            <!-- Main JAR has no classifier -->
+                        </configuration>
+                    </execution>
+                    
+                    <!-- Additional JAR with all platforms classifier -->
+                    <execution>
+                        <id>all-platforms-jar</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                            <classifier>all-platforms</classifier>
+                        </configuration>
+                    </execution>
+                    
+                    <!-- Platform-specific JARs -->
+                    <execution>
+                        <id>linux-x86_64-jar</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                            <classifier>linux-x86_64</classifier>
+                            <includes>
+                                <include>natives/linux-x86_64/**</include>
+                                <include>META-INF/**</include>
+                            </includes>
+                            <archive>
+                                <manifestEntries>
+                                    <Target-Platform>linux-x86_64</Target-Platform>
+                                </manifestEntries>
+                            </archive>
+                        </configuration>
+                    </execution>
+                    
+                    <execution>
+                        <id>linux-aarch64-jar</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                            <classifier>linux-aarch64</classifier>
+                            <includes>
+                                <include>natives/linux-aarch64/**</include>
+                                <include>META-INF/**</include>
+                            </includes>
+                            <archive>
+                                <manifestEntries>
+                                    <Target-Platform>linux-aarch64</Target-Platform>
+                                </manifestEntries>
+                            </archive>
+                        </configuration>
+                    </execution>
+                    
+                    <execution>
+                        <id>windows-x86_64-jar</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                            <classifier>windows-x86_64</classifier>
+                            <includes>
+                                <include>natives/windows-x86_64/**</include>
+                                <include>META-INF/**</include>
+                            </includes>
+                            <archive>
+                                <manifestEntries>
+                                    <Target-Platform>windows-x86_64</Target-Platform>
+                                </manifestEntries>
+                            </archive>
+                        </configuration>
+                    </execution>
+                    
+                    <execution>
+                        <id>macos-x86_64-jar</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                            <classifier>macos-x86_64</classifier>
+                            <includes>
+                                <include>natives/macos-x86_64/**</include>
+                                <include>META-INF/**</include>
+                            </includes>
+                            <archive>
+                                <manifestEntries>
+                                    <Target-Platform>macos-x86_64</Target-Platform>
+                                </manifestEntries>
+                            </archive>
+                        </configuration>
+                    </execution>
+                    
+                    <execution>
+                        <id>macos-aarch64-jar</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                            <classifier>macos-aarch64</classifier>
+                            <includes>
+                                <include>natives/macos-aarch64/**</include>
+                                <include>META-INF/**</include>
+                            </includes>
+                            <archive>
+                                <manifestEntries>
+                                    <Target-Platform>macos-aarch64</Target-Platform>
+                                </manifestEntries>
+                            </archive>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
 
             <!-- Clean plugin to clean native build artifacts -->
@@ -159,12 +366,23 @@
                             <directory>${native.build.path}</directory>
                         </fileset>
                         <fileset>
+                            <directory>${native.cargo.target.dir}</directory>
+                        </fileset>
+                        <fileset>
                             <directory>${project.basedir}/target</directory>
                             <includes>
                                 <include>**/*.dll</include>
                                 <include>**/*.so</include>
                                 <include>**/*.dylib</include>
                             </includes>
+                        </fileset>
+                        <!-- Clean Cargo.lock in development builds -->
+                        <fileset>
+                            <directory>${project.basedir}</directory>
+                            <includes>
+                                <include>Cargo.lock</include>
+                            </includes>
+                            <followSymlinks>false</followSymlinks>
                         </fileset>
                     </filesets>
                 </configuration>
@@ -173,61 +391,247 @@
     </build>
 
     <profiles>
-        <!-- Profile for native development -->
+        <!-- Development profile with incremental builds -->
         <profile>
             <id>native-dev</id>
             <properties>
-                <native.compile.skip>false</native.compile.skip>
+                <cargo.build.mode>debug</cargo.build.mode>
+                <native.incremental.build>true</native.incremental.build>
             </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <configuration>
+                            <environmentVariables>
+                                <RUST_BACKTRACE>full</RUST_BACKTRACE>
+                                <CARGO_TARGET_DIR>${native.cargo.target.dir}</CARGO_TARGET_DIR>
+                                <CARGO_INCREMENTAL>1</CARGO_INCREMENTAL>
+                            </environmentVariables>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
 
-        <!-- Profile for CI/CD without native compilation -->
+        <!-- Release profile with optimizations -->
         <profile>
-            <id>skip-native</id>
+            <id>native-release</id>
             <properties>
-                <native.compile.skip>true</native.compile.skip>
+                <cargo.build.mode>release</cargo.build.mode>
+                <cargo.features>default</cargo.features>
             </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <configuration>
+                            <environmentVariables>
+                                <RUST_BACKTRACE>1</RUST_BACKTRACE>
+                                <CARGO_TARGET_DIR>${native.cargo.target.dir}</CARGO_TARGET_DIR>
+                                <CARGO_INCREMENTAL>0</CARGO_INCREMENTAL>
+                                <RUSTFLAGS>-C target-cpu=native -C lto=fat</RUSTFLAGS>
+                            </environmentVariables>
+                        </configuration>
+                        <executions>
+                            <!-- Override cargo build for release mode -->
+                            <execution>
+                                <id>cargo-build</id>
+                                <phase>compile</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>cargo</executable>
+                                    <arguments>
+                                        <argument>build</argument>
+                                        <argument>--release</argument>
+                                        <argument>--target</argument>
+                                        <argument>${native.target}</argument>
+                                        <argument>--features</argument>
+                                        <argument>${cargo.features}</argument>
+                                    </arguments>
+                                    <skip>${native.compile.skip}</skip>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
 
-        <!-- Platform-specific profiles for library naming -->
+        <!-- Profile for cross-compilation toolchain setup -->
         <profile>
-            <id>linux</id>
+            <id>setup-cross-compilation</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <executions>
+                            <!-- Install all cross-compilation targets -->
+                            <execution>
+                                <id>install-linux-x86_64-target</id>
+                                <phase>initialize</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>rustup</executable>
+                                    <arguments>
+                                        <argument>target</argument>
+                                        <argument>add</argument>
+                                        <argument>${target.linux.x86_64}</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>install-linux-aarch64-target</id>
+                                <phase>initialize</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>rustup</executable>
+                                    <arguments>
+                                        <argument>target</argument>
+                                        <argument>add</argument>
+                                        <argument>${target.linux.aarch64}</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>install-windows-x86_64-target</id>
+                                <phase>initialize</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>rustup</executable>
+                                    <arguments>
+                                        <argument>target</argument>
+                                        <argument>add</argument>
+                                        <argument>${target.windows.x86_64}</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>install-macos-x86_64-target</id>
+                                <phase>initialize</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>rustup</executable>
+                                    <arguments>
+                                        <argument>target</argument>
+                                        <argument>add</argument>
+                                        <argument>${target.macos.x86_64}</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>install-macos-aarch64-target</id>
+                                <phase>initialize</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>rustup</executable>
+                                    <arguments>
+                                        <argument>target</argument>
+                                        <argument>add</argument>
+                                        <argument>${target.macos.aarch64}</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Profile for incremental builds during development -->
+        <profile>
+            <id>incremental-build</id>
             <activation>
-                <os>
-                    <family>unix</family>
-                    <name>!Mac OS X</name>
-                </os>
+                <property>
+                    <name>native.incremental.build</name>
+                    <value>true</value>
+                </property>
             </activation>
-            <properties>
-                <native.library.extension>so</native.library.extension>
-                <native.library.prefix>lib</native.library.prefix>
-            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>cargo-build</id>
+                                <phase>compile</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>cargo</executable>
+                                    <arguments>
+                                        <argument>build</argument>
+                                        <argument>--target</argument>
+                                        <argument>${native.target}</argument>
+                                        <argument>--features</argument>
+                                        <argument>${cargo.features}</argument>
+                                        <!-- Skip clean for incremental builds -->
+                                    </arguments>
+                                    <environmentVariables>
+                                        <CARGO_INCREMENTAL>1</CARGO_INCREMENTAL>
+                                        <RUST_BACKTRACE>1</RUST_BACKTRACE>
+                                        <CARGO_TARGET_DIR>${native.cargo.target.dir}</CARGO_TARGET_DIR>
+                                    </environmentVariables>
+                                    <skip>${native.compile.skip}</skip>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
 
+        <!-- Profile for building all platforms (CI/CD) -->
         <profile>
-            <id>macos</id>
+            <id>all-platforms</id>
             <activation>
-                <os>
-                    <family>mac</family>
-                </os>
+                <property>
+                    <name>native.build.all</name>
+                    <value>true</value>
+                </property>
             </activation>
-            <properties>
-                <native.library.extension>dylib</native.library.extension>
-                <native.library.prefix>lib</native.library.prefix>
-            </properties>
-        </profile>
-
-        <profile>
-            <id>windows</id>
-            <activation>
-                <os>
-                    <family>windows</family>
-                </os>
-            </activation>
-            <properties>
-                <native.library.extension>dll</native.library.extension>
-                <native.library.prefix></native.library.prefix>
-            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <executions>
+                            <!-- Use build script for all-platform builds -->
+                            <execution>
+                                <id>cargo-build-all-platforms</id>
+                                <phase>compile</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>./scripts/build-native.sh</executable>
+                                    <arguments>
+                                        <argument>build</argument>
+                                    </arguments>
+                                    <skip>${native.compile.skip}</skip>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
     </profiles>
 </project>

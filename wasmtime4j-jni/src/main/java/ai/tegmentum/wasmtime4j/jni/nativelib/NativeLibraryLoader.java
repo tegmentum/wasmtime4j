@@ -1,22 +1,20 @@
 package ai.tegmentum.wasmtime4j.jni.nativelib;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
+import ai.tegmentum.wasmtime4j.NativeLibraryUtils;
+import ai.tegmentum.wasmtime4j.PlatformDetector;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Utility class for loading native libraries required for JNI operations.
+ * JNI-specific wrapper for native library loading.
  *
- * <p>This class handles the extraction and loading of platform-specific native libraries from JAR
- * resources. It provides defensive programming to prevent multiple loading attempts and ensures
- * proper resource cleanup.
+ * <p>This class provides a simplified interface for JNI operations while using the shared {@link
+ * NativeLibraryUtils} for the actual loading logic. It maintains thread-safety and prevents
+ * multiple loading attempts.
  *
- * <p>The loader supports automatic platform detection and loads the appropriate native library for
- * the current operating system and architecture.
+ * <p>The loader automatically detects the current platform and loads the appropriate native library
+ * for JNI operations.
  */
 public final class NativeLibraryLoader {
 
@@ -25,11 +23,8 @@ public final class NativeLibraryLoader {
   /** Flag to track if the native library has been loaded. */
   private static final AtomicBoolean LIBRARY_LOADED = new AtomicBoolean(false);
 
-  /** The name of the native library without platform-specific suffixes. */
-  private static final String LIBRARY_NAME = "wasmtime4j";
-
-  /** Prefix for temporary files. */
-  private static final String TEMP_FILE_PREFIX = "wasmtime4j-native-";
+  /** Cached information about the library loading. */
+  private static volatile NativeLibraryUtils.LibraryLoadInfo loadInfo;
 
   /** Private constructor to prevent instantiation of utility class. */
   private NativeLibraryLoader() {
@@ -56,22 +51,45 @@ public final class NativeLibraryLoader {
       }
 
       try {
-        // First try to load from system library path
-        System.loadLibrary(LIBRARY_NAME);
-        LOGGER.info("Loaded native library from system library path: " + LIBRARY_NAME);
-        LIBRARY_LOADED.set(true);
-        return;
-      } catch (final UnsatisfiedLinkError e) {
-        LOGGER.fine("Failed to load from system path, trying embedded library: " + e.getMessage());
-      }
-
-      // If system loading fails, extract and load from JAR
-      try {
-        loadFromJar();
-        LIBRARY_LOADED.set(true);
+        loadInfo = NativeLibraryUtils.loadNativeLibrary();
+        if (loadInfo.isSuccessful()) {
+          LIBRARY_LOADED.set(true);
+          LOGGER.info("Successfully loaded native library for JNI: " + loadInfo);
+        } else {
+          LOGGER.log(
+              Level.SEVERE,
+              "Failed to load native library for JNI: " + loadInfo,
+              loadInfo.getError());
+          throw new RuntimeException(
+              "Failed to load native library for JNI operations", loadInfo.getError());
+        }
       } catch (final Exception e) {
-        throw new RuntimeException("Failed to load native library", e);
+        LOGGER.log(Level.SEVERE, "Unexpected error during native library loading", e);
+        throw new RuntimeException("Failed to load native library for JNI operations", e);
       }
+    }
+  }
+
+  /**
+   * Loads the native library and returns load information.
+   *
+   * <p>This is an alias for loadLibrary() but returns the load information instead of throwing on
+   * failure.
+   *
+   * @return the library load information
+   */
+  public static NativeLibraryUtils.LibraryLoadInfo loadNativeLibrary() {
+    try {
+      loadLibrary();
+      return loadInfo;
+    } catch (final RuntimeException e) {
+      // If we have load info with error details, return it; otherwise return null
+      if (loadInfo != null && !loadInfo.isSuccessful()) {
+        return loadInfo;
+      }
+      // Log the error and return null since we can't create LibraryLoadInfo from outside package
+      LOGGER.log(Level.SEVERE, "Failed to load native library: " + e.getMessage(), e);
+      return null;
     }
   }
 
@@ -91,113 +109,22 @@ public final class NativeLibraryLoader {
    * @throws RuntimeException if the current platform is not supported
    */
   public static String getLibraryResourcePath() {
-    final String os = detectOperatingSystem();
-    final String arch = detectArchitecture();
-    final String extension = getLibraryExtension(os);
-
-    return "/natives/" + os + "/" + arch + "/" + LIBRARY_NAME + extension;
-  }
-
-  /**
-   * Loads the native library by extracting it from the JAR.
-   *
-   * @throws IOException if there's an error extracting or loading the library
-   * @throws UnsatisfiedLinkError if the extracted library cannot be loaded
-   */
-  private static void loadFromJar() throws IOException {
-    final String resourcePath = getLibraryResourcePath();
-
-    try (final InputStream inputStream =
-        NativeLibraryLoader.class.getResourceAsStream(resourcePath)) {
-      if (inputStream == null) {
-        throw new IOException("Native library not found in JAR: " + resourcePath);
-      }
-
-      // Create temporary file for the native library
-      final String extension = getLibraryExtension(detectOperatingSystem());
-      final Path tempFile = Files.createTempFile(TEMP_FILE_PREFIX, extension);
-
-      // Ensure the temporary file is deleted when the JVM exits
-      tempFile.toFile().deleteOnExit();
-
-      // Copy the library from JAR to temporary file
-      Files.copy(inputStream, tempFile, StandardCopyOption.REPLACE_EXISTING);
-
-      // Set executable permissions on Unix-like systems
-      if (!isWindows()) {
-        tempFile.toFile().setExecutable(true);
-      }
-
-      // Load the library from the temporary file
-      System.load(tempFile.toAbsolutePath().toString());
-      LOGGER.info("Loaded native library from JAR: " + resourcePath + " -> " + tempFile);
+    try {
+      final PlatformDetector.PlatformInfo platformInfo = PlatformDetector.detect();
+      return platformInfo.getLibraryResourcePath("wasmtime4j");
+    } catch (final RuntimeException e) {
+      LOGGER.log(Level.SEVERE, "Failed to detect platform for resource path", e);
+      throw e;
     }
   }
 
   /**
-   * Detects the current operating system.
+   * Gets information about the library loading attempt.
    *
-   * @return the operating system name ("linux", "windows", "macos")
-   * @throws RuntimeException if the operating system is not supported
+   * @return the load info, or null if not yet attempted
    */
-  private static String detectOperatingSystem() {
-    final String osName = System.getProperty("os.name").toLowerCase();
-
-    if (osName.contains("linux")) {
-      return "linux";
-    } else if (osName.contains("windows")) {
-      return "windows";
-    } else if (osName.contains("mac") || osName.contains("darwin")) {
-      return "macos";
-    } else {
-      throw new RuntimeException("Unsupported operating system: " + osName);
-    }
-  }
-
-  /**
-   * Detects the current CPU architecture.
-   *
-   * @return the architecture name ("x86_64", "aarch64")
-   * @throws RuntimeException if the architecture is not supported
-   */
-  private static String detectArchitecture() {
-    final String archName = System.getProperty("os.arch").toLowerCase();
-
-    if (archName.equals("amd64") || archName.equals("x86_64")) {
-      return "x86_64";
-    } else if (archName.equals("aarch64") || archName.equals("arm64")) {
-      return "aarch64";
-    } else {
-      throw new RuntimeException("Unsupported architecture: " + archName);
-    }
-  }
-
-  /**
-   * Gets the file extension for native libraries on the given operating system.
-   *
-   * @param os the operating system name
-   * @return the library file extension
-   */
-  private static String getLibraryExtension(final String os) {
-    switch (os) {
-      case "linux":
-        return ".so";
-      case "windows":
-        return ".dll";
-      case "macos":
-        return ".dylib";
-      default:
-        throw new RuntimeException("Unknown operating system: " + os);
-    }
-  }
-
-  /**
-   * Checks if the current operating system is Windows.
-   *
-   * @return true if running on Windows, false otherwise
-   */
-  private static boolean isWindows() {
-    return System.getProperty("os.name").toLowerCase().contains("windows");
+  public static NativeLibraryUtils.LibraryLoadInfo getLoadInfo() {
+    return loadInfo;
   }
 
   /**
@@ -206,12 +133,15 @@ public final class NativeLibraryLoader {
    * @return a string describing the platform and library status
    */
   public static String getPlatformInfo() {
-    final String os = detectOperatingSystem();
-    final String arch = detectArchitecture();
-    final String resourcePath = getLibraryResourcePath();
-    final boolean loaded = isLibraryLoaded();
+    final StringBuilder sb = new StringBuilder();
+    sb.append("JNI Native Library Status:\n");
+    sb.append("  Loaded: ").append(isLibraryLoaded()).append("\n");
 
-    return String.format(
-        "Platform: %s-%s, Library: %s, Loaded: %s", os, arch, resourcePath, loaded);
+    if (loadInfo != null) {
+      sb.append("  Load info: ").append(loadInfo).append("\n");
+    }
+
+    sb.append(NativeLibraryUtils.getDiagnosticInfo());
+    return sb.toString();
   }
 }

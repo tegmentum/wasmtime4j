@@ -1,5 +1,7 @@
 package ai.tegmentum.wasmtime4j.jni.util;
 
+import ai.tegmentum.wasmtime4j.jni.exception.JniException;
+import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
 import java.util.logging.Logger;
 
 /**
@@ -62,48 +64,48 @@ public final class JniExceptionMapper {
    * @param message the error message from native code
    * @return the appropriate Java exception
    */
-  public static RuntimeException mapNativeError(final int errorCode, final String message) {
+  public static JniException mapNativeError(final int errorCode, final String message) {
     final String safeMessage = message != null ? message : "Unknown native error";
 
     switch (errorCode) {
       case NATIVE_ERROR_NONE:
         LOGGER.warning("mapNativeError called with NATIVE_ERROR_NONE");
-        return new RuntimeException("No error occurred");
+        return new JniException("No error occurred", errorCode);
 
       case NATIVE_ERROR_COMPILATION:
-        return new RuntimeException("Compilation failed: " + safeMessage);
+        return new JniException("Compilation failed: " + safeMessage, errorCode);
 
       case NATIVE_ERROR_RUNTIME:
-        return new RuntimeException("Runtime error: " + safeMessage);
+        return new JniException("Runtime error: " + safeMessage, errorCode);
 
       case NATIVE_ERROR_VALIDATION:
-        return new RuntimeException("Validation failed: " + safeMessage);
+        return new JniException("Validation failed: " + safeMessage, errorCode);
 
       case NATIVE_ERROR_MEMORY:
-        return new RuntimeException("Memory access error: " + safeMessage);
+        return new JniResourceException("Memory access error: " + safeMessage, errorCode);
 
       case NATIVE_ERROR_INVALID_ARG:
-        return new IllegalArgumentException("Invalid argument: " + safeMessage);
+        return new JniException("Invalid argument: " + safeMessage, errorCode);
 
       case NATIVE_ERROR_NOT_FOUND:
-        return new RuntimeException("Resource not found: " + safeMessage);
+        return new JniException("Resource not found: " + safeMessage, errorCode);
 
       case NATIVE_ERROR_SYSTEM:
-        return new RuntimeException("System error: " + safeMessage);
+        return new JniException("System error: " + safeMessage, errorCode);
 
       case NATIVE_ERROR_OUT_OF_MEMORY:
-        return new RuntimeException("Native out of memory: " + safeMessage);
+        return new JniResourceException("Native out of memory: " + safeMessage, errorCode);
 
       case NATIVE_ERROR_TRAP:
-        return new RuntimeException("WebAssembly trap: " + safeMessage);
+        return new JniException("WebAssembly trap: " + safeMessage, errorCode);
 
       case NATIVE_ERROR_TYPE_MISMATCH:
-        return new IllegalArgumentException("Type mismatch: " + safeMessage);
+        return new JniException("Type mismatch: " + safeMessage, errorCode);
 
       default:
         LOGGER.warning("Unknown native error code: " + errorCode);
-        return new RuntimeException(
-            "Unknown native error (code " + errorCode + "): " + safeMessage);
+        return new JniException(
+            "Unknown native error (code " + errorCode + "): " + safeMessage, errorCode);
     }
   }
 
@@ -113,7 +115,7 @@ public final class JniExceptionMapper {
    * @param errorCode the native error code
    * @return the appropriate Java exception
    */
-  public static RuntimeException mapNativeError(final int errorCode) {
+  public static JniException mapNativeError(final int errorCode) {
     return mapNativeError(errorCode, null);
   }
 
@@ -125,15 +127,14 @@ public final class JniExceptionMapper {
    *
    * @param operation the operation that failed
    * @param cause the underlying exception
-   * @return a RuntimeException wrapping the cause
+   * @return a JniException wrapping the cause
    */
-  public static RuntimeException wrapNativeException(
-      final String operation, final Throwable cause) {
+  public static JniException wrapNativeException(final String operation, final Throwable cause) {
     final String message =
         operation != null ? "Native operation failed: " + operation : "Native operation failed";
 
     LOGGER.warning(message + " - " + cause.getMessage());
-    return new RuntimeException(message, cause);
+    return new JniException(message, cause);
   }
 
   /**
@@ -141,7 +142,7 @@ public final class JniExceptionMapper {
    *
    * @param handle the native handle to validate
    * @param resourceType the type of resource (for error messaging)
-   * @throws RuntimeException if the handle is 0
+   * @throws JniResourceException if the handle is 0
    */
   public static void validateNativeHandle(final long handle, final String resourceType) {
     if (handle == 0) {
@@ -149,7 +150,7 @@ public final class JniExceptionMapper {
           "Failed to create "
               + (resourceType != null ? resourceType : "resource")
               + ": native handle is null";
-      throw new RuntimeException(message);
+      throw new JniResourceException(message);
     }
   }
 
@@ -158,13 +159,13 @@ public final class JniExceptionMapper {
    *
    * @param result the result from a native operation (typically boolean)
    * @param operation the operation description
-   * @throws RuntimeException if the result indicates failure
+   * @throws JniException if the result indicates failure
    */
   public static void validateNativeResult(final boolean result, final String operation) {
     if (!result) {
       final String message =
           "Native operation failed: " + (operation != null ? operation : "unknown operation");
-      throw new RuntimeException(message);
+      throw new JniException(message);
     }
   }
 
@@ -188,16 +189,16 @@ public final class JniExceptionMapper {
    *
    * @param resourceType the type of resource being cleaned up
    * @param cause the underlying exception (may be null)
-   * @return a RuntimeException for the cleanup failure
+   * @return a JniResourceException for the cleanup failure
    */
-  public static RuntimeException createCleanupException(
+  public static JniResourceException createCleanupException(
       final String resourceType, final Throwable cause) {
     final String message =
         "Failed to cleanup " + (resourceType != null ? resourceType : "resource");
     if (cause != null) {
-      return new RuntimeException(message, cause);
+      return new JniResourceException(message, cause);
     } else {
-      return new RuntimeException(message);
+      return new JniResourceException(message);
     }
   }
 
@@ -206,15 +207,15 @@ public final class JniExceptionMapper {
    *
    * @param resourceType the type of resource
    * @param state the invalid state description
-   * @return an IllegalStateException for the invalid state
+   * @return a JniException for the invalid state
    */
-  public static IllegalStateException createInvalidStateException(
+  public static JniException createInvalidStateException(
       final String resourceType, final String state) {
     final String message =
         (resourceType != null ? resourceType : "Resource")
             + " is "
             + (state != null ? state : "in invalid state");
-    return new IllegalStateException(message);
+    return new JniException(message);
   }
 
   /**

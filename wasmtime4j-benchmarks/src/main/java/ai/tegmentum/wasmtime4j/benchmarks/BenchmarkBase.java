@@ -1,5 +1,13 @@
 package ai.tegmentum.wasmtime4j.benchmarks;
 
+import ai.tegmentum.wasmtime4j.Engine;
+import ai.tegmentum.wasmtime4j.Instance;
+import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.RuntimeType;
+import ai.tegmentum.wasmtime4j.Store;
+import ai.tegmentum.wasmtime4j.WasmRuntime;
+import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
 import java.util.concurrent.TimeUnit;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -26,17 +34,6 @@ import org.openjdk.jmh.annotations.Warmup;
     jvmArgs = {"-Xms2g", "-Xmx2g"})
 public abstract class BenchmarkBase {
 
-  /** Enumeration of supported runtime implementations for comparison benchmarks. */
-  public enum RuntimeType {
-    /** JNI-based implementation for Java 8+ compatibility. */
-    JNI,
-
-    /** Panama Foreign Function API implementation for Java 23+. */
-    PANAMA,
-
-    /** Auto-selection based on Java version and availability. */
-    AUTO
-  }
 
   /**
    * Sample WebAssembly module for basic arithmetic operations. This simple module adds two i32
@@ -224,6 +221,70 @@ public abstract class BenchmarkBase {
     } else {
       return RuntimeType.JNI;
     }
+  }
+
+  /**
+   * Creates a WebAssembly runtime instance for the specified type.
+   *
+   * @param runtimeType the type of runtime to create, or null for auto-selection
+   * @return the WebAssembly runtime instance
+   * @throws WasmException if runtime creation fails
+   */
+  protected static WasmRuntime createRuntime(final RuntimeType runtimeType)
+      throws WasmException {
+    if (runtimeType == null) {
+      return WasmRuntimeFactory.create();
+    }
+    return WasmRuntimeFactory.create(runtimeType);
+  }
+
+  /**
+   * Creates a WebAssembly engine for the specified runtime.
+   *
+   * @param runtime the WebAssembly runtime
+   * @return the WebAssembly engine
+   * @throws WasmException if engine creation fails
+   */
+  protected static Engine createEngine(final WasmRuntime runtime) throws WasmException {
+    return runtime.createEngine();
+  }
+
+  /**
+   * Creates a WebAssembly store for the specified engine.
+   *
+   * @param engine the WebAssembly engine
+   * @return the WebAssembly store
+   * @throws WasmException if store creation fails
+   */
+  protected static Store createStore(final Engine engine) throws WasmException {
+    return engine.createStore();
+  }
+
+  /**
+   * Compiles a WebAssembly module from bytecode.
+   *
+   * @param engine the WebAssembly engine
+   * @param wasmBytes the WebAssembly module bytecode
+   * @return the compiled WebAssembly module
+   * @throws WasmException if module compilation fails
+   */
+  protected static Module compileModule(final Engine engine, final byte[] wasmBytes)
+      throws WasmException {
+    validateWasmModule(wasmBytes);
+    return engine.compileModule(wasmBytes);
+  }
+
+  /**
+   * Instantiates a WebAssembly module.
+   *
+   * @param store the WebAssembly store
+   * @param module the WebAssembly module
+   * @return the WebAssembly instance
+   * @throws WasmException if module instantiation fails
+   */
+  protected static Instance instantiateModule(final Store store, final Module module)
+      throws WasmException {
+    return module.instantiate(store);
   }
 
   /**

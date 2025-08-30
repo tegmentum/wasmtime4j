@@ -1,0 +1,681 @@
+package ai.tegmentum.wasmtime4j.benchmarks;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
+
+/**
+ * Performance regression detection framework for WebAssembly benchmarks.
+ *
+ * <p>This class provides automated detection of performance regressions by comparing benchmark
+ * results against historical baselines and detecting significant performance degradations.
+ *
+ * <p>Key features:
+ *
+ * <ul>
+ *   <li>Statistical analysis of benchmark results with confidence intervals
+ *   <li>Baseline establishment and tracking over time
+ *   <li>Automated regression detection with configurable thresholds
+ *   <li>Performance report generation for CI/CD integration
+ *   <li>Cross-runtime performance comparison analysis
+ * </ul>
+ */
+public final class PerformanceRegressionDetector {
+
+  /** Performance threshold for regression detection (5% degradation). */
+  private static final double REGRESSION_THRESHOLD = 0.05;
+
+  /** Minimum number of samples required for statistical analysis. */
+  private static final int MIN_SAMPLE_SIZE = 5;
+
+  /** Confidence level for statistical tests (95%). */
+  private static final double CONFIDENCE_LEVEL = 0.95;
+
+  /** Performance measurement result. */
+  public static final class PerformanceMeasurement {
+    private final String benchmarkName;
+    private final String runtimeType;
+    private final double throughput;
+    private final double latency;
+    private final long memoryUsage;
+    private final LocalDateTime timestamp;
+    private final Map<String, Object> metadata;
+
+    /**
+     * Creates a performance measurement with JSON deserialization support.
+     *
+     * @param benchmarkName the benchmark name
+     * @param runtimeType the runtime type
+     * @param throughput the throughput measurement
+     * @param latency the latency measurement
+     * @param memoryUsage the memory usage measurement
+     * @param timestamp the measurement timestamp
+     * @param metadata additional metadata
+     */
+    @JsonCreator
+    public PerformanceMeasurement(
+        @JsonProperty("benchmarkName") final String benchmarkName,
+        @JsonProperty("runtimeType") final String runtimeType,
+        @JsonProperty("throughput") final double throughput,
+        @JsonProperty("latency") final double latency,
+        @JsonProperty("memoryUsage") final long memoryUsage,
+        @JsonProperty("timestamp") final LocalDateTime timestamp,
+        @JsonProperty("metadata") final Map<String, Object> metadata) {
+      this.benchmarkName = benchmarkName;
+      this.runtimeType = runtimeType;
+      this.throughput = throughput;
+      this.latency = latency;
+      this.memoryUsage = memoryUsage;
+      this.timestamp = timestamp != null ? timestamp : LocalDateTime.now();
+      this.metadata = metadata != null ? new HashMap<>(metadata) : new HashMap<>();
+    }
+
+    public PerformanceMeasurement(
+        final String benchmarkName,
+        final String runtimeType,
+        final double throughput,
+        final double latency,
+        final long memoryUsage) {
+      this(benchmarkName, runtimeType, throughput, latency, memoryUsage, LocalDateTime.now(), new HashMap<>());
+    }
+
+    /**
+     * Adds metadata to this performance measurement.
+     *
+     * @param key the metadata key
+     * @param value the metadata value
+     * @return this measurement instance for chaining
+     */
+    public PerformanceMeasurement withMetadata(final String key, final Object value) {
+      this.metadata.put(key, value);
+      return this;
+    }
+
+    public String getBenchmarkName() {
+      return benchmarkName;
+    }
+
+    public String getRuntimeType() {
+      return runtimeType;
+    }
+
+    public double getThroughput() {
+      return throughput;
+    }
+
+    public double getLatency() {
+      return latency;
+    }
+
+    public long getMemoryUsage() {
+      return memoryUsage;
+    }
+
+    public LocalDateTime getTimestamp() {
+      return timestamp;
+    }
+
+    public Map<String, Object> getMetadata() {
+      return new HashMap<>(metadata);
+    }
+
+    @Override
+    public String toString() {
+      return String.format(
+          "PerformanceMeasurement{benchmark='%s', runtime='%s', throughput=%.2f, "
+              + "latency=%.2f, memory=%d, timestamp=%s}",
+          benchmarkName, runtimeType, throughput, latency, memoryUsage, timestamp);
+    }
+  }
+
+  /** Statistical summary of performance measurements. */
+  public static final class PerformanceStatistics {
+    private final double meanThroughput;
+    private final double stdDevThroughput;
+    private final double meanLatency;
+    private final double stdDevLatency;
+    private final long meanMemoryUsage;
+    private final int sampleCount;
+    private final double confidenceInterval;
+
+    /**
+     * Creates performance statistics from a list of measurements.
+     *
+     * @param measurements the performance measurements
+     * @param confidenceLevel the confidence level for statistical calculations
+     */
+    public PerformanceStatistics(
+        final List<PerformanceMeasurement> measurements, final double confidenceLevel) {
+      this.sampleCount = measurements.size();
+      this.confidenceInterval = confidenceLevel;
+
+      if (measurements.isEmpty()) {
+        this.meanThroughput = 0.0;
+        this.stdDevThroughput = 0.0;
+        this.meanLatency = 0.0;
+        this.stdDevLatency = 0.0;
+        this.meanMemoryUsage = 0;
+        return;
+      }
+
+      // Calculate throughput statistics
+      final double sumThroughput =
+          measurements.stream().mapToDouble(PerformanceMeasurement::getThroughput).sum();
+      this.meanThroughput = sumThroughput / measurements.size();
+
+      final double sumSquaredDiffThroughput =
+          measurements.stream()
+              .mapToDouble(m -> Math.pow(m.getThroughput() - meanThroughput, 2))
+              .sum();
+      this.stdDevThroughput =
+          measurements.size() > 1
+              ? Math.sqrt(sumSquaredDiffThroughput / (measurements.size() - 1))
+              : 0.0;
+
+      // Calculate latency statistics
+      final double sumLatency =
+          measurements.stream().mapToDouble(PerformanceMeasurement::getLatency).sum();
+      this.meanLatency = sumLatency / measurements.size();
+
+      final double sumSquaredDiffLatency =
+          measurements.stream()
+              .mapToDouble(m -> Math.pow(m.getLatency() - meanLatency, 2))
+              .sum();
+      this.stdDevLatency =
+          measurements.size() > 1
+              ? Math.sqrt(sumSquaredDiffLatency / (measurements.size() - 1))
+              : 0.0;
+
+      // Calculate memory usage statistics
+      this.meanMemoryUsage =
+          (long) measurements.stream().mapToLong(PerformanceMeasurement::getMemoryUsage).average().orElse(0.0);
+    }
+
+    public double getMeanThroughput() {
+      return meanThroughput;
+    }
+
+    public double getStdDevThroughput() {
+      return stdDevThroughput;
+    }
+
+    public double getMeanLatency() {
+      return meanLatency;
+    }
+
+    public double getStdDevLatency() {
+      return stdDevLatency;
+    }
+
+    public long getMeanMemoryUsage() {
+      return meanMemoryUsage;
+    }
+
+    public int getSampleCount() {
+      return sampleCount;
+    }
+
+    /**
+     * Gets the confidence interval for throughput measurements.
+     *
+     * @return the confidence interval value
+     */
+    public double getThroughputConfidenceInterval() {
+      if (sampleCount < 2) {
+        return 0.0;
+      }
+      // Simplified confidence interval calculation (assumes normal distribution)
+      final double tvalue = getTvalueForConfidenceLevel(confidenceInterval, sampleCount - 1);
+      return tvalue * (stdDevThroughput / Math.sqrt(sampleCount));
+    }
+
+    /**
+     * Gets the confidence interval for latency measurements.
+     *
+     * @return the confidence interval value
+     */
+    public double getLatencyConfidenceInterval() {
+      if (sampleCount < 2) {
+        return 0.0;
+      }
+      final double tvalue = getTvalueForConfidenceLevel(confidenceInterval, sampleCount - 1);
+      return tvalue * (stdDevLatency / Math.sqrt(sampleCount));
+    }
+
+    private double getTvalueForConfidenceLevel(final double confidenceLevel, final int degreesOfFreedom) {
+      // Simplified t-value calculation for common confidence levels
+      if (confidenceLevel >= 0.95) {
+        if (degreesOfFreedom >= 30) {
+          return 1.96;
+        } else if (degreesOfFreedom >= 10) {
+          return 2.23;
+        } else {
+          return 2.78;
+        }
+      } else if (confidenceLevel >= 0.90) {
+        if (degreesOfFreedom >= 30) {
+          return 1.645;
+        } else {
+          return 1.833;
+        }
+      }
+      return 1.96; // Default to 95% confidence
+    }
+
+    @Override
+    public String toString() {
+      return String.format(
+          "PerformanceStatistics{throughput: %.2f ± %.2f, latency: %.2f ± %.2f, "
+              + "memory: %d, samples: %d}",
+          meanThroughput,
+          getThroughputConfidenceInterval(),
+          meanLatency,
+          getLatencyConfidenceInterval(),
+          meanMemoryUsage,
+          sampleCount);
+    }
+  }
+
+  /** Regression detection result. */
+  public static final class RegressionResult {
+    private final String benchmarkName;
+    private final String runtimeType;
+    private final boolean isRegression;
+    private final double performanceChange;
+    private final String description;
+    private final PerformanceStatistics baseline;
+    private final PerformanceStatistics current;
+
+    /**
+     * Creates a regression detection result.
+     *
+     * @param benchmarkName the benchmark name
+     * @param runtimeType the runtime type
+     * @param isRegression whether a regression was detected
+     * @param performanceChange the performance change ratio
+     * @param description the result description
+     * @param baseline the baseline statistics
+     * @param current the current statistics
+     */
+    public RegressionResult(
+        final String benchmarkName,
+        final String runtimeType,
+        final boolean isRegression,
+        final double performanceChange,
+        final String description,
+        final PerformanceStatistics baseline,
+        final PerformanceStatistics current) {
+      this.benchmarkName = benchmarkName;
+      this.runtimeType = runtimeType;
+      this.isRegression = isRegression;
+      this.performanceChange = performanceChange;
+      this.description = description;
+      this.baseline = baseline;
+      this.current = current;
+    }
+
+    public String getBenchmarkName() {
+      return benchmarkName;
+    }
+
+    public String getRuntimeType() {
+      return runtimeType;
+    }
+
+    public boolean isRegression() {
+      return isRegression;
+    }
+
+    public double getPerformanceChange() {
+      return performanceChange;
+    }
+
+    public String getDescription() {
+      return description;
+    }
+
+    public PerformanceStatistics getBaseline() {
+      return baseline;
+    }
+
+    public PerformanceStatistics getCurrent() {
+      return current;
+    }
+
+    @Override
+    public String toString() {
+      return String.format(
+          "RegressionResult{benchmark='%s', runtime='%s', regression=%s, change=%.1f%%, '%s'}",
+          benchmarkName, runtimeType, isRegression, performanceChange * 100, description);
+    }
+  }
+
+  /** Logger for performance regression detection. */
+  private static final Logger LOGGER = Logger.getLogger(PerformanceRegressionDetector.class.getName());
+
+  /** Performance baseline storage and management. */
+  private final Map<String, List<PerformanceMeasurement>> baselineData;
+  private final Path baselineStoragePath;
+  private final ObjectMapper objectMapper;
+
+  /**
+   * Creates a new performance regression detector with default baseline storage.
+   */
+  public PerformanceRegressionDetector() {
+    this.baselineData = new HashMap<>();
+    this.baselineStoragePath = Paths.get(System.getProperty("user.home"), ".wasmtime4j-benchmarks");
+    this.objectMapper = createObjectMapper();
+  }
+
+  /**
+   * Creates a new performance regression detector with custom baseline storage path.
+   *
+   * @param baselineStoragePath the path for storing baseline performance data
+   */
+  public PerformanceRegressionDetector(final Path baselineStoragePath) {
+    this.baselineData = new HashMap<>();
+    this.baselineStoragePath = baselineStoragePath;
+    this.objectMapper = createObjectMapper();
+  }
+
+  /**
+   * Establishes a performance baseline from a set of measurements.
+   *
+   * @param measurements the baseline measurements
+   */
+  public void establishBaseline(final List<PerformanceMeasurement> measurements) {
+    for (final PerformanceMeasurement measurement : measurements) {
+      final String key = getBaselineKey(measurement.getBenchmarkName(), measurement.getRuntimeType());
+      baselineData.computeIfAbsent(key, k -> new ArrayList<>()).add(measurement);
+    }
+    saveBaselines();
+    LOGGER.info("Established baseline with " + measurements.size() + " measurements");
+  }
+
+  /**
+   * Detects performance regressions by comparing current measurements against baselines.
+   *
+   * @param currentMeasurements the current performance measurements
+   * @return list of regression detection results
+   */
+  public List<RegressionResult> detectRegressions(final List<PerformanceMeasurement> currentMeasurements) {
+    loadBaselines();
+
+    final List<RegressionResult> results = new ArrayList<>();
+    final Map<String, List<PerformanceMeasurement>> currentData = groupMeasurements(currentMeasurements);
+
+    for (final Map.Entry<String, List<PerformanceMeasurement>> entry : currentData.entrySet()) {
+      final String key = entry.getKey();
+      final List<PerformanceMeasurement> current = entry.getValue();
+      final List<PerformanceMeasurement> baseline = baselineData.get(key);
+
+      if (baseline == null || baseline.size() < MIN_SAMPLE_SIZE) {
+        continue; // No baseline or insufficient data
+      }
+
+      if (current.size() < MIN_SAMPLE_SIZE) {
+        continue; // Insufficient current data
+      }
+
+      final PerformanceStatistics baselineStats = new PerformanceStatistics(baseline, CONFIDENCE_LEVEL);
+      final PerformanceStatistics currentStats = new PerformanceStatistics(current, CONFIDENCE_LEVEL);
+
+      final RegressionResult result = analyzeRegression(key, baselineStats, currentStats);
+      results.add(result);
+    }
+
+    return results;
+  }
+
+  /**
+   * Generates a performance report with statistics and regression analysis.
+   *
+   * @param measurements the performance measurements to analyze
+   * @return formatted performance report
+   */
+  public String generatePerformanceReport(final List<PerformanceMeasurement> measurements) {
+    final StringBuilder report = new StringBuilder();
+    report.append("WebAssembly Performance Report\n");
+    report.append("Generated: ").append(LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)).append("\n");
+    report.append("==========================================================").append("\n\n");
+
+    final Map<String, List<PerformanceMeasurement>> groupedData = groupMeasurements(measurements);
+
+    for (final Map.Entry<String, List<PerformanceMeasurement>> entry : groupedData.entrySet()) {
+      final String key = entry.getKey();
+      final List<PerformanceMeasurement> data = entry.getValue();
+      final String[] parts = key.split(":");
+      final String benchmarkName = parts[0];
+      final String runtimeType = parts[1];
+
+      report.append(String.format("Benchmark: %s (%s Runtime)\n", benchmarkName, runtimeType));
+      report.append("---------------------------------------------\n");
+
+      final PerformanceStatistics stats = new PerformanceStatistics(data, CONFIDENCE_LEVEL);
+      report.append(String.format("Samples: %d\n", stats.getSampleCount()));
+      report.append(String.format("Throughput: %.2f ± %.2f ops/sec\n", 
+          stats.getMeanThroughput(), stats.getThroughputConfidenceInterval()));
+      report.append(String.format("Latency: %.2f ± %.2f ms\n", 
+          stats.getMeanLatency(), stats.getLatencyConfidenceInterval()));
+      report.append(String.format("Memory Usage: %d bytes\n", stats.getMeanMemoryUsage()));
+      report.append("\n");
+    }
+
+    // Add regression analysis if baselines exist
+    final List<RegressionResult> regressions = detectRegressions(measurements);
+    if (!regressions.isEmpty()) {
+      report.append("Regression Analysis\n");
+      report.append("==================\n");
+
+      for (final RegressionResult regression : regressions) {
+        if (regression.isRegression()) {
+          report.append(String.format("⚠️  REGRESSION DETECTED: %s\n", regression));
+        } else {
+          report.append(String.format("✅ No regression: %s\n", regression));
+        }
+      }
+      report.append("\n");
+    }
+
+    return report.toString();
+  }
+
+  /**
+   * Updates baseline data with new measurements.
+   *
+   * @param newMeasurements the new measurements to add to baselines
+   */
+  public void updateBaseline(final List<PerformanceMeasurement> newMeasurements) {
+    for (final PerformanceMeasurement measurement : newMeasurements) {
+      final String key = getBaselineKey(measurement.getBenchmarkName(), measurement.getRuntimeType());
+      final List<PerformanceMeasurement> baseline = baselineData.computeIfAbsent(key, k -> new ArrayList<>());
+      
+      // Keep only recent measurements (last 100 per benchmark/runtime combination)
+      baseline.add(measurement);
+      if (baseline.size() > 100) {
+        baseline.remove(0);
+      }
+    }
+    saveBaselines();
+  }
+
+  private String getBaselineKey(final String benchmarkName, final String runtimeType) {
+    return benchmarkName + ":" + runtimeType;
+  }
+
+  private Map<String, List<PerformanceMeasurement>> groupMeasurements(
+      final List<PerformanceMeasurement> measurements) {
+    final Map<String, List<PerformanceMeasurement>> grouped = new HashMap<>();
+    for (final PerformanceMeasurement measurement : measurements) {
+      final String key = getBaselineKey(measurement.getBenchmarkName(), measurement.getRuntimeType());
+      grouped.computeIfAbsent(key, k -> new ArrayList<>()).add(measurement);
+    }
+    return grouped;
+  }
+
+  private RegressionResult analyzeRegression(
+      final String key, final PerformanceStatistics baseline, final PerformanceStatistics current) {
+    final String[] parts = key.split(":");
+    final String benchmarkName = parts[0];
+    final String runtimeType = parts[1];
+
+    // Calculate throughput change (positive means improvement, negative means degradation)
+    final double throughputChange = 
+        (current.getMeanThroughput() - baseline.getMeanThroughput()) / baseline.getMeanThroughput();
+
+    // Check if the change is statistically significant and represents a regression
+    final boolean isRegression = throughputChange < -REGRESSION_THRESHOLD
+        && isStatisticallySignificant(baseline, current);
+
+    final String description = String.format(
+        "Throughput changed by %.1f%% from %.2f to %.2f ops/sec",
+        throughputChange * 100, baseline.getMeanThroughput(), current.getMeanThroughput());
+
+    return new RegressionResult(
+        benchmarkName, runtimeType, isRegression, throughputChange, description, baseline, current);
+  }
+
+  private boolean isStatisticallySignificant(
+      final PerformanceStatistics baseline, final PerformanceStatistics current) {
+    // Simplified statistical significance test
+    // In a real implementation, you would use proper t-tests or Mann-Whitney U tests
+    final double baselineCi = baseline.getThroughputConfidenceInterval();
+    final double currentCi = current.getThroughputConfidenceInterval();
+    final double difference = Math.abs(baseline.getMeanThroughput() - current.getMeanThroughput());
+    final double combinedCi = Math.sqrt(baselineCi * baselineCi + currentCi * currentCi);
+    
+    return difference > combinedCi;
+  }
+
+  private void saveBaselines() {
+    try {
+      Files.createDirectories(baselineStoragePath);
+      final Path dataFile = baselineStoragePath.resolve("baseline-data.json");
+      final ObjectMapper mapper = createObjectMapper();
+      mapper.writeValue(dataFile.toFile(), baselineData);
+      LOGGER.info("Saved baseline data to: " + dataFile);
+    } catch (final IOException e) {
+      LOGGER.warning("Failed to save baseline data: " + e.getMessage());
+    }
+  }
+
+  private void loadBaselines() {
+    try {
+      final Path dataFile = baselineStoragePath.resolve("baseline-data.json");
+      if (Files.exists(dataFile)) {
+        final ObjectMapper mapper = createObjectMapper();
+        final Map<String, List<PerformanceMeasurement>> loadedData = 
+            mapper.readValue(dataFile.toFile(), 
+                mapper.getTypeFactory().constructMapType(
+                    Map.class, 
+                    mapper.getTypeFactory().constructType(String.class), 
+                    mapper.getTypeFactory().constructCollectionType(List.class, PerformanceMeasurement.class)));
+        baselineData.clear();
+        baselineData.putAll(loadedData);
+        LOGGER.info("Loaded baseline data from: " + dataFile);
+      }
+    } catch (final IOException e) {
+      LOGGER.warning("Failed to load baseline data: " + e.getMessage());
+    }
+  }
+
+  /**
+   * Creates and configures the JSON object mapper for serialization.
+   *
+   * @return configured ObjectMapper instance
+   */
+  private ObjectMapper createObjectMapper() {
+    final ObjectMapper mapper = new ObjectMapper();
+    mapper.registerModule(new JavaTimeModule());
+    return mapper;
+  }
+
+  /**
+   * Generates CI/CD integration report in JSON format.
+   *
+   * @param regressions the regression analysis results
+   * @return JSON report for CI/CD consumption
+   */
+  public String generateCiCdReport(final List<RegressionResult> regressions) {
+    final Map<String, Object> report = new HashMap<>();
+    report.put("timestamp", LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+    report.put("regressionCount", regressions.stream().mapToLong(r -> r.isRegression() ? 1 : 0).sum());
+    report.put("totalBenchmarks", regressions.size());
+    report.put("hasRegressions", regressions.stream().anyMatch(RegressionResult::isRegression));
+    
+    final List<Map<String, Object>> regressionDetails = regressions.stream()
+        .filter(RegressionResult::isRegression)
+        .map(r -> {
+          final Map<String, Object> details = new HashMap<>();
+          details.put("benchmarkName", r.getBenchmarkName());
+          details.put("runtimeType", r.getRuntimeType());
+          details.put("performanceChange", r.getPerformanceChange());
+          details.put("description", r.getDescription());
+          return details;
+        })
+        .collect(Collectors.toList());
+    
+    report.put("regressions", regressionDetails);
+    
+    try {
+      return objectMapper.writeValueAsString(report);
+    } catch (final Exception e) {
+      LOGGER.warning("Failed to generate CI/CD report: " + e.getMessage());
+      return "{\"error\": \"Failed to generate report\"}";
+    }
+  }
+
+  /**
+   * Gets performance trend analysis for a specific benchmark and runtime.
+   *
+   * @param benchmarkName the benchmark name
+   * @param runtimeType the runtime type
+   * @param lookbackDays number of days to analyze
+   * @return performance trend statistics
+   */
+  public PerformanceStatistics getPerformanceTrend(
+      final String benchmarkName, final String runtimeType, final int lookbackDays) {
+    final String key = getBaselineKey(benchmarkName, runtimeType);
+    final List<PerformanceMeasurement> measurements = baselineData.get(key);
+    
+    if (measurements == null || measurements.isEmpty()) {
+      return new PerformanceStatistics(Collections.emptyList(), CONFIDENCE_LEVEL);
+    }
+    
+    final LocalDateTime cutoff = LocalDateTime.now().minusDays(lookbackDays);
+    final List<PerformanceMeasurement> recentMeasurements = measurements.stream()
+        .filter(m -> m.getTimestamp().isAfter(cutoff))
+        .collect(Collectors.toList());
+    
+    return new PerformanceStatistics(recentMeasurements, CONFIDENCE_LEVEL);
+  }
+
+  /**
+   * Clears all baseline data (useful for testing).
+   */
+  public void clearBaselines() {
+    baselineData.clear();
+    try {
+      final Path dataFile = baselineStoragePath.resolve("baseline-data.json");
+      if (Files.exists(dataFile)) {
+        Files.delete(dataFile);
+      }
+    } catch (final IOException e) {
+      LOGGER.warning("Failed to clear baseline data file: " + e.getMessage());
+    }
+  }
+}

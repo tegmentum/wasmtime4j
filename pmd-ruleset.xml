@@ -66,11 +66,6 @@
         </properties>
     </rule>
 
-    <rule ref="category/java/design.xml/ExcessiveMethodLength">
-        <properties>
-            <property name="minimum" value="100"/><!-- Allow longer methods for complex native operations -->
-        </properties>
-    </rule>
 
     <rule ref="category/java/design.xml/ExcessiveParameterList">
         <properties>
@@ -97,7 +92,6 @@
         <exclude name="DataflowAnomalyAnalysis"/><!-- May produce false positives with native code -->
         <exclude name="NullAssignment"/><!-- Explicit null assignment can be defensive -->
         <exclude name="AvoidLiteralsInIfCondition"/><!-- Sometimes literals in conditions are clearer -->
-        <exclude name="MissingBreakInSwitch"/><!-- Fall-through may be intentional -->
         <exclude name="EmptyIfStmt"/><!-- May be used for defensive programming -->
         <exclude name="AvoidFieldNameMatchingMethodName"/><!-- May be acceptable for properties -->
     </rule>
@@ -134,7 +128,7 @@
             <property name="xpath">
                 <value><![CDATA[
                     //MethodDeclaration[contains(@Name, 'native')]
-                    [not(descendant::PrimaryExpression[ends-with(@Image, 'log')])]
+                    [not(descendant::PrimaryExpression[ends-with(@Name, 'log')])]
                 ]]></value>
             </property>
         </properties>
