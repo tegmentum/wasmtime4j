@@ -1,14 +1,14 @@
 # GitHub Issue Mapping
 
-Epic: #37 - https://github.com/tegmentum/wasmtime4j/issues/37
+Epic: #15 - https://github.com/tegmentum/wasmtime4j/issues/15
 
 Tasks:
-- #41: Maven Source Integration - https://github.com/tegmentum/wasmtime4j/issues/41
-- #42: Native Compilation Pipeline - https://github.com/tegmentum/wasmtime4j/issues/42
-- #45: Build System Integration - https://github.com/tegmentum/wasmtime4j/issues/45
-- #46: GitHub Actions Workflow - https://github.com/tegmentum/wasmtime4j/issues/46
-- #47: Library Runtime Selection - https://github.com/tegmentum/wasmtime4j/issues/47
-- #48: Testing & Validation - https://github.com/tegmentum/wasmtime4j/issues/48
-- #49: Documentation & Migration Guide - https://github.com/tegmentum/wasmtime4j/issues/49
+- #16: Maven Source Integration - https://github.com/tegmentum/wasmtime4j/issues/16
+- #17: Native Compilation Pipeline - https://github.com/tegmentum/wasmtime4j/issues/17
+- #18: Build System Integration - https://github.com/tegmentum/wasmtime4j/issues/18
+- #23: GitHub Actions Workflow - https://github.com/tegmentum/wasmtime4j/issues/23
+- #24: Library Runtime Selection - https://github.com/tegmentum/wasmtime4j/issues/24
+- #25: Testing & Validation - https://github.com/tegmentum/wasmtime4j/issues/25
+- #26: Documentation & Migration Guide - https://github.com/tegmentum/wasmtime4j/issues/26
 
-Synced: 2025-08-30T20:57:43Z
+Synced: 2025-08-30T00:35:48Z
