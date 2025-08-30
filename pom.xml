@@ -754,7 +754,7 @@
             <id>linux-x86_64</id>
             <properties>
                 <native.target>${target.linux.x86_64}</native.target>
-                <native.platform>linux-x64</native.platform>
+                <native.platform>linux-x86_64</native.platform>
                 <native.library.extension>so</native.library.extension>
                 <native.library.prefix>lib</native.library.prefix>
             </properties>
@@ -774,7 +774,7 @@
             <id>windows-x86_64</id>
             <properties>
                 <native.target>${target.windows.x86_64}</native.target>
-                <native.platform>windows-x64</native.platform>
+                <native.platform>windows-x86_64</native.platform>
                 <native.library.extension>dll</native.library.extension>
                 <native.library.prefix></native.library.prefix>
             </properties>
@@ -784,7 +784,7 @@
             <id>macos-x86_64</id>
             <properties>
                 <native.target>${target.macos.x86_64}</native.target>
-                <native.platform>macos-x64</native.platform>
+                <native.platform>macos-x86_64</native.platform>
                 <native.library.extension>dylib</native.library.extension>
                 <native.library.prefix>lib</native.library.prefix>
             </properties>
@@ -812,7 +812,7 @@
             </activation>
             <properties>
                 <native.host.target>${target.linux.x86_64}</native.host.target>
-                <native.host.platform>linux-x64</native.host.platform>
+                <native.host.platform>linux-x86_64</native.host.platform>
             </properties>
         </profile>
 
@@ -841,7 +841,7 @@
             </activation>
             <properties>
                 <native.host.target>${target.windows.x86_64}</native.host.target>
-                <native.host.platform>windows-x64</native.host.platform>
+                <native.host.platform>windows-x86_64</native.host.platform>
             </properties>
         </profile>
 
@@ -855,7 +855,7 @@
             </activation>
             <properties>
                 <native.host.target>${target.macos.x86_64}</native.host.target>
-                <native.host.platform>macos-x64</native.host.platform>
+                <native.host.platform>macos-x86_64</native.host.platform>
             </properties>
         </profile>
 

@@ -10,6 +10,7 @@ import ai.tegmentum.wasmtime4j.WasmTable;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
+import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
@@ -47,14 +48,12 @@ public final class JniInstance extends JniResource implements Instance {
    *
    * @param name the name of the exported function
    * @return the function wrapper, or empty if not found
-   * @throws IllegalArgumentException if name is null or empty
+   * @throws ai.tegmentum.wasmtime4j.jni.exception.JniValidationException if name is null or empty
    * @throws IllegalStateException if this instance is closed
    */
   @Override
   public Optional<WasmFunction> getFunction(final String name) {
-    if (name == null || name.trim().isEmpty()) {
-      throw new IllegalArgumentException("Function name cannot be null or empty");
-    }
+    JniValidation.requireNonBlank(name, "name");
     ensureNotClosed();
 
     try {
@@ -75,14 +74,12 @@ public final class JniInstance extends JniResource implements Instance {
    *
    * @param name the name of the exported memory
    * @return the memory wrapper, or empty if not found
-   * @throws IllegalArgumentException if name is null or empty
+   * @throws ai.tegmentum.wasmtime4j.jni.exception.JniValidationException if name is null or empty
    * @throws IllegalStateException if this instance is closed
    */
   @Override
   public Optional<WasmMemory> getMemory(final String name) {
-    if (name == null || name.trim().isEmpty()) {
-      throw new IllegalArgumentException("Memory name cannot be null or empty");
-    }
+    JniValidation.requireNonBlank(name, "name");
     ensureNotClosed();
 
     try {
@@ -103,14 +100,12 @@ public final class JniInstance extends JniResource implements Instance {
    *
    * @param name the name of the exported table
    * @return the table wrapper, or empty if not found
-   * @throws IllegalArgumentException if name is null or empty
+   * @throws ai.tegmentum.wasmtime4j.jni.exception.JniValidationException if name is null or empty
    * @throws IllegalStateException if this instance is closed
    */
   @Override
   public Optional<WasmTable> getTable(final String name) {
-    if (name == null || name.trim().isEmpty()) {
-      throw new IllegalArgumentException("Table name cannot be null or empty");
-    }
+    JniValidation.requireNonBlank(name, "name");
     ensureNotClosed();
 
     try {
@@ -131,14 +126,12 @@ public final class JniInstance extends JniResource implements Instance {
    *
    * @param name the name of the exported global
    * @return the global wrapper, or empty if not found
-   * @throws IllegalArgumentException if name is null or empty
+   * @throws ai.tegmentum.wasmtime4j.jni.exception.JniValidationException if name is null or empty
    * @throws IllegalStateException if this instance is closed
    */
   @Override
   public Optional<WasmGlobal> getGlobal(final String name) {
-    if (name == null || name.trim().isEmpty()) {
-      throw new IllegalArgumentException("Global name cannot be null or empty");
-    }
+    JniValidation.requireNonBlank(name, "name");
     ensureNotClosed();
 
     try {
@@ -170,13 +163,11 @@ public final class JniInstance extends JniResource implements Instance {
    *
    * @param name the export name to check
    * @return true if the export exists
-   * @throws IllegalArgumentException if name is null or empty
+   * @throws ai.tegmentum.wasmtime4j.jni.exception.JniValidationException if name is null or empty
    * @throws IllegalStateException if this instance is closed
    */
   public boolean hasExport(final String name) {
-    if (name == null || name.trim().isEmpty()) {
-      throw new IllegalArgumentException("Export name cannot be null or empty");
-    }
+    JniValidation.requireNonBlank(name, "name");
     ensureNotClosed();
 
     try {

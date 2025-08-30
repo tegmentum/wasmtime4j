@@ -66,6 +66,21 @@ public final class JniValidation {
   }
 
   /**
+   * Validates that a string is not null, empty, or only whitespace.
+   *
+   * @param str the string to validate
+   * @param parameterName the parameter name for error messages
+   * @throws JniValidationException if the string is null, empty, or only whitespace
+   */
+  public static void requireNonBlank(final String str, final String parameterName) {
+    requireNonNull(str, parameterName);
+    if (str.trim().isEmpty()) {
+      throw new JniValidationException(
+          "Parameter '" + parameterName + "' must not be empty or whitespace-only", parameterName, str);
+    }
+  }
+
+  /**
    * Validates that an integer value is within the specified range.
    *
    * @param value the value to validate
