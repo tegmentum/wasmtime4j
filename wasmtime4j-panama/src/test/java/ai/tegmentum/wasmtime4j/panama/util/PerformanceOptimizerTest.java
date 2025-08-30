@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.when;
 
 import ai.tegmentum.wasmtime4j.panama.util.PerformanceOptimizer.UsagePattern;
@@ -59,7 +60,7 @@ class PerformanceOptimizerTest {
   private MethodHandle testMethodHandle;
 
   @BeforeEach
-  void setUp() throws Exception {
+  void setUp() throws Throwable {
     // Create a simple test method handle
     testMethodHandle =
         MethodHandles.lookup()
@@ -105,7 +106,7 @@ class PerformanceOptimizerTest {
 
     @Test
     @DisplayName("Should optimize method handle for high frequency usage")
-    void shouldOptimizeMethodHandleForHighFrequencyUsage() throws Exception {
+    void shouldOptimizeMethodHandleForHighFrequencyUsage() throws Throwable {
       // Act
       final MethodHandle optimized =
           optimizer.optimizeMethodHandle(
@@ -121,7 +122,7 @@ class PerformanceOptimizerTest {
 
     @Test
     @DisplayName("Should optimize method handle for bulk operations")
-    void shouldOptimizeMethodHandleForBulkOperations() throws Exception {
+    void shouldOptimizeMethodHandleForBulkOperations() throws Throwable {
       // Act
       final MethodHandle optimized =
           optimizer.optimizeMethodHandle(
@@ -136,7 +137,7 @@ class PerformanceOptimizerTest {
 
     @Test
     @DisplayName("Should optimize method handle for memory intensive operations")
-    void shouldOptimizeMethodHandleForMemoryIntensiveOperations() throws Exception {
+    void shouldOptimizeMethodHandleForMemoryIntensiveOperations() throws Throwable {
       // Act
       final MethodHandle optimized =
           optimizer.optimizeMethodHandle(
@@ -149,7 +150,7 @@ class PerformanceOptimizerTest {
 
     @Test
     @DisplayName("Should handle optimization disabled")
-    void shouldHandleOptimizationDisabled() throws Exception {
+    void shouldHandleOptimizationDisabled() throws Throwable {
       // Arrange
       optimizer.setOptimizationEnabled(false);
 
@@ -164,7 +165,7 @@ class PerformanceOptimizerTest {
 
     @Test
     @DisplayName("Should cache optimized method handles")
-    void shouldCacheOptimizedMethodHandles() throws Exception {
+    void shouldCacheOptimizedMethodHandles() throws Throwable {
       // Act
       final MethodHandle first =
           optimizer.optimizeMethodHandle(
@@ -184,14 +185,15 @@ class PerformanceOptimizerTest {
 
     @Test
     @DisplayName("Should execute batched operation successfully")
-    void shouldExecuteBatchedOperationSuccessfully() throws Exception {
+    void shouldExecuteBatchedOperationSuccessfully() throws Throwable {
       // Arrange
-      when(mockExecutor.execute(any(Runnable.class)))
-          .thenAnswer(
+      doAnswer(
               invocation -> {
                 ((Runnable) invocation.getArgument(0)).run();
                 return null;
-              });
+              })
+          .when(mockExecutor)
+          .execute(any());
 
       final PerformanceOptimizer.BatchedFfiOperation<Integer> operation =
           (handle, params) -> (Integer) params[0] + (Integer) params[1];
@@ -209,14 +211,15 @@ class PerformanceOptimizerTest {
 
     @Test
     @DisplayName("Should handle batched operation failure")
-    void shouldHandleBatchedOperationFailure() throws Exception {
+    void shouldHandleBatchedOperationFailure() throws Throwable {
       // Arrange
-      when(mockExecutor.execute(any(Runnable.class)))
-          .thenAnswer(
+      doAnswer(
               invocation -> {
                 ((Runnable) invocation.getArgument(0)).run();
                 return null;
-              });
+              })
+          .when(mockExecutor)
+          .execute(any());
 
       final PerformanceOptimizer.BatchedFfiOperation<Integer> failingOperation =
           (handle, params) -> {
@@ -312,18 +315,19 @@ class PerformanceOptimizerTest {
 
     @Test
     @DisplayName("Should create and execute processing pipeline")
-    void shouldCreateAndExecuteProcessingPipeline() throws Exception {
+    void shouldCreateAndExecuteProcessingPipeline() throws Throwable {
       // Arrange
       final Function<Integer, String> processor = i -> "processed_" + i;
       final List<Integer> input = Arrays.asList(1, 2, 3, 4, 5);
 
       // Mock executor to run synchronously for testing
-      when(mockExecutor.execute(any(Runnable.class)))
-          .thenAnswer(
+      doAnswer(
               invocation -> {
                 ((Runnable) invocation.getArgument(0)).run();
                 return null;
-              });
+              })
+          .when(mockExecutor)
+          .execute(any());
 
       // Act
       final PerformanceOptimizer.OperationPipeline<Integer, String> pipeline =
@@ -339,7 +343,7 @@ class PerformanceOptimizerTest {
 
     @Test
     @DisplayName("Should handle empty pipeline input")
-    void shouldHandleEmptyPipelineInput() throws Exception {
+    void shouldHandleEmptyPipelineInput() throws Throwable {
       // Arrange
       final Function<Integer, String> processor = i -> "processed_" + i;
       final List<Integer> emptyInput = List.of();
@@ -361,14 +365,15 @@ class PerformanceOptimizerTest {
 
     @Test
     @DisplayName("Should track performance statistics")
-    void shouldTrackPerformanceStatistics() throws Exception {
+    void shouldTrackPerformanceStatistics() throws Throwable {
       // Arrange
-      when(mockExecutor.execute(any(Runnable.class)))
-          .thenAnswer(
+      doAnswer(
               invocation -> {
                 ((Runnable) invocation.getArgument(0)).run();
                 return null;
-              });
+              })
+          .when(mockExecutor)
+          .execute(any());
 
       // Act - perform some operations
       optimizer.optimizeMethodHandle("test1", testMethodHandle, UsagePattern.HIGH_FREQUENCY_SIMPLE);
@@ -437,7 +442,7 @@ class PerformanceOptimizerTest {
 
     @Test
     @DisplayName("Should enable and disable optimization")
-    void shouldEnableAndDisableOptimization() throws Exception {
+    void shouldEnableAndDisableOptimization() throws Throwable {
       // Act & Assert - optimization enabled by default
       final MethodHandle optimized1 =
           optimizer.optimizeMethodHandle(
@@ -499,7 +504,7 @@ class PerformanceOptimizerTest {
 
     @Test
     @DisplayName("Should handle method handle optimization failure gracefully")
-    void shouldHandleMethodHandleOptimizationFailureGracefully() throws Exception {
+    void shouldHandleMethodHandleOptimizationFailureGracefully() throws Throwable {
       // Arrange - create a problematic method handle that might cause optimization to fail
       final MethodHandle problematicHandle = MethodHandles.empty(MethodType.methodType(void.class));
 
@@ -514,17 +519,18 @@ class PerformanceOptimizerTest {
 
     @Test
     @DisplayName("Should handle batch execution with queue overflow")
-    void shouldHandleBatchExecutionWithQueueOverflow() throws Exception {
+    void shouldHandleBatchExecutionWithQueueOverflow() throws Throwable {
       // Arrange - create optimizer with very small queue
       final PerformanceOptimizer smallQueueOptimizer =
           new PerformanceOptimizer(mockExecutor, 2, 10, 1); // Queue size = 1
 
-      when(mockExecutor.execute(any(Runnable.class)))
-          .thenAnswer(
+      doAnswer(
               invocation -> {
                 ((Runnable) invocation.getArgument(0)).run();
                 return null;
-              });
+              })
+          .when(mockExecutor)
+          .execute(any());
 
       final PerformanceOptimizer.BatchedFfiOperation<Integer> operation = (handle, params) -> 42;
 

@@ -18,8 +18,8 @@
         <!-- Java version properties -->
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
-        <project.build.inputEncoding>UTF-8</project.build.inputEncoding>
-        <project.build.putputEncoding>UTF-8</project.build.putputEncoding>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.build.outputEncoding>UTF-8</project.build.outputEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         
         <!-- JNI minimum Java version -->
@@ -58,11 +58,11 @@
         <checkstyle.plugin.version>3.3.0</checkstyle.plugin.version>
         <checkstyle.version>10.12.3</checkstyle.version>
         <spotless.plugin.version>2.40.0</spotless.plugin.version>
-        <spotbugs.plugin.version>4.7.3.6</spotbugs.plugin.version>
-        <spotbugs.version>4.7.3</spotbugs.version>
+        <spotbugs.plugin.version>4.8.6.4</spotbugs.plugin.version>
+        <spotbugs.version>4.8.6</spotbugs.version>
         <findsecbugs.version>1.12.0</findsecbugs.version>
-        <pmd.plugin.version>3.21.0</pmd.plugin.version>
-        <pmd.version>6.55.0</pmd.version>
+        <pmd.plugin.version>3.22.0</pmd.plugin.version>
+        <pmd.version>7.0.0</pmd.version>
         <jacoco.plugin.version>0.8.10</jacoco.plugin.version>
 
         <!-- Native build properties -->

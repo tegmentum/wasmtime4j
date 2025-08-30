@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -503,8 +504,9 @@ class PanamaHostFunctionTest {
           new PanamaHostFunction(
               "test_function", testFunctionType, testCallback, mockArenaManager, mockErrorHandler);
 
-      when(mockArenaManager.unregisterManagedResource(any()))
-          .thenThrow(new RuntimeException("Unregister failed"));
+      doThrow(new RuntimeException("Unregister failed"))
+          .when(mockArenaManager)
+          .unregisterManagedResource(any());
       when(mockErrorHandler.mapToWasmException(any(), any()))
           .thenReturn(new WasmException("Close failed"));
 
