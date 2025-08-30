@@ -3,6 +3,7 @@ package ai.tegmentum.wasmtime4j.panama.wasi;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
 import ai.tegmentum.wasmtime4j.panama.wasi.exception.WasiFileSystemException;
 import java.lang.ref.PhantomReference;
+import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
 import java.util.Map;
 import java.util.Set;
@@ -407,7 +408,9 @@ public final class WasiFileHandleManager implements AutoCloseable {
     int cleanedUp = 0;
     PhantomReference<WasiFileHandle> phantomRef;
 
-    while ((phantomRef = (PhantomReference<WasiFileHandle>) referenceQueue.poll()) != null) {
+    PhantomReference<WasiFileHandle> ref;
+    while ((ref = castToPhantomReference(referenceQueue.poll())) != null) {
+      phantomRef = ref;
       final Integer fileDescriptor = phantomReferences.remove(phantomRef);
       if (fileDescriptor != null) {
         try {
@@ -522,5 +525,15 @@ public final class WasiFileHandleManager implements AutoCloseable {
           totalHandlesGarbageCollected,
           phantomReferences);
     }
+  }
+
+  /**
+   * Helper method to safely cast Reference to PhantomReference.
+   * This suppresses the unchecked cast warning in one place.
+   */
+  @SuppressWarnings("unchecked")
+  private PhantomReference<WasiFileHandle> castToPhantomReference(
+      final Reference<? extends WasiFileHandle> ref) {
+    return (PhantomReference<WasiFileHandle>) ref;
   }
 }

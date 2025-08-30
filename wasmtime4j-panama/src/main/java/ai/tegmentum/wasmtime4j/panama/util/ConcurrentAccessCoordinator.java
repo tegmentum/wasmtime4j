@@ -278,7 +278,7 @@ public final class ConcurrentAccessCoordinator {
       return CompletableFuture.completedFuture(emptyArray);
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "rawtypes"})
     final CompletableFuture<T>[] futures = new CompletableFuture[operations.length];
     for (int i = 0; i < operations.length; i++) {
       futures[i] = executeAsync(operations[i]);

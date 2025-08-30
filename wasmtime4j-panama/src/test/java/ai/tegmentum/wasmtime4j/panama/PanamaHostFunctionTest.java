@@ -481,7 +481,7 @@ class PanamaHostFunctionTest {
     void shouldHandleUpcallStubCreationFailure() throws Exception {
       // Arrange
       when(mockArenaManager.getArena()).thenThrow(new RuntimeException("Arena creation failed"));
-      when(mockErrorHandler.mapToWasmException(any(), any()))
+      when(PanamaErrorHandler.mapToWasmException(any(), any()))
           .thenReturn(new WasmException("Mapped exception"));
 
       // Act & Assert
@@ -507,7 +507,7 @@ class PanamaHostFunctionTest {
       doThrow(new RuntimeException("Unregister failed"))
           .when(mockArenaManager)
           .unregisterManagedResource(any());
-      when(mockErrorHandler.mapToWasmException(any(), any()))
+      when(PanamaErrorHandler.mapToWasmException(any(), any()))
           .thenReturn(new WasmException("Close failed"));
 
       // Act & Assert
