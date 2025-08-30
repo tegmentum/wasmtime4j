@@ -2,7 +2,8 @@
 name: rust-build-integration
 status: completed
 created: 2025-08-30T00:35:27Z
-completed: 2025-08-30T23:23:04Zprogress: 100%
+completed: 2025-08-30T23:23:04Z
+progress: 100%
 prd: .claude/prds/rust-build-integration.md
 github: https://github.com/tegmentum/wasmtime4j/issues/15
 ---
