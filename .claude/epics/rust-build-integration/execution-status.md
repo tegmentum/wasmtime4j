@@ -23,8 +23,8 @@ branch: epic/rust-build-integration
 
 ## Queued Issues
 
-**Integration Required:**
-- Issue #17 - Source Compilation Integration - ⚠️ **BLOCKED** (waiting for #16 implementation to be integrated into worktree)
+**Ready to Start:**
+- Issue #17 - Source Compilation Integration - ✅ **READY** (dependencies satisfied: Issue #16 ✅ IMPLEMENTED)
 
 **Further downstream (sequential dependencies):**
 - Issue #18 - Cross-Platform Compilation (depends on #17)
@@ -33,12 +33,12 @@ branch: epic/rust-build-integration
 - Issue #26 - Documentation and Examples (depends on #25)
 
 **Completed Issues:**
-- ✅ Issue #16 - Maven Source Integration (100% complete - all 4 streams done) ⚠️ **NEEDS INTEGRATION**
+- ✅ Issue #16 - Maven Source Integration (100% complete - all 4 streams implemented and committed)
 - ✅ Issue #23 - GitHub Actions Workflow (100% complete - all 4 streams done)
 
-**Integration Status:**
-- Issue #16 work completed in design phase but needs to be integrated into the worktree
-- Issue #17 is blocked until #16 implementation is applied to wasmtime4j-native module
+**Implementation Status:**
+- Issue #16: Wasmtime source build profile implemented and tested (commit 8894981)
+- Issue #17: Ready to proceed with native compilation pipeline integration
 
 ## Work Streams Detail
 
