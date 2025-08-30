@@ -13,73 +13,118 @@ use wasmtime::{Trap, WasmBacktrace};
 pub enum WasmtimeError {
     /// WebAssembly compilation errors
     #[error("Compilation failed: {message}")]
-    Compilation { message: String },
+    Compilation { 
+        /// Error message describing the compilation failure
+        message: String 
+    },
 
     /// WebAssembly validation errors
     #[error("Module validation failed: {message}")]
-    Validation { message: String },
+    Validation { 
+        /// Error message describing the validation failure
+        message: String 
+    },
 
     /// WebAssembly module errors
     #[error("Module error: {message}")]
-    Module { message: String },
+    Module { 
+        /// Error message describing the module error
+        message: String 
+    },
 
     /// WebAssembly runtime errors and traps
     #[error("Runtime error: {message}")]
     Runtime { 
+        /// Error message describing the runtime error
         message: String,
+        /// Optional WebAssembly backtrace for debugging
         backtrace: Option<WasmBacktrace>,
     },
 
     /// Engine configuration errors
     #[error("Engine configuration error: {message}")]
-    EngineConfig { message: String },
+    EngineConfig { 
+        /// Error message describing the engine configuration issue
+        message: String 
+    },
 
     /// Store creation and management errors
     #[error("Store error: {message}")]
-    Store { message: String },
+    Store { 
+        /// Error message describing the store-related error
+        message: String 
+    },
 
     /// Memory access and management errors
     #[error("Memory error: {message}")]
-    Memory { message: String },
+    Memory { 
+        /// Error message describing the memory access error
+        message: String 
+    },
 
     /// Function invocation errors
     #[error("Function invocation failed: {message}")]
-    Function { message: String },
+    Function { 
+        /// Error message describing the function invocation error
+        message: String 
+    },
 
     /// Import/Export resolution errors
     #[error("Import/Export error: {message}")]
-    ImportExport { message: String },
+    ImportExport { 
+        /// Error message describing the import/export resolution error
+        message: String 
+    },
 
     /// Type conversion and validation errors
     #[error("Type error: {message}")]
-    Type { message: String },
+    Type { 
+        /// Error message describing the type conversion or validation error
+        message: String 
+    },
 
     /// Resource management errors
     #[error("Resource error: {message}")]
-    Resource { message: String },
+    Resource { 
+        /// Error message describing the resource management error
+        message: String 
+    },
 
     /// I/O and file system errors
     #[error("I/O error: {source}")]
     Io { 
         #[from] 
+        /// The underlying I/O error that occurred
         source: std::io::Error 
     },
 
     /// Null pointer or invalid parameter errors
     #[error("Invalid parameter: {message}")]
-    InvalidParameter { message: String },
+    InvalidParameter { 
+        /// Error message describing the invalid parameter
+        message: String 
+    },
 
     /// Threading and concurrency errors
     #[error("Concurrency error: {message}")]
-    Concurrency { message: String },
+    Concurrency { 
+        /// Error message describing the concurrency issue
+        message: String 
+    },
 
     /// WASI-specific errors (for future use)
     #[error("WASI error: {message}")]
-    Wasi { message: String },
+    Wasi { 
+        /// Error message describing the WASI-related error
+        message: String 
+    },
 
     /// Unexpected internal errors
     #[error("Internal error: {message}")]
-    Internal { message: String },
+    Internal { 
+        /// Error message describing the internal system error
+        message: String 
+    },
 }
 
 /// Result type for wasmtime4j operations
@@ -89,21 +134,37 @@ pub type WasmtimeResult<T> = Result<T, WasmtimeError>;
 #[repr(i32)]
 #[derive(Debug, Clone, Copy)]
 pub enum ErrorCode {
+    /// Operation completed successfully
     Success = 0,
+    /// WebAssembly compilation failed
     CompilationError = -1,
+    /// WebAssembly module validation failed
     ValidationError = -2,
+    /// WebAssembly runtime error occurred
     RuntimeError = -3,
+    /// Engine configuration error
     EngineConfigError = -4,
+    /// Store creation or management error
     StoreError = -5,
+    /// Memory access or allocation error
     MemoryError = -6,
+    /// Function invocation error
     FunctionError = -7,
+    /// Import or export resolution error
     ImportExportError = -8,
+    /// Type conversion or validation error
     TypeError = -9,
+    /// Resource management error
     ResourceError = -10,
+    /// I/O operation error
     IoError = -11,
+    /// Invalid parameter provided
     InvalidParameterError = -12,
+    /// Threading or concurrency error
     ConcurrencyError = -13,
+    /// WASI-related error
     WasiError = -14,
+    /// Internal system error
     InternalError = -15,
 }
 
@@ -172,6 +233,21 @@ macro_rules! validate_not_null {
     };
 }
 
+/// Validates that slice access is within bounds to prevent buffer overruns
+/// 
+/// This macro performs defensive bounds checking to ensure that accessing
+/// a slice with the given offset and length will not cause a panic or 
+/// undefined behavior.
+/// 
+/// # Arguments
+/// 
+/// * `$slice` - The slice to validate
+/// * `$offset` - Starting offset for the access
+/// * `$length` - Length of data to access
+/// 
+/// # Returns
+/// 
+/// Returns `WasmtimeError::InvalidParameter` if bounds check fails
 #[macro_export]
 macro_rules! validate_slice_bounds {
     ($slice:expr, $offset:expr, $length:expr) => {
@@ -188,7 +264,7 @@ macro_rules! validate_slice_bounds {
 pub mod ffi_utils {
     use super::*;
 
-    /// Store last error for FFI error handling
+    // Store last error for FFI error handling
     thread_local! {
         static LAST_ERROR: std::cell::RefCell<Option<WasmtimeError>> = std::cell::RefCell::new(None);
     }

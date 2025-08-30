@@ -129,7 +129,7 @@ public final class PanamaInstance implements Instance, AutoCloseable {
       // Create managed function wrapper
       return Optional.of(new PanamaFunction(functionPtr, resourceManager, this));
 
-    } catch (Exception e) {
+    } catch (Throwable e) {
       LOGGER.warning("Function lookup failed for '" + name + "': " + e.getMessage());
       return Optional.empty();
     }
@@ -162,7 +162,7 @@ public final class PanamaInstance implements Instance, AutoCloseable {
       // Create managed memory wrapper
       return Optional.of(new PanamaMemory(memoryPtr, resourceManager, this));
 
-    } catch (Exception e) {
+    } catch (Throwable e) {
       LOGGER.warning("Memory lookup failed for '" + name + "': " + e.getMessage());
       return Optional.empty();
     }
@@ -195,7 +195,7 @@ public final class PanamaInstance implements Instance, AutoCloseable {
       // Create managed global wrapper
       return Optional.of(new PanamaGlobal(globalPtr, resourceManager, this));
 
-    } catch (Exception e) {
+    } catch (Throwable e) {
       LOGGER.warning("Global lookup failed for '" + name + "': " + e.getMessage());
       return Optional.empty();
     }
@@ -228,7 +228,7 @@ public final class PanamaInstance implements Instance, AutoCloseable {
       // Create managed table wrapper
       return Optional.of(new PanamaTable(tablePtr, resourceManager, this));
 
-    } catch (Exception e) {
+    } catch (Throwable e) {
       LOGGER.warning("Table lookup failed for '" + name + "': " + e.getMessage());
       return Optional.empty();
     }
@@ -301,7 +301,11 @@ public final class PanamaInstance implements Instance, AutoCloseable {
   @Override
   public Store getStore() {
     ensureNotClosed();
-    return module.getEngine().createStore();
+    try {
+      return module.getEngine().createStore();
+    } catch (WasmException e) {
+      throw new java.lang.RuntimeException("Failed to create store", e);
+    }
   }
 
   @Override
@@ -383,7 +387,7 @@ public final class PanamaInstance implements Instance, AutoCloseable {
   // Private FFI helper methods for export access
 
   /** Finds an export by name using FFI calls. */
-  private MemorySegment findExportByName(final String name) throws Exception {
+  private MemorySegment findExportByName(final String name) throws Throwable {
     // Allocate memory for export name string
     ArenaResourceManager.ManagedMemorySegment nameMemory =
         resourceManager.allocate((name.length() + 1) * Character.BYTES);

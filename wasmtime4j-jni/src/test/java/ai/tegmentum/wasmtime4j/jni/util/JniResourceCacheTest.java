@@ -558,7 +558,7 @@ class JniResourceCacheTest {
         }
 
         // Wait for all operations to complete
-        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture<?>[0])).join();
 
         // Cache size should be within limits
         assertTrue(evictionCache.size() <= maxSize);

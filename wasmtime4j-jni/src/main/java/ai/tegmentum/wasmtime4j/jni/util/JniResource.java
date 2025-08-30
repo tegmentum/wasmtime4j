@@ -51,8 +51,8 @@ public abstract class JniResource implements AutoCloseable {
   protected JniResource(final long nativeHandle) {
     JniValidation.requireValidHandle(nativeHandle, "nativeHandle");
     this.nativeHandle = nativeHandle;
-    LOGGER.fine(
-        String.format("Created %s resource with handle: 0x%x", getResourceType(), nativeHandle));
+    // Note: Avoid calling getResourceType() here to prevent 'this' escape warning
+    LOGGER.fine(String.format("Created JNI resource with handle: 0x%x", nativeHandle));
   }
 
   /**

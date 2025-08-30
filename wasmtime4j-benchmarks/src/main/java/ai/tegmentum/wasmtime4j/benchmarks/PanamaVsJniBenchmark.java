@@ -20,6 +20,7 @@ import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.RuntimeType;
+import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmMemory;
 import ai.tegmentum.wasmtime4j.WasmRuntime;
@@ -72,7 +73,7 @@ import org.openjdk.jmh.infra.Blackhole;
 public class PanamaVsJniBenchmark extends BenchmarkBase {
 
   @Param({"JNI", "PANAMA"})
-  private RuntimeType runtimeType;
+  private String runtimeTypeName;
 
   @Param({"1", "10", "100", "1000"})
   private int operationCount;
@@ -221,10 +222,18 @@ public class PanamaVsJniBenchmark extends BenchmarkBase {
     0x0b
   };
 
+  /**
+   * Sets up the benchmark trial by initializing WebAssembly runtime, modules, and test data.
+   *
+   * @throws Exception if setup fails
+   */
   @Setup(Level.Trial)
   public void setupTrial() throws Exception {
-    System.out.println("Setting up benchmark trial with runtime: " + runtimeType);
+    System.out.println("Setting up benchmark trial with runtime: " + runtimeTypeName);
 
+    // Convert string to RuntimeType
+    final RuntimeType runtimeType = RuntimeType.valueOf(runtimeTypeName);
+    
     // Check if the requested runtime is available
     if (!WasmRuntimeFactory.isRuntimeAvailable(runtimeType)) {
       throw new RuntimeException("Runtime not available: " + runtimeType);
@@ -237,19 +246,20 @@ public class PanamaVsJniBenchmark extends BenchmarkBase {
     simpleModule = engine.compileModule(SIMPLE_ADD_WASM);
     memoryModule = engine.compileModule(MEMORY_WASM);
 
-    // Create instances
-    simpleInstance = runtime.instantiate(simpleModule);
-    memoryInstance = runtime.instantiate(memoryModule);
+    // Create store and instances
+    final Store store = engine.createStore();
+    simpleInstance = simpleModule.instantiate(store);
+    memoryInstance = memoryModule.instantiate(store);
 
     // Get exported functions and memory
     addFunction =
         simpleInstance
-            .getExportedFunction("add")
+            .getFunction("add")
             .orElseThrow(() -> new RuntimeException("Add function not found"));
 
     wasmMemory =
         memoryInstance
-            .getExportedMemory("memory")
+            .getMemory("memory")
             .orElseThrow(() -> new RuntimeException("Memory export not found"));
 
     // Initialize test data
@@ -269,16 +279,33 @@ public class PanamaVsJniBenchmark extends BenchmarkBase {
         "Trial setup completed for " + runtimeType + " with " + operationCount + " operations");
   }
 
+  /**
+   * Tears down the benchmark trial by cleaning up WebAssembly resources.
+   *
+   * @throws Exception if cleanup fails
+   */
   @TearDown(Level.Trial)
   public void teardownTrial() throws Exception {
-    if (simpleInstance != null) simpleInstance.close();
-    if (memoryInstance != null) memoryInstance.close();
-    if (simpleModule != null) simpleModule.close();
-    if (memoryModule != null) memoryModule.close();
-    if (engine != null) engine.close();
-    if (runtime != null) runtime.close();
+    if (simpleInstance != null) {
+      simpleInstance.close();
+    }
+    if (memoryInstance != null) {
+      memoryInstance.close();
+    }
+    if (simpleModule != null) {
+      simpleModule.close();
+    }
+    if (memoryModule != null) {
+      memoryModule.close();
+    }
+    if (engine != null) {
+      engine.close();
+    }
+    if (runtime != null) {
+      runtime.close();
+    }
 
-    System.out.println("Trial teardown completed for " + runtimeType);
+    System.out.println("Trial teardown completed for " + runtimeTypeName);
   }
 
   /**
@@ -291,7 +318,7 @@ public class PanamaVsJniBenchmark extends BenchmarkBase {
       final int a = testData[i];
       final int b = testData[(i + 1) % testData.length];
       final WasmValue[] results = addFunction.call(WasmValue.i32(a), WasmValue.i32(b));
-      bh.consume(results[0].asI32());
+      bh.consume(results[0].asInt());
     }
   }
 
@@ -308,7 +335,7 @@ public class PanamaVsJniBenchmark extends BenchmarkBase {
         params[1] = WasmValue.i32(testData[(index + 1) % testData.length]);
 
         final WasmValue[] results = addFunction.call(params);
-        bh.consume(results[0].asI32());
+        bh.consume(results[0].asInt());
       }
     }
   }
@@ -319,14 +346,13 @@ public class PanamaVsJniBenchmark extends BenchmarkBase {
    */
   @Benchmark
   public void memoryReads(final Blackhole bh) throws Exception {
-    final int memorySize = (int) wasmMemory.size();
+    final int memorySize = Math.toIntExact(wasmMemory.getSize());
     final int maxOffset = Math.max(1, memorySize - 4);
 
     for (int i = 0; i < operationCount; i++) {
       final int offset = (testData[i] % maxOffset) & ~3; // Align to 4 bytes
-      final ByteBuffer buffer = ByteBuffer.allocate(4);
-      wasmMemory.read(offset, buffer);
-      bh.consume(buffer.getInt(0));
+      final int value = readIntFromMemory(wasmMemory, offset);
+      bh.consume(value);
     }
   }
 
@@ -336,15 +362,12 @@ public class PanamaVsJniBenchmark extends BenchmarkBase {
    */
   @Benchmark
   public void memoryWrites(final Blackhole bh) throws Exception {
-    final int memorySize = (int) wasmMemory.size();
+    final int memorySize = Math.toIntExact(wasmMemory.getSize());
     final int maxOffset = Math.max(1, memorySize - 4);
 
     for (int i = 0; i < operationCount; i++) {
       final int offset = (testData[i] % maxOffset) & ~3; // Align to 4 bytes
-      final ByteBuffer buffer = ByteBuffer.allocate(4);
-      buffer.putInt(testData[i]);
-      buffer.flip();
-      wasmMemory.write(offset, buffer);
+      writeIntToMemory(wasmMemory, offset, testData[i]);
       bh.consume(offset);
     }
   }
@@ -364,15 +387,15 @@ public class PanamaVsJniBenchmark extends BenchmarkBase {
     final int iterations = Math.max(1, operationCount / (chunkSize / 4));
 
     for (int i = 0; i < iterations; i++) {
-      final int offset = (i * chunkSize) % Math.max(1, (int) wasmMemory.size() - chunkSize);
+      final int offset = (i * chunkSize) % Math.max(1, Math.toIntExact(wasmMemory.getSize()) - chunkSize);
 
       // Write chunk
       chunk.rewind();
-      wasmMemory.write(offset, chunk);
+      writeBufferToMemory(wasmMemory, offset, chunk);
 
       // Read it back
       final ByteBuffer readBuffer = ByteBuffer.allocate(chunkSize);
-      wasmMemory.read(offset, readBuffer);
+      readBufferFromMemory(wasmMemory, offset, readBuffer);
 
       bh.consume(readBuffer.getInt(0));
     }
@@ -397,7 +420,8 @@ public class PanamaVsJniBenchmark extends BenchmarkBase {
   @Benchmark
   public void instanceCreation(final Blackhole bh) throws Exception {
     for (int i = 0; i < Math.min(operationCount, 50); i++) { // Limit to avoid excessive overhead
-      try (Instance instance = runtime.instantiate(simpleModule)) {
+      try (Store store = engine.createStore();
+           Instance instance = simpleModule.instantiate(store)) {
         bh.consume(instance);
       }
     }
@@ -409,7 +433,7 @@ public class PanamaVsJniBenchmark extends BenchmarkBase {
    */
   @Benchmark
   public void mixedOperations(final Blackhole bh) throws Exception {
-    final int memorySize = (int) wasmMemory.size();
+    final int memorySize = Math.toIntExact(wasmMemory.getSize());
     final int maxOffset = Math.max(1, memorySize - 4);
 
     for (int i = 0; i < operationCount; i++) {
@@ -419,20 +443,20 @@ public class PanamaVsJniBenchmark extends BenchmarkBase {
         final int a = testData[i];
         final int b = testData[(i + 1) % testData.length];
         final WasmValue[] results = addFunction.call(WasmValue.i32(a), WasmValue.i32(b));
-        bh.consume(results[0].asI32());
+        bh.consume(results[0].asInt());
       } else if (i % 3 == 1) {
         // Memory write
         final int offset = (testData[i] % maxOffset) & ~3;
         final ByteBuffer buffer = ByteBuffer.allocate(4);
         buffer.putInt(testData[i]);
         buffer.flip();
-        wasmMemory.write(offset, buffer);
+        writeBufferToMemory(wasmMemory, offset, buffer);
         bh.consume(offset);
       } else {
         // Memory read
         final int offset = (testData[i] % maxOffset) & ~3;
         final ByteBuffer buffer = ByteBuffer.allocate(4);
-        wasmMemory.read(offset, buffer);
+        readBufferFromMemory(wasmMemory, offset, buffer);
         bh.consume(buffer.getInt(0));
       }
     }
@@ -451,12 +475,14 @@ public class PanamaVsJniBenchmark extends BenchmarkBase {
     for (int t = 0; t < threads; t++) {
       for (int i = 0; i < opsPerThread; i++) {
         final int index = t * opsPerThread + i;
-        if (index >= testData.length) break;
+        if (index >= testData.length) {
+          break;
+        }
 
         final int a = testData[index];
         final int b = testData[(index + 1) % testData.length];
         final WasmValue[] results = addFunction.call(WasmValue.i32(a), WasmValue.i32(b));
-        bh.consume(results[0].asI32());
+        bh.consume(results[0].asInt());
       }
     }
   }
@@ -471,16 +497,17 @@ public class PanamaVsJniBenchmark extends BenchmarkBase {
 
     for (int i = 0; i < iterations; i++) {
       try (Engine testEngine = runtime.createEngine();
+          Store testStore = testEngine.createStore();
           Module testModule = testEngine.compileModule(SIMPLE_ADD_WASM);
-          Instance testInstance = runtime.instantiate(testModule)) {
+          Instance testInstance = testModule.instantiate(testStore)) {
 
         final WasmFunction func =
             testInstance
-                .getExportedFunction("add")
+                .getFunction("add")
                 .orElseThrow(() -> new RuntimeException("Function not found"));
 
         final WasmValue[] results = func.call(WasmValue.i32(i), WasmValue.i32(i + 1));
-        bh.consume(results[0].asI32());
+        bh.consume(results[0].asInt());
       }
     }
   }
@@ -511,7 +538,35 @@ public class PanamaVsJniBenchmark extends BenchmarkBase {
 
     for (int i = 0; i < operationCount; i++) {
       final WasmValue[] results = addFunction.call(zero, one);
-      bh.consume(results[0].asI32());
+      bh.consume(results[0].asInt());
     }
+  }
+  
+  /** Helper to read 4 bytes as int from memory. */
+  private static int readIntFromMemory(final WasmMemory memory, final int offset) {
+    final byte[] bytes = new byte[4];
+    memory.readBytes(offset, bytes, 0, 4);
+    return java.nio.ByteBuffer.wrap(bytes).order(java.nio.ByteOrder.LITTLE_ENDIAN).getInt();
+  }
+  
+  /** Helper to write int as 4 bytes to memory. */
+  private static void writeIntToMemory(final WasmMemory memory, final int offset, final int value) {
+    final byte[] bytes = java.nio.ByteBuffer.allocate(4).order(java.nio.ByteOrder.LITTLE_ENDIAN).putInt(value).array();
+    memory.writeBytes(offset, bytes, 0, 4);
+  }
+  
+  /** Helper to write ByteBuffer to memory. */
+  private static void writeBufferToMemory(final WasmMemory memory, final int offset, final java.nio.ByteBuffer buffer) {
+    final byte[] bytes = new byte[buffer.remaining()];
+    buffer.get(bytes);
+    memory.writeBytes(offset, bytes, 0, bytes.length);
+  }
+  
+  /** Helper to read from memory into ByteBuffer. */
+  private static void readBufferFromMemory(
+      final WasmMemory memory, final int offset, final java.nio.ByteBuffer buffer) {
+    final byte[] bytes = new byte[buffer.remaining()];
+    memory.readBytes(offset, bytes, 0, bytes.length);
+    buffer.put(bytes);
   }
 }

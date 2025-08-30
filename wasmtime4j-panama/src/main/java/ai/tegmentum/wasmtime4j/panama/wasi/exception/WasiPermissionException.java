@@ -11,6 +11,8 @@ package ai.tegmentum.wasmtime4j.panama.wasi.exception;
  */
 public class WasiPermissionException extends WasiFileSystemException {
 
+  private static final long serialVersionUID = 1L;
+
   /**
    * Creates a new WASI permission exception.
    *

@@ -40,18 +40,22 @@ pub mod engine {
 }
 
 #[cfg(feature = "jni-bindings")]
+/// JNI bindings for WebAssembly module operations
+/// 
+/// This module provides JNI-compatible functions for compiling, validating,
+/// and introspecting WebAssembly modules from Java code.
 pub mod module {
-    use super::*;
-    
     /// Placeholder for JNI module bindings
     #[allow(dead_code)]
     pub struct PlaceholderModule;
 }
 
 #[cfg(feature = "jni-bindings")]
+/// JNI bindings for WebAssembly instance operations
+/// 
+/// This module provides JNI-compatible functions for instantiating WebAssembly
+/// modules, invoking functions, and managing WebAssembly runtime state.
 pub mod instance {
-    use super::*;
-    
     /// Placeholder for JNI instance bindings
     #[allow(dead_code)]
     pub struct PlaceholderInstance;

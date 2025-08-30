@@ -2,6 +2,7 @@ package ai.tegmentum.wasmtime4j.jni;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Store;
+import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
@@ -195,25 +196,26 @@ public final class JniStore extends JniResource implements Store {
    * execution time for long-running WebAssembly computations.
    *
    * @param additionalFuel the amount of fuel to add (must be positive)
-   * @throws JniException if fuel cannot be added
+   * @throws WasmException if fuel cannot be added
    * @throws JniResourceException if this store has been closed
    */
-  public void addFuel(final long additionalFuel) {
+  @Override
+  public void addFuel(final long additionalFuel) throws WasmException {
     JniValidation.requirePositive(additionalFuel, "additionalFuel");
     ensureNotClosed();
 
     try {
       final boolean success = nativeAddFuel(getNativeHandle(), additionalFuel);
       if (!success) {
-        throw new JniException("Failed to add fuel: " + additionalFuel);
+        throw new WasmException("Failed to add fuel: " + additionalFuel);
       }
       LOGGER.fine(
           "Added " + additionalFuel + " fuel to store 0x" + Long.toHexString(getNativeHandle()));
     } catch (final Exception e) {
-      if (e instanceof JniException) {
+      if (e instanceof WasmException) {
         throw e;
       }
-      throw new JniException("Unexpected error adding fuel", e);
+      throw new WasmException("Unexpected error adding fuel", e);
     }
   }
 
@@ -235,28 +237,49 @@ public final class JniStore extends JniResource implements Store {
   }
 
   @Override
-  public void setFuel(final long fuel) {
-    setFuelLimit(fuel);
+  public void setFuel(final long fuel) throws WasmException {
+    JniValidation.requirePositive(fuel, "fuel");
+    ensureNotClosed();
+
+    try {
+      final boolean success = nativeSetFuelLimit(getNativeHandle(), fuel);
+      if (!success) {
+        throw new WasmException("Failed to set fuel limit to " + fuel);
+      }
+      LOGGER.fine(
+          "Set fuel limit to " + fuel + " for store 0x" + Long.toHexString(getNativeHandle()));
+    } catch (final Exception e) {
+      if (e instanceof WasmException) {
+        throw e;
+      }
+      throw new WasmException("Unexpected error setting fuel limit", e);
+    }
   }
 
   @Override
-  public long getFuel() {
-    return getRemainingFuel();
+  public long getFuel() throws WasmException {
+    ensureNotClosed();
+
+    try {
+      return nativeGetRemainingFuel(getNativeHandle());
+    } catch (final Exception e) {
+      throw new WasmException("Failed to get remaining fuel", e);
+    }
   }
 
   @Override
-  public void setEpochDeadline(final long ticks) {
+  public void setEpochDeadline(final long ticks) throws WasmException {
     ensureNotClosed();
     try {
       final boolean success = nativeSetEpochDeadline(getNativeHandle(), ticks);
       if (!success) {
-        throw new JniException("Failed to set epoch deadline to " + ticks);
+        throw new WasmException("Failed to set epoch deadline to " + ticks);
       }
     } catch (final Exception e) {
-      if (e instanceof JniException) {
+      if (e instanceof WasmException) {
         throw e;
       }
-      throw new JniException("Unexpected error setting epoch deadline", e);
+      throw new WasmException("Unexpected error setting epoch deadline", e);
     }
   }
 

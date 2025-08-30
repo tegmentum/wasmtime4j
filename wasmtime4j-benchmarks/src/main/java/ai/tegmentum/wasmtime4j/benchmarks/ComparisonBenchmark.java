@@ -3,6 +3,7 @@ package ai.tegmentum.wasmtime4j.benchmarks;
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmMemory;
@@ -136,7 +137,7 @@ public class ComparisonBenchmark extends BenchmarkBase {
           runtime = BenchmarkBase.createRuntime(RuntimeType.PANAMA);
           break;
         default:
-          runtime = BenchmarkBase.createRuntime(RuntimeType.AUTO);
+          runtime = BenchmarkBase.createRuntime(null); // Auto-selection
           break;
       }
       
@@ -149,14 +150,14 @@ public class ComparisonBenchmark extends BenchmarkBase {
       switch (category) {
         case "FUNCTION_CALL":
         case "MIXED_WORKLOAD":
-          targetFunction = instance.getExportedFunction("add");
+          targetFunction = instance.getFunction("add").orElse(null);
           break;
         default:
           break;
       }
       
       if (category.equals("MEMORY_ACCESS") || category.equals("MIXED_WORKLOAD")) {
-        wasmMemory = instance.getExportedMemory("memory");
+        wasmMemory = instance.getMemory("memory").orElse(null);
       }
     }
 
@@ -179,12 +180,7 @@ public class ComparisonBenchmark extends BenchmarkBase {
     
     void cleanup() {
       try {
-        if (targetFunction != null) {
-          targetFunction.close();
-        }
-        if (wasmMemory != null) {
-          wasmMemory.close();
-        }
+        // Function and memory resources are managed by the instance
         if (instance != null) {
           instance.close();
         }
@@ -299,7 +295,7 @@ public class ComparisonBenchmark extends BenchmarkBase {
           
           final WasmValue[] results = targetFunction.call(params);
           if (results.length > 0) {
-            result += results[0].asI32();
+            result += results[0].asInt();
           }
         }
       } else {
@@ -315,7 +311,7 @@ public class ComparisonBenchmark extends BenchmarkBase {
       
       if (wasmMemory != null) {
         final byte[] writeBuffer = new byte[64];
-        final int memSize = (int) Math.min(wasmMemory.getSize(), 4096);
+        final int memSize = Math.min(Math.toIntExact(wasmMemory.getSize()), 4096);
         
         for (int i = 0; i < workAmount && i * 64 < memSize - 64; i++) {
           // Fill write buffer with data
@@ -324,10 +320,11 @@ public class ComparisonBenchmark extends BenchmarkBase {
           }
           
           // Write to WebAssembly memory
-          wasmMemory.write(i * 64, writeBuffer);
+          wasmMemory.writeBytes(i * 64, writeBuffer, 0, writeBuffer.length);
           
           // Read back from WebAssembly memory
-          final byte[] readBuffer = wasmMemory.read(i * 64, writeBuffer.length);
+          final byte[] readBuffer = new byte[writeBuffer.length];
+          wasmMemory.readBytes(i * 64, readBuffer, 0, writeBuffer.length);
           for (final byte b : readBuffer) {
             result += b & 0xFF;
           }
@@ -512,12 +509,12 @@ public class ComparisonBenchmark extends BenchmarkBase {
       final PerformanceResult panamaResult = panamaExecutor.execute();
 
       // Calculate comparison metrics
-      final double throughputRatio = jniResult.getThroughput() > 0 ? 
-          panamaResult.getThroughput() / jniResult.getThroughput() : 1.0;
-      final double memoryRatio = jniResult.getMemoryUsed() > 0 ? 
-          (double) panamaResult.getMemoryUsed() / jniResult.getMemoryUsed() : 1.0;
-      final double efficiencyComparison = jniResult.getEfficiencyScore() > 0 ?
-          panamaResult.getEfficiencyScore() / jniResult.getEfficiencyScore() : 1.0;
+      final double throughputRatio = jniResult.getThroughput() > 0
+          ? panamaResult.getThroughput() / jniResult.getThroughput() : 1.0;
+      final double memoryRatio = jniResult.getMemoryUsed() > 0
+          ? (double) panamaResult.getMemoryUsed() / jniResult.getMemoryUsed() : 1.0;
+      final double efficiencyComparison = jniResult.getEfficiencyScore() > 0
+          ? panamaResult.getEfficiencyScore() / jniResult.getEfficiencyScore() : 1.0;
 
       blackhole.consume(throughputRatio);
       blackhole.consume(memoryRatio);

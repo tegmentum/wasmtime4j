@@ -20,8 +20,10 @@ import java.lang.foreign.Arena;
 import java.lang.foreign.MemoryLayout;
 import java.lang.foreign.MemorySegment;
 import java.lang.ref.Cleaner;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -47,6 +49,7 @@ public final class ArenaResourceManager implements AutoCloseable {
   // Resource tracking
   private final Arena arena;
   private final ConcurrentHashMap<Long, ManagedResource> resources;
+  private final List<ManagedNativeResource> managedResources;
   private final AtomicLong resourceIdGenerator;
   private final boolean trackingEnabled;
 
@@ -68,6 +71,7 @@ public final class ArenaResourceManager implements AutoCloseable {
     this.arena = Objects.requireNonNull(arena, "Arena cannot be null");
     this.trackingEnabled = trackingEnabled;
     this.resources = trackingEnabled ? new ConcurrentHashMap<>() : null;
+    this.managedResources = trackingEnabled ? new CopyOnWriteArrayList<>() : null;
     this.resourceIdGenerator = trackingEnabled ? new AtomicLong(1) : null;
 
     LOGGER.fine("Created ArenaResourceManager with tracking: " + trackingEnabled);

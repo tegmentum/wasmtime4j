@@ -23,6 +23,8 @@ import ai.tegmentum.wasmtime4j.panama.exception.PanamaException;
  */
 public class WasiException extends PanamaException {
 
+  private static final long serialVersionUID = 1L;
+
   /**
    * Constructs a new WASI exception with the specified detail message.
    *
@@ -51,15 +53,4 @@ public class WasiException extends PanamaException {
     super(cause);
   }
 
-  /**
-   * Constructs a new WASI exception with the specified detail message and cause.
-   *
-   * @param message the detail message
-   * @param cause the cause
-   */
-  protected WasiException(
-      final String message,
-      final Throwable cause) {
-    super(message, cause);
-  }
 }

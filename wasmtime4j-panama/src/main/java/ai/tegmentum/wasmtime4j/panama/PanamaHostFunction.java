@@ -123,7 +123,7 @@ public final class PanamaHostFunction implements WasmFunction {
       }
     } catch (Exception e) {
       hostFunctionRegistry.remove(hostFunctionId);
-      throw errorHandler.mapToWasmException(e, "Failed to create host function: " + functionName);
+      throw PanamaErrorHandler.mapToWasmException(e, "Failed to create host function: " + functionName);
     }
   }
 
@@ -185,8 +185,10 @@ public final class PanamaHostFunction implements WasmFunction {
     return closed;
   }
 
-  @Override
-  public void close() throws WasmException {
+  /**
+   * Closes this host function and releases its resources.
+   */
+  public void close() {
     if (closed) {
       return;
     }
@@ -207,7 +209,7 @@ public final class PanamaHostFunction implements WasmFunction {
           logger.fine("Closed host function '" + functionName + "' with ID: " + hostFunctionId);
         }
       } catch (Exception e) {
-        throw errorHandler.mapToWasmException(e, "Failed to close host function: " + functionName);
+        logger.log(Level.SEVERE, "Failed to close host function: " + functionName, e);
       } finally {
         closed = true;
       }
@@ -262,7 +264,7 @@ public final class PanamaHostFunction implements WasmFunction {
     final WasmValueType[] returnTypes = functionType.getReturnTypes();
 
     // Build method type for native callback (long parameters + return)
-    final Class<?>[] nativeParams = new Class[paramTypes.length + 1]; // +1 for host function ID
+    final Class<?>[] nativeParams = new Class<?>[paramTypes.length + 1]; // +1 for host function ID
     nativeParams[0] = long.class; // host function ID
     for (int i = 0; i < paramTypes.length; i++) {
       nativeParams[i + 1] = getNativeType(paramTypes[i]);
@@ -322,7 +324,9 @@ public final class PanamaHostFunction implements WasmFunction {
       case I64 -> long.class;
       case F32 -> float.class;
       case F64 -> double.class;
+      case V128 -> byte[].class;
       case FUNCREF, EXTERNREF -> long.class; // Use handle/pointer as long
+      default -> throw new IllegalArgumentException("Unsupported value type: " + valueType);
     };
   }
 
@@ -338,7 +342,9 @@ public final class PanamaHostFunction implements WasmFunction {
       case I64 -> ValueLayout.JAVA_LONG;
       case F32 -> ValueLayout.JAVA_FLOAT;
       case F64 -> ValueLayout.JAVA_DOUBLE;
+      case V128 -> ValueLayout.ADDRESS;
       case FUNCREF, EXTERNREF -> ValueLayout.ADDRESS;
+      default -> throw new IllegalArgumentException("Unsupported value type: " + valueType);
     };
   }
 
@@ -440,7 +446,9 @@ public final class PanamaHostFunction implements WasmFunction {
       case I64 -> WasmValue.i64((Long) nativeValue);
       case F32 -> WasmValue.f32((Float) nativeValue);
       case F64 -> WasmValue.f64((Double) nativeValue);
+      case V128 -> WasmValue.v128((byte[]) nativeValue);
       case FUNCREF, EXTERNREF -> WasmValue.externref(nativeValue); // Handle as reference
+      default -> throw new IllegalArgumentException("Unsupported value type: " + valueType);
     };
   }
 
@@ -456,7 +464,9 @@ public final class PanamaHostFunction implements WasmFunction {
       case I64 -> wasmValue.asI64();
       case F32 -> wasmValue.asF32();
       case F64 -> wasmValue.asF64();
+      case V128 -> wasmValue.asV128();
       case FUNCREF, EXTERNREF -> wasmValue.asExternref();
+      default -> throw new IllegalArgumentException("Unsupported value type: " + wasmValue.getType());
     };
   }
 
@@ -472,7 +482,9 @@ public final class PanamaHostFunction implements WasmFunction {
       case I64 -> 0L;
       case F32 -> 0.0f;
       case F64 -> 0.0;
+      case V128 -> new byte[16]; // Default V128 value (16 zeros)
       case FUNCREF, EXTERNREF -> 0L; // Null pointer/handle
+      default -> throw new IllegalArgumentException("Unsupported value type: " + valueType);
     };
   }
 

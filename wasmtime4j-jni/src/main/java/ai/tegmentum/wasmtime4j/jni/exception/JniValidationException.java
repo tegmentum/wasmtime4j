@@ -26,7 +26,7 @@ public final class JniValidationException extends RuntimeException {
   private final String parameterName;
 
   /** The invalid parameter value. */
-  private final Object parameterValue;
+  private final transient Object parameterValue;
 
   /**
    * Creates a new JNI validation exception with the specified message.

@@ -1,5 +1,6 @@
 package ai.tegmentum.wasmtime4j.benchmarks;
 
+import ai.tegmentum.wasmtime4j.RuntimeType;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -53,7 +54,7 @@ public class WasiBenchmark extends BenchmarkBase {
 
   /** Runtime implementation to benchmark. */
   @Param({"JNI", "PANAMA"})
-  private RuntimeType runtimeType;
+  private String runtimeTypeName;
 
   /** WASI operation category to benchmark. */
   @Param({"FILE_IO", "DIRECTORY_OPS", "PROCESS_OPS", "ENVIRONMENT"})
@@ -222,10 +223,15 @@ public class WasiBenchmark extends BenchmarkBase {
   /** Test file names for operations. */
   private String[] testFiles;
 
+  /** Converts string runtime type name to RuntimeType enum. */
+  private RuntimeType getRuntimeType() {
+    return RuntimeType.valueOf(runtimeTypeName);
+  }
+
   /** Setup performed before each benchmark iteration. */
   @Setup(Level.Iteration)
   public void setupIteration() throws IOException {
-    wasiContext = new MockWasiContext(runtimeType, dataSize);
+    wasiContext = new MockWasiContext(getRuntimeType(), dataSize);
 
     // Prepare test files based on operation category
     testFiles = new String[5];
@@ -440,7 +446,7 @@ public class WasiBenchmark extends BenchmarkBase {
     }
 
     blackhole.consume(totalTime);
-    blackhole.consume(runtimeType.name());
+    blackhole.consume(getRuntimeType().name());
   }
 
   /**

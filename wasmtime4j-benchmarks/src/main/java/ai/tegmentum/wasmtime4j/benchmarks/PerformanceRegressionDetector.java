@@ -55,6 +55,17 @@ public final class PerformanceRegressionDetector {
     private final LocalDateTime timestamp;
     private final Map<String, Object> metadata;
 
+    /**
+     * Creates a performance measurement with JSON deserialization support.
+     *
+     * @param benchmarkName the benchmark name
+     * @param runtimeType the runtime type
+     * @param throughput the throughput measurement
+     * @param latency the latency measurement
+     * @param memoryUsage the memory usage measurement
+     * @param timestamp the measurement timestamp
+     * @param metadata additional metadata
+     */
     @JsonCreator
     public PerformanceMeasurement(
         @JsonProperty("benchmarkName") final String benchmarkName,
@@ -82,6 +93,13 @@ public final class PerformanceRegressionDetector {
       this(benchmarkName, runtimeType, throughput, latency, memoryUsage, LocalDateTime.now(), new HashMap<>());
     }
 
+    /**
+     * Adds metadata to this performance measurement.
+     *
+     * @param key the metadata key
+     * @param value the metadata value
+     * @return this measurement instance for chaining
+     */
     public PerformanceMeasurement withMetadata(final String key, final Object value) {
       this.metadata.put(key, value);
       return this;
@@ -134,6 +152,12 @@ public final class PerformanceRegressionDetector {
     private final int sampleCount;
     private final double confidenceInterval;
 
+    /**
+     * Creates performance statistics from a list of measurements.
+     *
+     * @param measurements the performance measurements
+     * @param confidenceLevel the confidence level for statistical calculations
+     */
     public PerformanceStatistics(
         final List<PerformanceMeasurement> measurements, final double confidenceLevel) {
       this.sampleCount = measurements.size();
@@ -205,24 +229,34 @@ public final class PerformanceRegressionDetector {
       return sampleCount;
     }
 
+    /**
+     * Gets the confidence interval for throughput measurements.
+     *
+     * @return the confidence interval value
+     */
     public double getThroughputConfidenceInterval() {
       if (sampleCount < 2) {
         return 0.0;
       }
       // Simplified confidence interval calculation (assumes normal distribution)
-      final double tValue = getTValueForConfidenceLevel(confidenceInterval, sampleCount - 1);
-      return tValue * (stdDevThroughput / Math.sqrt(sampleCount));
+      final double tvalue = getTvalueForConfidenceLevel(confidenceInterval, sampleCount - 1);
+      return tvalue * (stdDevThroughput / Math.sqrt(sampleCount));
     }
 
+    /**
+     * Gets the confidence interval for latency measurements.
+     *
+     * @return the confidence interval value
+     */
     public double getLatencyConfidenceInterval() {
       if (sampleCount < 2) {
         return 0.0;
       }
-      final double tValue = getTValueForConfidenceLevel(confidenceLevel, sampleCount - 1);
-      return tValue * (stdDevLatency / Math.sqrt(sampleCount));
+      final double tvalue = getTvalueForConfidenceLevel(confidenceInterval, sampleCount - 1);
+      return tvalue * (stdDevLatency / Math.sqrt(sampleCount));
     }
 
-    private double getTValueForConfidenceLevel(final double confidenceLevel, final int degreesOfFreedom) {
+    private double getTvalueForConfidenceLevel(final double confidenceLevel, final int degreesOfFreedom) {
       // Simplified t-value calculation for common confidence levels
       if (confidenceLevel >= 0.95) {
         if (degreesOfFreedom >= 30) {
@@ -266,6 +300,17 @@ public final class PerformanceRegressionDetector {
     private final PerformanceStatistics baseline;
     private final PerformanceStatistics current;
 
+    /**
+     * Creates a regression detection result.
+     *
+     * @param benchmarkName the benchmark name
+     * @param runtimeType the runtime type
+     * @param isRegression whether a regression was detected
+     * @param performanceChange the performance change ratio
+     * @param description the result description
+     * @param baseline the baseline statistics
+     * @param current the current statistics
+     */
     public RegressionResult(
         final String benchmarkName,
         final String runtimeType,
@@ -327,12 +372,20 @@ public final class PerformanceRegressionDetector {
   private final Path baselineStoragePath;
   private final ObjectMapper objectMapper;
 
+  /**
+   * Creates a new performance regression detector with default baseline storage.
+   */
   public PerformanceRegressionDetector() {
     this.baselineData = new HashMap<>();
     this.baselineStoragePath = Paths.get(System.getProperty("user.home"), ".wasmtime4j-benchmarks");
     this.objectMapper = createObjectMapper();
   }
 
+  /**
+   * Creates a new performance regression detector with custom baseline storage path.
+   *
+   * @param baselineStoragePath the path for storing baseline performance data
+   */
   public PerformanceRegressionDetector(final Path baselineStoragePath) {
     this.baselineData = new HashMap<>();
     this.baselineStoragePath = baselineStoragePath;
@@ -485,8 +538,8 @@ public final class PerformanceRegressionDetector {
         (current.getMeanThroughput() - baseline.getMeanThroughput()) / baseline.getMeanThroughput();
 
     // Check if the change is statistically significant and represents a regression
-    final boolean isRegression = throughputChange < -REGRESSION_THRESHOLD && 
-        isStatisticallySignificant(baseline, current);
+    final boolean isRegression = throughputChange < -REGRESSION_THRESHOLD
+        && isStatisticallySignificant(baseline, current);
 
     final String description = String.format(
         "Throughput changed by %.1f%% from %.2f to %.2f ops/sec",
@@ -500,12 +553,12 @@ public final class PerformanceRegressionDetector {
       final PerformanceStatistics baseline, final PerformanceStatistics current) {
     // Simplified statistical significance test
     // In a real implementation, you would use proper t-tests or Mann-Whitney U tests
-    final double baselineCI = baseline.getThroughputConfidenceInterval();
-    final double currentCI = current.getThroughputConfidenceInterval();
+    final double baselineCi = baseline.getThroughputConfidenceInterval();
+    final double currentCi = current.getThroughputConfidenceInterval();
     final double difference = Math.abs(baseline.getMeanThroughput() - current.getMeanThroughput());
-    final double combinedCI = Math.sqrt(baselineCI * baselineCI + currentCI * currentCI);
+    final double combinedCi = Math.sqrt(baselineCi * baselineCi + currentCi * currentCi);
     
-    return difference > combinedCI;
+    return difference > combinedCi;
   }
 
   private void saveBaselines() {
@@ -527,8 +580,9 @@ public final class PerformanceRegressionDetector {
         final ObjectMapper mapper = createObjectMapper();
         final Map<String, List<PerformanceMeasurement>> loadedData = 
             mapper.readValue(dataFile.toFile(), 
-                mapper.getTypeFactory().constructParametricType(
-                    Map.class, String.class, 
+                mapper.getTypeFactory().constructMapType(
+                    Map.class, 
+                    mapper.getTypeFactory().constructType(String.class), 
                     mapper.getTypeFactory().constructCollectionType(List.class, PerformanceMeasurement.class)));
         baselineData.clear();
         baselineData.putAll(loadedData);

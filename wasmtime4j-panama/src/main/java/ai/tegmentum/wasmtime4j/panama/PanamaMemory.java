@@ -106,7 +106,7 @@ public final class PanamaMemory implements WasmMemory {
       long sizeInBytes = (long) memorySize.invoke(memoryResource.getNativePointer());
       return (int) (sizeInBytes / 65536L); // Convert bytes to pages
 
-    } catch (Exception e) {
+    } catch (Throwable e) {
       // WasmMemory interface doesn't throw exceptions, return -1 for error
       return -1;
     }
@@ -149,7 +149,7 @@ public final class PanamaMemory implements WasmMemory {
         return -1;
       }
 
-    } catch (Exception e) {
+    } catch (Throwable e) {
       return -1;
     }
   }
@@ -179,7 +179,7 @@ public final class PanamaMemory implements WasmMemory {
 
     } catch (IndexOutOfBoundsException e) {
       throw e;
-    } catch (Exception e) {
+    } catch (Throwable e) {
       throw new RuntimeException("Memory read failed", e);
     }
   }
@@ -209,7 +209,7 @@ public final class PanamaMemory implements WasmMemory {
 
     } catch (IndexOutOfBoundsException e) {
       throw e;
-    } catch (Exception e) {
+    } catch (Throwable e) {
       throw new RuntimeException("Memory write failed", e);
     }
   }
@@ -253,7 +253,7 @@ public final class PanamaMemory implements WasmMemory {
 
     } catch (IndexOutOfBoundsException e) {
       throw e;
-    } catch (Exception e) {
+    } catch (Throwable e) {
       throw new RuntimeException("Memory read failed", e);
     }
   }
@@ -298,7 +298,7 @@ public final class PanamaMemory implements WasmMemory {
 
     } catch (IndexOutOfBoundsException e) {
       throw e;
-    } catch (Exception e) {
+    } catch (Throwable e) {
       throw new RuntimeException("Memory write failed", e);
     }
   }
@@ -315,7 +315,7 @@ public final class PanamaMemory implements WasmMemory {
       // Note: This creates a direct ByteBuffer that shares the same memory
       return memoryData.asByteBuffer();
 
-    } catch (Exception e) {
+    } catch (Throwable e) {
       throw new RuntimeException("ByteBuffer creation failed", e);
     }
   }
@@ -337,7 +337,7 @@ public final class PanamaMemory implements WasmMemory {
       // Return direct memory access - this is the zero-copy advantage of Panama
       return getDirectMemoryAccess();
 
-    } catch (Exception e) {
+    } catch (Throwable e) {
       String detailedMessage =
           PanamaErrorHandler.createDetailedErrorMessage(
               "MemorySegment access",
@@ -404,7 +404,7 @@ public final class PanamaMemory implements WasmMemory {
    * Gets direct access to the memory data through FFI calls. This is the core zero-copy operation
    * that provides MemorySegment access.
    */
-  private MemorySegment getDirectMemoryAccess() throws Exception {
+  private MemorySegment getDirectMemoryAccess() throws Throwable {
     // Get memory data pointer and size through FFI
     MemorySegment memoryPtr = getMemoryDataPointer();
     int memoryPages = getSize();
@@ -415,7 +415,7 @@ public final class PanamaMemory implements WasmMemory {
   }
 
   /** Gets the memory data pointer through FFI calls. */
-  private MemorySegment getMemoryDataPointer() throws Exception {
+  private MemorySegment getMemoryDataPointer() throws Throwable {
     // Call wasmtime_memory_data through cached method handle
     MethodHandle memoryData =
         nativeFunctions.getFunction(

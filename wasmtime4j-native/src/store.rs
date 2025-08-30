@@ -19,18 +19,26 @@ pub struct Store {
 /// Store execution metadata and resource tracking
 #[derive(Debug, Clone)]
 pub struct StoreMetadata {
+    /// Timestamp when this store was created
     pub created_at: Instant,
+    /// Optional fuel limit for execution metering
     pub fuel_limit: Option<u64>,
+    /// Optional memory limit in bytes to prevent resource exhaustion
     pub memory_limit_bytes: Option<usize>,
+    /// Optional timeout for store operations to prevent hanging
     pub execution_timeout: Option<Duration>,
+    /// Number of instances created in this store
     pub instance_count: usize,
 }
 
 /// Store-specific data for host function context
 #[derive(Debug)]
 pub struct StoreData {
+    /// Optional user-defined data attached to the store
     pub user_data: Option<Box<dyn std::any::Any + Send + Sync>>,
+    /// Resource limits and quotas for this store
     pub resource_limits: ResourceLimits,
+    /// Current execution state and statistics
     pub execution_state: ExecutionState,
 }
 
@@ -47,27 +55,39 @@ impl Clone for StoreData {
 /// Resource limits and quotas
 #[derive(Debug, Clone)]
 pub struct ResourceLimits {
+    /// Maximum memory allocation in bytes
     pub max_memory_bytes: Option<usize>,
+    /// Maximum number of table elements across all tables
     pub max_table_elements: Option<u32>,
+    /// Maximum number of WebAssembly instances in this store
     pub max_instances: Option<usize>,
+    /// Maximum number of functions that can be instantiated
     pub max_functions: Option<usize>,
 }
 
 /// Execution state tracking
 #[derive(Debug, Clone)]
 pub struct ExecutionState {
+    /// Total number of function executions in this store
     pub execution_count: u64,
+    /// Timestamp of the most recent execution
     pub last_execution: Option<Instant>,
+    /// Cumulative time spent executing WebAssembly code
     pub total_execution_time: Duration,
+    /// Total amount of fuel consumed by executions
     pub fuel_consumed: u64,
 }
 
 /// Builder for creating configured stores
 #[derive(Debug)]
 pub struct StoreBuilder {
+    /// Optional fuel limit for execution metering
     fuel_limit: Option<u64>,
+    /// Optional memory limit in bytes
     memory_limit_bytes: Option<usize>,
+    /// Optional execution timeout
     execution_timeout: Option<Duration>,
+    /// Resource limits configuration
     resource_limits: ResourceLimits,
 }
 

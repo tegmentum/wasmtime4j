@@ -99,6 +99,7 @@
                     </annotationProcessorPaths>
                     <compilerArgs>
                         <arg>-Xlint:all</arg>
+                        <arg>-Xlint:-processing</arg>
                         <!-- Remove -Werror for benchmarks to allow warnings -->
                     </compilerArgs>
                 </configuration>

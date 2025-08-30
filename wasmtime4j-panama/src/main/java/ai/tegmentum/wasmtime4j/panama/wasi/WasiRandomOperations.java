@@ -74,7 +74,8 @@ public final class WasiRandomOperations {
    * @throws PanamaException if the wasiContext or symbolLookup is null, or if native function
    *     lookup fails
    */
-  public WasiRandomOperations(final WasiContext wasiContext, final SymbolLookup symbolLookup) {
+  public WasiRandomOperations(final WasiContext wasiContext, final SymbolLookup symbolLookup) 
+      throws PanamaException {
     PanamaValidation.requireNonNull(wasiContext, "wasiContext");
     PanamaValidation.requireNonNull(symbolLookup, "symbolLookup");
 
@@ -102,7 +103,7 @@ public final class WasiRandomOperations {
    * @throws WasiException if the random generation fails
    * @throws PanamaException if the buffer is null, read-only, or a Panama FFI error occurs
    */
-  public void getRandomBytes(final ByteBuffer buffer) {
+  public void getRandomBytes(final ByteBuffer buffer) throws PanamaException {
     PanamaValidation.requireNonNull(buffer, "buffer");
     
     if (buffer.isReadOnly()) {
@@ -157,7 +158,7 @@ public final class WasiRandomOperations {
    * @throws WasiException if the random generation fails
    * @throws PanamaException if the length is invalid or a Panama FFI error occurs
    */
-  public byte[] generateRandomBytes(final int length) {
+  public byte[] generateRandomBytes(final int length) throws PanamaException {
     PanamaValidation.requireNonNegative(length, "length");
     validateBufferSize(length);
 
@@ -203,7 +204,7 @@ public final class WasiRandomOperations {
    * @throws WasiException if the random generation fails
    * @throws PanamaException if a Panama FFI error occurs
    */
-  public int generateRandomInt() {
+  public int generateRandomInt() throws PanamaException {
     final byte[] randomBytes = generateRandomBytes(4);
     return ByteBuffer.wrap(randomBytes).getInt();
   }
@@ -219,7 +220,7 @@ public final class WasiRandomOperations {
    * @throws WasiException if the random generation fails
    * @throws PanamaException if the bound is not positive or a Panama FFI error occurs
    */
-  public int generateRandomInt(final int bound) {
+  public int generateRandomInt(final int bound) throws PanamaException {
     if (bound <= 0) {
       throw new PanamaException("Bound must be positive: " + bound);
     }
@@ -245,7 +246,7 @@ public final class WasiRandomOperations {
    * @throws WasiException if the random generation fails
    * @throws PanamaException if a Panama FFI error occurs
    */
-  public long generateRandomLong() {
+  public long generateRandomLong() throws PanamaException {
     final byte[] randomBytes = generateRandomBytes(8);
     return ByteBuffer.wrap(randomBytes).getLong();
   }
@@ -260,7 +261,7 @@ public final class WasiRandomOperations {
    * @throws WasiException if the random generation fails
    * @throws PanamaException if a Panama FFI error occurs
    */
-  public double generateRandomDouble() {
+  public double generateRandomDouble() throws PanamaException {
     final long randomLong = generateRandomLong() >>> 11; // Use 53 bits for IEEE 754 double
     return (randomLong * 0x1.0p-53);
   }
@@ -274,7 +275,7 @@ public final class WasiRandomOperations {
    * @param buffer the buffer to fill with random bytes
    * @throws PanamaException if the buffer is null or read-only
    */
-  public void getRandomBytesFallback(final ByteBuffer buffer) {
+  public void getRandomBytesFallback(final ByteBuffer buffer) throws PanamaException {
     PanamaValidation.requireNonNull(buffer, "buffer");
     
     if (buffer.isReadOnly()) {
@@ -299,7 +300,7 @@ public final class WasiRandomOperations {
    * @param size the buffer size to validate
    * @throws PanamaException if the buffer size is too large
    */
-  private void validateBufferSize(final int size) {
+  private void validateBufferSize(final int size) throws PanamaException {
     if (size > MAX_BUFFER_SIZE) {
       throw new PanamaException("Buffer size too large: " + size 
                                + " bytes (maximum: " + MAX_BUFFER_SIZE + " bytes)");

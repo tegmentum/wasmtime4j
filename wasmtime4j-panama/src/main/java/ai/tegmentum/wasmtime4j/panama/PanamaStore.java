@@ -101,7 +101,7 @@ public final class PanamaStore implements Store, AutoCloseable {
   }
 
   @Override
-  public void setFuel(final long fuel) {
+  public void setFuel(final long fuel) throws WasmException {
     ensureNotClosed();
 
     if (fuel < 0) {
@@ -122,7 +122,7 @@ public final class PanamaStore implements Store, AutoCloseable {
   }
 
   @Override
-  public long getFuel() {
+  public long getFuel() throws WasmException {
     ensureNotClosed();
 
     try {
@@ -140,7 +140,7 @@ public final class PanamaStore implements Store, AutoCloseable {
   }
 
   @Override
-  public void addFuel(final long fuel) {
+  public void addFuel(final long fuel) throws WasmException {
     ensureNotClosed();
 
     if (fuel < 0) {
@@ -161,7 +161,7 @@ public final class PanamaStore implements Store, AutoCloseable {
   }
 
   @Override
-  public void setEpochDeadline(final long ticks) {
+  public void setEpochDeadline(final long ticks) throws WasmException {
     ensureNotClosed();
 
     if (ticks < 0) {

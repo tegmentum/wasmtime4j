@@ -218,7 +218,12 @@ public final class ConcurrentAccessCoordinator {
       }
 
       // Execute the bulk operation with resource coordination
-      final T result = coordinateBulkResourceAccess(resources, operation);
+      final T result;
+      try {
+        result = coordinateBulkResourceAccess(resources, operation);
+      } catch (Exception e) {
+        throw new RuntimeException("Bulk operation failed", e);
+      }
 
       logOperationSuccess("bulk", startTime);
       return result;
@@ -268,9 +273,12 @@ public final class ConcurrentAccessCoordinator {
     }
 
     if (operations.length == 0) {
-      return CompletableFuture.completedFuture((T[]) new Object[0]);
+      @SuppressWarnings("unchecked")
+      final T[] emptyArray = (T[]) new Object[0];
+      return CompletableFuture.completedFuture(emptyArray);
     }
 
+    @SuppressWarnings("unchecked")
     final CompletableFuture<T>[] futures = new CompletableFuture[operations.length];
     for (int i = 0; i < operations.length; i++) {
       futures[i] = executeAsync(operations[i]);

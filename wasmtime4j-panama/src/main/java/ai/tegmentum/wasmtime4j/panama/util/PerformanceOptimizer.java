@@ -489,7 +489,7 @@ public final class PerformanceOptimizer {
             CompletableFuture.supplyAsync(() -> chunk.stream().map(processor).toList(), executor));
       }
 
-      return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
+      return CompletableFuture.allOf(futures.toArray(new CompletableFuture<?>[0]))
           .thenApply(ignored -> futures.stream().flatMap(future -> future.join().stream()).toList());
     }
   }

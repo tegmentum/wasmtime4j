@@ -97,7 +97,6 @@ public final class PanamaFunction implements WasmFunction, AutoCloseable {
     }
   }
 
-  @Override
   public boolean isValid() {
     return !closed;
   }
@@ -168,7 +167,7 @@ public final class PanamaFunction implements WasmFunction, AutoCloseable {
 
       return results;
 
-    } catch (Exception e) {
+    } catch (Throwable e) {
       String detailedMessage =
           PanamaErrorHandler.createDetailedErrorMessage(
               "Function invocation",
@@ -298,13 +297,13 @@ public final class PanamaFunction implements WasmFunction, AutoCloseable {
               + ", results="
               + resultTypes.size());
 
-    } catch (Exception e) {
+    } catch (Throwable e) {
       throw new WasmException("Failed to initialize function type", e);
     }
   }
 
   /** Gets the function type pointer through FFI calls. */
-  private MemorySegment getNativeFunctionType() throws Exception {
+  private MemorySegment getNativeFunctionType() throws Throwable {
     // Call wasmtime_func_type through cached method handle
     MethodHandle funcType =
         nativeFunctions.getFunction(
@@ -344,7 +343,7 @@ public final class PanamaFunction implements WasmFunction, AutoCloseable {
       final int paramCount,
       final MemorySegment resultsArray,
       final int resultCount)
-      throws Exception {
+      throws Throwable {
     // Call wasmtime_func_call through cached method handle
     MethodHandle funcCall =
         nativeFunctions.getFunction(
