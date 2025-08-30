@@ -4,9 +4,9 @@ status: backlog
 created: 2025-08-30T00:49:09Z
 progress: 0%
 prd: .claude/prds/native-integration.md
-github: [Will be updated when synced to GitHub]
+github: https://github.com/tegmentum/wasmtime4j/issues/28
+updated: 2025-08-30T01:05:22Z
 ---
-
 # Epic: native-integration
 
 ## Overview
@@ -177,3 +177,18 @@ High-level task categories for systematic implementation:
 - **Wasmtime API Changes**: Potential breaking changes in wasmtime dependencies
 - **Cross-Platform Complexity**: Ensuring identical behavior across different platforms
 - **Performance Targets**: Achieving <5% overhead vs native performance may require optimization iterations
+
+## Tasks Created
+- [ ] #29 - Complete Engine API Implementation (parallel: true)
+- [ ] #30 - Complete Store and Module APIs (parallel: false)
+- [ ] #31 - Complete Instance and Function APIs (parallel: false)
+- [ ] #32 - Complete Memory, Global, and Table Operations (parallel: true)
+- [ ] #33 - Implement Host Functions and Linker (parallel: false)
+- [ ] #34 - Implement Fuel Metering and Resource Limits (parallel: true)
+- [ ] #35 - Complete WASI and Component Model Integration (parallel: false)
+- [ ] #36 - Complete Async Operations and Performance Integration (parallel: false)
+
+**Total tasks**: 8
+**Parallel tasks**: 3 (29, 32, 34)
+**Sequential tasks**: 5 (30, 31, 33, 35, 36)
+**Estimated total effort**: 355+ hours (approximately 9 person-weeks)

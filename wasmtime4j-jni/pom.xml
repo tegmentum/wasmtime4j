@@ -31,15 +31,13 @@
             <optional>false</optional>
         </dependency>
 
-        <!-- Native library dependency (runtime) - temporarily disabled -->
-        <!--
+        <!-- Native library dependency (runtime) -->
         <dependency>
             <groupId>ai.tegmentum</groupId>
             <artifactId>wasmtime4j-native</artifactId>
             <scope>runtime</scope>
             <optional>true</optional>
         </dependency>
-        -->
 
         <!-- Test dependencies -->
         <dependency>
