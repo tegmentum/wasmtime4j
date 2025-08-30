@@ -25,104 +25,153 @@ pub struct Module {
 /// Comprehensive module metadata for introspection and validation
 #[derive(Debug, Clone)]
 pub struct ModuleMetadata {
+    /// Optional module name from the name custom section
     pub name: Option<String>,
+    /// Size of the original WebAssembly binary in bytes
     pub size_bytes: usize,
+    /// List of imports required by this module
     pub imports: Vec<ImportInfo>,
+    /// List of exports provided by this module
     pub exports: Vec<ExportInfo>,
+    /// Information about all functions in the module
     pub functions: Vec<FunctionInfo>,
+    /// Information about global variables in the module
     pub globals: Vec<GlobalInfo>,
+    /// Information about memory sections in the module
     pub memories: Vec<MemoryInfo>,
+    /// Information about tables in the module
     pub tables: Vec<TableInfo>,
+    /// Custom sections from the WebAssembly module
     pub custom_sections: HashMap<String, Vec<u8>>,
 }
 
 /// Import information for validation and resolution
 #[derive(Debug, Clone)]
 pub struct ImportInfo {
+    /// Module name that provides this import
     pub module: String,
+    /// Name of the imported item within the module
     pub name: String,
+    /// Type and signature of the imported item
     pub import_type: ImportKind,
 }
 
 /// Export information for binding and invocation
 #[derive(Debug, Clone)]
 pub struct ExportInfo {
+    /// Name of the exported item
     pub name: String,
+    /// Type and signature of the exported item
     pub export_type: ExportKind,
 }
 
 /// Function signature information
 #[derive(Debug, Clone)]
 pub struct FunctionInfo {
+    /// Zero-based index of this function in the module
     pub index: usize,
+    /// Optional function name from debug info or custom sections
     pub name: Option<String>,
+    /// Function signature with parameter and return types
     pub signature: FunctionSignature,
 }
 
 /// Function signature with parameter and return types
 #[derive(Debug, Clone)]
 pub struct FunctionSignature {
+    /// Parameter types for this function
     pub params: Vec<ValueType>,
+    /// Return types for this function
     pub returns: Vec<ValueType>,
 }
 
 /// Global variable information
 #[derive(Debug, Clone)]
 pub struct GlobalInfo {
+    /// Zero-based index of this global in the module
     pub index: usize,
+    /// Optional global name from debug info or custom sections
     pub name: Option<String>,
+    /// WebAssembly value type of this global
     pub value_type: ValueType,
+    /// Whether this global can be modified after initialization
     pub mutable: bool,
 }
 
 /// Memory information
 #[derive(Debug, Clone)]
 pub struct MemoryInfo {
+    /// Zero-based index of this memory in the module
     pub index: usize,
+    /// Optional memory name from debug info or custom sections
     pub name: Option<String>,
+    /// Initial size in WebAssembly pages (64KB each)
     pub initial_pages: u64,
+    /// Optional maximum size in WebAssembly pages
     pub maximum_pages: Option<u64>,
+    /// Whether this memory can be shared between threads
     pub shared: bool,
+    /// Whether this is a 64-bit memory (vs 32-bit)
     pub is_64: bool,
 }
 
 /// Table information
 #[derive(Debug, Clone)]
 pub struct TableInfo {
+    /// Zero-based index of this table in the module
     pub index: usize,
+    /// Optional table name from debug info or custom sections
     pub name: Option<String>,
+    /// WebAssembly type of elements stored in this table
     pub element_type: ValueType,
+    /// Initial number of elements in the table
     pub initial_elements: u32,
+    /// Optional maximum number of elements the table can grow to
     pub maximum_elements: Option<u32>,
 }
 
 /// WebAssembly value types with defensive validation
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ValueType {
+    /// 32-bit integer
     I32,
+    /// 64-bit integer
     I64,
+    /// 32-bit floating point
     F32,
+    /// 64-bit floating point
     F64,
+    /// 128-bit SIMD vector
     V128,
+    /// Reference to external object
     ExternRef,
+    /// Reference to WebAssembly function
     FuncRef,
 }
 
 /// Import kinds with type information
 #[derive(Debug, Clone)]
 pub enum ImportKind {
+    /// Function import with signature
     Function(FunctionSignature),
+    /// Global variable import with type and mutability
     Global(ValueType, bool), // (type, mutable)
+    /// Memory import with initial size, optional max size, and sharing
     Memory(u64, Option<u64>, bool), // (initial, max, shared)
+    /// Table import with element type, initial size, and optional max size
     Table(ValueType, u32, Option<u32>), // (element_type, initial, max)
 }
 
 /// Export kinds with type information
 #[derive(Debug, Clone)]
 pub enum ExportKind {
+    /// Function export with signature
     Function(FunctionSignature),
+    /// Global variable export with type and mutability
     Global(ValueType, bool),
+    /// Memory export with initial size, optional max size, and sharing
     Memory(u64, Option<u64>, bool),
+    /// Table export with element type, initial size, and optional max size
     Table(ValueType, u32, Option<u32>),
 }
 
@@ -177,6 +226,7 @@ impl Module {
     }
 
     /// Get reference to inner Wasmtime module (internal use)
+    #[allow(dead_code)]
     pub(crate) fn inner(&self) -> &WasmtimeModule {
         &self.inner
     }

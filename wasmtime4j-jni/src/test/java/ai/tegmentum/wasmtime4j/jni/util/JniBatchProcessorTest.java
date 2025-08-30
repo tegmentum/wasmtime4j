@@ -270,7 +270,7 @@ class JniBatchProcessorTest {
       }
 
       // Wait for all operations to complete
-      CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+      CompletableFuture.allOf(futures.toArray(new CompletableFuture<?>[0])).join();
       executor.shutdown();
     }
 
@@ -412,7 +412,7 @@ class JniBatchProcessorTest {
         }
 
         // Wait for all operations to complete
-        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture<?>[0])).join();
         assertEquals(operationCount, completedCount.get());
       } finally {
         executor.shutdown();
@@ -453,7 +453,7 @@ class JniBatchProcessorTest {
         assertTrue(queueSize >= 0, "Queue size should be non-negative");
 
         // Wait for completion
-        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture<?>[0])).join();
         executor.shutdown();
       }
     }
@@ -478,12 +478,13 @@ class JniBatchProcessorTest {
           executor.submit(
               () -> {
                 for (int i = 0; i < operationsPerThread; i++) {
+                  final int operationIndex = i;
                   try {
                     final String result =
                         processor.execute(
                             () -> {
                               totalExecutions.incrementAndGet();
-                              return "thread" + threadIndex + "-op" + i;
+                              return "thread" + threadIndex + "-op" + operationIndex;
                             });
 
                     assertTrue(result.startsWith("thread" + threadIndex + "-op"));

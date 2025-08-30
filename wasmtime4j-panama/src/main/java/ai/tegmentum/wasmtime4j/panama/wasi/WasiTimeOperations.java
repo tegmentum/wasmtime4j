@@ -84,7 +84,8 @@ public final class WasiTimeOperations {
    * @throws PanamaException if the wasiContext or symbolLookup is null, or if native function
    *     lookup fails
    */
-  public WasiTimeOperations(final WasiContext wasiContext, final SymbolLookup symbolLookup) {
+  public WasiTimeOperations(final WasiContext wasiContext, final SymbolLookup symbolLookup) 
+      throws PanamaException {
     PanamaValidation.requireNonNull(wasiContext, "wasiContext");
     PanamaValidation.requireNonNull(symbolLookup, "symbolLookup");
 
@@ -113,7 +114,7 @@ public final class WasiTimeOperations {
    * @throws WasiException if the clock ID is invalid or the operation fails
    * @throws PanamaException if a Panama FFI error occurs
    */
-  public long getClockResolution(final int clockId) {
+  public long getClockResolution(final int clockId) throws PanamaException {
     validateClockId(clockId);
 
     try (final Arena arena = Arena.ofConfined()) {
@@ -156,7 +157,7 @@ public final class WasiTimeOperations {
    * @throws WasiException if the clock ID is invalid or the operation fails
    * @throws PanamaException if a Panama FFI error occurs
    */
-  public long getCurrentTime(final int clockId, final long precision) {
+  public long getCurrentTime(final int clockId, final long precision) throws PanamaException {
     validateClockId(clockId);
     PanamaValidation.requireNonNegative(precision, "precision");
 
@@ -200,7 +201,7 @@ public final class WasiTimeOperations {
    * @throws WasiException if the clock ID is invalid or the operation fails
    * @throws PanamaException if a Panama FFI error occurs
    */
-  public long getCurrentTime(final int clockId) {
+  public long getCurrentTime(final int clockId) throws PanamaException {
     return getCurrentTime(clockId, 0);
   }
 
@@ -214,7 +215,7 @@ public final class WasiTimeOperations {
    * @throws WasiException if the operation fails
    * @throws PanamaException if a Panama FFI error occurs
    */
-  public long getRealtime() {
+  public long getRealtime() throws PanamaException {
     return getCurrentTime(WASI_CLOCK_REALTIME);
   }
 
@@ -228,7 +229,7 @@ public final class WasiTimeOperations {
    * @throws WasiException if the operation fails
    * @throws PanamaException if a Panama FFI error occurs
    */
-  public long getMonotonicTime() {
+  public long getMonotonicTime() throws PanamaException {
     return getCurrentTime(WASI_CLOCK_MONOTONIC);
   }
 
@@ -242,7 +243,7 @@ public final class WasiTimeOperations {
    * @throws WasiException if the operation fails
    * @throws PanamaException if a Panama FFI error occurs
    */
-  public long getProcessCpuTime() {
+  public long getProcessCpuTime() throws PanamaException {
     return getCurrentTime(WASI_CLOCK_PROCESS_CPUTIME_ID);
   }
 
@@ -256,7 +257,7 @@ public final class WasiTimeOperations {
    * @throws WasiException if the operation fails
    * @throws PanamaException if a Panama FFI error occurs
    */
-  public long getThreadCpuTime() {
+  public long getThreadCpuTime() throws PanamaException {
     return getCurrentTime(WASI_CLOCK_THREAD_CPUTIME_ID);
   }
 
@@ -315,7 +316,7 @@ public final class WasiTimeOperations {
    * @param clockId the clock ID to validate
    * @throws PanamaException if the clock ID is invalid
    */
-  private void validateClockId(final int clockId) {
+  private void validateClockId(final int clockId) throws PanamaException {
     if (!isClockSupported(clockId)) {
       throw new PanamaException("Invalid clock ID: " + clockId 
                                + " (valid range: 0-" + MAX_CLOCK_ID + ")");

@@ -50,7 +50,6 @@ public final class PanamaTable implements WasmTable, AutoCloseable {
 
   private volatile boolean closed = false;
 
-  @Override
   public boolean isValid() {
     return !closed;
   }
@@ -125,7 +124,7 @@ public final class PanamaTable implements WasmTable, AutoCloseable {
       }
 
       // Bounds check
-      final long tableSize = size();
+      final long tableSize = getSize();
       if (index >= tableSize) {
         throw new RuntimeException("Table index out of bounds: " + index + " >= " + tableSize);
       }
@@ -174,7 +173,7 @@ public final class PanamaTable implements WasmTable, AutoCloseable {
       }
 
       // Bounds check
-      final long tableSize = size();
+      final long tableSize = getSize();
       if (index >= tableSize) {
         throw new RuntimeException("Table index out of bounds: " + index + " >= " + tableSize);
       }
@@ -240,10 +239,10 @@ public final class PanamaTable implements WasmTable, AutoCloseable {
 
       // Convert initial value to native handle
       MemorySegment initialHandle = MemorySegment.NULL;
-      if (initialValue != null) {
-        if (initialValue instanceof PanamaFunction panamaFunction) {
+      if (initValue != null) {
+        if (initValue instanceof PanamaFunction panamaFunction) {
           initialHandle = panamaFunction.getFunctionHandle();
-        } else if (initialValue instanceof WasmFunction) {
+        } else if (initValue instanceof WasmFunction) {
           throw new IllegalArgumentException(
               "Cannot use non-Panama function for table growth. "
                   + "Initial value must be null or a PanamaFunction instance.");
@@ -251,11 +250,11 @@ public final class PanamaTable implements WasmTable, AutoCloseable {
           throw new IllegalArgumentException(
               "Table initial value must be a WebAssembly function or null. "
                   + "Got: "
-                  + initialValue.getClass().getName());
+                  + initValue.getClass().getName());
         }
       }
 
-      final long previousSize = size();
+      final long previousSize = getSize();
       final boolean success = (boolean) growHandle.invokeExact(tableHandle, elements, initValue);
 
       if (!success) {
@@ -403,8 +402,8 @@ public final class PanamaTable implements WasmTable, AutoCloseable {
 
     try {
       return String.format(
-          "PanamaTable{size=%d, elementType=%s, handle=%s}", size(), getElementType(), tableHandle);
-    } catch (WasmException e) {
+          "PanamaTable{size=%d, elementType=%s, handle=%s}", getSize(), getElementType(), tableHandle);
+    } catch (Exception e) {
       return String.format("PanamaTable{handle=%s, error=%s}", tableHandle, e.getMessage());
     }
   }

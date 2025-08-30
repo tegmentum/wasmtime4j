@@ -3,6 +3,7 @@ package ai.tegmentum.wasmtime4j.benchmarks;
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
@@ -33,17 +34,6 @@ import org.openjdk.jmh.annotations.Warmup;
     jvmArgs = {"-Xms2g", "-Xmx2g"})
 public abstract class BenchmarkBase {
 
-  /** Enumeration of supported runtime implementations for comparison benchmarks. */
-  public enum RuntimeType {
-    /** JNI-based implementation for Java 8+ compatibility. */
-    JNI,
-
-    /** Panama Foreign Function API implementation for Java 23+. */
-    PANAMA,
-
-    /** Auto-selection based on Java version and availability. */
-    AUTO
-  }
 
   /**
    * Sample WebAssembly module for basic arithmetic operations. This simple module adds two i32
@@ -236,20 +226,16 @@ public abstract class BenchmarkBase {
   /**
    * Creates a WebAssembly runtime instance for the specified type.
    *
-   * @param runtimeType the type of runtime to create
+   * @param runtimeType the type of runtime to create, or null for auto-selection
    * @return the WebAssembly runtime instance
    * @throws WasmException if runtime creation fails
    */
-  protected static WasmRuntime createRuntime(final RuntimeType runtimeType) throws WasmException {
-    switch (runtimeType) {
-      case JNI:
-        return WasmRuntimeFactory.createJniRuntime();
-      case PANAMA:
-        return WasmRuntimeFactory.createPanamaRuntime();
-      case AUTO:
-      default:
-        return WasmRuntimeFactory.createRuntime();
+  protected static WasmRuntime createRuntime(final RuntimeType runtimeType)
+      throws WasmException {
+    if (runtimeType == null) {
+      return WasmRuntimeFactory.create();
     }
+    return WasmRuntimeFactory.create(runtimeType);
   }
 
   /**
@@ -298,7 +284,7 @@ public abstract class BenchmarkBase {
    */
   protected static Instance instantiateModule(final Store store, final Module module)
       throws WasmException {
-    return store.instantiate(module);
+    return module.instantiate(store);
   }
 
   /**

@@ -17,13 +17,21 @@ pub struct Engine {
 /// Summary of engine configuration for debugging and introspection
 #[derive(Debug, Clone)]
 pub struct EngineConfigSummary {
+    /// Compilation strategy used (e.g., "Cranelift")
     pub strategy: String,
+    /// Optimization level (e.g., "Speed", "SpeedAndSize", "None")
     pub opt_level: String,
+    /// Whether debug information is enabled
     pub debug_info: bool,
+    /// Whether WebAssembly threads are supported
     pub wasm_threads: bool,
+    /// Whether WebAssembly reference types are enabled
     pub wasm_reference_types: bool,
+    /// Whether WebAssembly SIMD instructions are supported
     pub wasm_simd: bool,
+    /// Whether WebAssembly bulk memory operations are enabled
     pub wasm_bulk_memory: bool,
+    /// Whether WebAssembly multi-value returns are supported
     pub wasm_multi_value: bool,
 }
 
@@ -197,10 +205,15 @@ impl EngineConfigSummary {
 /// WebAssembly features that can be queried
 #[derive(Debug, Clone, Copy)]
 pub enum WasmFeature {
+    /// WebAssembly threads proposal support
     Threads,
+    /// WebAssembly reference types proposal support
     ReferenceTypes,
+    /// WebAssembly SIMD (Single Instruction, Multiple Data) support
     Simd,
+    /// WebAssembly bulk memory operations proposal support
     BulkMemory,
+    /// WebAssembly multi-value proposal support (multiple return values)
     MultiValue,
 }
 

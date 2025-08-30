@@ -12,6 +12,8 @@ import ai.tegmentum.wasmtime4j.panama.exception.PanamaException;
  */
 public class WasiFileSystemException extends PanamaException {
 
+  private static final long serialVersionUID = 1L;
+
   /** The WASI error code associated with this exception. */
   private final String wasiErrorCode;
 

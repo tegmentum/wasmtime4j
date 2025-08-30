@@ -227,6 +227,46 @@ public final class WasmValue {
     return new WasmValue(WasmValueType.EXTERNREF, value);
   }
 
+  /**
+   * Creates a 32-bit integer value (alias for i32).
+   *
+   * @param value the integer value
+   * @return a new WasmValue
+   */
+  public static WasmValue ofI32(final int value) {
+    return i32(value);
+  }
+
+  /**
+   * Creates a 64-bit integer value (alias for i64).
+   *
+   * @param value the long value
+   * @return a new WasmValue
+   */
+  public static WasmValue ofI64(final long value) {
+    return i64(value);
+  }
+
+  /**
+   * Creates a 32-bit floating-point value (alias for f32).
+   *
+   * @param value the float value
+   * @return a new WasmValue
+   */
+  public static WasmValue ofF32(final float value) {
+    return f32(value);
+  }
+
+  /**
+   * Creates a 64-bit floating-point value (alias for f64).
+   *
+   * @param value the double value
+   * @return a new WasmValue
+   */
+  public static WasmValue ofF64(final double value) {
+    return f64(value);
+  }
+
   @Override
   public String toString() {
     if (type == WasmValueType.V128) {

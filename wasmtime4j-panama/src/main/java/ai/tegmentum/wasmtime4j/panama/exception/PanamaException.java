@@ -10,6 +10,8 @@ package ai.tegmentum.wasmtime4j.panama.exception;
  */
 public class PanamaException extends Exception {
 
+  private static final long serialVersionUID = 1L;
+
   /**
    * Creates a new Panama exception with the specified message.
    *

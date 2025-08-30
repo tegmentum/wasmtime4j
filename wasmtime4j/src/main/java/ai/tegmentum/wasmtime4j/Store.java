@@ -1,5 +1,6 @@
 package ai.tegmentum.wasmtime4j;
 
+import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.io.Closeable;
 
 /**
@@ -46,14 +47,14 @@ public interface Store extends Closeable {
    * @param fuel the amount of fuel to set
    * @throws IllegalArgumentException if fuel is negative
    */
-  void setFuel(final long fuel);
+  void setFuel(final long fuel) throws WasmException;
 
   /**
    * Gets the remaining fuel amount.
    *
    * @return the remaining fuel, or -1 if fuel consumption is disabled
    */
-  long getFuel();
+  long getFuel() throws WasmException;
 
   /**
    * Adds fuel to the store.
@@ -61,7 +62,7 @@ public interface Store extends Closeable {
    * @param fuel the amount of fuel to add
    * @throws IllegalArgumentException if fuel is negative
    */
-  void addFuel(final long fuel);
+  void addFuel(final long fuel) throws WasmException;
 
   /**
    * Sets the epoch deadline for WebAssembly execution.
@@ -70,7 +71,7 @@ public interface Store extends Closeable {
    *
    * @param ticks the number of epoch ticks before interruption
    */
-  void setEpochDeadline(final long ticks);
+  void setEpochDeadline(final long ticks) throws WasmException;
 
   /**
    * Checks if the store is still valid and usable.

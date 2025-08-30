@@ -95,7 +95,6 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
     }
   }
 
-  @Override
   public boolean isValid() {
     return !closed;
   }
@@ -125,7 +124,7 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
       int wasmType = getValueType();
       return unmarshalWasmValue(valueSegment, wasmType);
 
-    } catch (Exception e) {
+    } catch (Throwable e) {
       LOGGER.warning("Global value get failed: " + e.getMessage());
       return WasmValue.ofI32(0); // Default value
     }
@@ -163,9 +162,9 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
 
       globalSet.invoke(globalResource.getNativePointer(), valueSegment);
 
-    } catch (Exception e) {
+    } catch (Throwable e) {
       if (e instanceof UnsupportedOperationException) {
-        throw e;
+        throw (UnsupportedOperationException) e;
       }
       LOGGER.warning("Global value set failed: " + e.getMessage());
     }
@@ -290,13 +289,13 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
               + ", mutable="
               + mutable);
 
-    } catch (Exception e) {
+    } catch (Throwable e) {
       throw new WasmException("Failed to initialize global type", e);
     }
   }
 
   /** Gets the global type pointer through FFI calls. */
-  private MemorySegment getGlobalType() throws Exception {
+  private MemorySegment getGlobalType() throws Throwable {
     // Call wasmtime_global_type through cached method handle
     MethodHandle globalType =
         nativeFunctions.getFunction(

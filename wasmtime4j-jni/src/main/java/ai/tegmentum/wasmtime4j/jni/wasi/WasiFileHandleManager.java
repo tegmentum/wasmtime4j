@@ -402,6 +402,7 @@ public final class WasiFileHandleManager implements AutoCloseable {
   }
 
   /** Cleans up handles that have been garbage collected. */
+  @SuppressWarnings("unchecked")
   private int performGarbageCollectionCleanup() {
     int cleanedUp = 0;
     PhantomReference<WasiFileHandle> phantomRef;

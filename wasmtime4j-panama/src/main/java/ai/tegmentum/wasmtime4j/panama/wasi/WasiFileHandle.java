@@ -171,20 +171,8 @@ public final class WasiFileHandle implements AutoCloseable {
     }
   }
 
-  @Override
-  protected void finalize() throws Throwable {
-    try {
-      if (!closed) {
-        LOGGER.warning(
-            String.format(
-                "File handle not properly closed, cleaning up: fd=%d, path=%s",
-                fileDescriptor, path));
-        close();
-      }
-    } finally {
-      super.finalize();
-    }
-  }
+  // Note: finalize() method removed to avoid deprecation warnings.
+  // Resources should be properly closed using try-with-resources or explicit close() calls.
 
   @Override
   public String toString() {

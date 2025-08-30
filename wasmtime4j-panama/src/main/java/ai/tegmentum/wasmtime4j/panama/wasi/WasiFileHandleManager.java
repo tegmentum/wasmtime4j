@@ -137,7 +137,7 @@ public final class WasiFileHandleManager implements AutoCloseable {
    * @return the managed file handle wrapper
    * @throws WasiFileSystemException if the handle cannot be registered
    */
-  public ManagedFileHandle registerHandle(final WasiFileHandle handle) {
+  public ManagedFileHandle registerHandle(final WasiFileHandle handle) throws WasiFileSystemException {
     PanamaValidation.requireNonNull(handle, "handle");
 
     if (shutdown) {
@@ -190,7 +190,7 @@ public final class WasiFileHandleManager implements AutoCloseable {
    * @return the managed file handle
    * @throws WasiFileSystemException if the handle is not found or invalid
    */
-  public ManagedFileHandle getHandle(final int fileDescriptor) {
+  public ManagedFileHandle getHandle(final int fileDescriptor) throws WasiFileSystemException {
     if (shutdown) {
       throw new WasiFileSystemException("File handle manager is shut down", "EIO");
     }

@@ -10,9 +10,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.AfterEach;
@@ -364,7 +366,7 @@ class JniConcurrencyManagerTest {
 
     @Test
     @DisplayName("Should block reads during write")
-    void shouldBlockReadsDuringWrite() throws InterruptedException {
+    void shouldBlockReadsDuringWrite() throws InterruptedException, ExecutionException, TimeoutException {
       final CountDownLatch writeLatch = new CountDownLatch(1);
       final CountDownLatch readStartLatch = new CountDownLatch(1);
       final AtomicReference<String> readResult = new AtomicReference<>();

@@ -44,6 +44,10 @@ pub mod engine {
     }
 }
 
+/// Panama FFI bindings for WebAssembly module operations
+/// 
+/// This module provides C-compatible functions for compiling, validating,
+/// and managing WebAssembly modules through the Panama Foreign Function Interface.
 pub mod module {
     use super::*;
     
@@ -72,6 +76,10 @@ pub mod module {
     }
 }
 
+/// Panama FFI bindings for WebAssembly instance operations
+/// 
+/// This module provides C-compatible functions for instantiating WebAssembly
+/// modules, invoking exported functions, and managing runtime execution state.
 pub mod instance {
     use super::*;
     

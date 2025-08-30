@@ -3,6 +3,7 @@ package ai.tegmentum.wasmtime4j.benchmarks;
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmRuntime;
@@ -53,7 +54,7 @@ public class FunctionExecutionBenchmark extends BenchmarkBase {
 
   /** Runtime implementation to benchmark. */
   @Param({"JNI", "PANAMA"})
-  private RuntimeType runtimeType;
+  private String runtimeTypeName;
 
   /** Function type to test different call patterns. */
   @Param({"SIMPLE", "COMPLEX", "RECURSIVE"})
@@ -84,6 +85,7 @@ public class FunctionExecutionBenchmark extends BenchmarkBase {
   @Setup(Level.Iteration)
   public void setupIteration() throws WasmException {
     // Create runtime components
+    final RuntimeType runtimeType = RuntimeType.valueOf(runtimeTypeName);
     runtime = createRuntime(runtimeType);
     engine = createEngine(runtime);
     store = createStore(engine);
@@ -110,10 +112,11 @@ public class FunctionExecutionBenchmark extends BenchmarkBase {
     
     // Get the target function
     final String functionName = getFunctionNameForType(functionType);
-    targetFunction = instance.getExportedFunction(functionName);
-    if (targetFunction == null) {
+    final java.util.Optional<WasmFunction> functionOpt = instance.getFunction(functionName);
+    if (!functionOpt.isPresent()) {
       throw new WasmException("Target function not found: " + functionName);
     }
+    targetFunction = functionOpt.get();
     
     // Setup test parameters based on parameter count
     testParams = new WasmValue[Math.min(parameterCount, 2)]; // Limit to available params
@@ -133,10 +136,8 @@ public class FunctionExecutionBenchmark extends BenchmarkBase {
   /** Helper method to clean up WebAssembly resources. */
   private void cleanup() {
     try {
-      if (targetFunction != null) {
-        targetFunction.close();
-        targetFunction = null;
-      }
+      // WasmFunction does not implement AutoCloseable, no need to close
+      targetFunction = null;
       if (instance != null) {
         instance.close();
         instance = null;
@@ -256,7 +257,7 @@ public class FunctionExecutionBenchmark extends BenchmarkBase {
         // Modify parameters slightly for each call
         final WasmValue[] batchParams = testParams.clone();
         for (int j = 0; j < batchParams.length; j++) {
-          final int currentValue = batchParams[j].asI32();
+          final int currentValue = batchParams[j].asInt();
           batchParams[j] = WasmValue.i32(currentValue + i);
         }
 
@@ -410,14 +411,14 @@ public class FunctionExecutionBenchmark extends BenchmarkBase {
       return false;
     }
     
-    final int value = result[0].asI32();
+    final int value = result[0].asInt();
     
     switch (functionType) {
       case "SIMPLE":
         // For simple addition, result should be sum of parameters
         int expectedSum = 0;
         for (final WasmValue param : testParams) {
-          expectedSum += param.asI32();
+          expectedSum += param.asInt();
         }
         return value >= expectedSum; // Account for any overhead
 
