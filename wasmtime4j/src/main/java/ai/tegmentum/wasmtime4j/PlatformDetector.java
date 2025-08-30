@@ -191,6 +191,20 @@ public final class PlatformDetector {
   }
 
   /**
+   * Sanitizes a string for safe logging by removing CRLF injection characters.
+   *
+   * @param input the string to sanitize for logging
+   *
+   * @return the sanitized string safe for logging
+   */
+  private static String sanitizeForLog(final String input) {
+    if (input == null) {
+      return "null";
+    }
+    return input.replaceAll("[\r\n]", "_");
+  }
+
+  /**
    * Detects and returns information about the current platform.
    *
    * <p>This method caches the result after the first call for performance.
@@ -206,7 +220,7 @@ public final class PlatformDetector {
         if (result == null) {
           result = detectPlatform();
           cachedPlatformInfo = result;
-          LOGGER.info("Detected platform: " + result.getPlatformId());
+          LOGGER.info("Detected platform: " + sanitizeForLog(result.getPlatformId()));
         }
       }
     }

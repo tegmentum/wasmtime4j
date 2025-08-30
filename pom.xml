@@ -61,8 +61,8 @@
         <spotbugs.plugin.version>4.8.6.4</spotbugs.plugin.version>
         <spotbugs.version>4.8.6</spotbugs.version>
         <findsecbugs.version>1.12.0</findsecbugs.version>
-        <pmd.plugin.version>3.22.0</pmd.plugin.version>
-        <pmd.version>7.0.0</pmd.version>
+        <pmd.plugin.version>3.25.0</pmd.plugin.version>
+        <pmd.version>7.6.0</pmd.version>
         <jacoco.plugin.version>0.8.10</jacoco.plugin.version>
 
         <!-- Native build properties -->
@@ -487,10 +487,11 @@
                         </dependency>
                     </dependencies>
                     <configuration>
-                        <inputEncoding>${project.build.inputEncoding}</inputEncoding>
-                        <outputEncoding>${project.build.outputEncoding}</outputEncoding>
+                        <sourceEncoding>${project.build.sourceEncoding}</sourceEncoding>
                         <minimumTokens>100</minimumTokens>
-                        <targetJdk>${maven.compiler.target}</targetJdk>
+                        <compileSourceRoots>
+                            <compileSourceRoot>${project.build.sourceDirectory}</compileSourceRoot>
+                        </compileSourceRoots>
                         <includeTests>true</includeTests>
                         <failOnViolation>true</failOnViolation>
                         <printFailingErrors>true</printFailingErrors>
