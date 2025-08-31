@@ -188,9 +188,11 @@ public interface WasiResource extends Closeable {
    *
    * <p>After closing, the resource becomes invalid and should not be used.
    *
-   * @throws WasmException if closing fails or resource cleanup encounters errors
+   * <p>If cleanup encounters errors, they are logged but do not prevent the resource from being
+   * closed.
+   *
    * @throws IllegalStateException if the resource is not owned
    */
   @Override
-  void close() throws WasmException;
+  void close();
 }

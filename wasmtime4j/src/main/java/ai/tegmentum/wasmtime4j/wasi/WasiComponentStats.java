@@ -11,7 +11,7 @@ import java.util.Map;
  * performance metrics. This information is useful for monitoring, optimization, and debugging.
  *
  * <p>Statistics are snapshot-based and reflect the state at the time they were collected.
- * 
+ *
  * @since 1.0.0
  */
 public interface WasiComponentStats {
