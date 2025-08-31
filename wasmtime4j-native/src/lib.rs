@@ -39,6 +39,8 @@ pub mod panama_ffi;
 // Advanced modules - will be implemented in later tasks
 pub mod wasi;
 
+// Component model support will be added in later streams
+
 // Re-export core types for convenience
 pub use engine::{Engine, EngineBuilder, WasmFeature};
 pub use error::{WasmtimeError, WasmtimeResult, ErrorCode};
