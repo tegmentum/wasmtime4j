@@ -39,13 +39,22 @@ pub mod panama_ffi;
 // Advanced modules - will be implemented in later tasks
 pub mod wasi;
 
-// Component model support will be added in later streams
+// Component model support for WASI Preview 2
+pub mod component;
 
 // Re-export core types for convenience
 pub use engine::{Engine, EngineBuilder, WasmFeature};
 pub use error::{WasmtimeError, WasmtimeResult, ErrorCode};
 pub use module::{Module, ModuleMetadata, ValueType, ImportKind, ExportKind, FunctionSignature};
 pub use store::{Store, StoreBuilder, StoreData, StoreMetadata, ResourceLimits, ExecutionState, MemoryUsage};
+
+// Re-export component model types for WASI Preview 2 support
+pub use component::{
+    ComponentEngine, Component, ComponentMetadata, ComponentStoreData,
+    InterfaceDefinition, FunctionDefinition, Parameter, TypeDefinition, ResourceDefinition,
+    ValueType as ComponentValueType, TypeKind, FieldType, CaseType,
+    ResourceManager, HostInterface, InstanceInfo
+};
 
 /// Library version information
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");

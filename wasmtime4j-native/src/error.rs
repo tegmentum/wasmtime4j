@@ -126,6 +126,20 @@ pub enum WasmtimeError {
         message: String 
     },
 
+    /// Component model specific errors
+    #[error("Component error: {message}")]
+    Component { 
+        /// Error message describing the component-related error
+        message: String 
+    },
+
+    /// WIT interface definition and binding errors
+    #[error("Interface error: {message}")]
+    Interface { 
+        /// Error message describing the interface-related error
+        message: String 
+    },
+
     /// Unexpected internal errors
     #[error("Internal error: {message}")]
     Internal { 
@@ -173,8 +187,12 @@ pub enum ErrorCode {
     ConcurrencyError = -14,
     /// WASI-related error
     WasiError = -15,
+    /// Component model error
+    ComponentError = -16,
+    /// Interface definition or binding error
+    InterfaceError = -17,
     /// Internal system error
-    InternalError = -16,
+    InternalError = -18,
 }
 
 impl WasmtimeError {
@@ -197,6 +215,8 @@ impl WasmtimeError {
             WasmtimeError::InvalidParameter { .. } => ErrorCode::InvalidParameterError,
             WasmtimeError::Concurrency { .. } => ErrorCode::ConcurrencyError,
             WasmtimeError::Wasi { .. } => ErrorCode::WasiError,
+            WasmtimeError::Component { .. } => ErrorCode::ComponentError,
+            WasmtimeError::Interface { .. } => ErrorCode::InterfaceError,
             WasmtimeError::Internal { .. } => ErrorCode::InternalError,
         }
     }
@@ -346,6 +366,8 @@ pub mod jni_utils {
             WasmtimeError::Type { .. } => "ai/tegmentum/wasmtime4j/WasmTypeException",
             WasmtimeError::InvalidParameter { .. } => "java/lang/IllegalArgumentException",
             WasmtimeError::Io { .. } => "java/io/IOException",
+            WasmtimeError::Component { .. } => "ai/tegmentum/wasmtime4j/WasmComponentException",
+            WasmtimeError::Interface { .. } => "ai/tegmentum/wasmtime4j/WasmInterfaceException",
             _ => "ai/tegmentum/wasmtime4j/WasmException",
         }
     }
