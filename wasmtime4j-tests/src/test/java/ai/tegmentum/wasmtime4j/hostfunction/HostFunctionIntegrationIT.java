@@ -17,37 +17,26 @@
 package ai.tegmentum.wasmtime4j.hostfunction;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.FunctionType;
-import ai.tegmentum.wasmtime4j.ImportMap;
-import ai.tegmentum.wasmtime4j.Instance;
-import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFunction;
-import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.utils.BaseIntegrationTest;
 import ai.tegmentum.wasmtime4j.utils.CrossRuntimeValidator;
 import ai.tegmentum.wasmtime4j.utils.TestCategories;
-import ai.tegmentum.wasmtime4j.webassembly.WasmTestModules;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -103,20 +92,28 @@ final class HostFunctionIntegrationIT extends BaseIntegrationTest {
               final WasmFunction hostFunction;
               if (runtime.getRuntimeInfo().getRuntimeType() == RuntimeType.PANAMA) {
                 // Use Panama-specific host function creation
-                hostFunction = createPanamaHostFunction("add_host", functionType, 
-                    params -> {
-                      final int a = params[0].asI32();
-                      final int b = params[1].asI32();
-                      return new WasmValue[] {WasmValue.i32(a + b)};
-                    }, store);
+                hostFunction =
+                    createPanamaHostFunction(
+                        "add_host",
+                        functionType,
+                        params -> {
+                          final int a = params[0].asI32();
+                          final int b = params[1].asI32();
+                          return new WasmValue[] {WasmValue.i32(a + b)};
+                        },
+                        store);
               } else {
                 // Use JNI-specific host function creation (stub for now)
-                hostFunction = createJniHostFunction("add_host", functionType,
-                    params -> {
-                      final int a = params[0].asI32();
-                      final int b = params[1].asI32();
-                      return new WasmValue[] {WasmValue.i32(a + b)};
-                    }, store);
+                hostFunction =
+                    createJniHostFunction(
+                        "add_host",
+                        functionType,
+                        params -> {
+                          final int a = params[0].asI32();
+                          final int b = params[1].asI32();
+                          return new WasmValue[] {WasmValue.i32(a + b)};
+                        },
+                        store);
               }
 
               registerForCleanup(hostFunction);
@@ -125,8 +122,7 @@ final class HostFunctionIntegrationIT extends BaseIntegrationTest {
               assertThat(hostFunction.getName()).isEqualTo("add_host");
               assertThat(hostFunction.getFunctionType()).isEqualTo(functionType);
 
-              addTestMetric(
-                  "Host function created successfully with " + runtimeType + " runtime");
+              addTestMetric("Host function created successfully with " + runtimeType + " runtime");
             }
           });
     }
@@ -188,8 +184,7 @@ final class HostFunctionIntegrationIT extends BaseIntegrationTest {
                 final Store store = engine.createStore()) {
 
               final FunctionType voidReturnType =
-                  new FunctionType(
-                      new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {});
+                  new FunctionType(new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {});
 
               final AtomicInteger callCounter = new AtomicInteger(0);
 
@@ -223,7 +218,9 @@ final class HostFunctionIntegrationIT extends BaseIntegrationTest {
               final FunctionType multiReturnType =
                   new FunctionType(
                       new WasmValueType[] {WasmValueType.I32, WasmValueType.I32},
-                      new WasmValueType[] {WasmValueType.I32, WasmValueType.I32, WasmValueType.F64});
+                      new WasmValueType[] {
+                        WasmValueType.I32, WasmValueType.I32, WasmValueType.F64
+                      });
 
               final WasmFunction hostFunction =
                   runtime.createHostFunction(
@@ -242,8 +239,7 @@ final class HostFunctionIntegrationIT extends BaseIntegrationTest {
               assertThat(hostFunction).isNotNull();
               assertThat(hostFunction.getFunctionType().getReturnTypes()).hasSize(3);
 
-              addTestMetric(
-                  "Multi-return host function created with " + runtimeType + " runtime");
+              addTestMetric("Multi-return host function created with " + runtimeType + " runtime");
             }
           });
     }
@@ -274,7 +270,9 @@ final class HostFunctionIntegrationIT extends BaseIntegrationTest {
                           params -> {
                             final int input = params[0].asI32();
                             // Test various i32 values including edge cases
-                            final int[] testValues = {0, 1, -1, Integer.MAX_VALUE, Integer.MIN_VALUE};
+                            final int[] testValues = {
+                              0, 1, -1, Integer.MAX_VALUE, Integer.MIN_VALUE
+                            };
                             boolean allMatch = false;
                             for (final int testValue : testValues) {
                               if (input == testValue) {
@@ -377,8 +375,15 @@ final class HostFunctionIntegrationIT extends BaseIntegrationTest {
                             final float input = params[0].asF32();
                             // Test various f32 values including edge cases
                             final float[] testValues = {
-                              0.0f, 1.0f, -1.0f, Float.MAX_VALUE, Float.MIN_VALUE, Float.NaN,
-                              Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY, 3.14159f
+                              0.0f,
+                              1.0f,
+                              -1.0f,
+                              Float.MAX_VALUE,
+                              Float.MIN_VALUE,
+                              Float.NaN,
+                              Float.POSITIVE_INFINITY,
+                              Float.NEGATIVE_INFINITY,
+                              3.14159f
                             };
                             boolean allMatch = false;
                             for (final float testValue : testValues) {
@@ -433,8 +438,15 @@ final class HostFunctionIntegrationIT extends BaseIntegrationTest {
                             final double input = params[0].asF64();
                             // Test various f64 values including edge cases
                             final double[] testValues = {
-                              0.0, 1.0, -1.0, Double.MAX_VALUE, Double.MIN_VALUE, Double.NaN,
-                              Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY, 3.141592653589793
+                              0.0,
+                              1.0,
+                              -1.0,
+                              Double.MAX_VALUE,
+                              Double.MIN_VALUE,
+                              Double.NaN,
+                              Double.POSITIVE_INFINITY,
+                              Double.NEGATIVE_INFINITY,
+                              3.141592653589793
                             };
                             boolean allMatch = false;
                             for (final double testValue : testValues) {
@@ -729,7 +741,8 @@ final class HostFunctionIntegrationIT extends BaseIntegrationTest {
               registerForCleanup(typeValidationHostFunction);
 
               assertThat(typeValidationHostFunction).isNotNull();
-              assertThat(typeValidationHostFunction.getFunctionType()).isEqualTo(strictFunctionType);
+              assertThat(typeValidationHostFunction.getFunctionType())
+                  .isEqualTo(strictFunctionType);
 
               addTestMetric("Type validation host function created with " + runtimeType);
             }
@@ -747,7 +760,9 @@ final class HostFunctionIntegrationIT extends BaseIntegrationTest {
               final FunctionType multiReturnType =
                   new FunctionType(
                       new WasmValueType[] {WasmValueType.I32},
-                      new WasmValueType[] {WasmValueType.I32, WasmValueType.F32, WasmValueType.I64});
+                      new WasmValueType[] {
+                        WasmValueType.I32, WasmValueType.F32, WasmValueType.I64
+                      });
 
               final WasmFunction returnValidationHostFunction =
                   runtime.createHostFunction(
@@ -870,7 +885,9 @@ final class HostFunctionIntegrationIT extends BaseIntegrationTest {
                             final Object result3 = externref_1; // Pass through
 
                             return new WasmValue[] {
-                              WasmValue.f64(result1), WasmValue.i32(result2), WasmValue.externref(result3)
+                              WasmValue.f64(result1),
+                              WasmValue.i32(result2),
+                              WasmValue.externref(result3)
                             };
                           });
 
@@ -973,7 +990,8 @@ final class HostFunctionIntegrationIT extends BaseIntegrationTest {
                         } catch (final InterruptedException e) {
                           Thread.currentThread().interrupt();
                           errorCount.incrementAndGet();
-                          throw new RuntimeException("Interrupted during host function execution", e);
+                          throw new RuntimeException(
+                              "Interrupted during host function execution", e);
                         }
                       });
 
@@ -994,7 +1012,8 @@ final class HostFunctionIntegrationIT extends BaseIntegrationTest {
                         for (int c = 0; c < callsPerThread; c++) {
                           try {
                             // Test concurrent function object access
-                            assertThat(concurrentHostFunction.getName()).isEqualTo("concurrent_test");
+                            assertThat(concurrentHostFunction.getName())
+                                .isEqualTo("concurrent_test");
                             assertThat(concurrentHostFunction.getFunctionType()).isNotNull();
                             successfulCreations.incrementAndGet();
                           } catch (final Exception e) {
@@ -1094,7 +1113,9 @@ final class HostFunctionIntegrationIT extends BaseIntegrationTest {
                                         functionType,
                                         params -> {
                                           final int input = params[0].asI32();
-                                          return new WasmValue[] {WasmValue.i32(input + functionIndex)};
+                                          return new WasmValue[] {
+                                            WasmValue.i32(input + functionIndex)
+                                          };
                                         });
                                 registerForCleanup(hostFunction);
                               } catch (final WasmException e) {
@@ -1106,8 +1127,7 @@ final class HostFunctionIntegrationIT extends BaseIntegrationTest {
                   }
 
                   // Calculate statistics
-                  final long totalMs =
-                      creationTimes.stream().mapToLong(Duration::toMillis).sum();
+                  final long totalMs = creationTimes.stream().mapToLong(Duration::toMillis).sum();
                   final long avgMs = totalMs / creationTimes.size();
                   final long maxMs =
                       creationTimes.stream().mapToLong(Duration::toMillis).max().orElse(0);
@@ -1233,7 +1253,8 @@ final class HostFunctionIntegrationIT extends BaseIntegrationTest {
                   final String signature =
                       Arrays.toString(identicalHostFunction.getFunctionType().getParamTypes())
                           + " -> "
-                          + Arrays.toString(identicalHostFunction.getFunctionType().getReturnTypes());
+                          + Arrays.toString(
+                              identicalHostFunction.getFunctionType().getReturnTypes());
 
                   return signature;
                 }
@@ -1501,7 +1522,9 @@ final class HostFunctionIntegrationIT extends BaseIntegrationTest {
                   runtime.createHostFunction(
                       "host_validate_range",
                       new FunctionType(
-                          new WasmValueType[] {WasmValueType.I32, WasmValueType.I32, WasmValueType.I32},
+                          new WasmValueType[] {
+                            WasmValueType.I32, WasmValueType.I32, WasmValueType.I32
+                          },
                           new WasmValueType[] {WasmValueType.I32}),
                       params -> {
                         final int value = params[0].asI32();
@@ -1524,7 +1547,9 @@ final class HostFunctionIntegrationIT extends BaseIntegrationTest {
                   runtime.createHostFunction(
                       "host_sanitize_int",
                       new FunctionType(
-                          new WasmValueType[] {WasmValueType.I32, WasmValueType.I32, WasmValueType.I32},
+                          new WasmValueType[] {
+                            WasmValueType.I32, WasmValueType.I32, WasmValueType.I32
+                          },
                           new WasmValueType[] {WasmValueType.I32}),
                       params -> {
                         final int value = params[0].asI32();
@@ -1533,7 +1558,9 @@ final class HostFunctionIntegrationIT extends BaseIntegrationTest {
 
                         // Sanitize by clamping to range
                         if (min > max) {
-                          return new WasmValue[] {WasmValue.i32(value)}; // Return as-is if invalid range
+                          return new WasmValue[] {
+                            WasmValue.i32(value)
+                          }; // Return as-is if invalid range
                         }
 
                         final int sanitized = Math.max(min, Math.min(max, value));
@@ -1547,7 +1574,8 @@ final class HostFunctionIntegrationIT extends BaseIntegrationTest {
               assertAll(
                   () -> assertThat(validateRangeFunction).isNotNull(),
                   () -> assertThat(sanitizeIntFunction).isNotNull(),
-                  () -> assertThat(validateRangeFunction.getName()).isEqualTo("host_validate_range"),
+                  () ->
+                      assertThat(validateRangeFunction.getName()).isEqualTo("host_validate_range"),
                   () -> assertThat(sanitizeIntFunction.getName()).isEqualTo("host_sanitize_int"));
 
               addTestMetric(
@@ -1579,14 +1607,24 @@ final class HostFunctionIntegrationIT extends BaseIntegrationTest {
                         final Object messageRef = params[1].asExternref();
 
                         if (messageRef instanceof String) {
-                          final String levelStr =
-                              switch (level) {
-                                case 0 -> "DEBUG";
-                                case 1 -> "INFO";
-                                case 2 -> "WARN";
-                                case 3 -> "ERROR";
-                                default -> "UNKNOWN";
-                              };
+                          final String levelStr;
+                          switch (level) {
+                            case 0:
+                              levelStr = "DEBUG";
+                              break;
+                            case 1:
+                              levelStr = "INFO";
+                              break;
+                            case 2:
+                              levelStr = "WARN";
+                              break;
+                            case 3:
+                              levelStr = "ERROR";
+                              break;
+                            default:
+                              levelStr = "UNKNOWN";
+                              break;
+                          }
 
                           final String logMessage =
                               String.format("[%s] %s", levelStr, (String) messageRef);
@@ -1626,7 +1664,8 @@ final class HostFunctionIntegrationIT extends BaseIntegrationTest {
                   () -> assertThat(debugCounterFunction.getName()).isEqualTo("host_debug_counter"));
 
               // Verify log storage is working
-              assertThat(logMessages).isEmpty(); // No messages yet since functions haven't been called
+              assertThat(logMessages)
+                  .isEmpty(); // No messages yet since functions haven't been called
               assertThat(debugCallCount.get()).isEqualTo(0); // No debug calls yet
 
               addTestMetric(
