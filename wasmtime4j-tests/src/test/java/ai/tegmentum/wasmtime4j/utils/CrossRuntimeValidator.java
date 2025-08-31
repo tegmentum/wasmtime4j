@@ -10,6 +10,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Logger;
@@ -414,6 +416,328 @@ public final class CrossRuntimeValidator {
 
     LOGGER.info("Completed validation of " + results.size() + " operations");
     return results;
+  }
+
+  /**
+   * Validates that both runtimes handle errors identically.
+   *
+   * @param operation the operation that should fail identically
+   * @param <T> the result type
+   * @return comparison result with error validation outcome
+   */
+  public static <T> ComparisonResult validateErrorHandling(final RuntimeOperation<T> operation) {
+    return validateErrorHandling(operation, Duration.ofMinutes(1));
+  }
+
+  /**
+   * Validates that both runtimes handle errors identically with timeout.
+   *
+   * @param operation the operation that should fail identically
+   * @param timeout maximum execution time per runtime
+   * @param <T> the result type
+   * @return comparison result with error validation outcome
+   */
+  public static <T> ComparisonResult validateErrorHandling(
+      final RuntimeOperation<T> operation, final Duration timeout) {
+    LOGGER.info("Validating error handling across runtimes");
+
+    final List<TestResult> results = new ArrayList<>();
+
+    // Execute with JNI runtime expecting failure
+    final TestResult jniResult = executeWithRuntime(RuntimeType.JNI, operation, timeout);
+    results.add(jniResult);
+
+    // Execute with Panama runtime if available
+    TestResult panamaResult = null;
+    if (TestUtils.isPanamaAvailable()) {
+      panamaResult = executeWithRuntime(RuntimeType.PANAMA, operation, timeout);
+      results.add(panamaResult);
+    } else {
+      LOGGER.warning("Panama runtime not available, skipping error handling validation");
+      return new ComparisonResult(results, true, true, "Panama not available");
+    }
+
+    // Validate both failed with similar errors
+    if (jniResult.hasException() && panamaResult.hasException()) {
+      return compareResults(jniResult, panamaResult);
+    } else if (!jniResult.hasException() && !panamaResult.hasException()) {
+      return new ComparisonResult(
+          results, true, true, "Both runtimes unexpectedly succeeded");
+    } else {
+      return new ComparisonResult(
+          results, false, false,
+          String.format("Inconsistent error handling: JNI %s, Panama %s",
+              jniResult.hasException() ? "failed" : "succeeded",
+              panamaResult.hasException() ? "failed" : "succeeded"));
+    }
+  }
+
+  /**
+   * Validates operations under concurrent execution across both runtimes.
+   *
+   * @param operation the operation to test concurrently
+   * @param threadCount number of concurrent threads
+   * @param iterationsPerThread number of iterations per thread
+   * @param <T> the result type
+   * @return comparison result with concurrency validation outcome
+   */
+  public static <T> ComparisonResult validateConcurrentExecution(
+      final RuntimeOperation<T> operation,
+      final int threadCount,
+      final int iterationsPerThread) {
+
+    LOGGER.info(String.format(
+        "Validating concurrent execution with %d threads, %d iterations each",
+        threadCount, iterationsPerThread));
+
+    final List<TestResult> allResults = new ArrayList<>();
+
+    // Test JNI runtime concurrency
+    final TestResult jniResult = executeConcurrentTest(
+        RuntimeType.JNI, operation, threadCount, iterationsPerThread);
+    allResults.add(jniResult);
+
+    // Test Panama runtime concurrency if available
+    TestResult panamaResult = null;
+    if (TestUtils.isPanamaAvailable()) {
+      panamaResult = executeConcurrentTest(
+          RuntimeType.PANAMA, operation, threadCount, iterationsPerThread);
+      allResults.add(panamaResult);
+    } else {
+      LOGGER.warning("Panama runtime not available, skipping concurrency validation");
+      return new ComparisonResult(allResults, true, true, "Panama not available");
+    }
+
+    // Compare concurrency results
+    return compareResults(jniResult, panamaResult);
+  }
+
+  /** Executes a concurrent test for a specific runtime. */
+  private static <T> TestResult executeConcurrentTest(
+      final RuntimeType runtimeType,
+      final RuntimeOperation<T> operation,
+      final int threadCount,
+      final int iterationsPerThread) {
+
+    final Instant startTime = Instant.now();
+    final ExecutorService executor = Executors.newFixedThreadPool(threadCount);
+
+    try {
+      final List<CompletableFuture<Void>> futures = new ArrayList<>();
+      
+      for (int t = 0; t < threadCount; t++) {
+        futures.add(CompletableFuture.runAsync(() -> {
+          try (final WasmRuntime runtime = WasmRuntimeFactory.create(runtimeType)) {
+            for (int i = 0; i < iterationsPerThread; i++) {
+              operation.execute(runtime);
+            }
+          } catch (final Exception e) {
+            throw new RuntimeException("Concurrent execution failed", e);
+          }
+        }, executor));
+      }
+
+      // Wait for all threads to complete
+      CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+
+      final Duration executionTime = Duration.between(startTime, Instant.now());
+      final int totalOperations = threadCount * iterationsPerThread;
+
+      LOGGER.info(String.format(
+          "%s concurrent test completed: %d operations in %d ms",
+          runtimeType, totalOperations, executionTime.toMillis()));
+
+      return new TestResult(runtimeType, totalOperations, executionTime, null);
+
+    } catch (final Exception e) {
+      final Duration executionTime = Duration.between(startTime, Instant.now());
+      LOGGER.warning(runtimeType + " concurrent execution failed: " + e.getMessage());
+      return new TestResult(runtimeType, null, executionTime, e);
+
+    } finally {
+      executor.shutdown();
+      try {
+        if (!executor.awaitTermination(30, TimeUnit.SECONDS)) {
+          executor.shutdownNow();
+        }
+      } catch (final InterruptedException e) {
+        Thread.currentThread().interrupt();
+        executor.shutdownNow();
+      }
+    }
+  }
+
+  /**
+   * Validates that both runtimes produce consistent results under stress.
+   *
+   * @param operation the operation to stress test
+   * @param duration test duration
+   * @param operationsPerSecond target operations per second
+   * @param <T> the result type
+   * @return comparison result with stress validation outcome
+   */
+  public static <T> ComparisonResult validateUnderStress(
+      final RuntimeOperation<T> operation,
+      final Duration duration,
+      final int operationsPerSecond) {
+
+    LOGGER.info(String.format(
+        "Validating under stress for %d seconds at %d ops/sec",
+        duration.toSeconds(), operationsPerSecond));
+
+    final List<TestResult> allResults = new ArrayList<>();
+
+    // Test JNI runtime under stress
+    final TestResult jniResult = executeStressTest(
+        RuntimeType.JNI, operation, duration, operationsPerSecond);
+    allResults.add(jniResult);
+
+    // Test Panama runtime under stress if available
+    TestResult panamaResult = null;
+    if (TestUtils.isPanamaAvailable()) {
+      panamaResult = executeStressTest(
+          RuntimeType.PANAMA, operation, duration, operationsPerSecond);
+      allResults.add(panamaResult);
+    } else {
+      LOGGER.warning("Panama runtime not available, skipping stress validation");
+      return new ComparisonResult(allResults, true, true, "Panama not available");
+    }
+
+    // Compare stress test results
+    return compareResults(jniResult, panamaResult);
+  }
+
+  /** Executes a stress test for a specific runtime. */
+  private static <T> TestResult executeStressTest(
+      final RuntimeType runtimeType,
+      final RuntimeOperation<T> operation,
+      final Duration duration,
+      final int operationsPerSecond) {
+
+    final Instant startTime = Instant.now();
+    final Instant endTime = startTime.plus(duration);
+    final long operationIntervalNanos = 1_000_000_000L / operationsPerSecond;
+
+    try (final WasmRuntime runtime = WasmRuntimeFactory.create(runtimeType)) {
+      int operationCount = 0;
+      long lastOperationTime = System.nanoTime();
+
+      while (Instant.now().isBefore(endTime)) {
+        // Execute operation
+        operation.execute(runtime);
+        operationCount++;
+
+        // Rate limiting
+        final long currentTime = System.nanoTime();
+        final long expectedNextTime = lastOperationTime + operationIntervalNanos;
+        
+        if (currentTime < expectedNextTime) {
+          final long sleepNanos = expectedNextTime - currentTime;
+          if (sleepNanos > 1_000_000) { // Only sleep if > 1ms
+            try {
+              Thread.sleep(sleepNanos / 1_000_000, (int) (sleepNanos % 1_000_000));
+            } catch (final InterruptedException e) {
+              Thread.currentThread().interrupt();
+              break;
+            }
+          }
+        }
+        lastOperationTime = expectedNextTime;
+      }
+
+      final Duration actualDuration = Duration.between(startTime, Instant.now());
+      LOGGER.info(String.format(
+          "%s stress test completed: %d operations in %d ms",
+          runtimeType, operationCount, actualDuration.toMillis()));
+
+      return new TestResult(runtimeType, operationCount, actualDuration, null);
+
+    } catch (final Exception e) {
+      final Duration actualDuration = Duration.between(startTime, Instant.now());
+      LOGGER.warning(runtimeType + " stress test failed: " + e.getMessage());
+      return new TestResult(runtimeType, null, actualDuration, e);
+    }
+  }
+
+  /**
+   * Validates memory usage patterns across runtimes.
+   *
+   * @param operation the operation to test memory usage
+   * @param iterations number of iterations to run
+   * @param <T> the result type
+   * @return comparison result with memory validation outcome
+   */
+  public static <T> ComparisonResult validateMemoryUsage(
+      final RuntimeOperation<T> operation, final int iterations) {
+
+    LOGGER.info(String.format("Validating memory usage over %d iterations", iterations));
+
+    final List<TestResult> allResults = new ArrayList<>();
+
+    // Test JNI runtime memory usage
+    final TestResult jniResult = executeMemoryTest(RuntimeType.JNI, operation, iterations);
+    allResults.add(jniResult);
+
+    // Test Panama runtime memory usage if available
+    TestResult panamaResult = null;
+    if (TestUtils.isPanamaAvailable()) {
+      panamaResult = executeMemoryTest(RuntimeType.PANAMA, operation, iterations);
+      allResults.add(panamaResult);
+    } else {
+      LOGGER.warning("Panama runtime not available, skipping memory validation");
+      return new ComparisonResult(allResults, true, true, "Panama not available");
+    }
+
+    // Compare memory usage results
+    return compareResults(jniResult, panamaResult);
+  }
+
+  /** Executes a memory usage test for a specific runtime. */
+  private static <T> TestResult executeMemoryTest(
+      final RuntimeType runtimeType, final RuntimeOperation<T> operation, final int iterations) {
+
+    final Instant startTime = Instant.now();
+    final Runtime runtime = Runtime.getRuntime();
+
+    // Force garbage collection before test
+    System.gc();
+    try {
+      Thread.sleep(100);
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+    }
+
+    final long initialMemory = runtime.totalMemory() - runtime.freeMemory();
+
+    try (final WasmRuntime wasmRuntime = WasmRuntimeFactory.create(runtimeType)) {
+      for (int i = 0; i < iterations; i++) {
+        operation.execute(wasmRuntime);
+      }
+
+      // Force garbage collection after test
+      System.gc();
+      try {
+        Thread.sleep(100);
+      } catch (final InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
+
+      final long finalMemory = runtime.totalMemory() - runtime.freeMemory();
+      final long memoryDelta = finalMemory - initialMemory;
+      final Duration executionTime = Duration.between(startTime, Instant.now());
+
+      LOGGER.info(String.format(
+          "%s memory test completed: %d iterations, %d bytes memory change",
+          runtimeType, iterations, memoryDelta));
+
+      // Return memory delta as the "result" for comparison
+      return new TestResult(runtimeType, memoryDelta, executionTime, null);
+
+    } catch (final Exception e) {
+      final Duration executionTime = Duration.between(startTime, Instant.now());
+      LOGGER.warning(runtimeType + " memory test failed: " + e.getMessage());
+      return new TestResult(runtimeType, null, executionTime, e);
+    }
   }
 
   /**
