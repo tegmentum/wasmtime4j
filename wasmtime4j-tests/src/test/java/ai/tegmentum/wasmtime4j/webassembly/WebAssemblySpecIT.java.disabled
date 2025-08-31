@@ -254,6 +254,8 @@ class WebAssemblySpecIT extends BaseIntegrationTest {
     try {
       System.setProperty("wasmtime4j.runtime", runtimeType.name().toLowerCase());
       return ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory.create();
+    } catch (final ai.tegmentum.wasmtime4j.exception.WasmException e) {
+      throw new RuntimeException("Failed to create runtime for " + runtimeType, e);
     } finally {
       if (originalProperty != null) {
         System.setProperty("wasmtime4j.runtime", originalProperty);
@@ -267,7 +269,7 @@ class WebAssemblySpecIT extends BaseIntegrationTest {
   private void validateBasicModuleFunctionality(
       final Instance instance, final WasmTestCase testCase) {
     // Check that instance has expected exports
-    final List<String> exportNames = instance.getExportNames();
+    final String[] exportNames = instance.getExportNames();
     assertThat(exportNames).isNotEmpty().as("Module should have exports");
 
     LOGGER.fine("Module " + testCase.getDisplayName() + " exports: " + exportNames);
