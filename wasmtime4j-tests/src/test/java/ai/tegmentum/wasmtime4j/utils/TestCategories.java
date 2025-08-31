@@ -39,6 +39,15 @@ public final class TestCategories {
   /** Multi-threading and concurrency tests. */
   public static final String CONCURRENCY = "concurrency";
 
+  /** Engine API functionality tests. */
+  public static final String ENGINE = "engine";
+
+  /** Store API functionality tests. */
+  public static final String STORE = "store";
+
+  /** Cross-runtime validation tests. */
+  public static final String CROSS_RUNTIME = "cross.runtime";
+
   private TestCategories() {
     // Utility class - prevent instantiation
   }
