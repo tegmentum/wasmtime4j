@@ -479,11 +479,9 @@ public final class ArenaResourceManager implements AutoCloseable {
    * @return a managed native resource
    */
   public ManagedNativeResource registerManagedNativeResource(
-      final Object owner, 
-      final MemorySegment nativeHandle, 
-      final Runnable cleanupAction) {
+      final Object owner, final MemorySegment nativeHandle, final Runnable cleanupAction) {
     checkNotClosed();
-    
+
     if (owner == null) {
       throw new IllegalArgumentException("Owner cannot be null");
     }
@@ -493,18 +491,18 @@ public final class ArenaResourceManager implements AutoCloseable {
     if (cleanupAction == null) {
       throw new IllegalArgumentException("Cleanup action cannot be null");
     }
-    
-    ManagedNativeResource resource = new ManagedNativeResource(nativeHandle, cleanupAction, 
-                                                               owner.getClass().getSimpleName());
-    
+
+    ManagedNativeResource resource =
+        new ManagedNativeResource(nativeHandle, cleanupAction, owner.getClass().getSimpleName());
+
     synchronized (managedResources) {
       managedResources.add(resource);
     }
-    
+
     LOGGER.fine("Registered managed native resource: " + owner.getClass().getSimpleName());
     return resource;
   }
-  
+
   /**
    * Unregisters a managed resource.
    *
@@ -514,17 +512,18 @@ public final class ArenaResourceManager implements AutoCloseable {
     if (owner == null) {
       return;
     }
-    
+
     String ownerName = owner.getClass().getSimpleName();
     synchronized (managedResources) {
-      managedResources.removeIf(resource -> {
-        if (resource instanceof ManagedNativeResource managedNativeResource) {
-          return ownerName.equals(managedNativeResource.getDescription());
-        }
-        return false;
-      });
+      managedResources.removeIf(
+          resource -> {
+            if (resource instanceof ManagedNativeResource managedNativeResource) {
+              return ownerName.equals(managedNativeResource.getDescription());
+            }
+            return false;
+          });
     }
-    
+
     LOGGER.fine("Unregistered managed resource: " + ownerName);
   }
 }

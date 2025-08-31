@@ -194,7 +194,6 @@ public final class PlatformDetector {
    * Sanitizes a string for safe logging by removing CRLF injection characters.
    *
    * @param input the string to sanitize for logging
-   *
    * @return the sanitized string safe for logging
    */
   private static String sanitizeForLog(final String input) {

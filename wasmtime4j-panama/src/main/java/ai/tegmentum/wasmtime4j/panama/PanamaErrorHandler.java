@@ -419,8 +419,8 @@ public final class PanamaErrorHandler {
       return switch (mappedException) {
         case CompilationException ce -> new CompilationException(message, mappedException);
         case ValidationException ve -> new ValidationException(message, mappedException);
-        case ai.tegmentum.wasmtime4j.exception.RuntimeException re ->
-            new ai.tegmentum.wasmtime4j.exception.RuntimeException(message, mappedException);
+        case ai.tegmentum.wasmtime4j.exception.RuntimeException re -> new ai.tegmentum.wasmtime4j
+            .exception.RuntimeException(message, mappedException);
         default -> new WasmException(message, mappedException);
       };
     }

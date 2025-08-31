@@ -12,9 +12,9 @@ import java.util.logging.Logger;
 /**
  * JNI implementation of WASI random number generation operations.
  *
- * <p>This class provides access to WASI secure random number generation operations as specified
- * in WASI preview1. It integrates with the system's cryptographically secure random sources
- * to provide high-quality random data for WebAssembly applications.
+ * <p>This class provides access to WASI secure random number generation operations as specified in
+ * WASI preview1. It integrates with the system's cryptographically secure random sources to provide
+ * high-quality random data for WebAssembly applications.
  *
  * <p>Supported operations:
  *
@@ -73,7 +73,7 @@ public final class WasiRandomOperations {
    */
   public void getRandomBytes(final ByteBuffer buffer) {
     JniValidation.requireNonNull(buffer, "buffer");
-    
+
     if (buffer.isReadOnly()) {
       throw new JniException("Buffer is read-only and cannot be filled with random data");
     }
@@ -92,12 +92,9 @@ public final class WasiRandomOperations {
       final int result;
       if (buffer.isDirect()) {
         // Use direct buffer for better performance with native code
-        result = nativeGetRandomBytesDirect(
-            wasiContext.getNativeHandle(), 
-            buffer, 
-            buffer.position(), 
-            remaining
-        );
+        result =
+            nativeGetRandomBytesDirect(
+                wasiContext.getNativeHandle(), buffer, buffer.position(), remaining);
       } else {
         // Handle heap buffer by copying data
         final byte[] randomBytes = new byte[remaining];
@@ -110,11 +107,14 @@ public final class WasiRandomOperations {
       if (result != 0) {
         final WasiErrorCode errorCode = WasiErrorCode.fromErrnoOrNull(result);
         if (errorCode != null) {
-          throw new WasiException("Failed to generate random bytes: " 
-                                  + errorCode.getDescription(), errorCode, "random_get", "buffer");
+          throw new WasiException(
+              "Failed to generate random bytes: " + errorCode.getDescription(),
+              errorCode,
+              "random_get",
+              "buffer");
         } else {
-          throw new WasiException("Failed to generate random bytes with unknown error code: " 
-                                  + result);
+          throw new WasiException(
+              "Failed to generate random bytes with unknown error code: " + result);
         }
       }
 
@@ -154,11 +154,14 @@ public final class WasiRandomOperations {
       if (result != 0) {
         final WasiErrorCode errorCode = WasiErrorCode.fromErrnoOrNull(result);
         if (errorCode != null) {
-          throw new WasiException("Failed to generate random bytes: " 
-                                  + errorCode.getDescription(), errorCode, "random_get", "buffer");
+          throw new WasiException(
+              "Failed to generate random bytes: " + errorCode.getDescription(),
+              errorCode,
+              "random_get",
+              "buffer");
         } else {
-          throw new WasiException("Failed to generate random bytes with unknown error code: " 
-                                  + result);
+          throw new WasiException(
+              "Failed to generate random bytes with unknown error code: " + result);
         }
       }
 
@@ -216,8 +219,8 @@ public final class WasiRandomOperations {
   /**
    * Generates a random long using secure random generation.
    *
-   * <p>This is a convenience method that generates 8 random bytes and converts them to a long.
-   * The resulting long is uniformly distributed across the full long range.
+   * <p>This is a convenience method that generates 8 random bytes and converts them to a long. The
+   * resulting long is uniformly distributed across the full long range.
    *
    * @return a random long
    * @throws WasiException if the random generation fails
@@ -254,7 +257,7 @@ public final class WasiRandomOperations {
    */
   public void getRandomBytesFallback(final ByteBuffer buffer) {
     JniValidation.requireNonNull(buffer, "buffer");
-    
+
     if (buffer.isReadOnly()) {
       throw new JniException("Buffer is read-only and cannot be filled with random data");
     }
@@ -279,8 +282,8 @@ public final class WasiRandomOperations {
    */
   private void validateBufferSize(final int size) {
     if (size > MAX_BUFFER_SIZE) {
-      throw new JniException("Buffer size too large: " + size 
-                            + " bytes (maximum: " + MAX_BUFFER_SIZE + " bytes)");
+      throw new JniException(
+          "Buffer size too large: " + size + " bytes (maximum: " + MAX_BUFFER_SIZE + " bytes)");
     }
   }
 
@@ -294,11 +297,7 @@ public final class WasiRandomOperations {
    * @return 0 on success, or positive error code on failure
    */
   private static native int nativeGetRandomBytesDirect(
-      long contextHandle, 
-      ByteBuffer buffer, 
-      int position, 
-      int length
-  );
+      long contextHandle, ByteBuffer buffer, int position, int length);
 
   /**
    * Native method to fill a byte array with random bytes.

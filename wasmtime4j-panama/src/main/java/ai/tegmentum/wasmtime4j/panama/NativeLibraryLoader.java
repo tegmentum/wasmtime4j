@@ -64,13 +64,11 @@ public final class NativeLibraryLoader {
 
     if (!loadInfo.isSuccessful()) {
       final String errorMessage = loadInfo.getErrorMessage();
-      final RuntimeException cause = errorMessage != null 
-          ? new RuntimeException(errorMessage) 
-          : new RuntimeException("Unknown error");
-      LOGGER.log(
-          Level.SEVERE,
-          "Failed to load native library for Panama: " + loadInfo,
-          cause);
+      final RuntimeException cause =
+          errorMessage != null
+              ? new RuntimeException(errorMessage)
+              : new RuntimeException("Unknown error");
+      LOGGER.log(Level.SEVERE, "Failed to load native library for Panama: " + loadInfo, cause);
       throw new IllegalStateException("Failed to load native library for Panama FFI", cause);
     }
 

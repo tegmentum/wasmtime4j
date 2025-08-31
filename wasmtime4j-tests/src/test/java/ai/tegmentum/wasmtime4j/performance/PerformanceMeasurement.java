@@ -5,9 +5,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
 
-/**
- * Represents a performance measurement for a test execution.
- */
+/** Represents a performance measurement for a test execution. */
 public final class PerformanceMeasurement {
   private final String testName;
   private final RuntimeType runtimeType;

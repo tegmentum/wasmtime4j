@@ -138,7 +138,8 @@ public final class WasiFileHandleManager implements AutoCloseable {
    * @return the managed file handle wrapper
    * @throws WasiFileSystemException if the handle cannot be registered
    */
-  public ManagedFileHandle registerHandle(final WasiFileHandle handle) throws WasiFileSystemException {
+  public ManagedFileHandle registerHandle(final WasiFileHandle handle)
+      throws WasiFileSystemException {
     PanamaValidation.requireNonNull(handle, "handle");
 
     if (shutdown) {
@@ -528,8 +529,8 @@ public final class WasiFileHandleManager implements AutoCloseable {
   }
 
   /**
-   * Helper method to safely cast Reference to PhantomReference.
-   * This suppresses the unchecked cast warning in one place.
+   * Helper method to safely cast Reference to PhantomReference. This suppresses the unchecked cast
+   * warning in one place.
    */
   @SuppressWarnings("unchecked")
   private PhantomReference<WasiFileHandle> castToPhantomReference(

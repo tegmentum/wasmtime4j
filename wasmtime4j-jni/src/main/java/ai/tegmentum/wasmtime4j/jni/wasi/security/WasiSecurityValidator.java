@@ -38,66 +38,75 @@ public final class WasiSecurityValidator {
 
   /** Dangerous file extensions that should be blocked by default. */
   private static final Set<String> DANGEROUS_EXTENSIONS =
-      Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
-          ".exe", ".com", ".bat", ".cmd", ".pif", ".scr", ".vbs", ".js", ".jar", ".war", ".ear",
-          ".sh", ".bash", ".zsh", ".fish", ".csh", ".tcsh", ".py", ".pl", ".rb", ".php", ".jsp",
-          ".asp", ".aspx", ".dll", ".so", ".dylib")));
+      Collections.unmodifiableSet(
+          new HashSet<>(
+              Arrays.asList(
+                  ".exe", ".com", ".bat", ".cmd", ".pif", ".scr", ".vbs", ".js", ".jar", ".war",
+                  ".ear", ".sh", ".bash", ".zsh", ".fish", ".csh", ".tcsh", ".py", ".pl", ".rb",
+                  ".php", ".jsp", ".asp", ".aspx", ".dll", ".so", ".dylib")));
 
   /** System directories that should be blocked by default. */
   private static final Set<String> SYSTEM_DIRECTORIES =
-      Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
-          "/bin",
-          "/sbin",
-          "/usr/bin",
-          "/usr/sbin",
-          "/boot",
-          "/dev",
-          "/proc",
-          "/sys",
-          "/run",
-          "/lib",
-          "/usr/lib",
-          "/lib64",
-          "/usr/lib64",
-          "/etc/passwd",
-          "/etc/shadow",
-          "/etc/sudoers",
-          "C:\\Windows",
-          "C:\\Program Files",
-          "C:\\Program Files (x86)",
-          "C:\\System32",
-          "/System",
-          "/Library",
-          "/Applications",
-          "/Users/.Trash")));
+      Collections.unmodifiableSet(
+          new HashSet<>(
+              Arrays.asList(
+                  "/bin",
+                  "/sbin",
+                  "/usr/bin",
+                  "/usr/sbin",
+                  "/boot",
+                  "/dev",
+                  "/proc",
+                  "/sys",
+                  "/run",
+                  "/lib",
+                  "/usr/lib",
+                  "/lib64",
+                  "/usr/lib64",
+                  "/etc/passwd",
+                  "/etc/shadow",
+                  "/etc/sudoers",
+                  "C:\\Windows",
+                  "C:\\Program Files",
+                  "C:\\Program Files (x86)",
+                  "C:\\System32",
+                  "/System",
+                  "/Library",
+                  "/Applications",
+                  "/Users/.Trash")));
 
   /** Dangerous path patterns to detect and block. */
   private static final Set<Pattern> DANGEROUS_PATH_PATTERNS =
-      Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
-          Pattern.compile("\\.\\.[\\\\/]"), // Path traversal attempts
-          Pattern.compile("[\\\\/]\\.\\.[^\\\\/]"), // Hidden path traversal
-          Pattern.compile("^[a-zA-Z]:[^\\\\/]"), // Windows drive without slash
-          Pattern.compile("[\0\r\n]"), // Null bytes and line breaks
-          Pattern.compile("[\u202E\u202D]"), // Unicode direction override attacks
-          Pattern.compile(".*\\.(lnk|url)$", Pattern.CASE_INSENSITIVE)))); // Windows shortcuts
+      Collections.unmodifiableSet(
+          new HashSet<>(
+              Arrays.asList(
+                  Pattern.compile("\\.\\.[\\\\/]"), // Path traversal attempts
+                  Pattern.compile("[\\\\/]\\.\\.[^\\\\/]"), // Hidden path traversal
+                  Pattern.compile("^[a-zA-Z]:[^\\\\/]"), // Windows drive without slash
+                  Pattern.compile("[\0\r\n]"), // Null bytes and line breaks
+                  Pattern.compile("[\u202E\u202D]"), // Unicode direction override attacks
+                  Pattern.compile(
+                      ".*\\.(lnk|url)$", Pattern.CASE_INSENSITIVE)))); // Windows shortcuts
 
   /** Blocked environment variable names for security. */
   private static final Set<String> BLOCKED_ENVIRONMENT_VARIABLES =
-      Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
-          "PATH",
-          "LD_LIBRARY_PATH",
-          "DYLD_LIBRARY_PATH",
-          "JAVA_HOME",
-          "CLASSPATH",
-          "HOME",
-          "USER",
-          "USERNAME",
-          "SUDO_USER",
-          "SHELL",
-          "TERM",
-          "DISPLAY",
-          "PWD",
-          "OLDPWD")));
+      Collections.unmodifiableSet(
+          new HashSet<>(
+              Arrays.asList(
+                  "PATH",
+                  "LD_LIBRARY_PATH",
+                  "DYLD_LIBRARY_PATH",
+                  "JAVA_HOME",
+                  "CLASSPATH",
+                  "HOME",
+                  "USER",
+                  "USERNAME",
+                  "SUDO_USER",
+                  "SHELL",
+                  "TERM",
+                  "DISPLAY",
+                  "PWD",
+                  "OLDPWD")));
 
   /** Whether to enforce strict security policies. */
   private final boolean strictMode;
@@ -132,8 +141,10 @@ public final class WasiSecurityValidator {
     this.strictMode = builder.strictMode;
     this.allowSymbolicLinks = builder.allowSymbolicLinks;
     this.allowHiddenFiles = builder.allowHiddenFiles;
-    this.customDangerousExtensions = Collections.unmodifiableSet(new HashSet<>(builder.customDangerousExtensions));
-    this.customBlockedDirectories = Collections.unmodifiableSet(new HashSet<>(builder.customBlockedDirectories));
+    this.customDangerousExtensions =
+        Collections.unmodifiableSet(new HashSet<>(builder.customDangerousExtensions));
+    this.customBlockedDirectories =
+        Collections.unmodifiableSet(new HashSet<>(builder.customBlockedDirectories));
     this.customAllowedEnvironmentVariables =
         Collections.unmodifiableSet(new HashSet<>(builder.customAllowedEnvironmentVariables));
     this.maxPathLength = builder.maxPathLength;

@@ -115,7 +115,7 @@ public final class PanamaWasmRuntime implements WasmRuntime {
       // Create an arena-based resource manager for the engine
       Arena engineArena = Arena.ofConfined();
       ArenaResourceManager resourceManager = new ArenaResourceManager(engineArena, true);
-      
+
       return new PanamaEngine(resourceManager);
     } catch (Exception e) {
       throw exceptionMapper.mapException(e);
@@ -125,7 +125,7 @@ public final class PanamaWasmRuntime implements WasmRuntime {
   @Override
   public Engine createEngine(final EngineConfig config) throws WasmException {
     ensureNotClosed();
-    
+
     if (config == null) {
       throw new IllegalArgumentException("EngineConfig cannot be null");
     }
@@ -134,7 +134,7 @@ public final class PanamaWasmRuntime implements WasmRuntime {
       // Create an arena-based resource manager for the engine
       Arena engineArena = Arena.ofConfined();
       ArenaResourceManager resourceManager = new ArenaResourceManager(engineArena, true);
-      
+
       // For now, ignore the config and create a default engine
       // TODO: Implement engine configuration support
       logger.warning("Engine configuration not yet supported, creating default engine");
@@ -147,7 +147,7 @@ public final class PanamaWasmRuntime implements WasmRuntime {
   @Override
   public Module compileModule(final Engine engine, final byte[] wasmBytes) throws WasmException {
     ensureNotClosed();
-    
+
     if (engine == null) {
       throw new IllegalArgumentException("Engine cannot be null");
     }
@@ -161,9 +161,10 @@ public final class PanamaWasmRuntime implements WasmRuntime {
     try {
       // Use the provided engine to compile the module
       if (!(engine instanceof PanamaEngine)) {
-        throw new IllegalArgumentException("Engine must be a PanamaEngine instance for Panama runtime");
+        throw new IllegalArgumentException(
+            "Engine must be a PanamaEngine instance for Panama runtime");
       }
-      
+
       PanamaEngine panamaEngine = (PanamaEngine) engine;
       return panamaEngine.compileModule(wasmBytes);
     } catch (Exception e) {
@@ -354,19 +355,20 @@ public final class PanamaWasmRuntime implements WasmRuntime {
   @Override
   public Instance instantiate(final Module module) throws WasmException {
     ensureNotClosed();
-    
+
     if (module == null) {
       throw new IllegalArgumentException("Module cannot be null");
     }
-    
+
     try {
       // Cast to PanamaModule to get native handle
       if (!(module instanceof PanamaModule)) {
-        throw new IllegalArgumentException("Module must be a PanamaModule instance for Panama runtime");
+        throw new IllegalArgumentException(
+            "Module must be a PanamaModule instance for Panama runtime");
       }
-      
+
       PanamaModule panamaModule = (PanamaModule) module;
-      
+
       // Use the module to create an instance
       return panamaModule.instantiate();
     } catch (Exception e) {
@@ -377,22 +379,23 @@ public final class PanamaWasmRuntime implements WasmRuntime {
   @Override
   public Instance instantiate(final Module module, final ImportMap imports) throws WasmException {
     ensureNotClosed();
-    
+
     if (module == null) {
       throw new IllegalArgumentException("Module cannot be null");
     }
     if (imports == null) {
       throw new IllegalArgumentException("ImportMap cannot be null");
     }
-    
+
     try {
       // Cast to PanamaModule to get native handle
       if (!(module instanceof PanamaModule)) {
-        throw new IllegalArgumentException("Module must be a PanamaModule instance for Panama runtime");
+        throw new IllegalArgumentException(
+            "Module must be a PanamaModule instance for Panama runtime");
       }
-      
+
       PanamaModule panamaModule = (PanamaModule) module;
-      
+
       // For now, ignoring imports - this would need more complex implementation
       // Use the module to create an instance
       return panamaModule.instantiate();
@@ -409,8 +412,7 @@ public final class PanamaWasmRuntime implements WasmRuntime {
         "36.0.2", // Wasmtime version
         RuntimeType.PANAMA,
         System.getProperty("java.version"),
-        System.getProperty("os.name") + " " + System.getProperty("os.arch")
-    );
+        System.getProperty("os.name") + " " + System.getProperty("os.arch"));
   }
 
   /**

@@ -490,7 +490,8 @@ public final class PerformanceOptimizer {
       }
 
       return CompletableFuture.allOf(futures.toArray(new CompletableFuture<?>[0]))
-          .thenApply(ignored -> futures.stream().flatMap(future -> future.join().stream()).toList());
+          .thenApply(
+              ignored -> futures.stream().flatMap(future -> future.join().stream()).toList());
     }
   }
 

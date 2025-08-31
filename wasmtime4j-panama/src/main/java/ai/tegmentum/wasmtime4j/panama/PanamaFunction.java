@@ -409,16 +409,19 @@ public final class PanamaFunction implements WasmFunction, AutoCloseable {
   private WasmValue unmarshalWasmValue(final MemorySegment valueSlot, final int wasmType) {
     // Get the value based on type and create WasmValue
     return switch (wasmType) {
-      case MemoryLayouts.WASM_I32 -> WasmValue.i32((Integer) MemoryLayouts.WASM_VAL_I32.get(valueSlot));
-      case MemoryLayouts.WASM_I64 -> WasmValue.i64((Long) MemoryLayouts.WASM_VAL_I64.get(valueSlot));
-      case MemoryLayouts.WASM_F32 -> WasmValue.f32((Float) MemoryLayouts.WASM_VAL_F32.get(valueSlot));
-      case MemoryLayouts.WASM_F64 -> WasmValue.f64((Double) MemoryLayouts.WASM_VAL_F64.get(valueSlot));
+      case MemoryLayouts.WASM_I32 -> WasmValue.i32(
+          (Integer) MemoryLayouts.WASM_VAL_I32.get(valueSlot));
+      case MemoryLayouts.WASM_I64 -> WasmValue.i64(
+          (Long) MemoryLayouts.WASM_VAL_I64.get(valueSlot));
+      case MemoryLayouts.WASM_F32 -> WasmValue.f32(
+          (Float) MemoryLayouts.WASM_VAL_F32.get(valueSlot));
+      case MemoryLayouts.WASM_F64 -> WasmValue.f64(
+          (Double) MemoryLayouts.WASM_VAL_F64.get(valueSlot));
       case MemoryLayouts.WASM_ANYREF -> WasmValue.externref(null); // Simplified
       case MemoryLayouts.WASM_FUNCREF -> WasmValue.funcref(null); // Simplified
       default -> throw new IllegalArgumentException("Unsupported WebAssembly type: " + wasmType);
     };
   }
-
 
   /**
    * Internal cleanup method called by managed resource.

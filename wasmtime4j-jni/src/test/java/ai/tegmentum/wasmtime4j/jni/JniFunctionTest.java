@@ -97,7 +97,7 @@ class JniFunctionTest {
   @Test
   void testClearCache() {
     final JniFunction function = new JniFunction(VALID_HANDLE, FUNCTION_NAME);
-    
+
     // Should not throw any exception
     assertDoesNotThrow(function::clearCache);
   }
@@ -105,7 +105,7 @@ class JniFunctionTest {
   @Test
   void testGetCacheHitRatio() {
     final JniFunction function = new JniFunction(VALID_HANDLE, FUNCTION_NAME);
-    
+
     // Should return initial cache hit ratio (0.0)
     assertThat(function.getCacheHitRatio()).isEqualTo(0.0);
   }
@@ -114,7 +114,7 @@ class JniFunctionTest {
   void testResourceManagement() {
     final JniFunction function = new JniFunction(VALID_HANDLE, FUNCTION_NAME);
     assertFalse(function.isClosed());
-    
+
     // Note: Not calling close() in unit test since it requires native methods
     assertTrue(function.isClosed());
   }
@@ -146,13 +146,4 @@ class JniFunctionTest {
     final String toStringAfterClose = function.toString();
     assertThat(toStringAfterClose).contains("closed=true");
   }
-
-
-
-
-
-
-
-
-
 }

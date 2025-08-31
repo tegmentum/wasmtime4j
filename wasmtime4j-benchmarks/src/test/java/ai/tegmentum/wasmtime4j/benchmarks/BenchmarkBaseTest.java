@@ -74,8 +74,7 @@ final class BenchmarkBaseTest {
 
   @Test
   void testFormatBenchmarkId() {
-    final String id =
-        BenchmarkBase.formatBenchmarkId("test_operation", RuntimeType.JNI);
+    final String id = BenchmarkBase.formatBenchmarkId("test_operation", RuntimeType.JNI);
     assertThat(id).startsWith("test_operation_jni_");
     assertThat(id)
         .hasSizeGreaterThanOrEqualTo("test_operation_jni_".length() + 1); // Variable suffix
@@ -106,9 +105,6 @@ final class BenchmarkBaseTest {
   @Test
   void testRuntimeTypeValues() {
     // Test that all expected runtime types exist
-    assertThat(RuntimeType.values())
-        .containsExactly(
-            RuntimeType.JNI,
-            RuntimeType.PANAMA);
+    assertThat(RuntimeType.values()).containsExactly(RuntimeType.JNI, RuntimeType.PANAMA);
   }
 }

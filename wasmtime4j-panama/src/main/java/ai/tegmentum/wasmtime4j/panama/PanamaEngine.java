@@ -123,9 +123,8 @@ public final class PanamaEngine implements Engine, AutoCloseable {
   /**
    * Compiles WebAssembly bytecode from a ByteBuffer into a module using this engine.
    *
-   * <p>This method provides an alternative interface for compilation when the WebAssembly
-   * bytecode is available as a ByteBuffer. This can be more efficient for direct ByteBuffer
-   * operations.
+   * <p>This method provides an alternative interface for compilation when the WebAssembly bytecode
+   * is available as a ByteBuffer. This can be more efficient for direct ByteBuffer operations.
    *
    * @param wasmBuffer the WebAssembly bytecode buffer to compile
    * @return a compiled Module

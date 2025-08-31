@@ -63,23 +63,23 @@ public class FunctionExecutionBenchmark extends BenchmarkBase {
   /** Number of parameters to pass to the function. */
   @Param({"1", "2", "4"})
   private int parameterCount;
-  
+
   /** WebAssembly runtime components. */
   private WasmRuntime runtime;
+
   private Engine engine;
   private Store store;
   private Module module;
   private Instance instance;
-  
+
   /** Function to benchmark. */
   private WasmFunction targetFunction;
 
   /** Test parameters for function calls with current parameter count. */
   private WasmValue[] testParams;
-  
+
   /** Current module bytecode. */
   private byte[] moduleBytes;
-
 
   /** Setup performed before each benchmark iteration. */
   @Setup(Level.Iteration)
@@ -89,7 +89,7 @@ public class FunctionExecutionBenchmark extends BenchmarkBase {
     runtime = createRuntime(runtimeType);
     engine = createEngine(runtime);
     store = createStore(engine);
-    
+
     // Select appropriate module based on function type
     switch (functionType) {
       case "SIMPLE":
@@ -105,11 +105,11 @@ public class FunctionExecutionBenchmark extends BenchmarkBase {
         moduleBytes = SIMPLE_WASM_MODULE.clone();
         break;
     }
-    
+
     // Compile and instantiate module
     module = compileModule(engine, moduleBytes);
     instance = instantiateModule(store, module);
-    
+
     // Get the target function
     final String functionName = getFunctionNameForType(functionType);
     final java.util.Optional<WasmFunction> functionOpt = instance.getFunction(functionName);
@@ -117,7 +117,7 @@ public class FunctionExecutionBenchmark extends BenchmarkBase {
       throw new WasmException("Target function not found: " + functionName);
     }
     targetFunction = functionOpt.get();
-    
+
     // Setup test parameters based on parameter count
     testParams = new WasmValue[Math.min(parameterCount, 2)]; // Limit to available params
     for (int i = 0; i < testParams.length; i++) {
@@ -132,7 +132,7 @@ public class FunctionExecutionBenchmark extends BenchmarkBase {
     testParams = null;
     moduleBytes = null;
   }
-  
+
   /** Helper method to clean up WebAssembly resources. */
   private void cleanup() {
     try {
@@ -410,9 +410,9 @@ public class FunctionExecutionBenchmark extends BenchmarkBase {
     if (result == null || result.length == 0) {
       return false;
     }
-    
+
     final int value = result[0].asInt();
-    
+
     switch (functionType) {
       case "SIMPLE":
         // For simple addition, result should be sum of parameters
@@ -434,7 +434,7 @@ public class FunctionExecutionBenchmark extends BenchmarkBase {
         return true;
     }
   }
-  
+
   /**
    * Gets the function name for the specified function type.
    *

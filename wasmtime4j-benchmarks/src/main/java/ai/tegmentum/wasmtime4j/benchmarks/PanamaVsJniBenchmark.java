@@ -233,7 +233,7 @@ public class PanamaVsJniBenchmark extends BenchmarkBase {
 
     // Convert string to RuntimeType
     final RuntimeType runtimeType = RuntimeType.valueOf(runtimeTypeName);
-    
+
     // Check if the requested runtime is available
     if (!WasmRuntimeFactory.isRuntimeAvailable(runtimeType)) {
       throw new RuntimeException("Runtime not available: " + runtimeType);
@@ -387,7 +387,8 @@ public class PanamaVsJniBenchmark extends BenchmarkBase {
     final int iterations = Math.max(1, operationCount / (chunkSize / 4));
 
     for (int i = 0; i < iterations; i++) {
-      final int offset = (i * chunkSize) % Math.max(1, Math.toIntExact(wasmMemory.getSize()) - chunkSize);
+      final int offset =
+          (i * chunkSize) % Math.max(1, Math.toIntExact(wasmMemory.getSize()) - chunkSize);
 
       // Write chunk
       chunk.rewind();
@@ -421,7 +422,7 @@ public class PanamaVsJniBenchmark extends BenchmarkBase {
   public void instanceCreation(final Blackhole bh) throws Exception {
     for (int i = 0; i < Math.min(operationCount, 50); i++) { // Limit to avoid excessive overhead
       try (Store store = engine.createStore();
-           Instance instance = simpleModule.instantiate(store)) {
+          Instance instance = simpleModule.instantiate(store)) {
         bh.consume(instance);
       }
     }
@@ -541,27 +542,32 @@ public class PanamaVsJniBenchmark extends BenchmarkBase {
       bh.consume(results[0].asInt());
     }
   }
-  
+
   /** Helper to read 4 bytes as int from memory. */
   private static int readIntFromMemory(final WasmMemory memory, final int offset) {
     final byte[] bytes = new byte[4];
     memory.readBytes(offset, bytes, 0, 4);
     return java.nio.ByteBuffer.wrap(bytes).order(java.nio.ByteOrder.LITTLE_ENDIAN).getInt();
   }
-  
+
   /** Helper to write int as 4 bytes to memory. */
   private static void writeIntToMemory(final WasmMemory memory, final int offset, final int value) {
-    final byte[] bytes = java.nio.ByteBuffer.allocate(4).order(java.nio.ByteOrder.LITTLE_ENDIAN).putInt(value).array();
+    final byte[] bytes =
+        java.nio.ByteBuffer.allocate(4)
+            .order(java.nio.ByteOrder.LITTLE_ENDIAN)
+            .putInt(value)
+            .array();
     memory.writeBytes(offset, bytes, 0, 4);
   }
-  
+
   /** Helper to write ByteBuffer to memory. */
-  private static void writeBufferToMemory(final WasmMemory memory, final int offset, final java.nio.ByteBuffer buffer) {
+  private static void writeBufferToMemory(
+      final WasmMemory memory, final int offset, final java.nio.ByteBuffer buffer) {
     final byte[] bytes = new byte[buffer.remaining()];
     buffer.get(bytes);
     memory.writeBytes(offset, bytes, 0, bytes.length);
   }
-  
+
   /** Helper to read from memory into ByteBuffer. */
   private static void readBufferFromMemory(
       final WasmMemory memory, final int offset, final java.nio.ByteBuffer buffer) {

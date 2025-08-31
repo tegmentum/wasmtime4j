@@ -19,9 +19,9 @@ import java.util.logging.Logger;
 /**
  * Panama FFI implementation of WASI random number generation operations.
  *
- * <p>This class provides access to WASI secure random number generation operations as specified
- * in WASI preview1. It integrates with the system's cryptographically secure random sources
- * using Panama Foreign Function Interface to provide high-quality random data for WebAssembly
+ * <p>This class provides access to WASI secure random number generation operations as specified in
+ * WASI preview1. It integrates with the system's cryptographically secure random sources using
+ * Panama Foreign Function Interface to provide high-quality random data for WebAssembly
  * applications.
  *
  * <p>Supported operations:
@@ -74,7 +74,7 @@ public final class WasiRandomOperations {
    * @throws PanamaException if the wasiContext or symbolLookup is null, or if native function
    *     lookup fails
    */
-  public WasiRandomOperations(final WasiContext wasiContext, final SymbolLookup symbolLookup) 
+  public WasiRandomOperations(final WasiContext wasiContext, final SymbolLookup symbolLookup)
       throws PanamaException {
     PanamaValidation.requireNonNull(wasiContext, "wasiContext");
     PanamaValidation.requireNonNull(symbolLookup, "symbolLookup");
@@ -89,7 +89,8 @@ public final class WasiRandomOperations {
       this.randomGetHandle = initializeRandomGetHandle();
       LOGGER.fine("Initialized WASI random operations with Panama FFI");
     } catch (final Exception e) {
-      throw new PanamaException("Failed to initialize WASI random operations: " + e.getMessage(), e);
+      throw new PanamaException(
+          "Failed to initialize WASI random operations: " + e.getMessage(), e);
     }
   }
 
@@ -105,7 +106,7 @@ public final class WasiRandomOperations {
    */
   public void getRandomBytes(final ByteBuffer buffer) throws PanamaException {
     PanamaValidation.requireNonNull(buffer, "buffer");
-    
+
     if (buffer.isReadOnly()) {
       throw new PanamaException("Buffer is read-only and cannot be filled with random data");
     }
@@ -239,8 +240,8 @@ public final class WasiRandomOperations {
   /**
    * Generates a random long using secure random generation.
    *
-   * <p>This is a convenience method that generates 8 random bytes and converts them to a long.
-   * The resulting long is uniformly distributed across the full long range.
+   * <p>This is a convenience method that generates 8 random bytes and converts them to a long. The
+   * resulting long is uniformly distributed across the full long range.
    *
    * @return a random long
    * @throws WasiException if the random generation fails
@@ -277,7 +278,7 @@ public final class WasiRandomOperations {
    */
   public void getRandomBytesFallback(final ByteBuffer buffer) throws PanamaException {
     PanamaValidation.requireNonNull(buffer, "buffer");
-    
+
     if (buffer.isReadOnly()) {
       throw new PanamaException("Buffer is read-only and cannot be filled with random data");
     }
@@ -302,8 +303,8 @@ public final class WasiRandomOperations {
    */
   private void validateBufferSize(final int size) throws PanamaException {
     if (size > MAX_BUFFER_SIZE) {
-      throw new PanamaException("Buffer size too large: " + size 
-                               + " bytes (maximum: " + MAX_BUFFER_SIZE + " bytes)");
+      throw new PanamaException(
+          "Buffer size too large: " + size + " bytes (maximum: " + MAX_BUFFER_SIZE + " bytes)");
     }
   }
 
@@ -314,14 +315,17 @@ public final class WasiRandomOperations {
    * @throws Exception if function lookup fails
    */
   private MethodHandle initializeRandomGetHandle() throws Exception {
-    final MemorySegment symbol = symbolLookup.find("wasi_random_get")
-        .orElseThrow(() -> new PanamaException("WASI function wasi_random_get not found"));
+    final MemorySegment symbol =
+        symbolLookup
+            .find("wasi_random_get")
+            .orElseThrow(() -> new PanamaException("WASI function wasi_random_get not found"));
 
-    final FunctionDescriptor descriptor = FunctionDescriptor.of(
-        ValueLayout.JAVA_INT,     // return: wasi_errno_t
-        ValueLayout.ADDRESS,      // buf: *void
-        ValueLayout.JAVA_INT      // buf_len: size_t
-    );
+    final FunctionDescriptor descriptor =
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return: wasi_errno_t
+            ValueLayout.ADDRESS, // buf: *void
+            ValueLayout.JAVA_INT // buf_len: size_t
+            );
 
     return Linker.nativeLinker().downcallHandle(symbol, descriptor);
   }
