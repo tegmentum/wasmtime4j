@@ -84,6 +84,15 @@ public final class PerformanceRegressionDetector {
       this.metadata = metadata != null ? new HashMap<>(metadata) : new HashMap<>();
     }
 
+    /**
+     * Creates a PerformanceMeasurement with default timestamp and empty metadata.
+     *
+     * @param benchmarkName the name of the benchmark
+     * @param runtimeType the type of runtime (e.g., "jni", "panama")
+     * @param throughput the throughput measurement
+     * @param latency the latency measurement
+     * @param memoryUsage the memory usage measurement
+     */
     public PerformanceMeasurement(
         final String benchmarkName,
         final String runtimeType,
