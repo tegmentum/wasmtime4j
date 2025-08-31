@@ -44,7 +44,7 @@ cc = "1.0"
 pkg-config = "0.3"
 
 [features]
-default = ["jni-bindings", "panama-ffi"]
+default = ["jni-bindings", "panama-ffi", "component-model", "wasi"]
 
 # JNI bindings for Java 8-22
 jni-bindings = ["jni"]
@@ -55,8 +55,11 @@ panama-ffi = []
 # WASI support (using wasmtime-wasi crate)
 wasi = ["wasmtime-wasi"]
 
-# Component model support
-component-model = ["wasmtime/component-model"]
+# Component model support (WASI2)
+component-model = [
+    "wasmtime/component-model",
+    "wasmtime/component-model-async"
+]
 
 # Async support
 async = ["wasmtime/async"]
