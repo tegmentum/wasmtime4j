@@ -285,4 +285,218 @@ public abstract class BaseIntegrationTest {
               description, actualDuration.toMillis(), maxDuration.toMillis()));
     }
   }
+
+  /**
+   * Executes a test operation multiple times and collects performance metrics.
+   *
+   * @param description description of the operation
+   * @param operation the operation to execute
+   * @param iterations number of iterations to run
+   * @return list of execution durations
+   */
+  protected List<Duration> measureRepeatedExecution(
+      final String description, final Runnable operation, final int iterations) {
+    final List<Duration> durations = new ArrayList<>();
+    
+    for (int i = 0; i < iterations; i++) {
+      final Instant start = Instant.now();
+      operation.run();
+      final Duration duration = Duration.between(start, Instant.now());
+      durations.add(duration);
+    }
+    
+    // Calculate and log statistics
+    final double avgMs = durations.stream().mapToLong(Duration::toMillis).average().orElse(0.0);
+    final long minMs = durations.stream().mapToLong(Duration::toMillis).min().orElse(0L);
+    final long maxMs = durations.stream().mapToLong(Duration::toMillis).max().orElse(0L);
+    
+    addTestMetric(String.format("%s (%d iterations): avg=%.2fms, min=%dms, max=%dms", 
+        description, iterations, avgMs, minMs, maxMs));
+    
+    return durations;
+  }
+
+  /**
+   * Validates that both runtimes produce identical results for an operation.
+   *
+   * @param testName name of the test
+   * @param operation the operation to validate
+   * @param <T> the result type
+   * @return the common result if validation succeeds
+   */
+  protected <T> T validateCrossRuntimeIdentity(
+      final String testName, final RuntimeTestFunction<T> operation) {
+    T jniResult = null;
+    T panamaResult = null;
+    
+    // Execute with JNI runtime
+    try (final WasmRuntime jniRuntime = WasmRuntimeFactory.create(RuntimeType.JNI)) {
+      jniResult = operation.execute(jniRuntime, RuntimeType.JNI);
+    } catch (final Exception e) {
+      throw new RuntimeException("JNI runtime test failed for " + testName, e);
+    }
+    
+    // Execute with Panama runtime if available
+    if (TestUtils.isPanamaAvailable()) {
+      try (final WasmRuntime panamaRuntime = WasmRuntimeFactory.create(RuntimeType.PANAMA)) {
+        panamaResult = operation.execute(panamaRuntime, RuntimeType.PANAMA);
+      } catch (final Exception e) {
+        throw new RuntimeException("Panama runtime test failed for " + testName, e);
+      }
+      
+      // Validate results are identical
+      if (!java.util.Objects.equals(jniResult, panamaResult)) {
+        throw new AssertionError(String.format(
+            "Cross-runtime validation failed for %s: JNI=%s, Panama=%s",
+            testName, jniResult, panamaResult));
+      }
+    }
+    
+    return jniResult;
+  }
+
+  /**
+   * Executes a test with memory monitoring to detect potential leaks.
+   *
+   * @param description description of the operation
+   * @param operation the operation to monitor
+   */
+  protected void executeWithMemoryMonitoring(final String description, final Runnable operation) {
+    final Runtime runtime = Runtime.getRuntime();
+    
+    // Force garbage collection before measurement
+    System.gc();
+    try {
+      Thread.sleep(100);
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+    }
+    
+    final long initialMemory = runtime.totalMemory() - runtime.freeMemory();
+    
+    // Execute operation
+    operation.run();
+    
+    // Force garbage collection after operation
+    System.gc();
+    try {
+      Thread.sleep(100);
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+    }
+    
+    final long finalMemory = runtime.totalMemory() - runtime.freeMemory();
+    final long memoryDelta = finalMemory - initialMemory;
+    
+    addTestMetric(String.format("%s: memory delta = %d bytes", description, memoryDelta));
+    
+    // Log warning if significant memory increase
+    if (memoryDelta > 10 * 1024 * 1024) { // 10MB threshold
+      LOGGER.warning(String.format(
+          "Operation '%s' increased memory by %d MB", description, memoryDelta / (1024 * 1024)));
+    }
+  }
+
+  /**
+   * Executes a test operation with automatic retry on failure.
+   *
+   * @param description description of the operation
+   * @param operation the operation to execute
+   * @param maxRetries maximum number of retry attempts
+   * @param retryDelay delay between retry attempts
+   */
+  protected void executeWithRetry(
+      final String description,
+      final Runnable operation,
+      final int maxRetries,
+      final Duration retryDelay) {
+    
+    Exception lastException = null;
+    
+    for (int attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        operation.run();
+        if (attempt > 0) {
+          addTestMetric(String.format("%s: succeeded on attempt %d", description, attempt + 1));
+        }
+        return;
+      } catch (final Exception e) {
+        lastException = e;
+        
+        if (attempt < maxRetries) {
+          LOGGER.warning(String.format(
+              "Operation '%s' failed on attempt %d, retrying in %dms: %s",
+              description, attempt + 1, retryDelay.toMillis(), e.getMessage()));
+          
+          try {
+            Thread.sleep(retryDelay.toMillis());
+          } catch (final InterruptedException ie) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Retry interrupted for " + description, ie);
+          }
+        }
+      }
+    }
+    
+    throw new RuntimeException(
+        String.format("Operation '%s' failed after %d attempts", description, maxRetries + 1),
+        lastException);
+  }
+
+  /**
+   * Creates a performance baseline measurement for later comparison.
+   *
+   * @param baselineName name of the baseline measurement
+   * @param operation the operation to baseline
+   * @param iterations number of iterations for baseline
+   * @return the baseline duration
+   */
+  protected Duration createPerformanceBaseline(
+      final String baselineName, final Runnable operation, final int iterations) {
+    final List<Duration> measurements = measureRepeatedExecution(baselineName, operation, iterations);
+    
+    // Calculate median duration as baseline
+    final List<Long> sorted = measurements.stream()
+        .mapToLong(Duration::toMillis)
+        .sorted()
+        .boxed()
+        .collect(java.util.stream.Collectors.toList());
+    
+    final long medianMs = sorted.get(sorted.size() / 2);
+    final Duration baseline = Duration.ofMillis(medianMs);
+    
+    addTestMetric(String.format("Baseline %s: %dms", baselineName, medianMs));
+    return baseline;
+  }
+
+  /**
+   * Verifies that an operation performs within acceptable bounds compared to baseline.
+   *
+   * @param operationName name of the operation
+   * @param operation the operation to measure
+   * @param baseline the baseline duration to compare against
+   * @param tolerancePercent acceptable performance degradation percentage
+   */
+  protected void assertPerformanceWithinBounds(
+      final String operationName,
+      final Runnable operation,
+      final Duration baseline,
+      final double tolerancePercent) {
+    
+    final Duration actualDuration = measureExecutionTime(operationName, operation);
+    final long maxAllowedMs = (long) (baseline.toMillis() * (1.0 + tolerancePercent / 100.0));
+    
+    if (actualDuration.toMillis() > maxAllowedMs) {
+      throw new AssertionError(String.format(
+          "Performance regression detected for '%s': %dms > %dms (%.1f%% over baseline)",
+          operationName, actualDuration.toMillis(), maxAllowedMs,
+          ((double) actualDuration.toMillis() / baseline.toMillis() - 1.0) * 100.0));
+    }
+  }
+
+  /** Functional interface for operations that return values. */
+  @FunctionalInterface
+  protected interface RuntimeTestFunction<T> {
+    T execute(WasmRuntime runtime, RuntimeType runtimeType) throws Exception;
+  }
 }
