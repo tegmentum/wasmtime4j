@@ -128,6 +128,8 @@ public final class CrossRuntimeTestRunner {
           System.setProperty("wasmtime4j.runtime", runtimeType.name().toLowerCase());
           runtime = WasmRuntimeFactory.create();
           runtimeCache.put(runtimeType, runtime);
+        } catch (final ai.tegmentum.wasmtime4j.exception.WasmException e) {
+          throw new RuntimeException("Failed to create runtime for " + runtimeType, e);
         } finally {
           // Restore original property
           if (originalProperty != null) {
@@ -195,7 +197,7 @@ public final class CrossRuntimeTestRunner {
    * @return map of test results
    */
   public static ConcurrentMap<String, CrossRuntimeTestResult> getAllTestResults() {
-    return Collections.unmodifiableMap(testResults);
+    return new ConcurrentHashMap<>(testResults);
   }
 
   /** Clears all cached runtimes and test results. */
