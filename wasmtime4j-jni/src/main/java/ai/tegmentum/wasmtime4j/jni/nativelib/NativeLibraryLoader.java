@@ -56,10 +56,10 @@ public final class NativeLibraryLoader {
           LIBRARY_LOADED.set(true);
           LOGGER.info("Successfully loaded native library for JNI: " + loadInfo);
         } else {
-          final Exception error = loadInfo.getError();
+          final String errorMessage = loadInfo.getErrorMessage();
           final RuntimeException cause =
-              error != null
-                  ? new RuntimeException("Native library loading failed", error)
+              errorMessage != null
+                  ? new RuntimeException("Native library loading failed: " + errorMessage)
                   : new RuntimeException("Unknown error during library loading");
           LOGGER.log(Level.SEVERE, "Failed to load native library for JNI: " + loadInfo, cause);
           throw new RuntimeException("Failed to load native library for JNI operations", cause);
