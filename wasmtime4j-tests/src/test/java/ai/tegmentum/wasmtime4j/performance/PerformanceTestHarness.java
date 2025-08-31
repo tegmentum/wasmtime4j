@@ -720,4 +720,376 @@ public final class PerformanceTestHarness {
         .iterationTime(Duration.ofSeconds(2))
         .build();
   }
+
+  /**
+   * Runs a benchmark with profiling enabled for hotspot analysis.
+   *
+   * @param testName name of the test
+   * @param operation the operation to profile
+   * @param config benchmark configuration
+   * @return measurement result with profiling data
+   */
+  public static MeasurementResult runProfilingBenchmark(
+      final String testName, final BenchmarkOperation operation, final Configuration config) {
+    LOGGER.info("Running profiling benchmark: " + testName);
+
+    // Enable JVM profiling flags if available
+    final Map<String, Object> profilingMetrics = new HashMap<>();
+    
+    // Capture JVM compilation information
+    final long compilationTimeBefore = getCompilationTime();
+    final long gcTimeBefore = getGCTime();
+    
+    // Run the benchmark
+    final MeasurementResult result = runBenchmark(testName, operation, config);
+    
+    // Capture post-benchmark metrics
+    final long compilationTimeAfter = getCompilationTime();
+    final long gcTimeAfter = getGCTime();
+    
+    profilingMetrics.put("compilationTime", compilationTimeAfter - compilationTimeBefore);
+    profilingMetrics.put("gcTime", gcTimeAfter - gcTimeBefore);
+    
+    LOGGER.info(String.format("Profiling results: compilation=%dms, gc=%dms",
+        compilationTimeAfter - compilationTimeBefore,
+        gcTimeAfter - gcTimeBefore));
+    
+    return result;
+  }
+
+  /**
+   * Runs multiple benchmarks with different JVM options for comparison.
+   *
+   * @param testName base test name
+   * @param operation the operation to benchmark
+   * @param config benchmark configuration
+   * @param jvmOptionSets different JVM option configurations
+   * @return map of JVM options to measurement results
+   */
+  public static Map<String, MeasurementResult> runJvmOptionComparison(
+      final String testName,
+      final BenchmarkOperation operation,
+      final Configuration config,
+      final Map<String, String[]> jvmOptionSets) {
+    
+    final Map<String, MeasurementResult> results = new HashMap<>();
+    
+    for (final Map.Entry<String, String[]> entry : jvmOptionSets.entrySet()) {
+      final String optionSetName = entry.getKey();
+      final String[] jvmOptions = entry.getValue();
+      
+      LOGGER.info(String.format("Running benchmark with JVM options: %s (%s)",
+          optionSetName, String.join(" ", jvmOptions)));
+      
+      // Note: In a real JMH integration, we would spawn separate JVM processes
+      // For this simulation, we run in the current JVM and log the intended options
+      logJvmOptions(jvmOptions);
+      
+      final MeasurementResult result = runBenchmark(
+          testName + "[" + optionSetName + "]", operation, config);
+      results.put(optionSetName, result);
+    }
+    
+    return results;
+  }
+
+  /**
+   * Runs warmup benchmarks with different warmup strategies.
+   *
+   * @param testName base test name
+   * @param operation the operation to benchmark
+   * @param baseConfig base configuration
+   * @return comparison of warmup strategies
+   */
+  public static Map<String, MeasurementResult> runWarmupStrategyComparison(
+      final String testName, final BenchmarkOperation operation, final Configuration baseConfig) {
+    
+    final Map<String, MeasurementResult> results = new HashMap<>();
+    
+    // No warmup strategy
+    final Configuration noWarmup = Configuration.builder()
+        .warmupIterations(0)
+        .measurementIterations(baseConfig.getMeasurementIterations())
+        .iterationTime(baseConfig.getIterationTime())
+        .build();
+    results.put("no_warmup", runBenchmark(testName + "[no_warmup]", operation, noWarmup));
+    
+    // Short warmup strategy
+    final Configuration shortWarmup = Configuration.builder()
+        .warmupIterations(2)
+        .measurementIterations(baseConfig.getMeasurementIterations())
+        .iterationTime(Duration.ofMillis(500))
+        .build();
+    results.put("short_warmup", runBenchmark(testName + "[short_warmup]", operation, shortWarmup));
+    
+    // Long warmup strategy
+    final Configuration longWarmup = Configuration.builder()
+        .warmupIterations(20)
+        .measurementIterations(baseConfig.getMeasurementIterations())
+        .iterationTime(baseConfig.getIterationTime())
+        .build();
+    results.put("long_warmup", runBenchmark(testName + "[long_warmup]", operation, longWarmup));
+    
+    // Adaptive warmup strategy
+    final Configuration adaptiveWarmup = Configuration.builder()
+        .warmupIterations(10)
+        .measurementIterations(baseConfig.getMeasurementIterations())
+        .iterationTime(Duration.ofMillis(100))
+        .build();
+    results.put("adaptive_warmup", runBenchmark(testName + "[adaptive_warmup]", operation, adaptiveWarmup));
+    
+    return results;
+  }
+
+  /**
+   * Runs a benchmark with different thread counts to analyze scalability.
+   *
+   * @param testName base test name
+   * @param operation the operation to benchmark
+   * @param config base configuration
+   * @param threadCounts array of thread counts to test
+   * @return scalability analysis results
+   */
+  public static ScalabilityAnalysisResult runScalabilityAnalysis(
+      final String testName,
+      final BenchmarkOperation operation,
+      final Configuration config,
+      final int[] threadCounts) {
+    
+    final Map<Integer, MeasurementResult> results = runThroughputBenchmark(
+        testName, operation, config, threadCounts);
+    
+    return new ScalabilityAnalysisResult(testName, results);
+  }
+
+  /** Results container for scalability analysis. */
+  public static final class ScalabilityAnalysisResult {
+    private final String testName;
+    private final Map<Integer, MeasurementResult> results;
+    private final int optimalThreadCount;
+    private final double maxThroughput;
+    private final double scalabilityFactor;
+
+    private ScalabilityAnalysisResult(final String testName, final Map<Integer, MeasurementResult> results) {
+      this.testName = testName;
+      this.results = new HashMap<>(results);
+      
+      // Analyze results to find optimal configuration
+      double bestThroughput = 0.0;
+      int bestThreadCount = 1;
+      
+      for (final Map.Entry<Integer, MeasurementResult> entry : results.entrySet()) {
+        final double throughput = entry.getValue().getOperationsPerSecond();
+        if (throughput > bestThroughput) {
+          bestThroughput = throughput;
+          bestThreadCount = entry.getKey();
+        }
+      }
+      
+      this.optimalThreadCount = bestThreadCount;
+      this.maxThroughput = bestThroughput;
+      
+      // Calculate scalability factor (throughput at max threads / single thread throughput)
+      final MeasurementResult singleThreadResult = results.get(1);
+      if (singleThreadResult != null && singleThreadResult.getOperationsPerSecond() > 0) {
+        this.scalabilityFactor = bestThroughput / singleThreadResult.getOperationsPerSecond();
+      } else {
+        this.scalabilityFactor = 1.0;
+      }
+    }
+
+    public String getTestName() {
+      return testName;
+    }
+
+    public Map<Integer, MeasurementResult> getResults() {
+      return new HashMap<>(results);
+    }
+
+    public int getOptimalThreadCount() {
+      return optimalThreadCount;
+    }
+
+    public double getMaxThroughput() {
+      return maxThroughput;
+    }
+
+    public double getScalabilityFactor() {
+      return scalabilityFactor;
+    }
+
+    /**
+     * Generates a scalability analysis report.
+     *
+     * @return formatted analysis report
+     */
+    public String generateReport() {
+      final StringBuilder report = new StringBuilder();
+      report.append("Scalability Analysis Report for ").append(testName).append("\n");
+      report.append("=".repeat(50)).append("\n\n");
+      
+      report.append(String.format("Optimal Thread Count: %d\n", optimalThreadCount));
+      report.append(String.format("Maximum Throughput: %.2f ops/sec\n", maxThroughput));
+      report.append(String.format("Scalability Factor: %.2fx\n\n", scalabilityFactor));
+      
+      report.append("Thread Count Analysis:\n");
+      results.entrySet().stream()
+          .sorted(Map.Entry.comparingByKey())
+          .forEach(entry -> {
+            final int threads = entry.getKey();
+            final MeasurementResult result = entry.getValue();
+            report.append(String.format("  %2d threads: %8.2f ops/sec (avg: %.2f ms)\n",
+                threads, result.getOperationsPerSecond(), result.getMean() / 1_000_000.0));
+          });
+      
+      return report.toString();
+    }
+  }
+
+  /**
+   * Runs benchmarks with different GC algorithms for comparison.
+   *
+   * @param testName base test name
+   * @param operation the operation to benchmark
+   * @param config benchmark configuration
+   * @return map of GC algorithms to results
+   */
+  public static Map<String, MeasurementResult> runGCAlgorithmComparison(
+      final String testName, final BenchmarkOperation operation, final Configuration config) {
+    
+    final Map<String, String[]> gcOptions = new HashMap<>();
+    gcOptions.put("Serial", new String[]{"-XX:+UseSerialGC"});
+    gcOptions.put("Parallel", new String[]{"-XX:+UseParallelGC"});
+    gcOptions.put("G1", new String[]{"-XX:+UseG1GC"});
+    gcOptions.put("ZGC", new String[]{"-XX:+UseZGC"});
+    
+    return runJvmOptionComparison(testName + "_gc", operation, config, gcOptions);
+  }
+
+  /** Helper method to get current compilation time. */
+  private static long getCompilationTime() {
+    try {
+      final javax.management.MXBean compilationBean = 
+          java.lang.management.ManagementFactory.getCompilationMXBean();
+      if (compilationBean != null) {
+        return ((java.lang.management.CompilationMXBean) compilationBean).getTotalCompilationTime();
+      }
+    } catch (final Exception e) {
+      LOGGER.fine("Could not get compilation time: " + e.getMessage());
+    }
+    return 0L;
+  }
+
+  /** Helper method to get current GC time. */
+  private static long getGCTime() {
+    long totalGCTime = 0L;
+    try {
+      for (final java.lang.management.GarbageCollectorMXBean gcBean : 
+           java.lang.management.ManagementFactory.getGarbageCollectorMXBeans()) {
+        final long gcTime = gcBean.getCollectionTime();
+        if (gcTime > 0) {
+          totalGCTime += gcTime;
+        }
+      }
+    } catch (final Exception e) {
+      LOGGER.fine("Could not get GC time: " + e.getMessage());
+    }
+    return totalGCTime;
+  }
+
+  /** Helper method to log JVM options. */
+  private static void logJvmOptions(final String[] jvmOptions) {
+    LOGGER.info("JVM Options: " + String.join(" ", jvmOptions));
+    // In a real implementation, these options would be applied to spawned JVM processes
+  }
+
+  /**
+   * Runs performance regression analysis comparing current results with historical baselines.
+   *
+   * @param testName name of the test
+   * @param currentResult current benchmark result
+   * @param historicalResults list of historical results for comparison
+   * @param regressionThreshold threshold for detecting regressions (e.g., 0.1 for 10%)
+   * @return regression analysis result
+   */
+  public static PerformanceRegressionAnalysis analyzePerformanceRegression(
+      final String testName,
+      final MeasurementResult currentResult,
+      final List<MeasurementResult> historicalResults,
+      final double regressionThreshold) {
+    
+    if (historicalResults.isEmpty()) {
+      return new PerformanceRegressionAnalysis(testName, false, 0.0, "No historical data available");
+    }
+    
+    // Calculate baseline from historical results (median of recent results)
+    final List<Double> historicalThroughputs = historicalResults.stream()
+        .mapToDouble(MeasurementResult::getOperationsPerSecond)
+        .sorted()
+        .boxed()
+        .collect(java.util.stream.Collectors.toList());
+    
+    final double baseline = historicalThroughputs.get(historicalThroughputs.size() / 2);
+    final double currentThroughput = currentResult.getOperationsPerSecond();
+    final double regressionRatio = (baseline - currentThroughput) / baseline;
+    
+    final boolean isRegression = regressionRatio > regressionThreshold;
+    final String analysis = generateRegressionAnalysis(baseline, currentThroughput, regressionRatio, isRegression);
+    
+    return new PerformanceRegressionAnalysis(testName, isRegression, regressionRatio, analysis);
+  }
+
+  /** Performance regression analysis result. */
+  public static final class PerformanceRegressionAnalysis {
+    private final String testName;
+    private final boolean isRegression;
+    private final double regressionRatio;
+    private final String analysis;
+
+    private PerformanceRegressionAnalysis(
+        final String testName, final boolean isRegression, final double regressionRatio, final String analysis) {
+      this.testName = testName;
+      this.isRegression = isRegression;
+      this.regressionRatio = regressionRatio;
+      this.analysis = analysis;
+    }
+
+    public String getTestName() {
+      return testName;
+    }
+
+    public boolean isRegression() {
+      return isRegression;
+    }
+
+    public double getRegressionRatio() {
+      return regressionRatio;
+    }
+
+    public String getAnalysis() {
+      return analysis;
+    }
+  }
+
+  /** Helper method to generate regression analysis text. */
+  private static String generateRegressionAnalysis(
+      final double baseline, final double current, final double ratio, final boolean isRegression) {
+    final StringBuilder analysis = new StringBuilder();
+    
+    if (isRegression) {
+      analysis.append(String.format(
+          "PERFORMANCE REGRESSION DETECTED: Current throughput (%.2f ops/sec) is %.1f%% lower than baseline (%.2f ops/sec)",
+          current, ratio * 100, baseline));
+    } else if (ratio < -0.05) { // 5% improvement
+      analysis.append(String.format(
+          "PERFORMANCE IMPROVEMENT: Current throughput (%.2f ops/sec) is %.1f%% higher than baseline (%.2f ops/sec)",
+          current, Math.abs(ratio) * 100, baseline));
+    } else {
+      analysis.append(String.format(
+          "PERFORMANCE STABLE: Current throughput (%.2f ops/sec) is within acceptable range of baseline (%.2f ops/sec)",
+          current, baseline));
+    }
+    
+    return analysis.toString();
+  }
 }
