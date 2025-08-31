@@ -334,4 +334,22 @@ public final class TestUtils {
     }
     return properties;
   }
+
+  /**
+   * Converts a byte array to a hexadecimal string representation.
+   *
+   * @param bytes the byte array to convert
+   * @return the hexadecimal string representation
+   */
+  public static String bytesToHex(final byte[] bytes) {
+    if (bytes == null || bytes.length == 0) {
+      return "";
+    }
+    
+    final StringBuilder hex = new StringBuilder(bytes.length * 2);
+    for (final byte b : bytes) {
+      hex.append(String.format("%02x", b & 0xFF));
+    }
+    return hex.toString();
+  }
 }

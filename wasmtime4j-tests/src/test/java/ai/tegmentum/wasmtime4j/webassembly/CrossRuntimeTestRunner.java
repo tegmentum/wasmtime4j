@@ -126,7 +126,7 @@ public final class CrossRuntimeTestRunner {
         final String originalProperty = System.getProperty("wasmtime4j.runtime");
         try {
           System.setProperty("wasmtime4j.runtime", runtimeType.name().toLowerCase());
-          runtime = WasmRuntimeFactory.createRuntime();
+          runtime = WasmRuntimeFactory.create();
           runtimeCache.put(runtimeType, runtime);
         } finally {
           // Restore original property
