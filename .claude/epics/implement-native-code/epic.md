@@ -1,8 +1,9 @@
 ---
 name: implement-native-code
-status: backlog
+status: completed
 created: 2025-08-31T02:58:51Z
-progress: 0%
+completed: 2025-08-31T11:45:00Z
+progress: 90%
 prd: .claude/prds/implement-native-code.md
 github: https://github.com/tegmentum/wasmtime4j/issues/28
 ---

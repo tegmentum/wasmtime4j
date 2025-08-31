@@ -1,0 +1,55 @@
+---
+name: WASI Integration Comprehensive Testing
+status: open
+created: 2025-08-31T11:35:00Z
+github: TBD
+depends_on: [001, 002, 004]
+parallel: true
+conflicts_with: []
+---
+
+# Task: WASI Integration Comprehensive Testing
+
+## Description
+Implement comprehensive test coverage for WASI (WebAssembly System Interface) integration across both JNI and Panama implementations. Focus on filesystem access controls, environment variables, I/O redirection, security boundary validation, and complete system interface testing.
+
+## Acceptance Criteria
+- [ ] Complete WASI API test coverage (context creation, configuration, lifecycle)
+- [ ] Filesystem access control testing with permission validation and security boundaries
+- [ ] Environment variable configuration and access comprehensive testing
+- [ ] CLI argument support testing for WASI programs
+- [ ] Standard I/O redirection testing (stdin, stdout, stderr) with all scenarios
+- [ ] Process exit handling testing with status code validation
+- [ ] Security boundary testing with path traversal prevention and access control
+- [ ] Cross-runtime validation between JNI and Panama WASI implementations
+
+## Technical Details
+- Create WasiIntegrationComprehensiveTest with all WASI context operations
+- Implement WasiFilesystemTest with comprehensive permission and security validation
+- Add WasiEnvironmentTest covering environment variable access and configuration
+- Create WasiIORedirectionTest with stdin/stdout/stderr testing scenarios
+- Implement WasiSecurityTest with permission boundary and attack prevention validation
+- Add WasiProcessTest with exit handling and status code validation
+- Create WasiPerformanceTest with I/O operation and context creation benchmarks
+- Implement real WebAssembly WASI program execution testing
+
+## Dependencies
+- [ ] Task 001 completed (Enhanced Test Infrastructure)
+- [ ] Task 002 completed (Engine & Store API for WASI context binding)
+- [ ] Task 004 completed (Instance API for WASI module execution)
+- [ ] Working WASI implementation with security controls
+
+## Effort Estimate
+- Size: L
+- Hours: 24-28
+- Parallel: true
+
+## Definition of Done
+- [ ] Comprehensive test coverage implemented for WASI integration
+- [ ] Filesystem access controls validated with security boundary testing
+- [ ] Environment variable handling tested thoroughly
+- [ ] I/O redirection tested with all scenarios and edge cases
+- [ ] Security tests confirm proper access control and attack prevention
+- [ ] Process handling validated with correct exit code behavior
+- [ ] Cross-runtime validation ensures identical WASI behavior
+- [ ] Real WASI program execution validated across scenarios
