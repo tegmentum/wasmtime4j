@@ -332,11 +332,7 @@ public final class WasiPermissionException extends WasiException {
    * @param cause the underlying cause
    */
   public WasiPermissionException(final String message, final Throwable cause) {
-    this(
-        message,
-        PermissionViolationType.UNKNOWN,
-        "operation",
-        "resource");
+    this(message, PermissionViolationType.UNKNOWN, "operation", "resource");
     initCause(cause);
   }
 
@@ -346,10 +342,6 @@ public final class WasiPermissionException extends WasiException {
    * @param message the error message
    */
   public WasiPermissionException(final String message) {
-    this(
-        message,
-        PermissionViolationType.UNKNOWN,
-        "operation",
-        "resource");
+    this(message, PermissionViolationType.UNKNOWN, "operation", "resource");
   }
 }

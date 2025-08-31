@@ -162,8 +162,8 @@ public final class PanamaModule implements Module, AutoCloseable {
   /**
    * Creates an instance of this module without imports.
    *
-   * <p>This is a convenience method for instantiating modules that don't require imports.
-   * This method is specific to the Panama implementation.
+   * <p>This is a convenience method for instantiating modules that don't require imports. This
+   * method is specific to the Panama implementation.
    *
    * @return a new Instance of this module
    * @throws WasmException if instantiation fails
@@ -185,8 +185,8 @@ public final class PanamaModule implements Module, AutoCloseable {
   /**
    * Creates an instance of this module with the provided imports.
    *
-   * <p>This is a Panama-specific convenience method that accepts a list of import objects.
-   * This method is specific to the Panama implementation.
+   * <p>This is a Panama-specific convenience method that accepts a list of import objects. This
+   * method is specific to the Panama implementation.
    *
    * @param imports the import objects to provide to the module
    * @return a new Instance of this module with the specified imports
@@ -226,7 +226,8 @@ public final class PanamaModule implements Module, AutoCloseable {
   @Override
   public Instance instantiate(final Store store, final ImportMap imports) throws WasmException {
     // TODO: Implement proper store-based instantiation with imports
-    throw new UnsupportedOperationException("Store-based instantiation with imports not yet implemented");
+    throw new UnsupportedOperationException(
+        "Store-based instantiation with imports not yet implemented");
   }
 
   /**
@@ -284,8 +285,8 @@ public final class PanamaModule implements Module, AutoCloseable {
   /**
    * Serializes this module to a byte array.
    *
-   * <p>This method serializes the compiled module into a portable byte array format
-   * that can be saved and loaded later. This is useful for caching compiled modules.
+   * <p>This method serializes the compiled module into a portable byte array format that can be
+   * saved and loaded later. This is useful for caching compiled modules.
    *
    * @return the serialized module as a byte array
    * @throws WasmException if serialization fails

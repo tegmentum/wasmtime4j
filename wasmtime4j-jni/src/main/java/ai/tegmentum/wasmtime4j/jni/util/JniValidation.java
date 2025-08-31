@@ -76,7 +76,9 @@ public final class JniValidation {
     requireNonNull(str, parameterName);
     if (str.trim().isEmpty()) {
       throw new JniValidationException(
-          "Parameter '" + parameterName + "' must not be empty or whitespace-only", parameterName, str);
+          "Parameter '" + parameterName + "' must not be empty or whitespace-only",
+          parameterName,
+          str);
     }
   }
 

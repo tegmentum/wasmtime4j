@@ -16,7 +16,8 @@ import org.junit.jupiter.api.Test;
  * The tests verify constructor behavior, resource management, and basic API functionality without
  * relying on actual native calls.
  *
- * <p>Note: Functional behavior with actual WebAssembly global operations is tested in integration tests.
+ * <p>Note: Functional behavior with actual WebAssembly global operations is tested in integration
+ * tests.
  */
 class JniGlobalTest {
 
@@ -44,7 +45,7 @@ class JniGlobalTest {
   void testResourceManagement() {
     final JniGlobal global = new JniGlobal(VALID_HANDLE);
     assertFalse(global.isClosed());
-    
+
     // Note: Not calling close() in unit test since it requires native methods
     assertTrue(global.isClosed());
   }

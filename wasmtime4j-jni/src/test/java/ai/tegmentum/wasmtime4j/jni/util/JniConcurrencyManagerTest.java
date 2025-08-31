@@ -366,7 +366,8 @@ class JniConcurrencyManagerTest {
 
     @Test
     @DisplayName("Should block reads during write")
-    void shouldBlockReadsDuringWrite() throws InterruptedException, ExecutionException, TimeoutException {
+    void shouldBlockReadsDuringWrite()
+        throws InterruptedException, ExecutionException, TimeoutException {
       final CountDownLatch writeLatch = new CountDownLatch(1);
       final CountDownLatch readStartLatch = new CountDownLatch(1);
       final AtomicReference<String> readResult = new AtomicReference<>();

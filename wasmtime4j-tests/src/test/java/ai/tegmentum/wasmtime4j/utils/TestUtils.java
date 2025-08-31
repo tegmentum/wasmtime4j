@@ -345,7 +345,7 @@ public final class TestUtils {
     if (bytes == null || bytes.length == 0) {
       return "";
     }
-    
+
     final StringBuilder hex = new StringBuilder(bytes.length * 2);
     for (final byte b : bytes) {
       hex.append(String.format("%02x", b & 0xFF));

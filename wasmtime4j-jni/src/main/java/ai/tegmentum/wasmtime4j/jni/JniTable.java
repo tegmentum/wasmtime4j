@@ -210,7 +210,6 @@ public final class JniTable extends JniResource implements WasmTable {
     }
   }
 
-
   /**
    * Validates that an index is within table bounds.
    *

@@ -72,14 +72,15 @@ public class ConcurrencyBenchmark extends BenchmarkBase {
 
   /** WebAssembly runtime components for shared pattern. */
   private WasmRuntime sharedRuntime;
+
   private Engine sharedEngine;
-  
+
   /** Thread pool for concurrent execution. */
   private ExecutorService executorService;
-  
+
   /** Module bytecode. */
   private byte[] moduleBytes;
-  
+
   /** WebAssembly context for concurrent operations. */
   private static final class ConcurrentWasmContext {
     private final WasmRuntime runtime;
@@ -90,8 +91,8 @@ public class ConcurrencyBenchmark extends BenchmarkBase {
     private final WasmFunction function;
     private final WasmMemory memory;
     private final RuntimeType runtimeType;
-    
-    ConcurrentWasmContext(final RuntimeType runtimeType, final byte[] moduleBytes) 
+
+    ConcurrentWasmContext(final RuntimeType runtimeType, final byte[] moduleBytes)
         throws WasmException {
       this.runtimeType = runtimeType;
       this.runtime = BenchmarkBase.createRuntime(runtimeType);
@@ -102,8 +103,8 @@ public class ConcurrencyBenchmark extends BenchmarkBase {
       this.function = instance.getFunction("add").orElse(null);
       this.memory = instance.getMemory("memory").orElse(null);
     }
-    
-    ConcurrentWasmContext(final Engine sharedEngine, final byte[] moduleBytes) 
+
+    ConcurrentWasmContext(final Engine sharedEngine, final byte[] moduleBytes)
         throws WasmException {
       this.runtimeType = getRecommendedRuntime(); // Inherited from shared engine
       this.runtime = null; // Using shared runtime
@@ -114,18 +115,18 @@ public class ConcurrencyBenchmark extends BenchmarkBase {
       this.function = instance.getFunction("add").orElse(null);
       this.memory = instance.getMemory("memory").orElse(null);
     }
-    
+
     WasmValue[] callFunction(final int param1, final int param2) throws WasmException {
       final WasmValue[] params = {WasmValue.i32(param1), WasmValue.i32(param2)};
       return function.call(params);
     }
-    
+
     void writeMemory(final int offset, final byte[] data) throws WasmException {
       if (memory != null && offset + data.length <= memory.getSize()) {
         memory.writeBytes(offset, data, 0, data.length);
       }
     }
-    
+
     byte[] readMemory(final int offset, final int length) throws WasmException {
       if (memory != null && offset + length <= memory.getSize()) {
         byte[] result = new byte[length];
@@ -134,7 +135,7 @@ public class ConcurrencyBenchmark extends BenchmarkBase {
       }
       return new byte[0];
     }
-    
+
     void close() {
       try {
         // Function and memory resources are managed by the instance
@@ -154,7 +155,7 @@ public class ConcurrencyBenchmark extends BenchmarkBase {
         // Ignore cleanup errors
       }
     }
-    
+
     public RuntimeType getRuntimeType() {
       return runtimeType;
     }
@@ -170,13 +171,13 @@ public class ConcurrencyBenchmark extends BenchmarkBase {
   public void setupIteration() throws WasmException {
     moduleBytes = SIMPLE_WASM_MODULE.clone();
     executorService = Executors.newFixedThreadPool(threadCount);
-    
+
     // Setup shared runtime for SHARED_RUNTIME pattern
     if (concurrencyPattern.equals("SHARED_RUNTIME")) {
       sharedRuntime = createRuntime(getRuntimeType());
       sharedEngine = createEngine(sharedRuntime);
     }
-    
+
     // Force GC before concurrent operations
     System.gc();
   }
@@ -196,7 +197,7 @@ public class ConcurrencyBenchmark extends BenchmarkBase {
       }
       executorService = null;
     }
-    
+
     if (sharedEngine != null) {
       try {
         sharedEngine.close();
@@ -205,7 +206,7 @@ public class ConcurrencyBenchmark extends BenchmarkBase {
       }
       sharedEngine = null;
     }
-    
+
     if (sharedRuntime != null) {
       try {
         sharedRuntime.close();
@@ -214,7 +215,7 @@ public class ConcurrencyBenchmark extends BenchmarkBase {
       }
       sharedRuntime = null;
     }
-    
+
     moduleBytes = null;
   }
 
@@ -226,35 +227,37 @@ public class ConcurrencyBenchmark extends BenchmarkBase {
   @Benchmark
   public void benchmarkConcurrentFunctionCalls(final Blackhole blackhole) {
     final List<Future<Integer>> futures = new ArrayList<>();
-    
+
     for (int i = 0; i < threadCount; i++) {
       final int threadId = i;
-      final Future<Integer> future = executorService.submit(() -> {
-        try {
-          final ConcurrentWasmContext context;
-          if (concurrencyPattern.equals("SHARED_RUNTIME")) {
-            context = new ConcurrentWasmContext(sharedEngine, moduleBytes);
-          } else {
-            context = new ConcurrentWasmContext(getRuntimeType(), moduleBytes);
-          }
-          
-          int result = 0;
-          for (int j = 0; j < 100; j++) {
-            final WasmValue[] callResult = context.callFunction(threadId + j, j);
-            if (callResult.length > 0) {
-              result += callResult[0].asInt();
-            }
-          }
-          
-          context.close();
-          return result;
-        } catch (final WasmException e) {
-          return -1;
-        }
-      });
+      final Future<Integer> future =
+          executorService.submit(
+              () -> {
+                try {
+                  final ConcurrentWasmContext context;
+                  if (concurrencyPattern.equals("SHARED_RUNTIME")) {
+                    context = new ConcurrentWasmContext(sharedEngine, moduleBytes);
+                  } else {
+                    context = new ConcurrentWasmContext(getRuntimeType(), moduleBytes);
+                  }
+
+                  int result = 0;
+                  for (int j = 0; j < 100; j++) {
+                    final WasmValue[] callResult = context.callFunction(threadId + j, j);
+                    if (callResult.length > 0) {
+                      result += callResult[0].asInt();
+                    }
+                  }
+
+                  context.close();
+                  return result;
+                } catch (final WasmException e) {
+                  return -1;
+                }
+              });
       futures.add(future);
     }
-    
+
     // Wait for all tasks to complete and collect results
     int totalResult = 0;
     for (final Future<Integer> future : futures) {
@@ -264,7 +267,7 @@ public class ConcurrencyBenchmark extends BenchmarkBase {
         blackhole.consume(e.getMessage());
       }
     }
-    
+
     blackhole.consume(totalResult);
     blackhole.consume(threadCount);
   }
@@ -277,46 +280,48 @@ public class ConcurrencyBenchmark extends BenchmarkBase {
   @Benchmark
   public void benchmarkConcurrentMemoryOperations(final Blackhole blackhole) {
     final List<Future<Long>> futures = new ArrayList<>();
-    
+
     for (int i = 0; i < threadCount; i++) {
       final int threadId = i;
-      final Future<Long> future = executorService.submit(() -> {
-        try {
-          final ConcurrentWasmContext context;
-          if (concurrencyPattern.equals("SHARED_RUNTIME")) {
-            context = new ConcurrentWasmContext(sharedEngine, moduleBytes);
-          } else {
-            context = new ConcurrentWasmContext(getRuntimeType(), moduleBytes);
-          }
-          
-          final byte[] writeData = new byte[64];
-          for (int j = 0; j < writeData.length; j++) {
-            writeData[j] = (byte) ((threadId + j) % 256);
-          }
-          
-          long checksum = 0;
-          for (int j = 0; j < 50; j++) {
-            final int offset = (threadId * 128) + (j % 8) * 64;
-            
-            // Write memory
-            context.writeMemory(offset, writeData);
-            
-            // Read memory back
-            final byte[] readData = context.readMemory(offset, writeData.length);
-            for (final byte b : readData) {
-              checksum += b & 0xFF;
-            }
-          }
-          
-          context.close();
-          return checksum;
-        } catch (final WasmException e) {
-          return -1L;
-        }
-      });
+      final Future<Long> future =
+          executorService.submit(
+              () -> {
+                try {
+                  final ConcurrentWasmContext context;
+                  if (concurrencyPattern.equals("SHARED_RUNTIME")) {
+                    context = new ConcurrentWasmContext(sharedEngine, moduleBytes);
+                  } else {
+                    context = new ConcurrentWasmContext(getRuntimeType(), moduleBytes);
+                  }
+
+                  final byte[] writeData = new byte[64];
+                  for (int j = 0; j < writeData.length; j++) {
+                    writeData[j] = (byte) ((threadId + j) % 256);
+                  }
+
+                  long checksum = 0;
+                  for (int j = 0; j < 50; j++) {
+                    final int offset = (threadId * 128) + (j % 8) * 64;
+
+                    // Write memory
+                    context.writeMemory(offset, writeData);
+
+                    // Read memory back
+                    final byte[] readData = context.readMemory(offset, writeData.length);
+                    for (final byte b : readData) {
+                      checksum += b & 0xFF;
+                    }
+                  }
+
+                  context.close();
+                  return checksum;
+                } catch (final WasmException e) {
+                  return -1L;
+                }
+              });
       futures.add(future);
     }
-    
+
     // Wait for all tasks to complete and collect results
     long totalChecksum = 0;
     for (final Future<Long> future : futures) {
@@ -326,7 +331,7 @@ public class ConcurrencyBenchmark extends BenchmarkBase {
         blackhole.consume(e.getMessage());
       }
     }
-    
+
     blackhole.consume(totalChecksum);
     blackhole.consume(threadCount);
   }
@@ -339,49 +344,51 @@ public class ConcurrencyBenchmark extends BenchmarkBase {
   @Benchmark
   public void benchmarkMixedConcurrentOperations(final Blackhole blackhole) {
     final List<Future<String>> futures = new ArrayList<>();
-    
+
     for (int i = 0; i < threadCount; i++) {
       final int threadId = i;
-      final Future<String> future = executorService.submit(() -> {
-        try {
-          final ConcurrentWasmContext context;
-          if (concurrencyPattern.equals("SHARED_RUNTIME")) {
-            context = new ConcurrentWasmContext(sharedEngine, moduleBytes);
-          } else {
-            context = new ConcurrentWasmContext(getRuntimeType(), moduleBytes);
-          }
-          
-          final StringBuilder result = new StringBuilder();
-          
-          for (int j = 0; j < 25; j++) {
-            // Function call
-            final WasmValue[] callResult = context.callFunction(threadId, j);
-            if (callResult.length > 0) {
-              result.append(callResult[0].asInt()).append(",");
-            }
-            
-            // Memory operation
-            if (j % 5 == 0) {
-              final byte[] data = new byte[32];
-              for (int k = 0; k < data.length; k++) {
-                data[k] = (byte) ((threadId + j + k) % 256);
-              }
-              context.writeMemory(threadId * 64, data);
-              
-              final byte[] readBack = context.readMemory(threadId * 64, data.length);
-              result.append("mem:").append(readBack.length).append(";");
-            }
-          }
-          
-          context.close();
-          return result.toString();
-        } catch (final WasmException e) {
-          return "error:" + e.getMessage();
-        }
-      });
+      final Future<String> future =
+          executorService.submit(
+              () -> {
+                try {
+                  final ConcurrentWasmContext context;
+                  if (concurrencyPattern.equals("SHARED_RUNTIME")) {
+                    context = new ConcurrentWasmContext(sharedEngine, moduleBytes);
+                  } else {
+                    context = new ConcurrentWasmContext(getRuntimeType(), moduleBytes);
+                  }
+
+                  final StringBuilder result = new StringBuilder();
+
+                  for (int j = 0; j < 25; j++) {
+                    // Function call
+                    final WasmValue[] callResult = context.callFunction(threadId, j);
+                    if (callResult.length > 0) {
+                      result.append(callResult[0].asInt()).append(",");
+                    }
+
+                    // Memory operation
+                    if (j % 5 == 0) {
+                      final byte[] data = new byte[32];
+                      for (int k = 0; k < data.length; k++) {
+                        data[k] = (byte) ((threadId + j + k) % 256);
+                      }
+                      context.writeMemory(threadId * 64, data);
+
+                      final byte[] readBack = context.readMemory(threadId * 64, data.length);
+                      result.append("mem:").append(readBack.length).append(";");
+                    }
+                  }
+
+                  context.close();
+                  return result.toString();
+                } catch (final WasmException e) {
+                  return "error:" + e.getMessage();
+                }
+              });
       futures.add(future);
     }
-    
+
     // Wait for all tasks to complete and collect results
     final List<String> results = new ArrayList<>();
     for (final Future<String> future : futures) {
@@ -391,7 +398,7 @@ public class ConcurrencyBenchmark extends BenchmarkBase {
         results.add("exception:" + e.getMessage());
       }
     }
-    
+
     blackhole.consume(results.size());
     blackhole.consume(threadCount);
     for (final String result : results) {
@@ -407,35 +414,37 @@ public class ConcurrencyBenchmark extends BenchmarkBase {
   @Benchmark
   public void benchmarkConcurrentInstanceLifecycle(final Blackhole blackhole) {
     final List<Future<Integer>> futures = new ArrayList<>();
-    
+
     for (int i = 0; i < threadCount; i++) {
       final int threadId = i;
-      final Future<Integer> future = executorService.submit(() -> {
-        int successCount = 0;
-        
-        // Create and destroy multiple instances per thread
-        for (int j = 0; j < 10; j++) {
-          try {
-            final ConcurrentWasmContext context = 
-                new ConcurrentWasmContext(getRuntimeType(), moduleBytes);
-            
-            // Perform a simple operation
-            final WasmValue[] result = context.callFunction(threadId, j);
-            if (result.length > 0) {
-              successCount++;
-            }
-            
-            context.close();
-          } catch (final WasmException e) {
-            // Count failures but continue
-          }
-        }
-        
-        return successCount;
-      });
+      final Future<Integer> future =
+          executorService.submit(
+              () -> {
+                int successCount = 0;
+
+                // Create and destroy multiple instances per thread
+                for (int j = 0; j < 10; j++) {
+                  try {
+                    final ConcurrentWasmContext context =
+                        new ConcurrentWasmContext(getRuntimeType(), moduleBytes);
+
+                    // Perform a simple operation
+                    final WasmValue[] result = context.callFunction(threadId, j);
+                    if (result.length > 0) {
+                      successCount++;
+                    }
+
+                    context.close();
+                  } catch (final WasmException e) {
+                    // Count failures but continue
+                  }
+                }
+
+                return successCount;
+              });
       futures.add(future);
     }
-    
+
     // Wait for all tasks to complete and collect results
     int totalSuccess = 0;
     for (final Future<Integer> future : futures) {
@@ -445,7 +454,7 @@ public class ConcurrencyBenchmark extends BenchmarkBase {
         blackhole.consume(e.getMessage());
       }
     }
-    
+
     blackhole.consume(totalSuccess);
     blackhole.consume(threadCount);
   }
@@ -458,44 +467,47 @@ public class ConcurrencyBenchmark extends BenchmarkBase {
   @Benchmark
   public void benchmarkResourceContention(final Blackhole blackhole) {
     final List<CompletableFuture<Long>> futures = new ArrayList<>();
-    
+
     // Create more tasks than threads to test contention
     final int taskCount = threadCount * 3;
-    
+
     for (int i = 0; i < taskCount; i++) {
       final int taskId = i;
-      final CompletableFuture<Long> future = CompletableFuture.supplyAsync(() -> {
-        try {
-          final ConcurrentWasmContext context;
-          if (concurrencyPattern.equals("SHARED_RUNTIME")) {
-            context = new ConcurrentWasmContext(sharedEngine, moduleBytes);
-          } else {
-            context = new ConcurrentWasmContext(getRuntimeType(), moduleBytes);
-          }
-          
-          final long startTime = System.nanoTime();
-          
-          // Perform intensive operations
-          long result = 0;
-          for (int j = 0; j < 50; j++) {
-            final WasmValue[] callResult = context.callFunction(taskId % 100, j);
-            if (callResult.length > 0) {
-              result += callResult[0].asInt();
-            }
-          }
-          
-          final long endTime = System.nanoTime();
-          context.close();
-          
-          return endTime - startTime; // Return execution time
-        } catch (final WasmException e) {
-          return -1L;
-        }
-      }, executorService);
-      
+      final CompletableFuture<Long> future =
+          CompletableFuture.supplyAsync(
+              () -> {
+                try {
+                  final ConcurrentWasmContext context;
+                  if (concurrencyPattern.equals("SHARED_RUNTIME")) {
+                    context = new ConcurrentWasmContext(sharedEngine, moduleBytes);
+                  } else {
+                    context = new ConcurrentWasmContext(getRuntimeType(), moduleBytes);
+                  }
+
+                  final long startTime = System.nanoTime();
+
+                  // Perform intensive operations
+                  long result = 0;
+                  for (int j = 0; j < 50; j++) {
+                    final WasmValue[] callResult = context.callFunction(taskId % 100, j);
+                    if (callResult.length > 0) {
+                      result += callResult[0].asInt();
+                    }
+                  }
+
+                  final long endTime = System.nanoTime();
+                  context.close();
+
+                  return endTime - startTime; // Return execution time
+                } catch (final WasmException e) {
+                  return -1L;
+                }
+              },
+              executorService);
+
       futures.add(future);
     }
-    
+
     // Wait for all tasks to complete
     long totalTime = 0;
     int completedTasks = 0;
@@ -510,7 +522,7 @@ public class ConcurrencyBenchmark extends BenchmarkBase {
         blackhole.consume(e.getMessage());
       }
     }
-    
+
     blackhole.consume(totalTime);
     blackhole.consume(completedTasks);
     blackhole.consume(taskCount);

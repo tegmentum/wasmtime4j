@@ -5,9 +5,9 @@ import ai.tegmentum.wasmtime4j.panama.exception.PanamaException;
 /**
  * Exception thrown when WASI operations fail.
  *
- * <p>This exception is thrown when WASI (WebAssembly System Interface) operations encounter
- * errors during execution. It provides information about the specific operation that failed
- * and the underlying error condition.
+ * <p>This exception is thrown when WASI (WebAssembly System Interface) operations encounter errors
+ * during execution. It provides information about the specific operation that failed and the
+ * underlying error condition.
  *
  * <p>Common scenarios that trigger this exception:
  *
@@ -52,5 +52,4 @@ public class WasiException extends PanamaException {
   public WasiException(final Throwable cause) {
     super(cause);
   }
-
 }

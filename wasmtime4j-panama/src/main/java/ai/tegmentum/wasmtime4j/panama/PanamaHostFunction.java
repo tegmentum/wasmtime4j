@@ -123,7 +123,8 @@ public final class PanamaHostFunction implements WasmFunction {
       }
     } catch (Exception e) {
       hostFunctionRegistry.remove(hostFunctionId);
-      throw PanamaErrorHandler.mapToWasmException(e, "Failed to create host function: " + functionName);
+      throw PanamaErrorHandler.mapToWasmException(
+          e, "Failed to create host function: " + functionName);
     }
   }
 
@@ -185,9 +186,7 @@ public final class PanamaHostFunction implements WasmFunction {
     return closed;
   }
 
-  /**
-   * Closes this host function and releases its resources.
-   */
+  /** Closes this host function and releases its resources. */
   public void close() {
     if (closed) {
       return;
@@ -466,7 +465,8 @@ public final class PanamaHostFunction implements WasmFunction {
       case F64 -> wasmValue.asF64();
       case V128 -> wasmValue.asV128();
       case FUNCREF, EXTERNREF -> wasmValue.asExternref();
-      default -> throw new IllegalArgumentException("Unsupported value type: " + wasmValue.getType());
+      default -> throw new IllegalArgumentException(
+          "Unsupported value type: " + wasmValue.getType());
     };
   }
 

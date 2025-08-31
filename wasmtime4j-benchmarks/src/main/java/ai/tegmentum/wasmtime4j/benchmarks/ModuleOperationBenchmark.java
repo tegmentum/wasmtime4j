@@ -59,15 +59,16 @@ public class ModuleOperationBenchmark extends BenchmarkBase {
 
   /** WebAssembly runtime components. */
   private WasmRuntime runtime;
+
   private Engine engine;
   private Store store;
 
   /** Module bytecode based on the selected type. */
   private byte[] moduleBytes;
-  
+
   /** Compiled WebAssembly module. */
   private Module compiledModule;
-  
+
   /** WebAssembly instance. */
   private Instance wasmInstance;
 
@@ -79,7 +80,7 @@ public class ModuleOperationBenchmark extends BenchmarkBase {
     runtime = createRuntime(runtimeType);
     engine = createEngine(runtime);
     store = createStore(engine);
-    
+
     // Select appropriate module bytes based on type
     switch (moduleType) {
       case "SIMPLE":
@@ -109,7 +110,7 @@ public class ModuleOperationBenchmark extends BenchmarkBase {
     cleanup();
     moduleBytes = null;
   }
-  
+
   /** Helper method to clean up WebAssembly resources. */
   private void cleanup() {
     try {
@@ -182,15 +183,15 @@ public class ModuleOperationBenchmark extends BenchmarkBase {
     try {
       final Module module = compileModule(engine, moduleBytes);
       final Instance instance = instantiateModule(store, module);
-      
+
       blackhole.consume(module.getName());
       // TODO: Replace with actual export counting when getExports() API is implemented
       blackhole.consume(1); // Assume at least one export
-      
+
       // Clean up for next iteration
       instance.close();
       module.close();
-      
+
       return instance;
     } catch (final WasmException e) {
       throw new RuntimeException("Module instantiation failed", e);
@@ -218,7 +219,7 @@ public class ModuleOperationBenchmark extends BenchmarkBase {
       // Clean up
       instance.close();
       module.close();
-      
+
       return instance;
     } catch (final WasmException e) {
       throw new RuntimeException("Compile-then-instantiate failed", e);
@@ -293,7 +294,7 @@ public class ModuleOperationBenchmark extends BenchmarkBase {
   public void benchmarkModuleSerialization(final Blackhole blackhole) {
     try {
       final Module module = compileModule(engine, moduleBytes);
-      
+
       // Serialize compiled module
       // TODO: Uncomment when module.serialize() API is implemented
       final byte[] serialized = new byte[0]; // module.serialize();

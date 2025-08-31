@@ -24,9 +24,7 @@ public final class TestRunner {
     // Utility class - prevent instantiation
   }
 
-  /**
-   * Functional interface for tests that run with both runtimes.
-   */
+  /** Functional interface for tests that run with both runtimes. */
   @FunctionalInterface
   public interface RuntimeTestFunction {
     void execute(final WasmRuntime runtime, final String testName) throws Exception;
@@ -34,11 +32,12 @@ public final class TestRunner {
 
   /**
    * Runs a test function with both JNI and Panama runtimes.
-   * 
+   *
    * @param testInfo the test information
    * @param testFunction the test function to execute
    */
-  public static void runWithBothRuntimes(final TestInfo testInfo, final RuntimeTestFunction testFunction) {
+  public static void runWithBothRuntimes(
+      final TestInfo testInfo, final RuntimeTestFunction testFunction) {
     final String testName = testInfo.getDisplayName();
     LOGGER.info("Running test with both runtimes: " + testName);
 

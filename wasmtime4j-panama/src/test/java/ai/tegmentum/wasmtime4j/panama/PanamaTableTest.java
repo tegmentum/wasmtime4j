@@ -30,7 +30,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import ai.tegmentum.wasmtime4j.WasmValueType;
-import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.lang.foreign.MemorySegment;
 import java.lang.invoke.MethodHandle;
 import org.junit.jupiter.api.BeforeEach;
@@ -143,7 +142,7 @@ class PanamaTableTest {
 
       // Act
       final int result = panamaTable.getSize();
-      
+
       // Assert - getSize returns 0 on failure as per implementation
       assertEquals(0, result);
     }
@@ -229,7 +228,7 @@ class PanamaTableTest {
 
       // Act
       final Object result = panamaTable.get(index);
-      
+
       // Assert - get returns null on failure as per implementation
       assertNull(result);
     }

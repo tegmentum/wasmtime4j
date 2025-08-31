@@ -124,11 +124,14 @@ public final class WasiAsyncFileOperations implements AutoCloseable {
               });
 
       // Create scheduled executor for timeouts
-      this.scheduledExecutor = Executors.newScheduledThreadPool(2, r -> {
-        final Thread thread = new Thread(r, "WasiAsyncTimeout");
-        thread.setDaemon(true);
-        return thread;
-      });
+      this.scheduledExecutor =
+          Executors.newScheduledThreadPool(
+              2,
+              r -> {
+                final Thread thread = new Thread(r, "WasiAsyncTimeout");
+                thread.setDaemon(true);
+                return thread;
+              });
 
       // Create selector for non-blocking I/O
       this.selector = Selector.open();
@@ -181,13 +184,11 @@ public final class WasiAsyncFileOperations implements AutoCloseable {
     JniValidation.requirePositive(timeoutMs, "timeoutMs");
 
     if (closed.get()) {
-      return failedFuture(
-          new WasiFileSystemException("Async file operations closed", "EIO"));
+      return failedFuture(new WasiFileSystemException("Async file operations closed", "EIO"));
     }
 
     if (activeOperations.get() >= MAX_CONCURRENT_OPERATIONS) {
-      return failedFuture(
-          new WasiFileSystemException("Too many concurrent operations", "EAGAIN"));
+      return failedFuture(new WasiFileSystemException("Too many concurrent operations", "EAGAIN"));
     }
 
     LOGGER.fine(
@@ -212,7 +213,8 @@ public final class WasiAsyncFileOperations implements AutoCloseable {
 
     try {
       final AsynchronousFileChannel asyncChannel =
-          AsynchronousFileChannel.open(path, Collections.singleton(StandardOpenOption.READ), asyncExecutor);
+          AsynchronousFileChannel.open(
+              path, Collections.singleton(StandardOpenOption.READ), asyncExecutor);
 
       final ByteBuffer buffer = ByteBuffer.allocateDirect(bufferSize);
 
@@ -304,13 +306,11 @@ public final class WasiAsyncFileOperations implements AutoCloseable {
     JniValidation.requirePositive(timeoutMs, "timeoutMs");
 
     if (closed.get()) {
-      return failedFuture(
-          new WasiFileSystemException("Async file operations closed", "EIO"));
+      return failedFuture(new WasiFileSystemException("Async file operations closed", "EIO"));
     }
 
     if (activeOperations.get() >= MAX_CONCURRENT_OPERATIONS) {
-      return failedFuture(
-          new WasiFileSystemException("Too many concurrent operations", "EAGAIN"));
+      return failedFuture(new WasiFileSystemException("Too many concurrent operations", "EAGAIN"));
     }
 
     LOGGER.fine(
@@ -407,8 +407,7 @@ public final class WasiAsyncFileOperations implements AutoCloseable {
     JniValidation.requireNonNull(channel, "channel");
 
     if (closed.get()) {
-      return failedFuture(
-          new WasiFileSystemException("Async file operations closed", "EIO"));
+      return failedFuture(new WasiFileSystemException("Async file operations closed", "EIO"));
     }
 
     final CompletableFuture<SelectionKey> future = new CompletableFuture<>();

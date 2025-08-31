@@ -16,7 +16,8 @@ import org.junit.jupiter.api.Test;
  * The tests verify constructor behavior, resource management, and basic API functionality without
  * relying on actual native calls.
  *
- * <p>Note: Functional behavior with actual WebAssembly memory operations is tested in integration tests.
+ * <p>Note: Functional behavior with actual WebAssembly memory operations is tested in integration
+ * tests.
  */
 class JniMemoryTest {
 
@@ -44,7 +45,7 @@ class JniMemoryTest {
   void testResourceManagement() {
     final JniMemory memory = new JniMemory(VALID_HANDLE);
     assertFalse(memory.isClosed());
-    
+
     // Note: Not calling close() in unit test since it requires native methods
     assertTrue(memory.isClosed());
   }

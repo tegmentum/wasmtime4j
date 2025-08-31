@@ -5,9 +5,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-/**
- * Analysis of performance regressions across test runs.
- */
+/** Analysis of performance regressions across test runs. */
 public final class PerformanceRegressionAnalysis {
   private final String testName;
   private final List<PerformanceRegression> regressions;
@@ -63,9 +61,7 @@ public final class PerformanceRegressionAnalysis {
     }
   }
 
-  /**
-   * Builder for creating performance regression analysis instances.
-   */
+  /** Builder for creating performance regression analysis instances. */
   public static final class Builder {
     private final String testName;
     private final List<PerformanceRegression> regressions = new ArrayList<>();

@@ -288,7 +288,7 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
     try {
       final Object value = getValue();
       final String typeString = getValueType();
-      
+
       // Convert Object value and type string to WasmValue
       return convertToWasmValue(value, typeString);
     } catch (final Exception e) {
@@ -301,7 +301,7 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
     JniValidation.requireNonNull(value, "value");
     ensureNotClosed();
     validateMutable();
-    
+
     try {
       final Object objectValue = convertFromWasmValue(value);
       setValue(objectValue);
@@ -338,7 +338,7 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
     if (value == null) {
       return WasmValue.i32(0); // Default for null
     }
-    
+
     switch (typeString.toLowerCase()) {
       case "i32":
         return WasmValue.i32(((Number) value).intValue());

@@ -4,9 +4,7 @@ import ai.tegmentum.wasmtime4j.RuntimeType;
 import java.time.Duration;
 import java.util.Objects;
 
-/**
- * Represents a detected performance regression.
- */
+/** Represents a detected performance regression. */
 public final class PerformanceRegression {
   private final RuntimeType runtimeType;
   private final Duration baselineDuration;

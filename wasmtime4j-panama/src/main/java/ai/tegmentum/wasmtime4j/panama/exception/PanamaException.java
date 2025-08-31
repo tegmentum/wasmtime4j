@@ -3,8 +3,8 @@ package ai.tegmentum.wasmtime4j.panama.exception;
 /**
  * Base exception for Panama FFI implementation errors.
  *
- * <p>This is the root exception class for all Panama-specific errors in the WebAssembly runtime.
- * It provides a common base for exception handling across the Panama implementation.
+ * <p>This is the root exception class for all Panama-specific errors in the WebAssembly runtime. It
+ * provides a common base for exception handling across the Panama implementation.
  *
  * @since 1.0.0
  */

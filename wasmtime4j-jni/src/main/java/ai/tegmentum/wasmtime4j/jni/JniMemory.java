@@ -177,13 +177,14 @@ public final class JniMemory extends JniResource implements WasmMemory {
   }
 
   @Override
-  public void readBytes(final int offset, final byte[] dest, final int destOffset, final int length) {
+  public void readBytes(
+      final int offset, final byte[] dest, final int destOffset, final int length) {
     ensureNotClosed();
     JniValidation.requireNonNull(dest, "dest");
     JniValidation.requireNonNegative(offset, "offset");
     JniValidation.requireNonNegative(destOffset, "destOffset");
     JniValidation.requireNonNegative(length, "length");
-    
+
     if (destOffset + length > dest.length) {
       throw new IndexOutOfBoundsException("destOffset + length exceeds dest array length");
     }
@@ -220,13 +221,14 @@ public final class JniMemory extends JniResource implements WasmMemory {
   }
 
   @Override
-  public void writeBytes(final int offset, final byte[] src, final int srcOffset, final int length) {
+  public void writeBytes(
+      final int offset, final byte[] src, final int srcOffset, final int length) {
     ensureNotClosed();
     JniValidation.requireNonNull(src, "src");
     JniValidation.requireNonNegative(offset, "offset");
     JniValidation.requireNonNegative(srcOffset, "srcOffset");
     JniValidation.requireNonNegative(length, "length");
-    
+
     if (srcOffset + length > src.length) {
       throw new IndexOutOfBoundsException("srcOffset + length exceeds src array length");
     }

@@ -17,7 +17,8 @@ import org.junit.jupiter.api.Test;
  * The tests verify constructor behavior, resource lifecycle, and basic API functionality without
  * relying on actual native calls.
  *
- * <p>Note: Functional behavior with actual WebAssembly table operations is tested in integration tests.
+ * <p>Note: Functional behavior with actual WebAssembly table operations is tested in integration
+ * tests.
  */
 @DisplayName("JniTable Tests")
 class JniTableTest {

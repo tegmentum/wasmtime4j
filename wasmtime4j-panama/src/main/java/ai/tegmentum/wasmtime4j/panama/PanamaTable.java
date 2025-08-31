@@ -402,7 +402,8 @@ public final class PanamaTable implements WasmTable, AutoCloseable {
 
     try {
       return String.format(
-          "PanamaTable{size=%d, elementType=%s, handle=%s}", getSize(), getElementType(), tableHandle);
+          "PanamaTable{size=%d, elementType=%s, handle=%s}",
+          getSize(), getElementType(), tableHandle);
     } catch (Exception e) {
       return String.format("PanamaTable{handle=%s, error=%s}", tableHandle, e.getMessage());
     }

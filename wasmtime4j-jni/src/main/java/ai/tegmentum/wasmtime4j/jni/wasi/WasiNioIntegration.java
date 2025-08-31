@@ -279,7 +279,8 @@ public final class WasiNioIntegration {
 
     try {
       final AsynchronousFileChannel asyncChannel =
-          AsynchronousFileChannel.open(path, Collections.singleton(StandardOpenOption.READ), asyncExecutor);
+          AsynchronousFileChannel.open(
+              path, Collections.singleton(StandardOpenOption.READ), asyncExecutor);
 
       final ByteBuffer buffer = allocateBuffer(bufferSize);
 

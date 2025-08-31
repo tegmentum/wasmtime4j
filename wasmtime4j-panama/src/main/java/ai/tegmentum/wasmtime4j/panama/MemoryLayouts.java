@@ -518,11 +518,11 @@ public final class MemoryLayouts {
    */
   public static String valkindToString(final int kind) {
     return switch (kind) {
-      case 0 -> "i32";    // WASM_I32
-      case 1 -> "i64";    // WASM_I64
-      case 2 -> "f32";    // WASM_F32
-      case 3 -> "f64";    // WASM_F64
-      case 4 -> "v128";   // WASM_V128
+      case 0 -> "i32"; // WASM_I32
+      case 1 -> "i64"; // WASM_I64
+      case 2 -> "f32"; // WASM_F32
+      case 3 -> "f64"; // WASM_F64
+      case 4 -> "v128"; // WASM_V128
       case 5 -> "funcref"; // WASM_FUNCREF
       case 6 -> "externref"; // WASM_EXTERNREF
       default -> "unknown(" + kind + ")";
