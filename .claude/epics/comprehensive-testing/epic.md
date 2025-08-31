@@ -186,18 +186,18 @@ High-level task categories that will be created:
 - Performance baseline establishment early to detect regressions
 
 ## Tasks Created
-- [ ] #001 - Enhanced Test Infrastructure (foundation for all testing)
-- [ ] #002 - Engine & Store API Comprehensive Testing (parallel: true)
-- [ ] #003 - Module API Comprehensive Testing (parallel: true) 
-- [ ] #004 - Instance API Comprehensive Testing (parallel: true)
-- [ ] #005 - WASI Integration Comprehensive Testing (parallel: true)
-- [ ] #006 - Host Function Integration Testing (parallel: true)
-- [ ] #007 - Memory Management Comprehensive Testing (parallel: true)
-- [ ] #008 - Cross-Platform Validation Testing (depends on all API tests)
-- [ ] #009 - Performance & Regression Testing Framework (depends on platform validation)
-- [ ] #010 - Security & Compliance Testing Suite (depends on all API tests)
+- [ ] #82 - Enhanced Test Infrastructure (parallel: false)
+- [ ] #83 - Engine & Store API Comprehensive Testing (parallel: true)
+- [ ] #84 - Module API Comprehensive Testing (parallel: true)
+- [ ] #85 - Instance API Comprehensive Testing (parallel: true)
+- [ ] #86 - WASI Integration Comprehensive Testing (parallel: true)
+- [ ] #87 - Host Function Integration Testing (parallel: true)
+- [ ] #88 - Memory Management Comprehensive Testing (parallel: true)
+- [ ] #89 - Cross-Platform Validation Testing (parallel: false)
+- [ ] #90 - Performance & Regression Testing Framework (parallel: false)
+- [ ] #91 - Security & Compliance Testing Suite (parallel: false)
 
 Total tasks: 10
-Parallel tasks: 6 (API testing tasks can run in parallel after infrastructure)
-Sequential tasks: 4 (infrastructure, then parallel API testing, then integration validation)
+Parallel tasks: 6
+Sequential tasks: 4
 Estimated total effort: 240-320 hours
