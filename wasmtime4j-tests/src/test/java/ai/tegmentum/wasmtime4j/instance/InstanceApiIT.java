@@ -1,0 +1,858 @@
+package ai.tegmentum.wasmtime4j.instance;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import ai.tegmentum.wasmtime4j.Engine;
+import ai.tegmentum.wasmtime4j.FunctionType;
+import ai.tegmentum.wasmtime4j.Instance;
+import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.RuntimeType;
+import ai.tegmentum.wasmtime4j.Store;
+import ai.tegmentum.wasmtime4j.WasmFunction;
+import ai.tegmentum.wasmtime4j.WasmGlobal;
+import ai.tegmentum.wasmtime4j.WasmMemory;
+import ai.tegmentum.wasmtime4j.WasmRuntime;
+import ai.tegmentum.wasmtime4j.WasmTable;
+import ai.tegmentum.wasmtime4j.WasmValue;
+import ai.tegmentum.wasmtime4j.WasmValueType;
+import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.utils.BaseIntegrationTest;
+import ai.tegmentum.wasmtime4j.utils.CrossRuntimeValidator;
+import ai.tegmentum.wasmtime4j.utils.TestCategories;
+import ai.tegmentum.wasmtime4j.webassembly.WasmTestModules;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
+
+/**
+ * Comprehensive integration tests for Instance API functionality. Tests instance creation, function
+ * invocation, export access, memory operations, type safety validation, concurrent execution, and
+ * cross-runtime validation.
+ */
+@DisplayName("Instance API Integration Tests")
+final class InstanceApiIT extends BaseIntegrationTest {
+
+  @Override
+  protected void doSetUp(final TestInfo testInfo) {
+    skipIfCategoryNotEnabled(TestCategories.INSTANCE);
+  }
+
+  @Nested
+  @DisplayName("Instance Creation and Lifecycle Tests")
+  final class InstanceCreationTests {
+
+    @Test
+    @DisplayName("Should create instance from basic module")
+    void shouldCreateInstanceFromBasicModule() throws WasmException {
+      runWithBothRuntimes(
+          (runtime, runtimeType) -> {
+            final byte[] moduleBytes = WasmTestModules.getModule("basic_add");
+            try (final Engine engine = runtime.createEngine();
+                final Store store = engine.createStore();
+                final Module module = engine.compileModule(moduleBytes);
+                final Instance instance = module.instantiate(store)) {
+
+              assertThat(instance).isNotNull();
+              assertThat(instance.isValid()).isTrue();
+              assertThat(instance.getModule()).isEqualTo(module);
+              assertThat(instance.getStore()).isEqualTo(store);
+
+              // Verify exports are accessible
+              final String[] exportNames = instance.getExportNames();
+              assertThat(exportNames).isNotEmpty();
+              assertThat(Arrays.asList(exportNames)).contains("add");
+
+              addTestMetric("Instance created successfully with " + runtimeType);
+            }
+          });
+    }
+
+    @Test
+    @DisplayName("Should handle instance close operations properly")
+    void shouldHandleInstanceCloseOperations() throws WasmException {
+      runWithBothRuntimes(
+          (runtime, runtimeType) -> {
+            final byte[] moduleBytes = WasmTestModules.getModule("basic_add");
+            try (final Engine engine = runtime.createEngine();
+                final Store store = engine.createStore();
+                final Module module = engine.compileModule(moduleBytes)) {
+
+              final Instance instance = module.instantiate(store);
+              assertThat(instance.isValid()).isTrue();
+
+              // Close the instance
+              instance.close();
+              assertThat(instance.isValid()).isFalse();
+
+              // Operations on closed instance should fail
+              assertThatThrownBy(() -> instance.getFunction("add"))
+                  .isInstanceOf(WasmException.class);
+              assertThatThrownBy(() -> instance.callFunction("add", WasmValue.i32(1), WasmValue.i32(2)))
+                  .isInstanceOf(WasmException.class);
+
+              addTestMetric("Instance lifecycle validated with " + runtimeType);
+            }
+          });
+    }
+
+    @Test
+    @DisplayName("Should create multiple instances from same module")
+    void shouldCreateMultipleInstancesFromSameModule() throws WasmException {
+      runWithBothRuntimes(
+          (runtime, runtimeType) -> {
+            final byte[] moduleBytes = WasmTestModules.getModule("global_mutable");
+            try (final Engine engine = runtime.createEngine();
+                final Store store = engine.createStore();
+                final Module module = engine.compileModule(moduleBytes);
+                final Instance instance1 = module.instantiate(store);
+                final Instance instance2 = module.instantiate(store)) {
+
+              assertThat(instance1).isNotNull();
+              assertThat(instance2).isNotNull();
+              assertThat(instance1).isNotEqualTo(instance2);
+
+              // Both instances should be valid and independent
+              assertThat(instance1.isValid()).isTrue();
+              assertThat(instance2.isValid()).isTrue();
+              assertThat(instance1.getModule()).isEqualTo(module);
+              assertThat(instance2.getModule()).isEqualTo(module);
+
+              addTestMetric("Multiple instances created with " + runtimeType);
+            }
+          });
+    }
+  }
+
+  @Nested
+  @DisplayName("Function Invocation Tests")
+  final class FunctionInvocationTests {
+
+    @Test
+    @DisplayName("Should invoke basic arithmetic functions")
+    void shouldInvokeBasicArithmeticFunctions() throws WasmException {
+      runWithBothRuntimes(
+          (runtime, runtimeType) -> {
+            final byte[] moduleBytes = WasmTestModules.getModule("arithmetic_int");
+            try (final Engine engine = runtime.createEngine();
+                final Store store = engine.createStore();
+                final Module module = engine.compileModule(moduleBytes);
+                final Instance instance = module.instantiate(store)) {
+
+              // Test addition
+              final WasmValue[] addResult = instance.callFunction("add", 
+                  WasmValue.i32(10), WasmValue.i32(20));
+              assertThat(addResult).hasSize(1);
+              assertThat(addResult[0].asI32()).isEqualTo(30);
+
+              // Test subtraction
+              final WasmValue[] subResult = instance.callFunction("sub", 
+                  WasmValue.i32(50), WasmValue.i32(20));
+              assertThat(subResult).hasSize(1);
+              assertThat(subResult[0].asI32()).isEqualTo(30);
+
+              // Test multiplication
+              final WasmValue[] mulResult = instance.callFunction("mul", 
+                  WasmValue.i32(6), WasmValue.i32(7));
+              assertThat(mulResult).hasSize(1);
+              assertThat(mulResult[0].asI32()).isEqualTo(42);
+
+              addTestMetric("Arithmetic functions invoked with " + runtimeType);
+            }
+          });
+    }
+
+    @Test
+    @DisplayName("Should invoke functions with all WebAssembly value types")
+    void shouldInvokeFunctionsWithAllValueTypes() throws WasmException {
+      runWithBothRuntimes(
+          (runtime, runtimeType) -> {
+            final byte[] moduleBytes = WasmTestModules.getModule("arithmetic_float");
+            try (final Engine engine = runtime.createEngine();
+                final Store store = engine.createStore();
+                final Module module = engine.compileModule(moduleBytes);
+                final Instance instance = module.instantiate(store)) {
+
+              // Test f32 operations
+              final WasmValue[] f32Result = instance.callFunction("fadd_f32", 
+                  WasmValue.f32(3.14f), WasmValue.f32(2.86f));
+              assertThat(f32Result).hasSize(1);
+              assertThat(f32Result[0].asF32()).isCloseTo(6.0f, within(0.001f));
+
+              // Test f32 subtraction
+              final WasmValue[] f32SubResult = instance.callFunction("fsub_f32", 
+                  WasmValue.f32(10.5f), WasmValue.f32(4.5f));
+              assertThat(f32SubResult).hasSize(1);
+              assertThat(f32SubResult[0].asF32()).isCloseTo(6.0f, within(0.001f));
+
+              // Test f32 multiplication
+              final WasmValue[] f32MulResult = instance.callFunction("fmul_f32", 
+                  WasmValue.f32(2.5f), WasmValue.f32(4.0f));
+              assertThat(f32MulResult).hasSize(1);
+              assertThat(f32MulResult[0].asF32()).isCloseTo(10.0f, within(0.001f));
+
+              addTestMetric("All value types tested with " + runtimeType);
+            }
+          });
+    }
+
+    @Test
+    @DisplayName("Should handle edge cases in function parameters")
+    void shouldHandleEdgeCasesInFunctionParameters() throws WasmException {
+      runWithBothRuntimes(
+          (runtime, runtimeType) -> {
+            final byte[] moduleBytes = WasmTestModules.getModule("basic_add");
+            try (final Engine engine = runtime.createEngine();
+                final Store store = engine.createStore();
+                final Module module = engine.compileModule(moduleBytes);
+                final Instance instance = module.instantiate(store)) {
+
+              // Test with extreme values
+              final WasmValue[] maxResult = instance.callFunction("add", 
+                  WasmValue.i32(Integer.MAX_VALUE), WasmValue.i32(0));
+              assertThat(maxResult[0].asI32()).isEqualTo(Integer.MAX_VALUE);
+
+              final WasmValue[] minResult = instance.callFunction("add", 
+                  WasmValue.i32(Integer.MIN_VALUE), WasmValue.i32(0));
+              assertThat(minResult[0].asI32()).isEqualTo(Integer.MIN_VALUE);
+
+              // Test with zero
+              final WasmValue[] zeroResult = instance.callFunction("add", 
+                  WasmValue.i32(0), WasmValue.i32(0));
+              assertThat(zeroResult[0].asI32()).isEqualTo(0);
+
+              addTestMetric("Edge case parameters tested with " + runtimeType);
+            }
+          });
+    }
+
+    @Test
+    @DisplayName("Should handle complex function call patterns")
+    void shouldHandleComplexFunctionCallPatterns() throws WasmException {
+      runWithBothRuntimes(
+          (runtime, runtimeType) -> {
+            final byte[] moduleBytes = WasmTestModules.getModule("function_fibonacci");
+            try (final Engine engine = runtime.createEngine();
+                final Store store = engine.createStore();
+                final Module module = engine.compileModule(moduleBytes);
+                final Instance instance = module.instantiate(store)) {
+
+              // Test fibonacci sequence
+              final WasmValue[] fib0 = instance.callFunction("fib", WasmValue.i32(0));
+              assertThat(fib0[0].asI32()).isEqualTo(0);
+
+              final WasmValue[] fib1 = instance.callFunction("fib", WasmValue.i32(1));
+              assertThat(fib1[0].asI32()).isEqualTo(1);
+
+              final WasmValue[] fib5 = instance.callFunction("fib", WasmValue.i32(5));
+              assertThat(fib5[0].asI32()).isEqualTo(5);
+
+              final WasmValue[] fib10 = instance.callFunction("fib", WasmValue.i32(10));
+              assertThat(fib10[0].asI32()).isEqualTo(55);
+
+              addTestMetric("Complex function patterns tested with " + runtimeType);
+            }
+          });
+    }
+  }
+
+  @Nested
+  @DisplayName("Export Discovery and Type Introspection Tests")
+  final class ExportDiscoveryTests {
+
+    @Test
+    @DisplayName("Should discover all exported functions")
+    void shouldDiscoverAllExportedFunctions() throws WasmException {
+      runWithBothRuntimes(
+          (runtime, runtimeType) -> {
+            final byte[] moduleBytes = WasmTestModules.getModule("arithmetic_int");
+            try (final Engine engine = runtime.createEngine();
+                final Store store = engine.createStore();
+                final Module module = engine.compileModule(moduleBytes);
+                final Instance instance = module.instantiate(store)) {
+
+              final String[] exportNames = instance.getExportNames();
+              assertThat(exportNames).isNotEmpty();
+              assertThat(Arrays.asList(exportNames)).containsExactlyInAnyOrder("add", "sub", "mul");
+
+              // Verify each function can be retrieved
+              for (final String name : exportNames) {
+                final Optional<WasmFunction> function = instance.getFunction(name);
+                assertThat(function).isPresent();
+                assertThat(function.get().getName()).isEqualTo(name);
+                
+                final FunctionType funcType = function.get().getFunctionType();
+                assertThat(funcType).isNotNull();
+                // All arithmetic functions expect 2 i32 parameters and return 1 i32
+                assertThat(funcType.getParamTypes()).hasSize(2);
+                assertThat(funcType.getReturnTypes()).hasSize(1);
+              }
+
+              addTestMetric("Export discovery validated with " + runtimeType);
+            }
+          });
+    }
+
+    @Test
+    @DisplayName("Should access exported globals with type information")
+    void shouldAccessExportedGlobalsWithTypeInfo() throws WasmException {
+      runWithBothRuntimes(
+          (runtime, runtimeType) -> {
+            final byte[] moduleBytes = WasmTestModules.getModule("global_mutable");
+            try (final Engine engine = runtime.createEngine();
+                final Store store = engine.createStore();
+                final Module module = engine.compileModule(moduleBytes);
+                final Instance instance = module.instantiate(store)) {
+
+              // Test global access through functions since globals may not be directly exported
+              final WasmValue[] initialValue = instance.callFunction("get");
+              assertThat(initialValue).hasSize(1);
+              assertThat(initialValue[0].getType()).isEqualTo(WasmValueType.I32);
+              
+              // Modify global and verify change
+              instance.callFunction("set", WasmValue.i32(42));
+              final WasmValue[] newValue = instance.callFunction("get");
+              assertThat(newValue[0].asI32()).isEqualTo(42);
+
+              addTestMetric("Global access validated with " + runtimeType);
+            }
+          });
+    }
+
+    @Test
+    @DisplayName("Should handle non-existent exports gracefully")
+    void shouldHandleNonExistentExportsGracefully() throws WasmException {
+      runWithBothRuntimes(
+          (runtime, runtimeType) -> {
+            final byte[] moduleBytes = WasmTestModules.getModule("basic_add");
+            try (final Engine engine = runtime.createEngine();
+                final Store store = engine.createStore();
+                final Module module = engine.compileModule(moduleBytes);
+                final Instance instance = module.instantiate(store)) {
+
+              // Test non-existent function
+              final Optional<WasmFunction> nonExistentFunc = instance.getFunction("nonexistent");
+              assertThat(nonExistentFunc).isEmpty();
+
+              // Test non-existent memory
+              final Optional<WasmMemory> nonExistentMem = instance.getMemory("nonexistent");
+              assertThat(nonExistentMem).isEmpty();
+
+              // Test non-existent table
+              final Optional<WasmTable> nonExistentTable = instance.getTable("nonexistent");
+              assertThat(nonExistentTable).isEmpty();
+
+              // Test non-existent global
+              final Optional<WasmGlobal> nonExistentGlobal = instance.getGlobal("nonexistent");
+              assertThat(nonExistentGlobal).isEmpty();
+
+              addTestMetric("Non-existent exports handled with " + runtimeType);
+            }
+          });
+    }
+  }
+
+  @Nested
+  @DisplayName("Memory Operations Tests")
+  final class MemoryOperationsTests {
+
+    @Test
+    @DisplayName("Should perform basic memory load/store operations")
+    void shouldPerformBasicMemoryLoadStoreOperations() throws WasmException {
+      runWithBothRuntimes(
+          (runtime, runtimeType) -> {
+            final byte[] moduleBytes = WasmTestModules.getModule("memory_basic");
+            try (final Engine engine = runtime.createEngine();
+                final Store store = engine.createStore();
+                final Module module = engine.compileModule(moduleBytes);
+                final Instance instance = module.instantiate(store)) {
+
+              // Store a value in memory
+              instance.callFunction("store", WasmValue.i32(0), WasmValue.i32(42));
+              
+              // Load the value back
+              final WasmValue[] loadResult = instance.callFunction("load", WasmValue.i32(0));
+              assertThat(loadResult).hasSize(1);
+              assertThat(loadResult[0].asI32()).isEqualTo(42);
+
+              // Test different offset
+              instance.callFunction("store", WasmValue.i32(4), WasmValue.i32(123));
+              final WasmValue[] loadResult2 = instance.callFunction("load", WasmValue.i32(4));
+              assertThat(loadResult2[0].asI32()).isEqualTo(123);
+
+              addTestMetric("Memory operations validated with " + runtimeType);
+            }
+          });
+    }
+
+    @Test
+    @DisplayName("Should handle memory bounds checking")
+    void shouldHandleMemoryBoundsChecking() throws WasmException {
+      runWithBothRuntimes(
+          (runtime, runtimeType) -> {
+            final byte[] moduleBytes = WasmTestModules.getModule("memory_basic");
+            try (final Engine engine = runtime.createEngine();
+                final Store store = engine.createStore();
+                final Module module = engine.compileModule(moduleBytes);
+                final Instance instance = module.instantiate(store)) {
+
+              // Get default memory if available
+              final Optional<WasmMemory> memory = instance.getDefaultMemory();
+              if (memory.isPresent()) {
+                // Verify memory exists and has expected properties
+                assertThat(memory.get()).isNotNull();
+                
+                // Test accessing memory beyond bounds should fail gracefully
+                assertThatThrownBy(() -> 
+                    instance.callFunction("load", WasmValue.i32(Integer.MAX_VALUE)))
+                    .isInstanceOf(WasmException.class);
+              }
+
+              addTestMetric("Memory bounds checking validated with " + runtimeType);
+            }
+          });
+    }
+
+    @Test
+    @DisplayName("Should handle memory growth operations")
+    void shouldHandleMemoryGrowthOperations() throws WasmException {
+      runWithBothRuntimes(
+          (runtime, runtimeType) -> {
+            final byte[] moduleBytes = WasmTestModules.getModule("memory_grow");
+            try (final Engine engine = runtime.createEngine();
+                final Store store = engine.createStore();
+                final Module module = engine.compileModule(moduleBytes);
+                final Instance instance = module.instantiate(store)) {
+
+              // Test memory growth
+              final WasmValue[] growResult = instance.callFunction("grow", WasmValue.i32(1));
+              assertThat(growResult).hasSize(1);
+              assertThat(growResult[0].asI32()).isGreaterThanOrEqualTo(0);
+
+              addTestMetric("Memory growth validated with " + runtimeType);
+            }
+          });
+    }
+  }
+
+  @Nested
+  @DisplayName("Table and Global Access Tests")
+  final class TableAndGlobalAccessTests {
+
+    @Test
+    @DisplayName("Should access function tables with indirect calls")
+    void shouldAccessFunctionTablesWithIndirectCalls() throws WasmException {
+      runWithBothRuntimes(
+          (runtime, runtimeType) -> {
+            final byte[] moduleBytes = WasmTestModules.getModule("table_indirect");
+            try (final Engine engine = runtime.createEngine();
+                final Store store = engine.createStore();
+                final Module module = engine.compileModule(moduleBytes);
+                final Instance instance = module.instantiate(store)) {
+
+              // Test indirect function call through table
+              final WasmValue[] callResult = instance.callFunction("call_func", WasmValue.i32(0));
+              assertThat(callResult).hasSize(1);
+              assertThat(callResult[0].asI32()).isEqualTo(10);
+
+              final WasmValue[] callResult2 = instance.callFunction("call_func", WasmValue.i32(1));
+              assertThat(callResult2).hasSize(1);
+              assertThat(callResult2[0].asI32()).isEqualTo(20);
+
+              addTestMetric("Function table access validated with " + runtimeType);
+            }
+          });
+    }
+
+    @Test
+    @DisplayName("Should access immutable globals")
+    void shouldAccessImmutableGlobals() throws WasmException {
+      runWithBothRuntimes(
+          (runtime, runtimeType) -> {
+            final byte[] moduleBytes = WasmTestModules.getModule("global_immutable");
+            try (final Engine engine = runtime.createEngine();
+                final Store store = engine.createStore();
+                final Module module = engine.compileModule(moduleBytes);
+                final Instance instance = module.instantiate(store)) {
+
+              // Test accessing immutable global
+              final WasmValue[] globalResult = instance.callFunction("get_const");
+              assertThat(globalResult).hasSize(1);
+              assertThat(globalResult[0].asI32()).isEqualTo(65536); // 0x10000
+
+              addTestMetric("Immutable global access validated with " + runtimeType);
+            }
+          });
+    }
+  }
+
+  @Nested
+  @DisplayName("Concurrent Execution Tests")
+  final class ConcurrentExecutionTests {
+
+    @Test
+    @DisplayName("Should handle concurrent function calls on same instance")
+    void shouldHandleConcurrentFunctionCallsOnSameInstance() throws Exception {
+      runWithBothRuntimes(
+          (runtime, runtimeType) -> {
+            final byte[] moduleBytes = WasmTestModules.getModule("basic_add");
+            try (final Engine engine = runtime.createEngine();
+                final Store store = engine.createStore();
+                final Module module = engine.compileModule(moduleBytes);
+                final Instance instance = module.instantiate(store)) {
+
+              final int numThreads = 10;
+              final int numCallsPerThread = 100;
+              final ExecutorService executor = Executors.newFixedThreadPool(numThreads);
+              final CountDownLatch latch = new CountDownLatch(numThreads);
+              final AtomicInteger successCount = new AtomicInteger(0);
+              final AtomicReference<Exception> error = new AtomicReference<>();
+
+              try {
+                for (int i = 0; i < numThreads; i++) {
+                  final int threadId = i;
+                  executor.submit(
+                      () -> {
+                        try {
+                          for (int j = 0; j < numCallsPerThread; j++) {
+                            final WasmValue[] result = instance.callFunction("add", 
+                                WasmValue.i32(threadId), WasmValue.i32(j));
+                            if (result[0].asI32() == threadId + j) {
+                              successCount.incrementAndGet();
+                            }
+                          }
+                        } catch (final Exception e) {
+                          error.set(e);
+                        } finally {
+                          latch.countDown();
+                        }
+                      });
+                }
+
+                assertThat(latch.await(30, TimeUnit.SECONDS)).isTrue();
+                
+                if (error.get() != null) {
+                  throw new RuntimeException("Concurrent execution failed", error.get());
+                }
+                
+                assertThat(successCount.get()).isEqualTo(numThreads * numCallsPerThread);
+                
+              } finally {
+                executor.shutdownNow();
+              }
+
+              addTestMetric("Concurrent execution validated with " + runtimeType);
+            }
+          });
+    }
+
+    @Test
+    @DisplayName("Should handle concurrent instance creation")
+    void shouldHandleConcurrentInstanceCreation() throws Exception {
+      runWithBothRuntimes(
+          (runtime, runtimeType) -> {
+            final byte[] moduleBytes = WasmTestModules.getModule("basic_add");
+            final int numThreads = 20;
+            final ExecutorService executor = Executors.newFixedThreadPool(numThreads);
+            final CountDownLatch latch = new CountDownLatch(numThreads);
+            final List<Instance> instances = Collections.synchronizedList(new ArrayList<>());
+            final AtomicReference<Exception> error = new AtomicReference<>();
+
+            try (final Engine engine = runtime.createEngine()) {
+              final Module module = engine.compileModule(moduleBytes);
+
+              for (int i = 0; i < numThreads; i++) {
+                executor.submit(
+                    () -> {
+                      try (final Store store = engine.createStore();
+                          final Instance instance = module.instantiate(store)) {
+                        
+                        // Verify instance works
+                        final WasmValue[] result = instance.callFunction("add", 
+                            WasmValue.i32(1), WasmValue.i32(2));
+                        assertThat(result[0].asI32()).isEqualTo(3);
+                        
+                        synchronized (instances) {
+                          instances.add(instance);
+                        }
+                      } catch (final Exception e) {
+                        error.set(e);
+                      } finally {
+                        latch.countDown();
+                      }
+                    });
+              }
+
+              assertThat(latch.await(30, TimeUnit.SECONDS)).isTrue();
+              
+              if (error.get() != null) {
+                throw new RuntimeException("Concurrent instance creation failed", error.get());
+              }
+              
+              assertThat(instances).hasSize(numThreads);
+              
+            } finally {
+              executor.shutdownNow();
+            }
+
+            addTestMetric("Concurrent instance creation validated with " + runtimeType);
+          });
+    }
+  }
+
+  @Nested
+  @DisplayName("Error Handling Tests")
+  final class ErrorHandlingTests {
+
+    @Test
+    @DisplayName("Should handle invalid function calls")
+    void shouldHandleInvalidFunctionCalls() throws WasmException {
+      runWithBothRuntimes(
+          (runtime, runtimeType) -> {
+            final byte[] moduleBytes = WasmTestModules.getModule("basic_add");
+            try (final Engine engine = runtime.createEngine();
+                final Store store = engine.createStore();
+                final Module module = engine.compileModule(moduleBytes);
+                final Instance instance = module.instantiate(store)) {
+
+              // Test calling non-existent function
+              assertThatThrownBy(() -> 
+                  instance.callFunction("nonexistent"))
+                  .isInstanceOf(WasmException.class);
+
+              // Test wrong number of parameters
+              assertThatThrownBy(() -> 
+                  instance.callFunction("add", WasmValue.i32(1)))
+                  .isInstanceOf(WasmException.class);
+
+              // Test wrong parameter types (this should be caught at runtime)
+              assertThatThrownBy(() -> 
+                  instance.callFunction("add", WasmValue.f32(1.0f), WasmValue.i32(2)))
+                  .isInstanceOf(WasmException.class);
+
+              addTestMetric("Invalid function calls handled with " + runtimeType);
+            }
+          });
+    }
+
+    @Test
+    @DisplayName("Should handle parameter type mismatches")
+    void shouldHandleParameterTypeMismatches() throws WasmException {
+      runWithBothRuntimes(
+          (runtime, runtimeType) -> {
+            final byte[] moduleBytes = WasmTestModules.getModule("arithmetic_float");
+            try (final Engine engine = runtime.createEngine();
+                final Store store = engine.createStore();
+                final Module module = engine.compileModule(moduleBytes);
+                final Instance instance = module.instantiate(store)) {
+
+              // Test passing i32 to f32 function
+              assertThatThrownBy(() -> 
+                  instance.callFunction("fadd_f32", WasmValue.i32(1), WasmValue.f32(2.0f)))
+                  .isInstanceOf(WasmException.class);
+
+              // Test passing f32 to i32 function would require different module
+              // Testing with basic_add module
+            }
+
+            final byte[] intModuleBytes = WasmTestModules.getModule("basic_add");
+            try (final Engine engine = runtime.createEngine();
+                final Store store = engine.createStore();
+                final Module module = engine.compileModule(intModuleBytes);
+                final Instance instance = module.instantiate(store)) {
+
+              // Test passing f32 to i32 function
+              assertThatThrownBy(() -> 
+                  instance.callFunction("add", WasmValue.f32(1.0f), WasmValue.i32(2)))
+                  .isInstanceOf(WasmException.class);
+
+              addTestMetric("Parameter type mismatches handled with " + runtimeType);
+            }
+          });
+    }
+
+    @Test
+    @DisplayName("Should handle null parameter validation")
+    void shouldHandleNullParameterValidation() throws WasmException {
+      runWithBothRuntimes(
+          (runtime, runtimeType) -> {
+            final byte[] moduleBytes = WasmTestModules.getModule("basic_add");
+            try (final Engine engine = runtime.createEngine();
+                final Store store = engine.createStore();
+                final Module module = engine.compileModule(moduleBytes);
+                final Instance instance = module.instantiate(store)) {
+
+              // Test null function name
+              assertThatThrownBy(() -> 
+                  instance.callFunction(null, WasmValue.i32(1), WasmValue.i32(2)))
+                  .isInstanceOf(IllegalArgumentException.class);
+
+              // Test null in function lookup
+              assertThatThrownBy(() -> 
+                  instance.getFunction(null))
+                  .isInstanceOf(IllegalArgumentException.class);
+
+              addTestMetric("Null parameter validation handled with " + runtimeType);
+            }
+          });
+    }
+  }
+
+  @Nested
+  @DisplayName("Cross-Runtime Validation Tests")
+  final class CrossRuntimeValidationTests {
+
+    @Test
+    @DisplayName("Should produce identical results across runtimes")
+    void shouldProduceIdenticalResultsAcrossRuntimes() {
+      final CrossRuntimeValidator.ComparisonResult result = 
+          CrossRuntimeValidator.validateCrossRuntime(runtime -> {
+            final byte[] moduleBytes = WasmTestModules.getModule("arithmetic_int");
+            try (final Engine engine = runtime.createEngine();
+                final Store store = engine.createStore();
+                final Module module = engine.compileModule(moduleBytes);
+                final Instance instance = module.instantiate(store)) {
+
+              final List<WasmValue[]> results = new ArrayList<>();
+              
+              // Test multiple operations
+              results.add(instance.callFunction("add", WasmValue.i32(10), WasmValue.i32(20)));
+              results.add(instance.callFunction("sub", WasmValue.i32(50), WasmValue.i32(20)));
+              results.add(instance.callFunction("mul", WasmValue.i32(6), WasmValue.i32(7)));
+              
+              return results;
+            }
+          });
+
+      assertThat(result.isValid()).isTrue();
+      assertThat(result.areResultsIdentical()).isTrue();
+      assertThat(result.areExceptionsIdentical()).isTrue();
+
+      addTestMetric("Cross-runtime validation: " + result.getDifferenceDescription());
+    }
+
+    @Test
+    @DisplayName("Should handle errors identically across runtimes")
+    void shouldHandleErrorsIdenticallyAcrossRuntimes() {
+      final CrossRuntimeValidator.ComparisonResult result = 
+          CrossRuntimeValidator.validateCrossRuntime(runtime -> {
+            final byte[] moduleBytes = WasmTestModules.getModule("basic_add");
+            try (final Engine engine = runtime.createEngine();
+                final Store store = engine.createStore();
+                final Module module = engine.compileModule(moduleBytes);
+                final Instance instance = module.instantiate(store)) {
+
+              // This should fail in both runtimes
+              instance.callFunction("nonexistent", WasmValue.i32(1));
+              return "should not reach here";
+            }
+          });
+
+      // Both runtimes should fail with exceptions
+      assertThat(result.areExceptionsIdentical()).isTrue();
+
+      addTestMetric("Cross-runtime error handling: " + result.getDifferenceDescription());
+    }
+  }
+
+  @Nested
+  @DisplayName("Performance Measurement Tests")
+  final class PerformanceTests {
+
+    @Test
+    @DisplayName("Should establish performance baselines for instance operations")
+    void shouldEstablishPerformanceBaselinesForInstanceOperations() throws WasmException {
+      runWithBothRuntimes(
+          (runtime, runtimeType) -> {
+            final byte[] moduleBytes = WasmTestModules.getModule("basic_add");
+            try (final Engine engine = runtime.createEngine();
+                final Store store = engine.createStore();
+                final Module module = engine.compileModule(moduleBytes)) {
+
+              // Measure instance creation time
+              final Duration creationTime = measureExecutionTime("Instance creation", () -> {
+                try (final Instance instance = module.instantiate(store)) {
+                  assertThat(instance.isValid()).isTrue();
+                } catch (final WasmException e) {
+                  throw new RuntimeException(e);
+                }
+              });
+
+              // Measure function call performance
+              try (final Instance instance = module.instantiate(store)) {
+                final Duration callTime = measureExecutionTime("Function call", () -> {
+                  try {
+                    for (int i = 0; i < 1000; i++) {
+                      final WasmValue[] result = instance.callFunction("add", 
+                          WasmValue.i32(i), WasmValue.i32(i + 1));
+                      assertThat(result[0].asI32()).isEqualTo(2 * i + 1);
+                    }
+                  } catch (final WasmException e) {
+                    throw new RuntimeException(e);
+                  }
+                });
+
+                addTestMetric(runtimeType + " instance creation: " + creationTime.toMillis() + "ms");
+                addTestMetric(runtimeType + " 1000 function calls: " + callTime.toMillis() + "ms");
+              }
+            }
+          });
+    }
+
+    @RepeatedTest(5)
+    @DisplayName("Should maintain consistent performance across multiple runs")
+    void shouldMaintainConsistentPerformanceAcrossMultipleRuns() throws WasmException {
+      runWithBothRuntimes(
+          (runtime, runtimeType) -> {
+            final byte[] moduleBytes = WasmTestModules.getModule("function_fibonacci");
+            try (final Engine engine = runtime.createEngine();
+                final Store store = engine.createStore();
+                final Module module = engine.compileModule(moduleBytes);
+                final Instance instance = module.instantiate(store)) {
+
+              // Measure fibonacci calculation performance
+              final Duration fibTime = measureExecutionTime("Fibonacci calculation", () -> {
+                try {
+                  final WasmValue[] result = instance.callFunction("fib", WasmValue.i32(15));
+                  assertThat(result[0].asI32()).isEqualTo(610);
+                } catch (final WasmException e) {
+                  throw new RuntimeException(e);
+                }
+              });
+
+              // Performance should be reasonable (under 100ms for fib(15))
+              assertThat(fibTime.toMillis()).isLessThan(100);
+
+              addTestMetric(runtimeType + " fib(15): " + fibTime.toMillis() + "ms");
+            }
+          });
+    }
+  }
+
+  // Helper method for floating-point comparison
+  private static org.assertj.core.data.Offset<Float> within(final float offset) {
+    return org.assertj.core.data.Offset.offset(offset);
+  }
+}
