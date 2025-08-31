@@ -257,5 +257,245 @@ pub mod engine {}
 #[cfg(not(feature = "jni-bindings"))]
 pub mod module {}
 
+/// JNI bindings for Component operations (WASI Preview 2)
+#[cfg(feature = "jni-bindings")]
+pub mod jni_component {
+    use super::*;
+    use crate::component::{ComponentEngine, Component};
+    use wasmtime::component::Instance as ComponentInstance;
+    use std::sync::Arc;
+
+    /// Create a new component engine
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeCreateComponentEngine(
+        _env: JNIEnv,
+        _class: JClass,
+    ) -> jlong {
+        match ComponentEngine::new() {
+            Ok(engine) => Box::into_raw(Box::new(engine)) as jlong,
+            Err(e) => {
+                log::error!("Failed to create component engine: {:?}", e);
+                0
+            }
+        }
+    }
+
+    /// Load component from WebAssembly bytes
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeLoadComponentFromBytes(
+        mut env: JNIEnv,
+        _class: JClass,
+        engine_ptr: jlong,
+        wasm_bytes: jbyteArray,
+    ) -> jlong {
+        if engine_ptr == 0 {
+            log::error!("Component engine pointer is null");
+            return 0;
+        }
+
+        let engine = unsafe { &*(engine_ptr as *const ComponentEngine) };
+
+        // Get byte array from Java
+        let wasm_data = match env.convert_byte_array(unsafe { JByteArray::from_raw(wasm_bytes) }) {
+            Ok(data) => data,
+            Err(e) => {
+                log::error!("Failed to convert byte array: {:?}", e);
+                return 0;
+            }
+        };
+
+        if wasm_data.is_empty() {
+            log::error!("Component bytes cannot be empty");
+            return 0;
+        }
+
+        match engine.load_component_from_bytes(&wasm_data) {
+            Ok(component) => Box::into_raw(Box::new(component)) as jlong,
+            Err(e) => {
+                log::error!("Failed to load component: {:?}", e);
+                0
+            }
+        }
+    }
+
+    /// Instantiate a component
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeInstantiateComponent(
+        _env: JNIEnv,
+        _class: JClass,
+        engine_ptr: jlong,
+        component_ptr: jlong,
+    ) -> jlong {
+        if engine_ptr == 0 || component_ptr == 0 {
+            log::error!("Engine or component pointer is null");
+            return 0;
+        }
+
+        let engine = unsafe { &*(engine_ptr as *const ComponentEngine) };
+        let component = unsafe { &*(component_ptr as *const Component) };
+
+        match engine.instantiate_component(component) {
+            Ok(instance) => Box::into_raw(Box::new(instance)) as jlong,
+            Err(e) => {
+                log::error!("Failed to instantiate component: {:?}", e);
+                0
+            }
+        }
+    }
+
+    /// Get component size in bytes
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeGetComponentSize(
+        _env: JNIEnv,
+        _class: JClass,
+        component_ptr: jlong,
+    ) -> jlong {
+        if component_ptr == 0 {
+            log::error!("Component pointer is null");
+            return 0;
+        }
+
+        let component = unsafe { &*(component_ptr as *const Component) };
+        component.size_bytes() as jlong
+    }
+
+    /// Check if component exports an interface
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeExportsInterface(
+        mut env: JNIEnv,
+        _class: JClass,
+        component_ptr: jlong,
+        interface_name: jni::objects::JString,
+    ) -> jboolean {
+        if component_ptr == 0 {
+            log::error!("Component pointer is null");
+            return 0;
+        }
+
+        let component = unsafe { &*(component_ptr as *const Component) };
+
+        let interface_str: String = match env.get_string(&interface_name) {
+            Ok(s) => s.into(),
+            Err(e) => {
+                log::error!("Failed to convert interface name: {:?}", e);
+                return 0;
+            }
+        };
+
+        if component.exports_interface(&interface_str) { 1 } else { 0 }
+    }
+
+    /// Check if component imports an interface  
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeImportsInterface(
+        mut env: JNIEnv,
+        _class: JClass,
+        component_ptr: jlong,
+        interface_name: jni::objects::JString,
+    ) -> jboolean {
+        if component_ptr == 0 {
+            log::error!("Component pointer is null");
+            return 0;
+        }
+
+        let component = unsafe { &*(component_ptr as *const Component) };
+
+        let interface_str: String = match env.get_string(&interface_name) {
+            Ok(s) => s.into(),
+            Err(e) => {
+                log::error!("Failed to convert interface name: {:?}", e);
+                return 0;
+            }
+        };
+
+        if component.imports_interface(&interface_str) { 1 } else { 0 }
+    }
+
+    /// Get active component instances count
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeGetActiveInstancesCount(
+        _env: JNIEnv,
+        _class: JClass,
+        engine_ptr: jlong,
+    ) -> jint {
+        if engine_ptr == 0 {
+            log::error!("Component engine pointer is null");
+            return -1;
+        }
+
+        let engine = unsafe { &*(engine_ptr as *const ComponentEngine) };
+
+        match engine.get_active_instances() {
+            Ok(instances) => instances.len() as jint,
+            Err(e) => {
+                log::error!("Failed to get active instances: {:?}", e);
+                -1
+            }
+        }
+    }
+
+    /// Cleanup inactive component instances
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeCleanupInstances(
+        _env: JNIEnv,
+        _class: JClass,
+        engine_ptr: jlong,
+    ) -> jint {
+        if engine_ptr == 0 {
+            log::error!("Component engine pointer is null");
+            return -1;
+        }
+
+        let engine = unsafe { &*(engine_ptr as *const ComponentEngine) };
+
+        match engine.cleanup_instances() {
+            Ok(cleaned_count) => cleaned_count as jint,
+            Err(e) => {
+                log::error!("Failed to cleanup instances: {:?}", e);
+                -1
+            }
+        }
+    }
+
+    /// Destroy a component engine
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeDestroyComponentEngine(
+        _env: JNIEnv,
+        _class: JClass,
+        engine_ptr: jlong,
+    ) {
+        if engine_ptr != 0 {
+            let _ = unsafe { Box::from_raw(engine_ptr as *mut ComponentEngine) };
+            log::debug!("Component engine destroyed successfully");
+        }
+    }
+
+    /// Destroy a component
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeDestroyComponent(
+        _env: JNIEnv,
+        _class: JClass,
+        component_ptr: jlong,
+    ) {
+        if component_ptr != 0 {
+            let _ = unsafe { Box::from_raw(component_ptr as *mut Component) };
+            log::debug!("Component destroyed successfully");
+        }
+    }
+
+    /// Destroy a component instance
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeDestroyComponentInstance(
+        _env: JNIEnv,
+        _class: JClass,
+        instance_ptr: jlong,
+    ) {
+        if instance_ptr != 0 {
+            let _ = unsafe { Box::from_raw(instance_ptr as *mut Arc<ComponentInstance>) };
+            log::debug!("Component instance destroyed successfully");
+        }
+    }
+}
+
 #[cfg(not(feature = "jni-bindings"))]
 pub mod instance {}
