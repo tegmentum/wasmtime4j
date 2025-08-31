@@ -55,6 +55,13 @@ pub enum WasmtimeError {
         message: String 
     },
 
+    /// WebAssembly instance creation and management errors
+    #[error("Instance error: {message}")]
+    Instance { 
+        /// Error message describing the instance-related error
+        message: String 
+    },
+
     /// Memory access and management errors
     #[error("Memory error: {message}")]
     Memory { 
@@ -146,26 +153,28 @@ pub enum ErrorCode {
     EngineConfigError = -4,
     /// Store creation or management error
     StoreError = -5,
+    /// Instance creation or management error
+    InstanceError = -6,
     /// Memory access or allocation error
-    MemoryError = -6,
+    MemoryError = -7,
     /// Function invocation error
-    FunctionError = -7,
+    FunctionError = -8,
     /// Import or export resolution error
-    ImportExportError = -8,
+    ImportExportError = -9,
     /// Type conversion or validation error
-    TypeError = -9,
+    TypeError = -10,
     /// Resource management error
-    ResourceError = -10,
+    ResourceError = -11,
     /// I/O operation error
-    IoError = -11,
+    IoError = -12,
     /// Invalid parameter provided
-    InvalidParameterError = -12,
+    InvalidParameterError = -13,
     /// Threading or concurrency error
-    ConcurrencyError = -13,
+    ConcurrencyError = -14,
     /// WASI-related error
-    WasiError = -14,
+    WasiError = -15,
     /// Internal system error
-    InternalError = -15,
+    InternalError = -16,
 }
 
 impl WasmtimeError {
@@ -178,6 +187,7 @@ impl WasmtimeError {
             WasmtimeError::Runtime { .. } => ErrorCode::RuntimeError,
             WasmtimeError::EngineConfig { .. } => ErrorCode::EngineConfigError,
             WasmtimeError::Store { .. } => ErrorCode::StoreError,
+            WasmtimeError::Instance { .. } => ErrorCode::InstanceError,
             WasmtimeError::Memory { .. } => ErrorCode::MemoryError,
             WasmtimeError::Function { .. } => ErrorCode::FunctionError,
             WasmtimeError::ImportExport { .. } => ErrorCode::ImportExportError,
