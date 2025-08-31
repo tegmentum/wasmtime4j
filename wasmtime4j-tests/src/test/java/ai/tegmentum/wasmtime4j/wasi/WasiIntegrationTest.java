@@ -1,6 +1,6 @@
 package ai.tegmentum.wasmtime4j.wasi;
 
-import ai.tegmentum.wasmtime4j.integration.BaseIntegrationTest;
+import ai.tegmentum.wasmtime4j.utils.BaseIntegrationTest;
 import ai.tegmentum.wasmtime4j.utils.TestCategories;
 import ai.tegmentum.wasmtime4j.utils.TestRunner;
 import ai.tegmentum.wasmtime4j.utils.TestUtils;
