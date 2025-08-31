@@ -393,7 +393,7 @@ final class EngineStoreCrossRuntimeIT extends BaseIntegrationTest {
 
     @Test
     @DisplayName("Should produce identical store closure behavior")
-    void shouldProduceIdenticalStoreClosure Behavior() {
+    void shouldProduceIdenticalStoreClosureBehavior() {
       LOGGER.info("Validating store closure behavior across runtimes");
       
       final CrossRuntimeValidator.ComparisonResult result = CrossRuntimeValidator.validateCrossRuntime(

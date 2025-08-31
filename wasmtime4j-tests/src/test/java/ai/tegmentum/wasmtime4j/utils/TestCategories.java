@@ -45,6 +45,9 @@ public final class TestCategories {
   /** Store API functionality tests. */
   public static final String STORE = "store";
 
+  /** Instance API functionality tests. */
+  public static final String INSTANCE = "instance";
+
   /** Cross-runtime validation tests. */
   public static final String CROSS_RUNTIME = "cross.runtime";
 
