@@ -103,20 +103,6 @@ public interface WasiInstance extends Closeable {
   Object call(final String functionName, final Object... parameters) throws WasmException;
 
   /**
-   * Calls an exported function asynchronously.
-   *
-   * <p>This method allows non-blocking execution of component functions. The returned future
-   * completes when the function execution finishes, either successfully or with an error.
-   *
-   * @param functionName the name of the exported function to call
-   * @param parameters function parameters in the order expected by the component
-   * @return CompletableFuture that resolves to the function result
-   * @throws IllegalArgumentException if functionName is null or parameters are invalid
-   * @throws IllegalStateException if the instance is not in a callable state
-   */
-  CompletableFuture<Object> callAsync(final String functionName, final Object... parameters);
-
-  /**
    * Calls an exported function with a timeout.
    *
    * <p>If the function doesn't complete within the specified timeout, execution is terminated and
@@ -133,6 +119,20 @@ public interface WasiInstance extends Closeable {
    */
   Object call(final String functionName, final Duration timeout, final Object... parameters)
       throws WasmException;
+
+  /**
+   * Calls an exported function asynchronously.
+   *
+   * <p>This method allows non-blocking execution of component functions. The returned future
+   * completes when the function execution finishes, either successfully or with an error.
+   *
+   * @param functionName the name of the exported function to call
+   * @param parameters function parameters in the order expected by the component
+   * @return CompletableFuture that resolves to the function result
+   * @throws IllegalArgumentException if functionName is null or parameters are invalid
+   * @throws IllegalStateException if the instance is not in a callable state
+   */
+  CompletableFuture<Object> callAsync(final String functionName, final Object... parameters);
 
   /**
    * Gets the names of all exported functions.
@@ -306,8 +306,9 @@ public interface WasiInstance extends Closeable {
    *
    * <p>This method is idempotent and can be called multiple times safely.
    *
-   * @throws WasmException if cleanup encounters errors (but the instance is still closed)
+   * <p>If cleanup encounters errors, they are logged but do not prevent the instance from being
+   * closed.
    */
   @Override
-  void close() throws WasmException;
+  void close();
 }
