@@ -78,7 +78,7 @@ class WebAssemblySpecIT extends BaseIntegrationTest {
               final Store store = engine.createStore()) {
 
             final Module module = engine.compileModule(moduleBytes);
-            final Instance instance = store.instantiate(module);
+            final Instance instance = runtime.instantiate(module);
 
             // Get the add function
             final WasmFunction addFunction =
@@ -127,7 +127,7 @@ class WebAssemblySpecIT extends BaseIntegrationTest {
               final Store store = engine.createStore()) {
 
             final Module module = engine.compileModule(moduleBytes);
-            final Instance instance = store.instantiate(module);
+            final Instance instance = runtime.instantiate(module);
 
             final WasmFunction addFunction =
                 instance
@@ -189,7 +189,7 @@ class WebAssemblySpecIT extends BaseIntegrationTest {
         final Module module = engine.compileModule(testCase.getModuleBytes());
         assertThat(module).isNotNull();
 
-        final Instance instance = store.instantiate(module);
+        final Instance instance = runtime.instantiate(module);
         assertThat(instance).isNotNull();
 
         // For modules with exports, try to validate basic functionality
@@ -216,7 +216,7 @@ class WebAssemblySpecIT extends BaseIntegrationTest {
               final Store store = engine.createStore()) {
 
             final Module module = engine.compileModule(moduleBytes);
-            final Instance instance = store.instantiate(module);
+            final Instance instance = runtime.instantiate(module);
 
             return "success";
           }
@@ -253,7 +253,7 @@ class WebAssemblySpecIT extends BaseIntegrationTest {
     final String originalProperty = System.getProperty("wasmtime4j.runtime");
     try {
       System.setProperty("wasmtime4j.runtime", runtimeType.name().toLowerCase());
-      return ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory.createRuntime();
+      return ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory.create();
     } finally {
       if (originalProperty != null) {
         System.setProperty("wasmtime4j.runtime", originalProperty);

@@ -1,6 +1,10 @@
 package ai.tegmentum.wasmtime4j.utils;
 
+import ai.tegmentum.wasmtime4j.RuntimeType;
+import ai.tegmentum.wasmtime4j.WasmRuntime;
+import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
 import java.util.logging.Logger;
+import org.junit.jupiter.api.TestInfo;
 import org.junit.platform.engine.discovery.DiscoverySelectors;
 import org.junit.platform.launcher.Launcher;
 import org.junit.platform.launcher.LauncherDiscoveryRequest;
@@ -18,6 +22,49 @@ public final class TestRunner {
 
   private TestRunner() {
     // Utility class - prevent instantiation
+  }
+
+  /**
+   * Functional interface for tests that run with both runtimes.
+   */
+  @FunctionalInterface
+  public interface RuntimeTestFunction {
+    void execute(final WasmRuntime runtime, final String testName) throws Exception;
+  }
+
+  /**
+   * Runs a test function with both JNI and Panama runtimes.
+   * 
+   * @param testInfo the test information
+   * @param testFunction the test function to execute
+   */
+  public static void runWithBothRuntimes(final TestInfo testInfo, final RuntimeTestFunction testFunction) {
+    final String testName = testInfo.getDisplayName();
+    LOGGER.info("Running test with both runtimes: " + testName);
+
+    // Test with JNI runtime
+    LOGGER.info("Testing JNI runtime for: " + testName);
+    try (final WasmRuntime jniRuntime = WasmRuntimeFactory.create(RuntimeType.JNI)) {
+      testFunction.execute(jniRuntime, testName + "[JNI]");
+      LOGGER.info("JNI runtime test succeeded: " + testName);
+    } catch (final Exception e) {
+      LOGGER.severe("JNI runtime test failed: " + testName + " - " + e.getMessage());
+      throw new RuntimeException("JNI runtime test failed: " + testName, e);
+    }
+
+    // Test with Panama runtime if available
+    if (TestUtils.isPanamaAvailable()) {
+      LOGGER.info("Testing Panama runtime for: " + testName);
+      try (final WasmRuntime panamaRuntime = WasmRuntimeFactory.create(RuntimeType.PANAMA)) {
+        testFunction.execute(panamaRuntime, testName + "[Panama]");
+        LOGGER.info("Panama runtime test succeeded: " + testName);
+      } catch (final Exception e) {
+        LOGGER.severe("Panama runtime test failed: " + testName + " - " + e.getMessage());
+        throw new RuntimeException("Panama runtime test failed: " + testName, e);
+      }
+    } else {
+      LOGGER.info("Panama runtime not available, skipping for: " + testName);
+    }
   }
 
   /**

@@ -7,6 +7,7 @@ import ai.tegmentum.wasmtime4j.utils.BaseIntegrationTest;
 import ai.tegmentum.wasmtime4j.utils.TestUtils;
 import ai.tegmentum.wasmtime4j.wasi.WasiIntegrationTestRunner;
 import ai.tegmentum.wasmtime4j.webassembly.CrossRuntimeExecutionSummary;
+import ai.tegmentum.wasmtime4j.webassembly.CrossRuntimeTestResult;
 import ai.tegmentum.wasmtime4j.webassembly.CrossRuntimeTestRunner;
 import ai.tegmentum.wasmtime4j.webassembly.WasmTestDataManager;
 import ai.tegmentum.wasmtime4j.webassembly.WasmTestSuiteLoader;
@@ -56,7 +57,7 @@ class ComprehensiveIntegrationIT extends BaseIntegrationTest {
               final var store = engine.createStore()) {
 
             final var module = engine.compileModule(moduleBytes);
-            final var instance = store.instantiate(module);
+            final var instance = runtime.instantiate(module);
 
             final var addFunction =
                 instance
