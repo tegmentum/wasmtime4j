@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -149,16 +150,6 @@ public final class NativeLibraryUtils {
       return loadingMethod;
     }
 
-    /**
-     * Gets the error that occurred during loading (if any).
-     *
-     * @return the error, or null if no error
-     * @deprecated Use {@link #getErrorMessage()} or {@link #getErrorType()} for safer access
-     */
-    @Deprecated
-    public Exception getError() {
-      return error;
-    }
 
     /**
      * Gets the error message from the exception that occurred during loading.
@@ -328,9 +319,11 @@ public final class NativeLibraryUtils {
       // Sanitize platform ID to prevent path traversal attacks
       final String sanitizedPlatformId = sanitizePlatformId(platformInfo.getPlatformId());
 
-      // Create temporary directory with unique name
+      // Create temporary directory with unique name in system temp directory
       final Path tempDir =
-          Files.createTempDirectory(TEMP_FILE_PREFIX + sanitizedPlatformId + TEMP_DIR_SUFFIX);
+          Files.createTempDirectory(
+              Paths.get(System.getProperty("java.io.tmpdir")),
+              TEMP_FILE_PREFIX + sanitizedPlatformId + TEMP_DIR_SUFFIX);
       final String libraryFileName = platformInfo.getLibraryFileName(libraryName);
       final Path extractedLibrary = tempDir.resolve(libraryFileName);
 
@@ -416,7 +409,8 @@ public final class NativeLibraryUtils {
     if (input == null) {
       return "null";
     }
-    return input.replaceAll("[\r\n]", "_");
+    // Remove all control and format characters to prevent log injection
+    return input.replaceAll("[\\p{Cntrl}\\p{Cf}]", "_");
   }
 
   /**

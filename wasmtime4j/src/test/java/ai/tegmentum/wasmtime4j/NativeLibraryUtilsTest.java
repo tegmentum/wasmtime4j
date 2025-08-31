@@ -48,6 +48,7 @@ final class NativeLibraryUtilsTest {
   }
 
   @Test
+  @SuppressWarnings("NullAway")
   void testLibraryLoadInfoWithNullLibraryNameThrows() {
     assertThrows(NullPointerException.class, () -> NativeLibraryUtils.loadNativeLibrary(null));
   }
@@ -76,6 +77,7 @@ final class NativeLibraryUtilsTest {
   }
 
   @Test
+  @SuppressWarnings("NullAway")
   void testExtractLibraryFromJarWithNullThrows() {
     final PlatformDetector.PlatformInfo platformInfo = PlatformDetector.detect();
 

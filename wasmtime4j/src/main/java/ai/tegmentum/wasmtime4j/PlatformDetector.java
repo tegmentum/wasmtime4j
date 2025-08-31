@@ -200,7 +200,8 @@ public final class PlatformDetector {
     if (input == null) {
       return "null";
     }
-    return input.replaceAll("[\r\n]", "_");
+    // Remove all control and format characters to prevent log injection
+    return input.replaceAll("[\\p{Cntrl}\\p{Cf}]", "_");
   }
 
   /**

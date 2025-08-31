@@ -3,6 +3,7 @@ package ai.tegmentum.wasmtime4j.factory;
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import java.util.Locale;
 import java.util.logging.Logger;
 
 /**
@@ -48,7 +49,8 @@ public final class WasmRuntimeFactory {
     if (input == null) {
       return "null";
     }
-    return input.replaceAll("[\r\n]", "_");
+    // Remove all control and format characters to prevent log injection
+    return input.replaceAll("[\\p{Cntrl}\\p{Cf}]", "_");
   }
 
   /**
