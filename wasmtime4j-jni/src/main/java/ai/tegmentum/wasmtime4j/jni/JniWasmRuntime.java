@@ -43,6 +43,16 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
 
   private static final Logger LOGGER = Logger.getLogger(JniWasmRuntime.class.getName());
 
+  // Load native library when this class is first loaded
+  static {
+    try {
+      ai.tegmentum.wasmtime4j.jni.nativelib.NativeLibraryLoader.loadLibrary();
+    } catch (final RuntimeException e) {
+      LOGGER.severe("Failed to load native library for JniWasmRuntime: " + e.getMessage());
+      throw new ExceptionInInitializerError(e);
+    }
+  }
+
   /** Resource cache for engines and modules. */
   private final JniResourceCache<String, Object> resourceCache;
 

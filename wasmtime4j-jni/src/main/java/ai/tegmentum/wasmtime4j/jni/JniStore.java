@@ -64,6 +64,16 @@ public final class JniStore extends JniResource implements Store {
 
   private static final Logger LOGGER = Logger.getLogger(JniStore.class.getName());
 
+  // Load native library when this class is first loaded
+  static {
+    try {
+      ai.tegmentum.wasmtime4j.jni.nativelib.NativeLibraryLoader.loadLibrary();
+    } catch (final RuntimeException e) {
+      LOGGER.severe("Failed to load native library for JniStore: " + e.getMessage());
+      throw new ExceptionInInitializerError(e);
+    }
+  }
+
   /** Custom data associated with this store. */
   private volatile Object customData;
 

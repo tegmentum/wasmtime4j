@@ -4,6 +4,9 @@ import ai.tegmentum.wasmtime4j.RuntimeType;
 import java.time.Duration;
 import java.util.Objects;
 
+/**
+ * Represents a detected performance regression.
+ */
 public final class PerformanceRegression {
   private final RuntimeType runtimeType;
   private final Duration baselineDuration;
@@ -11,6 +14,15 @@ public final class PerformanceRegression {
   private final long regressionMs;
   private final double regressionPercent;
 
+  /**
+   * Creates a new performance regression record.
+   *
+   * @param runtimeType the runtime type that regressed
+   * @param baselineDuration the baseline duration
+   * @param currentDuration the current duration
+   * @param regressionMs the regression in milliseconds
+   * @param regressionPercent the regression as a percentage
+   */
   public PerformanceRegression(
       final RuntimeType runtimeType,
       final Duration baselineDuration,

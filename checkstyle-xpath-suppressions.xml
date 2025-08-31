@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<!DOCTYPE suppressions PUBLIC
+    "-//Checkstyle//DTD SuppressionXpathFilter Experimental Configuration 1.2//EN"
+    "https://checkstyle.org/dtds/suppressionxpathfilter_1_2.dtd">
+
+<suppressions>
+    <!-- Allow IT suffix for integration test classes -->
+    <suppress-xpath checks="AbbreviationAsWordInName" 
+                    query="//CLASS_DEF[contains(@text, 'IT')]" />
+    
+    <!-- Allow common abbreviations in test files -->
+    <suppress-xpath checks="AbbreviationAsWordInName" 
+                    query="//METHOD_DEF[contains(@text, 'MacOS') or contains(@text, 'ARM64') or contains(@text, 'OS')]" />
+    
+    <!-- Allow variable names with OS/ARM64 in test utilities -->
+    <suppress-xpath checks="AbbreviationAsWordInName" 
+                    query="//VARIABLE_DEF[contains(@text, 'MacOS') or contains(@text, 'ARM64') or contains(@text, 'OS')]" />
+</suppressions>

@@ -29,6 +29,16 @@ public final class JniInstance extends JniResource implements Instance {
 
   private static final Logger LOGGER = Logger.getLogger(JniInstance.class.getName());
 
+  // Load native library when this class is first loaded
+  static {
+    try {
+      ai.tegmentum.wasmtime4j.jni.nativelib.NativeLibraryLoader.loadLibrary();
+    } catch (final RuntimeException e) {
+      LOGGER.severe("Failed to load native library for JniInstance: " + e.getMessage());
+      throw new ExceptionInInitializerError(e);
+    }
+  }
+
   /** Flag to track if this instance has been closed. */
   private final AtomicBoolean closed = new AtomicBoolean(false);
 

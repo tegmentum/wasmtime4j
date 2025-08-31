@@ -129,7 +129,7 @@ public final class TestUtils {
    *
    * @return true if running on macOS
    */
-  public static boolean isMacOS() {
+  public static boolean isMacOs() {
     return getOperatingSystem().contains("mac") || getOperatingSystem().contains("darwin");
   }
 
@@ -148,7 +148,7 @@ public final class TestUtils {
    *
    * @return true if running on ARM64
    */
-  public static boolean isARM64() {
+  public static boolean isArm64() {
     final String arch = getSystemArchitecture();
     return arch.contains("aarch64") || arch.contains("arm64");
   }

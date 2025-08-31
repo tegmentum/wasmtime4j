@@ -22,6 +22,16 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
 
   private static final Logger LOGGER = Logger.getLogger(JniGlobal.class.getName());
 
+  // Load native library when this class is first loaded
+  static {
+    try {
+      ai.tegmentum.wasmtime4j.jni.nativelib.NativeLibraryLoader.loadLibrary();
+    } catch (final RuntimeException e) {
+      LOGGER.severe("Failed to load native library for JniGlobal: " + e.getMessage());
+      throw new ExceptionInInitializerError(e);
+    }
+  }
+
   /**
    * Creates a new JNI global with the given native handle.
    *

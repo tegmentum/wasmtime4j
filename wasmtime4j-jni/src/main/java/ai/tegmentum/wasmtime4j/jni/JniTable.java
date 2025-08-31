@@ -21,6 +21,16 @@ public final class JniTable extends JniResource implements WasmTable {
 
   private static final Logger LOGGER = Logger.getLogger(JniTable.class.getName());
 
+  // Load native library when this class is first loaded
+  static {
+    try {
+      ai.tegmentum.wasmtime4j.jni.nativelib.NativeLibraryLoader.loadLibrary();
+    } catch (final RuntimeException e) {
+      LOGGER.severe("Failed to load native library for JniTable: " + e.getMessage());
+      throw new ExceptionInInitializerError(e);
+    }
+  }
+
   /**
    * Creates a new JNI table with the given native handle.
    *

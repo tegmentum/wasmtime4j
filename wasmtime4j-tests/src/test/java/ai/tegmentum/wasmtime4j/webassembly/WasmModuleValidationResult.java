@@ -242,6 +242,18 @@ public final class WasmModuleValidationResult {
     }
 
     /**
+     * Adds multiple informational items.
+     *
+     * @param info the list of informational messages
+     * @return this builder
+     */
+    public Builder addInfo(final List<String> info) {
+      Objects.requireNonNull(info, "info cannot be null");
+      this.info.addAll(info);
+      return this;
+    }
+
+    /**
      * Adds multiple errors.
      *
      * @param errors the list of error messages
@@ -262,18 +274,6 @@ public final class WasmModuleValidationResult {
     public Builder addWarnings(final List<String> warnings) {
       Objects.requireNonNull(warnings, "warnings cannot be null");
       this.warnings.addAll(warnings);
-      return this;
-    }
-
-    /**
-     * Adds multiple informational items.
-     *
-     * @param info the list of informational messages
-     * @return this builder
-     */
-    public Builder addInfo(final List<String> info) {
-      Objects.requireNonNull(info, "info cannot be null");
-      this.info.addAll(info);
       return this;
     }
 

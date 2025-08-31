@@ -18,7 +18,9 @@ import java.util.stream.Stream;
 public final class WasmTestSuiteLoader {
   private static final Logger LOGGER = Logger.getLogger(WasmTestSuiteLoader.class.getName());
 
-  // Test suite categories
+  /**
+   * Test suite categories for WebAssembly test execution.
+   */
   public enum TestSuiteType {
     WEBASSEMBLY_SPEC("webassembly-spec"),
     WASMTIME_TESTS("wasmtime-tests"),

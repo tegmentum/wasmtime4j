@@ -89,8 +89,8 @@ public abstract class BaseIntegrationTest {
   }
 
   /** Skips the current test if running on macOS. */
-  protected void skipOnMacOS() {
-    skipIfNot(!TestUtils.isMacOS(), "Test skipped on macOS platform");
+  protected void skipOnMacOs() {
+    skipIfNot(!TestUtils.isMacOs(), "Test skipped on macOS platform");
   }
 
   /** Skips the current test if Panama is not available. */
@@ -99,8 +99,8 @@ public abstract class BaseIntegrationTest {
   }
 
   /** Skips the current test if running on ARM64 architecture. */
-  protected void skipOnARM64() {
-    skipIfNot(!TestUtils.isARM64(), "Test skipped on ARM64 architecture");
+  protected void skipOnArm64() {
+    skipIfNot(!TestUtils.isArm64(), "Test skipped on ARM64 architecture");
   }
 
   /** Skips the current test if running on x86_64 architecture. */
