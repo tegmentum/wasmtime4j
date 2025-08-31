@@ -461,12 +461,14 @@ public final class CrossRuntimeValidator {
     if (jniResult.hasException() && panamaResult.hasException()) {
       return compareResults(jniResult, panamaResult);
     } else if (!jniResult.hasException() && !panamaResult.hasException()) {
-      return new ComparisonResult(
-          results, true, true, "Both runtimes unexpectedly succeeded");
+      return new ComparisonResult(results, true, true, "Both runtimes unexpectedly succeeded");
     } else {
       return new ComparisonResult(
-          results, false, false,
-          String.format("Inconsistent error handling: JNI %s, Panama %s",
+          results,
+          false,
+          false,
+          String.format(
+              "Inconsistent error handling: JNI %s, Panama %s",
               jniResult.hasException() ? "failed" : "succeeded",
               panamaResult.hasException() ? "failed" : "succeeded"));
     }
@@ -482,26 +484,25 @@ public final class CrossRuntimeValidator {
    * @return comparison result with concurrency validation outcome
    */
   public static <T> ComparisonResult validateConcurrentExecution(
-      final RuntimeOperation<T> operation,
-      final int threadCount,
-      final int iterationsPerThread) {
+      final RuntimeOperation<T> operation, final int threadCount, final int iterationsPerThread) {
 
-    LOGGER.info(String.format(
-        "Validating concurrent execution with %d threads, %d iterations each",
-        threadCount, iterationsPerThread));
+    LOGGER.info(
+        String.format(
+            "Validating concurrent execution with %d threads, %d iterations each",
+            threadCount, iterationsPerThread));
 
     final List<TestResult> allResults = new ArrayList<>();
 
     // Test JNI runtime concurrency
-    final TestResult jniResult = executeConcurrentTest(
-        RuntimeType.JNI, operation, threadCount, iterationsPerThread);
+    final TestResult jniResult =
+        executeConcurrentTest(RuntimeType.JNI, operation, threadCount, iterationsPerThread);
     allResults.add(jniResult);
 
     // Test Panama runtime concurrency if available
     TestResult panamaResult = null;
     if (TestUtils.isPanamaAvailable()) {
-      panamaResult = executeConcurrentTest(
-          RuntimeType.PANAMA, operation, threadCount, iterationsPerThread);
+      panamaResult =
+          executeConcurrentTest(RuntimeType.PANAMA, operation, threadCount, iterationsPerThread);
       allResults.add(panamaResult);
     } else {
       LOGGER.warning("Panama runtime not available, skipping concurrency validation");
@@ -524,17 +525,20 @@ public final class CrossRuntimeValidator {
 
     try {
       final List<CompletableFuture<Void>> futures = new ArrayList<>();
-      
+
       for (int t = 0; t < threadCount; t++) {
-        futures.add(CompletableFuture.runAsync(() -> {
-          try (final WasmRuntime runtime = WasmRuntimeFactory.create(runtimeType)) {
-            for (int i = 0; i < iterationsPerThread; i++) {
-              operation.execute(runtime);
-            }
-          } catch (final Exception e) {
-            throw new RuntimeException("Concurrent execution failed", e);
-          }
-        }, executor));
+        futures.add(
+            CompletableFuture.runAsync(
+                () -> {
+                  try (final WasmRuntime runtime = WasmRuntimeFactory.create(runtimeType)) {
+                    for (int i = 0; i < iterationsPerThread; i++) {
+                      operation.execute(runtime);
+                    }
+                  } catch (final Exception e) {
+                    throw new RuntimeException("Concurrent execution failed", e);
+                  }
+                },
+                executor));
       }
 
       // Wait for all threads to complete
@@ -543,9 +547,10 @@ public final class CrossRuntimeValidator {
       final Duration executionTime = Duration.between(startTime, Instant.now());
       final int totalOperations = threadCount * iterationsPerThread;
 
-      LOGGER.info(String.format(
-          "%s concurrent test completed: %d operations in %d ms",
-          runtimeType, totalOperations, executionTime.toMillis()));
+      LOGGER.info(
+          String.format(
+              "%s concurrent test completed: %d operations in %d ms",
+              runtimeType, totalOperations, executionTime.toMillis()));
 
       return new TestResult(runtimeType, totalOperations, executionTime, null);
 
@@ -577,26 +582,25 @@ public final class CrossRuntimeValidator {
    * @return comparison result with stress validation outcome
    */
   public static <T> ComparisonResult validateUnderStress(
-      final RuntimeOperation<T> operation,
-      final Duration duration,
-      final int operationsPerSecond) {
+      final RuntimeOperation<T> operation, final Duration duration, final int operationsPerSecond) {
 
-    LOGGER.info(String.format(
-        "Validating under stress for %d seconds at %d ops/sec",
-        duration.toSeconds(), operationsPerSecond));
+    LOGGER.info(
+        String.format(
+            "Validating under stress for %d seconds at %d ops/sec",
+            duration.toSeconds(), operationsPerSecond));
 
     final List<TestResult> allResults = new ArrayList<>();
 
     // Test JNI runtime under stress
-    final TestResult jniResult = executeStressTest(
-        RuntimeType.JNI, operation, duration, operationsPerSecond);
+    final TestResult jniResult =
+        executeStressTest(RuntimeType.JNI, operation, duration, operationsPerSecond);
     allResults.add(jniResult);
 
     // Test Panama runtime under stress if available
     TestResult panamaResult = null;
     if (TestUtils.isPanamaAvailable()) {
-      panamaResult = executeStressTest(
-          RuntimeType.PANAMA, operation, duration, operationsPerSecond);
+      panamaResult =
+          executeStressTest(RuntimeType.PANAMA, operation, duration, operationsPerSecond);
       allResults.add(panamaResult);
     } else {
       LOGGER.warning("Panama runtime not available, skipping stress validation");
@@ -630,7 +634,7 @@ public final class CrossRuntimeValidator {
         // Rate limiting
         final long currentTime = System.nanoTime();
         final long expectedNextTime = lastOperationTime + operationIntervalNanos;
-        
+
         if (currentTime < expectedNextTime) {
           final long sleepNanos = expectedNextTime - currentTime;
           if (sleepNanos > 1_000_000) { // Only sleep if > 1ms
@@ -646,9 +650,10 @@ public final class CrossRuntimeValidator {
       }
 
       final Duration actualDuration = Duration.between(startTime, Instant.now());
-      LOGGER.info(String.format(
-          "%s stress test completed: %d operations in %d ms",
-          runtimeType, operationCount, actualDuration.toMillis()));
+      LOGGER.info(
+          String.format(
+              "%s stress test completed: %d operations in %d ms",
+              runtimeType, operationCount, actualDuration.toMillis()));
 
       return new TestResult(runtimeType, operationCount, actualDuration, null);
 
@@ -726,9 +731,10 @@ public final class CrossRuntimeValidator {
       final long memoryDelta = finalMemory - initialMemory;
       final Duration executionTime = Duration.between(startTime, Instant.now());
 
-      LOGGER.info(String.format(
-          "%s memory test completed: %d iterations, %d bytes memory change",
-          runtimeType, iterations, memoryDelta));
+      LOGGER.info(
+          String.format(
+              "%s memory test completed: %d iterations, %d bytes memory change",
+              runtimeType, iterations, memoryDelta));
 
       // Return memory delta as the "result" for comparison
       return new TestResult(runtimeType, memoryDelta, executionTime, null);
