@@ -174,7 +174,7 @@ public abstract class BaseIntegrationTest {
    *
    * @param testFunction the test function to execute
    */
-  protected void runWithBothRuntimes(final RuntimeTestFunction testFunction) {
+  protected void runWithBothRuntimes(final RuntimeTestFunction<Void> testFunction) {
     // Test with JNI runtime
     LOGGER.info("Testing with JNI runtime");
     try (final WasmRuntime jniRuntime = WasmRuntimeFactory.create(RuntimeType.JNI)) {
@@ -196,11 +196,6 @@ public abstract class BaseIntegrationTest {
     }
   }
 
-  /** Functional interface for runtime-specific test execution. */
-  @FunctionalInterface
-  protected interface RuntimeTestFunction {
-    void execute(WasmRuntime runtime, RuntimeType runtimeType) throws Exception;
-  }
 
   /**
    * Skips the current test if the specified condition is not met.

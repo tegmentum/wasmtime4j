@@ -51,6 +51,9 @@ public final class TestCategories {
   /** Cross-runtime validation tests. */
   public static final String CROSS_RUNTIME = "cross.runtime";
 
+  /** Host function integration and marshaling tests. */
+  public static final String HOST_FUNCTION = "host.function";
+
   private TestCategories() {
     // Utility class - prevent instantiation
   }
