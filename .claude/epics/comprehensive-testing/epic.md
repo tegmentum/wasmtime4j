@@ -4,7 +4,7 @@ status: backlog
 created: 2025-08-31T11:30:00Z
 progress: 0%
 prd: .claude/prds/comprehensive-testing.md
----
+github: https://github.com/tegmentum/wasmtime4j/issues/73---
 
 # Epic: comprehensive-testing
 
