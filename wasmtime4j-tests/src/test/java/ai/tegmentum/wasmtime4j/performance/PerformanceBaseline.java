@@ -13,6 +13,15 @@ public final class PerformanceBaseline {
   private final Instant lastUpdated;
   private final int measurementCount;
 
+  /**
+   * Creates a new performance baseline.
+   *
+   * @param testName the name of the test
+   * @param runtimeType the runtime type
+   * @param baselineDuration the baseline duration
+   * @param lastUpdated when the baseline was last updated
+   * @param measurementCount the number of measurements
+   */
   public PerformanceBaseline(
       final String testName,
       final RuntimeType runtimeType,
@@ -65,8 +74,12 @@ public final class PerformanceBaseline {
 
   @Override
   public boolean equals(final Object obj) {
-    if (this == obj) return true;
-    if (obj == null || getClass() != obj.getClass()) return false;
+    if (this == obj) {
+      return true;
+    }
+    if (obj == null || getClass() != obj.getClass()) {
+      return false;
+    }
 
     final PerformanceBaseline that = (PerformanceBaseline) obj;
     return measurementCount == that.measurementCount

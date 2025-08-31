@@ -51,6 +51,16 @@ public final class JniEngine extends JniResource implements Engine {
 
   private static final Logger LOGGER = Logger.getLogger(JniEngine.class.getName());
 
+  // Load native library when this class is first loaded
+  static {
+    try {
+      ai.tegmentum.wasmtime4j.jni.nativelib.NativeLibraryLoader.loadLibrary();
+    } catch (final RuntimeException e) {
+      LOGGER.severe("Failed to load native library for JniEngine: " + e.getMessage());
+      throw new ExceptionInInitializerError(e);
+    }
+  }
+
   /**
    * Creates a new JNI engine with the given native handle.
    *

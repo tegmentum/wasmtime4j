@@ -36,18 +36,18 @@ class CrossPlatformIT extends BaseIntegrationTest {
     // Verify platform detection methods work correctly
     final boolean isLinux = TestUtils.isLinux();
     final boolean isWindows = TestUtils.isWindows();
-    final boolean isMacOS = TestUtils.isMacOS();
+    final boolean isMacOs = TestUtils.isMacOs();
 
     // Exactly one should be true
-    final int platformCount = (isLinux ? 1 : 0) + (isWindows ? 1 : 0) + (isMacOS ? 1 : 0);
+    final int platformCount = (isLinux ? 1 : 0) + (isWindows ? 1 : 0) + (isMacOs ? 1 : 0);
     assertThat(platformCount).as("Exactly one platform should be detected").isEqualTo(1);
 
     // Verify architecture detection
     final boolean isX86_64 = TestUtils.isX86_64();
-    final boolean isARM64 = TestUtils.isARM64();
+    final boolean isArm64 = TestUtils.isArm64();
 
     // At least one architecture should be detected
-    assertThat(isX86_64 || isARM64)
+    assertThat(isX86_64 || isArm64)
         .as("At least one supported architecture should be detected")
         .isTrue();
 
@@ -90,9 +90,9 @@ class CrossPlatformIT extends BaseIntegrationTest {
   @Test
   @EnabledOnOs(OS.MAC)
   @DisplayName("Should work on macOS")
-  void shouldWorkOnMacOS() {
+  void shouldWorkOnMacOs() {
     // Given
-    assertThat(TestUtils.isMacOS()).isTrue();
+    assertThat(TestUtils.isMacOs()).isTrue();
 
     // TODO: Test macOS-specific functionality when API is available
     // Test should include both Intel and Apple Silicon support
@@ -111,7 +111,7 @@ class CrossPlatformIT extends BaseIntegrationTest {
       // TODO: Test x86_64-specific functionality
       // Verify that x86_64 native libraries load correctly
       LOGGER.info("Testing x86_64 architecture support");
-    } else if (TestUtils.isARM64()) {
+    } else if (TestUtils.isArm64()) {
       // TODO: Test ARM64-specific functionality
       // Verify that ARM64 native libraries load correctly
       LOGGER.info("Testing ARM64 architecture support");

@@ -195,6 +195,9 @@ public final class CrossRuntimeExecutionSummary {
     private int consistentResults = 0;
     private int inconsistentResults = 0;
 
+    /**
+     * Creates a new Builder instance.
+     */
     public Builder() {
       // Initialize counts for all runtime types
       for (final RuntimeType runtimeType : RuntimeType.values()) {
@@ -205,6 +208,12 @@ public final class CrossRuntimeExecutionSummary {
       }
     }
 
+    /**
+     * Adds a test result to the summary being built.
+     *
+     * @param result the test result to add
+     * @return this builder for method chaining
+     */
     public Builder addTestResult(final CrossRuntimeTestResult result) {
       totalTests++;
       allResults.add(result);

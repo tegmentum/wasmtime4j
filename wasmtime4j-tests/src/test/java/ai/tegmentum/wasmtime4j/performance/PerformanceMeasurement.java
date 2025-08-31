@@ -5,6 +5,9 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
 
+/**
+ * Represents a performance measurement for a test execution.
+ */
 public final class PerformanceMeasurement {
   private final String testName;
   private final RuntimeType runtimeType;
@@ -12,6 +15,15 @@ public final class PerformanceMeasurement {
   private final Instant measurementTime;
   private final boolean successful;
 
+  /**
+   * Creates a new performance measurement.
+   *
+   * @param testName the name of the test
+   * @param runtimeType the runtime type used
+   * @param duration the execution duration
+   * @param measurementTime when the measurement was taken
+   * @param successful whether the measurement was successful
+   */
   public PerformanceMeasurement(
       final String testName,
       final RuntimeType runtimeType,

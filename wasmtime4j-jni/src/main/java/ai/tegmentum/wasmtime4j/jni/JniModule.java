@@ -78,6 +78,16 @@ public final class JniModule extends JniResource implements Module {
 
   private static final Logger LOGGER = Logger.getLogger(JniModule.class.getName());
 
+  // Load native library when this class is first loaded
+  static {
+    try {
+      ai.tegmentum.wasmtime4j.jni.nativelib.NativeLibraryLoader.loadLibrary();
+    } catch (final RuntimeException e) {
+      LOGGER.severe("Failed to load native library for JniModule: " + e.getMessage());
+      throw new ExceptionInInitializerError(e);
+    }
+  }
+
   /** WebAssembly features that may be supported by modules. */
   public enum WasmFeature {
     SIMD("simd", "SIMD operations support"),

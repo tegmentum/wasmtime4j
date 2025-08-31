@@ -21,6 +21,16 @@ public final class JniMemory extends JniResource implements WasmMemory {
 
   private static final Logger LOGGER = Logger.getLogger(JniMemory.class.getName());
 
+  // Load native library when this class is first loaded
+  static {
+    try {
+      ai.tegmentum.wasmtime4j.jni.nativelib.NativeLibraryLoader.loadLibrary();
+    } catch (final RuntimeException e) {
+      LOGGER.severe("Failed to load native library for JniMemory: " + e.getMessage());
+      throw new ExceptionInInitializerError(e);
+    }
+  }
+
   /**
    * Creates a new JNI memory with the given native handle.
    *

@@ -5,12 +5,20 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * Analysis of performance regressions across test runs.
+ */
 public final class PerformanceRegressionAnalysis {
   private final String testName;
   private final List<PerformanceRegression> regressions;
   private final List<String> warnings;
   private final List<String> info;
 
+  /**
+   * Creates a new performance regression analysis from a builder.
+   *
+   * @param builder the builder containing analysis data
+   */
   private PerformanceRegressionAnalysis(final Builder builder) {
     this.testName = Objects.requireNonNull(builder.testName);
     this.regressions = Collections.unmodifiableList(new ArrayList<>(builder.regressions));
@@ -42,6 +50,11 @@ public final class PerformanceRegressionAnalysis {
     return !warnings.isEmpty();
   }
 
+  /**
+   * Gets a summary of the regression analysis.
+   *
+   * @return a summary string describing any detected regressions
+   */
   public String getSummary() {
     if (hasRegressions()) {
       return "REGRESSION DETECTED - " + regressions.size() + " regression(s) found for " + testName;
@@ -50,6 +63,9 @@ public final class PerformanceRegressionAnalysis {
     }
   }
 
+  /**
+   * Builder for creating performance regression analysis instances.
+   */
   public static final class Builder {
     private final String testName;
     private final List<PerformanceRegression> regressions = new ArrayList<>();
