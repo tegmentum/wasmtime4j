@@ -214,11 +214,12 @@ mod tests {
             .expect("Function should exist");
         
         // Function exists and has correct signature
-        store.with_context(|mut ctx| {
-            assert_eq!(add_func.param_arity(&ctx), 2);
-            assert_eq!(add_func.result_arity(&ctx), 1);
+        store.with_context(|ctx| {
+            let func_type = add_func.ty(&ctx);
+            assert_eq!(func_type.params().len(), 2);
+            assert_eq!(func_type.results().len(), 1);
             Ok(())
-        }).expect("Failed to check function arity");
+        }).expect("Failed to check function signature");
     }
     
     #[test]

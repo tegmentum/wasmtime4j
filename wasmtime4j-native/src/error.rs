@@ -377,7 +377,7 @@ mod tests {
     fn test_ffi_error_handling() {
         use ffi_utils::*;
         
-        let result = ffi_try(|| {
+        let result: (ErrorCode, ()) = ffi_try(|| {
             Err(WasmtimeError::InvalidParameter { 
                 message: "test".to_string() 
             })
