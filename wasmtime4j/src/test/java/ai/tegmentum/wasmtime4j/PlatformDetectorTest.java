@@ -111,12 +111,14 @@ final class PlatformDetectorTest {
   }
 
   @Test
+  @SuppressWarnings("NullAway")
   void testGetLibraryFileNameWithNullThrows() {
     final PlatformDetector.PlatformInfo info = PlatformDetector.detect();
     assertThrows(NullPointerException.class, () -> info.getLibraryFileName(null));
   }
 
   @Test
+  @SuppressWarnings("NullAway")
   void testGetLibraryResourcePathWithNullThrows() {
     final PlatformDetector.PlatformInfo info = PlatformDetector.detect();
     assertThrows(NullPointerException.class, () -> info.getLibraryResourcePath(null));

@@ -110,9 +110,8 @@ public final class NativeLibraryLoader {
    *
    * @return the loading error, or null if no error occurred
    */
-  @SuppressWarnings("deprecation")
-  public Optional<Exception> getLoadingError() {
-    return loadInfo != null ? Optional.ofNullable(loadInfo.getError()) : Optional.empty();
+  public Optional<String> getLoadingError() {
+    return loadInfo != null ? Optional.ofNullable(loadInfo.getErrorMessage()) : Optional.empty();
   }
 
   /**
