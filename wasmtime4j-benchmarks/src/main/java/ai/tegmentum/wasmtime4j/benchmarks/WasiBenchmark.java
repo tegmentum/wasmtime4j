@@ -124,10 +124,12 @@ public class WasiBenchmark extends BenchmarkBase {
 
       simulateRuntimeOverhead();
 
-      Files.list(tempDir).forEach(path -> {
-        // Simulate processing each entry
-        Math.abs(path.hashCode());
-      });
+      Files.list(tempDir)
+          .forEach(
+              path -> {
+                // Simulate processing each entry
+                Math.abs(path.hashCode());
+              });
 
       final long endTime = System.nanoTime();
       return endTime - startTime;
@@ -177,7 +179,10 @@ public class WasiBenchmark extends BenchmarkBase {
       final long currentTime = System.currentTimeMillis() / 1000;
 
       final long endTime = System.nanoTime();
-      return endTime - startTime + currentTime - currentTime; // Ensure clock read is not optimized away
+      return endTime
+          - startTime
+          + currentTime
+          - currentTime; // Ensure clock read is not optimized away
     }
 
     private void simulateRuntimeOverhead() {
@@ -200,13 +205,14 @@ public class WasiBenchmark extends BenchmarkBase {
         // Clean up temporary files and directories
         Files.walk(tempDir)
             .sorted((a, b) -> b.compareTo(a)) // Delete files before directories
-            .forEach(path -> {
-              try {
-                Files.deleteIfExists(path);
-              } catch (final IOException e) {
-                // Ignore cleanup errors
-              }
-            });
+            .forEach(
+                path -> {
+                  try {
+                    Files.deleteIfExists(path);
+                  } catch (final IOException e) {
+                    // Ignore cleanup errors
+                  }
+                });
       } catch (final Exception e) {
         // Ignore cleanup errors
       }
@@ -537,7 +543,8 @@ public class WasiBenchmark extends BenchmarkBase {
           // Normal operations
           switch (operationCategory) {
             case "FILE_IO":
-              wasiContext.fileWrite(String.format("error_test_%d.dat", i), wasiContext.getTestData());
+              wasiContext.fileWrite(
+                  String.format("error_test_%d.dat", i), wasiContext.getTestData());
               successCount++;
               break;
             case "DIRECTORY_OPS":

@@ -244,8 +244,13 @@ public final class NativeFunctionBindings {
     // Verify descriptor matches (optional but recommended for safety)
     FunctionDescriptor bindingDescriptor = binding.getDescriptor();
     if (bindingDescriptor != null && !bindingDescriptor.equals(descriptor)) {
-      LOGGER.warning("Function descriptor mismatch for " + functionName 
-                    + ": expected " + descriptor + ", got " + bindingDescriptor);
+      LOGGER.warning(
+          "Function descriptor mismatch for "
+              + functionName
+              + ": expected "
+              + descriptor
+              + ", got "
+              + bindingDescriptor);
     }
 
     return binding.getMethodHandle().orElse(null);

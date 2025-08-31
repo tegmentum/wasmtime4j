@@ -339,10 +339,14 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
   /** Unmarshals a WebAssembly value to WasmValue object. */
   private WasmValue unmarshalWasmValue(final MemorySegment valueSlot, final int wasmType) {
     return switch (wasmType) {
-      case MemoryLayouts.WASM_I32 -> WasmValue.i32((Integer) MemoryLayouts.WASM_VAL_I32.get(valueSlot));
-      case MemoryLayouts.WASM_I64 -> WasmValue.i64((Long) MemoryLayouts.WASM_VAL_I64.get(valueSlot));
-      case MemoryLayouts.WASM_F32 -> WasmValue.f32((Float) MemoryLayouts.WASM_VAL_F32.get(valueSlot));
-      case MemoryLayouts.WASM_F64 -> WasmValue.f64((Double) MemoryLayouts.WASM_VAL_F64.get(valueSlot));
+      case MemoryLayouts.WASM_I32 -> WasmValue.i32(
+          (Integer) MemoryLayouts.WASM_VAL_I32.get(valueSlot));
+      case MemoryLayouts.WASM_I64 -> WasmValue.i64(
+          (Long) MemoryLayouts.WASM_VAL_I64.get(valueSlot));
+      case MemoryLayouts.WASM_F32 -> WasmValue.f32(
+          (Float) MemoryLayouts.WASM_VAL_F32.get(valueSlot));
+      case MemoryLayouts.WASM_F64 -> WasmValue.f64(
+          (Double) MemoryLayouts.WASM_VAL_F64.get(valueSlot));
       case MemoryLayouts.WASM_ANYREF -> WasmValue.externref(null);
       case MemoryLayouts.WASM_FUNCREF -> WasmValue.funcref(null);
       default -> WasmValue.i32(0); // Default

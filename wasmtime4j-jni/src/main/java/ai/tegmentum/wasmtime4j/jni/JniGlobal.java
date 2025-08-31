@@ -22,6 +22,16 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
 
   private static final Logger LOGGER = Logger.getLogger(JniGlobal.class.getName());
 
+  // Load native library when this class is first loaded
+  static {
+    try {
+      ai.tegmentum.wasmtime4j.jni.nativelib.NativeLibraryLoader.loadLibrary();
+    } catch (final RuntimeException e) {
+      LOGGER.severe("Failed to load native library for JniGlobal: " + e.getMessage());
+      throw new ExceptionInInitializerError(e);
+    }
+  }
+
   /**
    * Creates a new JNI global with the given native handle.
    *
@@ -278,7 +288,7 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
     try {
       final Object value = getValue();
       final String typeString = getValueType();
-      
+
       // Convert Object value and type string to WasmValue
       return convertToWasmValue(value, typeString);
     } catch (final Exception e) {
@@ -291,7 +301,7 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
     JniValidation.requireNonNull(value, "value");
     ensureNotClosed();
     validateMutable();
-    
+
     try {
       final Object objectValue = convertFromWasmValue(value);
       setValue(objectValue);
@@ -328,7 +338,7 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
     if (value == null) {
       return WasmValue.i32(0); // Default for null
     }
-    
+
     switch (typeString.toLowerCase()) {
       case "i32":
         return WasmValue.i32(((Number) value).intValue());

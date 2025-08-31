@@ -34,7 +34,6 @@ import org.openjdk.jmh.annotations.Warmup;
     jvmArgs = {"-Xms2g", "-Xmx2g"})
 public abstract class BenchmarkBase {
 
-
   /**
    * Sample WebAssembly module for basic arithmetic operations. This simple module adds two i32
    * values and returns the result.
@@ -230,8 +229,7 @@ public abstract class BenchmarkBase {
    * @return the WebAssembly runtime instance
    * @throws WasmException if runtime creation fails
    */
-  protected static WasmRuntime createRuntime(final RuntimeType runtimeType)
-      throws WasmException {
+  protected static WasmRuntime createRuntime(final RuntimeType runtimeType) throws WasmException {
     if (runtimeType == null) {
       return WasmRuntimeFactory.create();
     }

@@ -140,12 +140,12 @@ public class ComparisonBenchmark extends BenchmarkBase {
           runtime = BenchmarkBase.createRuntime(null); // Auto-selection
           break;
       }
-      
+
       engine = BenchmarkBase.createEngine(runtime);
       store = BenchmarkBase.createStore(engine);
       module = BenchmarkBase.compileModule(engine, moduleBytes);
       instance = BenchmarkBase.instantiateModule(store, module);
-      
+
       // Get function and memory based on category
       switch (category) {
         case "FUNCTION_CALL":
@@ -155,7 +155,7 @@ public class ComparisonBenchmark extends BenchmarkBase {
         default:
           break;
       }
-      
+
       if (category.equals("MEMORY_ACCESS") || category.equals("MIXED_WORKLOAD")) {
         wasmMemory = instance.getMemory("memory").orElse(null);
       }
@@ -177,7 +177,7 @@ public class ComparisonBenchmark extends BenchmarkBase {
 
       return new PerformanceResult(runtimeType, category, executionTime, throughput, memoryUsed);
     }
-    
+
     void cleanup() {
       try {
         // Function and memory resources are managed by the instance
@@ -266,33 +266,33 @@ public class ComparisonBenchmark extends BenchmarkBase {
 
     private double performInitializationWork(final int workAmount) throws WasmException {
       double result = 0;
-      
+
       // Create and destroy multiple engine instances to measure initialization overhead
       for (int i = 0; i < Math.min(workAmount / 10, 5); i++) {
         final WasmRuntime tempRuntime = BenchmarkBase.createRuntime(runtimeType);
         final Engine tempEngine = BenchmarkBase.createEngine(tempRuntime);
         final Store tempStore = BenchmarkBase.createStore(tempEngine);
-        
+
         result += tempRuntime.hashCode() % 100;
-        
+
         tempStore.close();
         tempEngine.close();
         tempRuntime.close();
       }
-      
+
       return result;
     }
 
     private double performFunctionCallWork(final int workAmount) throws WasmException {
       double result = 0;
-      
+
       if (targetFunction != null) {
         final WasmValue[] params = {WasmValue.i32(1), WasmValue.i32(2)};
-        
+
         for (int i = 0; i < workAmount; i++) {
           params[0] = WasmValue.i32(i);
           params[1] = WasmValue.i32(i + 1);
-          
+
           final WasmValue[] results = targetFunction.call(params);
           if (results.length > 0) {
             result += results[0].asInt();
@@ -302,26 +302,26 @@ public class ComparisonBenchmark extends BenchmarkBase {
         // Fallback if function not available
         result = workAmount;
       }
-      
+
       return result;
     }
 
     private double performMemoryWork(final int workAmount) throws WasmException {
       double result = 0;
-      
+
       if (wasmMemory != null) {
         final byte[] writeBuffer = new byte[64];
         final int memSize = Math.min(Math.toIntExact(wasmMemory.getSize()), 4096);
-        
+
         for (int i = 0; i < workAmount && i * 64 < memSize - 64; i++) {
           // Fill write buffer with data
           for (int j = 0; j < writeBuffer.length; j++) {
             writeBuffer[j] = (byte) ((i + j) % 256);
           }
-          
+
           // Write to WebAssembly memory
           wasmMemory.writeBytes(i * 64, writeBuffer, 0, writeBuffer.length);
-          
+
           // Read back from WebAssembly memory
           final byte[] readBuffer = new byte[writeBuffer.length];
           wasmMemory.readBytes(i * 64, readBuffer, 0, writeBuffer.length);
@@ -333,30 +333,30 @@ public class ComparisonBenchmark extends BenchmarkBase {
         // Fallback if memory not available
         result = workAmount;
       }
-      
+
       return result;
     }
 
     private double performMixedWork(final int workAmount) throws WasmException {
       final int third = workAmount / 3;
-      
+
       double result = 0;
-      
+
       // Don't reinitialize for mixed workload, just do some setup work
       result += third; // Simulated initialization work
-      
+
       if (targetFunction != null) {
         result += performFunctionCallWork(third);
       } else {
         result += third;
       }
-      
+
       if (wasmMemory != null) {
         result += performMemoryWork(third);
       } else {
         result += third;
       }
-      
+
       return result;
     }
 
@@ -376,7 +376,7 @@ public class ComparisonBenchmark extends BenchmarkBase {
 
   /** Panama workload executor. */
   private WorkloadExecutor panamaExecutor;
-  
+
   /** Module bytecode for benchmarks. */
   private byte[] moduleBytes;
 
@@ -390,10 +390,11 @@ public class ComparisonBenchmark extends BenchmarkBase {
       } else {
         moduleBytes = SIMPLE_WASM_MODULE.clone();
       }
-      
+
       jniExecutor = new WorkloadExecutor(RuntimeType.JNI, operationCategory, workloadIntensity);
-      panamaExecutor = new WorkloadExecutor(RuntimeType.PANAMA, operationCategory, workloadIntensity);
-      
+      panamaExecutor =
+          new WorkloadExecutor(RuntimeType.PANAMA, operationCategory, workloadIntensity);
+
       // Initialize executors if not initialization benchmark
       if (!operationCategory.equals("INITIALIZATION")) {
         jniExecutor.initialize(moduleBytes);
@@ -442,7 +443,7 @@ public class ComparisonBenchmark extends BenchmarkBase {
       if (operationCategory.equals("INITIALIZATION")) {
         jniExecutor.initialize(moduleBytes);
       }
-      
+
       final PerformanceResult result = jniExecutor.execute();
 
       blackhole.consume(result.getExecutionTime());
@@ -473,7 +474,7 @@ public class ComparisonBenchmark extends BenchmarkBase {
       if (operationCategory.equals("INITIALIZATION")) {
         panamaExecutor.initialize(moduleBytes);
       }
-      
+
       final PerformanceResult result = panamaExecutor.execute();
 
       blackhole.consume(result.getExecutionTime());
@@ -504,24 +505,30 @@ public class ComparisonBenchmark extends BenchmarkBase {
         jniExecutor.initialize(moduleBytes);
         panamaExecutor.initialize(moduleBytes);
       }
-      
+
       final PerformanceResult jniResult = jniExecutor.execute();
       final PerformanceResult panamaResult = panamaExecutor.execute();
 
       // Calculate comparison metrics
-      final double throughputRatio = jniResult.getThroughput() > 0
-          ? panamaResult.getThroughput() / jniResult.getThroughput() : 1.0;
-      final double memoryRatio = jniResult.getMemoryUsed() > 0
-          ? (double) panamaResult.getMemoryUsed() / jniResult.getMemoryUsed() : 1.0;
-      final double efficiencyComparison = jniResult.getEfficiencyScore() > 0
-          ? panamaResult.getEfficiencyScore() / jniResult.getEfficiencyScore() : 1.0;
+      final double throughputRatio =
+          jniResult.getThroughput() > 0
+              ? panamaResult.getThroughput() / jniResult.getThroughput()
+              : 1.0;
+      final double memoryRatio =
+          jniResult.getMemoryUsed() > 0
+              ? (double) panamaResult.getMemoryUsed() / jniResult.getMemoryUsed()
+              : 1.0;
+      final double efficiencyComparison =
+          jniResult.getEfficiencyScore() > 0
+              ? panamaResult.getEfficiencyScore() / jniResult.getEfficiencyScore()
+              : 1.0;
 
       blackhole.consume(throughputRatio);
       blackhole.consume(memoryRatio);
       blackhole.consume(efficiencyComparison);
       blackhole.consume(jniResult.getExecutionTime());
       blackhole.consume(panamaResult.getExecutionTime());
-      
+
       // Cleanup initialization resources immediately
       if (operationCategory.equals("INITIALIZATION")) {
         jniExecutor.cleanup();

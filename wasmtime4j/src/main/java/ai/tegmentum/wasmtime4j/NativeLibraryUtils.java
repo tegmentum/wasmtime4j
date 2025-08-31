@@ -198,7 +198,8 @@ public final class NativeLibraryUtils {
       } else {
         return String.format(
             "LibraryLoadInfo{platform=%s, error=%s}",
-            platformInfo.getPlatformId(), getErrorMessage() != null ? getErrorMessage() : "unknown");
+            platformInfo.getPlatformId(),
+            getErrorMessage() != null ? getErrorMessage() : "unknown");
       }
     }
   }
@@ -246,7 +247,9 @@ public final class NativeLibraryUtils {
     // Strategy 1: Try loading from system library path
     try {
       System.loadLibrary(libraryName);
-      LOGGER.info("Successfully loaded native library from system library path: " + sanitizeForLog(libraryName));
+      LOGGER.info(
+          "Successfully loaded native library from system library path: "
+              + sanitizeForLog(libraryName));
       return new LibraryLoadInfo(
           libraryName,
           platformInfo,
@@ -264,8 +267,10 @@ public final class NativeLibraryUtils {
       final Path extractedPath = extractLibraryFromJar(libraryName, platformInfo, resourcePath);
       System.load(extractedPath.toAbsolutePath().toString());
       LOGGER.info(
-          "Successfully loaded native library from JAR: " + sanitizeForLog(resourcePath) 
-              + " -> " + sanitizeForLog(extractedPath.toString()));
+          "Successfully loaded native library from JAR: "
+              + sanitizeForLog(resourcePath)
+              + " -> "
+              + sanitizeForLog(extractedPath.toString()));
       return new LibraryLoadInfo(
           libraryName,
           platformInfo,
@@ -322,11 +327,10 @@ public final class NativeLibraryUtils {
 
       // Sanitize platform ID to prevent path traversal attacks
       final String sanitizedPlatformId = sanitizePlatformId(platformInfo.getPlatformId());
-      
+
       // Create temporary directory with unique name
       final Path tempDir =
-          Files.createTempDirectory(
-              TEMP_FILE_PREFIX + sanitizedPlatformId + TEMP_DIR_SUFFIX);
+          Files.createTempDirectory(TEMP_FILE_PREFIX + sanitizedPlatformId + TEMP_DIR_SUFFIX);
       final String libraryFileName = platformInfo.getLibraryFileName(libraryName);
       final Path extractedLibrary = tempDir.resolve(libraryFileName);
 
@@ -348,8 +352,11 @@ public final class NativeLibraryUtils {
       // Cache the path
       extractedLibrariesCache.put(cacheKey, extractedLibrary);
 
-      LOGGER.fine("Extracted native library: " + sanitizeForLog(resourcePath) 
-          + " -> " + sanitizeForLog(extractedLibrary.toString()));
+      LOGGER.fine(
+          "Extracted native library: "
+              + sanitizeForLog(resourcePath)
+              + " -> "
+              + sanitizeForLog(extractedLibrary.toString()));
       return extractedLibrary;
     }
   }
@@ -398,9 +405,9 @@ public final class NativeLibraryUtils {
 
   /**
    * Sanitizes a string for safe logging by removing CRLF injection characters.
-   * 
-   * <p>This method removes carriage return and line feed characters that could be used
-   * for log injection attacks.
+   *
+   * <p>This method removes carriage return and line feed characters that could be used for log
+   * injection attacks.
    *
    * @param input the string to sanitize for logging
    * @return the sanitized string safe for logging
@@ -414,9 +421,9 @@ public final class NativeLibraryUtils {
 
   /**
    * Sanitizes a platform ID string to prevent path traversal attacks.
-   * 
-   * <p>This method removes any characters that could be used for directory traversal
-   * and validates that the result contains only safe characters.
+   *
+   * <p>This method removes any characters that could be used for directory traversal and validates
+   * that the result contains only safe characters.
    *
    * @param platformId the platform ID to sanitize
    * @return the sanitized platform ID
@@ -426,17 +433,18 @@ public final class NativeLibraryUtils {
     if (platformId == null || platformId.trim().isEmpty()) {
       throw new IllegalArgumentException("Platform ID cannot be null or empty");
     }
-    
+
     // Remove any path traversal sequences and unsafe characters
-    final String sanitized = platformId
-        .replaceAll("\\.\\.", "")  // Remove .. sequences
-        .replaceAll("[\\\\/:]", "-")  // Replace path separators and colons with dashes
-        .replaceAll("[^a-zA-Z0-9\\-_]", "");  // Keep only alphanumeric, dashes, and underscores
-    
+    final String sanitized =
+        platformId
+            .replaceAll("\\.\\.", "") // Remove .. sequences
+            .replaceAll("[\\\\/:]", "-") // Replace path separators and colons with dashes
+            .replaceAll("[^a-zA-Z0-9\\-_]", ""); // Keep only alphanumeric, dashes, and underscores
+
     if (sanitized.isEmpty()) {
       throw new IllegalArgumentException("Platform ID contains no valid characters: " + platformId);
     }
-    
+
     return sanitized;
   }
 
@@ -455,7 +463,10 @@ public final class NativeLibraryUtils {
         libraryPath.toFile().setReadable(true, false);
       }
     } catch (final Exception e) {
-      LOGGER.log(Level.WARNING, "Failed to set library permissions: " + sanitizeForLog(libraryPath.toString()), e);
+      LOGGER.log(
+          Level.WARNING,
+          "Failed to set library permissions: " + sanitizeForLog(libraryPath.toString()),
+          e);
     }
   }
 
@@ -488,7 +499,7 @@ public final class NativeLibraryUtils {
                             // Expected - directory might not be empty or have permission issues
                             LOGGER.log(
                                 Level.FINE,
-                                "Could not delete parent directory (expected if not empty): " 
+                                "Could not delete parent directory (expected if not empty): "
                                     + sanitizeForLog(parent.toString()),
                                 e);
                           }
@@ -497,7 +508,8 @@ public final class NativeLibraryUtils {
                     } catch (final Exception e) {
                       LOGGER.log(
                           Level.FINE,
-                          "Error during cleanup of extracted library: " + sanitizeForLog(extractedPath.toString()),
+                          "Error during cleanup of extracted library: "
+                              + sanitizeForLog(extractedPath.toString()),
                           e);
                     }
                   }

@@ -12,8 +12,8 @@ import java.util.logging.Logger;
  * JNI implementation of WASI time and clock operations.
  *
  * <p>This class provides access to WASI time operations including clock resolution querying and
- * time retrieval for different clock types. It implements the WASI preview1 specification for
- * time operations with proper validation and error handling.
+ * time retrieval for different clock types. It implements the WASI preview1 specification for time
+ * operations with proper validation and error handling.
  *
  * <p>Supported operations:
  *
@@ -70,8 +70,8 @@ public final class WasiTimeOperations {
   /**
    * Gets the resolution of the specified clock.
    *
-   * <p>This operation returns the resolution (precision) of the specified clock in nanoseconds.
-   * The resolution represents the minimum time interval that can be measured by the clock.
+   * <p>This operation returns the resolution (precision) of the specified clock in nanoseconds. The
+   * resolution represents the minimum time interval that can be measured by the clock.
    *
    * @param clockId the clock identifier (one of the WASI_CLOCK_* constants)
    * @return the clock resolution in nanoseconds
@@ -89,11 +89,14 @@ public final class WasiTimeOperations {
       if (resolution < 0) {
         final WasiErrorCode errorCode = WasiErrorCode.fromErrnoOrNull((int) -resolution);
         if (errorCode != null) {
-          throw new WasiException("Failed to get clock resolution: " 
-                                + errorCode.getDescription(), errorCode, "clock_res_get", String.valueOf(clockId));
+          throw new WasiException(
+              "Failed to get clock resolution: " + errorCode.getDescription(),
+              errorCode,
+              "clock_res_get",
+              String.valueOf(clockId));
         } else {
-          throw new WasiException("Failed to get clock resolution with unknown error code: " 
-                                  + (-resolution));
+          throw new WasiException(
+              "Failed to get clock resolution with unknown error code: " + (-resolution));
         }
       }
 
@@ -123,19 +126,25 @@ public final class WasiTimeOperations {
     JniValidation.requireNonNegative(precision, "precision");
 
     try {
-      LOGGER.fine(() -> String.format("Getting current time for clock ID %d with precision %d", 
-                                      clockId, precision));
+      LOGGER.fine(
+          () ->
+              String.format(
+                  "Getting current time for clock ID %d with precision %d", clockId, precision));
 
-      final long timestamp = nativeGetCurrentTime(wasiContext.getNativeHandle(), clockId, precision);
+      final long timestamp =
+          nativeGetCurrentTime(wasiContext.getNativeHandle(), clockId, precision);
 
       if (timestamp < 0) {
         final WasiErrorCode errorCode = WasiErrorCode.fromErrnoOrNull((int) -timestamp);
         if (errorCode != null) {
-          throw new WasiException("Failed to get current time: " 
-                                + errorCode.getDescription(), errorCode, "clock_time_get", String.valueOf(clockId));
+          throw new WasiException(
+              "Failed to get current time: " + errorCode.getDescription(),
+              errorCode,
+              "clock_time_get",
+              String.valueOf(clockId));
         } else {
-          throw new WasiException("Failed to get current time with unknown error code: " 
-                                  + (-timestamp));
+          throw new WasiException(
+              "Failed to get current time with unknown error code: " + (-timestamp));
         }
       }
 
@@ -181,7 +190,8 @@ public final class WasiTimeOperations {
    * Gets the current monotonic time in nanoseconds since system boot.
    *
    * <p>This is a convenience method for getting monotonic time suitable for measuring time
-   * intervals, equivalent to calling {@link #getCurrentTime(int)} with {@link #WASI_CLOCK_MONOTONIC}.
+   * intervals, equivalent to calling {@link #getCurrentTime(int)} with {@link
+   * #WASI_CLOCK_MONOTONIC}.
    *
    * @return the current monotonic time in nanoseconds since system boot
    * @throws WasiException if the operation fails
@@ -237,8 +247,8 @@ public final class WasiTimeOperations {
   /**
    * Checks if the specified clock ID is supported.
    *
-   * <p>This method can be used to check if a clock ID is supported before attempting to use it
-   * with the time operations.
+   * <p>This method can be used to check if a clock ID is supported before attempting to use it with
+   * the time operations.
    *
    * @param clockId the clock identifier to check
    * @return true if the clock ID is supported, false otherwise
@@ -276,8 +286,8 @@ public final class WasiTimeOperations {
    */
   private void validateClockId(final int clockId) {
     if (!isClockSupported(clockId)) {
-      throw new JniException("Invalid clock ID: " + clockId 
-                            + " (valid range: 0-" + MAX_CLOCK_ID + ")");
+      throw new JniException(
+          "Invalid clock ID: " + clockId + " (valid range: 0-" + MAX_CLOCK_ID + ")");
     }
   }
 

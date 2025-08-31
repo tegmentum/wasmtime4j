@@ -70,14 +70,15 @@ public class MemoryOperationBenchmark extends BenchmarkBase {
 
   /** WebAssembly runtime components. */
   private WasmRuntime runtime;
+
   private Engine engine;
   private Store store;
   private Module module;
   private Instance instance;
-  
+
   /** WebAssembly memory instance. */
   private WasmMemory wasmMemory;
-  
+
   /** Current module bytecode. */
   private byte[] moduleBytes;
 
@@ -89,6 +90,7 @@ public class MemoryOperationBenchmark extends BenchmarkBase {
 
   /** GC monitoring beans for analyzing garbage collection impact. */
   private MemoryMXBean memoryBean;
+
   private java.util.List<GarbageCollectorMXBean> gcBeans;
 
   /** Setup performed before each benchmark iteration. */
@@ -99,14 +101,14 @@ public class MemoryOperationBenchmark extends BenchmarkBase {
     runtime = createRuntime(runtimeType);
     engine = createEngine(runtime);
     store = createStore(engine);
-    
+
     // Use complex module which includes memory
     moduleBytes = COMPLEX_WASM_MODULE.clone();
-    
+
     // Compile and instantiate module
     module = compileModule(engine, moduleBytes);
     instance = instantiateModule(store, module);
-    
+
     // Get WebAssembly memory
     final java.util.Optional<WasmMemory> memoryOpt = instance.getMemory("memory");
     if (!memoryOpt.isPresent()) {
@@ -141,7 +143,7 @@ public class MemoryOperationBenchmark extends BenchmarkBase {
     randomOffsets = null;
     moduleBytes = null;
   }
-  
+
   /** Helper method to clean up WebAssembly resources. */
   private void cleanup() {
     try {
@@ -402,11 +404,11 @@ public class MemoryOperationBenchmark extends BenchmarkBase {
       default:
         throw new IllegalArgumentException("Unknown operation pattern: " + operationPattern);
     }
-    
+
     final long oldSize = wasmMemory.getSize();
     final int growthResult = wasmMemory.grow(pages);
     final long newSize = wasmMemory.getSize();
-    
+
     blackhole.consume(newSize - oldSize);
     blackhole.consume(growthResult);
   }
@@ -486,7 +488,7 @@ public class MemoryOperationBenchmark extends BenchmarkBase {
       // Perform operations under pressure
       writeToMemory(wasmMemory, 0, testData);
       final byte[] readBack = readFromMemory(wasmMemory, 0, testData.length);
-      
+
       final int fillSize = Math.min(memorySize / 2, wasmMemory.getSize() / 2);
       final byte[] fillData = new byte[fillSize];
       writeToMemory(wasmMemory, 0, fillData);
@@ -558,7 +560,7 @@ public class MemoryOperationBenchmark extends BenchmarkBase {
 
       // Read data back
       final byte[] readData = readFromMemory(wasmMemory, offset, buffer.length);
-      
+
       // Create some garbage to stress GC
       if (i % 50 == 0) {
         final byte[] garbage = new byte[8192];
@@ -627,13 +629,14 @@ public class MemoryOperationBenchmark extends BenchmarkBase {
       for (int j = 0; j < reusableBuffer.length; j++) {
         reusableBuffer[j] = (byte) ((i + j) % 256);
       }
-      
+
       final int offset = i * 512;
       if (offset + reusableBuffer.length <= wasmMemory.getSize()) {
         writeToMemory(wasmMemory, offset, reusableBuffer);
-        
+
         // Read back using same buffer space
-        final byte[] readData = readFromMemory(wasmMemory, offset, Math.min(512, reusableBuffer.length));
+        final byte[] readData =
+            readFromMemory(wasmMemory, offset, Math.min(512, reusableBuffer.length));
         blackhole.consume(readData.length);
       }
     }
@@ -676,7 +679,7 @@ public class MemoryOperationBenchmark extends BenchmarkBase {
       for (int j = 0; j < data.length; j++) {
         data[j] = (byte) (i + j);
       }
-      
+
       final int offset = i * 128;
       if (offset + data.length <= wasmMemory.getSize()) {
         writeToMemory(wasmMemory, offset, data);
@@ -692,11 +695,11 @@ public class MemoryOperationBenchmark extends BenchmarkBase {
       // Random size allocation
       final int size = 128 + (int) (Math.random() * 512);
       final byte[] data = new byte[size];
-      
+
       for (int j = 0; j < data.length; j++) {
         data[j] = (byte) (Math.random() * 256);
       }
-      
+
       final int offset = randomOffsets[i % randomOffsets.length];
       if (offset + data.length <= wasmMemory.getSize()) {
         writeToMemory(wasmMemory, offset, data);
@@ -711,17 +714,17 @@ public class MemoryOperationBenchmark extends BenchmarkBase {
     // Large allocations
     final int bulkCount = 20;
     final int bulkSize = Math.min(8192, Math.toIntExact(wasmMemory.getSize()) / bulkCount);
-    
+
     for (int i = 0; i < bulkCount; i++) {
       final byte[] bulkData = new byte[bulkSize];
       for (int j = 0; j < bulkData.length; j++) {
         bulkData[j] = (byte) ((i * 10 + j) % 256);
       }
-      
+
       final int offset = i * bulkSize;
       if (offset + bulkSize <= wasmMemory.getSize()) {
         writeToMemory(wasmMemory, offset, bulkData);
-        
+
         // Read back a portion to verify
         final byte[] sample = readFromMemory(wasmMemory, offset, Math.min(1024, bulkSize));
         blackhole.consume(sample.length);
@@ -733,9 +736,10 @@ public class MemoryOperationBenchmark extends BenchmarkBase {
   private static void writeToMemory(final WasmMemory memory, final int offset, final byte[] data) {
     memory.writeBytes(offset, data, 0, data.length);
   }
-  
+
   /** Helper method to read data from WASM memory using the correct API. */
-  private static byte[] readFromMemory(final WasmMemory memory, final int offset, final int length) {
+  private static byte[] readFromMemory(
+      final WasmMemory memory, final int offset, final int length) {
     final byte[] result = new byte[length];
     memory.readBytes(offset, result, 0, length);
     return result;
@@ -745,12 +749,12 @@ public class MemoryOperationBenchmark extends BenchmarkBase {
   private GcStatistics captureGcStatistics() {
     long totalCollections = 0;
     long totalGcTime = 0;
-    
+
     for (final GarbageCollectorMXBean gcBean : gcBeans) {
       totalCollections += gcBean.getCollectionCount();
       totalGcTime += gcBean.getCollectionTime();
     }
-    
+
     return new GcStatistics(totalCollections, totalGcTime);
   }
 
@@ -758,7 +762,7 @@ public class MemoryOperationBenchmark extends BenchmarkBase {
   private static final class GcStatistics {
     final long totalCollections;
     final long totalGcTime;
-    
+
     GcStatistics(final long totalCollections, final long totalGcTime) {
       this.totalCollections = totalCollections;
       this.totalGcTime = totalGcTime;

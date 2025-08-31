@@ -24,7 +24,6 @@ import ai.tegmentum.wasmtime4j.WasmGlobal;
 import ai.tegmentum.wasmtime4j.WasmMemory;
 import ai.tegmentum.wasmtime4j.WasmTable;
 import ai.tegmentum.wasmtime4j.WasmValue;
-import ai.tegmentum.wasmtime4j.exception.RuntimeException;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.MemorySegment;
@@ -241,7 +240,7 @@ public final class PanamaInstance implements Instance, AutoCloseable {
     if (memory.isPresent()) {
       return memory;
     }
-    
+
     // If no "memory" export, try getting the first available memory
     String[] exports = getExportNames();
     for (String exportName : exports) {
@@ -250,7 +249,7 @@ public final class PanamaInstance implements Instance, AutoCloseable {
         return mem;
       }
     }
-    
+
     return Optional.empty();
   }
 
@@ -382,7 +381,6 @@ public final class PanamaInstance implements Instance, AutoCloseable {
     ensureNotClosed();
     return module;
   }
-
 
   // Private FFI helper methods for export access
 

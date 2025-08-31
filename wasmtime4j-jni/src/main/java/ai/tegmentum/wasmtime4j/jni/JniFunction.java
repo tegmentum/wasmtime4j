@@ -41,6 +41,16 @@ public final class JniFunction extends JniResource implements WasmFunction {
 
   private static final Logger LOGGER = Logger.getLogger(JniFunction.class.getName());
 
+  // Load native library when this class is first loaded
+  static {
+    try {
+      ai.tegmentum.wasmtime4j.jni.nativelib.NativeLibraryLoader.loadLibrary();
+    } catch (final RuntimeException e) {
+      LOGGER.severe("Failed to load native library for JniFunction: " + e.getMessage());
+      throw new ExceptionInInitializerError(e);
+    }
+  }
+
   /** Function name for debugging and identification. */
   private final String name;
 

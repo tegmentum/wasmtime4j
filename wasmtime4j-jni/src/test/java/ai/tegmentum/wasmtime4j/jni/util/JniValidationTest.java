@@ -7,9 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import ai.tegmentum.wasmtime4j.jni.exception.JniValidationException;
 import org.junit.jupiter.api.Test;
 
-/**
- * Unit tests for {@link JniValidation}.
- */
+/** Unit tests for {@link JniValidation}. */
 class JniValidationTest {
 
   @Test

@@ -419,7 +419,8 @@ public final class PanamaCapabilityDetector {
       return failureReason;
     }
 
-    /** Gets the fallback recommendation for this platform.
+    /**
+     * Gets the fallback recommendation for this platform.
      *
      * @return the fallback recommendation
      */
@@ -429,7 +430,8 @@ public final class PanamaCapabilityDetector {
           : FallbackRecommendation.USE_JNI;
     }
 
-    /** Gets a human-readable description of the Panama status.
+    /**
+     * Gets a human-readable description of the Panama status.
      *
      * @return status description
      */
@@ -445,7 +447,8 @@ public final class PanamaCapabilityDetector {
       return "Panama FFI availability unknown";
     }
 
-    /** Gets detailed diagnostic information about Panama capabilities.
+    /**
+     * Gets detailed diagnostic information about Panama capabilities.
      *
      * @return diagnostic information string
      */
@@ -612,7 +615,8 @@ public final class PanamaCapabilityDetector {
     private final int majorVersion;
     private final boolean java23OrHigher;
 
-    /** Creates a new JavaVersionInfo instance.
+    /**
+     * Creates a new JavaVersionInfo instance.
      *
      * @param fullVersion the full version string
      * @param vendor the vendor name

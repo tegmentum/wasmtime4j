@@ -90,7 +90,14 @@ public final class PerformanceRegressionDetector {
         final double throughput,
         final double latency,
         final long memoryUsage) {
-      this(benchmarkName, runtimeType, throughput, latency, memoryUsage, LocalDateTime.now(), new HashMap<>());
+      this(
+          benchmarkName,
+          runtimeType,
+          throughput,
+          latency,
+          memoryUsage,
+          LocalDateTime.now(),
+          new HashMap<>());
     }
 
     /**
@@ -192,9 +199,7 @@ public final class PerformanceRegressionDetector {
       this.meanLatency = sumLatency / measurements.size();
 
       final double sumSquaredDiffLatency =
-          measurements.stream()
-              .mapToDouble(m -> Math.pow(m.getLatency() - meanLatency, 2))
-              .sum();
+          measurements.stream().mapToDouble(m -> Math.pow(m.getLatency() - meanLatency, 2)).sum();
       this.stdDevLatency =
           measurements.size() > 1
               ? Math.sqrt(sumSquaredDiffLatency / (measurements.size() - 1))
@@ -202,7 +207,11 @@ public final class PerformanceRegressionDetector {
 
       // Calculate memory usage statistics
       this.meanMemoryUsage =
-          (long) measurements.stream().mapToLong(PerformanceMeasurement::getMemoryUsage).average().orElse(0.0);
+          (long)
+              measurements.stream()
+                  .mapToLong(PerformanceMeasurement::getMemoryUsage)
+                  .average()
+                  .orElse(0.0);
     }
 
     public double getMeanThroughput() {
@@ -256,7 +265,8 @@ public final class PerformanceRegressionDetector {
       return tvalue * (stdDevLatency / Math.sqrt(sampleCount));
     }
 
-    private double getTvalueForConfidenceLevel(final double confidenceLevel, final int degreesOfFreedom) {
+    private double getTvalueForConfidenceLevel(
+        final double confidenceLevel, final int degreesOfFreedom) {
       // Simplified t-value calculation for common confidence levels
       if (confidenceLevel >= 0.95) {
         if (degreesOfFreedom >= 30) {
@@ -365,16 +375,16 @@ public final class PerformanceRegressionDetector {
   }
 
   /** Logger for performance regression detection. */
-  private static final Logger LOGGER = Logger.getLogger(PerformanceRegressionDetector.class.getName());
+  private static final Logger LOGGER =
+      Logger.getLogger(PerformanceRegressionDetector.class.getName());
 
   /** Performance baseline storage and management. */
   private final Map<String, List<PerformanceMeasurement>> baselineData;
+
   private final Path baselineStoragePath;
   private final ObjectMapper objectMapper;
 
-  /**
-   * Creates a new performance regression detector with default baseline storage.
-   */
+  /** Creates a new performance regression detector with default baseline storage. */
   public PerformanceRegressionDetector() {
     this.baselineData = new HashMap<>();
     this.baselineStoragePath = Paths.get(System.getProperty("user.home"), ".wasmtime4j-benchmarks");
@@ -399,7 +409,8 @@ public final class PerformanceRegressionDetector {
    */
   public void establishBaseline(final List<PerformanceMeasurement> measurements) {
     for (final PerformanceMeasurement measurement : measurements) {
-      final String key = getBaselineKey(measurement.getBenchmarkName(), measurement.getRuntimeType());
+      final String key =
+          getBaselineKey(measurement.getBenchmarkName(), measurement.getRuntimeType());
       baselineData.computeIfAbsent(key, k -> new ArrayList<>()).add(measurement);
     }
     saveBaselines();
@@ -412,11 +423,13 @@ public final class PerformanceRegressionDetector {
    * @param currentMeasurements the current performance measurements
    * @return list of regression detection results
    */
-  public List<RegressionResult> detectRegressions(final List<PerformanceMeasurement> currentMeasurements) {
+  public List<RegressionResult> detectRegressions(
+      final List<PerformanceMeasurement> currentMeasurements) {
     loadBaselines();
 
     final List<RegressionResult> results = new ArrayList<>();
-    final Map<String, List<PerformanceMeasurement>> currentData = groupMeasurements(currentMeasurements);
+    final Map<String, List<PerformanceMeasurement>> currentData =
+        groupMeasurements(currentMeasurements);
 
     for (final Map.Entry<String, List<PerformanceMeasurement>> entry : currentData.entrySet()) {
       final String key = entry.getKey();
@@ -431,8 +444,10 @@ public final class PerformanceRegressionDetector {
         continue; // Insufficient current data
       }
 
-      final PerformanceStatistics baselineStats = new PerformanceStatistics(baseline, CONFIDENCE_LEVEL);
-      final PerformanceStatistics currentStats = new PerformanceStatistics(current, CONFIDENCE_LEVEL);
+      final PerformanceStatistics baselineStats =
+          new PerformanceStatistics(baseline, CONFIDENCE_LEVEL);
+      final PerformanceStatistics currentStats =
+          new PerformanceStatistics(current, CONFIDENCE_LEVEL);
 
       final RegressionResult result = analyzeRegression(key, baselineStats, currentStats);
       results.add(result);
@@ -450,7 +465,10 @@ public final class PerformanceRegressionDetector {
   public String generatePerformanceReport(final List<PerformanceMeasurement> measurements) {
     final StringBuilder report = new StringBuilder();
     report.append("WebAssembly Performance Report\n");
-    report.append("Generated: ").append(LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)).append("\n");
+    report
+        .append("Generated: ")
+        .append(LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))
+        .append("\n");
     report.append("==========================================================").append("\n\n");
 
     final Map<String, List<PerformanceMeasurement>> groupedData = groupMeasurements(measurements);
@@ -467,10 +485,14 @@ public final class PerformanceRegressionDetector {
 
       final PerformanceStatistics stats = new PerformanceStatistics(data, CONFIDENCE_LEVEL);
       report.append(String.format("Samples: %d\n", stats.getSampleCount()));
-      report.append(String.format("Throughput: %.2f ± %.2f ops/sec\n", 
-          stats.getMeanThroughput(), stats.getThroughputConfidenceInterval()));
-      report.append(String.format("Latency: %.2f ± %.2f ms\n", 
-          stats.getMeanLatency(), stats.getLatencyConfidenceInterval()));
+      report.append(
+          String.format(
+              "Throughput: %.2f ± %.2f ops/sec\n",
+              stats.getMeanThroughput(), stats.getThroughputConfidenceInterval()));
+      report.append(
+          String.format(
+              "Latency: %.2f ± %.2f ms\n",
+              stats.getMeanLatency(), stats.getLatencyConfidenceInterval()));
       report.append(String.format("Memory Usage: %d bytes\n", stats.getMeanMemoryUsage()));
       report.append("\n");
     }
@@ -501,9 +523,11 @@ public final class PerformanceRegressionDetector {
    */
   public void updateBaseline(final List<PerformanceMeasurement> newMeasurements) {
     for (final PerformanceMeasurement measurement : newMeasurements) {
-      final String key = getBaselineKey(measurement.getBenchmarkName(), measurement.getRuntimeType());
-      final List<PerformanceMeasurement> baseline = baselineData.computeIfAbsent(key, k -> new ArrayList<>());
-      
+      final String key =
+          getBaselineKey(measurement.getBenchmarkName(), measurement.getRuntimeType());
+      final List<PerformanceMeasurement> baseline =
+          baselineData.computeIfAbsent(key, k -> new ArrayList<>());
+
       // Keep only recent measurements (last 100 per benchmark/runtime combination)
       baseline.add(measurement);
       if (baseline.size() > 100) {
@@ -521,7 +545,8 @@ public final class PerformanceRegressionDetector {
       final List<PerformanceMeasurement> measurements) {
     final Map<String, List<PerformanceMeasurement>> grouped = new HashMap<>();
     for (final PerformanceMeasurement measurement : measurements) {
-      final String key = getBaselineKey(measurement.getBenchmarkName(), measurement.getRuntimeType());
+      final String key =
+          getBaselineKey(measurement.getBenchmarkName(), measurement.getRuntimeType());
       grouped.computeIfAbsent(key, k -> new ArrayList<>()).add(measurement);
     }
     return grouped;
@@ -534,16 +559,17 @@ public final class PerformanceRegressionDetector {
     final String runtimeType = parts[1];
 
     // Calculate throughput change (positive means improvement, negative means degradation)
-    final double throughputChange = 
+    final double throughputChange =
         (current.getMeanThroughput() - baseline.getMeanThroughput()) / baseline.getMeanThroughput();
 
     // Check if the change is statistically significant and represents a regression
-    final boolean isRegression = throughputChange < -REGRESSION_THRESHOLD
-        && isStatisticallySignificant(baseline, current);
+    final boolean isRegression =
+        throughputChange < -REGRESSION_THRESHOLD && isStatisticallySignificant(baseline, current);
 
-    final String description = String.format(
-        "Throughput changed by %.1f%% from %.2f to %.2f ops/sec",
-        throughputChange * 100, baseline.getMeanThroughput(), current.getMeanThroughput());
+    final String description =
+        String.format(
+            "Throughput changed by %.1f%% from %.2f to %.2f ops/sec",
+            throughputChange * 100, baseline.getMeanThroughput(), current.getMeanThroughput());
 
     return new RegressionResult(
         benchmarkName, runtimeType, isRegression, throughputChange, description, baseline, current);
@@ -557,7 +583,7 @@ public final class PerformanceRegressionDetector {
     final double currentCi = current.getThroughputConfidenceInterval();
     final double difference = Math.abs(baseline.getMeanThroughput() - current.getMeanThroughput());
     final double combinedCi = Math.sqrt(baselineCi * baselineCi + currentCi * currentCi);
-    
+
     return difference > combinedCi;
   }
 
@@ -578,12 +604,17 @@ public final class PerformanceRegressionDetector {
       final Path dataFile = baselineStoragePath.resolve("baseline-data.json");
       if (Files.exists(dataFile)) {
         final ObjectMapper mapper = createObjectMapper();
-        final Map<String, List<PerformanceMeasurement>> loadedData = 
-            mapper.readValue(dataFile.toFile(), 
-                mapper.getTypeFactory().constructMapType(
-                    Map.class, 
-                    mapper.getTypeFactory().constructType(String.class), 
-                    mapper.getTypeFactory().constructCollectionType(List.class, PerformanceMeasurement.class)));
+        final Map<String, List<PerformanceMeasurement>> loadedData =
+            mapper.readValue(
+                dataFile.toFile(),
+                mapper
+                    .getTypeFactory()
+                    .constructMapType(
+                        Map.class,
+                        mapper.getTypeFactory().constructType(String.class),
+                        mapper
+                            .getTypeFactory()
+                            .constructCollectionType(List.class, PerformanceMeasurement.class)));
         baselineData.clear();
         baselineData.putAll(loadedData);
         LOGGER.info("Loaded baseline data from: " + dataFile);
@@ -613,24 +644,27 @@ public final class PerformanceRegressionDetector {
   public String generateCiCdReport(final List<RegressionResult> regressions) {
     final Map<String, Object> report = new HashMap<>();
     report.put("timestamp", LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
-    report.put("regressionCount", regressions.stream().mapToLong(r -> r.isRegression() ? 1 : 0).sum());
+    report.put(
+        "regressionCount", regressions.stream().mapToLong(r -> r.isRegression() ? 1 : 0).sum());
     report.put("totalBenchmarks", regressions.size());
     report.put("hasRegressions", regressions.stream().anyMatch(RegressionResult::isRegression));
-    
-    final List<Map<String, Object>> regressionDetails = regressions.stream()
-        .filter(RegressionResult::isRegression)
-        .map(r -> {
-          final Map<String, Object> details = new HashMap<>();
-          details.put("benchmarkName", r.getBenchmarkName());
-          details.put("runtimeType", r.getRuntimeType());
-          details.put("performanceChange", r.getPerformanceChange());
-          details.put("description", r.getDescription());
-          return details;
-        })
-        .collect(Collectors.toList());
-    
+
+    final List<Map<String, Object>> regressionDetails =
+        regressions.stream()
+            .filter(RegressionResult::isRegression)
+            .map(
+                r -> {
+                  final Map<String, Object> details = new HashMap<>();
+                  details.put("benchmarkName", r.getBenchmarkName());
+                  details.put("runtimeType", r.getRuntimeType());
+                  details.put("performanceChange", r.getPerformanceChange());
+                  details.put("description", r.getDescription());
+                  return details;
+                })
+            .collect(Collectors.toList());
+
     report.put("regressions", regressionDetails);
-    
+
     try {
       return objectMapper.writeValueAsString(report);
     } catch (final Exception e) {
@@ -651,22 +685,21 @@ public final class PerformanceRegressionDetector {
       final String benchmarkName, final String runtimeType, final int lookbackDays) {
     final String key = getBaselineKey(benchmarkName, runtimeType);
     final List<PerformanceMeasurement> measurements = baselineData.get(key);
-    
+
     if (measurements == null || measurements.isEmpty()) {
       return new PerformanceStatistics(Collections.emptyList(), CONFIDENCE_LEVEL);
     }
-    
+
     final LocalDateTime cutoff = LocalDateTime.now().minusDays(lookbackDays);
-    final List<PerformanceMeasurement> recentMeasurements = measurements.stream()
-        .filter(m -> m.getTimestamp().isAfter(cutoff))
-        .collect(Collectors.toList());
-    
+    final List<PerformanceMeasurement> recentMeasurements =
+        measurements.stream()
+            .filter(m -> m.getTimestamp().isAfter(cutoff))
+            .collect(Collectors.toList());
+
     return new PerformanceStatistics(recentMeasurements, CONFIDENCE_LEVEL);
   }
 
-  /**
-   * Clears all baseline data (useful for testing).
-   */
+  /** Clears all baseline data (useful for testing). */
   public void clearBaselines() {
     baselineData.clear();
     try {

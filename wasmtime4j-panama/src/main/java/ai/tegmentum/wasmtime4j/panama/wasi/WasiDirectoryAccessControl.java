@@ -84,7 +84,7 @@ public final class WasiDirectoryAccessControl {
    * @throws WasiPermissionException if access is denied
    * @throws PanamaException if path normalization fails
    */
-  public void validateDirectoryAccess(final Path path, final WasiFileOperation operation) 
+  public void validateDirectoryAccess(final Path path, final WasiFileOperation operation)
       throws WasiPermissionException, PanamaException {
     PanamaValidation.requireNonNull(path, "path");
     PanamaValidation.requireNonNull(operation, "operation");
@@ -145,9 +145,8 @@ public final class WasiDirectoryAccessControl {
    * @throws PanamaException if path normalization fails or too many rules
    */
   public void grantDirectoryPermissions(
-      final String directoryPath,
-      final Set<WasiFileOperation> permissions,
-      final boolean recursive) throws PanamaException {
+      final String directoryPath, final Set<WasiFileOperation> permissions, final boolean recursive)
+      throws PanamaException {
     PanamaValidation.requireNonEmpty(directoryPath, "directoryPath");
     PanamaValidation.requireNonNull(permissions, "permissions");
 
@@ -212,7 +211,8 @@ public final class WasiDirectoryAccessControl {
    * @param enabled whether to enable or disable the rule
    * @throws PanamaException if path normalization fails
    */
-  public void setDirectoryRuleEnabled(final String directoryPath, final boolean enabled) throws PanamaException {
+  public void setDirectoryRuleEnabled(final String directoryPath, final boolean enabled)
+      throws PanamaException {
     PanamaValidation.requireNonEmpty(directoryPath, "directoryPath");
 
     final Path normalizedPath = normalizePath(Paths.get(directoryPath));
@@ -236,7 +236,8 @@ public final class WasiDirectoryAccessControl {
    * @return the permissions for the directory, or empty set if no permissions
    * @throws PanamaException if path normalization fails
    */
-  public Set<WasiFileOperation> getDirectoryPermissions(final String directoryPath) throws PanamaException {
+  public Set<WasiFileOperation> getDirectoryPermissions(final String directoryPath)
+      throws PanamaException {
     PanamaValidation.requireNonEmpty(directoryPath, "directoryPath");
 
     final Path normalizedPath = normalizePath(Paths.get(directoryPath));
@@ -338,7 +339,7 @@ public final class WasiDirectoryAccessControl {
 
   /** Validates that an operation is allowed by the given rule. */
   private void validateOperationAccess(
-      final DirectoryAccessRule rule, final WasiFileOperation operation, final Path path) 
+      final DirectoryAccessRule rule, final WasiFileOperation operation, final Path path)
       throws WasiPermissionException {
     if (!rule.enabled) {
       final String message =

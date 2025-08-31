@@ -11,7 +11,6 @@ import java.lang.foreign.MemorySegment;
 import java.lang.foreign.SymbolLookup;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodType;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -20,8 +19,8 @@ import java.util.logging.Logger;
  * Panama FFI implementation of WASI time and clock operations.
  *
  * <p>This class provides access to WASI time operations including clock resolution querying and
- * time retrieval for different clock types. It implements the WASI preview1 specification for
- * time operations using Panama Foreign Function Interface.
+ * time retrieval for different clock types. It implements the WASI preview1 specification for time
+ * operations using Panama Foreign Function Interface.
  *
  * <p>Supported operations:
  *
@@ -84,7 +83,7 @@ public final class WasiTimeOperations {
    * @throws PanamaException if the wasiContext or symbolLookup is null, or if native function
    *     lookup fails
    */
-  public WasiTimeOperations(final WasiContext wasiContext, final SymbolLookup symbolLookup) 
+  public WasiTimeOperations(final WasiContext wasiContext, final SymbolLookup symbolLookup)
       throws PanamaException {
     PanamaValidation.requireNonNull(wasiContext, "wasiContext");
     PanamaValidation.requireNonNull(symbolLookup, "symbolLookup");
@@ -106,8 +105,8 @@ public final class WasiTimeOperations {
   /**
    * Gets the resolution of the specified clock.
    *
-   * <p>This operation returns the resolution (precision) of the specified clock in nanoseconds.
-   * The resolution represents the minimum time interval that can be measured by the clock.
+   * <p>This operation returns the resolution (precision) of the specified clock in nanoseconds. The
+   * resolution represents the minimum time interval that can be measured by the clock.
    *
    * @param clockId the clock identifier (one of the WASI_CLOCK_* constants)
    * @return the clock resolution in nanoseconds
@@ -127,8 +126,8 @@ public final class WasiTimeOperations {
       final int result = (int) clockResGetHandle.invoke(clockId, resolutionOut);
 
       if (result != 0) {
-        throw new WasiException("Failed to get clock resolution for clock " + clockId 
-                                + ": error code " + result);
+        throw new WasiException(
+            "Failed to get clock resolution for clock " + clockId + ": error code " + result);
       }
 
       final long resolution = resolutionOut.get(ValueLayout.JAVA_LONG, 0);
@@ -162,8 +161,10 @@ public final class WasiTimeOperations {
     PanamaValidation.requireNonNegative(precision, "precision");
 
     try (final Arena arena = Arena.ofConfined()) {
-      LOGGER.fine(() -> String.format("Getting current time for clock ID %d with precision %d", 
-                                      clockId, precision));
+      LOGGER.fine(
+          () ->
+              String.format(
+                  "Getting current time for clock ID %d with precision %d", clockId, precision));
 
       // Allocate memory for the timestamp output
       final MemorySegment timestampOut = arena.allocate(ValueLayout.JAVA_LONG);
@@ -172,8 +173,8 @@ public final class WasiTimeOperations {
       final int result = (int) clockTimeGetHandle.invoke(clockId, precision, timestampOut);
 
       if (result != 0) {
-        throw new WasiException("Failed to get current time for clock " + clockId 
-                                + ": error code " + result);
+        throw new WasiException(
+            "Failed to get current time for clock " + clockId + ": error code " + result);
       }
 
       final long timestamp = timestampOut.get(ValueLayout.JAVA_LONG, 0);
@@ -223,7 +224,8 @@ public final class WasiTimeOperations {
    * Gets the current monotonic time in nanoseconds since system boot.
    *
    * <p>This is a convenience method for getting monotonic time suitable for measuring time
-   * intervals, equivalent to calling {@link #getCurrentTime(int)} with {@link #WASI_CLOCK_MONOTONIC}.
+   * intervals, equivalent to calling {@link #getCurrentTime(int)} with {@link
+   * #WASI_CLOCK_MONOTONIC}.
    *
    * @return the current monotonic time in nanoseconds since system boot
    * @throws WasiException if the operation fails
@@ -279,8 +281,8 @@ public final class WasiTimeOperations {
   /**
    * Checks if the specified clock ID is supported.
    *
-   * <p>This method can be used to check if a clock ID is supported before attempting to use it
-   * with the time operations.
+   * <p>This method can be used to check if a clock ID is supported before attempting to use it with
+   * the time operations.
    *
    * @param clockId the clock identifier to check
    * @return true if the clock ID is supported, false otherwise
@@ -318,8 +320,8 @@ public final class WasiTimeOperations {
    */
   private void validateClockId(final int clockId) throws PanamaException {
     if (!isClockSupported(clockId)) {
-      throw new PanamaException("Invalid clock ID: " + clockId 
-                               + " (valid range: 0-" + MAX_CLOCK_ID + ")");
+      throw new PanamaException(
+          "Invalid clock ID: " + clockId + " (valid range: 0-" + MAX_CLOCK_ID + ")");
     }
   }
 
@@ -330,14 +332,17 @@ public final class WasiTimeOperations {
    * @throws Exception if function lookup fails
    */
   private MethodHandle initializeClockResGetHandle() throws Exception {
-    final MemorySegment symbol = symbolLookup.find("wasi_clock_res_get")
-        .orElseThrow(() -> new PanamaException("WASI function wasi_clock_res_get not found"));
+    final MemorySegment symbol =
+        symbolLookup
+            .find("wasi_clock_res_get")
+            .orElseThrow(() -> new PanamaException("WASI function wasi_clock_res_get not found"));
 
-    final FunctionDescriptor descriptor = FunctionDescriptor.of(
-        ValueLayout.JAVA_INT,     // return: wasi_errno_t
-        ValueLayout.JAVA_INT,     // clock_id: wasi_clockid_t
-        ValueLayout.ADDRESS       // resolution_out: *wasi_timestamp_t
-    );
+    final FunctionDescriptor descriptor =
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return: wasi_errno_t
+            ValueLayout.JAVA_INT, // clock_id: wasi_clockid_t
+            ValueLayout.ADDRESS // resolution_out: *wasi_timestamp_t
+            );
 
     return Linker.nativeLinker().downcallHandle(symbol, descriptor);
   }
@@ -349,15 +354,18 @@ public final class WasiTimeOperations {
    * @throws Exception if function lookup fails
    */
   private MethodHandle initializeClockTimeGetHandle() throws Exception {
-    final MemorySegment symbol = symbolLookup.find("wasi_clock_time_get")
-        .orElseThrow(() -> new PanamaException("WASI function wasi_clock_time_get not found"));
+    final MemorySegment symbol =
+        symbolLookup
+            .find("wasi_clock_time_get")
+            .orElseThrow(() -> new PanamaException("WASI function wasi_clock_time_get not found"));
 
-    final FunctionDescriptor descriptor = FunctionDescriptor.of(
-        ValueLayout.JAVA_INT,     // return: wasi_errno_t
-        ValueLayout.JAVA_INT,     // clock_id: wasi_clockid_t
-        ValueLayout.JAVA_LONG,    // precision: wasi_timestamp_t
-        ValueLayout.ADDRESS       // timestamp_out: *wasi_timestamp_t
-    );
+    final FunctionDescriptor descriptor =
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return: wasi_errno_t
+            ValueLayout.JAVA_INT, // clock_id: wasi_clockid_t
+            ValueLayout.JAVA_LONG, // precision: wasi_timestamp_t
+            ValueLayout.ADDRESS // timestamp_out: *wasi_timestamp_t
+            );
 
     return Linker.nativeLinker().downcallHandle(symbol, descriptor);
   }

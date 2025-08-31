@@ -129,7 +129,7 @@ public final class PanamaMemory implements WasmMemory {
     try {
       // Get current size before growth
       int previousSize = getSize();
-      
+
       // Grow memory through optimized FFI call
       MethodHandle memoryGrow =
           nativeFunctions.getFunction(
@@ -215,7 +215,8 @@ public final class PanamaMemory implements WasmMemory {
   }
 
   @Override
-  public void readBytes(final int offset, final byte[] dest, final int destOffset, final int length) {
+  public void readBytes(
+      final int offset, final byte[] dest, final int destOffset, final int length) {
     ensureNotClosed();
 
     if (offset < 0) {
@@ -231,7 +232,12 @@ public final class PanamaMemory implements WasmMemory {
 
     if (destOffset + length > dest.length) {
       throw new IndexOutOfBoundsException(
-          "Buffer overflow: destOffset=" + destOffset + ", length=" + length + ", dest.length=" + dest.length);
+          "Buffer overflow: destOffset="
+              + destOffset
+              + ", length="
+              + length
+              + ", dest.length="
+              + dest.length);
     }
 
     try {
@@ -243,7 +249,12 @@ public final class PanamaMemory implements WasmMemory {
       long memorySize = currentSizePages * 65536L;
       if (offset + length > memorySize) {
         throw new IndexOutOfBoundsException(
-            "Read overflow: offset=" + offset + ", length=" + length + ", memory size=" + memorySize);
+            "Read overflow: offset="
+                + offset
+                + ", length="
+                + length
+                + ", memory size="
+                + memorySize);
       }
 
       // Zero-copy bulk memory read using MemorySegment
@@ -259,7 +270,8 @@ public final class PanamaMemory implements WasmMemory {
   }
 
   @Override
-  public void writeBytes(final int offset, final byte[] src, final int srcOffset, final int length) {
+  public void writeBytes(
+      final int offset, final byte[] src, final int srcOffset, final int length) {
     ensureNotClosed();
 
     if (offset < 0) {
@@ -275,7 +287,12 @@ public final class PanamaMemory implements WasmMemory {
 
     if (srcOffset + length > src.length) {
       throw new IndexOutOfBoundsException(
-          "Buffer overflow: srcOffset=" + srcOffset + ", length=" + length + ", src.length=" + src.length);
+          "Buffer overflow: srcOffset="
+              + srcOffset
+              + ", length="
+              + length
+              + ", src.length="
+              + src.length);
     }
 
     try {
@@ -287,7 +304,12 @@ public final class PanamaMemory implements WasmMemory {
       long memorySize = currentSizePages * 65536L;
       if (offset + length > memorySize) {
         throw new IndexOutOfBoundsException(
-            "Write overflow: offset=" + offset + ", length=" + length + ", memory size=" + memorySize);
+            "Write overflow: offset="
+                + offset
+                + ", length="
+                + length
+                + ", memory size="
+                + memorySize);
       }
 
       // Zero-copy bulk memory write using MemorySegment
@@ -350,8 +372,8 @@ public final class PanamaMemory implements WasmMemory {
   /**
    * Closes this memory instance and releases associated resources.
    *
-   * <p>After calling this method, the memory instance becomes invalid and should not be used.
-   * This method is idempotent and can be called multiple times safely.
+   * <p>After calling this method, the memory instance becomes invalid and should not be used. This
+   * method is idempotent and can be called multiple times safely.
    */
   public void close() {
     if (closed) {

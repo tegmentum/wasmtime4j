@@ -43,6 +43,16 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
 
   private static final Logger LOGGER = Logger.getLogger(JniWasmRuntime.class.getName());
 
+  // Load native library when this class is first loaded
+  static {
+    try {
+      ai.tegmentum.wasmtime4j.jni.nativelib.NativeLibraryLoader.loadLibrary();
+    } catch (final RuntimeException e) {
+      LOGGER.severe("Failed to load native library for JniWasmRuntime: " + e.getMessage());
+      throw new ExceptionInInitializerError(e);
+    }
+  }
+
   /** Resource cache for engines and modules. */
   private final JniResourceCache<String, Object> resourceCache;
 
@@ -117,29 +127,29 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
       return concurrencyManager.executeWithReadLock(
           getNativeHandle(),
           () -> {
-          try {
-            final long engineHandle = nativeCreateEngine(nativeHandle);
-            if (engineHandle == 0) {
-              throw new WasmException("Failed to create engine");
+            try {
+              final long engineHandle = nativeCreateEngine(nativeHandle);
+              if (engineHandle == 0) {
+                throw new WasmException("Failed to create engine");
+              }
+
+              final JniEngine engine = new JniEngine(engineHandle);
+
+              // Register engine for concurrency management and cleanup
+              concurrencyManager.registerResource(engineHandle);
+              phantomManager.register(engine, engineHandle, "nativeDestroyEngine");
+
+              // Cache the engine
+              resourceCache.put("engine-" + engineHandle, engine);
+
+              LOGGER.fine("Created engine with handle: 0x" + Long.toHexString(engineHandle));
+              return engine;
+            } catch (final WasmException e) {
+              throw new RuntimeException(e);
+            } catch (final Exception e) {
+              throw new RuntimeException(new WasmException("Unexpected error creating engine", e));
             }
-
-            final JniEngine engine = new JniEngine(engineHandle);
-
-            // Register engine for concurrency management and cleanup
-            concurrencyManager.registerResource(engineHandle);
-            phantomManager.register(engine, engineHandle, "nativeDestroyEngine");
-
-            // Cache the engine
-            resourceCache.put("engine-" + engineHandle, engine);
-
-            LOGGER.fine("Created engine with handle: 0x" + Long.toHexString(engineHandle));
-            return engine;
-          } catch (final WasmException e) {
-            throw new RuntimeException(e);
-          } catch (final Exception e) {
-            throw new RuntimeException(new WasmException("Unexpected error creating engine", e));
-          }
-        });
+          });
     } catch (final RuntimeException e) {
       if (e.getCause() instanceof WasmException) {
         throw (WasmException) e.getCause();
@@ -240,12 +250,14 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
               phantomManager.register(instance, instanceHandle, "nativeDestroyInstance");
 
               LOGGER.fine(
-                  "Instantiated module with instance handle: 0x" + Long.toHexString(instanceHandle));
+                  "Instantiated module with instance handle: 0x"
+                      + Long.toHexString(instanceHandle));
               return instance;
             } catch (final WasmException e) {
               throw new RuntimeException(e);
             } catch (final Exception e) {
-              throw new RuntimeException(new WasmException("Unexpected error instantiating module", e));
+              throw new RuntimeException(
+                  new WasmException("Unexpected error instantiating module", e));
             }
           });
     } catch (final RuntimeException e) {

@@ -146,7 +146,8 @@ public final class PanamaValidation {
    */
   public static int requirePositive(final int value, final String parameterName) {
     if (value <= 0) {
-      throw new IllegalArgumentException("Parameter '" + parameterName + "' must be positive: " + value);
+      throw new IllegalArgumentException(
+          "Parameter '" + parameterName + "' must be positive: " + value);
     }
     return value;
   }
@@ -161,7 +162,8 @@ public final class PanamaValidation {
    */
   public static long requirePositive(final long value, final String parameterName) {
     if (value <= 0) {
-      throw new IllegalArgumentException("Parameter '" + parameterName + "' must be positive: " + value);
+      throw new IllegalArgumentException(
+          "Parameter '" + parameterName + "' must be positive: " + value);
     }
     return value;
   }

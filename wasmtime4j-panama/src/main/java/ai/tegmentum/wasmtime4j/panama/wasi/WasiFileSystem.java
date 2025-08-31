@@ -94,7 +94,8 @@ public final class WasiFileSystem {
       final String path,
       final WasiFileOperation operation,
       final boolean createIfNotExists,
-      final boolean truncate) throws WasiFileSystemException {
+      final boolean truncate)
+      throws WasiFileSystemException {
     PanamaValidation.requireNonEmpty(path, "path");
     PanamaValidation.requireNonNull(operation, "operation");
 
@@ -160,7 +161,7 @@ public final class WasiFileSystem {
    * @throws WasiFileSystemException if the read operation fails
    */
   public int readFile(
-      final int fileDescriptor, final byte[] buffer, final int offset, final int length) 
+      final int fileDescriptor, final byte[] buffer, final int offset, final int length)
       throws WasiFileSystemException {
     PanamaValidation.requireNonNull(buffer, "buffer");
     PanamaValidation.requireNonNegative(offset, "offset");
@@ -205,7 +206,7 @@ public final class WasiFileSystem {
    * @throws WasiFileSystemException if the write operation fails
    */
   public int writeFile(
-      final int fileDescriptor, final byte[] buffer, final int offset, final int length) 
+      final int fileDescriptor, final byte[] buffer, final int offset, final int length)
       throws WasiFileSystemException {
     PanamaValidation.requireNonNull(buffer, "buffer");
     PanamaValidation.requireNonNegative(offset, "offset");
@@ -248,7 +249,8 @@ public final class WasiFileSystem {
    * @return the new absolute position in the file
    * @throws WasiFileSystemException if the seek operation fails
    */
-  public long seekFile(final int fileDescriptor, final long position, final int whence) throws WasiFileSystemException {
+  public long seekFile(final int fileDescriptor, final long position, final int whence)
+      throws WasiFileSystemException {
     LOGGER.fine(
         String.format(
             "Seeking file descriptor: %d, position: %d, whence: %d",
@@ -297,7 +299,8 @@ public final class WasiFileSystem {
    * @param dataOnly whether to sync only data (not metadata)
    * @throws WasiFileSystemException if the sync operation fails
    */
-  public void syncFile(final int fileDescriptor, final boolean dataOnly) throws WasiFileSystemException {
+  public void syncFile(final int fileDescriptor, final boolean dataOnly)
+      throws WasiFileSystemException {
     LOGGER.fine(
         String.format("Syncing file descriptor: %d, data only: %s", fileDescriptor, dataOnly));
 
@@ -329,7 +332,8 @@ public final class WasiFileSystem {
    * @param size the new file size
    * @throws WasiFileSystemException if the truncate operation fails
    */
-  public void truncateFile(final int fileDescriptor, final long size) throws WasiFileSystemException {
+  public void truncateFile(final int fileDescriptor, final long size)
+      throws WasiFileSystemException {
     PanamaValidation.requireNonNegative(size, "size");
 
     LOGGER.fine(String.format("Truncating file descriptor: %d to size: %d", fileDescriptor, size));
@@ -555,7 +559,8 @@ public final class WasiFileSystem {
    * @param newPath the new path
    * @throws WasiFileSystemException if the rename operation fails
    */
-  public void renameFileOrDirectory(final String oldPath, final String newPath) throws WasiFileSystemException {
+  public void renameFileOrDirectory(final String oldPath, final String newPath)
+      throws WasiFileSystemException {
     PanamaValidation.requireNonEmpty(oldPath, "oldPath");
     PanamaValidation.requireNonEmpty(newPath, "newPath");
 
@@ -591,7 +596,7 @@ public final class WasiFileSystem {
    * @throws WasiFileSystemException if the timestamps cannot be set
    */
   public void setFileTimes(
-      final String path, final FileTime lastAccessTime, final FileTime lastModifiedTime) 
+      final String path, final FileTime lastAccessTime, final FileTime lastModifiedTime)
       throws WasiFileSystemException {
     PanamaValidation.requireNonEmpty(path, "path");
 

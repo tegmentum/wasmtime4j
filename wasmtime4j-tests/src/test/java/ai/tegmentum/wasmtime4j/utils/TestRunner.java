@@ -1,7 +1,10 @@
 package ai.tegmentum.wasmtime4j.utils;
 
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.engine.JupiterTestEngine;
+import ai.tegmentum.wasmtime4j.RuntimeType;
+import ai.tegmentum.wasmtime4j.WasmRuntime;
+import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
+import java.util.logging.Logger;
+import org.junit.jupiter.api.TestInfo;
 import org.junit.platform.engine.discovery.DiscoverySelectors;
 import org.junit.platform.launcher.Launcher;
 import org.junit.platform.launcher.LauncherDiscoveryRequest;
@@ -10,153 +13,204 @@ import org.junit.platform.launcher.core.LauncherFactory;
 import org.junit.platform.launcher.listeners.SummaryGeneratingListener;
 import org.junit.platform.launcher.listeners.TestExecutionSummary;
 
-import java.util.logging.Logger;
-
 /**
- * Utility class for running Wasmtime4j test suites programmatically.
- * Provides methods to execute specific test categories and generate reports.
+ * Utility class for running Wasmtime4j test suites programmatically. Provides methods to execute
+ * specific test categories and generate reports.
  */
 public final class TestRunner {
-    private static final Logger LOGGER = Logger.getLogger(TestRunner.class.getName());
-    
-    private TestRunner() {
-        // Utility class - prevent instantiation
+  private static final Logger LOGGER = Logger.getLogger(TestRunner.class.getName());
+
+  private TestRunner() {
+    // Utility class - prevent instantiation
+  }
+
+  /** Functional interface for tests that run with both runtimes. */
+  @FunctionalInterface
+  public interface RuntimeTestFunction {
+    void execute(final WasmRuntime runtime, final String testName) throws Exception;
+  }
+
+  /**
+   * Runs a test function with both JNI and Panama runtimes.
+   *
+   * @param testInfo the test information
+   * @param testFunction the test function to execute
+   */
+  public static void runWithBothRuntimes(
+      final TestInfo testInfo, final RuntimeTestFunction testFunction) {
+    final String testName = testInfo.getDisplayName();
+    LOGGER.info("Running test with both runtimes: " + testName);
+
+    // Test with JNI runtime
+    LOGGER.info("Testing JNI runtime for: " + testName);
+    try (final WasmRuntime jniRuntime = WasmRuntimeFactory.create(RuntimeType.JNI)) {
+      testFunction.execute(jniRuntime, testName + "[JNI]");
+      LOGGER.info("JNI runtime test succeeded: " + testName);
+    } catch (final Exception e) {
+      LOGGER.severe("JNI runtime test failed: " + testName + " - " + e.getMessage());
+      throw new RuntimeException("JNI runtime test failed: " + testName, e);
     }
-    
-    /**
-     * Runs all integration tests for a specific category.
-     *
-     * @param category the test category to run
-     * @return the test execution summary
-     */
-    public static TestExecutionSummary runTestCategory(final String category) {
-        LOGGER.info("Running test category: " + category);
-        
-        // Set system property to enable the category
-        System.setProperty("wasmtime4j.test." + category + ".enabled", "true");
-        
-        try {
-            final LauncherDiscoveryRequest request = LauncherDiscoveryRequestBuilder.request()
-                .selectors(DiscoverySelectors.selectPackage("ai.tegmentum.wasmtime4j"))
-                .build();
-            
-            final Launcher launcher = LauncherFactory.create();
-            final SummaryGeneratingListener listener = new SummaryGeneratingListener();
-            
-            launcher.registerTestExecutionListeners(listener);
-            launcher.execute(request);
-            
-            final TestExecutionSummary summary = listener.getSummary();
-            logTestSummary(category, summary);
-            
-            return summary;
-        } finally {
-            // Clean up system property
-            System.clearProperty("wasmtime4j.test." + category + ".enabled");
-        }
+
+    // Test with Panama runtime if available
+    if (TestUtils.isPanamaAvailable()) {
+      LOGGER.info("Testing Panama runtime for: " + testName);
+      try (final WasmRuntime panamaRuntime = WasmRuntimeFactory.create(RuntimeType.PANAMA)) {
+        testFunction.execute(panamaRuntime, testName + "[Panama]");
+        LOGGER.info("Panama runtime test succeeded: " + testName);
+      } catch (final Exception e) {
+        LOGGER.severe("Panama runtime test failed: " + testName + " - " + e.getMessage());
+        throw new RuntimeException("Panama runtime test failed: " + testName, e);
+      }
+    } else {
+      LOGGER.info("Panama runtime not available, skipping for: " + testName);
     }
-    
-    /**
-     * Runs all Wasmtime4j integration tests.
-     *
-     * @return the test execution summary
-     */
-    public static TestExecutionSummary runAllTests() {
-        LOGGER.info("Running all Wasmtime4j integration tests");
-        
-        final LauncherDiscoveryRequest request = LauncherDiscoveryRequestBuilder.request()
+  }
+
+  /**
+   * Runs all integration tests for a specific category.
+   *
+   * @param category the test category to run
+   * @return the test execution summary
+   */
+  public static TestExecutionSummary runTestCategory(final String category) {
+    LOGGER.info("Running test category: " + category);
+
+    // Set system property to enable the category
+    System.setProperty("wasmtime4j.test." + category + ".enabled", "true");
+
+    try {
+      final LauncherDiscoveryRequest request =
+          LauncherDiscoveryRequestBuilder.request()
+              .selectors(DiscoverySelectors.selectPackage("ai.tegmentum.wasmtime4j"))
+              .build();
+
+      final Launcher launcher = LauncherFactory.create();
+      final SummaryGeneratingListener listener = new SummaryGeneratingListener();
+
+      launcher.registerTestExecutionListeners(listener);
+      launcher.execute(request);
+
+      final TestExecutionSummary summary = listener.getSummary();
+      logTestSummary(category, summary);
+
+      return summary;
+    } finally {
+      // Clean up system property
+      System.clearProperty("wasmtime4j.test." + category + ".enabled");
+    }
+  }
+
+  /**
+   * Runs all Wasmtime4j integration tests.
+   *
+   * @return the test execution summary
+   */
+  public static TestExecutionSummary runAllTests() {
+    LOGGER.info("Running all Wasmtime4j integration tests");
+
+    final LauncherDiscoveryRequest request =
+        LauncherDiscoveryRequestBuilder.request()
             .selectors(DiscoverySelectors.selectPackage("ai.tegmentum.wasmtime4j"))
             .build();
-        
-        final Launcher launcher = LauncherFactory.create();
-        final SummaryGeneratingListener listener = new SummaryGeneratingListener();
-        
-        launcher.registerTestExecutionListeners(listener);
-        launcher.execute(request);
-        
-        final TestExecutionSummary summary = listener.getSummary();
-        logTestSummary("all", summary);
-        
-        return summary;
+
+    final Launcher launcher = LauncherFactory.create();
+    final SummaryGeneratingListener listener = new SummaryGeneratingListener();
+
+    launcher.registerTestExecutionListeners(listener);
+    launcher.execute(request);
+
+    final TestExecutionSummary summary = listener.getSummary();
+    logTestSummary("all", summary);
+
+    return summary;
+  }
+
+  /**
+   * Runs tests for the current platform only.
+   *
+   * @return the test execution summary
+   */
+  public static TestExecutionSummary runPlatformTests() {
+    LOGGER.info(
+        "Running platform-specific tests for: "
+            + TestUtils.getOperatingSystem()
+            + " on "
+            + TestUtils.getSystemArchitecture());
+
+    return runTestCategory(TestCategories.PLATFORM);
+  }
+
+  /**
+   * Runs runtime selection tests.
+   *
+   * @return the test execution summary
+   */
+  public static TestExecutionSummary runRuntimeTests() {
+    LOGGER.info("Running runtime selection tests");
+    return runTestCategory(TestCategories.RUNTIME);
+  }
+
+  /**
+   * Runs WebAssembly test suite.
+   *
+   * @return the test execution summary
+   */
+  public static TestExecutionSummary runWebAssemblyTests() {
+    LOGGER.info("Running WebAssembly test suite");
+    return runTestCategory(TestCategories.WASM_SUITE);
+  }
+
+  /**
+   * Runs native library tests.
+   *
+   * @return the test execution summary
+   */
+  public static TestExecutionSummary runNativeTests() {
+    LOGGER.info("Running native library tests");
+    return runTestCategory(TestCategories.NATIVE);
+  }
+
+  /**
+   * Logs a test execution summary.
+   *
+   * @param category the test category
+   * @param summary the execution summary
+   */
+  private static void logTestSummary(final String category, final TestExecutionSummary summary) {
+    LOGGER.info("Test summary for category '" + category + "':");
+    LOGGER.info("  Tests found: " + summary.getTestsFoundCount());
+    LOGGER.info("  Tests started: " + summary.getTestsStartedCount());
+    LOGGER.info("  Tests successful: " + summary.getTestsSucceededCount());
+    LOGGER.info("  Tests failed: " + summary.getTestsFailedCount());
+    LOGGER.info("  Tests skipped: " + summary.getTestsSkippedCount());
+    LOGGER.info("  Tests aborted: " + summary.getTestsAbortedCount());
+
+    if (summary.getTestsFailedCount() > 0) {
+      LOGGER.severe("Failed tests:");
+      summary
+          .getFailures()
+          .forEach(
+              failure -> {
+                LOGGER.severe(
+                    "  - "
+                        + failure.getTestIdentifier().getDisplayName()
+                        + ": "
+                        + failure.getException().getMessage());
+              });
     }
-    
-    /**
-     * Runs tests for the current platform only.
-     *
-     * @return the test execution summary
-     */
-    public static TestExecutionSummary runPlatformTests() {
-        LOGGER.info("Running platform-specific tests for: " + 
-                   TestUtils.getOperatingSystem() + " on " + TestUtils.getSystemArchitecture());
-        
-        return runTestCategory(TestCategories.PLATFORM);
+  }
+
+  /**
+   * Main method to run tests from command line.
+   *
+   * @param args command line arguments
+   */
+  public static void main(final String[] args) {
+    if (args.length == 0) {
+      runAllTests();
+    } else {
+      final String category = args[0];
+      runTestCategory(category);
     }
-    
-    /**
-     * Runs runtime selection tests.
-     *
-     * @return the test execution summary
-     */
-    public static TestExecutionSummary runRuntimeTests() {
-        LOGGER.info("Running runtime selection tests");
-        return runTestCategory(TestCategories.RUNTIME);
-    }
-    
-    /**
-     * Runs WebAssembly test suite.
-     *
-     * @return the test execution summary
-     */
-    public static TestExecutionSummary runWebAssemblyTests() {
-        LOGGER.info("Running WebAssembly test suite");
-        return runTestCategory(TestCategories.WASM_SUITE);
-    }
-    
-    /**
-     * Runs native library tests.
-     *
-     * @return the test execution summary
-     */
-    public static TestExecutionSummary runNativeTests() {
-        LOGGER.info("Running native library tests");
-        return runTestCategory(TestCategories.NATIVE);
-    }
-    
-    /**
-     * Logs a test execution summary.
-     *
-     * @param category the test category
-     * @param summary the execution summary
-     */
-    private static void logTestSummary(final String category, final TestExecutionSummary summary) {
-        LOGGER.info("Test summary for category '" + category + "':");
-        LOGGER.info("  Tests found: " + summary.getTestsFoundCount());
-        LOGGER.info("  Tests started: " + summary.getTestsStartedCount());
-        LOGGER.info("  Tests successful: " + summary.getTestsSucceededCount());
-        LOGGER.info("  Tests failed: " + summary.getTestsFailedCount());
-        LOGGER.info("  Tests skipped: " + summary.getTestsSkippedCount());
-        LOGGER.info("  Tests aborted: " + summary.getTestsAbortedCount());
-        
-        if (summary.getTestsFailedCount() > 0) {
-            LOGGER.severe("Failed tests:");
-            summary.getFailures().forEach(failure -> {
-                LOGGER.severe("  - " + failure.getTestIdentifier().getDisplayName() + 
-                             ": " + failure.getException().getMessage());
-            });
-        }
-    }
-    
-    /**
-     * Main method to run tests from command line.
-     *
-     * @param args command line arguments
-     */
-    public static void main(final String[] args) {
-        if (args.length == 0) {
-            runAllTests();
-        } else {
-            final String category = args[0];
-            runTestCategory(category);
-        }
-    }
+  }
 }
