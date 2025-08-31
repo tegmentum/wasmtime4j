@@ -2,24 +2,15 @@ package ai.tegmentum.wasmtime4j.instance;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.FunctionType;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
-import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmGlobal;
 import ai.tegmentum.wasmtime4j.WasmMemory;
-import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.WasmTable;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
@@ -34,7 +25,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -110,7 +100,8 @@ final class InstanceApiIT extends BaseIntegrationTest {
               // Operations on closed instance should fail
               assertThatThrownBy(() -> instance.getFunction("add"))
                   .isInstanceOf(WasmException.class);
-              assertThatThrownBy(() -> instance.callFunction("add", WasmValue.i32(1), WasmValue.i32(2)))
+              assertThatThrownBy(
+                      () -> instance.callFunction("add", WasmValue.i32(1), WasmValue.i32(2)))
                   .isInstanceOf(WasmException.class);
 
               addTestMetric("Instance lifecycle validated with " + runtimeType);
@@ -162,20 +153,20 @@ final class InstanceApiIT extends BaseIntegrationTest {
                 final Instance instance = module.instantiate(store)) {
 
               // Test addition
-              final WasmValue[] addResult = instance.callFunction("add", 
-                  WasmValue.i32(10), WasmValue.i32(20));
+              final WasmValue[] addResult =
+                  instance.callFunction("add", WasmValue.i32(10), WasmValue.i32(20));
               assertThat(addResult).hasSize(1);
               assertThat(addResult[0].asI32()).isEqualTo(30);
 
               // Test subtraction
-              final WasmValue[] subResult = instance.callFunction("sub", 
-                  WasmValue.i32(50), WasmValue.i32(20));
+              final WasmValue[] subResult =
+                  instance.callFunction("sub", WasmValue.i32(50), WasmValue.i32(20));
               assertThat(subResult).hasSize(1);
               assertThat(subResult[0].asI32()).isEqualTo(30);
 
               // Test multiplication
-              final WasmValue[] mulResult = instance.callFunction("mul", 
-                  WasmValue.i32(6), WasmValue.i32(7));
+              final WasmValue[] mulResult =
+                  instance.callFunction("mul", WasmValue.i32(6), WasmValue.i32(7));
               assertThat(mulResult).hasSize(1);
               assertThat(mulResult[0].asI32()).isEqualTo(42);
 
@@ -196,20 +187,20 @@ final class InstanceApiIT extends BaseIntegrationTest {
                 final Instance instance = module.instantiate(store)) {
 
               // Test f32 operations
-              final WasmValue[] f32Result = instance.callFunction("fadd_f32", 
-                  WasmValue.f32(3.14f), WasmValue.f32(2.86f));
+              final WasmValue[] f32Result =
+                  instance.callFunction("fadd_f32", WasmValue.f32(3.14f), WasmValue.f32(2.86f));
               assertThat(f32Result).hasSize(1);
               assertThat(f32Result[0].asF32()).isCloseTo(6.0f, within(0.001f));
 
               // Test f32 subtraction
-              final WasmValue[] f32SubResult = instance.callFunction("fsub_f32", 
-                  WasmValue.f32(10.5f), WasmValue.f32(4.5f));
+              final WasmValue[] f32SubResult =
+                  instance.callFunction("fsub_f32", WasmValue.f32(10.5f), WasmValue.f32(4.5f));
               assertThat(f32SubResult).hasSize(1);
               assertThat(f32SubResult[0].asF32()).isCloseTo(6.0f, within(0.001f));
 
               // Test f32 multiplication
-              final WasmValue[] f32MulResult = instance.callFunction("fmul_f32", 
-                  WasmValue.f32(2.5f), WasmValue.f32(4.0f));
+              final WasmValue[] f32MulResult =
+                  instance.callFunction("fmul_f32", WasmValue.f32(2.5f), WasmValue.f32(4.0f));
               assertThat(f32MulResult).hasSize(1);
               assertThat(f32MulResult[0].asF32()).isCloseTo(10.0f, within(0.001f));
 
@@ -230,17 +221,17 @@ final class InstanceApiIT extends BaseIntegrationTest {
                 final Instance instance = module.instantiate(store)) {
 
               // Test with extreme values
-              final WasmValue[] maxResult = instance.callFunction("add", 
-                  WasmValue.i32(Integer.MAX_VALUE), WasmValue.i32(0));
+              final WasmValue[] maxResult =
+                  instance.callFunction("add", WasmValue.i32(Integer.MAX_VALUE), WasmValue.i32(0));
               assertThat(maxResult[0].asI32()).isEqualTo(Integer.MAX_VALUE);
 
-              final WasmValue[] minResult = instance.callFunction("add", 
-                  WasmValue.i32(Integer.MIN_VALUE), WasmValue.i32(0));
+              final WasmValue[] minResult =
+                  instance.callFunction("add", WasmValue.i32(Integer.MIN_VALUE), WasmValue.i32(0));
               assertThat(minResult[0].asI32()).isEqualTo(Integer.MIN_VALUE);
 
               // Test with zero
-              final WasmValue[] zeroResult = instance.callFunction("add", 
-                  WasmValue.i32(0), WasmValue.i32(0));
+              final WasmValue[] zeroResult =
+                  instance.callFunction("add", WasmValue.i32(0), WasmValue.i32(0));
               assertThat(zeroResult[0].asI32()).isEqualTo(0);
 
               addTestMetric("Edge case parameters tested with " + runtimeType);
@@ -302,7 +293,7 @@ final class InstanceApiIT extends BaseIntegrationTest {
                 final Optional<WasmFunction> function = instance.getFunction(name);
                 assertThat(function).isPresent();
                 assertThat(function.get().getName()).isEqualTo(name);
-                
+
                 final FunctionType funcType = function.get().getFunctionType();
                 assertThat(funcType).isNotNull();
                 // All arithmetic functions expect 2 i32 parameters and return 1 i32
@@ -330,7 +321,7 @@ final class InstanceApiIT extends BaseIntegrationTest {
               final WasmValue[] initialValue = instance.callFunction("get");
               assertThat(initialValue).hasSize(1);
               assertThat(initialValue[0].getType()).isEqualTo(WasmValueType.I32);
-              
+
               // Modify global and verify change
               instance.callFunction("set", WasmValue.i32(42));
               final WasmValue[] newValue = instance.callFunction("get");
@@ -391,7 +382,7 @@ final class InstanceApiIT extends BaseIntegrationTest {
 
               // Store a value in memory
               instance.callFunction("store", WasmValue.i32(0), WasmValue.i32(42));
-              
+
               // Load the value back
               final WasmValue[] loadResult = instance.callFunction("load", WasmValue.i32(0));
               assertThat(loadResult).hasSize(1);
@@ -423,10 +414,10 @@ final class InstanceApiIT extends BaseIntegrationTest {
               if (memory.isPresent()) {
                 // Verify memory exists and has expected properties
                 assertThat(memory.get()).isNotNull();
-                
+
                 // Test accessing memory beyond bounds should fail gracefully
-                assertThatThrownBy(() -> 
-                    instance.callFunction("load", WasmValue.i32(Integer.MAX_VALUE)))
+                assertThatThrownBy(
+                        () -> instance.callFunction("load", WasmValue.i32(Integer.MAX_VALUE)))
                     .isInstanceOf(WasmException.class);
               }
 
@@ -537,8 +528,9 @@ final class InstanceApiIT extends BaseIntegrationTest {
                       () -> {
                         try {
                           for (int j = 0; j < numCallsPerThread; j++) {
-                            final WasmValue[] result = instance.callFunction("add", 
-                                WasmValue.i32(threadId), WasmValue.i32(j));
+                            final WasmValue[] result =
+                                instance.callFunction(
+                                    "add", WasmValue.i32(threadId), WasmValue.i32(j));
                             if (result[0].asI32() == threadId + j) {
                               successCount.incrementAndGet();
                             }
@@ -552,13 +544,13 @@ final class InstanceApiIT extends BaseIntegrationTest {
                 }
 
                 assertThat(latch.await(30, TimeUnit.SECONDS)).isTrue();
-                
+
                 if (error.get() != null) {
                   throw new RuntimeException("Concurrent execution failed", error.get());
                 }
-                
+
                 assertThat(successCount.get()).isEqualTo(numThreads * numCallsPerThread);
-                
+
               } finally {
                 executor.shutdownNow();
               }
@@ -588,12 +580,12 @@ final class InstanceApiIT extends BaseIntegrationTest {
                     () -> {
                       try (final Store store = engine.createStore();
                           final Instance instance = module.instantiate(store)) {
-                        
+
                         // Verify instance works
-                        final WasmValue[] result = instance.callFunction("add", 
-                            WasmValue.i32(1), WasmValue.i32(2));
+                        final WasmValue[] result =
+                            instance.callFunction("add", WasmValue.i32(1), WasmValue.i32(2));
                         assertThat(result[0].asI32()).isEqualTo(3);
-                        
+
                         synchronized (instances) {
                           instances.add(instance);
                         }
@@ -606,13 +598,13 @@ final class InstanceApiIT extends BaseIntegrationTest {
               }
 
               assertThat(latch.await(30, TimeUnit.SECONDS)).isTrue();
-              
+
               if (error.get() != null) {
                 throw new RuntimeException("Concurrent instance creation failed", error.get());
               }
-              
+
               assertThat(instances).hasSize(numThreads);
-              
+
             } finally {
               executor.shutdownNow();
             }
@@ -638,18 +630,16 @@ final class InstanceApiIT extends BaseIntegrationTest {
                 final Instance instance = module.instantiate(store)) {
 
               // Test calling non-existent function
-              assertThatThrownBy(() -> 
-                  instance.callFunction("nonexistent"))
+              assertThatThrownBy(() -> instance.callFunction("nonexistent"))
                   .isInstanceOf(WasmException.class);
 
               // Test wrong number of parameters
-              assertThatThrownBy(() -> 
-                  instance.callFunction("add", WasmValue.i32(1)))
+              assertThatThrownBy(() -> instance.callFunction("add", WasmValue.i32(1)))
                   .isInstanceOf(WasmException.class);
 
               // Test wrong parameter types (this should be caught at runtime)
-              assertThatThrownBy(() -> 
-                  instance.callFunction("add", WasmValue.f32(1.0f), WasmValue.i32(2)))
+              assertThatThrownBy(
+                      () -> instance.callFunction("add", WasmValue.f32(1.0f), WasmValue.i32(2)))
                   .isInstanceOf(WasmException.class);
 
               addTestMetric("Invalid function calls handled with " + runtimeType);
@@ -669,8 +659,9 @@ final class InstanceApiIT extends BaseIntegrationTest {
                 final Instance instance = module.instantiate(store)) {
 
               // Test passing i32 to f32 function
-              assertThatThrownBy(() -> 
-                  instance.callFunction("fadd_f32", WasmValue.i32(1), WasmValue.f32(2.0f)))
+              assertThatThrownBy(
+                      () ->
+                          instance.callFunction("fadd_f32", WasmValue.i32(1), WasmValue.f32(2.0f)))
                   .isInstanceOf(WasmException.class);
 
               // Test passing f32 to i32 function would require different module
@@ -684,8 +675,8 @@ final class InstanceApiIT extends BaseIntegrationTest {
                 final Instance instance = module.instantiate(store)) {
 
               // Test passing f32 to i32 function
-              assertThatThrownBy(() -> 
-                  instance.callFunction("add", WasmValue.f32(1.0f), WasmValue.i32(2)))
+              assertThatThrownBy(
+                      () -> instance.callFunction("add", WasmValue.f32(1.0f), WasmValue.i32(2)))
                   .isInstanceOf(WasmException.class);
 
               addTestMetric("Parameter type mismatches handled with " + runtimeType);
@@ -705,13 +696,12 @@ final class InstanceApiIT extends BaseIntegrationTest {
                 final Instance instance = module.instantiate(store)) {
 
               // Test null function name
-              assertThatThrownBy(() -> 
-                  instance.callFunction(null, WasmValue.i32(1), WasmValue.i32(2)))
+              assertThatThrownBy(
+                      () -> instance.callFunction(null, WasmValue.i32(1), WasmValue.i32(2)))
                   .isInstanceOf(IllegalArgumentException.class);
 
               // Test null in function lookup
-              assertThatThrownBy(() -> 
-                  instance.getFunction(null))
+              assertThatThrownBy(() -> instance.getFunction(null))
                   .isInstanceOf(IllegalArgumentException.class);
 
               addTestMetric("Null parameter validation handled with " + runtimeType);
@@ -727,24 +717,25 @@ final class InstanceApiIT extends BaseIntegrationTest {
     @Test
     @DisplayName("Should produce identical results across runtimes")
     void shouldProduceIdenticalResultsAcrossRuntimes() {
-      final CrossRuntimeValidator.ComparisonResult result = 
-          CrossRuntimeValidator.validateCrossRuntime(runtime -> {
-            final byte[] moduleBytes = WasmTestModules.getModule("arithmetic_int");
-            try (final Engine engine = runtime.createEngine();
-                final Store store = engine.createStore();
-                final Module module = engine.compileModule(moduleBytes);
-                final Instance instance = module.instantiate(store)) {
+      final CrossRuntimeValidator.ComparisonResult result =
+          CrossRuntimeValidator.validateCrossRuntime(
+              runtime -> {
+                final byte[] moduleBytes = WasmTestModules.getModule("arithmetic_int");
+                try (final Engine engine = runtime.createEngine();
+                    final Store store = engine.createStore();
+                    final Module module = engine.compileModule(moduleBytes);
+                    final Instance instance = module.instantiate(store)) {
 
-              final List<WasmValue[]> results = new ArrayList<>();
-              
-              // Test multiple operations
-              results.add(instance.callFunction("add", WasmValue.i32(10), WasmValue.i32(20)));
-              results.add(instance.callFunction("sub", WasmValue.i32(50), WasmValue.i32(20)));
-              results.add(instance.callFunction("mul", WasmValue.i32(6), WasmValue.i32(7)));
-              
-              return results;
-            }
-          });
+                  final List<WasmValue[]> results = new ArrayList<>();
+
+                  // Test multiple operations
+                  results.add(instance.callFunction("add", WasmValue.i32(10), WasmValue.i32(20)));
+                  results.add(instance.callFunction("sub", WasmValue.i32(50), WasmValue.i32(20)));
+                  results.add(instance.callFunction("mul", WasmValue.i32(6), WasmValue.i32(7)));
+
+                  return results;
+                }
+              });
 
       assertThat(result.isValid()).isTrue();
       assertThat(result.areResultsIdentical()).isTrue();
@@ -756,19 +747,20 @@ final class InstanceApiIT extends BaseIntegrationTest {
     @Test
     @DisplayName("Should handle errors identically across runtimes")
     void shouldHandleErrorsIdenticallyAcrossRuntimes() {
-      final CrossRuntimeValidator.ComparisonResult result = 
-          CrossRuntimeValidator.validateCrossRuntime(runtime -> {
-            final byte[] moduleBytes = WasmTestModules.getModule("basic_add");
-            try (final Engine engine = runtime.createEngine();
-                final Store store = engine.createStore();
-                final Module module = engine.compileModule(moduleBytes);
-                final Instance instance = module.instantiate(store)) {
+      final CrossRuntimeValidator.ComparisonResult result =
+          CrossRuntimeValidator.validateCrossRuntime(
+              runtime -> {
+                final byte[] moduleBytes = WasmTestModules.getModule("basic_add");
+                try (final Engine engine = runtime.createEngine();
+                    final Store store = engine.createStore();
+                    final Module module = engine.compileModule(moduleBytes);
+                    final Instance instance = module.instantiate(store)) {
 
-              // This should fail in both runtimes
-              instance.callFunction("nonexistent", WasmValue.i32(1));
-              return "should not reach here";
-            }
-          });
+                  // This should fail in both runtimes
+                  instance.callFunction("nonexistent", WasmValue.i32(1));
+                  return "should not reach here";
+                }
+              });
 
       // Both runtimes should fail with exceptions
       assertThat(result.areExceptionsIdentical()).isTrue();
@@ -792,29 +784,37 @@ final class InstanceApiIT extends BaseIntegrationTest {
                 final Module module = engine.compileModule(moduleBytes)) {
 
               // Measure instance creation time
-              final Duration creationTime = measureExecutionTime("Instance creation", () -> {
-                try (final Instance instance = module.instantiate(store)) {
-                  assertThat(instance.isValid()).isTrue();
-                } catch (final WasmException e) {
-                  throw new RuntimeException(e);
-                }
-              });
+              final Duration creationTime =
+                  measureExecutionTime(
+                      "Instance creation",
+                      () -> {
+                        try (final Instance instance = module.instantiate(store)) {
+                          assertThat(instance.isValid()).isTrue();
+                        } catch (final WasmException e) {
+                          throw new RuntimeException(e);
+                        }
+                      });
 
               // Measure function call performance
               try (final Instance instance = module.instantiate(store)) {
-                final Duration callTime = measureExecutionTime("Function call", () -> {
-                  try {
-                    for (int i = 0; i < 1000; i++) {
-                      final WasmValue[] result = instance.callFunction("add", 
-                          WasmValue.i32(i), WasmValue.i32(i + 1));
-                      assertThat(result[0].asI32()).isEqualTo(2 * i + 1);
-                    }
-                  } catch (final WasmException e) {
-                    throw new RuntimeException(e);
-                  }
-                });
+                final Duration callTime =
+                    measureExecutionTime(
+                        "Function call",
+                        () -> {
+                          try {
+                            for (int i = 0; i < 1000; i++) {
+                              final WasmValue[] result =
+                                  instance.callFunction(
+                                      "add", WasmValue.i32(i), WasmValue.i32(i + 1));
+                              assertThat(result[0].asI32()).isEqualTo(2 * i + 1);
+                            }
+                          } catch (final WasmException e) {
+                            throw new RuntimeException(e);
+                          }
+                        });
 
-                addTestMetric(runtimeType + " instance creation: " + creationTime.toMillis() + "ms");
+                addTestMetric(
+                    runtimeType + " instance creation: " + creationTime.toMillis() + "ms");
                 addTestMetric(runtimeType + " 1000 function calls: " + callTime.toMillis() + "ms");
               }
             }
@@ -833,14 +833,18 @@ final class InstanceApiIT extends BaseIntegrationTest {
                 final Instance instance = module.instantiate(store)) {
 
               // Measure fibonacci calculation performance
-              final Duration fibTime = measureExecutionTime("Fibonacci calculation", () -> {
-                try {
-                  final WasmValue[] result = instance.callFunction("fib", WasmValue.i32(15));
-                  assertThat(result[0].asI32()).isEqualTo(610);
-                } catch (final WasmException e) {
-                  throw new RuntimeException(e);
-                }
-              });
+              final Duration fibTime =
+                  measureExecutionTime(
+                      "Fibonacci calculation",
+                      () -> {
+                        try {
+                          final WasmValue[] result =
+                              instance.callFunction("fib", WasmValue.i32(15));
+                          assertThat(result[0].asI32()).isEqualTo(610);
+                        } catch (final WasmException e) {
+                          throw new RuntimeException(e);
+                        }
+                      });
 
               // Performance should be reasonable (under 100ms for fib(15))
               assertThat(fibTime.toMillis()).isLessThan(100);
