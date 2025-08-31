@@ -13,8 +13,7 @@ use crate::engine::Engine;
 use crate::store::Store;
 #[cfg(feature = "jni-bindings")]
 use crate::module::Module;
-#[cfg(feature = "jni-bindings")]
-use crate::instance::Instance;
+// Instance is imported locally in each module that needs it
 
 /// JNI bindings module
 /// 
@@ -34,7 +33,10 @@ pub mod jni_engine {
     ) -> jlong {
         match Engine::new() {
             Ok(engine) => Box::into_raw(Box::new(engine)) as jlong,
-            Err(_) => 0,
+            Err(e) => {
+                log::error!("Failed to create engine: {:?}", e);
+                0
+            }
         }
     }
     
@@ -60,7 +62,10 @@ pub mod jni_engine {
         
         match Module::compile(engine, &wasm_data) {
             Ok(module) => Box::into_raw(Box::new(module)) as jlong,
-            Err(_) => 0,
+            Err(e) => {
+                log::error!("Failed to compile module: {:?}", e);
+                0
+            }
         }
     }
     
@@ -79,7 +84,10 @@ pub mod jni_engine {
         
         match Store::new(engine) {
             Ok(store) => Box::into_raw(Box::new(store)) as jlong,
-            Err(_) => 0,
+            Err(e) => {
+                log::error!("Failed to create store: {:?}", e);
+                0
+            }
         }
     }
     
@@ -165,7 +173,10 @@ pub mod jni_instance {
         
         match Instance::new_without_imports(store, module) {
             Ok(instance) => Box::into_raw(Box::new(instance)) as jlong,
-            Err(_) => 0,
+            Err(e) => {
+                log::error!("Failed to create instance: {:?}", e);
+                0
+            }
         }
     }
     
@@ -202,7 +213,10 @@ pub mod jni_store {
         
         match Store::new(engine) {
             Ok(store) => Box::into_raw(Box::new(store)) as jlong,
-            Err(_) => 0,
+            Err(e) => {
+                log::error!("Failed to create store: {:?}", e);
+                0
+            }
         }
     }
     
