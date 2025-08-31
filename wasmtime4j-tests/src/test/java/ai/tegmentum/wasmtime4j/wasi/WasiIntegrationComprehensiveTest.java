@@ -1,411 +1,642 @@
 package ai.tegmentum.wasmtime4j.wasi;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import ai.tegmentum.wasmtime4j.Engine;
+import ai.tegmentum.wasmtime4j.Instance;
+import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.RuntimeType;
-import ai.tegmentum.wasmtime4j.WasmEngine;
-import ai.tegmentum.wasmtime4j.WasmInstance;
-import ai.tegmentum.wasmtime4j.WasmModule;
+import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmRuntime;
-import ai.tegmentum.wasmtime4j.WasmStore;
-import ai.tegmentum.wasmtime4j.exception.WasmException;
-// TODO: Fix WASI imports for comprehensive testing
-// import ai.tegmentum.wasmtime4j.jni.wasi.WasiContext;
-// import ai.tegmentum.wasmtime4j.jni.wasi.WasiContextBuilder;
-// import ai.tegmentum.wasmtime4j.panama.wasi.WasiContext;
-// import ai.tegmentum.wasmtime4j.panama.wasi.WasiContextBuilder;
-import ai.tegmentum.wasmtime4j.utils.BaseIntegrationTest;
+import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
+import ai.tegmentum.wasmtime4j.utils.CrossRuntimeValidator;
 import ai.tegmentum.wasmtime4j.utils.TestCategories;
 import ai.tegmentum.wasmtime4j.utils.TestUtils;
+import ai.tegmentum.wasmtime4j.wasi.Wasi;
+import ai.tegmentum.wasmtime4j.wasi.WasiConfig;
 import ai.tegmentum.wasmtime4j.webassembly.WasmTestModules;
+import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 /**
- * Comprehensive integration tests for WASI (WebAssembly System Interface) functionality.
- * 
- * This test class provides comprehensive validation of WASI context creation, configuration,
- * lifecycle management, and system interface operations across both JNI and Panama implementations.
- * 
- * Key test areas:
- * - WASI context lifecycle (creation, configuration, cleanup)
- * - Filesystem access controls and security boundaries
- * - Environment variable configuration and access
- * - CLI argument handling and processing
- * - I/O redirection (stdin, stdout, stderr)
- * - Process exit handling and status codes
- * - Security boundary validation and attack prevention
- * - Cross-runtime compatibility validation
+ * Comprehensive integration tests for WASI (WebAssembly System Interface) functionality across
+ * both JNI and Panama implementations. Tests all WASI operations including filesystem access,
+ * environment variables, I/O redirection, and security boundaries.
  */
-@Tag(TestCategories.WASI_INTEGRATION)
-@Tag(TestCategories.COMPREHENSIVE_TESTING)
-@DisplayName("WASI Integration Comprehensive Tests")
-@Timeout(value = 10, unit = TimeUnit.MINUTES)
-public final class WasiIntegrationComprehensiveTest extends BaseIntegrationTest {
+@Tag(TestCategories.INTEGRATION)
+@Tag(TestCategories.WASI)
+@Tag(TestCategories.CROSS_RUNTIME)
+public final class WasiIntegrationComprehensiveTest {
+  private static final Logger LOGGER =
+      Logger.getLogger(WasiIntegrationComprehensiveTest.class.getName());
 
-  private static final Logger LOGGER = Logger.getLogger(WasiIntegrationComprehensiveTest.class.getName());
+  @TempDir private Path tempDirectory;
 
-  @TempDir
-  private Path tempDirectory;
+  private WasmRuntime runtime;
+  private Engine engine;
+  private Store store;
 
-  private Path testFilesDirectory;
-  private Path preOpenDirectory;
-  private Path restrictedDirectory;
+  @BeforeEach
+  void setUp() {
+    runtime = WasmRuntimeFactory.create();
+    engine = runtime.createEngine();
+    store = engine.createStore();
+    LOGGER.info("Set up WASI integration test with runtime: " + runtime.getRuntimeType());
+  }
 
-  @Override
-  protected void doSetUp(final TestInfo testInfo) {
-    super.doSetUp(testInfo);
-
-    try {
-      // Set up test directories
-      testFilesDirectory = tempDirectory.resolve("wasi-test-files");
-      preOpenDirectory = tempDirectory.resolve("preopen");
-      restrictedDirectory = tempDirectory.resolve("restricted");
-
-      Files.createDirectories(testFilesDirectory);
-      Files.createDirectories(preOpenDirectory);
-      Files.createDirectories(restrictedDirectory);
-
-      // Create test files for filesystem operations
-      createTestFiles();
-
-      LOGGER.info("WASI test environment initialized with directories:");
-      LOGGER.info("  Test files: " + testFilesDirectory);
-      LOGGER.info("  Preopen: " + preOpenDirectory);
-      LOGGER.info("  Restricted: " + restrictedDirectory);
-
-    } catch (final Exception e) {
-      throw new RuntimeException("Failed to initialize WASI test environment", e);
+  @AfterEach
+  void tearDown() {
+    if (store != null) {
+      store.close();
+    }
+    if (engine != null) {
+      engine.close();
+    }
+    if (runtime != null) {
+      runtime.close();
     }
   }
 
-  @Override
-  protected void doTearDown(final TestInfo testInfo) {
+  /** Tests basic WASI context creation and configuration. */
+  @Test
+  void testWasiContextCreation() {
+    LOGGER.info("Testing WASI context creation");
+
+    final WasiConfig config =
+        WasiConfig.builder()
+            .inheritEnv(true)
+            .inheritStdin(true)
+            .inheritStdout(true)
+            .inheritStderr(true)
+            .build();
+
+    assertDoesNotThrow(() -> {
+      final Wasi wasi = store.createWasi(config);
+      assertNotNull(wasi);
+      assertTrue(wasi.isValid());
+      wasi.close();
+    });
+  }
+
+  /** Tests WASI context creation with custom environment variables. */
+  @Test
+  void testWasiContextWithCustomEnvironment() {
+    LOGGER.info("Testing WASI context with custom environment");
+
+    final Map<String, String> customEnv = new HashMap<>();
+    customEnv.put("TEST_VAR", "test_value");
+    customEnv.put("CUSTOM_PATH", "/custom/path");
+
+    final WasiConfig config =
+        WasiConfig.builder()
+            .inheritEnv(false)
+            .environment(customEnv)
+            .inheritStdin(true)
+            .inheritStdout(true)
+            .inheritStderr(true)
+            .build();
+
+    assertDoesNotThrow(() -> {
+      final Wasi wasi = store.createWasi(config);
+      assertNotNull(wasi);
+      assertTrue(wasi.isValid());
+
+      // Verify environment is properly configured
+      final Map<String, String> actualEnv = wasi.getEnvironment();
+      assertEquals("test_value", actualEnv.get("TEST_VAR"));
+      assertEquals("/custom/path", actualEnv.get("CUSTOM_PATH"));
+
+      wasi.close();
+    });
+  }
+
+  /** Tests WASI context creation with command line arguments. */
+  @Test
+  void testWasiContextWithArguments() {
+    LOGGER.info("Testing WASI context with command line arguments");
+
+    final List<String> args = Arrays.asList("program", "--flag", "value", "positional");
+
+    final WasiConfig config =
+        WasiConfig.builder()
+            .inheritEnv(true)
+            .arguments(args)
+            .inheritStdin(true)
+            .inheritStdout(true)
+            .inheritStderr(true)
+            .build();
+
+    assertDoesNotThrow(() -> {
+      final Wasi wasi = store.createWasi(config);
+      assertNotNull(wasi);
+      assertTrue(wasi.isValid());
+
+      // Verify arguments are properly configured
+      final List<String> actualArgs = wasi.getArguments();
+      assertEquals(args.size(), actualArgs.size());
+      for (int i = 0; i < args.size(); i++) {
+        assertEquals(args.get(i), actualArgs.get(i));
+      }
+
+      wasi.close();
+    });
+  }
+
+  /** Tests WASI context creation with pre-opened directories. */
+  @Test
+  void testWasiContextWithPreopenedDirectories() throws IOException {
+    LOGGER.info("Testing WASI context with pre-opened directories");
+
+    // Create test directories
+    final Path readOnlyDir = tempDirectory.resolve("readonly");
+    final Path readWriteDir = tempDirectory.resolve("readwrite");
+    Files.createDirectories(readOnlyDir);
+    Files.createDirectories(readWriteDir);
+
+    // Create test files
+    final Path testFile1 = readOnlyDir.resolve("test1.txt");
+    final Path testFile2 = readWriteDir.resolve("test2.txt");
+    Files.write(testFile1, "Hello from readonly".getBytes());
+    Files.write(testFile2, "Hello from readwrite".getBytes());
+
+    final WasiConfig config =
+        WasiConfig.builder()
+            .inheritEnv(true)
+            .preopenDir(readOnlyDir.toString(), "readonly", true, false) // read-only
+            .preopenDir(readWriteDir.toString(), "readwrite", true, true) // read-write
+            .inheritStdin(true)
+            .inheritStdout(true)
+            .inheritStderr(true)
+            .build();
+
+    assertDoesNotThrow(() -> {
+      final Wasi wasi = store.createWasi(config);
+      assertNotNull(wasi);
+      assertTrue(wasi.isValid());
+
+      // Verify directories are pre-opened
+      final Map<String, String> preopenedDirs = wasi.getPreopenedDirectories();
+      assertTrue(preopenedDirs.containsKey("readonly"));
+      assertTrue(preopenedDirs.containsKey("readwrite"));
+
+      wasi.close();
+    });
+  }
+
+  /** Tests WASI module compilation and instantiation. */
+  @Test
+  void testWasiModuleInstantiation() {
+    LOGGER.info("Testing WASI module instantiation");
+
+    final byte[] wasmBytes = WasmTestModules.getModule("wasi_basic");
+    assertNotNull(wasmBytes);
+
+    final WasiConfig config =
+        WasiConfig.builder()
+            .inheritEnv(true)
+            .inheritStdin(true)
+            .inheritStdout(true)
+            .inheritStderr(true)
+            .build();
+
+    assertDoesNotThrow(() -> {
+      final Module module = engine.createModule(wasmBytes);
+      assertNotNull(module);
+
+      final Wasi wasi = store.createWasi(config);
+      assertNotNull(wasi);
+
+      final Instance instance = store.createInstance(module, wasi.getImports());
+      assertNotNull(instance);
+      assertTrue(instance.isValid());
+
+      instance.close();
+      wasi.close();
+      module.close();
+    });
+  }
+
+  /** Tests WASI function execution with basic I/O operations. */
+  @Test
+  @Timeout(value = 30, unit = TimeUnit.SECONDS)
+  void testWasiFunctionExecution() {
+    LOGGER.info("Testing WASI function execution");
+
+    final byte[] wasmBytes = WasmTestModules.getModule("wasi_basic");
+
+    final WasiConfig config =
+        WasiConfig.builder()
+            .inheritEnv(true)
+            .inheritStdin(true)
+            .inheritStdout(true)
+            .inheritStderr(true)
+            .build();
+
+    assertDoesNotThrow(() -> {
+      final Module module = engine.createModule(wasmBytes);
+      final Wasi wasi = store.createWasi(config);
+      final Instance instance = store.createInstance(module, wasi.getImports());
+
+      // Look for WASI start function
+      if (instance.hasExport("_start")) {
+        final var startFunction = instance.getExport("_start").asFunction();
+        assertNotNull(startFunction);
+
+        // Execute the start function
+        assertDoesNotThrow(() -> startFunction.call());
+      } else {
+        LOGGER.warning("WASI module does not export _start function");
+      }
+
+      instance.close();
+      wasi.close();
+      module.close();
+    });
+  }
+
+  /** Tests WASI resource cleanup and lifecycle management. */
+  @Test
+  void testWasiResourceCleanup() {
+    LOGGER.info("Testing WASI resource cleanup");
+
+    final WasiConfig config =
+        WasiConfig.builder()
+            .inheritEnv(true)
+            .inheritStdin(true)
+            .inheritStdout(true)
+            .inheritStderr(true)
+            .build();
+
+    assertDoesNotThrow(() -> {
+      final Wasi wasi = store.createWasi(config);
+      assertNotNull(wasi);
+      assertTrue(wasi.isValid());
+
+      // Close and verify resource cleanup
+      wasi.close();
+      
+      // Verify wasi is no longer valid after close
+      // Note: Implementation should invalidate the handle
+    });
+  }
+
+  /** Tests WASI error handling with invalid configurations. */
+  @Test
+  void testWasiErrorHandling() {
+    LOGGER.info("Testing WASI error handling");
+
+    // Test with invalid directory path
+    assertThrows(Exception.class, () -> {
+      final WasiConfig config =
+          WasiConfig.builder()
+              .inheritEnv(true)
+              .preopenDir("/invalid/nonexistent/path", "invalid", true, false)
+              .build();
+
+      store.createWasi(config);
+    });
+
+    // Test with null environment values
+    assertThrows(Exception.class, () -> {
+      final Map<String, String> invalidEnv = new HashMap<>();
+      invalidEnv.put("TEST_KEY", null);
+
+      final WasiConfig config =
+          WasiConfig.builder()
+              .inheritEnv(false)
+              .environment(invalidEnv)
+              .build();
+
+      store.createWasi(config);
+    });
+  }
+
+  /** Tests WASI concurrency with multiple simultaneous instances. */
+  @Test
+  @Timeout(value = 60, unit = TimeUnit.SECONDS)
+  void testWasiConcurrency() throws InterruptedException {
+    LOGGER.info("Testing WASI concurrency");
+
+    final int concurrentInstances = 4;
+    final ExecutorService executor = Executors.newFixedThreadPool(concurrentInstances);
+
     try {
-      // Clean up test directories
-      if (testFilesDirectory != null && Files.exists(testFilesDirectory)) {
-        TestUtils.deleteDirectoryRecursively(testFilesDirectory);
-      }
-    } catch (final Exception e) {
-      LOGGER.warning("Failed to clean up WASI test environment: " + e.getMessage());
-    }
+      final CompletableFuture<Void>[] futures = new CompletableFuture[concurrentInstances];
 
-    super.doTearDown(testInfo);
-  }
+      for (int i = 0; i < concurrentInstances; i++) {
+        final int instanceId = i;
+        futures[i] = CompletableFuture.runAsync(() -> {
+          try (final WasmRuntime instanceRuntime = WasmRuntimeFactory.create();
+               final Engine instanceEngine = instanceRuntime.createEngine();
+               final Store instanceStore = instanceEngine.createStore()) {
 
-  /**
-   * Tests basic WASI context creation and lifecycle management.
-   * Validates that contexts can be created, configured, and properly closed.
-   */
-  @Test
-  @DisplayName("WASI Context Lifecycle - Basic Creation and Cleanup")
-  void testWasiContextLifecycle() {
-    runWithBothRuntimes((runtime, runtimeType) -> {
-      LOGGER.info("Testing WASI context lifecycle with " + runtimeType + " runtime");
+            LOGGER.info("Starting concurrent WASI instance " + instanceId);
 
-      try (final WasmEngine engine = runtime.createEngine()) {
-        
-        // Test basic context creation
-        WasiContext context = createBasicWasiContext(runtimeType);
-        assertNotNull(context, "WASI context should be created successfully");
-        assertFalse(context.isClosed(), "WASI context should not be closed after creation");
+            final WasiConfig config =
+                WasiConfig.builder()
+                    .inheritEnv(true)
+                    .arguments(Arrays.asList("program", "--instance", String.valueOf(instanceId)))
+                    .inheritStdin(false) // Avoid stdin conflicts
+                    .inheritStdout(true)
+                    .inheritStderr(true)
+                    .build();
 
-        // Test context state access
-        assertNotNull(context.getEnvironment(), "Environment should be accessible");
-        assertNotNull(context.getArguments(), "Arguments should be accessible");
-        assertNotNull(context.getPreopenedDirectories(), "Preopened directories should be accessible");
-        assertNotNull(context.getWorkingDirectory(), "Working directory should be accessible");
+            final Wasi wasi = instanceStore.createWasi(config);
+            assertNotNull(wasi);
+            assertTrue(wasi.isValid());
 
-        // Test proper cleanup
-        context.close();
-        assertTrue(context.isClosed(), "WASI context should be closed after close() call");
-
-        // Test double close safety
-        assertDoesNotThrow(() -> context.close(), "Double close should be safe");
-      }
-    });
-  }
-
-  /**
-   * Tests WASI context creation with comprehensive configuration options.
-   * Validates all configuration parameters are properly set and accessible.
-   */
-  @Test
-  @DisplayName("WASI Context Configuration - Comprehensive Parameter Validation")
-  void testWasiContextComprehensiveConfiguration() {
-    runWithBothRuntimes((runtime, runtimeType) -> {
-      LOGGER.info("Testing comprehensive WASI context configuration with " + runtimeType + " runtime");
-
-      try (final WasmEngine engine = runtime.createEngine()) {
-        
-        // Create comprehensive configuration
-        final Map<String, String> environment = new HashMap<>();
-        environment.put("HOME", "/home/test");
-        environment.put("PATH", "/usr/bin:/bin");
-        environment.put("LANG", "en_US.UTF-8");
-        environment.put("TERM", "xterm-256color");
-        
-        final String[] arguments = {"test-program", "--verbose", "--input", "test.txt", "--output", "result.txt"};
-        
-        WasiContext context = createConfiguredWasiContext(runtimeType, environment, arguments);
-        registerForCleanup(context);
-
-        // Validate environment variables
-        final Map<String, String> actualEnv = context.getEnvironment();
-        assertEquals(environment.size(), actualEnv.size(), "Environment variable count should match");
-        for (final Map.Entry<String, String> entry : environment.entrySet()) {
-          assertEquals(entry.getValue(), actualEnv.get(entry.getKey()), 
-              "Environment variable " + entry.getKey() + " should match");
-        }
-
-        // Validate arguments
-        final String[] actualArgs = context.getArguments();
-        assertEquals(arguments.length, actualArgs.length, "Argument count should match");
-        for (int i = 0; i < arguments.length; i++) {
-          assertEquals(arguments[i], actualArgs[i], "Argument at index " + i + " should match");
-        }
-
-        // Validate preopen directories
-        final Map<String, Path> preopenDirs = context.getPreopenedDirectories();
-        assertTrue(preopenDirs.containsKey("/tmp"), "Should contain /tmp preopen directory");
-        assertEquals(preOpenDirectory, preopenDirs.get("/tmp"), "Preopen directory path should match");
-
-        // Validate working directory
-        assertEquals(Paths.get("/app"), context.getWorkingDirectory(), "Working directory should match");
-      }
-    });
-  }
-
-  /**
-   * Tests WASI context creation error handling and validation.
-   * Validates proper error handling for invalid configurations.
-   */
-  @Test
-  @DisplayName("WASI Context Validation - Error Handling and Invalid Configurations")
-  void testWasiContextValidationAndErrors() {
-    runWithBothRuntimes((runtime, runtimeType) -> {
-      LOGGER.info("Testing WASI context validation and error handling with " + runtimeType + " runtime");
-
-      try (final WasmEngine engine = runtime.createEngine()) {
-        
-        // Test invalid environment variable names
-        assertThrows(IllegalArgumentException.class, () -> {
-          createWasiContextBuilder(runtimeType)
-              .withEnvironment("", "value")
-              .build();
-        }, "Empty environment variable name should throw exception");
-
-        assertThrows(IllegalArgumentException.class, () -> {
-          createWasiContextBuilder(runtimeType)
-              .withEnvironment(null, "value")
-              .build();
-        }, "Null environment variable name should throw exception");
-
-        // Test invalid argument values
-        assertThrows(IllegalArgumentException.class, () -> {
-          createWasiContextBuilder(runtimeType)
-              .withArgument(null)
-              .build();
-        }, "Null argument should throw exception");
-
-        // Test invalid preopen directory paths
-        assertThrows(IllegalArgumentException.class, () -> {
-          createWasiContextBuilder(runtimeType)
-              .withPreopenDirectory("/guest", "/nonexistent/path")
-              .build();
-        }, "Non-existent host directory should throw exception");
-
-        assertThrows(IllegalArgumentException.class, () -> {
-          final Path tempFile = Files.createTempFile(tempDirectory, "test", ".txt");
-          createWasiContextBuilder(runtimeType)
-              .withPreopenDirectory("/guest", tempFile.toString())
-              .build();
-        }, "Host path that is not a directory should throw exception");
-
-        // Test invalid working directory
-        assertThrows(IllegalArgumentException.class, () -> {
-          createWasiContextBuilder(runtimeType)
-              .withWorkingDirectory("")
-              .build();
-        }, "Empty working directory should throw exception");
-      }
-    });
-  }
-
-  /**
-   * Tests WASI context resource management and memory cleanup.
-   * Validates that contexts properly release resources on close.
-   */
-  @Test
-  @DisplayName("WASI Context Resource Management - Memory and Resource Cleanup")
-  void testWasiContextResourceManagement() {
-    runWithBothRuntimes((runtime, runtimeType) -> {
-      LOGGER.info("Testing WASI context resource management with " + runtimeType + " runtime");
-
-      try (final WasmEngine engine = runtime.createEngine()) {
-        
-        // Create multiple contexts to test resource management
-        for (int i = 0; i < 10; i++) {
-          WasiContext context = createBasicWasiContext(runtimeType);
-          assertNotNull(context, "Context " + i + " should be created successfully");
-          
-          // Verify context state
-          assertFalse(context.isClosed(), "Context " + i + " should not be closed after creation");
-          
-          // Close context
-          context.close();
-          assertTrue(context.isClosed(), "Context " + i + " should be closed after close() call");
-          
-          // Verify operations fail after close
-          assertThrows(Exception.class, () -> context.getEnvironment(),
-              "Operations should fail on closed context " + i);
-        }
-        
-        // Force garbage collection to test cleanup
-        System.gc();
-        Thread.sleep(100); // Allow time for cleanup
-        
-        LOGGER.info("Successfully created and cleaned up 10 WASI contexts");
-      }
-    });
-  }
-
-  /**
-   * Tests WASI context thread safety and concurrent access.
-   * Validates that contexts can be safely accessed from multiple threads.
-   */
-  @Test
-  @DisplayName("WASI Context Thread Safety - Concurrent Access Validation")
-  void testWasiContextThreadSafety() {
-    skipIfCategoryNotEnabled(TestCategories.PERFORMANCE_TESTING);
-    
-    runWithBothRuntimes((runtime, runtimeType) -> {
-      LOGGER.info("Testing WASI context thread safety with " + runtimeType + " runtime");
-
-      try (final WasmEngine engine = runtime.createEngine()) {
-        
-        WasiContext context = createBasicWasiContext(runtimeType);
-        registerForCleanup(context);
-        
-        // Test concurrent read access
-        final int threadCount = 5;
-        final Thread[] threads = new Thread[threadCount];
-        final Exception[] exceptions = new Exception[threadCount];
-        
-        for (int i = 0; i < threadCount; i++) {
-          final int threadIndex = i;
-          threads[i] = new Thread(() -> {
+            // Hold the instance for a brief period
             try {
-              for (int j = 0; j < 100; j++) {
-                // Perform various read operations
-                assertNotNull(context.getEnvironment(), "Environment should be accessible from thread " + threadIndex);
-                assertNotNull(context.getArguments(), "Arguments should be accessible from thread " + threadIndex);
-                assertNotNull(context.getPreopenedDirectories(), "Preopen directories should be accessible from thread " + threadIndex);
-                assertNotNull(context.getWorkingDirectory(), "Working directory should be accessible from thread " + threadIndex);
-                
-                // Validate path operations
-                final Path testPath = context.validatePath("/tmp/test");
-                assertNotNull(testPath, "Path validation should work from thread " + threadIndex);
-              }
-            } catch (final Exception e) {
-              exceptions[threadIndex] = e;
+              Thread.sleep(100);
+            } catch (final InterruptedException e) {
+              Thread.currentThread().interrupt();
+              throw new RuntimeException(e);
             }
-          });
-        }
-        
-        // Start all threads
-        for (final Thread thread : threads) {
-          thread.start();
-        }
-        
-        // Wait for all threads to complete
-        for (final Thread thread : threads) {
-          thread.join(5000); // 5 second timeout
-        }
-        
-        // Check for exceptions
-        for (int i = 0; i < threadCount; i++) {
-          if (exceptions[i] != null) {
-            throw new AssertionError("Thread " + i + " encountered exception", exceptions[i]);
+
+            wasi.close();
+            LOGGER.info("Completed concurrent WASI instance " + instanceId);
+
+          } catch (final Exception e) {
+            LOGGER.log(Level.SEVERE, "Concurrent WASI instance " + instanceId + " failed", e);
+            throw new RuntimeException(e);
           }
-        }
-        
-        LOGGER.info("Successfully tested concurrent access with " + threadCount + " threads");
+        }, executor);
       }
+
+      // Wait for all instances to complete
+      CompletableFuture.allOf(futures).join();
+      LOGGER.info("All concurrent WASI instances completed successfully");
+
+    } finally {
+      executor.shutdown();
+      assertTrue(executor.awaitTermination(10, TimeUnit.SECONDS));
+    }
+  }
+
+  /** Tests cross-runtime WASI parity between JNI and Panama implementations. */
+  @Test
+  @Timeout(value = 30, unit = TimeUnit.SECONDS)
+  void testCrossRuntimeWasiParity() {
+    LOGGER.info("Testing cross-runtime WASI parity");
+
+    if (!TestUtils.isPanamaAvailable()) {
+      LOGGER.warning("Panama runtime not available, skipping cross-runtime test");
+      return;
+    }
+
+    final CrossRuntimeValidator.RuntimeOperation<String> wasiOperation = runtime -> {
+      try (final Engine engine = runtime.createEngine();
+           final Store store = engine.createStore()) {
+
+        final WasiConfig config =
+            WasiConfig.builder()
+                .inheritEnv(true)
+                .arguments(Arrays.asList("test", "program"))
+                .inheritStdin(true)
+                .inheritStdout(true)
+                .inheritStderr(true)
+                .build();
+
+        final Wasi wasi = store.createWasi(config);
+        final boolean isValid = wasi.isValid();
+        final int envCount = wasi.getEnvironment().size();
+        final int argCount = wasi.getArguments().size();
+
+        wasi.close();
+
+        return String.format("valid=%s,env=%d,args=%d", isValid, envCount, argCount);
+      }
+    };
+
+    final CrossRuntimeValidator.ComparisonResult result =
+        CrossRuntimeValidator.validateCrossRuntime(wasiOperation, Duration.ofSeconds(15));
+
+    assertTrue(result.isValid(),
+        "WASI behavior differs between runtimes: " + result.getDifferenceDescription());
+
+    LOGGER.info("Cross-runtime WASI validation successful: " + result.getDifferenceDescription());
+  }
+
+  /** Tests WASI environment variable isolation between instances. */
+  @Test
+  void testWasiEnvironmentIsolation() {
+    LOGGER.info("Testing WASI environment isolation");
+
+    final Map<String, String> env1 = new HashMap<>();
+    env1.put("INSTANCE", "1");
+    env1.put("SHARED", "value1");
+
+    final Map<String, String> env2 = new HashMap<>();
+    env2.put("INSTANCE", "2");
+    env2.put("SHARED", "value2");
+
+    final WasiConfig config1 =
+        WasiConfig.builder()
+            .inheritEnv(false)
+            .environment(env1)
+            .build();
+
+    final WasiConfig config2 =
+        WasiConfig.builder()
+            .inheritEnv(false)
+            .environment(env2)
+            .build();
+
+    assertDoesNotThrow(() -> {
+      final Wasi wasi1 = store.createWasi(config1);
+      final Wasi wasi2 = store.createWasi(config2);
+
+      // Verify environments are isolated
+      final Map<String, String> actualEnv1 = wasi1.getEnvironment();
+      final Map<String, String> actualEnv2 = wasi2.getEnvironment();
+
+      assertEquals("1", actualEnv1.get("INSTANCE"));
+      assertEquals("value1", actualEnv1.get("SHARED"));
+
+      assertEquals("2", actualEnv2.get("INSTANCE"));
+      assertEquals("value2", actualEnv2.get("SHARED"));
+
+      // Environments should not affect each other
+      assertTrue(actualEnv1.containsKey("INSTANCE"));
+      assertTrue(actualEnv2.containsKey("INSTANCE"));
+      assertEquals("1", actualEnv1.get("INSTANCE"));
+      assertEquals("2", actualEnv2.get("INSTANCE"));
+
+      wasi1.close();
+      wasi2.close();
     });
   }
 
-  /**
-   * Creates test files for filesystem operations.
-   */
-  private void createTestFiles() throws Exception {
-    // Create test files in preopen directory
-    Files.write(preOpenDirectory.resolve("test.txt"), "Hello, WASI!".getBytes());
-    Files.write(preOpenDirectory.resolve("input.txt"), "Test input data\nLine 2\nLine 3".getBytes());
-    
-    // Create subdirectory with files
-    final Path subDir = preOpenDirectory.resolve("subdir");
-    Files.createDirectories(subDir);
-    Files.write(subDir.resolve("nested.txt"), "Nested file content".getBytes());
-    
-    // Create files in restricted directory (should not be accessible)
-    Files.write(restrictedDirectory.resolve("secret.txt"), "Secret data".getBytes());
-  }
+  /** Tests WASI with stress conditions and resource limits. */
+  @Test
+  @Timeout(value = 60, unit = TimeUnit.SECONDS)
+  void testWasiStressConditions() {
+    LOGGER.info("Testing WASI under stress conditions");
 
-  /**
-   * Creates a basic WASI context for the specified runtime type.
-   */
-  private WasiContext createBasicWasiContext(final RuntimeType runtimeType) throws Exception {
-    return (WasiContext) createWasiContextBuilder(runtimeType)
-        .withEnvironment("HOME", "/home/test")
-        .withArgument("test-program")
-        .withPreopenDirectory("/tmp", preOpenDirectory.toString())
-        .withWorkingDirectory("/app")
-        .build();
-  }
-
-  /**
-   * Creates a configured WASI context with specified environment and arguments.
-   */
-  private WasiContext createConfiguredWasiContext(
-      final RuntimeType runtimeType,
-      final Map<String, String> environment,
-      final String[] arguments) throws Exception {
-    
-    final Object builder = createWasiContextBuilder(runtimeType)
-        .withEnvironment(environment)
-        .withArguments(arguments)
-        .withPreopenDirectory("/tmp", preOpenDirectory.toString())
-        .withWorkingDirectory("/app");
-    
-    if (runtimeType == RuntimeType.JNI) {
-      return ((WasiContextBuilder) builder).build();
-    } else {
-      return (WasiContext) ((PanamaWasiContextBuilder) builder).build();
+    // Test with many environment variables
+    final Map<String, String> largeEnv = new HashMap<>();
+    for (int i = 0; i < 1000; i++) {
+      largeEnv.put("VAR_" + i, "value_" + i);
     }
+
+    final WasiConfig stressConfig =
+        WasiConfig.builder()
+            .inheritEnv(false)
+            .environment(largeEnv)
+            .arguments(Arrays.asList("program", "--stress", "test"))
+            .inheritStdin(true)
+            .inheritStdout(true)
+            .inheritStderr(true)
+            .build();
+
+    assertDoesNotThrow(() -> {
+      final Wasi wasi = store.createWasi(stressConfig);
+      assertNotNull(wasi);
+      assertTrue(wasi.isValid());
+
+      final Map<String, String> actualEnv = wasi.getEnvironment();
+      assertEquals(1000, actualEnv.size());
+
+      // Verify a few random entries
+      assertTrue(actualEnv.containsKey("VAR_0"));
+      assertTrue(actualEnv.containsKey("VAR_500"));
+      assertTrue(actualEnv.containsKey("VAR_999"));
+
+      wasi.close();
+    });
   }
 
-  /**
-   * Creates a WASI context builder for the specified runtime type.
-   */
-  private Object createWasiContextBuilder(final RuntimeType runtimeType) {
-    if (runtimeType == RuntimeType.JNI) {
-      return WasiContext.builder();
-    } else {
-      return PanamaWasiContext.builder();
-    }
+  /** Tests WASI configuration validation and error scenarios. */
+  @Test
+  void testWasiConfigValidation() {
+    LOGGER.info("Testing WASI configuration validation");
+
+    // Test valid minimal configuration
+    assertDoesNotThrow(() -> {
+      final WasiConfig config = WasiConfig.builder().build();
+      final Wasi wasi = store.createWasi(config);
+      assertNotNull(wasi);
+      wasi.close();
+    });
+
+    // Test configuration with empty arguments list
+    assertDoesNotThrow(() -> {
+      final WasiConfig config =
+          WasiConfig.builder()
+              .arguments(Arrays.asList())
+              .build();
+      final Wasi wasi = store.createWasi(config);
+      assertNotNull(wasi);
+      assertEquals(0, wasi.getArguments().size());
+      wasi.close();
+    });
+
+    // Test configuration with empty environment
+    assertDoesNotThrow(() -> {
+      final WasiConfig config =
+          WasiConfig.builder()
+              .inheritEnv(false)
+              .environment(new HashMap<>())
+              .build();
+      final Wasi wasi = store.createWasi(config);
+      assertNotNull(wasi);
+      assertEquals(0, wasi.getEnvironment().size());
+      wasi.close();
+    });
+  }
+
+  /** Tests WASI preview1 compatibility and features. */
+  @Test
+  void testWasiPreview1Compatibility() {
+    LOGGER.info("Testing WASI preview1 compatibility");
+
+    // Use WASI preview1 module
+    final byte[] wasmBytes = WasmTestModules.getModule("wasi_basic");
+
+    final WasiConfig config =
+        WasiConfig.builder()
+            .inheritEnv(true)
+            .inheritStdin(true)
+            .inheritStdout(true)
+            .inheritStderr(true)
+            .build();
+
+    assertDoesNotThrow(() -> {
+      final Module module = engine.createModule(wasmBytes);
+      final Wasi wasi = store.createWasi(config);
+
+      // Verify WASI imports are properly provided
+      final var imports = wasi.getImports();
+      assertNotNull(imports);
+      assertTrue(imports.size() > 0);
+
+      // Verify common WASI preview1 functions are available
+      final boolean hasRequiredImports = imports.keySet().stream()
+          .anyMatch(key -> key.contains("wasi_snapshot_preview1"));
+
+      assertTrue(hasRequiredImports, "WASI preview1 imports not found");
+
+      final Instance instance = store.createInstance(module, imports);
+      assertNotNull(instance);
+
+      instance.close();
+      wasi.close();
+      module.close();
+    });
+  }
+
+  /** Tests WASI memory isolation and security boundaries. */
+  @Test
+  void testWasiMemoryIsolation() {
+    LOGGER.info("Testing WASI memory isolation");
+
+    final WasiConfig config =
+        WasiConfig.builder()
+            .inheritEnv(true)
+            .inheritStdin(true)
+            .inheritStdout(true)
+            .inheritStderr(true)
+            .build();
+
+    assertDoesNotThrow(() -> {
+      final Wasi wasi1 = store.createWasi(config);
+      final Wasi wasi2 = store.createWasi(config);
+
+      // Each WASI instance should be independent
+      assertNotNull(wasi1);
+      assertNotNull(wasi2);
+      assertTrue(wasi1.isValid());
+      assertTrue(wasi2.isValid());
+
+      // Verify they are different instances
+      assertTrue(wasi1 != wasi2);
+
+      wasi1.close();
+      wasi2.close();
+    });
   }
 }

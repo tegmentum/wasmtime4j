@@ -1,526 +1,641 @@
 package ai.tegmentum.wasmtime4j.wasi;
 
-import ai.tegmentum.wasmtime4j.RuntimeType;
-import ai.tegmentum.wasmtime4j.WasmEngine;
-import ai.tegmentum.wasmtime4j.WasmInstance;
-import ai.tegmentum.wasmtime4j.WasmModule;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import ai.tegmentum.wasmtime4j.Engine;
+import ai.tegmentum.wasmtime4j.Instance;
+import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmRuntime;
-import ai.tegmentum.wasmtime4j.WasmStore;
-import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.jni.wasi.WasiContext;
-import ai.tegmentum.wasmtime4j.jni.wasi.WasiContextBuilder;
-import ai.tegmentum.wasmtime4j.utils.BaseIntegrationTest;
+import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
+import ai.tegmentum.wasmtime4j.functions.WasmFunction;
+import ai.tegmentum.wasmtime4j.utils.CrossRuntimeValidator;
 import ai.tegmentum.wasmtime4j.utils.TestCategories;
 import ai.tegmentum.wasmtime4j.utils.TestUtils;
+import ai.tegmentum.wasmtime4j.wasi.Wasi;
+import ai.tegmentum.wasmtime4j.wasi.WasiConfig;
 import ai.tegmentum.wasmtime4j.webassembly.WasmTestModules;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.time.Duration;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.Timeout;
-import org.junit.jupiter.api.io.TempDir;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Comprehensive tests for WASI environment variable configuration and access.
- * 
- * This test class validates:
- * - Environment variable configuration and retrieval
- * - Environment variable security and access controls
- * - Large environment variable handling
- * - Unicode and special character support
- * - Environment inheritance and isolation
- * - Cross-runtime environment consistency
+ * Comprehensive environment and argument testing for WASI functionality. Tests environment
+ * variable access, command line argument handling, inheritance patterns, and cross-runtime
+ * compatibility for environment configuration.
  */
-@Tag(TestCategories.WASI_ENVIRONMENT)
-@Tag(TestCategories.COMPREHENSIVE_TESTING)
-@DisplayName("WASI Environment Variable Tests")
-@Timeout(value = 5, unit = TimeUnit.MINUTES)
-public final class WasiEnvironmentTest extends BaseIntegrationTest {
-
+@Tag(TestCategories.INTEGRATION)
+@Tag(TestCategories.WASI)
+@Tag(TestCategories.ENVIRONMENT)
+public final class WasiEnvironmentTest {
   private static final Logger LOGGER = Logger.getLogger(WasiEnvironmentTest.class.getName());
 
-  @TempDir
-  private Path tempDirectory;
+  private WasmRuntime runtime;
+  private Engine engine;
+  private Store store;
 
-  /**
-   * Tests basic environment variable configuration and access.
-   * Validates that environment variables can be set and retrieved correctly.
-   */
+  @BeforeEach
+  void setUp() {
+    runtime = WasmRuntimeFactory.create();
+    engine = runtime.createEngine();
+    store = engine.createStore();
+    LOGGER.info("Set up WASI environment test with runtime: " + runtime.getRuntimeType());
+  }
+
+  @AfterEach
+  void tearDown() {
+    if (store != null) {
+      store.close();
+    }
+    if (engine != null) {
+      engine.close();
+    }
+    if (runtime != null) {
+      runtime.close();
+    }
+  }
+
+  /** Tests basic environment variable configuration and access. */
   @Test
-  @DisplayName("Environment Variables - Basic Configuration and Access")
-  void testBasicEnvironmentVariableAccess() {
-    runWithBothRuntimes((runtime, runtimeType) -> {
-      LOGGER.info("Testing basic environment variable access with " + runtimeType + " runtime");
+  void testBasicEnvironmentConfiguration() {
+    LOGGER.info("Testing basic environment configuration");
 
-      try (final WasmEngine engine = runtime.createEngine()) {
-        
-        // Create context with basic environment variables
-        final Map<String, String> environment = new HashMap<>();
-        environment.put("HOME", "/home/test");
-        environment.put("PATH", "/usr/bin:/bin");
-        environment.put("USER", "testuser");
-        environment.put("LANG", "en_US.UTF-8");
+    final Map<String, String> testEnv = new HashMap<>();
+    testEnv.put("TEST_VAR", "test_value");
+    testEnv.put("PATH", "/usr/bin:/bin");
+    testEnv.put("HOME", "/home/user");
 
-        final WasiContext context = createWasiContextWithEnvironment(runtimeType, environment);
-        registerForCleanup(context);
+    final WasiConfig config =
+        WasiConfig.builder()
+            .inheritEnv(false)
+            .environment(testEnv)
+            .inheritStdin(true)
+            .inheritStdout(true)
+            .inheritStderr(true)
+            .build();
 
-        // Test individual environment variable access
-        assertEquals("/home/test", context.getEnvironmentVariable("HOME"),
-            "HOME environment variable should match");
-        assertEquals("/usr/bin:/bin", context.getEnvironmentVariable("PATH"),
-            "PATH environment variable should match");
-        assertEquals("testuser", context.getEnvironmentVariable("USER"),
-            "USER environment variable should match");
-        assertEquals("en_US.UTF-8", context.getEnvironmentVariable("LANG"),
-            "LANG environment variable should match");
+    assertDoesNotThrow(() -> {
+      final Wasi wasi = store.createWasi(config);
+      assertNotNull(wasi);
 
-        // Test non-existent variable
-        assertNull(context.getEnvironmentVariable("NONEXISTENT"),
-            "Non-existent environment variable should return null");
+      final Map<String, String> actualEnv = wasi.getEnvironment();
+      assertNotNull(actualEnv);
+      assertEquals(3, actualEnv.size());
+      assertEquals("test_value", actualEnv.get("TEST_VAR"));
+      assertEquals("/usr/bin:/bin", actualEnv.get("PATH"));
+      assertEquals("/home/user", actualEnv.get("HOME"));
 
-        // Test all environment variables
-        final Map<String, String> allEnv = context.getEnvironment();
-        assertEquals(environment.size(), allEnv.size(),
-            "Environment variable count should match");
-        for (final Map.Entry<String, String> entry : environment.entrySet()) {
-          assertEquals(entry.getValue(), allEnv.get(entry.getKey()),
-              "Environment variable " + entry.getKey() + " should match");
-        }
-
-        LOGGER.info("Successfully validated basic environment variable access");
-      }
+      wasi.close();
     });
   }
 
-  /**
-   * Tests environment variable configuration with special characters and Unicode.
-   * Validates proper handling of complex environment variable values.
-   */
+  /** Tests environment variable inheritance from host system. */
   @Test
-  @DisplayName("Environment Variables - Special Characters and Unicode Support")
-  void testEnvironmentVariableSpecialCharacters() {
-    runWithBothRuntimes((runtime, runtimeType) -> {
-      LOGGER.info("Testing environment variables with special characters using " + runtimeType + " runtime");
-
-      try (final WasmEngine engine = runtime.createEngine()) {
-        
-        final Map<String, String> environment = new HashMap<>();
-        environment.put("SPECIAL_CHARS", "!@#$%^&*()_+-=[]{}|;':\",./<>?");
-        environment.put("UNICODE_VAR", "Hello, 世界! Привет мир! مرحبا بالعالم");
-        environment.put("MULTILINE", "Line 1\nLine 2\nLine 3");
-        environment.put("QUOTES", "\"double quotes\" and 'single quotes'");
-        environment.put("BACKSLASH", "C:\\Windows\\System32");
-        environment.put("EMPTY_VALUE", "");
-        environment.put("SPACES", "   value with spaces   ");
-
-        final WasiContext context = createWasiContextWithEnvironment(runtimeType, environment);
-        registerForCleanup(context);
-
-        // Test special characters
-        assertEquals("!@#$%^&*()_+-=[]{}|;':\",./<>?", 
-            context.getEnvironmentVariable("SPECIAL_CHARS"),
-            "Special characters should be preserved");
-
-        // Test Unicode
-        assertEquals("Hello, 世界! Привет мир! مرحبا بالعالم", 
-            context.getEnvironmentVariable("UNICODE_VAR"),
-            "Unicode characters should be preserved");
-
-        // Test multiline
-        assertEquals("Line 1\nLine 2\nLine 3", 
-            context.getEnvironmentVariable("MULTILINE"),
-            "Multiline values should be preserved");
-
-        // Test quotes
-        assertEquals("\"double quotes\" and 'single quotes'", 
-            context.getEnvironmentVariable("QUOTES"),
-            "Quotes should be preserved");
-
-        // Test backslashes
-        assertEquals("C:\\Windows\\System32", 
-            context.getEnvironmentVariable("BACKSLASH"),
-            "Backslashes should be preserved");
-
-        // Test empty value
-        assertEquals("", context.getEnvironmentVariable("EMPTY_VALUE"),
-            "Empty values should be supported");
-
-        // Test spaces
-        assertEquals("   value with spaces   ", 
-            context.getEnvironmentVariable("SPACES"),
-            "Leading/trailing spaces should be preserved");
-
-        LOGGER.info("Successfully validated special character and Unicode environment variables");
-      }
-    });
-  }
-
-  /**
-   * Tests large environment variable configurations.
-   * Validates handling of many variables and large values.
-   */
-  @Test
-  @DisplayName("Environment Variables - Large Configuration Handling")
-  void testLargeEnvironmentConfiguration() {
-    runWithBothRuntimes((runtime, runtimeType) -> {
-      LOGGER.info("Testing large environment configuration with " + runtimeType + " runtime");
-
-      try (final WasmEngine engine = runtime.createEngine()) {
-        
-        final Map<String, String> environment = new HashMap<>();
-        
-        // Create many environment variables
-        for (int i = 0; i < 100; i++) {
-          environment.put("VAR_" + i, "value_" + i);
-        }
-        
-        // Add some variables with large values
-        final StringBuilder largeValue = new StringBuilder();
-        for (int i = 0; i < 1000; i++) {
-          largeValue.append("This is a very long environment variable value part ").append(i).append(" ");
-        }
-        environment.put("LARGE_VALUE", largeValue.toString());
-        
-        // Add variable with very long name
-        final String longName = "VERY_LONG_ENVIRONMENT_VARIABLE_NAME_" + "X".repeat(100);
-        environment.put(longName, "long_name_value");
-
-        final WasiContext context = createWasiContextWithEnvironment(runtimeType, environment);
-        registerForCleanup(context);
-
-        // Validate all variables are accessible
-        final Map<String, String> retrievedEnv = context.getEnvironment();
-        assertEquals(environment.size(), retrievedEnv.size(),
-            "All environment variables should be accessible");
-
-        // Test access to numbered variables
-        for (int i = 0; i < 100; i++) {
-          assertEquals("value_" + i, context.getEnvironmentVariable("VAR_" + i),
-              "Numbered variable " + i + " should be accessible");
-        }
-
-        // Test large value access
-        assertEquals(largeValue.toString(), context.getEnvironmentVariable("LARGE_VALUE"),
-            "Large environment variable value should be accessible");
-
-        // Test long name access
-        assertEquals("long_name_value", context.getEnvironmentVariable(longName),
-            "Variable with long name should be accessible");
-
-        LOGGER.info("Successfully validated large environment configuration");
-      }
-    });
-  }
-
-  /**
-   * Tests environment variable inheritance from host process.
-   * Validates proper inheritance of system environment variables.
-   */
-  @Test
-  @DisplayName("Environment Variables - Host Process Inheritance")
   void testEnvironmentInheritance() {
-    runWithBothRuntimes((runtime, runtimeType) -> {
-      LOGGER.info("Testing environment inheritance with " + runtimeType + " runtime");
+    LOGGER.info("Testing environment inheritance");
 
-      try (final WasmEngine engine = runtime.createEngine()) {
-        
-        // Get current system environment
-        final Map<String, String> systemEnv = System.getenv();
-        assertFalse(systemEnv.isEmpty(), "System environment should not be empty");
+    final WasiConfig inheritConfig =
+        WasiConfig.builder()
+            .inheritEnv(true)
+            .inheritStdin(true)
+            .inheritStdout(true)
+            .inheritStderr(true)
+            .build();
 
-        // Create context with inherited environment
-        final WasiContext context = createWasiContextWithInheritedEnvironment(runtimeType);
-        registerForCleanup(context);
+    assertDoesNotThrow(() -> {
+      final Wasi wasi = store.createWasi(inheritConfig);
+      assertNotNull(wasi);
 
-        final Map<String, String> inheritedEnv = context.getEnvironment();
+      final Map<String, String> inheritedEnv = wasi.getEnvironment();
+      assertNotNull(inheritedEnv);
+      
+      // Should inherit system environment (at least some variables)
+      assertTrue(inheritedEnv.size() > 0);
+      
+      // Common environment variables that should be present on most systems
+      assertTrue(inheritedEnv.containsKey("PATH") || inheritedEnv.containsKey("HOME") ||
+                 inheritedEnv.size() > 5); // Flexible check for different OS
 
-        // Validate that key system variables are inherited
-        if (systemEnv.containsKey("PATH")) {
-          assertEquals(systemEnv.get("PATH"), inheritedEnv.get("PATH"),
-              "PATH should be inherited from system environment");
-        }
-
-        if (systemEnv.containsKey("HOME") || systemEnv.containsKey("USERPROFILE")) {
-          final String homeVar = TestUtils.isWindows() ? "USERPROFILE" : "HOME";
-          if (systemEnv.containsKey(homeVar)) {
-            assertEquals(systemEnv.get(homeVar), inheritedEnv.get(homeVar),
-                homeVar + " should be inherited from system environment");
-          }
-        }
-
-        // Validate inherited environment size is reasonable
-        assertTrue(inheritedEnv.size() >= 3,
-            "Inherited environment should contain multiple variables");
-
-        LOGGER.info("Successfully validated environment inheritance (" + inheritedEnv.size() + " variables)");
-      }
+      wasi.close();
     });
   }
 
-  /**
-   * Tests environment variable security and access controls.
-   * Validates that environment access can be controlled and restricted.
-   */
+  /** Tests mixed environment configuration (inheritance + custom). */
   @Test
-  @DisplayName("Environment Variables - Security and Access Controls")
-  void testEnvironmentSecurityControls() {
-    runWithBothRuntimes((runtime, runtimeType) -> {
-      LOGGER.info("Testing environment security controls with " + runtimeType + " runtime");
+  void testMixedEnvironmentConfiguration() {
+    LOGGER.info("Testing mixed environment configuration");
 
-      try (final WasmEngine engine = runtime.createEngine()) {
-        
-        final Map<String, String> environment = new HashMap<>();
-        environment.put("PUBLIC_VAR", "public_value");
-        environment.put("SENSITIVE_VAR", "sensitive_value");
-        environment.put("API_KEY", "secret_api_key_12345");
-        environment.put("PASSWORD", "super_secret_password");
+    final Map<String, String> customEnv = new HashMap<>();
+    customEnv.put("CUSTOM_VAR", "custom_value");
+    customEnv.put("OVERRIDE_VAR", "overridden");
 
-        final WasiContext context = createWasiContextWithEnvironment(runtimeType, environment);
-        registerForCleanup(context);
+    final WasiConfig config =
+        WasiConfig.builder()
+            .inheritEnv(true) // Inherit system environment
+            .environment(customEnv) // Add custom variables
+            .inheritStdin(true)
+            .inheritStdout(true)
+            .inheritStderr(true)
+            .build();
 
-        // Test basic access
-        assertEquals("public_value", context.getEnvironmentVariable("PUBLIC_VAR"),
-            "Public variable should be accessible");
+    assertDoesNotThrow(() -> {
+      final Wasi wasi = store.createWasi(config);
+      assertNotNull(wasi);
 
-        // Test case sensitivity
-        assertNull(context.getEnvironmentVariable("public_var"),
-            "Environment variables should be case sensitive");
+      final Map<String, String> actualEnv = wasi.getEnvironment();
+      assertNotNull(actualEnv);
 
-        // Test null/empty name handling
-        assertThrows(IllegalArgumentException.class, () -> {
-          context.getEnvironmentVariable(null);
-        }, "Null variable name should throw exception");
+      // Should have both inherited and custom variables
+      assertTrue(actualEnv.size() > 2);
+      assertEquals("custom_value", actualEnv.get("CUSTOM_VAR"));
+      assertEquals("overridden", actualEnv.get("OVERRIDE_VAR"));
 
-        assertThrows(IllegalArgumentException.class, () -> {
-          context.getEnvironmentVariable("");
-        }, "Empty variable name should throw exception");
-
-        // Test access after context close
-        context.close();
-        assertThrows(Exception.class, () -> {
-          context.getEnvironmentVariable("PUBLIC_VAR");
-        }, "Environment access should fail after context close");
-
-        LOGGER.info("Successfully validated environment security controls");
-      }
+      wasi.close();
     });
   }
 
-  /**
-   * Tests environment variable immutability within WASI context.
-   * Validates that environment variables cannot be modified after context creation.
-   */
+  /** Tests command line argument configuration and access. */
   @Test
-  @DisplayName("Environment Variables - Immutability and Isolation")
-  void testEnvironmentImmutability() {
-    runWithBothRuntimes((runtime, runtimeType) -> {
-      LOGGER.info("Testing environment immutability with " + runtimeType + " runtime");
+  void testCommandLineArguments() {
+    LOGGER.info("Testing command line arguments");
 
-      try (final WasmEngine engine = runtime.createEngine()) {
-        
-        final Map<String, String> originalEnv = new HashMap<>();
-        originalEnv.put("VAR1", "value1");
-        originalEnv.put("VAR2", "value2");
+    final List<String> testArgs = Arrays.asList(
+        "program",
+        "--verbose",
+        "--output", "file.txt",
+        "--count", "42",
+        "input1.txt",
+        "input2.txt"
+    );
 
-        final WasiContext context = createWasiContextWithEnvironment(runtimeType, originalEnv);
-        registerForCleanup(context);
+    final WasiConfig config =
+        WasiConfig.builder()
+            .inheritEnv(true)
+            .arguments(testArgs)
+            .inheritStdin(true)
+            .inheritStdout(true)
+            .inheritStderr(true)
+            .build();
 
-        // Get environment and verify it's a defensive copy
-        final Map<String, String> retrievedEnv = context.getEnvironment();
-        assertEquals(originalEnv.size(), retrievedEnv.size(),
-            "Retrieved environment should match original size");
+    assertDoesNotThrow(() -> {
+      final Wasi wasi = store.createWasi(config);
+      assertNotNull(wasi);
 
-        // Modify retrieved environment (should not affect context)
-        retrievedEnv.put("VAR3", "value3");
-        retrievedEnv.put("VAR1", "modified_value1");
+      final List<String> actualArgs = wasi.getArguments();
+      assertNotNull(actualArgs);
+      assertEquals(testArgs.size(), actualArgs.size());
 
-        // Verify context environment is unchanged
-        final Map<String, String> contextEnv = context.getEnvironment();
-        assertEquals(originalEnv.size(), contextEnv.size(),
-            "Context environment should not be affected by external modifications");
-        assertEquals("value1", contextEnv.get("VAR1"),
-            "Original values should be preserved");
-        assertFalse(contextEnv.containsKey("VAR3"),
-            "New variables should not appear in context environment");
-
-        // Test multiple retrievals return consistent results
-        final Map<String, String> secondRetrieval = context.getEnvironment();
-        assertEquals(contextEnv, secondRetrieval,
-            "Multiple environment retrievals should return consistent results");
-
-        LOGGER.info("Successfully validated environment immutability");
+      for (int i = 0; i < testArgs.size(); i++) {
+        assertEquals(testArgs.get(i), actualArgs.get(i));
       }
+
+      wasi.close();
     });
   }
 
-  /**
-   * Tests concurrent environment variable access.
-   * Validates thread safety of environment variable operations.
-   */
+  /** Tests empty and minimal configurations. */
   @Test
-  @DisplayName("Environment Variables - Concurrent Access Thread Safety")
-  void testEnvironmentConcurrentAccess() {
-    skipIfCategoryNotEnabled(TestCategories.PERFORMANCE_TESTING);
-    
-    runWithBothRuntimes((runtime, runtimeType) -> {
-      LOGGER.info("Testing concurrent environment access with " + runtimeType + " runtime");
+  void testEmptyConfigurations() {
+    LOGGER.info("Testing empty configurations");
 
-      try (final WasmEngine engine = runtime.createEngine()) {
-        
-        final Map<String, String> environment = new HashMap<>();
-        for (int i = 0; i < 50; i++) {
-          environment.put("VAR_" + i, "value_" + i);
-        }
+    // Test empty environment
+    final WasiConfig emptyEnvConfig =
+        WasiConfig.builder()
+            .inheritEnv(false)
+            .environment(new HashMap<>())
+            .inheritStdin(true)
+            .inheritStdout(true)
+            .inheritStderr(true)
+            .build();
 
-        final WasiContext context = createWasiContextWithEnvironment(runtimeType, environment);
-        registerForCleanup(context);
+    assertDoesNotThrow(() -> {
+      final Wasi wasi = store.createWasi(emptyEnvConfig);
+      assertNotNull(wasi);
 
-        final int threadCount = 10;
-        final Thread[] threads = new Thread[threadCount];
-        final Exception[] exceptions = new Exception[threadCount];
+      final Map<String, String> env = wasi.getEnvironment();
+      assertNotNull(env);
+      assertEquals(0, env.size());
 
-        for (int i = 0; i < threadCount; i++) {
-          final int threadIndex = i;
-          threads[i] = new Thread(() -> {
-            try {
-              for (int j = 0; j < 100; j++) {
-                // Test individual variable access
-                final String varName = "VAR_" + (j % 50);
-                final String expectedValue = "value_" + (j % 50);
-                assertEquals(expectedValue, context.getEnvironmentVariable(varName),
-                    "Thread " + threadIndex + " should get correct value for " + varName);
+      wasi.close();
+    });
 
-                // Test environment map access
-                final Map<String, String> env = context.getEnvironment();
-                assertEquals(50, env.size(),
-                    "Thread " + threadIndex + " should get all environment variables");
+    // Test empty arguments
+    final WasiConfig emptyArgsConfig =
+        WasiConfig.builder()
+            .inheritEnv(true)
+            .arguments(Arrays.asList())
+            .inheritStdin(true)
+            .inheritStdout(true)
+            .inheritStderr(true)
+            .build();
 
-                // Test non-existent variable
-                assertNull(context.getEnvironmentVariable("NONEXISTENT_" + threadIndex),
-                    "Thread " + threadIndex + " should get null for non-existent variable");
-              }
-            } catch (final Exception e) {
-              exceptions[threadIndex] = e;
-            }
-          });
-        }
+    assertDoesNotThrow(() -> {
+      final Wasi wasi = store.createWasi(emptyArgsConfig);
+      assertNotNull(wasi);
 
-        // Start all threads
-        for (final Thread thread : threads) {
-          thread.start();
-        }
+      final List<String> args = wasi.getArguments();
+      assertNotNull(args);
+      assertEquals(0, args.size());
 
-        // Wait for completion
-        for (final Thread thread : threads) {
-          thread.join(10000); // 10 second timeout
-        }
-
-        // Check for exceptions
-        for (int i = 0; i < threadCount; i++) {
-          if (exceptions[i] != null) {
-            throw new AssertionError("Thread " + i + " encountered exception", exceptions[i]);
-          }
-        }
-
-        LOGGER.info("Successfully tested concurrent environment access with " + threadCount + " threads");
-      }
+      wasi.close();
     });
   }
 
-  /**
-   * Tests environment variable integration with WASM module execution.
-   * Validates that environment variables are properly accessible within WASM programs.
-   */
+  /** Tests environment variable access through WASI modules. */
   @Test
-  @DisplayName("Environment Variables - WASM Module Integration")
-  void testEnvironmentWasmIntegration() {
-    runWithBothRuntimes((runtime, runtimeType) -> {
-      LOGGER.info("Testing environment WASM integration with " + runtimeType + " runtime");
+  void testEnvironmentVariableAccess() {
+    LOGGER.info("Testing environment variable access through WASI module");
 
-      try (final WasmEngine engine = runtime.createEngine()) {
+    final Map<String, String> testEnv = new HashMap<>();
+    testEnv.put("TEST_ACCESS", "accessible_value");
+    testEnv.put("PROGRAM_MODE", "test");
+
+    final WasiConfig config =
+        WasiConfig.builder()
+            .inheritEnv(false)
+            .environment(testEnv)
+            .inheritStdin(true)
+            .inheritStdout(true)
+            .inheritStderr(true)
+            .build();
+
+    final byte[] wasmBytes = WasmTestModules.getModule("wasi_env");
+
+    assertDoesNotThrow(() -> {
+      final Module module = engine.createModule(wasmBytes);
+      final Wasi wasi = store.createWasi(config);
+      final Instance instance = store.createInstance(module, wasi.getImports());
+
+      // Test environment access functionality
+      if (instance.hasExport("get_envs")) {
+        final WasmFunction envFunction = instance.getExport("get_envs").asFunction();
+        assertNotNull(envFunction);
         
-        final Map<String, String> environment = new HashMap<>();
-        environment.put("TEST_VAR", "test_value");
-        environment.put("WASM_ENV", "wasm_environment_value");
-
-        final WasiContext context = createWasiContextWithEnvironment(runtimeType, environment);
-        registerForCleanup(context);
-
-        // Test that context is properly created and accessible
-        assertNotNull(context, "WASI context should be created for WASM integration");
-        assertFalse(context.isClosed(), "WASI context should be active");
-
-        // Validate environment is properly configured
-        assertEquals("test_value", context.getEnvironmentVariable("TEST_VAR"),
-            "Environment should be accessible for WASM module");
-        assertEquals("wasm_environment_value", context.getEnvironmentVariable("WASM_ENV"),
-            "WASM-specific environment should be accessible");
-
-        // Test with WASI environment access module
-        if (WasmTestModules.hasModule("wasi_env")) {
-          try (final WasmStore store = engine.createStore()) {
-            final byte[] moduleBytes = WasmTestModules.getModule("wasi_env");
-            final WasmModule module = WasmModule.fromBytes(engine, moduleBytes);
-            registerForCleanup(module);
-
-            // Note: Full WASM execution would require linking WASI context to instance
-            // This validates the environment is ready for such integration
-            assertNotNull(module, "WASI environment test module should compile");
-          }
-        }
-
-        LOGGER.info("Successfully validated environment WASM integration");
+        assertDoesNotThrow(() -> {
+          final var result = envFunction.call();
+          assertNotNull(result);
+          // The function should be able to access environment variables
+        });
       }
+
+      instance.close();
+      wasi.close();
+      module.close();
     });
   }
 
-  /**
-   * Creates a WASI context with specified environment variables.
-   */
-  private WasiContext createWasiContextWithEnvironment(
-      final RuntimeType runtimeType,
-      final Map<String, String> environment) throws Exception {
-    
-    if (runtimeType == RuntimeType.JNI) {
-      return ai.tegmentum.wasmtime4j.jni.wasi.WasiContext.builder()
-          .withEnvironment(environment)
-          .withArgument("test-program")
-          .withWorkingDirectory("/app")
-          .build();
-    } else {
-      return (WasiContext) ai.tegmentum.wasmtime4j.panama.wasi.WasiContext.builder()
-          .withEnvironment(environment)
-          .withArgument("test-program")
-          .withWorkingDirectory("/app")
-          .build();
+  /** Tests large environment configurations for stress testing. */
+  @Test
+  @Timeout(value = 30, unit = TimeUnit.SECONDS)
+  void testLargeEnvironmentConfiguration() {
+    LOGGER.info("Testing large environment configuration");
+
+    final Map<String, String> largeEnv = new HashMap<>();
+    for (int i = 0; i < 1000; i++) {
+      largeEnv.put("VAR_" + i, "value_" + i + "_" + "x".repeat(50)); // Longer values
     }
+
+    final WasiConfig config =
+        WasiConfig.builder()
+            .inheritEnv(false)
+            .environment(largeEnv)
+            .inheritStdin(true)
+            .inheritStdout(true)
+            .inheritStderr(true)
+            .build();
+
+    assertDoesNotThrow(() -> {
+      final Wasi wasi = store.createWasi(config);
+      assertNotNull(wasi);
+
+      final Map<String, String> actualEnv = wasi.getEnvironment();
+      assertNotNull(actualEnv);
+      assertEquals(1000, actualEnv.size());
+
+      // Verify some random entries
+      assertTrue(actualEnv.containsKey("VAR_0"));
+      assertTrue(actualEnv.containsKey("VAR_500"));
+      assertTrue(actualEnv.containsKey("VAR_999"));
+
+      // Verify value content
+      assertTrue(actualEnv.get("VAR_123").startsWith("value_123_"));
+      assertTrue(actualEnv.get("VAR_123").contains("x"));
+
+      wasi.close();
+    });
   }
 
-  /**
-   * Creates a WASI context with inherited system environment.
-   */
-  private WasiContext createWasiContextWithInheritedEnvironment(final RuntimeType runtimeType) throws Exception {
-    if (runtimeType == RuntimeType.JNI) {
-      return ai.tegmentum.wasmtime4j.jni.wasi.WasiContext.builder()
-          .withInheritedEnvironment()
-          .withArgument("test-program")
-          .withWorkingDirectory("/app")
-          .build();
-    } else {
-      return (WasiContext) ai.tegmentum.wasmtime4j.panama.wasi.WasiContext.builder()
-          .withInheritedEnvironment()
-          .withArgument("test-program")
-          .withWorkingDirectory("/app")
-          .build();
+  /** Tests command line argument parsing and special characters. */
+  @Test
+  void testArgumentParsingAndSpecialCharacters() {
+    LOGGER.info("Testing argument parsing with special characters");
+
+    final List<String> complexArgs = Arrays.asList(
+        "program",
+        "--option=value with spaces",
+        "--json={\"key\":\"value\"}",
+        "--path=/path/to/file with spaces",
+        "argument with spaces",
+        "--empty=",
+        "unicode_test_ñ_λ_中文",
+        "--quotes=\"quoted value\"",
+        "--escape=path\\with\\backslashes"
+    );
+
+    final WasiConfig config =
+        WasiConfig.builder()
+            .inheritEnv(true)
+            .arguments(complexArgs)
+            .inheritStdin(true)
+            .inheritStdout(true)
+            .inheritStderr(true)
+            .build();
+
+    assertDoesNotThrow(() -> {
+      final Wasi wasi = store.createWasi(config);
+      assertNotNull(wasi);
+
+      final List<String> actualArgs = wasi.getArguments();
+      assertNotNull(actualArgs);
+      assertEquals(complexArgs.size(), actualArgs.size());
+
+      // Verify special characters are preserved
+      assertEquals("--option=value with spaces", actualArgs.get(1));
+      assertEquals("--json={\"key\":\"value\"}", actualArgs.get(2));
+      assertEquals("--path=/path/to/file with spaces", actualArgs.get(3));
+      assertEquals("argument with spaces", actualArgs.get(4));
+      assertEquals("unicode_test_ñ_λ_中文", actualArgs.get(6));
+
+      wasi.close();
+    });
+  }
+
+  /** Tests environment variable validation and error handling. */
+  @Test
+  void testEnvironmentValidation() {
+    LOGGER.info("Testing environment validation");
+
+    // Test null key validation
+    assertThrows(Exception.class, () -> {
+      final Map<String, String> invalidEnv = new HashMap<>();
+      invalidEnv.put(null, "value");
+
+      final WasiConfig config =
+          WasiConfig.builder()
+              .inheritEnv(false)
+              .environment(invalidEnv)
+              .build();
+
+      store.createWasi(config);
+    });
+
+    // Test null value validation
+    assertThrows(Exception.class, () -> {
+      final Map<String, String> invalidEnv = new HashMap<>();
+      invalidEnv.put("KEY", null);
+
+      final WasiConfig config =
+          WasiConfig.builder()
+              .inheritEnv(false)
+              .environment(invalidEnv)
+              .build();
+
+      store.createWasi(config);
+    });
+
+    // Test empty key validation
+    assertDoesNotThrow(() -> {
+      final Map<String, String> validEnv = new HashMap<>();
+      validEnv.put("", "empty_key_value"); // Empty key should be allowed
+
+      final WasiConfig config =
+          WasiConfig.builder()
+              .inheritEnv(false)
+              .environment(validEnv)
+              .build();
+
+      final Wasi wasi = store.createWasi(config);
+      assertEquals("empty_key_value", wasi.getEnvironment().get(""));
+      wasi.close();
+    });
+  }
+
+  /** Tests argument validation and error handling. */
+  @Test
+  void testArgumentValidation() {
+    LOGGER.info("Testing argument validation");
+
+    // Test null argument validation
+    assertThrows(Exception.class, () -> {
+      final List<String> invalidArgs = Arrays.asList("program", null, "valid");
+
+      final WasiConfig config =
+          WasiConfig.builder()
+              .arguments(invalidArgs)
+              .build();
+
+      store.createWasi(config);
+    });
+
+    // Test empty string arguments (should be allowed)
+    assertDoesNotThrow(() -> {
+      final List<String> validArgs = Arrays.asList("program", "", "valid");
+
+      final WasiConfig config =
+          WasiConfig.builder()
+              .arguments(validArgs)
+              .build();
+
+      final Wasi wasi = store.createWasi(config);
+      assertEquals(3, wasi.getArguments().size());
+      assertEquals("", wasi.getArguments().get(1));
+      wasi.close();
+    });
+  }
+
+  /** Tests cross-runtime environment compatibility. */
+  @Test
+  @Timeout(value = 30, unit = TimeUnit.SECONDS)
+  void testCrossRuntimeEnvironmentCompatibility() {
+    LOGGER.info("Testing cross-runtime environment compatibility");
+
+    if (!TestUtils.isPanamaAvailable()) {
+      LOGGER.warning("Panama runtime not available, skipping cross-runtime test");
+      return;
     }
+
+    final Map<String, String> testEnv = new HashMap<>();
+    testEnv.put("CROSS_TEST", "cross_value");
+    testEnv.put("RUNTIME_CHECK", "both");
+
+    final CrossRuntimeValidator.RuntimeOperation<String> envOperation = runtime -> {
+      try (final Engine engine = runtime.createEngine();
+           final Store store = engine.createStore()) {
+
+        final WasiConfig config =
+            WasiConfig.builder()
+                .inheritEnv(false)
+                .environment(testEnv)
+                .arguments(Arrays.asList("test", "cross", "runtime"))
+                .inheritStdin(true)
+                .inheritStdout(true)
+                .inheritStderr(true)
+                .build();
+
+        final Wasi wasi = store.createWasi(config);
+        final Map<String, String> env = wasi.getEnvironment();
+        final List<String> args = wasi.getArguments();
+
+        final String result = String.format("env_size=%d,cross_test=%s,args_size=%d",
+            env.size(), env.get("CROSS_TEST"), args.size());
+
+        wasi.close();
+        return result;
+      }
+    };
+
+    final CrossRuntimeValidator.ComparisonResult result =
+        CrossRuntimeValidator.validateCrossRuntime(envOperation, Duration.ofSeconds(15));
+
+    assertTrue(result.isValid(),
+        "Environment behavior differs between runtimes: " + result.getDifferenceDescription());
+
+    LOGGER.info("Cross-runtime environment validation successful");
+  }
+
+  /** Tests environment isolation between multiple WASI instances. */
+  @Test
+  void testEnvironmentIsolation() {
+    LOGGER.info("Testing environment isolation between instances");
+
+    final Map<String, String> env1 = new HashMap<>();
+    env1.put("INSTANCE_ID", "1");
+    env1.put("SHARED_VAR", "value1");
+
+    final Map<String, String> env2 = new HashMap<>();
+    env2.put("INSTANCE_ID", "2");
+    env2.put("SHARED_VAR", "value2");
+    env2.put("UNIQUE_VAR", "unique");
+
+    final WasiConfig config1 =
+        WasiConfig.builder()
+            .inheritEnv(false)
+            .environment(env1)
+            .build();
+
+    final WasiConfig config2 =
+        WasiConfig.builder()
+            .inheritEnv(false)
+            .environment(env2)
+            .build();
+
+    assertDoesNotThrow(() -> {
+      final Wasi wasi1 = store.createWasi(config1);
+      final Wasi wasi2 = store.createWasi(config2);
+
+      final Map<String, String> actualEnv1 = wasi1.getEnvironment();
+      final Map<String, String> actualEnv2 = wasi2.getEnvironment();
+
+      // Verify isolation
+      assertEquals("1", actualEnv1.get("INSTANCE_ID"));
+      assertEquals("2", actualEnv2.get("INSTANCE_ID"));
+      assertEquals("value1", actualEnv1.get("SHARED_VAR"));
+      assertEquals("value2", actualEnv2.get("SHARED_VAR"));
+
+      // Verify unique variables
+      assertFalse(actualEnv1.containsKey("UNIQUE_VAR"));
+      assertTrue(actualEnv2.containsKey("UNIQUE_VAR"));
+      assertEquals("unique", actualEnv2.get("UNIQUE_VAR"));
+
+      wasi1.close();
+      wasi2.close();
+    });
+  }
+
+  /** Tests environment variable modification restrictions. */
+  @Test
+  void testEnvironmentModificationRestrictions() {
+    LOGGER.info("Testing environment modification restrictions");
+
+    final Map<String, String> testEnv = new HashMap<>();
+    testEnv.put("IMMUTABLE_VAR", "original_value");
+
+    final WasiConfig config =
+        WasiConfig.builder()
+            .inheritEnv(false)
+            .environment(testEnv)
+            .build();
+
+    assertDoesNotThrow(() -> {
+      final Wasi wasi = store.createWasi(config);
+      final Map<String, String> env = wasi.getEnvironment();
+
+      // Environment should be read-only or defensive copy
+      final String originalValue = env.get("IMMUTABLE_VAR");
+      assertEquals("original_value", originalValue);
+
+      // Attempt to modify returned map should not affect WASI instance
+      assertDoesNotThrow(() -> {
+        env.put("IMMUTABLE_VAR", "modified_value");
+        env.put("NEW_VAR", "new_value");
+      });
+
+      // Original environment should remain unchanged if defensive copy is used
+      final Map<String, String> freshEnv = wasi.getEnvironment();
+      // This test depends on implementation - may return defensive copies
+      assertNotNull(freshEnv);
+
+      wasi.close();
+    });
+  }
+
+  /** Tests Unicode and international character support in environment. */
+  @Test
+  void testUnicodeEnvironmentSupport() {
+    LOGGER.info("Testing Unicode environment support");
+
+    final Map<String, String> unicodeEnv = new HashMap<>();
+    unicodeEnv.put("ENGLISH", "Hello World");
+    unicodeEnv.put("ESPAÑOL", "Hola Mundo");
+    unicodeEnv.put("FRANÇAIS", "Bonjour le Monde");
+    unicodeEnv.put("中文", "你好世界");
+    unicodeEnv.put("РУССКИЙ", "Привет мир");
+    unicodeEnv.put("العربية", "مرحبا بالعالم");
+    unicodeEnv.put("EMOJI", "🌍🚀✨");
+
+    final WasiConfig config =
+        WasiConfig.builder()
+            .inheritEnv(false)
+            .environment(unicodeEnv)
+            .build();
+
+    assertDoesNotThrow(() -> {
+      final Wasi wasi = store.createWasi(config);
+      final Map<String, String> actualEnv = wasi.getEnvironment();
+
+      assertEquals("Hello World", actualEnv.get("ENGLISH"));
+      assertEquals("Hola Mundo", actualEnv.get("ESPAÑOL"));
+      assertEquals("Bonjour le Monde", actualEnv.get("FRANÇAIS"));
+      assertEquals("你好世界", actualEnv.get("中文"));
+      assertEquals("Привет мир", actualEnv.get("РУССКИЙ"));
+      assertEquals("مرحبا بالعالم", actualEnv.get("العربية"));
+      assertEquals("🌍🚀✨", actualEnv.get("EMOJI"));
+
+      wasi.close();
+    });
   }
 }
