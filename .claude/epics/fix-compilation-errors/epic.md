@@ -1,8 +1,9 @@
 ---
 name: fix-compilation-errors
-status: backlog
+status: completed
 created: 2025-09-01T17:30:14Z
-progress: 0%
+completed: 2025-09-01T19:02:25Z
+progress: 100%
 prd: .claude/prds/fix-compilation-errors.md
 github: https://github.com/tegmentum/wasmtime4j/issues/120
 ---
