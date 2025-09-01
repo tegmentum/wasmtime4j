@@ -25,7 +25,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
@@ -34,9 +33,8 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 /**
- * Performance benchmarks and tests for Module API operations.
- * Tests compilation performance, instantiation performance, metadata extraction,
- * and serialization/deserialization benchmarks.
+ * Performance benchmarks and tests for Module API operations. Tests compilation performance,
+ * instantiation performance, metadata extraction, and serialization/deserialization benchmarks.
  */
 @DisplayName("Module Performance Benchmarks")
 class ModulePerformanceTest extends BaseIntegrationTest {
@@ -112,27 +110,24 @@ class ModulePerformanceTest extends BaseIntegrationTest {
                 }
 
                 // Calculate statistics
-                final double avgMs = compilationTimes.stream()
-                    .mapToLong(Duration::toNanos)
-                    .average()
-                    .orElse(0.0) / 1_000_000.0;
+                final double avgMs =
+                    compilationTimes.stream().mapToLong(Duration::toNanos).average().orElse(0.0)
+                        / 1_000_000.0;
 
-                final double minMs = compilationTimes.stream()
-                    .mapToLong(Duration::toNanos)
-                    .min()
-                    .orElse(0) / 1_000_000.0;
+                final double minMs =
+                    compilationTimes.stream().mapToLong(Duration::toNanos).min().orElse(0)
+                        / 1_000_000.0;
 
-                final double maxMs = compilationTimes.stream()
-                    .mapToLong(Duration::toNanos)
-                    .max()
-                    .orElse(0) / 1_000_000.0;
+                final double maxMs =
+                    compilationTimes.stream().mapToLong(Duration::toNanos).max().orElse(0)
+                        / 1_000_000.0;
 
                 // Verify performance is acceptable
                 assertThat(avgMs).isLessThan(MAX_COMPILATION_TIME_MS);
 
-                final String result = String.format(
-                    "Compilation - Avg: %.2fms, Min: %.2fms, Max: %.2fms", 
-                    avgMs, minMs, maxMs);
+                final String result =
+                    String.format(
+                        "Compilation - Avg: %.2fms, Min: %.2fms, Max: %.2fms", avgMs, minMs, maxMs);
 
                 LOGGER.info(runtimeType + " " + result);
                 return result;
@@ -171,38 +166,36 @@ class ModulePerformanceTest extends BaseIntegrationTest {
                 final List<Duration> instantiationTimes = new ArrayList<>();
                 for (int i = 0; i < benchmarkIterations; i++) {
                   final Store store = engine.createStore();
-                  
+
                   final Instant start = Instant.now();
                   final Instance instance = module.instantiate(store);
                   final Duration instantiationTime = Duration.between(start, Instant.now());
                   instantiationTimes.add(instantiationTime);
-                  
+
                   instance.close();
                   store.close();
                 }
 
                 // Calculate statistics
-                final double avgMs = instantiationTimes.stream()
-                    .mapToLong(Duration::toNanos)
-                    .average()
-                    .orElse(0.0) / 1_000_000.0;
+                final double avgMs =
+                    instantiationTimes.stream().mapToLong(Duration::toNanos).average().orElse(0.0)
+                        / 1_000_000.0;
 
-                final double minMs = instantiationTimes.stream()
-                    .mapToLong(Duration::toNanos)
-                    .min()
-                    .orElse(0) / 1_000_000.0;
+                final double minMs =
+                    instantiationTimes.stream().mapToLong(Duration::toNanos).min().orElse(0)
+                        / 1_000_000.0;
 
-                final double maxMs = instantiationTimes.stream()
-                    .mapToLong(Duration::toNanos)
-                    .max()
-                    .orElse(0) / 1_000_000.0;
+                final double maxMs =
+                    instantiationTimes.stream().mapToLong(Duration::toNanos).max().orElse(0)
+                        / 1_000_000.0;
 
                 // Verify performance is acceptable
                 assertThat(avgMs).isLessThan(MAX_INSTANTIATION_TIME_MS);
 
-                final String result = String.format(
-                    "Instantiation - Avg: %.2fms, Min: %.2fms, Max: %.2fms", 
-                    avgMs, minMs, maxMs);
+                final String result =
+                    String.format(
+                        "Instantiation - Avg: %.2fms, Min: %.2fms, Max: %.2fms",
+                        avgMs, minMs, maxMs);
 
                 LOGGER.info(runtimeType + " " + result);
                 return result;
@@ -214,7 +207,7 @@ class ModulePerformanceTest extends BaseIntegrationTest {
   }
 
   @ParameterizedTest
-  @ArgumentsSource(CrossRuntimeTestRunner.RuntimeArgumentsProvider.class)  
+  @ArgumentsSource(CrossRuntimeTestRunner.RuntimeArgumentsProvider.class)
   @DisplayName("Should benchmark metadata extraction performance")
   void shouldBenchmarkMetadataExtractionPerformance(final RuntimeType runtimeType) {
     final CrossRuntimeValidationResult validation =
@@ -246,27 +239,24 @@ class ModulePerformanceTest extends BaseIntegrationTest {
                 }
 
                 // Calculate statistics
-                final double avgMs = metadataTimes.stream()
-                    .mapToLong(Duration::toNanos)
-                    .average()
-                    .orElse(0.0) / 1_000_000.0;
+                final double avgMs =
+                    metadataTimes.stream().mapToLong(Duration::toNanos).average().orElse(0.0)
+                        / 1_000_000.0;
 
-                final double minMs = metadataTimes.stream()
-                    .mapToLong(Duration::toNanos)
-                    .min()
-                    .orElse(0) / 1_000_000.0;
+                final double minMs =
+                    metadataTimes.stream().mapToLong(Duration::toNanos).min().orElse(0)
+                        / 1_000_000.0;
 
-                final double maxMs = metadataTimes.stream()
-                    .mapToLong(Duration::toNanos)
-                    .max()
-                    .orElse(0) / 1_000_000.0;
+                final double maxMs =
+                    metadataTimes.stream().mapToLong(Duration::toNanos).max().orElse(0)
+                        / 1_000_000.0;
 
                 // Verify performance is acceptable
                 assertThat(avgMs).isLessThan(MAX_METADATA_EXTRACTION_MS);
 
-                final String result = String.format(
-                    "Metadata - Avg: %.3fms, Min: %.3fms, Max: %.3fms", 
-                    avgMs, minMs, maxMs);
+                final String result =
+                    String.format(
+                        "Metadata - Avg: %.3fms, Min: %.3fms, Max: %.3fms", avgMs, minMs, maxMs);
 
                 LOGGER.info(runtimeType + " " + result);
                 return result;
@@ -303,13 +293,13 @@ class ModulePerformanceTest extends BaseIntegrationTest {
                 final List<Duration> serializationTimes = new ArrayList<>();
                 for (int i = 0; i < benchmarkIterations; i++) {
                   final Module module = engine.compileModule(wasmBytes);
-                  
+
                   final Instant start = Instant.now();
                   // Simulate serialization - in real implementation would be module.serialize()
                   final byte[] serialized = wasmBytes.clone();
                   final Duration serializationTime = Duration.between(start, Instant.now());
                   serializationTimes.add(serializationTime);
-                  
+
                   module.close();
                 }
 
@@ -324,22 +314,21 @@ class ModulePerformanceTest extends BaseIntegrationTest {
                 }
 
                 // Calculate statistics
-                final double avgSerMs = serializationTimes.stream()
-                    .mapToLong(Duration::toNanos)
-                    .average()
-                    .orElse(0.0) / 1_000_000.0;
+                final double avgSerMs =
+                    serializationTimes.stream().mapToLong(Duration::toNanos).average().orElse(0.0)
+                        / 1_000_000.0;
 
-                final double avgDeserMs = deserializationTimes.stream()
-                    .mapToLong(Duration::toNanos)
-                    .average()
-                    .orElse(0.0) / 1_000_000.0;
+                final double avgDeserMs =
+                    deserializationTimes.stream().mapToLong(Duration::toNanos).average().orElse(0.0)
+                        / 1_000_000.0;
 
                 // Verify performance is acceptable
                 assertThat(avgSerMs).isLessThan(MAX_SERIALIZATION_TIME_MS);
 
-                final String result = String.format(
-                    "Serialization - Avg: %.2fms, Deserialization - Avg: %.2fms", 
-                    avgSerMs, avgDeserMs);
+                final String result =
+                    String.format(
+                        "Serialization - Avg: %.2fms, Deserialization - Avg: %.2fms",
+                        avgSerMs, avgDeserMs);
 
                 LOGGER.info(runtimeType + " " + result);
                 return result;
@@ -374,18 +363,21 @@ class ModulePerformanceTest extends BaseIntegrationTest {
                 // Concurrent benchmark
                 final Instant concurrentStart = Instant.now();
                 final List<CompletableFuture<Void>> futures = new ArrayList<>();
-                
+
                 for (int i = 0; i < threadCount; i++) {
-                  final CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
-                    for (int j = 0; j < operationsPerThread; j++) {
-                      try {
-                        final Module module = engine.compileModule(wasmBytes);
-                        module.close();
-                      } catch (final Exception e) {
-                        throw new RuntimeException(e);
-                      }
-                    }
-                  }, executorService);
+                  final CompletableFuture<Void> future =
+                      CompletableFuture.runAsync(
+                          () -> {
+                            for (int j = 0; j < operationsPerThread; j++) {
+                              try {
+                                final Module module = engine.compileModule(wasmBytes);
+                                module.close();
+                              } catch (final Exception e) {
+                                throw new RuntimeException(e);
+                              }
+                            }
+                          },
+                          executorService);
                   futures.add(future);
                 }
 
@@ -399,9 +391,10 @@ class ModulePerformanceTest extends BaseIntegrationTest {
                 // Concurrent should be faster (or at least not much slower)
                 assertThat(speedup).isGreaterThan(0.5); // At least 50% of sequential speed
 
-                final String result = String.format(
-                    "Sequential: %dms, Concurrent: %dms, Speedup: %.2fx",
-                    sequentialTime.toMillis(), concurrentTime.toMillis(), speedup);
+                final String result =
+                    String.format(
+                        "Sequential: %dms, Concurrent: %dms, Speedup: %.2fx",
+                        sequentialTime.toMillis(), concurrentTime.toMillis(), speedup);
 
                 LOGGER.info("Concurrent benchmark: " + result);
                 return result;
@@ -425,7 +418,7 @@ class ModulePerformanceTest extends BaseIntegrationTest {
               // Given - Create module with different sizes (simulated)
               final byte[] baseModule = TestUtils.createSimpleWasmModule();
               final byte[] testModule;
-              
+
               if (sizeMultiplier == 1) {
                 testModule = baseModule;
               } else {
@@ -433,7 +426,8 @@ class ModulePerformanceTest extends BaseIntegrationTest {
                 testModule = baseModule; // For now, use same module
               }
 
-              final int benchmarkIterations = Math.max(10, 100 / sizeMultiplier); // Fewer iterations for larger modules
+              final int benchmarkIterations =
+                  Math.max(10, 100 / sizeMultiplier); // Fewer iterations for larger modules
 
               try (final Engine engine = runtime.createEngine()) {
                 // Benchmark compilation
@@ -446,14 +440,12 @@ class ModulePerformanceTest extends BaseIntegrationTest {
                   module.close();
                 }
 
-                final double avgMs = compilationTimes.stream()
-                    .mapToLong(Duration::toNanos)
-                    .average()
-                    .orElse(0.0) / 1_000_000.0;
+                final double avgMs =
+                    compilationTimes.stream().mapToLong(Duration::toNanos).average().orElse(0.0)
+                        / 1_000_000.0;
 
-                final String result = String.format(
-                    "Size %dx: %.2fms avg compilation", 
-                    sizeMultiplier, avgMs);
+                final String result =
+                    String.format("Size %dx: %.2fms avg compilation", sizeMultiplier, avgMs);
 
                 LOGGER.info(result);
                 return result;
@@ -487,12 +479,12 @@ class ModulePerformanceTest extends BaseIntegrationTest {
                 // Create many modules
                 final List<Module> modules = new ArrayList<>();
                 final Instant start = Instant.now();
-                
+
                 for (int i = 0; i < moduleCount; i++) {
                   final Module module = engine.compileModule(wasmBytes);
                   modules.add(module);
                 }
-                
+
                 final Duration creationTime = Duration.between(start, Instant.now());
 
                 // Measure memory after
@@ -516,15 +508,21 @@ class ModulePerformanceTest extends BaseIntegrationTest {
 
                 // Verify reasonable memory usage
                 final long avgMemoryPerModule = memoryUsed / moduleCount;
-                assertThat(avgMemoryPerModule).isLessThan(10 * 1024 * 1024); // Less than 10MB per module
+                assertThat(avgMemoryPerModule)
+                    .isLessThan(10 * 1024 * 1024); // Less than 10MB per module
 
                 // Verify cleanup effectiveness (allow some leakage due to GC timing)
                 assertThat(memoryLeaked).isLessThan(memoryUsed / 2); // Less than 50% leaked
 
-                final String result = String.format(
-                    "Memory: %dKB total, %dKB/module, %dKB leaked, Creation: %dms, Cleanup: %dms",
-                    memoryUsed / 1024, avgMemoryPerModule / 1024, memoryLeaked / 1024,
-                    creationTime.toMillis(), cleanupTime.toMillis());
+                final String result =
+                    String.format(
+                        "Memory: %dKB total, %dKB/module, %dKB leaked, Creation: %dms, Cleanup:"
+                            + " %dms",
+                        memoryUsed / 1024,
+                        avgMemoryPerModule / 1024,
+                        memoryLeaked / 1024,
+                        creationTime.toMillis(),
+                        cleanupTime.toMillis());
 
                 LOGGER.info("Memory benchmark: " + result);
                 return result;
@@ -543,8 +541,8 @@ class ModulePerformanceTest extends BaseIntegrationTest {
     skipIfCategoryNotEnabled("performance");
 
     try {
-      final List<WasmTestCase> testCases = testDataManager
-          .loadTestSuite(WasmTestSuiteLoader.TestSuiteType.CUSTOM_TESTS);
+      final List<WasmTestCase> testCases =
+          testDataManager.loadTestSuite(WasmTestSuiteLoader.TestSuiteType.CUSTOM_TESTS);
 
       if (testCases.isEmpty()) {
         LOGGER.info("No test cases available for performance benchmarking");
@@ -576,14 +574,14 @@ class ModulePerformanceTest extends BaseIntegrationTest {
                   }
 
                   if (!compilationTimes.isEmpty()) {
-                    final double avgMs = compilationTimes.stream()
-                        .mapToLong(Duration::toNanos)
-                        .average()
-                        .orElse(0.0) / 1_000_000.0;
+                    final double avgMs =
+                        compilationTimes.stream().mapToLong(Duration::toNanos).average().orElse(0.0)
+                            / 1_000_000.0;
 
-                    final String result = String.format(
-                        "Test suite modules: %d compiled, avg: %.2fms",
-                        compilationTimes.size(), avgMs);
+                    final String result =
+                        String.format(
+                            "Test suite modules: %d compiled, avg: %.2fms",
+                            compilationTimes.size(), avgMs);
 
                     LOGGER.info(runtimeType + " " + result);
                     return result;

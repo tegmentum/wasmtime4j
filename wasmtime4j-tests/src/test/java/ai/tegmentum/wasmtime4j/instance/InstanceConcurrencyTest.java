@@ -1,7 +1,6 @@
 package ai.tegmentum.wasmtime4j.instance;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Instance;
@@ -12,7 +11,6 @@ import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
-import ai.tegmentum.wasmtime4j.utils.CrossRuntimeValidator;
 import ai.tegmentum.wasmtime4j.utils.TestCategories;
 import ai.tegmentum.wasmtime4j.utils.TestUtils;
 import ai.tegmentum.wasmtime4j.webassembly.WasmTestModules;
@@ -30,7 +28,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -46,8 +43,7 @@ import org.junit.jupiter.api.TestInfo;
 @DisplayName("Instance Concurrency Tests")
 final class InstanceConcurrencyTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(InstanceConcurrencyTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(InstanceConcurrencyTest.class.getName());
 
   private final Map<String, Object> testMetrics = new HashMap<>();
 
@@ -120,43 +116,46 @@ final class InstanceConcurrencyTest {
 
                 for (int i = 0; i < numThreads; i++) {
                   final int threadId = i;
-                  executor.submit(() -> {
-                    try {
-                      // Wait for all threads to be ready
-                      startLatch.await();
-
-                      for (int j = 0; j < callsPerThread; j++) {
-                        final Instant callStart = Instant.now();
+                  executor.submit(
+                      () -> {
                         try {
-                          final WasmValue[] result = instance.callFunction("add", 
-                              WasmValue.i32(threadId), WasmValue.i32(j));
-                          final Duration callTime = Duration.between(callStart, Instant.now());
-                          callTimes.add(callTime);
-                          
-                          if (result[0].asI32() == threadId + j) {
-                            successCount.incrementAndGet();
-                          } else {
-                            errorCount.incrementAndGet();
+                          // Wait for all threads to be ready
+                          startLatch.await();
+
+                          for (int j = 0; j < callsPerThread; j++) {
+                            final Instant callStart = Instant.now();
+                            try {
+                              final WasmValue[] result =
+                                  instance.callFunction(
+                                      "add", WasmValue.i32(threadId), WasmValue.i32(j));
+                              final Duration callTime = Duration.between(callStart, Instant.now());
+                              callTimes.add(callTime);
+
+                              if (result[0].asI32() == threadId + j) {
+                                successCount.incrementAndGet();
+                              } else {
+                                errorCount.incrementAndGet();
+                              }
+                            } catch (final Exception e) {
+                              errorCount.incrementAndGet();
+                              LOGGER.warning(
+                                  String.format(
+                                      "Thread %d call %d failed: %s", threadId, j, e.getMessage()));
+                            }
                           }
-                        } catch (final Exception e) {
+                        } catch (final InterruptedException e) {
+                          Thread.currentThread().interrupt();
                           errorCount.incrementAndGet();
-                          LOGGER.warning(String.format("Thread %d call %d failed: %s", 
-                              threadId, j, e.getMessage()));
+                        } finally {
+                          completionLatch.countDown();
                         }
-                      }
-                    } catch (final InterruptedException e) {
-                      Thread.currentThread().interrupt();
-                      errorCount.incrementAndGet();
-                    } finally {
-                      completionLatch.countDown();
-                    }
-                  });
+                      });
                 }
 
                 // Start all threads simultaneously
                 final Instant testStart = Instant.now();
                 startLatch.countDown();
-                
+
                 // Wait for completion
                 assertThat(completionLatch.await(60, TimeUnit.SECONDS)).isTrue();
                 final Duration totalTime = Duration.between(testStart, Instant.now());
@@ -168,10 +167,9 @@ final class InstanceConcurrencyTest {
 
                 // Calculate performance metrics
                 final double callsPerSecond = totalCalls / (totalTime.toMillis() / 1000.0);
-                final double avgCallTimeMs = callTimes.stream()
-                    .mapToLong(Duration::toNanos)
-                    .average()
-                    .orElse(0.0) / 1_000_000.0;
+                final double avgCallTimeMs =
+                    callTimes.stream().mapToLong(Duration::toNanos).average().orElse(0.0)
+                        / 1_000_000.0;
 
                 assertThat(callsPerSecond).isGreaterThan(1000);
 
@@ -180,9 +178,12 @@ final class InstanceConcurrencyTest {
                 executor.awaitTermination(10, TimeUnit.SECONDS);
               }
 
-              addTestMetric(String.format("High-frequency calls: %d successful, %.0f calls/sec with %s", 
-                  successCount.get(), 
-                  successCount.get() / (System.currentTimeMillis() / 1000.0), runtimeType));
+              addTestMetric(
+                  String.format(
+                      "High-frequency calls: %d successful, %.0f calls/sec with %s",
+                      successCount.get(),
+                      successCount.get() / (System.currentTimeMillis() / 1000.0),
+                      runtimeType));
             }
           });
     }
@@ -210,44 +211,57 @@ final class InstanceConcurrencyTest {
 
                 for (int i = 0; i < numThreads; i++) {
                   final int threadId = i;
-                  final CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
-                    try {
-                      // Wait for all threads to be ready
-                      barrier.await(10, TimeUnit.SECONDS);
+                  final CompletableFuture<Void> future =
+                      CompletableFuture.runAsync(
+                          () -> {
+                            try {
+                              // Wait for all threads to be ready
+                              barrier.await(10, TimeUnit.SECONDS);
 
-                      for (int j = 0; j < operationsPerThread; j++) {
-                        final int setValue = threadId * 1000 + j;
-                        
-                        try {
-                          // Set the global value
-                          instance.callFunction("set", WasmValue.i32(setValue));
-                          
-                          // Immediately read it back
-                          final WasmValue[] result = instance.callFunction("get");
-                          final int readValue = result[0].asI32();
-                          
-                          // The value might have been changed by another thread,
-                          // but it should be a valid value from some thread
-                          final boolean isValidValue = isValidThreadValue(readValue, numThreads, operationsPerThread);
-                          if (!isValidValue) {
-                            consistencyErrors.incrementAndGet();
-                            LOGGER.warning(String.format("Invalid value read: %d (set %d)", 
-                                readValue, setValue));
-                          }
-                          
-                          totalOperations.incrementAndGet();
-                          
-                        } catch (final Exception e) {
-                          consistencyErrors.incrementAndGet();
-                          LOGGER.warning(String.format("Thread %d operation %d failed: %s", 
-                              threadId, j, e.getMessage()));
-                        }
-                      }
-                    } catch (final Exception e) {
-                      consistencyErrors.incrementAndGet();
-                      LOGGER.warning("Thread " + threadId + " barrier/execution failed: " + e.getMessage());
-                    }
-                  }, executor);
+                              for (int j = 0; j < operationsPerThread; j++) {
+                                final int setValue = threadId * 1000 + j;
+
+                                try {
+                                  // Set the global value
+                                  instance.callFunction("set", WasmValue.i32(setValue));
+
+                                  // Immediately read it back
+                                  final WasmValue[] result = instance.callFunction("get");
+                                  final int readValue = result[0].asI32();
+
+                                  // The value might have been changed by another thread,
+                                  // but it should be a valid value from some thread
+                                  final boolean isValidValue =
+                                      isValidThreadValue(
+                                          readValue, numThreads, operationsPerThread);
+                                  if (!isValidValue) {
+                                    consistencyErrors.incrementAndGet();
+                                    LOGGER.warning(
+                                        String.format(
+                                            "Invalid value read: %d (set %d)",
+                                            readValue, setValue));
+                                  }
+
+                                  totalOperations.incrementAndGet();
+
+                                } catch (final Exception e) {
+                                  consistencyErrors.incrementAndGet();
+                                  LOGGER.warning(
+                                      String.format(
+                                          "Thread %d operation %d failed: %s",
+                                          threadId, j, e.getMessage()));
+                                }
+                              }
+                            } catch (final Exception e) {
+                              consistencyErrors.incrementAndGet();
+                              LOGGER.warning(
+                                  "Thread "
+                                      + threadId
+                                      + " barrier/execution failed: "
+                                      + e.getMessage());
+                            }
+                          },
+                          executor);
                   futures.add(future);
                 }
 
@@ -257,7 +271,7 @@ final class InstanceConcurrencyTest {
 
                 // Should have completed all operations with minimal errors
                 assertThat(totalOperations.get()).isEqualTo(numThreads * operationsPerThread);
-                
+
                 // Allow for some race conditions but should be mostly consistent
                 final double errorRate = (double) consistencyErrors.get() / totalOperations.get();
                 assertThat(errorRate).isLessThan(0.1); // Less than 10% error rate
@@ -267,8 +281,10 @@ final class InstanceConcurrencyTest {
                 executor.awaitTermination(10, TimeUnit.SECONDS);
               }
 
-              addTestMetric(String.format("Thread safety: %d operations, %d consistency errors with %s", 
-                  totalOperations.get(), consistencyErrors.get(), runtimeType));
+              addTestMetric(
+                  String.format(
+                      "Thread safety: %d operations, %d consistency errors with %s",
+                      totalOperations.get(), consistencyErrors.get(), runtimeType));
             }
           });
     }
@@ -293,34 +309,42 @@ final class InstanceConcurrencyTest {
 
               for (int i = 0; i < numThreads; i++) {
                 final int threadId = i;
-                final CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
-                  try {
-                    startLatch.await();
+                final CompletableFuture<Void> future =
+                    CompletableFuture.runAsync(
+                        () -> {
+                          try {
+                            startLatch.await();
 
-                    try (final Store store = engine.createStore();
-                        final Instance instance = module.instantiate(store)) {
+                            try (final Store store = engine.createStore();
+                                final Instance instance = module.instantiate(store)) {
 
-                      // Verify instance is functional
-                      for (int j = 0; j < operationsPerInstance; j++) {
-                        final WasmValue[] result = instance.callFunction("add", 
-                            WasmValue.i32(threadId), WasmValue.i32(j));
-                        
-                        if (result[0].asI32() != threadId + j) {
-                          failedOperations.incrementAndGet();
-                        }
-                      }
-                      
-                      successfulInstances.incrementAndGet();
-                      
-                    } catch (final Exception e) {
-                      failedOperations.incrementAndGet();
-                      LOGGER.warning("Thread " + threadId + " instance creation/usage failed: " + e.getMessage());
-                    }
-                  } catch (final InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    failedOperations.incrementAndGet();
-                  }
-                }, executor);
+                              // Verify instance is functional
+                              for (int j = 0; j < operationsPerInstance; j++) {
+                                final WasmValue[] result =
+                                    instance.callFunction(
+                                        "add", WasmValue.i32(threadId), WasmValue.i32(j));
+
+                                if (result[0].asI32() != threadId + j) {
+                                  failedOperations.incrementAndGet();
+                                }
+                              }
+
+                              successfulInstances.incrementAndGet();
+
+                            } catch (final Exception e) {
+                              failedOperations.incrementAndGet();
+                              LOGGER.warning(
+                                  "Thread "
+                                      + threadId
+                                      + " instance creation/usage failed: "
+                                      + e.getMessage());
+                            }
+                          } catch (final InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                            failedOperations.incrementAndGet();
+                          }
+                        },
+                        executor);
                 futures.add(future);
               }
 
@@ -340,15 +364,16 @@ final class InstanceConcurrencyTest {
               executor.awaitTermination(10, TimeUnit.SECONDS);
             }
 
-            addTestMetric(String.format("Concurrent instances: %d successful, %d failures with %s", 
-                successfulInstances.get(), failedOperations.get(), runtimeType));
+            addTestMetric(
+                String.format(
+                    "Concurrent instances: %d successful, %d failures with %s",
+                    successfulInstances.get(), failedOperations.get(), runtimeType));
           });
     }
 
-    /**
-     * Check if a value could have been set by any of the threads.
-     */
-    private boolean isValidThreadValue(final int value, final int numThreads, final int operationsPerThread) {
+    /** Check if a value could have been set by any of the threads. */
+    private boolean isValidThreadValue(
+        final int value, final int numThreads, final int operationsPerThread) {
       for (int threadId = 0; threadId < numThreads; threadId++) {
         for (int operation = 0; operation < operationsPerThread; operation++) {
           if (value == threadId * 1000 + operation) {
@@ -387,38 +412,46 @@ final class InstanceConcurrencyTest {
 
                 for (int i = 0; i < numThreads; i++) {
                   final int threadId = i;
-                  final CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
-                    for (int j = 0; j < accessesPerThread; j++) {
-                      try {
-                        // Use thread-specific memory regions to avoid interference
-                        final int baseOffset = threadId * 1000;
-                        final int offset = baseOffset + (j * 4);
-                        final int value = threadId * 10000 + j;
+                  final CompletableFuture<Void> future =
+                      CompletableFuture.runAsync(
+                          () -> {
+                            for (int j = 0; j < accessesPerThread; j++) {
+                              try {
+                                // Use thread-specific memory regions to avoid interference
+                                final int baseOffset = threadId * 1000;
+                                final int offset = baseOffset + (j * 4);
+                                final int value = threadId * 10000 + j;
 
-                        // Store value
-                        instance.callFunction("store", WasmValue.i32(offset), WasmValue.i32(value));
-                        
-                        // Load and verify
-                        final WasmValue[] result = instance.callFunction("load", WasmValue.i32(offset));
-                        if (result[0].asI32() == value) {
-                          successfulAccesses.incrementAndGet();
-                        } else {
-                          otherErrors.incrementAndGet();
-                        }
-                        
-                      } catch (final WasmException e) {
-                        if (e.getMessage().contains("out of bounds") || e.getMessage().contains("bounds")) {
-                          boundaryErrors.incrementAndGet();
-                        } else {
-                          otherErrors.incrementAndGet();
-                        }
-                      } catch (final Exception e) {
-                        otherErrors.incrementAndGet();
-                        LOGGER.warning(String.format("Thread %d access %d unexpected error: %s", 
-                            threadId, j, e.getMessage()));
-                      }
-                    }
-                  }, executor);
+                                // Store value
+                                instance.callFunction(
+                                    "store", WasmValue.i32(offset), WasmValue.i32(value));
+
+                                // Load and verify
+                                final WasmValue[] result =
+                                    instance.callFunction("load", WasmValue.i32(offset));
+                                if (result[0].asI32() == value) {
+                                  successfulAccesses.incrementAndGet();
+                                } else {
+                                  otherErrors.incrementAndGet();
+                                }
+
+                              } catch (final WasmException e) {
+                                if (e.getMessage().contains("out of bounds")
+                                    || e.getMessage().contains("bounds")) {
+                                  boundaryErrors.incrementAndGet();
+                                } else {
+                                  otherErrors.incrementAndGet();
+                                }
+                              } catch (final Exception e) {
+                                otherErrors.incrementAndGet();
+                                LOGGER.warning(
+                                    String.format(
+                                        "Thread %d access %d unexpected error: %s",
+                                        threadId, j, e.getMessage()));
+                              }
+                            }
+                          },
+                          executor);
                   futures.add(future);
                 }
 
@@ -428,11 +461,12 @@ final class InstanceConcurrencyTest {
 
                 // Should have some successful accesses
                 assertThat(successfulAccesses.get()).isGreaterThan(0);
-                
+
                 // Boundary errors are acceptable, other errors are not
                 assertThat(otherErrors.get()).isEqualTo(0);
-                
-                final int totalOperations = successfulAccesses.get() + boundaryErrors.get() + otherErrors.get();
+
+                final int totalOperations =
+                    successfulAccesses.get() + boundaryErrors.get() + otherErrors.get();
                 assertThat(totalOperations).isEqualTo(numThreads * accessesPerThread);
 
               } finally {
@@ -440,8 +474,14 @@ final class InstanceConcurrencyTest {
                 executor.awaitTermination(10, TimeUnit.SECONDS);
               }
 
-              addTestMetric(String.format("Concurrent memory: %d successful, %d boundary errors, %d other errors with %s", 
-                  successfulAccesses.get(), boundaryErrors.get(), otherErrors.get(), runtimeType));
+              addTestMetric(
+                  String.format(
+                      "Concurrent memory: %d successful, %d boundary errors, %d other errors with"
+                          + " %s",
+                      successfulAccesses.get(),
+                      boundaryErrors.get(),
+                      otherErrors.get(),
+                      runtimeType));
             }
           });
     }
@@ -463,7 +503,7 @@ final class InstanceConcurrencyTest {
                 final int offset = i * 8; // Use 8-byte spacing to minimize overlap
                 final int value = i * 123; // Distinctive values
                 expectedData.put(offset, value);
-                
+
                 try {
                   instance.callFunction("store", WasmValue.i32(offset), WasmValue.i32(value));
                 } catch (final WasmException e) {
@@ -487,28 +527,36 @@ final class InstanceConcurrencyTest {
                 final List<CompletableFuture<Void>> futures = new ArrayList<>();
 
                 for (int i = 0; i < numReaders; i++) {
-                  final CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
-                    for (int j = 0; j < 200; j++) {
-                      for (final Map.Entry<Integer, Integer> entry : expectedData.entrySet()) {
-                        try {
-                          final int offset = entry.getKey();
-                          final int expectedValue = entry.getValue();
-                          
-                          final WasmValue[] result = instance.callFunction("load", WasmValue.i32(offset));
-                          totalReads.incrementAndGet();
-                          
-                          if (result[0].asI32() != expectedValue) {
-                            integrityViolations.incrementAndGet();
-                            LOGGER.warning(String.format("Data integrity violation at offset %d: expected %d, got %d", 
-                                offset, expectedValue, result[0].asI32()));
-                          }
-                        } catch (final Exception e) {
-                          // Any exception during reading is an integrity violation
-                          integrityViolations.incrementAndGet();
-                        }
-                      }
-                    }
-                  }, executor);
+                  final CompletableFuture<Void> future =
+                      CompletableFuture.runAsync(
+                          () -> {
+                            for (int j = 0; j < 200; j++) {
+                              for (final Map.Entry<Integer, Integer> entry :
+                                  expectedData.entrySet()) {
+                                try {
+                                  final int offset = entry.getKey();
+                                  final int expectedValue = entry.getValue();
+
+                                  final WasmValue[] result =
+                                      instance.callFunction("load", WasmValue.i32(offset));
+                                  totalReads.incrementAndGet();
+
+                                  if (result[0].asI32() != expectedValue) {
+                                    integrityViolations.incrementAndGet();
+                                    LOGGER.warning(
+                                        String.format(
+                                            "Data integrity violation at offset %d: expected %d,"
+                                                + " got %d",
+                                            offset, expectedValue, result[0].asI32()));
+                                  }
+                                } catch (final Exception e) {
+                                  // Any exception during reading is an integrity violation
+                                  integrityViolations.incrementAndGet();
+                                }
+                              }
+                            }
+                          },
+                          executor);
                   futures.add(future);
                 }
 
@@ -525,8 +573,10 @@ final class InstanceConcurrencyTest {
                 executor.awaitTermination(10, TimeUnit.SECONDS);
               }
 
-              addTestMetric(String.format("Data integrity: %d reads, %d violations with %s", 
-                  totalReads.get(), integrityViolations.get(), runtimeType));
+              addTestMetric(
+                  String.format(
+                      "Data integrity: %d reads, %d violations with %s",
+                      totalReads.get(), integrityViolations.get(), runtimeType));
             }
           });
     }
@@ -558,28 +608,32 @@ final class InstanceConcurrencyTest {
                 final List<CompletableFuture<Void>> futures = new ArrayList<>();
 
                 for (int i = 0; i < numThreads; i++) {
-                  final CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
-                    for (int j = 0; j < accessesPerThread; j++) {
-                      try {
-                        // Enumerate exports
-                        final String[] exports = instance.getExportNames();
-                        if (exports.length > 0) {
-                          successfulEnumerations.incrementAndGet();
-                        }
-                        
-                        // Access each export
-                        for (final String exportName : exports) {
-                          if (instance.getFunction(exportName).isPresent()) {
-                            successfulAccesses.incrementAndGet();
-                          }
-                        }
-                        
-                      } catch (final Exception e) {
-                        errors.incrementAndGet();
-                        LOGGER.warning("Concurrent export access failed: " + e.getMessage());
-                      }
-                    }
-                  }, executor);
+                  final CompletableFuture<Void> future =
+                      CompletableFuture.runAsync(
+                          () -> {
+                            for (int j = 0; j < accessesPerThread; j++) {
+                              try {
+                                // Enumerate exports
+                                final String[] exports = instance.getExportNames();
+                                if (exports.length > 0) {
+                                  successfulEnumerations.incrementAndGet();
+                                }
+
+                                // Access each export
+                                for (final String exportName : exports) {
+                                  if (instance.getFunction(exportName).isPresent()) {
+                                    successfulAccesses.incrementAndGet();
+                                  }
+                                }
+
+                              } catch (final Exception e) {
+                                errors.incrementAndGet();
+                                LOGGER.warning(
+                                    "Concurrent export access failed: " + e.getMessage());
+                              }
+                            }
+                          },
+                          executor);
                   futures.add(future);
                 }
 
@@ -597,8 +651,13 @@ final class InstanceConcurrencyTest {
                 executor.awaitTermination(10, TimeUnit.SECONDS);
               }
 
-              addTestMetric(String.format("Concurrent exports: %d enumerations, %d accesses, %d errors with %s", 
-                  successfulEnumerations.get(), successfulAccesses.get(), errors.get(), runtimeType));
+              addTestMetric(
+                  String.format(
+                      "Concurrent exports: %d enumerations, %d accesses, %d errors with %s",
+                      successfulEnumerations.get(),
+                      successfulAccesses.get(),
+                      errors.get(),
+                      runtimeType));
             }
           });
     }
@@ -617,14 +676,19 @@ final class InstanceConcurrencyTest {
               // Get reference export information
               final String[] referenceExports = instance.getExportNames();
               final Map<String, String> referenceSignatures = new HashMap<>();
-              
+
               for (final String exportName : referenceExports) {
-                instance.getFunction(exportName).ifPresent(func -> {
-                  final var funcType = func.getFunctionType();
-                  final String signature = java.util.Arrays.toString(funcType.getParamTypes()) + 
-                      " -> " + java.util.Arrays.toString(funcType.getReturnTypes());
-                  referenceSignatures.put(exportName, signature);
-                });
+                instance
+                    .getFunction(exportName)
+                    .ifPresent(
+                        func -> {
+                          final var funcType = func.getFunctionType();
+                          final String signature =
+                              java.util.Arrays.toString(funcType.getParamTypes())
+                                  + " -> "
+                                  + java.util.Arrays.toString(funcType.getReturnTypes());
+                          referenceSignatures.put(exportName, signature);
+                        });
               }
 
               final int numThreads = 10;
@@ -636,36 +700,47 @@ final class InstanceConcurrencyTest {
                 final List<CompletableFuture<Void>> futures = new ArrayList<>();
 
                 for (int i = 0; i < numThreads; i++) {
-                  final CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
-                    for (int j = 0; j < 50; j++) {
-                      try {
-                        // Check export names consistency
-                        final String[] exports = instance.getExportNames();
-                        if (!java.util.Arrays.equals(exports, referenceExports)) {
-                          consistencyErrors.incrementAndGet();
-                        }
-                        totalChecks.incrementAndGet();
-                        
-                        // Check function signature consistency
-                        for (final String exportName : exports) {
-                          instance.getFunction(exportName).ifPresent(func -> {
-                            final var funcType = func.getFunctionType();
-                            final String signature = java.util.Arrays.toString(funcType.getParamTypes()) + 
-                                " -> " + java.util.Arrays.toString(funcType.getReturnTypes());
-                            
-                            if (!signature.equals(referenceSignatures.get(exportName))) {
-                              consistencyErrors.incrementAndGet();
+                  final CompletableFuture<Void> future =
+                      CompletableFuture.runAsync(
+                          () -> {
+                            for (int j = 0; j < 50; j++) {
+                              try {
+                                // Check export names consistency
+                                final String[] exports = instance.getExportNames();
+                                if (!java.util.Arrays.equals(exports, referenceExports)) {
+                                  consistencyErrors.incrementAndGet();
+                                }
+                                totalChecks.incrementAndGet();
+
+                                // Check function signature consistency
+                                for (final String exportName : exports) {
+                                  instance
+                                      .getFunction(exportName)
+                                      .ifPresent(
+                                          func -> {
+                                            final var funcType = func.getFunctionType();
+                                            final String signature =
+                                                java.util.Arrays.toString(funcType.getParamTypes())
+                                                    + " -> "
+                                                    + java.util.Arrays.toString(
+                                                        funcType.getReturnTypes());
+
+                                            if (!signature.equals(
+                                                referenceSignatures.get(exportName))) {
+                                              consistencyErrors.incrementAndGet();
+                                            }
+                                            totalChecks.incrementAndGet();
+                                          });
+                                }
+
+                              } catch (final Exception e) {
+                                consistencyErrors.incrementAndGet();
+                                LOGGER.warning(
+                                    "Export consistency check failed: " + e.getMessage());
+                              }
                             }
-                            totalChecks.incrementAndGet();
-                          });
-                        }
-                        
-                      } catch (final Exception e) {
-                        consistencyErrors.incrementAndGet();
-                        LOGGER.warning("Export consistency check failed: " + e.getMessage());
-                      }
-                    }
-                  }, executor);
+                          },
+                          executor);
                   futures.add(future);
                 }
 
@@ -682,8 +757,10 @@ final class InstanceConcurrencyTest {
                 executor.awaitTermination(10, TimeUnit.SECONDS);
               }
 
-              addTestMetric(String.format("Export consistency: %d checks, %d errors with %s", 
-                  totalChecks.get(), consistencyErrors.get(), runtimeType));
+              addTestMetric(
+                  String.format(
+                      "Export consistency: %d checks, %d errors with %s",
+                      totalChecks.get(), consistencyErrors.get(), runtimeType));
             }
           });
     }
@@ -712,33 +789,39 @@ final class InstanceConcurrencyTest {
 
               for (int i = 0; i < numThreads; i++) {
                 final int threadId = i;
-                final CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
-                  for (int j = 0; j < instancesPerThread; j++) {
-                    try (final Store store = engine.createStore()) {
-                      
-                      // Create instance
-                      final Instance instance = module.instantiate(store);
-                      
-                      // Use instance briefly
-                      final WasmValue[] result = instance.callFunction("add", 
-                          WasmValue.i32(threadId), WasmValue.i32(j));
-                      
-                      if (result[0].asI32() == threadId + j) {
-                        successfulInstances.incrementAndGet();
-                      } else {
-                        failedInstances.incrementAndGet();
-                      }
-                      
-                      // Close instance
-                      instance.close();
-                      
-                    } catch (final Exception e) {
-                      failedInstances.incrementAndGet();
-                      LOGGER.warning(String.format("Thread %d instance %d failed: %s", 
-                          threadId, j, e.getMessage()));
-                    }
-                  }
-                }, executor);
+                final CompletableFuture<Void> future =
+                    CompletableFuture.runAsync(
+                        () -> {
+                          for (int j = 0; j < instancesPerThread; j++) {
+                            try (final Store store = engine.createStore()) {
+
+                              // Create instance
+                              final Instance instance = module.instantiate(store);
+
+                              // Use instance briefly
+                              final WasmValue[] result =
+                                  instance.callFunction(
+                                      "add", WasmValue.i32(threadId), WasmValue.i32(j));
+
+                              if (result[0].asI32() == threadId + j) {
+                                successfulInstances.incrementAndGet();
+                              } else {
+                                failedInstances.incrementAndGet();
+                              }
+
+                              // Close instance
+                              instance.close();
+
+                            } catch (final Exception e) {
+                              failedInstances.incrementAndGet();
+                              LOGGER.warning(
+                                  String.format(
+                                      "Thread %d instance %d failed: %s",
+                                      threadId, j, e.getMessage()));
+                            }
+                          }
+                        },
+                        executor);
                 futures.add(future);
               }
 
@@ -755,8 +838,10 @@ final class InstanceConcurrencyTest {
               executor.awaitTermination(10, TimeUnit.SECONDS);
             }
 
-            addTestMetric(String.format("Resource contention: %d successful, %d failed instances with %s", 
-                successfulInstances.get(), failedInstances.get(), runtimeType));
+            addTestMetric(
+                String.format(
+                    "Resource contention: %d successful, %d failed instances with %s",
+                    successfulInstances.get(), failedInstances.get(), runtimeType));
           });
     }
 
@@ -777,10 +862,10 @@ final class InstanceConcurrencyTest {
               for (int i = 0; i < numInstances; i++) {
                 final Instance instance = module.instantiate(store);
                 instances.add(instance);
-                
+
                 // Verify instance works
-                final WasmValue[] result = instance.callFunction("add", 
-                    WasmValue.i32(i), WasmValue.i32(1));
+                final WasmValue[] result =
+                    instance.callFunction("add", WasmValue.i32(i), WasmValue.i32(1));
                 assertThat(result[0].asI32()).isEqualTo(i + 1);
               }
 
@@ -794,15 +879,18 @@ final class InstanceConcurrencyTest {
 
                 for (int i = 0; i < numInstances; i++) {
                   final Instance instance = instances.get(i);
-                  final CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
-                    try {
-                      instance.close();
-                      successfulCloses.incrementAndGet();
-                    } catch (final Exception e) {
-                      failedCloses.incrementAndGet();
-                      LOGGER.warning("Instance close failed: " + e.getMessage());
-                    }
-                  }, executor);
+                  final CompletableFuture<Void> future =
+                      CompletableFuture.runAsync(
+                          () -> {
+                            try {
+                              instance.close();
+                              successfulCloses.incrementAndGet();
+                            } catch (final Exception e) {
+                              failedCloses.incrementAndGet();
+                              LOGGER.warning("Instance close failed: " + e.getMessage());
+                            }
+                          },
+                          executor);
                   futures.add(future);
                 }
 
@@ -823,11 +911,12 @@ final class InstanceConcurrencyTest {
                 executor.shutdownNow();
                 executor.awaitTermination(5, TimeUnit.SECONDS);
               }
-
             }
 
-            addTestMetric(String.format("Concurrent closes: %d successful, %d failed with %s", 
-                numInstances, 0, runtimeType));
+            addTestMetric(
+                String.format(
+                    "Concurrent closes: %d successful, %d failed with %s",
+                    numInstances, 0, runtimeType));
           });
     }
   }

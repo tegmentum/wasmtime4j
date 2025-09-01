@@ -5,8 +5,8 @@ import java.time.Duration;
 /**
  * Builder for creating WASI resource limits configuration.
  *
- * <p>This builder provides a fluent API for configuring resource limits including memory, CPU
- * time, file handles, network connections, and other system resources.
+ * <p>This builder provides a fluent API for configuring resource limits including memory, CPU time,
+ * file handles, network connections, and other system resources.
  *
  * <p>All methods return the builder instance for method chaining. By default, all limits are
  * unlimited unless explicitly configured.

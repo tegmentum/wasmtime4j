@@ -9,9 +9,9 @@ import java.util.Optional;
 /**
  * Interface for WASI component resource management.
  *
- * <p>Resources in the WASI component model represent external entities that components can
- * interact with, such as files, network connections, timers, and custom resource types. Resources
- * have well-defined lifecycles and ownership semantics.
+ * <p>Resources in the WASI component model represent external entities that components can interact
+ * with, such as files, network connections, timers, and custom resource types. Resources have
+ * well-defined lifecycles and ownership semantics.
  *
  * <p>Resources are created and managed by component instances and can be passed between components
  * through interface calls. Each resource has a unique identifier within its owning component.
@@ -135,8 +135,8 @@ public interface WasiResource extends Closeable {
   /**
    * Performs a type-specific operation on this resource.
    *
-   * <p>This provides a generic interface for resource-specific operations. The available
-   * operations depend on the resource type and current state.
+   * <p>This provides a generic interface for resource-specific operations. The available operations
+   * depend on the resource type and current state.
    *
    * @param operation the operation name
    * @param parameters operation parameters
@@ -149,8 +149,8 @@ public interface WasiResource extends Closeable {
   /**
    * Lists available operations for this resource type.
    *
-   * <p>Returns a list of operation names that can be used with {@link #invoke}. The list may
-   * change based on the resource's current state.
+   * <p>Returns a list of operation names that can be used with {@link #invoke}. The list may change
+   * based on the resource's current state.
    *
    * @return list of available operation names
    */

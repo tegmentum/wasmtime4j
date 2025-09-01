@@ -3,7 +3,6 @@ package ai.tegmentum.wasmtime4j.wasi;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
@@ -17,9 +16,6 @@ import ai.tegmentum.wasmtime4j.functions.WasmFunction;
 import ai.tegmentum.wasmtime4j.utils.CrossRuntimeValidator;
 import ai.tegmentum.wasmtime4j.utils.TestCategories;
 import ai.tegmentum.wasmtime4j.utils.TestUtils;
-import ai.tegmentum.wasmtime4j.wasi.Wasi;
-import ai.tegmentum.wasmtime4j.wasi.WasiConfig;
-import ai.tegmentum.wasmtime4j.wasi.WasiExitException;
 import ai.tegmentum.wasmtime4j.webassembly.WasmTestModules;
 import java.time.Duration;
 import java.util.Arrays;
@@ -85,24 +81,25 @@ public final class WasiProcessTest {
 
     final byte[] wasmBytes = WasmTestModules.getModule("wasi_basic");
 
-    assertDoesNotThrow(() -> {
-      final Module module = engine.createModule(wasmBytes);
-      final Wasi wasi = store.createWasi(config);
-      final Instance instance = store.createInstance(module, wasi.getImports());
+    assertDoesNotThrow(
+        () -> {
+          final Module module = engine.createModule(wasmBytes);
+          final Wasi wasi = store.createWasi(config);
+          final Instance instance = store.createInstance(module, wasi.getImports());
 
-      // Execute successful program
-      if (instance.hasExport("_start")) {
-        final WasmFunction startFunction = instance.getExport("_start").asFunction();
-        assertNotNull(startFunction);
-        
-        // Should complete successfully (exit code 0)
-        assertDoesNotThrow(() -> startFunction.call());
-      }
+          // Execute successful program
+          if (instance.hasExport("_start")) {
+            final WasmFunction startFunction = instance.getExport("_start").asFunction();
+            assertNotNull(startFunction);
 
-      instance.close();
-      wasi.close();
-      module.close();
-    });
+            // Should complete successfully (exit code 0)
+            assertDoesNotThrow(() -> startFunction.call());
+          }
+
+          instance.close();
+          wasi.close();
+          module.close();
+        });
   }
 
   /** Tests process execution with non-zero exit codes. */
@@ -124,37 +121,39 @@ public final class WasiProcessTest {
 
       final byte[] wasmBytes = createExitCodeModule(expectedExitCode);
 
-      assertDoesNotThrow(() -> {
-        final Module module = engine.createModule(wasmBytes);
-        final Wasi wasi = store.createWasi(config);
-        final Instance instance = store.createInstance(module, wasi.getImports());
+      assertDoesNotThrow(
+          () -> {
+            final Module module = engine.createModule(wasmBytes);
+            final Wasi wasi = store.createWasi(config);
+            final Instance instance = store.createInstance(module, wasi.getImports());
 
-        // Execute program that should exit with specific code
-        if (instance.hasExport("_start")) {
-          final WasmFunction startFunction = instance.getExport("_start").asFunction();
-          assertNotNull(startFunction);
-          
-          // Program should exit with expected code
-          try {
-            startFunction.call();
-            // If no exception, assume successful execution (exit code 0)
-          } catch (final WasmRuntimeException e) {
-            // Check if this is a WASI exit exception with expected code
-            if (e.getCause() instanceof WasiExitException) {
-              final WasiExitException exitException = (WasiExitException) e.getCause();
-              assertEquals(expectedExitCode, exitException.getExitCode());
-              LOGGER.info("Caught expected WASI exit with code: " + exitException.getExitCode());
-            } else {
-              // Re-throw if not expected exit
-              throw e;
+            // Execute program that should exit with specific code
+            if (instance.hasExport("_start")) {
+              final WasmFunction startFunction = instance.getExport("_start").asFunction();
+              assertNotNull(startFunction);
+
+              // Program should exit with expected code
+              try {
+                startFunction.call();
+                // If no exception, assume successful execution (exit code 0)
+              } catch (final WasmRuntimeException e) {
+                // Check if this is a WASI exit exception with expected code
+                if (e.getCause() instanceof WasiExitException) {
+                  final WasiExitException exitException = (WasiExitException) e.getCause();
+                  assertEquals(expectedExitCode, exitException.getExitCode());
+                  LOGGER.info(
+                      "Caught expected WASI exit with code: " + exitException.getExitCode());
+                } else {
+                  // Re-throw if not expected exit
+                  throw e;
+                }
+              }
             }
-          }
-        }
 
-        instance.close();
-        wasi.close();
-        module.close();
-      });
+            instance.close();
+            wasi.close();
+            module.close();
+          });
     }
   }
 
@@ -174,26 +173,28 @@ public final class WasiProcessTest {
 
     final byte[] wasmBytes = createTerminationModule();
 
-    assertDoesNotThrow(() -> {
-      final Module module = engine.createModule(wasmBytes);
-      final Wasi wasi = store.createWasi(config);
-      final Instance instance = store.createInstance(module, wasi.getImports());
+    assertDoesNotThrow(
+        () -> {
+          final Module module = engine.createModule(wasmBytes);
+          final Wasi wasi = store.createWasi(config);
+          final Instance instance = store.createInstance(module, wasi.getImports());
 
-      // Execute program that terminates
-      if (instance.hasExport("test_termination")) {
-        final WasmFunction terminationFunction = instance.getExport("test_termination").asFunction();
-        assertNotNull(terminationFunction);
-        
-        assertDoesNotThrow(() -> terminationFunction.call());
-      }
+          // Execute program that terminates
+          if (instance.hasExport("test_termination")) {
+            final WasmFunction terminationFunction =
+                instance.getExport("test_termination").asFunction();
+            assertNotNull(terminationFunction);
 
-      // Verify cleanup
-      assertTrue(instance.isValid()); // Should still be valid for cleanup
-      
-      instance.close();
-      wasi.close();
-      module.close();
-    });
+            assertDoesNotThrow(() -> terminationFunction.call());
+          }
+
+          // Verify cleanup
+          assertTrue(instance.isValid()); // Should still be valid for cleanup
+
+          instance.close();
+          wasi.close();
+          module.close();
+        });
   }
 
   /** Tests multiple process executions with different exit scenarios. */
@@ -217,28 +218,30 @@ public final class WasiProcessTest {
 
       final byte[] wasmBytes = createScenarioModule(scenario);
 
-      assertDoesNotThrow(() -> {
-        final Module module = engine.createModule(wasmBytes);
-        final Wasi wasi = store.createWasi(config);
-        final Instance instance = store.createInstance(module, wasi.getImports());
+      assertDoesNotThrow(
+          () -> {
+            final Module module = engine.createModule(wasmBytes);
+            final Wasi wasi = store.createWasi(config);
+            final Instance instance = store.createInstance(module, wasi.getImports());
 
-        // Execute scenario
-        if (instance.hasExport("run_scenario")) {
-          final WasmFunction scenarioFunction = instance.getExport("run_scenario").asFunction();
-          assertNotNull(scenarioFunction);
-          
-          try {
-            scenarioFunction.call();
-          } catch (final Exception e) {
-            // Some scenarios may throw exceptions (error, abort)
-            LOGGER.info("Scenario " + scenario + " resulted in: " + e.getClass().getSimpleName());
-          }
-        }
+            // Execute scenario
+            if (instance.hasExport("run_scenario")) {
+              final WasmFunction scenarioFunction = instance.getExport("run_scenario").asFunction();
+              assertNotNull(scenarioFunction);
 
-        instance.close();
-        wasi.close();
-        module.close();
-      });
+              try {
+                scenarioFunction.call();
+              } catch (final Exception e) {
+                // Some scenarios may throw exceptions (error, abort)
+                LOGGER.info(
+                    "Scenario " + scenario + " resulted in: " + e.getClass().getSimpleName());
+              }
+            }
+
+            instance.close();
+            wasi.close();
+            module.close();
+          });
     }
   }
 
@@ -258,65 +261,83 @@ public final class WasiProcessTest {
         final int processId = i;
         final int expectedExitCode = i; // Different exit code for each process
 
-        futures[i] = CompletableFuture.supplyAsync(() -> {
-          try (final WasmRuntime processRuntime = WasmRuntimeFactory.create();
-               final Engine processEngine = processRuntime.createEngine();
-               final Store processStore = processEngine.createStore()) {
+        futures[i] =
+            CompletableFuture.supplyAsync(
+                () -> {
+                  try (final WasmRuntime processRuntime = WasmRuntimeFactory.create();
+                      final Engine processEngine = processRuntime.createEngine();
+                      final Store processStore = processEngine.createStore()) {
 
-            LOGGER.info("Starting concurrent process " + processId);
+                    LOGGER.info("Starting concurrent process " + processId);
 
-            final WasiConfig config =
-                WasiConfig.builder()
-                    .inheritEnv(true)
-                    .arguments(Arrays.asList("process_" + processId, "--exit", String.valueOf(expectedExitCode)))
-                    .inheritStdin(false)
-                    .inheritStdout(true)
-                    .inheritStderr(true)
-                    .build();
+                    final WasiConfig config =
+                        WasiConfig.builder()
+                            .inheritEnv(true)
+                            .arguments(
+                                Arrays.asList(
+                                    "process_" + processId,
+                                    "--exit",
+                                    String.valueOf(expectedExitCode)))
+                            .inheritStdin(false)
+                            .inheritStdout(true)
+                            .inheritStderr(true)
+                            .build();
 
-            final byte[] wasmBytes = createExitCodeModule(expectedExitCode);
-            final Module module = processEngine.createModule(wasmBytes);
-            final Wasi wasi = processStore.createWasi(config);
-            final Instance instance = processStore.createInstance(module, wasi.getImports());
+                    final byte[] wasmBytes = createExitCodeModule(expectedExitCode);
+                    final Module module = processEngine.createModule(wasmBytes);
+                    final Wasi wasi = processStore.createWasi(config);
+                    final Instance instance =
+                        processStore.createInstance(module, wasi.getImports());
 
-            int actualExitCode = 0;
-            if (instance.hasExport("_start")) {
-              final WasmFunction startFunction = instance.getExport("_start").asFunction();
-              
-              try {
-                startFunction.call();
-                actualExitCode = 0; // Successful completion
-              } catch (final WasmRuntimeException e) {
-                if (e.getCause() instanceof WasiExitException) {
-                  actualExitCode = ((WasiExitException) e.getCause()).getExitCode();
-                } else {
-                  actualExitCode = -1; // Error condition
-                }
-              }
-            }
+                    int actualExitCode = 0;
+                    if (instance.hasExport("_start")) {
+                      final WasmFunction startFunction = instance.getExport("_start").asFunction();
 
-            instance.close();
-            wasi.close();
-            module.close();
+                      try {
+                        startFunction.call();
+                        actualExitCode = 0; // Successful completion
+                      } catch (final WasmRuntimeException e) {
+                        if (e.getCause() instanceof WasiExitException) {
+                          actualExitCode = ((WasiExitException) e.getCause()).getExitCode();
+                        } else {
+                          actualExitCode = -1; // Error condition
+                        }
+                      }
+                    }
 
-            LOGGER.info("Concurrent process " + processId + " completed with exit code: " + actualExitCode);
-            return actualExitCode;
+                    instance.close();
+                    wasi.close();
+                    module.close();
 
-          } catch (final Exception e) {
-            LOGGER.severe("Concurrent process " + processId + " failed: " + e.getMessage());
-            throw new RuntimeException(e);
-          }
-        }, executor);
+                    LOGGER.info(
+                        "Concurrent process "
+                            + processId
+                            + " completed with exit code: "
+                            + actualExitCode);
+                    return actualExitCode;
+
+                  } catch (final Exception e) {
+                    LOGGER.severe("Concurrent process " + processId + " failed: " + e.getMessage());
+                    throw new RuntimeException(e);
+                  }
+                },
+                executor);
       }
 
       // Wait for all processes and verify exit codes
       for (int i = 0; i < processCount; i++) {
         final Integer actualExitCode = futures[i].join();
         final int expectedExitCode = i;
-        
+
         // Allow for both successful completion (0) or expected exit code
-        assertTrue(actualExitCode == 0 || actualExitCode == expectedExitCode,
-            "Process " + i + " exit code mismatch: expected " + expectedExitCode + " or 0, got " + actualExitCode);
+        assertTrue(
+            actualExitCode == 0 || actualExitCode == expectedExitCode,
+            "Process "
+                + i
+                + " exit code mismatch: expected "
+                + expectedExitCode
+                + " or 0, got "
+                + actualExitCode);
       }
 
       LOGGER.info("All concurrent processes completed successfully");
@@ -344,39 +365,42 @@ public final class WasiProcessTest {
 
     final byte[] wasmBytes = createHangingModule();
 
-    assertDoesNotThrow(() -> {
-      final Module module = engine.createModule(wasmBytes);
-      final Wasi wasi = store.createWasi(config);
-      final Instance instance = store.createInstance(module, wasi.getImports());
+    assertDoesNotThrow(
+        () -> {
+          final Module module = engine.createModule(wasmBytes);
+          final Wasi wasi = store.createWasi(config);
+          final Instance instance = store.createInstance(module, wasi.getImports());
 
-      // Execute with timeout using CompletableFuture
-      if (instance.hasExport("hang_forever")) {
-        final WasmFunction hangFunction = instance.getExport("hang_forever").asFunction();
-        assertNotNull(hangFunction);
-        
-        final CompletableFuture<Void> execution = CompletableFuture.runAsync(() -> {
-          try {
-            hangFunction.call();
-          } catch (final Exception e) {
-            // Timeout or termination is acceptable
-            LOGGER.info("Hanging function terminated: " + e.getClass().getSimpleName());
+          // Execute with timeout using CompletableFuture
+          if (instance.hasExport("hang_forever")) {
+            final WasmFunction hangFunction = instance.getExport("hang_forever").asFunction();
+            assertNotNull(hangFunction);
+
+            final CompletableFuture<Void> execution =
+                CompletableFuture.runAsync(
+                    () -> {
+                      try {
+                        hangFunction.call();
+                      } catch (final Exception e) {
+                        // Timeout or termination is acceptable
+                        LOGGER.info("Hanging function terminated: " + e.getClass().getSimpleName());
+                      }
+                    });
+
+            try {
+              // Wait with timeout
+              execution.get(5, TimeUnit.SECONDS);
+            } catch (final java.util.concurrent.TimeoutException e) {
+              // Expected timeout - cancel execution
+              execution.cancel(true);
+              LOGGER.info("Process execution timed out as expected");
+            }
           }
+
+          instance.close();
+          wasi.close();
+          module.close();
         });
-
-        try {
-          // Wait with timeout
-          execution.get(5, TimeUnit.SECONDS);
-        } catch (final java.util.concurrent.TimeoutException e) {
-          // Expected timeout - cancel execution
-          execution.cancel(true);
-          LOGGER.info("Process execution timed out as expected");
-        }
-      }
-
-      instance.close();
-      wasi.close();
-      module.close();
-    });
   }
 
   /** Tests cross-runtime process behavior consistency. */
@@ -390,55 +414,57 @@ public final class WasiProcessTest {
       return;
     }
 
-    final CrossRuntimeValidator.RuntimeOperation<String> processOperation = runtime -> {
-      try (final Engine engine = runtime.createEngine();
-           final Store store = engine.createStore()) {
+    final CrossRuntimeValidator.RuntimeOperation<String> processOperation =
+        runtime -> {
+          try (final Engine engine = runtime.createEngine();
+              final Store store = engine.createStore()) {
 
-        final WasiConfig config =
-            WasiConfig.builder()
-                .inheritEnv(true)
-                .arguments(Arrays.asList("test_process", "--exit", "42"))
-                .inheritStdin(true)
-                .inheritStdout(true)
-                .inheritStderr(true)
-                .build();
+            final WasiConfig config =
+                WasiConfig.builder()
+                    .inheritEnv(true)
+                    .arguments(Arrays.asList("test_process", "--exit", "42"))
+                    .inheritStdin(true)
+                    .inheritStdout(true)
+                    .inheritStderr(true)
+                    .build();
 
-        final byte[] wasmBytes = createExitCodeModule(42);
-        final Module module = engine.createModule(wasmBytes);
-        final Wasi wasi = store.createWasi(config);
-        final Instance instance = store.createInstance(module, wasi.getImports());
+            final byte[] wasmBytes = createExitCodeModule(42);
+            final Module module = engine.createModule(wasmBytes);
+            final Wasi wasi = store.createWasi(config);
+            final Instance instance = store.createInstance(module, wasi.getImports());
 
-        int exitCode = 0;
-        String status = "success";
+            int exitCode = 0;
+            String status = "success";
 
-        if (instance.hasExport("_start")) {
-          final WasmFunction startFunction = instance.getExport("_start").asFunction();
-          
-          try {
-            startFunction.call();
-            status = "completed";
-          } catch (final WasmRuntimeException e) {
-            if (e.getCause() instanceof WasiExitException) {
-              exitCode = ((WasiExitException) e.getCause()).getExitCode();
-              status = "exit_" + exitCode;
-            } else {
-              status = "error";
+            if (instance.hasExport("_start")) {
+              final WasmFunction startFunction = instance.getExport("_start").asFunction();
+
+              try {
+                startFunction.call();
+                status = "completed";
+              } catch (final WasmRuntimeException e) {
+                if (e.getCause() instanceof WasiExitException) {
+                  exitCode = ((WasiExitException) e.getCause()).getExitCode();
+                  status = "exit_" + exitCode;
+                } else {
+                  status = "error";
+                }
+              }
             }
+
+            instance.close();
+            wasi.close();
+            module.close();
+
+            return String.format("status=%s,exit=%d", status, exitCode);
           }
-        }
-
-        instance.close();
-        wasi.close();
-        module.close();
-
-        return String.format("status=%s,exit=%d", status, exitCode);
-      }
-    };
+        };
 
     final CrossRuntimeValidator.ComparisonResult result =
         CrossRuntimeValidator.validateCrossRuntime(processOperation, Duration.ofSeconds(20));
 
-    assertTrue(result.isValid(),
+    assertTrue(
+        result.isValid(),
         "Process behavior differs between runtimes: " + result.getDifferenceDescription());
 
     LOGGER.info("Cross-runtime process validation successful");
@@ -460,31 +486,32 @@ public final class WasiProcessTest {
 
     final byte[] wasmBytes = createCrashModule();
 
-    assertDoesNotThrow(() -> {
-      final Module module = engine.createModule(wasmBytes);
-      final Wasi wasi = store.createWasi(config);
-      final Instance instance = store.createInstance(module, wasi.getImports());
+    assertDoesNotThrow(
+        () -> {
+          final Module module = engine.createModule(wasmBytes);
+          final Wasi wasi = store.createWasi(config);
+          final Instance instance = store.createInstance(module, wasi.getImports());
 
-      // Execute program that crashes
-      if (instance.hasExport("crash_program")) {
-        final WasmFunction crashFunction = instance.getExport("crash_program").asFunction();
-        assertNotNull(crashFunction);
-        
-        try {
-          crashFunction.call();
-        } catch (final Exception e) {
-          // Crash is expected
-          LOGGER.info("Program crashed as expected: " + e.getClass().getSimpleName());
-        }
-      }
+          // Execute program that crashes
+          if (instance.hasExport("crash_program")) {
+            final WasmFunction crashFunction = instance.getExport("crash_program").asFunction();
+            assertNotNull(crashFunction);
 
-      // Verify resources can still be cleaned up
-      assertTrue(instance.isValid());
-      
-      instance.close();
-      wasi.close();
-      module.close();
-    });
+            try {
+              crashFunction.call();
+            } catch (final Exception e) {
+              // Crash is expected
+              LOGGER.info("Program crashed as expected: " + e.getClass().getSimpleName());
+            }
+          }
+
+          // Verify resources can still be cleaned up
+          assertTrue(instance.isValid());
+
+          instance.close();
+          wasi.close();
+          module.close();
+        });
   }
 
   /** Tests process argument passing and validation. */
@@ -492,16 +519,19 @@ public final class WasiProcessTest {
   void testProcessArgumentPassingAndValidation() {
     LOGGER.info("Testing process argument passing and validation");
 
-    final java.util.List<String> complexArgs = Arrays.asList(
-        "program",
-        "--flag",
-        "--option=value",
-        "positional_arg",
-        "--number", "123",
-        "--path", "/path/to/file",
-        "--empty=",
-        "--spaces", "argument with spaces"
-    );
+    final java.util.List<String> complexArgs =
+        Arrays.asList(
+            "program",
+            "--flag",
+            "--option=value",
+            "positional_arg",
+            "--number",
+            "123",
+            "--path",
+            "/path/to/file",
+            "--empty=",
+            "--spaces",
+            "argument with spaces");
 
     final WasiConfig config =
         WasiConfig.builder()
@@ -514,31 +544,32 @@ public final class WasiProcessTest {
 
     final byte[] wasmBytes = createArgumentValidationModule();
 
-    assertDoesNotThrow(() -> {
-      final Module module = engine.createModule(wasmBytes);
-      final Wasi wasi = store.createWasi(config);
-      final Instance instance = store.createInstance(module, wasi.getImports());
+    assertDoesNotThrow(
+        () -> {
+          final Module module = engine.createModule(wasmBytes);
+          final Wasi wasi = store.createWasi(config);
+          final Instance instance = store.createInstance(module, wasi.getImports());
 
-      // Verify arguments are properly passed
-      final java.util.List<String> actualArgs = wasi.getArguments();
-      assertEquals(complexArgs.size(), actualArgs.size());
-      
-      for (int i = 0; i < complexArgs.size(); i++) {
-        assertEquals(complexArgs.get(i), actualArgs.get(i));
-      }
+          // Verify arguments are properly passed
+          final java.util.List<String> actualArgs = wasi.getArguments();
+          assertEquals(complexArgs.size(), actualArgs.size());
 
-      // Execute argument validation
-      if (instance.hasExport("validate_args")) {
-        final WasmFunction validateFunction = instance.getExport("validate_args").asFunction();
-        assertNotNull(validateFunction);
-        
-        assertDoesNotThrow(() -> validateFunction.call());
-      }
+          for (int i = 0; i < complexArgs.size(); i++) {
+            assertEquals(complexArgs.get(i), actualArgs.get(i));
+          }
 
-      instance.close();
-      wasi.close();
-      module.close();
-    });
+          // Execute argument validation
+          if (instance.hasExport("validate_args")) {
+            final WasmFunction validateFunction = instance.getExport("validate_args").asFunction();
+            assertNotNull(validateFunction);
+
+            assertDoesNotThrow(() -> validateFunction.call());
+          }
+
+          instance.close();
+          wasi.close();
+          module.close();
+        });
   }
 
   /** Tests process exit code boundary conditions. */
@@ -560,33 +591,38 @@ public final class WasiProcessTest {
 
       final byte[] wasmBytes = createBoundaryExitModule(exitCode);
 
-      assertDoesNotThrow(() -> {
-        final Module module = engine.createModule(wasmBytes);
-        final Wasi wasi = store.createWasi(config);
-        final Instance instance = store.createInstance(module, wasi.getImports());
+      assertDoesNotThrow(
+          () -> {
+            final Module module = engine.createModule(wasmBytes);
+            final Wasi wasi = store.createWasi(config);
+            final Instance instance = store.createInstance(module, wasi.getImports());
 
-        if (instance.hasExport("boundary_exit")) {
-          final WasmFunction boundaryFunction = instance.getExport("boundary_exit").asFunction();
-          assertNotNull(boundaryFunction);
-          
-          try {
-            boundaryFunction.call();
-            if (exitCode != 0) {
-              LOGGER.warning("Expected exit code " + exitCode + " but function completed normally");
-            }
-          } catch (final WasmRuntimeException e) {
-            if (e.getCause() instanceof WasiExitException) {
-              final int actualExitCode = ((WasiExitException) e.getCause()).getExitCode();
-              assertEquals(exitCode, actualExitCode, 
-                  "Exit code mismatch for boundary value " + exitCode);
-            }
-          }
-        }
+            if (instance.hasExport("boundary_exit")) {
+              final WasmFunction boundaryFunction =
+                  instance.getExport("boundary_exit").asFunction();
+              assertNotNull(boundaryFunction);
 
-        instance.close();
-        wasi.close();
-        module.close();
-      });
+              try {
+                boundaryFunction.call();
+                if (exitCode != 0) {
+                  LOGGER.warning(
+                      "Expected exit code " + exitCode + " but function completed normally");
+                }
+              } catch (final WasmRuntimeException e) {
+                if (e.getCause() instanceof WasiExitException) {
+                  final int actualExitCode = ((WasiExitException) e.getCause()).getExitCode();
+                  assertEquals(
+                      exitCode,
+                      actualExitCode,
+                      "Exit code mismatch for boundary value " + exitCode);
+                }
+              }
+            }
+
+            instance.close();
+            wasi.close();
+            module.close();
+          });
     }
   }
 

@@ -6,8 +6,6 @@ import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
 import ai.tegmentum.wasmtime4j.jni.nativelib.NativeMethodBindings;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.logging.Logger;
 
 /**
@@ -56,9 +54,7 @@ public final class JniComponent {
     }
   }
 
-  /**
-   * Prevent instantiation - this class contains only static factory methods.
-   */
+  /** Prevent instantiation - this class contains only static factory methods. */
   private JniComponent() {}
 
   /**
@@ -381,8 +377,7 @@ public final class JniComponent {
     protected void doClose() throws Exception {
       if (getNativeHandle() != 0) {
         nativeDestroyComponent(getNativeHandle());
-        LOGGER.fine(
-            "Destroyed component with handle: 0x" + Long.toHexString(getNativeHandle()));
+        LOGGER.fine("Destroyed component with handle: 0x" + Long.toHexString(getNativeHandle()));
       }
     }
 
@@ -399,9 +394,9 @@ public final class JniComponent {
   /**
    * JNI wrapper for component instance handles.
    *
-   * <p>Represents an instantiated WebAssembly component that can be used to call exported
-   * functions and interact with component resources. Implements automatic resource cleanup through
-   * {@link JniResource}.
+   * <p>Represents an instantiated WebAssembly component that can be used to call exported functions
+   * and interact with component resources. Implements automatic resource cleanup through {@link
+   * JniResource}.
    */
   public static final class JniComponentInstanceHandle extends JniResource {
 
@@ -413,8 +408,7 @@ public final class JniComponent {
      */
     JniComponentInstanceHandle(final long nativeHandle) {
       super(nativeHandle);
-      LOGGER.fine(
-          "Created component instance with handle: 0x" + Long.toHexString(nativeHandle));
+      LOGGER.fine("Created component instance with handle: 0x" + Long.toHexString(nativeHandle));
     }
 
     @Override

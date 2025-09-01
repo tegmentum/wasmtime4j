@@ -3,8 +3,8 @@ package ai.tegmentum.wasmtime4j.wasi;
 /**
  * Information about the WASI runtime implementation.
  *
- * <p>This class provides details about the currently active WASI runtime, including
- * the implementation type, version information, and capabilities.
+ * <p>This class provides details about the currently active WASI runtime, including the
+ * implementation type, version information, and capabilities.
  *
  * @since 1.0.0
  */
@@ -58,8 +58,7 @@ public final class WasiRuntimeInfo {
   @Override
   public String toString() {
     return String.format(
-        "WasiRuntimeInfo{type=%s, version=%s, wasmtime=%s}",
-        runtimeType, version, wasmtimeVersion);
+        "WasiRuntimeInfo{type=%s, version=%s, wasmtime=%s}", runtimeType, version, wasmtimeVersion);
   }
 
   @Override

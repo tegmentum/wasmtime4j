@@ -56,8 +56,8 @@ public interface WasiInstanceStats {
   /**
    * Gets the total execution time for this instance.
    *
-   * <p>Execution time is the cumulative time spent actually executing component code, excluding
-   * I/O wait time and suspension periods.
+   * <p>Execution time is the cumulative time spent actually executing component code, excluding I/O
+   * wait time and suspension periods.
    *
    * @return total execution time
    */
@@ -246,8 +246,7 @@ public interface WasiInstanceStats {
   /**
    * Creates a summary string representation of these statistics.
    *
-   * <p>The summary includes key metrics in a human-readable format suitable for logging or
-   * display.
+   * <p>The summary includes key metrics in a human-readable format suitable for logging or display.
    *
    * @return formatted summary string
    */
@@ -256,11 +255,10 @@ public interface WasiInstanceStats {
   /**
    * Resets all statistics counters to zero.
    *
-   * <p>This allows starting fresh statistics collection from the current point in time. Peak
-   * values and creation timestamps are not affected.
+   * <p>This allows starting fresh statistics collection from the current point in time. Peak values
+   * and creation timestamps are not affected.
    *
-   * @throws IllegalStateException if reset is not supported or instance is not in a suitable
-   *     state
+   * @throws IllegalStateException if reset is not supported or instance is not in a suitable state
    */
   void reset();
 }

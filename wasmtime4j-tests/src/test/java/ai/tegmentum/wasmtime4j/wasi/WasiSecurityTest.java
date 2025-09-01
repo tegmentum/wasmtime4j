@@ -16,8 +16,6 @@ import ai.tegmentum.wasmtime4j.functions.WasmFunction;
 import ai.tegmentum.wasmtime4j.utils.CrossRuntimeValidator;
 import ai.tegmentum.wasmtime4j.utils.TestCategories;
 import ai.tegmentum.wasmtime4j.utils.TestUtils;
-import ai.tegmentum.wasmtime4j.wasi.Wasi;
-import ai.tegmentum.wasmtime4j.wasi.WasiConfig;
 import ai.tegmentum.wasmtime4j.webassembly.WasmTestModules;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -99,32 +97,34 @@ public final class WasiSecurityTest {
 
     final byte[] wasmBytes = WasmTestModules.getModule("security_bounds_check");
 
-    assertDoesNotThrow(() -> {
-      final Module module = engine.createModule(wasmBytes);
-      final Wasi wasi = store.createWasi(config);
+    assertDoesNotThrow(
+        () -> {
+          final Module module = engine.createModule(wasmBytes);
+          final Wasi wasi = store.createWasi(config);
 
-      // Verify only allowed directory is accessible
-      assertTrue(wasi.getPreopenedDirectories().containsKey("allowed"));
-      assertFalse(wasi.getPreopenedDirectories().containsKey("forbidden"));
+          // Verify only allowed directory is accessible
+          assertTrue(wasi.getPreopenedDirectories().containsKey("allowed"));
+          assertFalse(wasi.getPreopenedDirectories().containsKey("forbidden"));
 
-      final Instance instance = store.createInstance(module, wasi.getImports());
+          final Instance instance = store.createInstance(module, wasi.getImports());
 
-      // Attempt to access forbidden resources should be blocked
-      if (instance.hasExport("bounds_check")) {
-        final WasmFunction boundsFunction = instance.getExport("bounds_check").asFunction();
-        assertNotNull(boundsFunction);
-        
-        // This should complete without throwing but access should be denied
-        assertDoesNotThrow(() -> {
-          final var result = boundsFunction.call();
-          assertNotNull(result);
+          // Attempt to access forbidden resources should be blocked
+          if (instance.hasExport("bounds_check")) {
+            final WasmFunction boundsFunction = instance.getExport("bounds_check").asFunction();
+            assertNotNull(boundsFunction);
+
+            // This should complete without throwing but access should be denied
+            assertDoesNotThrow(
+                () -> {
+                  final var result = boundsFunction.call();
+                  assertNotNull(result);
+                });
+          }
+
+          instance.close();
+          wasi.close();
+          module.close();
         });
-      }
-
-      instance.close();
-      wasi.close();
-      module.close();
-    });
   }
 
   /** Tests path traversal attack prevention. */
@@ -152,28 +152,31 @@ public final class WasiSecurityTest {
 
     final byte[] wasmBytes = createPathTraversalAttackModule();
 
-    assertDoesNotThrow(() -> {
-      final Module module = engine.createModule(wasmBytes);
-      final Wasi wasi = store.createWasi(config);
-      final Instance instance = store.createInstance(module, wasi.getImports());
+    assertDoesNotThrow(
+        () -> {
+          final Module module = engine.createModule(wasmBytes);
+          final Wasi wasi = store.createWasi(config);
+          final Instance instance = store.createInstance(module, wasi.getImports());
 
-      // Attempt path traversal attacks
-      if (instance.hasExport("attempt_path_traversal")) {
-        final WasmFunction traversalFunction = instance.getExport("attempt_path_traversal").asFunction();
-        assertNotNull(traversalFunction);
-        
-        // Path traversal attempts should be blocked or handled safely
-        assertDoesNotThrow(() -> {
-          final var result = traversalFunction.call();
-          assertNotNull(result);
-          // Success here means the attack was properly blocked
+          // Attempt path traversal attacks
+          if (instance.hasExport("attempt_path_traversal")) {
+            final WasmFunction traversalFunction =
+                instance.getExport("attempt_path_traversal").asFunction();
+            assertNotNull(traversalFunction);
+
+            // Path traversal attempts should be blocked or handled safely
+            assertDoesNotThrow(
+                () -> {
+                  final var result = traversalFunction.call();
+                  assertNotNull(result);
+                  // Success here means the attack was properly blocked
+                });
+          }
+
+          instance.close();
+          wasi.close();
+          module.close();
         });
-      }
-
-      instance.close();
-      wasi.close();
-      module.close();
-    });
   }
 
   /** Tests memory isolation and bounds checking. */
@@ -191,27 +194,29 @@ public final class WasiSecurityTest {
 
     final byte[] wasmBytes = WasmTestModules.getModule("security_bounds_check");
 
-    assertDoesNotThrow(() -> {
-      final Module module = engine.createModule(wasmBytes);
-      final Wasi wasi = store.createWasi(config);
-      final Instance instance = store.createInstance(module, wasi.getImports());
+    assertDoesNotThrow(
+        () -> {
+          final Module module = engine.createModule(wasmBytes);
+          final Wasi wasi = store.createWasi(config);
+          final Instance instance = store.createInstance(module, wasi.getImports());
 
-      // Test memory bounds checking
-      if (instance.hasExport("bounds_check")) {
-        final WasmFunction boundsFunction = instance.getExport("bounds_check").asFunction();
-        assertNotNull(boundsFunction);
-        
-        // Memory bounds violations should be caught
-        assertDoesNotThrow(() -> {
-          final var result = boundsFunction.call();
-          assertNotNull(result);
+          // Test memory bounds checking
+          if (instance.hasExport("bounds_check")) {
+            final WasmFunction boundsFunction = instance.getExport("bounds_check").asFunction();
+            assertNotNull(boundsFunction);
+
+            // Memory bounds violations should be caught
+            assertDoesNotThrow(
+                () -> {
+                  final var result = boundsFunction.call();
+                  assertNotNull(result);
+                });
+          }
+
+          instance.close();
+          wasi.close();
+          module.close();
         });
-      }
-
-      instance.close();
-      wasi.close();
-      module.close();
-    });
   }
 
   /** Tests resource exhaustion prevention and limits. */
@@ -230,27 +235,29 @@ public final class WasiSecurityTest {
 
     final byte[] wasmBytes = WasmTestModules.getModule("security_dos_test");
 
-    assertDoesNotThrow(() -> {
-      final Module module = engine.createModule(wasmBytes);
-      final Wasi wasi = store.createWasi(config);
-      final Instance instance = store.createInstance(module, wasi.getImports());
+    assertDoesNotThrow(
+        () -> {
+          final Module module = engine.createModule(wasmBytes);
+          final Wasi wasi = store.createWasi(config);
+          final Instance instance = store.createInstance(module, wasi.getImports());
 
-      // Test resource exhaustion attempts
-      if (instance.hasExport("dos_test")) {
-        final WasmFunction dosFunction = instance.getExport("dos_test").asFunction();
-        assertNotNull(dosFunction);
-        
-        // DoS attempts should be limited or controlled
-        assertDoesNotThrow(() -> {
-          final var result = dosFunction.call();
-          assertNotNull(result);
+          // Test resource exhaustion attempts
+          if (instance.hasExport("dos_test")) {
+            final WasmFunction dosFunction = instance.getExport("dos_test").asFunction();
+            assertNotNull(dosFunction);
+
+            // DoS attempts should be limited or controlled
+            assertDoesNotThrow(
+                () -> {
+                  final var result = dosFunction.call();
+                  assertNotNull(result);
+                });
+          }
+
+          instance.close();
+          wasi.close();
+          module.close();
         });
-      }
-
-      instance.close();
-      wasi.close();
-      module.close();
-    });
   }
 
   /** Tests privilege escalation prevention. */
@@ -272,27 +279,30 @@ public final class WasiSecurityTest {
 
     final byte[] wasmBytes = createPrivilegeEscalationModule();
 
-    assertDoesNotThrow(() -> {
-      final Module module = engine.createModule(wasmBytes);
-      final Wasi wasi = store.createWasi(config);
-      final Instance instance = store.createInstance(module, wasi.getImports());
+    assertDoesNotThrow(
+        () -> {
+          final Module module = engine.createModule(wasmBytes);
+          final Wasi wasi = store.createWasi(config);
+          final Instance instance = store.createInstance(module, wasi.getImports());
 
-      // Attempt privilege escalation
-      if (instance.hasExport("attempt_escalation")) {
-        final WasmFunction escalationFunction = instance.getExport("attempt_escalation").asFunction();
-        assertNotNull(escalationFunction);
-        
-        // Privilege escalation should be prevented
-        assertDoesNotThrow(() -> {
-          final var result = escalationFunction.call();
-          assertNotNull(result);
+          // Attempt privilege escalation
+          if (instance.hasExport("attempt_escalation")) {
+            final WasmFunction escalationFunction =
+                instance.getExport("attempt_escalation").asFunction();
+            assertNotNull(escalationFunction);
+
+            // Privilege escalation should be prevented
+            assertDoesNotThrow(
+                () -> {
+                  final var result = escalationFunction.call();
+                  assertNotNull(result);
+                });
+          }
+
+          instance.close();
+          wasi.close();
+          module.close();
         });
-      }
-
-      instance.close();
-      wasi.close();
-      module.close();
-    });
   }
 
   /** Tests sandbox escape attempt prevention. */
@@ -314,27 +324,29 @@ public final class WasiSecurityTest {
 
     final byte[] wasmBytes = WasmTestModules.getModule("security_sandbox_test");
 
-    assertDoesNotThrow(() -> {
-      final Module module = engine.createModule(wasmBytes);
-      final Wasi wasi = store.createWasi(config);
-      final Instance instance = store.createInstance(module, wasi.getImports());
+    assertDoesNotThrow(
+        () -> {
+          final Module module = engine.createModule(wasmBytes);
+          final Wasi wasi = store.createWasi(config);
+          final Instance instance = store.createInstance(module, wasi.getImports());
 
-      // Attempt sandbox escape
-      if (instance.hasExport("sandbox_test")) {
-        final WasmFunction sandboxFunction = instance.getExport("sandbox_test").asFunction();
-        assertNotNull(sandboxFunction);
-        
-        // Sandbox escape attempts should be contained
-        assertDoesNotThrow(() -> {
-          final var result = sandboxFunction.call();
-          assertNotNull(result);
+          // Attempt sandbox escape
+          if (instance.hasExport("sandbox_test")) {
+            final WasmFunction sandboxFunction = instance.getExport("sandbox_test").asFunction();
+            assertNotNull(sandboxFunction);
+
+            // Sandbox escape attempts should be contained
+            assertDoesNotThrow(
+                () -> {
+                  final var result = sandboxFunction.call();
+                  assertNotNull(result);
+                });
+          }
+
+          instance.close();
+          wasi.close();
+          module.close();
         });
-      }
-
-      instance.close();
-      wasi.close();
-      module.close();
-    });
   }
 
   /** Tests information leakage prevention. */
@@ -364,27 +376,29 @@ public final class WasiSecurityTest {
 
     final byte[] wasmBytes = createInformationLeakageModule();
 
-    assertDoesNotThrow(() -> {
-      final Module module = engine.createModule(wasmBytes);
-      final Wasi wasi = store.createWasi(config);
-      final Instance instance = store.createInstance(module, wasi.getImports());
+    assertDoesNotThrow(
+        () -> {
+          final Module module = engine.createModule(wasmBytes);
+          final Wasi wasi = store.createWasi(config);
+          final Instance instance = store.createInstance(module, wasi.getImports());
 
-      // Attempt information leakage
-      if (instance.hasExport("attempt_leak")) {
-        final WasmFunction leakFunction = instance.getExport("attempt_leak").asFunction();
-        assertNotNull(leakFunction);
-        
-        // Information leakage should be prevented
-        assertDoesNotThrow(() -> {
-          final var result = leakFunction.call();
-          assertNotNull(result);
+          // Attempt information leakage
+          if (instance.hasExport("attempt_leak")) {
+            final WasmFunction leakFunction = instance.getExport("attempt_leak").asFunction();
+            assertNotNull(leakFunction);
+
+            // Information leakage should be prevented
+            assertDoesNotThrow(
+                () -> {
+                  final var result = leakFunction.call();
+                  assertNotNull(result);
+                });
+          }
+
+          instance.close();
+          wasi.close();
+          module.close();
         });
-      }
-
-      instance.close();
-      wasi.close();
-      module.close();
-    });
   }
 
   /** Tests concurrent security isolation between instances. */
@@ -401,7 +415,7 @@ public final class WasiSecurityTest {
     for (int i = 0; i < instanceCount; i++) {
       instanceDirs[i] = tempDirectory.resolve("instance_" + i);
       Files.createDirectories(instanceDirs[i]);
-      
+
       // Create instance-specific data
       final Path dataFile = instanceDirs[i].resolve("data.txt");
       Files.write(dataFile, ("Private data for instance " + i).getBytes());
@@ -412,40 +426,49 @@ public final class WasiSecurityTest {
 
       for (int i = 0; i < instanceCount; i++) {
         final int instanceId = i;
-        futures[i] = CompletableFuture.runAsync(() -> {
-          try (final WasmRuntime instanceRuntime = WasmRuntimeFactory.create();
-               final Engine instanceEngine = instanceRuntime.createEngine();
-               final Store instanceStore = instanceEngine.createStore()) {
+        futures[i] =
+            CompletableFuture.runAsync(
+                () -> {
+                  try (final WasmRuntime instanceRuntime = WasmRuntimeFactory.create();
+                      final Engine instanceEngine = instanceRuntime.createEngine();
+                      final Store instanceStore = instanceEngine.createStore()) {
 
-            final WasiConfig config =
-                WasiConfig.builder()
-                    .inheritEnv(true)
-                    .preopenDir(instanceDirs[instanceId].toString(), "private", true, false)
-                    .inheritStdin(true)
-                    .inheritStdout(true)
-                    .inheritStderr(true)
-                    .build();
+                    final WasiConfig config =
+                        WasiConfig.builder()
+                            .inheritEnv(true)
+                            .preopenDir(instanceDirs[instanceId].toString(), "private", true, false)
+                            .inheritStdin(true)
+                            .inheritStdout(true)
+                            .inheritStderr(true)
+                            .build();
 
-            final byte[] wasmBytes = createSecurityIsolationModule();
-            final Module module = instanceEngine.createModule(wasmBytes);
-            final Wasi wasi = instanceStore.createWasi(config);
-            final Instance instance = instanceStore.createInstance(module, wasi.getImports());
+                    final byte[] wasmBytes = createSecurityIsolationModule();
+                    final Module module = instanceEngine.createModule(wasmBytes);
+                    final Wasi wasi = instanceStore.createWasi(config);
+                    final Instance instance =
+                        instanceStore.createInstance(module, wasi.getImports());
 
-            // Each instance should only access its own data
-            if (instance.hasExport("test_isolation")) {
-              final WasmFunction isolationFunction = instance.getExport("test_isolation").asFunction();
-              isolationFunction.call();
-            }
+                    // Each instance should only access its own data
+                    if (instance.hasExport("test_isolation")) {
+                      final WasmFunction isolationFunction =
+                          instance.getExport("test_isolation").asFunction();
+                      isolationFunction.call();
+                    }
 
-            instance.close();
-            wasi.close();
-            module.close();
+                    instance.close();
+                    wasi.close();
+                    module.close();
 
-          } catch (final Exception e) {
-            LOGGER.severe("Security isolation test failed for instance " + instanceId + ": " + e.getMessage());
-            throw new RuntimeException(e);
-          }
-        }, executor);
+                  } catch (final Exception e) {
+                    LOGGER.severe(
+                        "Security isolation test failed for instance "
+                            + instanceId
+                            + ": "
+                            + e.getMessage());
+                    throw new RuntimeException(e);
+                  }
+                },
+                executor);
       }
 
       // Wait for all instances to complete
@@ -472,56 +495,58 @@ public final class WasiSecurityTest {
     final Path secureDir = tempDirectory.resolve("secure");
     Files.createDirectories(secureDir);
 
-    final CrossRuntimeValidator.RuntimeOperation<String> securityOperation = runtime -> {
-      try (final Engine engine = runtime.createEngine();
-           final Store store = engine.createStore()) {
+    final CrossRuntimeValidator.RuntimeOperation<String> securityOperation =
+        runtime -> {
+          try (final Engine engine = runtime.createEngine();
+              final Store store = engine.createStore()) {
 
-        final WasiConfig config =
-            WasiConfig.builder()
-                .inheritEnv(true)
-                .preopenDir(secureDir.toString(), "secure", true, false)
-                .inheritStdin(true)
-                .inheritStdout(true)
-                .inheritStderr(true)
-                .build();
+            final WasiConfig config =
+                WasiConfig.builder()
+                    .inheritEnv(true)
+                    .preopenDir(secureDir.toString(), "secure", true, false)
+                    .inheritStdin(true)
+                    .inheritStdout(true)
+                    .inheritStderr(true)
+                    .build();
 
-        final byte[] wasmBytes = WasmTestModules.getModule("security_bounds_check");
-        final Module module = engine.createModule(wasmBytes);
-        final Wasi wasi = store.createWasi(config);
+            final byte[] wasmBytes = WasmTestModules.getModule("security_bounds_check");
+            final Module module = engine.createModule(wasmBytes);
+            final Wasi wasi = store.createWasi(config);
 
-        final boolean hasSecureDir = wasi.getPreopenedDirectories().containsKey("secure");
-        final int dirCount = wasi.getPreopenedDirectories().size();
+            final boolean hasSecureDir = wasi.getPreopenedDirectories().containsKey("secure");
+            final int dirCount = wasi.getPreopenedDirectories().size();
 
-        final Instance instance = store.createInstance(module, wasi.getImports());
+            final Instance instance = store.createInstance(module, wasi.getImports());
 
-        // Test security enforcement
-        boolean securityTestPassed = false;
-        if (instance.hasExport("bounds_check")) {
-          final WasmFunction boundsFunction = instance.getExport("bounds_check").asFunction();
-          try {
-            boundsFunction.call();
-            securityTestPassed = true;
-          } catch (final Exception e) {
-            // Security violation caught - this is expected/acceptable
-            securityTestPassed = true;
+            // Test security enforcement
+            boolean securityTestPassed = false;
+            if (instance.hasExport("bounds_check")) {
+              final WasmFunction boundsFunction = instance.getExport("bounds_check").asFunction();
+              try {
+                boundsFunction.call();
+                securityTestPassed = true;
+              } catch (final Exception e) {
+                // Security violation caught - this is expected/acceptable
+                securityTestPassed = true;
+              }
+            } else {
+              securityTestPassed = true; // No test function available
+            }
+
+            instance.close();
+            wasi.close();
+            module.close();
+
+            return String.format(
+                "hasDir=%s,count=%d,security=%s", hasSecureDir, dirCount, securityTestPassed);
           }
-        } else {
-          securityTestPassed = true; // No test function available
-        }
-
-        instance.close();
-        wasi.close();
-        module.close();
-
-        return String.format("hasDir=%s,count=%d,security=%s", 
-            hasSecureDir, dirCount, securityTestPassed);
-      }
-    };
+        };
 
     final CrossRuntimeValidator.ComparisonResult result =
         CrossRuntimeValidator.validateCrossRuntime(securityOperation, Duration.ofSeconds(20));
 
-    assertTrue(result.isValid(),
+    assertTrue(
+        result.isValid(),
         "Security behavior differs between runtimes: " + result.getDifferenceDescription());
 
     LOGGER.info("Cross-runtime security validation successful");
@@ -542,27 +567,30 @@ public final class WasiSecurityTest {
 
     // Test with various malformed modules
     final String[] maliciousModules = {
-        "malformed_magic",
-        "malformed_version", 
-        "malformed_truncated",
-        "malformed_section",
-        "malformed_type_mismatch"
+      "malformed_magic",
+      "malformed_version",
+      "malformed_truncated",
+      "malformed_section",
+      "malformed_type_mismatch"
     };
 
     for (final String moduleName : maliciousModules) {
       if (WasmTestModules.hasModule(moduleName)) {
         final byte[] maliciousBytes = WasmTestModules.getModule(moduleName);
-        
+
         // Malicious modules should be rejected or handled safely
-        assertThrows(Exception.class, () -> {
-          final Module module = engine.createModule(maliciousBytes);
-          final Wasi wasi = store.createWasi(config);
-          final Instance instance = store.createInstance(module, wasi.getImports());
-          
-          instance.close();
-          wasi.close();
-          module.close();
-        }, "Malicious module " + moduleName + " should be rejected");
+        assertThrows(
+            Exception.class,
+            () -> {
+              final Module module = engine.createModule(maliciousBytes);
+              final Wasi wasi = store.createWasi(config);
+              final Instance instance = store.createInstance(module, wasi.getImports());
+
+              instance.close();
+              wasi.close();
+              module.close();
+            },
+            "Malicious module " + moduleName + " should be rejected");
       }
     }
   }
@@ -573,28 +601,26 @@ public final class WasiSecurityTest {
     LOGGER.info("Testing security configuration validation");
 
     // Test with potentially dangerous environment variables
-    assertDoesNotThrow(() -> {
-      final java.util.Map<String, String> suspiciousEnv = new java.util.HashMap<>();
-      suspiciousEnv.put("LD_PRELOAD", "/malicious/lib.so");
-      suspiciousEnv.put("PATH", "/malicious/bin:/usr/bin");
-      suspiciousEnv.put("SHELL", "/malicious/shell");
+    assertDoesNotThrow(
+        () -> {
+          final java.util.Map<String, String> suspiciousEnv = new java.util.HashMap<>();
+          suspiciousEnv.put("LD_PRELOAD", "/malicious/lib.so");
+          suspiciousEnv.put("PATH", "/malicious/bin:/usr/bin");
+          suspiciousEnv.put("SHELL", "/malicious/shell");
 
-      final WasiConfig config =
-          WasiConfig.builder()
-              .inheritEnv(false)
-              .environment(suspiciousEnv)
-              .build();
+          final WasiConfig config =
+              WasiConfig.builder().inheritEnv(false).environment(suspiciousEnv).build();
 
-      // Configuration should be accepted but contained within WASI sandbox
-      final Wasi wasi = store.createWasi(config);
-      assertNotNull(wasi);
-      
-      // Environment should be isolated within WASI context
-      final var env = wasi.getEnvironment();
-      assertTrue(env.containsKey("LD_PRELOAD"));
-      
-      wasi.close();
-    });
+          // Configuration should be accepted but contained within WASI sandbox
+          final Wasi wasi = store.createWasi(config);
+          assertNotNull(wasi);
+
+          // Environment should be isolated within WASI context
+          final var env = wasi.getEnvironment();
+          assertTrue(env.containsKey("LD_PRELOAD"));
+
+          wasi.close();
+        });
   }
 
   /** Tests time-based attack prevention (timing attacks). */
@@ -613,28 +639,29 @@ public final class WasiSecurityTest {
 
     final byte[] wasmBytes = createTimingAttackModule();
 
-    assertDoesNotThrow(() -> {
-      final Module module = engine.createModule(wasmBytes);
-      final Wasi wasi = store.createWasi(config);
-      final Instance instance = store.createInstance(module, wasi.getImports());
+    assertDoesNotThrow(
+        () -> {
+          final Module module = engine.createModule(wasmBytes);
+          final Wasi wasi = store.createWasi(config);
+          final Instance instance = store.createInstance(module, wasi.getImports());
 
-      // Time-based attacks should be mitigated
-      if (instance.hasExport("timing_test")) {
-        final WasmFunction timingFunction = instance.getExport("timing_test").asFunction();
-        assertNotNull(timingFunction);
-        
-        final long startTime = System.nanoTime();
-        assertDoesNotThrow(() -> timingFunction.call());
-        final long elapsed = System.nanoTime() - startTime;
-        
-        // Timing should be reasonable (not indicating timing attack success)
-        assertTrue(elapsed < TimeUnit.SECONDS.toNanos(10));
-      }
+          // Time-based attacks should be mitigated
+          if (instance.hasExport("timing_test")) {
+            final WasmFunction timingFunction = instance.getExport("timing_test").asFunction();
+            assertNotNull(timingFunction);
 
-      instance.close();
-      wasi.close();
-      module.close();
-    });
+            final long startTime = System.nanoTime();
+            assertDoesNotThrow(() -> timingFunction.call());
+            final long elapsed = System.nanoTime() - startTime;
+
+            // Timing should be reasonable (not indicating timing attack success)
+            assertTrue(elapsed < TimeUnit.SECONDS.toNanos(10));
+          }
+
+          instance.close();
+          wasi.close();
+          module.close();
+        });
   }
 
   /** Creates a WebAssembly module for path traversal attack testing. */

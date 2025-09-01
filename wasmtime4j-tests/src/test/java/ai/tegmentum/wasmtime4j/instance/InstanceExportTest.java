@@ -22,7 +22,6 @@ import ai.tegmentum.wasmtime4j.utils.CrossRuntimeValidator;
 import ai.tegmentum.wasmtime4j.utils.TestCategories;
 import ai.tegmentum.wasmtime4j.utils.TestUtils;
 import ai.tegmentum.wasmtime4j.webassembly.WasmTestModules;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -44,14 +43,13 @@ import org.junit.jupiter.api.TestInfo;
 
 /**
  * Comprehensive test suite for Instance export discovery, type introspection, and binding
- * validation. Tests export resolution, function signature validation, memory/table access
- * patterns, and cross-runtime consistency in export handling.
+ * validation. Tests export resolution, function signature validation, memory/table access patterns,
+ * and cross-runtime consistency in export handling.
  */
 @DisplayName("Instance Export Tests")
 final class InstanceExportTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(InstanceExportTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(InstanceExportTest.class.getName());
 
   private final Map<String, Object> testMetrics = new HashMap<>();
 
@@ -143,8 +141,10 @@ final class InstanceExportTest {
                     assertThat(Arrays.asList(exportNames)).contains("add");
                   }
 
-                  addTestMetric(String.format("Module '%s' exports discovered: %d with %s", 
-                      moduleName, exportNames.length, runtimeType));
+                  addTestMetric(
+                      String.format(
+                          "Module '%s' exports discovered: %d with %s",
+                          moduleName, exportNames.length, runtimeType));
                 }
               }
             }
@@ -175,10 +175,9 @@ final class InstanceExportTest {
               final ExecutorService executor = Executors.newFixedThreadPool(10);
               try {
                 final CompletableFuture<String[]>[] futures = new CompletableFuture[20];
-                
+
                 for (int i = 0; i < futures.length; i++) {
-                  futures[i] = CompletableFuture.supplyAsync(
-                      instance::getExportNames, executor);
+                  futures[i] = CompletableFuture.supplyAsync(instance::getExportNames, executor);
                 }
 
                 // All concurrent calls should return identical results
@@ -209,10 +208,10 @@ final class InstanceExportTest {
                 final Instance instance = module.instantiate(store)) {
 
               final String[] exportNames = instance.getExportNames();
-              
+
               // Even if there are exports, the array should be properly formed
               assertThat(exportNames).isNotNull();
-              
+
               if (exportNames.length == 0) {
                 // If no exports, all lookups should return empty
                 assertThat(instance.getFunction("any_name")).isEmpty();
@@ -244,7 +243,7 @@ final class InstanceExportTest {
                 final Instance instance = module.instantiate(store)) {
 
               final String[] expectedFunctions = {"add", "sub", "mul"};
-              
+
               for (final String functionName : expectedFunctions) {
                 final Optional<WasmFunction> function = instance.getFunction(functionName);
                 assertThat(function).isPresent();
@@ -281,8 +280,9 @@ final class InstanceExportTest {
                     break;
                 }
 
-                addTestMetric(String.format("Function '%s' type validated with %s", 
-                    functionName, runtimeType));
+                addTestMetric(
+                    String.format(
+                        "Function '%s' type validated with %s", functionName, runtimeType));
               }
             }
           });
@@ -301,7 +301,8 @@ final class InstanceExportTest {
               try (final Module noParamModule = engine.compileModule(noParamModuleBytes);
                   final Instance noParamInstance = noParamModule.instantiate(store)) {
 
-                final Optional<WasmFunction> getConstFunc = noParamInstance.getFunction("get_const");
+                final Optional<WasmFunction> getConstFunc =
+                    noParamInstance.getFunction("get_const");
                 if (getConstFunc.isPresent()) {
                   final FunctionType funcType = getConstFunc.get().getFunctionType();
                   assertThat(funcType.getParamTypes()).hasSize(0);
@@ -330,8 +331,8 @@ final class InstanceExportTest {
                   assertThat(funcType.getReturnTypes()[0]).isEqualTo(WasmValueType.F32);
 
                   // Test actual call
-                  final WasmValue[] result = faddFunc.get().call(
-                      WasmValue.f32(3.14f), WasmValue.f32(2.86f));
+                  final WasmValue[] result =
+                      faddFunc.get().call(WasmValue.f32(3.14f), WasmValue.f32(2.86f));
                   assertThat(result).hasSize(1);
                   assertThat(result[0].asF32()).isCloseTo(6.0f, within(0.001f));
                 }
@@ -355,23 +356,23 @@ final class InstanceExportTest {
 
               final Optional<WasmFunction> func1 = instance.getFunction("add");
               final Optional<WasmFunction> func2 = instance.getFunction("add");
-              
+
               assertThat(func1).isPresent();
               assertThat(func2).isPresent();
 
               // Function references should have consistent properties
               assertThat(func1.get().getName()).isEqualTo(func2.get().getName());
-              
+
               final FunctionType type1 = func1.get().getFunctionType();
               final FunctionType type2 = func2.get().getFunctionType();
-              
+
               assertThat(type1.getParamTypes()).isEqualTo(type2.getParamTypes());
               assertThat(type1.getReturnTypes()).isEqualTo(type2.getReturnTypes());
 
               // Both function references should work identically
               final WasmValue[] result1 = func1.get().call(WasmValue.i32(20), WasmValue.i32(22));
               final WasmValue[] result2 = func2.get().call(WasmValue.i32(20), WasmValue.i32(22));
-              
+
               assertThat(result1[0].asI32()).isEqualTo(result2[0].asI32());
               assertThat(result1[0].asI32()).isEqualTo(42);
 
@@ -400,7 +401,7 @@ final class InstanceExportTest {
               final Optional<WasmMemory> defaultMemory = instance.getDefaultMemory();
               if (defaultMemory.isPresent()) {
                 assertThat(defaultMemory.get()).isNotNull();
-                
+
                 // Memory should be accessible and functional
                 // This requires the memory module to export memory operations
                 instance.callFunction("store", WasmValue.i32(0), WasmValue.i32(42));
@@ -476,8 +477,8 @@ final class InstanceExportTest {
               // Test that memory is still accessible after growth
               if (instance.getDefaultMemory().isPresent()) {
                 // Memory should still be functional
-                addTestMetric(String.format("Memory grew from %d pages with %s", 
-                    previousPages, runtimeType));
+                addTestMetric(
+                    String.format("Memory grew from %d pages with %s", previousPages, runtimeType));
               }
             }
           });
@@ -544,7 +545,7 @@ final class InstanceExportTest {
               // Test immutable global access
               final WasmValue[] constantValue1 = instance.callFunction("get_const");
               final WasmValue[] constantValue2 = instance.callFunction("get_const");
-              
+
               assertThat(constantValue1).hasSize(1);
               assertThat(constantValue2).hasSize(1);
               assertThat(constantValue1[0].asI32()).isEqualTo(constantValue2[0].asI32());
@@ -653,7 +654,7 @@ final class InstanceExportTest {
                 final Module module = engine.compileModule(moduleBytes)) {
 
               final Instance instance = module.instantiate(store);
-              
+
               // Verify instance works initially
               assertThat(instance.getExportNames()).isNotEmpty();
               assertThat(instance.getFunction("add")).isPresent();
@@ -663,8 +664,7 @@ final class InstanceExportTest {
               assertThat(instance.isValid()).isFalse();
 
               // All export operations should fail after close
-              assertThatThrownBy(instance::getExportNames)
-                  .isInstanceOf(WasmException.class);
+              assertThatThrownBy(instance::getExportNames).isInstanceOf(WasmException.class);
               assertThatThrownBy(() -> instance.getFunction("add"))
                   .isInstanceOf(WasmException.class);
               assertThatThrownBy(() -> instance.getMemory("memory"))
@@ -673,8 +673,7 @@ final class InstanceExportTest {
                   .isInstanceOf(WasmException.class);
               assertThatThrownBy(() -> instance.getGlobal("global"))
                   .isInstanceOf(WasmException.class);
-              assertThatThrownBy(instance::getDefaultMemory)
-                  .isInstanceOf(WasmException.class);
+              assertThatThrownBy(instance::getDefaultMemory).isInstanceOf(WasmException.class);
 
               addTestMetric("Closed instance export handling validated with " + runtimeType);
             }
@@ -727,8 +726,10 @@ final class InstanceExportTest {
                     final Optional<WasmFunction> function = instance.getFunction(exportName);
                     if (function.isPresent()) {
                       final FunctionType funcType = function.get().getFunctionType();
-                      final String signature = Arrays.toString(funcType.getParamTypes()) + 
-                          " -> " + Arrays.toString(funcType.getReturnTypes());
+                      final String signature =
+                          Arrays.toString(funcType.getParamTypes())
+                              + " -> "
+                              + Arrays.toString(funcType.getReturnTypes());
                       functionSignatures.put(exportName, signature);
                     }
                   }
@@ -755,20 +756,20 @@ final class InstanceExportTest {
                     final Instance instance = module.instantiate(store)) {
 
                   final Map<String, Boolean> resolutionResults = new HashMap<>();
-                  
+
                   // Test various export lookups
                   final String[] testNames = {"add", "nonexistent", "ADD", "", "add ", " add"};
                   for (final String testName : testNames) {
-                    resolutionResults.put("func_" + testName, 
-                        instance.getFunction(testName).isPresent());
-                    resolutionResults.put("mem_" + testName, 
-                        instance.getMemory(testName).isPresent());
-                    resolutionResults.put("table_" + testName, 
-                        instance.getTable(testName).isPresent());
-                    resolutionResults.put("global_" + testName, 
-                        instance.getGlobal(testName).isPresent());
+                    resolutionResults.put(
+                        "func_" + testName, instance.getFunction(testName).isPresent());
+                    resolutionResults.put(
+                        "mem_" + testName, instance.getMemory(testName).isPresent());
+                    resolutionResults.put(
+                        "table_" + testName, instance.getTable(testName).isPresent());
+                    resolutionResults.put(
+                        "global_" + testName, instance.getGlobal(testName).isPresent());
                   }
-                  
+
                   return resolutionResults;
                 }
               });

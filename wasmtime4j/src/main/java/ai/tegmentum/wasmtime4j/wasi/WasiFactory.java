@@ -1,7 +1,6 @@
 package ai.tegmentum.wasmtime4j.wasi;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import java.util.Locale;
 import java.util.logging.Logger;
 
 /**
@@ -56,8 +55,8 @@ public final class WasiFactory {
    * Creates a new WASI context with automatic implementation selection.
    *
    * <p>This method automatically selects the best available WASI runtime implementation based on
-   * the Java version and system configuration. It prefers Panama FFI on Java 23+ but falls back
-   * to JNI if Panama is not available.
+   * the Java version and system configuration. It prefers Panama FFI on Java 23+ but falls back to
+   * JNI if Panama is not available.
    *
    * @return a new WasiContext instance
    * @throws WasmException if no suitable WASI runtime implementation is available
@@ -80,8 +79,7 @@ public final class WasiFactory {
       throw new IllegalArgumentException("WASI runtime type cannot be null");
     }
 
-    logger.info(
-        "Creating WASI context with type: " + sanitizeForLog(runtimeType.toString()));
+    logger.info("Creating WASI context with type: " + sanitizeForLog(runtimeType.toString()));
 
     switch (runtimeType) {
       case JNI:
@@ -112,7 +110,7 @@ public final class WasiFactory {
     if (runtimeType == null) {
       return false;
     }
-    
+
     try {
       switch (runtimeType) {
         case JNI:
@@ -174,7 +172,8 @@ public final class WasiFactory {
 
     if (javaVersion >= 23 && isPanamaRuntimeAvailable()) {
       logger.info(
-          "Auto-selected Panama WASI runtime for Java " + sanitizeForLog(String.valueOf(javaVersion)));
+          "Auto-selected Panama WASI runtime for Java "
+              + sanitizeForLog(String.valueOf(javaVersion)));
       return WasiRuntimeType.PANAMA;
     } else {
       logger.info(
@@ -186,7 +185,8 @@ public final class WasiFactory {
   private static WasiContext createJniContext() throws WasmException {
     try {
       // This will be implemented by loading the JNI WASI implementation class
-      final Class<?> jniWasiContextClass = Class.forName("ai.tegmentum.wasmtime4j.jni.JniWasiContext");
+      final Class<?> jniWasiContextClass =
+          Class.forName("ai.tegmentum.wasmtime4j.jni.JniWasiContext");
       return (WasiContext) jniWasiContextClass.getDeclaredConstructor().newInstance();
     } catch (final Exception e) {
       throw new WasmException("Failed to create JNI WASI context: " + e.getMessage(), e);

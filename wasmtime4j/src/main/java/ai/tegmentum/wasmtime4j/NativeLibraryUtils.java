@@ -150,7 +150,6 @@ public final class NativeLibraryUtils {
       return loadingMethod;
     }
 
-
     /**
      * Gets the error message from the exception that occurred during loading.
      *

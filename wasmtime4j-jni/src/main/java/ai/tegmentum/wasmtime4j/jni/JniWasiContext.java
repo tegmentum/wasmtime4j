@@ -1,8 +1,6 @@
 package ai.tegmentum.wasmtime4j.jni;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.jni.exception.JniException;
-import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import ai.tegmentum.wasmtime4j.wasi.WasiComponent;
 import ai.tegmentum.wasmtime4j.wasi.WasiContext;
@@ -17,9 +15,9 @@ import java.util.logging.Logger;
 /**
  * JNI implementation of the WasiContext interface.
  *
- * <p>This class provides a concrete implementation of WASI context functionality using JNI
- * bindings to the native Wasmtime component model. It manages component loading, runtime
- * information, and context lifecycle through JNI calls.
+ * <p>This class provides a concrete implementation of WASI context functionality using JNI bindings
+ * to the native Wasmtime component model. It manages component loading, runtime information, and
+ * context lifecycle through JNI calls.
  *
  * <p>Key features:
  *
@@ -53,10 +51,10 @@ public final class JniWasiContext implements WasiContext {
     try {
       // Create the underlying component engine
       this.componentEngine = JniComponent.createComponentEngine();
-      
+
       // Create runtime information
       this.runtimeInfo = createRuntimeInfo();
-      
+
       LOGGER.info("Created JNI WASI context successfully");
 
     } catch (final Exception e) {
@@ -72,9 +70,9 @@ public final class JniWasiContext implements WasiContext {
 
     try {
       // Load component through JNI component engine
-      JniComponent.JniComponentHandle componentHandle = 
+      JniComponent.JniComponentHandle componentHandle =
           componentEngine.loadComponentFromBytes(wasmBytes);
-      
+
       // Create unified WasiComponent wrapper
       return new JniWasiComponent(componentEngine, componentHandle, null);
 
@@ -89,8 +87,8 @@ public final class JniWasiContext implements WasiContext {
   /**
    * Creates a component from a WebAssembly file.
    *
-   * <p>This is a convenience method for loading components from files. The file is read into
-   * memory and then loaded as bytes.
+   * <p>This is a convenience method for loading components from files. The file is read into memory
+   * and then loaded as bytes.
    *
    * @param wasmFile the path to the WebAssembly component file
    * @return a new WasiComponent instance
@@ -104,14 +102,14 @@ public final class JniWasiContext implements WasiContext {
     try {
       // Read file into bytes
       byte[] wasmBytes = Files.readAllBytes(wasmFile);
-      
-      // Load component through JNI component engine  
-      JniComponent.JniComponentHandle componentHandle = 
+
+      // Load component through JNI component engine
+      JniComponent.JniComponentHandle componentHandle =
           componentEngine.loadComponentFromBytes(wasmBytes);
-      
+
       // Extract file name for component name
       String componentName = wasmFile.getFileName().toString();
-      
+
       // Create unified WasiComponent wrapper
       return new JniWasiComponent(componentEngine, componentHandle, componentName);
 
@@ -134,7 +132,7 @@ public final class JniWasiContext implements WasiContext {
    * @throws WasmException if component creation fails
    * @throws IllegalArgumentException if wasmFile or componentName is null
    */
-  public WasiComponent createComponentFromFile(final Path wasmFile, final String componentName) 
+  public WasiComponent createComponentFromFile(final Path wasmFile, final String componentName)
       throws WasmException {
     Objects.requireNonNull(wasmFile, "WebAssembly file path cannot be null");
     Objects.requireNonNull(componentName, "Component name cannot be null");
@@ -143,11 +141,11 @@ public final class JniWasiContext implements WasiContext {
     try {
       // Read file into bytes
       byte[] wasmBytes = Files.readAllBytes(wasmFile);
-      
+
       // Load component through JNI component engine
-      JniComponent.JniComponentHandle componentHandle = 
+      JniComponent.JniComponentHandle componentHandle =
           componentEngine.loadComponentFromBytes(wasmBytes);
-      
+
       // Create unified WasiComponent wrapper
       return new JniWasiComponent(componentEngine, componentHandle, componentName);
 
@@ -232,10 +230,6 @@ public final class JniWasiContext implements WasiContext {
    */
   private WasiRuntimeInfo createRuntimeInfo() {
     // TODO: Extract actual versions from native layer
-    return new WasiRuntimeInfo(
-        WasiRuntimeType.JNI,
-        "1.0.0-jni",
-        "36.0.2"
-    );
+    return new WasiRuntimeInfo(WasiRuntimeType.JNI, "1.0.0-jni", "36.0.2");
   }
 }

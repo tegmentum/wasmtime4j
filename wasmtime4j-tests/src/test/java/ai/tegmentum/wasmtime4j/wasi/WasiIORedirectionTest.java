@@ -1,8 +1,6 @@
 package ai.tegmentum.wasmtime4j.wasi;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -16,14 +14,10 @@ import ai.tegmentum.wasmtime4j.functions.WasmFunction;
 import ai.tegmentum.wasmtime4j.utils.CrossRuntimeValidator;
 import ai.tegmentum.wasmtime4j.utils.TestCategories;
 import ai.tegmentum.wasmtime4j.utils.TestUtils;
-import ai.tegmentum.wasmtime4j.wasi.Wasi;
-import ai.tegmentum.wasmtime4j.wasi.WasiConfig;
 import ai.tegmentum.wasmtime4j.webassembly.WasmTestModules;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -86,14 +80,15 @@ public final class WasiIORedirectionTest {
             .inheritStderr(true)
             .build();
 
-    assertDoesNotThrow(() -> {
-      final Wasi wasi = store.createWasi(config);
-      assertNotNull(wasi);
-      assertTrue(wasi.isValid());
+    assertDoesNotThrow(
+        () -> {
+          final Wasi wasi = store.createWasi(config);
+          assertNotNull(wasi);
+          assertTrue(wasi.isValid());
 
-      // Verify stdin is configured (implementation dependent)
-      wasi.close();
-    });
+          // Verify stdin is configured (implementation dependent)
+          wasi.close();
+        });
   }
 
   /** Tests stdout inheritance from host process. */
@@ -109,13 +104,14 @@ public final class WasiIORedirectionTest {
             .inheritStderr(true)
             .build();
 
-    assertDoesNotThrow(() -> {
-      final Wasi wasi = store.createWasi(config);
-      assertNotNull(wasi);
-      assertTrue(wasi.isValid());
+    assertDoesNotThrow(
+        () -> {
+          final Wasi wasi = store.createWasi(config);
+          assertNotNull(wasi);
+          assertTrue(wasi.isValid());
 
-      wasi.close();
-    });
+          wasi.close();
+        });
   }
 
   /** Tests stderr inheritance from host process. */
@@ -131,13 +127,14 @@ public final class WasiIORedirectionTest {
             .inheritStderr(true) // Inherit host stderr
             .build();
 
-    assertDoesNotThrow(() -> {
-      final Wasi wasi = store.createWasi(config);
-      assertNotNull(wasi);
-      assertTrue(wasi.isValid());
+    assertDoesNotThrow(
+        () -> {
+          final Wasi wasi = store.createWasi(config);
+          assertNotNull(wasi);
+          assertTrue(wasi.isValid());
 
-      wasi.close();
-    });
+          wasi.close();
+        });
   }
 
   /** Tests stdin redirection from byte array. */
@@ -157,13 +154,14 @@ public final class WasiIORedirectionTest {
             .inheritStderr(true)
             .build();
 
-    assertDoesNotThrow(() -> {
-      final Wasi wasi = store.createWasi(config);
-      assertNotNull(wasi);
-      assertTrue(wasi.isValid());
+    assertDoesNotThrow(
+        () -> {
+          final Wasi wasi = store.createWasi(config);
+          assertNotNull(wasi);
+          assertTrue(wasi.isValid());
 
-      wasi.close();
-    });
+          wasi.close();
+        });
   }
 
   /** Tests stdout redirection to byte array. */
@@ -183,27 +181,28 @@ public final class WasiIORedirectionTest {
 
     final byte[] wasmBytes = WasmTestModules.getModule("wasi_basic");
 
-    assertDoesNotThrow(() -> {
-      final Module module = engine.createModule(wasmBytes);
-      final Wasi wasi = store.createWasi(config);
-      final Instance instance = store.createInstance(module, wasi.getImports());
+    assertDoesNotThrow(
+        () -> {
+          final Module module = engine.createModule(wasmBytes);
+          final Wasi wasi = store.createWasi(config);
+          final Instance instance = store.createInstance(module, wasi.getImports());
 
-      // Execute WASI program that should write to stdout
-      if (instance.hasExport("_start")) {
-        final WasmFunction startFunction = instance.getExport("_start").asFunction();
-        assertNotNull(startFunction);
-        
-        assertDoesNotThrow(() -> startFunction.call());
-      }
+          // Execute WASI program that should write to stdout
+          if (instance.hasExport("_start")) {
+            final WasmFunction startFunction = instance.getExport("_start").asFunction();
+            assertNotNull(startFunction);
 
-      // Check captured stdout (content depends on WASI module behavior)
-      final byte[] capturedOutput = stdoutStream.toByteArray();
-      assertNotNull(capturedOutput);
-      
-      instance.close();
-      wasi.close();
-      module.close();
-    });
+            assertDoesNotThrow(() -> startFunction.call());
+          }
+
+          // Check captured stdout (content depends on WASI module behavior)
+          final byte[] capturedOutput = stdoutStream.toByteArray();
+          assertNotNull(capturedOutput);
+
+          instance.close();
+          wasi.close();
+          module.close();
+        });
   }
 
   /** Tests stderr redirection to byte array. */
@@ -223,27 +222,28 @@ public final class WasiIORedirectionTest {
 
     final byte[] wasmBytes = WasmTestModules.getModule("wasi_basic");
 
-    assertDoesNotThrow(() -> {
-      final Module module = engine.createModule(wasmBytes);
-      final Wasi wasi = store.createWasi(config);
-      final Instance instance = store.createInstance(module, wasi.getImports());
+    assertDoesNotThrow(
+        () -> {
+          final Module module = engine.createModule(wasmBytes);
+          final Wasi wasi = store.createWasi(config);
+          final Instance instance = store.createInstance(module, wasi.getImports());
 
-      // Execute WASI program
-      if (instance.hasExport("_start")) {
-        final WasmFunction startFunction = instance.getExport("_start").asFunction();
-        assertNotNull(startFunction);
-        
-        assertDoesNotThrow(() -> startFunction.call());
-      }
+          // Execute WASI program
+          if (instance.hasExport("_start")) {
+            final WasmFunction startFunction = instance.getExport("_start").asFunction();
+            assertNotNull(startFunction);
 
-      // Check captured stderr
-      final byte[] capturedError = stderrStream.toByteArray();
-      assertNotNull(capturedError);
-      
-      instance.close();
-      wasi.close();
-      module.close();
-    });
+            assertDoesNotThrow(() -> startFunction.call());
+          }
+
+          // Check captured stderr
+          final byte[] capturedError = stderrStream.toByteArray();
+          assertNotNull(capturedError);
+
+          instance.close();
+          wasi.close();
+          module.close();
+        });
   }
 
   /** Tests file-based I/O redirection. */
@@ -268,23 +268,24 @@ public final class WasiIORedirectionTest {
 
     final byte[] wasmBytes = createIOTestModule();
 
-    assertDoesNotThrow(() -> {
-      final Module module = engine.createModule(wasmBytes);
-      final Wasi wasi = store.createWasi(config);
-      final Instance instance = store.createInstance(module, wasi.getImports());
+    assertDoesNotThrow(
+        () -> {
+          final Module module = engine.createModule(wasmBytes);
+          final Wasi wasi = store.createWasi(config);
+          final Instance instance = store.createInstance(module, wasi.getImports());
 
-      // Execute I/O operations
-      if (instance.hasExport("test_io")) {
-        final WasmFunction ioFunction = instance.getExport("test_io").asFunction();
-        assertNotNull(ioFunction);
-        
-        assertDoesNotThrow(() -> ioFunction.call());
-      }
+          // Execute I/O operations
+          if (instance.hasExport("test_io")) {
+            final WasmFunction ioFunction = instance.getExport("test_io").asFunction();
+            assertNotNull(ioFunction);
 
-      instance.close();
-      wasi.close();
-      module.close();
-    });
+            assertDoesNotThrow(() -> ioFunction.call());
+          }
+
+          instance.close();
+          wasi.close();
+          module.close();
+        });
 
     // Verify output files were written (content depends on module behavior)
     assertTrue(Files.exists(outputFile) || Files.size(outputFile) >= 0);
@@ -314,38 +315,41 @@ public final class WasiIORedirectionTest {
 
     for (int i = 0; i < instanceCount; i++) {
       final int instanceId = i;
-      threads[i] = new Thread(() -> {
-        try (final WasmRuntime instanceRuntime = WasmRuntimeFactory.create();
-             final Engine instanceEngine = instanceRuntime.createEngine();
-             final Store instanceStore = instanceEngine.createStore()) {
+      threads[i] =
+          new Thread(
+              () -> {
+                try (final WasmRuntime instanceRuntime = WasmRuntimeFactory.create();
+                    final Engine instanceEngine = instanceRuntime.createEngine();
+                    final Store instanceStore = instanceEngine.createStore()) {
 
-          final WasiConfig config =
-              WasiConfig.builder()
-                  .inheritEnv(true)
-                  .stdin(stdinStreams[instanceId])
-                  .stdout(stdoutStreams[instanceId])
-                  .inheritStderr(true)
-                  .build();
+                  final WasiConfig config =
+                      WasiConfig.builder()
+                          .inheritEnv(true)
+                          .stdin(stdinStreams[instanceId])
+                          .stdout(stdoutStreams[instanceId])
+                          .inheritStderr(true)
+                          .build();
 
-          final byte[] wasmBytes = WasmTestModules.getModule("wasi_basic");
-          final Module module = instanceEngine.createModule(wasmBytes);
-          final Wasi wasi = instanceStore.createWasi(config);
-          final Instance instance = instanceStore.createInstance(module, wasi.getImports());
+                  final byte[] wasmBytes = WasmTestModules.getModule("wasi_basic");
+                  final Module module = instanceEngine.createModule(wasmBytes);
+                  final Wasi wasi = instanceStore.createWasi(config);
+                  final Instance instance = instanceStore.createInstance(module, wasi.getImports());
 
-          if (instance.hasExport("_start")) {
-            final WasmFunction startFunction = instance.getExport("_start").asFunction();
-            startFunction.call();
-          }
+                  if (instance.hasExport("_start")) {
+                    final WasmFunction startFunction = instance.getExport("_start").asFunction();
+                    startFunction.call();
+                  }
 
-          instance.close();
-          wasi.close();
-          module.close();
+                  instance.close();
+                  wasi.close();
+                  module.close();
 
-        } catch (final Exception e) {
-          exceptions[instanceId] = e;
-          LOGGER.severe("Concurrent I/O instance " + instanceId + " failed: " + e.getMessage());
-        }
-      });
+                } catch (final Exception e) {
+                  exceptions[instanceId] = e;
+                  LOGGER.severe(
+                      "Concurrent I/O instance " + instanceId + " failed: " + e.getMessage());
+                }
+              });
     }
 
     // Start all threads
@@ -402,21 +406,22 @@ public final class WasiIORedirectionTest {
             .inheritStderr(true)
             .build();
 
-    assertDoesNotThrow(() -> {
-      final Wasi wasi1 = store.createWasi(config1);
-      final Wasi wasi2 = store.createWasi(config2);
+    assertDoesNotThrow(
+        () -> {
+          final Wasi wasi1 = store.createWasi(config1);
+          final Wasi wasi2 = store.createWasi(config2);
 
-      assertNotNull(wasi1);
-      assertNotNull(wasi2);
-      assertTrue(wasi1.isValid());
-      assertTrue(wasi2.isValid());
+          assertNotNull(wasi1);
+          assertNotNull(wasi2);
+          assertTrue(wasi1.isValid());
+          assertTrue(wasi2.isValid());
 
-      // Instances should be isolated - different streams
-      assertTrue(wasi1 != wasi2);
+          // Instances should be isolated - different streams
+          assertTrue(wasi1 != wasi2);
 
-      wasi1.close();
-      wasi2.close();
-    });
+          wasi1.close();
+          wasi2.close();
+        });
 
     // Verify streams remain separate
     assertNotNull(stdout1.toByteArray());
@@ -447,23 +452,24 @@ public final class WasiIORedirectionTest {
 
     final byte[] wasmBytes = createBinaryIOModule();
 
-    assertDoesNotThrow(() -> {
-      final Module module = engine.createModule(wasmBytes);
-      final Wasi wasi = store.createWasi(config);
-      final Instance instance = store.createInstance(module, wasi.getImports());
+    assertDoesNotThrow(
+        () -> {
+          final Module module = engine.createModule(wasmBytes);
+          final Wasi wasi = store.createWasi(config);
+          final Instance instance = store.createInstance(module, wasi.getImports());
 
-      // Execute binary I/O test
-      if (instance.hasExport("test_binary_io")) {
-        final WasmFunction binaryFunction = instance.getExport("test_binary_io").asFunction();
-        assertNotNull(binaryFunction);
-        
-        assertDoesNotThrow(() -> binaryFunction.call());
-      }
+          // Execute binary I/O test
+          if (instance.hasExport("test_binary_io")) {
+            final WasmFunction binaryFunction = instance.getExport("test_binary_io").asFunction();
+            assertNotNull(binaryFunction);
 
-      instance.close();
-      wasi.close();
-      module.close();
-    });
+            assertDoesNotThrow(() -> binaryFunction.call());
+          }
+
+          instance.close();
+          wasi.close();
+          module.close();
+        });
 
     // Verify binary data integrity (depends on module implementation)
     final byte[] outputData = stdoutStream.toByteArray();
@@ -496,27 +502,29 @@ public final class WasiIORedirectionTest {
 
     final byte[] wasmBytes = createLargeDataModule();
 
-    assertDoesNotThrow(() -> {
-      final Module module = engine.createModule(wasmBytes);
-      final Wasi wasi = store.createWasi(config);
-      final Instance instance = store.createInstance(module, wasi.getImports());
+    assertDoesNotThrow(
+        () -> {
+          final Module module = engine.createModule(wasmBytes);
+          final Wasi wasi = store.createWasi(config);
+          final Instance instance = store.createInstance(module, wasi.getImports());
 
-      // Execute large data processing
-      if (instance.hasExport("process_large_data")) {
-        final WasmFunction dataFunction = instance.getExport("process_large_data").asFunction();
-        assertNotNull(dataFunction);
-        
-        assertDoesNotThrow(() -> dataFunction.call());
-      }
+          // Execute large data processing
+          if (instance.hasExport("process_large_data")) {
+            final WasmFunction dataFunction = instance.getExport("process_large_data").asFunction();
+            assertNotNull(dataFunction);
 
-      instance.close();
-      wasi.close();
-      module.close();
-    });
+            assertDoesNotThrow(() -> dataFunction.call());
+          }
+
+          instance.close();
+          wasi.close();
+          module.close();
+        });
 
     final byte[] outputData = stdoutStream.toByteArray();
     assertNotNull(outputData);
-    LOGGER.info("Processed " + largeInput.length + " bytes, output: " + outputData.length + " bytes");
+    LOGGER.info(
+        "Processed " + largeInput.length + " bytes, output: " + outputData.length + " bytes");
   }
 
   /** Tests cross-runtime I/O redirection compatibility. */
@@ -531,47 +539,49 @@ public final class WasiIORedirectionTest {
     }
 
     final String testInput = "Cross-runtime I/O test data\n";
-    final CrossRuntimeValidator.RuntimeOperation<String> ioOperation = runtime -> {
-      try (final Engine engine = runtime.createEngine();
-           final Store store = engine.createStore()) {
+    final CrossRuntimeValidator.RuntimeOperation<String> ioOperation =
+        runtime -> {
+          try (final Engine engine = runtime.createEngine();
+              final Store store = engine.createStore()) {
 
-        final ByteArrayInputStream stdin = new ByteArrayInputStream(testInput.getBytes());
-        final ByteArrayOutputStream stdout = new ByteArrayOutputStream();
+            final ByteArrayInputStream stdin = new ByteArrayInputStream(testInput.getBytes());
+            final ByteArrayOutputStream stdout = new ByteArrayOutputStream();
 
-        final WasiConfig config =
-            WasiConfig.builder()
-                .inheritEnv(true)
-                .stdin(stdin)
-                .stdout(stdout)
-                .inheritStderr(true)
-                .build();
+            final WasiConfig config =
+                WasiConfig.builder()
+                    .inheritEnv(true)
+                    .stdin(stdin)
+                    .stdout(stdout)
+                    .inheritStderr(true)
+                    .build();
 
-        final byte[] wasmBytes = WasmTestModules.getModule("wasi_basic");
-        final Module module = engine.createModule(wasmBytes);
-        final Wasi wasi = store.createWasi(config);
-        final Instance instance = store.createInstance(module, wasi.getImports());
+            final byte[] wasmBytes = WasmTestModules.getModule("wasi_basic");
+            final Module module = engine.createModule(wasmBytes);
+            final Wasi wasi = store.createWasi(config);
+            final Instance instance = store.createInstance(module, wasi.getImports());
 
-        if (instance.hasExport("_start")) {
-          final WasmFunction startFunction = instance.getExport("_start").asFunction();
-          startFunction.call();
-        }
+            if (instance.hasExport("_start")) {
+              final WasmFunction startFunction = instance.getExport("_start").asFunction();
+              startFunction.call();
+            }
 
-        final byte[] output = stdout.toByteArray();
-        final String result = String.format("input=%d,output=%d", 
-            testInput.length(), output.length);
+            final byte[] output = stdout.toByteArray();
+            final String result =
+                String.format("input=%d,output=%d", testInput.length(), output.length);
 
-        instance.close();
-        wasi.close();
-        module.close();
+            instance.close();
+            wasi.close();
+            module.close();
 
-        return result;
-      }
-    };
+            return result;
+          }
+        };
 
     final CrossRuntimeValidator.ComparisonResult result =
         CrossRuntimeValidator.validateCrossRuntime(ioOperation, Duration.ofSeconds(15));
 
-    assertTrue(result.isValid(),
+    assertTrue(
+        result.isValid(),
         "I/O behavior differs between runtimes: " + result.getDifferenceDescription());
 
     LOGGER.info("Cross-runtime I/O validation successful");
@@ -595,11 +605,12 @@ public final class WasiIORedirectionTest {
             .build();
 
     // Should handle closed stream gracefully
-    assertDoesNotThrow(() -> {
-      final Wasi wasi = store.createWasi(config);
-      assertNotNull(wasi);
-      wasi.close();
-    });
+    assertDoesNotThrow(
+        () -> {
+          final Wasi wasi = store.createWasi(config);
+          assertNotNull(wasi);
+          wasi.close();
+        });
   }
 
   /** Tests buffering behavior of I/O streams. */
@@ -620,30 +631,31 @@ public final class WasiIORedirectionTest {
 
     final byte[] wasmBytes = createBufferingTestModule();
 
-    assertDoesNotThrow(() -> {
-      final Module module = engine.createModule(wasmBytes);
-      final Wasi wasi = store.createWasi(config);
-      final Instance instance = store.createInstance(module, wasi.getImports());
+    assertDoesNotThrow(
+        () -> {
+          final Module module = engine.createModule(wasmBytes);
+          final Wasi wasi = store.createWasi(config);
+          final Instance instance = store.createInstance(module, wasi.getImports());
 
-      // Test buffering behavior
-      if (instance.hasExport("test_buffering")) {
-        final WasmFunction bufferFunction = instance.getExport("test_buffering").asFunction();
-        assertNotNull(bufferFunction);
-        
-        assertDoesNotThrow(() -> bufferFunction.call());
-      }
+          // Test buffering behavior
+          if (instance.hasExport("test_buffering")) {
+            final WasmFunction bufferFunction = instance.getExport("test_buffering").asFunction();
+            assertNotNull(bufferFunction);
 
-      // Check that data was captured
-      final byte[] stdoutData = stdoutStream.toByteArray();
-      final byte[] stderrData = stderrStream.toByteArray();
+            assertDoesNotThrow(() -> bufferFunction.call());
+          }
 
-      assertNotNull(stdoutData);
-      assertNotNull(stderrData);
+          // Check that data was captured
+          final byte[] stdoutData = stdoutStream.toByteArray();
+          final byte[] stderrData = stderrStream.toByteArray();
 
-      instance.close();
-      wasi.close();
-      module.close();
-    });
+          assertNotNull(stdoutData);
+          assertNotNull(stderrData);
+
+          instance.close();
+          wasi.close();
+          module.close();
+        });
   }
 
   /** Creates a WebAssembly module for I/O testing. */

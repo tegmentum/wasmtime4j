@@ -3,20 +3,20 @@ package ai.tegmentum.wasmtime4j.jni;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.wasi.WasiComponent;
 import ai.tegmentum.wasmtime4j.wasi.WasiConfig;
+import ai.tegmentum.wasmtime4j.wasi.WasiFileSystemStats;
+import ai.tegmentum.wasmtime4j.wasi.WasiFunctionMetadata;
 import ai.tegmentum.wasmtime4j.wasi.WasiInstance;
 import ai.tegmentum.wasmtime4j.wasi.WasiInstanceState;
 import ai.tegmentum.wasmtime4j.wasi.WasiInstanceStats;
-import ai.tegmentum.wasmtime4j.wasi.WasiFunctionMetadata;
-import ai.tegmentum.wasmtime4j.wasi.WasiResource;
 import ai.tegmentum.wasmtime4j.wasi.WasiMemoryInfo;
+import ai.tegmentum.wasmtime4j.wasi.WasiNetworkStats;
 import ai.tegmentum.wasmtime4j.wasi.WasiParameterMetadata;
-import ai.tegmentum.wasmtime4j.wasi.WasiTypeMetadata;
+import ai.tegmentum.wasmtime4j.wasi.WasiResource;
+import ai.tegmentum.wasmtime4j.wasi.WasiResourceHandle;
 import ai.tegmentum.wasmtime4j.wasi.WasiResourceMetadata;
 import ai.tegmentum.wasmtime4j.wasi.WasiResourceState;
 import ai.tegmentum.wasmtime4j.wasi.WasiResourceStats;
-import ai.tegmentum.wasmtime4j.wasi.WasiResourceHandle;
-import ai.tegmentum.wasmtime4j.wasi.WasiFileSystemStats;
-import ai.tegmentum.wasmtime4j.wasi.WasiNetworkStats;
+import ai.tegmentum.wasmtime4j.wasi.WasiTypeMetadata;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -47,15 +47,15 @@ import java.util.logging.Logger;
  *   <li>Thread-safe operations with defensive programming
  * </ul>
  *
- * <p>This implementation follows the unified API pattern while delegating to JNI-specific
- * component instance wrappers for native interactions.
+ * <p>This implementation follows the unified API pattern while delegating to JNI-specific component
+ * instance wrappers for native interactions.
  *
  * @since 1.0.0
  */
 public final class JniWasiInstance implements WasiInstance {
 
   private static final Logger LOGGER = Logger.getLogger(JniWasiInstance.class.getName());
-  
+
   private static final AtomicLong NEXT_INSTANCE_ID = new AtomicLong(1);
 
   private final long instanceId;
@@ -65,7 +65,7 @@ public final class JniWasiInstance implements WasiInstance {
   private final Instant createdAt;
   private final Map<String, Object> properties;
   private final List<WasiResource> resources;
-  
+
   private volatile WasiInstanceState state;
   private volatile Instant lastActivityAt;
   private volatile boolean closed = false;
@@ -147,17 +147,19 @@ public final class JniWasiInstance implements WasiInstance {
 
     try {
       setState(WasiInstanceState.RUNNING);
-      
+
       // TODO: Implement actual function calling through native layer
       // For now, simulate basic function call
-      LOGGER.fine("Calling function: " + functionName + " with " + parameters.length + " parameters");
-      
+      LOGGER.fine(
+          "Calling function: " + functionName + " with " + parameters.length + " parameters");
+
       // This would be replaced with actual JNI calls to invoke the function
-      // Object result = nativeCallFunction(instanceHandle.getNativeHandle(), functionName, parameters, timeout);
-      
+      // Object result = nativeCallFunction(instanceHandle.getNativeHandle(), functionName,
+      // parameters, timeout);
+
       // For now, return null to indicate successful void call
       Object result = null;
-      
+
       setState(WasiInstanceState.CREATED); // Return to ready state
       return result;
 
@@ -171,7 +173,8 @@ public final class JniWasiInstance implements WasiInstance {
   }
 
   @Override
-  public CompletableFuture<Object> callAsync(final String functionName, final Object... parameters) {
+  public CompletableFuture<Object> callAsync(
+      final String functionName, final Object... parameters) {
     Objects.requireNonNull(functionName, "Function name cannot be null");
     if (functionName.trim().isEmpty()) {
       throw new IllegalArgumentException("Function name cannot be empty");
@@ -179,13 +182,14 @@ public final class JniWasiInstance implements WasiInstance {
     ensureNotClosed();
     ensureCallableState();
 
-    return CompletableFuture.supplyAsync(() -> {
-      try {
-        return call(functionName, parameters);
-      } catch (WasmException e) {
-        throw new RuntimeException(e);
-      }
-    });
+    return CompletableFuture.supplyAsync(
+        () -> {
+          try {
+            return call(functionName, parameters);
+          } catch (WasmException e) {
+            throw new RuntimeException(e);
+          }
+        });
   }
 
   @Override
@@ -261,9 +265,7 @@ public final class JniWasiInstance implements WasiInstance {
   public Optional<WasiResource> getResource(final long resourceId) {
     ensureNotClosed();
     synchronized (resources) {
-      return resources.stream()
-          .filter(resource -> resource.getId() == resourceId)
-          .findFirst();
+      return resources.stream().filter(resource -> resource.getId() == resourceId).findFirst();
     }
   }
 
@@ -282,11 +284,11 @@ public final class JniWasiInstance implements WasiInstance {
       // TODO: Implement actual resource creation through native layer
       // For now, create a placeholder resource
       WasiResource resource = createPlaceholderResource(resourceType, parameters);
-      
+
       synchronized (resources) {
         resources.add(resource);
       }
-      
+
       LOGGER.fine("Created resource of type: " + resourceType + " with ID: " + resource.getId());
       return resource;
 
@@ -316,7 +318,7 @@ public final class JniWasiInstance implements WasiInstance {
     if (state == WasiInstanceState.SUSPENDED) {
       return; // Already suspended
     }
-    
+
     try {
       // TODO: Implement actual suspension through native layer
       setState(WasiInstanceState.SUSPENDED);
@@ -332,7 +334,7 @@ public final class JniWasiInstance implements WasiInstance {
     if (state != WasiInstanceState.SUSPENDED) {
       throw new IllegalStateException("Instance is not suspended");
     }
-    
+
     try {
       // TODO: Implement actual resumption through native layer
       setState(WasiInstanceState.CREATED);
@@ -346,7 +348,7 @@ public final class JniWasiInstance implements WasiInstance {
   @Override
   public void terminate() throws WasmException {
     ensureNotClosed();
-    
+
     try {
       // TODO: Implement actual termination through native layer
       setState(WasiInstanceState.TERMINATED);
@@ -372,7 +374,7 @@ public final class JniWasiInstance implements WasiInstance {
     if (key.trim().isEmpty()) {
       throw new IllegalArgumentException("Property key cannot be empty");
     }
-    
+
     properties.put(key, value);
   }
 
@@ -382,7 +384,7 @@ public final class JniWasiInstance implements WasiInstance {
     if (key.trim().isEmpty()) {
       throw new IllegalArgumentException("Property key cannot be empty");
     }
-    
+
     return Optional.ofNullable(properties.get(key));
   }
 
@@ -469,11 +471,11 @@ public final class JniWasiInstance implements WasiInstance {
       // TODO: Implement actual function extraction from native layer
       // For now, return empty list as placeholder
       List<String> functions = new ArrayList<>();
-      
+
       // This would be replaced with actual native calls to extract functions
       // functions.add("process");
       // functions.add("initialize");
-      
+
       LOGGER.fine("Extracted " + functions.size() + " exported functions from instance");
       return functions;
 
@@ -555,7 +557,8 @@ public final class JniWasiInstance implements WasiInstance {
    * @param parameters creation parameters
    * @return a placeholder resource
    */
-  private WasiResource createPlaceholderResource(final String resourceType, final Object... parameters) {
+  private WasiResource createPlaceholderResource(
+      final String resourceType, final Object... parameters) {
     // TODO: Implement actual resource creation
     // For now, create a basic placeholder resource
     return new WasiResource() {
@@ -622,7 +625,8 @@ public final class JniWasiInstance implements WasiInstance {
       }
 
       @Override
-      public Object invoke(final String operation, final Object... parameters) throws WasmException {
+      public Object invoke(final String operation, final Object... parameters)
+          throws WasmException {
         Objects.requireNonNull(operation, "Operation cannot be null");
         updateLastAccessed();
         throw new WasmException("Operation not supported: " + operation);
@@ -915,14 +919,13 @@ public final class JniWasiInstance implements WasiInstance {
       @Override
       public String getSummary() {
         return String.format(
-          "Instance %d: state=%s, uptime=%s, calls=%d, resources=%d, memory=%d bytes",
-          getInstanceId(),
-          getState(),
-          getUptime(),
-          getFunctionCallCount(),
-          getCurrentResourceCount(),
-          getCurrentMemoryUsage()
-        );
+            "Instance %d: state=%s, uptime=%s, calls=%d, resources=%d, memory=%d bytes",
+            getInstanceId(),
+            getState(),
+            getUptime(),
+            getFunctionCallCount(),
+            getCurrentResourceCount(),
+            getCurrentMemoryUsage());
       }
 
       @Override

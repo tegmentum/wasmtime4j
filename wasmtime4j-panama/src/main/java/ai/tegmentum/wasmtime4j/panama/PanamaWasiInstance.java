@@ -19,12 +19,12 @@ package ai.tegmentum.wasmtime4j.panama;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.wasi.WasiComponent;
 import ai.tegmentum.wasmtime4j.wasi.WasiConfig;
+import ai.tegmentum.wasmtime4j.wasi.WasiFunctionMetadata;
 import ai.tegmentum.wasmtime4j.wasi.WasiInstance;
 import ai.tegmentum.wasmtime4j.wasi.WasiInstanceState;
 import ai.tegmentum.wasmtime4j.wasi.WasiInstanceStats;
-import ai.tegmentum.wasmtime4j.wasi.WasiFunctionMetadata;
-import ai.tegmentum.wasmtime4j.wasi.WasiResource;
 import ai.tegmentum.wasmtime4j.wasi.WasiMemoryInfo;
+import ai.tegmentum.wasmtime4j.wasi.WasiResource;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -41,9 +41,9 @@ import java.util.logging.Logger;
  * Panama FFI implementation of the WasiInstance interface.
  *
  * <p>This class provides a concrete implementation of WASI component instance functionality using
- * Panama Foreign Function API bindings to the native Wasmtime component model. It manages
- * instance lifecycle, function calling, resource management, and execution state through Panama
- * FFI calls with Arena-based resource management.
+ * Panama Foreign Function API bindings to the native Wasmtime component model. It manages instance
+ * lifecycle, function calling, resource management, and execution state through Panama FFI calls
+ * with Arena-based resource management.
  *
  * <p>Key features:
  *
@@ -148,8 +148,7 @@ public final class PanamaWasiInstance implements WasiInstance {
   }
 
   @Override
-  public Object call(
-      final String functionName, final Duration timeout, final Object... parameters)
+  public Object call(final String functionName, final Duration timeout, final Object... parameters)
       throws WasmException {
     Objects.requireNonNull(functionName, "Function name cannot be null");
     if (functionName.trim().isEmpty()) {
@@ -305,8 +304,7 @@ public final class PanamaWasiInstance implements WasiInstance {
         resources.add(resource);
       }
 
-      LOGGER.fine(
-          "Created resource of type: " + resourceType + " with ID: " + resource.getId());
+      LOGGER.fine("Created resource of type: " + resourceType + " with ID: " + resource.getId());
       return resource;
 
     } catch (final Exception e) {

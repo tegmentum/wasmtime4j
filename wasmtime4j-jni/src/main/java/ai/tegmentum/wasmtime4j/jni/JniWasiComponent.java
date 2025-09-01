@@ -1,8 +1,6 @@
 package ai.tegmentum.wasmtime4j.jni;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.jni.exception.JniException;
-import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
 import ai.tegmentum.wasmtime4j.wasi.WasiComponent;
 import ai.tegmentum.wasmtime4j.wasi.WasiComponentStats;
 import ai.tegmentum.wasmtime4j.wasi.WasiConfig;
@@ -41,8 +39,8 @@ import java.util.logging.Logger;
  *   <li>Thread-safe operations with defensive programming
  * </ul>
  *
- * <p>This implementation follows the unified API pattern while delegating to JNI-specific
- * component wrappers for native interactions.
+ * <p>This implementation follows the unified API pattern while delegating to JNI-specific component
+ * wrappers for native interactions.
  *
  * @since 1.0.0
  */
@@ -237,7 +235,7 @@ public final class JniWasiComponent implements WasiComponent {
   public void close() {
     if (!closed) {
       closed = true;
-      
+
       // Clear caches
       cachedExports = null;
       cachedImports = null;
@@ -289,11 +287,11 @@ public final class JniWasiComponent implements WasiComponent {
       // TODO: Implement actual export extraction from native layer
       // For now, return empty list as placeholder
       List<String> exports = new ArrayList<>();
-      
+
       // This would be replaced with actual native calls to extract exports
       // exports.add("wasi:filesystem/types");
       // exports.add("wasi:sockets/network");
-      
+
       LOGGER.fine("Extracted " + exports.size() + " exports from component");
       return exports;
 
@@ -313,11 +311,11 @@ public final class JniWasiComponent implements WasiComponent {
       // TODO: Implement actual import extraction from native layer
       // For now, return empty list as placeholder
       List<String> imports = new ArrayList<>();
-      
+
       // This would be replaced with actual native calls to extract imports
       // imports.add("wasi:cli/environment");
       // imports.add("wasi:filesystem/preopens");
-      
+
       LOGGER.fine("Extracted " + imports.size() + " imports from component");
       return imports;
 
@@ -445,31 +443,31 @@ public final class JniWasiComponent implements WasiComponent {
   private WasiComponentStats extractStats() {
     try {
       final long size = componentHandle.getSize();
-      
+
       // TODO: Extract more detailed statistics from native layer
       return new WasiComponentStats() {
         private final Instant collectedAt = Instant.now();
-        
+
         @Override
         public Instant getCollectedAt() {
           return collectedAt;
         }
-        
+
         @Override
         public String getComponentName() {
           return name;
         }
-        
+
         @Override
         public long getBytecodeSize() {
           return size;
         }
-        
+
         @Override
         public long getCompiledSize() {
           return size; // Placeholder - same as bytecode for now
         }
-        
+
         @Override
         public int getExportedInterfaceCount() {
           try {
@@ -478,12 +476,12 @@ public final class JniWasiComponent implements WasiComponent {
             return 0;
           }
         }
-        
+
         @Override
         public int getExportedFunctionCount() {
           return 0; // Not tracked yet
         }
-        
+
         @Override
         public int getImportedInterfaceCount() {
           try {
@@ -492,77 +490,77 @@ public final class JniWasiComponent implements WasiComponent {
             return 0;
           }
         }
-        
+
         @Override
         public int getImportedFunctionCount() {
           return 0; // Not tracked yet
         }
-        
+
         @Override
         public int getResourceTypeCount() {
           return 0; // Not tracked yet
         }
-        
+
         @Override
         public int getCustomTypeCount() {
           return 0; // Not tracked yet
         }
-        
+
         @Override
         public long getCompilationTimeMs() {
           return 0; // Not tracked yet
         }
-        
+
         @Override
         public long getMemoryOverhead() {
           return size; // Placeholder
         }
-        
+
         @Override
         public int getActiveInstanceCount() {
           return 0; // Not tracked yet
         }
-        
+
         @Override
         public long getTotalInstanceCount() {
           return 0; // Not tracked yet
         }
-        
+
         @Override
         public long getTotalFunctionCalls() {
           return 0; // Not tracked yet
         }
-        
+
         @Override
         public Map<String, Long> getFunctionCallStats() {
           return new HashMap<>(); // Not tracked yet
         }
-        
+
         @Override
         public long getTotalExecutionTimeMs() {
           return 0; // Not tracked yet
         }
-        
+
         @Override
         public Map<String, Long> getFunctionExecutionTimeStats() {
           return new HashMap<>(); // Not tracked yet
         }
-        
+
         @Override
         public WasiErrorStats getErrorStats() {
           return createBasicErrorStats();
         }
-        
+
         @Override
         public WasiResourceUsageStats getResourceUsageStats() {
           return createBasicResourceUsageStats();
         }
-        
+
         @Override
         public WasiPerformanceMetrics getPerformanceMetrics() {
           return createBasicPerformanceMetrics();
         }
-        
+
         @Override
         public List<String> getExportedInterfaces() {
           try {
@@ -571,7 +569,7 @@ public final class JniWasiComponent implements WasiComponent {
             return new ArrayList<>();
           }
         }
-        
+
         @Override
         public List<String> getImportedInterfaces() {
           try {
@@ -580,7 +578,7 @@ public final class JniWasiComponent implements WasiComponent {
             return new ArrayList<>();
           }
         }
-        
+
         @Override
         public Map<String, Object> getCustomProperties() {
           Map<String, Object> properties = new HashMap<>();
@@ -588,14 +586,15 @@ public final class JniWasiComponent implements WasiComponent {
           properties.put("isClosed", closed);
           return properties;
         }
-        
+
         @Override
         public String getSummary() {
-          return String.format("Component %s: %d bytes, %d exports, %d imports", 
-            name != null ? name : "unnamed", 
-            getBytecodeSize(),
-            getExportedInterfaceCount(),
-            getImportedInterfaceCount());
+          return String.format(
+              "Component %s: %d bytes, %d exports, %d imports",
+              name != null ? name : "unnamed",
+              getBytecodeSize(),
+              getExportedInterfaceCount(),
+              getImportedInterfaceCount());
         }
       };
 
@@ -603,127 +602,127 @@ public final class JniWasiComponent implements WasiComponent {
       // Return minimal stats on error
       return new WasiComponentStats() {
         private final Instant collectedAt = Instant.now();
-        
+
         @Override
         public Instant getCollectedAt() {
           return collectedAt;
         }
-        
+
         @Override
         public String getComponentName() {
           return name;
         }
-        
+
         @Override
         public long getBytecodeSize() {
           return 0;
         }
-        
+
         @Override
         public long getCompiledSize() {
           return 0;
         }
-        
+
         @Override
         public int getExportedInterfaceCount() {
           return 0;
         }
-        
+
         @Override
         public int getExportedFunctionCount() {
           return 0;
         }
-        
+
         @Override
         public int getImportedInterfaceCount() {
           return 0;
         }
-        
+
         @Override
         public int getImportedFunctionCount() {
           return 0;
         }
-        
+
         @Override
         public int getResourceTypeCount() {
           return 0;
         }
-        
+
         @Override
         public int getCustomTypeCount() {
           return 0;
         }
-        
+
         @Override
         public long getCompilationTimeMs() {
           return 0;
         }
-        
+
         @Override
         public long getMemoryOverhead() {
           return 0;
         }
-        
+
         @Override
         public int getActiveInstanceCount() {
           return 0;
         }
-        
+
         @Override
         public long getTotalInstanceCount() {
           return 0;
         }
-        
+
         @Override
         public long getTotalFunctionCalls() {
           return 0;
         }
-        
+
         @Override
         public Map<String, Long> getFunctionCallStats() {
           return new HashMap<>();
         }
-        
+
         @Override
         public long getTotalExecutionTimeMs() {
           return 0;
         }
-        
+
         @Override
         public Map<String, Long> getFunctionExecutionTimeStats() {
           return new HashMap<>();
         }
-        
+
         @Override
         public WasiErrorStats getErrorStats() {
           return createBasicErrorStats();
         }
-        
+
         @Override
         public WasiResourceUsageStats getResourceUsageStats() {
           return createBasicResourceUsageStats();
         }
-        
+
         @Override
         public WasiPerformanceMetrics getPerformanceMetrics() {
           return createBasicPerformanceMetrics();
         }
-        
+
         @Override
         public List<String> getExportedInterfaces() {
           return new ArrayList<>();
         }
-        
+
         @Override
         public List<String> getImportedInterfaces() {
           return new ArrayList<>();
         }
-        
+
         @Override
         public Map<String, Object> getCustomProperties() {
           return new HashMap<>();
         }
-        
+
         @Override
         public String getSummary() {
           return "Component statistics unavailable due to error";
@@ -731,10 +730,10 @@ public final class JniWasiComponent implements WasiComponent {
       };
     }
   }
-  
+
   /**
    * Creates basic error statistics for placeholder purposes.
-   * 
+   *
    * @return basic error statistics
    */
   private WasiErrorStats createBasicErrorStats() {
@@ -743,27 +742,27 @@ public final class JniWasiComponent implements WasiComponent {
       public long getTotalErrors() {
         return 0; // Not tracked yet
       }
-      
+
       @Override
       public Map<String, Long> getErrorsByType() {
         return new HashMap<>(); // Not tracked yet
       }
-      
+
       @Override
       public long getFatalErrors() {
         return 0; // Not tracked yet
       }
-      
+
       @Override
       public long getRecoverableErrors() {
         return 0; // Not tracked yet
       }
     };
   }
-  
+
   /**
    * Creates basic resource usage statistics for placeholder purposes.
-   * 
+   *
    * @return basic resource usage statistics
    */
   private WasiResourceUsageStats createBasicResourceUsageStats() {
@@ -772,32 +771,32 @@ public final class JniWasiComponent implements WasiComponent {
       public long getTotalResourcesCreated() {
         return 0; // Not tracked yet
       }
-      
+
       @Override
       public int getCurrentResourceCount() {
         return 0; // Not tracked yet
       }
-      
+
       @Override
       public int getPeakResourceCount() {
         return 0; // Not tracked yet
       }
-      
+
       @Override
       public Map<String, Integer> getResourceCountsByType() {
         return new HashMap<>(); // Not tracked yet
       }
-      
+
       @Override
       public Map<String, Long> getResourceCreationsByType() {
         return new HashMap<>(); // Not tracked yet
       }
     };
   }
-  
+
   /**
    * Creates basic performance metrics for placeholder purposes.
-   * 
+   *
    * @return basic performance metrics
    */
   private WasiPerformanceMetrics createBasicPerformanceMetrics() {
@@ -806,27 +805,27 @@ public final class JniWasiComponent implements WasiComponent {
       public Duration getAverageExecutionTime() {
         return Duration.ZERO; // Not tracked yet
       }
-      
+
       @Override
       public Duration getMedianExecutionTime() {
         return Duration.ZERO; // Not tracked yet
       }
-      
+
       @Override
       public Duration getP95ExecutionTime() {
         return Duration.ZERO; // Not tracked yet
       }
-      
+
       @Override
       public Duration getP99ExecutionTime() {
         return Duration.ZERO; // Not tracked yet
       }
-      
+
       @Override
       public double getThroughput() {
         return 0.0; // Not tracked yet
       }
-      
+
       @Override
       public double getMemoryEfficiency() {
         return 0.0; // Not tracked yet
