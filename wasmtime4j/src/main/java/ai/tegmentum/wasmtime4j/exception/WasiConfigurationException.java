@@ -298,6 +298,9 @@ public class WasiConfigurationException extends WasiException {
       case SYSTEM:
         guidance.append(". Check system-level configuration settings.");
         break;
+      default:
+        guidance.append(". Review configuration settings.");
+        break;
     }
 
     return guidance.toString();
