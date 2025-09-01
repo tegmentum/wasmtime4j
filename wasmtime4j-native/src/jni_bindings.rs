@@ -283,7 +283,7 @@ pub mod jni_component {
     /// Load component from WebAssembly bytes
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeLoadComponentFromBytes(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         engine_ptr: jlong,
         wasm_bytes: jbyteArray,
