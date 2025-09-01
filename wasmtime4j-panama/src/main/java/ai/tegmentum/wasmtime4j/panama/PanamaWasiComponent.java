@@ -20,11 +20,17 @@ import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.wasi.WasiComponent;
 import ai.tegmentum.wasmtime4j.wasi.WasiComponentStats;
 import ai.tegmentum.wasmtime4j.wasi.WasiConfig;
+import ai.tegmentum.wasmtime4j.wasi.WasiFunctionMetadata;
 import ai.tegmentum.wasmtime4j.wasi.WasiInstance;
 import ai.tegmentum.wasmtime4j.wasi.WasiInterfaceMetadata;
+import ai.tegmentum.wasmtime4j.wasi.WasiResourceTypeMetadata;
+import ai.tegmentum.wasmtime4j.wasi.WasiTypeDefinition;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.logging.Logger;
 
 /**
@@ -363,34 +369,80 @@ public final class PanamaWasiComponent implements WasiComponent {
       }
 
       @Override
-      public String getNamespace() {
-        int colonIndex = interfaceName.indexOf(':');
-        return colonIndex > 0 ? interfaceName.substring(0, colonIndex) : null;
+      public Optional<String> getVersion() {
+        return Optional.empty(); // Not extracted yet
       }
 
       @Override
-      public String getVersion() {
-        return null; // Not extracted yet
+      public Optional<String> getDocumentation() {
+        return Optional.empty(); // Not extracted yet
       }
 
       @Override
-      public List<String> getFunctions() {
+      public List<WasiFunctionMetadata> getFunctions() {
         return new ArrayList<>(); // Not extracted yet
       }
 
       @Override
-      public List<String> getTypes() {
+      public Optional<WasiFunctionMetadata> getFunction(final String functionName) {
+        return Optional.empty(); // Not extracted yet
+      }
+
+      @Override
+      public List<WasiResourceTypeMetadata> getResourceTypes() {
         return new ArrayList<>(); // Not extracted yet
       }
 
       @Override
-      public List<String> getResources() {
-        return new ArrayList<>(); // Not extracted yet
+      public Optional<WasiResourceTypeMetadata> getResourceType(final String typeName) {
+        return Optional.empty(); // Not extracted yet
       }
 
       @Override
-      public boolean isExport() {
-        return isExport;
+      public Map<String, WasiTypeDefinition> getCustomTypes() {
+        return new HashMap<>(); // Not extracted yet
+      }
+
+      @Override
+      public Optional<WasiTypeDefinition> getCustomType(final String typeName) {
+        return Optional.empty(); // Not extracted yet
+      }
+
+      @Override
+      public Map<String, Object> getConstants() {
+        return new HashMap<>(); // Not extracted yet
+      }
+
+      @Override
+      public Optional<Object> getConstant(final String constantName) {
+        return Optional.empty(); // Not extracted yet
+      }
+
+      @Override
+      public Map<String, Object> getProperties() {
+        return new HashMap<>(); // Not extracted yet
+      }
+
+      @Override
+      public void validate() {
+        // Basic validation - just check that interface name is not null/empty
+        if (interfaceName == null || interfaceName.trim().isEmpty()) {
+          throw new IllegalArgumentException("Interface name cannot be null or empty");
+        }
+      }
+
+      @Override
+      public boolean isCompatibleWith(final WasiInterfaceMetadata other) {
+        if (other == null) {
+          return false;
+        }
+        // Basic compatibility check - same name
+        return Objects.equals(getName(), other.getName());
+      }
+
+      @Override
+      public List<String> getDependencies() {
+        return new ArrayList<>(); // No dependencies for basic interface
       }
     };
   }
@@ -438,6 +490,28 @@ public final class PanamaWasiComponent implements WasiComponent {
         public long getValidationTimeNanos() {
           return 0; // Not tracked yet
         }
+
+        @Override
+        public String getSummary() {
+          return String.format(
+              "Component Stats: size=%d bytes, exports=%d, imports=%d, compile=%d ns, validate=%d ns",
+              getSizeBytes(), getExportCount(), getImportCount(), getCompilationTimeNanos(), getValidationTimeNanos());
+        }
+
+        @Override
+        public Map<String, Object> getCustomProperties() {
+          return new HashMap<>(); // No custom properties yet
+        }
+
+        @Override
+        public List<String> getExportedInterfaces() {
+          return new ArrayList<>(); // Not implemented yet
+        }
+
+        @Override
+        public List<String> getImportedInterfaces() {
+          return new ArrayList<>(); // Not implemented yet
+        }
       };
 
     } catch (final Exception e) {
@@ -466,6 +540,26 @@ public final class PanamaWasiComponent implements WasiComponent {
         @Override
         public long getValidationTimeNanos() {
           return 0;
+        }
+
+        @Override
+        public String getSummary() {
+          return "Component Stats: Error retrieving statistics (default values)";
+        }
+
+        @Override
+        public Map<String, Object> getCustomProperties() {
+          return new HashMap<>(); // No custom properties on error
+        }
+
+        @Override
+        public List<String> getExportedInterfaces() {
+          return new ArrayList<>(); // No interfaces on error
+        }
+
+        @Override
+        public List<String> getImportedInterfaces() {
+          return new ArrayList<>(); // No interfaces on error
         }
       };
     }
