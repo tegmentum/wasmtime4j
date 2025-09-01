@@ -18,10 +18,10 @@ package ai.tegmentum.wasmtime4j.panama;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.wasi.WasiComponent;
+import ai.tegmentum.wasmtime4j.wasi.WasiComponentStats;
 import ai.tegmentum.wasmtime4j.wasi.WasiConfig;
 import ai.tegmentum.wasmtime4j.wasi.WasiInstance;
 import ai.tegmentum.wasmtime4j.wasi.WasiInterfaceMetadata;
-import ai.tegmentum.wasmtime4j.wasi.WasiComponentStats;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;

@@ -13,8 +13,8 @@ package ai.tegmentum.wasmtime4j.exception;
  *   <li>Permission configuration errors
  * </ul>
  *
- * <p>Configuration exceptions provide detailed information about configuration failures,
- * including the specific configuration parameter, expected values, and remediation guidance.
+ * <p>Configuration exceptions provide detailed information about configuration failures, including
+ * the specific configuration parameter, expected values, and remediation guidance.
  *
  * @since 1.0.0
  */
@@ -34,9 +34,7 @@ public class WasiConfigurationException extends WasiException {
   /** The configuration area that failed. */
   private final ConfigurationArea configurationArea;
 
-  /**
-   * Configuration areas for better error categorization and handling.
-   */
+  /** Configuration areas for better error categorization and handling. */
   public enum ConfigurationArea {
     /** Environment variables and system environment setup. */
     ENVIRONMENT,
@@ -270,7 +268,9 @@ public class WasiConfigurationException extends WasiException {
     if (configurationParameter != null && expectedValue != null) {
       guidance.append("Set '").append(configurationParameter).append("' to ").append(expectedValue);
     } else {
-      guidance.append("Check configuration for ").append(configurationArea.name().toLowerCase().replace('_', ' '));
+      guidance
+          .append("Check configuration for ")
+          .append(configurationArea.name().toLowerCase().replace('_', ' '));
     }
 
     switch (configurationArea) {
@@ -297,6 +297,9 @@ public class WasiConfigurationException extends WasiException {
         break;
       case SYSTEM:
         guidance.append(". Check system-level configuration settings.");
+        break;
+      default:
+        guidance.append(". Review configuration settings.");
         break;
     }
 
@@ -331,7 +334,9 @@ public class WasiConfigurationException extends WasiException {
     }
 
     if (configurationParameter == null) {
-      return configurationArea != null ? configurationArea.name().toLowerCase().replace('_', '-') : null;
+      return configurationArea != null
+          ? configurationArea.name().toLowerCase().replace('_', '-')
+          : null;
     }
 
     if (configurationArea == null) {

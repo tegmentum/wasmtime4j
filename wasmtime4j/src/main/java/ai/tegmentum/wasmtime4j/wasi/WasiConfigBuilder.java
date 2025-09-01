@@ -108,8 +108,8 @@ public interface WasiConfigBuilder {
    * Pre-opens a directory for the component.
    *
    * <p>This makes a host directory available to the component at the specified guest path. The
-   * directory must exist and be accessible. Security policies may restrict which directories can
-   * be pre-opened.
+   * directory must exist and be accessible. Security policies may restrict which directories can be
+   * pre-opened.
    *
    * @param guestPath the path where the directory appears inside the component
    * @param hostPath the actual host directory path to expose
@@ -184,8 +184,8 @@ public interface WasiConfigBuilder {
   /**
    * Sets the execution timeout for component operations.
    *
-   * <p>Component operations that exceed this timeout will be terminated. This applies to
-   * individual function calls and overall component execution.
+   * <p>Component operations that exceed this timeout will be terminated. This applies to individual
+   * function calls and overall component execution.
    *
    * @param timeout maximum execution time for component operations
    * @return this builder for method chaining
@@ -222,8 +222,8 @@ public interface WasiConfigBuilder {
   /**
    * Sets the security policy for the component.
    *
-   * <p>Security policies define allowed operations, file system access patterns, and other
-   * security constraints for component execution.
+   * <p>Security policies define allowed operations, file system access patterns, and other security
+   * constraints for component execution.
    *
    * @param policy security policy to enforce
    * @return this builder for method chaining
@@ -280,9 +280,8 @@ public interface WasiConfigBuilder {
   /**
    * Enables or disables component validation during instantiation.
    *
-   * <p>When enabled, the component and configuration are validated for security, compatibility,
-   * and resource constraints during instantiation. This is recommended for production
-   * environments.
+   * <p>When enabled, the component and configuration are validated for security, compatibility, and
+   * resource constraints during instantiation. This is recommended for production environments.
    *
    * @param validate true to enable validation, false to disable
    * @return this builder for method chaining

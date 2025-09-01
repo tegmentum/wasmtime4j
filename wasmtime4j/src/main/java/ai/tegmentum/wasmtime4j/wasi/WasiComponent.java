@@ -3,7 +3,6 @@ package ai.tegmentum.wasmtime4j.wasi;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.io.Closeable;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Interface for WASI component operations.
@@ -133,8 +132,8 @@ public interface WasiComponent extends Closeable {
   /**
    * Gets component statistics and metrics.
    *
-   * <p>Returns information about component size, complexity, and resource requirements. This can
-   * be useful for monitoring and optimization.
+   * <p>Returns information about component size, complexity, and resource requirements. This can be
+   * useful for monitoring and optimization.
    *
    * @return component statistics
    */

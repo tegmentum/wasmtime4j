@@ -8,8 +8,8 @@ import java.util.Map;
  * Interface for resolving WASI component imports.
  *
  * <p>Import resolvers provide implementations for component interface imports. When a component
- * requires external functionality, resolvers supply the necessary implementations, whether as
- * host functions, other components, or resource providers.
+ * requires external functionality, resolvers supply the necessary implementations, whether as host
+ * functions, other components, or resource providers.
  *
  * <p>Resolvers can be used to inject custom functionality, provide mock implementations for
  * testing, or create bridges to existing Java code.
@@ -130,8 +130,8 @@ public interface WasiImportResolver {
   /**
    * Gets custom properties and configuration for this resolver.
    *
-   * <p>Properties can include resolver-specific settings, debugging information, or metadata
-   * useful for management and monitoring.
+   * <p>Properties can include resolver-specific settings, debugging information, or metadata useful
+   * for management and monitoring.
    *
    * @return map of property names to values
    */
@@ -159,8 +159,8 @@ public interface WasiImportResolver {
   /**
    * Initializes this resolver with the specified component context.
    *
-   * <p>This method is called before the resolver is used, allowing it to prepare for operation
-   * with knowledge of the requesting component.
+   * <p>This method is called before the resolver is used, allowing it to prepare for operation with
+   * knowledge of the requesting component.
    *
    * @param component the component that will use this resolver
    * @throws WasmException if initialization fails
@@ -171,8 +171,8 @@ public interface WasiImportResolver {
   /**
    * Cleans up resources used by this resolver.
    *
-   * <p>This method is called when the resolver is no longer needed, allowing it to release any
-   * held resources or perform cleanup operations.
+   * <p>This method is called when the resolver is no longer needed, allowing it to release any held
+   * resources or perform cleanup operations.
    *
    * @throws WasmException if cleanup encounters errors
    */

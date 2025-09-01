@@ -7,16 +7,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
-import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
-import ai.tegmentum.wasmtime4j.WasmRuntime;
-import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
 import ai.tegmentum.wasmtime4j.functions.WasmFunction;
 import ai.tegmentum.wasmtime4j.utils.CrossRuntimeValidator;
 import ai.tegmentum.wasmtime4j.utils.TestCategories;
 import ai.tegmentum.wasmtime4j.utils.TestUtils;
-import ai.tegmentum.wasmtime4j.wasi.Wasi;
-import ai.tegmentum.wasmtime4j.wasi.WasiConfig;
 import ai.tegmentum.wasmtime4j.webassembly.WasmTestModules;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -60,34 +55,36 @@ public final class WasiCrossRuntimeValidationTest {
       return;
     }
 
-    final CrossRuntimeValidator.RuntimeOperation<String> contextOperation = runtime -> {
-      try (final Engine engine = runtime.createEngine();
-           final Store store = engine.createStore()) {
+    final CrossRuntimeValidator.RuntimeOperation<String> contextOperation =
+        runtime -> {
+          try (final Engine engine = runtime.createEngine();
+              final Store store = engine.createStore()) {
 
-        final WasiConfig config =
-            WasiConfig.builder()
-                .inheritEnv(true)
-                .arguments(Arrays.asList("test", "program"))
-                .inheritStdin(true)
-                .inheritStdout(true)
-                .inheritStderr(true)
-                .build();
+            final WasiConfig config =
+                WasiConfig.builder()
+                    .inheritEnv(true)
+                    .arguments(Arrays.asList("test", "program"))
+                    .inheritStdin(true)
+                    .inheritStdout(true)
+                    .inheritStderr(true)
+                    .build();
 
-        final Wasi wasi = store.createWasi(config);
-        final boolean isValid = wasi.isValid();
-        final int argCount = wasi.getArguments().size();
-        final int envCount = wasi.getEnvironment().size();
+            final Wasi wasi = store.createWasi(config);
+            final boolean isValid = wasi.isValid();
+            final int argCount = wasi.getArguments().size();
+            final int envCount = wasi.getEnvironment().size();
 
-        wasi.close();
+            wasi.close();
 
-        return String.format("valid=%s,args=%d,env=%d", isValid, argCount, envCount);
-      }
-    };
+            return String.format("valid=%s,args=%d,env=%d", isValid, argCount, envCount);
+          }
+        };
 
     final CrossRuntimeValidator.ComparisonResult result =
         CrossRuntimeValidator.validateCrossRuntime(contextOperation, Duration.ofSeconds(15));
 
-    assertTrue(result.isValid(),
+    assertTrue(
+        result.isValid(),
         "WASI context creation differs between runtimes: " + result.getDifferenceDescription());
 
     LOGGER.info("Cross-runtime WASI context creation validation successful");
@@ -109,37 +106,41 @@ public final class WasiCrossRuntimeValidationTest {
     testEnv.put("UNICODE_TEST", "测试中文");
     testEnv.put("SPECIAL_CHARS", "!@#$%^&*()");
 
-    final CrossRuntimeValidator.RuntimeOperation<String> envOperation = runtime -> {
-      try (final Engine engine = runtime.createEngine();
-           final Store store = engine.createStore()) {
+    final CrossRuntimeValidator.RuntimeOperation<String> envOperation =
+        runtime -> {
+          try (final Engine engine = runtime.createEngine();
+              final Store store = engine.createStore()) {
 
-        final WasiConfig config =
-            WasiConfig.builder()
-                .inheritEnv(false)
-                .environment(testEnv)
-                .inheritStdin(true)
-                .inheritStdout(true)
-                .inheritStderr(true)
-                .build();
+            final WasiConfig config =
+                WasiConfig.builder()
+                    .inheritEnv(false)
+                    .environment(testEnv)
+                    .inheritStdin(true)
+                    .inheritStdout(true)
+                    .inheritStderr(true)
+                    .build();
 
-        final Wasi wasi = store.createWasi(config);
-        final Map<String, String> actualEnv = wasi.getEnvironment();
-        
-        final String result = String.format("size=%d,cross=%s,unicode=%s,special=%s",
-            actualEnv.size(),
-            actualEnv.get("CROSS_TEST"),
-            actualEnv.get("UNICODE_TEST"),
-            actualEnv.get("SPECIAL_CHARS"));
+            final Wasi wasi = store.createWasi(config);
+            final Map<String, String> actualEnv = wasi.getEnvironment();
 
-        wasi.close();
-        return result;
-      }
-    };
+            final String result =
+                String.format(
+                    "size=%d,cross=%s,unicode=%s,special=%s",
+                    actualEnv.size(),
+                    actualEnv.get("CROSS_TEST"),
+                    actualEnv.get("UNICODE_TEST"),
+                    actualEnv.get("SPECIAL_CHARS"));
+
+            wasi.close();
+            return result;
+          }
+        };
 
     final CrossRuntimeValidator.ComparisonResult result =
         CrossRuntimeValidator.validateCrossRuntime(envOperation, Duration.ofSeconds(15));
 
-    assertTrue(result.isValid(),
+    assertTrue(
+        result.isValid(),
         "Environment handling differs between runtimes: " + result.getDifferenceDescription());
 
     LOGGER.info("Cross-runtime environment handling validation successful");
@@ -158,38 +159,40 @@ public final class WasiCrossRuntimeValidationTest {
 
     final Path testDir = tempDirectory.resolve("cross_fs");
     Files.createDirectories(testDir);
-    
+
     final Path testFile = testDir.resolve("test.txt");
     Files.write(testFile, "Cross-runtime test file".getBytes());
 
-    final CrossRuntimeValidator.RuntimeOperation<String> filesystemOperation = runtime -> {
-      try (final Engine engine = runtime.createEngine();
-           final Store store = engine.createStore()) {
+    final CrossRuntimeValidator.RuntimeOperation<String> filesystemOperation =
+        runtime -> {
+          try (final Engine engine = runtime.createEngine();
+              final Store store = engine.createStore()) {
 
-        final WasiConfig config =
-            WasiConfig.builder()
-                .inheritEnv(true)
-                .preopenDir(testDir.toString(), "testdir", true, false)
-                .inheritStdin(true)
-                .inheritStdout(true)
-                .inheritStderr(true)
-                .build();
+            final WasiConfig config =
+                WasiConfig.builder()
+                    .inheritEnv(true)
+                    .preopenDir(testDir.toString(), "testdir", true, false)
+                    .inheritStdin(true)
+                    .inheritStdout(true)
+                    .inheritStderr(true)
+                    .build();
 
-        final Wasi wasi = store.createWasi(config);
-        final Map<String, String> preopenedDirs = wasi.getPreopenedDirectories();
-        
-        final boolean hasTestDir = preopenedDirs.containsKey("testdir");
-        final int dirCount = preopenedDirs.size();
+            final Wasi wasi = store.createWasi(config);
+            final Map<String, String> preopenedDirs = wasi.getPreopenedDirectories();
 
-        wasi.close();
-        return String.format("hasDir=%s,count=%d", hasTestDir, dirCount);
-      }
-    };
+            final boolean hasTestDir = preopenedDirs.containsKey("testdir");
+            final int dirCount = preopenedDirs.size();
+
+            wasi.close();
+            return String.format("hasDir=%s,count=%d", hasTestDir, dirCount);
+          }
+        };
 
     final CrossRuntimeValidator.ComparisonResult result =
         CrossRuntimeValidator.validateCrossRuntime(filesystemOperation, Duration.ofSeconds(15));
 
-    assertTrue(result.isValid(),
+    assertTrue(
+        result.isValid(),
         "Filesystem access differs between runtimes: " + result.getDifferenceDescription());
 
     LOGGER.info("Cross-runtime filesystem access validation successful");
@@ -208,48 +211,50 @@ public final class WasiCrossRuntimeValidationTest {
 
     final String testInput = "Cross-runtime I/O test\nLine 2\nLine 3\n";
 
-    final CrossRuntimeValidator.RuntimeOperation<String> ioOperation = runtime -> {
-      try (final Engine engine = runtime.createEngine();
-           final Store store = engine.createStore()) {
+    final CrossRuntimeValidator.RuntimeOperation<String> ioOperation =
+        runtime -> {
+          try (final Engine engine = runtime.createEngine();
+              final Store store = engine.createStore()) {
 
-        final ByteArrayInputStream stdin = new ByteArrayInputStream(testInput.getBytes());
-        final ByteArrayOutputStream stdout = new ByteArrayOutputStream();
-        final ByteArrayOutputStream stderr = new ByteArrayOutputStream();
+            final ByteArrayInputStream stdin = new ByteArrayInputStream(testInput.getBytes());
+            final ByteArrayOutputStream stdout = new ByteArrayOutputStream();
+            final ByteArrayOutputStream stderr = new ByteArrayOutputStream();
 
-        final WasiConfig config =
-            WasiConfig.builder()
-                .inheritEnv(true)
-                .stdin(stdin)
-                .stdout(stdout)
-                .stderr(stderr)
-                .build();
+            final WasiConfig config =
+                WasiConfig.builder()
+                    .inheritEnv(true)
+                    .stdin(stdin)
+                    .stdout(stdout)
+                    .stderr(stderr)
+                    .build();
 
-        final byte[] wasmBytes = WasmTestModules.getModule("wasi_basic");
-        final Module module = engine.createModule(wasmBytes);
-        final Wasi wasi = store.createWasi(config);
-        final Instance instance = store.createInstance(module, wasi.getImports());
+            final byte[] wasmBytes = WasmTestModules.getModule("wasi_basic");
+            final Module module = engine.createModule(wasmBytes);
+            final Wasi wasi = store.createWasi(config);
+            final Instance instance = store.createInstance(module, wasi.getImports());
 
-        if (instance.hasExport("_start")) {
-          final WasmFunction startFunction = instance.getExport("_start").asFunction();
-          assertDoesNotThrow(() -> startFunction.call());
-        }
+            if (instance.hasExport("_start")) {
+              final WasmFunction startFunction = instance.getExport("_start").asFunction();
+              assertDoesNotThrow(() -> startFunction.call());
+            }
 
-        final int stdoutSize = stdout.toByteArray().length;
-        final int stderrSize = stderr.toByteArray().length;
+            final int stdoutSize = stdout.toByteArray().length;
+            final int stderrSize = stderr.toByteArray().length;
 
-        instance.close();
-        wasi.close();
-        module.close();
+            instance.close();
+            wasi.close();
+            module.close();
 
-        return String.format("input=%d,stdout=%d,stderr=%d", 
-            testInput.length(), stdoutSize, stderrSize);
-      }
-    };
+            return String.format(
+                "input=%d,stdout=%d,stderr=%d", testInput.length(), stdoutSize, stderrSize);
+          }
+        };
 
     final CrossRuntimeValidator.ComparisonResult result =
         CrossRuntimeValidator.validateCrossRuntime(ioOperation, Duration.ofSeconds(15));
 
-    assertTrue(result.isValid(),
+    assertTrue(
+        result.isValid(),
         "I/O redirection differs between runtimes: " + result.getDifferenceDescription());
 
     LOGGER.info("Cross-runtime I/O redirection validation successful");
@@ -266,43 +271,45 @@ public final class WasiCrossRuntimeValidationTest {
       return;
     }
 
-    final CrossRuntimeValidator.RuntimeOperation<String> instantiationOperation = runtime -> {
-      try (final Engine engine = runtime.createEngine();
-           final Store store = engine.createStore()) {
+    final CrossRuntimeValidator.RuntimeOperation<String> instantiationOperation =
+        runtime -> {
+          try (final Engine engine = runtime.createEngine();
+              final Store store = engine.createStore()) {
 
-        final WasiConfig config =
-            WasiConfig.builder()
-                .inheritEnv(true)
-                .arguments(Arrays.asList("test_module"))
-                .inheritStdin(true)
-                .inheritStdout(true)
-                .inheritStderr(true)
-                .build();
+            final WasiConfig config =
+                WasiConfig.builder()
+                    .inheritEnv(true)
+                    .arguments(Arrays.asList("test_module"))
+                    .inheritStdin(true)
+                    .inheritStdout(true)
+                    .inheritStderr(true)
+                    .build();
 
-        final byte[] wasmBytes = WasmTestModules.getModule("wasi_basic");
-        final Module module = engine.createModule(wasmBytes);
-        final Wasi wasi = store.createWasi(config);
+            final byte[] wasmBytes = WasmTestModules.getModule("wasi_basic");
+            final Module module = engine.createModule(wasmBytes);
+            final Wasi wasi = store.createWasi(config);
 
-        final var imports = wasi.getImports();
-        final int importCount = imports.size();
+            final var imports = wasi.getImports();
+            final int importCount = imports.size();
 
-        final Instance instance = store.createInstance(module, imports);
-        final boolean instanceValid = instance.isValid();
-        final boolean hasStartExport = instance.hasExport("_start");
+            final Instance instance = store.createInstance(module, imports);
+            final boolean instanceValid = instance.isValid();
+            final boolean hasStartExport = instance.hasExport("_start");
 
-        instance.close();
-        wasi.close();
-        module.close();
+            instance.close();
+            wasi.close();
+            module.close();
 
-        return String.format("imports=%d,valid=%s,start=%s", 
-            importCount, instanceValid, hasStartExport);
-      }
-    };
+            return String.format(
+                "imports=%d,valid=%s,start=%s", importCount, instanceValid, hasStartExport);
+          }
+        };
 
     final CrossRuntimeValidator.ComparisonResult result =
         CrossRuntimeValidator.validateCrossRuntime(instantiationOperation, Duration.ofSeconds(15));
 
-    assertTrue(result.isValid(),
+    assertTrue(
+        result.isValid(),
         "Module instantiation differs between runtimes: " + result.getDifferenceDescription());
 
     LOGGER.info("Cross-runtime module instantiation validation successful");
@@ -320,39 +327,41 @@ public final class WasiCrossRuntimeValidationTest {
     }
 
     // Test with invalid configuration that should cause errors
-    final CrossRuntimeValidator.RuntimeOperation<String> errorOperation = runtime -> {
-      try (final Engine engine = runtime.createEngine();
-           final Store store = engine.createStore()) {
+    final CrossRuntimeValidator.RuntimeOperation<String> errorOperation =
+        runtime -> {
+          try (final Engine engine = runtime.createEngine();
+              final Store store = engine.createStore()) {
 
-        try {
-          // Attempt to create WASI with invalid directory
-          final WasiConfig config =
-              WasiConfig.builder()
-                  .inheritEnv(true)
-                  .preopenDir("/nonexistent/invalid/path", "invalid", true, false)
-                  .build();
+            try {
+              // Attempt to create WASI with invalid directory
+              final WasiConfig config =
+                  WasiConfig.builder()
+                      .inheritEnv(true)
+                      .preopenDir("/nonexistent/invalid/path", "invalid", true, false)
+                      .build();
 
-          final Wasi wasi = store.createWasi(config);
-          wasi.close();
-          return "success"; // Should not reach here
-        } catch (final Exception e) {
-          return "error_" + e.getClass().getSimpleName();
-        }
-      }
-    };
+              final Wasi wasi = store.createWasi(config);
+              wasi.close();
+              return "success"; // Should not reach here
+            } catch (final Exception e) {
+              return "error_" + e.getClass().getSimpleName();
+            }
+          }
+        };
 
     final CrossRuntimeValidator.ComparisonResult result =
         CrossRuntimeValidator.validateErrorHandling(errorOperation, Duration.ofSeconds(15));
 
     // Both should fail with similar errors
     final List<CrossRuntimeValidator.TestResult> results = result.getResults();
-    
+
     // Verify both runtimes handled the error (either threw or returned error indicator)
     boolean bothHandledError = true;
     for (final CrossRuntimeValidator.TestResult testResult : results) {
-      final boolean handledError = testResult.hasException() || 
-          (testResult.getResult() != null && 
-           testResult.getResult().toString().startsWith("error_"));
+      final boolean handledError =
+          testResult.hasException()
+              || (testResult.getResult() != null
+                  && testResult.getResult().toString().startsWith("error_"));
       if (!handledError) {
         bothHandledError = false;
         break;
@@ -374,50 +383,52 @@ public final class WasiCrossRuntimeValidationTest {
       return;
     }
 
-    final CrossRuntimeValidator.RuntimeOperation<Long> performanceOperation = runtime -> {
-      try (final Engine engine = runtime.createEngine();
-           final Store store = engine.createStore()) {
+    final CrossRuntimeValidator.RuntimeOperation<Long> performanceOperation =
+        runtime -> {
+          try (final Engine engine = runtime.createEngine();
+              final Store store = engine.createStore()) {
 
-        final long startTime = System.nanoTime();
+            final long startTime = System.nanoTime();
 
-        // Perform multiple WASI operations for measurement
-        for (int i = 0; i < 10; i++) {
-          final WasiConfig config =
-              WasiConfig.builder()
-                  .inheritEnv(true)
-                  .arguments(Arrays.asList("perf_test_" + i))
-                  .inheritStdin(true)
-                  .inheritStdout(true)
-                  .inheritStderr(true)
-                  .build();
+            // Perform multiple WASI operations for measurement
+            for (int i = 0; i < 10; i++) {
+              final WasiConfig config =
+                  WasiConfig.builder()
+                      .inheritEnv(true)
+                      .arguments(Arrays.asList("perf_test_" + i))
+                      .inheritStdin(true)
+                      .inheritStdout(true)
+                      .inheritStderr(true)
+                      .build();
 
-          final Wasi wasi = store.createWasi(config);
-          assertTrue(wasi.isValid());
-          wasi.close();
-        }
+              final Wasi wasi = store.createWasi(config);
+              assertTrue(wasi.isValid());
+              wasi.close();
+            }
 
-        final long elapsed = System.nanoTime() - startTime;
-        return elapsed / 1_000_000; // Return milliseconds
-      }
-    };
+            final long elapsed = System.nanoTime() - startTime;
+            return elapsed / 1_000_000; // Return milliseconds
+          }
+        };
 
     final CrossRuntimeValidator.ComparisonResult result =
         CrossRuntimeValidator.validateCrossRuntime(performanceOperation, Duration.ofSeconds(30));
 
     assertNotNull(result);
-    
+
     // Performance may differ between runtimes, but both should complete successfully
     final List<CrossRuntimeValidator.TestResult> results = result.getResults();
     for (final CrossRuntimeValidator.TestResult testResult : results) {
-      assertTrue(testResult.isSuccess(), 
+      assertTrue(
+          testResult.isSuccess(),
           "Performance test should succeed in " + testResult.getRuntimeType());
-      
+
       final Long duration = (Long) testResult.getResult();
       assertNotNull(duration);
       assertTrue(duration > 0, "Performance measurement should be positive");
-      
-      LOGGER.info(String.format("%s runtime performance: %d ms", 
-          testResult.getRuntimeType(), duration));
+
+      LOGGER.info(
+          String.format("%s runtime performance: %d ms", testResult.getRuntimeType(), duration));
     }
 
     LOGGER.info("Cross-runtime performance consistency validation successful");
@@ -434,40 +445,42 @@ public final class WasiCrossRuntimeValidationTest {
       return;
     }
 
-    final CrossRuntimeValidator.RuntimeOperation<String> resourceOperation = runtime -> {
-      try (final Engine engine = runtime.createEngine();
-           final Store store = engine.createStore()) {
+    final CrossRuntimeValidator.RuntimeOperation<String> resourceOperation =
+        runtime -> {
+          try (final Engine engine = runtime.createEngine();
+              final Store store = engine.createStore()) {
 
-        // Create multiple WASI contexts to test resource management
-        final WasiConfig config =
-            WasiConfig.builder()
-                .inheritEnv(true)
-                .inheritStdin(true)
-                .inheritStdout(true)
-                .inheritStderr(true)
-                .build();
+            // Create multiple WASI contexts to test resource management
+            final WasiConfig config =
+                WasiConfig.builder()
+                    .inheritEnv(true)
+                    .inheritStdin(true)
+                    .inheritStdout(true)
+                    .inheritStderr(true)
+                    .build();
 
-        final Wasi[] wasContexts = new Wasi[5];
-        
-        // Create contexts
-        for (int i = 0; i < wasContexts.length; i++) {
-          wasContexts[i] = store.createWasi(config);
-          assertTrue(wasContexts[i].isValid());
-        }
+            final Wasi[] wasContexts = new Wasi[5];
 
-        // Close contexts
-        for (final Wasi wasi : wasContexts) {
-          wasi.close();
-        }
+            // Create contexts
+            for (int i = 0; i < wasContexts.length; i++) {
+              wasContexts[i] = store.createWasi(config);
+              assertTrue(wasContexts[i].isValid());
+            }
 
-        return "managed_" + wasContexts.length + "_contexts";
-      }
-    };
+            // Close contexts
+            for (final Wasi wasi : wasContexts) {
+              wasi.close();
+            }
+
+            return "managed_" + wasContexts.length + "_contexts";
+          }
+        };
 
     final CrossRuntimeValidator.ComparisonResult result =
         CrossRuntimeValidator.validateCrossRuntime(resourceOperation, Duration.ofSeconds(20));
 
-    assertTrue(result.isValid(),
+    assertTrue(
+        result.isValid(),
         "Resource management differs between runtimes: " + result.getDifferenceDescription());
 
     LOGGER.info("Cross-runtime resource management validation successful");
@@ -484,39 +497,41 @@ public final class WasiCrossRuntimeValidationTest {
       return;
     }
 
-    final CrossRuntimeValidator.RuntimeOperation<Integer> concurrencyOperation = runtime -> {
-      final int concurrentCount = 3;
-      final CrossRuntimeValidator.ComparisonResult concurrentResult =
-          CrossRuntimeValidator.validateConcurrentExecution(
-              wasmRuntime -> {
-                try (final Engine engine = wasmRuntime.createEngine();
-                     final Store store = engine.createStore()) {
+    final CrossRuntimeValidator.RuntimeOperation<Integer> concurrencyOperation =
+        runtime -> {
+          final int concurrentCount = 3;
+          final CrossRuntimeValidator.ComparisonResult concurrentResult =
+              CrossRuntimeValidator.validateConcurrentExecution(
+                  wasmRuntime -> {
+                    try (final Engine engine = wasmRuntime.createEngine();
+                        final Store store = engine.createStore()) {
 
-                  final WasiConfig config =
-                      WasiConfig.builder()
-                          .inheritEnv(true)
-                          .inheritStdin(false)
-                          .inheritStdout(true)
-                          .inheritStderr(true)
-                          .build();
+                      final WasiConfig config =
+                          WasiConfig.builder()
+                              .inheritEnv(true)
+                              .inheritStdin(false)
+                              .inheritStdout(true)
+                              .inheritStderr(true)
+                              .build();
 
-                  final Wasi wasi = store.createWasi(config);
-                  assertTrue(wasi.isValid());
-                  wasi.close();
+                      final Wasi wasi = store.createWasi(config);
+                      assertTrue(wasi.isValid());
+                      wasi.close();
 
-                  return "concurrent_success";
-                }
-              },
-              concurrentCount,
-              2);
+                      return "concurrent_success";
+                    }
+                  },
+                  concurrentCount,
+                  2);
 
-      return concurrentResult.isValid() ? concurrentCount : 0;
-    };
+          return concurrentResult.isValid() ? concurrentCount : 0;
+        };
 
     final CrossRuntimeValidator.ComparisonResult result =
         CrossRuntimeValidator.validateCrossRuntime(concurrencyOperation, Duration.ofSeconds(45));
 
-    assertTrue(result.isValid(),
+    assertTrue(
+        result.isValid(),
         "Concurrency behavior differs between runtimes: " + result.getDifferenceDescription());
 
     LOGGER.info("Cross-runtime concurrency behavior validation successful");
@@ -533,35 +548,37 @@ public final class WasiCrossRuntimeValidationTest {
       return;
     }
 
-    final CrossRuntimeValidator.RuntimeOperation<String> edgeCaseOperation = runtime -> {
-      try (final Engine engine = runtime.createEngine();
-           final Store store = engine.createStore()) {
+    final CrossRuntimeValidator.RuntimeOperation<String> edgeCaseOperation =
+        runtime -> {
+          try (final Engine engine = runtime.createEngine();
+              final Store store = engine.createStore()) {
 
-        // Test edge case: empty environment and arguments
-        final WasiConfig emptyConfig =
-            WasiConfig.builder()
-                .inheritEnv(false)
-                .environment(new HashMap<>())
-                .arguments(Arrays.asList())
-                .inheritStdin(true)
-                .inheritStdout(true)
-                .inheritStderr(true)
-                .build();
+            // Test edge case: empty environment and arguments
+            final WasiConfig emptyConfig =
+                WasiConfig.builder()
+                    .inheritEnv(false)
+                    .environment(new HashMap<>())
+                    .arguments(Arrays.asList())
+                    .inheritStdin(true)
+                    .inheritStdout(true)
+                    .inheritStderr(true)
+                    .build();
 
-        final Wasi wasi = store.createWasi(emptyConfig);
-        final int envSize = wasi.getEnvironment().size();
-        final int argSize = wasi.getArguments().size();
+            final Wasi wasi = store.createWasi(emptyConfig);
+            final int envSize = wasi.getEnvironment().size();
+            final int argSize = wasi.getArguments().size();
 
-        wasi.close();
+            wasi.close();
 
-        return String.format("env=%d,args=%d", envSize, argSize);
-      }
-    };
+            return String.format("env=%d,args=%d", envSize, argSize);
+          }
+        };
 
     final CrossRuntimeValidator.ComparisonResult result =
         CrossRuntimeValidator.validateCrossRuntime(edgeCaseOperation, Duration.ofSeconds(15));
 
-    assertTrue(result.isValid(),
+    assertTrue(
+        result.isValid(),
         "Configuration edge cases differ between runtimes: " + result.getDifferenceDescription());
 
     LOGGER.info("Cross-runtime configuration edge cases validation successful");

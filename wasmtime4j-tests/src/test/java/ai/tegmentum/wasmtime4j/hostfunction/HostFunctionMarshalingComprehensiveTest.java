@@ -17,29 +17,17 @@
 package ai.tegmentum.wasmtime4j.hostfunction;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.FunctionType;
-import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFunction;
-import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
-import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
 import ai.tegmentum.wasmtime4j.utils.CrossRuntimeValidator;
 import ai.tegmentum.wasmtime4j.utils.TestCategories;
 import ai.tegmentum.wasmtime4j.utils.TestRunner;
-import ai.tegmentum.wasmtime4j.utils.TestUtils;
-import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
@@ -107,8 +95,19 @@ final class HostFunctionMarshalingComprehensiveTest {
 
                   // Test edge values
                   final int[] testValues = {
-                    0, 1, -1, 42, -42, 255, -255, 65535, -65535,
-                    Integer.MAX_VALUE, Integer.MIN_VALUE, 0x7FFFFFFF, 0x80000000
+                    0,
+                    1,
+                    -1,
+                    42,
+                    -42,
+                    255,
+                    -255,
+                    65535,
+                    -65535,
+                    Integer.MAX_VALUE,
+                    Integer.MIN_VALUE,
+                    0x7FFFFFFF,
+                    0x80000000
                   };
 
                   final List<String> results = new ArrayList<>();
@@ -281,11 +280,21 @@ final class HostFunctionMarshalingComprehensiveTest {
 
                   // Test edge values
                   final long[] testValues = {
-                    0L, 1L, -1L, 42L, -42L,
-                    255L, -255L, 65535L, -65535L,
-                    (long) Integer.MAX_VALUE, (long) Integer.MIN_VALUE,
-                    Long.MAX_VALUE, Long.MIN_VALUE,
-                    0x7FFFFFFFFFFFFFFFL, 0x8000000000000000L
+                    0L,
+                    1L,
+                    -1L,
+                    42L,
+                    -42L,
+                    255L,
+                    -255L,
+                    65535L,
+                    -65535L,
+                    (long) Integer.MAX_VALUE,
+                    (long) Integer.MIN_VALUE,
+                    Long.MAX_VALUE,
+                    Long.MIN_VALUE,
+                    0x7FFFFFFFFFFFFFFFL,
+                    0x8000000000000000L
                   };
 
                   final List<String> results = new ArrayList<>();
@@ -779,7 +788,8 @@ final class HostFunctionMarshalingComprehensiveTest {
                             final double result1 = i32_1 * f64_1 + i64_1 * f32_1 + i32_2 * f32_2;
 
                             // Compute aggregate integer result
-                            final long aggregateSum = i32_1 + i64_1 + (long) f32_1 + (long) f64_1 + i32_2 + (long) f32_2;
+                            final long aggregateSum =
+                                i32_1 + i64_1 + (long) f32_1 + (long) f64_1 + i32_2 + (long) f32_2;
                             final int result2 = (int) (aggregateSum % Integer.MAX_VALUE);
 
                             // Create result object
@@ -918,8 +928,7 @@ final class HostFunctionMarshalingComprehensiveTest {
                         }
 
                         if (params.length == 0) {
-                          throw new IllegalArgumentException(
-                              "Parameters array cannot be empty");
+                          throw new IllegalArgumentException("Parameters array cannot be empty");
                         }
 
                         if (params[0] == null) {

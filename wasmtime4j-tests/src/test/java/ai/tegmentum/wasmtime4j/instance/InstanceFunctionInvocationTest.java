@@ -15,14 +15,12 @@ import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
-import ai.tegmentum.wasmtime4j.utils.CrossRuntimeValidator;
 import ai.tegmentum.wasmtime4j.utils.TestCategories;
 import ai.tegmentum.wasmtime4j.utils.TestUtils;
 import ai.tegmentum.wasmtime4j.webassembly.WasmTestModules;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,8 +39,8 @@ import org.junit.jupiter.api.TestInfo;
 
 /**
  * Comprehensive test suite specifically focused on function invocation patterns, parameter
- * handling, return value validation, and edge cases in WebAssembly function calls. This test
- * suite provides exhaustive coverage of all function invocation scenarios.
+ * handling, return value validation, and edge cases in WebAssembly function calls. This test suite
+ * provides exhaustive coverage of all function invocation scenarios.
  */
 @DisplayName("Instance Function Invocation Tests")
 final class InstanceFunctionInvocationTest {
@@ -110,40 +108,44 @@ final class InstanceFunctionInvocationTest {
 
               // Test all i32 boundary values
               final Map<String, Integer[]> boundaryTests = new HashMap<>();
-              boundaryTests.put("zero", new Integer[]{0, 0});
-              boundaryTests.put("positive", new Integer[]{42, 58});
-              boundaryTests.put("negative", new Integer[]{-42, -58});
-              boundaryTests.put("max_value", new Integer[]{Integer.MAX_VALUE, 0});
-              boundaryTests.put("min_value", new Integer[]{Integer.MIN_VALUE, 0});
-              boundaryTests.put("max_pos_neg", new Integer[]{Integer.MAX_VALUE, Integer.MIN_VALUE});
-              boundaryTests.put("large_pos", new Integer[]{1000000, 2000000});
-              boundaryTests.put("large_neg", new Integer[]{-1000000, -2000000});
+              boundaryTests.put("zero", new Integer[] {0, 0});
+              boundaryTests.put("positive", new Integer[] {42, 58});
+              boundaryTests.put("negative", new Integer[] {-42, -58});
+              boundaryTests.put("max_value", new Integer[] {Integer.MAX_VALUE, 0});
+              boundaryTests.put("min_value", new Integer[] {Integer.MIN_VALUE, 0});
+              boundaryTests.put(
+                  "max_pos_neg", new Integer[] {Integer.MAX_VALUE, Integer.MIN_VALUE});
+              boundaryTests.put("large_pos", new Integer[] {1000000, 2000000});
+              boundaryTests.put("large_neg", new Integer[] {-1000000, -2000000});
 
               for (final Map.Entry<String, Integer[]> test : boundaryTests.entrySet()) {
                 final String testName = test.getKey();
                 final Integer[] values = test.getValue();
 
                 // Test addition
-                final WasmValue[] addResult = instance.callFunction("add", 
-                    WasmValue.i32(values[0]), WasmValue.i32(values[1]));
+                final WasmValue[] addResult =
+                    instance.callFunction(
+                        "add", WasmValue.i32(values[0]), WasmValue.i32(values[1]));
                 assertThat(addResult).hasSize(1);
                 assertThat(addResult[0].getType()).isEqualTo(WasmValueType.I32);
                 assertThat(addResult[0].asI32()).isEqualTo(values[0] + values[1]);
 
                 // Test subtraction
-                final WasmValue[] subResult = instance.callFunction("sub", 
-                    WasmValue.i32(values[0]), WasmValue.i32(values[1]));
+                final WasmValue[] subResult =
+                    instance.callFunction(
+                        "sub", WasmValue.i32(values[0]), WasmValue.i32(values[1]));
                 assertThat(subResult).hasSize(1);
                 assertThat(subResult[0].asI32()).isEqualTo(values[0] - values[1]);
 
-                // Test multiplication  
-                final WasmValue[] mulResult = instance.callFunction("mul", 
-                    WasmValue.i32(values[0]), WasmValue.i32(values[1]));
+                // Test multiplication
+                final WasmValue[] mulResult =
+                    instance.callFunction(
+                        "mul", WasmValue.i32(values[0]), WasmValue.i32(values[1]));
                 assertThat(mulResult).hasSize(1);
                 assertThat(mulResult[0].asI32()).isEqualTo(values[0] * values[1]);
 
-                addTestMetric(String.format("i32 boundary test '%s' passed with %s", 
-                    testName, runtimeType));
+                addTestMetric(
+                    String.format("i32 boundary test '%s' passed with %s", testName, runtimeType));
               }
             }
           });
@@ -162,40 +164,43 @@ final class InstanceFunctionInvocationTest {
 
               // Test f32 precision and edge cases
               final Map<String, Float[]> floatTests = new HashMap<>();
-              floatTests.put("simple", new Float[]{3.14f, 2.86f});
-              floatTests.put("precision", new Float[]{0.1f, 0.2f});
-              floatTests.put("zero", new Float[]{0.0f, 0.0f});
-              floatTests.put("negative", new Float[]{-5.5f, -3.3f});
-              floatTests.put("max_value", new Float[]{Float.MAX_VALUE, 0.0f});
-              floatTests.put("min_value", new Float[]{Float.MIN_VALUE, 0.0f});
-              floatTests.put("small_numbers", new Float[]{0.000001f, 0.000002f});
-              floatTests.put("large_numbers", new Float[]{1000000.0f, 2000000.0f});
+              floatTests.put("simple", new Float[] {3.14f, 2.86f});
+              floatTests.put("precision", new Float[] {0.1f, 0.2f});
+              floatTests.put("zero", new Float[] {0.0f, 0.0f});
+              floatTests.put("negative", new Float[] {-5.5f, -3.3f});
+              floatTests.put("max_value", new Float[] {Float.MAX_VALUE, 0.0f});
+              floatTests.put("min_value", new Float[] {Float.MIN_VALUE, 0.0f});
+              floatTests.put("small_numbers", new Float[] {0.000001f, 0.000002f});
+              floatTests.put("large_numbers", new Float[] {1000000.0f, 2000000.0f});
 
               for (final Map.Entry<String, Float[]> test : floatTests.entrySet()) {
                 final String testName = test.getKey();
                 final Float[] values = test.getValue();
 
                 // Test f32 addition
-                final WasmValue[] addResult = instance.callFunction("fadd_f32", 
-                    WasmValue.f32(values[0]), WasmValue.f32(values[1]));
+                final WasmValue[] addResult =
+                    instance.callFunction(
+                        "fadd_f32", WasmValue.f32(values[0]), WasmValue.f32(values[1]));
                 assertThat(addResult).hasSize(1);
                 assertThat(addResult[0].getType()).isEqualTo(WasmValueType.F32);
                 assertThat(addResult[0].asF32()).isCloseTo(values[0] + values[1], within(0.00001f));
 
                 // Test f32 subtraction
-                final WasmValue[] subResult = instance.callFunction("fsub_f32", 
-                    WasmValue.f32(values[0]), WasmValue.f32(values[1]));
+                final WasmValue[] subResult =
+                    instance.callFunction(
+                        "fsub_f32", WasmValue.f32(values[0]), WasmValue.f32(values[1]));
                 assertThat(subResult).hasSize(1);
                 assertThat(subResult[0].asF32()).isCloseTo(values[0] - values[1], within(0.00001f));
 
                 // Test f32 multiplication
-                final WasmValue[] mulResult = instance.callFunction("fmul_f32", 
-                    WasmValue.f32(values[0]), WasmValue.f32(values[1]));
+                final WasmValue[] mulResult =
+                    instance.callFunction(
+                        "fmul_f32", WasmValue.f32(values[0]), WasmValue.f32(values[1]));
                 assertThat(mulResult).hasSize(1);
                 assertThat(mulResult[0].asF32()).isCloseTo(values[0] * values[1], within(0.00001f));
 
-                addTestMetric(String.format("f32 precision test '%s' passed with %s", 
-                    testName, runtimeType));
+                addTestMetric(
+                    String.format("f32 precision test '%s' passed with %s", testName, runtimeType));
               }
             }
           });
@@ -214,19 +219,20 @@ final class InstanceFunctionInvocationTest {
 
               // Test special float values
               final Map<String, Float[]> specialTests = new HashMap<>();
-              specialTests.put("positive_infinity", new Float[]{Float.POSITIVE_INFINITY, 1.0f});
-              specialTests.put("negative_infinity", new Float[]{Float.NEGATIVE_INFINITY, 1.0f});
-              specialTests.put("nan", new Float[]{Float.NaN, 1.0f});
+              specialTests.put("positive_infinity", new Float[] {Float.POSITIVE_INFINITY, 1.0f});
+              specialTests.put("negative_infinity", new Float[] {Float.NEGATIVE_INFINITY, 1.0f});
+              specialTests.put("nan", new Float[] {Float.NaN, 1.0f});
 
               for (final Map.Entry<String, Float[]> test : specialTests.entrySet()) {
                 final String testName = test.getKey();
                 final Float[] values = test.getValue();
 
                 try {
-                  final WasmValue[] result = instance.callFunction("fadd_f32", 
-                      WasmValue.f32(values[0]), WasmValue.f32(values[1]));
+                  final WasmValue[] result =
+                      instance.callFunction(
+                          "fadd_f32", WasmValue.f32(values[0]), WasmValue.f32(values[1]));
                   assertThat(result).hasSize(1);
-                  
+
                   final float resultValue = result[0].asF32();
                   if (testName.equals("nan")) {
                     assertThat(Float.isNaN(resultValue)).isTrue();
@@ -238,12 +244,15 @@ final class InstanceFunctionInvocationTest {
                     assertThat(resultValue < 0).isTrue();
                   }
 
-                  addTestMetric(String.format("Special float test '%s' handled with %s", 
-                      testName, runtimeType));
+                  addTestMetric(
+                      String.format(
+                          "Special float test '%s' handled with %s", testName, runtimeType));
                 } catch (final WasmException e) {
                   // Some special values may cause traps, which is acceptable
-                  addTestMetric(String.format("Special float test '%s' trapped (expected) with %s", 
-                      testName, runtimeType));
+                  addTestMetric(
+                      String.format(
+                          "Special float test '%s' trapped (expected) with %s",
+                          testName, runtimeType));
                 }
               }
             }
@@ -264,17 +273,21 @@ final class InstanceFunctionInvocationTest {
                   final Instance intInstance = intModule.instantiate(store)) {
 
                 // Should accept correct i32 parameters
-                final WasmValue[] correctResult = intInstance.callFunction("add", 
-                    WasmValue.i32(10), WasmValue.i32(20));
+                final WasmValue[] correctResult =
+                    intInstance.callFunction("add", WasmValue.i32(10), WasmValue.i32(20));
                 assertThat(correctResult[0].asI32()).isEqualTo(30);
 
                 // Should reject f32 parameters for i32 function
-                assertThatThrownBy(() -> intInstance.callFunction("add", 
-                    WasmValue.f32(10.0f), WasmValue.i32(20)))
+                assertThatThrownBy(
+                        () ->
+                            intInstance.callFunction(
+                                "add", WasmValue.f32(10.0f), WasmValue.i32(20)))
                     .isInstanceOf(WasmException.class);
 
-                assertThatThrownBy(() -> intInstance.callFunction("add", 
-                    WasmValue.i32(10), WasmValue.f32(20.0f)))
+                assertThatThrownBy(
+                        () ->
+                            intInstance.callFunction(
+                                "add", WasmValue.i32(10), WasmValue.f32(20.0f)))
                     .isInstanceOf(WasmException.class);
               }
 
@@ -283,13 +296,16 @@ final class InstanceFunctionInvocationTest {
                   final Instance floatInstance = floatModule.instantiate(store)) {
 
                 // Should accept correct f32 parameters
-                final WasmValue[] correctResult = floatInstance.callFunction("fadd_f32", 
-                    WasmValue.f32(10.5f), WasmValue.f32(20.5f));
+                final WasmValue[] correctResult =
+                    floatInstance.callFunction(
+                        "fadd_f32", WasmValue.f32(10.5f), WasmValue.f32(20.5f));
                 assertThat(correctResult[0].asF32()).isCloseTo(31.0f, within(0.001f));
 
                 // Should reject i32 parameters for f32 function
-                assertThatThrownBy(() -> floatInstance.callFunction("fadd_f32", 
-                    WasmValue.i32(10), WasmValue.f32(20.5f)))
+                assertThatThrownBy(
+                        () ->
+                            floatInstance.callFunction(
+                                "fadd_f32", WasmValue.i32(10), WasmValue.f32(20.5f)))
                     .isInstanceOf(WasmException.class);
               }
 
@@ -322,8 +338,8 @@ final class InstanceFunctionInvocationTest {
               assertThat(funcType.getReturnTypes()).hasSize(1);
 
               // Test correct parameter count
-              final WasmValue[] correctResult = instance.callFunction("add", 
-                  WasmValue.i32(10), WasmValue.i32(20));
+              final WasmValue[] correctResult =
+                  instance.callFunction("add", WasmValue.i32(10), WasmValue.i32(20));
               assertThat(correctResult).hasSize(1);
               assertThat(correctResult[0].asI32()).isEqualTo(30);
 
@@ -337,13 +353,21 @@ final class InstanceFunctionInvocationTest {
                   .hasMessageContaining("parameter");
 
               // Test too many parameters
-              assertThatThrownBy(() -> instance.callFunction("add", 
-                  WasmValue.i32(10), WasmValue.i32(20), WasmValue.i32(30)))
+              assertThatThrownBy(
+                      () ->
+                          instance.callFunction(
+                              "add", WasmValue.i32(10), WasmValue.i32(20), WasmValue.i32(30)))
                   .isInstanceOf(WasmException.class)
                   .hasMessageContaining("parameter");
 
-              assertThatThrownBy(() -> instance.callFunction("add", 
-                  WasmValue.i32(10), WasmValue.i32(20), WasmValue.i32(30), WasmValue.i32(40)))
+              assertThatThrownBy(
+                      () ->
+                          instance.callFunction(
+                              "add",
+                              WasmValue.i32(10),
+                              WasmValue.i32(20),
+                              WasmValue.i32(30),
+                              WasmValue.i32(40)))
                   .isInstanceOf(WasmException.class)
                   .hasMessageContaining("parameter");
 
@@ -397,9 +421,9 @@ final class InstanceFunctionInvocationTest {
               try (final Module intModule = engine.compileModule(intModuleBytes);
                   final Instance intInstance = intModule.instantiate(store)) {
 
-                final WasmValue[] result = intInstance.callFunction("add", 
-                    WasmValue.i32(15), WasmValue.i32(25));
-                
+                final WasmValue[] result =
+                    intInstance.callFunction("add", WasmValue.i32(15), WasmValue.i32(25));
+
                 // Validate return count and type
                 assertThat(result).hasSize(1);
                 assertThat(result[0].getType()).isEqualTo(WasmValueType.I32);
@@ -418,9 +442,10 @@ final class InstanceFunctionInvocationTest {
               try (final Module floatModule = engine.compileModule(floatModuleBytes);
                   final Instance floatInstance = floatModule.instantiate(store)) {
 
-                final WasmValue[] result = floatInstance.callFunction("fadd_f32", 
-                    WasmValue.f32(1.5f), WasmValue.f32(2.5f));
-                
+                final WasmValue[] result =
+                    floatInstance.callFunction(
+                        "fadd_f32", WasmValue.f32(1.5f), WasmValue.f32(2.5f));
+
                 // Validate return count and type
                 assertThat(result).hasSize(1);
                 assertThat(result[0].getType()).isEqualTo(WasmValueType.F32);
@@ -459,8 +484,8 @@ final class InstanceFunctionInvocationTest {
               final Instant startTime = Instant.now();
 
               for (int i = 0; i < numCalls; i++) {
-                final WasmValue[] result = instance.callFunction("add", 
-                    WasmValue.i32(i), WasmValue.i32(i + 1));
+                final WasmValue[] result =
+                    instance.callFunction("add", WasmValue.i32(i), WasmValue.i32(i + 1));
                 assertThat(result[0].asI32()).isEqualTo(2 * i + 1);
               }
 
@@ -470,8 +495,10 @@ final class InstanceFunctionInvocationTest {
               // Should achieve reasonable performance
               assertThat(callsPerSecond).isGreaterThan(1000);
 
-              addTestMetric(String.format("Rapid calls: %d calls in %dms (%.0f calls/sec) with %s", 
-                  numCalls, totalTime.toMillis(), callsPerSecond, runtimeType));
+              addTestMetric(
+                  String.format(
+                      "Rapid calls: %d calls in %dms (%.0f calls/sec) with %s",
+                      numCalls, totalTime.toMillis(), callsPerSecond, runtimeType));
             }
           });
     }
@@ -493,7 +520,7 @@ final class InstanceFunctionInvocationTest {
               for (final int testValue : testValues) {
                 // Set the global value
                 instance.callFunction("set", WasmValue.i32(testValue));
-                
+
                 // Verify it was set correctly
                 final WasmValue[] getResult = instance.callFunction("get");
                 assertThat(getResult[0].asI32()).isEqualTo(testValue);
@@ -534,23 +561,27 @@ final class InstanceFunctionInvocationTest {
 
                 for (int i = 0; i < numThreads; i++) {
                   final int threadId = i;
-                  final CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
-                    for (int j = 0; j < numCallsPerThread; j++) {
-                      try {
-                        final WasmValue[] result = instance.callFunction("add", 
-                            WasmValue.i32(threadId), WasmValue.i32(j));
-                        
-                        if (result[0].asI32() == threadId + j) {
-                          successCount.incrementAndGet();
-                        } else {
-                          errorCount.incrementAndGet();
-                        }
-                      } catch (final Exception e) {
-                        errorCount.incrementAndGet();
-                        LOGGER.warning("Concurrent call failed: " + e.getMessage());
-                      }
-                    }
-                  }, executor);
+                  final CompletableFuture<Void> future =
+                      CompletableFuture.runAsync(
+                          () -> {
+                            for (int j = 0; j < numCallsPerThread; j++) {
+                              try {
+                                final WasmValue[] result =
+                                    instance.callFunction(
+                                        "add", WasmValue.i32(threadId), WasmValue.i32(j));
+
+                                if (result[0].asI32() == threadId + j) {
+                                  successCount.incrementAndGet();
+                                } else {
+                                  errorCount.incrementAndGet();
+                                }
+                              } catch (final Exception e) {
+                                errorCount.incrementAndGet();
+                                LOGGER.warning("Concurrent call failed: " + e.getMessage());
+                              }
+                            }
+                          },
+                          executor);
                   futures.add(future);
                 }
 
@@ -567,8 +598,10 @@ final class InstanceFunctionInvocationTest {
                 executor.awaitTermination(5, TimeUnit.SECONDS);
               }
 
-              addTestMetric(String.format("Concurrent function calls: %d successful with %s", 
-                  successCount.get(), runtimeType));
+              addTestMetric(
+                  String.format(
+                      "Concurrent function calls: %d successful with %s",
+                      successCount.get(), runtimeType));
             }
           });
     }
@@ -590,24 +623,30 @@ final class InstanceFunctionInvocationTest {
                 final Instance instance = module.instantiate(store)) {
 
               // Test null function name
-              assertThatThrownBy(() -> instance.callFunction(null, WasmValue.i32(1), WasmValue.i32(2)))
+              assertThatThrownBy(
+                      () -> instance.callFunction(null, WasmValue.i32(1), WasmValue.i32(2)))
                   .isInstanceOf(IllegalArgumentException.class);
 
               // Test empty function name
-              assertThatThrownBy(() -> instance.callFunction("", WasmValue.i32(1), WasmValue.i32(2)))
+              assertThatThrownBy(
+                      () -> instance.callFunction("", WasmValue.i32(1), WasmValue.i32(2)))
                   .isInstanceOf(WasmException.class);
 
               // Test non-existent function name
-              assertThatThrownBy(() -> instance.callFunction("nonexistent", WasmValue.i32(1), WasmValue.i32(2)))
+              assertThatThrownBy(
+                      () ->
+                          instance.callFunction("nonexistent", WasmValue.i32(1), WasmValue.i32(2)))
                   .isInstanceOf(WasmException.class);
 
               // Test function name with special characters
-              assertThatThrownBy(() -> instance.callFunction("add@#$", WasmValue.i32(1), WasmValue.i32(2)))
+              assertThatThrownBy(
+                      () -> instance.callFunction("add@#$", WasmValue.i32(1), WasmValue.i32(2)))
                   .isInstanceOf(WasmException.class);
 
               // Test very long function name
               final String longName = "a".repeat(10000);
-              assertThatThrownBy(() -> instance.callFunction(longName, WasmValue.i32(1), WasmValue.i32(2)))
+              assertThatThrownBy(
+                      () -> instance.callFunction(longName, WasmValue.i32(1), WasmValue.i32(2)))
                   .isInstanceOf(WasmException.class);
 
               addTestMetric("Invalid function call handling validated with " + runtimeType);
@@ -638,7 +677,8 @@ final class InstanceFunctionInvocationTest {
                   .isInstanceOf(IllegalArgumentException.class);
 
               // Test with mixed valid/invalid parameters
-              assertThatThrownBy(() -> instance.callFunction("add", WasmValue.i32(1), null, WasmValue.i32(3)))
+              assertThatThrownBy(
+                      () -> instance.callFunction("add", WasmValue.i32(1), null, WasmValue.i32(3)))
                   .isInstanceOf(IllegalArgumentException.class);
 
               addTestMetric("Null parameter handling validated with " + runtimeType);
@@ -657,9 +697,10 @@ final class InstanceFunctionInvocationTest {
                 final Module module = engine.compileModule(moduleBytes)) {
 
               final Instance instance = module.instantiate(store);
-              
+
               // Verify instance works initially
-              final WasmValue[] result = instance.callFunction("add", WasmValue.i32(1), WasmValue.i32(2));
+              final WasmValue[] result =
+                  instance.callFunction("add", WasmValue.i32(1), WasmValue.i32(2));
               assertThat(result[0].asI32()).isEqualTo(3);
 
               // Close the instance
@@ -667,14 +708,14 @@ final class InstanceFunctionInvocationTest {
               assertThat(instance.isValid()).isFalse();
 
               // All function calls should fail after close
-              assertThatThrownBy(() -> instance.callFunction("add", WasmValue.i32(1), WasmValue.i32(2)))
+              assertThatThrownBy(
+                      () -> instance.callFunction("add", WasmValue.i32(1), WasmValue.i32(2)))
                   .isInstanceOf(WasmException.class);
 
               assertThatThrownBy(() -> instance.getFunction("add"))
                   .isInstanceOf(WasmException.class);
 
-              assertThatThrownBy(() -> instance.getExportNames())
-                  .isInstanceOf(WasmException.class);
+              assertThatThrownBy(() -> instance.getExportNames()).isInstanceOf(WasmException.class);
 
               // Subsequent close calls should be safe
               instance.close(); // Should not throw

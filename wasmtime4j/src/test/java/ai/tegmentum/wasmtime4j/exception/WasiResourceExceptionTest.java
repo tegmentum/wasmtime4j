@@ -1,6 +1,9 @@
 package ai.tegmentum.wasmtime4j.exception;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -24,7 +27,8 @@ class WasiResourceExceptionTest {
       assertEquals("resource-operation", exception.getOperation());
       assertEquals(WasiResourceException.ResourceType.SYSTEM, exception.getResourceType());
       assertNull(exception.getResourceHandle());
-      assertEquals(WasiResourceException.ResourceOperation.ACCESS, exception.getResourceOperation());
+      assertEquals(
+          WasiResourceException.ResourceOperation.ACCESS, exception.getResourceOperation());
       assertFalse(exception.isCleanupRequired());
       assertTrue(exception.isRetryable());
       assertEquals(WasiException.ErrorCategory.RESOURCE_LIMIT, exception.getCategory());
@@ -41,7 +45,8 @@ class WasiResourceExceptionTest {
       assertEquals(cause, exception.getCause());
       assertEquals("resource-operation", exception.getOperation());
       assertEquals(WasiResourceException.ResourceType.SYSTEM, exception.getResourceType());
-      assertEquals(WasiResourceException.ResourceOperation.ACCESS, exception.getResourceOperation());
+      assertEquals(
+          WasiResourceException.ResourceOperation.ACCESS, exception.getResourceOperation());
       assertTrue(exception.isRetryable());
     }
 
@@ -49,10 +54,13 @@ class WasiResourceExceptionTest {
     @DisplayName("Resource-specific constructor creates exception correctly")
     void testResourceSpecificConstructor() {
       final String message = "File allocation failed";
-      final WasiResourceException.ResourceType resourceType = WasiResourceException.ResourceType.FILE;
-      final WasiResourceException.ResourceOperation resourceOperation = WasiResourceException.ResourceOperation.ALLOCATION;
+      final WasiResourceException.ResourceType resourceType =
+          WasiResourceException.ResourceType.FILE;
+      final WasiResourceException.ResourceOperation resourceOperation =
+          WasiResourceException.ResourceOperation.ALLOCATION;
 
-      final WasiResourceException exception = new WasiResourceException(message, resourceType, resourceOperation);
+      final WasiResourceException exception =
+          new WasiResourceException(message, resourceType, resourceOperation);
 
       assertTrue(exception.getMessage().contains(message));
       assertEquals("file-allocation", exception.getOperation());
@@ -69,11 +77,14 @@ class WasiResourceExceptionTest {
     @DisplayName("Full constructor creates exception correctly")
     void testFullConstructor() {
       final String message = "Socket access failed";
-      final WasiResourceException.ResourceType resourceType = WasiResourceException.ResourceType.SOCKET;
+      final WasiResourceException.ResourceType resourceType =
+          WasiResourceException.ResourceType.SOCKET;
       final String resourceHandle = "socket-123";
-      final WasiResourceException.ResourceOperation resourceOperation = WasiResourceException.ResourceOperation.ACCESS;
+      final WasiResourceException.ResourceOperation resourceOperation =
+          WasiResourceException.ResourceOperation.ACCESS;
 
-      final WasiResourceException exception = new WasiResourceException(message, resourceType, resourceHandle, resourceOperation);
+      final WasiResourceException exception =
+          new WasiResourceException(message, resourceType, resourceHandle, resourceOperation);
 
       assertTrue(exception.getMessage().contains(message));
       assertEquals("socket-access", exception.getOperation());
@@ -90,12 +101,16 @@ class WasiResourceExceptionTest {
     @DisplayName("Full constructor with cause creates exception correctly")
     void testFullConstructorWithCause() {
       final String message = "Memory cleanup failed";
-      final WasiResourceException.ResourceType resourceType = WasiResourceException.ResourceType.MEMORY;
+      final WasiResourceException.ResourceType resourceType =
+          WasiResourceException.ResourceType.MEMORY;
       final String resourceHandle = "mem-456";
-      final WasiResourceException.ResourceOperation resourceOperation = WasiResourceException.ResourceOperation.CLEANUP;
+      final WasiResourceException.ResourceOperation resourceOperation =
+          WasiResourceException.ResourceOperation.CLEANUP;
       final RuntimeException cause = new RuntimeException("Memory error");
 
-      final WasiResourceException exception = new WasiResourceException(message, resourceType, resourceHandle, resourceOperation, cause);
+      final WasiResourceException exception =
+          new WasiResourceException(
+              message, resourceType, resourceHandle, resourceOperation, cause);
 
       assertTrue(exception.getMessage().contains(message));
       assertEquals(cause, exception.getCause());
@@ -104,7 +119,8 @@ class WasiResourceExceptionTest {
       assertEquals(resourceType, exception.getResourceType());
       assertEquals(resourceHandle, exception.getResourceHandle());
       assertEquals(resourceOperation, exception.getResourceOperation());
-      assertFalse(exception.isCleanupRequired()); // Cleanup operations don't require additional cleanup
+      assertFalse(
+          exception.isCleanupRequired()); // Cleanup operations don't require additional cleanup
     }
   }
 
@@ -115,7 +131,11 @@ class WasiResourceExceptionTest {
     @Test
     @DisplayName("isAllocationError returns true for ALLOCATION operation")
     void testIsAllocationError() {
-      final WasiResourceException exception = new WasiResourceException("Error", WasiResourceException.ResourceType.FILE, WasiResourceException.ResourceOperation.ALLOCATION);
+      final WasiResourceException exception =
+          new WasiResourceException(
+              "Error",
+              WasiResourceException.ResourceType.FILE,
+              WasiResourceException.ResourceOperation.ALLOCATION);
       assertTrue(exception.isAllocationError());
       assertFalse(exception.isAccessError());
       assertFalse(exception.isCleanupError());
@@ -124,7 +144,11 @@ class WasiResourceExceptionTest {
     @Test
     @DisplayName("isAccessError returns true for ACCESS operation")
     void testIsAccessError() {
-      final WasiResourceException exception = new WasiResourceException("Error", WasiResourceException.ResourceType.FILE, WasiResourceException.ResourceOperation.ACCESS);
+      final WasiResourceException exception =
+          new WasiResourceException(
+              "Error",
+              WasiResourceException.ResourceType.FILE,
+              WasiResourceException.ResourceOperation.ACCESS);
       assertFalse(exception.isAllocationError());
       assertTrue(exception.isAccessError());
       assertFalse(exception.isCleanupError());
@@ -133,7 +157,11 @@ class WasiResourceExceptionTest {
     @Test
     @DisplayName("isCleanupError returns true for CLEANUP operation")
     void testIsCleanupError() {
-      final WasiResourceException exception = new WasiResourceException("Error", WasiResourceException.ResourceType.FILE, WasiResourceException.ResourceOperation.CLEANUP);
+      final WasiResourceException exception =
+          new WasiResourceException(
+              "Error",
+              WasiResourceException.ResourceType.FILE,
+              WasiResourceException.ResourceOperation.CLEANUP);
       assertFalse(exception.isAllocationError());
       assertFalse(exception.isAccessError());
       assertTrue(exception.isCleanupError());
@@ -147,12 +175,20 @@ class WasiResourceExceptionTest {
     @Test
     @DisplayName("isFileResourceError returns true for file resources")
     void testIsFileResourceError() {
-      final WasiResourceException fileException = new WasiResourceException("Error", WasiResourceException.ResourceType.FILE, WasiResourceException.ResourceOperation.ACCESS);
+      final WasiResourceException fileException =
+          new WasiResourceException(
+              "Error",
+              WasiResourceException.ResourceType.FILE,
+              WasiResourceException.ResourceOperation.ACCESS);
       assertTrue(fileException.isFileResourceError());
       assertFalse(fileException.isNetworkResourceError());
       assertFalse(fileException.isMemoryResourceError());
 
-      final WasiResourceException dirException = new WasiResourceException("Error", WasiResourceException.ResourceType.DIRECTORY, WasiResourceException.ResourceOperation.ACCESS);
+      final WasiResourceException dirException =
+          new WasiResourceException(
+              "Error",
+              WasiResourceException.ResourceType.DIRECTORY,
+              WasiResourceException.ResourceOperation.ACCESS);
       assertTrue(dirException.isFileResourceError());
       assertFalse(dirException.isNetworkResourceError());
       assertFalse(dirException.isMemoryResourceError());
@@ -161,7 +197,11 @@ class WasiResourceExceptionTest {
     @Test
     @DisplayName("isNetworkResourceError returns true for socket resources")
     void testIsNetworkResourceError() {
-      final WasiResourceException exception = new WasiResourceException("Error", WasiResourceException.ResourceType.SOCKET, WasiResourceException.ResourceOperation.ACCESS);
+      final WasiResourceException exception =
+          new WasiResourceException(
+              "Error",
+              WasiResourceException.ResourceType.SOCKET,
+              WasiResourceException.ResourceOperation.ACCESS);
       assertFalse(exception.isFileResourceError());
       assertTrue(exception.isNetworkResourceError());
       assertFalse(exception.isMemoryResourceError());
@@ -170,7 +210,11 @@ class WasiResourceExceptionTest {
     @Test
     @DisplayName("isMemoryResourceError returns true for memory resources")
     void testIsMemoryResourceError() {
-      final WasiResourceException exception = new WasiResourceException("Error", WasiResourceException.ResourceType.MEMORY, WasiResourceException.ResourceOperation.ACCESS);
+      final WasiResourceException exception =
+          new WasiResourceException(
+              "Error",
+              WasiResourceException.ResourceType.MEMORY,
+              WasiResourceException.ResourceOperation.ACCESS);
       assertFalse(exception.isFileResourceError());
       assertFalse(exception.isNetworkResourceError());
       assertTrue(exception.isMemoryResourceError());
@@ -184,23 +228,46 @@ class WasiResourceExceptionTest {
     @Test
     @DisplayName("ALLOCATION operations require cleanup")
     void testAllocationRequiresCleanup() {
-      final WasiResourceException exception = new WasiResourceException("Error", WasiResourceException.ResourceType.FILE, WasiResourceException.ResourceOperation.ALLOCATION);
+      final WasiResourceException exception =
+          new WasiResourceException(
+              "Error",
+              WasiResourceException.ResourceType.FILE,
+              WasiResourceException.ResourceOperation.ALLOCATION);
       assertTrue(exception.isCleanupRequired());
     }
 
     @Test
     @DisplayName("LIFETIME_MANAGEMENT operations require cleanup")
     void testLifetimeManagementRequiresCleanup() {
-      final WasiResourceException exception = new WasiResourceException("Error", WasiResourceException.ResourceType.FILE, WasiResourceException.ResourceOperation.LIFETIME_MANAGEMENT);
+      final WasiResourceException exception =
+          new WasiResourceException(
+              "Error",
+              WasiResourceException.ResourceType.FILE,
+              WasiResourceException.ResourceOperation.LIFETIME_MANAGEMENT);
       assertTrue(exception.isCleanupRequired());
     }
 
     @Test
     @DisplayName("Other operations do not require cleanup")
     void testOtherOperationsDoNotRequireCleanup() {
-      assertFalse(new WasiResourceException("Error", WasiResourceException.ResourceType.FILE, WasiResourceException.ResourceOperation.ACCESS).isCleanupRequired());
-      assertFalse(new WasiResourceException("Error", WasiResourceException.ResourceType.FILE, WasiResourceException.ResourceOperation.MODIFICATION).isCleanupRequired());
-      assertFalse(new WasiResourceException("Error", WasiResourceException.ResourceType.FILE, WasiResourceException.ResourceOperation.CLEANUP).isCleanupRequired());
+      assertFalse(
+          new WasiResourceException(
+                  "Error",
+                  WasiResourceException.ResourceType.FILE,
+                  WasiResourceException.ResourceOperation.ACCESS)
+              .isCleanupRequired());
+      assertFalse(
+          new WasiResourceException(
+                  "Error",
+                  WasiResourceException.ResourceType.FILE,
+                  WasiResourceException.ResourceOperation.MODIFICATION)
+              .isCleanupRequired());
+      assertFalse(
+          new WasiResourceException(
+                  "Error",
+                  WasiResourceException.ResourceType.FILE,
+                  WasiResourceException.ResourceOperation.CLEANUP)
+              .isCleanupRequired());
     }
   }
 
@@ -211,16 +278,41 @@ class WasiResourceExceptionTest {
     @Test
     @DisplayName("ALLOCATION and ACCESS operations are retryable")
     void testRetryableOperations() {
-      assertTrue(new WasiResourceException("Error", WasiResourceException.ResourceType.FILE, WasiResourceException.ResourceOperation.ALLOCATION).isRetryable());
-      assertTrue(new WasiResourceException("Error", WasiResourceException.ResourceType.FILE, WasiResourceException.ResourceOperation.ACCESS).isRetryable());
+      assertTrue(
+          new WasiResourceException(
+                  "Error",
+                  WasiResourceException.ResourceType.FILE,
+                  WasiResourceException.ResourceOperation.ALLOCATION)
+              .isRetryable());
+      assertTrue(
+          new WasiResourceException(
+                  "Error",
+                  WasiResourceException.ResourceType.FILE,
+                  WasiResourceException.ResourceOperation.ACCESS)
+              .isRetryable());
     }
 
     @Test
     @DisplayName("Other operations are not retryable")
     void testNonRetryableOperations() {
-      assertFalse(new WasiResourceException("Error", WasiResourceException.ResourceType.FILE, WasiResourceException.ResourceOperation.MODIFICATION).isRetryable());
-      assertFalse(new WasiResourceException("Error", WasiResourceException.ResourceType.FILE, WasiResourceException.ResourceOperation.CLEANUP).isRetryable());
-      assertFalse(new WasiResourceException("Error", WasiResourceException.ResourceType.FILE, WasiResourceException.ResourceOperation.LIFETIME_MANAGEMENT).isRetryable());
+      assertFalse(
+          new WasiResourceException(
+                  "Error",
+                  WasiResourceException.ResourceType.FILE,
+                  WasiResourceException.ResourceOperation.MODIFICATION)
+              .isRetryable());
+      assertFalse(
+          new WasiResourceException(
+                  "Error",
+                  WasiResourceException.ResourceType.FILE,
+                  WasiResourceException.ResourceOperation.CLEANUP)
+              .isRetryable());
+      assertFalse(
+          new WasiResourceException(
+                  "Error",
+                  WasiResourceException.ResourceType.FILE,
+                  WasiResourceException.ResourceOperation.LIFETIME_MANAGEMENT)
+              .isRetryable());
     }
   }
 
@@ -231,32 +323,72 @@ class WasiResourceExceptionTest {
     @Test
     @DisplayName("File resources map to FILE_SYSTEM category")
     void testFileResourcesCategory() {
-      assertEquals(WasiException.ErrorCategory.FILE_SYSTEM, 
-          new WasiResourceException("Error", WasiResourceException.ResourceType.FILE, WasiResourceException.ResourceOperation.ACCESS).getCategory());
-      assertEquals(WasiException.ErrorCategory.FILE_SYSTEM, 
-          new WasiResourceException("Error", WasiResourceException.ResourceType.DIRECTORY, WasiResourceException.ResourceOperation.ACCESS).getCategory());
+      assertEquals(
+          WasiException.ErrorCategory.FILE_SYSTEM,
+          new WasiResourceException(
+                  "Error",
+                  WasiResourceException.ResourceType.FILE,
+                  WasiResourceException.ResourceOperation.ACCESS)
+              .getCategory());
+      assertEquals(
+          WasiException.ErrorCategory.FILE_SYSTEM,
+          new WasiResourceException(
+                  "Error",
+                  WasiResourceException.ResourceType.DIRECTORY,
+                  WasiResourceException.ResourceOperation.ACCESS)
+              .getCategory());
     }
 
     @Test
     @DisplayName("Socket resources map to NETWORK category")
     void testSocketResourcesCategory() {
-      assertEquals(WasiException.ErrorCategory.NETWORK, 
-          new WasiResourceException("Error", WasiResourceException.ResourceType.SOCKET, WasiResourceException.ResourceOperation.ACCESS).getCategory());
+      assertEquals(
+          WasiException.ErrorCategory.NETWORK,
+          new WasiResourceException(
+                  "Error",
+                  WasiResourceException.ResourceType.SOCKET,
+                  WasiResourceException.ResourceOperation.ACCESS)
+              .getCategory());
     }
 
     @Test
     @DisplayName("Other resources map to RESOURCE_LIMIT category")
     void testOtherResourcesCategory() {
-      assertEquals(WasiException.ErrorCategory.RESOURCE_LIMIT, 
-          new WasiResourceException("Error", WasiResourceException.ResourceType.MEMORY, WasiResourceException.ResourceOperation.ACCESS).getCategory());
-      assertEquals(WasiException.ErrorCategory.RESOURCE_LIMIT, 
-          new WasiResourceException("Error", WasiResourceException.ResourceType.EXECUTION_CONTEXT, WasiResourceException.ResourceOperation.ACCESS).getCategory());
-      assertEquals(WasiException.ErrorCategory.RESOURCE_LIMIT, 
-          new WasiResourceException("Error", WasiResourceException.ResourceType.TIMER, WasiResourceException.ResourceOperation.ACCESS).getCategory());
-      assertEquals(WasiException.ErrorCategory.RESOURCE_LIMIT, 
-          new WasiResourceException("Error", WasiResourceException.ResourceType.EVENT, WasiResourceException.ResourceOperation.ACCESS).getCategory());
-      assertEquals(WasiException.ErrorCategory.RESOURCE_LIMIT, 
-          new WasiResourceException("Error", WasiResourceException.ResourceType.SYSTEM, WasiResourceException.ResourceOperation.ACCESS).getCategory());
+      assertEquals(
+          WasiException.ErrorCategory.RESOURCE_LIMIT,
+          new WasiResourceException(
+                  "Error",
+                  WasiResourceException.ResourceType.MEMORY,
+                  WasiResourceException.ResourceOperation.ACCESS)
+              .getCategory());
+      assertEquals(
+          WasiException.ErrorCategory.RESOURCE_LIMIT,
+          new WasiResourceException(
+                  "Error",
+                  WasiResourceException.ResourceType.EXECUTION_CONTEXT,
+                  WasiResourceException.ResourceOperation.ACCESS)
+              .getCategory());
+      assertEquals(
+          WasiException.ErrorCategory.RESOURCE_LIMIT,
+          new WasiResourceException(
+                  "Error",
+                  WasiResourceException.ResourceType.TIMER,
+                  WasiResourceException.ResourceOperation.ACCESS)
+              .getCategory());
+      assertEquals(
+          WasiException.ErrorCategory.RESOURCE_LIMIT,
+          new WasiResourceException(
+                  "Error",
+                  WasiResourceException.ResourceType.EVENT,
+                  WasiResourceException.ResourceOperation.ACCESS)
+              .getCategory());
+      assertEquals(
+          WasiException.ErrorCategory.RESOURCE_LIMIT,
+          new WasiResourceException(
+                  "Error",
+                  WasiResourceException.ResourceType.SYSTEM,
+                  WasiResourceException.ResourceOperation.ACCESS)
+              .getCategory());
     }
   }
 
@@ -267,41 +399,76 @@ class WasiResourceExceptionTest {
     @Test
     @DisplayName("Operation formatting works correctly for all combinations")
     void testOperationFormatting() {
-      assertEquals("file-allocation", 
-          new WasiResourceException("Error", WasiResourceException.ResourceType.FILE, WasiResourceException.ResourceOperation.ALLOCATION).getOperation());
-      assertEquals("socket-access", 
-          new WasiResourceException("Error", WasiResourceException.ResourceType.SOCKET, WasiResourceException.ResourceOperation.ACCESS).getOperation());
-      assertEquals("memory-cleanup", 
-          new WasiResourceException("Error", WasiResourceException.ResourceType.MEMORY, WasiResourceException.ResourceOperation.CLEANUP).getOperation());
+      assertEquals(
+          "file-allocation",
+          new WasiResourceException(
+                  "Error",
+                  WasiResourceException.ResourceType.FILE,
+                  WasiResourceException.ResourceOperation.ALLOCATION)
+              .getOperation());
+      assertEquals(
+          "socket-access",
+          new WasiResourceException(
+                  "Error",
+                  WasiResourceException.ResourceType.SOCKET,
+                  WasiResourceException.ResourceOperation.ACCESS)
+              .getOperation());
+      assertEquals(
+          "memory-cleanup",
+          new WasiResourceException(
+                  "Error",
+                  WasiResourceException.ResourceType.MEMORY,
+                  WasiResourceException.ResourceOperation.CLEANUP)
+              .getOperation());
     }
 
     @Test
     @DisplayName("Resource formatting works correctly with type only")
     void testResourceFormattingTypeOnly() {
-      final WasiResourceException exception = new WasiResourceException("Error", WasiResourceException.ResourceType.FILE, WasiResourceException.ResourceOperation.ACCESS);
+      final WasiResourceException exception =
+          new WasiResourceException(
+              "Error",
+              WasiResourceException.ResourceType.FILE,
+              WasiResourceException.ResourceOperation.ACCESS);
       assertEquals("file", exception.getResource());
     }
 
     @Test
     @DisplayName("Resource formatting works correctly with type and handle")
     void testResourceFormattingTypeAndHandle() {
-      final WasiResourceException exception = new WasiResourceException("Error", WasiResourceException.ResourceType.FILE, "file-123", WasiResourceException.ResourceOperation.ACCESS);
+      final WasiResourceException exception =
+          new WasiResourceException(
+              "Error",
+              WasiResourceException.ResourceType.FILE,
+              "file-123",
+              WasiResourceException.ResourceOperation.ACCESS);
       assertEquals("file:file-123", exception.getResource());
     }
 
     @Test
     @DisplayName("Resource formatting works correctly with handle only")
     void testResourceFormattingHandleOnly() {
-      // This would require creating an exception with null type and non-null handle, which isn't exposed by constructors
+      // This would require creating an exception with null type and non-null handle, which isn't
+      // exposed by constructors
       // but we can test the internal logic through inheritance
-      final WasiResourceException exception = new WasiResourceException("Error", WasiResourceException.ResourceType.FILE, "handle-only", WasiResourceException.ResourceOperation.ACCESS);
+      final WasiResourceException exception =
+          new WasiResourceException(
+              "Error",
+              WasiResourceException.ResourceType.FILE,
+              "handle-only",
+              WasiResourceException.ResourceOperation.ACCESS);
       assertEquals("file:handle-only", exception.getResource());
     }
 
     @Test
     @DisplayName("Resource formatting returns null for null inputs")
     void testResourceFormattingNullInputs() {
-      final WasiResourceException exception = new WasiResourceException("Error", WasiResourceException.ResourceType.FILE, null, WasiResourceException.ResourceOperation.ACCESS);
+      final WasiResourceException exception =
+          new WasiResourceException(
+              "Error",
+              WasiResourceException.ResourceType.FILE,
+              null,
+              WasiResourceException.ResourceOperation.ACCESS);
       assertEquals("file", exception.getResource());
     }
   }
@@ -332,9 +499,10 @@ class WasiResourceExceptionTest {
     @Test
     @DisplayName("All ResourceType values are properly defined")
     void testResourceTypeValues() {
-      final WasiResourceException.ResourceType[] types = WasiResourceException.ResourceType.values();
+      final WasiResourceException.ResourceType[] types =
+          WasiResourceException.ResourceType.values();
       assertEquals(8, types.length);
-      
+
       assertTrue(contains(types, WasiResourceException.ResourceType.FILE));
       assertTrue(contains(types, WasiResourceException.ResourceType.DIRECTORY));
       assertTrue(contains(types, WasiResourceException.ResourceType.SOCKET));
@@ -345,7 +513,9 @@ class WasiResourceExceptionTest {
       assertTrue(contains(types, WasiResourceException.ResourceType.SYSTEM));
     }
 
-    private boolean contains(final WasiResourceException.ResourceType[] array, final WasiResourceException.ResourceType value) {
+    private boolean contains(
+        final WasiResourceException.ResourceType[] array,
+        final WasiResourceException.ResourceType value) {
       for (final WasiResourceException.ResourceType type : array) {
         if (type == value) {
           return true;
@@ -362,9 +532,10 @@ class WasiResourceExceptionTest {
     @Test
     @DisplayName("All ResourceOperation values are properly defined")
     void testResourceOperationValues() {
-      final WasiResourceException.ResourceOperation[] operations = WasiResourceException.ResourceOperation.values();
+      final WasiResourceException.ResourceOperation[] operations =
+          WasiResourceException.ResourceOperation.values();
       assertEquals(5, operations.length);
-      
+
       assertTrue(contains(operations, WasiResourceException.ResourceOperation.ALLOCATION));
       assertTrue(contains(operations, WasiResourceException.ResourceOperation.ACCESS));
       assertTrue(contains(operations, WasiResourceException.ResourceOperation.MODIFICATION));
@@ -372,7 +543,9 @@ class WasiResourceExceptionTest {
       assertTrue(contains(operations, WasiResourceException.ResourceOperation.LIFETIME_MANAGEMENT));
     }
 
-    private boolean contains(final WasiResourceException.ResourceOperation[] array, final WasiResourceException.ResourceOperation value) {
+    private boolean contains(
+        final WasiResourceException.ResourceOperation[] array,
+        final WasiResourceException.ResourceOperation value) {
       for (final WasiResourceException.ResourceOperation operation : array) {
         if (operation == value) {
           return true;

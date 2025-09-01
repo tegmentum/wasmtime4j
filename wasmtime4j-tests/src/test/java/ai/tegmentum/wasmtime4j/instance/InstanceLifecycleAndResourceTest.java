@@ -12,7 +12,6 @@ import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
-import ai.tegmentum.wasmtime4j.performance.PerformanceTestHarness;
 import ai.tegmentum.wasmtime4j.utils.CrossRuntimeValidator;
 import ai.tegmentum.wasmtime4j.utils.TestCategories;
 import ai.tegmentum.wasmtime4j.utils.TestUtils;
@@ -55,7 +54,7 @@ final class InstanceLifecycleAndResourceTest {
     TestUtils.skipIfCategoryNotEnabled(TestCategories.INSTANCE);
     testMetrics.clear();
     LOGGER.info("Starting test: " + testInfo.getDisplayName());
-    
+
     // Force garbage collection before test
     System.gc();
     System.gc();
@@ -112,7 +111,7 @@ final class InstanceLifecycleAndResourceTest {
               // Test creation -> usage -> close pattern
               for (int cycle = 0; cycle < 5; cycle++) {
                 try (final Store store = engine.createStore()) {
-                  
+
                   // Create instance
                   final Instance instance = module.instantiate(store);
                   assertThat(instance.isValid()).isTrue();
@@ -121,8 +120,9 @@ final class InstanceLifecycleAndResourceTest {
 
                   // Use instance extensively
                   for (int i = 0; i < 100; i++) {
-                    final WasmValue[] result = instance.callFunction("add", 
-                        WasmValue.i32(cycle * 100 + i), WasmValue.i32(1));
+                    final WasmValue[] result =
+                        instance.callFunction(
+                            "add", WasmValue.i32(cycle * 100 + i), WasmValue.i32(1));
                     assertThat(result[0].asI32()).isEqualTo(cycle * 100 + i + 1);
                   }
 
@@ -136,14 +136,14 @@ final class InstanceLifecycleAndResourceTest {
                   assertThat(instance.isValid()).isFalse();
 
                   // Verify operations fail after close
-                  assertThatThrownBy(instance::getExportNames)
-                      .isInstanceOf(WasmException.class);
-                  assertThatThrownBy(() -> instance.callFunction("add", 
-                      WasmValue.i32(1), WasmValue.i32(2)))
+                  assertThatThrownBy(instance::getExportNames).isInstanceOf(WasmException.class);
+                  assertThatThrownBy(
+                          () -> instance.callFunction("add", WasmValue.i32(1), WasmValue.i32(2)))
                       .isInstanceOf(WasmException.class);
                 }
 
-                addTestMetric(String.format("Lifecycle cycle %d completed with %s", cycle, runtimeType));
+                addTestMetric(
+                    String.format("Lifecycle cycle %d completed with %s", cycle, runtimeType));
               }
             }
           });
@@ -187,8 +187,9 @@ final class InstanceLifecycleAndResourceTest {
                   assertThat(result[0].asI32()).isEqualTo(value);
                 }
 
-                addTestMetric(String.format("State transition '%s' to %d verified with %s", 
-                    phase, value, runtimeType));
+                addTestMetric(
+                    String.format(
+                        "State transition '%s' to %d verified with %s", phase, value, runtimeType));
               }
             }
           });
@@ -214,10 +215,10 @@ final class InstanceLifecycleAndResourceTest {
                 for (int i = 0; i < numInstances; i++) {
                   final Instance instance = module.instantiate(store);
                   instances.add(instance);
-                  
+
                   final int uniqueValue = i * 1000;
                   instanceValues.put(instance, uniqueValue);
-                  
+
                   // Set unique value for each instance
                   instance.callFunction("set", WasmValue.i32(uniqueValue));
                 }
@@ -235,14 +236,14 @@ final class InstanceLifecycleAndResourceTest {
                 for (final Instance instance : instances) {
                   final int currentValue = instanceValues.get(instance);
                   final int newValue = currentValue + 42;
-                  
+
                   instance.callFunction("set", WasmValue.i32(newValue));
                   instanceValues.put(instance, newValue);
-                  
+
                   // Verify this instance changed
                   final WasmValue[] result = instance.callFunction("get");
                   assertThat(result[0].asI32()).isEqualTo(newValue);
-                  
+
                   // Verify other instances unchanged
                   for (final Instance otherInstance : instances) {
                     if (otherInstance != instance) {
@@ -262,7 +263,8 @@ final class InstanceLifecycleAndResourceTest {
                 }
               }
 
-              addTestMetric(String.format("Multiple instance independence verified with %s", runtimeType));
+              addTestMetric(
+                  String.format("Multiple instance independence verified with %s", runtimeType));
             }
           });
     }
@@ -294,15 +296,15 @@ final class InstanceLifecycleAndResourceTest {
                 final List<Instance> instances = new ArrayList<>();
 
                 try (final Store store = engine.createStore()) {
-                  
+
                   // Create multiple instances
                   for (int i = 0; i < instancesPerCycle; i++) {
                     final Instance instance = module.instantiate(store);
                     instances.add(instance);
-                    
+
                     // Use each instance
-                    final WasmValue[] result = instance.callFunction("add", 
-                        WasmValue.i32(cycle), WasmValue.i32(i));
+                    final WasmValue[] result =
+                        instance.callFunction("add", WasmValue.i32(cycle), WasmValue.i32(i));
                     assertThat(result[0].asI32()).isEqualTo(cycle + i);
                   }
 
@@ -321,12 +323,14 @@ final class InstanceLifecycleAndResourceTest {
                   System.gc();
                   final long currentMemory = memoryBean.getHeapMemoryUsage().getUsed();
                   final long memoryIncrease = currentMemory - baselineMemory;
-                  
+
                   // Memory increase should be reasonable (less than 100MB)
                   assertThat(memoryIncrease).isLessThan(100 * 1024 * 1024);
-                  
-                  addTestMetric(String.format("Memory check at cycle %d: %d bytes increase with %s", 
-                      cycle, memoryIncrease, runtimeType));
+
+                  addTestMetric(
+                      String.format(
+                          "Memory check at cycle %d: %d bytes increase with %s",
+                          cycle, memoryIncrease, runtimeType));
                 }
               }
 
@@ -336,8 +340,10 @@ final class InstanceLifecycleAndResourceTest {
               final long finalMemory = memoryBean.getHeapMemoryUsage().getUsed();
               final long totalIncrease = finalMemory - baselineMemory;
 
-              addTestMetric(String.format("Total memory increase: %d bytes after %d cycles with %s", 
-                  totalIncrease, numCycles, runtimeType));
+              addTestMetric(
+                  String.format(
+                      "Total memory increase: %d bytes after %d cycles with %s",
+                      totalIncrease, numCycles, runtimeType));
             }
           });
     }
@@ -359,30 +365,36 @@ final class InstanceLifecycleAndResourceTest {
 
               for (int i = 0; i < numThreads; i++) {
                 final int threadId = i;
-                final CompletableFuture<Integer> future = CompletableFuture.supplyAsync(() -> {
-                  int successfulCleanups = 0;
-                  
-                  for (int j = 0; j < instancesPerThread; j++) {
-                    try (final Store store = engine.createStore()) {
-                      final Instance instance = module.instantiate(store);
-                      
-                      // Use instance
-                      instance.callFunction("add", WasmValue.i32(threadId), WasmValue.i32(j));
-                      
-                      // Explicit close
-                      instance.close();
-                      assertThat(instance.isValid()).isFalse();
-                      
-                      successfulCleanups++;
-                      
-                    } catch (final Exception e) {
-                      LOGGER.warning(String.format("Thread %d instance %d cleanup failed: %s", 
-                          threadId, j, e.getMessage()));
-                    }
-                  }
-                  
-                  return successfulCleanups;
-                }, executor);
+                final CompletableFuture<Integer> future =
+                    CompletableFuture.supplyAsync(
+                        () -> {
+                          int successfulCleanups = 0;
+
+                          for (int j = 0; j < instancesPerThread; j++) {
+                            try (final Store store = engine.createStore()) {
+                              final Instance instance = module.instantiate(store);
+
+                              // Use instance
+                              instance.callFunction(
+                                  "add", WasmValue.i32(threadId), WasmValue.i32(j));
+
+                              // Explicit close
+                              instance.close();
+                              assertThat(instance.isValid()).isFalse();
+
+                              successfulCleanups++;
+
+                            } catch (final Exception e) {
+                              LOGGER.warning(
+                                  String.format(
+                                      "Thread %d instance %d cleanup failed: %s",
+                                      threadId, j, e.getMessage()));
+                            }
+                          }
+
+                          return successfulCleanups;
+                        },
+                        executor);
                 futures.add(future);
               }
 
@@ -400,8 +412,10 @@ final class InstanceLifecycleAndResourceTest {
               executor.awaitTermination(10, TimeUnit.SECONDS);
             }
 
-            addTestMetric(String.format("Stress cleanup: %d successful cleanups with %s", 
-                numThreads * instancesPerThread, runtimeType));
+            addTestMetric(
+                String.format(
+                    "Stress cleanup: %d successful cleanups with %s",
+                    numThreads * instancesPerThread, runtimeType));
           });
     }
   }
@@ -431,50 +445,54 @@ final class InstanceLifecycleAndResourceTest {
               // Benchmark instance creation
               final int creationIterations = 100;
               final Instant creationStart = Instant.now();
-              
+
               for (int i = 0; i < creationIterations; i++) {
                 try (final Instance instance = module.instantiate(store)) {
                   assertThat(instance.isValid()).isTrue();
                 }
               }
-              
+
               final Duration creationTime = Duration.between(creationStart, Instant.now());
-              final double creationsPerSecond = creationIterations / (creationTime.toMillis() / 1000.0);
+              final double creationsPerSecond =
+                  creationIterations / (creationTime.toMillis() / 1000.0);
 
               // Benchmark function calls
               try (final Instance instance = module.instantiate(store)) {
                 final int callIterations = 10000;
                 final Instant callStart = Instant.now();
-                
+
                 for (int i = 0; i < callIterations; i++) {
-                  final WasmValue[] result = instance.callFunction("add", 
-                      WasmValue.i32(i), WasmValue.i32(1));
+                  final WasmValue[] result =
+                      instance.callFunction("add", WasmValue.i32(i), WasmValue.i32(1));
                   assertThat(result[0].asI32()).isEqualTo(i + 1);
                 }
-                
+
                 final Duration callTime = Duration.between(callStart, Instant.now());
                 final double callsPerSecond = callIterations / (callTime.toMillis() / 1000.0);
 
                 // Benchmark export access
                 final int exportIterations = 10000;
                 final Instant exportStart = Instant.now();
-                
+
                 for (int i = 0; i < exportIterations; i++) {
                   final String[] exports = instance.getExportNames();
                   assertThat(exports).isNotEmpty();
                   assertThat(instance.getFunction("add")).isPresent();
                 }
-                
+
                 final Duration exportTime = Duration.between(exportStart, Instant.now());
-                final double exportAccessPerSecond = exportIterations / (exportTime.toMillis() / 1000.0);
+                final double exportAccessPerSecond =
+                    exportIterations / (exportTime.toMillis() / 1000.0);
 
                 // Performance assertions
                 assertThat(creationsPerSecond).isGreaterThan(100);
                 assertThat(callsPerSecond).isGreaterThan(1000);
                 assertThat(exportAccessPerSecond).isGreaterThan(1000);
 
-                addTestMetric(String.format("Performance with %s: %.0f creations/sec, %.0f calls/sec, %.0f exports/sec", 
-                    runtimeType, creationsPerSecond, callsPerSecond, exportAccessPerSecond));
+                addTestMetric(
+                    String.format(
+                        "Performance with %s: %.0f creations/sec, %.0f calls/sec, %.0f exports/sec",
+                        runtimeType, creationsPerSecond, callsPerSecond, exportAccessPerSecond));
               }
             }
           });
@@ -500,21 +518,25 @@ final class InstanceLifecycleAndResourceTest {
 
               for (int i = 0; i < numThreads; i++) {
                 final int threadId = i;
-                final CompletableFuture<Duration> future = CompletableFuture.supplyAsync(() -> {
-                  final Instant threadStart = Instant.now();
-                  
-                  for (int j = 0; j < operationsPerThread; j++) {
-                    try {
-                      final WasmValue[] result = instance.callFunction("add", 
-                          WasmValue.i32(threadId * 1000 + j), WasmValue.i32(1));
-                      assertThat(result[0].asI32()).isEqualTo(threadId * 1000 + j + 1);
-                    } catch (final Exception e) {
-                      throw new RuntimeException("Concurrent operation failed", e);
-                    }
-                  }
-                  
-                  return Duration.between(threadStart, Instant.now());
-                }, executor);
+                final CompletableFuture<Duration> future =
+                    CompletableFuture.supplyAsync(
+                        () -> {
+                          final Instant threadStart = Instant.now();
+
+                          for (int j = 0; j < operationsPerThread; j++) {
+                            try {
+                              final WasmValue[] result =
+                                  instance.callFunction(
+                                      "add", WasmValue.i32(threadId * 1000 + j), WasmValue.i32(1));
+                              assertThat(result[0].asI32()).isEqualTo(threadId * 1000 + j + 1);
+                            } catch (final Exception e) {
+                              throw new RuntimeException("Concurrent operation failed", e);
+                            }
+                          }
+
+                          return Duration.between(threadStart, Instant.now());
+                        },
+                        executor);
                 futures.add(future);
               }
 
@@ -534,8 +556,10 @@ final class InstanceLifecycleAndResourceTest {
               // Should achieve reasonable concurrent performance
               assertThat(concurrentThroughput).isGreaterThan(1000);
 
-              addTestMetric(String.format("Concurrent performance with %s: %.0f ops/sec with %d threads", 
-                  runtimeType, concurrentThroughput, numThreads));
+              addTestMetric(
+                  String.format(
+                      "Concurrent performance with %s: %.0f ops/sec with %d threads",
+                      runtimeType, concurrentThroughput, numThreads));
 
             } finally {
               executor.shutdownNow();
@@ -562,24 +586,24 @@ final class InstanceLifecycleAndResourceTest {
                     final Instance instance = module.instantiate(store)) {
 
                   final Map<String, Object> lifecycleResults = new HashMap<>();
-                  
+
                   // Initial state
                   final WasmValue[] initial = instance.callFunction("get");
                   lifecycleResults.put("initial_value", initial[0].asI32());
-                  
+
                   // State modification
                   instance.callFunction("set", WasmValue.i32(12345));
                   final WasmValue[] modified = instance.callFunction("get");
                   lifecycleResults.put("modified_value", modified[0].asI32());
-                  
+
                   // Instance properties
                   lifecycleResults.put("is_valid_before_close", instance.isValid());
                   lifecycleResults.put("export_count", instance.getExportNames().length);
-                  
+
                   // Close and verify
                   instance.close();
                   lifecycleResults.put("is_valid_after_close", instance.isValid());
-                  
+
                   return lifecycleResults;
                 }
               });
@@ -603,21 +627,21 @@ final class InstanceLifecycleAndResourceTest {
                     final Instance instance = module.instantiate(store)) {
 
                   final Map<String, String> performanceResults = new HashMap<>();
-                  
+
                   // Quick function call benchmark
                   final int iterations = 1000;
                   final Instant start = Instant.now();
-                  
+
                   for (int i = 0; i < iterations; i++) {
-                    final WasmValue[] result = instance.callFunction("add", 
-                        WasmValue.i32(i), WasmValue.i32(1));
+                    final WasmValue[] result =
+                        instance.callFunction("add", WasmValue.i32(i), WasmValue.i32(1));
                     if (result[0].asI32() != i + 1) {
                       throw new RuntimeException("Unexpected result");
                     }
                   }
-                  
+
                   final Duration duration = Duration.between(start, Instant.now());
-                  
+
                   // Categorize performance level rather than exact timing
                   final double callsPerSecond = iterations / (duration.toMillis() / 1000.0);
                   final String performanceCategory;
@@ -630,17 +654,17 @@ final class InstanceLifecycleAndResourceTest {
                   } else {
                     performanceCategory = "slow";
                   }
-                  
+
                   performanceResults.put("performance_category", performanceCategory);
                   performanceResults.put("function_works", "true");
-                  
+
                   return performanceResults;
                 }
               });
 
       assertThat(result.isValid()).isTrue();
       // Performance might vary slightly, but functionality should be identical
-      
+
       addTestMetric("Cross-runtime performance validation: " + result.getDifferenceDescription());
     }
   }
