@@ -9,6 +9,14 @@ import ai.tegmentum.wasmtime4j.wasi.WasiInstanceStats;
 import ai.tegmentum.wasmtime4j.wasi.WasiFunctionMetadata;
 import ai.tegmentum.wasmtime4j.wasi.WasiResource;
 import ai.tegmentum.wasmtime4j.wasi.WasiMemoryInfo;
+import ai.tegmentum.wasmtime4j.wasi.WasiParameterMetadata;
+import ai.tegmentum.wasmtime4j.wasi.WasiTypeMetadata;
+import ai.tegmentum.wasmtime4j.wasi.WasiResourceMetadata;
+import ai.tegmentum.wasmtime4j.wasi.WasiResourceState;
+import ai.tegmentum.wasmtime4j.wasi.WasiResourceStats;
+import ai.tegmentum.wasmtime4j.wasi.WasiResourceHandle;
+import ai.tegmentum.wasmtime4j.wasi.WasiFileSystemStats;
+import ai.tegmentum.wasmtime4j.wasi.WasiNetworkStats;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -380,7 +388,7 @@ public final class JniWasiInstance implements WasiInstance {
 
   @Override
   public Map<String, Object> getProperties() {
-    return Map.copyOf(properties);
+    return new ConcurrentHashMap<>(properties);
   }
 
   @Override
@@ -505,18 +513,37 @@ public final class JniWasiInstance implements WasiInstance {
       }
 
       @Override
-      public List<String> getParameterTypes() {
+      public Optional<String> getDocumentation() {
+        return Optional.empty(); // No documentation available yet
+      }
+
+      @Override
+      public List<WasiParameterMetadata> getParameters() {
         return new ArrayList<>(); // Not extracted yet
       }
 
       @Override
-      public List<String> getReturnTypes() {
+      public Optional<WasiTypeMetadata> getReturnType() {
+        return Optional.empty(); // Not extracted yet
+      }
+
+      @Override
+      public boolean canThrow() {
+        return true; // Assume functions can throw for safety
+      }
+
+      @Override
+      public List<String> getThrownExceptionTypes() {
         return new ArrayList<>(); // Not extracted yet
       }
 
       @Override
-      public boolean isAsync() {
-        return false; // Assume synchronous for now
+      public void validateParameters(final Object... parameters) {
+        // Basic validation - for now accept any parameters
+        // TODO: Implement actual parameter validation based on function signature
+        if (parameters == null) {
+          throw new IllegalArgumentException("Parameters cannot be null");
+        }
       }
     };
   }
@@ -532,28 +559,177 @@ public final class JniWasiInstance implements WasiInstance {
     // TODO: Implement actual resource creation
     // For now, create a basic placeholder resource
     return new WasiResource() {
-      private static final AtomicLong NEXT_RESOURCE_ID = new AtomicLong(1);
-      private final long resourceId = NEXT_RESOURCE_ID.getAndIncrement();
+      private final AtomicLong resourceIdGenerator = new AtomicLong(1);
+      private final long resourceId = resourceIdGenerator.getAndIncrement();
+      private final Instant createdAt = Instant.now();
       private volatile boolean resourceClosed = false;
+      private volatile Instant lastAccessedAt = null;
 
       @Override
       public long getId() {
+        updateLastAccessed();
         return resourceId;
       }
 
       @Override
       public String getType() {
+        updateLastAccessed();
         return resourceType;
       }
 
       @Override
+      public WasiInstance getOwner() {
+        updateLastAccessed();
+        return JniWasiInstance.this;
+      }
+
+      @Override
+      public boolean isOwned() {
+        return true; // Assume all created resources are owned
+      }
+
+      @Override
       public boolean isValid() {
-        return !resourceClosed;
+        return !resourceClosed && JniWasiInstance.this.isValid();
+      }
+
+      @Override
+      public Instant getCreatedAt() {
+        return createdAt;
+      }
+
+      @Override
+      public Optional<Instant> getLastAccessedAt() {
+        return Optional.ofNullable(lastAccessedAt);
+      }
+
+      @Override
+      public WasiResourceMetadata getMetadata() throws WasmException {
+        updateLastAccessed();
+        return createPlaceholderResourceMetadata();
+      }
+
+      @Override
+      public WasiResourceState getState() throws WasmException {
+        updateLastAccessed();
+        return resourceClosed ? WasiResourceState.CLOSED : WasiResourceState.ACTIVE;
+      }
+
+      @Override
+      public WasiResourceStats getStats() {
+        updateLastAccessed();
+        return createPlaceholderResourceStats();
+      }
+
+      @Override
+      public Object invoke(final String operation, final Object... parameters) throws WasmException {
+        Objects.requireNonNull(operation, "Operation cannot be null");
+        updateLastAccessed();
+        throw new WasmException("Operation not supported: " + operation);
+      }
+
+      @Override
+      public List<String> getAvailableOperations() {
+        updateLastAccessed();
+        return new ArrayList<>(); // No operations available for placeholder resources
+      }
+
+      @Override
+      public WasiResourceHandle createHandle() throws WasmException {
+        updateLastAccessed();
+        throw new WasmException("Handle creation not supported for placeholder resources");
+      }
+
+      @Override
+      public void transferOwnership(final WasiInstance targetInstance) throws WasmException {
+        Objects.requireNonNull(targetInstance, "Target instance cannot be null");
+        updateLastAccessed();
+        throw new WasmException("Ownership transfer not supported for placeholder resources");
       }
 
       @Override
       public void close() {
-        resourceClosed = true;
+        if (!resourceClosed) {
+          resourceClosed = true;
+          updateLastAccessed();
+        }
+      }
+
+      private void updateLastAccessed() {
+        lastAccessedAt = Instant.now();
+      }
+    };
+  }
+
+  /**
+   * Creates placeholder resource metadata.
+   *
+   * @return placeholder resource metadata
+   */
+  private WasiResourceMetadata createPlaceholderResourceMetadata() {
+    return new WasiResourceMetadata() {
+      @Override
+      public String getResourceType() {
+        return "placeholder";
+      }
+
+      @Override
+      public long getResourceId() {
+        return instanceId; // Use instance ID as placeholder
+      }
+
+      @Override
+      public Instant getCreatedAt() {
+        return createdAt;
+      }
+
+      @Override
+      public Optional<Instant> getLastModifiedAt() {
+        return Optional.empty();
+      }
+
+      @Override
+      public Optional<Long> getSize() {
+        return Optional.empty(); // Size not applicable for placeholder
+      }
+
+      @Override
+      public Map<String, Object> getProperties() {
+        return new ConcurrentHashMap<>();
+      }
+
+      @Override
+      public boolean hasCapability(final String capability) {
+        return false; // No capabilities for placeholder resources
+      }
+    };
+  }
+
+  /**
+   * Creates placeholder resource statistics.
+   *
+   * @return placeholder resource statistics
+   */
+  private WasiResourceStats createPlaceholderResourceStats() {
+    return new WasiResourceStats() {
+      @Override
+      public long getAccessCount() {
+        return 0;
+      }
+
+      @Override
+      public Duration getTotalUsageTime() {
+        return Duration.ZERO;
+      }
+
+      @Override
+      public long getOperationCount() {
+        return 0;
+      }
+
+      @Override
+      public long getErrorCount() {
+        return 0;
       }
     };
   }
@@ -565,9 +741,36 @@ public final class JniWasiInstance implements WasiInstance {
    */
   private WasiInstanceStats createInstanceStats() {
     return new WasiInstanceStats() {
+      private final Instant collectedAt = Instant.now();
+
       @Override
-      public long getExecutionTimeNanos() {
-        return 0; // Not tracked yet
+      public Instant getCollectedAt() {
+        return collectedAt;
+      }
+
+      @Override
+      public long getInstanceId() {
+        return instanceId;
+      }
+
+      @Override
+      public WasiInstanceState getState() {
+        return state;
+      }
+
+      @Override
+      public Instant getCreatedAt() {
+        return createdAt;
+      }
+
+      @Override
+      public Duration getUptime() {
+        return Duration.between(createdAt, Instant.now());
+      }
+
+      @Override
+      public Duration getExecutionTime() {
+        return Duration.ZERO; // Not tracked yet
       }
 
       @Override
@@ -576,20 +779,229 @@ public final class JniWasiInstance implements WasiInstance {
       }
 
       @Override
-      public long getResourceCount() {
+      public Map<String, Long> getFunctionCallStats() {
+        return new ConcurrentHashMap<>(); // Not tracked yet
+      }
+
+      @Override
+      public Map<String, Duration> getFunctionExecutionTimeStats() {
+        return new ConcurrentHashMap<>(); // Not tracked yet
+      }
+
+      @Override
+      public long getCurrentMemoryUsage() {
+        return 0; // Not tracked yet
+      }
+
+      @Override
+      public long getPeakMemoryUsage() {
+        return 0; // Not tracked yet
+      }
+
+      @Override
+      public long getMemoryAllocationCount() {
+        return 0; // Not tracked yet
+      }
+
+      @Override
+      public long getTotalMemoryAllocated() {
+        return 0; // Not tracked yet
+      }
+
+      @Override
+      public int getCurrentResourceCount() {
         synchronized (resources) {
           return resources.size();
         }
       }
 
       @Override
-      public long getMemoryUsageBytes() {
-        return 0; // Not tracked yet
+      public int getPeakResourceCount() {
+        return getCurrentResourceCount(); // Simplified for now
+      }
+
+      @Override
+      public long getTotalResourcesCreated() {
+        return getCurrentResourceCount(); // Simplified for now
+      }
+
+      @Override
+      public Map<String, Integer> getResourceUsageByType() {
+        Map<String, Integer> usage = new ConcurrentHashMap<>();
+        synchronized (resources) {
+          for (WasiResource resource : resources) {
+            usage.merge(resource.getType(), 1, Integer::sum);
+          }
+        }
+        return usage;
       }
 
       @Override
       public long getErrorCount() {
         return 0; // Not tracked yet
+      }
+
+      @Override
+      public Map<String, Long> getErrorStats() {
+        return new ConcurrentHashMap<>(); // Not tracked yet
+      }
+
+      @Override
+      public long getSuspensionCount() {
+        return 0; // Not tracked yet
+      }
+
+      @Override
+      public Duration getTotalSuspensionTime() {
+        return Duration.ZERO; // Not tracked yet
+      }
+
+      @Override
+      public long getAsyncOperationCount() {
+        return 0; // Not tracked yet
+      }
+
+      @Override
+      public int getPendingAsyncOperationCount() {
+        return 0; // Not tracked yet
+      }
+
+      @Override
+      public WasiFileSystemStats getFileSystemStats() {
+        return createPlaceholderFileSystemStats();
+      }
+
+      @Override
+      public WasiNetworkStats getNetworkStats() {
+        return createPlaceholderNetworkStats();
+      }
+
+      @Override
+      public Duration getAverageExecutionTime() {
+        long callCount = getFunctionCallCount();
+        if (callCount == 0) {
+          return Duration.ZERO;
+        }
+        return getExecutionTime().dividedBy(callCount);
+      }
+
+      @Override
+      public double getThroughput() {
+        Duration executionTime = getExecutionTime();
+        if (executionTime.isZero()) {
+          return 0.0;
+        }
+        double seconds = executionTime.toMillis() / 1000.0;
+        if (seconds <= 0.0) {
+          return 0.0;
+        }
+        return (double) getFunctionCallCount() / seconds;
+      }
+
+      @Override
+      public double getMemoryEfficiency() {
+        long memoryUsage = getCurrentMemoryUsage();
+        if (memoryUsage == 0) {
+          return 1.0; // Perfect efficiency if no memory used
+        }
+        return (double) getFunctionCallCount() / memoryUsage;
+      }
+
+      @Override
+      public Map<String, Object> getCustomProperties() {
+        return new ConcurrentHashMap<>();
+      }
+
+      @Override
+      public String getSummary() {
+        return String.format(
+          "Instance %d: state=%s, uptime=%s, calls=%d, resources=%d, memory=%d bytes",
+          getInstanceId(),
+          getState(),
+          getUptime(),
+          getFunctionCallCount(),
+          getCurrentResourceCount(),
+          getCurrentMemoryUsage()
+        );
+      }
+
+      @Override
+      public void reset() {
+        // For now, no-op since we're not tracking detailed statistics
+        // TODO: Implement actual statistics reset when tracking is added
+      }
+    };
+  }
+
+  /**
+   * Creates placeholder file system statistics.
+   *
+   * @return placeholder file system statistics
+   */
+  private WasiFileSystemStats createPlaceholderFileSystemStats() {
+    return new WasiFileSystemStats() {
+      @Override
+      public long getReadOperations() {
+        return 0;
+      }
+
+      @Override
+      public long getWriteOperations() {
+        return 0;
+      }
+
+      @Override
+      public long getBytesRead() {
+        return 0;
+      }
+
+      @Override
+      public long getBytesWritten() {
+        return 0;
+      }
+
+      @Override
+      public long getFileOpenCount() {
+        return 0;
+      }
+
+      @Override
+      public int getCurrentOpenFiles() {
+        return 0;
+      }
+    };
+  }
+
+  /**
+   * Creates placeholder network statistics.
+   *
+   * @return placeholder network statistics
+   */
+  private WasiNetworkStats createPlaceholderNetworkStats() {
+    return new WasiNetworkStats() {
+      @Override
+      public long getConnectionCount() {
+        return 0;
+      }
+
+      @Override
+      public int getCurrentConnections() {
+        return 0;
+      }
+
+      @Override
+      public long getBytesSent() {
+        return 0;
+      }
+
+      @Override
+      public long getBytesReceived() {
+        return 0;
+      }
+
+      @Override
+      public long getNetworkErrors() {
+        return 0;
       }
     };
   }
@@ -602,27 +1014,38 @@ public final class JniWasiInstance implements WasiInstance {
   private WasiMemoryInfo createMemoryInfo() {
     return new WasiMemoryInfo() {
       @Override
-      public long getAllocatedBytes() {
+      public long getCurrentUsage() {
         return 0; // Not tracked yet
       }
 
       @Override
-      public long getPeakBytes() {
+      public long getPeakUsage() {
         return 0; // Not tracked yet
       }
 
       @Override
-      public long getLimitBytes() {
-        return config.getMemoryLimit().orElse(0L);
+      public Optional<Long> getLimit() {
+        return config.getMemoryLimit();
       }
 
       @Override
-      public double getUsageRatio() {
-        long limit = getLimitBytes();
-        if (limit <= 0) {
-          return 0.0;
+      public Optional<Double> getUsagePercentage() {
+        Optional<Long> limitOpt = getLimit();
+        if (!limitOpt.isPresent()) {
+          return Optional.empty();
         }
-        return (double) getAllocatedBytes() / limit;
+        long limit = limitOpt.get();
+        if (limit <= 0) {
+          return Optional.empty();
+        }
+        double percentage = (double) getCurrentUsage() / limit * 100.0;
+        return Optional.of(percentage);
+      }
+
+      @Override
+      public boolean isNearLimit() {
+        Optional<Double> percentageOpt = getUsagePercentage();
+        return percentageOpt.isPresent() && percentageOpt.get() > 80.0;
       }
     };
   }
