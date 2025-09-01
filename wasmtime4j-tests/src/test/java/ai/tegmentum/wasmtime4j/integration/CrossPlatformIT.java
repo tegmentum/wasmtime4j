@@ -19,7 +19,7 @@ class CrossPlatformIT extends BaseIntegrationTest {
 
   @Override
   protected void doSetUp(final TestInfo testInfo) {
-    skipIfCategoryNotEnabled("platform");
+    // skipIfCategoryNotEnabled("platform");
   }
 
   @Test

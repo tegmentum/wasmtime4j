@@ -536,7 +536,7 @@ public final class StressTestFramework {
                 thread.setDaemon(true);
                 return thread;
               }
-            });
+          });
 
     // Set up performance monitoring
     final ScheduledExecutorService monitoringExecutor =

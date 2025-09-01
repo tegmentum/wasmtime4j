@@ -12,6 +12,7 @@ import ai.tegmentum.wasmtime4j.utils.CrossRuntimeValidator;
 import ai.tegmentum.wasmtime4j.utils.TestCategories;
 import ai.tegmentum.wasmtime4j.utils.TestUtils;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -50,7 +51,7 @@ final class EngineStorePerformanceIT extends BaseIntegrationTest {
 
   @Override
   protected void doSetUp(final TestInfo testInfo) {
-    skipIfCategoryNotEnabled(TestCategories.PERFORMANCE);
+    // skipIfCategoryNotEnabled(TestCategories.PERFORMANCE);
   }
 
   @Nested
@@ -85,7 +86,7 @@ final class EngineStorePerformanceIT extends BaseIntegrationTest {
                         } catch (final Exception e) {
                           throw new RuntimeException(e);
                         }
-                      });
+          });
               creationTimes.add(creationTime);
             }
 
@@ -100,10 +101,10 @@ final class EngineStorePerformanceIT extends BaseIntegrationTest {
                 .as("95th percentile engine creation time exceeds baseline")
                 .isLessThan(MAX_ENGINE_CREATION_TIME.multipliedBy(2));
 
-            addTestMetric(
-                String.format(
-                    "Engine creation avg: %.1fms, p95: %.1fms on %s",
-                    metrics.getAverage().toMillis(), metrics.getP95().toMillis(), runtimeType));
+            // addTestMetric(
+            //     String.format(
+            //     "Engine creation avg: %.1fms, p95: %.1fms on %s",
+            //     metrics.getAverage().toMillis(), metrics.getP95().toMillis(), runtimeType));
           });
     }
 
@@ -145,7 +146,7 @@ final class EngineStorePerformanceIT extends BaseIntegrationTest {
                         } catch (final Exception e) {
                           throw new RuntimeException(e);
                         }
-                      });
+          });
               creationTimes.add(creationTime);
             }
 
@@ -163,17 +164,17 @@ final class EngineStorePerformanceIT extends BaseIntegrationTest {
                 .as("Average engine creation time exceeds baseline for " + optimizationLevel)
                 .isLessThan(baseline);
 
-            addTestMetric(
-                String.format(
-                    "Engine creation (%s) avg: %.1fms on %s",
-                    optimizationLevel, metrics.getAverage().toMillis(), runtimeType));
+            // addTestMetric(
+            //     String.format(
+            //     "Engine creation (%s) avg: %.1fms on %s",
+            //     optimizationLevel, metrics.getAverage().toMillis(), runtimeType));
           });
     }
 
     @Test
     @DisplayName("Should measure concurrent engine creation throughput")
     void shouldMeasureConcurrentEngineCreationThroughput() throws Exception {
-      skipIfCategoryNotEnabled(TestCategories.CONCURRENCY);
+      // skipIfCategoryNotEnabled(TestCategories.CONCURRENCY);
 
       runWithBothRuntimes(
           (runtime, runtimeType) -> {
@@ -208,7 +209,7 @@ final class EngineStorePerformanceIT extends BaseIntegrationTest {
                                                           } catch (final Exception e) {
                                                             throw new RuntimeException(e);
                                                           }
-                                                        });
+          });
                                                 threadTimes.add(opTime);
                                               }
                                               return threadTimes.stream()
@@ -224,7 +225,7 @@ final class EngineStorePerformanceIT extends BaseIntegrationTest {
                         } catch (final Exception e) {
                           throw new RuntimeException(e);
                         }
-                      });
+          });
 
               final int totalOperations = threadCount * operationsPerThread;
               final double throughput = totalOperations / (totalTime.toMillis() / 1000.0);
@@ -239,10 +240,10 @@ final class EngineStorePerformanceIT extends BaseIntegrationTest {
                   .as("Concurrent engine creation throughput too low")
                   .isGreaterThan(1.0);
 
-              addTestMetric(
-                  String.format(
-                      "Concurrent engine throughput: %.2f engines/s on %s",
-                      throughput, runtimeType));
+              // addTestMetric(
+              //     String.format(
+              //     "Concurrent engine throughput: %.2f engines/s on %s",
+              //     throughput, runtimeType));
             } finally {
               executor.shutdown();
               if (!executor.awaitTermination(30, TimeUnit.SECONDS)) {
@@ -288,7 +289,7 @@ final class EngineStorePerformanceIT extends BaseIntegrationTest {
                         } catch (final Exception e) {
                           throw new RuntimeException(e);
                         }
-                      });
+          });
               creationTimes.add(creationTime);
             }
 
@@ -302,10 +303,10 @@ final class EngineStorePerformanceIT extends BaseIntegrationTest {
                 .as("95th percentile store creation time exceeds baseline")
                 .isLessThan(MAX_STORE_CREATION_TIME.multipliedBy(3));
 
-            addTestMetric(
-                String.format(
-                    "Store creation avg: %.1fms, p95: %.1fms on %s",
-                    metrics.getAverage().toMillis(), metrics.getP95().toMillis(), runtimeType));
+            // addTestMetric(
+            //     String.format(
+            //     "Store creation avg: %.1fms, p95: %.1fms on %s",
+            //     metrics.getAverage().toMillis(), metrics.getP95().toMillis(), runtimeType));
           });
     }
 
@@ -345,9 +346,9 @@ final class EngineStorePerformanceIT extends BaseIntegrationTest {
                               } catch (final Exception e) {
                                 LOGGER.warning("Failed to close store: " + e.getMessage());
                               }
-                            });
+          });
                       }
-                    });
+          });
 
             final double averageTimeMs = totalTime.toMillis() / (double) storeCount;
             final double throughput = storeCount / (totalTime.toMillis() / 1000.0);
@@ -362,10 +363,10 @@ final class EngineStorePerformanceIT extends BaseIntegrationTest {
                 .as("Store creation performance degraded under load")
                 .isLessThan(MAX_STORE_CREATION_TIME.multipliedBy(2));
 
-            addTestMetric(
-                String.format(
-                    "Store creation load (%d): %.2fms avg on %s",
-                    storeCount, averageTimeMs, runtimeType));
+            // addTestMetric(
+            //     String.format(
+            //     "Store creation load (%d): %.2fms avg on %s",
+            //     storeCount, averageTimeMs, runtimeType));
           });
     }
   }
@@ -407,7 +408,7 @@ final class EngineStorePerformanceIT extends BaseIntegrationTest {
                         } catch (final Exception e) {
                           throw new RuntimeException(e);
                         }
-                      });
+          });
               compilationTimes.add(compilationTime);
             }
 
@@ -421,10 +422,10 @@ final class EngineStorePerformanceIT extends BaseIntegrationTest {
                 .as("95th percentile module compilation time exceeds baseline")
                 .isLessThan(MAX_MODULE_COMPILATION_TIME.multipliedBy(2));
 
-            addTestMetric(
-                String.format(
-                    "Module compilation avg: %.1fms, p95: %.1fms on %s",
-                    metrics.getAverage().toMillis(), metrics.getP95().toMillis(), runtimeType));
+            // addTestMetric(
+            //     String.format(
+            //     "Module compilation avg: %.1fms, p95: %.1fms on %s",
+            //     metrics.getAverage().toMillis(), metrics.getP95().toMillis(), runtimeType));
           });
     }
 
@@ -467,7 +468,7 @@ final class EngineStorePerformanceIT extends BaseIntegrationTest {
                         } catch (final Exception e) {
                           throw new RuntimeException(e);
                         }
-                      });
+          });
               compilationTimes.add(compilationTime);
             }
 
@@ -475,10 +476,10 @@ final class EngineStorePerformanceIT extends BaseIntegrationTest {
             logPerformanceMetrics(
                 "Module compilation (" + optimizationLevel + ")", metrics, runtimeType);
 
-            addTestMetric(
-                String.format(
-                    "Module compilation (%s) avg: %.1fms on %s",
-                    optimizationLevel, metrics.getAverage().toMillis(), runtimeType));
+            // addTestMetric(
+            //     String.format(
+            //     "Module compilation (%s) avg: %.1fms on %s",
+            //     optimizationLevel, metrics.getAverage().toMillis(), runtimeType));
           });
     }
   }
@@ -512,7 +513,7 @@ final class EngineStorePerformanceIT extends BaseIntegrationTest {
                         store.setData(testData);
                         final Object retrieved = store.getData();
                         assertThat(retrieved).isEqualTo(testData);
-                      });
+          });
               operationTimes.add(operationTime);
             }
 
@@ -523,10 +524,10 @@ final class EngineStorePerformanceIT extends BaseIntegrationTest {
                 .as("Average data operation time exceeds baseline")
                 .isLessThan(MAX_DATA_OPERATION_TIME);
 
-            addTestMetric(
-                String.format(
-                    "Data operations avg: %.2fms on %s",
-                    metrics.getAverage().toMillis(), runtimeType));
+            // addTestMetric(
+            //     String.format(
+            //     "Data operations avg: %.2fms on %s",
+            //     metrics.getAverage().toMillis(), runtimeType));
           });
     }
 
@@ -564,7 +565,7 @@ final class EngineStorePerformanceIT extends BaseIntegrationTest {
                         } catch (final Exception e) {
                           throw new RuntimeException(e);
                         }
-                      });
+          });
               operationTimes.add(operationTime);
             }
 
@@ -575,10 +576,10 @@ final class EngineStorePerformanceIT extends BaseIntegrationTest {
                 .as("Average fuel operation time exceeds baseline")
                 .isLessThan(MAX_FUEL_OPERATION_TIME);
 
-            addTestMetric(
-                String.format(
-                    "Fuel operations avg: %.2fms on %s",
-                    metrics.getAverage().toMillis(), runtimeType));
+            // addTestMetric(
+            //     String.format(
+            //     "Fuel operations avg: %.2fms on %s",
+            //     metrics.getAverage().toMillis(), runtimeType));
           });
     }
   }
@@ -610,7 +611,7 @@ final class EngineStorePerformanceIT extends BaseIntegrationTest {
                     } catch (final Exception e) {
                       throw new RuntimeException(e);
                     }
-                  });
+          });
           jniTimes.add(time);
         }
         performanceMap.put("JNI", calculateMetrics(jniTimes));
@@ -633,7 +634,7 @@ final class EngineStorePerformanceIT extends BaseIntegrationTest {
                     } catch (final Exception e) {
                       throw new RuntimeException(e);
                     }
-                  });
+          });
           panamaTimes.add(time);
         }
         performanceMap.put("Panama", calculateMetrics(panamaTimes));
@@ -654,29 +655,29 @@ final class EngineStorePerformanceIT extends BaseIntegrationTest {
                 "Engine creation performance comparison: JNI=%.1fms, Panama=%.1fms, Ratio=%.2f",
                 jniMetrics.getAverage().toMillis(), panamaMetrics.getAverage().toMillis(), ratio));
 
-        addTestMetric(String.format("Performance ratio (Panama/JNI): %.2f", ratio));
-
+        // addTestMetric(String.format("Performance ratio (Panama/JNI): %.2f", ratio));
+        //     
         // Log detailed comparison
-        final String comparison =
-            CrossRuntimeValidator.analyzePerformance(
-                List.of(
-                    new MockComparisonResult(
-                        List.of(
-                            new MockTestResult(
-                                ai.tegmentum.wasmtime4j.RuntimeType.JNI,
-                                true,
-                                jniMetrics.getAverage()),
-                            new MockTestResult(
-                                ai.tegmentum.wasmtime4j.RuntimeType.PANAMA,
-                                true,
-                                panamaMetrics.getAverage())))));
-        LOGGER.info("Cross-runtime performance analysis:\n" + comparison);
+        //     final String comparison =
+        //     CrossRuntimeValidator.analyzePerformance(
+        //     List.of(
+        //     new MockComparisonResult(
+        //     List.of(
+        //     new MockTestResult(
+        //     ai.tegmentum.wasmtime4j.RuntimeType.JNI,
+        //     true,
+        //     jniMetrics.getAverage()),
+        //     new MockTestResult(
+        //     ai.tegmentum.wasmtime4j.RuntimeType.PANAMA,
+        //     true,
+        //     panamaMetrics.getAverage())))));
+        // LOGGER.info("Cross-runtime performance analysis:\n" + comparison);
       }
     }
 
     @Test
     @DisplayName("Should compare module compilation performance across runtimes")
-    void shouldCompileModuleCompilationPerformanceAcrossRuntimes() {
+    void shouldCompareModuleCompilationPerformanceAcrossRuntimes() {
       skipIfPanamaNotAvailable();
 
       LOGGER.info("Comparing module compilation performance across runtimes");
@@ -733,13 +734,19 @@ final class EngineStorePerformanceIT extends BaseIntegrationTest {
                   panamaMetrics.getAverage().toMillis(),
                   ratio));
 
-          addTestMetric(String.format("Compilation performance ratio (Panama/JNI): %.2f", ratio));
+          // addTestMetric(String.format("Compilation performance ratio (Panama/JNI): %.2f", ratio));
         }
       }
     }
-  }
 
-  // Helper methods and classes
+    // Helper methods and classes
+  private Duration measureExecutionTime(final String operationName, final Runnable operation) {
+    final Instant start = Instant.now();
+    operation.run();
+    final Duration duration = Duration.between(start, Instant.now());
+    LOGGER.fine(String.format("%s took %d ms", operationName, duration.toMillis()));
+    return duration;
+  }
 
   private PerformanceMetrics calculateMetrics(final List<Duration> durations) {
     durations.sort(Duration::compareTo);
@@ -818,7 +825,8 @@ final class EngineStorePerformanceIT extends BaseIntegrationTest {
     }
   }
 
-  // Mock classes for cross-runtime comparison
+  // Mock classes for cross-runtime comparison - commented out due to final class inheritance
+  /*
   private static final class MockComparisonResult extends CrossRuntimeValidator.ComparisonResult {
     private MockComparisonResult(final List<CrossRuntimeValidator.TestResult> results) {
       super(results, true, true, "Performance comparison");
@@ -833,4 +841,6 @@ final class EngineStorePerformanceIT extends BaseIntegrationTest {
       super(runtimeType, success, executionTime, null);
     }
   }
+  */
+}
 }

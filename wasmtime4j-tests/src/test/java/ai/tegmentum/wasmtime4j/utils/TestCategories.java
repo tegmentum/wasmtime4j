@@ -54,6 +54,21 @@ public final class TestCategories {
   /** Host function integration and marshaling tests. */
   public static final String HOST_FUNCTION = "host.function";
 
+  /** Filesystem-related tests. */
+  public static final String FILESYSTEM = "filesystem";
+
+  /** I/O redirection and handling tests. */
+  public static final String IO = "io";
+
+  /** Benchmark and performance measurement tests. */
+  public static final String BENCHMARKS = "benchmarks";
+
+  /** Process management tests. */
+  public static final String PROCESS = "process";
+
+  /** Environment variable tests. */
+  public static final String ENVIRONMENT = "environment";
+
   private TestCategories() {
     // Utility class - prevent instantiation
   }

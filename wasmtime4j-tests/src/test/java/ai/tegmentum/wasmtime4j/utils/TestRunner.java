@@ -196,7 +196,7 @@ public final class TestRunner {
                         + failure.getTestIdentifier().getDisplayName()
                         + ": "
                         + failure.getException().getMessage());
-              });
+          });
     }
   }
 

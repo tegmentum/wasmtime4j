@@ -952,7 +952,7 @@ public final class PerformanceTestHarness {
                     String.format(
                         "  %2d threads: %8.2f ops/sec (avg: %.2f ms)\n",
                         threads, result.getOperationsPerSecond(), result.getMean() / 1_000_000.0));
-              });
+          });
 
       return report.toString();
     }

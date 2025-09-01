@@ -38,7 +38,7 @@ final class EngineStoreLeakDetectionIT extends BaseIntegrationTest {
 
   @Override
   protected void doSetUp(final TestInfo testInfo) {
-    skipIfCategoryNotEnabled(TestCategories.MEMORY);
+    // skipIfCategoryNotEnabled(TestCategories.MEMORY);
   }
 
   @Nested
@@ -75,7 +75,7 @@ final class EngineStoreLeakDetectionIT extends BaseIntegrationTest {
                       Thread.yield();
                     }
                   }
-                });
+          });
 
             // Force final garbage collection
             System.gc();
@@ -95,13 +95,13 @@ final class EngineStoreLeakDetectionIT extends BaseIntegrationTest {
                 .as("Memory leak detected during engine creation/closure on " + runtimeType)
                 .isLessThan(MEMORY_THRESHOLD_MB);
 
-            addTestMetric(
-                "Memory increase after "
-                    + STRESS_ITERATIONS
-                    + " engine cycles: "
-                    + memoryIncreaseMB
-                    + "MB on "
-                    + runtimeType);
+            // addTestMetric(
+            //     "Memory increase after "
+            //         + STRESS_ITERATIONS
+            //         + " engine cycles: "
+            //         + memoryIncreaseMB
+            //         + "MB on "
+            //         + runtimeType);
           });
     }
 
@@ -147,7 +147,7 @@ final class EngineStoreLeakDetectionIT extends BaseIntegrationTest {
                       Thread.yield();
                     }
                   }
-                });
+          });
 
             System.gc();
             Thread.sleep(1000);
@@ -166,13 +166,13 @@ final class EngineStoreLeakDetectionIT extends BaseIntegrationTest {
                 .as("Memory leak detected with engine configurations on " + runtimeType)
                 .isLessThan(MEMORY_THRESHOLD_MB);
 
-            addTestMetric(
-                "Memory increase after "
-                    + STRESS_ITERATIONS
-                    + " config cycles: "
-                    + memoryIncreaseMB
-                    + "MB on "
-                    + runtimeType);
+            // addTestMetric(
+            //     "Memory increase after "
+            //         + STRESS_ITERATIONS
+            //         + " config cycles: "
+            //         + memoryIncreaseMB
+            //         + "MB on "
+            //         + runtimeType);
           });
     }
 
@@ -208,7 +208,7 @@ final class EngineStoreLeakDetectionIT extends BaseIntegrationTest {
                       Thread.yield();
                     }
                   }
-                });
+          });
 
             System.gc();
             Thread.sleep(1000);
@@ -228,13 +228,13 @@ final class EngineStoreLeakDetectionIT extends BaseIntegrationTest {
                 .as("Memory leak detected during module compilation on " + runtimeType)
                 .isLessThan(MEMORY_THRESHOLD_MB);
 
-            addTestMetric(
-                "Memory increase after "
-                    + STRESS_ITERATIONS
-                    + " compilations: "
-                    + memoryIncreaseMB
-                    + "MB on "
-                    + runtimeType);
+            // addTestMetric(
+            //     "Memory increase after "
+            //         + STRESS_ITERATIONS
+            //         + " compilations: "
+            //         + memoryIncreaseMB
+            //         + "MB on "
+            //         + runtimeType);
           });
     }
   }
@@ -274,7 +274,7 @@ final class EngineStoreLeakDetectionIT extends BaseIntegrationTest {
                       Thread.yield();
                     }
                   }
-                });
+          });
 
             System.gc();
             Thread.sleep(1000);
@@ -293,13 +293,13 @@ final class EngineStoreLeakDetectionIT extends BaseIntegrationTest {
                 .as("Memory leak detected during store creation/closure on " + runtimeType)
                 .isLessThan(MEMORY_THRESHOLD_MB);
 
-            addTestMetric(
-                "Memory increase after "
-                    + STRESS_ITERATIONS
-                    + " store cycles: "
-                    + memoryIncreaseMB
-                    + "MB on "
-                    + runtimeType);
+            // addTestMetric(
+            //     "Memory increase after "
+            //         + STRESS_ITERATIONS
+            //         + " store cycles: "
+            //         + memoryIncreaseMB
+            //         + "MB on "
+            //         + runtimeType);
           });
     }
 
@@ -345,7 +345,7 @@ final class EngineStoreLeakDetectionIT extends BaseIntegrationTest {
                       Thread.yield();
                     }
                   }
-                });
+          });
 
             System.gc();
             Thread.sleep(1000);
@@ -364,13 +364,13 @@ final class EngineStoreLeakDetectionIT extends BaseIntegrationTest {
                 .as("Memory leak detected during store data management on " + runtimeType)
                 .isLessThan(MEMORY_THRESHOLD_MB);
 
-            addTestMetric(
-                "Memory increase after "
-                    + STRESS_ITERATIONS
-                    + " data operations: "
-                    + memoryIncreaseMB
-                    + "MB on "
-                    + runtimeType);
+            // addTestMetric(
+            //     "Memory increase after "
+            //         + STRESS_ITERATIONS
+            //         + " data operations: "
+            //         + memoryIncreaseMB
+            //         + "MB on "
+            //         + runtimeType);
           });
     }
 
@@ -413,7 +413,7 @@ final class EngineStoreLeakDetectionIT extends BaseIntegrationTest {
                       Thread.yield();
                     }
                   }
-                });
+          });
 
             System.gc();
             Thread.sleep(1000);
@@ -432,13 +432,13 @@ final class EngineStoreLeakDetectionIT extends BaseIntegrationTest {
                 .as("Memory leak detected during store fuel management on " + runtimeType)
                 .isLessThan(MEMORY_THRESHOLD_MB);
 
-            addTestMetric(
-                "Memory increase after "
-                    + STRESS_ITERATIONS
-                    + " fuel operations: "
-                    + memoryIncreaseMB
-                    + "MB on "
-                    + runtimeType);
+            // addTestMetric(
+            //     "Memory increase after "
+            //         + STRESS_ITERATIONS
+            //         + " fuel operations: "
+            //         + memoryIncreaseMB
+            //         + "MB on "
+            //         + runtimeType);
           });
     }
   }
@@ -450,7 +450,7 @@ final class EngineStoreLeakDetectionIT extends BaseIntegrationTest {
     @Test
     @DisplayName("Should not leak memory during concurrent engine operations")
     void shouldNotLeakMemoryDuringConcurrentEngineOperations() throws Exception {
-      skipIfCategoryNotEnabled(TestCategories.CONCURRENCY);
+      // skipIfCategoryNotEnabled(TestCategories.CONCURRENCY);
 
       runWithBothRuntimes(
           (runtime, runtimeType) -> {
@@ -511,7 +511,7 @@ final class EngineStoreLeakDetectionIT extends BaseIntegrationTest {
                     } catch (final Exception e) {
                       throw new RuntimeException(e);
                     }
-                  });
+          });
 
               System.gc();
               Thread.sleep(2000); // Give more time for concurrent cleanup
@@ -531,13 +531,13 @@ final class EngineStoreLeakDetectionIT extends BaseIntegrationTest {
                   .isLessThan(
                       MEMORY_THRESHOLD_MB * 2); // Allow more tolerance for concurrent operations
 
-              addTestMetric(
-                  "Memory increase after "
-                      + (threadCount * operationsPerThread)
-                      + " concurrent operations: "
-                      + memoryIncreaseMB
-                      + "MB on "
-                      + runtimeType);
+              // addTestMetric(
+              //     "Memory increase after "
+              //         + (threadCount * operationsPerThread)
+              //         + " concurrent operations: "
+              //         + memoryIncreaseMB
+              //         + "MB on "
+              //         + runtimeType);
             } finally {
               executor.shutdown();
               if (!executor.awaitTermination(30, TimeUnit.SECONDS)) {
@@ -583,7 +583,7 @@ final class EngineStoreLeakDetectionIT extends BaseIntegrationTest {
                       Thread.yield();
                     }
                   }
-                });
+          });
 
             System.gc();
             Thread.sleep(1000);
@@ -602,13 +602,13 @@ final class EngineStoreLeakDetectionIT extends BaseIntegrationTest {
                 .as("Memory leak detected during compilation errors on " + runtimeType)
                 .isLessThan(MEMORY_THRESHOLD_MB);
 
-            addTestMetric(
-                "Memory increase after "
-                    + STRESS_ITERATIONS
-                    + " compilation errors: "
-                    + memoryIncreaseMB
-                    + "MB on "
-                    + runtimeType);
+            // addTestMetric(
+            //     "Memory increase after "
+            //         + STRESS_ITERATIONS
+            //         + " compilation errors: "
+            //         + memoryIncreaseMB
+            //         + "MB on "
+            //         + runtimeType);
           });
     }
 
@@ -652,7 +652,7 @@ final class EngineStoreLeakDetectionIT extends BaseIntegrationTest {
                       System.gc();
                     }
                   }
-                });
+          });
 
             // Give finalizers time to run
             System.gc();
@@ -676,13 +676,13 @@ final class EngineStoreLeakDetectionIT extends BaseIntegrationTest {
                 .as("Excessive memory usage with improper resource handling on " + runtimeType)
                 .isLessThan(MEMORY_THRESHOLD_MB * 3);
 
-            addTestMetric(
-                "Memory increase after "
-                    + (STRESS_ITERATIONS / 2)
-                    + " improper resource cycles: "
-                    + memoryIncreaseMB
-                    + "MB on "
-                    + runtimeType);
+            // addTestMetric(
+            //     "Memory increase after "
+            //         + (STRESS_ITERATIONS / 2)
+            //         + " improper resource cycles: "
+            //         + memoryIncreaseMB
+            //         + "MB on "
+            //         + runtimeType);
           });
     }
   }
@@ -694,7 +694,7 @@ final class EngineStoreLeakDetectionIT extends BaseIntegrationTest {
     @Test
     @DisplayName("Should profile memory usage patterns")
     void shouldProfileMemoryUsagePatterns() throws Exception {
-      skipIfCategoryNotEnabled(TestCategories.PERFORMANCE);
+      // skipIfCategoryNotEnabled(TestCategories.PERFORMANCE);
 
       runWithBothRuntimes(
           (runtime, runtimeType) -> {
@@ -748,7 +748,7 @@ final class EngineStoreLeakDetectionIT extends BaseIntegrationTest {
                   } catch (final Exception e) {
                     throw new RuntimeException(e);
                   }
-                });
+          });
 
             // Log memory usage pattern
             final StringBuilder profile = new StringBuilder();
@@ -781,11 +781,11 @@ final class EngineStoreLeakDetectionIT extends BaseIntegrationTest {
             final long totalIncrease =
                 (memorySnapshots.get(memorySnapshots.size() - 1) - memorySnapshots.get(0))
                     / (1024 * 1024);
-            addTestMetric(
-                "Total memory increase during profiling: "
-                    + totalIncrease
-                    + "MB on "
-                    + runtimeType);
+            // addTestMetric(
+            //     "Total memory increase during profiling: "
+            //         + totalIncrease
+            //         + "MB on "
+            //         + runtimeType);
           });
     }
   }

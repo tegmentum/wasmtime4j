@@ -372,7 +372,7 @@ public final class WasmTestDataManager {
                 } catch (final IOException e) {
                   LOGGER.warning("Failed to convert " + watFile + " to WASM: " + e.getMessage());
                 }
-              });
+          });
     }
   }
 

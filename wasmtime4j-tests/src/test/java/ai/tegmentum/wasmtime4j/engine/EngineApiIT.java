@@ -35,7 +35,7 @@ final class EngineApiIT extends BaseIntegrationTest {
 
   @Override
   protected void doSetUp(final TestInfo testInfo) {
-    skipIfCategoryNotEnabled(TestCategories.ENGINE);
+    // skipIfCategoryNotEnabled(TestCategories.ENGINE);
   }
 
   @Nested
@@ -56,7 +56,7 @@ final class EngineApiIT extends BaseIntegrationTest {
             assertThat(engine.isValid()).isTrue();
             assertThat(engine.getConfig()).isNotNull();
 
-            addTestMetric("Created engine with default config on " + runtimeType);
+            // addTestMetric("Created engine with default config on " + runtimeType);
           });
     }
 
@@ -85,7 +85,7 @@ final class EngineApiIT extends BaseIntegrationTest {
             assertThat(engine.getConfig().getOptimizationLevel()).isEqualTo(OptimizationLevel.SIZE);
             assertThat(engine.getConfig().isParallelCompilation()).isFalse();
 
-            addTestMetric("Created engine with custom config on " + runtimeType);
+            // addTestMetric("Created engine with custom config on " + runtimeType);
           });
     }
 
@@ -105,7 +105,7 @@ final class EngineApiIT extends BaseIntegrationTest {
                 .isEqualTo(OptimizationLevel.SPEED);
             assertThat(engine.getConfig().isParallelCompilation()).isTrue();
 
-            addTestMetric("Created speed-optimized engine on " + runtimeType);
+            // addTestMetric("Created speed-optimized engine on " + runtimeType);
           });
     }
 
@@ -124,7 +124,7 @@ final class EngineApiIT extends BaseIntegrationTest {
             assertThat(engine.getConfig().getOptimizationLevel()).isEqualTo(OptimizationLevel.SIZE);
             assertThat(engine.getConfig().isParallelCompilation()).isTrue();
 
-            addTestMetric("Created size-optimized engine on " + runtimeType);
+            // addTestMetric("Created size-optimized engine on " + runtimeType);
           });
     }
 
@@ -144,7 +144,7 @@ final class EngineApiIT extends BaseIntegrationTest {
             assertThat(engine.getConfig().getOptimizationLevel()).isEqualTo(OptimizationLevel.NONE);
             assertThat(engine.getConfig().isCraneliftDebugVerifier()).isTrue();
 
-            addTestMetric("Created debug engine on " + runtimeType);
+            // addTestMetric("Created debug engine on " + runtimeType);
           });
     }
 
@@ -159,7 +159,7 @@ final class EngineApiIT extends BaseIntegrationTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("configuration cannot be null");
 
-            addTestMetric("Rejected null config on " + runtimeType);
+            // addTestMetric("Rejected null config on " + runtimeType);
           });
     }
   }
@@ -195,7 +195,7 @@ final class EngineApiIT extends BaseIntegrationTest {
             assertThat(retrievedConfig.isParallelCompilation()).isTrue();
             assertThat(retrievedConfig.isCraneliftDebugVerifier()).isTrue();
 
-            addTestMetric("Validated all config options on " + runtimeType);
+            // addTestMetric("Validated all config options on " + runtimeType);
           });
     }
 
@@ -217,7 +217,7 @@ final class EngineApiIT extends BaseIntegrationTest {
               LOGGER.fine("Successfully created engine with " + level + " on " + runtimeType);
             }
 
-            addTestMetric("Tested " + levels.length + " optimization levels on " + runtimeType);
+            // addTestMetric("Tested " + levels.length + " optimization levels on " + runtimeType);
           });
     }
 
@@ -251,7 +251,7 @@ final class EngineApiIT extends BaseIntegrationTest {
             engine.close();
             assertThat(engine.isValid()).isFalse();
 
-            addTestMetric("Validated engine closure on " + runtimeType);
+            // addTestMetric("Validated engine closure on " + runtimeType);
           });
     }
 
@@ -276,7 +276,7 @@ final class EngineApiIT extends BaseIntegrationTest {
                 .isInstanceOf(WasmException.class)
                 .hasMessageContaining("Engine is closed");
 
-            addTestMetric("Rejected operations on closed engine on " + runtimeType);
+            // addTestMetric("Rejected operations on closed engine on " + runtimeType);
           });
     }
   }
@@ -305,7 +305,7 @@ final class EngineApiIT extends BaseIntegrationTest {
                       } catch (final WasmException e) {
                         throw new RuntimeException(e);
                       }
-                    });
+          });
             registerForCleanup(module);
 
             assertThat(module).isNotNull();
@@ -327,7 +327,7 @@ final class EngineApiIT extends BaseIntegrationTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("WebAssembly bytes cannot be null");
 
-            addTestMetric("Rejected null bytes on " + runtimeType);
+            // addTestMetric("Rejected null bytes on " + runtimeType);
           });
     }
 
@@ -345,7 +345,7 @@ final class EngineApiIT extends BaseIntegrationTest {
                 .isInstanceOf(WasmException.class)
                 .hasMessageContaining("empty");
 
-            addTestMetric("Rejected empty bytes on " + runtimeType);
+            // addTestMetric("Rejected empty bytes on " + runtimeType);
           });
     }
 
@@ -364,7 +364,7 @@ final class EngineApiIT extends BaseIntegrationTest {
                 .isInstanceOf(WasmException.class)
                 .hasMessageContaining("compilation failed");
 
-            addTestMetric("Rejected invalid bytes on " + runtimeType);
+            // addTestMetric("Rejected invalid bytes on " + runtimeType);
           });
     }
   }
@@ -391,7 +391,7 @@ final class EngineApiIT extends BaseIntegrationTest {
             assertThat(store.getEngine()).isSameAs(engine);
             assertThat(store.getData()).isNull();
 
-            addTestMetric("Created store without data on " + runtimeType);
+            // addTestMetric("Created store without data on " + runtimeType);
           });
     }
 
@@ -414,7 +414,7 @@ final class EngineApiIT extends BaseIntegrationTest {
             assertThat(store.getEngine()).isSameAs(engine);
             assertThat(store.getData()).isEqualTo(customData);
 
-            addTestMetric("Created store with data on " + runtimeType);
+            // addTestMetric("Created store with data on " + runtimeType);
           });
     }
 
@@ -445,7 +445,7 @@ final class EngineApiIT extends BaseIntegrationTest {
               assertThat(store.getData()).isEqualTo("store-" + i);
             }
 
-            addTestMetric("Created " + storeCount + " stores on " + runtimeType);
+            // addTestMetric("Created " + storeCount + " stores on " + runtimeType);
           });
     }
   }
@@ -457,7 +457,7 @@ final class EngineApiIT extends BaseIntegrationTest {
     @Test
     @DisplayName("Should support concurrent module compilation")
     void shouldSupportConcurrentModuleCompilation() throws Exception {
-      skipIfCategoryNotEnabled(TestCategories.CONCURRENCY);
+      // skipIfCategoryNotEnabled(TestCategories.CONCURRENCY);
 
       runWithBothRuntimes(
           (runtime, runtimeType) -> {
@@ -504,11 +504,11 @@ final class EngineApiIT extends BaseIntegrationTest {
                 registerForCleanup(module);
               }
 
-              addTestMetric(
-                  "Completed "
-                      + (threadCount * operationsPerThread)
-                      + " concurrent compilations on "
-                      + runtimeType);
+              // addTestMetric(
+              //     "Completed "
+              //     + (threadCount * operationsPerThread)
+              //     + " concurrent compilations on "
+              //     + runtimeType);
             } finally {
               executor.shutdown();
               if (!executor.awaitTermination(10, TimeUnit.SECONDS)) {
@@ -521,7 +521,7 @@ final class EngineApiIT extends BaseIntegrationTest {
     @Test
     @DisplayName("Should support concurrent store creation")
     void shouldSupportConcurrentStoreCreation() throws Exception {
-      skipIfCategoryNotEnabled(TestCategories.CONCURRENCY);
+      // skipIfCategoryNotEnabled(TestCategories.CONCURRENCY);
 
       runWithBothRuntimes(
           (runtime, runtimeType) -> {
@@ -571,11 +571,11 @@ final class EngineApiIT extends BaseIntegrationTest {
                 registerForCleanup(store);
               }
 
-              addTestMetric(
-                  "Completed "
-                      + (threadCount * storesPerThread)
-                      + " concurrent store creations on "
-                      + runtimeType);
+              // addTestMetric(
+              //     "Completed "
+              //     + (threadCount * storesPerThread)
+              //     + " concurrent store creations on "
+              //     + runtimeType);
             } finally {
               executor.shutdown();
               if (!executor.awaitTermination(10, TimeUnit.SECONDS)) {
@@ -602,7 +602,7 @@ final class EngineApiIT extends BaseIntegrationTest {
                 final boolean isValid = engine.isValid();
                 engine.close();
                 return isValid;
-              });
+          });
 
       assertThat(result.isValid()).isTrue();
       assertThat(result.areResultsIdentical()).isTrue();
@@ -624,7 +624,7 @@ final class EngineApiIT extends BaseIntegrationTest {
                 module.close();
                 engine.close();
                 return isValid;
-              });
+          });
 
       assertThat(result.isValid()).isTrue();
       assertThat(result.areResultsIdentical()).isTrue();
@@ -646,7 +646,7 @@ final class EngineApiIT extends BaseIntegrationTest {
                 store.close();
                 engine.close();
                 return data;
-              });
+          });
 
       assertThat(result.isValid()).isTrue();
       assertThat(result.areResultsIdentical()).isTrue();
@@ -661,7 +661,7 @@ final class EngineApiIT extends BaseIntegrationTest {
     @Test
     @DisplayName("Should meet engine creation performance baseline")
     void shouldMeetEngineCreationPerformanceBaseline() throws WasmException {
-      skipIfCategoryNotEnabled(TestCategories.PERFORMANCE);
+      // skipIfCategoryNotEnabled(TestCategories.PERFORMANCE);
 
       runWithBothRuntimes(
           (runtime, runtimeType) -> {
@@ -687,7 +687,7 @@ final class EngineApiIT extends BaseIntegrationTest {
     @Test
     @DisplayName("Should meet module compilation performance baseline")
     void shouldMeetModuleCompilationPerformanceBaseline() throws WasmException {
-      skipIfCategoryNotEnabled(TestCategories.PERFORMANCE);
+      // skipIfCategoryNotEnabled(TestCategories.PERFORMANCE);
 
       final byte[] wasmBytes = TestUtils.createSimpleWasmModule();
 
@@ -718,7 +718,7 @@ final class EngineApiIT extends BaseIntegrationTest {
     @Test
     @DisplayName("Should meet store creation performance baseline")
     void shouldMeetStoreCreationPerformanceBaseline() throws WasmException {
-      skipIfCategoryNotEnabled(TestCategories.PERFORMANCE);
+      // skipIfCategoryNotEnabled(TestCategories.PERFORMANCE);
 
       runWithBothRuntimes(
           (runtime, runtimeType) -> {

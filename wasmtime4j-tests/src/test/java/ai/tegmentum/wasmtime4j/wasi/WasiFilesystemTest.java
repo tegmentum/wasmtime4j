@@ -11,7 +11,7 @@ import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
-import ai.tegmentum.wasmtime4j.functions.WasmFunction;
+// // import ai.tegmentum.wasmtime4j.functions.WasmFunction;
 import ai.tegmentum.wasmtime4j.utils.CrossRuntimeValidator;
 import ai.tegmentum.wasmtime4j.utils.TestCategories;
 import ai.tegmentum.wasmtime4j.utils.TestUtils;
@@ -97,7 +97,7 @@ public final class WasiFilesystemTest {
           assertTrue(wasi.getPreopenedDirectories().containsKey("test"));
 
           wasi.close();
-        });
+          });
   }
 
   /** Tests filesystem read operations with proper permission validation. */
@@ -140,13 +140,13 @@ public final class WasiFilesystemTest {
                   final var result = readFunction.call();
                   // Verify read operation completed successfully
                   assertNotNull(result);
-                });
+          });
           }
 
           instance.close();
           wasi.close();
           module.close();
-        });
+          });
   }
 
   /** Tests filesystem write operations with permission validation. */
@@ -184,13 +184,13 @@ public final class WasiFilesystemTest {
                 () -> {
                   final var result = writeFunction.call();
                   assertNotNull(result);
-                });
+          });
           }
 
           instance.close();
           wasi.close();
           module.close();
-        });
+          });
 
     // Verify file was created (if write was successful)
     final Path expectedFile = writeDir.resolve("output.txt");
@@ -232,7 +232,7 @@ public final class WasiFilesystemTest {
           assertFalse(wasi.getPreopenedDirectories().containsKey("forbidden"));
 
           wasi.close();
-        });
+          });
   }
 
   /** Tests security boundaries preventing path traversal attacks. */
@@ -274,13 +274,13 @@ public final class WasiFilesystemTest {
                 () -> {
                   final var result = traversalFunction.call();
                   // The function should complete but access should be denied
-                });
+          });
           }
 
           instance.close();
           wasi.close();
           module.close();
-        });
+          });
   }
 
   /** Tests filesystem operations under different permission modes. */
@@ -310,7 +310,7 @@ public final class WasiFilesystemTest {
           assertTrue(readOnlyWasi.getPreopenedDirectories().containsKey("readonly"));
 
           readOnlyWasi.close();
-        });
+          });
 
     // Test read-write mode
     final WasiConfig readWriteConfig =
@@ -328,7 +328,7 @@ public final class WasiFilesystemTest {
           assertTrue(readWriteWasi.getPreopenedDirectories().containsKey("readwrite"));
 
           readWriteWasi.close();
-        });
+          });
   }
 
   /** Tests directory creation and management operations. */
@@ -365,13 +365,13 @@ public final class WasiFilesystemTest {
                 () -> {
                   final var result = dirFunction.call();
                   assertNotNull(result);
-                });
+          });
           }
 
           instance.close();
           wasi.close();
           module.close();
-        });
+          });
   }
 
   /** Tests file metadata and attributes access. */
@@ -411,13 +411,13 @@ public final class WasiFilesystemTest {
                 () -> {
                   final var result = metaFunction.call();
                   assertNotNull(result);
-                });
+          });
           }
 
           instance.close();
           wasi.close();
           module.close();
-        });
+          });
   }
 
   /** Tests cross-runtime filesystem operation compatibility. */
@@ -506,13 +506,13 @@ public final class WasiFilesystemTest {
                 () -> {
                   final var result = errorFunction.call();
                   assertNotNull(result);
-                });
+          });
           }
 
           instance.close();
           wasi.close();
           module.close();
-        });
+          });
   }
 
   /** Tests filesystem operations with large files and stress conditions. */
@@ -557,13 +557,13 @@ public final class WasiFilesystemTest {
                 () -> {
                   final var result = largeFunction.call();
                   assertNotNull(result);
-                });
+          });
           }
 
           instance.close();
           wasi.close();
           module.close();
-        });
+          });
   }
 
   /** Creates a WebAssembly module for file reading operations. */

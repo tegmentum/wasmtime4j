@@ -46,7 +46,7 @@ class ModuleResourceManagementTest extends BaseIntegrationTest {
 
   @Override
   protected void doSetUp(final TestInfo testInfo) {
-    skipIfCategoryNotEnabled("module.resources");
+    // skipIfCategoryNotEnabled("module.resources");
 
     try {
       testDataManager = WasmTestDataManager.getInstance();
@@ -116,7 +116,7 @@ class ModuleResourceManagementTest extends BaseIntegrationTest {
                 return "Resource cleanup: " + collectedCount + "/10 modules collected";
               }
             },
-            comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
+            comparison -> comparison.getJniExecution().equals(comparison.getPanamaExecution()));
 
     assertThat(validation.isConsistent()).isTrue();
     LOGGER.info("Resource cleanup validation: " + validation.getSummary());
@@ -160,7 +160,7 @@ class ModuleResourceManagementTest extends BaseIntegrationTest {
                 return "Implicit cleanup: " + collectedCount + "/5 modules collected";
               }
             },
-            comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
+            comparison -> comparison.getJniExecution().equals(comparison.getPanamaExecution()));
 
     assertThat(validation.isConsistent()).isTrue();
     LOGGER.info("Implicit cleanup validation: " + validation.getSummary());
@@ -200,7 +200,7 @@ class ModuleResourceManagementTest extends BaseIntegrationTest {
 
               return "Engine closed first: all modules invalid = " + allInvalid;
             },
-            comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
+            comparison -> comparison.getJniExecution().equals(comparison.getPanamaExecution()));
 
     assertThat(validation.isConsistent()).isTrue();
     LOGGER.info("Engine-module cleanup validation: " + validation.getSummary());
@@ -250,7 +250,7 @@ class ModuleResourceManagementTest extends BaseIntegrationTest {
                 return "Instance lifecycle: " + collectedInstances + "/5 instances collected";
               }
             },
-            comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
+            comparison -> comparison.getJniExecution().equals(comparison.getPanamaExecution()));
 
     assertThat(validation.isConsistent()).isTrue();
     LOGGER.info("Module-instance lifecycle validation: " + validation.getSummary());
@@ -260,7 +260,7 @@ class ModuleResourceManagementTest extends BaseIntegrationTest {
   @ArgumentsSource(CrossRuntimeTestRunner.RuntimeArgumentsProvider.class)
   @DisplayName("Should handle memory pressure with many modules")
   void shouldHandleMemoryPressureWithManyModules(final RuntimeType runtimeType) {
-    skipIfCategoryNotEnabled("stress");
+    // skipIfCategoryNotEnabled("stress");
 
     final CrossRuntimeValidationResult validation =
         CrossRuntimeTestRunner.validateConsistency(
@@ -367,7 +367,7 @@ class ModuleResourceManagementTest extends BaseIntegrationTest {
                         } finally {
                           completionLatch.countDown();
                         }
-                      });
+          });
                 }
 
                 // Start all threads
@@ -389,7 +389,7 @@ class ModuleResourceManagementTest extends BaseIntegrationTest {
                     + " closed";
               }
             },
-            comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
+            comparison -> comparison.getJniExecution().equals(comparison.getPanamaExecution()));
 
     assertThat(validation.isConsistent()).isTrue();
     LOGGER.info("Concurrent resource operations validation: " + validation.getSummary());
@@ -506,7 +506,7 @@ class ModuleResourceManagementTest extends BaseIntegrationTest {
                     successfulModules, failedModules);
               }
             },
-            comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
+            comparison -> comparison.getJniExecution().equals(comparison.getPanamaExecution()));
 
     assertThat(validation.isConsistent()).isTrue();
     LOGGER.info("Exception resource cleanup validation: " + validation.getSummary());
@@ -549,7 +549,7 @@ class ModuleResourceManagementTest extends BaseIntegrationTest {
               // Then - All resources should be cleaned up automatically
               return "Try-with-resources: " + modulesProcessed + " modules processed";
             },
-            comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
+            comparison -> comparison.getJniExecution().equals(comparison.getPanamaExecution()));
 
     assertThat(validation.isConsistent()).isTrue();
     LOGGER.info("Try-with-resources cleanup validation: " + validation.getSummary());
@@ -584,7 +584,7 @@ class ModuleResourceManagementTest extends BaseIntegrationTest {
                 return "Finalizer cleanup completed";
               }
             },
-            comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
+            comparison -> comparison.getJniExecution().equals(comparison.getPanamaExecution()));
 
     assertThat(validation.isConsistent()).isTrue();
     LOGGER.info("Finalizer cleanup timing validation: " + validation.getSummary());

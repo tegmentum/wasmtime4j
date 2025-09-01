@@ -51,7 +51,7 @@ class ModuleSerializationTest extends BaseIntegrationTest {
 
   @Override
   protected void doSetUp(final TestInfo testInfo) {
-    skipIfCategoryNotEnabled("module.serialization");
+    // skipIfCategoryNotEnabled("module.serialization");
 
     try {
       testDataManager = WasmTestDataManager.getInstance();
@@ -93,7 +93,7 @@ class ModuleSerializationTest extends BaseIntegrationTest {
                   } catch (final IOException e) {
                     LOGGER.warning("Failed to delete cache file: " + e.getMessage());
                   }
-                });
+          });
       } catch (final IOException e) {
         LOGGER.warning("Failed to clean up cache directory: " + e.getMessage());
       }
@@ -135,7 +135,7 @@ class ModuleSerializationTest extends BaseIntegrationTest {
                 return "Module bytecode persistence successful";
               }
             },
-            comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
+            comparison -> comparison.getJniExecution().equals(comparison.getPanamaExecution()));
 
     assertThat(validation.isConsistent()).isTrue();
     LOGGER.info("Module bytecode persistence validation: " + validation.getSummary());
@@ -189,7 +189,7 @@ class ModuleSerializationTest extends BaseIntegrationTest {
                     firstCompilation.toMillis(), secondCompilation.toMillis(), cacheHit);
               }
             },
-            comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
+            comparison -> comparison.getJniExecution().equals(comparison.getPanamaExecution()));
 
     assertThat(validation.isConsistent()).isTrue();
     LOGGER.info("Module compilation cache validation: " + validation.getSummary());
@@ -236,7 +236,7 @@ class ModuleSerializationTest extends BaseIntegrationTest {
                 return "Cache invalidation successful";
               }
             },
-            comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
+            comparison -> comparison.getJniExecution().equals(comparison.getPanamaExecution()));
 
     assertThat(validation.isConsistent()).isTrue();
     LOGGER.info("Cache invalidation validation: " + validation.getSummary());
@@ -286,7 +286,7 @@ class ModuleSerializationTest extends BaseIntegrationTest {
                         } finally {
                           completionLatch.countDown();
                         }
-                      });
+          });
                 }
 
                 // Start all threads
@@ -303,7 +303,7 @@ class ModuleSerializationTest extends BaseIntegrationTest {
                 return "Concurrent cache operations completed: " + moduleCache.size() + " entries";
               }
             },
-            comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
+            comparison -> comparison.getJniExecution().equals(comparison.getPanamaExecution()));
 
     assertThat(validation.isConsistent()).isTrue();
     LOGGER.info("Concurrent cache operations validation: " + validation.getSummary());
@@ -343,7 +343,7 @@ class ModuleSerializationTest extends BaseIntegrationTest {
                 return "File-based persistence successful";
               }
             },
-            comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
+            comparison -> comparison.getJniExecution().equals(comparison.getPanamaExecution()));
 
     assertThat(validation.isConsistent()).isTrue();
     LOGGER.info("File-based persistence validation: " + validation.getSummary());
@@ -353,7 +353,7 @@ class ModuleSerializationTest extends BaseIntegrationTest {
   @ArgumentsSource(CrossRuntimeTestRunner.RuntimeArgumentsProvider.class)
   @DisplayName("Should measure serialization performance")
   void shouldMeasureSerializationPerformance(final RuntimeType runtimeType) {
-    skipIfCategoryNotEnabled("performance");
+    // skipIfCategoryNotEnabled("performance");
 
     final CrossRuntimeValidationResult validation =
         CrossRuntimeTestRunner.validateConsistency(
@@ -449,7 +449,7 @@ class ModuleSerializationTest extends BaseIntegrationTest {
                 return "Cache size limited to: " + moduleCache.size() + " entries";
               }
             },
-            comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
+            comparison -> comparison.getJniExecution().equals(comparison.getPanamaExecution()));
 
     assertThat(validation.isConsistent()).isTrue();
     LOGGER.info("Cache size limits validation: " + validation.getSummary());
@@ -497,7 +497,7 @@ class ModuleSerializationTest extends BaseIntegrationTest {
                 return "Cache expiration handled successfully";
               }
             },
-            comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
+            comparison -> comparison.getJniExecution().equals(comparison.getPanamaExecution()));
 
     assertThat(validation.isConsistent()).isTrue();
     LOGGER.info("Cache expiration validation: " + validation.getSummary());
@@ -538,7 +538,7 @@ class ModuleSerializationTest extends BaseIntegrationTest {
                 return "Module identity preserved across serialization";
               }
             },
-            comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
+            comparison -> comparison.getJniExecution().equals(comparison.getPanamaExecution()));
 
     assertThat(validation.isConsistent()).isTrue();
     LOGGER.info("Module identity serialization validation: " + validation.getSummary());

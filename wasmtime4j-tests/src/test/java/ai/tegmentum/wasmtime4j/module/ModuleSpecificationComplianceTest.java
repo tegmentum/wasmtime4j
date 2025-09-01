@@ -46,7 +46,7 @@ class ModuleSpecificationComplianceTest extends BaseIntegrationTest {
 
   @Override
   protected void doSetUp(final TestInfo testInfo) {
-    skipIfCategoryNotEnabled("module.compliance");
+    // skipIfCategoryNotEnabled("module.compliance");
 
     try {
       testDataManager = WasmTestDataManager.getInstance();
@@ -106,7 +106,7 @@ class ModuleSpecificationComplianceTest extends BaseIntegrationTest {
                     "Binary format: %d valid, %d invalid", validModules, invalidModules);
               }
             },
-            comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
+            comparison -> comparison.getJniExecution().equals(comparison.getPanamaExecution()));
 
     assertThat(validation.isConsistent()).isTrue();
     LOGGER.info("Binary format specification validation: " + validation.getSummary());
@@ -149,7 +149,7 @@ class ModuleSpecificationComplianceTest extends BaseIntegrationTest {
                     correctOrderings, incorrectOrderings);
               }
             },
-            comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
+            comparison -> comparison.getJniExecution().equals(comparison.getPanamaExecution()));
 
     assertThat(validation.isConsistent()).isTrue();
     LOGGER.info("Section ordering specification validation: " + validation.getSummary());
@@ -160,7 +160,7 @@ class ModuleSpecificationComplianceTest extends BaseIntegrationTest {
   @DisplayName("Should process official WebAssembly test suites")
   void shouldProcessOfficialWebAssemblyTestSuites(
       final WasmTestSuiteLoader.TestSuiteType suiteType) {
-    skipIfCategoryNotEnabled("testsuite");
+    // skipIfCategoryNotEnabled("testsuite");
 
     try {
       final List<WasmTestCase> testCases = testDataManager.loadTestSuite(suiteType);
@@ -208,7 +208,7 @@ class ModuleSpecificationComplianceTest extends BaseIntegrationTest {
                     "Suite %s: %d/%d compiled successfully",
                     suiteType, compiledCount.get(), maxToTest);
               },
-              comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
+              comparison -> comparison.getJniExecution().equals(comparison.getPanamaExecution()));
 
       assertThat(validation.isConsistent()).isTrue();
       LOGGER.info("Test suite " + suiteType + " validation: " + validation.getSummary());
@@ -267,7 +267,7 @@ class ModuleSpecificationComplianceTest extends BaseIntegrationTest {
                 return String.format("Type system: %d valid, %d invalid", validTypes, invalidTypes);
               }
             },
-            comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
+            comparison -> comparison.getJniExecution().equals(comparison.getPanamaExecution()));
 
     assertThat(validation.isConsistent()).isTrue();
     LOGGER.info("Type system specification validation: " + validation.getSummary());
@@ -308,7 +308,7 @@ class ModuleSpecificationComplianceTest extends BaseIntegrationTest {
                 return String.format("Limits: %d within, %d exceeds", withinLimits, exceedsLimits);
               }
             },
-            comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
+            comparison -> comparison.getJniExecution().equals(comparison.getPanamaExecution()));
 
     assertThat(validation.isConsistent()).isTrue();
     LOGGER.info("Limits and constraints validation: " + validation.getSummary());
@@ -354,7 +354,7 @@ class ModuleSpecificationComplianceTest extends BaseIntegrationTest {
   @Test
   @DisplayName("Should validate specification compliance statistics")
   void shouldValidateSpecificationComplianceStatistics() {
-    skipIfCategoryNotEnabled("testsuite");
+    // skipIfCategoryNotEnabled("testsuite");
 
     try {
       final WasmTestSuiteStats stats = testDataManager.getTestSuiteStatistics();
@@ -397,7 +397,7 @@ class ModuleSpecificationComplianceTest extends BaseIntegrationTest {
                     "Compliance: %.1f%% (%d/%d tests passed)",
                     complianceRate, passedTests, totalTests);
               },
-              comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
+              comparison -> comparison.getJniExecution().equals(comparison.getPanamaExecution()));
 
       assertThat(validation.isConsistent()).isTrue();
       LOGGER.info("Specification compliance statistics: " + validation.getSummary());
@@ -441,7 +441,7 @@ class ModuleSpecificationComplianceTest extends BaseIntegrationTest {
                     + ")";
               }
             },
-            comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
+            comparison -> comparison.getJniExecution().equals(comparison.getPanamaExecution()));
 
     assertThat(validation.isConsistent()).isTrue();
     LOGGER.info("Instruction set specification validation: " + validation.getSummary());

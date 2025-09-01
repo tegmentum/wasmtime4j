@@ -12,7 +12,7 @@ import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
-import ai.tegmentum.wasmtime4j.functions.WasmFunction;
+// // import ai.tegmentum.wasmtime4j.functions.WasmFunction;
 import ai.tegmentum.wasmtime4j.utils.CrossRuntimeValidator;
 import ai.tegmentum.wasmtime4j.utils.TestCategories;
 import ai.tegmentum.wasmtime4j.utils.TestUtils;
@@ -118,13 +118,13 @@ public final class WasiSecurityTest {
                 () -> {
                   final var result = boundsFunction.call();
                   assertNotNull(result);
-                });
+          });
           }
 
           instance.close();
           wasi.close();
           module.close();
-        });
+          });
   }
 
   /** Tests path traversal attack prevention. */
@@ -170,13 +170,13 @@ public final class WasiSecurityTest {
                   final var result = traversalFunction.call();
                   assertNotNull(result);
                   // Success here means the attack was properly blocked
-                });
+          });
           }
 
           instance.close();
           wasi.close();
           module.close();
-        });
+          });
   }
 
   /** Tests memory isolation and bounds checking. */
@@ -210,13 +210,13 @@ public final class WasiSecurityTest {
                 () -> {
                   final var result = boundsFunction.call();
                   assertNotNull(result);
-                });
+          });
           }
 
           instance.close();
           wasi.close();
           module.close();
-        });
+          });
   }
 
   /** Tests resource exhaustion prevention and limits. */
@@ -251,13 +251,13 @@ public final class WasiSecurityTest {
                 () -> {
                   final var result = dosFunction.call();
                   assertNotNull(result);
-                });
+          });
           }
 
           instance.close();
           wasi.close();
           module.close();
-        });
+          });
   }
 
   /** Tests privilege escalation prevention. */
@@ -296,13 +296,13 @@ public final class WasiSecurityTest {
                 () -> {
                   final var result = escalationFunction.call();
                   assertNotNull(result);
-                });
+          });
           }
 
           instance.close();
           wasi.close();
           module.close();
-        });
+          });
   }
 
   /** Tests sandbox escape attempt prevention. */
@@ -340,13 +340,13 @@ public final class WasiSecurityTest {
                 () -> {
                   final var result = sandboxFunction.call();
                   assertNotNull(result);
-                });
+          });
           }
 
           instance.close();
           wasi.close();
           module.close();
-        });
+          });
   }
 
   /** Tests information leakage prevention. */
@@ -392,13 +392,13 @@ public final class WasiSecurityTest {
                 () -> {
                   final var result = leakFunction.call();
                   assertNotNull(result);
-                });
+          });
           }
 
           instance.close();
           wasi.close();
           module.close();
-        });
+          });
   }
 
   /** Tests concurrent security isolation between instances. */
@@ -620,7 +620,7 @@ public final class WasiSecurityTest {
           assertTrue(env.containsKey("LD_PRELOAD"));
 
           wasi.close();
-        });
+          });
   }
 
   /** Tests time-based attack prevention (timing attacks). */
@@ -661,7 +661,7 @@ public final class WasiSecurityTest {
           instance.close();
           wasi.close();
           module.close();
-        });
+          });
   }
 
   /** Creates a WebAssembly module for path traversal attack testing. */

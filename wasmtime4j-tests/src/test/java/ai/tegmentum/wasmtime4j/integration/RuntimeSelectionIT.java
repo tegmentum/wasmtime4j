@@ -19,7 +19,7 @@ class RuntimeSelectionIT extends BaseIntegrationTest {
 
   @Override
   protected void doSetUp(final TestInfo testInfo) {
-    skipIfCategoryNotEnabled("runtime");
+    // skipIfCategoryNotEnabled("runtime");
   }
 
   @Test

@@ -10,7 +10,7 @@ import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
-import ai.tegmentum.wasmtime4j.functions.WasmFunction;
+// // import ai.tegmentum.wasmtime4j.functions.WasmFunction;
 import ai.tegmentum.wasmtime4j.performance.PerformanceTestHarness;
 import ai.tegmentum.wasmtime4j.utils.TestCategories;
 import ai.tegmentum.wasmtime4j.utils.TestUtils;

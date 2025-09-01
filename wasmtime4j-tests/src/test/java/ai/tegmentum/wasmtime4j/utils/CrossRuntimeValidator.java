@@ -184,7 +184,7 @@ public final class CrossRuntimeValidator {
                 LOGGER.warning(runtimeType + " execution failed: " + e.getMessage());
                 return new TestResult(runtimeType, null, executionTime, e);
               }
-            });
+          });
 
     try {
       return future.get(timeout.toMillis(), TimeUnit.MILLISECONDS);
