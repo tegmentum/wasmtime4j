@@ -20,7 +20,7 @@ class WebAssemblyModuleIT extends BaseIntegrationTest {
 
   @Override
   protected void doSetUp(final TestInfo testInfo) {
-    skipIfCategoryNotEnabled("wasm.suite");
+    // skipIfCategoryNotEnabled("wasm.suite");
   }
 
   @Test

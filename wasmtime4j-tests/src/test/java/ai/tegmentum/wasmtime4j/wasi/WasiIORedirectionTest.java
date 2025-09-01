@@ -10,7 +10,7 @@ import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
-import ai.tegmentum.wasmtime4j.functions.WasmFunction;
+// // import ai.tegmentum.wasmtime4j.functions.WasmFunction;
 import ai.tegmentum.wasmtime4j.utils.CrossRuntimeValidator;
 import ai.tegmentum.wasmtime4j.utils.TestCategories;
 import ai.tegmentum.wasmtime4j.utils.TestUtils;
@@ -88,7 +88,7 @@ public final class WasiIORedirectionTest {
 
           // Verify stdin is configured (implementation dependent)
           wasi.close();
-        });
+          });
   }
 
   /** Tests stdout inheritance from host process. */
@@ -111,7 +111,7 @@ public final class WasiIORedirectionTest {
           assertTrue(wasi.isValid());
 
           wasi.close();
-        });
+          });
   }
 
   /** Tests stderr inheritance from host process. */
@@ -134,7 +134,7 @@ public final class WasiIORedirectionTest {
           assertTrue(wasi.isValid());
 
           wasi.close();
-        });
+          });
   }
 
   /** Tests stdin redirection from byte array. */
@@ -161,7 +161,7 @@ public final class WasiIORedirectionTest {
           assertTrue(wasi.isValid());
 
           wasi.close();
-        });
+          });
   }
 
   /** Tests stdout redirection to byte array. */
@@ -202,7 +202,7 @@ public final class WasiIORedirectionTest {
           instance.close();
           wasi.close();
           module.close();
-        });
+          });
   }
 
   /** Tests stderr redirection to byte array. */
@@ -243,7 +243,7 @@ public final class WasiIORedirectionTest {
           instance.close();
           wasi.close();
           module.close();
-        });
+          });
   }
 
   /** Tests file-based I/O redirection. */
@@ -285,7 +285,7 @@ public final class WasiIORedirectionTest {
           instance.close();
           wasi.close();
           module.close();
-        });
+          });
 
     // Verify output files were written (content depends on module behavior)
     assertTrue(Files.exists(outputFile) || Files.size(outputFile) >= 0);
@@ -349,7 +349,7 @@ public final class WasiIORedirectionTest {
                   LOGGER.severe(
                       "Concurrent I/O instance " + instanceId + " failed: " + e.getMessage());
                 }
-              });
+          });
     }
 
     // Start all threads
@@ -421,7 +421,7 @@ public final class WasiIORedirectionTest {
 
           wasi1.close();
           wasi2.close();
-        });
+          });
 
     // Verify streams remain separate
     assertNotNull(stdout1.toByteArray());
@@ -469,7 +469,7 @@ public final class WasiIORedirectionTest {
           instance.close();
           wasi.close();
           module.close();
-        });
+          });
 
     // Verify binary data integrity (depends on module implementation)
     final byte[] outputData = stdoutStream.toByteArray();
@@ -519,7 +519,7 @@ public final class WasiIORedirectionTest {
           instance.close();
           wasi.close();
           module.close();
-        });
+          });
 
     final byte[] outputData = stdoutStream.toByteArray();
     assertNotNull(outputData);
@@ -610,7 +610,7 @@ public final class WasiIORedirectionTest {
           final Wasi wasi = store.createWasi(config);
           assertNotNull(wasi);
           wasi.close();
-        });
+          });
   }
 
   /** Tests buffering behavior of I/O streams. */
@@ -655,7 +655,7 @@ public final class WasiIORedirectionTest {
           instance.close();
           wasi.close();
           module.close();
-        });
+          });
   }
 
   /** Creates a WebAssembly module for I/O testing. */

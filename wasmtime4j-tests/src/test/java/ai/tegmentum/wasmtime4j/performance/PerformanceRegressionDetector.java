@@ -52,12 +52,12 @@ public final class PerformanceRegressionDetector {
     final Instant measurementTime = Instant.now();
 
     // Record JNI measurement
-    recordRuntimeMeasurement(testName, RuntimeType.JNI, result.getJniResult(), measurementTime);
+    recordRuntimeMeasurement(testName, RuntimeType.JNI, result.getJniExecution(), measurementTime);
 
     // Record Panama measurement if available
     if (result.hasPanamaResult()) {
       recordRuntimeMeasurement(
-          testName, RuntimeType.PANAMA, result.getPanamaResult(), measurementTime);
+          testName, RuntimeType.PANAMA, result.getPanamaExecution(), measurementTime);
     }
 
     LOGGER.fine("Recorded performance measurement for test: " + testName);
@@ -160,7 +160,7 @@ public final class PerformanceRegressionDetector {
     analyzeRuntimeRegression(
         testName,
         RuntimeType.JNI,
-        currentResult.getJniResult(),
+        currentResult.getJniExecution(),
         regressionThreshold,
         analysisBuilder);
 
@@ -169,7 +169,7 @@ public final class PerformanceRegressionDetector {
       analyzeRuntimeRegression(
           testName,
           RuntimeType.PANAMA,
-          currentResult.getPanamaResult(),
+          currentResult.getPanamaExecution(),
           regressionThreshold,
           analysisBuilder);
     }

@@ -162,7 +162,7 @@ public final class CrossRuntimeTestRunner {
 
     if (testResult.bothSuccessful()) {
       final RuntimeTestComparison comparison =
-          new RuntimeTestComparison(testResult.getJniResult(), testResult.getPanamaResult());
+          new RuntimeTestComparison(testResult.getJniExecution(), testResult.getPanamaExecution());
 
       final boolean consistent = resultComparator.apply(comparison);
       validationBuilder.consistent(consistent);
@@ -171,19 +171,19 @@ public final class CrossRuntimeTestRunner {
         validationBuilder.addInfo("Both runtimes produced consistent results");
       } else {
         validationBuilder.addError("Runtimes produced inconsistent results");
-        validationBuilder.addError("JNI result: " + testResult.getJniResult().getResult());
-        validationBuilder.addError("Panama result: " + testResult.getPanamaResult().getResult());
+        validationBuilder.addError("JNI result: " + testResult.getJniExecution().getResult());
+        validationBuilder.addError("Panama result: " + testResult.getPanamaExecution().getResult());
       }
     } else {
       validationBuilder.consistent(false);
       validationBuilder.addError("Not both runtimes executed successfully");
 
-      if (!testResult.getJniResult().isSuccessful()) {
-        validationBuilder.addError("JNI failed: " + testResult.getJniResult().getException());
+      if (!testResult.getJniExecution().isSuccessful()) {
+        validationBuilder.addError("JNI failed: " + testResult.getJniExecution().getException());
       }
 
-      if (testResult.getPanamaResult() != null && !testResult.getPanamaResult().isSuccessful()) {
-        validationBuilder.addError("Panama failed: " + testResult.getPanamaResult().getException());
+      if (testResult.getPanamaExecution() != null && !testResult.getPanamaExecution().isSuccessful()) {
+        validationBuilder.addError("Panama failed: " + testResult.getPanamaExecution().getException());
       }
     }
 
@@ -212,7 +212,7 @@ public final class CrossRuntimeTestRunner {
                 } catch (final Exception e) {
                   LOGGER.warning("Failed to close runtime: " + e.getMessage());
                 }
-              });
+          });
 
       runtimeCache.clear();
       testResults.clear();

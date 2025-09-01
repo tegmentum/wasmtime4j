@@ -44,7 +44,7 @@ class ModuleApiComprehensiveTest extends BaseIntegrationTest {
 
   @Override
   protected void doSetUp(final TestInfo testInfo) {
-    skipIfCategoryNotEnabled("module.comprehensive");
+    // skipIfCategoryNotEnabled("module.comprehensive");
 
     try {
       testDataManager = WasmTestDataManager.getInstance();
@@ -96,7 +96,7 @@ class ModuleApiComprehensiveTest extends BaseIntegrationTest {
 
               return "Module compiled successfully";
             },
-            comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
+            comparison -> comparison.getJniExecution().equals(comparison.getPanamaExecution()));
 
     assertThat(validation.isConsistent()).isTrue();
     LOGGER.info("Module compilation validation: " + validation.getSummary());
@@ -125,7 +125,7 @@ class ModuleApiComprehensiveTest extends BaseIntegrationTest {
                 return "Module instantiated successfully";
               }
             },
-            comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
+            comparison -> comparison.getJniExecution().equals(comparison.getPanamaExecution()));
 
     assertThat(validation.isConsistent()).isTrue();
     LOGGER.info("Module instantiation validation: " + validation.getSummary());
@@ -154,7 +154,7 @@ class ModuleApiComprehensiveTest extends BaseIntegrationTest {
                 return "Module imports validated: " + imports.size();
               }
             },
-            comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
+            comparison -> comparison.getJniExecution().equals(comparison.getPanamaExecution()));
 
     assertThat(validation.isConsistent()).isTrue();
     LOGGER.info("Module imports validation: " + validation.getSummary());
@@ -187,7 +187,7 @@ class ModuleApiComprehensiveTest extends BaseIntegrationTest {
                 return "Exports found: " + exports.size() + ", has add: " + hasAddFunction;
               }
             },
-            comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
+            comparison -> comparison.getJniExecution().equals(comparison.getPanamaExecution()));
 
     assertThat(validation.isConsistent()).isTrue();
     LOGGER.info("Module exports metadata validation: " + validation.getSummary());
@@ -224,7 +224,7 @@ class ModuleApiComprehensiveTest extends BaseIntegrationTest {
                 return "Imports found: " + imports.size() + ", has memory: " + hasMemoryImport;
               }
             },
-            comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
+            comparison -> comparison.getJniExecution().equals(comparison.getPanamaExecution()));
 
     assertThat(validation.isConsistent()).isTrue();
     LOGGER.info("Module imports metadata validation: " + validation.getSummary());
@@ -253,7 +253,7 @@ class ModuleApiComprehensiveTest extends BaseIntegrationTest {
                 return "Empty imports validation: " + validWithEmpty;
               }
             },
-            comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
+            comparison -> comparison.getJniExecution().equals(comparison.getPanamaExecution()));
 
     assertThat(validation.isConsistent()).isTrue();
     LOGGER.info("Module import validation: " + validation.getSummary());
@@ -293,7 +293,7 @@ class ModuleApiComprehensiveTest extends BaseIntegrationTest {
                 }
               }
             },
-            comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
+            comparison -> comparison.getJniExecution().equals(comparison.getPanamaExecution()));
 
     assertThat(validation.isConsistent()).isTrue();
     LOGGER.info("Multiple modules validation: " + validation.getSummary());
@@ -333,7 +333,7 @@ class ModuleApiComprehensiveTest extends BaseIntegrationTest {
                         } finally {
                           completionLatch.countDown();
                         }
-                      });
+          });
                 }
 
                 // Start all threads
@@ -346,7 +346,7 @@ class ModuleApiComprehensiveTest extends BaseIntegrationTest {
                 return "Concurrent compilation completed successfully";
               }
             },
-            comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
+            comparison -> comparison.getJniExecution().equals(comparison.getPanamaExecution()));
 
     assertThat(validation.isConsistent()).isTrue();
     LOGGER.info("Concurrent compilation validation: " + validation.getSummary());
@@ -380,7 +380,7 @@ class ModuleApiComprehensiveTest extends BaseIntegrationTest {
 
               return "Resource cleanup handled successfully";
             },
-            comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
+            comparison -> comparison.getJniExecution().equals(comparison.getPanamaExecution()));
 
     assertThat(validation.isConsistent()).isTrue();
     LOGGER.info("Module resource cleanup validation: " + validation.getSummary());
@@ -390,7 +390,7 @@ class ModuleApiComprehensiveTest extends BaseIntegrationTest {
   @ArgumentsSource(CrossRuntimeTestRunner.RuntimeArgumentsProvider.class)
   @DisplayName("Should measure module compilation performance")
   void shouldMeasureModuleCompilationPerformance(final RuntimeType runtimeType) {
-    skipIfCategoryNotEnabled("performance");
+    // skipIfCategoryNotEnabled("performance");
 
     // Use cross-runtime test execution for performance measurement
     final CrossRuntimeValidationResult validation =
@@ -455,7 +455,7 @@ class ModuleApiComprehensiveTest extends BaseIntegrationTest {
                 return "Module name: " + moduleName;
               }
             },
-            comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
+            comparison -> comparison.getJniExecution().equals(comparison.getPanamaExecution()));
 
     assertThat(validation.isConsistent()).isTrue();
     LOGGER.info("Module name extraction validation: " + validation.getSummary());
@@ -494,7 +494,7 @@ class ModuleApiComprehensiveTest extends BaseIntegrationTest {
                 }
               }
             },
-            comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
+            comparison -> comparison.getJniExecution().equals(comparison.getPanamaExecution()));
 
     assertThat(validation.isConsistent()).isTrue();
     LOGGER.info("Module state consistency validation: " + validation.getSummary());

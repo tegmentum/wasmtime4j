@@ -52,7 +52,7 @@ class ModulePerformanceTest extends BaseIntegrationTest {
 
   @Override
   protected void doSetUp(final TestInfo testInfo) {
-    skipIfCategoryNotEnabled("module.performance");
+    // skipIfCategoryNotEnabled("module.performance");
 
     try {
       testDataManager = WasmTestDataManager.getInstance();
@@ -400,7 +400,7 @@ class ModulePerformanceTest extends BaseIntegrationTest {
                 return result;
               }
             },
-            comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
+            comparison -> comparison.getJniExecution().equals(comparison.getPanamaExecution()));
 
     assertThat(validation.isConsistent()).isTrue();
   }
@@ -409,7 +409,7 @@ class ModulePerformanceTest extends BaseIntegrationTest {
   @ValueSource(ints = {1, 5, 10, 20})
   @DisplayName("Should benchmark module compilation with different module sizes")
   void shouldBenchmarkModuleCompilationWithDifferentModuleSizes(final int sizeMultiplier) {
-    skipIfCategoryNotEnabled("performance");
+    // skipIfCategoryNotEnabled("performance");
 
     final CrossRuntimeValidationResult validation =
         CrossRuntimeTestRunner.validateConsistency(
@@ -459,7 +459,7 @@ class ModulePerformanceTest extends BaseIntegrationTest {
   @Test
   @DisplayName("Should benchmark module memory usage patterns")
   void shouldBenchmarkModuleMemoryUsagePatterns() {
-    skipIfCategoryNotEnabled("performance");
+    // skipIfCategoryNotEnabled("performance");
 
     final CrossRuntimeValidationResult validation =
         CrossRuntimeTestRunner.validateConsistency(
@@ -537,8 +537,8 @@ class ModulePerformanceTest extends BaseIntegrationTest {
   @ArgumentsSource(CrossRuntimeTestRunner.RuntimeArgumentsProvider.class)
   @DisplayName("Should benchmark module operations with real test suite modules")
   void shouldBenchmarkModuleOperationsWithRealTestSuiteModules(final RuntimeType runtimeType) {
-    skipIfCategoryNotEnabled("testsuite");
-    skipIfCategoryNotEnabled("performance");
+    // skipIfCategoryNotEnabled("testsuite");
+    // skipIfCategoryNotEnabled("performance");
 
     try {
       final List<WasmTestCase> testCases =

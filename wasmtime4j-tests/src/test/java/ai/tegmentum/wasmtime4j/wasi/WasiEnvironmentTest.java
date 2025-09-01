@@ -13,7 +13,7 @@ import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
-import ai.tegmentum.wasmtime4j.functions.WasmFunction;
+// // import ai.tegmentum.wasmtime4j.functions.WasmFunction;
 import ai.tegmentum.wasmtime4j.utils.CrossRuntimeValidator;
 import ai.tegmentum.wasmtime4j.utils.TestCategories;
 import ai.tegmentum.wasmtime4j.utils.TestUtils;
@@ -99,7 +99,7 @@ public final class WasiEnvironmentTest {
           assertEquals("/home/user", actualEnv.get("HOME"));
 
           wasi.close();
-        });
+          });
   }
 
   /** Tests environment variable inheritance from host system. */
@@ -133,7 +133,7 @@ public final class WasiEnvironmentTest {
                   || inheritedEnv.size() > 5); // Flexible check for different OS
 
           wasi.close();
-        });
+          });
   }
 
   /** Tests mixed environment configuration (inheritance + custom). */
@@ -168,7 +168,7 @@ public final class WasiEnvironmentTest {
           assertEquals("overridden", actualEnv.get("OVERRIDE_VAR"));
 
           wasi.close();
-        });
+          });
   }
 
   /** Tests command line argument configuration and access. */
@@ -210,7 +210,7 @@ public final class WasiEnvironmentTest {
           }
 
           wasi.close();
-        });
+          });
   }
 
   /** Tests empty and minimal configurations. */
@@ -238,7 +238,7 @@ public final class WasiEnvironmentTest {
           assertEquals(0, env.size());
 
           wasi.close();
-        });
+          });
 
     // Test empty arguments
     final WasiConfig emptyArgsConfig =
@@ -260,7 +260,7 @@ public final class WasiEnvironmentTest {
           assertEquals(0, args.size());
 
           wasi.close();
-        });
+          });
   }
 
   /** Tests environment variable access through WASI modules. */
@@ -299,13 +299,13 @@ public final class WasiEnvironmentTest {
                   final var result = envFunction.call();
                   assertNotNull(result);
                   // The function should be able to access environment variables
-                });
+          });
           }
 
           instance.close();
           wasi.close();
           module.close();
-        });
+          });
   }
 
   /** Tests large environment configurations for stress testing. */
@@ -347,7 +347,7 @@ public final class WasiEnvironmentTest {
           assertTrue(actualEnv.get("VAR_123").contains("x"));
 
           wasi.close();
-        });
+          });
   }
 
   /** Tests command line argument parsing and special characters. */
@@ -393,7 +393,7 @@ public final class WasiEnvironmentTest {
           assertEquals("unicode_test_ñ_λ_中文", actualArgs.get(6));
 
           wasi.close();
-        });
+          });
   }
 
   /** Tests environment variable validation and error handling. */
@@ -412,7 +412,7 @@ public final class WasiEnvironmentTest {
               WasiConfig.builder().inheritEnv(false).environment(invalidEnv).build();
 
           store.createWasi(config);
-        });
+          });
 
     // Test null value validation
     assertThrows(
@@ -425,7 +425,7 @@ public final class WasiEnvironmentTest {
               WasiConfig.builder().inheritEnv(false).environment(invalidEnv).build();
 
           store.createWasi(config);
-        });
+          });
 
     // Test empty key validation
     assertDoesNotThrow(
@@ -439,7 +439,7 @@ public final class WasiEnvironmentTest {
           final Wasi wasi = store.createWasi(config);
           assertEquals("empty_key_value", wasi.getEnvironment().get(""));
           wasi.close();
-        });
+          });
   }
 
   /** Tests argument validation and error handling. */
@@ -456,7 +456,7 @@ public final class WasiEnvironmentTest {
           final WasiConfig config = WasiConfig.builder().arguments(invalidArgs).build();
 
           store.createWasi(config);
-        });
+          });
 
     // Test empty string arguments (should be allowed)
     assertDoesNotThrow(
@@ -469,7 +469,7 @@ public final class WasiEnvironmentTest {
           assertEquals(3, wasi.getArguments().size());
           assertEquals("", wasi.getArguments().get(1));
           wasi.close();
-        });
+          });
   }
 
   /** Tests cross-runtime environment compatibility. */
@@ -565,7 +565,7 @@ public final class WasiEnvironmentTest {
 
           wasi1.close();
           wasi2.close();
-        });
+          });
   }
 
   /** Tests environment variable modification restrictions. */
@@ -592,7 +592,7 @@ public final class WasiEnvironmentTest {
               () -> {
                 env.put("IMMUTABLE_VAR", "modified_value");
                 env.put("NEW_VAR", "new_value");
-              });
+          });
 
           // Original environment should remain unchanged if defensive copy is used
           final Map<String, String> freshEnv = wasi.getEnvironment();
@@ -600,7 +600,7 @@ public final class WasiEnvironmentTest {
           assertNotNull(freshEnv);
 
           wasi.close();
-        });
+          });
   }
 
   /** Tests Unicode and international character support in environment. */
@@ -634,6 +634,6 @@ public final class WasiEnvironmentTest {
           assertEquals("🌍🚀✨", actualEnv.get("EMOJI"));
 
           wasi.close();
-        });
+          });
   }
 }

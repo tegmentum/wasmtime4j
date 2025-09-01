@@ -10,9 +10,9 @@ import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmRuntime;
-import ai.tegmentum.wasmtime4j.exceptions.WasmRuntimeException;
+// import ai.tegmentum.wasmtime4j.exceptions.WasmRuntimeException;
 import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
-import ai.tegmentum.wasmtime4j.functions.WasmFunction;
+// import ai.tegmentum.wasmtime4j.functions.WasmFunction;
 import ai.tegmentum.wasmtime4j.utils.CrossRuntimeValidator;
 import ai.tegmentum.wasmtime4j.utils.TestCategories;
 import ai.tegmentum.wasmtime4j.utils.TestUtils;
@@ -99,7 +99,7 @@ public final class WasiProcessTest {
           instance.close();
           wasi.close();
           module.close();
-        });
+          });
   }
 
   /** Tests process execution with non-zero exit codes. */
@@ -194,7 +194,7 @@ public final class WasiProcessTest {
           instance.close();
           wasi.close();
           module.close();
-        });
+          });
   }
 
   /** Tests multiple process executions with different exit scenarios. */
@@ -385,7 +385,7 @@ public final class WasiProcessTest {
                         // Timeout or termination is acceptable
                         LOGGER.info("Hanging function terminated: " + e.getClass().getSimpleName());
                       }
-                    });
+          });
 
             try {
               // Wait with timeout
@@ -400,7 +400,7 @@ public final class WasiProcessTest {
           instance.close();
           wasi.close();
           module.close();
-        });
+          });
   }
 
   /** Tests cross-runtime process behavior consistency. */
@@ -511,7 +511,7 @@ public final class WasiProcessTest {
           instance.close();
           wasi.close();
           module.close();
-        });
+          });
   }
 
   /** Tests process argument passing and validation. */
@@ -569,7 +569,7 @@ public final class WasiProcessTest {
           instance.close();
           wasi.close();
           module.close();
-        });
+          });
   }
 
   /** Tests process exit code boundary conditions. */

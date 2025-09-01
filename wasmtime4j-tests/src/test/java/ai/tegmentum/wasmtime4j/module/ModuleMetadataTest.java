@@ -40,7 +40,7 @@ class ModuleMetadataTest extends BaseIntegrationTest {
 
   @Override
   protected void doSetUp(final TestInfo testInfo) {
-    skipIfCategoryNotEnabled("module.metadata");
+    // skipIfCategoryNotEnabled("module.metadata");
 
     try {
       testDataManager = WasmTestDataManager.getInstance();
@@ -92,7 +92,7 @@ class ModuleMetadataTest extends BaseIntegrationTest {
                     + addExport.isPresent();
               }
             },
-            comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
+            comparison -> comparison.getJniExecution().equals(comparison.getPanamaExecution()));
 
     assertThat(validation.isConsistent()).isTrue();
     LOGGER.info("Function export metadata validation: " + validation.getSummary());
@@ -145,7 +145,7 @@ class ModuleMetadataTest extends BaseIntegrationTest {
                     + memoryImport.isPresent();
               }
             },
-            comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
+            comparison -> comparison.getJniExecution().equals(comparison.getPanamaExecution()));
 
     assertThat(validation.isConsistent()).isTrue();
     LOGGER.info("Memory import metadata validation: " + validation.getSummary());
@@ -177,7 +177,7 @@ class ModuleMetadataTest extends BaseIntegrationTest {
                 return "Empty module - exports: " + exports.size() + ", imports: " + imports.size();
               }
             },
-            comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
+            comparison -> comparison.getJniExecution().equals(comparison.getPanamaExecution()));
 
     assertThat(validation.isConsistent()).isTrue();
     LOGGER.info("Empty module metadata validation: " + validation.getSummary());
@@ -219,7 +219,7 @@ class ModuleMetadataTest extends BaseIntegrationTest {
                 return "Complex exports: " + exports.size() + ", types: " + exportTypeKinds.size();
               }
             },
-            comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
+            comparison -> comparison.getJniExecution().equals(comparison.getPanamaExecution()));
 
     assertThat(validation.isConsistent()).isTrue();
     LOGGER.info("Complex module exports validation: " + validation.getSummary());
@@ -266,7 +266,7 @@ class ModuleMetadataTest extends BaseIntegrationTest {
                     + importTypeKinds.size();
               }
             },
-            comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
+            comparison -> comparison.getJniExecution().equals(comparison.getPanamaExecution()));
 
     assertThat(validation.isConsistent()).isTrue();
     LOGGER.info("Complex module imports validation: " + validation.getSummary());
@@ -314,7 +314,7 @@ class ModuleMetadataTest extends BaseIntegrationTest {
                 return "Type consistency verified";
               }
             },
-            comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
+            comparison -> comparison.getJniExecution().equals(comparison.getPanamaExecution()));
 
     assertThat(validation.isConsistent()).isTrue();
     LOGGER.info("Type consistency validation: " + validation.getSummary());
@@ -342,7 +342,7 @@ class ModuleMetadataTest extends BaseIntegrationTest {
                 return "Module name: " + (moduleName != null ? moduleName : "null");
               }
             },
-            comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
+            comparison -> comparison.getJniExecution().equals(comparison.getPanamaExecution()));
 
     assertThat(validation.isConsistent()).isTrue();
     LOGGER.info("Module name extraction validation: " + validation.getSummary());
@@ -397,7 +397,7 @@ class ModuleMetadataTest extends BaseIntegrationTest {
                     functionExports, memoryExports, globalExports, tableExports);
               }
             },
-            comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
+            comparison -> comparison.getJniExecution().equals(comparison.getPanamaExecution()));
 
     assertThat(validation.isConsistent()).isTrue();
     LOGGER.info("Export/import correspondence validation: " + validation.getSummary());
@@ -407,7 +407,7 @@ class ModuleMetadataTest extends BaseIntegrationTest {
   @ArgumentsSource(CrossRuntimeTestRunner.RuntimeArgumentsProvider.class)
   @DisplayName("Should handle metadata extraction from test suite modules")
   void shouldHandleMetadataExtractionFromTestSuiteModules(final RuntimeType runtimeType) {
-    skipIfCategoryNotEnabled("testsuite");
+    // skipIfCategoryNotEnabled("testsuite");
 
     try {
       final List<WasmTestCase> testCases =
@@ -458,7 +458,7 @@ class ModuleMetadataTest extends BaseIntegrationTest {
 
                 return "Processed " + localProcessed + " test suite modules";
               },
-              comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
+              comparison -> comparison.getJniExecution().equals(comparison.getPanamaExecution()));
 
       assertThat(validation.isConsistent()).isTrue();
       LOGGER.info(
@@ -473,7 +473,7 @@ class ModuleMetadataTest extends BaseIntegrationTest {
   @Test
   @DisplayName("Should handle metadata extraction performance")
   void shouldHandleMetadataExtractionPerformance() {
-    skipIfCategoryNotEnabled("performance");
+    // skipIfCategoryNotEnabled("performance");
 
     final CrossRuntimeValidationResult validation =
         CrossRuntimeTestRunner.validateConsistency(

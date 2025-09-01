@@ -30,7 +30,7 @@ final class EngineStoreCrossRuntimeIT extends BaseIntegrationTest {
 
   @Override
   protected void doSetUp(final TestInfo testInfo) {
-    skipIfCategoryNotEnabled(TestCategories.CROSS_RUNTIME);
+    // skipIfCategoryNotEnabled(TestCategories.CROSS_RUNTIME);
     skipIfPanamaNotAvailable();
   }
 
@@ -52,20 +52,20 @@ final class EngineStoreCrossRuntimeIT extends BaseIntegrationTest {
                 engine.close();
 
                 return EngineValidationResult.of(isValid, config);
-              });
+          });
 
       assertThat(result.isValid()).as("Cross-runtime engine creation validation failed").isTrue();
       assertThat(result.areResultsIdentical())
           .as("Engine creation results differ between runtimes")
           .isTrue();
       LOGGER.info("Engine creation validation: " + result.getDifferenceDescription());
-      addTestMetric("Validated default engine creation cross-runtime");
-    }
-
-    @Test
-    @DisplayName("Should produce identical custom config engine creation results")
-    void shouldProduceIdenticalCustomConfigEngineCreationResults() {
-      LOGGER.info("Validating custom config engine creation across runtimes");
+      // addTestMetric("Validated default engine creation cross-runtime");
+      //     }
+      //     
+      //     @Test
+      //     @DisplayName("Should produce identical custom config engine creation results")
+      //     void shouldProduceIdenticalCustomConfigEngineCreationResults() {
+      //     LOGGER.info("Validating custom config engine creation across runtimes");
 
       final CrossRuntimeValidator.ComparisonResult result =
           CrossRuntimeValidator.validateCrossRuntime(
@@ -83,7 +83,7 @@ final class EngineStoreCrossRuntimeIT extends BaseIntegrationTest {
                 engine.close();
 
                 return EngineValidationResult.of(isValid, retrievedConfig);
-              });
+          });
 
       assertThat(result.isValid())
           .as("Cross-runtime custom engine creation validation failed")
@@ -92,13 +92,13 @@ final class EngineStoreCrossRuntimeIT extends BaseIntegrationTest {
           .as("Custom engine creation results differ between runtimes")
           .isTrue();
       LOGGER.info("Custom config engine creation validation: " + result.getDifferenceDescription());
-      addTestMetric("Validated custom config engine creation cross-runtime");
-    }
-
-    @Test
-    @DisplayName("Should produce identical optimization level handling")
-    void shouldProduceIdenticalOptimizationLevelHandling() {
-      LOGGER.info("Validating optimization level handling across runtimes");
+      // addTestMetric("Validated custom config engine creation cross-runtime");
+      //     }
+      //     
+      //     @Test
+      //     @DisplayName("Should produce identical optimization level handling")
+      //     void shouldProduceIdenticalOptimizationLevelHandling() {
+      //     LOGGER.info("Validating optimization level handling across runtimes");
 
       final OptimizationLevel[] levels = OptimizationLevel.values();
 
@@ -113,7 +113,7 @@ final class EngineStoreCrossRuntimeIT extends BaseIntegrationTest {
                   engine.close();
 
                   return retrievedLevel;
-                });
+          });
 
         assertThat(result.isValid())
             .as("Cross-runtime optimization level validation failed for " + level)
@@ -125,18 +125,18 @@ final class EngineStoreCrossRuntimeIT extends BaseIntegrationTest {
             "Optimization level " + level + " validation: " + result.getDifferenceDescription());
       }
 
-      addTestMetric("Validated " + levels.length + " optimization levels cross-runtime");
-    }
-  }
-
-  @Nested
-  @DisplayName("Engine Module Compilation Cross-Runtime Validation")
-  final class EngineModuleCompilationValidationTests {
-
-    @Test
-    @DisplayName("Should produce identical module compilation results")
-    void shouldProduceIdenticalModuleCompilationResults() {
-      LOGGER.info("Validating module compilation across runtimes");
+      // addTestMetric("Validated " + levels.length + " optimization levels cross-runtime");
+      //     }
+      //     }
+      //     
+      //     @Nested
+      //     @DisplayName("Engine Module Compilation Cross-Runtime Validation")
+      //     final class EngineModuleCompilationValidationTests {
+      //     
+      //     @Test
+      //     @DisplayName("Should produce identical module compilation results")
+      //     void shouldProduceIdenticalModuleCompilationResults() {
+      //     LOGGER.info("Validating module compilation across runtimes");
 
       final byte[] wasmBytes = TestUtils.createSimpleWasmModule();
       final CrossRuntimeValidator.ComparisonResult result =
@@ -149,7 +149,7 @@ final class EngineStoreCrossRuntimeIT extends BaseIntegrationTest {
                 engine.close();
 
                 return isValid;
-              });
+          });
 
       assertThat(result.isValid())
           .as("Cross-runtime module compilation validation failed")
@@ -158,13 +158,13 @@ final class EngineStoreCrossRuntimeIT extends BaseIntegrationTest {
           .as("Module compilation results differ between runtimes")
           .isTrue();
       LOGGER.info("Module compilation validation: " + result.getDifferenceDescription());
-      addTestMetric("Validated module compilation cross-runtime");
-    }
-
-    @Test
-    @DisplayName("Should produce identical compilation error handling")
-    void shouldProduceIdenticalCompilationErrorHandling() {
-      LOGGER.info("Validating compilation error handling across runtimes");
+      // addTestMetric("Validated module compilation cross-runtime");
+      //     }
+      //     
+      //     @Test
+      //     @DisplayName("Should produce identical compilation error handling")
+      //     void shouldProduceIdenticalCompilationErrorHandling() {
+      //     LOGGER.info("Validating compilation error handling across runtimes");
 
       final byte[] invalidWasm = "invalid wasm".getBytes();
       final CrossRuntimeValidator.ComparisonResult result =
@@ -179,25 +179,25 @@ final class EngineStoreCrossRuntimeIT extends BaseIntegrationTest {
                   engine.close();
                   return e.getClass().getSimpleName(); // Return exception type for comparison
                 }
-              });
+          });
 
       // Both runtimes should throw exceptions of the same type
       assertThat(result.areExceptionsIdentical() || result.areResultsIdentical())
           .as("Error handling differs between runtimes")
           .isTrue();
       LOGGER.info("Compilation error handling validation: " + result.getDifferenceDescription());
-      addTestMetric("Validated compilation error handling cross-runtime");
-    }
-  }
-
-  @Nested
-  @DisplayName("Store Creation Cross-Runtime Validation")
-  final class StoreCreationValidationTests {
-
-    @Test
-    @DisplayName("Should produce identical store creation results")
-    void shouldProduceIdenticalStoreCreationResults() {
-      LOGGER.info("Validating store creation across runtimes");
+      // addTestMetric("Validated compilation error handling cross-runtime");
+      //     }
+      //     }
+      //     
+      //     @Nested
+      //     @DisplayName("Store Creation Cross-Runtime Validation")
+      //     final class StoreCreationValidationTests {
+      //     
+      //     @Test
+      //     @DisplayName("Should produce identical store creation results")
+      //     void shouldProduceIdenticalStoreCreationResults() {
+      //     LOGGER.info("Validating store creation across runtimes");
 
       final CrossRuntimeValidator.ComparisonResult result =
           CrossRuntimeValidator.validateCrossRuntime(
@@ -210,20 +210,20 @@ final class EngineStoreCrossRuntimeIT extends BaseIntegrationTest {
                 engine.close();
 
                 return StoreValidationResult.of(isValid, data);
-              });
+          });
 
       assertThat(result.isValid()).as("Cross-runtime store creation validation failed").isTrue();
       assertThat(result.areResultsIdentical())
           .as("Store creation results differ between runtimes")
           .isTrue();
       LOGGER.info("Store creation validation: " + result.getDifferenceDescription());
-      addTestMetric("Validated store creation cross-runtime");
-    }
-
-    @Test
-    @DisplayName("Should produce identical store creation with custom data")
-    void shouldProduceIdenticalStoreCreationWithCustomData() {
-      LOGGER.info("Validating store creation with custom data across runtimes");
+      // addTestMetric("Validated store creation cross-runtime");
+      //     }
+      //     
+      //     @Test
+      //     @DisplayName("Should produce identical store creation with custom data")
+      //     void shouldProduceIdenticalStoreCreationWithCustomData() {
+      //     LOGGER.info("Validating store creation with custom data across runtimes");
 
       final String testData = "cross-runtime-test-data";
       final CrossRuntimeValidator.ComparisonResult result =
@@ -237,7 +237,7 @@ final class EngineStoreCrossRuntimeIT extends BaseIntegrationTest {
                 engine.close();
 
                 return StoreValidationResult.of(isValid, data);
-              });
+          });
 
       assertThat(result.isValid())
           .as("Cross-runtime store creation with data validation failed")
@@ -246,18 +246,18 @@ final class EngineStoreCrossRuntimeIT extends BaseIntegrationTest {
           .as("Store creation with data results differ between runtimes")
           .isTrue();
       LOGGER.info("Store creation with data validation: " + result.getDifferenceDescription());
-      addTestMetric("Validated store creation with data cross-runtime");
-    }
-  }
-
-  @Nested
-  @DisplayName("Store Data Management Cross-Runtime Validation")
-  final class StoreDataManagementValidationTests {
-
-    @Test
-    @DisplayName("Should produce identical data set/get operations")
-    void shouldProduceIdenticalDataSetGetOperations() {
-      LOGGER.info("Validating store data operations across runtimes");
+      // addTestMetric("Validated store creation with data cross-runtime");
+      //     }
+      //     }
+      //     
+      //     @Nested
+      //     @DisplayName("Store Data Management Cross-Runtime Validation")
+      //     final class StoreDataManagementValidationTests {
+      //     
+      //     @Test
+      //     @DisplayName("Should produce identical data set/get operations")
+      //     void shouldProduceIdenticalDataSetGetOperations() {
+      //     LOGGER.info("Validating store data operations across runtimes");
 
       final CrossRuntimeValidator.ComparisonResult result =
           CrossRuntimeValidator.validateCrossRuntime(
@@ -282,25 +282,25 @@ final class EngineStoreCrossRuntimeIT extends BaseIntegrationTest {
                 engine.close();
 
                 return List.of(data1, data2, data3, data4);
-              });
+          });
 
       assertThat(result.isValid()).as("Cross-runtime data operations validation failed").isTrue();
       assertThat(result.areResultsIdentical())
           .as("Data operations results differ between runtimes")
           .isTrue();
       LOGGER.info("Data operations validation: " + result.getDifferenceDescription());
-      addTestMetric("Validated store data operations cross-runtime");
-    }
-  }
-
-  @Nested
-  @DisplayName("Store Fuel Management Cross-Runtime Validation")
-  final class StoreFuelManagementValidationTests {
-
-    @Test
-    @DisplayName("Should produce identical fuel operations")
-    void shouldProduceIdenticalFuelOperations() {
-      LOGGER.info("Validating store fuel operations across runtimes");
+      // addTestMetric("Validated store data operations cross-runtime");
+      //     }
+      //     }
+      //     
+      //     @Nested
+      //     @DisplayName("Store Fuel Management Cross-Runtime Validation")
+      //     final class StoreFuelManagementValidationTests {
+      //     
+      //     @Test
+      //     @DisplayName("Should produce identical fuel operations")
+      //     void shouldProduceIdenticalFuelOperations() {
+      //     LOGGER.info("Validating store fuel operations across runtimes");
 
       final CrossRuntimeValidator.ComparisonResult result =
           CrossRuntimeValidator.validateCrossRuntime(
@@ -323,20 +323,20 @@ final class EngineStoreCrossRuntimeIT extends BaseIntegrationTest {
                 engine.close();
 
                 return List.of(fuel1, fuel2, fuel3);
-              });
+          });
 
       assertThat(result.isValid()).as("Cross-runtime fuel operations validation failed").isTrue();
       assertThat(result.areResultsIdentical())
           .as("Fuel operations results differ between runtimes")
           .isTrue();
       LOGGER.info("Fuel operations validation: " + result.getDifferenceDescription());
-      addTestMetric("Validated store fuel operations cross-runtime");
-    }
-
-    @Test
-    @DisplayName("Should produce identical fuel operations when consumption disabled")
-    void shouldProduceIdenticalFuelOperationsWhenConsumptionDisabled() {
-      LOGGER.info("Validating store fuel operations with consumption disabled across runtimes");
+      // addTestMetric("Validated store fuel operations cross-runtime");
+      //     }
+      //     
+      //     @Test
+      //     @DisplayName("Should produce identical fuel operations when consumption disabled")
+      //     void shouldProduceIdenticalFuelOperationsWhenConsumptionDisabled() {
+      //     LOGGER.info("Validating store fuel operations with consumption disabled across runtimes");
 
       final CrossRuntimeValidator.ComparisonResult result =
           CrossRuntimeValidator.validateCrossRuntime(
@@ -356,7 +356,7 @@ final class EngineStoreCrossRuntimeIT extends BaseIntegrationTest {
                   engine.close();
                   return "ERROR:" + e.getClass().getSimpleName();
                 }
-              });
+          });
 
       // Both should either succeed or fail with same exception type
       assertThat(result.areExceptionsIdentical() || result.areResultsIdentical())
@@ -365,18 +365,18 @@ final class EngineStoreCrossRuntimeIT extends BaseIntegrationTest {
       LOGGER.info(
           "Fuel operations (consumption disabled) validation: "
               + result.getDifferenceDescription());
-      addTestMetric("Validated fuel operations with consumption disabled cross-runtime");
-    }
-  }
-
-  @Nested
-  @DisplayName("Store Epoch Management Cross-Runtime Validation")
-  final class StoreEpochManagementValidationTests {
-
-    @Test
-    @DisplayName("Should produce identical epoch deadline operations")
-    void shouldProduceIdenticalEpochDeadlineOperations() {
-      LOGGER.info("Validating store epoch deadline operations across runtimes");
+      // addTestMetric("Validated fuel operations with consumption disabled cross-runtime");
+      //     }
+      //     }
+      //     
+      //     @Nested
+      //     @DisplayName("Store Epoch Management Cross-Runtime Validation")
+      //     final class StoreEpochManagementValidationTests {
+      //     
+      //     @Test
+      //     @DisplayName("Should produce identical epoch deadline operations")
+      //     void shouldProduceIdenticalEpochDeadlineOperations() {
+      //     LOGGER.info("Validating store epoch deadline operations across runtimes");
 
       final CrossRuntimeValidator.ComparisonResult result =
           CrossRuntimeValidator.validateCrossRuntime(
@@ -394,25 +394,25 @@ final class EngineStoreCrossRuntimeIT extends BaseIntegrationTest {
                 engine.close();
 
                 return deadlines.length; // Return count of successful operations
-              });
+          });
 
       assertThat(result.isValid()).as("Cross-runtime epoch operations validation failed").isTrue();
       assertThat(result.areResultsIdentical())
           .as("Epoch operations results differ between runtimes")
           .isTrue();
       LOGGER.info("Epoch operations validation: " + result.getDifferenceDescription());
-      addTestMetric("Validated store epoch operations cross-runtime");
-    }
-  }
-
-  @Nested
-  @DisplayName("Lifecycle Cross-Runtime Validation")
-  final class LifecycleValidationTests {
-
-    @Test
-    @DisplayName("Should produce identical engine closure behavior")
-    void shouldProduceIdenticalEngineClosureBehavior() {
-      LOGGER.info("Validating engine closure behavior across runtimes");
+      // addTestMetric("Validated store epoch operations cross-runtime");
+      //     }
+      //     }
+      //     
+      //     @Nested
+      //     @DisplayName("Lifecycle Cross-Runtime Validation")
+      //     final class LifecycleValidationTests {
+      //     
+      //     @Test
+      //     @DisplayName("Should produce identical engine closure behavior")
+      //     void shouldProduceIdenticalEngineClosureBehavior() {
+      //     LOGGER.info("Validating engine closure behavior across runtimes");
 
       final CrossRuntimeValidator.ComparisonResult result =
           CrossRuntimeValidator.validateCrossRuntime(
@@ -428,20 +428,20 @@ final class EngineStoreCrossRuntimeIT extends BaseIntegrationTest {
                 final boolean validAfterSecondClose = engine.isValid();
 
                 return List.of(validBefore, validAfter, validAfterSecondClose);
-              });
+          });
 
       assertThat(result.isValid()).as("Cross-runtime engine closure validation failed").isTrue();
       assertThat(result.areResultsIdentical())
           .as("Engine closure behavior differs between runtimes")
           .isTrue();
       LOGGER.info("Engine closure validation: " + result.getDifferenceDescription());
-      addTestMetric("Validated engine closure cross-runtime");
-    }
-
-    @Test
-    @DisplayName("Should produce identical store closure behavior")
-    void shouldProduceIdenticalStoreClosureBehavior() {
-      LOGGER.info("Validating store closure behavior across runtimes");
+      // addTestMetric("Validated engine closure cross-runtime");
+      //     }
+      //     
+      //     @Test
+      //     @DisplayName("Should produce identical store closure behavior")
+      //     void shouldProduceIdenticalStoreClosureBehavior() {
+      //     LOGGER.info("Validating store closure behavior across runtimes");
 
       final CrossRuntimeValidator.ComparisonResult result =
           CrossRuntimeValidator.validateCrossRuntime(
@@ -460,25 +460,25 @@ final class EngineStoreCrossRuntimeIT extends BaseIntegrationTest {
                 engine.close();
 
                 return List.of(validBefore, validAfter, validAfterSecondClose);
-              });
+          });
 
       assertThat(result.isValid()).as("Cross-runtime store closure validation failed").isTrue();
       assertThat(result.areResultsIdentical())
           .as("Store closure behavior differs between runtimes")
           .isTrue();
       LOGGER.info("Store closure validation: " + result.getDifferenceDescription());
-      addTestMetric("Validated store closure cross-runtime");
-    }
-  }
-
-  @Nested
-  @DisplayName("Complex Workflow Cross-Runtime Validation")
-  final class ComplexWorkflowValidationTests {
-
-    @Test
-    @DisplayName("Should produce identical results for complete engine-store-module workflow")
-    void shouldProduceIdenticalResultsForCompleteWorkflow() {
-      LOGGER.info("Validating complete engine-store-module workflow across runtimes");
+      // addTestMetric("Validated store closure cross-runtime");
+      //     }
+      //     }
+      //     
+      //     @Nested
+      //     @DisplayName("Complex Workflow Cross-Runtime Validation")
+      //     final class ComplexWorkflowValidationTests {
+      //     
+      //     @Test
+      //     @DisplayName("Should produce identical results for complete engine-store-module workflow")
+      //     void shouldProduceIdenticalResultsForCompleteWorkflow() {
+      //     LOGGER.info("Validating complete engine-store-module workflow across runtimes");
 
       final byte[] wasmBytes = TestUtils.createSimpleWasmModule();
       final CrossRuntimeValidator.ComparisonResult result =
@@ -530,14 +530,14 @@ final class EngineStoreCrossRuntimeIT extends BaseIntegrationTest {
           .as("Complete workflow results differ between runtimes")
           .isTrue();
       LOGGER.info("Complete workflow validation: " + result.getDifferenceDescription());
-      addTestMetric("Validated complete engine-store-module workflow cross-runtime");
-    }
-
-    @Test
-    @DisplayName("Should produce identical results for concurrent operations workflow")
-    void shouldProduceIdenticalResultsForConcurrentOperationsWorkflow()
-        throws InterruptedException, ExecutionException {
-      skipIfCategoryNotEnabled(TestCategories.CONCURRENCY);
+      // addTestMetric("Validated complete engine-store-module workflow cross-runtime");
+      //     }
+      //     
+      //     @Test
+      //     @DisplayName("Should produce identical results for concurrent operations workflow")
+      //     void shouldProduceIdenticalResultsForConcurrentOperationsWorkflow()
+      //     throws InterruptedException, ExecutionException {
+      // skipIfCategoryNotEnabled(TestCategories.CONCURRENCY);
 
       LOGGER.info("Validating concurrent operations workflow across runtimes");
 
@@ -601,21 +601,21 @@ final class EngineStoreCrossRuntimeIT extends BaseIntegrationTest {
           .as("Concurrent workflow results differ between runtimes")
           .isTrue();
       LOGGER.info("Concurrent workflow validation: " + result.getDifferenceDescription());
-      addTestMetric("Validated concurrent operations workflow cross-runtime");
-    }
-  }
-
+      // addTestMetric("Validated concurrent operations workflow cross-runtime");
+      //     }
+      //     }
+      //     
   // Helper classes for structured validation results
-  private static final class EngineValidationResult {
-    private final boolean valid;
-    private final boolean debugInfo;
-    private final boolean consumeFuel;
-    private final OptimizationLevel optimizationLevel;
-    private final boolean parallelCompilation;
-
-    private EngineValidationResult(final boolean valid, final EngineConfig config) {
-      this.valid = valid;
-      this.debugInfo = config.isDebugInfo();
+      //     private static final class EngineValidationResult {
+      //     private final boolean valid;
+      //     private final boolean debugInfo;
+      //     private final boolean consumeFuel;
+      //     private final OptimizationLevel optimizationLevel;
+      //     private final boolean parallelCompilation;
+      //     
+      //     private EngineValidationResult(final boolean valid, final EngineConfig config) {
+      //     this.valid = valid;
+      //     this.debugInfo = config.isDebugInfo();
       this.consumeFuel = config.isConsumeFuel();
       this.optimizationLevel = config.getOptimizationLevel();
       this.parallelCompilation = config.isParallelCompilation();

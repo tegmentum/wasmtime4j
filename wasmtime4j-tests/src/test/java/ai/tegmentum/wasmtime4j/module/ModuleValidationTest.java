@@ -37,7 +37,7 @@ class ModuleValidationTest extends BaseIntegrationTest {
 
   @Override
   protected void doSetUp(final TestInfo testInfo) {
-    skipIfCategoryNotEnabled("module.validation");
+    // skipIfCategoryNotEnabled("module.validation");
 
     try {
       testDataManager = WasmTestDataManager.getInstance();
@@ -67,7 +67,7 @@ class ModuleValidationTest extends BaseIntegrationTest {
                 return "Invalid magic number correctly rejected";
               }
             },
-            comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
+            comparison -> comparison.getJniExecution().equals(comparison.getPanamaExecution()));
 
     assertThat(validation.isConsistent()).isTrue();
     LOGGER.info("Magic number validation: " + validation.getSummary());
@@ -92,7 +92,7 @@ class ModuleValidationTest extends BaseIntegrationTest {
                 return "Invalid version correctly rejected";
               }
             },
-            comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
+            comparison -> comparison.getJniExecution().equals(comparison.getPanamaExecution()));
 
     assertThat(validation.isConsistent()).isTrue();
     LOGGER.info("Version validation: " + validation.getSummary());
@@ -117,7 +117,7 @@ class ModuleValidationTest extends BaseIntegrationTest {
                 return "Empty module correctly rejected";
               }
             },
-            comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
+            comparison -> comparison.getJniExecution().equals(comparison.getPanamaExecution()));
 
     assertThat(validation.isConsistent()).isTrue();
     LOGGER.info("Empty module validation: " + validation.getSummary());
@@ -147,7 +147,7 @@ class ModuleValidationTest extends BaseIntegrationTest {
                 return "Header-only module accepted as empty module";
               }
             },
-            comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
+            comparison -> comparison.getJniExecution().equals(comparison.getPanamaExecution()));
 
     assertThat(validation.isConsistent()).isTrue();
     LOGGER.info("Header-only module validation: " + validation.getSummary());
@@ -177,7 +177,7 @@ class ModuleValidationTest extends BaseIntegrationTest {
                   return "Malformed section " + moduleIndex + " correctly rejected";
                 }
               },
-              comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
+              comparison -> comparison.getJniExecution().equals(comparison.getPanamaExecution()));
 
       assertThat(validation.isConsistent()).isTrue();
       LOGGER.info("Malformed section " + moduleIndex + " validation: " + validation.getSummary());
@@ -203,7 +203,7 @@ class ModuleValidationTest extends BaseIntegrationTest {
                 return "Invalid function signature correctly rejected";
               }
             },
-            comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
+            comparison -> comparison.getJniExecution().equals(comparison.getPanamaExecution()));
 
     assertThat(validation.isConsistent()).isTrue();
     LOGGER.info("Invalid function signature validation: " + validation.getSummary());
@@ -228,7 +228,7 @@ class ModuleValidationTest extends BaseIntegrationTest {
                 return "Invalid memory descriptor correctly rejected";
               }
             },
-            comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
+            comparison -> comparison.getJniExecution().equals(comparison.getPanamaExecution()));
 
     assertThat(validation.isConsistent()).isTrue();
     LOGGER.info("Invalid memory descriptor validation: " + validation.getSummary());
@@ -257,7 +257,7 @@ class ModuleValidationTest extends BaseIntegrationTest {
                 return "Module with circular imports compiled successfully";
               }
             },
-            comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
+            comparison -> comparison.getJniExecution().equals(comparison.getPanamaExecution()));
 
     assertThat(validation.isConsistent()).isTrue();
     LOGGER.info("Circular imports validation: " + validation.getSummary());
@@ -282,7 +282,7 @@ class ModuleValidationTest extends BaseIntegrationTest {
                 return "Invalid bytecode correctly rejected";
               }
             },
-            comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
+            comparison -> comparison.getJniExecution().equals(comparison.getPanamaExecution()));
 
     assertThat(validation.isConsistent()).isTrue();
     LOGGER.info("Invalid bytecode validation: " + validation.getSummary());
@@ -292,7 +292,7 @@ class ModuleValidationTest extends BaseIntegrationTest {
   @ArgumentsSource(CrossRuntimeTestRunner.RuntimeArgumentsProvider.class)
   @DisplayName("Should handle stress test with many invalid modules")
   void shouldHandleStressTestWithManyInvalidModules(final RuntimeType runtimeType) {
-    skipIfCategoryNotEnabled("stress");
+    // skipIfCategoryNotEnabled("stress");
 
     final CrossRuntimeValidationResult validation =
         CrossRuntimeTestRunner.validateConsistency(
@@ -321,7 +321,7 @@ class ModuleValidationTest extends BaseIntegrationTest {
                   + invalidModules.size()
                   + " invalid modules";
             },
-            comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
+            comparison -> comparison.getJniExecution().equals(comparison.getPanamaExecution()));
 
     assertThat(validation.isConsistent()).isTrue();
     LOGGER.info("Stress test validation: " + validation.getSummary());
@@ -353,7 +353,7 @@ class ModuleValidationTest extends BaseIntegrationTest {
                 return "All " + validModules.size() + " valid modules compiled successfully";
               }
             },
-            comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
+            comparison -> comparison.getJniExecution().equals(comparison.getPanamaExecution()));
 
     assertThat(validation.isConsistent()).isTrue();
     LOGGER.info("Valid modules validation: " + validation.getSummary());
@@ -378,7 +378,7 @@ class ModuleValidationTest extends BaseIntegrationTest {
           (byte) 0xFF, // type section with invalid length
           0x01,
           0x60
-        });
+          });
 
     // Truncated section
     malformed.add(
@@ -395,7 +395,7 @@ class ModuleValidationTest extends BaseIntegrationTest {
           0x05, // type section length 5
           0x01,
           0x60 // but only 2 bytes follow
-        });
+          });
 
     // Invalid section ID
     malformed.add(
@@ -411,7 +411,7 @@ class ModuleValidationTest extends BaseIntegrationTest {
           (byte) 0xFF,
           0x01, // invalid section ID 255
           0x60
-        });
+          });
 
     return malformed;
   }
@@ -565,7 +565,7 @@ class ModuleValidationTest extends BaseIntegrationTest {
           invalidModules.add(
               new byte[] {
                 0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, (byte) (0x80 + i), 0x01, (byte) i
-              });
+          });
           break;
       }
     }

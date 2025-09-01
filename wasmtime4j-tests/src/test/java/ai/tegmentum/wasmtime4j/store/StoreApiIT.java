@@ -32,7 +32,7 @@ final class StoreApiIT extends BaseIntegrationTest {
 
   @Override
   protected void doSetUp(final TestInfo testInfo) {
-    skipIfCategoryNotEnabled(TestCategories.STORE);
+    // skipIfCategoryNotEnabled(TestCategories.STORE);
   }
 
   @Nested
@@ -57,7 +57,7 @@ final class StoreApiIT extends BaseIntegrationTest {
             assertThat(store.getEngine()).isSameAs(engine);
             assertThat(store.getData()).isNull();
 
-            addTestMetric("Created store on " + runtimeType);
+            // addTestMetric("Created store on " + runtimeType);
           });
     }
 
@@ -80,7 +80,7 @@ final class StoreApiIT extends BaseIntegrationTest {
             assertThat(store.getEngine()).isSameAs(engine);
             assertThat(store.getData()).isEqualTo(testData);
 
-            addTestMetric("Created store with custom data on " + runtimeType);
+            // addTestMetric("Created store with custom data on " + runtimeType);
           });
     }
 
@@ -102,7 +102,7 @@ final class StoreApiIT extends BaseIntegrationTest {
             assertThat(store.getEngine()).isSameAs(engine);
             assertThat(store.getData()).isNull();
 
-            addTestMetric("Created store with null data on " + runtimeType);
+            // addTestMetric("Created store with null data on " + runtimeType);
           });
     }
 
@@ -131,7 +131,7 @@ final class StoreApiIT extends BaseIntegrationTest {
 
             assertThat(stores).hasSize(storeCount);
 
-            addTestMetric("Created " + storeCount + " stores on " + runtimeType);
+            // addTestMetric("Created " + storeCount + " stores on " + runtimeType);
           });
     }
   }
@@ -175,7 +175,7 @@ final class StoreApiIT extends BaseIntegrationTest {
             store.setData(listData);
             assertThat(store.getData()).isEqualTo(listData);
 
-            addTestMetric("Managed store data on " + runtimeType);
+            // addTestMetric("Managed store data on " + runtimeType);
           });
     }
   }
@@ -212,7 +212,7 @@ final class StoreApiIT extends BaseIntegrationTest {
             store.setFuel(0L);
             assertThat(store.getFuel()).isEqualTo(0L);
 
-            addTestMetric("Managed store fuel on " + runtimeType);
+            // addTestMetric("Managed store fuel on " + runtimeType);
           });
     }
 
@@ -241,7 +241,7 @@ final class StoreApiIT extends BaseIntegrationTest {
               assertThat(e.getMessage()).containsIgnoringCase("fuel");
             }
 
-            addTestMetric("Tested fuel with consumption disabled on " + runtimeType);
+            // addTestMetric("Tested fuel with consumption disabled on " + runtimeType);
           });
     }
 
@@ -270,7 +270,7 @@ final class StoreApiIT extends BaseIntegrationTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("fuel");
 
-            addTestMetric("Rejected negative fuel on " + runtimeType);
+            // addTestMetric("Rejected negative fuel on " + runtimeType);
           });
     }
 
@@ -298,7 +298,7 @@ final class StoreApiIT extends BaseIntegrationTest {
             store.addFuel(maxFuel / 2);
             assertThat(store.getFuel()).isEqualTo(maxFuel / 2);
 
-            addTestMetric("Handled large fuel values on " + runtimeType);
+            // addTestMetric("Handled large fuel values on " + runtimeType);
           });
     }
   }
@@ -328,7 +328,7 @@ final class StoreApiIT extends BaseIntegrationTest {
               LOGGER.fine("Set epoch deadline to " + deadline + " on " + runtimeType);
             }
 
-            addTestMetric("Set " + deadlines.length + " epoch deadlines on " + runtimeType);
+            // addTestMetric("Set " + deadlines.length + " epoch deadlines on " + runtimeType);
           });
     }
 
@@ -354,7 +354,7 @@ final class StoreApiIT extends BaseIntegrationTest {
                   "Negative epoch deadline rejected on " + runtimeType + ": " + e.getMessage());
             }
 
-            addTestMetric("Tested negative epoch deadline on " + runtimeType);
+            // addTestMetric("Tested negative epoch deadline on " + runtimeType);
           });
     }
   }
@@ -383,7 +383,7 @@ final class StoreApiIT extends BaseIntegrationTest {
             store.close();
             assertThat(store.isValid()).isFalse();
 
-            addTestMetric("Validated store closure on " + runtimeType);
+            // addTestMetric("Validated store closure on " + runtimeType);
           });
     }
 
@@ -428,7 +428,7 @@ final class StoreApiIT extends BaseIntegrationTest {
                 .isInstanceOf(WasmException.class)
                 .hasMessageContaining("Store is closed");
 
-            addTestMetric("Rejected operations on closed store on " + runtimeType);
+            // addTestMetric("Rejected operations on closed store on " + runtimeType);
           });
     }
 
@@ -459,7 +459,7 @@ final class StoreApiIT extends BaseIntegrationTest {
               store.close();
             }
 
-            addTestMetric("Tested store with closed engine on " + runtimeType);
+            // addTestMetric("Tested store with closed engine on " + runtimeType);
           });
     }
   }
@@ -471,7 +471,7 @@ final class StoreApiIT extends BaseIntegrationTest {
     @Test
     @DisplayName("Should handle concurrent data operations safely")
     void shouldHandleConcurrentDataOperationsSafely() throws Exception {
-      skipIfCategoryNotEnabled(TestCategories.CONCURRENCY);
+      // skipIfCategoryNotEnabled(TestCategories.CONCURRENCY);
 
       runWithBothRuntimes(
           (runtime, runtimeType) -> {
@@ -523,11 +523,11 @@ final class StoreApiIT extends BaseIntegrationTest {
                 future.get(); // This will throw if there was an uncaught exception
               }
 
-              addTestMetric(
-                  "Completed "
-                      + (threadCount * operationsPerThread)
-                      + " concurrent data operations on "
-                      + runtimeType);
+              // addTestMetric(
+              //     "Completed "
+              //     + (threadCount * operationsPerThread)
+              //     + " concurrent data operations on "
+              //     + runtimeType);
             } finally {
               executor.shutdown();
               if (!executor.awaitTermination(10, TimeUnit.SECONDS)) {
@@ -540,7 +540,7 @@ final class StoreApiIT extends BaseIntegrationTest {
     @Test
     @DisplayName("Should handle concurrent fuel operations safely")
     void shouldHandleConcurrentFuelOperationsSafely() throws Exception {
-      skipIfCategoryNotEnabled(TestCategories.CONCURRENCY);
+      // skipIfCategoryNotEnabled(TestCategories.CONCURRENCY);
 
       runWithBothRuntimes(
           (runtime, runtimeType) -> {
@@ -593,11 +593,11 @@ final class StoreApiIT extends BaseIntegrationTest {
                 future.get();
               }
 
-              addTestMetric(
-                  "Completed "
-                      + (threadCount * operationsPerThread)
-                      + " concurrent fuel operations on "
-                      + runtimeType);
+              // addTestMetric(
+              //     "Completed "
+              //     + (threadCount * operationsPerThread)
+              //     + " concurrent fuel operations on "
+              //     + runtimeType);
             } finally {
               executor.shutdown();
               if (!executor.awaitTermination(10, TimeUnit.SECONDS)) {
@@ -627,7 +627,7 @@ final class StoreApiIT extends BaseIntegrationTest {
                 store.close();
                 engine.close();
                 return isValid;
-              });
+          });
 
       assertThat(result.isValid()).isTrue();
       assertThat(result.areResultsIdentical()).isTrue();
@@ -656,7 +656,7 @@ final class StoreApiIT extends BaseIntegrationTest {
                 engine.close();
 
                 return fuel2 - fuel1; // Should be 500
-              });
+          });
 
       assertThat(result.isValid()).isTrue();
       assertThat(result.areResultsIdentical()).isTrue();
@@ -687,7 +687,7 @@ final class StoreApiIT extends BaseIntegrationTest {
                 engine.close();
 
                 return List.of(data1, data2, data3);
-              });
+          });
 
       assertThat(result.isValid()).isTrue();
       assertThat(result.areResultsIdentical()).isTrue();
@@ -702,7 +702,7 @@ final class StoreApiIT extends BaseIntegrationTest {
     @Test
     @DisplayName("Should meet store creation performance baseline")
     void shouldMeetStoreCreationPerformanceBaseline() throws WasmException {
-      skipIfCategoryNotEnabled(TestCategories.PERFORMANCE);
+      // skipIfCategoryNotEnabled(TestCategories.PERFORMANCE);
 
       runWithBothRuntimes(
           (runtime, runtimeType) -> {
@@ -731,7 +731,7 @@ final class StoreApiIT extends BaseIntegrationTest {
     @Test
     @DisplayName("Should meet data operations performance baseline")
     void shouldMeetDataOperationsPerformanceBaseline() throws WasmException {
-      skipIfCategoryNotEnabled(TestCategories.PERFORMANCE);
+      // skipIfCategoryNotEnabled(TestCategories.PERFORMANCE);
 
       runWithBothRuntimes(
           (runtime, runtimeType) -> {
@@ -760,7 +760,7 @@ final class StoreApiIT extends BaseIntegrationTest {
     @Test
     @DisplayName("Should meet fuel operations performance baseline")
     void shouldMeetFuelOperationsPerformanceBaseline() throws WasmException {
-      skipIfCategoryNotEnabled(TestCategories.PERFORMANCE);
+      // skipIfCategoryNotEnabled(TestCategories.PERFORMANCE);
 
       runWithBothRuntimes(
           (runtime, runtimeType) -> {

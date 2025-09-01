@@ -39,7 +39,7 @@ class WasiInstanceTest {
     config = WasiConfig.defaultConfig();
 
     System.out.println(
-        "Set up WASI instance test with runtime: " + context.getRuntimeInfo().getType());
+        "Set up WASI instance test with runtime: " + context.getRuntimeInfo().getRuntimeType());
   }
 
   @AfterEach
@@ -116,8 +116,8 @@ class WasiInstanceTest {
         WasiConfig.builder()
             .withMemoryLimit(1024 * 1024) // 1MB limit
             .withExecutionTimeout(Duration.ofSeconds(30))
-            .withValidationEnabled(true)
-            .withStrictModeEnabled(false)
+            .withValidation(true)
+            .withStrictMode(false)
             .build();
 
     assertNotNull(testConfig, "Built configuration should not be null");
@@ -160,28 +160,41 @@ class WasiInstanceTest {
           }
 
           @Override
-          public List<String> getParameterTypes() {
-            return List.of("i32", "string");
+          public Optional<String> getDocumentation() {
+            return Optional.of("Test function for validation");
           }
 
           @Override
-          public List<String> getReturnTypes() {
-            return List.of("i32");
+          public List<WasiParameterMetadata> getParameters() {
+            return List.of(); // Empty for this test
           }
 
           @Override
-          public boolean isAsync() {
+          public Optional<WasiTypeMetadata> getReturnType() {
+            return Optional.empty(); // Void function for this test
+          }
+
+          @Override
+          public boolean canThrow() {
             return false;
+          }
+
+          @Override
+          public List<String> getThrownExceptionTypes() {
+            return List.of();
+          }
+
+          @Override
+          public void validateParameters(final Object... parameters) {
+            // Test implementation - no validation needed
           }
         };
 
     assertEquals("test-function", mockMetadata.getName());
-    assertEquals(2, mockMetadata.getParameterTypes().size());
-    assertEquals(1, mockMetadata.getReturnTypes().size());
-    assertEquals("i32", mockMetadata.getParameterTypes().get(0));
-    assertEquals("string", mockMetadata.getParameterTypes().get(1));
-    assertEquals("i32", mockMetadata.getReturnTypes().get(0));
-    assertFalse(mockMetadata.isAsync());
+    assertEquals("Test function for validation", mockMetadata.getDocumentation().orElse(""));
+    assertTrue(mockMetadata.getParameters().isEmpty());
+    assertFalse(mockMetadata.getReturnType().isPresent());
+    assertFalse(mockMetadata.canThrow());
 
     System.out.println("Function metadata structure validated");
   }
@@ -206,8 +219,63 @@ class WasiInstanceTest {
           }
 
           @Override
+          public WasiInstance getOwner() {
+            return null; // Mock implementation for test
+          }
+
+          @Override
+          public boolean isOwned() {
+            return true;
+          }
+
+          @Override
           public boolean isValid() {
             return !closed;
+          }
+
+          @Override
+          public java.time.Instant getCreatedAt() {
+            return java.time.Instant.now();
+          }
+
+          @Override
+          public java.util.Optional<java.time.Instant> getLastAccessedAt() {
+            return java.util.Optional.empty();
+          }
+
+          @Override
+          public WasiResourceMetadata getMetadata() {
+            throw new UnsupportedOperationException("Not implemented for test");
+          }
+
+          @Override
+          public WasiResourceState getState() {
+            throw new UnsupportedOperationException("Not implemented for test");
+          }
+
+          @Override
+          public WasiResourceStats getStats() {
+            throw new UnsupportedOperationException("Not implemented for test");
+          }
+
+          @Override
+          public Object invoke(String operation, Object... parameters) {
+            throw new UnsupportedOperationException("Not implemented for test");
+          }
+
+          @Override
+          public java.util.List<String> getAvailableOperations() {
+            return java.util.List.of();
+          }
+
+          @Override
+          public WasiResourceHandle createHandle() {
+            throw new UnsupportedOperationException("Not implemented for test");
+          }
+
+          @Override
+          public void transferOwnership(WasiInstance targetInstance) {
+            // Test implementation - no actual transfer
           }
 
           @Override
@@ -235,30 +303,36 @@ class WasiInstanceTest {
     WasiMemoryInfo mockMemoryInfo =
         new WasiMemoryInfo() {
           @Override
-          public long getAllocatedBytes() {
+          public long getCurrentUsage() {
             return 1024L;
           }
 
           @Override
-          public long getPeakBytes() {
+          public long getPeakUsage() {
             return 2048L;
           }
 
           @Override
-          public long getLimitBytes() {
-            return 8192L;
+          public java.util.Optional<Long> getLimit() {
+            return java.util.Optional.of(8192L);
           }
 
           @Override
-          public double getUsageRatio() {
-            return getAllocatedBytes() / (double) getLimitBytes();
+          public java.util.Optional<Double> getUsagePercentage() {
+            return java.util.Optional.of(12.5);
+          }
+
+          @Override
+          public boolean isNearLimit() {
+            return false; // Not near limit for this test
           }
         };
 
-    assertEquals(1024L, mockMemoryInfo.getAllocatedBytes());
-    assertEquals(2048L, mockMemoryInfo.getPeakBytes());
-    assertEquals(8192L, mockMemoryInfo.getLimitBytes());
-    assertEquals(0.125, mockMemoryInfo.getUsageRatio(), 0.001);
+    assertEquals(1024L, mockMemoryInfo.getCurrentUsage());
+    assertEquals(2048L, mockMemoryInfo.getPeakUsage());
+    assertEquals(8192L, mockMemoryInfo.getLimit().orElse(0L));
+    assertEquals(12.5, mockMemoryInfo.getUsagePercentage().orElse(0.0), 0.001);
+    assertFalse(mockMemoryInfo.isNearLimit());
 
     System.out.println("Memory info structure validated");
   }
@@ -271,8 +345,33 @@ class WasiInstanceTest {
     WasiInstanceStats mockStats =
         new WasiInstanceStats() {
           @Override
-          public long getExecutionTimeNanos() {
-            return 1000000L; // 1ms
+          public java.time.Instant getCollectedAt() {
+            return java.time.Instant.now();
+          }
+
+          @Override
+          public long getInstanceId() {
+            return 1L;
+          }
+
+          @Override
+          public WasiInstanceState getState() {
+            return WasiInstanceState.RUNNING;
+          }
+
+          @Override
+          public java.time.Instant getCreatedAt() {
+            return java.time.Instant.now().minusSeconds(60);
+          }
+
+          @Override
+          public java.time.Duration getUptime() {
+            return java.time.Duration.ofSeconds(60);
+          }
+
+          @Override
+          public java.time.Duration getExecutionTime() {
+            return java.time.Duration.ofMillis(1000);
           }
 
           @Override
@@ -281,25 +380,130 @@ class WasiInstanceTest {
           }
 
           @Override
-          public long getResourceCount() {
-            return 3L;
+          public java.util.Map<String, Long> getFunctionCallStats() {
+            return java.util.Map.of("test-function", 5L);
           }
 
           @Override
-          public long getMemoryUsageBytes() {
+          public java.util.Map<String, java.time.Duration> getFunctionExecutionTimeStats() {
+            return java.util.Map.of("test-function", java.time.Duration.ofMillis(200));
+          }
+
+          @Override
+          public long getCurrentMemoryUsage() {
             return 4096L;
+          }
+
+          @Override
+          public long getPeakMemoryUsage() {
+            return 8192L;
+          }
+
+          @Override
+          public long getMemoryAllocationCount() {
+            return 10L;
+          }
+
+          @Override
+          public long getTotalMemoryAllocated() {
+            return 16384L;
+          }
+
+          @Override
+          public int getCurrentResourceCount() {
+            return 3;
+          }
+
+          @Override
+          public int getPeakResourceCount() {
+            return 5;
+          }
+
+          @Override
+          public long getTotalResourcesCreated() {
+            return 8L;
+          }
+
+          @Override
+          public java.util.Map<String, Integer> getResourceUsageByType() {
+            return java.util.Map.of("file", 2, "socket", 1);
           }
 
           @Override
           public long getErrorCount() {
             return 0L;
           }
+
+          @Override
+          public java.util.Map<String, Long> getErrorStats() {
+            return java.util.Map.of();
+          }
+
+          @Override
+          public long getSuspensionCount() {
+            return 0L;
+          }
+
+          @Override
+          public java.time.Duration getTotalSuspensionTime() {
+            return java.time.Duration.ZERO;
+          }
+
+          @Override
+          public long getAsyncOperationCount() {
+            return 0L;
+          }
+
+          @Override
+          public int getPendingAsyncOperationCount() {
+            return 0;
+          }
+
+          @Override
+          public WasiFileSystemStats getFileSystemStats() {
+            throw new UnsupportedOperationException("Not implemented for test");
+          }
+
+          @Override
+          public WasiNetworkStats getNetworkStats() {
+            throw new UnsupportedOperationException("Not implemented for test");
+          }
+
+          @Override
+          public java.time.Duration getAverageExecutionTime() {
+            return java.time.Duration.ofMillis(200);
+          }
+
+          @Override
+          public double getThroughput() {
+            return 5.0;
+          }
+
+          @Override
+          public double getMemoryEfficiency() {
+            return 1.0;
+          }
+
+          @Override
+          public java.util.Map<String, Object> getCustomProperties() {
+            return java.util.Map.of();
+          }
+
+          @Override
+          public String getSummary() {
+            return "Test stats summary";
+          }
+
+          @Override
+          public void reset() {
+            // Test implementation - no reset needed
+          }
         };
 
-    assertEquals(1000000L, mockStats.getExecutionTimeNanos());
+    assertEquals(1L, mockStats.getInstanceId());
     assertEquals(5L, mockStats.getFunctionCallCount());
-    assertEquals(3L, mockStats.getResourceCount());
-    assertEquals(4096L, mockStats.getMemoryUsageBytes());
+    assertEquals(3, mockStats.getCurrentResourceCount());
+    assertEquals(4096L, mockStats.getCurrentMemoryUsage());
     assertEquals(0L, mockStats.getErrorCount());
 
     System.out.println("Instance statistics structure validated");

@@ -95,7 +95,7 @@ public final class WasiIntegrationComprehensiveTest {
           assertNotNull(wasi);
           assertTrue(wasi.isValid());
           wasi.close();
-        });
+          });
   }
 
   /** Tests WASI context creation with custom environment variables. */
@@ -128,7 +128,7 @@ public final class WasiIntegrationComprehensiveTest {
           assertEquals("/custom/path", actualEnv.get("CUSTOM_PATH"));
 
           wasi.close();
-        });
+          });
   }
 
   /** Tests WASI context creation with command line arguments. */
@@ -161,7 +161,7 @@ public final class WasiIntegrationComprehensiveTest {
           }
 
           wasi.close();
-        });
+          });
   }
 
   /** Tests WASI context creation with pre-opened directories. */
@@ -203,7 +203,7 @@ public final class WasiIntegrationComprehensiveTest {
           assertTrue(preopenedDirs.containsKey("readwrite"));
 
           wasi.close();
-        });
+          });
   }
 
   /** Tests WASI module compilation and instantiation. */
@@ -237,7 +237,7 @@ public final class WasiIntegrationComprehensiveTest {
           instance.close();
           wasi.close();
           module.close();
-        });
+          });
   }
 
   /** Tests WASI function execution with basic I/O operations. */
@@ -276,7 +276,7 @@ public final class WasiIntegrationComprehensiveTest {
           instance.close();
           wasi.close();
           module.close();
-        });
+          });
   }
 
   /** Tests WASI resource cleanup and lifecycle management. */
@@ -303,7 +303,7 @@ public final class WasiIntegrationComprehensiveTest {
 
           // Verify wasi is no longer valid after close
           // Note: Implementation should invalidate the handle
-        });
+          });
   }
 
   /** Tests WASI error handling with invalid configurations. */
@@ -322,7 +322,7 @@ public final class WasiIntegrationComprehensiveTest {
                   .build();
 
           store.createWasi(config);
-        });
+          });
 
     // Test with null environment values
     assertThrows(
@@ -335,7 +335,7 @@ public final class WasiIntegrationComprehensiveTest {
               WasiConfig.builder().inheritEnv(false).environment(invalidEnv).build();
 
           store.createWasi(config);
-        });
+          });
   }
 
   /** Tests WASI concurrency with multiple simultaneous instances. */
@@ -491,7 +491,7 @@ public final class WasiIntegrationComprehensiveTest {
 
           wasi1.close();
           wasi2.close();
-        });
+          });
   }
 
   /** Tests WASI with stress conditions and resource limits. */
@@ -531,7 +531,7 @@ public final class WasiIntegrationComprehensiveTest {
           assertTrue(actualEnv.containsKey("VAR_999"));
 
           wasi.close();
-        });
+          });
   }
 
   /** Tests WASI configuration validation and error scenarios. */
@@ -546,7 +546,7 @@ public final class WasiIntegrationComprehensiveTest {
           final Wasi wasi = store.createWasi(config);
           assertNotNull(wasi);
           wasi.close();
-        });
+          });
 
     // Test configuration with empty arguments list
     assertDoesNotThrow(
@@ -556,7 +556,7 @@ public final class WasiIntegrationComprehensiveTest {
           assertNotNull(wasi);
           assertEquals(0, wasi.getArguments().size());
           wasi.close();
-        });
+          });
 
     // Test configuration with empty environment
     assertDoesNotThrow(
@@ -567,7 +567,7 @@ public final class WasiIntegrationComprehensiveTest {
           assertNotNull(wasi);
           assertEquals(0, wasi.getEnvironment().size());
           wasi.close();
-        });
+          });
   }
 
   /** Tests WASI preview1 compatibility and features. */
@@ -608,7 +608,7 @@ public final class WasiIntegrationComprehensiveTest {
           instance.close();
           wasi.close();
           module.close();
-        });
+          });
   }
 
   /** Tests WASI memory isolation and security boundaries. */
@@ -640,6 +640,6 @@ public final class WasiIntegrationComprehensiveTest {
 
           wasi1.close();
           wasi2.close();
-        });
+          });
   }
 }

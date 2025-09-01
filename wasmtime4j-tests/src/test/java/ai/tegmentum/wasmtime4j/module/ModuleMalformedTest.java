@@ -44,7 +44,7 @@ class ModuleMalformedTest extends BaseIntegrationTest {
 
   @Override
   protected void doSetUp(final TestInfo testInfo) {
-    skipIfCategoryNotEnabled("module.malformed");
+    // skipIfCategoryNotEnabled("module.malformed");
 
     try {
       testDataManager = WasmTestDataManager.getInstance();
@@ -95,7 +95,7 @@ class ModuleMalformedTest extends BaseIntegrationTest {
                   return "Corrupted magic module " + moduleIndex + " correctly rejected";
                 }
               },
-              comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
+              comparison -> comparison.getJniExecution().equals(comparison.getPanamaExecution()));
 
       assertThat(validation.isConsistent()).isTrue();
       LOGGER.fine("Corrupted magic " + moduleIndex + " validation: " + validation.getSummary());
@@ -126,7 +126,7 @@ class ModuleMalformedTest extends BaseIntegrationTest {
                   return "Invalid version module " + moduleIndex + " correctly rejected";
                 }
               },
-              comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
+              comparison -> comparison.getJniExecution().equals(comparison.getPanamaExecution()));
 
       assertThat(validation.isConsistent()).isTrue();
       LOGGER.fine("Invalid version " + moduleIndex + " validation: " + validation.getSummary());
@@ -157,7 +157,7 @@ class ModuleMalformedTest extends BaseIntegrationTest {
                   return "Truncated module " + moduleIndex + " correctly rejected";
                 }
               },
-              comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
+              comparison -> comparison.getJniExecution().equals(comparison.getPanamaExecution()));
 
       assertThat(validation.isConsistent()).isTrue();
       LOGGER.fine("Truncated module " + moduleIndex + " validation: " + validation.getSummary());
@@ -188,7 +188,7 @@ class ModuleMalformedTest extends BaseIntegrationTest {
                   return "Malformed section module " + moduleIndex + " correctly rejected";
                 }
               },
-              comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
+              comparison -> comparison.getJniExecution().equals(comparison.getPanamaExecution()));
 
       assertThat(validation.isConsistent()).isTrue();
       LOGGER.fine("Malformed section " + moduleIndex + " validation: " + validation.getSummary());
@@ -219,7 +219,7 @@ class ModuleMalformedTest extends BaseIntegrationTest {
                   return "Invalid type section module " + moduleIndex + " correctly rejected";
                 }
               },
-              comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
+              comparison -> comparison.getJniExecution().equals(comparison.getPanamaExecution()));
 
       assertThat(validation.isConsistent()).isTrue();
       LOGGER.fine(
@@ -251,7 +251,7 @@ class ModuleMalformedTest extends BaseIntegrationTest {
                   return "Invalid function section module " + moduleIndex + " correctly rejected";
                 }
               },
-              comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
+              comparison -> comparison.getJniExecution().equals(comparison.getPanamaExecution()));
 
       assertThat(validation.isConsistent()).isTrue();
       LOGGER.fine(
@@ -283,7 +283,7 @@ class ModuleMalformedTest extends BaseIntegrationTest {
                   return "Invalid code section module " + moduleIndex + " correctly rejected";
                 }
               },
-              comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
+              comparison -> comparison.getJniExecution().equals(comparison.getPanamaExecution()));
 
       assertThat(validation.isConsistent()).isTrue();
       LOGGER.fine(
@@ -315,7 +315,7 @@ class ModuleMalformedTest extends BaseIntegrationTest {
                   return "Invalid memory section module " + moduleIndex + " correctly rejected";
                 }
               },
-              comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
+              comparison -> comparison.getJniExecution().equals(comparison.getPanamaExecution()));
 
       assertThat(validation.isConsistent()).isTrue();
       LOGGER.fine(
@@ -347,7 +347,7 @@ class ModuleMalformedTest extends BaseIntegrationTest {
                   return "Random data " + sampleIndex + " correctly rejected";
                 }
               },
-              comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
+              comparison -> comparison.getJniExecution().equals(comparison.getPanamaExecution()));
 
       assertThat(validation.isConsistent()).isTrue();
       LOGGER.fine("Random data " + sampleIndex + " validation: " + validation.getSummary());
@@ -358,7 +358,7 @@ class ModuleMalformedTest extends BaseIntegrationTest {
   @ArgumentsSource(CrossRuntimeTestRunner.RuntimeArgumentsProvider.class)
   @DisplayName("Should handle malformed module stress test")
   void shouldHandleMalformedModuleStressTest(final RuntimeType runtimeType) {
-    skipIfCategoryNotEnabled("stress");
+    // skipIfCategoryNotEnabled("stress");
 
     final CrossRuntimeValidationResult validation =
         CrossRuntimeTestRunner.validateConsistency(
@@ -377,7 +377,7 @@ class ModuleMalformedTest extends BaseIntegrationTest {
                     engine.compileModule(malformedModule);
                     // If it doesn't throw, that's unexpected but log it
                     LOGGER.fine("Malformed module was unexpectedly accepted");
-                  } catch (final WasmException | CompilationException | ValidationException e) {
+                  } catch (final WasmException e) {
                     rejectedCount.incrementAndGet();
                   } catch (final Exception e) {
                     // Other exceptions are also acceptable for malformed data
@@ -394,7 +394,7 @@ class ModuleMalformedTest extends BaseIntegrationTest {
 
               return "Stress test: " + rejected + "/" + processed + " malformed modules rejected";
             },
-            comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
+            comparison -> comparison.getJniExecution().equals(comparison.getPanamaExecution()));
 
     assertThat(validation.isConsistent()).isTrue();
     LOGGER.info("Malformed stress test for " + runtimeType + ": " + validation.getSummary());
@@ -445,7 +445,7 @@ class ModuleMalformedTest extends BaseIntegrationTest {
                           totalRejected.addAndGet(threadRejected);
                           completionLatch.countDown();
                         }
-                      });
+          });
                 }
 
                 // Start all threads
@@ -467,7 +467,7 @@ class ModuleMalformedTest extends BaseIntegrationTest {
                     + " malformed modules rejected";
               }
             },
-            comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
+            comparison -> comparison.getJniExecution().equals(comparison.getPanamaExecution()));
 
     assertThat(validation.isConsistent()).isTrue();
     LOGGER.info("Concurrent malformed validation: " + validation.getSummary());
@@ -491,7 +491,7 @@ class ModuleMalformedTest extends BaseIntegrationTest {
                   try {
                     engine.compileModule(testCase.moduleBytes);
                     // Should not reach here
-                  } catch (final WasmException | CompilationException | ValidationException e) {
+                  } catch (final WasmException e) {
                     // Verify error message is not empty and somewhat meaningful
                     final String message = e.getMessage();
                     if (message != null && !message.trim().isEmpty() && message.length() > 5) {
@@ -507,7 +507,7 @@ class ModuleMalformedTest extends BaseIntegrationTest {
                 return "Meaningful errors: " + meaningfulErrors + "/" + testCases.size();
               }
             },
-            comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
+            comparison -> comparison.getJniExecution().equals(comparison.getPanamaExecution()));
 
     assertThat(validation.isConsistent()).isTrue();
     LOGGER.info("Error message validation: " + validation.getSummary());
@@ -578,7 +578,7 @@ class ModuleMalformedTest extends BaseIntegrationTest {
           (byte) 0xFF,
           (byte) 0xFF,
           (byte) 0xFF // Invalid section size
-        });
+          });
 
     // Section with size larger than remaining bytes
     modules.add(
@@ -595,7 +595,7 @@ class ModuleMalformedTest extends BaseIntegrationTest {
           0x10,
           0x00,
           0x01 // Size 16 but only 2 bytes follow
-        });
+          });
 
     return modules;
   }
@@ -621,7 +621,7 @@ class ModuleMalformedTest extends BaseIntegrationTest {
           (byte) 0xFF,
           0x00,
           0x00 // Invalid type indicator
-        });
+          });
 
     return modules;
   }
@@ -651,7 +651,7 @@ class ModuleMalformedTest extends BaseIntegrationTest {
           0x02,
           0x01,
           (byte) 0xFF // Function section with invalid type index
-        });
+          });
 
     return modules;
   }
@@ -689,7 +689,7 @@ class ModuleMalformedTest extends BaseIntegrationTest {
           (byte) 0xFF,
           (byte) 0xFF,
           0x0b // Invalid instruction
-        });
+          });
 
     return modules;
   }
@@ -718,7 +718,7 @@ class ModuleMalformedTest extends BaseIntegrationTest {
           0x80,
           0x80,
           0x10 // Invalid min size (too large)
-        });
+          });
 
     return modules;
   }

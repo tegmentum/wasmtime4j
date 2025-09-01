@@ -217,25 +217,25 @@ public final class CrossRuntimeExecutionSummary {
       allResults.add(result);
 
       // Process JNI result
-      processRuntimeResult(RuntimeType.JNI, result.getJniResult());
+      processRuntimeResult(RuntimeType.JNI, result.getJniExecution());
 
       // Process Panama result if available
       if (result.hasPanamaResult()) {
-        processRuntimeResult(RuntimeType.PANAMA, result.getPanamaResult());
+        processRuntimeResult(RuntimeType.PANAMA, result.getPanamaExecution());
 
         // Check consistency
         if (result.bothSuccessful()) {
           // Both successful - check if results are consistent
-          final Object jniResult = result.getJniResult().getResult();
-          final Object panamaResult = result.getPanamaResult().getResult();
+          final Object jniResult = result.getJniExecution().getResult();
+          final Object panamaResult = result.getPanamaExecution().getResult();
 
           if (java.util.Objects.equals(jniResult, panamaResult)) {
             consistentResults++;
           } else {
             inconsistentResults++;
           }
-        } else if (result.getJniResult().isSuccessful()
-            == result.getPanamaResult().isSuccessful()) {
+        } else if (result.getJniExecution().isSuccessful()
+            == result.getPanamaExecution().isSuccessful()) {
           // Both failed or both skipped - consider consistent
           consistentResults++;
         } else {

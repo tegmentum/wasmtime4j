@@ -32,7 +32,7 @@ public final class CrossRuntimeTestResult {
    *
    * @return the JNI execution result
    */
-  public RuntimeTestExecution getJniResult() {
+  public RuntimeTestExecution getJniExecution() {
     return jniResult;
   }
 
@@ -41,7 +41,7 @@ public final class CrossRuntimeTestResult {
    *
    * @return the Panama execution result if available, null otherwise
    */
-  public RuntimeTestExecution getPanamaResult() {
+  public RuntimeTestExecution getPanamaExecution() {
     return panamaResult;
   }
 
