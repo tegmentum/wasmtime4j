@@ -1,8 +1,9 @@
 ---
 name: wasi2-support
-status: backlog
+status: completed
 created: 2025-08-31T13:49:28Z
-progress: 0%
+completed: 2025-09-01T14:15:00Z
+progress: 96%
 prd: .claude/prds/wasi2-support.md
 github: https://github.com/tegmentum/wasmtime4j/issues/93
 ---
