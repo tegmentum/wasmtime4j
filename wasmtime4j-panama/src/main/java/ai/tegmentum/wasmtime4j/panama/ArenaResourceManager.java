@@ -262,8 +262,7 @@ public final class ArenaResourceManager implements AutoCloseable {
     return new Statistics(
         trackingEnabled ? resources.size() : 0,
         trackingEnabled ? managedResources.size() : 0,
-        arena.scope().isAlive()
-    );
+        arena.scope().isAlive());
   }
 
   /** Closes the resource manager and cleans up all resources. */
@@ -619,9 +618,12 @@ public final class ArenaResourceManager implements AutoCloseable {
     @Override
     public String toString() {
       return "Statistics{"
-          + "totalResources=" + totalResources
-          + ", nativeResources=" + nativeResources
-          + ", arenaActive=" + arenaActive
+          + "totalResources="
+          + totalResources
+          + ", nativeResources="
+          + nativeResources
+          + ", arenaActive="
+          + arenaActive
           + '}';
     }
   }

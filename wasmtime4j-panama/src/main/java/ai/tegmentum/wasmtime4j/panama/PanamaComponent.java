@@ -448,7 +448,8 @@ public final class PanamaComponent {
       }
     }
 
-    private boolean exportsInterfaceNative(MemorySegment componentPtr, String interfaceName) throws WasmException {
+    private boolean exportsInterfaceNative(MemorySegment componentPtr, String interfaceName)
+        throws WasmException {
       try {
         return nativeFunctions.exportsInterface(componentPtr, interfaceName);
       } catch (Exception e) {
@@ -456,7 +457,8 @@ public final class PanamaComponent {
       }
     }
 
-    private boolean importsInterfaceNative(MemorySegment componentPtr, String interfaceName) throws WasmException {
+    private boolean importsInterfaceNative(MemorySegment componentPtr, String interfaceName)
+        throws WasmException {
       try {
         return nativeFunctions.importsInterface(componentPtr, interfaceName);
       } catch (Exception e) {

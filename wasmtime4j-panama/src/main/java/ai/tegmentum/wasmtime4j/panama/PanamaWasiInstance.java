@@ -648,7 +648,8 @@ public final class PanamaWasiInstance implements WasiInstance {
       }
 
       @Override
-      public Object invoke(final String operation, final Object... parameters) throws WasmException {
+      public Object invoke(final String operation, final Object... parameters)
+          throws WasmException {
         throw new WasmException("Operation not supported: " + operation);
       }
 
@@ -831,7 +832,8 @@ public final class PanamaWasiInstance implements WasiInstance {
 
       @Override
       public String getSummary() {
-        return String.format("Instance Stats: ID=%d, State=%s, Uptime=%s, Resources=%d",
+        return String.format(
+            "Instance Stats: ID=%d, State=%s, Uptime=%s, Resources=%d",
             getInstanceId(), getState(), getUptime(), getCurrentResourceCount());
       }
 
