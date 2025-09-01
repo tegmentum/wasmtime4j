@@ -235,7 +235,9 @@ public final class JniComponent {
         throws WasmException {
       JniValidation.requireNonNull(component, "component");
       ensureNotClosed();
-      component.ensureNotClosed();
+      if (component.isClosed()) {
+        throw new JniResourceException("Component has been closed");
+      }
 
       try {
         final long instanceHandle =
@@ -299,7 +301,6 @@ public final class JniComponent {
       return "ComponentEngine";
     }
 
-    @Override
     public boolean isValid() {
       return !isClosed() && getNativeHandle() != 0;
     }
@@ -390,7 +391,6 @@ public final class JniComponent {
       return "Component";
     }
 
-    @Override
     public boolean isValid() {
       return !isClosed() && getNativeHandle() != 0;
     }
@@ -431,7 +431,6 @@ public final class JniComponent {
       return "ComponentInstance";
     }
 
-    @Override
     public boolean isValid() {
       return !isClosed() && getNativeHandle() != 0;
     }

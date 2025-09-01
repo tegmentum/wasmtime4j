@@ -231,43 +231,11 @@ public final class JniWasiContext implements WasiContext {
    * @return runtime information
    */
   private WasiRuntimeInfo createRuntimeInfo() {
-    return new WasiRuntimeInfo() {
-      @Override
-      public WasiRuntimeType getType() {
-        return WasiRuntimeType.JNI;
-      }
-
-      @Override
-      public String getVersion() {
-        // TODO: Extract actual version from native layer
-        return "1.0.0-jni";
-      }
-
-      @Override
-      public String getWasmtimeVersion() {
-        // TODO: Extract actual Wasmtime version from native layer
-        return "36.0.2";
-      }
-
-      @Override
-      public boolean supportsComponentModel() {
-        return true;
-      }
-
-      @Override
-      public boolean supportsAsync() {
-        return true;
-      }
-
-      @Override
-      public boolean supportsResourceSharing() {
-        return true;
-      }
-
-      @Override
-      public String getDescription() {
-        return "JNI-based WASI runtime implementation using Wasmtime component model";
-      }
-    };
+    // TODO: Extract actual versions from native layer
+    return new WasiRuntimeInfo(
+        WasiRuntimeType.JNI,
+        "1.0.0-jni",
+        "36.0.2"
+    );
   }
 }
