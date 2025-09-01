@@ -213,8 +213,7 @@ public interface WasiComponentStats {
   /**
    * Creates a summary string representation of these statistics.
    *
-   * <p>The summary includes key metrics in a human-readable format suitable for logging or
-   * display.
+   * <p>The summary includes key metrics in a human-readable format suitable for logging or display.
    *
    * @return formatted summary string
    */

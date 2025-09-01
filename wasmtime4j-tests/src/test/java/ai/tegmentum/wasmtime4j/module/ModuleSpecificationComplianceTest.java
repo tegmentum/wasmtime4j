@@ -1,15 +1,12 @@
 package ai.tegmentum.wasmtime4j.module;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.ExportType;
 import ai.tegmentum.wasmtime4j.ImportType;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.RuntimeType;
-import ai.tegmentum.wasmtime4j.WasmTypeKind;
 import ai.tegmentum.wasmtime4j.exception.CompilationException;
 import ai.tegmentum.wasmtime4j.exception.ValidationException;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
@@ -28,7 +25,6 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
@@ -37,13 +33,14 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
 import org.junit.jupiter.params.provider.EnumSource;
 
 /**
- * WebAssembly specification compliance tests for Module API.
- * Tests compliance with official WebAssembly specification using test suites.
+ * WebAssembly specification compliance tests for Module API. Tests compliance with official
+ * WebAssembly specification using test suites.
  */
 @DisplayName("Module WebAssembly Specification Compliance Tests")
 class ModuleSpecificationComplianceTest extends BaseIntegrationTest {
 
-  private static final Logger LOGGER = Logger.getLogger(ModuleSpecificationComplianceTest.class.getName());
+  private static final Logger LOGGER =
+      Logger.getLogger(ModuleSpecificationComplianceTest.class.getName());
 
   private WasmTestDataManager testDataManager;
 
@@ -78,30 +75,35 @@ class ModuleSpecificationComplianceTest extends BaseIntegrationTest {
                 for (final SpecTestCase testCase : testCases) {
                   try {
                     final Module module = engine.compileModule(testCase.moduleBytes);
-                    
+
                     if (testCase.shouldBeValid) {
                       validModules++;
                       // Valid module should have expected properties
                       assertThat(module.isValid()).isTrue();
                     } else {
                       // Should not reach here for invalid modules
-                      LOGGER.warning("Invalid module was unexpectedly accepted: " + testCase.description);
+                      LOGGER.warning(
+                          "Invalid module was unexpectedly accepted: " + testCase.description);
                     }
-                    
+
                     module.close();
-                    
+
                   } catch (final WasmException | CompilationException | ValidationException e) {
                     if (!testCase.shouldBeValid) {
                       invalidModules++;
                       // Expected rejection
                     } else {
-                      LOGGER.warning("Valid module was unexpectedly rejected: " + testCase.description
-                          + " - " + e.getMessage());
+                      LOGGER.warning(
+                          "Valid module was unexpectedly rejected: "
+                              + testCase.description
+                              + " - "
+                              + e.getMessage());
                     }
                   }
                 }
 
-                return String.format("Binary format: %d valid, %d invalid", validModules, invalidModules);
+                return String.format(
+                    "Binary format: %d valid, %d invalid", validModules, invalidModules);
               }
             },
             comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
@@ -128,13 +130,13 @@ class ModuleSpecificationComplianceTest extends BaseIntegrationTest {
                 for (final SpecTestCase testCase : testCases) {
                   try {
                     final Module module = engine.compileModule(testCase.moduleBytes);
-                    
+
                     if (testCase.shouldBeValid) {
                       correctOrderings++;
                     }
-                    
+
                     module.close();
-                    
+
                   } catch (final WasmException | CompilationException | ValidationException e) {
                     if (!testCase.shouldBeValid) {
                       incorrectOrderings++;
@@ -142,7 +144,8 @@ class ModuleSpecificationComplianceTest extends BaseIntegrationTest {
                   }
                 }
 
-                return String.format("Section ordering: %d correct, %d incorrect", 
+                return String.format(
+                    "Section ordering: %d correct, %d incorrect",
                     correctOrderings, incorrectOrderings);
               }
             },
@@ -155,7 +158,8 @@ class ModuleSpecificationComplianceTest extends BaseIntegrationTest {
   @ParameterizedTest
   @EnumSource(WasmTestSuiteLoader.TestSuiteType.class)
   @DisplayName("Should process official WebAssembly test suites")
-  void shouldProcessOfficialWebAssemblyTestSuites(final WasmTestSuiteLoader.TestSuiteType suiteType) {
+  void shouldProcessOfficialWebAssemblyTestSuites(
+      final WasmTestSuiteLoader.TestSuiteType suiteType) {
     skipIfCategoryNotEnabled("testsuite");
 
     try {
@@ -180,7 +184,7 @@ class ModuleSpecificationComplianceTest extends BaseIntegrationTest {
 
                     try {
                       final Module module = engine.compileModule(testCase.getModuleBytes());
-                      
+
                       // Basic validation
                       assertThat(module.isValid()).isTrue();
                       assertThat(module.getExports()).isNotNull();
@@ -191,12 +195,17 @@ class ModuleSpecificationComplianceTest extends BaseIntegrationTest {
 
                     } catch (final Exception e) {
                       failedCount.incrementAndGet();
-                      LOGGER.fine("Test case failed (may be expected): " + testCase.getName() + " - " + e.getMessage());
+                      LOGGER.fine(
+                          "Test case failed (may be expected): "
+                              + testCase.getName()
+                              + " - "
+                              + e.getMessage());
                     }
                   }
                 }
 
-                return String.format("Suite %s: %d/%d compiled successfully", 
+                return String.format(
+                    "Suite %s: %d/%d compiled successfully",
                     suiteType, compiledCount.get(), maxToTest);
               },
               comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
@@ -228,26 +237,26 @@ class ModuleSpecificationComplianceTest extends BaseIntegrationTest {
                 for (final SpecTestCase testCase : testCases) {
                   try {
                     final Module module = engine.compileModule(testCase.moduleBytes);
-                    
+
                     if (testCase.shouldBeValid) {
                       validTypes++;
-                      
+
                       // Validate type information is extractable
                       final List<ExportType> exports = module.getExports();
                       final List<ImportType> imports = module.getImports();
-                      
+
                       // All types should have valid type kinds
                       for (final ExportType export : exports) {
                         assertThat(export.getType().getKind()).isNotNull();
                       }
-                      
+
                       for (final ImportType importType : imports) {
                         assertThat(importType.getType().getKind()).isNotNull();
                       }
                     }
-                    
+
                     module.close();
-                    
+
                   } catch (final WasmException | CompilationException | ValidationException e) {
                     if (!testCase.shouldBeValid) {
                       invalidTypes++;
@@ -282,13 +291,13 @@ class ModuleSpecificationComplianceTest extends BaseIntegrationTest {
                 for (final SpecTestCase testCase : testCases) {
                   try {
                     final Module module = engine.compileModule(testCase.moduleBytes);
-                    
+
                     if (testCase.shouldBeValid) {
                       withinLimits++;
                     }
-                    
+
                     module.close();
-                    
+
                   } catch (final WasmException | CompilationException | ValidationException e) {
                     if (!testCase.shouldBeValid) {
                       exceedsLimits++;
@@ -331,7 +340,8 @@ class ModuleSpecificationComplianceTest extends BaseIntegrationTest {
                   }
                 }
 
-                return String.format("Features - Supported: %s, Unsupported: %s",
+                return String.format(
+                    "Features - Supported: %s, Unsupported: %s",
                     supportedFeatures, unsupportedFeatures);
               }
             },
@@ -358,7 +368,8 @@ class ModuleSpecificationComplianceTest extends BaseIntegrationTest {
 
                 try (final Engine engine = runtime.createEngine()) {
                   // Test a sample from each available suite
-                  for (final WasmTestSuiteLoader.TestSuiteType suiteType : WasmTestSuiteLoader.TestSuiteType.values()) {
+                  for (final WasmTestSuiteLoader.TestSuiteType suiteType :
+                      WasmTestSuiteLoader.TestSuiteType.values()) {
                     final int suiteSize = stats.getSuiteSize(suiteType);
                     if (suiteSize > 0) {
                       final List<WasmTestCase> testCases = testDataManager.loadTestSuite(suiteType);
@@ -367,7 +378,8 @@ class ModuleSpecificationComplianceTest extends BaseIntegrationTest {
                       for (int i = 0; i < sampleSize; i++) {
                         totalTests++;
                         try {
-                          final Module module = engine.compileModule(testCases.get(i).getModuleBytes());
+                          final Module module =
+                              engine.compileModule(testCases.get(i).getModuleBytes());
                           module.close();
                           passedTests++;
                         } catch (final Exception e) {
@@ -378,9 +390,11 @@ class ModuleSpecificationComplianceTest extends BaseIntegrationTest {
                   }
                 }
 
-                final double complianceRate = totalTests > 0 ? (double) passedTests / totalTests * 100.0 : 0.0;
-                
-                return String.format("Compliance: %.1f%% (%d/%d tests passed)", 
+                final double complianceRate =
+                    totalTests > 0 ? (double) passedTests / totalTests * 100.0 : 0.0;
+
+                return String.format(
+                    "Compliance: %.1f%% (%d/%d tests passed)",
                     complianceRate, passedTests, totalTests);
               },
               comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
@@ -405,21 +419,26 @@ class ModuleSpecificationComplianceTest extends BaseIntegrationTest {
               final List<InstructionTestCase> instructionTests = createInstructionTestCases();
 
               try (final Engine engine = runtime.createEngine()) {
-                final Set<String> supportedInstructions = instructionTests.stream()
-                    .filter(test -> {
-                      try {
-                        final Module module = engine.compileModule(test.moduleBytes);
-                        module.close();
-                        return true;
-                      } catch (final Exception e) {
-                        return false;
-                      }
-                    })
-                    .map(test -> test.instructionCategory)
-                    .collect(Collectors.toSet());
+                final Set<String> supportedInstructions =
+                    instructionTests.stream()
+                        .filter(
+                            test -> {
+                              try {
+                                final Module module = engine.compileModule(test.moduleBytes);
+                                module.close();
+                                return true;
+                              } catch (final Exception e) {
+                                return false;
+                              }
+                            })
+                        .map(test -> test.instructionCategory)
+                        .collect(Collectors.toSet());
 
-                return "Instruction categories supported: " + supportedInstructions.size()
-                       + " (" + supportedInstructions + ")";
+                return "Instruction categories supported: "
+                    + supportedInstructions.size()
+                    + " ("
+                    + supportedInstructions
+                    + ")";
               }
             },
             comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
@@ -428,53 +447,39 @@ class ModuleSpecificationComplianceTest extends BaseIntegrationTest {
     LOGGER.info("Instruction set specification validation: " + validation.getSummary());
   }
 
-  /**
-   * Creates test cases for binary format validation.
-   */
+  /** Creates test cases for binary format validation. */
   private List<SpecTestCase> createBinaryFormatTestCases() {
     final List<SpecTestCase> testCases = new ArrayList<>();
 
     // Valid cases
-    testCases.add(new SpecTestCase(
-        "Valid simple module",
-        TestUtils.createSimpleWasmModule(),
-        true
-    ));
+    testCases.add(
+        new SpecTestCase("Valid simple module", TestUtils.createSimpleWasmModule(), true));
 
-    testCases.add(new SpecTestCase(
-        "Valid module with imports",
-        TestUtils.createMemoryImportWasmModule(),
-        true
-    ));
+    testCases.add(
+        new SpecTestCase(
+            "Valid module with imports", TestUtils.createMemoryImportWasmModule(), true));
 
     // Invalid cases
-    testCases.add(new SpecTestCase(
-        "Invalid magic number",
-        new byte[]{0x01, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00},
-        false
-    ));
+    testCases.add(
+        new SpecTestCase(
+            "Invalid magic number",
+            new byte[] {0x01, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00},
+            false));
 
-    testCases.add(new SpecTestCase(
-        "Invalid version",
-        new byte[]{0x00, 0x61, 0x73, 0x6d, 0x02, 0x00, 0x00, 0x00},
-        false
-    ));
+    testCases.add(
+        new SpecTestCase(
+            "Invalid version", new byte[] {0x00, 0x61, 0x73, 0x6d, 0x02, 0x00, 0x00, 0x00}, false));
 
     return testCases;
   }
 
-  /**
-   * Creates test cases for section ordering validation.
-   */
+  /** Creates test cases for section ordering validation. */
   private List<SpecTestCase> createSectionOrderingTestCases() {
     final List<SpecTestCase> testCases = new ArrayList<>();
 
     // Correct ordering (type, import, function, export, code)
-    testCases.add(new SpecTestCase(
-        "Correct section order",
-        TestUtils.createSimpleWasmModule(),
-        true
-    ));
+    testCases.add(
+        new SpecTestCase("Correct section order", TestUtils.createSimpleWasmModule(), true));
 
     // TODO: Add cases with incorrect section ordering
     // This would require creating modules with sections in wrong order
@@ -482,57 +487,38 @@ class ModuleSpecificationComplianceTest extends BaseIntegrationTest {
     return testCases;
   }
 
-  /**
-   * Creates test cases for type system validation.
-   */
+  /** Creates test cases for type system validation. */
   private List<SpecTestCase> createTypeSystemTestCases() {
     final List<SpecTestCase> testCases = new ArrayList<>();
 
     // Valid type system usage
-    testCases.add(new SpecTestCase(
-        "Valid function types",
-        TestUtils.createSimpleWasmModule(),
-        true
-    ));
+    testCases.add(
+        new SpecTestCase("Valid function types", TestUtils.createSimpleWasmModule(), true));
 
     // TODO: Add cases with invalid type usage
-    
+
     return testCases;
   }
 
-  /**
-   * Creates test cases for limits and constraints validation.
-   */
+  /** Creates test cases for limits and constraints validation. */
   private List<SpecTestCase> createLimitsTestCases() {
     final List<SpecTestCase> testCases = new ArrayList<>();
 
     // Within limits
-    testCases.add(new SpecTestCase(
-        "Normal module size",
-        TestUtils.createSimpleWasmModule(),
-        true
-    ));
+    testCases.add(new SpecTestCase("Normal module size", TestUtils.createSimpleWasmModule(), true));
 
     // TODO: Add cases that exceed specification limits
-    
+
     return testCases;
   }
 
-  /**
-   * Creates test cases for different WebAssembly features.
-   */
+  /** Creates test cases for different WebAssembly features. */
   private List<FeatureTestCase> createFeatureTestCases() {
     final List<FeatureTestCase> testCases = new ArrayList<>();
 
-    testCases.add(new FeatureTestCase(
-        "MVP Functions",
-        TestUtils.createSimpleWasmModule()
-    ));
+    testCases.add(new FeatureTestCase("MVP Functions", TestUtils.createSimpleWasmModule()));
 
-    testCases.add(new FeatureTestCase(
-        "Linear Memory",
-        TestUtils.createMemoryImportWasmModule()
-    ));
+    testCases.add(new FeatureTestCase("Linear Memory", TestUtils.createMemoryImportWasmModule()));
 
     // TODO: Add more feature-specific test cases
     // - SIMD
@@ -543,30 +529,26 @@ class ModuleSpecificationComplianceTest extends BaseIntegrationTest {
     return testCases;
   }
 
-  /**
-   * Creates test cases for different instruction categories.
-   */
+  /** Creates test cases for different instruction categories. */
   private List<InstructionTestCase> createInstructionTestCases() {
     final List<InstructionTestCase> testCases = new ArrayList<>();
 
-    testCases.add(new InstructionTestCase(
-        "Arithmetic",
-        TestUtils.createSimpleWasmModule() // Contains i32.add
-    ));
+    testCases.add(
+        new InstructionTestCase(
+            "Arithmetic", TestUtils.createSimpleWasmModule() // Contains i32.add
+            ));
 
-    testCases.add(new InstructionTestCase(
-        "Memory",
-        TestUtils.createMemoryImportWasmModule() // Contains i32.load
-    ));
+    testCases.add(
+        new InstructionTestCase(
+            "Memory", TestUtils.createMemoryImportWasmModule() // Contains i32.load
+            ));
 
     // TODO: Add more instruction category tests
 
     return testCases;
   }
 
-  /**
-   * Test case for specification compliance testing.
-   */
+  /** Test case for specification compliance testing. */
   private static class SpecTestCase {
     final String description;
     final byte[] moduleBytes;
@@ -579,9 +561,7 @@ class ModuleSpecificationComplianceTest extends BaseIntegrationTest {
     }
   }
 
-  /**
-   * Test case for feature support testing.
-   */
+  /** Test case for feature support testing. */
   private static class FeatureTestCase {
     final String featureName;
     final byte[] moduleBytes;
@@ -592,9 +572,7 @@ class ModuleSpecificationComplianceTest extends BaseIntegrationTest {
     }
   }
 
-  /**
-   * Test case for instruction set testing.
-   */
+  /** Test case for instruction set testing. */
   private static class InstructionTestCase {
     final String instructionCategory;
     final byte[] moduleBytes;

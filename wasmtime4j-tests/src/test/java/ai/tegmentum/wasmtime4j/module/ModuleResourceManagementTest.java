@@ -18,7 +18,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -26,7 +25,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
@@ -34,13 +32,14 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
- * Comprehensive tests for Module resource management and memory leak detection.
- * Tests proper cleanup of native resources, memory management, and resource lifecycle.
+ * Comprehensive tests for Module resource management and memory leak detection. Tests proper
+ * cleanup of native resources, memory management, and resource lifecycle.
  */
 @DisplayName("Module Resource Management Tests")
 class ModuleResourceManagementTest extends BaseIntegrationTest {
 
-  private static final Logger LOGGER = Logger.getLogger(ModuleResourceManagementTest.class.getName());
+  private static final Logger LOGGER =
+      Logger.getLogger(ModuleResourceManagementTest.class.getName());
 
   private WasmTestDataManager testDataManager;
   private ExecutorService executorService;
@@ -90,13 +89,13 @@ class ModuleResourceManagementTest extends BaseIntegrationTest {
                 for (int i = 0; i < 10; i++) {
                   final Module module = engine.compileModule(wasmBytes);
                   moduleRefs.add(new WeakReference<>(module));
-                  
+
                   // Verify module is valid before closing
                   assertThat(module.isValid()).isTrue();
-                  
+
                   // Close explicitly
                   module.close();
-                  
+
                   // Verify module is invalid after closing
                   assertThat(module.isValid()).isFalse();
                 }
@@ -179,7 +178,7 @@ class ModuleResourceManagementTest extends BaseIntegrationTest {
               final List<Module> modules = new ArrayList<>();
 
               final Engine engine = runtime.createEngine();
-              
+
               // When - Create modules and then close engine
               for (int i = 0; i < 5; i++) {
                 final Module module = engine.compileModule(wasmBytes);
@@ -281,7 +280,7 @@ class ModuleResourceManagementTest extends BaseIntegrationTest {
                 for (int i = 0; i < moduleCount; i++) {
                   final Module module = engine.compileModule(wasmBytes);
                   modules.add(module);
-                  
+
                   // Periodically check memory and trigger GC if needed
                   if (i % 20 == 0) {
                     final long currentMemory = rt.totalMemory() - rt.freeMemory();
@@ -309,9 +308,11 @@ class ModuleResourceManagementTest extends BaseIntegrationTest {
 
                 // Then - Verify reasonable memory usage
                 final long avgMemoryPerModule = memoryUsed / moduleCount;
-                assertThat(avgMemoryPerModule).isLessThan(5 * 1024 * 1024); // Less than 5MB per module
+                assertThat(avgMemoryPerModule)
+                    .isLessThan(5 * 1024 * 1024); // Less than 5MB per module
 
-                return String.format("Memory pressure: %dKB used, %dKB/module, cleanup: %dms",
+                return String.format(
+                    "Memory pressure: %dKB used, %dKB/module, cleanup: %dms",
                     memoryUsed / 1024, avgMemoryPerModule / 1024, cleanupTime.toMillis());
               }
             },
@@ -340,32 +341,33 @@ class ModuleResourceManagementTest extends BaseIntegrationTest {
               try (final Engine engine = runtime.createEngine()) {
                 // When - Perform concurrent module operations
                 for (int i = 0; i < threadCount; i++) {
-                  executorService.submit(() -> {
-                    final List<Module> threadModules = new ArrayList<>();
-                    
-                    try {
-                      startLatch.await();
+                  executorService.submit(
+                      () -> {
+                        final List<Module> threadModules = new ArrayList<>();
 
-                      // Create modules
-                      for (int j = 0; j < modulesPerThread; j++) {
-                        final Module module = engine.compileModule(wasmBytes);
-                        threadModules.add(module);
-                        totalModulesCreated.incrementAndGet();
-                      }
+                        try {
+                          startLatch.await();
 
-                      // Close modules
-                      for (final Module module : threadModules) {
-                        module.close();
-                        totalModulesClosed.incrementAndGet();
-                      }
+                          // Create modules
+                          for (int j = 0; j < modulesPerThread; j++) {
+                            final Module module = engine.compileModule(wasmBytes);
+                            threadModules.add(module);
+                            totalModulesCreated.incrementAndGet();
+                          }
 
-                    } catch (final Exception e) {
-                      LOGGER.severe("Concurrent resource operation failed: " + e.getMessage());
-                      throw new RuntimeException(e);
-                    } finally {
-                      completionLatch.countDown();
-                    }
-                  });
+                          // Close modules
+                          for (final Module module : threadModules) {
+                            module.close();
+                            totalModulesClosed.incrementAndGet();
+                          }
+
+                        } catch (final Exception e) {
+                          LOGGER.severe("Concurrent resource operation failed: " + e.getMessage());
+                          throw new RuntimeException(e);
+                        } finally {
+                          completionLatch.countDown();
+                        }
+                      });
                 }
 
                 // Start all threads
@@ -380,8 +382,11 @@ class ModuleResourceManagementTest extends BaseIntegrationTest {
                 assertThat(totalModulesCreated.get()).isEqualTo(expectedTotal);
                 assertThat(totalModulesClosed.get()).isEqualTo(expectedTotal);
 
-                return "Concurrent resources: " + totalModulesCreated.get() + " created, "
-                       + totalModulesClosed.get() + " closed";
+                return "Concurrent resources: "
+                    + totalModulesCreated.get()
+                    + " created, "
+                    + totalModulesClosed.get()
+                    + " closed";
               }
             },
             comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
@@ -424,14 +429,16 @@ class ModuleResourceManagementTest extends BaseIntegrationTest {
                   if (cycle % 3 == 0) {
                     System.gc();
                     Thread.sleep(50);
-                    
+
                     final long currentMemory = getUsedMemory();
                     final long memoryIncrease = currentMemory - initialMemory;
-                    
+
                     // Memory should not grow indefinitely
                     if (memoryIncrease > 50 * 1024 * 1024) { // 50MB threshold
-                      LOGGER.warning("Potential memory leak detected: "
-                          + (memoryIncrease / 1024 / 1024) + "MB increase");
+                      LOGGER.warning(
+                          "Potential memory leak detected: "
+                              + (memoryIncrease / 1024 / 1024)
+                              + "MB increase");
                     }
                   }
                 }
@@ -445,7 +452,8 @@ class ModuleResourceManagementTest extends BaseIntegrationTest {
                 // Verify no significant leak (allow some growth due to JVM overhead)
                 assertThat(totalIncrease).isLessThan(20 * 1024 * 1024); // Less than 20MB growth
 
-                return String.format("Leak detection: %d cycles, %dKB memory increase",
+                return String.format(
+                    "Leak detection: %d cycles, %dKB memory increase",
                     cycleCount, totalIncrease / 1024);
               }
             },
@@ -464,7 +472,9 @@ class ModuleResourceManagementTest extends BaseIntegrationTest {
             runtime -> {
               // Given
               final byte[] wasmBytes = TestUtils.createSimpleWasmModule();
-              final byte[] malformedBytes = {0x01, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00}; // Invalid magic
+              final byte[] malformedBytes = {
+                0x01, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00
+              }; // Invalid magic
 
               try (final Engine engine = runtime.createEngine()) {
                 int successfulModules = 0;
@@ -475,11 +485,11 @@ class ModuleResourceManagementTest extends BaseIntegrationTest {
                   try {
                     final byte[] testBytes = (i % 3 == 0) ? malformedBytes : wasmBytes;
                     final Module module = engine.compileModule(testBytes);
-                    
+
                     // If successful, close immediately
                     module.close();
                     successfulModules++;
-                    
+
                   } catch (final Exception e) {
                     // Expected for malformed modules
                     failedModules++;
@@ -491,7 +501,8 @@ class ModuleResourceManagementTest extends BaseIntegrationTest {
                 assertThat(finalModule.isValid()).isTrue();
                 finalModule.close();
 
-                return String.format("Exception handling: %d successful, %d failed",
+                return String.format(
+                    "Exception handling: %d successful, %d failed",
                     successfulModules, failedModules);
               }
             },
@@ -514,16 +525,16 @@ class ModuleResourceManagementTest extends BaseIntegrationTest {
 
               // When - Use try-with-resources for automatic cleanup
               try (final Engine engine = runtime.createEngine()) {
-                
+
                 for (int i = 0; i < 10; i++) {
                   try (final Module module = engine.compileModule(wasmBytes)) {
                     // Verify module is valid within try block
                     assertThat(module.isValid()).isTrue();
-                    
+
                     // Create and use instance
                     try (final Store store = engine.createStore();
-                         final Instance instance = module.instantiate(store)) {
-                      
+                        final Instance instance = module.instantiate(store)) {
+
                       // Instance should be valid
                       assertThat(instance).isNotNull();
                       modulesProcessed++;
@@ -579,19 +590,16 @@ class ModuleResourceManagementTest extends BaseIntegrationTest {
     LOGGER.info("Finalizer cleanup timing validation: " + validation.getSummary());
   }
 
-  /**
-   * Helper method to create modules without explicit close (to test finalizers).
-   */
-  private void createModulesWithoutExplicitClose(final Engine engine, final byte[] wasmBytes, final int count) {
+  /** Helper method to create modules without explicit close (to test finalizers). */
+  private void createModulesWithoutExplicitClose(
+      final Engine engine, final byte[] wasmBytes, final int count) {
     for (int i = 0; i < count; i++) {
       final Module module = engine.compileModule(wasmBytes);
       // Intentionally don't close - rely on finalizer
     }
   }
 
-  /**
-   * Gets current memory usage in bytes.
-   */
+  /** Gets current memory usage in bytes. */
   private long getUsedMemory() {
     final Runtime runtime = Runtime.getRuntime();
     return runtime.totalMemory() - runtime.freeMemory();

@@ -17,7 +17,7 @@ final class WasiRuntimeInfoTest {
   @Test
   void testConstructorAndGetters() {
     final WasiRuntimeInfo info = new WasiRuntimeInfo(WasiRuntimeType.JNI, "1.0.0", "36.0.2");
-    
+
     assertEquals(WasiRuntimeType.JNI, info.getRuntimeType());
     assertEquals("1.0.0", info.getVersion());
     assertEquals("36.0.2", info.getWasmtimeVersion());
@@ -27,7 +27,7 @@ final class WasiRuntimeInfoTest {
   void testToString() {
     final WasiRuntimeInfo info = new WasiRuntimeInfo(WasiRuntimeType.PANAMA, "1.0.0", "36.0.2");
     final String result = info.toString();
-    
+
     assertTrue(result.contains("PANAMA"));
     assertTrue(result.contains("1.0.0"));
     assertTrue(result.contains("36.0.2"));
@@ -58,7 +58,9 @@ final class WasiRuntimeInfoTest {
     final WasiRuntimeInfo info3 = new WasiRuntimeInfo(WasiRuntimeType.PANAMA, "1.0.0", "36.0.2");
 
     assertEquals(info1.hashCode(), info2.hashCode()); // Same values should have same hash
-    assertNotEquals(info1.hashCode(), info3.hashCode()); // Different values should have different hash (usually)
+    assertNotEquals(
+        info1.hashCode(),
+        info3.hashCode()); // Different values should have different hash (usually)
   }
 
   @Test

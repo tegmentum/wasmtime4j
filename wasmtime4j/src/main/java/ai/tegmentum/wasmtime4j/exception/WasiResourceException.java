@@ -13,8 +13,8 @@ package ai.tegmentum.wasmtime4j.exception;
  *   <li>Resource access permission errors
  * </ul>
  *
- * <p>Resource exceptions provide detailed context about resource management failures,
- * including resource types, handle identifiers, and cleanup guidance to prevent resource leaks.
+ * <p>Resource exceptions provide detailed context about resource management failures, including
+ * resource types, handle identifiers, and cleanup guidance to prevent resource leaks.
  *
  * @since 1.0.0
  */
@@ -34,9 +34,7 @@ public class WasiResourceException extends WasiException {
   /** The resource operation that failed. */
   private final ResourceOperation resourceOperation;
 
-  /**
-   * WASI resource types for better error categorization and handling.
-   */
+  /** WASI resource types for better error categorization and handling. */
   public enum ResourceType {
     /** File handle resource. */
     FILE,
@@ -56,9 +54,7 @@ public class WasiResourceException extends WasiException {
     SYSTEM
   }
 
-  /**
-   * Resource operations for better error context.
-   */
+  /** Resource operations for better error context. */
   public enum ResourceOperation {
     /** Resource allocation operation. */
     ALLOCATION,
@@ -278,8 +274,10 @@ public class WasiResourceException extends WasiException {
       return "resource-operation";
     }
 
-    final String operationStr = operation != null ? operation.name().toLowerCase().replace('_', '-') : "operation";
-    final String resourceStr = resourceType != null ? resourceType.name().toLowerCase() : "resource";
+    final String operationStr =
+        operation != null ? operation.name().toLowerCase().replace('_', '-') : "operation";
+    final String resourceStr =
+        resourceType != null ? resourceType.name().toLowerCase() : "resource";
 
     return resourceStr + "-" + operationStr;
   }

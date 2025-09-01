@@ -10,34 +10,22 @@ package ai.tegmentum.wasmtime4j.wasi;
  */
 public enum WasiResourceState {
 
-  /**
-   * Resource has been created but not yet initialized or opened.
-   */
+  /** Resource has been created but not yet initialized or opened. */
   CREATED,
 
-  /**
-   * Resource is open and ready for operations.
-   */
+  /** Resource is open and ready for operations. */
   OPEN,
 
-  /**
-   * Resource is currently being used in an operation.
-   */
+  /** Resource is currently being used in an operation. */
   ACTIVE,
 
-  /**
-   * Resource is temporarily unavailable but can be reactivated.
-   */
+  /** Resource is temporarily unavailable but can be reactivated. */
   SUSPENDED,
 
-  /**
-   * Resource has encountered an error and may not be usable.
-   */
+  /** Resource has encountered an error and may not be usable. */
   ERROR,
 
-  /**
-   * Resource has been closed and is no longer usable.
-   */
+  /** Resource has been closed and is no longer usable. */
   CLOSED;
 
   /**

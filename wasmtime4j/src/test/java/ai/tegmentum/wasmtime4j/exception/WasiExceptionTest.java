@@ -54,7 +54,9 @@ class WasiExceptionTest {
       final WasiException exception =
           new WasiException(message, operation, resource, retryable, category);
 
-      assertEquals("File operation failed (operation: file-read) (resource: /path/to/file)", exception.getMessage());
+      assertEquals(
+          "File operation failed (operation: file-read) (resource: /path/to/file)",
+          exception.getMessage());
       assertNull(exception.getCause());
       assertEquals(operation, exception.getOperation());
       assertEquals(resource, exception.getResource());
@@ -75,7 +77,9 @@ class WasiExceptionTest {
       final WasiException exception =
           new WasiException(message, operation, resource, retryable, category, cause);
 
-      assertEquals("Network operation failed (operation: socket-connect) (resource: localhost:8080)", exception.getMessage());
+      assertEquals(
+          "Network operation failed (operation: socket-connect) (resource: localhost:8080)",
+          exception.getMessage());
       assertEquals(cause, exception.getCause());
       assertEquals(operation, exception.getOperation());
       assertEquals(resource, exception.getResource());
@@ -88,7 +92,9 @@ class WasiExceptionTest {
     void testConstructorWithNullMessage() {
       assertThrows(
           IllegalArgumentException.class,
-          () -> new WasiException(null, "operation", "resource", false, WasiException.ErrorCategory.SYSTEM));
+          () ->
+              new WasiException(
+                  null, "operation", "resource", false, WasiException.ErrorCategory.SYSTEM));
     }
 
     @Test
@@ -96,7 +102,9 @@ class WasiExceptionTest {
     void testConstructorWithEmptyMessage() {
       assertThrows(
           IllegalArgumentException.class,
-          () -> new WasiException("", "operation", "resource", false, WasiException.ErrorCategory.SYSTEM));
+          () ->
+              new WasiException(
+                  "", "operation", "resource", false, WasiException.ErrorCategory.SYSTEM));
     }
   }
 
@@ -107,7 +115,8 @@ class WasiExceptionTest {
     @Test
     @DisplayName("isFileSystemError returns true for FILE_SYSTEM category")
     void testIsFileSystemError() {
-      final WasiException exception = new WasiException("Error", "op", "res", false, WasiException.ErrorCategory.FILE_SYSTEM);
+      final WasiException exception =
+          new WasiException("Error", "op", "res", false, WasiException.ErrorCategory.FILE_SYSTEM);
       assertTrue(exception.isFileSystemError());
       assertFalse(exception.isNetworkError());
       assertFalse(exception.isPermissionError());
@@ -119,7 +128,8 @@ class WasiExceptionTest {
     @Test
     @DisplayName("isNetworkError returns true for NETWORK category")
     void testIsNetworkError() {
-      final WasiException exception = new WasiException("Error", "op", "res", false, WasiException.ErrorCategory.NETWORK);
+      final WasiException exception =
+          new WasiException("Error", "op", "res", false, WasiException.ErrorCategory.NETWORK);
       assertFalse(exception.isFileSystemError());
       assertTrue(exception.isNetworkError());
       assertFalse(exception.isPermissionError());
@@ -131,7 +141,8 @@ class WasiExceptionTest {
     @Test
     @DisplayName("isPermissionError returns true for PERMISSION category")
     void testIsPermissionError() {
-      final WasiException exception = new WasiException("Error", "op", "res", false, WasiException.ErrorCategory.PERMISSION);
+      final WasiException exception =
+          new WasiException("Error", "op", "res", false, WasiException.ErrorCategory.PERMISSION);
       assertFalse(exception.isFileSystemError());
       assertFalse(exception.isNetworkError());
       assertTrue(exception.isPermissionError());
@@ -143,7 +154,9 @@ class WasiExceptionTest {
     @Test
     @DisplayName("isResourceLimitError returns true for RESOURCE_LIMIT category")
     void testIsResourceLimitError() {
-      final WasiException exception = new WasiException("Error", "op", "res", false, WasiException.ErrorCategory.RESOURCE_LIMIT);
+      final WasiException exception =
+          new WasiException(
+              "Error", "op", "res", false, WasiException.ErrorCategory.RESOURCE_LIMIT);
       assertFalse(exception.isFileSystemError());
       assertFalse(exception.isNetworkError());
       assertFalse(exception.isPermissionError());
@@ -155,7 +168,8 @@ class WasiExceptionTest {
     @Test
     @DisplayName("isComponentError returns true for COMPONENT category")
     void testIsComponentError() {
-      final WasiException exception = new WasiException("Error", "op", "res", false, WasiException.ErrorCategory.COMPONENT);
+      final WasiException exception =
+          new WasiException("Error", "op", "res", false, WasiException.ErrorCategory.COMPONENT);
       assertFalse(exception.isFileSystemError());
       assertFalse(exception.isNetworkError());
       assertFalse(exception.isPermissionError());
@@ -167,7 +181,8 @@ class WasiExceptionTest {
     @Test
     @DisplayName("isConfigurationError returns true for CONFIGURATION category")
     void testIsConfigurationError() {
-      final WasiException exception = new WasiException("Error", "op", "res", false, WasiException.ErrorCategory.CONFIGURATION);
+      final WasiException exception =
+          new WasiException("Error", "op", "res", false, WasiException.ErrorCategory.CONFIGURATION);
       assertFalse(exception.isFileSystemError());
       assertFalse(exception.isNetworkError());
       assertFalse(exception.isPermissionError());
@@ -184,35 +199,41 @@ class WasiExceptionTest {
     @Test
     @DisplayName("formatMessage with operation and resource formats correctly")
     void testFormatMessageWithOperationAndResource() {
-      final WasiException exception = new WasiException("Error", "test-op", "test-res", false, WasiException.ErrorCategory.SYSTEM);
+      final WasiException exception =
+          new WasiException(
+              "Error", "test-op", "test-res", false, WasiException.ErrorCategory.SYSTEM);
       assertEquals("Error (operation: test-op) (resource: test-res)", exception.getMessage());
     }
 
     @Test
     @DisplayName("formatMessage with operation only formats correctly")
     void testFormatMessageWithOperationOnly() {
-      final WasiException exception = new WasiException("Error", "test-op", null, false, WasiException.ErrorCategory.SYSTEM);
+      final WasiException exception =
+          new WasiException("Error", "test-op", null, false, WasiException.ErrorCategory.SYSTEM);
       assertEquals("Error (operation: test-op)", exception.getMessage());
     }
 
     @Test
     @DisplayName("formatMessage with resource only formats correctly")
     void testFormatMessageWithResourceOnly() {
-      final WasiException exception = new WasiException("Error", null, "test-res", false, WasiException.ErrorCategory.SYSTEM);
+      final WasiException exception =
+          new WasiException("Error", null, "test-res", false, WasiException.ErrorCategory.SYSTEM);
       assertEquals("Error (resource: test-res)", exception.getMessage());
     }
 
     @Test
     @DisplayName("formatMessage with neither operation nor resource formats correctly")
     void testFormatMessageWithNeitherOperationNorResource() {
-      final WasiException exception = new WasiException("Error", null, null, false, WasiException.ErrorCategory.SYSTEM);
+      final WasiException exception =
+          new WasiException("Error", null, null, false, WasiException.ErrorCategory.SYSTEM);
       assertEquals("Error", exception.getMessage());
     }
 
     @Test
     @DisplayName("formatMessage with empty operation and resource handles correctly")
     void testFormatMessageWithEmptyOperationAndResource() {
-      final WasiException exception = new WasiException("Error", "", "", false, WasiException.ErrorCategory.SYSTEM);
+      final WasiException exception =
+          new WasiException("Error", "", "", false, WasiException.ErrorCategory.SYSTEM);
       assertEquals("Error", exception.getMessage());
     }
   }
@@ -266,7 +287,7 @@ class WasiExceptionTest {
     void testErrorCategoryValues() {
       final WasiException.ErrorCategory[] categories = WasiException.ErrorCategory.values();
       assertEquals(7, categories.length);
-      
+
       assertTrue(contains(categories, WasiException.ErrorCategory.FILE_SYSTEM));
       assertTrue(contains(categories, WasiException.ErrorCategory.NETWORK));
       assertTrue(contains(categories, WasiException.ErrorCategory.PERMISSION));
@@ -276,7 +297,8 @@ class WasiExceptionTest {
       assertTrue(contains(categories, WasiException.ErrorCategory.SYSTEM));
     }
 
-    private boolean contains(final WasiException.ErrorCategory[] array, final WasiException.ErrorCategory value) {
+    private boolean contains(
+        final WasiException.ErrorCategory[] array, final WasiException.ErrorCategory value) {
       for (final WasiException.ErrorCategory category : array) {
         if (category == value) {
           return true;

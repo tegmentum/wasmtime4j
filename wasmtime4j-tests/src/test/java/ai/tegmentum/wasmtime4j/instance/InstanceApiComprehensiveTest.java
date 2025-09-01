@@ -10,48 +10,34 @@ import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFunction;
-import ai.tegmentum.wasmtime4j.WasmGlobal;
 import ai.tegmentum.wasmtime4j.WasmMemory;
 import ai.tegmentum.wasmtime4j.WasmRuntime;
-import ai.tegmentum.wasmtime4j.WasmTable;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
-import ai.tegmentum.wasmtime4j.performance.PerformanceTestHarness;
-import ai.tegmentum.wasmtime4j.utils.CrossRuntimeValidator;
 import ai.tegmentum.wasmtime4j.utils.TestCategories;
 import ai.tegmentum.wasmtime4j.utils.TestUtils;
 import ai.tegmentum.wasmtime4j.webassembly.WasmTestModules;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 
 /**
  * Comprehensive test suite for Instance API functionality providing exhaustive coverage of instance
  * creation, function invocation, export access, memory operations, type safety validation, and
- * concurrent execution patterns. This test suite goes beyond basic functionality to test edge cases,
- * performance characteristics, and cross-runtime consistency.
+ * concurrent execution patterns. This test suite goes beyond basic functionality to test edge
+ * cases, performance characteristics, and cross-runtime consistency.
  */
 @DisplayName("Instance API Comprehensive Tests")
 final class InstanceApiComprehensiveTest {
@@ -202,7 +188,7 @@ final class InstanceApiComprehensiveTest {
                 for (int i = 0; i < 10; i++) {
                   final Store store = engine.createStore();
                   stores.add(store);
-                  
+
                   final Module module = engine.compileModule(moduleBytes);
                   final Instance instance = module.instantiate(store);
                   instances.add(instance);
@@ -211,8 +197,8 @@ final class InstanceApiComprehensiveTest {
                   assertThat(instance.getStore()).isEqualTo(store);
 
                   // Verify each instance works independently
-                  final WasmValue[] result = instance.callFunction("add", 
-                      WasmValue.i32(i), WasmValue.i32(i + 1));
+                  final WasmValue[] result =
+                      instance.callFunction("add", WasmValue.i32(i), WasmValue.i32(i + 1));
                   assertThat(result[0].asI32()).isEqualTo(2 * i + 1);
                 }
 
@@ -220,9 +206,9 @@ final class InstanceApiComprehensiveTest {
                 for (int i = 0; i < instances.size(); i++) {
                   final Instance instance = instances.get(i);
                   assertThat(instance.isValid()).isTrue();
-                  
-                  final WasmValue[] result = instance.callFunction("add", 
-                      WasmValue.i32(100), WasmValue.i32(i));
+
+                  final WasmValue[] result =
+                      instance.callFunction("add", WasmValue.i32(100), WasmValue.i32(i));
                   assertThat(result[0].asI32()).isEqualTo(100 + i);
                 }
 
@@ -296,8 +282,9 @@ final class InstanceApiComprehensiveTest {
               try (final Module intModule = engine.compileModule(intModuleBytes);
                   final Instance intInstance = intModule.instantiate(store)) {
 
-                final WasmValue[] intResult = intInstance.callFunction("add",
-                    WasmValue.i32(Integer.MAX_VALUE), WasmValue.i32(-1));
+                final WasmValue[] intResult =
+                    intInstance.callFunction(
+                        "add", WasmValue.i32(Integer.MAX_VALUE), WasmValue.i32(-1));
                 assertThat(intResult[0].asI32()).isEqualTo(Integer.MAX_VALUE - 1);
               }
 
@@ -306,8 +293,11 @@ final class InstanceApiComprehensiveTest {
               try (final Module floatModule = engine.compileModule(floatModuleBytes);
                   final Instance floatInstance = floatModule.instantiate(store)) {
 
-                final WasmValue[] floatResult = floatInstance.callFunction("fadd_f32",
-                    WasmValue.f32(Float.MAX_VALUE), WasmValue.f32(-Float.MAX_VALUE));
+                final WasmValue[] floatResult =
+                    floatInstance.callFunction(
+                        "fadd_f32",
+                        WasmValue.f32(Float.MAX_VALUE),
+                        WasmValue.f32(-Float.MAX_VALUE));
                 assertThat(floatResult[0].asF32()).isCloseTo(0.0f, within(0.001f));
               }
 
@@ -329,26 +319,26 @@ final class InstanceApiComprehensiveTest {
 
               // Test boundary values
               final Map<String, WasmValue[]> boundaryTests = new HashMap<>();
-              boundaryTests.put("zero", new WasmValue[]{WasmValue.i32(0), WasmValue.i32(0)});
-              boundaryTests.put("max_int", new WasmValue[]{WasmValue.i32(Integer.MAX_VALUE), 
-                  WasmValue.i32(0)});
-              boundaryTests.put("min_int", new WasmValue[]{WasmValue.i32(Integer.MIN_VALUE), 
-                  WasmValue.i32(0)});
-              boundaryTests.put("negative", new WasmValue[]{WasmValue.i32(-100), 
-                  WasmValue.i32(50)});
+              boundaryTests.put("zero", new WasmValue[] {WasmValue.i32(0), WasmValue.i32(0)});
+              boundaryTests.put(
+                  "max_int", new WasmValue[] {WasmValue.i32(Integer.MAX_VALUE), WasmValue.i32(0)});
+              boundaryTests.put(
+                  "min_int", new WasmValue[] {WasmValue.i32(Integer.MIN_VALUE), WasmValue.i32(0)});
+              boundaryTests.put(
+                  "negative", new WasmValue[] {WasmValue.i32(-100), WasmValue.i32(50)});
 
               for (final Map.Entry<String, WasmValue[]> test : boundaryTests.entrySet()) {
                 final String testName = test.getKey();
                 final WasmValue[] params = test.getValue();
-                
+
                 final WasmValue[] result = instance.callFunction("add", params);
                 assertThat(result).hasSize(1);
-                
+
                 final int expected = params[0].asI32() + params[1].asI32();
                 assertThat(result[0].asI32()).isEqualTo(expected);
-                
-                addTestMetric(String.format("Boundary test '%s' passed with %s", 
-                    testName, runtimeType));
+
+                addTestMetric(
+                    String.format("Boundary test '%s' passed with %s", testName, runtimeType));
               }
 
               // Test empty parameter arrays where applicable
@@ -356,14 +346,16 @@ final class InstanceApiComprehensiveTest {
               assertThat(addFunc).isPresent();
               final FunctionType funcType = addFunc.get().getFunctionType();
               assertThat(funcType.getParamTypes()).hasSize(2);
-              
+
               // Verify wrong parameter count fails
               assertThatThrownBy(() -> instance.callFunction("add"))
                   .isInstanceOf(WasmException.class);
               assertThatThrownBy(() -> instance.callFunction("add", WasmValue.i32(1)))
                   .isInstanceOf(WasmException.class);
-              assertThatThrownBy(() -> instance.callFunction("add", 
-                  WasmValue.i32(1), WasmValue.i32(2), WasmValue.i32(3)))
+              assertThatThrownBy(
+                      () ->
+                          instance.callFunction(
+                              "add", WasmValue.i32(1), WasmValue.i32(2), WasmValue.i32(3)))
                   .isInstanceOf(WasmException.class);
 
               addTestMetric("Parameter validation edge cases tested with " + runtimeType);
@@ -397,23 +389,23 @@ final class InstanceApiComprehensiveTest {
               for (final Map.Entry<Integer, Integer> test : fibonacciExpected.entrySet()) {
                 final int input = test.getKey();
                 final int expected = test.getValue();
-                
+
                 final WasmValue[] result = instance.callFunction("fib", WasmValue.i32(input));
                 assertThat(result).hasSize(1);
                 assertThat(result[0].asI32()).isEqualTo(expected);
-                
-                addTestMetric(String.format("fib(%d) = %d verified with %s", 
-                    input, expected, runtimeType));
+
+                addTestMetric(
+                    String.format("fib(%d) = %d verified with %s", input, expected, runtimeType));
               }
 
               // Test performance characteristics of recursive calls
               final Instant startTime = Instant.now();
               instance.callFunction("fib", WasmValue.i32(25));
               final Duration recursionTime = Duration.between(startTime, Instant.now());
-              
+
               // Recursive fibonacci should complete within reasonable time
               assertThat(recursionTime.toMillis()).isLessThan(5000);
-              
+
               addTestMetric("Complex recursion patterns validated with " + runtimeType);
             }
           });
@@ -437,20 +429,21 @@ final class InstanceApiComprehensiveTest {
                   final WasmValue[] result = instance.callFunction("fib", WasmValue.i32(depth));
                   assertThat(result).hasSize(1);
                   maxWorkingDepth = depth;
-                  
-                  addTestMetric(String.format("Recursion depth %d successful with %s", 
-                      depth, runtimeType));
+
+                  addTestMetric(
+                      String.format("Recursion depth %d successful with %s", depth, runtimeType));
                 } catch (final WasmException e) {
                   // Expected at some point due to stack limits
-                  addTestMetric(String.format("Recursion limit reached at depth %d with %s", 
-                      depth, runtimeType));
+                  addTestMetric(
+                      String.format(
+                          "Recursion limit reached at depth %d with %s", depth, runtimeType));
                   break;
                 }
               }
 
               // Should handle at least reasonable recursion depth
               assertThat(maxWorkingDepth).isGreaterThanOrEqualTo(20);
-              
+
               addTestMetric("Stack depth limits validated with " + runtimeType);
             }
           });
@@ -579,13 +572,14 @@ final class InstanceApiComprehensiveTest {
               for (int i = 0; i < 100; i++) {
                 final String[] exports = instance.getExportNames();
                 assertThat(exports).isEqualTo(exports1);
-                
+
                 final Optional<WasmFunction> func = instance.getFunction("add");
                 assertThat(func).isPresent();
                 assertThat(func.get().getName()).isEqualTo("add");
               }
 
-              addTestMetric("Export consistency validated across multiple queries with " + runtimeType);
+              addTestMetric(
+                  "Export consistency validated across multiple queries with " + runtimeType);
             }
           });
     }

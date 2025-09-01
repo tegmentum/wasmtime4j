@@ -31,9 +31,7 @@ public class WasiComponentException extends WasiException {
   /** The component operation type that failed. */
   private final ComponentOperation operationType;
 
-  /**
-   * Component operation types for better error categorization.
-   */
+  /** Component operation types for better error categorization. */
   public enum ComponentOperation {
     /** Component instantiation operation. */
     INSTANTIATION,

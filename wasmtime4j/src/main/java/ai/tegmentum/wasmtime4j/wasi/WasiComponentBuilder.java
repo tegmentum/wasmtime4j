@@ -213,9 +213,8 @@ public interface WasiComponentBuilder {
   /**
    * Creates the configured WASI component.
    *
-   * <p>This method processes the provided bytecode, applies all configuration settings, and
-   * creates a ready-to-use WasiComponent instance. The component can then be instantiated and
-   * executed.
+   * <p>This method processes the provided bytecode, applies all configuration settings, and creates
+   * a ready-to-use WasiComponent instance. The component can then be instantiated and executed.
    *
    * @return a configured WasiComponent instance
    * @throws WasmException if component creation fails due to invalid bytecode, configuration

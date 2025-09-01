@@ -115,8 +115,8 @@ public final class PanamaWasiContext implements WasiContext {
   /**
    * Creates a component from a WebAssembly file.
    *
-   * <p>This is a convenience method for loading components from files. The file is read into
-   * memory and then loaded as bytes using zero-copy optimization where possible.
+   * <p>This is a convenience method for loading components from files. The file is read into memory
+   * and then loaded as bytes using zero-copy optimization where possible.
    *
    * @param wasmFile the path to the WebAssembly component file
    * @return a new WasiComponent instance
@@ -139,7 +139,8 @@ public final class PanamaWasiContext implements WasiContext {
       String componentName = wasmFile.getFileName().toString();
 
       // Create unified WasiComponent wrapper
-      return new PanamaWasiComponent(resourceManager, componentEngine, componentHandle, componentName);
+      return new PanamaWasiComponent(
+          resourceManager, componentEngine, componentHandle, componentName);
 
     } catch (final IOException e) {
       throw new WasmException("Failed to read WebAssembly file: " + wasmFile, e);
@@ -175,7 +176,8 @@ public final class PanamaWasiContext implements WasiContext {
           componentEngine.loadComponentFromBytes(wasmBytes);
 
       // Create unified WasiComponent wrapper
-      return new PanamaWasiComponent(resourceManager, componentEngine, componentHandle, componentName);
+      return new PanamaWasiComponent(
+          resourceManager, componentEngine, componentHandle, componentName);
 
     } catch (final IOException e) {
       throw new WasmException("Failed to read WebAssembly file: " + wasmFile, e);
@@ -211,8 +213,8 @@ public final class PanamaWasiContext implements WasiContext {
    * Cleans up inactive component instances managed by this context.
    *
    * <p>This method can be called periodically to free up resources from components and instances
-   * that are no longer referenced by application code. With Arena-based resource management,
-   * this also helps clean up native memory more efficiently.
+   * that are no longer referenced by application code. With Arena-based resource management, this
+   * also helps clean up native memory more efficiently.
    *
    * @return the number of instances that were cleaned up
    */
@@ -319,7 +321,8 @@ public final class PanamaWasiContext implements WasiContext {
 
       @Override
       public String getDescription() {
-        return "Panama FFI-based WASI runtime implementation using Wasmtime component model with Arena-based resource management";
+        return "Panama FFI-based WASI runtime implementation using Wasmtime component model with"
+            + " Arena-based resource management";
       }
     };
   }

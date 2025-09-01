@@ -14,8 +14,8 @@ public enum WasiInstanceState {
   /**
    * Instance has been created but not yet started execution.
    *
-   * <p>In this state, the instance has been successfully instantiated with its configuration but
-   * no function calls have been made yet. Resources are allocated and the instance is ready for
+   * <p>In this state, the instance has been successfully instantiated with its configuration but no
+   * function calls have been made yet. Resources are allocated and the instance is ready for
    * execution.
    */
   CREATED,
@@ -31,8 +31,8 @@ public enum WasiInstanceState {
   /**
    * Instance execution has been suspended.
    *
-   * <p>The instance has been temporarily paused and retains all its state. Suspended instances
-   * can be resumed to continue execution from where they left off.
+   * <p>The instance has been temporarily paused and retains all its state. Suspended instances can
+   * be resumed to continue execution from where they left off.
    */
   SUSPENDED,
 

@@ -22,7 +22,8 @@ class WasiConfigurationExceptionTest {
       assertEquals(message, exception.getMessage());
       assertNull(exception.getCause());
       assertEquals("configuration", exception.getOperation());
-      assertEquals(WasiConfigurationException.ConfigurationArea.SYSTEM, exception.getConfigurationArea());
+      assertEquals(
+          WasiConfigurationException.ConfigurationArea.SYSTEM, exception.getConfigurationArea());
       assertNull(exception.getConfigurationParameter());
       assertNull(exception.getProvidedValue());
       assertNull(exception.getExpectedValue());
@@ -40,16 +41,19 @@ class WasiConfigurationExceptionTest {
       assertEquals(message, exception.getMessage());
       assertEquals(cause, exception.getCause());
       assertEquals("configuration", exception.getOperation());
-      assertEquals(WasiConfigurationException.ConfigurationArea.SYSTEM, exception.getConfigurationArea());
+      assertEquals(
+          WasiConfigurationException.ConfigurationArea.SYSTEM, exception.getConfigurationArea());
     }
 
     @Test
     @DisplayName("Configuration area constructor creates exception correctly")
     void testConfigurationAreaConstructor() {
       final String message = "Environment configuration failed";
-      final WasiConfigurationException.ConfigurationArea configArea = WasiConfigurationException.ConfigurationArea.ENVIRONMENT;
+      final WasiConfigurationException.ConfigurationArea configArea =
+          WasiConfigurationException.ConfigurationArea.ENVIRONMENT;
 
-      final WasiConfigurationException exception = new WasiConfigurationException(message, configArea);
+      final WasiConfigurationException exception =
+          new WasiConfigurationException(message, configArea);
 
       assertEquals(message, exception.getMessage());
       assertEquals("environment-configuration", exception.getOperation());
@@ -64,12 +68,15 @@ class WasiConfigurationExceptionTest {
     @DisplayName("Parameter-specific constructor creates exception correctly")
     void testParameterSpecificConstructor() {
       final String message = "Invalid parameter value";
-      final WasiConfigurationException.ConfigurationArea configArea = WasiConfigurationException.ConfigurationArea.RESOURCE_LIMITS;
+      final WasiConfigurationException.ConfigurationArea configArea =
+          WasiConfigurationException.ConfigurationArea.RESOURCE_LIMITS;
       final String parameter = "max_memory";
       final String providedValue = "-1";
       final String expectedValue = "positive integer";
 
-      final WasiConfigurationException exception = new WasiConfigurationException(message, configArea, parameter, providedValue, expectedValue);
+      final WasiConfigurationException exception =
+          new WasiConfigurationException(
+              message, configArea, parameter, providedValue, expectedValue);
 
       assertTrue(exception.getMessage().contains(message));
       assertTrue(exception.getMessage().contains("[parameter: max_memory]"));
@@ -87,13 +94,16 @@ class WasiConfigurationExceptionTest {
     @DisplayName("Full constructor with cause creates exception correctly")
     void testFullConstructorWithCause() {
       final String message = "Network configuration error";
-      final WasiConfigurationException.ConfigurationArea configArea = WasiConfigurationException.ConfigurationArea.NETWORK_CONFIGURATION;
+      final WasiConfigurationException.ConfigurationArea configArea =
+          WasiConfigurationException.ConfigurationArea.NETWORK_CONFIGURATION;
       final String parameter = "port";
       final String providedValue = "invalid";
       final String expectedValue = "1-65535";
       final RuntimeException cause = new RuntimeException("Parse error");
 
-      final WasiConfigurationException exception = new WasiConfigurationException(message, configArea, parameter, providedValue, expectedValue, cause);
+      final WasiConfigurationException exception =
+          new WasiConfigurationException(
+              message, configArea, parameter, providedValue, expectedValue, cause);
 
       assertTrue(exception.getMessage().contains(message));
       assertEquals(cause, exception.getCause());
@@ -110,7 +120,13 @@ class WasiConfigurationExceptionTest {
     void testConstructorWithNullMessage() {
       assertThrows(
           IllegalArgumentException.class,
-          () -> new WasiConfigurationException(null, WasiConfigurationException.ConfigurationArea.SYSTEM, "param", "value", "expected"));
+          () ->
+              new WasiConfigurationException(
+                  null,
+                  WasiConfigurationException.ConfigurationArea.SYSTEM,
+                  "param",
+                  "value",
+                  "expected"));
     }
 
     @Test
@@ -118,7 +134,13 @@ class WasiConfigurationExceptionTest {
     void testConstructorWithEmptyMessage() {
       assertThrows(
           IllegalArgumentException.class,
-          () -> new WasiConfigurationException("", WasiConfigurationException.ConfigurationArea.SYSTEM, "param", "value", "expected"));
+          () ->
+              new WasiConfigurationException(
+                  "",
+                  WasiConfigurationException.ConfigurationArea.SYSTEM,
+                  "param",
+                  "value",
+                  "expected"));
     }
   }
 
@@ -129,7 +151,9 @@ class WasiConfigurationExceptionTest {
     @Test
     @DisplayName("isEnvironmentError returns true for ENVIRONMENT area")
     void testIsEnvironmentError() {
-      final WasiConfigurationException exception = new WasiConfigurationException("Error", WasiConfigurationException.ConfigurationArea.ENVIRONMENT);
+      final WasiConfigurationException exception =
+          new WasiConfigurationException(
+              "Error", WasiConfigurationException.ConfigurationArea.ENVIRONMENT);
       assertTrue(exception.isEnvironmentError());
       assertFalse(exception.isFileSystemPermissionsError());
       assertFalse(exception.isNetworkConfigurationError());
@@ -142,7 +166,9 @@ class WasiConfigurationExceptionTest {
     @Test
     @DisplayName("isFileSystemPermissionsError returns true for FILE_SYSTEM_PERMISSIONS area")
     void testIsFileSystemPermissionsError() {
-      final WasiConfigurationException exception = new WasiConfigurationException("Error", WasiConfigurationException.ConfigurationArea.FILE_SYSTEM_PERMISSIONS);
+      final WasiConfigurationException exception =
+          new WasiConfigurationException(
+              "Error", WasiConfigurationException.ConfigurationArea.FILE_SYSTEM_PERMISSIONS);
       assertFalse(exception.isEnvironmentError());
       assertTrue(exception.isFileSystemPermissionsError());
       assertFalse(exception.isNetworkConfigurationError());
@@ -155,7 +181,9 @@ class WasiConfigurationExceptionTest {
     @Test
     @DisplayName("isNetworkConfigurationError returns true for NETWORK_CONFIGURATION area")
     void testIsNetworkConfigurationError() {
-      final WasiConfigurationException exception = new WasiConfigurationException("Error", WasiConfigurationException.ConfigurationArea.NETWORK_CONFIGURATION);
+      final WasiConfigurationException exception =
+          new WasiConfigurationException(
+              "Error", WasiConfigurationException.ConfigurationArea.NETWORK_CONFIGURATION);
       assertFalse(exception.isEnvironmentError());
       assertFalse(exception.isFileSystemPermissionsError());
       assertTrue(exception.isNetworkConfigurationError());
@@ -168,7 +196,9 @@ class WasiConfigurationExceptionTest {
     @Test
     @DisplayName("isComponentInstantiationError returns true for COMPONENT_INSTANTIATION area")
     void testIsComponentInstantiationError() {
-      final WasiConfigurationException exception = new WasiConfigurationException("Error", WasiConfigurationException.ConfigurationArea.COMPONENT_INSTANTIATION);
+      final WasiConfigurationException exception =
+          new WasiConfigurationException(
+              "Error", WasiConfigurationException.ConfigurationArea.COMPONENT_INSTANTIATION);
       assertFalse(exception.isEnvironmentError());
       assertFalse(exception.isFileSystemPermissionsError());
       assertFalse(exception.isNetworkConfigurationError());
@@ -181,7 +211,9 @@ class WasiConfigurationExceptionTest {
     @Test
     @DisplayName("isResourceLimitsError returns true for RESOURCE_LIMITS area")
     void testIsResourceLimitsError() {
-      final WasiConfigurationException exception = new WasiConfigurationException("Error", WasiConfigurationException.ConfigurationArea.RESOURCE_LIMITS);
+      final WasiConfigurationException exception =
+          new WasiConfigurationException(
+              "Error", WasiConfigurationException.ConfigurationArea.RESOURCE_LIMITS);
       assertFalse(exception.isEnvironmentError());
       assertFalse(exception.isFileSystemPermissionsError());
       assertFalse(exception.isNetworkConfigurationError());
@@ -194,7 +226,9 @@ class WasiConfigurationExceptionTest {
     @Test
     @DisplayName("isRuntimeEngineError returns true for RUNTIME_ENGINE area")
     void testIsRuntimeEngineError() {
-      final WasiConfigurationException exception = new WasiConfigurationException("Error", WasiConfigurationException.ConfigurationArea.RUNTIME_ENGINE);
+      final WasiConfigurationException exception =
+          new WasiConfigurationException(
+              "Error", WasiConfigurationException.ConfigurationArea.RUNTIME_ENGINE);
       assertFalse(exception.isEnvironmentError());
       assertFalse(exception.isFileSystemPermissionsError());
       assertFalse(exception.isNetworkConfigurationError());
@@ -207,7 +241,9 @@ class WasiConfigurationExceptionTest {
     @Test
     @DisplayName("isSecurityPolicyError returns true for SECURITY_POLICY area")
     void testIsSecurityPolicyError() {
-      final WasiConfigurationException exception = new WasiConfigurationException("Error", WasiConfigurationException.ConfigurationArea.SECURITY_POLICY);
+      final WasiConfigurationException exception =
+          new WasiConfigurationException(
+              "Error", WasiConfigurationException.ConfigurationArea.SECURITY_POLICY);
       assertFalse(exception.isEnvironmentError());
       assertFalse(exception.isFileSystemPermissionsError());
       assertFalse(exception.isNetworkConfigurationError());
@@ -225,12 +261,13 @@ class WasiConfigurationExceptionTest {
     @Test
     @DisplayName("getConfigurationGuidance provides parameter-specific guidance")
     void testGetConfigurationGuidanceWithParameter() {
-      final WasiConfigurationException exception = new WasiConfigurationException(
-          "Error",
-          WasiConfigurationException.ConfigurationArea.RESOURCE_LIMITS,
-          "max_memory",
-          "invalid",
-          "positive integer");
+      final WasiConfigurationException exception =
+          new WasiConfigurationException(
+              "Error",
+              WasiConfigurationException.ConfigurationArea.RESOURCE_LIMITS,
+              "max_memory",
+              "invalid",
+              "positive integer");
 
       final String guidance = exception.getConfigurationGuidance();
       assertTrue(guidance.contains("Set 'max_memory' to positive integer"));
@@ -240,9 +277,9 @@ class WasiConfigurationExceptionTest {
     @Test
     @DisplayName("getConfigurationGuidance provides area-specific guidance without parameters")
     void testGetConfigurationGuidanceWithoutParameter() {
-      final WasiConfigurationException exception = new WasiConfigurationException(
-          "Error",
-          WasiConfigurationException.ConfigurationArea.ENVIRONMENT);
+      final WasiConfigurationException exception =
+          new WasiConfigurationException(
+              "Error", WasiConfigurationException.ConfigurationArea.ENVIRONMENT);
 
       final String guidance = exception.getConfigurationGuidance();
       assertTrue(guidance.contains("Check configuration for environment"));
@@ -253,14 +290,15 @@ class WasiConfigurationExceptionTest {
     @DisplayName("getConfigurationGuidance provides correct guidance for all configuration areas")
     void testGetConfigurationGuidanceForAllAreas() {
       // Test each configuration area has appropriate guidance
-      final WasiConfigurationException.ConfigurationArea[] areas = WasiConfigurationException.ConfigurationArea.values();
-      
+      final WasiConfigurationException.ConfigurationArea[] areas =
+          WasiConfigurationException.ConfigurationArea.values();
+
       for (final WasiConfigurationException.ConfigurationArea area : areas) {
         final WasiConfigurationException exception = new WasiConfigurationException("Error", area);
         final String guidance = exception.getConfigurationGuidance();
         assertNotNull(guidance);
         assertFalse(guidance.isEmpty());
-        
+
         // Each area should have specific guidance
         switch (area) {
           case ENVIRONMENT:
@@ -299,44 +337,80 @@ class WasiConfigurationExceptionTest {
     @Test
     @DisplayName("Operation formatting works correctly for all configuration areas")
     void testOperationFormatting() {
-      assertEquals("environment-configuration", 
-          new WasiConfigurationException("Error", WasiConfigurationException.ConfigurationArea.ENVIRONMENT).getOperation());
-      assertEquals("file-system-permissions-configuration", 
-          new WasiConfigurationException("Error", WasiConfigurationException.ConfigurationArea.FILE_SYSTEM_PERMISSIONS).getOperation());
-      assertEquals("network-configuration", 
-          new WasiConfigurationException("Error", WasiConfigurationException.ConfigurationArea.NETWORK_CONFIGURATION).getOperation());
-      assertEquals("component-instantiation-configuration", 
-          new WasiConfigurationException("Error", WasiConfigurationException.ConfigurationArea.COMPONENT_INSTANTIATION).getOperation());
-      assertEquals("resource-limits-configuration", 
-          new WasiConfigurationException("Error", WasiConfigurationException.ConfigurationArea.RESOURCE_LIMITS).getOperation());
-      assertEquals("runtime-engine-configuration", 
-          new WasiConfigurationException("Error", WasiConfigurationException.ConfigurationArea.RUNTIME_ENGINE).getOperation());
-      assertEquals("security-policy-configuration", 
-          new WasiConfigurationException("Error", WasiConfigurationException.ConfigurationArea.SECURITY_POLICY).getOperation());
-      assertEquals("system-configuration", 
-          new WasiConfigurationException("Error", WasiConfigurationException.ConfigurationArea.SYSTEM).getOperation());
+      assertEquals(
+          "environment-configuration",
+          new WasiConfigurationException(
+                  "Error", WasiConfigurationException.ConfigurationArea.ENVIRONMENT)
+              .getOperation());
+      assertEquals(
+          "file-system-permissions-configuration",
+          new WasiConfigurationException(
+                  "Error", WasiConfigurationException.ConfigurationArea.FILE_SYSTEM_PERMISSIONS)
+              .getOperation());
+      assertEquals(
+          "network-configuration",
+          new WasiConfigurationException(
+                  "Error", WasiConfigurationException.ConfigurationArea.NETWORK_CONFIGURATION)
+              .getOperation());
+      assertEquals(
+          "component-instantiation-configuration",
+          new WasiConfigurationException(
+                  "Error", WasiConfigurationException.ConfigurationArea.COMPONENT_INSTANTIATION)
+              .getOperation());
+      assertEquals(
+          "resource-limits-configuration",
+          new WasiConfigurationException(
+                  "Error", WasiConfigurationException.ConfigurationArea.RESOURCE_LIMITS)
+              .getOperation());
+      assertEquals(
+          "runtime-engine-configuration",
+          new WasiConfigurationException(
+                  "Error", WasiConfigurationException.ConfigurationArea.RUNTIME_ENGINE)
+              .getOperation());
+      assertEquals(
+          "security-policy-configuration",
+          new WasiConfigurationException(
+                  "Error", WasiConfigurationException.ConfigurationArea.SECURITY_POLICY)
+              .getOperation());
+      assertEquals(
+          "system-configuration",
+          new WasiConfigurationException(
+                  "Error", WasiConfigurationException.ConfigurationArea.SYSTEM)
+              .getOperation());
     }
 
     @Test
     @DisplayName("Resource formatting works correctly with area only")
     void testResourceFormattingAreaOnly() {
-      final WasiConfigurationException exception = new WasiConfigurationException("Error", WasiConfigurationException.ConfigurationArea.ENVIRONMENT);
+      final WasiConfigurationException exception =
+          new WasiConfigurationException(
+              "Error", WasiConfigurationException.ConfigurationArea.ENVIRONMENT);
       assertEquals("environment", exception.getResource());
     }
 
     @Test
     @DisplayName("Resource formatting works correctly with area and parameter")
     void testResourceFormattingAreaAndParameter() {
-      final WasiConfigurationException exception = new WasiConfigurationException(
-          "Error", WasiConfigurationException.ConfigurationArea.ENVIRONMENT, "PATH", "invalid", "valid path");
+      final WasiConfigurationException exception =
+          new WasiConfigurationException(
+              "Error",
+              WasiConfigurationException.ConfigurationArea.ENVIRONMENT,
+              "PATH",
+              "invalid",
+              "valid path");
       assertEquals("environment:PATH", exception.getResource());
     }
 
     @Test
     @DisplayName("Detailed message formatting includes all parameter information")
     void testDetailedMessageFormatting() {
-      final WasiConfigurationException exception = new WasiConfigurationException(
-          "Base error", WasiConfigurationException.ConfigurationArea.RESOURCE_LIMITS, "max_memory", "-1", "positive integer");
+      final WasiConfigurationException exception =
+          new WasiConfigurationException(
+              "Base error",
+              WasiConfigurationException.ConfigurationArea.RESOURCE_LIMITS,
+              "max_memory",
+              "-1",
+              "positive integer");
 
       final String message = exception.getMessage();
       assertTrue(message.contains("Base error"));
@@ -348,8 +422,9 @@ class WasiConfigurationExceptionTest {
     @Test
     @DisplayName("Detailed message formatting handles null values gracefully")
     void testDetailedMessageFormattingWithNulls() {
-      final WasiConfigurationException exception = new WasiConfigurationException(
-          "Base error", WasiConfigurationException.ConfigurationArea.SYSTEM, null, null, null);
+      final WasiConfigurationException exception =
+          new WasiConfigurationException(
+              "Base error", WasiConfigurationException.ConfigurationArea.SYSTEM, null, null, null);
 
       final String message = exception.getMessage();
       assertTrue(message.contains("Base error"));
@@ -383,10 +458,12 @@ class WasiConfigurationExceptionTest {
     void testConfigurationExceptionsNotRetryable() {
       final WasiConfigurationException exception = new WasiConfigurationException("Test error");
       assertFalse(exception.isRetryable());
-      
+
       // All configuration areas should be non-retryable
-      for (final WasiConfigurationException.ConfigurationArea area : WasiConfigurationException.ConfigurationArea.values()) {
-        final WasiConfigurationException areaException = new WasiConfigurationException("Error", area);
+      for (final WasiConfigurationException.ConfigurationArea area :
+          WasiConfigurationException.ConfigurationArea.values()) {
+        final WasiConfigurationException areaException =
+            new WasiConfigurationException("Error", area);
         assertFalse(areaException.isRetryable());
       }
     }
@@ -399,20 +476,26 @@ class WasiConfigurationExceptionTest {
     @Test
     @DisplayName("All ConfigurationArea values are properly defined")
     void testConfigurationAreaValues() {
-      final WasiConfigurationException.ConfigurationArea[] areas = WasiConfigurationException.ConfigurationArea.values();
+      final WasiConfigurationException.ConfigurationArea[] areas =
+          WasiConfigurationException.ConfigurationArea.values();
       assertEquals(8, areas.length);
-      
+
       assertTrue(contains(areas, WasiConfigurationException.ConfigurationArea.ENVIRONMENT));
-      assertTrue(contains(areas, WasiConfigurationException.ConfigurationArea.FILE_SYSTEM_PERMISSIONS));
-      assertTrue(contains(areas, WasiConfigurationException.ConfigurationArea.NETWORK_CONFIGURATION));
-      assertTrue(contains(areas, WasiConfigurationException.ConfigurationArea.COMPONENT_INSTANTIATION));
+      assertTrue(
+          contains(areas, WasiConfigurationException.ConfigurationArea.FILE_SYSTEM_PERMISSIONS));
+      assertTrue(
+          contains(areas, WasiConfigurationException.ConfigurationArea.NETWORK_CONFIGURATION));
+      assertTrue(
+          contains(areas, WasiConfigurationException.ConfigurationArea.COMPONENT_INSTANTIATION));
       assertTrue(contains(areas, WasiConfigurationException.ConfigurationArea.RESOURCE_LIMITS));
       assertTrue(contains(areas, WasiConfigurationException.ConfigurationArea.RUNTIME_ENGINE));
       assertTrue(contains(areas, WasiConfigurationException.ConfigurationArea.SECURITY_POLICY));
       assertTrue(contains(areas, WasiConfigurationException.ConfigurationArea.SYSTEM));
     }
 
-    private boolean contains(final WasiConfigurationException.ConfigurationArea[] array, final WasiConfigurationException.ConfigurationArea value) {
+    private boolean contains(
+        final WasiConfigurationException.ConfigurationArea[] array,
+        final WasiConfigurationException.ConfigurationArea value) {
       for (final WasiConfigurationException.ConfigurationArea area : array) {
         if (area == value) {
           return true;
@@ -429,24 +512,35 @@ class WasiConfigurationExceptionTest {
     @Test
     @DisplayName("Empty parameter name handling")
     void testEmptyParameterNameHandling() {
-      final WasiConfigurationException exception = new WasiConfigurationException(
-          "Error", WasiConfigurationException.ConfigurationArea.SYSTEM, "", "value", "expected");
+      final WasiConfigurationException exception =
+          new WasiConfigurationException(
+              "Error",
+              WasiConfigurationException.ConfigurationArea.SYSTEM,
+              "",
+              "value",
+              "expected");
       assertEquals("", exception.getConfigurationParameter());
     }
 
     @Test
     @DisplayName("Empty provided value handling")
     void testEmptyProvidedValueHandling() {
-      final WasiConfigurationException exception = new WasiConfigurationException(
-          "Error", WasiConfigurationException.ConfigurationArea.SYSTEM, "param", "", "expected");
+      final WasiConfigurationException exception =
+          new WasiConfigurationException(
+              "Error",
+              WasiConfigurationException.ConfigurationArea.SYSTEM,
+              "param",
+              "",
+              "expected");
       assertEquals("", exception.getProvidedValue());
     }
 
     @Test
     @DisplayName("Empty expected value handling")
     void testEmptyExpectedValueHandling() {
-      final WasiConfigurationException exception = new WasiConfigurationException(
-          "Error", WasiConfigurationException.ConfigurationArea.SYSTEM, "param", "value", "");
+      final WasiConfigurationException exception =
+          new WasiConfigurationException(
+              "Error", WasiConfigurationException.ConfigurationArea.SYSTEM, "param", "value", "");
       assertEquals("", exception.getExpectedValue());
     }
   }
