@@ -325,6 +325,9 @@ class WasiConfigurationExceptionTest {
           case SYSTEM:
             assertTrue(guidance.contains("system-level"));
             break;
+          default:
+            assertTrue(guidance.contains("configuration"));
+            break;
         }
       }
     }
