@@ -543,36 +543,19 @@ public final class JniWasiInstance implements WasiInstance {
 
       @Override
       public void validateParameters(final Object... parameters) {
-        // Basic validation - for now accept any parameters
-        // TODO: Implement actual parameter validation based on function signature
+        // Basic validation - check for null parameters
         if (parameters == null) {
           throw new IllegalArgumentException("Parameters cannot be null");
         }
-      }
-
-      public void validateParameters(final Object... parameters) {
-        // Basic validation - check for null parameters
-        if (parameters != null) {
-          for (Object param : parameters) {
-            if (param == null) {
-              throw new IllegalArgumentException("Function parameters cannot be null");
-            }
+        for (Object param : parameters) {
+          if (param == null) {
+            throw new IllegalArgumentException("Function parameters cannot be null");
           }
         }
       }
 
-      public List<String> getThrownExceptionTypes() {
-        return new ArrayList<>(); // No exception types tracked yet
-      }
 
-      public boolean canThrow() {
-        return !getThrownExceptionTypes().isEmpty();
-      }
 
-      public String getReturnType() {
-        // Placeholder - return generic object type
-        return "object";
-      }
     };
   }
 
@@ -680,97 +663,6 @@ public final class JniWasiInstance implements WasiInstance {
         throw new WasmException("Ownership transfer not supported for placeholder resources");
       }
 
-      @Override
-      public Instant getCreatedAt() {
-        return createdAt;
-      }
-
-      @Override
-      public Optional<Instant> getLastAccessedAt() {
-        return Optional.ofNullable(lastAccessedAt);
-      }
-
-      @Override
-      public WasiResourceMetadata getMetadata() throws WasmException {
-        // Placeholder metadata implementation
-        return new WasiResourceMetadata() {
-          @Override
-          public String getResourceType() { return resourceType; }
-          @Override
-          public long getResourceId() { return resourceId; }
-          @Override
-          public Map<String, Object> getProperties() { return Collections.emptyMap(); }
-          @Override
-          public boolean hasCapability(String capability) { return false; }
-        };
-      }
-
-      @Override
-      public WasiResourceState getState() throws WasmException {
-        // Placeholder state implementation
-        return resourceClosed ? WasiResourceState.CLOSED : WasiResourceState.ACTIVE;
-      }
-
-      @Override
-      public WasiResourceStats getStats() {
-        // Placeholder stats implementation
-        return new WasiResourceStats() {
-          @Override
-          public long getAccessCount() { return 0; }
-          @Override
-          public long getErrorCount() { return 0; }
-          @Override
-          public long getOperationCount() { return 0; }
-          @Override
-          public Instant getLastUsed() { return lastAccessedAt; }
-          @Override
-          public String getSummary() { return "Resource " + resourceId + " (" + resourceType + ")"; }
-        };
-      }
-
-      @Override
-      public Object invoke(final String operation, final Object... parameters) throws WasmException {
-        lastAccessedAt = Instant.now();
-        // Placeholder operation implementation
-        throw new WasmException("Operation not supported: " + operation);
-      }
-
-      @Override
-      public List<String> getAvailableOperations() {
-        return Collections.emptyList(); // No operations supported in placeholder
-      }
-
-      @Override
-      public WasiResourceHandle createHandle() throws WasmException {
-        // Placeholder handle implementation
-        return new WasiResourceHandle() {
-          @Override
-          public long getResourceId() { return resourceId; }
-          @Override
-          public String getResourceType() { return resourceType; }
-          @Override
-          public WasiInstance getOwner() { return JniWasiInstance.this; }
-          @Override
-          public boolean isValid() { return !resourceClosed; }
-        };
-      }
-
-      @Override
-      public void transferOwnership(final WasiInstance targetInstance) throws WasmException {
-        // Placeholder implementation - in real implementation this would
-        // transfer resource ownership to another WASI instance
-        if (targetInstance == null) {
-          throw new IllegalArgumentException("Target instance cannot be null");
-        }
-        if (!isOwned()) {
-          throw new IllegalStateException("Cannot transfer ownership of borrowed resource");
-        }
-        if (!isValid()) {
-          throw new IllegalStateException("Cannot transfer ownership of invalid resource");
-        }
-        // For now, just log the transfer
-        LOGGER.fine("Transferring resource " + resourceId + " to instance " + targetInstance.getId());
-      }
 
       @Override
       public void close() {
