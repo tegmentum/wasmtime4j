@@ -294,6 +294,6 @@ public final class PanamaWasiContext implements WasiContext {
         WasiRuntimeType.PANAMA,
         "1.0.0-panama",
         "36.0.2" // TODO: Extract actual version from native layer
-    );
+        );
   }
 }

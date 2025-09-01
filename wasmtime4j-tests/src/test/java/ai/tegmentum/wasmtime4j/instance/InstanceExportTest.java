@@ -278,6 +278,8 @@ final class InstanceExportTest {
                   case "mul":
                     assertThat(result[0].asI32()).isEqualTo(50);
                     break;
+                  default:
+                    throw new AssertionError("Unexpected function name: " + functionName);
                 }
 
                 addTestMetric(

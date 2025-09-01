@@ -595,8 +595,12 @@ public final class PanamaWasiComponent implements WasiComponent {
         @Override
         public String getSummary() {
           return String.format(
-              "Component Stats: bytecode=%d bytes, compiled=%d bytes, exported interfaces=%d, imported interfaces=%d",
-              getBytecodeSize(), getCompiledSize(), getExportedInterfaceCount(), getImportedInterfaceCount());
+              "Component Stats: bytecode=%d bytes, compiled=%d bytes, exported interfaces=%d,"
+                  + " imported interfaces=%d",
+              getBytecodeSize(),
+              getCompiledSize(),
+              getExportedInterfaceCount(),
+              getImportedInterfaceCount());
         }
       };
 

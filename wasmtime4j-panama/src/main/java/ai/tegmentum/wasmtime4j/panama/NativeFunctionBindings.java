@@ -344,10 +344,12 @@ public final class NativeFunctionBindings {
    * @param wasmBytes pointer to the WASM component bytes
    * @return memory segment pointer to the component, or null on failure
    */
-  public MemorySegment loadComponentFromBytes(final MemorySegment enginePtr, final MemorySegment wasmBytes) {
+  public MemorySegment loadComponentFromBytes(
+      final MemorySegment enginePtr, final MemorySegment wasmBytes) {
     validatePointer(enginePtr, "enginePtr");
     validatePointer(wasmBytes, "wasmBytes");
-    return callNativeFunction("wasmtime4j_component_load_from_bytes", MemorySegment.class, enginePtr, wasmBytes);
+    return callNativeFunction(
+        "wasmtime4j_component_load_from_bytes", MemorySegment.class, enginePtr, wasmBytes);
   }
 
   /**
@@ -357,10 +359,12 @@ public final class NativeFunctionBindings {
    * @param componentPtr pointer to the component
    * @return memory segment pointer to the component instance, or null on failure
    */
-  public MemorySegment instantiateComponent(final MemorySegment enginePtr, final MemorySegment componentPtr) {
+  public MemorySegment instantiateComponent(
+      final MemorySegment enginePtr, final MemorySegment componentPtr) {
     validatePointer(enginePtr, "enginePtr");
     validatePointer(componentPtr, "componentPtr");
-    return callNativeFunction("wasmtime4j_component_instantiate", MemorySegment.class, enginePtr, componentPtr);
+    return callNativeFunction(
+        "wasmtime4j_component_instantiate", MemorySegment.class, enginePtr, componentPtr);
   }
 
   /**
@@ -371,7 +375,8 @@ public final class NativeFunctionBindings {
    */
   public int getActiveInstancesCount(final MemorySegment enginePtr) {
     validatePointer(enginePtr, "enginePtr");
-    return callNativeFunction("wasmtime4j_component_engine_active_instances", Integer.class, enginePtr);
+    return callNativeFunction(
+        "wasmtime4j_component_engine_active_instances", Integer.class, enginePtr);
   }
 
   /**
@@ -415,7 +420,8 @@ public final class NativeFunctionBindings {
    */
   public boolean exportsInterface(final MemorySegment componentPtr, final String interfaceName) {
     validatePointer(componentPtr, "componentPtr");
-    return callNativeFunction("wasmtime4j_component_exports_interface", Boolean.class, componentPtr, interfaceName);
+    return callNativeFunction(
+        "wasmtime4j_component_exports_interface", Boolean.class, componentPtr, interfaceName);
   }
 
   /**
@@ -427,7 +433,8 @@ public final class NativeFunctionBindings {
    */
   public boolean importsInterface(final MemorySegment componentPtr, final String interfaceName) {
     validatePointer(componentPtr, "componentPtr");
-    return callNativeFunction("wasmtime4j_component_imports_interface", Boolean.class, componentPtr, interfaceName);
+    return callNativeFunction(
+        "wasmtime4j_component_imports_interface", Boolean.class, componentPtr, interfaceName);
   }
 
   /**
