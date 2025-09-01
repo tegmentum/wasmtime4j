@@ -1,14 +1,11 @@
 # GitHub Issue Mapping
 
-Epic: #103 - https://github.com/tegmentum/wasmtime4j/issues/103
+Epic: #120 - https://github.com/tegmentum/wasmtime4j/issues/120
 
 Tasks:
-- #104: Fix JniWasiInstance interface implementation mismatches - https://github.com/tegmentum/wasmtime4j/issues/104
-- #105: Fix JniWasiComponent interface implementation mismatches - https://github.com/tegmentum/wasmtime4j/issues/105
-- #106: Fix JniComponent and JniWasiContext compilation errors - https://github.com/tegmentum/wasmtime4j/issues/106
-- #107: Apply automated code style fixes - https://github.com/tegmentum/wasmtime4j/issues/107
-- #108: Fix remaining manual code style violations - https://github.com/tegmentum/wasmtime4j/issues/108
-- #109: Fix Rust native code warnings - https://github.com/tegmentum/wasmtime4j/issues/109
-- #110: Validate complete Maven build lifecycle - https://github.com/tegmentum/wasmtime4j/issues/110
+- #121: Fix JNI compilation errors and duplicate methods - https://github.com/tegmentum/wasmtime4j/issues/121
+- #122: Fix Panama compilation errors and missing implementations - https://github.com/tegmentum/wasmtime4j/issues/122
+- #123: Apply static analysis fixes and code formatting - https://github.com/tegmentum/wasmtime4j/issues/123
+- #124: Validate complete Maven build lifecycle - https://github.com/tegmentum/wasmtime4j/issues/124
 
-Synced: 2025-09-01T14:18:47Z
+Synced: 2025-09-01T17:39:14Z
