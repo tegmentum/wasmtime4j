@@ -14,8 +14,8 @@ import ai.tegmentum.wasmtime4j.utils.BaseIntegrationTest;
 import ai.tegmentum.wasmtime4j.utils.TestUtils;
 import ai.tegmentum.wasmtime4j.webassembly.CrossRuntimeTestRunner;
 import ai.tegmentum.wasmtime4j.webassembly.CrossRuntimeValidationResult;
-import ai.tegmentum.wasmtime4j.webassembly.WasmTestDataManager;
 import ai.tegmentum.wasmtime4j.webassembly.WasmTestCase;
+import ai.tegmentum.wasmtime4j.webassembly.WasmTestDataManager;
 import ai.tegmentum.wasmtime4j.webassembly.WasmTestSuiteLoader;
 import java.io.IOException;
 import java.util.HashSet;
@@ -254,8 +254,8 @@ class ModuleMetadataTest extends BaseIntegrationTest {
                 // Verify we have imports from different modules
                 assertThat(importModules).isNotEmpty();
 
-                return "Complex imports: " + imports.size() + ", modules: " + importModules.size() + 
-                       ", types: " + importTypeKinds.size();
+                return "Complex imports: " + imports.size() + ", modules: " + importModules.size()
+                       + ", types: " + importTypeKinds.size();
               }
             },
             comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
@@ -438,8 +438,8 @@ class ModuleMetadataTest extends BaseIntegrationTest {
                       localProcessed++;
                       
                     } catch (final Exception e) {
-                      LOGGER.fine("Test case compilation failed (expected for some): " + 
-                                  testCase.getName() + " - " + e.getMessage());
+                      LOGGER.fine("Test case compilation failed (expected for some): "
+                                  + testCase.getName() + " - " + e.getMessage());
                     }
                   }
                 }
