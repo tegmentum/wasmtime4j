@@ -209,8 +209,9 @@ public final class PanamaComponent {
      * Gets the number of active component instances.
      *
      * @return the number of active instances
+     * @throws WasmException if the operation fails
      */
-    public int getActiveInstancesCount() {
+    public int getActiveInstancesCount() throws WasmException {
       ensureNotClosed();
 
       try {
@@ -227,8 +228,9 @@ public final class PanamaComponent {
      * and preventing memory leaks.
      *
      * @return the number of instances that were cleaned up
+     * @throws WasmException if the operation fails
      */
-    public int cleanupInstances() {
+    public int cleanupInstances() throws WasmException {
       ensureNotClosed();
 
       try {
@@ -264,7 +266,7 @@ public final class PanamaComponent {
 
     // Native method implementations using Panama FFI
 
-    private MemorySegment createNativeComponentEngine() {
+    private MemorySegment createNativeComponentEngine() throws WasmException {
       try {
         return nativeFunctions.createComponentEngine();
       } catch (Exception e) {
@@ -273,7 +275,7 @@ public final class PanamaComponent {
     }
 
     private MemorySegment loadNativeComponentFromBytes(
-        MemorySegment enginePtr, MemorySegment wasmBytes) {
+        MemorySegment enginePtr, MemorySegment wasmBytes) throws WasmException {
       try {
         return nativeFunctions.loadComponentFromBytes(enginePtr, wasmBytes);
       } catch (Exception e) {
@@ -282,7 +284,7 @@ public final class PanamaComponent {
     }
 
     private MemorySegment instantiateNativeComponent(
-        MemorySegment enginePtr, MemorySegment componentPtr) {
+        MemorySegment enginePtr, MemorySegment componentPtr) throws WasmException {
       try {
         return nativeFunctions.instantiateComponent(enginePtr, componentPtr);
       } catch (Exception e) {
@@ -290,7 +292,7 @@ public final class PanamaComponent {
       }
     }
 
-    private int getActiveInstancesCountNative(MemorySegment enginePtr) {
+    private int getActiveInstancesCountNative(MemorySegment enginePtr) throws WasmException {
       try {
         return nativeFunctions.getActiveInstancesCount(enginePtr);
       } catch (Exception e) {
@@ -298,7 +300,7 @@ public final class PanamaComponent {
       }
     }
 
-    private int cleanupInstancesNative(MemorySegment enginePtr) {
+    private int cleanupInstancesNative(MemorySegment enginePtr) throws WasmException {
       try {
         return nativeFunctions.cleanupInstances(enginePtr);
       } catch (Exception e) {
@@ -352,8 +354,9 @@ public final class PanamaComponent {
      * Gets the size of the component in bytes.
      *
      * @return the component size in bytes
+     * @throws WasmException if the operation fails
      */
-    public long getSize() {
+    public long getSize() throws WasmException {
       ensureNotClosed();
 
       try {
@@ -368,8 +371,9 @@ public final class PanamaComponent {
      *
      * @param interfaceName the interface name to check
      * @return true if the interface is exported, false otherwise
+     * @throws WasmException if the operation fails
      */
-    public boolean exportsInterface(final String interfaceName) {
+    public boolean exportsInterface(final String interfaceName) throws WasmException {
       Objects.requireNonNull(interfaceName, "Interface name cannot be null");
       PanamaErrorHandler.requireNonEmpty(interfaceName, "interfaceName");
       ensureNotClosed();

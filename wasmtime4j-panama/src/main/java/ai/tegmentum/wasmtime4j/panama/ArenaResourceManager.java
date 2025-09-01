@@ -244,6 +244,28 @@ public final class ArenaResourceManager implements AutoCloseable {
     return closed;
   }
 
+  /**
+   * Checks if the resource manager is valid (not closed).
+   *
+   * @return true if valid, false if closed
+   */
+  public boolean isValid() {
+    return !closed;
+  }
+
+  /**
+   * Gets resource statistics.
+   *
+   * @return resource statistics
+   */
+  public Statistics getStatistics() {
+    return new Statistics(
+        trackingEnabled ? resources.size() : 0,
+        trackingEnabled ? managedResources.size() : 0,
+        arena.scope().isAlive()
+    );
+  }
+
   /** Closes the resource manager and cleans up all resources. */
   @Override
   public void close() {
@@ -332,6 +354,15 @@ public final class ArenaResourceManager implements AutoCloseable {
     }
 
     /**
+     * Gets the underlying memory segment (alias for getSegment).
+     *
+     * @return the memory segment
+     */
+    public MemorySegment segment() {
+      return segment;
+    }
+
+    /**
      * Gets the description of this managed segment.
      *
      * @return the description
@@ -408,6 +439,16 @@ public final class ArenaResourceManager implements AutoCloseable {
     }
 
     /**
+     * Gets the native pointer (alias for getNativePointer).
+     *
+     * @return the native pointer
+     * @throws IllegalStateException if the resource is closed
+     */
+    public MemorySegment resource() {
+      return getNativePointer();
+    }
+
+    /**
      * Gets the description of this managed resource.
      *
      * @return the description
@@ -423,6 +464,15 @@ public final class ArenaResourceManager implements AutoCloseable {
      */
     public boolean isClosed() {
       return closed;
+    }
+
+    /**
+     * Checks if the resource is valid (not closed).
+     *
+     * @return true if valid, false if closed
+     */
+    public boolean isValid() {
+      return !closed;
     }
 
     /** Closes the native resource. */
@@ -525,5 +575,54 @@ public final class ArenaResourceManager implements AutoCloseable {
     }
 
     LOGGER.fine("Unregistered managed resource: " + ownerName);
+  }
+
+  /** Resource statistics data. */
+  public static final class Statistics {
+    private final int totalResources;
+    private final int nativeResources;
+    private final boolean arenaActive;
+
+    Statistics(final int totalResources, final int nativeResources, final boolean arenaActive) {
+      this.totalResources = totalResources;
+      this.nativeResources = nativeResources;
+      this.arenaActive = arenaActive;
+    }
+
+    /**
+     * Gets the total number of resources.
+     *
+     * @return total resource count
+     */
+    public int getTotalResources() {
+      return totalResources;
+    }
+
+    /**
+     * Gets the number of native resources.
+     *
+     * @return native resource count
+     */
+    public int getNativeResources() {
+      return nativeResources;
+    }
+
+    /**
+     * Checks if the arena is active.
+     *
+     * @return true if arena is active
+     */
+    public boolean isArenaActive() {
+      return arenaActive;
+    }
+
+    @Override
+    public String toString() {
+      return "Statistics{" +
+          "totalResources=" + totalResources +
+          ", nativeResources=" + nativeResources +
+          ", arenaActive=" + arenaActive +
+          '}';
+    }
   }
 }

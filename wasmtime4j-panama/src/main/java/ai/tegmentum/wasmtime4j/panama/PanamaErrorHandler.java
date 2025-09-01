@@ -483,4 +483,16 @@ public final class PanamaErrorHandler {
     }
     return value;
   }
+
+  /**
+   * Validates that a string is not null or empty (alias for requireNotEmpty).
+   *
+   * @param value the string to validate
+   * @param paramName the parameter name for error messages
+   * @return the value if valid
+   * @throws IllegalArgumentException if the string is null or empty
+   */
+  public static String requireNonEmpty(final String value, final String paramName) {
+    return requireNotEmpty(value, paramName);
+  }
 }

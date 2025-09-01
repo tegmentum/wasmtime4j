@@ -65,9 +65,11 @@ public final class PanamaWasiContext implements WasiContext {
    * @throws WasmException if context creation fails
    */
   public PanamaWasiContext() throws WasmException {
+    ArenaResourceManager tempResourceManager = null;
     try {
       // Create arena resource manager for lifecycle management
-      this.resourceManager = new ArenaResourceManager();
+      tempResourceManager = new ArenaResourceManager();
+      this.resourceManager = tempResourceManager;
 
       // Create the underlying component engine
       this.componentEngine = PanamaComponent.createComponentEngine(resourceManager);
@@ -79,9 +81,9 @@ public final class PanamaWasiContext implements WasiContext {
 
     } catch (final Exception e) {
       // Clean up on failure
-      if (resourceManager != null) {
+      if (tempResourceManager != null) {
         try {
-          resourceManager.close();
+          tempResourceManager.close();
         } catch (Exception cleanupException) {
           e.addSuppressed(cleanupException);
         }
@@ -203,8 +205,9 @@ public final class PanamaWasiContext implements WasiContext {
    * Gets the number of active component instances managed by this context.
    *
    * @return the number of active instances
+   * @throws WasmException if the operation fails
    */
-  public int getActiveInstancesCount() {
+  public int getActiveInstancesCount() throws WasmException {
     ensureNotClosed();
     return componentEngine.getActiveInstancesCount();
   }
@@ -217,8 +220,9 @@ public final class PanamaWasiContext implements WasiContext {
    * also helps clean up native memory more efficiently.
    *
    * @return the number of instances that were cleaned up
+   * @throws WasmException if the operation fails
    */
-  public int cleanupInstances() {
+  public int cleanupInstances() throws WasmException {
     ensureNotClosed();
     return componentEngine.cleanupInstances();
   }
@@ -286,44 +290,10 @@ public final class PanamaWasiContext implements WasiContext {
    * @return runtime information
    */
   private WasiRuntimeInfo createRuntimeInfo() {
-    return new WasiRuntimeInfo() {
-      @Override
-      public WasiRuntimeType getType() {
-        return WasiRuntimeType.PANAMA;
-      }
-
-      @Override
-      public String getVersion() {
-        // TODO: Extract actual version from native layer
-        return "1.0.0-panama";
-      }
-
-      @Override
-      public String getWasmtimeVersion() {
-        // TODO: Extract actual Wasmtime version from native layer
-        return "36.0.2";
-      }
-
-      @Override
-      public boolean supportsComponentModel() {
-        return true;
-      }
-
-      @Override
-      public boolean supportsAsync() {
-        return true;
-      }
-
-      @Override
-      public boolean supportsResourceSharing() {
-        return true;
-      }
-
-      @Override
-      public String getDescription() {
-        return "Panama FFI-based WASI runtime implementation using Wasmtime component model with"
-            + " Arena-based resource management";
-      }
-    };
+    return new WasiRuntimeInfo(
+        WasiRuntimeType.PANAMA,
+        "1.0.0-panama",
+        "36.0.2" // TODO: Extract actual version from native layer
+    );
   }
 }

@@ -328,6 +328,128 @@ public final class NativeFunctionBindings {
     return getMethodHandle("wasmtime4j_functype_destroy").orElse(null);
   }
 
+  /**
+   * Creates a component engine.
+   *
+   * @return memory segment pointer to the component engine, or null on failure
+   */
+  public MemorySegment createComponentEngine() {
+    return callNativeFunction("wasmtime4j_component_engine_create", MemorySegment.class);
+  }
+
+  /**
+   * Loads a component from bytes.
+   *
+   * @param enginePtr pointer to the component engine
+   * @param wasmBytes pointer to the WASM component bytes
+   * @return memory segment pointer to the component, or null on failure
+   */
+  public MemorySegment loadComponentFromBytes(final MemorySegment enginePtr, final MemorySegment wasmBytes) {
+    validatePointer(enginePtr, "enginePtr");
+    validatePointer(wasmBytes, "wasmBytes");
+    return callNativeFunction("wasmtime4j_component_load_from_bytes", MemorySegment.class, enginePtr, wasmBytes);
+  }
+
+  /**
+   * Instantiates a component.
+   *
+   * @param enginePtr pointer to the component engine
+   * @param componentPtr pointer to the component
+   * @return memory segment pointer to the component instance, or null on failure
+   */
+  public MemorySegment instantiateComponent(final MemorySegment enginePtr, final MemorySegment componentPtr) {
+    validatePointer(enginePtr, "enginePtr");
+    validatePointer(componentPtr, "componentPtr");
+    return callNativeFunction("wasmtime4j_component_instantiate", MemorySegment.class, enginePtr, componentPtr);
+  }
+
+  /**
+   * Gets the active instances count for a component engine.
+   *
+   * @param enginePtr pointer to the component engine
+   * @return number of active instances
+   */
+  public int getActiveInstancesCount(final MemorySegment enginePtr) {
+    validatePointer(enginePtr, "enginePtr");
+    return callNativeFunction("wasmtime4j_component_engine_active_instances", Integer.class, enginePtr);
+  }
+
+  /**
+   * Cleans up inactive instances.
+   *
+   * @param enginePtr pointer to the component engine
+   * @return number of instances cleaned up
+   */
+  public int cleanupInstances(final MemorySegment enginePtr) {
+    validatePointer(enginePtr, "enginePtr");
+    return callNativeFunction("wasmtime4j_component_engine_cleanup", Integer.class, enginePtr);
+  }
+
+  /**
+   * Destroys a component engine.
+   *
+   * @param enginePtr pointer to the component engine to destroy
+   */
+  public void destroyComponentEngine(final MemorySegment enginePtr) {
+    validatePointer(enginePtr, "enginePtr");
+    callNativeFunction("wasmtime4j_component_engine_destroy", Void.class, enginePtr);
+  }
+
+  /**
+   * Gets the size of a component.
+   *
+   * @param componentPtr pointer to the component
+   * @return component size in bytes
+   */
+  public long getComponentSize(final MemorySegment componentPtr) {
+    validatePointer(componentPtr, "componentPtr");
+    return callNativeFunction("wasmtime4j_component_size", Long.class, componentPtr);
+  }
+
+  /**
+   * Checks if a component exports a specific interface.
+   *
+   * @param componentPtr pointer to the component
+   * @param interfaceName name of the interface to check
+   * @return true if the interface is exported
+   */
+  public boolean exportsInterface(final MemorySegment componentPtr, final String interfaceName) {
+    validatePointer(componentPtr, "componentPtr");
+    return callNativeFunction("wasmtime4j_component_exports_interface", Boolean.class, componentPtr, interfaceName);
+  }
+
+  /**
+   * Checks if a component imports a specific interface.
+   *
+   * @param componentPtr pointer to the component
+   * @param interfaceName name of the interface to check
+   * @return true if the interface is imported
+   */
+  public boolean importsInterface(final MemorySegment componentPtr, final String interfaceName) {
+    validatePointer(componentPtr, "componentPtr");
+    return callNativeFunction("wasmtime4j_component_imports_interface", Boolean.class, componentPtr, interfaceName);
+  }
+
+  /**
+   * Destroys a component.
+   *
+   * @param componentPtr pointer to the component to destroy
+   */
+  public void destroyComponent(final MemorySegment componentPtr) {
+    validatePointer(componentPtr, "componentPtr");
+    callNativeFunction("wasmtime4j_component_destroy", Void.class, componentPtr);
+  }
+
+  /**
+   * Destroys a component instance.
+   *
+   * @param instancePtr pointer to the component instance to destroy
+   */
+  public void destroyComponentInstance(final MemorySegment instancePtr) {
+    validatePointer(instancePtr, "instancePtr");
+    callNativeFunction("wasmtime4j_component_instance_destroy", Void.class, instancePtr);
+  }
+
   /** Initializes all function bindings. */
   private void initializeFunctionBindings() {
     // Engine functions
@@ -421,6 +543,68 @@ public final class NativeFunctionBindings {
     addFunctionBinding(
         "wasmtime4j_functype_destroy",
         FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // functype_ptr
+
+    // Component engine functions
+    addFunctionBinding(
+        "wasmtime4j_component_engine_create", FunctionDescriptor.of(ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_component_load_from_bytes",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, // return component_ptr
+            ValueLayout.ADDRESS, // engine_ptr
+            ValueLayout.ADDRESS)); // wasm_bytes
+
+    addFunctionBinding(
+        "wasmtime4j_component_instantiate",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, // return instance_ptr
+            ValueLayout.ADDRESS, // engine_ptr
+            ValueLayout.ADDRESS)); // component_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_component_engine_active_instances",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return count
+            ValueLayout.ADDRESS)); // engine_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_component_engine_cleanup",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return count
+            ValueLayout.ADDRESS)); // engine_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_component_engine_destroy",
+        FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // engine_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_component_size",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG, // return size
+            ValueLayout.ADDRESS)); // component_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_component_exports_interface",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_BOOLEAN, // return success
+            ValueLayout.ADDRESS, // component_ptr
+            ValueLayout.ADDRESS)); // interface_name
+
+    addFunctionBinding(
+        "wasmtime4j_component_imports_interface",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_BOOLEAN, // return success
+            ValueLayout.ADDRESS, // component_ptr
+            ValueLayout.ADDRESS)); // interface_name
+
+    addFunctionBinding(
+        "wasmtime4j_component_destroy",
+        FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // component_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_component_instance_destroy",
+        FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // instance_ptr
   }
 
   /**
