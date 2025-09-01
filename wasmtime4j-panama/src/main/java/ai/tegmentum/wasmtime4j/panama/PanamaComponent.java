@@ -390,8 +390,9 @@ public final class PanamaComponent {
      *
      * @param interfaceName the interface name to check
      * @return true if the interface is imported, false otherwise
+     * @throws WasmException if the operation fails
      */
-    public boolean importsInterface(final String interfaceName) {
+    public boolean importsInterface(final String interfaceName) throws WasmException {
       Objects.requireNonNull(interfaceName, "Interface name cannot be null");
       PanamaErrorHandler.requireNonEmpty(interfaceName, "interfaceName");
       ensureNotClosed();
@@ -439,7 +440,7 @@ public final class PanamaComponent {
 
     // Native method implementations using Panama FFI
 
-    private long getComponentSizeNative(MemorySegment componentPtr) {
+    private long getComponentSizeNative(MemorySegment componentPtr) throws WasmException {
       try {
         return nativeFunctions.getComponentSize(componentPtr);
       } catch (Exception e) {
@@ -447,7 +448,7 @@ public final class PanamaComponent {
       }
     }
 
-    private boolean exportsInterfaceNative(MemorySegment componentPtr, String interfaceName) {
+    private boolean exportsInterfaceNative(MemorySegment componentPtr, String interfaceName) throws WasmException {
       try {
         return nativeFunctions.exportsInterface(componentPtr, interfaceName);
       } catch (Exception e) {
@@ -455,7 +456,7 @@ public final class PanamaComponent {
       }
     }
 
-    private boolean importsInterfaceNative(MemorySegment componentPtr, String interfaceName) {
+    private boolean importsInterfaceNative(MemorySegment componentPtr, String interfaceName) throws WasmException {
       try {
         return nativeFunctions.importsInterface(componentPtr, interfaceName);
       } catch (Exception e) {
