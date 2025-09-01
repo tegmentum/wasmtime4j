@@ -4,13 +4,24 @@ import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
 import ai.tegmentum.wasmtime4j.wasi.WasiComponent;
+import ai.tegmentum.wasmtime4j.wasi.WasiComponentStats;
 import ai.tegmentum.wasmtime4j.wasi.WasiConfig;
+import ai.tegmentum.wasmtime4j.wasi.WasiErrorStats;
+import ai.tegmentum.wasmtime4j.wasi.WasiFunctionMetadata;
 import ai.tegmentum.wasmtime4j.wasi.WasiInstance;
 import ai.tegmentum.wasmtime4j.wasi.WasiInterfaceMetadata;
-import ai.tegmentum.wasmtime4j.wasi.WasiComponentStats;
+import ai.tegmentum.wasmtime4j.wasi.WasiPerformanceMetrics;
+import ai.tegmentum.wasmtime4j.wasi.WasiResourceTypeMetadata;
+import ai.tegmentum.wasmtime4j.wasi.WasiResourceUsageStats;
+import ai.tegmentum.wasmtime4j.wasi.WasiTypeDefinition;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.logging.Logger;
 
 /**
@@ -333,34 +344,95 @@ public final class JniWasiComponent implements WasiComponent {
       }
 
       @Override
-      public String getNamespace() {
-        int colonIndex = interfaceName.indexOf(':');
-        return colonIndex > 0 ? interfaceName.substring(0, colonIndex) : null;
+      public Optional<String> getVersion() {
+        return Optional.empty(); // Not extracted yet
       }
 
       @Override
-      public String getVersion() {
-        return null; // Not extracted yet
+      public Optional<String> getDocumentation() {
+        return Optional.empty(); // Not extracted yet
       }
 
       @Override
-      public List<String> getFunctions() {
+      public List<WasiFunctionMetadata> getFunctions() {
         return new ArrayList<>(); // Not extracted yet
       }
 
       @Override
-      public List<String> getTypes() {
+      public Optional<WasiFunctionMetadata> getFunction(final String functionName) {
+        Objects.requireNonNull(functionName, "Function name cannot be null");
+        if (functionName.trim().isEmpty()) {
+          throw new IllegalArgumentException("Function name cannot be empty");
+        }
+        return Optional.empty(); // Not extracted yet
+      }
+
+      @Override
+      public List<WasiResourceTypeMetadata> getResourceTypes() {
         return new ArrayList<>(); // Not extracted yet
       }
 
       @Override
-      public List<String> getResources() {
+      public Optional<WasiResourceTypeMetadata> getResourceType(final String typeName) {
+        Objects.requireNonNull(typeName, "Type name cannot be null");
+        if (typeName.trim().isEmpty()) {
+          throw new IllegalArgumentException("Type name cannot be empty");
+        }
+        return Optional.empty(); // Not extracted yet
+      }
+
+      @Override
+      public Map<String, WasiTypeDefinition> getCustomTypes() {
+        return new HashMap<>(); // Not extracted yet
+      }
+
+      @Override
+      public Optional<WasiTypeDefinition> getCustomType(final String typeName) {
+        Objects.requireNonNull(typeName, "Type name cannot be null");
+        if (typeName.trim().isEmpty()) {
+          throw new IllegalArgumentException("Type name cannot be empty");
+        }
+        return Optional.empty(); // Not extracted yet
+      }
+
+      @Override
+      public Map<String, Object> getConstants() {
+        return new HashMap<>(); // Not extracted yet
+      }
+
+      @Override
+      public Optional<Object> getConstant(final String constantName) {
+        Objects.requireNonNull(constantName, "Constant name cannot be null");
+        if (constantName.trim().isEmpty()) {
+          throw new IllegalArgumentException("Constant name cannot be empty");
+        }
+        return Optional.empty(); // Not extracted yet
+      }
+
+      @Override
+      public List<String> getDependencies() {
         return new ArrayList<>(); // Not extracted yet
       }
 
       @Override
-      public boolean isExport() {
-        return isExport;
+      public boolean isCompatibleWith(final WasiInterfaceMetadata other) {
+        Objects.requireNonNull(other, "Other interface cannot be null");
+        // Basic compatibility check - same name for now
+        return getName().equals(other.getName());
+      }
+
+      @Override
+      public Map<String, Object> getProperties() {
+        Map<String, Object> properties = new HashMap<>();
+        properties.put("isExport", isExport);
+        return properties;
+      }
+
+      @Override
+      public void validate() {
+        if (interfaceName == null || interfaceName.trim().isEmpty()) {
+          throw new IllegalArgumentException("Interface name cannot be null or empty");
+        }
       }
     };
   }
@@ -376,68 +448,389 @@ public final class JniWasiComponent implements WasiComponent {
       
       // TODO: Extract more detailed statistics from native layer
       return new WasiComponentStats() {
+        private final Instant collectedAt = Instant.now();
+        
         @Override
-        public long getSizeBytes() {
+        public Instant getCollectedAt() {
+          return collectedAt;
+        }
+        
+        @Override
+        public String getComponentName() {
+          return name;
+        }
+        
+        @Override
+        public long getBytecodeSize() {
           return size;
         }
-
+        
         @Override
-        public int getExportCount() {
+        public long getCompiledSize() {
+          return size; // Placeholder - same as bytecode for now
+        }
+        
+        @Override
+        public int getExportedInterfaceCount() {
           try {
             return getExports().size();
           } catch (WasmException e) {
             return 0;
           }
         }
-
+        
         @Override
-        public int getImportCount() {
+        public int getExportedFunctionCount() {
+          return 0; // Not tracked yet
+        }
+        
+        @Override
+        public int getImportedInterfaceCount() {
           try {
             return getImports().size();
           } catch (WasmException e) {
             return 0;
           }
         }
-
+        
         @Override
-        public long getCompilationTimeNanos() {
+        public int getImportedFunctionCount() {
           return 0; // Not tracked yet
         }
-
+        
         @Override
-        public long getValidationTimeNanos() {
+        public int getResourceTypeCount() {
           return 0; // Not tracked yet
+        }
+        
+        @Override
+        public int getCustomTypeCount() {
+          return 0; // Not tracked yet
+        }
+        
+        @Override
+        public long getCompilationTimeMs() {
+          return 0; // Not tracked yet
+        }
+        
+        @Override
+        public long getMemoryOverhead() {
+          return size; // Placeholder
+        }
+        
+        @Override
+        public int getActiveInstanceCount() {
+          return 0; // Not tracked yet
+        }
+        
+        @Override
+        public long getTotalInstanceCount() {
+          return 0; // Not tracked yet
+        }
+        
+        @Override
+        public long getTotalFunctionCalls() {
+          return 0; // Not tracked yet
+        }
+        
+        @Override
+        public Map<String, Long> getFunctionCallStats() {
+          return new HashMap<>(); // Not tracked yet
+        }
+        
+        @Override
+        public long getTotalExecutionTimeMs() {
+          return 0; // Not tracked yet
+        }
+        
+        @Override
+        public Map<String, Long> getFunctionExecutionTimeStats() {
+          return new HashMap<>(); // Not tracked yet
+        }
+        
+        @Override
+        public WasiErrorStats getErrorStats() {
+          return createBasicErrorStats();
+        }
+        
+        @Override
+        public WasiResourceUsageStats getResourceUsageStats() {
+          return createBasicResourceUsageStats();
+        }
+        
+        @Override
+        public WasiPerformanceMetrics getPerformanceMetrics() {
+          return createBasicPerformanceMetrics();
+        }
+        
+        @Override
+        public List<String> getExportedInterfaces() {
+          try {
+            return new ArrayList<>(getExports());
+          } catch (WasmException e) {
+            return new ArrayList<>();
+          }
+        }
+        
+        @Override
+        public List<String> getImportedInterfaces() {
+          try {
+            return new ArrayList<>(getImports());
+          } catch (WasmException e) {
+            return new ArrayList<>();
+          }
+        }
+        
+        @Override
+        public Map<String, Object> getCustomProperties() {
+          Map<String, Object> properties = new HashMap<>();
+          properties.put("componentValid", isValid());
+          properties.put("isClosed", closed);
+          return properties;
+        }
+        
+        @Override
+        public String getSummary() {
+          return String.format("Component %s: %d bytes, %d exports, %d imports", 
+            name != null ? name : "unnamed", 
+            getBytecodeSize(),
+            getExportedInterfaceCount(),
+            getImportedInterfaceCount());
         }
       };
 
     } catch (final Exception e) {
       // Return minimal stats on error
       return new WasiComponentStats() {
+        private final Instant collectedAt = Instant.now();
+        
         @Override
-        public long getSizeBytes() {
+        public Instant getCollectedAt() {
+          return collectedAt;
+        }
+        
+        @Override
+        public String getComponentName() {
+          return name;
+        }
+        
+        @Override
+        public long getBytecodeSize() {
           return 0;
         }
-
+        
         @Override
-        public int getExportCount() {
+        public long getCompiledSize() {
           return 0;
         }
-
+        
         @Override
-        public int getImportCount() {
+        public int getExportedInterfaceCount() {
           return 0;
         }
-
+        
         @Override
-        public long getCompilationTimeNanos() {
+        public int getExportedFunctionCount() {
           return 0;
         }
-
+        
         @Override
-        public long getValidationTimeNanos() {
+        public int getImportedInterfaceCount() {
           return 0;
+        }
+        
+        @Override
+        public int getImportedFunctionCount() {
+          return 0;
+        }
+        
+        @Override
+        public int getResourceTypeCount() {
+          return 0;
+        }
+        
+        @Override
+        public int getCustomTypeCount() {
+          return 0;
+        }
+        
+        @Override
+        public long getCompilationTimeMs() {
+          return 0;
+        }
+        
+        @Override
+        public long getMemoryOverhead() {
+          return 0;
+        }
+        
+        @Override
+        public int getActiveInstanceCount() {
+          return 0;
+        }
+        
+        @Override
+        public long getTotalInstanceCount() {
+          return 0;
+        }
+        
+        @Override
+        public long getTotalFunctionCalls() {
+          return 0;
+        }
+        
+        @Override
+        public Map<String, Long> getFunctionCallStats() {
+          return new HashMap<>();
+        }
+        
+        @Override
+        public long getTotalExecutionTimeMs() {
+          return 0;
+        }
+        
+        @Override
+        public Map<String, Long> getFunctionExecutionTimeStats() {
+          return new HashMap<>();
+        }
+        
+        @Override
+        public WasiErrorStats getErrorStats() {
+          return createBasicErrorStats();
+        }
+        
+        @Override
+        public WasiResourceUsageStats getResourceUsageStats() {
+          return createBasicResourceUsageStats();
+        }
+        
+        @Override
+        public WasiPerformanceMetrics getPerformanceMetrics() {
+          return createBasicPerformanceMetrics();
+        }
+        
+        @Override
+        public List<String> getExportedInterfaces() {
+          return new ArrayList<>();
+        }
+        
+        @Override
+        public List<String> getImportedInterfaces() {
+          return new ArrayList<>();
+        }
+        
+        @Override
+        public Map<String, Object> getCustomProperties() {
+          return new HashMap<>();
+        }
+        
+        @Override
+        public String getSummary() {
+          return "Component statistics unavailable due to error";
         }
       };
     }
+  }
+  
+  /**
+   * Creates basic error statistics for placeholder purposes.
+   * 
+   * @return basic error statistics
+   */
+  private WasiErrorStats createBasicErrorStats() {
+    return new WasiErrorStats() {
+      @Override
+      public long getTotalErrors() {
+        return 0; // Not tracked yet
+      }
+      
+      @Override
+      public Map<String, Long> getErrorsByType() {
+        return new HashMap<>(); // Not tracked yet
+      }
+      
+      @Override
+      public long getFatalErrors() {
+        return 0; // Not tracked yet
+      }
+      
+      @Override
+      public long getRecoverableErrors() {
+        return 0; // Not tracked yet
+      }
+    };
+  }
+  
+  /**
+   * Creates basic resource usage statistics for placeholder purposes.
+   * 
+   * @return basic resource usage statistics
+   */
+  private WasiResourceUsageStats createBasicResourceUsageStats() {
+    return new WasiResourceUsageStats() {
+      @Override
+      public long getTotalResourcesCreated() {
+        return 0; // Not tracked yet
+      }
+      
+      @Override
+      public int getCurrentResourceCount() {
+        return 0; // Not tracked yet
+      }
+      
+      @Override
+      public int getPeakResourceCount() {
+        return 0; // Not tracked yet
+      }
+      
+      @Override
+      public Map<String, Integer> getResourceCountsByType() {
+        return new HashMap<>(); // Not tracked yet
+      }
+      
+      @Override
+      public Map<String, Long> getResourceCreationsByType() {
+        return new HashMap<>(); // Not tracked yet
+      }
+    };
+  }
+  
+  /**
+   * Creates basic performance metrics for placeholder purposes.
+   * 
+   * @return basic performance metrics
+   */
+  private WasiPerformanceMetrics createBasicPerformanceMetrics() {
+    return new WasiPerformanceMetrics() {
+      @Override
+      public Duration getAverageExecutionTime() {
+        return Duration.ZERO; // Not tracked yet
+      }
+      
+      @Override
+      public Duration getMedianExecutionTime() {
+        return Duration.ZERO; // Not tracked yet
+      }
+      
+      @Override
+      public Duration getP95ExecutionTime() {
+        return Duration.ZERO; // Not tracked yet
+      }
+      
+      @Override
+      public Duration getP99ExecutionTime() {
+        return Duration.ZERO; // Not tracked yet
+      }
+      
+      @Override
+      public double getThroughput() {
+        return 0.0; // Not tracked yet
+      }
+      
+      @Override
+      public double getMemoryEfficiency() {
+        return 0.0; // Not tracked yet
+      }
+    };
   }
 }
