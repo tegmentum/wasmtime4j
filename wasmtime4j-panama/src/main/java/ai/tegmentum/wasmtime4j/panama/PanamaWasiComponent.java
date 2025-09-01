@@ -20,11 +20,16 @@ import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.wasi.WasiComponent;
 import ai.tegmentum.wasmtime4j.wasi.WasiComponentStats;
 import ai.tegmentum.wasmtime4j.wasi.WasiConfig;
+import ai.tegmentum.wasmtime4j.wasi.WasiErrorStats;
 import ai.tegmentum.wasmtime4j.wasi.WasiFunctionMetadata;
 import ai.tegmentum.wasmtime4j.wasi.WasiInstance;
 import ai.tegmentum.wasmtime4j.wasi.WasiInterfaceMetadata;
+import ai.tegmentum.wasmtime4j.wasi.WasiPerformanceMetrics;
 import ai.tegmentum.wasmtime4j.wasi.WasiResourceTypeMetadata;
+import ai.tegmentum.wasmtime4j.wasi.WasiResourceUsageStats;
 import ai.tegmentum.wasmtime4j.wasi.WasiTypeDefinition;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -455,16 +460,32 @@ public final class PanamaWasiComponent implements WasiComponent {
   private WasiComponentStats extractStats() {
     try {
       final long size = componentHandle.getSize();
+      final Instant collectedAt = Instant.now();
 
       // TODO: Extract more detailed statistics from native layer
       return new WasiComponentStats() {
         @Override
-        public long getSizeBytes() {
+        public Instant getCollectedAt() {
+          return collectedAt;
+        }
+
+        @Override
+        public String getComponentName() {
+          return null; // Not specified
+        }
+
+        @Override
+        public long getBytecodeSize() {
           return size;
         }
 
         @Override
-        public int getExportCount() {
+        public long getCompiledSize() {
+          return size; // Approximation
+        }
+
+        @Override
+        public int getExportedInterfaceCount() {
           try {
             return getExports().size();
           } catch (WasmException e) {
@@ -473,7 +494,12 @@ public final class PanamaWasiComponent implements WasiComponent {
         }
 
         @Override
-        public int getImportCount() {
+        public int getExportedFunctionCount() {
+          return 0; // Not tracked yet
+        }
+
+        @Override
+        public int getImportedInterfaceCount() {
           try {
             return getImports().size();
           } catch (WasmException e) {
@@ -482,20 +508,83 @@ public final class PanamaWasiComponent implements WasiComponent {
         }
 
         @Override
-        public long getCompilationTimeNanos() {
+        public int getImportedFunctionCount() {
           return 0; // Not tracked yet
         }
 
         @Override
-        public long getValidationTimeNanos() {
+        public int getResourceTypeCount() {
           return 0; // Not tracked yet
         }
 
         @Override
-        public String getSummary() {
-          return String.format(
-              "Component Stats: size=%d bytes, exports=%d, imports=%d, compile=%d ns, validate=%d ns",
-              getSizeBytes(), getExportCount(), getImportCount(), getCompilationTimeNanos(), getValidationTimeNanos());
+        public int getCustomTypeCount() {
+          return 0; // Not tracked yet
+        }
+
+        @Override
+        public long getCompilationTimeMs() {
+          return 0; // Not tracked yet
+        }
+
+        @Override
+        public long getMemoryOverhead() {
+          return 0; // Not tracked yet
+        }
+
+        @Override
+        public int getActiveInstanceCount() {
+          return 0; // Not tracked yet
+        }
+
+        @Override
+        public long getTotalInstanceCount() {
+          return 0; // Not tracked yet
+        }
+
+        @Override
+        public long getTotalFunctionCalls() {
+          return 0; // Not tracked yet
+        }
+
+        @Override
+        public Map<String, Long> getFunctionCallStats() {
+          return new HashMap<>();
+        }
+
+        @Override
+        public long getTotalExecutionTimeMs() {
+          return 0; // Not tracked yet
+        }
+
+        @Override
+        public Map<String, Long> getFunctionExecutionTimeStats() {
+          return new HashMap<>();
+        }
+
+        @Override
+        public WasiErrorStats getErrorStats() {
+          return createEmptyErrorStats();
+        }
+
+        @Override
+        public WasiResourceUsageStats getResourceUsageStats() {
+          return createEmptyResourceUsageStats();
+        }
+
+        @Override
+        public WasiPerformanceMetrics getPerformanceMetrics() {
+          return createEmptyPerformanceMetrics();
+        }
+
+        @Override
+        public List<String> getExportedInterfaces() {
+          return new ArrayList<>(); // Not implemented yet
+        }
+
+        @Override
+        public List<String> getImportedInterfaces() {
+          return new ArrayList<>(); // Not implemented yet
         }
 
         @Override
@@ -504,64 +593,229 @@ public final class PanamaWasiComponent implements WasiComponent {
         }
 
         @Override
-        public List<String> getExportedInterfaces() {
-          return new ArrayList<>(); // Not implemented yet
-        }
-
-        @Override
-        public List<String> getImportedInterfaces() {
-          return new ArrayList<>(); // Not implemented yet
+        public String getSummary() {
+          return String.format(
+              "Component Stats: bytecode=%d bytes, compiled=%d bytes, exported interfaces=%d, imported interfaces=%d",
+              getBytecodeSize(), getCompiledSize(), getExportedInterfaceCount(), getImportedInterfaceCount());
         }
       };
 
     } catch (final Exception e) {
       // Return minimal stats on error
+      final Instant collectedAt = Instant.now();
       return new WasiComponentStats() {
         @Override
-        public long getSizeBytes() {
+        public Instant getCollectedAt() {
+          return collectedAt;
+        }
+
+        @Override
+        public String getComponentName() {
+          return null;
+        }
+
+        @Override
+        public long getBytecodeSize() {
           return 0;
         }
 
         @Override
-        public int getExportCount() {
+        public long getCompiledSize() {
           return 0;
         }
 
         @Override
-        public int getImportCount() {
+        public int getExportedInterfaceCount() {
           return 0;
         }
 
         @Override
-        public long getCompilationTimeNanos() {
+        public int getExportedFunctionCount() {
           return 0;
         }
 
         @Override
-        public long getValidationTimeNanos() {
+        public int getImportedInterfaceCount() {
           return 0;
+        }
+
+        @Override
+        public int getImportedFunctionCount() {
+          return 0;
+        }
+
+        @Override
+        public int getResourceTypeCount() {
+          return 0;
+        }
+
+        @Override
+        public int getCustomTypeCount() {
+          return 0;
+        }
+
+        @Override
+        public long getCompilationTimeMs() {
+          return 0;
+        }
+
+        @Override
+        public long getMemoryOverhead() {
+          return 0;
+        }
+
+        @Override
+        public int getActiveInstanceCount() {
+          return 0;
+        }
+
+        @Override
+        public long getTotalInstanceCount() {
+          return 0;
+        }
+
+        @Override
+        public long getTotalFunctionCalls() {
+          return 0;
+        }
+
+        @Override
+        public Map<String, Long> getFunctionCallStats() {
+          return new HashMap<>();
+        }
+
+        @Override
+        public long getTotalExecutionTimeMs() {
+          return 0;
+        }
+
+        @Override
+        public Map<String, Long> getFunctionExecutionTimeStats() {
+          return new HashMap<>();
+        }
+
+        @Override
+        public WasiErrorStats getErrorStats() {
+          return createEmptyErrorStats();
+        }
+
+        @Override
+        public WasiResourceUsageStats getResourceUsageStats() {
+          return createEmptyResourceUsageStats();
+        }
+
+        @Override
+        public WasiPerformanceMetrics getPerformanceMetrics() {
+          return createEmptyPerformanceMetrics();
+        }
+
+        @Override
+        public List<String> getExportedInterfaces() {
+          return new ArrayList<>();
+        }
+
+        @Override
+        public List<String> getImportedInterfaces() {
+          return new ArrayList<>();
+        }
+
+        @Override
+        public Map<String, Object> getCustomProperties() {
+          return new HashMap<>();
         }
 
         @Override
         public String getSummary() {
           return "Component Stats: Error retrieving statistics (default values)";
         }
-
-        @Override
-        public Map<String, Object> getCustomProperties() {
-          return new HashMap<>(); // No custom properties on error
-        }
-
-        @Override
-        public List<String> getExportedInterfaces() {
-          return new ArrayList<>(); // No interfaces on error
-        }
-
-        @Override
-        public List<String> getImportedInterfaces() {
-          return new ArrayList<>(); // No interfaces on error
-        }
       };
     }
+  }
+
+  private WasiErrorStats createEmptyErrorStats() {
+    return new WasiErrorStats() {
+      @Override
+      public long getTotalErrors() {
+        return 0;
+      }
+
+      @Override
+      public Map<String, Long> getErrorsByType() {
+        return new HashMap<>();
+      }
+
+      @Override
+      public long getFatalErrors() {
+        return 0;
+      }
+
+      @Override
+      public long getRecoverableErrors() {
+        return 0;
+      }
+    };
+  }
+
+  private WasiResourceUsageStats createEmptyResourceUsageStats() {
+    return new WasiResourceUsageStats() {
+      @Override
+      public long getTotalResourcesCreated() {
+        return 0;
+      }
+
+      @Override
+      public int getCurrentResourceCount() {
+        return 0;
+      }
+
+      @Override
+      public int getPeakResourceCount() {
+        return 0;
+      }
+
+      @Override
+      public Map<String, Integer> getResourceCountsByType() {
+        return new HashMap<>();
+      }
+
+      @Override
+      public Map<String, Long> getResourceCreationsByType() {
+        return new HashMap<>();
+      }
+    };
+  }
+
+  private WasiPerformanceMetrics createEmptyPerformanceMetrics() {
+    return new WasiPerformanceMetrics() {
+      @Override
+      public Duration getAverageExecutionTime() {
+        return Duration.ZERO;
+      }
+
+      @Override
+      public Duration getMedianExecutionTime() {
+        return Duration.ZERO;
+      }
+
+      @Override
+      public Duration getP95ExecutionTime() {
+        return Duration.ZERO;
+      }
+
+      @Override
+      public Duration getP99ExecutionTime() {
+        return Duration.ZERO;
+      }
+
+      @Override
+      public double getThroughput() {
+        return 0.0;
+      }
+
+      @Override
+      public double getMemoryEfficiency() {
+        return 0.0;
+      }
+    };
   }
 }

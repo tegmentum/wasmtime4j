@@ -19,15 +19,24 @@ package ai.tegmentum.wasmtime4j.panama;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.wasi.WasiComponent;
 import ai.tegmentum.wasmtime4j.wasi.WasiConfig;
+import ai.tegmentum.wasmtime4j.wasi.WasiFileSystemStats;
 import ai.tegmentum.wasmtime4j.wasi.WasiFunctionMetadata;
 import ai.tegmentum.wasmtime4j.wasi.WasiInstance;
 import ai.tegmentum.wasmtime4j.wasi.WasiInstanceState;
 import ai.tegmentum.wasmtime4j.wasi.WasiInstanceStats;
 import ai.tegmentum.wasmtime4j.wasi.WasiMemoryInfo;
+import ai.tegmentum.wasmtime4j.wasi.WasiNetworkStats;
+import ai.tegmentum.wasmtime4j.wasi.WasiParameterMetadata;
 import ai.tegmentum.wasmtime4j.wasi.WasiResource;
+import ai.tegmentum.wasmtime4j.wasi.WasiResourceHandle;
+import ai.tegmentum.wasmtime4j.wasi.WasiResourceMetadata;
+import ai.tegmentum.wasmtime4j.wasi.WasiResourceState;
+import ai.tegmentum.wasmtime4j.wasi.WasiResourceStats;
+import ai.tegmentum.wasmtime4j.wasi.WasiTypeMetadata;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -539,18 +548,33 @@ public final class PanamaWasiInstance implements WasiInstance {
       }
 
       @Override
-      public List<String> getParameterTypes() {
-        return new ArrayList<>(); // Not extracted yet
+      public Optional<String> getDocumentation() {
+        return Optional.empty();
       }
 
       @Override
-      public List<String> getReturnTypes() {
-        return new ArrayList<>(); // Not extracted yet
+      public List<WasiParameterMetadata> getParameters() {
+        return new ArrayList<>();
       }
 
       @Override
-      public boolean isAsync() {
-        return false; // Assume synchronous for now
+      public Optional<WasiTypeMetadata> getReturnType() {
+        return Optional.empty();
+      }
+
+      @Override
+      public boolean canThrow() {
+        return false;
+      }
+
+      @Override
+      public List<String> getThrownExceptionTypes() {
+        return new ArrayList<>();
+      }
+
+      @Override
+      public void validateParameters(final Object... parameters) {
+        // Basic validation - accept all for now
       }
     };
   }
@@ -570,6 +594,8 @@ public final class PanamaWasiInstance implements WasiInstance {
       private static final AtomicLong NEXT_RESOURCE_ID = new AtomicLong(1);
       private final long resourceId = NEXT_RESOURCE_ID.getAndIncrement();
       private volatile boolean resourceClosed = false;
+      private final Instant createdAt = Instant.now();
+      private volatile Instant lastAccessedAt = null;
 
       @Override
       public long getId() {
@@ -582,8 +608,63 @@ public final class PanamaWasiInstance implements WasiInstance {
       }
 
       @Override
+      public WasiInstance getOwner() {
+        return PanamaWasiInstance.this;
+      }
+
+      @Override
+      public boolean isOwned() {
+        return true; // All our resources are owned
+      }
+
+      @Override
       public boolean isValid() {
         return !resourceClosed;
+      }
+
+      @Override
+      public Instant getCreatedAt() {
+        return createdAt;
+      }
+
+      @Override
+      public Optional<Instant> getLastAccessedAt() {
+        return Optional.ofNullable(lastAccessedAt);
+      }
+
+      @Override
+      public WasiResourceMetadata getMetadata() throws WasmException {
+        return createEmptyResourceMetadata();
+      }
+
+      @Override
+      public WasiResourceState getState() throws WasmException {
+        return createEmptyResourceState();
+      }
+
+      @Override
+      public WasiResourceStats getStats() {
+        return createEmptyResourceStats();
+      }
+
+      @Override
+      public Object invoke(final String operation, final Object... parameters) throws WasmException {
+        throw new WasmException("Operation not supported: " + operation);
+      }
+
+      @Override
+      public List<String> getAvailableOperations() {
+        return new ArrayList<>();
+      }
+
+      @Override
+      public WasiResourceHandle createHandle() throws WasmException {
+        throw new WasmException("Handle creation not supported yet");
+      }
+
+      @Override
+      public void transferOwnership(final WasiInstance targetInstance) throws WasmException {
+        throw new WasmException("Ownership transfer not supported yet");
       }
 
       @Override
@@ -599,10 +680,36 @@ public final class PanamaWasiInstance implements WasiInstance {
    * @return instance statistics
    */
   private WasiInstanceStats createInstanceStats() {
+    final Instant collectedAt = Instant.now();
     return new WasiInstanceStats() {
       @Override
-      public long getExecutionTimeNanos() {
-        return 0; // Not tracked yet
+      public Instant getCollectedAt() {
+        return collectedAt;
+      }
+
+      @Override
+      public long getInstanceId() {
+        return instanceId;
+      }
+
+      @Override
+      public WasiInstanceState getState() {
+        return state;
+      }
+
+      @Override
+      public Instant getCreatedAt() {
+        return createdAt;
+      }
+
+      @Override
+      public Duration getUptime() {
+        return Duration.between(createdAt, Instant.now());
+      }
+
+      @Override
+      public Duration getExecutionTime() {
+        return Duration.ZERO; // Not tracked yet
       }
 
       @Override
@@ -611,20 +718,127 @@ public final class PanamaWasiInstance implements WasiInstance {
       }
 
       @Override
-      public long getResourceCount() {
+      public Map<String, Long> getFunctionCallStats() {
+        return new HashMap<>();
+      }
+
+      @Override
+      public Map<String, Duration> getFunctionExecutionTimeStats() {
+        return new HashMap<>();
+      }
+
+      @Override
+      public long getCurrentMemoryUsage() {
+        return 0; // Not tracked yet
+      }
+
+      @Override
+      public long getPeakMemoryUsage() {
+        return 0; // Not tracked yet
+      }
+
+      @Override
+      public long getMemoryAllocationCount() {
+        return 0; // Not tracked yet
+      }
+
+      @Override
+      public long getTotalMemoryAllocated() {
+        return 0; // Not tracked yet
+      }
+
+      @Override
+      public int getCurrentResourceCount() {
         synchronized (resources) {
           return resources.size();
         }
       }
 
       @Override
-      public long getMemoryUsageBytes() {
+      public int getPeakResourceCount() {
         return 0; // Not tracked yet
+      }
+
+      @Override
+      public long getTotalResourcesCreated() {
+        return 0; // Not tracked yet
+      }
+
+      @Override
+      public Map<String, Integer> getResourceUsageByType() {
+        return new HashMap<>();
       }
 
       @Override
       public long getErrorCount() {
         return 0; // Not tracked yet
+      }
+
+      @Override
+      public Map<String, Long> getErrorStats() {
+        return new HashMap<>();
+      }
+
+      @Override
+      public long getSuspensionCount() {
+        return 0; // Not tracked yet
+      }
+
+      @Override
+      public Duration getTotalSuspensionTime() {
+        return Duration.ZERO;
+      }
+
+      @Override
+      public long getAsyncOperationCount() {
+        return 0; // Not tracked yet
+      }
+
+      @Override
+      public int getPendingAsyncOperationCount() {
+        return 0; // Not tracked yet
+      }
+
+      @Override
+      public WasiFileSystemStats getFileSystemStats() {
+        return createEmptyFileSystemStats();
+      }
+
+      @Override
+      public WasiNetworkStats getNetworkStats() {
+        return createEmptyNetworkStats();
+      }
+
+      @Override
+      public Duration getAverageExecutionTime() {
+        return Duration.ZERO;
+      }
+
+      @Override
+      public double getThroughput() {
+        return 0.0;
+      }
+
+      @Override
+      public double getMemoryEfficiency() {
+        return 0.0;
+      }
+
+      @Override
+      public Map<String, Object> getCustomProperties() {
+        return new HashMap<>();
+      }
+
+      @Override
+      public String getSummary() {
+        return String.format("Instance Stats: ID=%d, State=%s, Uptime=%s, Resources=%d",
+            getInstanceId(), getState(), getUptime(), getCurrentResourceCount());
+      }
+
+      @Override
+      public void reset() {
+        // Reset operation not supported yet
+        throw new IllegalStateException("Reset not supported yet");
       }
     };
   }
@@ -637,27 +851,167 @@ public final class PanamaWasiInstance implements WasiInstance {
   private WasiMemoryInfo createMemoryInfo() {
     return new WasiMemoryInfo() {
       @Override
-      public long getAllocatedBytes() {
+      public long getCurrentUsage() {
         return 0; // Not tracked yet
       }
 
       @Override
-      public long getPeakBytes() {
+      public long getPeakUsage() {
         return 0; // Not tracked yet
       }
 
       @Override
-      public long getLimitBytes() {
-        return config.getMemoryLimit().orElse(0L);
+      public Optional<Long> getLimit() {
+        return config.getMemoryLimit();
       }
 
       @Override
-      public double getUsageRatio() {
-        long limit = getLimitBytes();
-        if (limit <= 0) {
-          return 0.0;
+      public Optional<Double> getUsagePercentage() {
+        Optional<Long> limit = getLimit();
+        if (limit.isEmpty()) {
+          return Optional.empty();
         }
-        return (double) getAllocatedBytes() / limit;
+        long current = getCurrentUsage();
+        if (current <= 0) {
+          return Optional.of(0.0);
+        }
+        return Optional.of((double) current / limit.get() * 100.0);
+      }
+
+      @Override
+      public boolean isNearLimit() {
+        Optional<Double> percentage = getUsagePercentage();
+        return percentage.isPresent() && percentage.get() > 80.0;
+      }
+    };
+  }
+
+  private WasiResourceMetadata createEmptyResourceMetadata() {
+    return new WasiResourceMetadata() {
+      @Override
+      public String getResourceType() {
+        return "unknown";
+      }
+
+      @Override
+      public long getResourceId() {
+        return 0;
+      }
+
+      @Override
+      public Instant getCreatedAt() {
+        return Instant.now();
+      }
+
+      @Override
+      public Optional<Instant> getLastModifiedAt() {
+        return Optional.empty();
+      }
+
+      @Override
+      public Optional<Long> getSize() {
+        return Optional.empty();
+      }
+
+      @Override
+      public Map<String, Object> getProperties() {
+        return new HashMap<>();
+      }
+
+      @Override
+      public boolean hasCapability(final String capability) {
+        return false;
+      }
+    };
+  }
+
+  private WasiResourceState createEmptyResourceState() {
+    return WasiResourceState.CREATED;
+  }
+
+  private WasiResourceStats createEmptyResourceStats() {
+    return new WasiResourceStats() {
+      @Override
+      public long getAccessCount() {
+        return 0;
+      }
+
+      @Override
+      public Duration getTotalUsageTime() {
+        return Duration.ZERO;
+      }
+
+      @Override
+      public long getOperationCount() {
+        return 0;
+      }
+
+      @Override
+      public long getErrorCount() {
+        return 0;
+      }
+    };
+  }
+
+  private WasiFileSystemStats createEmptyFileSystemStats() {
+    return new WasiFileSystemStats() {
+      @Override
+      public long getReadOperations() {
+        return 0;
+      }
+
+      @Override
+      public long getWriteOperations() {
+        return 0;
+      }
+
+      @Override
+      public long getBytesRead() {
+        return 0;
+      }
+
+      @Override
+      public long getBytesWritten() {
+        return 0;
+      }
+
+      @Override
+      public long getFileOpenCount() {
+        return 0;
+      }
+
+      @Override
+      public int getCurrentOpenFiles() {
+        return 0;
+      }
+    };
+  }
+
+  private WasiNetworkStats createEmptyNetworkStats() {
+    return new WasiNetworkStats() {
+      @Override
+      public long getConnectionCount() {
+        return 0;
+      }
+
+      @Override
+      public int getCurrentConnections() {
+        return 0;
+      }
+
+      @Override
+      public long getBytesSent() {
+        return 0;
+      }
+
+      @Override
+      public long getBytesReceived() {
+        return 0;
+      }
+
+      @Override
+      public long getNetworkErrors() {
+        return 0;
       }
     };
   }

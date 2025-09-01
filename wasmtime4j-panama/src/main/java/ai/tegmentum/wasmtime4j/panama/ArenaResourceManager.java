@@ -618,11 +618,11 @@ public final class ArenaResourceManager implements AutoCloseable {
 
     @Override
     public String toString() {
-      return "Statistics{" +
-          "totalResources=" + totalResources +
-          ", nativeResources=" + nativeResources +
-          ", arenaActive=" + arenaActive +
-          '}';
+      return "Statistics{"
+          + "totalResources=" + totalResources
+          + ", nativeResources=" + nativeResources
+          + ", arenaActive=" + arenaActive
+          + '}';
     }
   }
 }
