@@ -95,7 +95,8 @@ class ModuleSpecificationComplianceTest extends BaseIntegrationTest {
                       invalidModules++;
                       // Expected rejection
                     } else {
-                      LOGGER.warning("Valid module was unexpectedly rejected: " + testCase.description + " - " + e.getMessage());
+                      LOGGER.warning("Valid module was unexpectedly rejected: " + testCase.description
+                          + " - " + e.getMessage());
                     }
                   }
                 }
@@ -417,8 +418,8 @@ class ModuleSpecificationComplianceTest extends BaseIntegrationTest {
                     .map(test -> test.instructionCategory)
                     .collect(Collectors.toSet());
 
-                return "Instruction categories supported: " + supportedInstructions.size() + 
-                       " (" + supportedInstructions + ")";
+                return "Instruction categories supported: " + supportedInstructions.size()
+                       + " (" + supportedInstructions + ")";
               }
             },
             comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));

@@ -380,8 +380,8 @@ class ModuleResourceManagementTest extends BaseIntegrationTest {
                 assertThat(totalModulesCreated.get()).isEqualTo(expectedTotal);
                 assertThat(totalModulesClosed.get()).isEqualTo(expectedTotal);
 
-                return "Concurrent resources: " + totalModulesCreated.get() + " created, " +
-                       totalModulesClosed.get() + " closed";
+                return "Concurrent resources: " + totalModulesCreated.get() + " created, "
+                       + totalModulesClosed.get() + " closed";
               }
             },
             comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
@@ -430,7 +430,8 @@ class ModuleResourceManagementTest extends BaseIntegrationTest {
                     
                     // Memory should not grow indefinitely
                     if (memoryIncrease > 50 * 1024 * 1024) { // 50MB threshold
-                      LOGGER.warning("Potential memory leak detected: " + (memoryIncrease / 1024 / 1024) + "MB increase");
+                      LOGGER.warning("Potential memory leak detected: "
+                          + (memoryIncrease / 1024 / 1024) + "MB increase");
                     }
                   }
                 }
