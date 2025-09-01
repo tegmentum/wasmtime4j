@@ -59,9 +59,7 @@ public final class PanamaComponent {
 
   private static final Logger LOGGER = Logger.getLogger(PanamaComponent.class.getName());
 
-  /**
-   * Prevent instantiation - this class contains only static factory methods.
-   */
+  /** Prevent instantiation - this class contains only static factory methods. */
   private PanamaComponent() {}
 
   /**
@@ -89,8 +87,8 @@ public final class PanamaComponent {
    * Panama FFI wrapper for component engine operations.
    *
    * <p>Manages the lifecycle of a native component engine and provides methods for loading and
-   * instantiating components using Panama FFI. Implements automatic resource cleanup through
-   * {@link ArenaResourceManager}.
+   * instantiating components using Panama FFI. Implements automatic resource cleanup through {@link
+   * ArenaResourceManager}.
    */
   public static final class PanamaComponentEngine implements AutoCloseable {
 
@@ -345,9 +343,7 @@ public final class PanamaComponent {
       // Create managed resource with cleanup
       this.componentResource =
           resourceManager.manageNativeResource(
-              componentPtr,
-              () -> destroyNativeComponent(componentPtr),
-              "Wasmtime Component");
+              componentPtr, () -> destroyNativeComponent(componentPtr), "Wasmtime Component");
 
       LOGGER.fine("Created Panama component handle with managed resource");
     }
@@ -475,9 +471,9 @@ public final class PanamaComponent {
   /**
    * Panama FFI wrapper for component instance handles.
    *
-   * <p>Represents an instantiated WebAssembly component that can be used to call exported
-   * functions and interact with component resources. Implements automatic resource cleanup through
-   * {@link ArenaResourceManager}.
+   * <p>Represents an instantiated WebAssembly component that can be used to call exported functions
+   * and interact with component resources. Implements automatic resource cleanup through {@link
+   * ArenaResourceManager}.
    */
   public static final class PanamaComponentInstanceHandle implements AutoCloseable {
 

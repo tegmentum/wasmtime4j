@@ -39,7 +39,8 @@ final class WasiFactoryTest {
 
   @Test
   void testIsRuntimeAvailableWithValidTypes() {
-    // At least one runtime type should be available (even if class not found, method should not throw)
+    // At least one runtime type should be available (even if class not found, method should not
+    // throw)
     assertDoesNotThrow(() -> WasiFactory.isRuntimeAvailable(WasiRuntimeType.JNI));
     assertDoesNotThrow(() -> WasiFactory.isRuntimeAvailable(WasiRuntimeType.PANAMA));
   }
@@ -51,7 +52,7 @@ final class WasiFactoryTest {
             IllegalArgumentException.class,
             () -> WasiFactory.createContext(null),
             "Creating context with null runtime type should throw IllegalArgumentException");
-    
+
     assertEquals("WASI runtime type cannot be null", exception.getMessage());
   }
 
@@ -63,19 +64,20 @@ final class WasiFactoryTest {
             WasmException.class,
             () -> WasiFactory.createContext(WasiRuntimeType.JNI),
             "Creating JNI context should throw WasmException when implementation not available");
-    
+
     assertTrue(exception.getMessage().contains("Failed to create JNI WASI context"));
   }
 
   @Test
   void testCreateContextWithPanamaType() {
-    // This should attempt to create Panama context (will fail since implementation doesn't exist yet)
+    // This should attempt to create Panama context (will fail since implementation doesn't exist
+    // yet)
     final WasmException exception =
         assertThrows(
             WasmException.class,
             () -> WasiFactory.createContext(WasiRuntimeType.PANAMA),
             "Creating Panama context should throw WasmException when implementation not available");
-    
+
     assertTrue(exception.getMessage().contains("Failed to create Panama WASI context"));
   }
 
@@ -86,8 +88,9 @@ final class WasiFactoryTest {
         assertThrows(
             WasmException.class,
             () -> WasiFactory.createContext(),
-            "Creating context with auto-detect should throw WasmException when no implementation available");
-    
+            "Creating context with auto-detect should throw WasmException when no implementation"
+                + " available");
+
     assertTrue(
         exception.getMessage().contains("Failed to create JNI WASI context")
             || exception.getMessage().contains("Failed to create Panama WASI context"));

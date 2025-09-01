@@ -16,8 +16,8 @@ import java.util.concurrent.CompletableFuture;
  * memory, and resources. Instances provide access to exported functions and interfaces, manage
  * component lifecycle, and handle resource allocation.
  *
- * <p>Component instances are created from {@link WasiComponent} objects and configured with
- * {@link WasiConfig} settings. Each instance has its own execution context and resource namespace.
+ * <p>Component instances are created from {@link WasiComponent} objects and configured with {@link
+ * WasiConfig} settings. Each instance has its own execution context and resource namespace.
  *
  * <p>Example usage:
  *
@@ -65,8 +65,8 @@ public interface WasiInstance extends Closeable {
   /**
    * Gets the current state of the instance.
    *
-   * <p>Instance states track the lifecycle from creation through execution to termination.
-   * Possible states include CREATED, RUNNING, SUSPENDED, TERMINATED, and ERROR.
+   * <p>Instance states track the lifecycle from creation through execution to termination. Possible
+   * states include CREATED, RUNNING, SUSPENDED, TERMINATED, and ERROR.
    *
    * @return the current instance state
    */
@@ -113,8 +113,8 @@ public interface WasiInstance extends Closeable {
    * @param parameters function parameters in the order expected by the component
    * @return function return value, or null for void functions
    * @throws WasmException if the function call fails, times out, or function doesn't exist
-   * @throws IllegalArgumentException if functionName is null, timeout is invalid, or parameters
-   *     are invalid
+   * @throws IllegalArgumentException if functionName is null, timeout is invalid, or parameters are
+   *     invalid
    * @throws IllegalStateException if the instance is not in a callable state
    */
   Object call(final String functionName, final Duration timeout, final Object... parameters)
@@ -207,8 +207,8 @@ public interface WasiInstance extends Closeable {
   /**
    * Gets comprehensive statistics about this instance.
    *
-   * <p>Statistics include execution time, memory usage, resource counts, function call counts,
-   * and other metrics useful for monitoring and debugging.
+   * <p>Statistics include execution time, memory usage, resource counts, function call counts, and
+   * other metrics useful for monitoring and debugging.
    *
    * @return instance statistics
    */
@@ -247,8 +247,8 @@ public interface WasiInstance extends Closeable {
   /**
    * Terminates execution of this instance.
    *
-   * <p>Terminated instances stop executing immediately and cannot be resumed. This is more
-   * forceful than closing and may not allow proper cleanup.
+   * <p>Terminated instances stop executing immediately and cannot be resumed. This is more forceful
+   * than closing and may not allow proper cleanup.
    *
    * @throws WasmException if termination fails
    */
@@ -301,8 +301,8 @@ public interface WasiInstance extends Closeable {
   /**
    * Closes the instance and releases all associated resources.
    *
-   * <p>After closing, the instance becomes invalid and should not be used. All owned resources
-   * are automatically closed, and any ongoing execution is terminated.
+   * <p>After closing, the instance becomes invalid and should not be used. All owned resources are
+   * automatically closed, and any ongoing execution is terminated.
    *
    * <p>This method is idempotent and can be called multiple times safely.
    *

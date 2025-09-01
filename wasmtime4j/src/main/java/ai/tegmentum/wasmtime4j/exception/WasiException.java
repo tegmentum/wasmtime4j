@@ -15,8 +15,8 @@ package ai.tegmentum.wasmtime4j.exception;
  *   <li>Retry guidance for transient errors
  * </ul>
  *
- * <p>This class serves as the public API exception base and abstracts implementation-specific
- * error details from JNI and Panama runtimes into a unified error handling interface.
+ * <p>This class serves as the public API exception base and abstracts implementation-specific error
+ * details from JNI and Panama runtimes into a unified error handling interface.
  *
  * @since 1.0.0
  */
@@ -36,9 +36,7 @@ public class WasiException extends WasmException {
   /** The error category for handling strategies. */
   private final ErrorCategory category;
 
-  /**
-   * Error categories for WASI exceptions to guide error handling strategies.
-   */
+  /** Error categories for WASI exceptions to guide error handling strategies. */
   public enum ErrorCategory {
     /** File system related errors (I/O, permissions, paths). */
     FILE_SYSTEM,

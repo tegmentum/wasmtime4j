@@ -4,7 +4,7 @@ status: backlog
 created: 2025-09-01T14:26:08Z
 progress: 0%
 prd: .claude/prds/complete-async-support.md
-github: [Will be updated when synced to GitHub]
+github: https://github.com/tegmentum/wasmtime4j/issues/111
 ---
 
 # Epic: complete-async-support
@@ -171,6 +171,20 @@ High-level task categories that will be created:
 - Performance baseline establishment before optimization phase
 - Comprehensive documentation and examples for adoption success
 
+## Tasks Created
+- [ ] #115 - Native Async Engine Foundation (parallel: false)
+- [ ] #117 - Async Module Operations (parallel: true)
+- [ ] #119 - Async Instance Management (parallel: true)
+- [ ] #114 - Comprehensive Async WASI (parallel: true)
+- [ ] #116 - Public API Async Integration (parallel: false)
+- [ ] #118 - Cross-Runtime Async Consistency (parallel: false)
+- [ ] #112 - Async Performance & Monitoring (parallel: true)
+- [ ] #113 - Async Testing & Validation (parallel: true)
+
+Total tasks: 8
+Parallel tasks: 5
+Sequential tasks: 3
+Estimated total effort: 200-220 hours
 ## Technical Innovation
 
 **Leveraging Existing Infrastructure**

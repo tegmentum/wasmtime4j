@@ -1,14 +1,12 @@
 package ai.tegmentum.wasmtime4j.module;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.ExportType;
 import ai.tegmentum.wasmtime4j.ImportType;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.RuntimeType;
-import ai.tegmentum.wasmtime4j.WasmType;
 import ai.tegmentum.wasmtime4j.WasmTypeKind;
 import ai.tegmentum.wasmtime4j.utils.BaseIntegrationTest;
 import ai.tegmentum.wasmtime4j.utils.TestUtils;
@@ -18,13 +16,11 @@ import ai.tegmentum.wasmtime4j.webassembly.WasmTestCase;
 import ai.tegmentum.wasmtime4j.webassembly.WasmTestDataManager;
 import ai.tegmentum.wasmtime4j.webassembly.WasmTestSuiteLoader;
 import java.io.IOException;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
@@ -32,8 +28,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
- * Comprehensive tests for Module metadata introspection and analysis.
- * Tests export/import introspection, type information, custom sections, and metadata consistency.
+ * Comprehensive tests for Module metadata introspection and analysis. Tests export/import
+ * introspection, type information, custom sections, and metadata consistency.
  */
 @DisplayName("Module Metadata Comprehensive Tests")
 class ModuleMetadataTest extends BaseIntegrationTest {
@@ -76,9 +72,8 @@ class ModuleMetadataTest extends BaseIntegrationTest {
                 assertThat(exports).isNotEmpty();
 
                 // Simple module should have an "add" function export
-                final Optional<ExportType> addExport = exports.stream()
-                    .filter(export -> "add".equals(export.getName()))
-                    .findFirst();
+                final Optional<ExportType> addExport =
+                    exports.stream().filter(export -> "add".equals(export.getName())).findFirst();
 
                 assertThat(addExport).isPresent();
                 assertThat(addExport.get().getType().getKind()).isEqualTo(WasmTypeKind.FUNC);
@@ -91,7 +86,10 @@ class ModuleMetadataTest extends BaseIntegrationTest {
                   assertThat(export.getType().getKind()).isNotNull();
                 }
 
-                return "Function exports: " + exports.size() + ", has add: " + addExport.isPresent();
+                return "Function exports: "
+                    + exports.size()
+                    + ", has add: "
+                    + addExport.isPresent();
               }
             },
             comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
@@ -121,9 +119,12 @@ class ModuleMetadataTest extends BaseIntegrationTest {
                 assertThat(imports).isNotEmpty();
 
                 // Module should import memory from "env"
-                final Optional<ImportType> memoryImport = imports.stream()
-                    .filter(imp -> "env".equals(imp.getModuleName()) && "memory".equals(imp.getName()))
-                    .findFirst();
+                final Optional<ImportType> memoryImport =
+                    imports.stream()
+                        .filter(
+                            imp ->
+                                "env".equals(imp.getModuleName()) && "memory".equals(imp.getName()))
+                        .findFirst();
 
                 assertThat(memoryImport).isPresent();
                 assertThat(memoryImport.get().getType().getKind()).isEqualTo(WasmTypeKind.MEMORY);
@@ -138,7 +139,10 @@ class ModuleMetadataTest extends BaseIntegrationTest {
                   assertThat(importType.getType().getKind()).isNotNull();
                 }
 
-                return "Memory imports: " + imports.size() + ", has env.memory: " + memoryImport.isPresent();
+                return "Memory imports: "
+                    + imports.size()
+                    + ", has env.memory: "
+                    + memoryImport.isPresent();
               }
             },
             comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
@@ -197,19 +201,19 @@ class ModuleMetadataTest extends BaseIntegrationTest {
 
                 // Then
                 assertThat(exports).isNotNull();
-                
+
                 // Group exports by type
-                final Set<WasmTypeKind> exportTypeKinds = exports.stream()
-                    .map(export -> export.getType().getKind())
-                    .collect(Collectors.toSet());
+                final Set<WasmTypeKind> exportTypeKinds =
+                    exports.stream()
+                        .map(export -> export.getType().getKind())
+                        .collect(Collectors.toSet());
 
                 // Verify we have at least functions
                 assertThat(exportTypeKinds).contains(WasmTypeKind.FUNC);
 
                 // Verify export names are unique
-                final Set<String> exportNames = exports.stream()
-                    .map(ExportType::getName)
-                    .collect(Collectors.toSet());
+                final Set<String> exportNames =
+                    exports.stream().map(ExportType::getName).collect(Collectors.toSet());
                 assertThat(exportNames.size()).isEqualTo(exports.size()); // No duplicates
 
                 return "Complex exports: " + exports.size() + ", types: " + exportTypeKinds.size();
@@ -242,20 +246,24 @@ class ModuleMetadataTest extends BaseIntegrationTest {
                 assertThat(imports).isNotEmpty();
 
                 // Group imports by module
-                final Set<String> importModules = imports.stream()
-                    .map(ImportType::getModuleName)
-                    .collect(Collectors.toSet());
+                final Set<String> importModules =
+                    imports.stream().map(ImportType::getModuleName).collect(Collectors.toSet());
 
                 // Group imports by type
-                final Set<WasmTypeKind> importTypeKinds = imports.stream()
-                    .map(imp -> imp.getType().getKind())
-                    .collect(Collectors.toSet());
+                final Set<WasmTypeKind> importTypeKinds =
+                    imports.stream()
+                        .map(imp -> imp.getType().getKind())
+                        .collect(Collectors.toSet());
 
                 // Verify we have imports from different modules
                 assertThat(importModules).isNotEmpty();
 
-                return "Complex imports: " + imports.size() + ", modules: " + importModules.size()
-                       + ", types: " + importTypeKinds.size();
+                return "Complex imports: "
+                    + imports.size()
+                    + ", modules: "
+                    + importModules.size()
+                    + ", types: "
+                    + importTypeKinds.size();
               }
             },
             comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
@@ -330,7 +338,7 @@ class ModuleMetadataTest extends BaseIntegrationTest {
 
                 // Then - Module name may be null if not present in the module
                 // This is implementation-dependent
-                
+
                 return "Module name: " + (moduleName != null ? moduleName : "null");
               }
             },
@@ -358,7 +366,7 @@ class ModuleMetadataTest extends BaseIntegrationTest {
 
                 // Then - Verify that if this module were used as an import source,
                 // the type information would be compatible
-                
+
                 int functionExports = 0;
                 int memoryExports = 0;
                 int globalExports = 0;
@@ -384,7 +392,8 @@ class ModuleMetadataTest extends BaseIntegrationTest {
                   }
                 }
 
-                return String.format("Exports - func: %d, mem: %d, global: %d, table: %d",
+                return String.format(
+                    "Exports - func: %d, mem: %d, global: %d, table: %d",
                     functionExports, memoryExports, globalExports, tableExports);
               }
             },
@@ -401,8 +410,8 @@ class ModuleMetadataTest extends BaseIntegrationTest {
     skipIfCategoryNotEnabled("testsuite");
 
     try {
-      final List<WasmTestCase> testCases = testDataManager
-          .loadTestSuite(WasmTestSuiteLoader.TestSuiteType.CUSTOM_TESTS);
+      final List<WasmTestCase> testCases =
+          testDataManager.loadTestSuite(WasmTestSuiteLoader.TestSuiteType.CUSTOM_TESTS);
 
       if (testCases.isEmpty()) {
         LOGGER.info("No custom test cases available, skipping test suite metadata extraction");
@@ -417,7 +426,7 @@ class ModuleMetadataTest extends BaseIntegrationTest {
               "module-testsuite-metadata-" + runtimeType,
               runtime -> {
                 int localProcessed = 0;
-                
+
                 try (final Engine engine = runtime.createEngine()) {
                   for (final WasmTestCase testCase : testCases) {
                     if (localProcessed >= maxToProcess) {
@@ -426,20 +435,23 @@ class ModuleMetadataTest extends BaseIntegrationTest {
 
                     try {
                       final Module module = engine.compileModule(testCase.getModuleBytes());
-                      
+
                       // Extract and validate metadata
                       final List<ExportType> exports = module.getExports();
                       final List<ImportType> imports = module.getImports();
-                      
+
                       assertThat(exports).isNotNull();
                       assertThat(imports).isNotNull();
 
                       module.close();
                       localProcessed++;
-                      
+
                     } catch (final Exception e) {
-                      LOGGER.fine("Test case compilation failed (expected for some): "
-                                  + testCase.getName() + " - " + e.getMessage());
+                      LOGGER.fine(
+                          "Test case compilation failed (expected for some): "
+                              + testCase.getName()
+                              + " - "
+                              + e.getMessage());
                     }
                   }
                 }
@@ -449,7 +461,8 @@ class ModuleMetadataTest extends BaseIntegrationTest {
               comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
 
       assertThat(validation.isConsistent()).isTrue();
-      LOGGER.info("Test suite metadata extraction for " + runtimeType + ": " + validation.getSummary());
+      LOGGER.info(
+          "Test suite metadata extraction for " + runtimeType + ": " + validation.getSummary());
 
     } catch (final IOException e) {
       LOGGER.warning("Failed to load test suite: " + e.getMessage());
@@ -484,10 +497,10 @@ class ModuleMetadataTest extends BaseIntegrationTest {
                 // When - Measure metadata extraction time
                 for (int i = 0; i < iterations; i++) {
                   final long start = System.nanoTime();
-                  
+
                   final List<ExportType> exports = module.getExports();
                   final List<ImportType> imports = module.getImports();
-                  
+
                   final long end = System.nanoTime();
                   totalExtractionTime += (end - start);
 
@@ -509,9 +522,7 @@ class ModuleMetadataTest extends BaseIntegrationTest {
     LOGGER.info("Metadata extraction performance: " + validation.getSummary());
   }
 
-  /**
-   * Creates a complex WebAssembly module with multiple export types.
-   */
+  /** Creates a complex WebAssembly module with multiple export types. */
   private byte[] createComplexModule() {
     // This is a more complex module with function exports, memory, and globals
     // For simplicity, we'll use the existing simple module
@@ -519,18 +530,14 @@ class ModuleMetadataTest extends BaseIntegrationTest {
     return TestUtils.createSimpleWasmModule();
   }
 
-  /**
-   * Creates a WebAssembly module with multiple import types.
-   */
+  /** Creates a WebAssembly module with multiple import types. */
   private byte[] createModuleWithMultipleImports() {
     // This would be a module that imports functions, memory, globals, etc.
     // For now, we'll use the memory import module
     return TestUtils.createMemoryImportWasmModule();
   }
 
-  /**
-   * Creates a WebAssembly module with a name section.
-   */
+  /** Creates a WebAssembly module with a name section. */
   private byte[] createNamedModule() {
     // This would be a module with a custom name section
     // For now, we'll use a simple module

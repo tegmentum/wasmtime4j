@@ -14,8 +14,6 @@ import ai.tegmentum.wasmtime4j.functions.WasmFunction;
 import ai.tegmentum.wasmtime4j.performance.PerformanceTestHarness;
 import ai.tegmentum.wasmtime4j.utils.TestCategories;
 import ai.tegmentum.wasmtime4j.utils.TestUtils;
-import ai.tegmentum.wasmtime4j.wasi.Wasi;
-import ai.tegmentum.wasmtime4j.wasi.WasiConfig;
 import ai.tegmentum.wasmtime4j.webassembly.WasmTestModules;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -80,33 +78,34 @@ public final class WasiPerformanceTest {
   void testWasiContextCreationPerformance() {
     LOGGER.info("Testing WASI context creation performance");
 
-    final PerformanceTestHarness.BenchmarkOperation contextCreation = () -> {
-      final WasiConfig config =
-          WasiConfig.builder()
-              .inheritEnv(true)
-              .inheritStdin(true)
-              .inheritStdout(true)
-              .inheritStderr(true)
-              .build();
+    final PerformanceTestHarness.BenchmarkOperation contextCreation =
+        () -> {
+          final WasiConfig config =
+              WasiConfig.builder()
+                  .inheritEnv(true)
+                  .inheritStdin(true)
+                  .inheritStdout(true)
+                  .inheritStderr(true)
+                  .build();
 
-      final Wasi wasi = store.createWasi(config);
-      assertTrue(wasi.isValid());
-      wasi.close();
-    };
+          final Wasi wasi = store.createWasi(config);
+          assertTrue(wasi.isValid());
+          wasi.close();
+        };
 
     final PerformanceTestHarness.Configuration config =
         PerformanceTestHarness.getFastConfiguration();
 
     final PerformanceTestHarness.MeasurementResult result =
-        PerformanceTestHarness.runBenchmark(
-            "WASI Context Creation", contextCreation, config);
+        PerformanceTestHarness.runBenchmark("WASI Context Creation", contextCreation, config);
 
     assertNotNull(result);
     assertTrue(result.getMean() > 0);
-    
-    LOGGER.info(String.format(
-        "WASI context creation: %.2f ops/sec (%.2f μs/op)",
-        result.getOperationsPerSecond(), result.getMean() / 1000.0));
+
+    LOGGER.info(
+        String.format(
+            "WASI context creation: %.2f ops/sec (%.2f μs/op)",
+            result.getOperationsPerSecond(), result.getMean() / 1000.0));
   }
 
   /** Tests WASI context creation with complex configuration performance. */
@@ -123,32 +122,42 @@ public final class WasiPerformanceTest {
       largeEnv.put("PERF_VAR_" + i, "performance_value_" + i);
     }
 
-    final List<String> manyArgs = Arrays.asList(
-        "program", "--perf", "--benchmark", "--iterations", "1000",
-        "--input", "file1.txt", "--input", "file2.txt", "--output", "result.txt"
-    );
+    final List<String> manyArgs =
+        Arrays.asList(
+            "program",
+            "--perf",
+            "--benchmark",
+            "--iterations",
+            "1000",
+            "--input",
+            "file1.txt",
+            "--input",
+            "file2.txt",
+            "--output",
+            "result.txt");
 
-    final PerformanceTestHarness.BenchmarkOperation complexContextCreation = () -> {
-      final WasiConfig config =
-          WasiConfig.builder()
-              .inheritEnv(false)
-              .environment(largeEnv)
-              .arguments(manyArgs)
-              .preopenDir(testDir.toString(), "perf", true, true)
-              .inheritStdin(true)
-              .inheritStdout(true)
-              .inheritStderr(true)
-              .build();
+    final PerformanceTestHarness.BenchmarkOperation complexContextCreation =
+        () -> {
+          final WasiConfig config =
+              WasiConfig.builder()
+                  .inheritEnv(false)
+                  .environment(largeEnv)
+                  .arguments(manyArgs)
+                  .preopenDir(testDir.toString(), "perf", true, true)
+                  .inheritStdin(true)
+                  .inheritStdout(true)
+                  .inheritStderr(true)
+                  .build();
 
-      final Wasi wasi = store.createWasi(config);
-      assertTrue(wasi.isValid());
-      
-      // Verify configuration
-      assertEquals(100, wasi.getEnvironment().size());
-      assertEquals(manyArgs.size(), wasi.getArguments().size());
-      
-      wasi.close();
-    };
+          final Wasi wasi = store.createWasi(config);
+          assertTrue(wasi.isValid());
+
+          // Verify configuration
+          assertEquals(100, wasi.getEnvironment().size());
+          assertEquals(manyArgs.size(), wasi.getArguments().size());
+
+          wasi.close();
+        };
 
     final PerformanceTestHarness.Configuration config =
         PerformanceTestHarness.getFastConfiguration();
@@ -159,10 +168,11 @@ public final class WasiPerformanceTest {
 
     assertNotNull(result);
     assertTrue(result.getMean() > 0);
-    
-    LOGGER.info(String.format(
-        "Complex WASI context creation: %.2f ops/sec (%.2f μs/op)",
-        result.getOperationsPerSecond(), result.getMean() / 1000.0));
+
+    LOGGER.info(
+        String.format(
+            "Complex WASI context creation: %.2f ops/sec (%.2f μs/op)",
+            result.getOperationsPerSecond(), result.getMean() / 1000.0));
   }
 
   /** Tests WASI module instantiation performance. */
@@ -174,23 +184,24 @@ public final class WasiPerformanceTest {
     final byte[] wasmBytes = WasmTestModules.getModule("wasi_basic");
     final Module module = engine.createModule(wasmBytes);
 
-    final PerformanceTestHarness.BenchmarkOperation moduleInstantiation = () -> {
-      final WasiConfig config =
-          WasiConfig.builder()
-              .inheritEnv(true)
-              .inheritStdin(true)
-              .inheritStdout(true)
-              .inheritStderr(true)
-              .build();
+    final PerformanceTestHarness.BenchmarkOperation moduleInstantiation =
+        () -> {
+          final WasiConfig config =
+              WasiConfig.builder()
+                  .inheritEnv(true)
+                  .inheritStdin(true)
+                  .inheritStdout(true)
+                  .inheritStderr(true)
+                  .build();
 
-      final Wasi wasi = store.createWasi(config);
-      final Instance instance = store.createInstance(module, wasi.getImports());
-      
-      assertTrue(instance.isValid());
-      
-      instance.close();
-      wasi.close();
-    };
+          final Wasi wasi = store.createWasi(config);
+          final Instance instance = store.createInstance(module, wasi.getImports());
+
+          assertTrue(instance.isValid());
+
+          instance.close();
+          wasi.close();
+        };
 
     final PerformanceTestHarness.Configuration config =
         PerformanceTestHarness.getFastConfiguration();
@@ -201,10 +212,11 @@ public final class WasiPerformanceTest {
 
     assertNotNull(result);
     assertTrue(result.getMean() > 0);
-    
-    LOGGER.info(String.format(
-        "WASI module instantiation: %.2f ops/sec (%.2f μs/op)",
-        result.getOperationsPerSecond(), result.getMean() / 1000.0));
+
+    LOGGER.info(
+        String.format(
+            "WASI module instantiation: %.2f ops/sec (%.2f μs/op)",
+            result.getOperationsPerSecond(), result.getMean() / 1000.0));
 
     module.close();
   }
@@ -219,48 +231,49 @@ public final class WasiPerformanceTest {
     final byte[] wasmBytes = WasmTestModules.getModule("wasi_basic");
     final Module module = engine.createModule(wasmBytes);
 
-    final PerformanceTestHarness.BenchmarkOperation ioRedirection = () -> {
-      final ByteArrayInputStream stdin = new ByteArrayInputStream(testInput.getBytes());
-      final ByteArrayOutputStream stdout = new ByteArrayOutputStream();
-      final ByteArrayOutputStream stderr = new ByteArrayOutputStream();
+    final PerformanceTestHarness.BenchmarkOperation ioRedirection =
+        () -> {
+          final ByteArrayInputStream stdin = new ByteArrayInputStream(testInput.getBytes());
+          final ByteArrayOutputStream stdout = new ByteArrayOutputStream();
+          final ByteArrayOutputStream stderr = new ByteArrayOutputStream();
 
-      final WasiConfig config =
-          WasiConfig.builder()
-              .inheritEnv(true)
-              .stdin(stdin)
-              .stdout(stdout)
-              .stderr(stderr)
-              .build();
+          final WasiConfig config =
+              WasiConfig.builder()
+                  .inheritEnv(true)
+                  .stdin(stdin)
+                  .stdout(stdout)
+                  .stderr(stderr)
+                  .build();
 
-      final Wasi wasi = store.createWasi(config);
-      final Instance instance = store.createInstance(module, wasi.getImports());
+          final Wasi wasi = store.createWasi(config);
+          final Instance instance = store.createInstance(module, wasi.getImports());
 
-      // Execute I/O operation
-      if (instance.hasExport("_start")) {
-        final WasmFunction startFunction = instance.getExport("_start").asFunction();
-        assertDoesNotThrow(() -> startFunction.call());
-      }
+          // Execute I/O operation
+          if (instance.hasExport("_start")) {
+            final WasmFunction startFunction = instance.getExport("_start").asFunction();
+            assertDoesNotThrow(() -> startFunction.call());
+          }
 
-      final byte[] output = stdout.toByteArray();
-      assertNotNull(output);
+          final byte[] output = stdout.toByteArray();
+          assertNotNull(output);
 
-      instance.close();
-      wasi.close();
-    };
+          instance.close();
+          wasi.close();
+        };
 
     final PerformanceTestHarness.Configuration config =
         PerformanceTestHarness.getFastConfiguration();
 
     final PerformanceTestHarness.MeasurementResult result =
-        PerformanceTestHarness.runBenchmark(
-            "WASI I/O Redirection", ioRedirection, config);
+        PerformanceTestHarness.runBenchmark("WASI I/O Redirection", ioRedirection, config);
 
     assertNotNull(result);
     assertTrue(result.getMean() > 0);
-    
-    LOGGER.info(String.format(
-        "WASI I/O redirection: %.2f ops/sec (%.2f μs/op)",
-        result.getOperationsPerSecond(), result.getMean() / 1000.0));
+
+    LOGGER.info(
+        String.format(
+            "WASI I/O redirection: %.2f ops/sec (%.2f μs/op)",
+            result.getOperationsPerSecond(), result.getMean() / 1000.0));
 
     module.close();
   }
@@ -279,33 +292,34 @@ public final class WasiPerformanceTest {
     final byte[] wasmBytes = WasmTestModules.getModule("wasi_basic");
     final Module module = engine.createModule(wasmBytes);
 
-    final PerformanceTestHarness.BenchmarkOperation largeDataIO = () -> {
-      final ByteArrayInputStream stdin = new ByteArrayInputStream(largeData);
-      final ByteArrayOutputStream stdout = new ByteArrayOutputStream();
+    final PerformanceTestHarness.BenchmarkOperation largeDataIO =
+        () -> {
+          final ByteArrayInputStream stdin = new ByteArrayInputStream(largeData);
+          final ByteArrayOutputStream stdout = new ByteArrayOutputStream();
 
-      final WasiConfig config =
-          WasiConfig.builder()
-              .inheritEnv(true)
-              .stdin(stdin)
-              .stdout(stdout)
-              .inheritStderr(true)
-              .build();
+          final WasiConfig config =
+              WasiConfig.builder()
+                  .inheritEnv(true)
+                  .stdin(stdin)
+                  .stdout(stdout)
+                  .inheritStderr(true)
+                  .build();
 
-      final Wasi wasi = store.createWasi(config);
-      final Instance instance = store.createInstance(module, wasi.getImports());
+          final Wasi wasi = store.createWasi(config);
+          final Instance instance = store.createInstance(module, wasi.getImports());
 
-      // Process large data
-      if (instance.hasExport("_start")) {
-        final WasmFunction startFunction = instance.getExport("_start").asFunction();
-        assertDoesNotThrow(() -> startFunction.call());
-      }
+          // Process large data
+          if (instance.hasExport("_start")) {
+            final WasmFunction startFunction = instance.getExport("_start").asFunction();
+            assertDoesNotThrow(() -> startFunction.call());
+          }
 
-      final byte[] output = stdout.toByteArray();
-      assertNotNull(output);
+          final byte[] output = stdout.toByteArray();
+          assertNotNull(output);
 
-      instance.close();
-      wasi.close();
-    };
+          instance.close();
+          wasi.close();
+        };
 
     final PerformanceTestHarness.Configuration config =
         PerformanceTestHarness.Configuration.builder()
@@ -315,16 +329,16 @@ public final class WasiPerformanceTest {
             .build();
 
     final PerformanceTestHarness.MeasurementResult result =
-        PerformanceTestHarness.runBenchmark(
-            "Large Data I/O", largeDataIO, config);
+        PerformanceTestHarness.runBenchmark("Large Data I/O", largeDataIO, config);
 
     assertNotNull(result);
     assertTrue(result.getMean() > 0);
-    
+
     final double mbPerSecond = (dataSize * result.getOperationsPerSecond()) / (1024 * 1024);
-    LOGGER.info(String.format(
-        "Large data I/O: %.2f ops/sec (%.2f MB/sec throughput)",
-        result.getOperationsPerSecond(), mbPerSecond));
+    LOGGER.info(
+        String.format(
+            "Large data I/O: %.2f ops/sec (%.2f MB/sec throughput)",
+            result.getOperationsPerSecond(), mbPerSecond));
 
     module.close();
   }
@@ -347,42 +361,43 @@ public final class WasiPerformanceTest {
     final byte[] wasmBytes = WasmTestModules.getModule("wasi_basic");
     final Module module = engine.createModule(wasmBytes);
 
-    final PerformanceTestHarness.BenchmarkOperation filesystemOps = () -> {
-      final WasiConfig config =
-          WasiConfig.builder()
-              .inheritEnv(true)
-              .preopenDir(testDir.toString(), "testdir", true, false)
-              .inheritStdin(true)
-              .inheritStdout(true)
-              .inheritStderr(true)
-              .build();
+    final PerformanceTestHarness.BenchmarkOperation filesystemOps =
+        () -> {
+          final WasiConfig config =
+              WasiConfig.builder()
+                  .inheritEnv(true)
+                  .preopenDir(testDir.toString(), "testdir", true, false)
+                  .inheritStdin(true)
+                  .inheritStdout(true)
+                  .inheritStderr(true)
+                  .build();
 
-      final Wasi wasi = store.createWasi(config);
-      final Instance instance = store.createInstance(module, wasi.getImports());
+          final Wasi wasi = store.createWasi(config);
+          final Instance instance = store.createInstance(module, wasi.getImports());
 
-      // Access filesystem through WASI
-      if (instance.hasExport("_start")) {
-        final WasmFunction startFunction = instance.getExport("_start").asFunction();
-        assertDoesNotThrow(() -> startFunction.call());
-      }
+          // Access filesystem through WASI
+          if (instance.hasExport("_start")) {
+            final WasmFunction startFunction = instance.getExport("_start").asFunction();
+            assertDoesNotThrow(() -> startFunction.call());
+          }
 
-      instance.close();
-      wasi.close();
-    };
+          instance.close();
+          wasi.close();
+        };
 
     final PerformanceTestHarness.Configuration config =
         PerformanceTestHarness.getFastConfiguration();
 
     final PerformanceTestHarness.MeasurementResult result =
-        PerformanceTestHarness.runBenchmark(
-            "WASI Filesystem Operations", filesystemOps, config);
+        PerformanceTestHarness.runBenchmark("WASI Filesystem Operations", filesystemOps, config);
 
     assertNotNull(result);
     assertTrue(result.getMean() > 0);
-    
-    LOGGER.info(String.format(
-        "WASI filesystem operations: %.2f ops/sec (%.2f μs/op)",
-        result.getOperationsPerSecond(), result.getMean() / 1000.0));
+
+    LOGGER.info(
+        String.format(
+            "WASI filesystem operations: %.2f ops/sec (%.2f μs/op)",
+            result.getOperationsPerSecond(), result.getMean() / 1000.0));
 
     module.close();
   }
@@ -400,33 +415,34 @@ public final class WasiPerformanceTest {
 
     final byte[] wasmBytes = WasmTestModules.getModule("wasi_basic");
 
-    final PerformanceTestHarness.RuntimeBenchmarkOperation wasiOperation = runtime -> {
-      try (final Engine engine = runtime.createEngine();
-           final Store store = engine.createStore()) {
+    final PerformanceTestHarness.RuntimeBenchmarkOperation wasiOperation =
+        runtime -> {
+          try (final Engine engine = runtime.createEngine();
+              final Store store = engine.createStore()) {
 
-        final WasiConfig config =
-            WasiConfig.builder()
-                .inheritEnv(true)
-                .arguments(Arrays.asList("perf_test", "--benchmark"))
-                .inheritStdin(true)
-                .inheritStdout(true)
-                .inheritStderr(true)
-                .build();
+            final WasiConfig config =
+                WasiConfig.builder()
+                    .inheritEnv(true)
+                    .arguments(Arrays.asList("perf_test", "--benchmark"))
+                    .inheritStdin(true)
+                    .inheritStdout(true)
+                    .inheritStderr(true)
+                    .build();
 
-        final Module module = engine.createModule(wasmBytes);
-        final Wasi wasi = store.createWasi(config);
-        final Instance instance = store.createInstance(module, wasi.getImports());
+            final Module module = engine.createModule(wasmBytes);
+            final Wasi wasi = store.createWasi(config);
+            final Instance instance = store.createInstance(module, wasi.getImports());
 
-        if (instance.hasExport("_start")) {
-          final WasmFunction startFunction = instance.getExport("_start").asFunction();
-          startFunction.call();
-        }
+            if (instance.hasExport("_start")) {
+              final WasmFunction startFunction = instance.getExport("_start").asFunction();
+              startFunction.call();
+            }
 
-        instance.close();
-        wasi.close();
-        module.close();
-      }
-    };
+            instance.close();
+            wasi.close();
+            module.close();
+          }
+        };
 
     final PerformanceTestHarness.Configuration config =
         PerformanceTestHarness.getFastConfiguration();
@@ -439,11 +455,12 @@ public final class WasiPerformanceTest {
     assertTrue(comparison.getBaseline().getMean() > 0);
     assertTrue(comparison.getComparison().getMean() > 0);
 
-    LOGGER.info(String.format(
-        "Cross-runtime WASI performance - JNI: %.2f ops/sec, Panama: %.2f ops/sec (%.2fx)",
-        comparison.getBaseline().getOperationsPerSecond(),
-        comparison.getComparison().getOperationsPerSecond(),
-        comparison.getSpeedupRatio()));
+    LOGGER.info(
+        String.format(
+            "Cross-runtime WASI performance - JNI: %.2f ops/sec, Panama: %.2f ops/sec (%.2fx)",
+            comparison.getBaseline().getOperationsPerSecond(),
+            comparison.getComparison().getOperationsPerSecond(),
+            comparison.getSpeedupRatio()));
 
     final String comparisonReport = PerformanceTestHarness.generateComparisonReport(comparison);
     LOGGER.info("\n" + comparisonReport);
@@ -458,48 +475,49 @@ public final class WasiPerformanceTest {
     final byte[] wasmBytes = WasmTestModules.getModule("wasi_basic");
     final Module module = engine.createModule(wasmBytes);
 
-    final PerformanceTestHarness.BenchmarkOperation memoryTest = () -> {
-      final Map<String, String> envVars = new HashMap<>();
-      for (int i = 0; i < 50; i++) {
-        envVars.put("MEM_VAR_" + i, "value_" + i + "_" + "x".repeat(20));
-      }
+    final PerformanceTestHarness.BenchmarkOperation memoryTest =
+        () -> {
+          final Map<String, String> envVars = new HashMap<>();
+          for (int i = 0; i < 50; i++) {
+            envVars.put("MEM_VAR_" + i, "value_" + i + "_" + "x".repeat(20));
+          }
 
-      final WasiConfig config =
-          WasiConfig.builder()
-              .inheritEnv(false)
-              .environment(envVars)
-              .arguments(Arrays.asList("memory_test", "--allocate", "1000"))
-              .inheritStdin(true)
-              .inheritStdout(true)
-              .inheritStderr(true)
-              .build();
+          final WasiConfig config =
+              WasiConfig.builder()
+                  .inheritEnv(false)
+                  .environment(envVars)
+                  .arguments(Arrays.asList("memory_test", "--allocate", "1000"))
+                  .inheritStdin(true)
+                  .inheritStdout(true)
+                  .inheritStderr(true)
+                  .build();
 
-      final Wasi wasi = store.createWasi(config);
-      final Instance instance = store.createInstance(module, wasi.getImports());
+          final Wasi wasi = store.createWasi(config);
+          final Instance instance = store.createInstance(module, wasi.getImports());
 
-      // Force some memory allocation through function calls
-      if (instance.hasExport("_start")) {
-        final WasmFunction startFunction = instance.getExport("_start").asFunction();
-        assertDoesNotThrow(() -> startFunction.call());
-      }
+          // Force some memory allocation through function calls
+          if (instance.hasExport("_start")) {
+            final WasmFunction startFunction = instance.getExport("_start").asFunction();
+            assertDoesNotThrow(() -> startFunction.call());
+          }
 
-      instance.close();
-      wasi.close();
-    };
+          instance.close();
+          wasi.close();
+        };
 
     final PerformanceTestHarness.Configuration config =
         PerformanceTestHarness.getFastConfiguration();
 
     final PerformanceTestHarness.MeasurementResult result =
-        PerformanceTestHarness.runBenchmark(
-            "WASI Memory Usage", memoryTest, config);
+        PerformanceTestHarness.runBenchmark("WASI Memory Usage", memoryTest, config);
 
     assertNotNull(result);
     assertTrue(result.getMean() > 0);
-    
-    LOGGER.info(String.format(
-        "WASI memory usage: %.2f ops/sec (%.2f μs/op)",
-        result.getOperationsPerSecond(), result.getMean() / 1000.0));
+
+    LOGGER.info(
+        String.format(
+            "WASI memory usage: %.2f ops/sec (%.2f μs/op)",
+            result.getOperationsPerSecond(), result.getMean() / 1000.0));
 
     module.close();
   }
@@ -513,31 +531,32 @@ public final class WasiPerformanceTest {
     final byte[] wasmBytes = WasmTestModules.getModule("wasi_basic");
     final Module module = engine.createModule(wasmBytes);
 
-    final PerformanceTestHarness.BenchmarkOperation scalabilityTest = () -> {
-      final WasiConfig config =
-          WasiConfig.builder()
-              .inheritEnv(true)
-              .inheritStdin(true)
-              .inheritStdout(true)
-              .inheritStderr(true)
-              .build();
+    final PerformanceTestHarness.BenchmarkOperation scalabilityTest =
+        () -> {
+          final WasiConfig config =
+              WasiConfig.builder()
+                  .inheritEnv(true)
+                  .inheritStdin(true)
+                  .inheritStdout(true)
+                  .inheritStderr(true)
+                  .build();
 
-      final Wasi wasi = store.createWasi(config);
-      final Instance instance = store.createInstance(module, wasi.getImports());
+          final Wasi wasi = store.createWasi(config);
+          final Instance instance = store.createInstance(module, wasi.getImports());
 
-      // Execute multiple operations to test scalability
-      if (instance.hasExport("_start")) {
-        final WasmFunction startFunction = instance.getExport("_start").asFunction();
-        
-        // Simulate load with multiple calls
-        for (int i = 0; i < 5; i++) {
-          assertDoesNotThrow(() -> startFunction.call());
-        }
-      }
+          // Execute multiple operations to test scalability
+          if (instance.hasExport("_start")) {
+            final WasmFunction startFunction = instance.getExport("_start").asFunction();
 
-      instance.close();
-      wasi.close();
-    };
+            // Simulate load with multiple calls
+            for (int i = 0; i < 5; i++) {
+              assertDoesNotThrow(() -> startFunction.call());
+            }
+          }
+
+          instance.close();
+          wasi.close();
+        };
 
     final int[] threadCounts = {1, 2, 4, 8};
     final PerformanceTestHarness.Configuration config =
@@ -552,15 +571,16 @@ public final class WasiPerformanceTest {
             "WASI Scalability", scalabilityTest, config, threadCounts);
 
     assertNotNull(scalabilityResults);
-    
-    for (final Map.Entry<Integer, PerformanceTestHarness.MeasurementResult> entry : 
-         scalabilityResults.entrySet()) {
+
+    for (final Map.Entry<Integer, PerformanceTestHarness.MeasurementResult> entry :
+        scalabilityResults.entrySet()) {
       final int threads = entry.getKey();
       final PerformanceTestHarness.MeasurementResult result = entry.getValue();
-      
-      LOGGER.info(String.format(
-          "WASI scalability (%d threads): %.2f ops/sec",
-          threads, result.getOperationsPerSecond()));
+
+      LOGGER.info(
+          String.format(
+              "WASI scalability (%d threads): %.2f ops/sec",
+              threads, result.getOperationsPerSecond()));
     }
 
     module.close();
@@ -575,26 +595,27 @@ public final class WasiPerformanceTest {
     final byte[] wasmBytes = WasmTestModules.getModule("wasi_basic");
     final Module module = engine.createModule(wasmBytes);
 
-    final PerformanceTestHarness.BenchmarkOperation baselineTest = () -> {
-      final WasiConfig config =
-          WasiConfig.builder()
-              .inheritEnv(true)
-              .inheritStdin(true)
-              .inheritStdout(true)
-              .inheritStderr(true)
-              .build();
+    final PerformanceTestHarness.BenchmarkOperation baselineTest =
+        () -> {
+          final WasiConfig config =
+              WasiConfig.builder()
+                  .inheritEnv(true)
+                  .inheritStdin(true)
+                  .inheritStdout(true)
+                  .inheritStderr(true)
+                  .build();
 
-      final Wasi wasi = store.createWasi(config);
-      final Instance instance = store.createInstance(module, wasi.getImports());
+          final Wasi wasi = store.createWasi(config);
+          final Instance instance = store.createInstance(module, wasi.getImports());
 
-      if (instance.hasExport("_start")) {
-        final WasmFunction startFunction = instance.getExport("_start").asFunction();
-        assertDoesNotThrow(() -> startFunction.call());
-      }
+          if (instance.hasExport("_start")) {
+            final WasmFunction startFunction = instance.getExport("_start").asFunction();
+            assertDoesNotThrow(() -> startFunction.call());
+          }
 
-      instance.close();
-      wasi.close();
-    };
+          instance.close();
+          wasi.close();
+        };
 
     final PerformanceTestHarness.Configuration config =
         PerformanceTestHarness.getDefaultConfiguration();
@@ -608,7 +629,7 @@ public final class WasiPerformanceTest {
         PerformanceTestHarness.runBenchmark("WASI Current", baselineTest, config);
 
     // Analyze for regression
-    final List<PerformanceTestHarness.MeasurementResult> historicalResults = 
+    final List<PerformanceTestHarness.MeasurementResult> historicalResults =
         Arrays.asList(baselineResult);
 
     final PerformanceTestHarness.PerformanceRegressionAnalysis regression =
@@ -616,12 +637,14 @@ public final class WasiPerformanceTest {
             "WASI Regression Test", currentResult, historicalResults, 0.1);
 
     assertNotNull(regression);
-    
+
     LOGGER.info("Regression analysis: " + regression.getAnalysis());
-    
+
     if (regression.isRegression()) {
-      LOGGER.warning("Performance regression detected: " + 
-          (regression.getRegressionRatio() * 100) + "% degradation");
+      LOGGER.warning(
+          "Performance regression detected: "
+              + (regression.getRegressionRatio() * 100)
+              + "% degradation");
     }
 
     module.close();

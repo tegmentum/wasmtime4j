@@ -1,8 +1,6 @@
 package ai.tegmentum.wasmtime4j.module;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.ExportType;
@@ -12,14 +10,11 @@ import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
-import ai.tegmentum.wasmtime4j.WasmRuntime;
-import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.utils.BaseIntegrationTest;
 import ai.tegmentum.wasmtime4j.utils.TestUtils;
 import ai.tegmentum.wasmtime4j.webassembly.CrossRuntimeTestRunner;
 import ai.tegmentum.wasmtime4j.webassembly.CrossRuntimeValidationResult;
 import ai.tegmentum.wasmtime4j.webassembly.WasmTestDataManager;
-import ai.tegmentum.wasmtime4j.webassembly.WasmTestSuiteLoader;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -29,7 +24,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
@@ -154,7 +148,7 @@ class ModuleApiComprehensiveTest extends BaseIntegrationTest {
                 // When - Check imports required
                 final List<ImportType> imports = module.getImports();
                 assertThat(imports).isNotEmpty();
-                
+
                 // For this test, we'll validate the import structure without instantiating
                 // since we don't have proper import setup yet
                 return "Module imports validated: " + imports.size();
@@ -223,7 +217,9 @@ class ModuleApiComprehensiveTest extends BaseIntegrationTest {
                 final boolean hasMemoryImport =
                     imports.stream()
                         .anyMatch(
-                            imp -> "env".equals(imp.getModuleName()) && "memory".equals(imp.getName()));
+                            imp ->
+                                "env".equals(imp.getModuleName())
+                                    && "memory".equals(imp.getName()));
 
                 return "Imports found: " + imports.size() + ", has memory: " + hasMemoryImport;
               }
@@ -433,7 +429,8 @@ class ModuleApiComprehensiveTest extends BaseIntegrationTest {
             comparison -> true); // Just measure, don't compare values exactly
 
     assertThat(validation.isConsistent()).isTrue();
-    LOGGER.info("Module performance validation for " + runtimeType + ": " + validation.getSummary());
+    LOGGER.info(
+        "Module performance validation for " + runtimeType + ": " + validation.getSummary());
   }
 
   @Test

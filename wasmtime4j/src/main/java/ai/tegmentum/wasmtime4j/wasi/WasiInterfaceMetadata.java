@@ -73,8 +73,8 @@ public interface WasiInterfaceMetadata {
   /**
    * Gets all custom types defined in this interface.
    *
-   * <p>Custom types include records, variants, enums, and other user-defined types used in
-   * function signatures.
+   * <p>Custom types include records, variants, enums, and other user-defined types used in function
+   * signatures.
    *
    * @return map of type names to their definitions
    */

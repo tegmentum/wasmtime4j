@@ -17,8 +17,8 @@ import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
  * Integration tests for the WASI Component Model lifecycle.
  *
  * <p>These tests validate the complete lifecycle of WASI components including creation,
- * instantiation, function calling, and cleanup. They test both JNI and Panama implementations
- * to ensure consistent behavior across runtime types.
+ * instantiation, function calling, and cleanup. They test both JNI and Panama implementations to
+ * ensure consistent behavior across runtime types.
  *
  * <p>Tests are designed to be verbose for debugging purposes and use actual component operations
  * rather than mocks to ensure real-world functionality.
@@ -33,7 +33,7 @@ class WasiComponentLifecycleTest {
   // This would be replaced with actual component bytes in real tests
   private static final byte[] MINIMAL_WASM_BYTES = {
     0x00, 0x61, 0x73, 0x6d, // WASM magic number
-    0x01, 0x00, 0x00, 0x00  // WASM version
+    0x01, 0x00, 0x00, 0x00 // WASM version
   };
 
   @BeforeEach
@@ -43,8 +43,7 @@ class WasiComponentLifecycleTest {
     assertNotNull(context, "WASI context should be created successfully");
     assertTrue(context.isValid(), "WASI context should be valid after creation");
 
-    System.out.println("Created WASI context with runtime: "
-        + context.getRuntimeInfo().getType());
+    System.out.println("Created WASI context with runtime: " + context.getRuntimeInfo().getType());
   }
 
   @AfterEach
@@ -82,28 +81,37 @@ class WasiComponentLifecycleTest {
   void testComponentCreationFromBytes() throws WasmException {
     // Test component creation from minimal bytes
     System.out.println("Testing component creation from bytes...");
-    
+
     // Note: This will likely fail with current minimal bytes, but tests the API
-    assertThrows(WasmException.class, () -> {
-      component = context.createComponent(MINIMAL_WASM_BYTES);
-    }, "Minimal WASM bytes should fail component creation (expected)");
-    
+    assertThrows(
+        WasmException.class,
+        () -> {
+          component = context.createComponent(MINIMAL_WASM_BYTES);
+        },
+        "Minimal WASM bytes should fail component creation (expected)");
+
     System.out.println("Component creation correctly rejected invalid bytes");
   }
 
   @Test
   void testComponentValidation() throws WasmException {
     System.out.println("Testing component validation...");
-    
+
     // Test with null bytes
-    assertThrows(NullPointerException.class, () -> {
-      context.createComponent(null);
-    }, "Null bytes should throw NullPointerException");
+    assertThrows(
+        NullPointerException.class,
+        () -> {
+          context.createComponent(null);
+        },
+        "Null bytes should throw NullPointerException");
 
     // Test with empty bytes
-    assertThrows(Exception.class, () -> {
-      context.createComponent(new byte[0]);
-    }, "Empty bytes should throw exception");
+    assertThrows(
+        Exception.class,
+        () -> {
+          context.createComponent(new byte[0]);
+        },
+        "Empty bytes should throw exception");
 
     System.out.println("Component validation working correctly");
   }
@@ -111,16 +119,16 @@ class WasiComponentLifecycleTest {
   @Test
   void testRuntimeInfo() {
     System.out.println("Testing runtime information...");
-    
+
     WasiRuntimeInfo info = context.getRuntimeInfo();
     assertNotNull(info, "Runtime info should not be null");
     assertNotNull(info.getType(), "Runtime type should not be null");
     assertNotNull(info.getVersion(), "Runtime version should not be null");
     assertNotNull(info.getWasmtimeVersion(), "Wasmtime version should not be null");
-    
+
     assertTrue(info.supportsComponentModel(), "Runtime should support component model");
     assertTrue(info.supportsAsync(), "Runtime should support async operations");
-    
+
     System.out.println("Runtime Type: " + info.getType());
     System.out.println("Runtime Version: " + info.getVersion());
     System.out.println("Wasmtime Version: " + info.getWasmtimeVersion());
@@ -133,41 +141,46 @@ class WasiComponentLifecycleTest {
   @Test
   void testContextLifecycle() {
     System.out.println("Testing context lifecycle management...");
-    
+
     // Test context validity
     assertTrue(context.isValid(), "Context should be valid initially");
-    
+
     // Close context
     context.close();
     assertFalse(context.isValid(), "Context should be invalid after close");
-    
+
     // Verify operations fail on closed context
-    assertThrows(IllegalStateException.class, () -> {
-      context.createComponent(MINIMAL_WASM_BYTES);
-    }, "Operations should fail on closed context");
-    
+    assertThrows(
+        IllegalStateException.class,
+        () -> {
+          context.createComponent(MINIMAL_WASM_BYTES);
+        },
+        "Operations should fail on closed context");
+
     System.out.println("Context lifecycle management working correctly");
   }
 
   @Test
   void testConfigurationValidation() throws WasmException {
     System.out.println("Testing configuration validation...");
-    
+
     // Test default configuration
     WasiConfig defaultConfig = WasiConfig.defaultConfig();
     assertNotNull(defaultConfig, "Default config should not be null");
-    
+
     // Test configuration validation
-    assertDoesNotThrow(() -> {
-      defaultConfig.validate();
-    }, "Default configuration should be valid");
-    
+    assertDoesNotThrow(
+        () -> {
+          defaultConfig.validate();
+        },
+        "Default configuration should be valid");
+
     // Test configuration properties
     assertNotNull(defaultConfig.getEnvironment(), "Environment should not be null");
     assertNotNull(defaultConfig.getArguments(), "Arguments should not be null");
     assertNotNull(defaultConfig.getPreopenDirectories(), "Preopen directories should not be null");
     assertNotNull(defaultConfig.getImportResolvers(), "Import resolvers should not be null");
-    
+
     System.out.println("Environment variables: " + defaultConfig.getEnvironment().size());
     System.out.println("Arguments: " + defaultConfig.getArguments().size());
     System.out.println("Preopen directories: " + defaultConfig.getPreopenDirectories().size());
@@ -179,16 +192,18 @@ class WasiComponentLifecycleTest {
   @EnabledIfSystemProperty(named = "wasmtime4j.test.jni", matches = "true")
   void testJniSpecificFeatures() throws WasmException {
     System.out.println("Testing JNI-specific features...");
-    
+
     // Force JNI runtime
     WasiContext jniContext = WasiFactory.createContext(WasiRuntimeType.JNI);
-    
+
     try {
-      assertEquals(WasiRuntimeType.JNI, jniContext.getRuntimeInfo().getType(),
+      assertEquals(
+          WasiRuntimeType.JNI,
+          jniContext.getRuntimeInfo().getType(),
           "Should create JNI runtime when explicitly requested");
-      
+
       System.out.println("JNI runtime created successfully");
-      
+
     } finally {
       jniContext.close();
     }
@@ -198,18 +213,20 @@ class WasiComponentLifecycleTest {
   @EnabledIfSystemProperty(named = "wasmtime4j.test.panama", matches = "true")
   void testPanamaSpecificFeatures() throws WasmException {
     System.out.println("Testing Panama-specific features...");
-    
+
     // Only run on Java 23+
     if (WasiFactory.getJavaVersion() >= 23) {
       // Force Panama runtime
       WasiContext panamaContext = WasiFactory.createContext(WasiRuntimeType.PANAMA);
-      
+
       try {
-        assertEquals(WasiRuntimeType.PANAMA, panamaContext.getRuntimeInfo().getType(),
+        assertEquals(
+            WasiRuntimeType.PANAMA,
+            panamaContext.getRuntimeInfo().getType(),
             "Should create Panama runtime when explicitly requested");
-        
+
         System.out.println("Panama runtime created successfully");
-        
+
       } finally {
         panamaContext.close();
       }
@@ -221,39 +238,45 @@ class WasiComponentLifecycleTest {
   @Test
   void testRuntimeSelection() {
     System.out.println("Testing runtime selection logic...");
-    
+
     WasiRuntimeType selectedType = WasiFactory.getSelectedRuntimeType();
     assertNotNull(selectedType, "Selected runtime type should not be null");
-    
+
     boolean jniAvailable = WasiFactory.isRuntimeAvailable(WasiRuntimeType.JNI);
     boolean panamaAvailable = WasiFactory.isRuntimeAvailable(WasiRuntimeType.PANAMA);
-    
+
     System.out.println("Java Version: " + WasiFactory.getJavaVersion());
     System.out.println("Selected Runtime: " + selectedType);
     System.out.println("JNI Available: " + jniAvailable);
     System.out.println("Panama Available: " + panamaAvailable);
-    
+
     // At least one runtime should be available
-    assertTrue(jniAvailable || panamaAvailable, 
-        "At least one runtime implementation should be available");
+    assertTrue(
+        jniAvailable || panamaAvailable, "At least one runtime implementation should be available");
   }
 
   @Test
   void testErrorHandling() {
     System.out.println("Testing error handling robustness...");
-    
+
     // Test various error conditions to ensure robust error handling
-    
+
     // Null context operations
-    assertThrows(Exception.class, () -> {
-      WasiFactory.createContext(null);
-    }, "Null runtime type should throw exception");
-    
+    assertThrows(
+        Exception.class,
+        () -> {
+          WasiFactory.createContext(null);
+        },
+        "Null runtime type should throw exception");
+
     // Invalid component creation
-    assertThrows(Exception.class, () -> {
-      context.createComponent(new byte[1]); // Invalid WASM
-    }, "Invalid WASM bytes should throw exception");
-    
+    assertThrows(
+        Exception.class,
+        () -> {
+          context.createComponent(new byte[1]); // Invalid WASM
+        },
+        "Invalid WASM bytes should throw exception");
+
     System.out.println("Error handling working correctly");
   }
 }

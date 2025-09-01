@@ -1,31 +1,21 @@
 package ai.tegmentum.wasmtime4j.module;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.assertj.core.api.Assumptions.assumeThat;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.RuntimeType;
-import ai.tegmentum.wasmtime4j.WasmRuntime;
-import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.utils.BaseIntegrationTest;
 import ai.tegmentum.wasmtime4j.utils.TestUtils;
 import ai.tegmentum.wasmtime4j.webassembly.CrossRuntimeTestRunner;
 import ai.tegmentum.wasmtime4j.webassembly.CrossRuntimeValidationResult;
 import ai.tegmentum.wasmtime4j.webassembly.WasmTestDataManager;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
@@ -34,7 +24,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
@@ -42,11 +31,11 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
- * Comprehensive tests for Module serialization, deserialization, and caching capabilities.
- * Tests module persistence, cache invalidation, and performance of serialization operations.
+ * Comprehensive tests for Module serialization, deserialization, and caching capabilities. Tests
+ * module persistence, cache invalidation, and performance of serialization operations.
  *
- * <p>Note: This test suite documents expected serialization API behavior and provides
- * comprehensive test coverage for when serialization capabilities are implemented.
+ * <p>Note: This test suite documents expected serialization API behavior and provides comprehensive
+ * test coverage for when serialization capabilities are implemented.
  */
 @DisplayName("Module Serialization and Caching Tests")
 class ModuleSerializationTest extends BaseIntegrationTest {
@@ -68,10 +57,10 @@ class ModuleSerializationTest extends BaseIntegrationTest {
       testDataManager = WasmTestDataManager.getInstance();
       testDataManager.ensureTestDataAvailable();
       executorService = Executors.newFixedThreadPool(4);
-      
+
       // Create temporary cache directory
       tempCacheDir = Files.createTempDirectory("wasmtime4j-module-cache-test");
-      
+
     } catch (final Exception e) {
       LOGGER.warning("Failed to setup test environment: " + e.getMessage());
       skipIfNot(false, "Test environment setup failed: " + e.getMessage());
@@ -97,13 +86,14 @@ class ModuleSerializationTest extends BaseIntegrationTest {
       try {
         Files.walk(tempCacheDir)
             .sorted((a, b) -> b.compareTo(a)) // Delete files before directories
-            .forEach(path -> {
-              try {
-                Files.delete(path);
-              } catch (final IOException e) {
-                LOGGER.warning("Failed to delete cache file: " + e.getMessage());
-              }
-            });
+            .forEach(
+                path -> {
+                  try {
+                    Files.delete(path);
+                  } catch (final IOException e) {
+                    LOGGER.warning("Failed to delete cache file: " + e.getMessage());
+                  }
+                });
       } catch (final IOException e) {
         LOGGER.warning("Failed to clean up cache directory: " + e.getMessage());
       }
@@ -126,14 +116,14 @@ class ModuleSerializationTest extends BaseIntegrationTest {
               try (final Engine engine = runtime.createEngine()) {
                 // When - Compile module and extract its bytecode
                 final Module module = engine.compileModule(originalBytes);
-                
+
                 // For now, we'll store the original bytecode as a proxy for serialization
                 // In a real implementation, this would be module.serialize() or similar
                 final byte[] persistedBytes = originalBytes.clone();
-                
+
                 // Simulate cache storage
-                final CachedModuleData cachedData = new CachedModuleData(
-                    moduleId, persistedBytes, System.currentTimeMillis());
+                final CachedModuleData cachedData =
+                    new CachedModuleData(moduleId, persistedBytes, System.currentTimeMillis());
                 moduleCache.put(moduleId, cachedData);
 
                 // Then - Verify cache storage
@@ -160,7 +150,8 @@ class ModuleSerializationTest extends BaseIntegrationTest {
             runtime -> {
               // Given
               final byte[] wasmBytes = TestUtils.createSimpleWasmModule();
-              final String cacheKey = generateCacheKey(wasmBytes, runtime.getClass().getSimpleName());
+              final String cacheKey =
+                  generateCacheKey(wasmBytes, runtime.getClass().getSimpleName());
 
               try (final Engine engine = runtime.createEngine()) {
                 // When - First compilation (cache miss)
@@ -169,8 +160,8 @@ class ModuleSerializationTest extends BaseIntegrationTest {
                 final Duration firstCompilation = Duration.between(firstStart, Instant.now());
 
                 // Cache the compilation result (simulated)
-                final CachedModuleData cachedData = new CachedModuleData(
-                    cacheKey, wasmBytes, System.currentTimeMillis());
+                final CachedModuleData cachedData =
+                    new CachedModuleData(cacheKey, wasmBytes, System.currentTimeMillis());
                 moduleCache.put(cacheKey, cachedData);
 
                 // Second compilation (cache hit simulation)
@@ -193,7 +184,8 @@ class ModuleSerializationTest extends BaseIntegrationTest {
                 module1.close();
                 module2.close();
 
-                return String.format("First: %dms, Second: %dms, Cache hit: %s",
+                return String.format(
+                    "First: %dms, Second: %dms, Cache hit: %s",
                     firstCompilation.toMillis(), secondCompilation.toMillis(), cacheHit);
               }
             },
@@ -218,8 +210,9 @@ class ModuleSerializationTest extends BaseIntegrationTest {
               try (final Engine engine = runtime.createEngine()) {
                 // When - Cache original module
                 final Module originalModule = engine.compileModule(originalBytes);
-                moduleCache.put(cacheKey, new CachedModuleData(
-                    cacheKey, originalBytes, System.currentTimeMillis()));
+                moduleCache.put(
+                    cacheKey,
+                    new CachedModuleData(cacheKey, originalBytes, System.currentTimeMillis()));
                 assertThat(moduleCache.containsKey(cacheKey)).isTrue();
 
                 // Invalidate cache entry
@@ -228,8 +221,9 @@ class ModuleSerializationTest extends BaseIntegrationTest {
 
                 // Cache new module with same key
                 final Module newModule = engine.compileModule(modifiedBytes);
-                moduleCache.put(cacheKey, new CachedModuleData(
-                    cacheKey, modifiedBytes, System.currentTimeMillis()));
+                moduleCache.put(
+                    cacheKey,
+                    new CachedModuleData(cacheKey, modifiedBytes, System.currentTimeMillis()));
 
                 // Then - Verify cache now contains new data
                 final CachedModuleData cachedData = moduleCache.get(cacheKey);
@@ -265,31 +259,34 @@ class ModuleSerializationTest extends BaseIntegrationTest {
                 // When - Perform concurrent cache operations
                 for (int i = 0; i < threadCount; i++) {
                   final int threadId = i;
-                  executorService.submit(() -> {
-                    try {
-                      startLatch.await();
-                      
-                      for (int j = 0; j < operationsPerThread; j++) {
-                        final String cacheKey = "thread-" + threadId + "-op-" + j;
-                        final byte[] wasmBytes = TestUtils.createSimpleWasmModule();
+                  executorService.submit(
+                      () -> {
+                        try {
+                          startLatch.await();
 
-                        // Compile and cache
-                        final Module module = engine.compileModule(wasmBytes);
-                        moduleCache.put(cacheKey, new CachedModuleData(
-                            cacheKey, wasmBytes, System.currentTimeMillis()));
+                          for (int j = 0; j < operationsPerThread; j++) {
+                            final String cacheKey = "thread-" + threadId + "-op-" + j;
+                            final byte[] wasmBytes = TestUtils.createSimpleWasmModule();
 
-                        // Verify cache entry exists
-                        assertThat(moduleCache.containsKey(cacheKey)).isTrue();
+                            // Compile and cache
+                            final Module module = engine.compileModule(wasmBytes);
+                            moduleCache.put(
+                                cacheKey,
+                                new CachedModuleData(
+                                    cacheKey, wasmBytes, System.currentTimeMillis()));
 
-                        module.close();
-                      }
-                    } catch (final Exception e) {
-                      LOGGER.severe("Concurrent cache operation failed: " + e.getMessage());
-                      throw new RuntimeException(e);
-                    } finally {
-                      completionLatch.countDown();
-                    }
-                  });
+                            // Verify cache entry exists
+                            assertThat(moduleCache.containsKey(cacheKey)).isTrue();
+
+                            module.close();
+                          }
+                        } catch (final Exception e) {
+                          LOGGER.severe("Concurrent cache operation failed: " + e.getMessage());
+                          throw new RuntimeException(e);
+                        } finally {
+                          completionLatch.countDown();
+                        }
+                      });
                 }
 
                 // Start all threads
@@ -326,10 +323,10 @@ class ModuleSerializationTest extends BaseIntegrationTest {
               try (final Engine engine = runtime.createEngine()) {
                 // When - Persist module to file
                 final Module module = engine.compileModule(wasmBytes);
-                
+
                 // Simulate serialization to file
                 Files.write(moduleFile, wasmBytes);
-                
+
                 // Read back from file
                 final byte[] restoredBytes = Files.readAllBytes(moduleFile);
                 final Module restoredModule = engine.compileModule(restoredBytes);
@@ -337,7 +334,8 @@ class ModuleSerializationTest extends BaseIntegrationTest {
                 // Then - Verify restoration
                 assertThat(restoredBytes).isEqualTo(wasmBytes);
                 assertThat(restoredModule.isValid()).isTrue();
-                assertThat(restoredModule.getExports().size()).isEqualTo(module.getExports().size());
+                assertThat(restoredModule.getExports().size())
+                    .isEqualTo(module.getExports().size());
 
                 module.close();
                 restoredModule.close();
@@ -421,19 +419,22 @@ class ModuleSerializationTest extends BaseIntegrationTest {
                 for (int i = 0; i < modulesToCreate; i++) {
                   final String cacheKey = "size-limit-test-" + i;
                   final byte[] wasmBytes = TestUtils.createSimpleWasmModule();
-                  
+
                   final Module module = engine.compileModule(wasmBytes);
-                  moduleCache.put(cacheKey, new CachedModuleData(
-                      cacheKey, wasmBytes, System.currentTimeMillis()));
+                  moduleCache.put(
+                      cacheKey,
+                      new CachedModuleData(cacheKey, wasmBytes, System.currentTimeMillis()));
 
                   // Simulate LRU eviction when cache is full
                   if (moduleCache.size() > maxCacheSize) {
-                    final String oldestKey = moduleCache.entrySet().stream()
-                        .min(Map.Entry.comparingByValue(
-                            (a, b) -> Long.compare(a.getTimestamp(), b.getTimestamp())))
-                        .map(Map.Entry::getKey)
-                        .orElse(null);
-                    
+                    final String oldestKey =
+                        moduleCache.entrySet().stream()
+                            .min(
+                                Map.Entry.comparingByValue(
+                                    (a, b) -> Long.compare(a.getTimestamp(), b.getTimestamp())))
+                            .map(Map.Entry::getKey)
+                            .orElse(null);
+
                     if (oldestKey != null) {
                       moduleCache.remove(oldestKey);
                     }
@@ -469,10 +470,11 @@ class ModuleSerializationTest extends BaseIntegrationTest {
                 // When - Add module to cache
                 final byte[] wasmBytes = TestUtils.createSimpleWasmModule();
                 final Module module = engine.compileModule(wasmBytes);
-                
-                moduleCache.put(cacheKey, new CachedModuleData(
-                    cacheKey, wasmBytes, System.currentTimeMillis()));
-                
+
+                moduleCache.put(
+                    cacheKey,
+                    new CachedModuleData(cacheKey, wasmBytes, System.currentTimeMillis()));
+
                 assertThat(moduleCache.containsKey(cacheKey)).isTrue();
 
                 // Wait for expiration
@@ -480,8 +482,9 @@ class ModuleSerializationTest extends BaseIntegrationTest {
 
                 // Simulate expiration check
                 final CachedModuleData cachedData = moduleCache.get(cacheKey);
-                final boolean expired = (System.currentTimeMillis() - cachedData.getTimestamp()) > expirationMs;
-                
+                final boolean expired =
+                    (System.currentTimeMillis() - cachedData.getTimestamp()) > expirationMs;
+
                 if (expired) {
                   moduleCache.remove(cacheKey);
                 }
@@ -513,7 +516,7 @@ class ModuleSerializationTest extends BaseIntegrationTest {
               try (final Engine engine = runtime.createEngine()) {
                 // When - Compile original module
                 final Module originalModule = engine.compileModule(wasmBytes);
-                
+
                 // Serialize and deserialize (simulated)
                 final byte[] serializedBytes = wasmBytes.clone();
                 final Module deserializedModule = engine.compileModule(serializedBytes);
@@ -541,16 +544,12 @@ class ModuleSerializationTest extends BaseIntegrationTest {
     LOGGER.info("Module identity serialization validation: " + validation.getSummary());
   }
 
-  /**
-   * Generates a cache key for a module based on its bytecode and runtime.
-   */
+  /** Generates a cache key for a module based on its bytecode and runtime. */
   private String generateCacheKey(final byte[] wasmBytes, final String runtime) {
     return runtime + "-" + Arrays.hashCode(wasmBytes);
   }
 
-  /**
-   * Simple data structure to represent cached module data.
-   */
+  /** Simple data structure to represent cached module data. */
   private static class CachedModuleData {
     private final String moduleId;
     private final byte[] moduleBytes;

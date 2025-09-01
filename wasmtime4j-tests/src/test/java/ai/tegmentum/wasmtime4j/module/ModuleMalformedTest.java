@@ -24,7 +24,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
@@ -32,8 +31,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
- * Comprehensive tests for malformed WebAssembly modules.
- * Tests various types of malformed modules, validation errors, and error handling scenarios.
+ * Comprehensive tests for malformed WebAssembly modules. Tests various types of malformed modules,
+ * validation errors, and error handling scenarios.
  */
 @DisplayName("Module Malformed Scenarios Tests")
 class ModuleMalformedTest extends BaseIntegrationTest {
@@ -88,7 +87,10 @@ class ModuleMalformedTest extends BaseIntegrationTest {
                 try (final Engine engine = runtime.createEngine()) {
                   // When & Then
                   assertThatThrownBy(() -> engine.compileModule(corruptedModule))
-                      .isInstanceOfAny(WasmException.class, CompilationException.class, ValidationException.class);
+                      .isInstanceOfAny(
+                          WasmException.class,
+                          CompilationException.class,
+                          ValidationException.class);
 
                   return "Corrupted magic module " + moduleIndex + " correctly rejected";
                 }
@@ -116,7 +118,10 @@ class ModuleMalformedTest extends BaseIntegrationTest {
                 try (final Engine engine = runtime.createEngine()) {
                   // When & Then
                   assertThatThrownBy(() -> engine.compileModule(invalidModule))
-                      .isInstanceOfAny(WasmException.class, CompilationException.class, ValidationException.class);
+                      .isInstanceOfAny(
+                          WasmException.class,
+                          CompilationException.class,
+                          ValidationException.class);
 
                   return "Invalid version module " + moduleIndex + " correctly rejected";
                 }
@@ -144,7 +149,10 @@ class ModuleMalformedTest extends BaseIntegrationTest {
                 try (final Engine engine = runtime.createEngine()) {
                   // When & Then
                   assertThatThrownBy(() -> engine.compileModule(truncatedModule))
-                      .isInstanceOfAny(WasmException.class, CompilationException.class, ValidationException.class);
+                      .isInstanceOfAny(
+                          WasmException.class,
+                          CompilationException.class,
+                          ValidationException.class);
 
                   return "Truncated module " + moduleIndex + " correctly rejected";
                 }
@@ -172,7 +180,10 @@ class ModuleMalformedTest extends BaseIntegrationTest {
                 try (final Engine engine = runtime.createEngine()) {
                   // When & Then
                   assertThatThrownBy(() -> engine.compileModule(malformedModule))
-                      .isInstanceOfAny(WasmException.class, CompilationException.class, ValidationException.class);
+                      .isInstanceOfAny(
+                          WasmException.class,
+                          CompilationException.class,
+                          ValidationException.class);
 
                   return "Malformed section module " + moduleIndex + " correctly rejected";
                 }
@@ -200,7 +211,10 @@ class ModuleMalformedTest extends BaseIntegrationTest {
                 try (final Engine engine = runtime.createEngine()) {
                   // When & Then
                   assertThatThrownBy(() -> engine.compileModule(invalidModule))
-                      .isInstanceOfAny(WasmException.class, CompilationException.class, ValidationException.class);
+                      .isInstanceOfAny(
+                          WasmException.class,
+                          CompilationException.class,
+                          ValidationException.class);
 
                   return "Invalid type section module " + moduleIndex + " correctly rejected";
                 }
@@ -208,7 +222,8 @@ class ModuleMalformedTest extends BaseIntegrationTest {
               comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
 
       assertThat(validation.isConsistent()).isTrue();
-      LOGGER.fine("Invalid type section " + moduleIndex + " validation: " + validation.getSummary());
+      LOGGER.fine(
+          "Invalid type section " + moduleIndex + " validation: " + validation.getSummary());
     }
   }
 
@@ -228,7 +243,10 @@ class ModuleMalformedTest extends BaseIntegrationTest {
                 try (final Engine engine = runtime.createEngine()) {
                   // When & Then
                   assertThatThrownBy(() -> engine.compileModule(invalidModule))
-                      .isInstanceOfAny(WasmException.class, CompilationException.class, ValidationException.class);
+                      .isInstanceOfAny(
+                          WasmException.class,
+                          CompilationException.class,
+                          ValidationException.class);
 
                   return "Invalid function section module " + moduleIndex + " correctly rejected";
                 }
@@ -236,7 +254,8 @@ class ModuleMalformedTest extends BaseIntegrationTest {
               comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
 
       assertThat(validation.isConsistent()).isTrue();
-      LOGGER.fine("Invalid function section " + moduleIndex + " validation: " + validation.getSummary());
+      LOGGER.fine(
+          "Invalid function section " + moduleIndex + " validation: " + validation.getSummary());
     }
   }
 
@@ -256,7 +275,10 @@ class ModuleMalformedTest extends BaseIntegrationTest {
                 try (final Engine engine = runtime.createEngine()) {
                   // When & Then
                   assertThatThrownBy(() -> engine.compileModule(invalidModule))
-                      .isInstanceOfAny(WasmException.class, CompilationException.class, ValidationException.class);
+                      .isInstanceOfAny(
+                          WasmException.class,
+                          CompilationException.class,
+                          ValidationException.class);
 
                   return "Invalid code section module " + moduleIndex + " correctly rejected";
                 }
@@ -264,7 +286,8 @@ class ModuleMalformedTest extends BaseIntegrationTest {
               comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
 
       assertThat(validation.isConsistent()).isTrue();
-      LOGGER.fine("Invalid code section " + moduleIndex + " validation: " + validation.getSummary());
+      LOGGER.fine(
+          "Invalid code section " + moduleIndex + " validation: " + validation.getSummary());
     }
   }
 
@@ -284,7 +307,10 @@ class ModuleMalformedTest extends BaseIntegrationTest {
                 try (final Engine engine = runtime.createEngine()) {
                   // When & Then
                   assertThatThrownBy(() -> engine.compileModule(invalidModule))
-                      .isInstanceOfAny(WasmException.class, CompilationException.class, ValidationException.class);
+                      .isInstanceOfAny(
+                          WasmException.class,
+                          CompilationException.class,
+                          ValidationException.class);
 
                   return "Invalid memory section module " + moduleIndex + " correctly rejected";
                 }
@@ -292,7 +318,8 @@ class ModuleMalformedTest extends BaseIntegrationTest {
               comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
 
       assertThat(validation.isConsistent()).isTrue();
-      LOGGER.fine("Invalid memory section " + moduleIndex + " validation: " + validation.getSummary());
+      LOGGER.fine(
+          "Invalid memory section " + moduleIndex + " validation: " + validation.getSummary());
     }
   }
 
@@ -312,7 +339,10 @@ class ModuleMalformedTest extends BaseIntegrationTest {
                 try (final Engine engine = runtime.createEngine()) {
                   // When & Then
                   assertThatThrownBy(() -> engine.compileModule(randomData))
-                      .isInstanceOfAny(WasmException.class, CompilationException.class, ValidationException.class);
+                      .isInstanceOfAny(
+                          WasmException.class,
+                          CompilationException.class,
+                          ValidationException.class);
 
                   return "Random data " + sampleIndex + " correctly rejected";
                 }
@@ -387,31 +417,35 @@ class ModuleMalformedTest extends BaseIntegrationTest {
                 // When - Validate malformed modules concurrently
                 for (int i = 0; i < threadCount; i++) {
                   final int threadId = i;
-                  executorService.submit(() -> {
-                    int threadRejected = 0;
-                    try {
-                      startLatch.await();
-
-                      for (int j = 0; j < modulesPerThread; j++) {
-                        final byte[] malformedModule = generateMalformedModule(threadId * modulesPerThread + j);
-                        
+                  executorService.submit(
+                      () -> {
+                        int threadRejected = 0;
                         try {
-                          engine.compileModule(malformedModule);
-                          // If it doesn't throw, that's unexpected
-                        } catch (final WasmException | CompilationException | ValidationException e) {
-                          threadRejected++;
-                        } catch (final Exception e) {
-                          // Other exceptions are also acceptable
-                          threadRejected++;
+                          startLatch.await();
+
+                          for (int j = 0; j < modulesPerThread; j++) {
+                            final byte[] malformedModule =
+                                generateMalformedModule(threadId * modulesPerThread + j);
+
+                            try {
+                              engine.compileModule(malformedModule);
+                              // If it doesn't throw, that's unexpected
+                            } catch (final WasmException
+                                | CompilationException
+                                | ValidationException e) {
+                              threadRejected++;
+                            } catch (final Exception e) {
+                              // Other exceptions are also acceptable
+                              threadRejected++;
+                            }
+                          }
+                        } catch (final InterruptedException e) {
+                          Thread.currentThread().interrupt();
+                        } finally {
+                          totalRejected.addAndGet(threadRejected);
+                          completionLatch.countDown();
                         }
-                      }
-                    } catch (final InterruptedException e) {
-                      Thread.currentThread().interrupt();
-                    } finally {
-                      totalRejected.addAndGet(threadRejected);
-                      completionLatch.countDown();
-                    }
-                  });
+                      });
                 }
 
                 // Start all threads
@@ -426,7 +460,11 @@ class ModuleMalformedTest extends BaseIntegrationTest {
                 final int rejected = totalRejected.get();
                 assertThat(rejected).isGreaterThan(totalModules / 2);
 
-                return "Concurrent validation: " + rejected + "/" + totalModules + " malformed modules rejected";
+                return "Concurrent validation: "
+                    + rejected
+                    + "/"
+                    + totalModules
+                    + " malformed modules rejected";
               }
             },
             comparison -> comparison.getJniResult().equals(comparison.getPanamaResult()));
@@ -475,211 +513,289 @@ class ModuleMalformedTest extends BaseIntegrationTest {
     LOGGER.info("Error message validation: " + validation.getSummary());
   }
 
-  /**
-   * Creates modules with corrupted magic numbers.
-   */
+  /** Creates modules with corrupted magic numbers. */
   private List<byte[]> createCorruptedMagicModules() {
     final List<byte[]> modules = new ArrayList<>();
-    
+
     // Various magic number corruptions
-    modules.add(new byte[]{0x01, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00}); // Wrong first byte
-    modules.add(new byte[]{0x00, 0x62, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00}); // Wrong second byte  
-    modules.add(new byte[]{0x00, 0x61, 0x74, 0x6d, 0x01, 0x00, 0x00, 0x00}); // Wrong third byte
-    modules.add(new byte[]{0x00, 0x61, 0x73, 0x6e, 0x01, 0x00, 0x00, 0x00}); // Wrong fourth byte
-    modules.add(new byte[]{(byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, 0x01, 0x00, 0x00, 0x00}); // All wrong
-    
+    modules.add(new byte[] {0x01, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00}); // Wrong first byte
+    modules.add(new byte[] {0x00, 0x62, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00}); // Wrong second byte
+    modules.add(new byte[] {0x00, 0x61, 0x74, 0x6d, 0x01, 0x00, 0x00, 0x00}); // Wrong third byte
+    modules.add(new byte[] {0x00, 0x61, 0x73, 0x6e, 0x01, 0x00, 0x00, 0x00}); // Wrong fourth byte
+    modules.add(
+        new byte[] {
+          (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, 0x01, 0x00, 0x00, 0x00
+        }); // All wrong
+
     return modules;
   }
 
-  /**
-   * Creates modules with invalid versions.
-   */
+  /** Creates modules with invalid versions. */
   private List<byte[]> createInvalidVersionModules() {
     final List<byte[]> modules = new ArrayList<>();
-    
+
     // Various version corruptions
-    modules.add(new byte[]{0x00, 0x61, 0x73, 0x6d, 0x02, 0x00, 0x00, 0x00}); // Version 2
-    modules.add(new byte[]{0x00, 0x61, 0x73, 0x6d, 0x00, 0x00, 0x00, 0x00}); // Version 0
-    modules.add(new byte[]{0x00, 0x61, 0x73, 0x6d, (byte) 0xFF, 0x00, 0x00, 0x00}); // High version
-    modules.add(new byte[]{0x00, 0x61, 0x73, 0x6d, 0x01, 0x01, 0x00, 0x00}); // Wrong minor version
-    
+    modules.add(new byte[] {0x00, 0x61, 0x73, 0x6d, 0x02, 0x00, 0x00, 0x00}); // Version 2
+    modules.add(new byte[] {0x00, 0x61, 0x73, 0x6d, 0x00, 0x00, 0x00, 0x00}); // Version 0
+    modules.add(new byte[] {0x00, 0x61, 0x73, 0x6d, (byte) 0xFF, 0x00, 0x00, 0x00}); // High version
+    modules.add(new byte[] {0x00, 0x61, 0x73, 0x6d, 0x01, 0x01, 0x00, 0x00}); // Wrong minor version
+
     return modules;
   }
 
-  /**
-   * Creates truncated modules.
-   */
+  /** Creates truncated modules. */
   private List<byte[]> createTruncatedModules() {
     final List<byte[]> modules = new ArrayList<>();
     final byte[] validStart = TestUtils.createSimpleWasmModule();
-    
+
     // Truncate at various points
     modules.add(new byte[0]); // Empty
     modules.add(Arrays.copyOf(validStart, 1)); // Only one byte
     modules.add(Arrays.copyOf(validStart, 4)); // Only magic
     modules.add(Arrays.copyOf(validStart, 7)); // Incomplete version
     modules.add(Arrays.copyOf(validStart, validStart.length / 2)); // Half module
-    
+
     return modules;
   }
 
-  /**
-   * Creates modules with malformed sections.
-   */
+  /** Creates modules with malformed sections. */
   private List<byte[]> createMalformedSectionModules() {
     final List<byte[]> modules = new ArrayList<>();
-    
+
     // Section with invalid size
-    modules.add(new byte[]{
-        0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, // Header
-        0x01, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF // Invalid section size
-    });
-    
+    modules.add(
+        new byte[] {
+          0x00,
+          0x61,
+          0x73,
+          0x6d,
+          0x01,
+          0x00,
+          0x00,
+          0x00, // Header
+          0x01,
+          (byte) 0xFF,
+          (byte) 0xFF,
+          (byte) 0xFF,
+          (byte) 0xFF // Invalid section size
+        });
+
     // Section with size larger than remaining bytes
-    modules.add(new byte[]{
-        0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, // Header
-        0x01, 0x10, 0x00, 0x01 // Size 16 but only 2 bytes follow
-    });
-    
+    modules.add(
+        new byte[] {
+          0x00,
+          0x61,
+          0x73,
+          0x6d,
+          0x01,
+          0x00,
+          0x00,
+          0x00, // Header
+          0x01,
+          0x10,
+          0x00,
+          0x01 // Size 16 but only 2 bytes follow
+        });
+
     return modules;
   }
 
-  /**
-   * Creates modules with invalid type sections.
-   */
+  /** Creates modules with invalid type sections. */
   private List<byte[]> createInvalidTypeSectionModules() {
     final List<byte[]> modules = new ArrayList<>();
-    
+
     // Invalid function type
-    modules.add(new byte[]{
-        0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, // Header
-        0x01, 0x05, 0x01, // Type section
-        (byte) 0xFF, 0x00, 0x00 // Invalid type indicator
-    });
-    
+    modules.add(
+        new byte[] {
+          0x00,
+          0x61,
+          0x73,
+          0x6d,
+          0x01,
+          0x00,
+          0x00,
+          0x00, // Header
+          0x01,
+          0x05,
+          0x01, // Type section
+          (byte) 0xFF,
+          0x00,
+          0x00 // Invalid type indicator
+        });
+
     return modules;
   }
 
-  /**
-   * Creates modules with invalid function sections.
-   */
+  /** Creates modules with invalid function sections. */
   private List<byte[]> createInvalidFunctionSectionModules() {
     final List<byte[]> modules = new ArrayList<>();
-    
+
     // Function section referencing non-existent type
-    modules.add(new byte[]{
-        0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, // Header
-        0x01, 0x04, 0x01, 0x60, 0x00, 0x00, // Valid type section
-        0x03, 0x02, 0x01, (byte) 0xFF // Function section with invalid type index
-    });
-    
+    modules.add(
+        new byte[] {
+          0x00,
+          0x61,
+          0x73,
+          0x6d,
+          0x01,
+          0x00,
+          0x00,
+          0x00, // Header
+          0x01,
+          0x04,
+          0x01,
+          0x60,
+          0x00,
+          0x00, // Valid type section
+          0x03,
+          0x02,
+          0x01,
+          (byte) 0xFF // Function section with invalid type index
+        });
+
     return modules;
   }
 
-  /**
-   * Creates modules with invalid code sections.
-   */
+  /** Creates modules with invalid code sections. */
   private List<byte[]> createInvalidCodeSectionModules() {
     final List<byte[]> modules = new ArrayList<>();
-    
+
     // Code section with invalid instruction
-    modules.add(new byte[]{
-        0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, // Header
-        0x01, 0x04, 0x01, 0x60, 0x00, 0x00, // Type section
-        0x03, 0x02, 0x01, 0x00, // Function section
-        0x0a, 0x06, 0x01, 0x04, 0x00, (byte) 0xFF, (byte) 0xFF, 0x0b // Invalid instruction
-    });
-    
+    modules.add(
+        new byte[] {
+          0x00,
+          0x61,
+          0x73,
+          0x6d,
+          0x01,
+          0x00,
+          0x00,
+          0x00, // Header
+          0x01,
+          0x04,
+          0x01,
+          0x60,
+          0x00,
+          0x00, // Type section
+          0x03,
+          0x02,
+          0x01,
+          0x00, // Function section
+          0x0a,
+          0x06,
+          0x01,
+          0x04,
+          0x00,
+          (byte) 0xFF,
+          (byte) 0xFF,
+          0x0b // Invalid instruction
+        });
+
     return modules;
   }
 
-  /**
-   * Creates modules with invalid memory sections.
-   */
+  /** Creates modules with invalid memory sections. */
   private List<byte[]> createInvalidMemorySectionModules() {
     final List<byte[]> modules = new ArrayList<>();
-    
+
     // Memory with invalid limits
-    modules.add(new byte[]{
-        0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, // Header
-        0x05, 0x05, 0x01, 0x01, // Memory section
-        (byte) 0x80, 0x80, 0x80, 0x80, 0x10 // Invalid min size (too large)
-    });
-    
+    modules.add(
+        new byte[] {
+          0x00,
+          0x61,
+          0x73,
+          0x6d,
+          0x01,
+          0x00,
+          0x00,
+          0x00, // Header
+          0x05,
+          0x05,
+          0x01,
+          0x01, // Memory section
+          (byte) 0x80,
+          0x80,
+          0x80,
+          0x80,
+          0x10 // Invalid min size (too large)
+        });
+
     return modules;
   }
 
-  /**
-   * Creates random data samples.
-   */
+  /** Creates random data samples. */
   private List<byte[]> createRandomDataSamples() {
     final List<byte[]> samples = new ArrayList<>();
     final Random random = new Random(12345); // Fixed seed for reproducibility
-    
+
     for (int i = 0; i < 10; i++) {
       final byte[] randomData = new byte[16 + random.nextInt(48)];
       random.nextBytes(randomData);
       samples.add(randomData);
     }
-    
+
     return samples;
   }
 
-  /**
-   * Generates malformed modules for stress testing.
-   */
+  /** Generates malformed modules for stress testing. */
   private List<byte[]> generateMalformedModules(final int count) {
     final List<byte[]> modules = new ArrayList<>();
-    
+
     // Combine all types of malformed modules
     modules.addAll(createCorruptedMagicModules());
     modules.addAll(createInvalidVersionModules());
     modules.addAll(createTruncatedModules());
     modules.addAll(createMalformedSectionModules());
     modules.addAll(createRandomDataSamples());
-    
+
     // Fill remaining with generated malformed modules
     final Random random = new Random(54321);
     while (modules.size() < count) {
       modules.add(generateMalformedModule(random.nextInt()));
     }
-    
+
     return modules.subList(0, Math.min(count, modules.size()));
   }
 
-  /**
-   * Generates a single malformed module based on seed.
-   */
+  /** Generates a single malformed module based on seed. */
   private byte[] generateMalformedModule(final int seed) {
     final Random random = new Random(seed);
-    
+
     switch (random.nextInt(5)) {
       case 0:
         // Corrupted header
         final byte[] header = {0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00};
         header[random.nextInt(8)] = (byte) random.nextInt(256);
         return header;
-        
+
       case 1:
         // Random short data
         final byte[] shortData = new byte[4 + random.nextInt(12)];
         random.nextBytes(shortData);
         return shortData;
-        
+
       case 2:
         // Invalid section
-        return new byte[]{
-            0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, // Header
-            (byte) (0x80 + random.nextInt(127)), // Invalid section ID
-            (byte) random.nextInt(10), (byte) random.nextInt(256)
+        return new byte[] {
+          0x00,
+          0x61,
+          0x73,
+          0x6d,
+          0x01,
+          0x00,
+          0x00,
+          0x00, // Header
+          (byte) (0x80 + random.nextInt(127)), // Invalid section ID
+          (byte) random.nextInt(10),
+          (byte) random.nextInt(256)
         };
-        
+
       case 3:
         // Truncated valid module
         final byte[] validModule = TestUtils.createSimpleWasmModule();
         final int truncateAt = 8 + random.nextInt(Math.max(1, validModule.length - 8));
         return Arrays.copyOf(validModule, truncateAt);
-        
+
       default:
         // Completely random
         final byte[] randomData = new byte[8 + random.nextInt(24)];
@@ -688,38 +804,29 @@ class ModuleMalformedTest extends BaseIntegrationTest {
     }
   }
 
-  /**
-   * Creates malformed test cases with descriptions.
-   */
+  /** Creates malformed test cases with descriptions. */
   private List<MalformedTestCase> createMalformedTestCases() {
     final List<MalformedTestCase> testCases = new ArrayList<>();
-    
-    testCases.add(new MalformedTestCase(
-        "Invalid magic number",
-        new byte[]{0x01, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00}
-    ));
-    
-    testCases.add(new MalformedTestCase(
-        "Invalid version",
-        new byte[]{0x00, 0x61, 0x73, 0x6d, 0x02, 0x00, 0x00, 0x00}
-    ));
-    
-    testCases.add(new MalformedTestCase(
-        "Truncated module",
-        new byte[]{0x00, 0x61, 0x73, 0x6d}
-    ));
-    
-    testCases.add(new MalformedTestCase(
-        "Invalid section size",
-        new byte[]{0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, 0x01, (byte) 0xFF}
-    ));
-    
+
+    testCases.add(
+        new MalformedTestCase(
+            "Invalid magic number", new byte[] {0x01, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00}));
+
+    testCases.add(
+        new MalformedTestCase(
+            "Invalid version", new byte[] {0x00, 0x61, 0x73, 0x6d, 0x02, 0x00, 0x00, 0x00}));
+
+    testCases.add(new MalformedTestCase("Truncated module", new byte[] {0x00, 0x61, 0x73, 0x6d}));
+
+    testCases.add(
+        new MalformedTestCase(
+            "Invalid section size",
+            new byte[] {0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, 0x01, (byte) 0xFF}));
+
     return testCases;
   }
 
-  /**
-   * Test case for malformed modules.
-   */
+  /** Test case for malformed modules. */
   private static class MalformedTestCase {
     final String description;
     final byte[] moduleBytes;
