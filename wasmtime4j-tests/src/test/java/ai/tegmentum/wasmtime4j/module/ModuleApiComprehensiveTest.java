@@ -43,6 +43,7 @@ class ModuleApiComprehensiveTest extends BaseIntegrationTest {
   private ExecutorService executorService;
 
   @Override
+  @SuppressWarnings("unused")
   protected void doSetUp(final TestInfo testInfo) {
     // skipIfCategoryNotEnabled("module.comprehensive");
 
@@ -142,8 +143,7 @@ class ModuleApiComprehensiveTest extends BaseIntegrationTest {
               final byte[] wasmBytes = TestUtils.createMemoryImportWasmModule();
 
               try (final Engine engine = runtime.createEngine();
-                  final Module module = engine.compileModule(wasmBytes);
-                  final Store store = engine.createStore()) {
+                  final Module module = engine.compileModule(wasmBytes)) {
 
                 // When - Check imports required
                 final List<ImportType> imports = module.getImports();
@@ -244,7 +244,7 @@ class ModuleApiComprehensiveTest extends BaseIntegrationTest {
                   final Module module = engine.compileModule(wasmBytes)) {
 
                 // When - Create empty import map (should be invalid)
-                final ImportMap emptyImports = new ImportMap();
+                final ImportMap emptyImports = ImportMap.empty();
                 final boolean validWithEmpty = module.validateImports(emptyImports);
 
                 // Then
@@ -301,6 +301,7 @@ class ModuleApiComprehensiveTest extends BaseIntegrationTest {
 
   @Test
   @DisplayName("Should handle concurrent module compilation")
+  @SuppressWarnings("unused")
   void shouldHandleConcurrentModuleCompilation() {
     final CrossRuntimeValidationResult validation =
         CrossRuntimeTestRunner.validateConsistency(
@@ -333,7 +334,7 @@ class ModuleApiComprehensiveTest extends BaseIntegrationTest {
                         } finally {
                           completionLatch.countDown();
                         }
-          });
+                      });
                 }
 
                 // Start all threads
@@ -362,23 +363,19 @@ class ModuleApiComprehensiveTest extends BaseIntegrationTest {
               // Given
               final byte[] wasmBytes = TestUtils.createSimpleWasmModule();
 
-              Module module;
-              Engine engine = runtime.createEngine();
+              try (final Engine engine = runtime.createEngine()) {
+                // When
+                final Module module = engine.compileModule(wasmBytes);
+                assertThat(module.isValid()).isTrue();
 
-              // When
-              module = engine.compileModule(wasmBytes);
-              assertThat(module.isValid()).isTrue();
+                // Close module
+                module.close();
 
-              // Close module
-              module.close();
+                // Then
+                assertThat(module.isValid()).isFalse();
 
-              // Then
-              assertThat(module.isValid()).isFalse();
-
-              // Close engine
-              engine.close();
-
-              return "Resource cleanup handled successfully";
+                return "Resource cleanup handled successfully";
+              }
             },
             comparison -> comparison.getJniExecution().equals(comparison.getPanamaExecution()));
 

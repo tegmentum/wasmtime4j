@@ -17,8 +17,6 @@
 package ai.tegmentum.wasmtime4j.hostfunction;
 
 import ai.tegmentum.wasmtime4j.utils.BaseIntegrationTest;
-import ai.tegmentum.wasmtime4j.utils.TestCategories;
-import ai.tegmentum.wasmtime4j.utils.TestRunner;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -28,8 +26,8 @@ import org.junit.jupiter.api.TestInfo;
  * Comprehensive tests for Host Function bidirectional data marshaling across all WebAssembly value
  * types. Tests parameter and return value marshaling, type safety, edge cases, and cross-runtime
  * consistency.
- * 
- * TEMPORARILY DISABLED FOR COMPILATION - Tests require TestRunner implementation.
+ *
+ * <p>TEMPORARILY DISABLED FOR COMPILATION - Tests require TestRunner implementation.
  */
 @DisplayName("Host Function Marshaling Comprehensive Tests")
 final class HostFunctionMarshalingComprehensiveTest extends BaseIntegrationTest {

@@ -9,7 +9,6 @@ import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.utils.BaseIntegrationTest;
 import ai.tegmentum.wasmtime4j.utils.CrossRuntimeValidator;
-import ai.tegmentum.wasmtime4j.utils.TestCategories;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -627,7 +626,7 @@ final class StoreApiIT extends BaseIntegrationTest {
                 store.close();
                 engine.close();
                 return isValid;
-          });
+              });
 
       assertThat(result.isValid()).isTrue();
       assertThat(result.areResultsIdentical()).isTrue();
@@ -656,7 +655,7 @@ final class StoreApiIT extends BaseIntegrationTest {
                 engine.close();
 
                 return fuel2 - fuel1; // Should be 500
-          });
+              });
 
       assertThat(result.isValid()).isTrue();
       assertThat(result.areResultsIdentical()).isTrue();
@@ -687,7 +686,7 @@ final class StoreApiIT extends BaseIntegrationTest {
                 engine.close();
 
                 return List.of(data1, data2, data3);
-          });
+              });
 
       assertThat(result.isValid()).isTrue();
       assertThat(result.areResultsIdentical()).isTrue();

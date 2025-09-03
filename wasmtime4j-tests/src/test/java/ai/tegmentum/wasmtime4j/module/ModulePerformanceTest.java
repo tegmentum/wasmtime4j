@@ -285,6 +285,7 @@ class ModulePerformanceTest extends BaseIntegrationTest {
                 for (int i = 0; i < warmupIterations; i++) {
                   final Module module = engine.compileModule(wasmBytes);
                   // Simulate serialization with byte array cloning
+                  @SuppressWarnings("unused")
                   final byte[] serialized = wasmBytes.clone();
                   module.close();
                 }
@@ -296,6 +297,7 @@ class ModulePerformanceTest extends BaseIntegrationTest {
 
                   final Instant start = Instant.now();
                   // Simulate serialization - in real implementation would be module.serialize()
+                  @SuppressWarnings("unused")
                   final byte[] serialized = wasmBytes.clone();
                   final Duration serializationTime = Duration.between(start, Instant.now());
                   serializationTimes.add(serializationTime);
@@ -382,7 +384,7 @@ class ModulePerformanceTest extends BaseIntegrationTest {
                 }
 
                 // Wait for all threads to complete
-                CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+                CompletableFuture.allOf(futures.toArray(new CompletableFuture<?>[0])).join();
                 final Duration concurrentTime = Duration.between(concurrentStart, Instant.now());
 
                 // Calculate speedup
@@ -472,7 +474,11 @@ class ModulePerformanceTest extends BaseIntegrationTest {
               try (final Engine engine = runtime.createEngine()) {
                 // Measure memory before
                 System.gc(); // Encourage garbage collection
-                Thread.sleep(100); // Allow GC to complete
+                try {
+                  Thread.sleep(100); // Allow GC to complete
+                } catch (final InterruptedException e) {
+                  Thread.currentThread().interrupt();
+                }
                 final Runtime rt = Runtime.getRuntime();
                 final long memoryBefore = rt.totalMemory() - rt.freeMemory();
 
@@ -489,7 +495,11 @@ class ModulePerformanceTest extends BaseIntegrationTest {
 
                 // Measure memory after
                 System.gc();
-                Thread.sleep(100);
+                try {
+                  Thread.sleep(100);
+                } catch (final InterruptedException e) {
+                  Thread.currentThread().interrupt();
+                }
                 final long memoryAfter = rt.totalMemory() - rt.freeMemory();
                 final long memoryUsed = memoryAfter - memoryBefore;
 
@@ -502,7 +512,11 @@ class ModulePerformanceTest extends BaseIntegrationTest {
 
                 // Measure memory after cleanup
                 System.gc();
-                Thread.sleep(100);
+                try {
+                  Thread.sleep(100);
+                } catch (final InterruptedException e) {
+                  Thread.currentThread().interrupt();
+                }
                 final long memoryAfterCleanup = rt.totalMemory() - rt.freeMemory();
                 final long memoryLeaked = memoryAfterCleanup - memoryBefore;
 
@@ -569,7 +583,7 @@ class ModulePerformanceTest extends BaseIntegrationTest {
 
                     } catch (final Exception e) {
                       // Some test modules may be invalid, which is expected
-                      LOGGER.fine("Test case compilation failed: " + testCase.getName());
+                      LOGGER.fine("Test case compilation failed: " + testCase.getTestName());
                     }
                   }
 

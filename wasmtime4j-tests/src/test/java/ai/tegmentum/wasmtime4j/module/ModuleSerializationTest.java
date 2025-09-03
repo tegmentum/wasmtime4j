@@ -93,7 +93,7 @@ class ModuleSerializationTest extends BaseIntegrationTest {
                   } catch (final IOException e) {
                     LOGGER.warning("Failed to delete cache file: " + e.getMessage());
                   }
-          });
+                });
       } catch (final IOException e) {
         LOGGER.warning("Failed to clean up cache directory: " + e.getMessage());
       }
@@ -286,7 +286,7 @@ class ModuleSerializationTest extends BaseIntegrationTest {
                         } finally {
                           completionLatch.countDown();
                         }
-          });
+                      });
                 }
 
                 // Start all threads

@@ -43,7 +43,8 @@ class WasiComponentLifecycleTest {
     assertNotNull(context, "WASI context should be created successfully");
     assertTrue(context.isValid(), "WASI context should be valid after creation");
 
-    System.out.println("Created WASI context with runtime: " + context.getRuntimeInfo().getRuntimeType());
+    System.out.println(
+        "Created WASI context with runtime: " + context.getRuntimeInfo().getRuntimeType());
   }
 
   @AfterEach

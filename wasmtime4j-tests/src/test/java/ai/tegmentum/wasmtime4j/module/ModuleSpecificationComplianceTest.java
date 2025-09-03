@@ -88,7 +88,7 @@ class ModuleSpecificationComplianceTest extends BaseIntegrationTest {
 
                     module.close();
 
-                  } catch (final WasmException | CompilationException | ValidationException e) {
+                  } catch (final WasmException e) {
                     if (!testCase.shouldBeValid) {
                       invalidModules++;
                       // Expected rejection
@@ -137,7 +137,7 @@ class ModuleSpecificationComplianceTest extends BaseIntegrationTest {
 
                     module.close();
 
-                  } catch (final WasmException | CompilationException | ValidationException e) {
+                  } catch (final WasmException e) {
                     if (!testCase.shouldBeValid) {
                       incorrectOrderings++;
                     }
@@ -197,7 +197,7 @@ class ModuleSpecificationComplianceTest extends BaseIntegrationTest {
                       failedCount.incrementAndGet();
                       LOGGER.fine(
                           "Test case failed (may be expected): "
-                              + testCase.getName()
+                              + testCase.getTestName()
                               + " - "
                               + e.getMessage());
                     }
@@ -257,7 +257,7 @@ class ModuleSpecificationComplianceTest extends BaseIntegrationTest {
 
                     module.close();
 
-                  } catch (final WasmException | CompilationException | ValidationException e) {
+                  } catch (final WasmException e) {
                     if (!testCase.shouldBeValid) {
                       invalidTypes++;
                     }
@@ -298,7 +298,7 @@ class ModuleSpecificationComplianceTest extends BaseIntegrationTest {
 
                     module.close();
 
-                  } catch (final WasmException | CompilationException | ValidationException e) {
+                  } catch (final WasmException e) {
                     if (!testCase.shouldBeValid) {
                       exceedsLimits++;
                     }
@@ -357,7 +357,7 @@ class ModuleSpecificationComplianceTest extends BaseIntegrationTest {
     // skipIfCategoryNotEnabled("testsuite");
 
     try {
-      final WasmTestSuiteStats stats = testDataManager.getTestSuiteStatistics();
+      final WasmTestSuiteStats stats = WasmTestSuiteLoader.getTestSuiteStatistics();
 
       final CrossRuntimeValidationResult validation =
           CrossRuntimeTestRunner.validateConsistency(
@@ -370,7 +370,7 @@ class ModuleSpecificationComplianceTest extends BaseIntegrationTest {
                   // Test a sample from each available suite
                   for (final WasmTestSuiteLoader.TestSuiteType suiteType :
                       WasmTestSuiteLoader.TestSuiteType.values()) {
-                    final int suiteSize = stats.getSuiteSize(suiteType);
+                    final int suiteSize = stats.getTestCount(suiteType);
                     if (suiteSize > 0) {
                       final List<WasmTestCase> testCases = testDataManager.loadTestSuite(suiteType);
                       final int sampleSize = Math.min(testCases.size(), 5); // Small sample

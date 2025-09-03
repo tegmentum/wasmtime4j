@@ -5,7 +5,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import ai.tegmentum.wasmtime4j.performance.PerformanceRegressionDetector;
 import ai.tegmentum.wasmtime4j.utils.BaseIntegrationTest;
 import ai.tegmentum.wasmtime4j.utils.TestUtils;
-// import ai.tegmentum.wasmtime4j.wasi.WasiIntegrationTestRunner; // TEMPORARILY DISABLED
+import ai.tegmentum.wasmtime4j.wasi.WasiContext;
+import ai.tegmentum.wasmtime4j.wasi.WasiFactory;
+import ai.tegmentum.wasmtime4j.wasi.WasiRuntimeType;
 import ai.tegmentum.wasmtime4j.webassembly.CrossRuntimeExecutionSummary;
 import ai.tegmentum.wasmtime4j.webassembly.CrossRuntimeTestResult;
 import ai.tegmentum.wasmtime4j.webassembly.CrossRuntimeTestRunner;
@@ -21,7 +23,6 @@ import org.junit.jupiter.api.Test;
  * Comprehensive integration test demonstrating the full testing framework. This test validates the
  * entire integration testing infrastructure.
  */
-@org.junit.jupiter.api.Disabled("Comprehensive test temporarily disabled due to WASI dependencies")
 @DisplayName("Comprehensive Integration Test Framework")
 class ComprehensiveIntegrationIT extends BaseIntegrationTest {
 
@@ -101,19 +102,9 @@ class ComprehensiveIntegrationIT extends BaseIntegrationTest {
 
     LOGGER.info("   - Performance analysis: " + regressionAnalysis.getSummary());
 
-    // 4. Test WASI integration - TEMPORARILY DISABLED
-    LOGGER.info("4. Testing WASI integration...");
-    // final var wasiResult =
-    //     WasiIntegrationTestRunner.executeWasiTest(
-    //         "comprehensive_wasi_test",
-    //         (runtime, testDir) -> {
-    //           // Simple WASI validation
-    //           return testDir != null
-    //               ? "wasi_environment_available"
-    //               : "wasi_environment_unavailable";
-    //         },
-    //         true);
-    final String wasiResult = "WASI tests temporarily disabled";
+    // 4. Test WASI integration using WasiFactory
+    LOGGER.info("4. Testing WASI integration with WasiFactory...");
+    final String wasiResult = testWasiIntegration();
 
     LOGGER.info("   - WASI test: " + wasiResult);
 
@@ -127,8 +118,7 @@ class ComprehensiveIntegrationIT extends BaseIntegrationTest {
     final String performanceSummary = PerformanceRegressionDetector.createPerformanceSummary();
     LOGGER.info("   - Performance summary created");
 
-    // final var wasiSummary = WasiIntegrationTestRunner.createWasiExecutionSummary(); // TEMPORARILY DISABLED
-    final String wasiSummary = "WASI summary temporarily disabled";
+    final String wasiSummary = createWasiExecutionSummary();
     LOGGER.info("   - WASI summary: " + wasiSummary);
 
     // 6. Validate cache statistics
@@ -189,7 +179,7 @@ class ComprehensiveIntegrationIT extends BaseIntegrationTest {
 
     // Clear all caches and test data
     CrossRuntimeTestRunner.clearCache();
-    // WasiIntegrationTestRunner.clearWasiTestResults(); // TEMPORARILY DISABLED
+    clearWasiTestResults();
     PerformanceRegressionDetector.clearPerformanceData();
 
     final WasmTestDataManager dataManager = WasmTestDataManager.getInstance();
@@ -225,7 +215,7 @@ class ComprehensiveIntegrationIT extends BaseIntegrationTest {
   private void generateComprehensiveReport(
       final WasmTestSuiteStats stats,
       final CrossRuntimeExecutionSummary executionSummary,
-      final String wasiSummary, // TEMPORARILY CHANGED from WasiExecutionSummary
+      final String wasiSummary,
       final String performanceSummary,
       final WasmTestDataManager.CacheStatistics cacheStats) {
 
@@ -258,7 +248,7 @@ class ComprehensiveIntegrationIT extends BaseIntegrationTest {
 
     report.append("WASI Integration:\n");
     report.append("----------------\n");
-    report.append(wasiSummary).append("\n"); // TEMPORARILY CHANGED - was wasiSummary.createReport()
+    report.append(wasiSummary).append("\n");
 
     report.append("Performance Baselines:\n");
     report.append("---------------------\n");
@@ -275,5 +265,56 @@ class ComprehensiveIntegrationIT extends BaseIntegrationTest {
         "================================================================================\n");
 
     LOGGER.info(report.toString());
+  }
+
+  /**
+   * Tests WASI integration using the WasiFactory pattern.
+   *
+   * @return test result summary
+   */
+  private String testWasiIntegration() {
+    try {
+      // Test WASI context creation using factory
+      final WasiContext wasiContext = WasiFactory.createContext();
+      
+      // Basic validation that WASI context is available
+      if (wasiContext != null) {
+        wasiContext.close(); // Clean up resources
+        return "WASI integration successful - context created with " + WasiFactory.getSelectedRuntimeType();
+      } else {
+        return "WASI integration failed - context is null";
+      }
+    } catch (final Exception e) {
+      return "WASI integration failed: " + e.getMessage();
+    }
+  }
+
+  /**
+   * Creates a WASI execution summary using WasiFactory.
+   *
+   * @return WASI execution summary
+   */
+  private String createWasiExecutionSummary() {
+    final StringBuilder summary = new StringBuilder();
+    summary.append("WASI Factory Integration Summary:\n");
+    summary.append("Selected Runtime Type: ").append(WasiFactory.getSelectedRuntimeType()).append("\n");
+    
+    // Check availability of different runtime types
+    summary.append("JNI Runtime Available: ").append(WasiFactory.isRuntimeAvailable(WasiRuntimeType.JNI)).append("\n");
+    summary
+        .append("Panama Runtime Available: ")
+        .append(WasiFactory.isRuntimeAvailable(WasiRuntimeType.PANAMA))
+        .append("\n");
+    
+    return summary.toString();
+  }
+
+  /**
+   * Clears WASI test results (placeholder for compatibility).
+   */
+  private void clearWasiTestResults() {
+    // Since we're using WasiFactory pattern, there's no specific cleanup needed
+    // This method exists for compatibility with the test structure
+    LOGGER.info("WASI test results cleared (WasiFactory pattern - no cleanup needed)");
   }
 }

@@ -430,9 +430,7 @@ class ModuleMalformedTest extends BaseIntegrationTest {
                             try {
                               engine.compileModule(malformedModule);
                               // If it doesn't throw, that's unexpected
-                            } catch (final WasmException
-                                | CompilationException
-                                | ValidationException e) {
+                            } catch (final WasmException e) {
                               threadRejected++;
                             } catch (final Exception e) {
                               // Other exceptions are also acceptable
@@ -445,7 +443,7 @@ class ModuleMalformedTest extends BaseIntegrationTest {
                           totalRejected.addAndGet(threadRejected);
                           completionLatch.countDown();
                         }
-          });
+                      });
                 }
 
                 // Start all threads
@@ -578,7 +576,7 @@ class ModuleMalformedTest extends BaseIntegrationTest {
           (byte) 0xFF,
           (byte) 0xFF,
           (byte) 0xFF // Invalid section size
-          });
+        });
 
     // Section with size larger than remaining bytes
     modules.add(
@@ -595,7 +593,7 @@ class ModuleMalformedTest extends BaseIntegrationTest {
           0x10,
           0x00,
           0x01 // Size 16 but only 2 bytes follow
-          });
+        });
 
     return modules;
   }
@@ -621,7 +619,7 @@ class ModuleMalformedTest extends BaseIntegrationTest {
           (byte) 0xFF,
           0x00,
           0x00 // Invalid type indicator
-          });
+        });
 
     return modules;
   }
@@ -651,7 +649,7 @@ class ModuleMalformedTest extends BaseIntegrationTest {
           0x02,
           0x01,
           (byte) 0xFF // Function section with invalid type index
-          });
+        });
 
     return modules;
   }
@@ -689,7 +687,7 @@ class ModuleMalformedTest extends BaseIntegrationTest {
           (byte) 0xFF,
           (byte) 0xFF,
           0x0b // Invalid instruction
-          });
+        });
 
     return modules;
   }
@@ -714,11 +712,11 @@ class ModuleMalformedTest extends BaseIntegrationTest {
           0x01,
           0x01, // Memory section
           (byte) 0x80,
-          0x80,
-          0x80,
-          0x80,
+          (byte) 0x80,
+          (byte) 0x80,
+          (byte) 0x80,
           0x10 // Invalid min size (too large)
-          });
+        });
 
     return modules;
   }

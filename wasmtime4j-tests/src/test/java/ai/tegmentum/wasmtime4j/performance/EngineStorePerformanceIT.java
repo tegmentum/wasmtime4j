@@ -8,11 +8,10 @@ import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.OptimizationLevel;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.utils.BaseIntegrationTest;
-import ai.tegmentum.wasmtime4j.utils.CrossRuntimeValidator;
-import ai.tegmentum.wasmtime4j.utils.TestCategories;
+import ai.tegmentum.wasmtime4j.utils.PerformanceMetrics;
+import ai.tegmentum.wasmtime4j.utils.PerformanceTestUtils;
 import ai.tegmentum.wasmtime4j.utils.TestUtils;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -76,7 +75,7 @@ final class EngineStorePerformanceIT extends BaseIntegrationTest {
             // Measure creation times
             for (int i = 0; i < MEASUREMENT_ITERATIONS; i++) {
               final Duration creationTime =
-                  measureExecutionTime(
+                  timeOperation(
                       "Engine creation " + i,
                       () -> {
                         try {
@@ -86,12 +85,12 @@ final class EngineStorePerformanceIT extends BaseIntegrationTest {
                         } catch (final Exception e) {
                           throw new RuntimeException(e);
                         }
-          });
+                      });
               creationTimes.add(creationTime);
             }
 
-            final PerformanceMetrics metrics = calculateMetrics(creationTimes);
-            logPerformanceMetrics("Engine creation", metrics, runtimeType);
+            final PerformanceMetrics metrics = PerformanceTestUtils.calculateMetrics(creationTimes);
+            PerformanceTestUtils.logPerformanceMetrics("Engine creation", metrics, runtimeType);
 
             // Verify baseline
             assertThat(metrics.getAverage())
@@ -134,7 +133,7 @@ final class EngineStorePerformanceIT extends BaseIntegrationTest {
             // Measure creation times
             for (int i = 0; i < MEASUREMENT_ITERATIONS; i++) {
               final Duration creationTime =
-                  measureExecutionTime(
+                  PerformanceTestUtils.measureExecutionTimeAndReturnDuration(
                       "Engine creation with " + optimizationLevel + " " + i,
                       () -> {
                         try {
@@ -146,12 +145,12 @@ final class EngineStorePerformanceIT extends BaseIntegrationTest {
                         } catch (final Exception e) {
                           throw new RuntimeException(e);
                         }
-          });
+                      });
               creationTimes.add(creationTime);
             }
 
-            final PerformanceMetrics metrics = calculateMetrics(creationTimes);
-            logPerformanceMetrics(
+            final PerformanceMetrics metrics = PerformanceTestUtils.calculateMetrics(creationTimes);
+            PerformanceTestUtils.logPerformanceMetrics(
                 "Engine creation (" + optimizationLevel + ")", metrics, runtimeType);
 
             // Allow slightly more time for debug configurations
@@ -186,7 +185,7 @@ final class EngineStorePerformanceIT extends BaseIntegrationTest {
 
             try {
               final Duration totalTime =
-                  measureExecutionTime(
+                  PerformanceTestUtils.measureExecutionTimeAndReturnDuration(
                       "Concurrent engine creation on " + runtimeType,
                       () -> {
                         final List<CompletableFuture<Duration>> futures =
@@ -198,7 +197,7 @@ final class EngineStorePerformanceIT extends BaseIntegrationTest {
                                               final List<Duration> threadTimes = new ArrayList<>();
                                               for (int op = 0; op < operationsPerThread; op++) {
                                                 final Duration opTime =
-                                                    measureExecutionTime(
+                                                    PerformanceTestUtils.measureExecutionTimeAndReturnDuration(
                                                         "Thread " + threadId + " op " + op,
                                                         () -> {
                                                           try {
@@ -209,7 +208,7 @@ final class EngineStorePerformanceIT extends BaseIntegrationTest {
                                                           } catch (final Exception e) {
                                                             throw new RuntimeException(e);
                                                           }
-          });
+                                                        });
                                                 threadTimes.add(opTime);
                                               }
                                               return threadTimes.stream()
@@ -225,7 +224,7 @@ final class EngineStorePerformanceIT extends BaseIntegrationTest {
                         } catch (final Exception e) {
                           throw new RuntimeException(e);
                         }
-          });
+                      });
 
               final int totalOperations = threadCount * operationsPerThread;
               final double throughput = totalOperations / (totalTime.toMillis() / 1000.0);
@@ -279,7 +278,7 @@ final class EngineStorePerformanceIT extends BaseIntegrationTest {
             // Measure creation times
             for (int i = 0; i < MEASUREMENT_ITERATIONS; i++) {
               final Duration creationTime =
-                  measureExecutionTime(
+                  PerformanceTestUtils.measureExecutionTimeAndReturnDuration(
                       "Store creation " + i,
                       () -> {
                         try {
@@ -289,12 +288,12 @@ final class EngineStorePerformanceIT extends BaseIntegrationTest {
                         } catch (final Exception e) {
                           throw new RuntimeException(e);
                         }
-          });
+                      });
               creationTimes.add(creationTime);
             }
 
-            final PerformanceMetrics metrics = calculateMetrics(creationTimes);
-            logPerformanceMetrics("Store creation", metrics, runtimeType);
+            final PerformanceMetrics metrics = PerformanceTestUtils.calculateMetrics(creationTimes);
+            PerformanceTestUtils.logPerformanceMetrics("Store creation", metrics, runtimeType);
 
             assertThat(metrics.getAverage())
                 .as("Average store creation time exceeds baseline")
@@ -326,7 +325,7 @@ final class EngineStorePerformanceIT extends BaseIntegrationTest {
             registerForCleanup(engine);
 
             final Duration totalTime =
-                measureExecutionTime(
+                PerformanceTestUtils.measureExecutionTimeAndReturnDuration(
                     storeCount + " store creations on " + runtimeType,
                     () -> {
                       final List<Store> stores = new ArrayList<>();
@@ -346,9 +345,9 @@ final class EngineStorePerformanceIT extends BaseIntegrationTest {
                               } catch (final Exception e) {
                                 LOGGER.warning("Failed to close store: " + e.getMessage());
                               }
-          });
+                            });
                       }
-          });
+                    });
 
             final double averageTimeMs = totalTime.toMillis() / (double) storeCount;
             final double throughput = storeCount / (totalTime.toMillis() / 1000.0);
@@ -398,7 +397,7 @@ final class EngineStorePerformanceIT extends BaseIntegrationTest {
             // Measure compilation times
             for (int i = 0; i < MEASUREMENT_ITERATIONS; i++) {
               final Duration compilationTime =
-                  measureExecutionTime(
+                  PerformanceTestUtils.measureExecutionTimeAndReturnDuration(
                       "Module compilation " + i,
                       () -> {
                         try {
@@ -408,12 +407,12 @@ final class EngineStorePerformanceIT extends BaseIntegrationTest {
                         } catch (final Exception e) {
                           throw new RuntimeException(e);
                         }
-          });
+                      });
               compilationTimes.add(compilationTime);
             }
 
-            final PerformanceMetrics metrics = calculateMetrics(compilationTimes);
-            logPerformanceMetrics("Module compilation", metrics, runtimeType);
+            final PerformanceMetrics metrics = PerformanceTestUtils.calculateMetrics(compilationTimes);
+            PerformanceTestUtils.logPerformanceMetrics("Module compilation", metrics, runtimeType);
 
             assertThat(metrics.getAverage())
                 .as("Average module compilation time exceeds baseline")
@@ -458,7 +457,7 @@ final class EngineStorePerformanceIT extends BaseIntegrationTest {
 
             for (int i = 0; i < iterations; i++) {
               final Duration compilationTime =
-                  measureExecutionTime(
+                  PerformanceTestUtils.measureExecutionTimeAndReturnDuration(
                       "Module compilation (" + optimizationLevel + ") " + i,
                       () -> {
                         try {
@@ -468,12 +467,12 @@ final class EngineStorePerformanceIT extends BaseIntegrationTest {
                         } catch (final Exception e) {
                           throw new RuntimeException(e);
                         }
-          });
+                      });
               compilationTimes.add(compilationTime);
             }
 
-            final PerformanceMetrics metrics = calculateMetrics(compilationTimes);
-            logPerformanceMetrics(
+            final PerformanceMetrics metrics = PerformanceTestUtils.calculateMetrics(compilationTimes);
+            PerformanceTestUtils.logPerformanceMetrics(
                 "Module compilation (" + optimizationLevel + ")", metrics, runtimeType);
 
             // addTestMetric(
@@ -507,18 +506,18 @@ final class EngineStorePerformanceIT extends BaseIntegrationTest {
             for (int i = 0; i < MEASUREMENT_ITERATIONS; i++) {
               final String testData = "test-data-" + i;
               final Duration operationTime =
-                  measureExecutionTime(
+                  PerformanceTestUtils.measureExecutionTimeAndReturnDuration(
                       "Data operation " + i,
                       () -> {
                         store.setData(testData);
                         final Object retrieved = store.getData();
                         assertThat(retrieved).isEqualTo(testData);
-          });
+                      });
               operationTimes.add(operationTime);
             }
 
-            final PerformanceMetrics metrics = calculateMetrics(operationTimes);
-            logPerformanceMetrics("Data operations", metrics, runtimeType);
+            final PerformanceMetrics metrics = PerformanceTestUtils.calculateMetrics(operationTimes);
+            PerformanceTestUtils.logPerformanceMetrics("Data operations", metrics, runtimeType);
 
             assertThat(metrics.getAverage())
                 .as("Average data operation time exceeds baseline")
@@ -551,7 +550,7 @@ final class EngineStorePerformanceIT extends BaseIntegrationTest {
             for (int i = 0; i < MEASUREMENT_ITERATIONS; i++) {
               final long fuelAmount = 1000L + i;
               final Duration operationTime =
-                  measureExecutionTime(
+                  PerformanceTestUtils.measureExecutionTimeAndReturnDuration(
                       "Fuel operation " + i,
                       () -> {
                         try {
@@ -565,12 +564,12 @@ final class EngineStorePerformanceIT extends BaseIntegrationTest {
                         } catch (final Exception e) {
                           throw new RuntimeException(e);
                         }
-          });
+                      });
               operationTimes.add(operationTime);
             }
 
-            final PerformanceMetrics metrics = calculateMetrics(operationTimes);
-            logPerformanceMetrics("Fuel operations", metrics, runtimeType);
+            final PerformanceMetrics metrics = PerformanceTestUtils.calculateMetrics(operationTimes);
+            PerformanceTestUtils.logPerformanceMetrics("Fuel operations", metrics, runtimeType);
 
             assertThat(metrics.getAverage())
                 .as("Average fuel operation time exceeds baseline")
@@ -602,7 +601,7 @@ final class EngineStorePerformanceIT extends BaseIntegrationTest {
         final List<Duration> jniTimes = new ArrayList<>();
         for (int i = 0; i < MEASUREMENT_ITERATIONS; i++) {
           final Duration time =
-              measureExecutionTime(
+              PerformanceTestUtils.measureExecutionTimeAndReturnDuration(
                   "JNI engine creation " + i,
                   () -> {
                     try {
@@ -611,10 +610,10 @@ final class EngineStorePerformanceIT extends BaseIntegrationTest {
                     } catch (final Exception e) {
                       throw new RuntimeException(e);
                     }
-          });
+                  });
           jniTimes.add(time);
         }
-        performanceMap.put("JNI", calculateMetrics(jniTimes));
+        performanceMap.put("JNI", PerformanceTestUtils.calculateMetrics(jniTimes));
       } catch (final Exception e) {
         LOGGER.warning("JNI performance measurement failed: " + e.getMessage());
       }
@@ -625,7 +624,7 @@ final class EngineStorePerformanceIT extends BaseIntegrationTest {
         final List<Duration> panamaTimes = new ArrayList<>();
         for (int i = 0; i < MEASUREMENT_ITERATIONS; i++) {
           final Duration time =
-              measureExecutionTime(
+              PerformanceTestUtils.measureExecutionTimeAndReturnDuration(
                   "Panama engine creation " + i,
                   () -> {
                     try {
@@ -634,10 +633,10 @@ final class EngineStorePerformanceIT extends BaseIntegrationTest {
                     } catch (final Exception e) {
                       throw new RuntimeException(e);
                     }
-          });
+                  });
           panamaTimes.add(time);
         }
-        performanceMap.put("Panama", calculateMetrics(panamaTimes));
+        performanceMap.put("Panama", PerformanceTestUtils.calculateMetrics(panamaTimes));
       } catch (final Exception e) {
         LOGGER.warning("Panama performance measurement failed: " + e.getMessage());
       }
@@ -656,7 +655,7 @@ final class EngineStorePerformanceIT extends BaseIntegrationTest {
                 jniMetrics.getAverage().toMillis(), panamaMetrics.getAverage().toMillis(), ratio));
 
         // addTestMetric(String.format("Performance ratio (Panama/JNI): %.2f", ratio));
-        //     
+        //
         // Log detailed comparison
         //     final String comparison =
         //     CrossRuntimeValidator.analyzePerformance(
@@ -696,7 +695,7 @@ final class EngineStorePerformanceIT extends BaseIntegrationTest {
           final List<Duration> compilationTimes = new ArrayList<>();
           for (int i = 0; i < MEASUREMENT_ITERATIONS / 2; i++) { // Fewer iterations for compilation
             final Duration time =
-                measureExecutionTime(
+                PerformanceTestUtils.measureExecutionTimeAndReturnDuration(
                     runtimeType + " compilation " + i,
                     () -> {
                       try {
@@ -710,7 +709,7 @@ final class EngineStorePerformanceIT extends BaseIntegrationTest {
           }
 
           engine.close();
-          performanceMap.put(runtimeType.toString(), calculateMetrics(compilationTimes));
+          performanceMap.put(runtimeType.toString(), PerformanceTestUtils.calculateMetrics(compilationTimes));
         } catch (final Exception e) {
           LOGGER.warning(
               runtimeType + " compilation performance measurement failed: " + e.getMessage());
@@ -734,113 +733,31 @@ final class EngineStorePerformanceIT extends BaseIntegrationTest {
                   panamaMetrics.getAverage().toMillis(),
                   ratio));
 
-          // addTestMetric(String.format("Compilation performance ratio (Panama/JNI): %.2f", ratio));
+          // addTestMetric(String.format("Compilation performance ratio (Panama/JNI): %.2f",
+          // ratio));
         }
       }
     }
 
-    // Helper methods and classes
-  private Duration measureExecutionTime(final String operationName, final Runnable operation) {
-    final Instant start = Instant.now();
-    operation.run();
-    final Duration duration = Duration.between(start, Instant.now());
-    LOGGER.fine(String.format("%s took %d ms", operationName, duration.toMillis()));
-    return duration;
+    // Helper methods moved to PerformanceTestUtils
+
+
+    // Mock classes for cross-runtime comparison - commented out due to final class inheritance
+    /*
+    private static final class MockComparisonResult extends CrossRuntimeValidator.ComparisonResult {
+      private MockComparisonResult(final List<CrossRuntimeValidator.TestResult> results) {
+        super(results, true, true, "Performance comparison");
+      }
+    }
+
+    private static final class MockTestResult extends CrossRuntimeValidator.TestResult {
+      private MockTestResult(
+          final ai.tegmentum.wasmtime4j.RuntimeType runtimeType,
+          final boolean success,
+          final Duration executionTime) {
+        super(runtimeType, success, executionTime, null);
+      }
+    }
+    */
   }
-
-  private PerformanceMetrics calculateMetrics(final List<Duration> durations) {
-    durations.sort(Duration::compareTo);
-
-    final Duration min = durations.get(0);
-    final Duration max = durations.get(durations.size() - 1);
-    final Duration average =
-        Duration.ofNanos(
-            (long) durations.stream().mapToLong(Duration::toNanos).average().orElse(0.0));
-    final Duration median = durations.get(durations.size() / 2);
-    final Duration p95 = durations.get((int) (durations.size() * 0.95));
-    final Duration p99 = durations.get((int) (durations.size() * 0.99));
-
-    return new PerformanceMetrics(min, max, average, median, p95, p99);
-  }
-
-  private void logPerformanceMetrics(
-      final String operation, final PerformanceMetrics metrics, final Object runtimeType) {
-    LOGGER.info(
-        String.format(
-            "%s performance on %s: min=%.1fms, avg=%.1fms, max=%.1fms, p95=%.1fms, p99=%.1fms",
-            operation,
-            runtimeType,
-            metrics.getMin().toMillis(),
-            metrics.getAverage().toMillis(),
-            metrics.getMax().toMillis(),
-            metrics.getP95().toMillis(),
-            metrics.getP99().toMillis()));
-  }
-
-  private static final class PerformanceMetrics {
-    private final Duration min;
-    private final Duration max;
-    private final Duration average;
-    private final Duration median;
-    private final Duration p95;
-    private final Duration p99;
-
-    private PerformanceMetrics(
-        final Duration min,
-        final Duration max,
-        final Duration average,
-        final Duration median,
-        final Duration p95,
-        final Duration p99) {
-      this.min = min;
-      this.max = max;
-      this.average = average;
-      this.median = median;
-      this.p95 = p95;
-      this.p99 = p99;
-    }
-
-    public Duration getMin() {
-      return min;
-    }
-
-    public Duration getMax() {
-      return max;
-    }
-
-    public Duration getAverage() {
-      return average;
-    }
-
-    public Duration getMedian() {
-      return median;
-    }
-
-    public Duration getP95() {
-      return p95;
-    }
-
-    public Duration getP99() {
-      return p99;
-    }
-  }
-
-  // Mock classes for cross-runtime comparison - commented out due to final class inheritance
-  /*
-  private static final class MockComparisonResult extends CrossRuntimeValidator.ComparisonResult {
-    private MockComparisonResult(final List<CrossRuntimeValidator.TestResult> results) {
-      super(results, true, true, "Performance comparison");
-    }
-  }
-
-  private static final class MockTestResult extends CrossRuntimeValidator.TestResult {
-    private MockTestResult(
-        final ai.tegmentum.wasmtime4j.RuntimeType runtimeType,
-        final boolean success,
-        final Duration executionTime) {
-      super(runtimeType, success, executionTime, null);
-    }
-  }
-  */
-}
 }

@@ -952,7 +952,7 @@ public final class PerformanceTestHarness {
                     String.format(
                         "  %2d threads: %8.2f ops/sec (avg: %.2f ms)\n",
                         threads, result.getOperationsPerSecond(), result.getMean() / 1_000_000.0));
-          });
+              });
 
       return report.toString();
     }
@@ -981,10 +981,10 @@ public final class PerformanceTestHarness {
   /** Helper method to get current compilation time. */
   private static long getCompilationTime() {
     try {
-      final javax.management.MXBean compilationBean =
+      final java.lang.management.CompilationMXBean compilationBean =
           java.lang.management.ManagementFactory.getCompilationMXBean();
       if (compilationBean != null) {
-        return ((java.lang.management.CompilationMXBean) compilationBean).getTotalCompilationTime();
+        return compilationBean.getTotalCompilationTime();
       }
     } catch (final Exception e) {
       LOGGER.fine("Could not get compilation time: " + e.getMessage());

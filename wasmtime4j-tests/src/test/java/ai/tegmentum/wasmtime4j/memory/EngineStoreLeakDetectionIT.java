@@ -8,7 +8,6 @@ import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.OptimizationLevel;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.utils.BaseIntegrationTest;
-import ai.tegmentum.wasmtime4j.utils.TestCategories;
 import ai.tegmentum.wasmtime4j.utils.TestUtils;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
@@ -75,7 +74,7 @@ final class EngineStoreLeakDetectionIT extends BaseIntegrationTest {
                       Thread.yield();
                     }
                   }
-          });
+                });
 
             // Force final garbage collection
             System.gc();
@@ -147,7 +146,7 @@ final class EngineStoreLeakDetectionIT extends BaseIntegrationTest {
                       Thread.yield();
                     }
                   }
-          });
+                });
 
             System.gc();
             Thread.sleep(1000);
@@ -208,7 +207,7 @@ final class EngineStoreLeakDetectionIT extends BaseIntegrationTest {
                       Thread.yield();
                     }
                   }
-          });
+                });
 
             System.gc();
             Thread.sleep(1000);
@@ -274,7 +273,7 @@ final class EngineStoreLeakDetectionIT extends BaseIntegrationTest {
                       Thread.yield();
                     }
                   }
-          });
+                });
 
             System.gc();
             Thread.sleep(1000);
@@ -345,7 +344,7 @@ final class EngineStoreLeakDetectionIT extends BaseIntegrationTest {
                       Thread.yield();
                     }
                   }
-          });
+                });
 
             System.gc();
             Thread.sleep(1000);
@@ -413,7 +412,7 @@ final class EngineStoreLeakDetectionIT extends BaseIntegrationTest {
                       Thread.yield();
                     }
                   }
-          });
+                });
 
             System.gc();
             Thread.sleep(1000);
@@ -511,7 +510,7 @@ final class EngineStoreLeakDetectionIT extends BaseIntegrationTest {
                     } catch (final Exception e) {
                       throw new RuntimeException(e);
                     }
-          });
+                  });
 
               System.gc();
               Thread.sleep(2000); // Give more time for concurrent cleanup
@@ -583,7 +582,7 @@ final class EngineStoreLeakDetectionIT extends BaseIntegrationTest {
                       Thread.yield();
                     }
                   }
-          });
+                });
 
             System.gc();
             Thread.sleep(1000);
@@ -648,11 +647,16 @@ final class EngineStoreLeakDetectionIT extends BaseIntegrationTest {
                     // Force GC more frequently due to potential resource buildup
                     if (i % 5 == 0) {
                       System.gc();
-                      Thread.sleep(100);
+                      try {
+                        Thread.sleep(100);
+                      } catch (final InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        throw new RuntimeException("Interrupted during GC wait", e);
+                      }
                       System.gc();
                     }
                   }
-          });
+                });
 
             // Give finalizers time to run
             System.gc();
@@ -748,7 +752,7 @@ final class EngineStoreLeakDetectionIT extends BaseIntegrationTest {
                   } catch (final Exception e) {
                     throw new RuntimeException(e);
                   }
-          });
+                });
 
             // Log memory usage pattern
             final StringBuilder profile = new StringBuilder();

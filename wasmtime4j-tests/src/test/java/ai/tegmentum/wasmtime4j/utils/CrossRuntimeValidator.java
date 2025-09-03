@@ -3,6 +3,7 @@ package ai.tegmentum.wasmtime4j.utils;
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
+import ai.tegmentum.wasmtime4j.utils.TestUtils;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -184,7 +185,7 @@ public final class CrossRuntimeValidator {
                 LOGGER.warning(runtimeType + " execution failed: " + e.getMessage());
                 return new TestResult(runtimeType, null, executionTime, e);
               }
-          });
+            });
 
     try {
       return future.get(timeout.toMillis(), TimeUnit.MILLISECONDS);
@@ -542,7 +543,7 @@ public final class CrossRuntimeValidator {
       }
 
       // Wait for all threads to complete
-      CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+      CompletableFuture.allOf(futures.toArray(new CompletableFuture<?>[0])).join();
 
       final Duration executionTime = Duration.between(startTime, Instant.now());
       final int totalOperations = threadCount * iterationsPerThread;

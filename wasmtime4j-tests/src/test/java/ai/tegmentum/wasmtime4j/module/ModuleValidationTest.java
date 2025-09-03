@@ -307,7 +307,7 @@ class ModuleValidationTest extends BaseIntegrationTest {
                     engine.compileModule(invalidModule);
                     // If it doesn't throw, that's unexpected but not necessarily wrong
                     LOGGER.warning("Expected invalid module was accepted");
-                  } catch (final WasmException | CompilationException | ValidationException e) {
+                  } catch (final WasmException e) {
                     rejectedCount++;
                   }
                 }
@@ -378,7 +378,7 @@ class ModuleValidationTest extends BaseIntegrationTest {
           (byte) 0xFF, // type section with invalid length
           0x01,
           0x60
-          });
+        });
 
     // Truncated section
     malformed.add(
@@ -395,7 +395,7 @@ class ModuleValidationTest extends BaseIntegrationTest {
           0x05, // type section length 5
           0x01,
           0x60 // but only 2 bytes follow
-          });
+        });
 
     // Invalid section ID
     malformed.add(
@@ -411,7 +411,7 @@ class ModuleValidationTest extends BaseIntegrationTest {
           (byte) 0xFF,
           0x01, // invalid section ID 255
           0x60
-          });
+        });
 
     return malformed;
   }
@@ -565,7 +565,7 @@ class ModuleValidationTest extends BaseIntegrationTest {
           invalidModules.add(
               new byte[] {
                 0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, (byte) (0x80 + i), 0x01, (byte) i
-          });
+              });
           break;
       }
     }
