@@ -15,10 +15,10 @@ REQUIRED_RUST_VERSION="1.75.0"
 
 # Cross-compilation targets and platform mappings
 TARGETS_LIST=(
-    "x86_64-unknown-linux-gnu:linux-x64"
+    "x86_64-unknown-linux-gnu:linux-x86_64"
     "aarch64-unknown-linux-gnu:linux-aarch64"
-    "x86_64-pc-windows-gnu:windows-x64"
-    "x86_64-apple-darwin:macos-x64"
+    "x86_64-pc-windows-msvc:windows-x86_64"
+    "x86_64-apple-darwin:macos-x86_64"
     "aarch64-apple-darwin:macos-aarch64"
 )
 
@@ -26,7 +26,7 @@ TARGETS_LIST=(
 PLATFORM_DEPS_LIST=(
     "x86_64-unknown-linux-gnu:gcc-multilib libc6-dev"
     "aarch64-unknown-linux-gnu:gcc-aarch64-linux-gnu"
-    "x86_64-pc-windows-gnu:mingw-w64"
+    "x86_64-pc-windows-msvc:msvc-tools"
     "x86_64-apple-darwin:osxcross"
     "aarch64-apple-darwin:osxcross"
 )
@@ -102,21 +102,21 @@ detect_host_platform() {
     case "$os_name" in
         Linux*)
             case "$arch" in
-                x86_64) echo "linux-x64" ;;
+                x86_64) echo "linux-x86_64" ;;
                 aarch64|arm64) echo "linux-aarch64" ;;
                 *) log_error "Unsupported Linux architecture: $arch"; exit 1 ;;
             esac
             ;;
         Darwin*)
             case "$arch" in
-                x86_64) echo "macos-x64" ;;
+                x86_64) echo "macos-x86_64" ;;
                 arm64) echo "macos-aarch64" ;;
                 *) log_error "Unsupported macOS architecture: $arch"; exit 1 ;;
             esac
             ;;
         MINGW*|MSYS*|CYGWIN*)
             case "$arch" in
-                x86_64) echo "windows-x64" ;;
+                x86_64) echo "windows-x86_64" ;;
                 *) log_error "Unsupported Windows architecture: $arch"; exit 1 ;;
             esac
             ;;

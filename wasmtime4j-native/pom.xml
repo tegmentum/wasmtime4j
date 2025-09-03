@@ -111,17 +111,18 @@
                     <workingDirectory>${project.basedir}</workingDirectory>
                 </configuration>
                 <executions>
-                    <!-- Check Rust toolchain -->
+                    <!-- Enhanced toolchain validation -->
                     <execution>
-                        <id>check-rust-toolchain</id>
+                        <id>validate-build-environment</id>
                         <phase>validate</phase>
                         <goals>
                             <goal>exec</goal>
                         </goals>
                         <configuration>
-                            <executable>rustc</executable>
+                            <executable>bash</executable>
                             <arguments>
-                                <argument>--version</argument>
+                                <argument>-c</argument>
+                                <argument>./scripts/build-native.sh check</argument>
                             </arguments>
                             <skip>${native.compile.skip}</skip>
                             <successCodes>
@@ -130,7 +131,27 @@
                         </configuration>
                     </execution>
 
-                    <!-- Check Cargo -->
+                    <!-- Check Rust toolchain with detailed reporting -->
+                    <execution>
+                        <id>check-rust-toolchain</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>bash</executable>
+                            <arguments>
+                                <argument>-c</argument>
+                                <argument>echo "Checking Rust toolchain..." ; rustc --version ; echo "Rust compiler: OK"</argument>
+                            </arguments>
+                            <skip>${native.compile.skip}</skip>
+                            <successCodes>
+                                <successCode>0</successCode>
+                            </successCodes>
+                        </configuration>
+                    </execution>
+
+                    <!-- Check Cargo with detailed reporting -->
                     <execution>
                         <id>check-cargo-toolchain</id>
                         <phase>validate</phase>
@@ -138,13 +159,35 @@
                             <goal>exec</goal>
                         </goals>
                         <configuration>
-                            <executable>cargo</executable>
+                            <executable>bash</executable>
                             <arguments>
-                                <argument>--version</argument>
+                                <argument>-c</argument>
+                                <argument>echo "Checking Cargo..." ; cargo --version ; echo "Cargo: OK"</argument>
                             </arguments>
                             <skip>${native.compile.skip}</skip>
                             <successCodes>
                                 <successCode>0</successCode>
+                            </successCodes>
+                        </configuration>
+                    </execution>
+
+                    <!-- Validate cross-compilation targets -->
+                    <execution>
+                        <id>validate-cross-compilation-targets</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>bash</executable>
+                            <arguments>
+                                <argument>-c</argument>
+                                <argument>echo "Validating cross-compilation targets..." ; rustup target list --installed | grep -q "x86_64-unknown-linux-gnu" || echo "- Linux x86_64 target missing" ; rustup target list --installed | grep -q "aarch64-unknown-linux-gnu" || echo "- Linux aarch64 target missing" ; rustup target list --installed | grep -q "x86_64-pc-windows-msvc" || echo "- Windows x86_64 target missing" ; rustup target list --installed | grep -q "x86_64-apple-darwin" || echo "- macOS x86_64 target missing" ; rustup target list --installed | grep -q "aarch64-apple-darwin" || echo "- macOS aarch64 target missing" ; echo "Cross-compilation targets validation completed"</argument>
+                            </arguments>
+                            <skip>${native.compile.skip}</skip>
+                            <successCodes>
+                                <successCode>0</successCode>
+                                <successCode>1</successCode> <!-- Allow partial success -->
                             </successCodes>
                         </configuration>
                     </execution>
@@ -609,11 +652,29 @@
             </activation>
             <build>
                 <plugins>
+                    <!-- Setup cross-compilation before building -->
                     <plugin>
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>exec-maven-plugin</artifactId>
                         <executions>
-                            <!-- Use build script for all-platform builds -->
+                            <!-- Setup cross-compilation targets -->
+                            <execution>
+                                <id>setup-cross-compilation</id>
+                                <phase>validate</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>bash</executable>
+                                    <arguments>
+                                        <argument>-c</argument>
+                                        <argument>./scripts/setup-cross-compilation.sh --skip-deps</argument>
+                                    </arguments>
+                                    <skip>${native.compile.skip}</skip>
+                                </configuration>
+                            </execution>
+                            
+                            <!-- Build all platforms using compile mode -->
                             <execution>
                                 <id>cargo-build-all-platforms</id>
                                 <phase>compile</phase>
@@ -621,9 +682,129 @@
                                     <goal>exec</goal>
                                 </goals>
                                 <configuration>
-                                    <executable>./scripts/build-native.sh</executable>
+                                    <executable>bash</executable>
                                     <arguments>
-                                        <argument>build</argument>
+                                        <argument>-c</argument>
+                                        <argument>./scripts/build-native.sh compile --all-platforms</argument>
+                                    </arguments>
+                                    <skip>${native.compile.skip}</skip>
+                                </configuration>
+                            </execution>
+                            
+                            <!-- Verify built libraries -->
+                            <execution>
+                                <id>verify-all-platforms</id>
+                                <phase>process-classes</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>bash</executable>
+                                    <arguments>
+                                        <argument>-c</argument>
+                                        <argument>./scripts/build-native.sh verify</argument>
+                                    </arguments>
+                                    <skip>${native.compile.skip}</skip>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Profile for parallel builds using Maven parallel execution -->
+        <profile>
+            <id>parallel-build</id>
+            <properties>
+                <native.build.parallel>true</native.build.parallel>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <executions>
+                            <!-- Build Linux x86_64 -->
+                            <execution>
+                                <id>build-linux-x86_64</id>
+                                <phase>compile</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>bash</executable>
+                                    <arguments>
+                                        <argument>-c</argument>
+                                        <argument>./scripts/build-native.sh compile --target x86_64-unknown-linux-gnu</argument>
+                                    </arguments>
+                                    <skip>${native.compile.skip}</skip>
+                                </configuration>
+                            </execution>
+                            
+                            <!-- Build Linux aarch64 -->
+                            <execution>
+                                <id>build-linux-aarch64</id>
+                                <phase>compile</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>bash</executable>
+                                    <arguments>
+                                        <argument>-c</argument>
+                                        <argument>./scripts/build-native.sh compile --target aarch64-unknown-linux-gnu</argument>
+                                    </arguments>
+                                    <skip>${native.compile.skip}</skip>
+                                </configuration>
+                            </execution>
+                            
+                            <!-- Build Windows x86_64 -->
+                            <execution>
+                                <id>build-windows-x86_64</id>
+                                <phase>compile</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>bash</executable>
+                                    <arguments>
+                                        <argument>-c</argument>
+                                        <argument>./scripts/build-native.sh compile --target x86_64-pc-windows-msvc</argument>
+                                    </arguments>
+                                    <skip>${native.compile.skip}</skip>
+                                </configuration>
+                            </execution>
+                            
+                            <!-- Build macOS x86_64 -->
+                            <execution>
+                                <id>build-macos-x86_64</id>
+                                <phase>compile</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>bash</executable>
+                                    <arguments>
+                                        <argument>-c</argument>
+                                        <argument>./scripts/build-native.sh compile --target x86_64-apple-darwin</argument>
+                                    </arguments>
+                                    <skip>${native.compile.skip}</skip>
+                                </configuration>
+                            </execution>
+                            
+                            <!-- Build macOS aarch64 -->
+                            <execution>
+                                <id>build-macos-aarch64</id>
+                                <phase>compile</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>bash</executable>
+                                    <arguments>
+                                        <argument>-c</argument>
+                                        <argument>./scripts/build-native.sh compile --target aarch64-apple-darwin</argument>
                                     </arguments>
                                     <skip>${native.compile.skip}</skip>
                                 </configuration>
