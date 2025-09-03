@@ -57,6 +57,13 @@ pub use component::{
     ResourceManager, HostInterface, InstanceInfo
 };
 
+// Re-export WASI types for system interface support
+pub use wasi::{
+    WasiContext, WasiConfig, EnvironmentPolicy, DirectoryMapping,
+    WasiDirPermissions, WasiFilePermissions, StdioConfig, StdioSource, StdioSink,
+    WasiExecutionResult
+};
+
 /// Library version information
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
