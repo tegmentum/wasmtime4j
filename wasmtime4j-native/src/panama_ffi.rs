@@ -1093,3 +1093,468 @@ pub mod memory {
         }
     }
 }
+
+/// Panama FFI bindings for WebAssembly global variables
+///
+/// This module provides C-compatible functions for creating, managing,
+/// and accessing WebAssembly global variables with type safety and mutability enforcement.
+pub mod global {
+    use super::*;
+    use crate::global::{Global, GlobalValue, core};
+    use crate::store::Store;
+    use crate::error::{ffi_utils, ErrorCode};
+    use wasmtime::{ValType, Mutability};
+
+    /// Create a new WebAssembly global variable (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_global_create(
+        store_ptr: *mut c_void,
+        value_type: c_int,
+        mutability: c_int,
+        i32_value: c_int,
+        i64_value: c_ulong,
+        f32_value: f64, // Use f64 for F32 to avoid precision loss in FFI
+        f64_value: f64,
+        ref_id_present: c_int,
+        ref_id: c_ulong,
+        name_ptr: *const c_char,
+        global_ptr: *mut *mut c_void,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let store = unsafe { ffi_utils::deref_ptr::<Store>(store_ptr, "store")? };
+            
+            let val_type = match value_type {
+                0 => ValType::I32,
+                1 => ValType::I64,
+                2 => ValType::F32,
+                3 => ValType::F64,
+                4 => ValType::V128,
+                5 => ValType::FuncRef,
+                6 => ValType::ExternRef,
+                _ => return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: format!("Invalid value type: {}", value_type),
+                }),
+            };
+
+            let mutability_enum = match mutability {
+                0 => Mutability::Const,
+                1 => Mutability::Var,
+                _ => return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: format!("Invalid mutability: {}", mutability),
+                }),
+            };
+
+            let ref_id_opt = if ref_id_present != 0 { Some(ref_id) } else { None };
+
+            let initial_value = core::create_global_value(
+                val_type, 
+                i32_value, 
+                i64_value as i64, 
+                f32_value as f32, 
+                f64_value,
+                ref_id_opt,
+            )?;
+
+            let name = if name_ptr.is_null() {
+                None
+            } else {
+                Some(unsafe { ffi_utils::c_char_to_string(name_ptr)? })
+            };
+
+            let global = core::create_global(store, val_type, mutability_enum, initial_value, name)?;
+            
+            unsafe {
+                *global_ptr = Box::into_raw(global) as *mut c_void;
+            }
+            
+            Ok(())
+        })
+    }
+
+    /// Get global variable value (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_global_get(
+        global_ptr: *mut c_void,
+        store_ptr: *mut c_void,
+        i32_value: *mut c_int,
+        i64_value: *mut c_ulong,
+        f32_value: *mut f64,
+        f64_value: *mut f64,
+        ref_id_present: *mut c_int,
+        ref_id: *mut c_ulong,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let global = unsafe { core::get_global_ref(global_ptr)? };
+            let store = unsafe { ffi_utils::deref_ptr::<Store>(store_ptr, "store")? };
+            
+            let value = core::get_global_value(global, store)?;
+            let (i32_val, i64_val, f32_val, f64_val, ref_id_opt) = core::extract_global_value(&value);
+            
+            unsafe {
+                if !i32_value.is_null() { *i32_value = i32_val; }
+                if !i64_value.is_null() { *i64_value = i64_val as c_ulong; }
+                if !f32_value.is_null() { *f32_value = f32_val as f64; }
+                if !f64_value.is_null() { *f64_value = f64_val; }
+                if !ref_id_present.is_null() { *ref_id_present = if ref_id_opt.is_some() { 1 } else { 0 }; }
+                if !ref_id.is_null() { *ref_id = ref_id_opt.unwrap_or(0); }
+            }
+            
+            Ok(())
+        })
+    }
+
+    /// Set global variable value (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_global_set(
+        global_ptr: *mut c_void,
+        store_ptr: *mut c_void,
+        value_type: c_int,
+        i32_value: c_int,
+        i64_value: c_ulong,
+        f32_value: f64,
+        f64_value: f64,
+        ref_id_present: c_int,
+        ref_id: c_ulong,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let global = unsafe { core::get_global_ref(global_ptr)? };
+            let store = unsafe { ffi_utils::deref_ptr::<Store>(store_ptr, "store")? };
+            
+            let val_type = match value_type {
+                0 => ValType::I32,
+                1 => ValType::I64,
+                2 => ValType::F32,
+                3 => ValType::F64,
+                4 => ValType::V128,
+                5 => ValType::FuncRef,
+                6 => ValType::ExternRef,
+                _ => return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: format!("Invalid value type: {}", value_type),
+                }),
+            };
+
+            let ref_id_opt = if ref_id_present != 0 { Some(ref_id) } else { None };
+
+            let value = core::create_global_value(
+                val_type, 
+                i32_value, 
+                i64_value as i64, 
+                f32_value as f32, 
+                f64_value,
+                ref_id_opt,
+            )?;
+
+            core::set_global_value(global, store, value)?;
+            
+            Ok(())
+        })
+    }
+
+    /// Get global variable metadata (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_global_metadata(
+        global_ptr: *mut c_void,
+        value_type: *mut c_int,
+        mutability: *mut c_int,
+        name_ptr: *mut *mut c_char,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let global = unsafe { core::get_global_ref(global_ptr)? };
+            let metadata = core::get_global_metadata(global);
+            
+            unsafe {
+                if !value_type.is_null() {
+                    *value_type = match metadata.value_type {
+                        ValType::I32 => 0,
+                        ValType::I64 => 1,
+                        ValType::F32 => 2,
+                        ValType::F64 => 3,
+                        ValType::V128 => 4,
+                        ValType::FuncRef => 5,
+                        ValType::ExternRef => 6,
+                    };
+                }
+                if !mutability.is_null() {
+                    *mutability = match metadata.mutability {
+                        Mutability::Const => 0,
+                        Mutability::Var => 1,
+                    };
+                }
+                if !name_ptr.is_null() {
+                    *name_ptr = if let Some(ref name) = metadata.name {
+                        ffi_utils::string_to_c_char(name.clone())?
+                    } else {
+                        std::ptr::null_mut()
+                    };
+                }
+            }
+            
+            Ok(())
+        })
+    }
+
+    /// Destroy a global variable (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_global_destroy(global_ptr: *mut c_void) {
+        unsafe {
+            core::destroy_global(global_ptr);
+        }
+    }
+}
+
+/// Panama FFI bindings for WebAssembly tables
+///
+/// This module provides C-compatible functions for creating, managing,
+/// and accessing WebAssembly tables with bounds checking and reference type support.
+pub mod table {
+    use super::*;
+    use crate::table::{Table, TableElement, core};
+    use crate::store::Store;
+    use crate::error::{ffi_utils, ErrorCode};
+    use wasmtime::ValType;
+
+    /// Create a new WebAssembly table (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_table_create(
+        store_ptr: *mut c_void,
+        element_type: c_int,
+        initial_size: c_uint,
+        has_maximum: c_int,
+        maximum_size: c_uint,
+        name_ptr: *const c_char,
+        table_ptr: *mut *mut c_void,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let store = unsafe { ffi_utils::deref_ptr::<Store>(store_ptr, "store")? };
+            
+            let val_type = match element_type {
+                5 => ValType::FuncRef,
+                6 => ValType::ExternRef,
+                _ => return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: format!("Invalid table element type: {}", element_type),
+                }),
+            };
+
+            let max_size = if has_maximum != 0 { Some(maximum_size) } else { None };
+
+            let name = if name_ptr.is_null() {
+                None
+            } else {
+                Some(unsafe { ffi_utils::c_char_to_string(name_ptr)? })
+            };
+
+            let table = core::create_table(store, val_type, initial_size, max_size, name)?;
+            
+            unsafe {
+                *table_ptr = Box::into_raw(table) as *mut c_void;
+            }
+            
+            Ok(())
+        })
+    }
+
+    /// Get table size (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_table_size(
+        table_ptr: *mut c_void,
+        store_ptr: *mut c_void,
+        size: *mut c_uint,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let table = unsafe { core::get_table_ref(table_ptr)? };
+            let store = unsafe { ffi_utils::deref_ptr::<Store>(store_ptr, "store")? };
+            
+            let table_size = core::get_table_size(table, store)?;
+            
+            unsafe {
+                if !size.is_null() {
+                    *size = table_size;
+                }
+            }
+            
+            Ok(())
+        })
+    }
+
+    /// Get table element (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_table_get(
+        table_ptr: *mut c_void,
+        store_ptr: *mut c_void,
+        index: c_uint,
+        ref_id_present: *mut c_int,
+        ref_id: *mut c_ulong,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let table = unsafe { core::get_table_ref(table_ptr)? };
+            let store = unsafe { ffi_utils::deref_ptr::<Store>(store_ptr, "store")? };
+            
+            let element = core::get_table_element(table, store, index)?;
+            let ref_id_opt = core::extract_table_element_ref_id(&element);
+            
+            unsafe {
+                if !ref_id_present.is_null() {
+                    *ref_id_present = if ref_id_opt.is_some() { 1 } else { 0 };
+                }
+                if !ref_id.is_null() {
+                    *ref_id = ref_id_opt.unwrap_or(0);
+                }
+            }
+            
+            Ok(())
+        })
+    }
+
+    /// Set table element (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_table_set(
+        table_ptr: *mut c_void,
+        store_ptr: *mut c_void,
+        index: c_uint,
+        element_type: c_int,
+        ref_id_present: c_int,
+        ref_id: c_ulong,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let table = unsafe { core::get_table_ref(table_ptr)? };
+            let store = unsafe { ffi_utils::deref_ptr::<Store>(store_ptr, "store")? };
+            
+            let val_type = match element_type {
+                5 => ValType::FuncRef,
+                6 => ValType::ExternRef,
+                _ => return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: format!("Invalid table element type: {}", element_type),
+                }),
+            };
+
+            let ref_id_opt = if ref_id_present != 0 { Some(ref_id) } else { None };
+            let element = core::create_table_element(val_type, ref_id_opt)?;
+
+            core::set_table_element(table, store, index, element)?;
+            
+            Ok(())
+        })
+    }
+
+    /// Grow table (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_table_grow(
+        table_ptr: *mut c_void,
+        store_ptr: *mut c_void,
+        delta: c_uint,
+        element_type: c_int,
+        ref_id_present: c_int,
+        ref_id: c_ulong,
+        old_size: *mut c_uint,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let table = unsafe { core::get_table_ref(table_ptr)? };
+            let store = unsafe { ffi_utils::deref_ptr::<Store>(store_ptr, "store")? };
+            
+            let val_type = match element_type {
+                5 => ValType::FuncRef,
+                6 => ValType::ExternRef,
+                _ => return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: format!("Invalid table element type: {}", element_type),
+                }),
+            };
+
+            let ref_id_opt = if ref_id_present != 0 { Some(ref_id) } else { None };
+            let init_value = core::create_table_element(val_type, ref_id_opt)?;
+
+            let previous_size = core::grow_table(table, store, delta, init_value)?;
+            
+            unsafe {
+                if !old_size.is_null() {
+                    *old_size = previous_size;
+                }
+            }
+            
+            Ok(())
+        })
+    }
+
+    /// Fill table range (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_table_fill(
+        table_ptr: *mut c_void,
+        store_ptr: *mut c_void,
+        dst: c_uint,
+        len: c_uint,
+        element_type: c_int,
+        ref_id_present: c_int,
+        ref_id: c_ulong,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let table = unsafe { core::get_table_ref(table_ptr)? };
+            let store = unsafe { ffi_utils::deref_ptr::<Store>(store_ptr, "store")? };
+            
+            let val_type = match element_type {
+                5 => ValType::FuncRef,
+                6 => ValType::ExternRef,
+                _ => return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: format!("Invalid table element type: {}", element_type),
+                }),
+            };
+
+            let ref_id_opt = if ref_id_present != 0 { Some(ref_id) } else { None };
+            let value = core::create_table_element(val_type, ref_id_opt)?;
+
+            core::fill_table(table, store, dst, value, len)?;
+            
+            Ok(())
+        })
+    }
+
+    /// Get table metadata (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_table_metadata(
+        table_ptr: *mut c_void,
+        element_type: *mut c_int,
+        initial_size: *mut c_uint,
+        has_maximum: *mut c_int,
+        maximum_size: *mut c_uint,
+        name_ptr: *mut *mut c_char,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let table = unsafe { core::get_table_ref(table_ptr)? };
+            let metadata = core::get_table_metadata(table);
+            
+            unsafe {
+                if !element_type.is_null() {
+                    *element_type = match metadata.element_type {
+                        ValType::FuncRef => 5,
+                        ValType::ExternRef => 6,
+                        _ => -1, // Invalid
+                    };
+                }
+                if !initial_size.is_null() {
+                    *initial_size = metadata.initial_size;
+                }
+                if !has_maximum.is_null() {
+                    *has_maximum = if metadata.maximum_size.is_some() { 1 } else { 0 };
+                }
+                if !maximum_size.is_null() {
+                    *maximum_size = metadata.maximum_size.unwrap_or(0);
+                }
+                if !name_ptr.is_null() {
+                    *name_ptr = if let Some(ref name) = metadata.name {
+                        ffi_utils::string_to_c_char(name.clone())?
+                    } else {
+                        std::ptr::null_mut()
+                    };
+                }
+            }
+            
+            Ok(())
+        })
+    }
+
+    /// Destroy a table (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_table_destroy(table_ptr: *mut c_void) {
+        unsafe {
+            core::destroy_table(table_ptr);
+        }
+    }
+}
