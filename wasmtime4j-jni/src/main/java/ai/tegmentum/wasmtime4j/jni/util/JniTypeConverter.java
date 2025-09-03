@@ -334,4 +334,279 @@ public final class JniTypeConverter {
     }
     return types;
   }
+
+  /**
+   * Marshals a FunctionType to byte array for native consumption.
+   *
+   * <p>The marshalling format is: [param_count: 4 bytes][param_types: param_count bytes]
+   * [return_count: 4 bytes][return_types: return_count bytes]
+   *
+   * <p>Each type is encoded as: i32=0, i64=1, f32=2, f64=3, v128=4, funcref=5, externref=6
+   *
+   * @param functionType the function type to marshal
+   * @return byte array containing marshalled function type
+   * @throws JniValidationException if functionType is null
+   */
+  public static byte[] marshalFunctionType(
+      final ai.tegmentum.wasmtime4j.FunctionType functionType) {
+    JniValidation.requireNonNull(functionType, "functionType");
+
+    final ai.tegmentum.wasmtime4j.WasmValueType[] paramTypes = functionType.getParamTypes();
+    final ai.tegmentum.wasmtime4j.WasmValueType[] returnTypes = functionType.getReturnTypes();
+
+    final int totalSize = 8 + paramTypes.length + returnTypes.length;
+    final byte[] data = new byte[totalSize];
+    int offset = 0;
+
+    // Write parameter count
+    writeInt(data, offset, paramTypes.length);
+    offset += 4;
+
+    // Write parameter types
+    for (final ai.tegmentum.wasmtime4j.WasmValueType paramType : paramTypes) {
+      data[offset++] = encodeValueType(paramType);
+    }
+
+    // Write return count
+    writeInt(data, offset, returnTypes.length);
+    offset += 4;
+
+    // Write return types
+    for (final ai.tegmentum.wasmtime4j.WasmValueType returnType : returnTypes) {
+      data[offset++] = encodeValueType(returnType);
+    }
+
+    return data;
+  }
+
+  /**
+   * Unmarshals parameters from native byte array.
+   *
+   * @param paramsData the marshalled parameter data
+   * @param expectedTypes the expected parameter types for validation
+   * @return array of WasmValue parameters
+   * @throws JniValidationException if unmarshalling fails or types don't match
+   */
+  public static WasmValue[] unmarshalParameters(
+      final byte[] paramsData, final ai.tegmentum.wasmtime4j.WasmValueType[] expectedTypes) {
+    JniValidation.requireNonNull(paramsData, "paramsData");
+    JniValidation.requireNonNull(expectedTypes, "expectedTypes");
+
+    if (paramsData.length < 4) {
+      throw new JniValidationException("Parameter data too short");
+    }
+
+    final int paramCount = readInt(paramsData, 0);
+    if (paramCount != expectedTypes.length) {
+      throw new JniValidationException(
+          "Parameter count mismatch: expected " + expectedTypes.length + ", got " + paramCount);
+    }
+
+    final WasmValue[] params = new WasmValue[paramCount];
+    int offset = 4;
+
+    for (int i = 0; i < paramCount; i++) {
+      final ai.tegmentum.wasmtime4j.WasmValueType expectedType = expectedTypes[i];
+      params[i] = unmarshalValue(paramsData, offset, expectedType);
+      offset += getValueSize(expectedType);
+    }
+
+    return params;
+  }
+
+  /**
+   * Marshals results to native byte array.
+   *
+   * @param results the result values to marshal
+   * @param buffer the buffer to write results to
+   * @throws JniValidationException if marshalling fails
+   */
+  public static void marshalResults(final WasmValue[] results, final byte[] buffer) {
+    JniValidation.requireNonNull(results, "results");
+    JniValidation.requireNonNull(buffer, "buffer");
+
+    // Write result count
+    if (buffer.length < 4) {
+      throw new JniValidationException("Result buffer too small for count");
+    }
+
+    writeInt(buffer, 0, results.length);
+    int offset = 4;
+
+    for (final WasmValue result : results) {
+      offset = marshalValue(result, buffer, offset);
+    }
+  }
+
+  /**
+   * Encodes a WasmValueType to byte representation.
+   *
+   * @param valueType the value type to encode
+   * @return byte representation of the type
+   */
+  private static byte encodeValueType(final ai.tegmentum.wasmtime4j.WasmValueType valueType) {
+    switch (valueType) {
+      case I32:
+        return 0;
+      case I64:
+        return 1;
+      case F32:
+        return 2;
+      case F64:
+        return 3;
+      case V128:
+        return 4;
+      case FUNCREF:
+        return 5;
+      case EXTERNREF:
+        return 6;
+      default:
+        throw new JniValidationException("Unsupported value type: " + valueType);
+    }
+  }
+
+  /**
+   * Gets the size in bytes of a value type when marshalled.
+   *
+   * @param valueType the value type
+   * @return size in bytes
+   */
+  private static int getValueSize(final ai.tegmentum.wasmtime4j.WasmValueType valueType) {
+    switch (valueType) {
+      case I32:
+      case F32:
+        return 4;
+      case I64:
+      case F64:
+      case FUNCREF:
+      case EXTERNREF:
+        return 8;
+      case V128:
+        return 16;
+      default:
+        throw new JniValidationException("Unsupported value type: " + valueType);
+    }
+  }
+
+  /**
+   * Unmarshals a single value from byte array.
+   *
+   * @param data the data array
+   * @param offset the offset to read from
+   * @param valueType the expected value type
+   * @return the unmarshalled WasmValue
+   */
+  private static WasmValue unmarshalValue(
+      final byte[] data, final int offset, final ai.tegmentum.wasmtime4j.WasmValueType valueType) {
+    switch (valueType) {
+      case I32:
+        return WasmValue.i32(readInt(data, offset));
+      case I64:
+        return WasmValue.i64(readLong(data, offset));
+      case F32:
+        return WasmValue.f32(Float.intBitsToFloat(readInt(data, offset)));
+      case F64:
+        return WasmValue.f64(Double.longBitsToDouble(readLong(data, offset)));
+      case V128:
+        final byte[] v128Data = new byte[16];
+        System.arraycopy(data, offset, v128Data, 0, 16);
+        return WasmValue.v128(v128Data);
+      case FUNCREF:
+        return WasmValue.funcref();
+      case EXTERNREF:
+        return WasmValue.externref(null);
+      default:
+        throw new JniValidationException("Unsupported value type: " + valueType);
+    }
+  }
+
+  /**
+   * Marshals a single value to byte array.
+   *
+   * @param value the value to marshal
+   * @param buffer the buffer to write to
+   * @param offset the offset to write at
+   * @return the new offset after writing
+   */
+  private static int marshalValue(final WasmValue value, final byte[] buffer, final int offset) {
+    switch (value.getType()) {
+      case I32:
+        writeInt(buffer, offset, value.asI32());
+        return offset + 4;
+      case I64:
+        writeLong(buffer, offset, value.asI64());
+        return offset + 8;
+      case F32:
+        writeInt(buffer, offset, Float.floatToIntBits(value.asF32()));
+        return offset + 4;
+      case F64:
+        writeLong(buffer, offset, Double.doubleToLongBits(value.asF64()));
+        return offset + 8;
+      case V128:
+        final byte[] v128Data = value.asV128();
+        System.arraycopy(v128Data, 0, buffer, offset, 16);
+        return offset + 16;
+      case FUNCREF:
+        writeLong(buffer, offset, 0); // Null funcref
+        return offset + 8;
+      case EXTERNREF:
+        writeLong(buffer, offset, 0); // Null externref
+        return offset + 8;
+      default:
+        throw new JniValidationException("Unsupported value type: " + value.getType());
+    }
+  }
+
+  /**
+   * Writes a 32-bit integer to byte array in little-endian format.
+   *
+   * @param buffer the buffer to write to
+   * @param offset the offset to write at
+   * @param value the value to write
+   */
+  private static void writeInt(final byte[] buffer, final int offset, final int value) {
+    buffer[offset] = (byte) (value & 0xFF);
+    buffer[offset + 1] = (byte) ((value >> 8) & 0xFF);
+    buffer[offset + 2] = (byte) ((value >> 16) & 0xFF);
+    buffer[offset + 3] = (byte) ((value >> 24) & 0xFF);
+  }
+
+  /**
+   * Writes a 64-bit long to byte array in little-endian format.
+   *
+   * @param buffer the buffer to write to
+   * @param offset the offset to write at
+   * @param value the value to write
+   */
+  private static void writeLong(final byte[] buffer, final int offset, final long value) {
+    writeInt(buffer, offset, (int) (value & 0xFFFFFFFFL));
+    writeInt(buffer, offset + 4, (int) ((value >> 32) & 0xFFFFFFFFL));
+  }
+
+  /**
+   * Reads a 32-bit integer from byte array in little-endian format.
+   *
+   * @param buffer the buffer to read from
+   * @param offset the offset to read from
+   * @return the read integer value
+   */
+  private static int readInt(final byte[] buffer, final int offset) {
+    return (buffer[offset] & 0xFF)
+        | ((buffer[offset + 1] & 0xFF) << 8)
+        | ((buffer[offset + 2] & 0xFF) << 16)
+        | ((buffer[offset + 3] & 0xFF) << 24);
+  }
+
+  /**
+   * Reads a 64-bit long from byte array in little-endian format.
+   *
+   * @param buffer the buffer to read from
+   * @param offset the offset to read from
+   * @return the read long value
+   */
+  private static long readLong(final byte[] buffer, final int offset) {
+    final long low = readInt(buffer, offset) & 0xFFFFFFFFL;
+    final long high = readInt(buffer, offset + 4) & 0xFFFFFFFFL;
+    return low | (high << 32);
+  }
 }

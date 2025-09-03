@@ -1,18 +1,34 @@
-//! WebAssembly instance management with defensive execution and resource tracking
+//! WebAssembly instance management with comprehensive import/export handling
 //!
-//! The Instance provides safe execution of WebAssembly functions with comprehensive
-//! resource management, timeout handling, and defensive programming practices.
+//! This module provides Instance lifecycle management with complete import resolution,
+//! export access, resource cleanup, and defensive programming practices for safe execution.
 
 use std::sync::{Arc, Mutex};
-use wasmtime::{Instance as WasmtimeInstance, Extern, Func, Global, Memory, Table};
-use crate::store::Store;
-use crate::module::Module;
+use std::collections::HashMap;
+use std::time::Instant;
+use wasmtime::{
+    Instance as WasmtimeInstance, 
+    Extern, 
+    Func, 
+    Global, 
+    Memory, 
+    Table,
+    Val,
+    ValType as WasmtimeValType,
+    FuncType,
+    ExternType,
+};
+use crate::store::{Store, StoreData};
+use crate::module::{Module, ValueType, FunctionSignature, ImportKind, ExportKind};
 use crate::error::{WasmtimeError, WasmtimeResult};
 
-/// Thread-safe wrapper around Wasmtime instance with resource management
+/// Thread-safe wrapper around Wasmtime instance with comprehensive lifecycle management
+#[derive(Debug)]
 pub struct Instance {
     inner: Arc<Mutex<WasmtimeInstance>>,
     metadata: InstanceMetadata,
+    imports_map: HashMap<String, ImportBinding>,
+    exports_map: HashMap<String, ExportBinding>,
 }
 
 /// Instance metadata and resource tracking
@@ -20,23 +36,97 @@ pub struct Instance {
 pub struct InstanceMetadata {
     /// Module name or identifier
     pub name: String,
+    /// Timestamp when this instance was created
+    pub created_at: Instant,
     /// Number of exported functions
     pub export_count: usize,
     /// Number of imported functions
     pub import_count: usize,
     /// Memory usage in bytes
     pub memory_bytes: usize,
+    /// Function call count for performance tracking
+    pub function_calls: u64,
+    /// Whether this instance has been disposed
+    pub disposed: bool,
+}
+
+/// Import binding information for validation and resolution
+#[derive(Debug, Clone)]
+pub struct ImportBinding {
+    /// Module name that provides this import
+    pub module: String,
+    /// Name within the providing module
+    pub name: String,
+    /// Type of the imported item
+    pub import_type: ImportKind,
+    /// Whether this import has been resolved
+    pub resolved: bool,
+}
+
+/// Export binding information for type-safe invocation
+#[derive(Debug, Clone)]
+pub struct ExportBinding {
+    /// Name of the exported item
+    pub name: String,
+    /// Type of the exported item
+    pub export_type: ExportKind,
+    /// Whether this export is currently accessible
+    pub accessible: bool,
+}
+
+/// Parameter value for WebAssembly function calls
+#[derive(Debug, Clone)]
+pub enum WasmValue {
+    /// 32-bit integer
+    I32(i32),
+    /// 64-bit integer
+    I64(i64),
+    /// 32-bit floating point
+    F32(f32),
+    /// 64-bit floating point
+    F64(f64),
+    /// 128-bit SIMD vector (as bytes)
+    V128([u8; 16]),
+    /// External reference (null for now)
+    ExternRef,
+    /// Function reference (null for now)  
+    FuncRef,
+}
+
+/// Result from WebAssembly function execution
+#[derive(Debug)]
+pub struct ExecutionResult {
+    /// Return values from the function
+    pub values: Vec<WasmValue>,
+    /// Fuel consumed during execution (if enabled)
+    pub fuel_consumed: Option<u64>,
+    /// Execution time in nanoseconds
+    pub execution_time_ns: u64,
 }
 
 impl Instance {
-    /// Create a new WebAssembly instance with imports
+    /// Create a new WebAssembly instance with comprehensive import resolution and validation
     pub fn new(
         store: &mut Store,
         module: &Module,
         imports: &[Extern],
     ) -> WasmtimeResult<Self> {
+        // Validate inputs
         module.validate()?;
         
+        // Validate imports against module requirements
+        let required_imports = module.required_imports();
+        if imports.len() != required_imports.len() {
+            return Err(WasmtimeError::ImportExport {
+                message: format!(
+                    "Import count mismatch: expected {}, got {}",
+                    required_imports.len(),
+                    imports.len()
+                ),
+            });
+        }
+        
+        // Create instance with defensive error handling
         let instance = store.with_context(|mut ctx| {
             WasmtimeInstance::new(&mut ctx, module.inner(), imports)
                 .map_err(|e| WasmtimeError::Instance {
@@ -44,22 +134,47 @@ impl Instance {
                 })
         })?;
         
-        // Count exports for metadata
-        let export_count = store.with_context(|mut ctx| {
-            Ok(instance.exports(&mut ctx).count())
+        // Build comprehensive metadata and mappings
+        let (metadata, imports_map, exports_map) = store.with_context(|mut ctx| {
+            Self::build_instance_data(&instance, &mut ctx, module, imports.len())
         })?;
-        
-        let metadata = InstanceMetadata {
-            name: "default".to_string(),
-            export_count,
-            import_count: imports.len(),
-            memory_bytes: 0, // Will be updated when memory is accessed
-        };
         
         Ok(Instance {
             inner: Arc::new(Mutex::new(instance)),
             metadata,
+            imports_map,
+            exports_map,
         })
+    }
+    
+    /// Create instance with validated import resolution
+    pub fn new_with_imports(
+        store: &mut Store,
+        module: &Module,
+        imports: &HashMap<String, HashMap<String, Extern>>,
+    ) -> WasmtimeResult<Self> {
+        // Validate all required imports are provided
+        let required_imports = module.required_imports();
+        let mut resolved_imports = Vec::new();
+        
+        for import_info in required_imports {
+            let module_imports = imports.get(&import_info.module)
+                .ok_or_else(|| WasmtimeError::ImportExport {
+                    message: format!("Missing import module: {}", import_info.module),
+                })?;
+            
+            let import_item = module_imports.get(&import_info.name)
+                .ok_or_else(|| WasmtimeError::ImportExport {
+                    message: format!("Missing import: {}.{}", import_info.module, import_info.name),
+                })?;
+            
+            // Validate import type compatibility
+            Self::validate_import_compatibility(&import_info.import_type, import_item, store)?;
+            
+            resolved_imports.push(import_item.clone());
+        }
+        
+        Self::new(store, module, &resolved_imports)
     }
     
     /// Create instance with no imports (for simple modules)
@@ -70,7 +185,206 @@ impl Instance {
         Self::new(store, module, &[])
     }
     
-    /// Get exported function by name
+    /// Build comprehensive instance metadata and binding maps
+    fn build_instance_data(
+        instance: &WasmtimeInstance,
+        ctx: &mut wasmtime::StoreContextMut<StoreData>,
+        module: &Module,
+        import_count: usize,
+    ) -> WasmtimeResult<(InstanceMetadata, HashMap<String, ImportBinding>, HashMap<String, ExportBinding>)> {
+        // Build export bindings map from module metadata instead of instance for now
+        // This avoids complex borrowing issues with the store context
+        let mut exports_map = HashMap::new();
+        let export_count = module.metadata().exports.len();
+        
+        for export_info in &module.metadata().exports {
+            let binding = ExportBinding {
+                name: export_info.name.clone(),
+                export_type: export_info.export_type.clone(),
+                accessible: true,
+            };
+            exports_map.insert(export_info.name.clone(), binding);
+        }
+        
+        // Build import bindings map from module metadata
+        let mut imports_map = HashMap::new();
+        for import_info in module.required_imports() {
+            let key = format!("{}:{}", import_info.module, import_info.name);
+            let binding = ImportBinding {
+                module: import_info.module.clone(),
+                name: import_info.name.clone(),
+                import_type: import_info.import_type.clone(),
+                resolved: true, // Assume resolved if instance created successfully
+            };
+            imports_map.insert(key, binding);
+        }
+        
+        let metadata = InstanceMetadata {
+            name: module.metadata().name.clone().unwrap_or_else(|| "unnamed".to_string()),
+            created_at: Instant::now(),
+            export_count,
+            import_count,
+            memory_bytes: 0, // Will be calculated when memory is accessed
+            function_calls: 0,
+            disposed: false,
+        };
+        
+        Ok((metadata, imports_map, exports_map))
+    }
+    
+    /// Validate import compatibility between required and provided
+    fn validate_import_compatibility(
+        required: &ImportKind,
+        provided: &Extern,
+        store: &Store,
+    ) -> WasmtimeResult<()> {
+        match (required, provided) {
+            (ImportKind::Function(req_sig), Extern::Func(func)) => {
+                store.with_context_ro(|ctx| {
+                    let func_type = func.ty(&ctx);
+                    let provided_sig = Self::convert_func_type(&func_type)?;
+                    if !Self::signatures_compatible(req_sig, &provided_sig) {
+                        return Err(WasmtimeError::ImportExport {
+                            message: "Function signature mismatch".to_string(),
+                        });
+                    }
+                    Ok(())
+                })
+            }
+            (ImportKind::Global(req_type, req_mut), Extern::Global(global)) => {
+                store.with_context_ro(|ctx| {
+                    let global_type = global.ty(&ctx);
+                    let provided_type = Self::convert_val_type(global_type.content().clone())?;
+                    let provided_mut = matches!(global_type.mutability(), wasmtime::Mutability::Var);
+                    
+                    if req_type != &provided_type || (req_mut > &provided_mut) {
+                        return Err(WasmtimeError::ImportExport {
+                            message: "Global type mismatch".to_string(),
+                        });
+                    }
+                    Ok(())
+                })
+            }
+            (ImportKind::Memory(_req_min, _req_max, _req_shared), Extern::Memory(_memory)) => {
+                // Memory compatibility validation could be more sophisticated
+                Ok(())
+            }
+            (ImportKind::Table(_req_elem, _req_min, _req_max), Extern::Table(_table)) => {
+                // Table compatibility validation could be more sophisticated
+                Ok(())
+            }
+            _ => Err(WasmtimeError::ImportExport {
+                message: "Import type mismatch".to_string(),
+            }),
+        }
+    }
+    
+    /// Call exported function with comprehensive type checking and parameter conversion
+    pub fn call_export_function(
+        &self,
+        store: &mut Store,
+        name: &str,
+        params: &[WasmValue],
+    ) -> WasmtimeResult<ExecutionResult> {
+        // Check if instance is disposed
+        if self.metadata.disposed {
+            return Err(WasmtimeError::Instance {
+                message: "Cannot call function on disposed instance".to_string(),
+            });
+        }
+        
+        // Validate export exists and is a function
+        let export_binding = self.exports_map.get(name)
+            .ok_or_else(|| WasmtimeError::ImportExport {
+                message: format!("Export '{}' not found", name),
+            })?;
+            
+        let function_sig = match &export_binding.export_type {
+            ExportKind::Function(sig) => sig,
+            _ => return Err(WasmtimeError::Function {
+                message: format!("Export '{}' is not a function", name),
+            }),
+        };
+        
+        // Validate parameter count and types
+        if params.len() != function_sig.params.len() {
+            return Err(WasmtimeError::Function {
+                message: format!(
+                    "Parameter count mismatch: expected {}, got {}",
+                    function_sig.params.len(),
+                    params.len()
+                ),
+            });
+        }
+        
+        // Convert parameters to Wasmtime values with type validation
+        let mut wasm_params = Vec::new();
+        for (i, (provided, expected)) in params.iter().zip(&function_sig.params).enumerate() {
+            if !Self::value_type_matches(provided, expected) {
+                return Err(WasmtimeError::Function {
+                    message: format!(
+                        "Parameter {} type mismatch: expected {:?}, got {:?}",
+                        i, expected, provided
+                    ),
+                });
+            }
+            wasm_params.push(Self::wasm_value_to_val(provided)?);
+        }
+        
+        // Get function and execute with timing
+        let start_time = Instant::now();
+        let instance = self.inner.lock().map_err(|e| WasmtimeError::Concurrency {
+            message: format!("Failed to acquire instance lock: {}", e),
+        })?;
+        
+        // TODO: Implement fuel tracking when available in store context
+        let fuel_before = None;
+        
+        let result = store.with_context(|mut ctx| {
+            let export = instance.get_export(&mut ctx, name)
+                .ok_or_else(|| WasmtimeError::ImportExport {
+                    message: format!("Export '{}' not found", name),
+                })?;
+                
+            match export {
+                Extern::Func(func) => {
+                    let mut results = vec![Val::I32(0); function_sig.returns.len()];
+                    func.call(&mut ctx, &wasm_params, &mut results)
+                        .map_err(|e| WasmtimeError::Runtime {
+                            message: format!("Function execution failed: {}", e),
+                            backtrace: None,
+                        })?;
+                    Ok(results)
+                }
+                _ => Err(WasmtimeError::Function {
+                    message: format!("Export '{}' is not a function", name),
+                })
+            }
+        })?;
+        
+        let execution_time_ns = start_time.elapsed().as_nanos() as u64;
+        
+        // TODO: Implement fuel tracking when available in store context
+        let fuel_after: Option<u64> = None;
+        
+        let fuel_consumed = match (fuel_before, fuel_after) {
+            (Some(before), Some(after)) => Some(after.saturating_sub(before)),
+            _ => None,
+        };
+        
+        // Convert results back to WasmValue
+        let values = result.into_iter()
+            .map(|val| Self::val_to_wasm_value(val))
+            .collect::<WasmtimeResult<Vec<_>>>()?;
+        
+        Ok(ExecutionResult {
+            values,
+            fuel_consumed,
+            execution_time_ns,
+        })
+    }
+    
+    /// Get exported function by name (for direct Wasmtime usage)
     pub fn get_func(&self, store: &mut Store, name: &str) -> WasmtimeResult<Option<Func>> {
         let instance = self.inner.lock().map_err(|e| WasmtimeError::Concurrency {
             message: format!("Failed to acquire instance lock: {}", e),
@@ -144,13 +458,58 @@ impl Instance {
         })
     }
     
+    /// Dispose instance and clean up resources
+    pub fn dispose(&mut self) -> WasmtimeResult<()> {
+        // Mark as disposed to prevent further operations
+        self.metadata.disposed = true;
+        
+        // Clear export and import maps 
+        self.exports_map.clear();
+        self.imports_map.clear();
+        
+        // The Arc<Mutex<WasmtimeInstance>> will be cleaned up when the last reference is dropped
+        Ok(())
+    }
+    
+    /// Check if instance has been disposed
+    pub fn is_disposed(&self) -> bool {
+        self.metadata.disposed
+    }
+    
     /// Get instance metadata
     pub fn metadata(&self) -> &InstanceMetadata {
         &self.metadata
     }
     
+    /// Get export information by name
+    pub fn get_export_info(&self, name: &str) -> Option<&ExportBinding> {
+        self.exports_map.get(name)
+    }
+    
+    /// Get all exports
+    pub fn all_exports(&self) -> &HashMap<String, ExportBinding> {
+        &self.exports_map
+    }
+    
+    /// Get import information by key (module:name format)
+    pub fn get_import_info(&self, module: &str, name: &str) -> Option<&ImportBinding> {
+        let key = format!("{}:{}", module, name);
+        self.imports_map.get(&key)
+    }
+    
+    /// Get all imports
+    pub fn all_imports(&self) -> &HashMap<String, ImportBinding> {
+        &self.imports_map
+    }
+    
     /// Validate instance is still functional (defensive check)
     pub fn validate(&self) -> WasmtimeResult<()> {
+        if self.metadata.disposed {
+            return Err(WasmtimeError::Instance {
+                message: "Instance has been disposed".to_string(),
+            });
+        }
+        
         if let Ok(_guard) = self.inner.try_lock() {
             Ok(())
         } else {
@@ -159,80 +518,520 @@ impl Instance {
             })
         }
     }
+    
+    // Helper methods for type conversion and validation
+    
+    /// Convert ExternType to ExportKind
+    fn extern_to_export_kind(extern_type: ExternType) -> WasmtimeResult<ExportKind> {
+        match extern_type {
+            ExternType::Func(func_type) => {
+                Ok(ExportKind::Function(Self::convert_func_type(&func_type)?))
+            }
+            ExternType::Global(global_type) => {
+                let val_type = Self::convert_val_type(global_type.content().clone())?;
+                let mutable = matches!(global_type.mutability(), wasmtime::Mutability::Var);
+                Ok(ExportKind::Global(val_type, mutable))
+            }
+            ExternType::Memory(memory_type) => {
+                Ok(ExportKind::Memory(
+                    memory_type.minimum(),
+                    memory_type.maximum(),
+                    memory_type.is_shared(),
+                ))
+            }
+            ExternType::Table(table_type) => {
+                let element_type = Self::convert_ref_type(table_type.element())?;
+                let min = table_type.minimum().try_into().unwrap_or(u32::MAX);
+                let max = table_type.maximum().map(|m| m.try_into().unwrap_or(u32::MAX));
+                Ok(ExportKind::Table(element_type, min, max))
+            }
+            ExternType::Tag(_) => Err(WasmtimeError::Type {
+                message: "Tag types are not supported".to_string(),
+            }),
+        }
+    }
+    
+    /// Convert FuncType to FunctionSignature
+    fn convert_func_type(func_type: &FuncType) -> WasmtimeResult<FunctionSignature> {
+        let params = func_type.params()
+            .map(Self::convert_val_type)
+            .collect::<WasmtimeResult<Vec<_>>>()?;
+            
+        let returns = func_type.results()
+            .map(Self::convert_val_type)
+            .collect::<WasmtimeResult<Vec<_>>>()?;
+            
+        Ok(FunctionSignature { params, returns })
+    }
+    
+    /// Convert wasmtime ValType to our ValueType
+    fn convert_val_type(val_type: WasmtimeValType) -> WasmtimeResult<ValueType> {
+        match val_type {
+            WasmtimeValType::I32 => Ok(ValueType::I32),
+            WasmtimeValType::I64 => Ok(ValueType::I64),
+            WasmtimeValType::F32 => Ok(ValueType::F32),
+            WasmtimeValType::F64 => Ok(ValueType::F64),
+            WasmtimeValType::V128 => Ok(ValueType::V128),
+            WasmtimeValType::Ref(ref_type) => Self::convert_ref_type(&ref_type),
+        }
+    }
+    
+    /// Convert RefType to ValueType
+    fn convert_ref_type(ref_type: &wasmtime::RefType) -> WasmtimeResult<ValueType> {
+        match ref_type.heap_type() {
+            wasmtime::HeapType::Extern => Ok(ValueType::ExternRef),
+            wasmtime::HeapType::Func => Ok(ValueType::FuncRef),
+            _ => Err(WasmtimeError::Type {
+                message: format!("Unsupported reference type: {:?}", ref_type),
+            }),
+        }
+    }
+    
+    /// Check if WasmValue matches expected ValueType
+    fn value_type_matches(value: &WasmValue, expected: &ValueType) -> bool {
+        match (value, expected) {
+            (WasmValue::I32(_), ValueType::I32) => true,
+            (WasmValue::I64(_), ValueType::I64) => true,
+            (WasmValue::F32(_), ValueType::F32) => true,
+            (WasmValue::F64(_), ValueType::F64) => true,
+            (WasmValue::V128(_), ValueType::V128) => true,
+            (WasmValue::ExternRef, ValueType::ExternRef) => true,
+            (WasmValue::FuncRef, ValueType::FuncRef) => true,
+            _ => false,
+        }
+    }
+    
+    /// Convert WasmValue to wasmtime Val
+    fn wasm_value_to_val(value: &WasmValue) -> WasmtimeResult<Val> {
+        match value {
+            WasmValue::I32(v) => Ok(Val::I32(*v)),
+            WasmValue::I64(v) => Ok(Val::I64(*v)),
+            WasmValue::F32(v) => Ok(Val::F32(v.to_bits())),
+            WasmValue::F64(v) => Ok(Val::F64(v.to_bits())),
+            WasmValue::V128(bytes) => Ok(Val::V128(wasmtime::V128::from(u128::from_le_bytes(*bytes)))),
+            WasmValue::ExternRef => Ok(Val::ExternRef(None)),
+            WasmValue::FuncRef => Ok(Val::FuncRef(None)),
+        }
+    }
+    
+    /// Convert wasmtime Val to WasmValue
+    fn val_to_wasm_value(val: Val) -> WasmtimeResult<WasmValue> {
+        match val {
+            Val::I32(v) => Ok(WasmValue::I32(v)),
+            Val::I64(v) => Ok(WasmValue::I64(v)),
+            Val::F32(bits) => Ok(WasmValue::F32(f32::from_bits(bits))),
+            Val::F64(bits) => Ok(WasmValue::F64(f64::from_bits(bits))),
+            Val::V128(v) => Ok(WasmValue::V128(u128::from(v).to_le_bytes())),
+            Val::ExternRef(_) => Ok(WasmValue::ExternRef),
+            Val::FuncRef(_) => Ok(WasmValue::FuncRef),
+            Val::AnyRef(_) => Ok(WasmValue::ExternRef), // Treat AnyRef as ExternRef for now
+            Val::ExnRef(_) => Ok(WasmValue::ExternRef), // Treat ExnRef as ExternRef for now
+        }
+    }
+    
+    /// Check if two function signatures are compatible
+    fn signatures_compatible(sig1: &FunctionSignature, sig2: &FunctionSignature) -> bool {
+        sig1.params == sig2.params && sig1.returns == sig2.returns
+    }
 }
 
 // Thread safety: Instance uses Arc<Mutex<WasmtimeInstance>> internally
 unsafe impl Send for Instance {}
 unsafe impl Sync for Instance {}
 
+/// Shared core functions for instance operations used by both JNI and Panama interfaces
+/// 
+/// These functions eliminate code duplication and provide consistent behavior
+/// across interface implementations while maintaining defensive programming practices.
+pub mod core {
+    use super::*;
+    use std::os::raw::c_void;
+    use crate::error::ffi_utils;
+    use crate::validate_ptr_not_null;
+    use crate::store::Store;
+    use crate::module::Module;
+    use wasmtime::Extern;
+    
+    /// Core function to create a new WebAssembly instance with comprehensive import resolution
+    pub fn create_instance_with_imports(
+        store: &mut Store,
+        module: &Module,
+        imports: &[Extern],
+    ) -> WasmtimeResult<Box<Instance>> {
+        Instance::new(store, module, imports).map(Box::new)
+    }
+    
+    /// Core function to create instance with validated import resolution from hash map
+    pub fn create_instance_with_import_map(
+        store: &mut Store,
+        module: &Module,
+        imports: &HashMap<String, HashMap<String, Extern>>,
+    ) -> WasmtimeResult<Box<Instance>> {
+        Instance::new_with_imports(store, module, imports).map(Box::new)
+    }
+    
+    /// Core function to create a new WebAssembly instance without imports
+    pub fn create_instance(store: &mut Store, module: &Module) -> WasmtimeResult<Box<Instance>> {
+        Instance::new_without_imports(store, module).map(Box::new)
+    }
+    
+    /// Core function to call exported function with type checking and parameter conversion
+    pub fn call_exported_function(
+        instance: &Instance,
+        store: &mut Store,
+        name: &str,
+        params: &[WasmValue],
+    ) -> WasmtimeResult<ExecutionResult> {
+        instance.call_export_function(store, name, params)
+    }
+    
+    /// Core function to validate instance pointer and get reference
+    pub unsafe fn get_instance_ref(instance_ptr: *const c_void) -> WasmtimeResult<&'static Instance> {
+        validate_ptr_not_null!(instance_ptr, "instance");
+        Ok(&*(instance_ptr as *const Instance))
+    }
+    
+    /// Core function to validate instance pointer and get mutable reference
+    pub unsafe fn get_instance_mut(instance_ptr: *mut c_void) -> WasmtimeResult<&'static mut Instance> {
+        validate_ptr_not_null!(instance_ptr, "instance");
+        Ok(&mut *(instance_ptr as *mut Instance))
+    }
+    
+    /// Core function to get exported function by name
+    pub fn get_exported_function(
+        instance: &Instance,
+        store: &mut Store,
+        name: &str,
+    ) -> WasmtimeResult<Option<wasmtime::Func>> {
+        instance.get_func(store, name)
+    }
+    
+    /// Core function to get exported global by name
+    pub fn get_exported_global(
+        instance: &Instance,
+        store: &mut Store,
+        name: &str,
+    ) -> WasmtimeResult<Option<wasmtime::Global>> {
+        instance.get_global(store, name)
+    }
+    
+    /// Core function to get exported memory by name
+    pub fn get_exported_memory(
+        instance: &Instance,
+        store: &mut Store,
+        name: &str,
+    ) -> WasmtimeResult<Option<wasmtime::Memory>> {
+        instance.get_memory(store, name)
+    }
+    
+    /// Core function to get exported table by name
+    pub fn get_exported_table(
+        instance: &Instance,
+        store: &mut Store,
+        name: &str,
+    ) -> WasmtimeResult<Option<wasmtime::Table>> {
+        instance.get_table(store, name)
+    }
+    
+    /// Core function to list all exports
+    pub fn list_exports(instance: &Instance, store: &mut Store) -> WasmtimeResult<Vec<String>> {
+        instance.exports(store)
+    }
+    
+    /// Core function to get instance metadata
+    pub fn get_instance_metadata(instance: &Instance) -> &InstanceMetadata {
+        instance.metadata()
+    }
+    
+    /// Core function to validate instance functionality
+    pub fn validate_instance(instance: &Instance) -> WasmtimeResult<()> {
+        instance.validate()
+    }
+    
+    /// Core function to dispose instance with proper resource cleanup  
+    pub fn dispose_instance(instance: &mut Instance) -> WasmtimeResult<()> {
+        instance.dispose()
+    }
+    
+    /// Core function to destroy an instance (safe cleanup)
+    pub unsafe fn destroy_instance(instance_ptr: *mut c_void) {
+        ffi_utils::destroy_resource::<Instance>(instance_ptr, "Instance");
+    }
+    
+    /// Core function to check if instance has been disposed
+    pub fn is_instance_disposed(instance: &Instance) -> bool {
+        instance.is_disposed()
+    }
+    
+    /// Core function to check if instance has a specific export
+    pub fn has_export(instance: &Instance, name: &str) -> bool {
+        instance.get_export_info(name).is_some()
+    }
+    
+    /// Core function to get export information
+    pub fn get_export_information<'a>(instance: &'a Instance, name: &str) -> Option<&'a ExportBinding> {
+        instance.get_export_info(name)
+    }
+    
+    /// Core function to get all exports information
+    pub fn get_all_exports(instance: &Instance) -> &HashMap<String, ExportBinding> {
+        instance.all_exports()
+    }
+    
+    /// Core function to get import information  
+    pub fn get_import_information<'a>(instance: &'a Instance, module: &str, name: &str) -> Option<&'a ImportBinding> {
+        instance.get_import_info(module, name)
+    }
+    
+    /// Core function to get all imports information
+    pub fn get_all_imports(instance: &Instance) -> &HashMap<String, ImportBinding> {
+        instance.all_imports()
+    }
+    
+    /// Core function to get export count
+    pub fn get_export_count(instance: &Instance) -> usize {
+        instance.metadata().export_count
+    }
+    
+    /// Core function to get import count
+    pub fn get_import_count(instance: &Instance) -> usize {
+        instance.metadata().import_count
+    }
+    
+    /// Core function to get memory usage in bytes
+    pub fn get_memory_bytes(instance: &Instance) -> usize {
+        instance.metadata().memory_bytes
+    }
+    
+    /// Core function to get instance name
+    pub fn get_instance_name(instance: &Instance) -> &str {
+        &instance.metadata().name
+    }
+    
+    /// Core function to get function call count
+    pub fn get_function_call_count(instance: &Instance) -> u64 {
+        instance.metadata().function_calls
+    }
+    
+    /// Core function to get instance creation timestamp
+    pub fn get_creation_time(instance: &Instance) -> Instant {
+        instance.metadata().created_at
+    }
+    
+    /// Helper function to create WasmValue from primitive types for JNI/Panama bindings
+    pub fn create_i32_value(value: i32) -> WasmValue {
+        WasmValue::I32(value)
+    }
+    
+    pub fn create_i64_value(value: i64) -> WasmValue {
+        WasmValue::I64(value)
+    }
+    
+    pub fn create_f32_value(value: f32) -> WasmValue {
+        WasmValue::F32(value)
+    }
+    
+    pub fn create_f64_value(value: f64) -> WasmValue {
+        WasmValue::F64(value)
+    }
+    
+    pub fn create_v128_value(bytes: [u8; 16]) -> WasmValue {
+        WasmValue::V128(bytes)
+    }
+    
+    pub fn create_externref_value() -> WasmValue {
+        WasmValue::ExternRef
+    }
+    
+    pub fn create_funcref_value() -> WasmValue {
+        WasmValue::FuncRef
+    }
+    
+    /// Helper functions to extract values from WasmValue for JNI/Panama bindings
+    pub fn extract_i32_value(value: &WasmValue) -> WasmtimeResult<i32> {
+        match value {
+            WasmValue::I32(v) => Ok(*v),
+            _ => Err(WasmtimeError::Type {
+                message: "Expected I32 value".to_string(),
+            }),
+        }
+    }
+    
+    pub fn extract_i64_value(value: &WasmValue) -> WasmtimeResult<i64> {
+        match value {
+            WasmValue::I64(v) => Ok(*v),
+            _ => Err(WasmtimeError::Type {
+                message: "Expected I64 value".to_string(),
+            }),
+        }
+    }
+    
+    pub fn extract_f32_value(value: &WasmValue) -> WasmtimeResult<f32> {
+        match value {
+            WasmValue::F32(v) => Ok(*v),
+            _ => Err(WasmtimeError::Type {
+                message: "Expected F32 value".to_string(),
+            }),
+        }
+    }
+    
+    pub fn extract_f64_value(value: &WasmValue) -> WasmtimeResult<f64> {
+        match value {
+            WasmValue::F64(v) => Ok(*v),
+            _ => Err(WasmtimeError::Type {
+                message: "Expected F64 value".to_string(),
+            }),
+        }
+    }
+    
+    pub fn extract_v128_value(value: &WasmValue) -> WasmtimeResult<[u8; 16]> {
+        match value {
+            WasmValue::V128(bytes) => Ok(*bytes),
+            _ => Err(WasmtimeError::Type {
+                message: "Expected V128 value".to_string(),
+            }),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::engine::Engine;
     
-    // Simple WebAssembly module that adds two i32 values
-    const SIMPLE_WASM: &[u8] = &[
-        0x00, 0x61, 0x73, 0x6d, // magic
-        0x01, 0x00, 0x00, 0x00, // version
-        0x01, 0x07, 0x01,       // type section
-        0x60, 0x02, 0x7f, 0x7f, 0x01, 0x7f, // func type: (i32, i32) -> i32
-        0x03, 0x02, 0x01, 0x00, // func section
-        0x07, 0x07, 0x01,       // export section
-        0x03, 0x61, 0x64, 0x64, 0x00, 0x00, // export "add" func 0
-        0x0a, 0x09, 0x01,       // code section
-        0x07, 0x00,             // func 0 body
-        0x20, 0x00,             // local.get 0
-        0x20, 0x01,             // local.get 1
-        0x6a,                   // i32.add
-        0x0b,                   // end
-    ];
-    
     #[test]
     fn test_instance_creation() {
         let engine = Engine::new().expect("Failed to create engine");
         let mut store = Store::new(&engine).expect("Failed to create store");
-        let module = Module::compile(&engine, SIMPLE_WASM).expect("Failed to create module");
+        
+        // Simple WAT module for testing  
+        let wat = "(module (func (export \"add\") (param i32 i32) (result i32) 
+                     local.get 0 local.get 1 i32.add))";
+        let module = Module::compile_wat(&engine, wat).expect("Failed to create module");
         
         let instance = Instance::new_without_imports(&mut store, &module)
             .expect("Failed to create instance");
         
         assert!(instance.validate().is_ok());
         assert_eq!(instance.metadata().export_count, 1); // "add" function
+        assert!(!instance.is_disposed());
     }
     
     #[test]
-    fn test_get_exported_function() {
+    fn test_export_function_call() {
         let engine = Engine::new().expect("Failed to create engine");
         let mut store = Store::new(&engine).expect("Failed to create store");
-        let module = Module::compile(&engine, SIMPLE_WASM).expect("Failed to create module");
+        
+        let wat = "(module (func (export \"add\") (param i32 i32) (result i32) 
+                     local.get 0 local.get 1 i32.add))";
+        let module = Module::compile_wat(&engine, wat).expect("Failed to create module");
         
         let instance = Instance::new_without_imports(&mut store, &module)
             .expect("Failed to create instance");
         
-        let add_func = instance.get_func(&mut store, "add")
-            .expect("Failed to get function")
-            .expect("Function should exist");
+        // Call the function with type checking
+        let params = vec![WasmValue::I32(5), WasmValue::I32(3)];
+        let result = instance.call_export_function(&mut store, "add", &params)
+            .expect("Failed to call function");
         
-        // Function exists and has correct signature
-        store.with_context(|ctx| {
-            let func_type = add_func.ty(&ctx);
-            assert_eq!(func_type.params().len(), 2);
-            assert_eq!(func_type.results().len(), 1);
-            Ok(())
-        }).expect("Failed to check function signature");
+        assert_eq!(result.values.len(), 1);
+        match &result.values[0] {
+            WasmValue::I32(value) => assert_eq!(*value, 8),
+            _ => panic!("Expected I32 result"),
+        }
     }
     
     #[test]
-    fn test_list_exports() {
+    fn test_export_information() {
         let engine = Engine::new().expect("Failed to create engine");
         let mut store = Store::new(&engine).expect("Failed to create store");
-        let module = Module::compile(&engine, SIMPLE_WASM).expect("Failed to create module");
+        
+        let wat = "(module 
+                     (func (export \"add\") (param i32 i32) (result i32) 
+                       local.get 0 local.get 1 i32.add)
+                     (memory (export \"mem\") 1))";
+        let module = Module::compile_wat(&engine, wat).expect("Failed to create module");
         
         let instance = Instance::new_without_imports(&mut store, &module)
             .expect("Failed to create instance");
         
-        let exports = instance.exports(&mut store).expect("Failed to get exports");
-        assert_eq!(exports.len(), 1);
-        assert_eq!(exports[0], "add");
+        // Check export information
+        assert!(instance.get_export_info("add").is_some());
+        assert!(instance.get_export_info("mem").is_some());
+        assert!(instance.get_export_info("nonexistent").is_none());
+        
+        let add_export = instance.get_export_info("add").unwrap();
+        match &add_export.export_type {
+            ExportKind::Function(sig) => {
+                assert_eq!(sig.params.len(), 2);
+                assert_eq!(sig.returns.len(), 1);
+            }
+            _ => panic!("Expected function export"),
+        }
+    }
+    
+    #[test] 
+    fn test_instance_disposal() {
+        let engine = Engine::new().expect("Failed to create engine");
+        let mut store = Store::new(&engine).expect("Failed to create store");
+        
+        let wat = "(module (func (export \"test\") (result i32) i32.const 42))";
+        let module = Module::compile_wat(&engine, wat).expect("Failed to create module");
+        
+        let mut instance = Instance::new_without_imports(&mut store, &module)
+            .expect("Failed to create instance");
+        
+        assert!(!instance.is_disposed());
+        
+        // Dispose the instance
+        instance.dispose().expect("Failed to dispose instance");
+        assert!(instance.is_disposed());
+        
+        // Should not be able to call functions after disposal
+        let params = vec![];
+        let result = instance.call_export_function(&mut store, "test", &params);
+        assert!(result.is_err());
+    }
+    
+    #[test]
+    fn test_type_validation() {
+        let engine = Engine::new().expect("Failed to create engine");
+        let mut store = Store::new(&engine).expect("Failed to create store");
+        
+        let wat = "(module (func (export \"add\") (param i32 i32) (result i32) 
+                     local.get 0 local.get 1 i32.add))";
+        let module = Module::compile_wat(&engine, wat).expect("Failed to create module");
+        
+        let instance = Instance::new_without_imports(&mut store, &module)
+            .expect("Failed to create instance");
+        
+        // Test parameter count mismatch
+        let wrong_param_count = vec![WasmValue::I32(5)]; // Should be 2 params
+        let result = instance.call_export_function(&mut store, "add", &wrong_param_count);
+        assert!(result.is_err());
+        
+        // Test parameter type mismatch
+        let wrong_param_types = vec![WasmValue::F32(5.0), WasmValue::I32(3)]; // Should be i32, i32
+        let result = instance.call_export_function(&mut store, "add", &wrong_param_types);
+        assert!(result.is_err());
+    }
+    
+    #[test]
+    fn test_wasm_value_conversion() {
+        // Test WasmValue creation and extraction
+        let i32_val = WasmValue::I32(42);
+        let i64_val = WasmValue::I64(123456789);
+        let f32_val = WasmValue::F32(3.14);
+        let f64_val = WasmValue::F64(2.71828);
+        
+        // Test extraction
+        assert_eq!(core::extract_i32_value(&i32_val).unwrap(), 42);
+        assert_eq!(core::extract_i64_value(&i64_val).unwrap(), 123456789);
+        assert_eq!(core::extract_f32_value(&f32_val).unwrap(), 3.14);
+        assert_eq!(core::extract_f64_value(&f64_val).unwrap(), 2.71828);
+        
+        // Test type mismatch errors
+        assert!(core::extract_i64_value(&i32_val).is_err());
+        assert!(core::extract_f32_value(&i64_val).is_err());
     }
 }

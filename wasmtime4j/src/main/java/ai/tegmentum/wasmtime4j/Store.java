@@ -74,6 +74,23 @@ public interface Store extends Closeable {
   void setEpochDeadline(final long ticks) throws WasmException;
 
   /**
+   * Creates a host function that can be imported by WebAssembly modules.
+   *
+   * <p>The created function will be bound to this store and can be added to import maps for module
+   * instantiation. The function type must accurately describe the parameter and return types.
+   *
+   * @param name the name of the function (for debugging/logging purposes)
+   * @param functionType the WebAssembly function type signature
+   * @param implementation the Java implementation of the function
+   * @return a WasmFunction that can be used in import maps
+   * @throws WasmException if host function creation fails
+   * @throws IllegalArgumentException if any parameter is null
+   */
+  WasmFunction createHostFunction(
+      final String name, final FunctionType functionType, final HostFunction implementation)
+      throws WasmException;
+
+  /**
    * Checks if the store is still valid and usable.
    *
    * @return true if the store is valid, false otherwise

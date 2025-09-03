@@ -39,26 +39,47 @@ public final class PanamaErrorHandler {
 
   private static final Logger LOGGER = Logger.getLogger(PanamaErrorHandler.class.getName());
 
-  // Native error codes (matching Wasmtime C API)
+  // Native error codes (must match the Rust error.rs enum ErrorCode exactly)
   private static final int WASMTIME_SUCCESS = 0;
-  private static final int WASMTIME_ERROR_GENERIC = -1;
-  private static final int WASMTIME_ERROR_COMPILATION = -2;
-  private static final int WASMTIME_ERROR_VALIDATION = -3;
-  private static final int WASMTIME_ERROR_RUNTIME = -4;
-  private static final int WASMTIME_ERROR_MEMORY = -5;
-  private static final int WASMTIME_ERROR_INVALID_ARGUMENT = -6;
-  private static final int WASMTIME_ERROR_UNSUPPORTED = -7;
-  private static final int WASMTIME_ERROR_TRAP = -8;
+  private static final int WASMTIME_ERROR_COMPILATION = -1;
+  private static final int WASMTIME_ERROR_VALIDATION = -2;
+  private static final int WASMTIME_ERROR_RUNTIME = -3;
+  private static final int WASMTIME_ERROR_ENGINE_CONFIG = -4;
+  private static final int WASMTIME_ERROR_STORE = -5;
+  private static final int WASMTIME_ERROR_INSTANCE = -6;
+  private static final int WASMTIME_ERROR_MEMORY = -7;
+  private static final int WASMTIME_ERROR_FUNCTION = -8;
+  private static final int WASMTIME_ERROR_IMPORT_EXPORT = -9;
+  private static final int WASMTIME_ERROR_TYPE = -10;
+  private static final int WASMTIME_ERROR_RESOURCE = -11;
+  private static final int WASMTIME_ERROR_IO = -12;
+  private static final int WASMTIME_ERROR_INVALID_PARAMETER = -13;
+  private static final int WASMTIME_ERROR_CONCURRENCY = -14;
+  private static final int WASMTIME_ERROR_WASI = -15;
+  private static final int WASMTIME_ERROR_COMPONENT = -16;
+  private static final int WASMTIME_ERROR_INTERFACE = -17;
+  private static final int WASMTIME_ERROR_INTERNAL = -18;
 
   // Default error messages
   private static final String DEFAULT_GENERIC_ERROR = "Native operation failed";
   private static final String DEFAULT_COMPILATION_ERROR = "WebAssembly compilation failed";
   private static final String DEFAULT_VALIDATION_ERROR = "WebAssembly validation failed";
   private static final String DEFAULT_RUNTIME_ERROR = "WebAssembly runtime error";
+  private static final String DEFAULT_ENGINE_CONFIG_ERROR = "Engine configuration error";
+  private static final String DEFAULT_STORE_ERROR = "Store creation or management error";
+  private static final String DEFAULT_INSTANCE_ERROR = "Instance creation or management error";
   private static final String DEFAULT_MEMORY_ERROR = "Memory allocation or access error";
-  private static final String DEFAULT_INVALID_ARGUMENT = "Invalid argument provided";
-  private static final String DEFAULT_UNSUPPORTED = "Unsupported operation";
-  private static final String DEFAULT_TRAP_ERROR = "WebAssembly trap occurred";
+  private static final String DEFAULT_FUNCTION_ERROR = "Function invocation error";
+  private static final String DEFAULT_IMPORT_EXPORT_ERROR = "Import or export resolution error";
+  private static final String DEFAULT_TYPE_ERROR = "Type conversion or validation error";
+  private static final String DEFAULT_RESOURCE_ERROR = "Resource management error";
+  private static final String DEFAULT_IO_ERROR = "I/O operation error";
+  private static final String DEFAULT_INVALID_PARAMETER_ERROR = "Invalid parameter provided";
+  private static final String DEFAULT_CONCURRENCY_ERROR = "Threading or concurrency error";
+  private static final String DEFAULT_WASI_ERROR = "WASI-related error";
+  private static final String DEFAULT_COMPONENT_ERROR = "Component model error";
+  private static final String DEFAULT_INTERFACE_ERROR = "Interface definition or binding error";
+  private static final String DEFAULT_INTERNAL_ERROR = "Internal system error";
 
   // Private constructor to prevent instantiation
   private PanamaErrorHandler() {
@@ -132,7 +153,8 @@ public final class PanamaErrorHandler {
     }
 
     try {
-      // Extract error information from the structure
+      // Extract error information from the structure (using correct VarHandle names from
+      // MemoryLayouts)
       int errorCode = (int) MemoryLayouts.WASMTIME_ERROR_CODE.get(errorStructPtr, 0);
       MemorySegment messagePtr =
           (MemorySegment) MemoryLayouts.WASMTIME_ERROR_MESSAGE.get(errorStructPtr, 0);
@@ -197,11 +219,32 @@ public final class PanamaErrorHandler {
     return switch (errorCode) {
       case WASMTIME_ERROR_COMPILATION -> new CompilationException(message);
       case WASMTIME_ERROR_VALIDATION -> new ValidationException(message);
-      case WASMTIME_ERROR_RUNTIME, WASMTIME_ERROR_TRAP -> new ai.tegmentum.wasmtime4j.exception
+      case WASMTIME_ERROR_RUNTIME -> new ai.tegmentum.wasmtime4j.exception.RuntimeException(
+          message);
+      case WASMTIME_ERROR_ENGINE_CONFIG -> new ai.tegmentum.wasmtime4j.exception.RuntimeException(
+          message);
+      case WASMTIME_ERROR_STORE -> new ai.tegmentum.wasmtime4j.exception.RuntimeException(message);
+      case WASMTIME_ERROR_INSTANCE -> new ai.tegmentum.wasmtime4j.exception.RuntimeException(
+          message);
+      case WASMTIME_ERROR_MEMORY -> new ai.tegmentum.wasmtime4j.exception.RuntimeException(message);
+      case WASMTIME_ERROR_FUNCTION -> new ai.tegmentum.wasmtime4j.exception.RuntimeException(
+          message);
+      case WASMTIME_ERROR_IMPORT_EXPORT -> new ai.tegmentum.wasmtime4j.exception.RuntimeException(
+          message);
+      case WASMTIME_ERROR_TYPE -> new ai.tegmentum.wasmtime4j.exception.RuntimeException(message);
+      case WASMTIME_ERROR_RESOURCE -> new ai.tegmentum.wasmtime4j.exception.RuntimeException(
+          message);
+      case WASMTIME_ERROR_IO -> new ai.tegmentum.wasmtime4j.exception.RuntimeException(message);
+      case WASMTIME_ERROR_INVALID_PARAMETER -> new ai.tegmentum.wasmtime4j.exception
           .RuntimeException(message);
-      case WASMTIME_ERROR_MEMORY,
-          WASMTIME_ERROR_INVALID_ARGUMENT,
-          WASMTIME_ERROR_UNSUPPORTED -> new ai.tegmentum.wasmtime4j.exception.RuntimeException(
+      case WASMTIME_ERROR_CONCURRENCY -> new ai.tegmentum.wasmtime4j.exception.RuntimeException(
+          message);
+      case WASMTIME_ERROR_WASI -> new ai.tegmentum.wasmtime4j.exception.RuntimeException(message);
+      case WASMTIME_ERROR_COMPONENT -> new ai.tegmentum.wasmtime4j.exception.RuntimeException(
+          message);
+      case WASMTIME_ERROR_INTERFACE -> new ai.tegmentum.wasmtime4j.exception.RuntimeException(
+          message);
+      case WASMTIME_ERROR_INTERNAL -> new ai.tegmentum.wasmtime4j.exception.RuntimeException(
           message);
       default -> new ai.tegmentum.wasmtime4j.exception.RuntimeException(message);
     };
@@ -218,10 +261,21 @@ public final class PanamaErrorHandler {
       case WASMTIME_ERROR_COMPILATION -> DEFAULT_COMPILATION_ERROR;
       case WASMTIME_ERROR_VALIDATION -> DEFAULT_VALIDATION_ERROR;
       case WASMTIME_ERROR_RUNTIME -> DEFAULT_RUNTIME_ERROR;
+      case WASMTIME_ERROR_ENGINE_CONFIG -> DEFAULT_ENGINE_CONFIG_ERROR;
+      case WASMTIME_ERROR_STORE -> DEFAULT_STORE_ERROR;
+      case WASMTIME_ERROR_INSTANCE -> DEFAULT_INSTANCE_ERROR;
       case WASMTIME_ERROR_MEMORY -> DEFAULT_MEMORY_ERROR;
-      case WASMTIME_ERROR_INVALID_ARGUMENT -> DEFAULT_INVALID_ARGUMENT;
-      case WASMTIME_ERROR_UNSUPPORTED -> DEFAULT_UNSUPPORTED;
-      case WASMTIME_ERROR_TRAP -> DEFAULT_TRAP_ERROR;
+      case WASMTIME_ERROR_FUNCTION -> DEFAULT_FUNCTION_ERROR;
+      case WASMTIME_ERROR_IMPORT_EXPORT -> DEFAULT_IMPORT_EXPORT_ERROR;
+      case WASMTIME_ERROR_TYPE -> DEFAULT_TYPE_ERROR;
+      case WASMTIME_ERROR_RESOURCE -> DEFAULT_RESOURCE_ERROR;
+      case WASMTIME_ERROR_IO -> DEFAULT_IO_ERROR;
+      case WASMTIME_ERROR_INVALID_PARAMETER -> DEFAULT_INVALID_PARAMETER_ERROR;
+      case WASMTIME_ERROR_CONCURRENCY -> DEFAULT_CONCURRENCY_ERROR;
+      case WASMTIME_ERROR_WASI -> DEFAULT_WASI_ERROR;
+      case WASMTIME_ERROR_COMPONENT -> DEFAULT_COMPONENT_ERROR;
+      case WASMTIME_ERROR_INTERFACE -> DEFAULT_INTERFACE_ERROR;
+      case WASMTIME_ERROR_INTERNAL -> DEFAULT_INTERNAL_ERROR;
       default -> DEFAULT_GENERIC_ERROR;
     };
   }
@@ -245,12 +299,36 @@ public final class PanamaErrorHandler {
     }
 
     try {
-      // Safely read the error message from native memory
+      // Defensive check for reasonable message length (prevent excessive memory allocation)
+      if (messageLen > 65536) { // 64KB max message length
+        LOGGER.log(Level.WARNING, "Error message too long: " + messageLen + " bytes, truncating");
+        return getDefaultErrorMessage(errorCode) + " (message truncated)";
+      }
+
+      // Safely read the error message from native memory with bounds checking
       MemorySegment messageSegment = messagePtr.reinterpret(messageLen);
+
+      // Verify the segment is readable before accessing
+      if (messageSegment.byteSize() != messageLen) {
+        LOGGER.log(Level.WARNING, "Error message segment size mismatch");
+        return getDefaultErrorMessage(errorCode);
+      }
+
       byte[] messageBytes = messageSegment.toArray(ValueLayout.JAVA_BYTE);
+
+      // Additional null byte safety check
+      if (messageBytes.length == 0) {
+        return getDefaultErrorMessage(errorCode);
+      }
 
       // Convert to string, handling potential encoding issues
       String message = new String(messageBytes, java.nio.charset.StandardCharsets.UTF_8).trim();
+
+      // Remove any null terminators that might be present
+      int nullIndex = message.indexOf('\0');
+      if (nullIndex >= 0) {
+        message = message.substring(0, nullIndex);
+      }
 
       if (message.isEmpty()) {
         return getDefaultErrorMessage(errorCode);
@@ -258,6 +336,9 @@ public final class PanamaErrorHandler {
 
       return message;
 
+    } catch (IllegalArgumentException e) {
+      LOGGER.log(Level.WARNING, "Invalid memory segment for error message: " + e.getMessage());
+      return getDefaultErrorMessage(errorCode);
     } catch (Exception e) {
       LOGGER.log(Level.WARNING, "Failed to extract native error message", e);
       return getDefaultErrorMessage(errorCode);
@@ -376,10 +457,21 @@ public final class PanamaErrorHandler {
       case WASMTIME_ERROR_COMPILATION -> "Compilation Error";
       case WASMTIME_ERROR_VALIDATION -> "Validation Error";
       case WASMTIME_ERROR_RUNTIME -> "Runtime Error";
+      case WASMTIME_ERROR_ENGINE_CONFIG -> "Engine Configuration Error";
+      case WASMTIME_ERROR_STORE -> "Store Error";
+      case WASMTIME_ERROR_INSTANCE -> "Instance Error";
       case WASMTIME_ERROR_MEMORY -> "Memory Error";
-      case WASMTIME_ERROR_INVALID_ARGUMENT -> "Invalid Argument";
-      case WASMTIME_ERROR_UNSUPPORTED -> "Unsupported Operation";
-      case WASMTIME_ERROR_TRAP -> "WebAssembly Trap";
+      case WASMTIME_ERROR_FUNCTION -> "Function Error";
+      case WASMTIME_ERROR_IMPORT_EXPORT -> "Import/Export Error";
+      case WASMTIME_ERROR_TYPE -> "Type Error";
+      case WASMTIME_ERROR_RESOURCE -> "Resource Error";
+      case WASMTIME_ERROR_IO -> "I/O Error";
+      case WASMTIME_ERROR_INVALID_PARAMETER -> "Invalid Parameter";
+      case WASMTIME_ERROR_CONCURRENCY -> "Concurrency Error";
+      case WASMTIME_ERROR_WASI -> "WASI Error";
+      case WASMTIME_ERROR_COMPONENT -> "Component Error";
+      case WASMTIME_ERROR_INTERFACE -> "Interface Error";
+      case WASMTIME_ERROR_INTERNAL -> "Internal Error";
       default -> "Unknown Error (" + errorCode + ")";
     };
   }
@@ -392,7 +484,7 @@ public final class PanamaErrorHandler {
    */
   public static boolean isRecoverableError(final int errorCode) {
     return switch (errorCode) {
-      case WASMTIME_ERROR_MEMORY, WASMTIME_ERROR_INVALID_ARGUMENT -> true;
+      case WASMTIME_ERROR_MEMORY, WASMTIME_ERROR_INVALID_PARAMETER, WASMTIME_ERROR_RESOURCE -> true;
       default -> false;
     };
   }

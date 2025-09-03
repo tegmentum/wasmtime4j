@@ -105,12 +105,12 @@ build_target() {
             if [[ $target == *aarch64* ]]; then
                 output_dir="$NATIVE_DIR/linux-aarch64"
             else
-                output_dir="$NATIVE_DIR/linux-x64"
+                output_dir="$NATIVE_DIR/linux-x86_64"
             fi
             lib_extension="so"
             ;;
         *windows*)
-            output_dir="$NATIVE_DIR/windows-x64"
+            output_dir="$NATIVE_DIR/windows-x86_64"
             lib_extension="dll"
             lib_prefix=""
             ;;
@@ -118,7 +118,7 @@ build_target() {
             if [[ $target == *aarch64* ]]; then
                 output_dir="$NATIVE_DIR/macos-aarch64"
             else
-                output_dir="$NATIVE_DIR/macos-x64"
+                output_dir="$NATIVE_DIR/macos-x86_64"
             fi
             lib_extension="dylib"
             ;;
@@ -152,19 +152,19 @@ build_target() {
 
 # Cross-compilation target mapping
 TARGETS_LIST=(
-    "x86_64-unknown-linux-gnu:linux-x64"
+    "x86_64-unknown-linux-gnu:linux-x86_64"
     "aarch64-unknown-linux-gnu:linux-aarch64"
-    "x86_64-pc-windows-gnu:windows-x64"
-    "x86_64-apple-darwin:macos-x64"
+    "x86_64-pc-windows-msvc:windows-x86_64"
+    "x86_64-apple-darwin:macos-x86_64"
     "aarch64-apple-darwin:macos-aarch64"
 )
 
 # Library configuration per platform
 LIB_CONFIG_LIST=(
-    "linux-x64:lib:so"
+    "linux-x86_64:lib:so"
     "linux-aarch64:lib:so"
-    "windows-x64::dll"
-    "macos-x64:lib:dylib"
+    "windows-x86_64::dll"
+    "macos-x86_64:lib:dylib"
     "macos-aarch64:lib:dylib"
 )
 
