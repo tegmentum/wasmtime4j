@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import ai.tegmentum.wasmtime4j.nativeloader.NativeLoaderBuilder.SecurityLevel;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -99,7 +100,7 @@ final class NativeLoaderBuilderTest {
   @DisplayName("Should support fluent API for resource path convention")
   void testPathConventionFluentAPI() {
     final NativeLoaderBuilder builder = new NativeLoaderBuilder();
-    final NativeLoaderBuilder result = builder.resourcePathConvention(PathConvention.JNA);
+    final NativeLoaderBuilder result = builder.pathConvention(PathConvention.JNA);
 
     assertSame(builder, result, "Should return same builder instance for method chaining");
     assertEquals(
@@ -157,7 +158,7 @@ final class NativeLoaderBuilderTest {
 
     assertThrows(
         IllegalArgumentException.class,
-        () -> builder.resourcePathConvention(null),
+        () -> builder.pathConvention(null),
         "Should throw IllegalArgumentException for null resource path convention");
   }
 
@@ -172,7 +173,7 @@ final class NativeLoaderBuilderTest {
             .tempFilePrefix("chain-")
             .tempDirSuffix("-chain")
             .securityLevel(SecurityLevel.PERMISSIVE)
-            .resourcePathConvention(PathConvention.CUSTOM);
+            .pathConvention(PathConvention.CUSTOM);
 
     assertSame(builder, result, "Should return same builder instance for method chaining");
     assertEquals("chaintest", builder.getLibraryName());
@@ -259,7 +260,7 @@ final class NativeLoaderBuilderTest {
 
     // Test all resource path conventions
     for (final PathConvention convention : PathConvention.values()) {
-      builder.resourcePathConvention(convention);
+      builder.pathConvention(convention);
       assertEquals(
           convention,
           builder.getPathConvention(),

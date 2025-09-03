@@ -55,6 +55,7 @@ import org.openjdk.jmh.infra.Blackhole;
  *   <li>Concurrent performance: < 10% degradation under load
  * </ul>
  */
+@SuppressWarnings({"exports", "module"})
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @Warmup(iterations = 10, time = 1, timeUnit = TimeUnit.SECONDS)
@@ -68,6 +69,11 @@ public class PlatformDetectorBenchmark {
   };
 
   private PlatformDetector.PlatformInfo platformInfo;
+
+  /** Public constructor required for JMH. */
+  public PlatformDetectorBenchmark() {
+    // JMH will instantiate this class
+  }
 
   /** Sets up the benchmark environment. */
   @Setup(Level.Trial)

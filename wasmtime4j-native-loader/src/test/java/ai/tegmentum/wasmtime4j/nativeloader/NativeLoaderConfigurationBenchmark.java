@@ -55,6 +55,7 @@ import org.openjdk.jmh.infra.Blackhole;
  *   <li>Method access: < 100ns per method call
  * </ul>
  */
+@SuppressWarnings({"exports", "module"})
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @Warmup(iterations = 10, time = 1, timeUnit = TimeUnit.SECONDS)
@@ -70,6 +71,11 @@ public class NativeLoaderConfigurationBenchmark {
   private NativeLibraryConfig customConfig;
   private NativeLoaderBuilder builder;
 
+  /** Public constructor required for JMH. */
+  public NativeLoaderConfigurationBenchmark() {
+    // JMH will instantiate this class
+  }
+
   /** Sets up the benchmark environment with pre-created configurations. */
   @Setup(Level.Trial)
   public void setupTrial() {
@@ -80,10 +86,6 @@ public class NativeLoaderConfigurationBenchmark {
         NativeLibraryConfig.builder()
             .libraryName(TEST_LIBRARY_NAME)
             .tempFilePrefix(TEST_PREFIX)
-            .pathConventions(
-                PathConvention.MAVEN_NATIVE,
-                PathConvention.GRAALVM_NATIVE_IMAGE,
-                PathConvention.SPRING_BOOT_FAT_JAR)
             .build();
 
     this.builder = NativeLoader.builder();
@@ -128,10 +130,6 @@ public class NativeLoaderConfigurationBenchmark {
         NativeLibraryConfig.builder()
             .libraryName(TEST_LIBRARY_NAME)
             .tempFilePrefix(TEST_PREFIX)
-            .pathConventions(
-                PathConvention.MAVEN_NATIVE,
-                PathConvention.GRAALVM_NATIVE_IMAGE,
-                PathConvention.SPRING_BOOT_FAT_JAR)
             .build();
     blackhole.consume(config);
   }
@@ -156,7 +154,7 @@ public class NativeLoaderConfigurationBenchmark {
         NativeLoader.builder()
             .libraryName(TEST_LIBRARY_NAME)
             .tempFilePrefix(TEST_PREFIX)
-            .resourcePathConvention(PathConvention.MAVEN_NATIVE);
+            .pathConvention(PathConvention.MAVEN_NATIVE);
     blackhole.consume(loaderBuilder);
   }
 
@@ -179,9 +177,9 @@ public class NativeLoaderConfigurationBenchmark {
 
   /** Benchmark: Configuration method access - getPathConventions. */
   @Benchmark
-  public void benchmarkConfigGetPathConventions(final Blackhole blackhole) {
-    final PathConvention[] conventions = customConfig.getPathConventions();
-    blackhole.consume(conventions);
+  public void benchmarkConfigGetTempDirSuffix(final Blackhole blackhole) {
+    final String suffix = customConfig.getTempDirSuffix();
+    blackhole.consume(suffix);
   }
 
   /**
@@ -266,7 +264,6 @@ public class NativeLoaderConfigurationBenchmark {
         NativeLibraryConfig.builder()
             .libraryName(TEST_LIBRARY_NAME)
             .tempFilePrefix(TEST_PREFIX)
-            .pathConventions(PathConvention.MAVEN_NATIVE)
             .build();
     blackhole.consume(config);
   }
@@ -280,11 +277,11 @@ public class NativeLoaderConfigurationBenchmark {
   public void benchmarkConcurrentConfigAccess(final Blackhole blackhole) {
     final String libraryName = customConfig.getLibraryName();
     final String prefix = customConfig.getTempFilePrefix();
-    final PathConvention[] conventions = customConfig.getPathConventions();
+    final String suffix = customConfig.getTempDirSuffix();
 
     blackhole.consume(libraryName);
     blackhole.consume(prefix);
-    blackhole.consume(conventions);
+    blackhole.consume(suffix);
   }
 
   /**
@@ -297,24 +294,18 @@ public class NativeLoaderConfigurationBenchmark {
     final NativeLibraryConfig config1 =
         NativeLibraryConfig.builder()
             .libraryName(TEST_LIBRARY_NAME)
-            .pathConventions(PathConvention.MAVEN_NATIVE)
             .build();
 
     // Multiple conventions
     final NativeLibraryConfig config2 =
         NativeLibraryConfig.builder()
             .libraryName(TEST_LIBRARY_NAME)
-            .pathConventions(PathConvention.MAVEN_NATIVE, PathConvention.GRAALVM_NATIVE_IMAGE)
             .build();
 
     // All conventions
     final NativeLibraryConfig config3 =
         NativeLibraryConfig.builder()
             .libraryName(TEST_LIBRARY_NAME)
-            .pathConventions(
-                PathConvention.MAVEN_NATIVE,
-                PathConvention.GRAALVM_NATIVE_IMAGE,
-                PathConvention.SPRING_BOOT_FAT_JAR)
             .build();
 
     blackhole.consume(config1);

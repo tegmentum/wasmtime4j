@@ -55,6 +55,7 @@ import org.openjdk.jmh.infra.Blackhole;
  *   <li>Caching efficiency: > 90% hit rate for repeated paths
  * </ul>
  */
+@SuppressWarnings({"exports", "module"})
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @Warmup(iterations = 10, time = 1, timeUnit = TimeUnit.SECONDS)
@@ -74,13 +75,16 @@ public class ResourcePathResolverBenchmark {
     "123numeric"
   };
 
-  private ResourcePathResolver resolver;
   private PlatformDetector.PlatformInfo platformInfo;
 
-  /** Sets up the benchmark environment with resolver and platform info. */
+  /** Public constructor required for JMH. */
+  public ResourcePathResolverBenchmark() {
+    // JMH will instantiate this class
+  }
+
+  /** Sets up the benchmark environment with platform info. */
   @Setup(Level.Trial)
   public void setupTrial() {
-    this.resolver = new ResourcePathResolver();
     this.platformInfo = PlatformDetector.detect();
 
     System.out.printf(
@@ -102,35 +106,33 @@ public class ResourcePathResolverBenchmark {
   public void benchmarkMavenNativePathResolution(final Blackhole blackhole) {
     for (final String libraryName : TEST_LIBRARY_NAMES) {
       final String path =
-          resolver.resolveResourcePath(libraryName, PathConvention.MAVEN_NATIVE, platformInfo);
+          PathConvention.MAVEN_NATIVE.generatePath(libraryName, platformInfo);
       blackhole.consume(path);
     }
   }
 
   /**
-   * Benchmark: Resource path resolution with GRAALVM_NATIVE_IMAGE convention. This tests the
+   * Benchmark: Resource path resolution with MAVEN_NATIVE convention. This tests the
    * GraalVM native image path convention.
    */
   @Benchmark
   public void benchmarkGraalVmPathResolution(final Blackhole blackhole) {
     for (final String libraryName : TEST_LIBRARY_NAMES) {
       final String path =
-          resolver.resolveResourcePath(
-              libraryName, PathConvention.GRAALVM_NATIVE_IMAGE, platformInfo);
+          PathConvention.MAVEN_NATIVE.generatePath(libraryName, platformInfo);
       blackhole.consume(path);
     }
   }
 
   /**
-   * Benchmark: Resource path resolution with SPRING_BOOT_FAT_JAR convention. This tests the Spring
+   * Benchmark: Resource path resolution with JNA convention. This tests the Spring
    * Boot fat JAR path convention.
    */
   @Benchmark
   public void benchmarkSpringBootPathResolution(final Blackhole blackhole) {
     for (final String libraryName : TEST_LIBRARY_NAMES) {
       final String path =
-          resolver.resolveResourcePath(
-              libraryName, PathConvention.SPRING_BOOT_FAT_JAR, platformInfo);
+          PathConvention.JNA.generatePath(libraryName, platformInfo);
       blackhole.consume(path);
     }
   }
@@ -144,7 +146,7 @@ public class ResourcePathResolverBenchmark {
     final String libraryName = "wasmtime4j";
 
     for (final PathConvention convention : PathConvention.values()) {
-      final String path = resolver.resolveResourcePath(libraryName, convention, platformInfo);
+      final String path = convention.generatePath(libraryName, platformInfo);
       blackhole.consume(path);
     }
   }
@@ -160,7 +162,7 @@ public class ResourcePathResolverBenchmark {
     // Resolve the same library multiple times to test caching
     for (int i = 0; i < 10; i++) {
       final String path =
-          resolver.resolveResourcePath(libraryName, PathConvention.MAVEN_NATIVE, platformInfo);
+          PathConvention.MAVEN_NATIVE.generatePath(libraryName, platformInfo);
       blackhole.consume(path);
     }
   }
@@ -176,7 +178,7 @@ public class ResourcePathResolverBenchmark {
     // Cycle through conventions multiple times
     for (int cycle = 0; cycle < 3; cycle++) {
       for (final PathConvention convention : PathConvention.values()) {
-        final String path = resolver.resolveResourcePath(libraryName, convention, platformInfo);
+        final String path = convention.generatePath(libraryName, platformInfo);
         blackhole.consume(path);
       }
     }
@@ -189,7 +191,7 @@ public class ResourcePathResolverBenchmark {
   public void benchmarkPathValidation(final Blackhole blackhole) {
     for (final String libraryName : TEST_LIBRARY_NAMES) {
       final String path =
-          resolver.resolveResourcePath(libraryName, PathConvention.MAVEN_NATIVE, platformInfo);
+          PathConvention.MAVEN_NATIVE.generatePath(libraryName, platformInfo);
 
       // Simulate path validation operations
       final boolean isValid = path != null && !path.isEmpty() && path.contains("/");
@@ -202,7 +204,7 @@ public class ResourcePathResolverBenchmark {
   public void benchmarkPathNormalization(final Blackhole blackhole) {
     for (final String libraryName : TEST_LIBRARY_NAMES) {
       final String path =
-          resolver.resolveResourcePath(libraryName, PathConvention.MAVEN_NATIVE, platformInfo);
+          PathConvention.MAVEN_NATIVE.generatePath(libraryName, platformInfo);
 
       // Simulate path normalization
       final String normalized = path.replaceAll("//", "/").replaceAll("\\\\", "/");
@@ -219,7 +221,7 @@ public class ResourcePathResolverBenchmark {
   public void benchmarkConcurrentPathResolution4Threads(final Blackhole blackhole) {
     final String libraryName = "wasmtime4j";
     final String path =
-        resolver.resolveResourcePath(libraryName, PathConvention.MAVEN_NATIVE, platformInfo);
+        PathConvention.MAVEN_NATIVE.generatePath(libraryName, platformInfo);
     blackhole.consume(path);
   }
 
@@ -232,7 +234,7 @@ public class ResourcePathResolverBenchmark {
   public void benchmarkConcurrentPathResolution10Threads(final Blackhole blackhole) {
     final String libraryName = "wasmtime4j";
     final String path =
-        resolver.resolveResourcePath(libraryName, PathConvention.MAVEN_NATIVE, platformInfo);
+        PathConvention.MAVEN_NATIVE.generatePath(libraryName, platformInfo);
     blackhole.consume(path);
   }
 
@@ -248,7 +250,7 @@ public class ResourcePathResolverBenchmark {
       final String libraryName = TEST_LIBRARY_NAMES[i];
       final PathConvention convention = conventions[i % conventions.length];
 
-      final String path = resolver.resolveResourcePath(libraryName, convention, platformInfo);
+      final String path = convention.generatePath(libraryName, platformInfo);
       blackhole.consume(path);
     }
   }
@@ -268,7 +270,7 @@ public class ResourcePathResolverBenchmark {
 
     for (final String libraryName : complexNames) {
       final String path =
-          resolver.resolveResourcePath(libraryName, PathConvention.MAVEN_NATIVE, platformInfo);
+          PathConvention.MAVEN_NATIVE.generatePath(libraryName, platformInfo);
       blackhole.consume(path);
     }
   }
@@ -282,7 +284,7 @@ public class ResourcePathResolverBenchmark {
     final String libraryName = "wasmtime4j";
 
     final String path =
-        resolver.resolveResourcePath(libraryName, PathConvention.MAVEN_NATIVE, platformInfo);
+        PathConvention.MAVEN_NATIVE.generatePath(libraryName, platformInfo);
 
     // Immediate usage operations
     final int length = path.length();

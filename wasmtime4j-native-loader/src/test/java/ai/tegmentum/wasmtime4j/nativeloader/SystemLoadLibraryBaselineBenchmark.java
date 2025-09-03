@@ -55,6 +55,7 @@ import org.openjdk.jmh.infra.Blackhole;
  * <p><strong>Important:</strong> Some benchmarks may fail if test libraries are not available, but
  * they provide valuable baseline data for comparison when libraries are present.
  */
+@SuppressWarnings({"exports", "module"})
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MICROSECONDS)
 @Warmup(iterations = 10, time = 1, timeUnit = TimeUnit.SECONDS)
@@ -69,6 +70,11 @@ public class SystemLoadLibraryBaselineBenchmark {
 
   private PlatformDetector.PlatformInfo platformInfo;
   private ClassLoader classLoader;
+
+  /** Public constructor required for JMH. */
+  public SystemLoadLibraryBaselineBenchmark() {
+    // JMH will instantiate this class
+  }
 
   /** Sets up the benchmark environment. */
   @Setup(Level.Trial)

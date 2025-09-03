@@ -53,6 +53,7 @@ import org.openjdk.jmh.infra.Blackhole;
  *   <li>Cache Hit Performance: <1% overhead for cached library access
  * </ul>
  */
+@SuppressWarnings({"exports", "module"})
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MICROSECONDS)
 @Warmup(iterations = 10, time = 1, timeUnit = TimeUnit.SECONDS)
@@ -63,6 +64,11 @@ public class NativeLoaderLoadingBenchmark {
 
   private static final String TEST_LIBRARY_NAME = "wasmtime4j";
   private static final String ALT_LIBRARY_NAME = "wasmtime4j-test";
+
+  /** Public constructor required for JMH. */
+  public NativeLoaderLoadingBenchmark() {
+    // JMH will instantiate this class
+  }
 
   /** Sets up the benchmark environment with clean state. */
   @Setup(Level.Trial)
@@ -141,7 +147,7 @@ public class NativeLoaderLoadingBenchmark {
         NativeLoader.builder()
             .libraryName(TEST_LIBRARY_NAME)
             .tempFilePrefix("benchmark-")
-            .resourcePathConvention(PathConvention.MAVEN_NATIVE)
+            .pathConvention(PathConvention.MAVEN_NATIVE)
             .load();
 
     blackhole.consume(loadInfo);
@@ -236,7 +242,6 @@ public class NativeLoaderLoadingBenchmark {
         NativeLibraryConfig.builder()
             .libraryName(TEST_LIBRARY_NAME)
             .tempFilePrefix("benchmark-")
-            .pathConventions(PathConvention.MAVEN_NATIVE, PathConvention.GRAALVM_NATIVE_IMAGE)
             .build();
 
     blackhole.consume(config);
