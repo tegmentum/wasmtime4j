@@ -47,6 +47,7 @@ pub use engine::{Engine, EngineBuilder, WasmFeature};
 pub use error::{WasmtimeError, WasmtimeResult, ErrorCode};
 pub use module::{Module, ModuleMetadata, ValueType, ImportKind, ExportKind, FunctionSignature};
 pub use store::{Store, StoreBuilder, StoreData, StoreMetadata, ResourceLimits, ExecutionState, MemoryUsage};
+pub use instance::{Instance, InstanceMetadata, ImportBinding, ExportBinding, WasmValue, ExecutionResult};
 
 // Re-export component model types for WASI Preview 2 support
 pub use component::{
