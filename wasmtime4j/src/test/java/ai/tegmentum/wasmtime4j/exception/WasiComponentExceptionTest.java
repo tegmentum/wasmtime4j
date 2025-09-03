@@ -23,7 +23,7 @@ class WasiComponentExceptionTest {
       final String message = "Component operation failed";
       final WasiComponentException exception = new WasiComponentException(message);
 
-      assertEquals(message, exception.getMessage());
+      assertEquals("Component operation failed (operation: component-operation)", exception.getMessage());
       assertNull(exception.getCause());
       assertEquals("component-operation", exception.getOperation());
       assertNull(exception.getComponentId());
@@ -41,7 +41,7 @@ class WasiComponentExceptionTest {
       final RuntimeException cause = new RuntimeException("Native error");
       final WasiComponentException exception = new WasiComponentException(message, cause);
 
-      assertEquals(message, exception.getMessage());
+      assertEquals("Component failed (operation: component-operation)", exception.getMessage());
       assertEquals(cause, exception.getCause());
       assertEquals("component-operation", exception.getOperation());
       assertNull(exception.getComponentId());
