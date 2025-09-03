@@ -609,7 +609,85 @@ pub mod jni_utils {
             WasmtimeError::Io { .. } => "java/io/IOException",
             WasmtimeError::Component { .. } => "ai/tegmentum/wasmtime4j/WasmComponentException",
             WasmtimeError::Interface { .. } => "ai/tegmentum/wasmtime4j/WasmInterfaceException",
+            WasmtimeError::EngineConfig { .. } => "ai/tegmentum/wasmtime4j/WasmEngineException",
+            WasmtimeError::Store { .. } => "ai/tegmentum/wasmtime4j/WasmStoreException",
+            WasmtimeError::Instance { .. } => "ai/tegmentum/wasmtime4j/WasmInstanceException",
+            WasmtimeError::ImportExport { .. } => "ai/tegmentum/wasmtime4j/WasmImportExportException",
+            WasmtimeError::Resource { .. } => "ai/tegmentum/wasmtime4j/WasmResourceException",
+            WasmtimeError::Concurrency { .. } => "ai/tegmentum/wasmtime4j/WasmConcurrencyException",
+            WasmtimeError::Wasi { .. } => "ai/tegmentum/wasmtime4j/WasiException",
+            WasmtimeError::Internal { .. } => "ai/tegmentum/wasmtime4j/WasmInternalException",
             _ => "ai/tegmentum/wasmtime4j/WasmException",
+        }
+    }
+
+    #[cfg(feature = "jni-bindings")]
+    /// Throw JNI exception with proper error information
+    pub fn throw_jni_exception(env: &mut jni::JNIEnv, error: &WasmtimeError) {
+        let class_name = error_to_exception_class(error);
+        let message = error.to_string();
+        
+        if let Err(e) = env.throw_new(class_name, &message) {
+            // Fallback to RuntimeException if specific exception class doesn't exist
+            log::error!("Failed to throw specific exception {}: {:?}, using RuntimeException", class_name, e);
+            if let Err(e2) = env.throw_new("java/lang/RuntimeException", &message) {
+                log::error!("Failed to throw fallback RuntimeException: {:?}", e2);
+            }
+        }
+    }
+
+    #[cfg(feature = "jni-bindings")]
+    /// Execute operation with JNI exception throwing, returning pointer for success
+    pub fn jni_try_ptr<F, T>(mut env: jni::JNIEnv, operation: F) -> *mut c_void
+    where
+        F: FnOnce() -> WasmtimeResult<Box<T>>,
+    {
+        match operation() {
+            Ok(result) => {
+                clear_last_error();
+                Box::into_raw(result) as *mut c_void
+            }
+            Err(error) => {
+                throw_jni_exception(&mut env, &error);
+                std::ptr::null_mut()
+            }
+        }
+    }
+
+    #[cfg(feature = "jni-bindings")]
+    /// Execute operation with JNI exception throwing, returning error code
+    pub fn jni_try_code<F>(mut env: jni::JNIEnv, operation: F) -> i32
+    where
+        F: FnOnce() -> WasmtimeResult<()>,
+    {
+        match operation() {
+            Ok(()) => {
+                clear_last_error();
+                ErrorCode::Success as i32
+            }
+            Err(error) => {
+                throw_jni_exception(&mut env, &error);
+                error.to_error_code() as i32
+            }
+        }
+    }
+
+    #[cfg(feature = "jni-bindings")]
+    /// Execute operation with JNI exception throwing, returning typed result
+    pub fn jni_try<F, T>(mut env: jni::JNIEnv, operation: F) -> (ErrorCode, T)
+    where
+        F: FnOnce() -> WasmtimeResult<T>,
+        T: Default,
+    {
+        match operation() {
+            Ok(result) => {
+                clear_last_error();
+                (ErrorCode::Success, result)
+            }
+            Err(error) => {
+                throw_jni_exception(&mut env, &error);
+                (error.to_error_code(), T::default())
+            }
         }
     }
 }
