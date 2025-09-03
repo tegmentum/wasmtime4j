@@ -16,68 +16,58 @@
 
 package ai.tegmentum.wasmtime4j;
 
-import java.util.Locale;
-import java.util.Objects;
-import java.util.logging.Logger;
-
 /**
- * Utility class for detecting the current platform (operating system and architecture).
+ * Backward-compatible wrapper for platform detection utilities.
  *
- * <p>This class provides consistent platform detection across all wasmtime4j modules. It normalizes
- * operating system and architecture names to standard values used throughout the project.
+ * <p>This class provides the same API as the original PlatformDetector but delegates to the
+ * refactored implementation in the wasmtime4j-native-loader module. This maintains backward
+ * compatibility for existing code while enabling the new configurable functionality.
  *
- * <p>The detector supports automatic detection of the runtime platform and provides methods for
- * constructing platform-specific resource paths and library names.
+ * @deprecated This class is maintained for backward compatibility. New code should use {@link
+ *     ai.tegmentum.wasmtime4j.nativeloader.PlatformDetector} directly.
  */
+@Deprecated
 public final class PlatformDetector {
 
-  private static final Logger LOGGER = Logger.getLogger(PlatformDetector.class.getName());
+  /** Cached platform info instance. */
+  private static volatile PlatformInfo cachedPlatformInfo;
 
-  /** Supported operating systems. */
+  /** Private constructor to prevent instantiation of utility class. */
+  private PlatformDetector() {
+    throw new AssertionError("Utility class should not be instantiated");
+  }
+
+  /** Operating system enumeration. */
   public enum OperatingSystem {
-    LINUX("linux", ".so", "lib"),
-    WINDOWS("windows", ".dll", ""),
-    MACOS("macos", ".dylib", "lib");
+    LINUX("linux", "lib", ".so"),
+    WINDOWS("windows", "", ".dll"),
+    MACOS("macos", "lib", ".dylib");
 
     private final String name;
-    private final String libraryExtension;
     private final String libraryPrefix;
+    private final String libraryExtension;
 
-    OperatingSystem(final String name, final String libraryExtension, final String libraryPrefix) {
+    OperatingSystem(
+        final String name, final String libraryPrefix, final String libraryExtension) {
       this.name = name;
-      this.libraryExtension = libraryExtension;
       this.libraryPrefix = libraryPrefix;
+      this.libraryExtension = libraryExtension;
     }
 
-    /**
-     * Gets the normalized operating system name.
-     *
-     * @return the operating system name
-     */
     public String getName() {
       return name;
     }
 
-    /**
-     * Gets the file extension for native libraries on this operating system.
-     *
-     * @return the library file extension (including the dot)
-     */
-    public String getLibraryExtension() {
-      return libraryExtension;
-    }
-
-    /**
-     * Gets the prefix for native libraries on this operating system.
-     *
-     * @return the library prefix (e.g., "lib" for Unix systems, empty for Windows)
-     */
     public String getLibraryPrefix() {
       return libraryPrefix;
     }
+
+    public String getLibraryExtension() {
+      return libraryExtension;
+    }
   }
 
-  /** Supported CPU architectures. */
+  /** Architecture enumeration. */
   public enum Architecture {
     X86_64("x86_64"),
     AARCH64("aarch64");
@@ -88,25 +78,27 @@ public final class PlatformDetector {
       this.name = name;
     }
 
-    /**
-     * Gets the normalized architecture name.
-     *
-     * @return the architecture name
-     */
     public String getName() {
       return name;
     }
   }
 
-  /** Information about the detected platform. */
+  /** Platform information wrapper. */
   public static final class PlatformInfo {
-    private final OperatingSystem operatingSystem;
-    private final Architecture architecture;
+    private final ai.tegmentum.wasmtime4j.nativeloader.PlatformDetector.PlatformInfo delegate;
 
-    PlatformInfo(final OperatingSystem operatingSystem, final Architecture architecture) {
-      this.operatingSystem =
-          Objects.requireNonNull(operatingSystem, "operatingSystem must not be null");
-      this.architecture = Objects.requireNonNull(architecture, "architecture must not be null");
+    PlatformInfo(
+        final ai.tegmentum.wasmtime4j.nativeloader.PlatformDetector.PlatformInfo delegate) {
+      this.delegate = delegate;
+    }
+
+    /**
+     * Gets the platform ID.
+     *
+     * @return the platform ID
+     */
+    public String getPlatformId() {
+      return delegate.getPlatformId();
     }
 
     /**
@@ -115,7 +107,18 @@ public final class PlatformDetector {
      * @return the operating system
      */
     public OperatingSystem getOperatingSystem() {
-      return operatingSystem;
+      final ai.tegmentum.wasmtime4j.nativeloader.PlatformDetector.OperatingSystem delegateOs =
+          delegate.getOperatingSystem();
+      switch (delegateOs) {
+        case LINUX:
+          return OperatingSystem.LINUX;
+        case WINDOWS:
+          return OperatingSystem.WINDOWS;
+        case MACOS:
+          return OperatingSystem.MACOS;
+        default:
+          throw new IllegalStateException("Unknown operating system: " + delegateOs);
+      }
     }
 
     /**
@@ -124,39 +127,36 @@ public final class PlatformDetector {
      * @return the architecture
      */
     public Architecture getArchitecture() {
-      return architecture;
+      final ai.tegmentum.wasmtime4j.nativeloader.PlatformDetector.Architecture delegateArch =
+          delegate.getArchitecture();
+      switch (delegateArch) {
+        case X86_64:
+          return Architecture.X86_64;
+        case AARCH64:
+          return Architecture.AARCH64;
+        default:
+          throw new IllegalStateException("Unknown architecture: " + delegateArch);
+      }
     }
 
     /**
-     * Gets the platform identifier string (e.g., "linux-x86_64").
+     * Gets the library file name for the given library.
      *
-     * @return the platform identifier
-     */
-    public String getPlatformId() {
-      return operatingSystem.getName() + "-" + architecture.getName();
-    }
-
-    /**
-     * Gets the native library file name for the given library name.
-     *
-     * @param libraryName the base library name (without prefix or extension)
-     * @return the complete library file name
+     * @param libraryName the library name
+     * @return the library file name
      */
     public String getLibraryFileName(final String libraryName) {
-      Objects.requireNonNull(libraryName, "libraryName must not be null");
-      return operatingSystem.getLibraryPrefix()
-          + libraryName
-          + operatingSystem.getLibraryExtension();
+      return delegate.getLibraryFileName(libraryName);
     }
 
     /**
-     * Gets the resource path for a native library.
+     * Gets the library resource path for the given library.
      *
-     * @param libraryName the base library name
-     * @return the complete resource path
+     * @param libraryName the library name
+     * @return the library resource path
      */
     public String getLibraryResourcePath(final String libraryName) {
-      return "/natives/" + getPlatformId() + "/" + getLibraryFileName(libraryName);
+      return delegate.getLibraryResourcePath(libraryName);
     }
 
     @Override
@@ -167,50 +167,25 @@ public final class PlatformDetector {
       if (obj == null || getClass() != obj.getClass()) {
         return false;
       }
-      final PlatformInfo that = (PlatformInfo) obj;
-      return operatingSystem == that.operatingSystem && architecture == that.architecture;
+      final PlatformInfo other = (PlatformInfo) obj;
+      return delegate.equals(other.delegate);
     }
 
     @Override
     public int hashCode() {
-      return Objects.hash(operatingSystem, architecture);
+      return delegate.hashCode();
     }
 
     @Override
     public String toString() {
-      return getPlatformId();
+      return delegate.toString();
     }
   }
 
-  /** Cache for the detected platform information. */
-  private static volatile PlatformInfo cachedPlatformInfo;
-
-  /** Private constructor to prevent instantiation of utility class. */
-  private PlatformDetector() {
-    throw new AssertionError("Utility class should not be instantiated");
-  }
-
   /**
-   * Sanitizes a string for safe logging by removing CRLF injection characters.
+   * Detects the current platform.
    *
-   * @param input the string to sanitize for logging
-   * @return the sanitized string safe for logging
-   */
-  private static String sanitizeForLog(final String input) {
-    if (input == null) {
-      return "null";
-    }
-    // Remove all control and format characters to prevent log injection
-    return input.replaceAll("[\\p{Cntrl}\\p{Cf}]", "_");
-  }
-
-  /**
-   * Detects and returns information about the current platform.
-   *
-   * <p>This method caches the result after the first call for performance.
-   *
-   * @return the platform information
-   * @throws RuntimeException if the current platform is not supported
+   * @return platform information
    */
   public static PlatformInfo detect() {
     PlatformInfo result = cachedPlatformInfo;
@@ -218,9 +193,8 @@ public final class PlatformDetector {
       synchronized (PlatformDetector.class) {
         result = cachedPlatformInfo;
         if (result == null) {
-          result = detectPlatform();
-          cachedPlatformInfo = result;
-          LOGGER.info("Detected platform: " + sanitizeForLog(result.getPlatformId()));
+          cachedPlatformInfo = result = new PlatformInfo(
+              ai.tegmentum.wasmtime4j.nativeloader.PlatformDetector.detect());
         }
       }
     }
@@ -228,108 +202,58 @@ public final class PlatformDetector {
   }
 
   /**
-   * Detects the current operating system.
+   * Gets platform description.
    *
-   * @return the operating system
-   * @throws RuntimeException if the operating system is not supported
-   */
-  public static OperatingSystem detectOperatingSystem() {
-    return detect().getOperatingSystem();
-  }
-
-  /**
-   * Detects the current CPU architecture.
-   *
-   * @return the architecture
-   * @throws RuntimeException if the architecture is not supported
-   */
-  public static Architecture detectArchitecture() {
-    return detect().getArchitecture();
-  }
-
-  /**
-   * Checks if the current platform is supported.
-   *
-   * @return true if the platform is supported, false otherwise
-   */
-  public static boolean isPlatformSupported() {
-    try {
-      detect();
-      return true;
-    } catch (final RuntimeException e) {
-      return false;
-    }
-  }
-
-  /**
-   * Gets a human-readable description of the current platform.
-   *
-   * @return the platform description
+   * @return platform description
    */
   public static String getPlatformDescription() {
-    final String osName = System.getProperty("os.name");
-    final String osArch = System.getProperty("os.arch");
-    final String javaVersion = System.getProperty("java.version");
-
-    try {
-      final PlatformInfo info = detect();
-      return String.format(
-          "Platform: %s (detected as %s), Java: %s",
-          osName + " " + osArch, info.getPlatformId(), javaVersion);
-    } catch (final RuntimeException e) {
-      return String.format(
-          "Platform: %s %s (unsupported), Java: %s, Error: %s",
-          osName, osArch, javaVersion, e.getMessage());
-    }
+    return ai.tegmentum.wasmtime4j.nativeloader.PlatformDetector.getPlatformDescription();
   }
 
   /**
-   * Performs the actual platform detection.
+   * Checks if the platform is supported.
    *
-   * @return the platform information
-   * @throws RuntimeException if the platform is not supported
+   * @return true if platform is supported
    */
-  private static PlatformInfo detectPlatform() {
-    final OperatingSystem os = detectOperatingSystemInternal();
-    final Architecture arch = detectArchitectureInternal();
-    return new PlatformInfo(os, arch);
+  public static boolean isPlatformSupported() {
+    return ai.tegmentum.wasmtime4j.nativeloader.PlatformDetector.isPlatformSupported();
   }
 
   /**
-   * Internal method to detect the operating system.
+   * Detects the operating system.
    *
    * @return the operating system
-   * @throws RuntimeException if not supported
    */
-  private static OperatingSystem detectOperatingSystemInternal() {
-    final String osName = System.getProperty("os.name").toLowerCase(Locale.ENGLISH);
-
-    if (osName.contains("linux")) {
-      return OperatingSystem.LINUX;
-    } else if (osName.contains("windows")) {
-      return OperatingSystem.WINDOWS;
-    } else if (osName.contains("mac") || osName.contains("darwin")) {
-      return OperatingSystem.MACOS;
-    } else {
-      throw new RuntimeException("Unsupported operating system: " + osName);
+  public static OperatingSystem detectOperatingSystem() {
+    final ai.tegmentum.wasmtime4j.nativeloader.PlatformDetector.OperatingSystem delegateOs =
+        ai.tegmentum.wasmtime4j.nativeloader.PlatformDetector.detectOperatingSystem();
+    switch (delegateOs) {
+      case LINUX:
+        return OperatingSystem.LINUX;
+      case WINDOWS:
+        return OperatingSystem.WINDOWS;
+      case MACOS:
+        return OperatingSystem.MACOS;
+      default:
+        throw new IllegalStateException("Unknown operating system: " + delegateOs);
     }
   }
 
   /**
-   * Internal method to detect the CPU architecture.
+   * Detects the architecture.
    *
    * @return the architecture
-   * @throws RuntimeException if not supported
    */
-  private static Architecture detectArchitectureInternal() {
-    final String archName = System.getProperty("os.arch").toLowerCase(Locale.ENGLISH);
-
-    if ("amd64".equals(archName) || "x86_64".equals(archName)) {
-      return Architecture.X86_64;
-    } else if ("aarch64".equals(archName) || "arm64".equals(archName)) {
-      return Architecture.AARCH64;
-    } else {
-      throw new RuntimeException("Unsupported architecture: " + archName);
+  public static Architecture detectArchitecture() {
+    final ai.tegmentum.wasmtime4j.nativeloader.PlatformDetector.Architecture delegateArch =
+        ai.tegmentum.wasmtime4j.nativeloader.PlatformDetector.detectArchitecture();
+    switch (delegateArch) {
+      case X86_64:
+        return Architecture.X86_64;
+      case AARCH64:
+        return Architecture.AARCH64;
+      default:
+        throw new IllegalStateException("Unknown architecture: " + delegateArch);
     }
   }
 }

@@ -5,7 +5,6 @@ import ai.tegmentum.wasmtime4j.EngineConfig;
 import ai.tegmentum.wasmtime4j.ImportMap;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
-import ai.tegmentum.wasmtime4j.PlatformDetector;
 import ai.tegmentum.wasmtime4j.RuntimeInfo;
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.WasmRuntime;
@@ -16,6 +15,7 @@ import ai.tegmentum.wasmtime4j.jni.util.JniPhantomReferenceManager;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import ai.tegmentum.wasmtime4j.jni.util.JniResourceCache;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
+import ai.tegmentum.wasmtime4j.nativeloader.PlatformDetector;
 import java.util.logging.Logger;
 
 /**

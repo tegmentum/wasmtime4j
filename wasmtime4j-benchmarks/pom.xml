@@ -57,6 +57,12 @@
             <groupId>ai.tegmentum</groupId>
             <artifactId>wasmtime4j-panama</artifactId>
         </dependency>
+        <dependency>
+            <groupId>ai.tegmentum</groupId>
+            <artifactId>wasmtime4j-native-loader</artifactId>
+            <version>${project.version}</version>
+            <scope>compile</scope>
+        </dependency>
 
         <!-- JSON Processing for baseline persistence -->
         <dependency>
@@ -198,7 +204,7 @@
 
         <!-- Profile for running only memory operation benchmarks -->
         <profile>
-        <id>memory-benchmarks</id>
+            <id>memory-operation-benchmarks</id>
             <properties>
                 <jmh.benchmarks>.*MemoryOperationBenchmark.*</jmh.benchmarks>
             </properties>
@@ -209,6 +215,46 @@
             <id>comparison-benchmarks</id>
             <properties>
                 <jmh.benchmarks>.*ComparisonBenchmark.*</jmh.benchmarks>
+            </properties>
+        </profile>
+
+        <!-- Profile for native loader benchmarks -->
+        <profile>
+            <id>native-loader-benchmarks</id>
+            <properties>
+                <jmh.benchmarks>.*ai\.tegmentum\.wasmtime4j\.nativeloader\..*Benchmark.*</jmh.benchmarks>
+            </properties>
+        </profile>
+
+        <!-- Profile for loading performance benchmarks -->
+        <profile>
+            <id>loading-benchmarks</id>
+            <properties>
+                <jmh.benchmarks>.*LoadingBenchmark.*</jmh.benchmarks>
+            </properties>
+        </profile>
+
+        <!-- Profile for platform detection benchmarks -->
+        <profile>
+            <id>platform-benchmarks</id>
+            <properties>
+                <jmh.benchmarks>.*PlatformDetectorBenchmark.*</jmh.benchmarks>
+            </properties>
+        </profile>
+
+        <!-- Profile for memory allocation benchmarks -->
+        <profile>
+            <id>memory-benchmarks</id>
+            <properties>
+                <jmh.benchmarks>.*MemoryAllocationBenchmark.*</jmh.benchmarks>
+            </properties>
+        </profile>
+
+        <!-- Profile for baseline comparison benchmarks -->
+        <profile>
+            <id>baseline-benchmarks</id>
+            <properties>
+                <jmh.benchmarks>.*SystemLoadLibraryBaselineBenchmark.*</jmh.benchmarks>
             </properties>
         </profile>
 

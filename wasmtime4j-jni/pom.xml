@@ -32,6 +32,13 @@
             <optional>false</optional>
         </dependency>
 
+        <!-- Native loader dependency (for direct imports) -->
+        <dependency>
+            <groupId>ai.tegmentum</groupId>
+            <artifactId>wasmtime4j-native-loader</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
         <!-- Native library dependency (runtime) -->
         <dependency>
             <groupId>ai.tegmentum</groupId>
