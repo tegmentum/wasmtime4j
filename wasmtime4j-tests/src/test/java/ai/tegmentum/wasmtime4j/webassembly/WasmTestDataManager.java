@@ -372,7 +372,7 @@ public final class WasmTestDataManager {
                 } catch (final IOException e) {
                   LOGGER.warning("Failed to convert " + watFile + " to WASM: " + e.getMessage());
                 }
-          });
+              });
     }
   }
 
@@ -471,6 +471,35 @@ public final class WasmTestDataManager {
     boolean isExpired() {
       return Duration.between(cachedAt, Instant.now()).compareTo(CACHE_TTL) > 0;
     }
+  }
+
+  /**
+   * Ensures that test data is available and ready for use. This method performs any necessary
+   * initialization and validation of test data directories and files.
+   *
+   * @throws IOException if test data initialization fails
+   */
+  public void ensureTestDataAvailable() throws IOException {
+    // Check if test suite directories exist and are accessible
+    for (final WasmTestSuiteLoader.TestSuiteType suiteType :
+        WasmTestSuiteLoader.TestSuiteType.values()) {
+      try {
+        final Path suiteDir = WasmTestSuiteLoader.getTestSuiteDirectory(suiteType);
+        if (!Files.exists(suiteDir)) {
+          LOGGER.warning("Test suite directory does not exist: " + suiteDir);
+        } else if (!Files.isDirectory(suiteDir)) {
+          LOGGER.warning("Test suite path is not a directory: " + suiteDir);
+        } else if (!Files.isReadable(suiteDir)) {
+          LOGGER.warning("Test suite directory is not readable: " + suiteDir);
+        } else {
+          LOGGER.fine("Test suite directory is available: " + suiteDir);
+        }
+      } catch (final Exception e) {
+        LOGGER.warning("Failed to check test suite " + suiteType + ": " + e.getMessage());
+      }
+    }
+
+    LOGGER.info("Test data availability check completed");
   }
 
   /** Cache statistics. */

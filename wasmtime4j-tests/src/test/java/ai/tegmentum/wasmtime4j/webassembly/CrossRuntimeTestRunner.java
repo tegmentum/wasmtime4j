@@ -182,8 +182,10 @@ public final class CrossRuntimeTestRunner {
         validationBuilder.addError("JNI failed: " + testResult.getJniExecution().getException());
       }
 
-      if (testResult.getPanamaExecution() != null && !testResult.getPanamaExecution().isSuccessful()) {
-        validationBuilder.addError("Panama failed: " + testResult.getPanamaExecution().getException());
+      if (testResult.getPanamaExecution() != null
+          && !testResult.getPanamaExecution().isSuccessful()) {
+        validationBuilder.addError(
+            "Panama failed: " + testResult.getPanamaExecution().getException());
       }
     }
 
@@ -212,7 +214,7 @@ public final class CrossRuntimeTestRunner {
                 } catch (final Exception e) {
                   LOGGER.warning("Failed to close runtime: " + e.getMessage());
                 }
-          });
+              });
 
       runtimeCache.clear();
       testResults.clear();

@@ -10,6 +10,7 @@ import ai.tegmentum.wasmtime4j.OptimizationLevel;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.utils.BaseIntegrationTest;
+import ai.tegmentum.wasmtime4j.utils.TestCategories;
 import ai.tegmentum.wasmtime4j.utils.TestUtils;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -111,8 +112,7 @@ final class EngineStoreEdgeCasesIT extends BaseIntegrationTest {
               }
             }
 
-            // addTestMetric("Tested " + configCount + " boolean flag combinations on " +
-            // runtimeType);
+            // addTestMetric("Tested " + configCount + " boolean flag combinations on " + runtimeType);
           });
     }
 
@@ -166,27 +166,27 @@ final class EngineStoreEdgeCasesIT extends BaseIntegrationTest {
             //     measureExecutionTime(
             //         "Maximum compilation attempts on " + runtimeType,
             //         () -> {
-            final List<Module> modules = new ArrayList<>();
-            try {
-              for (int i = 0; i < maxAttempts; i++) {
-                final Module module = engine.compileModule(wasmBytes);
-                assertThat(module.isValid()).isTrue();
-                modules.add(module);
-              }
-            } catch (final Exception e) {
-              throw new RuntimeException(e);
-            } finally {
-              // Clean up all modules
-              modules.forEach(
-                  module -> {
-                    try {
-                      module.close();
-                    } catch (final Exception e) {
-                      LOGGER.warning("Failed to close module: " + e.getMessage());
-                    }
-                  });
-            }
-            // });
+                      final List<Module> modules = new ArrayList<>();
+                      try {
+                        for (int i = 0; i < maxAttempts; i++) {
+                          final Module module = engine.compileModule(wasmBytes);
+                          assertThat(module.isValid()).isTrue();
+                          modules.add(module);
+                        }
+                      } catch (final Exception e) {
+                        throw new RuntimeException(e);
+                      } finally {
+                        // Clean up all modules
+                        modules.forEach(
+                            module -> {
+                              try {
+                                module.close();
+                              } catch (final Exception e) {
+                                LOGGER.warning("Failed to close module: " + e.getMessage());
+                              }
+                            });
+                      }
+                    // });
 
             // assertThat(compilationTime).isLessThan(Duration.ofMinutes(5));
             // addTestMetric(
@@ -215,28 +215,28 @@ final class EngineStoreEdgeCasesIT extends BaseIntegrationTest {
             //     measureExecutionTime(
             //         "Maximum store creation attempts on " + runtimeType,
             //         () -> {
-            final List<Store> stores = new ArrayList<>();
-            try {
-              for (int i = 0; i < maxAttempts; i++) {
-                final Store store = engine.createStore("store-" + i);
-                assertThat(store.isValid()).isTrue();
-                assertThat(store.getData()).isEqualTo("store-" + i);
-                stores.add(store);
-              }
-            } catch (final Exception e) {
-              throw new RuntimeException(e);
-            } finally {
-              // Clean up all stores
-              stores.forEach(
-                  store -> {
-                    try {
-                      store.close();
-                    } catch (final Exception e) {
-                      LOGGER.warning("Failed to close store: " + e.getMessage());
-                    }
-                  });
-            }
-            // });
+                      final List<Store> stores = new ArrayList<>();
+                      try {
+                        for (int i = 0; i < maxAttempts; i++) {
+                          final Store store = engine.createStore("store-" + i);
+                          assertThat(store.isValid()).isTrue();
+                          assertThat(store.getData()).isEqualTo("store-" + i);
+                          stores.add(store);
+                        }
+                      } catch (final Exception e) {
+                        throw new RuntimeException(e);
+                      } finally {
+                        // Clean up all stores
+                        stores.forEach(
+                            store -> {
+                              try {
+                                store.close();
+                              } catch (final Exception e) {
+                                LOGGER.warning("Failed to close store: " + e.getMessage());
+                              }
+                            });
+                      }
+                    // });
 
             // assertThat(creationTime).isLessThan(Duration.ofMinutes(2));
             // addTestMetric(
@@ -361,12 +361,12 @@ final class EngineStoreEdgeCasesIT extends BaseIntegrationTest {
             //     measureExecutionTime(
             //         updateCount + " data updates on " + runtimeType,
             //         () -> {
-            for (int i = 0; i < updateCount; i++) {
-              store.setData("data-update-" + i);
-              final Object retrieved = store.getData();
-              assertThat(retrieved).isEqualTo("data-update-" + i);
-            }
-            // });
+                      for (int i = 0; i < updateCount; i++) {
+                        store.setData("data-update-" + i);
+                        final Object retrieved = store.getData();
+                        assertThat(retrieved).isEqualTo("data-update-" + i);
+                      }
+                    // });
 
             if (updateCount > 0) {
               // final double updatesPerSecond = updateCount / (updateTime.toMillis() / 1000.0);
@@ -440,25 +440,24 @@ final class EngineStoreEdgeCasesIT extends BaseIntegrationTest {
             //     measureExecutionTime(
             //         "Rapid fuel operations on " + runtimeType,
             //         () -> {
-            long expectedFuel = 0L;
-            for (int i = 0; i < operationCount; i++) {
-              final long increment = i % 100;
-              store.addFuel(increment);
-              expectedFuel += increment;
+                      long expectedFuel = 0L;
+                      for (int i = 0; i < operationCount; i++) {
+                        final long increment = i % 100;
+                        store.addFuel(increment);
+                        expectedFuel += increment;
 
-              final long actualFuel = store.getFuel();
-              assertThat(actualFuel).isEqualTo(expectedFuel);
+                        final long actualFuel = store.getFuel();
+                        assertThat(actualFuel).isEqualTo(expectedFuel);
 
-              // Occasionally reset fuel
-              if (i % 100 == 0) {
-                store.setFuel(0L);
-                expectedFuel = 0L;
-              }
-            }
-            // });
+                        // Occasionally reset fuel
+                        if (i % 100 == 0) {
+                          store.setFuel(0L);
+                          expectedFuel = 0L;
+                        }
+                      }
+                    // });
 
-            // final double operationsPerSecond = operationCount / (operationTime.toMillis() /
-            // 1000.0);
+            // final double operationsPerSecond = operationCount / (operationTime.toMillis() / 1000.0);
             // addTestMetric(
             //     String.format("%.0f fuel ops/second on %s", operationsPerSecond, runtimeType));
           });
@@ -675,20 +674,19 @@ final class EngineStoreEdgeCasesIT extends BaseIntegrationTest {
             // measureExecutionTime(
             //     "Repeated close operations on " + runtimeType,
             //     () -> {
-            for (int i = 0; i < closeAttempts; i++) {
-              store.close();
-              assertThat(store.isValid()).isFalse();
-            }
+                  for (int i = 0; i < closeAttempts; i++) {
+                    store.close();
+                    assertThat(store.isValid()).isFalse();
+                  }
 
-            for (int i = 0; i < closeAttempts; i++) {
-              engine.close();
-              assertThat(engine.isValid()).isFalse();
-            }
-            // });
+                  for (int i = 0; i < closeAttempts; i++) {
+                    engine.close();
+                    assertThat(engine.isValid()).isFalse();
+                  }
+                // });
 
             // addTestMetric(
-            //     "Handled " + (closeAttempts * 2) + " repeated close operations on " +
-            // runtimeType);
+            //     "Handled " + (closeAttempts * 2) + " repeated close operations on " + runtimeType);
           });
     }
 
@@ -765,16 +763,16 @@ final class EngineStoreEdgeCasesIT extends BaseIntegrationTest {
               //     measureExecutionTime(
               //         "Sustained load operation " + i + " on " + runtimeType,
               //         () -> {
-              try {
-                final Store store = engine.createStore("load-test-" + iteration);
-                store.setData("sustained-load-data-" + iteration);
-                final Object data = store.getData();
-                assertThat(data).isEqualTo("sustained-load-data-" + iteration);
-                store.close();
-              } catch (final Exception e) {
-                throw new RuntimeException(e);
-              }
-              // });
+                        try {
+                          final Store store = engine.createStore("load-test-" + iteration);
+                          store.setData("sustained-load-data-" + iteration);
+                          final Object data = store.getData();
+                          assertThat(data).isEqualTo("sustained-load-data-" + iteration);
+                          store.close();
+                        } catch (final Exception e) {
+                          throw new RuntimeException(e);
+                        }
+                      // });
               // operationTimes.add(operationTime);
 
               // Occasional garbage collection to simulate real-world conditions
@@ -791,8 +789,7 @@ final class EngineStoreEdgeCasesIT extends BaseIntegrationTest {
 
             // LOGGER.info(
             //     String.format(
-            //         "Performance ratio (last/first): %.2f on %s", performanceRatio,
-            // runtimeType));
+            //         "Performance ratio (last/first): %.2f on %s", performanceRatio, runtimeType));
 
             // Performance should not degrade significantly (allow up to 3x degradation)
             // assertThat(performanceRatio)

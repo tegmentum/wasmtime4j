@@ -489,7 +489,7 @@ public final class MemoryLeakDetector {
               if (usage != null) {
                 memoryPools.put(pool.getName(), usage.getUsed());
               }
-          });
+            });
 
     return new MemorySnapshot(
         Instant.now(),

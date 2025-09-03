@@ -11,6 +11,7 @@ import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.utils.BaseIntegrationTest;
 import ai.tegmentum.wasmtime4j.utils.CrossRuntimeValidator;
+import ai.tegmentum.wasmtime4j.utils.TestCategories;
 import ai.tegmentum.wasmtime4j.utils.TestUtils;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -504,10 +505,10 @@ final class EngineApiIT extends BaseIntegrationTest {
               }
 
               // addTestMetric(
-              //     "Completed "
-              //     + (threadCount * operationsPerThread)
-              //     + " concurrent compilations on "
-              //     + runtimeType);
+                  "Completed "
+                      + (threadCount * operationsPerThread)
+                      + " concurrent compilations on "
+                      + runtimeType);
             } finally {
               executor.shutdown();
               if (!executor.awaitTermination(10, TimeUnit.SECONDS)) {
@@ -571,10 +572,10 @@ final class EngineApiIT extends BaseIntegrationTest {
               }
 
               // addTestMetric(
-              //     "Completed "
-              //     + (threadCount * storesPerThread)
-              //     + " concurrent store creations on "
-              //     + runtimeType);
+                  "Completed "
+                      + (threadCount * storesPerThread)
+                      + " concurrent store creations on "
+                      + runtimeType);
             } finally {
               executor.shutdown();
               if (!executor.awaitTermination(10, TimeUnit.SECONDS)) {

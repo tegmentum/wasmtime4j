@@ -8,15 +8,10 @@ import org.junit.jupiter.api.Test;
  * Test suite for WebAssembly instance concurrency and thread safety across both JNI and Panama
  * runtime implementations.
  *
- * <p>This test class validates:
- * - Concurrent instance creation and destruction
- * - Thread-safe function invocation
- * - Concurrent memory access and modification
- * - Resource contention handling
- * - Deadlock prevention and detection
- * - Performance under concurrent load
- * - Error handling in multi-threaded scenarios
- * - Cross-runtime consistency in concurrent environments
+ * <p>This test class validates: - Concurrent instance creation and destruction - Thread-safe
+ * function invocation - Concurrent memory access and modification - Resource contention handling -
+ * Deadlock prevention and detection - Performance under concurrent load - Error handling in
+ * multi-threaded scenarios - Cross-runtime consistency in concurrent environments
  */
 @DisplayName("Instance Concurrency Tests")
 public final class InstanceConcurrencyTest extends BaseIntegrationTest {
@@ -30,7 +25,7 @@ public final class InstanceConcurrencyTest extends BaseIntegrationTest {
   void instanceConcurrencyTestsPlaceholder() {
     // Placeholder implementation - instance concurrency tests will be added
     // once the instance management and concurrency APIs are implemented
-    
+
     // This placeholder ensures the test class compiles and can be executed
     // without causing compilation errors due to missing concurrency APIs
   }

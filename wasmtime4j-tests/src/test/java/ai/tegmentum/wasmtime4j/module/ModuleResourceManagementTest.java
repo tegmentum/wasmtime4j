@@ -102,7 +102,11 @@ class ModuleResourceManagementTest extends BaseIntegrationTest {
 
                 // Force garbage collection
                 System.gc();
-                Thread.sleep(100); // Allow GC to run
+                try {
+                  Thread.sleep(100); // Allow GC to run
+                } catch (final InterruptedException e) {
+                  Thread.currentThread().interrupt();
+                }
 
                 // Then - Verify modules can be garbage collected
                 int collectedCount = 0;
@@ -145,8 +149,11 @@ class ModuleResourceManagementTest extends BaseIntegrationTest {
                 // Force garbage collection multiple times
                 for (int i = 0; i < 3; i++) {
                   System.gc();
-                  System.runFinalization();
-                  Thread.sleep(50);
+                  try {
+                    Thread.sleep(50);
+                  } catch (final InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                  }
                 }
 
                 // Then - Modules should eventually be collected by finalizers
@@ -234,7 +241,11 @@ class ModuleResourceManagementTest extends BaseIntegrationTest {
 
                 // Force garbage collection
                 System.gc();
-                Thread.sleep(100);
+                try {
+                  Thread.sleep(100);
+                } catch (final InterruptedException e) {
+                  Thread.currentThread().interrupt();
+                }
 
                 // Then - Check garbage collection
                 int collectedInstances = 0;
@@ -286,7 +297,11 @@ class ModuleResourceManagementTest extends BaseIntegrationTest {
                     final long currentMemory = rt.totalMemory() - rt.freeMemory();
                     if (currentMemory > memoryBefore + 100 * 1024 * 1024) { // 100MB threshold
                       System.gc();
-                      Thread.sleep(10);
+                      try {
+                        Thread.sleep(10);
+                      } catch (final InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                      }
                     }
                   }
                 }
@@ -303,7 +318,11 @@ class ModuleResourceManagementTest extends BaseIntegrationTest {
 
                 // Force GC and measure cleanup effectiveness
                 System.gc();
-                Thread.sleep(100);
+                try {
+                  Thread.sleep(100);
+                } catch (final InterruptedException e) {
+                  Thread.currentThread().interrupt();
+                }
                 final long memoryAfterCleanup = rt.totalMemory() - rt.freeMemory();
 
                 // Then - Verify reasonable memory usage
@@ -367,7 +386,7 @@ class ModuleResourceManagementTest extends BaseIntegrationTest {
                         } finally {
                           completionLatch.countDown();
                         }
-          });
+                      });
                 }
 
                 // Start all threads
@@ -428,7 +447,11 @@ class ModuleResourceManagementTest extends BaseIntegrationTest {
                   // Periodically check for memory leaks
                   if (cycle % 3 == 0) {
                     System.gc();
-                    Thread.sleep(50);
+                    try {
+                      Thread.sleep(50);
+                    } catch (final InterruptedException e) {
+                      Thread.currentThread().interrupt();
+                    }
 
                     final long currentMemory = getUsedMemory();
                     final long memoryIncrease = currentMemory - initialMemory;
@@ -445,7 +468,11 @@ class ModuleResourceManagementTest extends BaseIntegrationTest {
 
                 // Then - Final memory check
                 System.gc();
-                Thread.sleep(100);
+                try {
+                  Thread.sleep(100);
+                } catch (final InterruptedException e) {
+                  Thread.currentThread().interrupt();
+                }
                 final long finalMemory = getUsedMemory();
                 final long totalIncrease = finalMemory - initialMemory;
 
@@ -572,8 +599,11 @@ class ModuleResourceManagementTest extends BaseIntegrationTest {
                 // Force garbage collection and finalization
                 for (int i = 0; i < 5; i++) {
                   System.gc();
-                  System.runFinalization();
-                  Thread.sleep(20);
+                  try {
+                    Thread.sleep(20);
+                  } catch (final InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                  }
                 }
 
                 // Engine should still be functional
@@ -591,8 +621,9 @@ class ModuleResourceManagementTest extends BaseIntegrationTest {
   }
 
   /** Helper method to create modules without explicit close (to test finalizers). */
+  @SuppressWarnings("unused")
   private void createModulesWithoutExplicitClose(
-      final Engine engine, final byte[] wasmBytes, final int count) {
+      final Engine engine, final byte[] wasmBytes, final int count) throws Exception {
     for (int i = 0; i < count; i++) {
       final Module module = engine.compileModule(wasmBytes);
       // Intentionally don't close - rely on finalizer

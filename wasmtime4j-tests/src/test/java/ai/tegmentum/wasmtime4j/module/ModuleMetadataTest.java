@@ -76,7 +76,7 @@ class ModuleMetadataTest extends BaseIntegrationTest {
                     exports.stream().filter(export -> "add".equals(export.getName())).findFirst();
 
                 assertThat(addExport).isPresent();
-                assertThat(addExport.get().getType().getKind()).isEqualTo(WasmTypeKind.FUNC);
+                assertThat(addExport.get().getType().getKind()).isEqualTo(WasmTypeKind.FUNCTION);
 
                 // Verify all exports have valid names and types
                 for (final ExportType export : exports) {
@@ -209,7 +209,7 @@ class ModuleMetadataTest extends BaseIntegrationTest {
                         .collect(Collectors.toSet());
 
                 // Verify we have at least functions
-                assertThat(exportTypeKinds).contains(WasmTypeKind.FUNC);
+                assertThat(exportTypeKinds).contains(WasmTypeKind.FUNCTION);
 
                 // Verify export names are unique
                 final Set<String> exportNames =
@@ -374,7 +374,7 @@ class ModuleMetadataTest extends BaseIntegrationTest {
 
                 for (final ExportType export : exports) {
                   switch (export.getType().getKind()) {
-                    case FUNC:
+                    case FUNCTION:
                       functionExports++;
                       break;
                     case MEMORY:
@@ -449,7 +449,7 @@ class ModuleMetadataTest extends BaseIntegrationTest {
                     } catch (final Exception e) {
                       LOGGER.fine(
                           "Test case compilation failed (expected for some): "
-                              + testCase.getName()
+                              + testCase.getTestName()
                               + " - "
                               + e.getMessage());
                     }
