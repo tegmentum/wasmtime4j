@@ -3,7 +3,7 @@
 #[cfg(feature = "jni-bindings")]
 use jni::JNIEnv;
 #[cfg(feature = "jni-bindings")]
-use jni::objects::{JClass, JByteArray};
+use jni::objects::{JClass, JByteArray, JString, JObjectArray};
 #[cfg(feature = "jni-bindings")]
 use jni::sys::{jlong, jint, jboolean, jbyteArray};
 
@@ -359,6 +359,507 @@ pub mod jni_store {
 pub mod jni_module {
     use super::*;
     use crate::module::core;
+    use crate::error::ffi_utils;
+    use jni::sys::{jobjectArray, jstring};
+    
+    /// Instantiate a module within a store context
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeInstantiateModule(
+        _env: JNIEnv,
+        _class: JClass,
+        module_ptr: jlong,
+        store_ptr: jlong,
+    ) -> jlong {
+        ffi_utils::ffi_try_ptr(|| {
+            let module = unsafe { core::get_module_ref(module_ptr as *const std::os::raw::c_void)? };
+            let store = unsafe { crate::store::core::get_store_mut(store_ptr as *mut std::os::raw::c_void)? };
+            crate::instance::core::create_instance(store, module)
+        }) as jlong
+    }
+    
+    /// Instantiate a module with specific imports
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeInstantiateModuleWithImports(
+        _env: JNIEnv,
+        _class: JClass,
+        module_ptr: jlong,
+        store_ptr: jlong,
+        import_map_ptr: jlong,
+    ) -> jlong {
+        ffi_utils::ffi_try_ptr(|| {
+            let module = unsafe { core::get_module_ref(module_ptr as *const std::os::raw::c_void)? };
+            let store = unsafe { crate::store::core::get_store_mut(store_ptr as *mut std::os::raw::c_void)? };
+            // For now, ignore imports - this would need proper ImportMap implementation
+            crate::instance::core::create_instance(store, module)
+        }) as jlong
+    }
+    
+    /// Get the names of functions exported by a module
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetExportedFunctions(
+        mut env: JNIEnv,
+        _class: JClass,
+        module_ptr: jlong,
+    ) -> jobjectArray {
+        match unsafe { core::get_module_ref(module_ptr as *const std::os::raw::c_void) } {
+            Ok(module) => {
+                let exports = core::get_function_exports(module);
+                let mut function_names = Vec::new();
+                
+                for export in exports {
+                    function_names.push(export.name.as_str());
+                }
+                
+                // Convert to Java String array
+                match env.new_object_array(
+                    function_names.len() as i32,
+                    "java/lang/String",
+                    JString::default(),
+                ) {
+                    Ok(array) => {
+                        for (i, name) in function_names.iter().enumerate() {
+                            if let Ok(jstr) = env.new_string(name) {
+                                let _ = env.set_object_array_element(&array, i as i32, jstr);
+                            }
+                        }
+                        array.into_raw()
+                    }
+                    Err(_) => std::ptr::null_mut(),
+                }
+            }
+            Err(_) => std::ptr::null_mut(),
+        }
+    }
+    
+    /// Get the names of memories exported by a module
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetExportedMemories(
+        mut env: JNIEnv,
+        _class: JClass,
+        module_ptr: jlong,
+    ) -> jobjectArray {
+        match unsafe { core::get_module_ref(module_ptr as *const std::os::raw::c_void) } {
+            Ok(module) => {
+                let exports = core::get_memory_exports(module);
+                let mut memory_names = Vec::new();
+                
+                for export in exports {
+                    memory_names.push(export.name.as_str());
+                }
+                
+                // Convert to Java String array
+                match env.new_object_array(
+                    memory_names.len() as i32,
+                    "java/lang/String",
+                    JString::default(),
+                ) {
+                    Ok(array) => {
+                        for (i, name) in memory_names.iter().enumerate() {
+                            if let Ok(jstr) = env.new_string(name) {
+                                let _ = env.set_object_array_element(&array, i as i32, jstr);
+                            }
+                        }
+                        array.into_raw()
+                    }
+                    Err(_) => std::ptr::null_mut(),
+                }
+            }
+            Err(_) => std::ptr::null_mut(),
+        }
+    }
+    
+    /// Get the names of tables exported by a module
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetExportedTables(
+        mut env: JNIEnv,
+        _class: JClass,
+        module_ptr: jlong,
+    ) -> jobjectArray {
+        match unsafe { core::get_module_ref(module_ptr as *const std::os::raw::c_void) } {
+            Ok(module) => {
+                let metadata = core::get_metadata(module);
+                let mut table_names = Vec::new();
+                
+                for export in &metadata.exports {
+                    if matches!(export.export_type, crate::module::ExportKind::Table(_, _, _)) {
+                        table_names.push(export.name.as_str());
+                    }
+                }
+                
+                // Convert to Java String array
+                match env.new_object_array(
+                    table_names.len() as i32,
+                    "java/lang/String",
+                    JString::default(),
+                ) {
+                    Ok(array) => {
+                        for (i, name) in table_names.iter().enumerate() {
+                            if let Ok(jstr) = env.new_string(name) {
+                                let _ = env.set_object_array_element(&array, i as i32, jstr);
+                            }
+                        }
+                        array.into_raw()
+                    }
+                    Err(_) => std::ptr::null_mut(),
+                }
+            }
+            Err(_) => std::ptr::null_mut(),
+        }
+    }
+    
+    /// Get the names of globals exported by a module
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetExportedGlobals(
+        mut env: JNIEnv,
+        _class: JClass,
+        module_ptr: jlong,
+    ) -> jobjectArray {
+        match unsafe { core::get_module_ref(module_ptr as *const std::os::raw::c_void) } {
+            Ok(module) => {
+                let metadata = core::get_metadata(module);
+                let mut global_names = Vec::new();
+                
+                for export in &metadata.exports {
+                    if matches!(export.export_type, crate::module::ExportKind::Global(_, _)) {
+                        global_names.push(export.name.as_str());
+                    }
+                }
+                
+                // Convert to Java String array
+                match env.new_object_array(
+                    global_names.len() as i32,
+                    "java/lang/String",
+                    JString::default(),
+                ) {
+                    Ok(array) => {
+                        for (i, name) in global_names.iter().enumerate() {
+                            if let Ok(jstr) = env.new_string(name) {
+                                let _ = env.set_object_array_element(&array, i as i32, jstr);
+                            }
+                        }
+                        array.into_raw()
+                    }
+                    Err(_) => std::ptr::null_mut(),
+                }
+            }
+            Err(_) => std::ptr::null_mut(),
+        }
+    }
+    
+    /// Get the names of functions imported by a module
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetImportedFunctions(
+        mut env: JNIEnv,
+        _class: JClass,
+        module_ptr: jlong,
+    ) -> jobjectArray {
+        match unsafe { core::get_module_ref(module_ptr as *const std::os::raw::c_void) } {
+            Ok(module) => {
+                let imports = core::get_required_imports(module);
+                let mut function_names = Vec::new();
+                
+                for import in imports {
+                    if matches!(import.import_type, crate::module::ImportKind::Function(_)) {
+                        let full_name = format!("{}::{}", import.module, import.name);
+                        function_names.push(full_name);
+                    }
+                }
+                
+                // Convert to Java String array
+                match env.new_object_array(
+                    function_names.len() as i32,
+                    "java/lang/String",
+                    JString::default(),
+                ) {
+                    Ok(array) => {
+                        for (i, name) in function_names.iter().enumerate() {
+                            if let Ok(jstr) = env.new_string(&name) {
+                                let _ = env.set_object_array_element(&array, i as i32, jstr);
+                            }
+                        }
+                        array.into_raw()
+                    }
+                    Err(_) => std::ptr::null_mut(),
+                }
+            }
+            Err(_) => std::ptr::null_mut(),
+        }
+    }
+    
+    /// Validate WebAssembly bytecode without compiling
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeValidateModule(
+        mut env: JNIEnv,
+        _class: JClass,
+        bytecode: jbyteArray,
+    ) -> jboolean {
+        match env.convert_byte_array(unsafe { JByteArray::from_raw(bytecode) }) {
+            Ok(wasm_data) => {
+                match core::validate_module_bytes(&wasm_data) {
+                    Ok(()) => 1, // Valid
+                    Err(_) => 0, // Invalid
+                }
+            }
+            Err(_) => 0, // Invalid - couldn't convert byte array
+        }
+    }
+    
+    /// Get the size of a compiled module in bytes
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetModuleSize(
+        _env: JNIEnv,
+        _class: JClass,
+        module_ptr: jlong,
+    ) -> jlong {
+        match unsafe { core::get_module_ref(module_ptr as *const std::os::raw::c_void) } {
+            Ok(module) => core::get_module_size(module) as jlong,
+            Err(_) => -1,
+        }
+    }
+    
+    /// Get comprehensive export metadata for a module
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetExportMetadata(
+        mut env: JNIEnv,
+        _class: JClass,
+        module_ptr: jlong,
+    ) -> jobjectArray {
+        match unsafe { core::get_module_ref(module_ptr as *const std::os::raw::c_void) } {
+            Ok(module) => {
+                let metadata = core::get_metadata(module);
+                let mut export_data = Vec::new();
+                
+                for export in &metadata.exports {
+                    let type_str = match &export.export_type {
+                        crate::module::ExportKind::Function(_) => "function",
+                        crate::module::ExportKind::Global(_, _) => "global",
+                        crate::module::ExportKind::Memory(_, _, _) => "memory",
+                        crate::module::ExportKind::Table(_, _, _) => "table",
+                    };
+                    
+                    let entry = format!("{}|{}", export.name, type_str);
+                    export_data.push(entry);
+                }
+                
+                // Convert to Java String array
+                match env.new_object_array(
+                    export_data.len() as i32,
+                    "java/lang/String",
+                    JString::default(),
+                ) {
+                    Ok(array) => {
+                        for (i, data) in export_data.iter().enumerate() {
+                            if let Ok(jstr) = env.new_string(data) {
+                                let _ = env.set_object_array_element(&array, i as i32, jstr);
+                            }
+                        }
+                        array.into_raw()
+                    }
+                    Err(_) => std::ptr::null_mut(),
+                }
+            }
+            Err(_) => std::ptr::null_mut(),
+        }
+    }
+    
+    /// Get comprehensive import metadata for a module
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetImportMetadata(
+        mut env: JNIEnv,
+        _class: JClass,
+        module_ptr: jlong,
+    ) -> jobjectArray {
+        match unsafe { core::get_module_ref(module_ptr as *const std::os::raw::c_void) } {
+            Ok(module) => {
+                let imports = core::get_required_imports(module);
+                let mut import_data = Vec::new();
+                
+                for import in imports {
+                    let type_str = match &import.import_type {
+                        crate::module::ImportKind::Function(_) => "function",
+                        crate::module::ImportKind::Global(_, _) => "global",
+                        crate::module::ImportKind::Memory(_, _, _) => "memory",
+                        crate::module::ImportKind::Table(_, _, _) => "table",
+                    };
+                    
+                    let entry = format!("{}|{}|{}", import.module, import.name, type_str);
+                    import_data.push(entry);
+                }
+                
+                // Convert to Java String array
+                match env.new_object_array(
+                    import_data.len() as i32,
+                    "java/lang/String",
+                    JString::default(),
+                ) {
+                    Ok(array) => {
+                        for (i, data) in import_data.iter().enumerate() {
+                            if let Ok(jstr) = env.new_string(data) {
+                                let _ = env.set_object_array_element(&array, i as i32, jstr);
+                            }
+                        }
+                        array.into_raw()
+                    }
+                    Err(_) => std::ptr::null_mut(),
+                }
+            }
+            Err(_) => std::ptr::null_mut(),
+        }
+    }
+    
+    /// Get the name of a module if it has one
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetModuleName(
+        mut env: JNIEnv,
+        _class: JClass,
+        module_ptr: jlong,
+    ) -> jstring {
+        match unsafe { core::get_module_ref(module_ptr as *const std::os::raw::c_void) } {
+            Ok(module) => {
+                if let Some(name) = core::get_module_name(module) {
+                    match env.new_string(name) {
+                        Ok(jstr) => jstr.into_raw(),
+                        Err(_) => std::ptr::null_mut(),
+                    }
+                } else {
+                    std::ptr::null_mut()
+                }
+            }
+            Err(_) => std::ptr::null_mut(),
+        }
+    }
+    
+    /// Get WebAssembly features supported by a module
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetModuleFeatures(
+        mut env: JNIEnv,
+        _class: JClass,
+        module_ptr: jlong,
+    ) -> jobjectArray {
+        match unsafe { core::get_module_ref(module_ptr as *const std::os::raw::c_void) } {
+            Ok(_module) => {
+                // For now, return empty array - feature detection would need more sophisticated analysis
+                let features: Vec<String> = vec![];
+                
+                // Convert to Java String array
+                match env.new_object_array(
+                    features.len() as i32,
+                    "java/lang/String",
+                    JString::default(),
+                ) {
+                    Ok(array) => {
+                        for (i, feature) in features.iter().enumerate() {
+                            if let Ok(jstr) = env.new_string(feature) {
+                                let _ = env.set_object_array_element(&array, i as i32, jstr);
+                            }
+                        }
+                        array.into_raw()
+                    }
+                    Err(_) => std::ptr::null_mut(),
+                }
+            }
+            Err(_) => std::ptr::null_mut(),
+        }
+    }
+    
+    /// Get module linking information
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetModuleLinkingInfo(
+        mut env: JNIEnv,
+        _class: JClass,
+        module_ptr: jlong,
+    ) -> jobjectArray {
+        match unsafe { core::get_module_ref(module_ptr as *const std::os::raw::c_void) } {
+            Ok(_module) => {
+                // For now, return empty array - linking info would need more sophisticated analysis
+                let linking_info: Vec<String> = vec![];
+                
+                // Convert to Java String array
+                match env.new_object_array(
+                    linking_info.len() as i32,
+                    "java/lang/String",
+                    JString::default(),
+                ) {
+                    Ok(array) => {
+                        for (i, info) in linking_info.iter().enumerate() {
+                            if let Ok(jstr) = env.new_string(info) {
+                                let _ = env.set_object_array_element(&array, i as i32, jstr);
+                            }
+                        }
+                        array.into_raw()
+                    }
+                    Err(_) => std::ptr::null_mut(),
+                }
+            }
+            Err(_) => std::ptr::null_mut(),
+        }
+    }
+    
+    /// Serialize a compiled module to bytes
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeSerializeModule(
+        mut env: JNIEnv,
+        _class: JClass,
+        module_ptr: jlong,
+    ) -> jbyteArray {
+        match unsafe { core::get_module_ref(module_ptr as *const std::os::raw::c_void) } {
+            Ok(module) => {
+                match core::serialize_module(module) {
+                    Ok(bytes) => {
+                        match env.byte_array_from_slice(&bytes) {
+                            Ok(jarray) => jarray.into_raw(),
+                            Err(_) => std::ptr::null_mut(),
+                        }
+                    }
+                    Err(_) => std::ptr::null_mut(),
+                }
+            }
+            Err(_) => std::ptr::null_mut(),
+        }
+    }
+    
+    /// Deserialize a module from bytes
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeDeserializeModule(
+        mut env: JNIEnv,
+        _class: JClass,
+        engine_ptr: jlong,
+        serialized_data: jbyteArray,
+    ) -> jlong {
+        ffi_utils::ffi_try_ptr(|| {
+            let engine = unsafe { crate::engine::core::get_engine_ref(engine_ptr as *const std::os::raw::c_void)? };
+            
+            // Get byte array from Java
+            let data = env.convert_byte_array(unsafe { JByteArray::from_raw(serialized_data) })
+                .map_err(|e| crate::error::WasmtimeError::InvalidParameter {
+                    message: format!("Failed to convert Java byte array: {}", e),
+                })?;
+            
+            core::deserialize_module(engine, &data)
+        }) as jlong
+    }
+    
+    /// Create a native import map from serialized data
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeCreateImportMap(
+        _env: JNIEnv,
+        _class: JClass,
+        _store_ptr: jlong,
+        _import_data: jbyteArray,
+    ) -> jlong {
+        // For now, return 0 - proper ImportMap implementation would be needed
+        0
+    }
+    
+    /// Destroy a native import map
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeDestroyImportMap(
+        _env: JNIEnv,
+        _class: JClass,
+        _import_map_ptr: jlong,
+    ) {
+        // For now, do nothing - proper ImportMap implementation would be needed
+    }
     
     /// Destroy a module
     #[no_mangle]

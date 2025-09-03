@@ -187,6 +187,8 @@ pub mod engine {
 /// and managing WebAssembly modules through the Panama Foreign Function Interface.
 pub mod module {
     use super::*;
+    use crate::module::core;
+    use crate::error::ffi_utils;
     
     /// Compile a WebAssembly module (Panama FFI version)
     #[no_mangle]
@@ -196,8 +198,6 @@ pub mod module {
         wasm_size: usize,
         module_ptr: *mut *mut c_void,
     ) -> c_int {
-        use crate::error::{ffi_utils, ErrorCode};
-        
         ffi_utils::ffi_try_code(|| {
             let engine = unsafe { crate::engine::core::get_engine_ref(engine_ptr)? };
             let wasm_data = unsafe { ffi_utils::slice_from_raw_parts(wasm_bytes, wasm_size, "wasm_bytes")? };
@@ -210,6 +210,184 @@ pub mod module {
             
             Ok(())
         })
+    }
+
+    /// Compile a WebAssembly module from WAT (WebAssembly Text format)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_module_compile_wat(
+        engine_ptr: *mut c_void,
+        wat_text: *const c_char,
+        module_ptr: *mut *mut c_void,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let engine = unsafe { crate::engine::core::get_engine_ref(engine_ptr)? };
+            let wat_str = unsafe { ffi_utils::c_str_to_string(wat_text, "WAT text")? };
+            
+            let module = core::compile_module_wat(engine, &wat_str)?;
+            
+            unsafe {
+                *module_ptr = Box::into_raw(module) as *mut c_void;
+            }
+            Ok(())
+        })
+    }
+
+    /// Validate WebAssembly bytecode without compiling
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_module_validate(
+        wasm_bytes: *const u8,
+        wasm_size: usize,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let wasm_data = unsafe { ffi_utils::slice_from_raw_parts(wasm_bytes, wasm_size, "wasm_bytes")? };
+            core::validate_module_bytes(wasm_data)
+        })
+    }
+
+    /// Get module size in bytes
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_module_get_size(module_ptr: *mut c_void) -> usize {
+        match unsafe { core::get_module_ref(module_ptr) } {
+            Ok(module) => core::get_module_size(module),
+            Err(_) => 0,
+        }
+    }
+
+    /// Get module name (if available)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_module_get_name(module_ptr: *mut c_void) -> *mut c_char {
+        match unsafe { core::get_module_ref(module_ptr) } {
+            Ok(module) => {
+                if let Some(name) = core::get_module_name(module) {
+                    match std::ffi::CString::new(name) {
+                        Ok(c_str) => c_str.into_raw(),
+                        Err(_) => std::ptr::null_mut(),
+                    }
+                } else {
+                    std::ptr::null_mut()
+                }
+            }
+            Err(_) => std::ptr::null_mut(),
+        }
+    }
+
+    /// Get number of exports
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_module_get_export_count(module_ptr: *mut c_void) -> c_int {
+        match unsafe { core::get_module_ref(module_ptr) } {
+            Ok(module) => core::get_export_count(module) as c_int,
+            Err(_) => -1,
+        }
+    }
+
+    /// Get number of imports
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_module_get_import_count(module_ptr: *mut c_void) -> c_int {
+        match unsafe { core::get_module_ref(module_ptr) } {
+            Ok(module) => core::get_import_count(module) as c_int,
+            Err(_) => -1,
+        }
+    }
+
+    /// Get number of functions
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_module_get_function_count(module_ptr: *mut c_void) -> c_int {
+        match unsafe { core::get_module_ref(module_ptr) } {
+            Ok(module) => core::get_function_count(module) as c_int,
+            Err(_) => -1,
+        }
+    }
+
+    /// Check if module has a specific export
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_module_has_export(
+        module_ptr: *mut c_void,
+        name: *const c_char,
+    ) -> c_int {
+        match unsafe { core::get_module_ref(module_ptr) } {
+            Ok(module) => {
+                match unsafe { ffi_utils::c_str_to_string(name, "export name") } {
+                    Ok(export_name) => {
+                        if core::has_export(module, &export_name) { 1 } else { 0 }
+                    }
+                    Err(_) => 0,
+                }
+            }
+            Err(_) => 0,
+        }
+    }
+
+    /// Serialize a module for caching
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_module_serialize(
+        module_ptr: *mut c_void,
+        data_ptr: *mut *mut u8,
+        len_ptr: *mut usize,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let module = unsafe { core::get_module_ref(module_ptr)? };
+            let serialized = core::serialize_module(module)?;
+            
+            let len = serialized.len();
+            let data = Box::into_raw(serialized.into_boxed_slice()) as *mut u8;
+            
+            unsafe {
+                *data_ptr = data;
+                *len_ptr = len;
+            }
+            
+            Ok(())
+        })
+    }
+
+    /// Deserialize a module from cache
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_module_deserialize(
+        engine_ptr: *mut c_void,
+        data_ptr: *const u8,
+        len: usize,
+        module_ptr: *mut *mut c_void,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let engine = unsafe { crate::engine::core::get_engine_ref(engine_ptr)? };
+            let data = unsafe { ffi_utils::slice_from_raw_parts(data_ptr, len, "serialized data")? };
+            
+            let module = core::deserialize_module(engine, data)?;
+            
+            unsafe {
+                *module_ptr = Box::into_raw(module) as *mut c_void;
+            }
+            Ok(())
+        })
+    }
+
+    /// Validate module functionality (defensive check)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_module_validate_functionality(module_ptr: *mut c_void) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let module = unsafe { core::get_module_ref(module_ptr)? };
+            core::validate_module(module)
+        })
+    }
+
+    /// Free serialized data
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_module_free_serialized_data(data_ptr: *mut u8, len: usize) {
+        if !data_ptr.is_null() && len > 0 {
+            unsafe {
+                drop(Box::from_raw(std::slice::from_raw_parts_mut(data_ptr, len)));
+            }
+        }
+    }
+
+    /// Free C string returned by module functions
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_module_free_string(str_ptr: *mut c_char) {
+        if !str_ptr.is_null() {
+            unsafe {
+                drop(std::ffi::CString::from_raw(str_ptr));
+            }
+        }
     }
     
     /// Destroy a WebAssembly module (Panama FFI version)
