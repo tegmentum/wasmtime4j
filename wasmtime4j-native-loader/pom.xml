@@ -15,13 +15,58 @@
     <packaging>jar</packaging>
 
     <name>Wasmtime4j Native Library Loader</name>
-    <description>Native library loading, extraction, and platform detection utilities for Wasmtime4j</description>
+    <description>High-performance, secure native library loading solution for Java applications with automatic platform detection, secure resource extraction, and flexible configuration options</description>
+    <url>https://github.com/tegmentum/wasmtime4j</url>
 
     <properties>
         <!-- This module should be Java 8+ compatible for widest support -->
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
     </properties>
+
+    <!-- License information inherited from parent but explicitly declared for clarity -->
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <!-- Developer information -->
+    <developers>
+        <developer>
+            <id>wasmtime4j-team</id>
+            <name>Wasmtime4j Development Team</name>
+            <organization>Tegmentum AI</organization>
+            <email>wasmtime4j@tegmentum.ai</email>
+        </developer>
+    </developers>
+
+    <!-- SCM information -->
+    <scm>
+        <connection>scm:git:git://github.com/tegmentum/wasmtime4j.git</connection>
+        <developerConnection>scm:git:ssh://github.com:tegmentum/wasmtime4j.git</developerConnection>
+        <url>https://github.com/tegmentum/wasmtime4j/tree/master</url>
+    </scm>
+
+    <!-- Issue management -->
+    <issueManagement>
+        <system>GitHub</system>
+        <url>https://github.com/tegmentum/wasmtime4j/issues</url>
+    </issueManagement>
+
+    <!-- Distribution management for Maven Central -->
+    <distributionManagement>
+        <snapshotRepository>
+            <id>ossrh</id>
+            <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
+        <repository>
+            <id>ossrh</id>
+            <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+        </repository>
+    </distributionManagement>
 
     <dependencies>
         <!-- JMH Core Dependencies for benchmarking -->
@@ -124,6 +169,106 @@
                 <groupId>com.diffplug.spotless</groupId>
                 <artifactId>spotless-maven-plugin</artifactId>
             </plugin>
+
+            <!-- GPG plugin for signing artifacts -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-gpg-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>sign-artifacts</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>sign</goal>
+                        </goals>
+                        <configuration>
+                            <keyname>${gpg.keyname}</keyname>
+                            <passphraseServerId>${gpg.keyname}</passphraseServerId>
+                            <!-- Use agent if available for non-interactive signing -->
+                            <useAgent>true</useAgent>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Nexus Staging Plugin for deployment to Maven Central -->
+            <plugin>
+                <groupId>org.sonatype.plugins</groupId>
+                <artifactId>nexus-staging-maven-plugin</artifactId>
+                <version>1.6.13</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <serverId>ossrh</serverId>
+                    <nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
+                    <autoReleaseAfterClose>true</autoReleaseAfterClose>
+                    <stagingProgressTimeoutMinutes>20</stagingProgressTimeoutMinutes>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
+
+    <!-- Profiles for release management -->
+    <profiles>
+        <!-- Release profile - activated when performing a release -->
+        <profile>
+            <id>release</id>
+            <activation>
+                <property>
+                    <name>performRelease</name>
+                    <value>true</value>
+                </property>
+            </activation>
+            <properties>
+                <!-- Override snapshot behavior for releases -->
+                <maven.deploy.skip>false</maven.deploy.skip>
+            </properties>
+            <build>
+                <plugins>
+                    <!-- Ensure GPG signing is enabled for releases -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- GPG signing profile - can be activated manually -->
+        <profile>
+            <id>sign-artifacts</id>
+            <activation>
+                <property>
+                    <name>gpg.sign</name>
+                    <value>true</value>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>
