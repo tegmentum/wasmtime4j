@@ -172,7 +172,8 @@ unsafe impl Sync for Instance {}
 pub mod core {
     use super::*;
     use std::os::raw::c_void;
-    use crate::error::{ffi_utils, validate_ptr_not_null};
+    use crate::error::ffi_utils;
+    use crate::validate_ptr_not_null;
     use crate::store::Store;
     use crate::module::Module;
     use wasmtime::Extern;

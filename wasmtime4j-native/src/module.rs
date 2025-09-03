@@ -545,7 +545,8 @@ fn signatures_compatible(required: &FunctionSignature, available: &FunctionSigna
 pub mod core {
     use super::*;
     use std::os::raw::c_void;
-    use crate::error::{ffi_utils, validate_ptr_not_null, validate_not_empty};
+    use crate::error::ffi_utils;
+    use crate::{validate_ptr_not_null, validate_not_empty};
     use crate::engine::Engine;
     
     /// Core function to compile a WebAssembly module from bytes
@@ -583,7 +584,7 @@ pub mod core {
     }
     
     /// Core function to get export information by name
-    pub fn get_export_info(module: &Module, name: &str) -> Option<&ExportInfo> {
+    pub fn get_export_info<'a>(module: &'a Module, name: &str) -> Option<&'a ExportInfo> {
         module.get_export(name)
     }
     
