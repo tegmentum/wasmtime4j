@@ -22,7 +22,7 @@ class WasiResourceExceptionTest {
       final String message = "Resource operation failed";
       final WasiResourceException exception = new WasiResourceException(message);
 
-      assertEquals(message, exception.getMessage());
+      assertEquals("Resource operation failed (operation: resource-operation)", exception.getMessage());
       assertNull(exception.getCause());
       assertEquals("resource-operation", exception.getOperation());
       assertEquals(WasiResourceException.ResourceType.SYSTEM, exception.getResourceType());
@@ -41,7 +41,7 @@ class WasiResourceExceptionTest {
       final RuntimeException cause = new RuntimeException("Native error");
       final WasiResourceException exception = new WasiResourceException(message, cause);
 
-      assertEquals(message, exception.getMessage());
+      assertEquals("Resource failed (operation: resource-operation)", exception.getMessage());
       assertEquals(cause, exception.getCause());
       assertEquals("resource-operation", exception.getOperation());
       assertEquals(WasiResourceException.ResourceType.SYSTEM, exception.getResourceType());

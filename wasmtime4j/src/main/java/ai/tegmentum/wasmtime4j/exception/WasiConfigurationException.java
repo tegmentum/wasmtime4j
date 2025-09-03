@@ -317,7 +317,14 @@ public class WasiConfigurationException extends WasiException {
       return "configuration";
     }
 
-    return configurationArea.name().toLowerCase().replace('_', '-') + "-configuration";
+    final String areaName = configurationArea.name().toLowerCase().replace('_', '-');
+    
+    // Avoid redundant "-configuration" suffix for areas that already include "configuration"
+    if (areaName.endsWith("-configuration")) {
+      return areaName;
+    }
+    
+    return areaName + "-configuration";
   }
 
   /**

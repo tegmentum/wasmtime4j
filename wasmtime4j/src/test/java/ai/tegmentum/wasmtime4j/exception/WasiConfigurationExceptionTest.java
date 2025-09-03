@@ -24,7 +24,7 @@ class WasiConfigurationExceptionTest {
       final String message = "Configuration failed";
       final WasiConfigurationException exception = new WasiConfigurationException(message);
 
-      assertEquals(message, exception.getMessage());
+      assertEquals("Configuration failed (operation: configuration)", exception.getMessage());
       assertNull(exception.getCause());
       assertEquals("configuration", exception.getOperation());
       assertEquals(
@@ -43,7 +43,7 @@ class WasiConfigurationExceptionTest {
       final RuntimeException cause = new RuntimeException("Config error");
       final WasiConfigurationException exception = new WasiConfigurationException(message, cause);
 
-      assertEquals(message, exception.getMessage());
+      assertEquals("Configuration failed (operation: configuration)", exception.getMessage());
       assertEquals(cause, exception.getCause());
       assertEquals("configuration", exception.getOperation());
       assertEquals(
@@ -60,7 +60,9 @@ class WasiConfigurationExceptionTest {
       final WasiConfigurationException exception =
           new WasiConfigurationException(message, configArea);
 
-      assertEquals(message, exception.getMessage());
+      assertEquals(
+          "Environment configuration failed (operation: environment-configuration) (resource: environment)",
+          exception.getMessage());
       assertEquals("environment-configuration", exception.getOperation());
       assertEquals("environment", exception.getResource());
       assertEquals(configArea, exception.getConfigurationArea());
