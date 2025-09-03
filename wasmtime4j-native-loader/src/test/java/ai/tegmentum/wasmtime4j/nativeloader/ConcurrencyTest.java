@@ -401,6 +401,10 @@ final class ConcurrencyTest {
           assertEquals(
               "true", result, "isPlatformSupported() should return true for current platform");
           break;
+
+        default:
+          // Should not reach here with known method indices
+          throw new IllegalStateException("Unknown method index: " + methodIndex);
       }
     }
   }
