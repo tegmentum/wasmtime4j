@@ -312,10 +312,7 @@ public final class JniStore extends JniResource implements Store {
           new JniHostFunction(name, functionType, implementation, this);
 
       LOGGER.fine(
-          "Created host function '"
-              + name
-              + "' in store 0x"
-              + Long.toHexString(getNativeHandle()));
+          "Created host function '" + name + "' in store 0x" + Long.toHexString(getNativeHandle()));
       return hostFunction;
     } catch (final Exception e) {
       if (e instanceof WasmException) {

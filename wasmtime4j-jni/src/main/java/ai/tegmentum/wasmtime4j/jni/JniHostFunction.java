@@ -21,11 +21,8 @@ import ai.tegmentum.wasmtime4j.HostFunction;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.jni.exception.JniException;
-import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import ai.tegmentum.wasmtime4j.jni.util.JniTypeConverter;
-import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import java.lang.ref.WeakReference;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -126,8 +123,12 @@ public final class JniHostFunction extends JniResource implements WasmFunction {
       HOST_FUNCTION_REGISTRY.put(hostFunctionId, this);
 
       // Create native host function
-      final long nativeHandle = nativeCreateHostFunction(
-          store.getNativeHandle(), functionName, marshalFunctionType(functionType), hostFunctionId);
+      final long nativeHandle =
+          nativeCreateHostFunction(
+              store.getNativeHandle(),
+              functionName,
+              marshalFunctionType(functionType),
+              hostFunctionId);
 
       if (nativeHandle == 0) {
         throw new WasmException("Failed to create native host function: " + functionName);
@@ -223,9 +224,9 @@ public final class JniHostFunction extends JniResource implements WasmFunction {
   /**
    * Static callback method invoked by native code.
    *
-   * <p>This method serves as the bridge between native WebAssembly execution and Java host
-   * function implementation. It marshals parameters, invokes the callback, and marshals results
-   * back to native code.
+   * <p>This method serves as the bridge between native WebAssembly execution and Java host function
+   * implementation. It marshals parameters, invokes the callback, and marshals results back to
+   * native code.
    *
    * @param hostFunctionId the ID of the host function to invoke
    * @param paramsData the serialized parameter data from WebAssembly
@@ -248,8 +249,9 @@ public final class JniHostFunction extends JniResource implements WasmFunction {
       }
 
       // Unmarshal parameters from native format
-      final WasmValue[] wasmParams = JniTypeConverter.unmarshalParameters(
-          paramsData, hostFunction.functionType.getParamTypes());
+      final WasmValue[] wasmParams =
+          JniTypeConverter.unmarshalParameters(
+              paramsData, hostFunction.functionType.getParamTypes());
 
       // Invoke the Java callback
       final WasmValue[] wasmResults = hostFunction.implementation.execute(wasmParams);
@@ -271,8 +273,7 @@ public final class JniHostFunction extends JniResource implements WasmFunction {
       return 0;
 
     } catch (Exception e) {
-      LOGGER.log(
-          Level.SEVERE, "Error in host function callback: " + hostFunction.functionName, e);
+      LOGGER.log(Level.SEVERE, "Error in host function callback: " + hostFunction.functionName, e);
       return -4;
     }
   }

@@ -187,8 +187,9 @@ public final class JniFunction extends JniResource implements WasmFunction {
     ensureNotClosed();
 
     // Start performance monitoring
-    final long startTime = ai.tegmentum.wasmtime4j.jni.performance.PerformanceMonitor
-        .startOperation("function_call", name);
+    final long startTime =
+        ai.tegmentum.wasmtime4j.jni.performance.PerformanceMonitor.startOperation(
+            "function_call", name);
 
     try {
       // Increment call count for performance monitoring
@@ -210,8 +211,8 @@ public final class JniFunction extends JniResource implements WasmFunction {
       // Use optimized parameter marshalling
       final Object[] nativeParams;
       try {
-        nativeParams = ai.tegmentum.wasmtime4j.jni.performance.OptimizedMarshalling
-            .marshalParameters(params);
+        nativeParams =
+            ai.tegmentum.wasmtime4j.jni.performance.OptimizedMarshalling.marshalParameters(params);
       } catch (final Exception e) {
         // Fallback to traditional marshalling
         nativeParams = JniTypeConverter.wasmValuesToNativeParams(params);
@@ -226,11 +227,14 @@ public final class JniFunction extends JniResource implements WasmFunction {
       // Convert native results back to WasmValue array
       final WasmValue[] results;
       try {
-        results = ai.tegmentum.wasmtime4j.jni.performance.OptimizedMarshalling
-            .unmarshalResults(nativeResults, functionType.getReturnTypes());
+        results =
+            ai.tegmentum.wasmtime4j.jni.performance.OptimizedMarshalling.unmarshalResults(
+                nativeResults, functionType.getReturnTypes());
       } catch (final Exception e) {
         // Fallback to traditional unmarshalling
-        results = JniTypeConverter.nativeResultsToWasmValues(nativeResults, functionType.getReturnTypes());
+        results =
+            JniTypeConverter.nativeResultsToWasmValues(
+                nativeResults, functionType.getReturnTypes());
       }
 
       // Cache result for frequently called functions
@@ -246,8 +250,8 @@ public final class JniFunction extends JniResource implements WasmFunction {
     } catch (final Exception e) {
       throw new WasmException("Unexpected error calling function '" + name + "'", e);
     } finally {
-      ai.tegmentum.wasmtime4j.jni.performance.PerformanceMonitor
-          .endOperation("function_call", startTime);
+      ai.tegmentum.wasmtime4j.jni.performance.PerformanceMonitor.endOperation(
+          "function_call", startTime);
     }
   }
 

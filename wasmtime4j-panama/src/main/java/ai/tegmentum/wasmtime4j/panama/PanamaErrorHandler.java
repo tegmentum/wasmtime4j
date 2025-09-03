@@ -153,7 +153,8 @@ public final class PanamaErrorHandler {
     }
 
     try {
-      // Extract error information from the structure (using correct VarHandle names from MemoryLayouts)
+      // Extract error information from the structure (using correct VarHandle names from
+      // MemoryLayouts)
       int errorCode = (int) MemoryLayouts.WASMTIME_ERROR_CODE.get(errorStructPtr, 0);
       MemorySegment messagePtr =
           (MemorySegment) MemoryLayouts.WASMTIME_ERROR_MESSAGE.get(errorStructPtr, 0);
@@ -218,22 +219,33 @@ public final class PanamaErrorHandler {
     return switch (errorCode) {
       case WASMTIME_ERROR_COMPILATION -> new CompilationException(message);
       case WASMTIME_ERROR_VALIDATION -> new ValidationException(message);
-      case WASMTIME_ERROR_RUNTIME -> new ai.tegmentum.wasmtime4j.exception.RuntimeException(message);
-      case WASMTIME_ERROR_ENGINE_CONFIG -> new ai.tegmentum.wasmtime4j.exception.RuntimeException(message);
+      case WASMTIME_ERROR_RUNTIME -> new ai.tegmentum.wasmtime4j.exception.RuntimeException(
+          message);
+      case WASMTIME_ERROR_ENGINE_CONFIG -> new ai.tegmentum.wasmtime4j.exception.RuntimeException(
+          message);
       case WASMTIME_ERROR_STORE -> new ai.tegmentum.wasmtime4j.exception.RuntimeException(message);
-      case WASMTIME_ERROR_INSTANCE -> new ai.tegmentum.wasmtime4j.exception.RuntimeException(message);
+      case WASMTIME_ERROR_INSTANCE -> new ai.tegmentum.wasmtime4j.exception.RuntimeException(
+          message);
       case WASMTIME_ERROR_MEMORY -> new ai.tegmentum.wasmtime4j.exception.RuntimeException(message);
-      case WASMTIME_ERROR_FUNCTION -> new ai.tegmentum.wasmtime4j.exception.RuntimeException(message);
-      case WASMTIME_ERROR_IMPORT_EXPORT -> new ai.tegmentum.wasmtime4j.exception.RuntimeException(message);
+      case WASMTIME_ERROR_FUNCTION -> new ai.tegmentum.wasmtime4j.exception.RuntimeException(
+          message);
+      case WASMTIME_ERROR_IMPORT_EXPORT -> new ai.tegmentum.wasmtime4j.exception.RuntimeException(
+          message);
       case WASMTIME_ERROR_TYPE -> new ai.tegmentum.wasmtime4j.exception.RuntimeException(message);
-      case WASMTIME_ERROR_RESOURCE -> new ai.tegmentum.wasmtime4j.exception.RuntimeException(message);
+      case WASMTIME_ERROR_RESOURCE -> new ai.tegmentum.wasmtime4j.exception.RuntimeException(
+          message);
       case WASMTIME_ERROR_IO -> new ai.tegmentum.wasmtime4j.exception.RuntimeException(message);
-      case WASMTIME_ERROR_INVALID_PARAMETER -> new ai.tegmentum.wasmtime4j.exception.RuntimeException(message);
-      case WASMTIME_ERROR_CONCURRENCY -> new ai.tegmentum.wasmtime4j.exception.RuntimeException(message);
+      case WASMTIME_ERROR_INVALID_PARAMETER -> new ai.tegmentum.wasmtime4j.exception
+          .RuntimeException(message);
+      case WASMTIME_ERROR_CONCURRENCY -> new ai.tegmentum.wasmtime4j.exception.RuntimeException(
+          message);
       case WASMTIME_ERROR_WASI -> new ai.tegmentum.wasmtime4j.exception.RuntimeException(message);
-      case WASMTIME_ERROR_COMPONENT -> new ai.tegmentum.wasmtime4j.exception.RuntimeException(message);
-      case WASMTIME_ERROR_INTERFACE -> new ai.tegmentum.wasmtime4j.exception.RuntimeException(message);
-      case WASMTIME_ERROR_INTERNAL -> new ai.tegmentum.wasmtime4j.exception.RuntimeException(message);
+      case WASMTIME_ERROR_COMPONENT -> new ai.tegmentum.wasmtime4j.exception.RuntimeException(
+          message);
+      case WASMTIME_ERROR_INTERFACE -> new ai.tegmentum.wasmtime4j.exception.RuntimeException(
+          message);
+      case WASMTIME_ERROR_INTERNAL -> new ai.tegmentum.wasmtime4j.exception.RuntimeException(
+          message);
       default -> new ai.tegmentum.wasmtime4j.exception.RuntimeException(message);
     };
   }
@@ -295,7 +307,7 @@ public final class PanamaErrorHandler {
 
       // Safely read the error message from native memory with bounds checking
       MemorySegment messageSegment = messagePtr.reinterpret(messageLen);
-      
+
       // Verify the segment is readable before accessing
       if (messageSegment.byteSize() != messageLen) {
         LOGGER.log(Level.WARNING, "Error message segment size mismatch");

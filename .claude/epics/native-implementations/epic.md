@@ -1,8 +1,9 @@
 ---
 name: native-implementations
-status: backlog
+status: completed
 created: 2025-09-03T10:54:00Z
-progress: 0%
+completed: 2025-09-03T23:17:47Z
+progress: 100%
 prd: .claude/prds/native-implementations.md
 github: #140
 ---
