@@ -60,6 +60,9 @@ class ComprehensiveIntegrationIT extends BaseIntegrationTest {
 
             final var module = engine.compileModule(moduleBytes);
             final var instance = runtime.instantiate(module);
+            
+            // Verify store is properly created
+            assertThat(store).isNotNull();
 
             final var addFunction =
                 instance
@@ -80,13 +83,13 @@ class ComprehensiveIntegrationIT extends BaseIntegrationTest {
     final CrossRuntimeTestResult crossRuntimeResult =
         CrossRuntimeTestRunner.executeAcrossRuntimes("comprehensive_workflow_test", testFunction);
 
-    assertThat(crossRuntimeResult.getJniResult().isSuccessful()).isTrue();
-    assertThat(crossRuntimeResult.getJniResult().getResult()).isEqualTo(25);
+    assertThat(crossRuntimeResult.getJniExecution().isSuccessful()).isTrue();
+    assertThat(crossRuntimeResult.getJniExecution().getResult()).isEqualTo(25);
 
     if (TestUtils.isPanamaAvailable()) {
-      assertThat(crossRuntimeResult.getPanamaResult()).isNotNull();
-      assertThat(crossRuntimeResult.getPanamaResult().isSuccessful()).isTrue();
-      assertThat(crossRuntimeResult.getPanamaResult().getResult()).isEqualTo(25);
+      assertThat(crossRuntimeResult.getPanamaExecution()).isNotNull();
+      assertThat(crossRuntimeResult.getPanamaExecution().isSuccessful()).isTrue();
+      assertThat(crossRuntimeResult.getPanamaExecution().getResult()).isEqualTo(25);
     }
 
     LOGGER.info("   - Cross-runtime test: " + crossRuntimeResult.getSummary());
@@ -163,10 +166,10 @@ class ComprehensiveIntegrationIT extends BaseIntegrationTest {
     final var result =
         CrossRuntimeTestRunner.executeAcrossRuntimes("platform_compatibility_test", platformTest);
 
-    assertThat(result.getJniResult().isSuccessful()).isTrue();
+    assertThat(result.getJniExecution().isSuccessful()).isTrue();
 
     if (TestUtils.isPanamaAvailable()) {
-      assertThat(result.getPanamaResult().isSuccessful()).isTrue();
+      assertThat(result.getPanamaExecution().isSuccessful()).isTrue();
     }
 
     LOGGER.info("Cross-platform compatibility validated: " + result.getSummary());
@@ -187,7 +190,6 @@ class ComprehensiveIntegrationIT extends BaseIntegrationTest {
 
     // Force garbage collection
     System.gc();
-    System.runFinalization();
     System.gc();
 
     LOGGER.info("All test resources cleaned up successfully");
@@ -207,7 +209,7 @@ class ComprehensiveIntegrationIT extends BaseIntegrationTest {
     final var result =
         CrossRuntimeTestRunner.executeAcrossRuntimes("post_cleanup_test", cleanupTest);
 
-    assertThat(result.getJniResult().isSuccessful()).isTrue();
+    assertThat(result.getJniExecution().isSuccessful()).isTrue();
     LOGGER.info("Post-cleanup functionality validated: " + result.getSummary());
   }
 
