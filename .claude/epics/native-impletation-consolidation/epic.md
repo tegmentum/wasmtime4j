@@ -4,7 +4,7 @@ status: backlog
 created: 2025-09-03T23:19:32Z
 progress: 0%
 prd: .claude/prds/native-impletation-consolidation.md
-github: [Will be updated when synced to GitHub]
+github: https://github.com//issues/156
 ---
 
 # Epic: Native Implementation Consolidation
@@ -118,3 +118,17 @@ High-level task categories that will be created:
 - **Primary Developer**: Full-time commitment for technical implementation
 - **Code Review**: 2-3 hours from lead maintainer for architecture approval
 - **Testing Validation**: Automated test suite execution across supported platforms
+
+## Tasks Created
+
+- [ ] #157 - Design shared FFI architecture with trait-based conversions (parallel: true)
+- [ ] #158 - Extract engine operations into shared implementation (parallel: false)
+- [ ] #159 - Extract module operations into shared implementation (parallel: false)
+- [ ] #160 - Extract store and instance operations into shared implementation (parallel: false)
+- [ ] #161 - Extract component and advanced operations into shared implementation (parallel: false)
+- [ ] #162 - Comprehensive testing and validation of consolidated implementation (parallel: true)
+
+**Total tasks:** 6  
+**Parallel tasks:** 2 (#157, #162)  
+**Sequential tasks:** 4 (#158, #159, #160, #161)  
+**Estimated total effort:** 132 hours (~16-17 development days)
