@@ -218,11 +218,55 @@ impl Module {
 
         engine.validate()?;
 
-        // WAT parsing is no longer in wasmtime core - disable for now
-        // Applications should compile WAT to WASM before using this library
-        Err(WasmtimeError::Compilation {
-            message: "WAT parsing not supported. Please compile WAT to WASM first.".to_string(),
-        })
+        // Convert WAT to WASM bytes using wat crate
+        let wasm_bytes = wat::parse_str(wat)
+            .map_err(|e| WasmtimeError::Compilation {
+                message: format!("WAT parsing failed: {}", e),
+            })?;
+
+        Self::compile(engine, &wasm_bytes)
+    }
+
+    /// Validate WebAssembly bytecode without compiling (static validation)
+    pub fn validate_bytes(wasm_bytes: &[u8]) -> WasmtimeResult<()> {
+        // Defensive validation
+        if wasm_bytes.is_empty() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "WebAssembly bytes cannot be empty".to_string(),
+            });
+        }
+
+        // Check WASM magic number
+        if wasm_bytes.len() < 8 {
+            return Err(WasmtimeError::Validation {
+                message: "WebAssembly binary too short".to_string(),
+            });
+        }
+
+        if &wasm_bytes[0..4] != b"\0asm" {
+            return Err(WasmtimeError::Validation {
+                message: "Invalid WebAssembly magic number".to_string(),
+            });
+        }
+
+        // Check version
+        let version = u32::from_le_bytes([
+            wasm_bytes[4], wasm_bytes[5], wasm_bytes[6], wasm_bytes[7]
+        ]);
+        
+        if version != 1 {
+            return Err(WasmtimeError::Validation {
+                message: format!("Unsupported WebAssembly version: {}", version),
+            });
+        }
+
+        // Use wasmparser for comprehensive validation
+        match wasmtime::Module::validate(&wasmtime::Engine::default(), wasm_bytes) {
+            Ok(_) => Ok(()),
+            Err(e) => Err(WasmtimeError::Validation {
+                message: format!("WebAssembly validation failed: {}", e),
+            }),
+        }
     }
 
     /// Get reference to inner Wasmtime module (internal use)
@@ -559,6 +603,12 @@ pub mod core {
     pub fn compile_module_wat(engine: &Engine, wat: &str) -> WasmtimeResult<Box<Module>> {
         validate_not_empty!(wat.as_bytes(), "WAT string");
         Module::compile_wat(engine, wat).map(Box::new)
+    }
+    
+    /// Core function to validate WebAssembly bytes without compilation
+    pub fn validate_module_bytes(wasm_bytes: &[u8]) -> WasmtimeResult<()> {
+        validate_not_empty!(wasm_bytes, "WebAssembly bytes");
+        Module::validate_bytes(wasm_bytes)
     }
     
     /// Core function to validate module pointer and get reference
