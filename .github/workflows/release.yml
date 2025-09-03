@@ -1,0 +1,311 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version'
+        required: true
+        default: '1.0.0'
+      pre_release:
+        description: 'Is this a pre-release?'
+        required: true
+        default: 'false'
+        type: boolean
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+jobs:
+  # Build for all platforms
+  build-release:
+    name: Build Release Artifacts
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Native platform builds
+          - os: ubuntu-latest
+            platform: linux-x86_64
+            target: x86_64-unknown-linux-gnu
+          - os: macos-latest
+            platform: macos-x86_64
+            target: x86_64-apple-darwin
+          - os: windows-latest
+            platform: windows-x86_64
+            target: x86_64-pc-windows-msvc
+          
+          # Cross-compilation builds
+          - os: ubuntu-latest
+            platform: linux-aarch64
+            target: aarch64-unknown-linux-gnu
+            cross: true
+          - os: ubuntu-latest
+            platform: macos-aarch64
+            target: aarch64-apple-darwin
+            cross: true
+
+    runs-on: ${{ matrix.os }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 8
+        uses: actions/setup-java@v4
+        with:
+          java-version: '8'
+          distribution: 'temurin'
+
+      - name: Set up JDK 23 (for Panama)
+        uses: actions/setup-java@v4
+        with:
+          java-version: '23'
+          distribution: 'temurin'
+
+      - name: Cache Maven dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          targets: ${{ matrix.target }}
+
+      - name: Cache Rust dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Install cross-compilation tools (Linux ARM64)
+        if: matrix.cross && matrix.platform == 'linux-aarch64'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu
+          cargo install cross --git https://github.com/cross-rs/cross
+
+      - name: Install MSVC tools (Windows)
+        if: matrix.os == 'windows-latest'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Build native libraries
+        shell: bash
+        run: |
+          if [[ "${{ matrix.platform }}" == "linux-x86_64" ]]; then
+            ./mvnw clean compile -P linux-x86_64 -DskipTests -B
+          elif [[ "${{ matrix.platform }}" == "linux-aarch64" ]]; then
+            ./mvnw clean compile -P linux-aarch64 -DskipTests -B
+          elif [[ "${{ matrix.platform }}" == "macos-x86_64" ]]; then
+            ./mvnw clean compile -P macos-x86_64 -DskipTests -B
+          elif [[ "${{ matrix.platform }}" == "macos-aarch64" ]]; then
+            ./mvnw clean compile -P macos-aarch64 -DskipTests -B
+          elif [[ "${{ matrix.platform }}" == "windows-x86_64" ]]; then
+            ./mvnw clean compile -P windows-x86_64 -DskipTests -B
+          fi
+
+      - name: Run comprehensive tests
+        shell: bash
+        if: ${{ !matrix.cross }}
+        run: |
+          # Test with JNI (Java 8)
+          export JAVA_HOME="${{ steps.setup-java.outputs.java-home }}"
+          ./mvnw test verify -B -Dtest.runtime=jni
+          
+          # Test with Panama (Java 23) if not Windows
+          if [[ "${{ matrix.os }}" != "windows-latest" ]]; then
+            export JAVA_HOME="${{ steps.setup-java-23.outputs.java-home }}"
+            ./mvnw test verify -B -Dtest.runtime=panama
+          fi
+
+      - name: Package release artifacts
+        run: ./mvnw package -P release -DskipTests -B
+
+      - name: Upload platform artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-artifacts-${{ matrix.platform }}
+          path: |
+            target/*.jar
+            */target/*.jar
+            **/target/classes/native/
+          retention-days: 90
+
+  # Create unified release
+  create-release:
+    name: Create Release
+    needs: [build-release]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 11
+        uses: actions/setup-java@v4
+        with:
+          java-version: '11'
+          distribution: 'temurin'
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: release-artifacts-*
+          merge-multiple: true
+
+      - name: Create unified JAR with all native libraries
+        run: |
+          # Reorganize native libraries by platform
+          mkdir -p unified-native/{linux-x86_64,linux-aarch64,macos-x86_64,macos-aarch64,windows-x86_64}
+          
+          # Copy native libraries to their respective platform directories
+          find . -name "*.so" -path "*linux-x86_64*" -exec cp {} unified-native/linux-x86_64/ \;
+          find . -name "*.so" -path "*linux-aarch64*" -exec cp {} unified-native/linux-aarch64/ \;
+          find . -name "*.dylib" -path "*macos-x86_64*" -exec cp {} unified-native/macos-x86_64/ \;
+          find . -name "*.dylib" -path "*macos-aarch64*" -exec cp {} unified-native/macos-aarch64/ \;
+          find . -name "*.dll" -path "*windows-x86_64*" -exec cp {} unified-native/windows-x86_64/ \;
+          
+          # Build unified package
+          ./mvnw clean package -P release,all-platforms -DskipTests -B
+
+      - name: Generate release notes
+        run: |
+          echo "# Wasmtime4j Release" > RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+          echo "## What's New" >> RELEASE_NOTES.md
+          echo "- Cross-platform native library support for all 6 target platforms" >> RELEASE_NOTES.md
+          echo "- JNI implementation for Java 8-22" >> RELEASE_NOTES.md
+          echo "- Panama FFI implementation for Java 23+" >> RELEASE_NOTES.md
+          echo "- Comprehensive WebAssembly test suite" >> RELEASE_NOTES.md
+          echo "- Performance benchmarks and optimization" >> RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+          echo "## Platform Support" >> RELEASE_NOTES.md
+          echo "- Linux x86_64 and ARM64" >> RELEASE_NOTES.md
+          echo "- macOS x86_64 and ARM64 (Apple Silicon)" >> RELEASE_NOTES.md
+          echo "- Windows x86_64" >> RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+          echo "## Installation" >> RELEASE_NOTES.md
+          echo '```xml' >> RELEASE_NOTES.md
+          echo '<dependency>' >> RELEASE_NOTES.md
+          echo '    <groupId>ai.tegmentum</groupId>' >> RELEASE_NOTES.md
+          echo '    <artifactId>wasmtime4j</artifactId>' >> RELEASE_NOTES.md
+          echo "    <version>${{ github.ref_name }}</version>" >> RELEASE_NOTES.md
+          echo '</dependency>' >> RELEASE_NOTES.md
+          echo '```' >> RELEASE_NOTES.md
+
+      - name: Create checksums
+        run: |
+          cd target
+          for file in *.jar; do
+            if [ -f "$file" ]; then
+              sha256sum "$file" > "$file.sha256"
+              sha512sum "$file" > "$file.sha512"
+            fi
+          done
+
+      - name: Sign artifacts (if GPG key available)
+        if: env.GPG_PRIVATE_KEY != ''
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        run: |
+          echo "$GPG_PRIVATE_KEY" | base64 --decode | gpg --batch --import
+          cd target
+          for file in *.jar; do
+            if [ -f "$file" ]; then
+              gpg --batch --yes --pinentry-mode loopback --passphrase "$GPG_PASSPHRASE" --armor --detach-sign "$file"
+            fi
+          done
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            target/*.jar
+            target/*.sha256
+            target/*.sha512
+            target/*.asc
+          body_path: RELEASE_NOTES.md
+          prerelease: ${{ github.event.inputs.pre_release == 'true' }}
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Deploy to Maven Central (if configured)
+        if: env.MAVEN_CENTRAL_USERNAME != ''
+        env:
+          MAVEN_CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          MAVEN_CENTRAL_PASSWORD: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        run: |
+          echo "Deploying to Maven Central..."
+          ./mvnw deploy -P release -DskipTests -B \
+            -Dossrh.username="$MAVEN_CENTRAL_USERNAME" \
+            -Dossrh.password="$MAVEN_CENTRAL_PASSWORD"
+
+  # Post-release benchmarks
+  release-benchmarks:
+    name: Release Performance Benchmarks
+    needs: [create-release]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux-x86_64
+          - os: macos-latest
+            platform: macos-x86_64
+          - os: windows-latest
+            platform: windows-x86_64
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 8
+        uses: actions/setup-java@v4
+        with:
+          java-version: '8'
+          distribution: 'temurin'
+
+      - name: Set up JDK 23
+        uses: actions/setup-java@v4
+        with:
+          java-version: '23'
+          distribution: 'temurin'
+
+      - name: Download release artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: release-artifacts-*
+          merge-multiple: true
+
+      - name: Run release benchmarks
+        shell: bash
+        run: |
+          cd wasmtime4j-benchmarks
+          echo "Running release benchmarks for ${{ matrix.platform }}..."
+          ./run-performance-suite.sh jni
+          if [[ "${{ matrix.os }}" != "windows-latest" ]]; then
+            ./run-performance-suite.sh panama
+          fi
+
+      - name: Upload release benchmark results
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-benchmarks-${{ matrix.platform }}
+          path: wasmtime4j-benchmarks/benchmark-results/
+          retention-days: 365
