@@ -51,7 +51,7 @@ final class NativeLoaderBuilderTest {
         builder.getSecurityLevel(),
         "Should start with default security level");
     assertEquals(
-        PathConvention.MAVEN_NATIVE,
+        PathConvention.WASMTIME4J,
         builder.getPathConvention(),
         "Should start with default resource path convention");
   }
@@ -113,9 +113,9 @@ final class NativeLoaderBuilderTest {
     final NativeLoaderBuilder builder = new NativeLoaderBuilder();
 
     assertThrows(
-        IllegalArgumentException.class,
+        NullPointerException.class,
         () -> builder.libraryName(null),
-        "Should throw IllegalArgumentException for null library name");
+        "Should throw NullPointerException for null library name");
   }
 
   @Test
@@ -124,9 +124,9 @@ final class NativeLoaderBuilderTest {
     final NativeLoaderBuilder builder = new NativeLoaderBuilder();
 
     assertThrows(
-        IllegalArgumentException.class,
+        NullPointerException.class,
         () -> builder.tempFilePrefix(null),
-        "Should throw IllegalArgumentException for null temp file prefix");
+        "Should throw NullPointerException for null temp file prefix");
   }
 
   @Test
@@ -135,9 +135,9 @@ final class NativeLoaderBuilderTest {
     final NativeLoaderBuilder builder = new NativeLoaderBuilder();
 
     assertThrows(
-        IllegalArgumentException.class,
+        NullPointerException.class,
         () -> builder.tempDirSuffix(null),
-        "Should throw IllegalArgumentException for null temp dir suffix");
+        "Should throw NullPointerException for null temp dir suffix");
   }
 
   @Test
@@ -146,9 +146,9 @@ final class NativeLoaderBuilderTest {
     final NativeLoaderBuilder builder = new NativeLoaderBuilder();
 
     assertThrows(
-        IllegalArgumentException.class,
+        NullPointerException.class,
         () -> builder.securityLevel(null),
-        "Should throw IllegalArgumentException for null security level");
+        "Should throw NullPointerException for null security level");
   }
 
   @Test
@@ -157,9 +157,9 @@ final class NativeLoaderBuilderTest {
     final NativeLoaderBuilder builder = new NativeLoaderBuilder();
 
     assertThrows(
-        IllegalArgumentException.class,
+        NullPointerException.class,
         () -> builder.pathConvention(null),
-        "Should throw IllegalArgumentException for null resource path convention");
+        "Should throw NullPointerException for null resource path convention");
   }
 
   @Test

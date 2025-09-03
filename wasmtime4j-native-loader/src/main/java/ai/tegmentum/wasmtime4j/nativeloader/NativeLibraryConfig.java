@@ -172,18 +172,19 @@ public final class NativeLibraryConfig {
   private static String validateLibraryName(final String libraryName) {
     Objects.requireNonNull(libraryName, "libraryName must not be null");
 
-    if (libraryName.trim().isEmpty()) {
+    final String trimmed = libraryName.trim();
+    if (trimmed.isEmpty()) {
       throw new IllegalArgumentException("libraryName must not be empty");
     }
 
     // Validate that library name contains only safe characters
-    if (!libraryName.matches("^[a-zA-Z0-9_-]+$")) {
+    if (!trimmed.matches("^[a-zA-Z0-9_-]+$")) {
       throw new IllegalArgumentException(
           "libraryName must contain only alphanumeric characters, underscores, and dashes: "
-              + libraryName);
+              + trimmed);
     }
 
-    return libraryName.trim();
+    return trimmed;
   }
 
   /**
@@ -196,18 +197,19 @@ public final class NativeLibraryConfig {
   private static String validateTempFilePrefix(final String tempFilePrefix) {
     Objects.requireNonNull(tempFilePrefix, "tempFilePrefix must not be null");
 
-    if (tempFilePrefix.trim().isEmpty()) {
+    final String trimmed = tempFilePrefix.trim();
+    if (trimmed.isEmpty()) {
       throw new IllegalArgumentException("tempFilePrefix must not be empty");
     }
 
     // Validate that prefix contains only safe characters and doesn't contain path separators
-    if (!tempFilePrefix.matches("^[a-zA-Z0-9_-]+$")) {
+    if (!trimmed.matches("^[a-zA-Z0-9_-]+$")) {
       throw new IllegalArgumentException(
           "tempFilePrefix must contain only alphanumeric characters, underscores, and dashes: "
-              + tempFilePrefix);
+              + trimmed);
     }
 
-    return tempFilePrefix.trim();
+    return trimmed;
   }
 
   /**
@@ -220,18 +222,19 @@ public final class NativeLibraryConfig {
   private static String validateTempDirSuffix(final String tempDirSuffix) {
     Objects.requireNonNull(tempDirSuffix, "tempDirSuffix must not be null");
 
-    if (tempDirSuffix.trim().isEmpty()) {
+    final String trimmed = tempDirSuffix.trim();
+    if (trimmed.isEmpty()) {
       throw new IllegalArgumentException("tempDirSuffix must not be empty");
     }
 
     // Validate that suffix contains only safe characters and doesn't contain path separators
-    if (!tempDirSuffix.matches("^-?[a-zA-Z0-9_-]+$")) {
+    if (!trimmed.matches("^-?[a-zA-Z0-9_-]+$")) {
       throw new IllegalArgumentException(
           "tempDirSuffix must contain only alphanumeric characters, underscores, and dashes: "
-              + tempDirSuffix);
+              + trimmed);
     }
 
-    return tempDirSuffix.trim();
+    return trimmed;
   }
 
   @Override

@@ -20,7 +20,9 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.lang.reflect.InvocationTargetException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -49,9 +51,9 @@ final class NativeLoaderTest {
   @DisplayName("Should reject null library name in static method")
   void testLoadLibraryWithNullName() {
     assertThrows(
-        IllegalArgumentException.class,
+        NullPointerException.class,
         () -> NativeLoader.loadLibrary(null),
-        "Should throw IllegalArgumentException for null library name");
+        "Should throw NullPointerException for null library name");
   }
 
   @Test
@@ -76,14 +78,18 @@ final class NativeLoaderTest {
   @DisplayName("Should not allow instantiation of utility class")
   void testUtilityClassInstantiation() {
     // Use reflection to try to instantiate the utility class
-    assertThrows(
-        AssertionError.class,
+    final var exception = assertThrows(
+        InvocationTargetException.class,
         () -> {
           final var constructor = NativeLoader.class.getDeclaredConstructor();
           constructor.setAccessible(true);
           constructor.newInstance();
         },
-        "Should throw AssertionError when trying to instantiate utility class");
+        "Should throw InvocationTargetException when trying to instantiate utility class");
+    
+    // Verify the cause is AssertionError
+    assertTrue(exception.getCause() instanceof AssertionError,
+        "The cause should be AssertionError to prevent instantiation");
   }
 
   @Test
