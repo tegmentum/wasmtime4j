@@ -186,10 +186,14 @@ public final class JniFunction extends JniResource implements WasmFunction {
     JniValidation.requireNonNull(params, "params");
     ensureNotClosed();
 
-    // Increment call count for performance monitoring
-    final long currentCall = callCount.incrementAndGet();
+    // Start performance monitoring
+    final long startTime = ai.tegmentum.wasmtime4j.jni.performance.PerformanceMonitor
+        .startOperation("function_call", name);
 
     try {
+      // Increment call count for performance monitoring
+      final long currentCall = callCount.incrementAndGet();
+
       final FunctionType functionType = getFunctionType();
 
       // Validate parameter types
@@ -203,8 +207,15 @@ public final class JniFunction extends JniResource implements WasmFunction {
         return cached.result.clone();
       }
 
-      // Convert WasmValue parameters to native format
-      final Object[] nativeParams = JniTypeConverter.wasmValuesToNativeParams(params);
+      // Use optimized parameter marshalling
+      final Object[] nativeParams;
+      try {
+        nativeParams = ai.tegmentum.wasmtime4j.jni.performance.OptimizedMarshalling
+            .marshalParameters(params);
+      } catch (final Exception e) {
+        // Fallback to traditional marshalling
+        nativeParams = JniTypeConverter.wasmValuesToNativeParams(params);
+      }
 
       // Call native function
       final Object[] nativeResults = nativeCallMultiValue(getNativeHandle(), nativeParams);
@@ -213,8 +224,14 @@ public final class JniFunction extends JniResource implements WasmFunction {
       }
 
       // Convert native results back to WasmValue array
-      final WasmValue[] results =
-          JniTypeConverter.nativeResultsToWasmValues(nativeResults, functionType.getReturnTypes());
+      final WasmValue[] results;
+      try {
+        results = ai.tegmentum.wasmtime4j.jni.performance.OptimizedMarshalling
+            .unmarshalResults(nativeResults, functionType.getReturnTypes());
+      } catch (final Exception e) {
+        // Fallback to traditional unmarshalling
+        results = JniTypeConverter.nativeResultsToWasmValues(nativeResults, functionType.getReturnTypes());
+      }
 
       // Cache result for frequently called functions
       if (shouldCacheResult(currentCall)) {
@@ -228,6 +245,9 @@ public final class JniFunction extends JniResource implements WasmFunction {
       throw new WasmException("Native function call failed for '" + name + "'", e);
     } catch (final Exception e) {
       throw new WasmException("Unexpected error calling function '" + name + "'", e);
+    } finally {
+      ai.tegmentum.wasmtime4j.jni.performance.PerformanceMonitor
+          .endOperation("function_call", startTime);
     }
   }
 
