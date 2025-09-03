@@ -24,6 +24,13 @@
     </properties>
 
     <dependencies>
+        <!-- Native library loading utilities -->
+        <dependency>
+            <groupId>ai.tegmentum</groupId>
+            <artifactId>wasmtime4j-native-loader</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        
         <!-- Test dependencies -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
