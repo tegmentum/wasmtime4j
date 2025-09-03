@@ -18,39 +18,63 @@ public final class JniExceptionMapper {
 
   private static final Logger LOGGER = Logger.getLogger(JniExceptionMapper.class.getName());
 
-  // Native error code constants (these should match the native library)
+  // Native error code constants (must match the Rust error.rs enum ErrorCode exactly)
   /** No error occurred. */
   private static final int NATIVE_ERROR_NONE = 0;
 
-  /** Generic compilation error. */
-  private static final int NATIVE_ERROR_COMPILATION = 1;
+  /** WebAssembly compilation failed. */
+  private static final int NATIVE_ERROR_COMPILATION = -1;
 
-  /** Runtime execution error. */
-  private static final int NATIVE_ERROR_RUNTIME = 2;
+  /** WebAssembly module validation failed. */
+  private static final int NATIVE_ERROR_VALIDATION = -2;
 
-  /** Module validation error. */
-  private static final int NATIVE_ERROR_VALIDATION = 3;
+  /** WebAssembly runtime error occurred. */
+  private static final int NATIVE_ERROR_RUNTIME = -3;
 
-  /** Memory access error. */
-  private static final int NATIVE_ERROR_MEMORY = 4;
+  /** Engine configuration error. */
+  private static final int NATIVE_ERROR_ENGINE_CONFIG = -4;
 
-  /** Invalid argument error. */
-  private static final int NATIVE_ERROR_INVALID_ARG = 5;
+  /** Store creation or management error. */
+  private static final int NATIVE_ERROR_STORE = -5;
 
-  /** Resource not found error. */
-  private static final int NATIVE_ERROR_NOT_FOUND = 6;
+  /** Instance creation or management error. */
+  private static final int NATIVE_ERROR_INSTANCE = -6;
 
-  /** System/IO error. */
-  private static final int NATIVE_ERROR_SYSTEM = 7;
+  /** Memory access or allocation error. */
+  private static final int NATIVE_ERROR_MEMORY = -7;
 
-  /** Out of memory error. */
-  private static final int NATIVE_ERROR_OUT_OF_MEMORY = 8;
+  /** Function invocation error. */
+  private static final int NATIVE_ERROR_FUNCTION = -8;
 
-  /** Trap occurred during execution. */
-  private static final int NATIVE_ERROR_TRAP = 9;
+  /** Import or export resolution error. */
+  private static final int NATIVE_ERROR_IMPORT_EXPORT = -9;
 
-  /** Type mismatch error. */
-  private static final int NATIVE_ERROR_TYPE_MISMATCH = 10;
+  /** Type conversion or validation error. */
+  private static final int NATIVE_ERROR_TYPE = -10;
+
+  /** Resource management error. */
+  private static final int NATIVE_ERROR_RESOURCE = -11;
+
+  /** I/O operation error. */
+  private static final int NATIVE_ERROR_IO = -12;
+
+  /** Invalid parameter provided. */
+  private static final int NATIVE_ERROR_INVALID_PARAMETER = -13;
+
+  /** Threading or concurrency error. */
+  private static final int NATIVE_ERROR_CONCURRENCY = -14;
+
+  /** WASI-related error. */
+  private static final int NATIVE_ERROR_WASI = -15;
+
+  /** Component model error. */
+  private static final int NATIVE_ERROR_COMPONENT = -16;
+
+  /** Interface definition or binding error. */
+  private static final int NATIVE_ERROR_INTERFACE = -17;
+
+  /** Internal system error. */
+  private static final int NATIVE_ERROR_INTERNAL = -18;
 
   /** Private constructor to prevent instantiation of utility class. */
   private JniExceptionMapper() {
@@ -75,32 +99,56 @@ public final class JniExceptionMapper {
       case NATIVE_ERROR_COMPILATION:
         return new JniException("Compilation failed: " + safeMessage, errorCode);
 
+      case NATIVE_ERROR_VALIDATION:
+        return new JniException("Validation failed: " + safeMessage, errorCode);
+
       case NATIVE_ERROR_RUNTIME:
         return new JniException("Runtime error: " + safeMessage, errorCode);
 
-      case NATIVE_ERROR_VALIDATION:
-        return new JniException("Validation failed: " + safeMessage, errorCode);
+      case NATIVE_ERROR_ENGINE_CONFIG:
+        return new JniException("Engine configuration error: " + safeMessage, errorCode);
+
+      case NATIVE_ERROR_STORE:
+        return new JniException("Store error: " + safeMessage, errorCode);
+
+      case NATIVE_ERROR_INSTANCE:
+        return new JniException("Instance error: " + safeMessage, errorCode);
 
       case NATIVE_ERROR_MEMORY:
         return new JniResourceException("Memory access error: " + safeMessage, errorCode);
 
-      case NATIVE_ERROR_INVALID_ARG:
-        return new JniException("Invalid argument: " + safeMessage, errorCode);
+      case NATIVE_ERROR_FUNCTION:
+        return new JniException("Function invocation failed: " + safeMessage, errorCode);
 
-      case NATIVE_ERROR_NOT_FOUND:
-        return new JniException("Resource not found: " + safeMessage, errorCode);
+      case NATIVE_ERROR_IMPORT_EXPORT:
+        return new JniException("Import/Export error: " + safeMessage, errorCode);
 
-      case NATIVE_ERROR_SYSTEM:
-        return new JniException("System error: " + safeMessage, errorCode);
+      case NATIVE_ERROR_TYPE:
+        return new JniException("Type error: " + safeMessage, errorCode);
 
-      case NATIVE_ERROR_OUT_OF_MEMORY:
-        return new JniResourceException("Native out of memory: " + safeMessage, errorCode);
+      case NATIVE_ERROR_RESOURCE:
+        return new JniResourceException("Resource error: " + safeMessage, errorCode);
 
-      case NATIVE_ERROR_TRAP:
-        return new JniException("WebAssembly trap: " + safeMessage, errorCode);
+      case NATIVE_ERROR_IO:
+        return new JniException("I/O error: " + safeMessage, errorCode);
 
-      case NATIVE_ERROR_TYPE_MISMATCH:
-        return new JniException("Type mismatch: " + safeMessage, errorCode);
+      case NATIVE_ERROR_INVALID_PARAMETER:
+        return new JniException("Invalid parameter: " + safeMessage, errorCode);
+
+      case NATIVE_ERROR_CONCURRENCY:
+        return new JniException("Concurrency error: " + safeMessage, errorCode);
+
+      case NATIVE_ERROR_WASI:
+        return new JniException("WASI error: " + safeMessage, errorCode);
+
+      case NATIVE_ERROR_COMPONENT:
+        return new JniException("Component error: " + safeMessage, errorCode);
+
+      case NATIVE_ERROR_INTERFACE:
+        return new JniException("Interface error: " + safeMessage, errorCode);
+
+      case NATIVE_ERROR_INTERNAL:
+        return new JniException("Internal error: " + safeMessage, errorCode);
 
       default:
         LOGGER.warning("Unknown native error code: " + errorCode);
@@ -230,24 +278,40 @@ public final class JniExceptionMapper {
         return "No error";
       case NATIVE_ERROR_COMPILATION:
         return "Compilation error";
-      case NATIVE_ERROR_RUNTIME:
-        return "Runtime error";
       case NATIVE_ERROR_VALIDATION:
         return "Validation error";
+      case NATIVE_ERROR_RUNTIME:
+        return "Runtime error";
+      case NATIVE_ERROR_ENGINE_CONFIG:
+        return "Engine configuration error";
+      case NATIVE_ERROR_STORE:
+        return "Store error";
+      case NATIVE_ERROR_INSTANCE:
+        return "Instance error";
       case NATIVE_ERROR_MEMORY:
         return "Memory access error";
-      case NATIVE_ERROR_INVALID_ARG:
-        return "Invalid argument";
-      case NATIVE_ERROR_NOT_FOUND:
-        return "Resource not found";
-      case NATIVE_ERROR_SYSTEM:
-        return "System error";
-      case NATIVE_ERROR_OUT_OF_MEMORY:
-        return "Out of memory";
-      case NATIVE_ERROR_TRAP:
-        return "WebAssembly trap";
-      case NATIVE_ERROR_TYPE_MISMATCH:
-        return "Type mismatch";
+      case NATIVE_ERROR_FUNCTION:
+        return "Function error";
+      case NATIVE_ERROR_IMPORT_EXPORT:
+        return "Import/Export error";
+      case NATIVE_ERROR_TYPE:
+        return "Type error";
+      case NATIVE_ERROR_RESOURCE:
+        return "Resource error";
+      case NATIVE_ERROR_IO:
+        return "I/O error";
+      case NATIVE_ERROR_INVALID_PARAMETER:
+        return "Invalid parameter";
+      case NATIVE_ERROR_CONCURRENCY:
+        return "Concurrency error";
+      case NATIVE_ERROR_WASI:
+        return "WASI error";
+      case NATIVE_ERROR_COMPONENT:
+        return "Component error";
+      case NATIVE_ERROR_INTERFACE:
+        return "Interface error";
+      case NATIVE_ERROR_INTERNAL:
+        return "Internal error";
       default:
         return "Unknown error (code " + errorCode + ")";
     }

@@ -19,21 +19,21 @@ use jni::sys::{jlong, jint, jboolean, jbyteArray};
 pub mod jni_engine {
     use super::*;
     use crate::engine::core;
-    use crate::error::ffi_utils;
+    use crate::error::{ffi_utils, jni_utils};
     
     /// Create a new Wasmtime engine with default configuration (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeCreateEngine(
-        _env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
     ) -> jlong {
-        ffi_utils::ffi_try_ptr(|| core::create_engine()) as jlong
+        jni_utils::jni_try_ptr(env, || core::create_engine()) as jlong
     }
 
     /// Create a new Wasmtime engine with custom configuration (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeCreateEngineWithConfig(
-        _env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         strategy: jint,
         opt_level: jint,
@@ -51,7 +51,7 @@ pub mod jni_engine {
     ) -> jlong {
         use wasmtime::{Strategy, OptLevel};
         
-        ffi_utils::ffi_try_ptr(|| {
+        jni_utils::jni_try_ptr(env, || {
             let strategy_opt = match strategy {
                 0 => Some(Strategy::Cranelift),
                 _ => None,
