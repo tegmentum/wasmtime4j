@@ -30,12 +30,14 @@
         <dependency>
             <groupId>ai.tegmentum</groupId>
             <artifactId>wasmtime4j</artifactId>
+            <version>${project.version}</version>
         </dependency>
 
         <!-- Native library dependency -->
         <dependency>
             <groupId>ai.tegmentum</groupId>
             <artifactId>wasmtime4j-native</artifactId>
+            <version>${project.version}</version>
         </dependency>
 
         <!-- Test dependencies -->

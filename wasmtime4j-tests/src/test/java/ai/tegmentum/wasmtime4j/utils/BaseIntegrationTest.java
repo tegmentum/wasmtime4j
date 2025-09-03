@@ -140,13 +140,13 @@ public abstract class BaseIntegrationTest {
   protected final void runWithBothRuntimes(final BiRuntimeOperation operation) {
     try {
       // Test with JNI runtime
-      try (final WasmRuntime jniRuntime = WasmRuntimeFactory.create()) {
+      try (final WasmRuntime jniRuntime = WasmRuntimeFactory.create(RuntimeType.JNI)) {
         operation.execute(jniRuntime, "JNI");
       }
 
       // Test with Panama runtime if available
       if (TestUtils.isPanamaAvailable()) {
-        try (final WasmRuntime panamaRuntime = WasmRuntimeFactory.create()) {
+        try (final WasmRuntime panamaRuntime = WasmRuntimeFactory.create(RuntimeType.PANAMA)) {
           operation.execute(panamaRuntime, "PANAMA");
         }
       } else {
@@ -280,9 +280,7 @@ public abstract class BaseIntegrationTest {
    */
   protected final WasmRuntime createTestRuntime(final RuntimeType runtimeType) {
     try {
-      // For now, use the factory to create the default runtime
-      // Future enhancement could respect the runtimeType parameter
-      final WasmRuntime runtime = WasmRuntimeFactory.create();
+      final WasmRuntime runtime = WasmRuntimeFactory.create(runtimeType);
       registerForCleanup(runtime);
       return runtime;
     } catch (final Exception e) {

@@ -121,21 +121,11 @@ public final class CrossRuntimeTestRunner {
       if (runtime == null) {
         LOGGER.info("Creating runtime instance for " + runtimeType);
 
-        // Override runtime selection for testing
-        final String originalProperty = System.getProperty("wasmtime4j.runtime");
         try {
-          System.setProperty("wasmtime4j.runtime", runtimeType.name().toLowerCase());
-          runtime = WasmRuntimeFactory.create();
+          runtime = WasmRuntimeFactory.create(runtimeType);
           runtimeCache.put(runtimeType, runtime);
         } catch (final ai.tegmentum.wasmtime4j.exception.WasmException e) {
           throw new RuntimeException("Failed to create runtime for " + runtimeType, e);
-        } finally {
-          // Restore original property
-          if (originalProperty != null) {
-            System.setProperty("wasmtime4j.runtime", originalProperty);
-          } else {
-            System.clearProperty("wasmtime4j.runtime");
-          }
         }
       }
     }
