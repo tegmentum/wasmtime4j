@@ -168,7 +168,7 @@ pub mod component {
     /// Create a new component engine (Panama FFI version)
     #[no_mangle]
     pub extern "C" fn wasmtime4j_component_engine_create() -> *mut c_void {
-        use crate::error::ffi_utils;
+        use crate::error::{ffi_utils, ErrorCode};
         
         ffi_utils::ffi_try_ptr(|| crate::component::core::create_component_engine())
     }

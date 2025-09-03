@@ -669,7 +669,8 @@ impl ResourceManager {
 pub mod core {
     use super::*;
     use std::os::raw::c_void;
-    use crate::error::{ffi_utils, validate_ptr_not_null, validate_not_empty};
+    use crate::error::ffi_utils;
+    use crate::{validate_ptr_not_null, validate_not_empty};
     
     /// Core function to create a new component engine
     pub fn create_component_engine() -> WasmtimeResult<Box<ComponentEngine>> {

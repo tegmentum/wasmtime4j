@@ -112,7 +112,8 @@ impl Engine {
 pub mod core {
     use super::*;
     use std::os::raw::c_void;
-    use crate::error::{ffi_utils, validate_ptr_not_null};
+    use crate::error::ffi_utils;
+    use crate::validate_ptr_not_null;
     
     /// Core function to create a new engine with default configuration
     pub fn create_engine() -> WasmtimeResult<Box<Engine>> {

@@ -7,12 +7,6 @@ use jni::objects::{JClass, JByteArray};
 #[cfg(feature = "jni-bindings")]
 use jni::sys::{jlong, jint, jboolean, jbyteArray};
 
-#[cfg(feature = "jni-bindings")]
-use crate::engine::Engine;
-#[cfg(feature = "jni-bindings")]
-use crate::store::Store;
-#[cfg(feature = "jni-bindings")]
-use crate::module::Module;
 // Instance is imported locally in each module that needs it
 
 /// JNI bindings module
@@ -133,8 +127,8 @@ pub mod jni_engine {
 #[cfg(feature = "jni-bindings")]
 pub mod jni_instance {
     use super::*;
-    use crate::instance::Instance;
     use crate::instance::core;
+    use crate::error::ffi_utils;
     
     /// Create a new WebAssembly instance
     #[no_mangle]
@@ -169,6 +163,7 @@ pub mod jni_instance {
 pub mod jni_store {
     use super::*;
     use crate::store::core;
+    use crate::error::ffi_utils;
     
     /// Create a new store
     #[no_mangle]
@@ -226,8 +221,7 @@ pub mod module {}
 pub mod jni_component {
     use super::*;
     use crate::component::{ComponentEngine, Component};
-    use wasmtime::component::Instance as ComponentInstance;
-    use std::sync::Arc;
+    use crate::error::ffi_utils;
 
     /// Create a new component engine
     #[no_mangle]

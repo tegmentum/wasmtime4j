@@ -387,7 +387,8 @@ pub mod core {
     use super::*;
     use std::os::raw::c_void;
     use std::time::Duration;
-    use crate::error::{ffi_utils, validate_ptr_not_null};
+    use crate::error::ffi_utils;
+    use crate::validate_ptr_not_null;
     use crate::engine::Engine;
     
     /// Core function to create a new store with default configuration
