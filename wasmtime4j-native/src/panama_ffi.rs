@@ -1,6 +1,7 @@
 //! Panama Foreign Function Interface bindings for Java 23+
 
-use std::os::raw::{c_char, c_int, c_void};
+use std::os::raw::{c_char, c_int, c_uint, c_ulong, c_void};
+use std::sync::Arc;
 
 /// Panama FFI bindings module
 /// 
@@ -726,6 +727,369 @@ pub mod component {
     pub extern "C" fn wasmtime4j_component_instance_destroy(instance_ptr: *mut c_void) {
         unsafe {
             crate::component::core::destroy_component_instance(instance_ptr);
+        }
+    }
+}
+
+/// Panama FFI bindings for WebAssembly linear memory operations
+/// 
+/// This module provides C-compatible functions for creating, managing,
+/// and accessing WebAssembly linear memory with comprehensive bounds checking.
+pub mod memory {
+    use super::*;
+    use crate::memory::{Memory, MemoryBuilder, MemoryConfig, MemoryUsage as MemUsage, MemoryDataType, MemoryRegistry};
+    use crate::store::Store;
+    use crate::error::{ffi_utils, ErrorCode};
+
+    /// Create a new WebAssembly memory with default configuration (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_memory_create(
+        store_ptr: *mut c_void,
+        initial_pages: c_uint,
+        memory_ptr: *mut *mut c_void,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let mut store = unsafe { ffi_utils::deref_ptr_mut::<Store>(store_ptr, "store")? };
+            
+            let memory = Memory::new(store, initial_pages as u64)?;
+            
+            unsafe {
+                *memory_ptr = Box::into_raw(Box::new(memory)) as *mut c_void;
+            }
+            
+            Ok(())
+        })
+    }
+
+    /// Create a new WebAssembly memory with configuration (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_memory_create_with_config(
+        store_ptr: *mut c_void,
+        initial_pages: c_uint,
+        maximum_pages: c_uint,
+        is_shared: c_int,
+        memory_index: c_uint,
+        name: *const c_char,
+        memory_ptr: *mut *mut c_void,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let mut store = unsafe { ffi_utils::deref_ptr_mut::<Store>(store_ptr, "store")? };
+            
+            let mut builder = MemoryBuilder::new(initial_pages as u64);
+            
+            if maximum_pages > 0 {
+                builder = builder.maximum_pages(maximum_pages as u64);
+            }
+            
+            if is_shared != 0 {
+                builder = builder.shared();
+            }
+            
+            builder = builder.memory_index(memory_index);
+            
+            if !name.is_null() {
+                let name_str = unsafe { ffi_utils::c_str_to_string(name, "memory_name")? };
+                builder = builder.name(name_str);
+            }
+            
+            let memory = builder.build(store)?;
+            
+            unsafe {
+                *memory_ptr = Box::into_raw(Box::new(memory)) as *mut c_void;
+            }
+            
+            Ok(())
+        })
+    }
+
+    /// Get memory size in pages (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_memory_size_pages(
+        memory_ptr: *mut c_void,
+        store_ptr: *mut c_void,
+        size_out: *mut c_uint,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let memory = unsafe { ffi_utils::deref_ptr::<Memory>(memory_ptr, "memory")? };
+            let store = unsafe { ffi_utils::deref_ptr::<Store>(store_ptr, "store")? };
+            
+            let size = memory.size_pages(store)?;
+            
+            unsafe {
+                *size_out = size as c_uint;
+            }
+            
+            Ok(())
+        })
+    }
+
+    /// Get memory size in bytes (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_memory_size_bytes(
+        memory_ptr: *mut c_void,
+        store_ptr: *mut c_void,
+        size_out: *mut usize,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let memory = unsafe { ffi_utils::deref_ptr::<Memory>(memory_ptr, "memory")? };
+            let store = unsafe { ffi_utils::deref_ptr::<Store>(store_ptr, "store")? };
+            
+            let size = memory.size_bytes(store)?;
+            
+            unsafe {
+                *size_out = size;
+            }
+            
+            Ok(())
+        })
+    }
+
+    /// Grow memory by additional pages (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_memory_grow(
+        memory_ptr: *mut c_void,
+        store_ptr: *mut c_void,
+        additional_pages: c_uint,
+        previous_pages_out: *mut c_uint,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let memory = unsafe { ffi_utils::deref_ptr::<Memory>(memory_ptr, "memory")? };
+            let mut store = unsafe { ffi_utils::deref_ptr_mut::<Store>(store_ptr, "store")? };
+            
+            let previous_pages = memory.grow(store, additional_pages as u64)?;
+            
+            unsafe {
+                *previous_pages_out = previous_pages as c_uint;
+            }
+            
+            Ok(())
+        })
+    }
+
+    /// Read bytes from memory with bounds checking (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_memory_read_bytes(
+        memory_ptr: *mut c_void,
+        store_ptr: *mut c_void,
+        offset: usize,
+        length: usize,
+        buffer: *mut u8,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let memory = unsafe { ffi_utils::deref_ptr::<Memory>(memory_ptr, "memory")? };
+            let store = unsafe { ffi_utils::deref_ptr::<Store>(store_ptr, "store")? };
+            
+            if buffer.is_null() {
+                return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: "Buffer cannot be null".to_string(),
+                });
+            }
+            
+            let data = memory.read_bytes(store, offset, length)?;
+            
+            unsafe {
+                std::ptr::copy_nonoverlapping(data.as_ptr(), buffer, length);
+            }
+            
+            Ok(())
+        })
+    }
+
+    /// Write bytes to memory with bounds checking (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_memory_write_bytes(
+        memory_ptr: *mut c_void,
+        store_ptr: *mut c_void,
+        offset: usize,
+        length: usize,
+        buffer: *const u8,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let memory = unsafe { ffi_utils::deref_ptr::<Memory>(memory_ptr, "memory")? };
+            let mut store = unsafe { ffi_utils::deref_ptr_mut::<Store>(store_ptr, "store")? };
+            
+            if buffer.is_null() {
+                return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: "Buffer cannot be null".to_string(),
+                });
+            }
+            
+            let data = unsafe { std::slice::from_raw_parts(buffer, length) };
+            memory.write_bytes(store, offset, data)?;
+            
+            Ok(())
+        })
+    }
+
+    /// Read typed value from memory with alignment checking (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_memory_read_u32(
+        memory_ptr: *mut c_void,
+        store_ptr: *mut c_void,
+        offset: usize,
+        value_out: *mut u32,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let memory = unsafe { ffi_utils::deref_ptr::<Memory>(memory_ptr, "memory")? };
+            let store = unsafe { ffi_utils::deref_ptr::<Store>(store_ptr, "store")? };
+            
+            if value_out.is_null() {
+                return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: "Value output pointer cannot be null".to_string(),
+                });
+            }
+            
+            let value: u32 = memory.read_typed(store, offset, MemoryDataType::U32Le)?;
+            
+            unsafe {
+                *value_out = value;
+            }
+            
+            Ok(())
+        })
+    }
+
+    /// Write typed value to memory with alignment checking (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_memory_write_u32(
+        memory_ptr: *mut c_void,
+        store_ptr: *mut c_void,
+        offset: usize,
+        value: u32,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let memory = unsafe { ffi_utils::deref_ptr::<Memory>(memory_ptr, "memory")? };
+            let mut store = unsafe { ffi_utils::deref_ptr_mut::<Store>(store_ptr, "store")? };
+            
+            memory.write_typed(store, offset, value, MemoryDataType::U32Le)?;
+            
+            Ok(())
+        })
+    }
+
+    /// Get memory usage statistics (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_memory_get_usage(
+        memory_ptr: *mut c_void,
+        store_ptr: *mut c_void,
+        current_bytes_out: *mut usize,
+        current_pages_out: *mut c_uint,
+        peak_bytes_out: *mut usize,
+        read_count_out: *mut c_ulong,
+        write_count_out: *mut c_ulong,
+        bytes_transferred_out: *mut c_ulong,
+        utilization_percent_out: *mut f64,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let memory = unsafe { ffi_utils::deref_ptr::<Memory>(memory_ptr, "memory")? };
+            let store = unsafe { ffi_utils::deref_ptr::<Store>(store_ptr, "store")? };
+            
+            let usage = memory.get_usage(store)?;
+            
+            unsafe {
+                if !current_bytes_out.is_null() {
+                    *current_bytes_out = usage.current_bytes;
+                }
+                if !current_pages_out.is_null() {
+                    *current_pages_out = usage.current_pages as c_uint;
+                }
+                if !peak_bytes_out.is_null() {
+                    *peak_bytes_out = usage.peak_bytes;
+                }
+                if !read_count_out.is_null() {
+                    *read_count_out = usage.read_count as c_ulong;
+                }
+                if !write_count_out.is_null() {
+                    *write_count_out = usage.write_count as c_ulong;
+                }
+                if !bytes_transferred_out.is_null() {
+                    *bytes_transferred_out = usage.bytes_transferred as c_ulong;
+                }
+                if !utilization_percent_out.is_null() {
+                    *utilization_percent_out = usage.utilization_percent;
+                }
+            }
+            
+            Ok(())
+        })
+    }
+
+    /// Create a memory registry (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_memory_registry_create(registry_ptr: *mut *mut c_void) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let registry = MemoryRegistry::new();
+            
+            unsafe {
+                *registry_ptr = Box::into_raw(Box::new(registry)) as *mut c_void;
+            }
+            
+            Ok(())
+        })
+    }
+
+    /// Register a memory in the registry (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_memory_registry_register(
+        registry_ptr: *mut c_void,
+        memory_ptr: *mut c_void,
+        memory_id_out: *mut c_uint,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let registry = unsafe { ffi_utils::deref_ptr::<MemoryRegistry>(registry_ptr, "registry")? };
+            let memory = unsafe { Box::from_raw(memory_ptr as *mut Memory) };
+            
+            let memory_id = registry.register(*memory)?;
+            
+            unsafe {
+                *memory_id_out = memory_id;
+            }
+            
+            Ok(())
+        })
+    }
+
+    /// Get memory from registry (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_memory_registry_get(
+        registry_ptr: *mut c_void,
+        memory_id: c_uint,
+        memory_ptr: *mut *mut c_void,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let registry = unsafe { ffi_utils::deref_ptr::<MemoryRegistry>(registry_ptr, "registry")? };
+            
+            let memory_arc = registry.get(memory_id)?;
+            
+            // Return a reference to the Arc-wrapped memory
+            // Note: This is a simplified approach - production code would need better lifetime management
+            unsafe {
+                *memory_ptr = Arc::as_ptr(&memory_arc) as *mut c_void;
+            }
+            
+            Ok(())
+        })
+    }
+
+    /// Destroy a memory instance (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_memory_destroy(memory_ptr: *mut c_void) {
+        if !memory_ptr.is_null() {
+            unsafe {
+                let _ = Box::from_raw(memory_ptr as *mut Memory);
+            }
+            log::debug!("Memory destroyed successfully");
+        }
+    }
+
+    /// Destroy a memory registry (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_memory_registry_destroy(registry_ptr: *mut c_void) {
+        if !registry_ptr.is_null() {
+            unsafe {
+                let _ = Box::from_raw(registry_ptr as *mut MemoryRegistry);
+            }
+            log::debug!("Memory registry destroyed successfully");
         }
     }
 }

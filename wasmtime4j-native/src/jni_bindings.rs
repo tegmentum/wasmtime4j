@@ -1090,5 +1090,162 @@ pub mod jni_component {
     }
 }
 
+/// JNI bindings for Host Function operations
+#[cfg(feature = "jni-bindings")]
+pub mod jni_hostfunc {
+    use super::*;
+    use crate::error::ffi_utils;
+    use crate::hostfunc::{HostFunction, HostFunctionCallback};
+    use crate::instance::WasmValue;
+    use crate::{WasmtimeError, WasmtimeResult};
+    use wasmtime::{ValType, FuncType};
+    use std::os::raw::c_void;
+
+    /// JNI callback implementation that bridges to Java
+    struct JniHostFunctionCallback {
+        java_callback_id: u64,
+    }
+
+    impl HostFunctionCallback for JniHostFunctionCallback {
+        fn execute(&self, _params: &[WasmValue]) -> WasmtimeResult<Vec<WasmValue>> {
+            // This will be called from the native hostFunctionCallback method in Java
+            // For now, we'll return an error as this should not be called directly
+            Err(WasmtimeError::Runtime {
+                message: "JNI host function callback should be handled by Java".to_string(),
+                backtrace: None,
+            })
+        }
+    }
+
+    /// Create a new host function (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniHostFunction_nativeCreateHostFunction(
+        env: JNIEnv,
+        _class: JClass,
+        store_handle: jlong,
+        function_name: JString,
+        function_type_data: jbyteArray,
+        host_function_id: jlong,
+    ) -> jlong {
+        ffi_utils::ffi_try_ptr(|| {
+            // Convert JString to native string
+            let name_string = env.get_string(function_name.into()).map_err(|e| WasmtimeError::Validation {
+                message: format!("Invalid function name: {}", e),
+            })?;
+            let name: String = name_string.into();
+
+            // Convert function type data
+            let type_data = env.convert_byte_array(function_type_data.into()).map_err(|e| WasmtimeError::Validation {
+                message: format!("Invalid function type data: {}", e),
+            })?;
+            
+            let func_type = unmarshal_function_type(&type_data)?;
+            
+            // Get store reference
+            let store = unsafe { crate::store::core::get_store_ref(store_handle as *const c_void)? };
+            let store_weak = std::sync::Arc::downgrade(&store.inner);
+            
+            // Create callback wrapper
+            let callback = Box::new(JniHostFunctionCallback {
+                java_callback_id: host_function_id as u64,
+            });
+            
+            // Create host function
+            let host_func = HostFunction::new(
+                name,
+                func_type,
+                store_weak,
+                callback,
+            )?;
+            
+            let host_func_ptr = Box::into_raw(Box::new(host_func));
+            Ok(host_func_ptr as *mut c_void)
+        }) as jlong
+    }
+
+    /// Destroy a host function (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniHostFunction_nativeDestroyHostFunction(
+        _env: JNIEnv,
+        _class: JClass,
+        host_func_handle: jlong,
+    ) {
+        unsafe {
+            if host_func_handle != 0 {
+                let _ = Box::from_raw(host_func_handle as *mut HostFunction);
+                log::debug!("Destroyed JNI host function with handle: 0x{:x}", host_func_handle);
+            }
+        }
+    }
+
+    /// Unmarshal function type from byte array
+    fn unmarshal_function_type(data: &[u8]) -> WasmtimeResult<FuncType> {
+        // Simple marshalling format:
+        // [param_count: 4 bytes][param_types: param_count bytes][return_count: 4 bytes][return_types: return_count bytes]
+        
+        if data.len() < 8 {
+            return Err(WasmtimeError::Validation {
+                message: "Function type data too short".to_string(),
+            });
+        }
+        
+        let param_count = u32::from_le_bytes([data[0], data[1], data[2], data[3]]) as usize;
+        let return_count_offset = 4 + param_count;
+        
+        if data.len() < return_count_offset + 4 {
+            return Err(WasmtimeError::Validation {
+                message: "Function type data missing return count".to_string(),
+            });
+        }
+        
+        let return_count = u32::from_le_bytes([
+            data[return_count_offset],
+            data[return_count_offset + 1], 
+            data[return_count_offset + 2],
+            data[return_count_offset + 3]
+        ]) as usize;
+        
+        if data.len() < return_count_offset + 4 + return_count {
+            return Err(WasmtimeError::Validation {
+                message: "Function type data too short for return types".to_string(),
+            });
+        }
+        
+        // Parse parameter types
+        let mut param_types = Vec::with_capacity(param_count);
+        for i in 0..param_count {
+            let val_type = match data[4 + i] {
+                0 => ValType::I32,
+                1 => ValType::I64,
+                2 => ValType::F32,
+                3 => ValType::F64,
+                4 => ValType::V128,
+                _ => return Err(WasmtimeError::Validation {
+                    message: format!("Invalid parameter type: {}", data[4 + i]),
+                }),
+            };
+            param_types.push(val_type);
+        }
+        
+        // Parse return types
+        let mut return_types = Vec::with_capacity(return_count);
+        for i in 0..return_count {
+            let val_type = match data[return_count_offset + 4 + i] {
+                0 => ValType::I32,
+                1 => ValType::I64,
+                2 => ValType::F32,
+                3 => ValType::F64,
+                4 => ValType::V128,
+                _ => return Err(WasmtimeError::Validation {
+                    message: format!("Invalid return type: {}", data[return_count_offset + 4 + i]),
+                }),
+            };
+            return_types.push(val_type);
+        }
+        
+        wasmtime::FuncType::new(param_types, return_types)
+    }
+}
+
 #[cfg(not(feature = "jni-bindings"))]
 pub mod instance {}
