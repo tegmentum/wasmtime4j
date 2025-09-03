@@ -16,6 +16,7 @@
 
 package ai.tegmentum.wasmtime4j.nativeloader;
 
+import java.util.Arrays;
 import java.util.Objects;
 
 /**
@@ -41,7 +42,7 @@ import java.util.Objects;
  *     .tempFilePrefix("mylib-native-")
  *     .tempDirSuffix("-mylib")
  *     .securityLevel(SecurityLevel.STRICT)
- *     .resourcePathConvention(ResourcePathConvention.MAVEN_NATIVE)
+ *     .pathConvention(PathConvention.MAVEN_NATIVE)
  *     .load();
  * }</pre>
  *
@@ -95,41 +96,6 @@ public final class NativeLoaderBuilder {
     PERMISSIVE
   }
 
-  /**
-   * Resource path convention for locating native libraries within JAR resources.
-   *
-   * <p>Different conventions support various packaging and deployment scenarios:
-   *
-   * <ul>
-   *   <li><strong>MAVEN_NATIVE</strong>: Standard Maven native plugin layout
-   *   <li><strong>JNA</strong>: JNA-compatible resource layout
-   *   <li><strong>CUSTOM</strong>: User-defined resource paths
-   * </ul>
-   */
-  public enum ResourcePathConvention {
-    /**
-     * Maven Native plugin convention.
-     *
-     * <p>Uses the standard Maven native plugin resource layout:
-     * {@code /natives/{os}-{arch}/{libraryname}.{extension}}
-     */
-    MAVEN_NATIVE,
-
-    /**
-     * JNA (Java Native Access) convention.
-     *
-     * <p>Uses JNA-compatible resource paths for better interoperability with JNA-based libraries.
-     */
-    JNA,
-
-    /**
-     * Custom resource path convention.
-     *
-     * <p>Allows user-defined resource path patterns. When using this convention, additional
-     * configuration methods may be available to specify the exact path format.
-     */
-    CUSTOM
-  }
 
   /** Default library name for backward compatibility. */
   private static final String DEFAULT_LIBRARY_NAME = NativeLibraryConfig.DEFAULT_LIBRARY_NAME;
@@ -143,16 +109,17 @@ public final class NativeLoaderBuilder {
   /** Default security level. */
   private static final SecurityLevel DEFAULT_SECURITY_LEVEL = SecurityLevel.MODERATE;
 
-  /** Default resource path convention. */
-  private static final ResourcePathConvention DEFAULT_RESOURCE_PATH_CONVENTION = 
-      ResourcePathConvention.MAVEN_NATIVE;
+  /** Default path convention. */
+  private static final PathConvention DEFAULT_PATH_CONVENTION = PathConvention.WASMTIME4J;
 
   // Configuration fields
   private String libraryName = DEFAULT_LIBRARY_NAME;
   private String tempFilePrefix = DEFAULT_TEMP_FILE_PREFIX;
   private String tempDirSuffix = DEFAULT_TEMP_DIR_SUFFIX;
   private SecurityLevel securityLevel = DEFAULT_SECURITY_LEVEL;
-  private ResourcePathConvention resourcePathConvention = DEFAULT_RESOURCE_PATH_CONVENTION;
+  private PathConvention pathConvention = DEFAULT_PATH_CONVENTION;
+  private PathConvention.CustomPathConvention customPathConvention;
+  private PathConvention[] conventionPriority;
 
   /** Package-private constructor - use {@link NativeLoader#builder()} to create instances. */
   NativeLoaderBuilder() {
@@ -224,19 +191,61 @@ public final class NativeLoaderBuilder {
   }
 
   /**
-   * Sets the resource path convention for locating libraries in JAR resources.
+   * Sets the path convention for locating libraries in JAR resources.
    *
-   * <p>The resource path convention determines how native libraries are located within JAR files.
+   * <p>The path convention determines how native libraries are located within JAR files.
    * Different conventions support various packaging tools and deployment scenarios.
    *
-   * @param resourcePathConvention the resource path convention
+   * @param pathConvention the path convention to use
    * @return this builder for method chaining
-   * @throws IllegalArgumentException if resourcePathConvention is null
+   * @throws IllegalArgumentException if pathConvention is null
    */
-  public NativeLoaderBuilder resourcePathConvention(
-      final ResourcePathConvention resourcePathConvention) {
-    Objects.requireNonNull(resourcePathConvention, "resourcePathConvention must not be null");
-    this.resourcePathConvention = resourcePathConvention;
+  public NativeLoaderBuilder pathConvention(final PathConvention pathConvention) {
+    Objects.requireNonNull(pathConvention, "pathConvention must not be null");
+    this.pathConvention = pathConvention;
+    return this;
+  }
+
+  /**
+   * Sets a custom path pattern when using CUSTOM path convention.
+   *
+   * <p>The pattern supports placeholders that will be substituted with platform-specific values:
+   * <ul>
+   *   <li>{@code {platform}} - Full platform identifier (e.g., "linux-x86_64")
+   *   <li>{@code {os}} - Operating system name (e.g., "linux")
+   *   <li>{@code {arch}} - Architecture name (e.g., "x86_64")
+   *   <li>{@code {lib}} - Platform-specific library prefix
+   *   <li>{@code {name}} - Library name
+   *   <li>{@code {ext}} - Platform-specific library extension
+   * </ul>
+   *
+   * @param customPattern the custom path pattern with placeholders
+   * @return this builder for method chaining
+   * @throws IllegalArgumentException if customPattern is null or invalid
+   */
+  public NativeLoaderBuilder customPathPattern(final String customPattern) {
+    Objects.requireNonNull(customPattern, "customPattern must not be null");
+    // Create and validate the custom convention
+    this.customPathConvention = PathConvention.custom(customPattern);
+    return this;
+  }
+
+  /**
+   * Sets the convention priority order for fallback resolution.
+   *
+   * <p>When multiple conventions are specified, they will be tried in the given order until
+   * a library resource is found. If no priority is set, only the primary convention is used.
+   *
+   * @param conventions the conventions to try in order
+   * @return this builder for method chaining
+   * @throws IllegalArgumentException if conventions is null or empty
+   */
+  public NativeLoaderBuilder conventionPriority(final PathConvention... conventions) {
+    Objects.requireNonNull(conventions, "conventions must not be null");
+    if (conventions.length == 0) {
+      throw new IllegalArgumentException("conventions must not be empty");
+    }
+    this.conventionPriority = conventions.clone();
     return this;
   }
 
@@ -263,11 +272,11 @@ public final class NativeLoaderBuilder {
     // Create base configuration
     final NativeLibraryConfig baseConfig = buildBaseConfig();
     
-    // Apply security level and resource path convention
+    // Apply security level and path convention
     final NativeLibraryConfig finalConfig = applyAdvancedConfiguration(baseConfig);
     
-    // Delegate to NativeLibraryUtils for actual loading
-    return NativeLibraryUtils.loadNativeLibrary(finalConfig);
+    // Perform the actual loading using the configured conventions
+    return performLoad(finalConfig);
   }
 
   /**
@@ -281,24 +290,58 @@ public final class NativeLoaderBuilder {
   }
 
   /**
-   * Applies advanced configuration options like security level and resource path convention.
+   * Applies advanced configuration options like security level and path convention.
    *
-   * <p>For now, this method returns the base configuration unchanged as the advanced features
-   * are primarily behavioral and don't affect the core NativeLibraryConfig. Future versions
-   * may extend the configuration system to support these features.
+   * <p>This method uses the new convention-based loading functionality when path conventions
+   * or convention priority is specified. Otherwise, it uses the standard loading method.
    *
    * @param baseConfig the base configuration
-   * @return the enhanced configuration
+   * @return the enhanced configuration (currently returns the same config)
    */
   private NativeLibraryConfig applyAdvancedConfiguration(final NativeLibraryConfig baseConfig) {
-    // Note: For now, security level and resource path convention are stored for future use
-    // but don't modify the base configuration. Future implementations may extend
-    // NativeLibraryConfig to support these features or create a wrapper configuration.
+    // The advanced configuration is applied during loading, not in config building
+    // This preserves the existing NativeLibraryConfig interface
     
     // TODO: Implement security level validation
-    // TODO: Implement resource path convention handling
     
     return baseConfig;
+  }
+
+  /**
+   * Performs the actual library loading using the configured conventions.
+   *
+   * @param config the base configuration
+   * @return the library loading information
+   */
+  private NativeLibraryUtils.LibraryLoadInfo performLoad(final NativeLibraryConfig config) {
+    // Determine which conventions to use
+    final PathConvention[] conventions = getConventionsToTry();
+    
+    if (customPathConvention != null) {
+      // Use custom convention with fallback to standard conventions
+      return NativeLibraryUtils.loadNativeLibraryWithCustomConvention(
+          libraryName, config, customPathConvention, conventions);
+    } else if (conventions.length > 1 || conventions[0] != PathConvention.WASMTIME4J) {
+      // Use standard convention-based loading
+      return NativeLibraryUtils.loadNativeLibraryWithConventions(
+          libraryName, config, conventions);
+    } else {
+      // Use legacy loading method for backward compatibility
+      return NativeLibraryUtils.loadNativeLibrary(libraryName, config);
+    }
+  }
+
+  /**
+   * Gets the conventions to try in priority order.
+   *
+   * @return the conventions array
+   */
+  private PathConvention[] getConventionsToTry() {
+    if (conventionPriority != null && conventionPriority.length > 0) {
+      return conventionPriority.clone();
+    } else {
+      return new PathConvention[] { pathConvention };
+    }
   }
 
   /**
@@ -338,11 +381,29 @@ public final class NativeLoaderBuilder {
   }
 
   /**
-   * Gets the current resource path convention.
+   * Gets the current path convention.
    *
-   * @return the resource path convention
+   * @return the path convention
    */
-  public ResourcePathConvention getResourcePathConvention() {
-    return resourcePathConvention;
+  public PathConvention getPathConvention() {
+    return pathConvention;
+  }
+
+  /**
+   * Gets the current custom path convention.
+   *
+   * @return the custom path convention, or null if not set
+   */
+  public PathConvention.CustomPathConvention getCustomPathConvention() {
+    return customPathConvention;
+  }
+
+  /**
+   * Gets the current convention priority array.
+   *
+   * @return the convention priority array, or null if not set
+   */
+  public PathConvention[] getConventionPriority() {
+    return conventionPriority != null ? conventionPriority.clone() : null;
   }
 }

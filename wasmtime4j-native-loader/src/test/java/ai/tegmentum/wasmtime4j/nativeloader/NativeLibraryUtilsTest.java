@@ -196,7 +196,9 @@ final class NativeLibraryUtilsTest {
             true,
             null,
             NativeLibraryUtils.LibraryLoadInfo.LoadingMethod.SYSTEM_LIBRARY_PATH,
-            null);
+            null,
+            null,
+            new java.util.ArrayList<>());
 
     assertTrue(
         successInfo.isSuccessful(),
@@ -211,7 +213,9 @@ final class NativeLibraryUtilsTest {
             false,
             null,
             null,
-            new RuntimeException("Test error"));
+            new RuntimeException("Test error"),
+            null,
+            new java.util.ArrayList<>());
 
     assertFalse(failedInfo.isSuccessful(), "Load info should not be successful with error");
   }
@@ -229,7 +233,9 @@ final class NativeLibraryUtilsTest {
             true,
             null,
             NativeLibraryUtils.LibraryLoadInfo.LoadingMethod.SYSTEM_LIBRARY_PATH,
-            null);
+            null,
+            null,
+            new java.util.ArrayList<>());
 
     final String successString = successInfo.toString();
     assertNotNull(successString, "toString should not return null");
@@ -243,7 +249,8 @@ final class NativeLibraryUtilsTest {
     final RuntimeException testError = new RuntimeException("Test error");
     final NativeLibraryUtils.LibraryLoadInfo failedInfo =
         new NativeLibraryUtils.LibraryLoadInfo(
-            "test", platformInfo, "/test/path", false, null, null, testError);
+            "test", platformInfo, "/test/path", false, null, null, testError, null, 
+            new java.util.ArrayList<>());
 
     final String failedString = failedInfo.toString();
     assertNotNull(failedString, "toString should not return null");
