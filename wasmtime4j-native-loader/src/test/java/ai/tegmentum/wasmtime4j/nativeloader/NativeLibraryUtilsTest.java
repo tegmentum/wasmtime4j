@@ -249,7 +249,14 @@ final class NativeLibraryUtilsTest {
     final RuntimeException testError = new RuntimeException("Test error");
     final NativeLibraryUtils.LibraryLoadInfo failedInfo =
         new NativeLibraryUtils.LibraryLoadInfo(
-            "test", platformInfo, "/test/path", false, null, null, testError, null, 
+            "test",
+            platformInfo,
+            "/test/path",
+            false,
+            null,
+            null,
+            testError,
+            null,
             new java.util.ArrayList<>());
 
     final String failedString = failedInfo.toString();

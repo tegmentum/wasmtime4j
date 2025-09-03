@@ -30,8 +30,8 @@ import org.junit.jupiter.params.provider.EnumSource;
 /**
  * Comprehensive tests for PathConvention enum and resource path generation functionality.
  *
- * <p>This test class verifies that path conventions correctly generate resource paths
- * for all supported platforms and library naming patterns.
+ * <p>This test class verifies that path conventions correctly generate resource paths for all
+ * supported platforms and library naming patterns.
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 final class PathConventionTest {
@@ -44,43 +44,43 @@ final class PathConventionTest {
   @BeforeEach
   void setUp() {
     // Create platform info objects for testing different platforms
-    linuxX64Info = new PlatformDetector.PlatformInfo(
-        PlatformDetector.OperatingSystem.LINUX,
-        PlatformDetector.Architecture.X86_64);
-        
-    windowsX64Info = new PlatformDetector.PlatformInfo(
-        PlatformDetector.OperatingSystem.WINDOWS,
-        PlatformDetector.Architecture.X86_64);
-        
-    darwinX64Info = new PlatformDetector.PlatformInfo(
-        PlatformDetector.OperatingSystem.MACOS,
-        PlatformDetector.Architecture.X86_64);
-        
-    linuxAarch64Info = new PlatformDetector.PlatformInfo(
-        PlatformDetector.OperatingSystem.LINUX,
-        PlatformDetector.Architecture.AARCH64);
+    linuxX64Info =
+        new PlatformDetector.PlatformInfo(
+            PlatformDetector.OperatingSystem.LINUX, PlatformDetector.Architecture.X86_64);
+
+    windowsX64Info =
+        new PlatformDetector.PlatformInfo(
+            PlatformDetector.OperatingSystem.WINDOWS, PlatformDetector.Architecture.X86_64);
+
+    darwinX64Info =
+        new PlatformDetector.PlatformInfo(
+            PlatformDetector.OperatingSystem.MACOS, PlatformDetector.Architecture.X86_64);
+
+    linuxAarch64Info =
+        new PlatformDetector.PlatformInfo(
+            PlatformDetector.OperatingSystem.LINUX, PlatformDetector.Architecture.AARCH64);
   }
 
   @Test
   @DisplayName("WASMTIME4J convention should generate correct paths for all platforms")
   void testWasmtime4jConvention() {
     final String libraryName = "wasmtime4j";
-    
+
     assertEquals(
         "/native/linux-x86_64/libwasmtime4j.so",
         PathConvention.WASMTIME4J.generatePath(libraryName, linuxX64Info),
         "WASMTIME4J convention should generate correct Linux x86_64 path");
-        
+
     assertEquals(
         "/native/windows-x86_64/wasmtime4j.dll",
         PathConvention.WASMTIME4J.generatePath(libraryName, windowsX64Info),
         "WASMTIME4J convention should generate correct Windows x86_64 path");
-        
+
     assertEquals(
         "/native/macos-x86_64/libwasmtime4j.dylib",
         PathConvention.WASMTIME4J.generatePath(libraryName, darwinX64Info),
         "WASMTIME4J convention should generate correct macOS x86_64 path");
-        
+
     assertEquals(
         "/native/linux-aarch64/libwasmtime4j.so",
         PathConvention.WASMTIME4J.generatePath(libraryName, linuxAarch64Info),
@@ -91,17 +91,17 @@ final class PathConventionTest {
   @DisplayName("MAVEN_NATIVE convention should generate correct paths for all platforms")
   void testMavenNativeConvention() {
     final String libraryName = "testlib";
-    
+
     assertEquals(
         "/natives/linux-x86_64/libtestlib.so",
         PathConvention.MAVEN_NATIVE.generatePath(libraryName, linuxX64Info),
         "MAVEN_NATIVE convention should generate correct Linux x86_64 path");
-        
+
     assertEquals(
         "/natives/windows-x86_64/testlib.dll",
         PathConvention.MAVEN_NATIVE.generatePath(libraryName, windowsX64Info),
         "MAVEN_NATIVE convention should generate correct Windows x86_64 path");
-        
+
     assertEquals(
         "/natives/macos-x86_64/libtestlib.dylib",
         PathConvention.MAVEN_NATIVE.generatePath(libraryName, darwinX64Info),
@@ -112,17 +112,17 @@ final class PathConventionTest {
   @DisplayName("JNA convention should generate correct paths for all platforms")
   void testJnaConvention() {
     final String libraryName = "jnalib";
-    
+
     assertEquals(
         "/linux-x86_64/jnalib.so",
         PathConvention.JNA.generatePath(libraryName, linuxX64Info),
         "JNA convention should generate correct Linux x86_64 path");
-        
+
     assertEquals(
         "/windows-x86_64/jnalib.dll",
         PathConvention.JNA.generatePath(libraryName, windowsX64Info),
         "JNA convention should generate correct Windows x86_64 path");
-        
+
     assertEquals(
         "/macos-x86_64/jnalib.dylib",
         PathConvention.JNA.generatePath(libraryName, darwinX64Info),
@@ -143,10 +143,10 @@ final class PathConventionTest {
   void testCustomPathConventionFactory() {
     final String customPattern = "/lib/{platform}/{name}{ext}";
     final PathConvention.CustomPathConvention custom = PathConvention.custom(customPattern);
-    
+
     assertNotNull(custom, "Custom convention should not be null");
     assertEquals(customPattern, custom.getPattern(), "Custom pattern should match input");
-    
+
     assertEquals(
         "/lib/linux-x86_64/testlib.so",
         custom.generatePath("testlib", linuxX64Info),
@@ -160,12 +160,12 @@ final class PathConventionTest {
         NullPointerException.class,
         () -> PathConvention.custom(null),
         "Should throw NPE for null pattern");
-        
+
     assertThrows(
         IllegalArgumentException.class,
         () -> PathConvention.custom(""),
         "Should throw IAE for empty pattern");
-        
+
     assertThrows(
         IllegalArgumentException.class,
         () -> PathConvention.custom("   "),
@@ -179,7 +179,7 @@ final class PathConventionTest {
         SecurityException.class,
         () -> PathConvention.custom("../../../etc/passwd"),
         "Should reject path traversal patterns");
-        
+
     assertThrows(
         SecurityException.class,
         () -> PathConvention.custom("/lib/{name}/../{platform}"),
@@ -193,12 +193,12 @@ final class PathConventionTest {
     if (convention == PathConvention.CUSTOM) {
       return; // Skip CUSTOM as it has different behavior
     }
-    
+
     assertThrows(
         NullPointerException.class,
         () -> convention.generatePath(null, linuxX64Info),
         "Should throw NPE for null library name");
-        
+
     assertThrows(
         NullPointerException.class,
         () -> convention.generatePath("test", null),
@@ -212,12 +212,12 @@ final class PathConventionTest {
     if (convention == PathConvention.CUSTOM) {
       return; // Skip CUSTOM as it has different behavior
     }
-    
+
     assertThrows(
         IllegalArgumentException.class,
         () -> convention.generatePath("", linuxX64Info),
         "Should throw IAE for empty library name");
-        
+
     assertThrows(
         IllegalArgumentException.class,
         () -> convention.generatePath("   ", linuxX64Info),
@@ -229,10 +229,12 @@ final class PathConventionTest {
   void testPlaceholderSubstitution() {
     final String pattern = "/{os}/{arch}/{platform}/{lib}{name}{ext}";
     final PathConvention.CustomPathConvention custom = PathConvention.custom(pattern);
-    
+
     final String result = custom.generatePath("mylib", linuxX64Info);
-    
-    assertEquals("/linux/x86_64/linux-x86_64/libmylib.so", result,
+
+    assertEquals(
+        "/linux/x86_64/linux-x86_64/libmylib.so",
+        result,
         "All placeholders should be properly substituted");
   }
 
@@ -241,35 +243,42 @@ final class PathConventionTest {
   void testLibraryNameSanitization() {
     final String pattern = "/lib/{name}{ext}";
     final PathConvention.CustomPathConvention custom = PathConvention.custom(pattern);
-    
+
     // Test that path separators are removed from library name
     final String result = custom.generatePath("lib/with/slashes", linuxX64Info);
-    
-    assertEquals("/lib/libwithslashes.so", result,
+
+    assertEquals(
+        "/lib/libwithslashes.so",
+        result,
         "Library name should be sanitized to remove path separators");
   }
 
   @Test
   @DisplayName("Convention toString methods should provide useful output")
   void testToStringMethods() {
-    assertEquals("PathConvention.WASMTIME4J(\"/native/{platform}/{lib}{name}{ext}\")",
+    assertEquals(
+        "PathConvention.WASMTIME4J(\"/native/{platform}/{lib}{name}{ext}\")",
         PathConvention.WASMTIME4J.toString(),
         "WASMTIME4J toString should show pattern");
-        
-    assertEquals("PathConvention.MAVEN_NATIVE(\"/natives/{os}-{arch}/{lib}{name}{ext}\")",
+
+    assertEquals(
+        "PathConvention.MAVEN_NATIVE(\"/natives/{os}-{arch}/{lib}{name}{ext}\")",
         PathConvention.MAVEN_NATIVE.toString(),
         "MAVEN_NATIVE toString should show pattern");
-        
-    assertEquals("PathConvention.JNA(\"/{platform}/{name}{ext}\")",
+
+    assertEquals(
+        "PathConvention.JNA(\"/{platform}/{name}{ext}\")",
         PathConvention.JNA.toString(),
         "JNA toString should show pattern");
-        
-    assertEquals("PathConvention.CUSTOM",
+
+    assertEquals(
+        "PathConvention.CUSTOM",
         PathConvention.CUSTOM.toString(),
         "CUSTOM toString should show CUSTOM identifier");
-        
+
     final PathConvention.CustomPathConvention custom = PathConvention.custom("/test/{name}");
-    assertEquals("PathConvention.CUSTOM(\"/test/{name}\")",
+    assertEquals(
+        "PathConvention.CUSTOM(\"/test/{name}\")",
         custom.toString(),
         "Custom convention toString should show pattern");
   }

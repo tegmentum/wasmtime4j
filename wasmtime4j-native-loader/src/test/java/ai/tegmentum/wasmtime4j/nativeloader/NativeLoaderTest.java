@@ -36,19 +36,20 @@ final class NativeLoaderTest {
   @DisplayName("Should load library with default configuration using static method")
   void testLoadLibraryWithDefaultConfiguration() {
     // Test loading a library that doesn't exist - should return info with error
-    final NativeLibraryUtils.LibraryLoadInfo info = 
+    final NativeLibraryUtils.LibraryLoadInfo info =
         assertDoesNotThrow(() -> NativeLoader.loadLibrary("nonexistent-test-library"));
-    
+
     assertNotNull(info, "Load info should not be null");
     assertNotNull(info.getLibraryName(), "Library name should not be null");
-    assertEquals("nonexistent-test-library", info.getLibraryName(), 
-        "Library name should match input");
+    assertEquals(
+        "nonexistent-test-library", info.getLibraryName(), "Library name should match input");
   }
 
   @Test
   @DisplayName("Should reject null library name in static method")
   void testLoadLibraryWithNullName() {
-    assertThrows(IllegalArgumentException.class, 
+    assertThrows(
+        IllegalArgumentException.class,
         () -> NativeLoader.loadLibrary(null),
         "Should throw IllegalArgumentException for null library name");
   }
@@ -57,13 +58,17 @@ final class NativeLoaderTest {
   @DisplayName("Should create builder instance")
   void testBuilderCreation() {
     final NativeLoaderBuilder builder = assertDoesNotThrow(NativeLoader::builder);
-    
+
     assertNotNull(builder, "Builder should not be null");
-    assertEquals("wasmtime4j", builder.getLibraryName(), 
-        "Builder should start with default library name");
-    assertEquals("wasmtime4j-native-", builder.getTempFilePrefix(), 
+    assertEquals(
+        "wasmtime4j", builder.getLibraryName(), "Builder should start with default library name");
+    assertEquals(
+        "wasmtime4j-native-",
+        builder.getTempFilePrefix(),
         "Builder should start with default temp file prefix");
-    assertEquals("-wasmtime4j", builder.getTempDirSuffix(), 
+    assertEquals(
+        "-wasmtime4j",
+        builder.getTempDirSuffix(),
         "Builder should start with default temp dir suffix");
   }
 
@@ -71,11 +76,14 @@ final class NativeLoaderTest {
   @DisplayName("Should not allow instantiation of utility class")
   void testUtilityClassInstantiation() {
     // Use reflection to try to instantiate the utility class
-    assertThrows(AssertionError.class, () -> {
-      final var constructor = NativeLoader.class.getDeclaredConstructor();
-      constructor.setAccessible(true);
-      constructor.newInstance();
-    }, "Should throw AssertionError when trying to instantiate utility class");
+    assertThrows(
+        AssertionError.class,
+        () -> {
+          final var constructor = NativeLoader.class.getDeclaredConstructor();
+          constructor.setAccessible(true);
+          constructor.newInstance();
+        },
+        "Should throw AssertionError when trying to instantiate utility class");
   }
 
   @Test
@@ -83,25 +91,26 @@ final class NativeLoaderTest {
   void testMultipleBuilderInstances() {
     final NativeLoaderBuilder builder1 = NativeLoader.builder();
     final NativeLoaderBuilder builder2 = NativeLoader.builder();
-    
+
     assertNotNull(builder1, "First builder should not be null");
     assertNotNull(builder2, "Second builder should not be null");
-    
+
     // Modify one builder and verify it doesn't affect the other
     builder1.libraryName("test1");
     builder2.libraryName("test2");
-    
-    assertEquals("test1", builder1.getLibraryName(), 
-        "First builder should have test1 library name");
-    assertEquals("test2", builder2.getLibraryName(), 
-        "Second builder should have test2 library name");
+
+    assertEquals(
+        "test1", builder1.getLibraryName(), "First builder should have test1 library name");
+    assertEquals(
+        "test2", builder2.getLibraryName(), "Second builder should have test2 library name");
   }
 
   @Test
   @DisplayName("Should handle empty library name appropriately")
   void testEmptyLibraryName() {
     // Empty string should be passed through to the builder and fail validation there
-    assertThrows(IllegalArgumentException.class, 
+    assertThrows(
+        IllegalArgumentException.class,
         () -> NativeLoader.loadLibrary(""),
         "Should throw IllegalArgumentException for empty library name");
   }
@@ -110,7 +119,8 @@ final class NativeLoaderTest {
   @DisplayName("Should handle whitespace-only library name appropriately")
   void testWhitespaceOnlyLibraryName() {
     // Whitespace-only string should be passed through and fail validation
-    assertThrows(IllegalArgumentException.class, 
+    assertThrows(
+        IllegalArgumentException.class,
         () -> NativeLoader.loadLibrary("   "),
         "Should throw IllegalArgumentException for whitespace-only library name");
   }
@@ -119,10 +129,12 @@ final class NativeLoaderTest {
   @DisplayName("Should preserve library name through builder chain")
   void testLibraryNamePreservation() {
     final String testLibName = "test-library-name";
-    final NativeLibraryUtils.LibraryLoadInfo info = 
+    final NativeLibraryUtils.LibraryLoadInfo info =
         assertDoesNotThrow(() -> NativeLoader.loadLibrary(testLibName));
-    
-    assertEquals(testLibName, info.getLibraryName(),
+
+    assertEquals(
+        testLibName,
+        info.getLibraryName(),
         "Library name should be preserved through the loading process");
   }
 
@@ -130,16 +142,18 @@ final class NativeLoaderTest {
   @DisplayName("Should work with builder pattern equivalent")
   void testBuilderPatternEquivalence() {
     final String testLibName = "equivalent-test";
-    
+
     // Load using static method
-    final NativeLibraryUtils.LibraryLoadInfo staticInfo = 
+    final NativeLibraryUtils.LibraryLoadInfo staticInfo =
         assertDoesNotThrow(() -> NativeLoader.loadLibrary(testLibName));
-    
+
     // Load using builder pattern
-    final NativeLibraryUtils.LibraryLoadInfo builderInfo = 
+    final NativeLibraryUtils.LibraryLoadInfo builderInfo =
         assertDoesNotThrow(() -> NativeLoader.builder().libraryName(testLibName).load());
-    
-    assertEquals(staticInfo.getLibraryName(), builderInfo.getLibraryName(),
+
+    assertEquals(
+        staticInfo.getLibraryName(),
+        builderInfo.getLibraryName(),
         "Static and builder methods should produce equivalent results");
   }
 }

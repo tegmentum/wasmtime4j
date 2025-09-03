@@ -22,8 +22,8 @@ import java.util.Objects;
  * Defines different conventions for locating native libraries within JAR resources.
  *
  * <p>This enum provides predefined patterns for common native library packaging approaches used
- * across the Java ecosystem. Each convention defines a specific resource path pattern that
- * supports placeholder substitution for platform-specific values.
+ * across the Java ecosystem. Each convention defines a specific resource path pattern that supports
+ * placeholder substitution for platform-specific values.
  *
  * <p><strong>Supported Placeholders:</strong>
  *
@@ -58,6 +58,7 @@ public enum PathConvention {
    * <p>Pattern: {@code /native/{platform}/{lib}{name}{ext}}
    *
    * <p>Example paths:
+   *
    * <ul>
    *   <li>Linux: {@code /native/linux-x86_64/libwasmtime4j.so}
    *   <li>Windows: {@code /native/windows-x86_64/wasmtime4j.dll}
@@ -71,10 +72,11 @@ public enum PathConvention {
    *
    * <p>Pattern: {@code /natives/{os}-{arch}/{lib}{name}{ext}}
    *
-   * <p>This convention matches the standard Maven Native Plugin resource layout used by many
-   * Java native library projects.
+   * <p>This convention matches the standard Maven Native Plugin resource layout used by many Java
+   * native library projects.
    *
    * <p>Example paths:
+   *
    * <ul>
    *   <li>Linux: {@code /natives/linux-x86_64/libwasmtime4j.so}
    *   <li>Windows: {@code /natives/windows-x86_64/wasmtime4j.dll}
@@ -92,6 +94,7 @@ public enum PathConvention {
    * libraries directly under platform directories without additional path prefixes.
    *
    * <p>Example paths:
+   *
    * <ul>
    *   <li>Linux: {@code /linux-x86_64/wasmtime4j.so}
    *   <li>Windows: {@code /windows-x86_64/wasmtime4j.dll}
@@ -106,8 +109,8 @@ public enum PathConvention {
    * <p>This special convention allows users to define their own resource path patterns. When using
    * CUSTOM, the pattern must be provided separately through configuration methods.
    *
-   * <p>Custom patterns support all standard placeholders and undergo security validation to
-   * prevent path traversal attacks.
+   * <p>Custom patterns support all standard placeholders and undergo security validation to prevent
+   * path traversal attacks.
    */
   CUSTOM("");
 
@@ -135,8 +138,8 @@ public enum PathConvention {
   /**
    * Generates a complete resource path for the specified library and platform.
    *
-   * <p>This method substitutes placeholders in the convention's pattern with actual values from
-   * the platform information.
+   * <p>This method substitutes placeholders in the convention's pattern with actual values from the
+   * platform information.
    *
    * @param libraryName the base name of the library
    * @param platformInfo the platform information for placeholder substitution
@@ -145,8 +148,8 @@ public enum PathConvention {
    * @throws IllegalArgumentException if platformInfo is null
    * @throws IllegalStateException if this is a CUSTOM convention without a pattern
    */
-  public String generatePath(final String libraryName, 
-                           final PlatformDetector.PlatformInfo platformInfo) {
+  public String generatePath(
+      final String libraryName, final PlatformDetector.PlatformInfo platformInfo) {
     Objects.requireNonNull(libraryName, "libraryName must not be null");
     Objects.requireNonNull(platformInfo, "platformInfo must not be null");
 
@@ -165,8 +168,8 @@ public enum PathConvention {
   /**
    * Creates a custom path convention with the specified pattern.
    *
-   * <p>This method creates a wrapper that can be used with convention-based loading.
-   * The pattern supports all standard placeholders and undergoes security validation.
+   * <p>This method creates a wrapper that can be used with convention-based loading. The pattern
+   * supports all standard placeholders and undergoes security validation.
    *
    * @param customPattern the custom resource path pattern
    * @return a custom path convention wrapper
@@ -185,9 +188,7 @@ public enum PathConvention {
     return new CustomPathConvention(customPattern);
   }
 
-  /**
-   * Wrapper class for custom path conventions with user-defined patterns.
-   */
+  /** Wrapper class for custom path conventions with user-defined patterns. */
   public static final class CustomPathConvention {
     private final String customPattern;
 
@@ -211,8 +212,8 @@ public enum PathConvention {
      * @param platformInfo the platform information
      * @return the generated path
      */
-    public String generatePath(final String libraryName,
-                             final PlatformDetector.PlatformInfo platformInfo) {
+    public String generatePath(
+        final String libraryName, final PlatformDetector.PlatformInfo platformInfo) {
       Objects.requireNonNull(libraryName, "libraryName must not be null");
       Objects.requireNonNull(platformInfo, "platformInfo must not be null");
 

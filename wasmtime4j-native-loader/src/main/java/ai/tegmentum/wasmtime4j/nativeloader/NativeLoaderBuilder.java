@@ -16,15 +16,14 @@
 
 package ai.tegmentum.wasmtime4j.nativeloader;
 
-import java.util.Arrays;
 import java.util.Objects;
 
 /**
  * Builder for configuring native library loading with a fluent API.
  *
- * <p>This builder provides comprehensive configuration options for native library loading, including
- * security levels, resource path conventions, and custom naming patterns. All configurations are
- * validated and result in immutable, thread-safe objects.
+ * <p>This builder provides comprehensive configuration options for native library loading,
+ * including security levels, resource path conventions, and custom naming patterns. All
+ * configurations are validated and result in immutable, thread-safe objects.
  *
  * <p><strong>Basic Usage:</strong>
  *
@@ -96,12 +95,12 @@ public final class NativeLoaderBuilder {
     PERMISSIVE
   }
 
-
   /** Default library name for backward compatibility. */
   private static final String DEFAULT_LIBRARY_NAME = NativeLibraryConfig.DEFAULT_LIBRARY_NAME;
 
   /** Default temporary file prefix. */
-  private static final String DEFAULT_TEMP_FILE_PREFIX = NativeLibraryConfig.DEFAULT_TEMP_FILE_PREFIX;
+  private static final String DEFAULT_TEMP_FILE_PREFIX =
+      NativeLibraryConfig.DEFAULT_TEMP_FILE_PREFIX;
 
   /** Default temporary directory suffix. */
   private static final String DEFAULT_TEMP_DIR_SUFFIX = NativeLibraryConfig.DEFAULT_TEMP_DIR_SUFFIX;
@@ -193,8 +192,8 @@ public final class NativeLoaderBuilder {
   /**
    * Sets the path convention for locating libraries in JAR resources.
    *
-   * <p>The path convention determines how native libraries are located within JAR files.
-   * Different conventions support various packaging tools and deployment scenarios.
+   * <p>The path convention determines how native libraries are located within JAR files. Different
+   * conventions support various packaging tools and deployment scenarios.
    *
    * @param pathConvention the path convention to use
    * @return this builder for method chaining
@@ -210,6 +209,7 @@ public final class NativeLoaderBuilder {
    * Sets a custom path pattern when using CUSTOM path convention.
    *
    * <p>The pattern supports placeholders that will be substituted with platform-specific values:
+   *
    * <ul>
    *   <li>{@code {platform}} - Full platform identifier (e.g., "linux-x86_64")
    *   <li>{@code {os}} - Operating system name (e.g., "linux")
@@ -233,8 +233,8 @@ public final class NativeLoaderBuilder {
   /**
    * Sets the convention priority order for fallback resolution.
    *
-   * <p>When multiple conventions are specified, they will be tried in the given order until
-   * a library resource is found. If no priority is set, only the primary convention is used.
+   * <p>When multiple conventions are specified, they will be tried in the given order until a
+   * library resource is found. If no priority is set, only the primary convention is used.
    *
    * @param conventions the conventions to try in order
    * @return this builder for method chaining
@@ -271,10 +271,10 @@ public final class NativeLoaderBuilder {
   public NativeLibraryUtils.LibraryLoadInfo load() {
     // Create base configuration
     final NativeLibraryConfig baseConfig = buildBaseConfig();
-    
+
     // Apply security level and path convention
     final NativeLibraryConfig finalConfig = applyAdvancedConfiguration(baseConfig);
-    
+
     // Perform the actual loading using the configured conventions
     return performLoad(finalConfig);
   }
@@ -292,8 +292,8 @@ public final class NativeLoaderBuilder {
   /**
    * Applies advanced configuration options like security level and path convention.
    *
-   * <p>This method uses the new convention-based loading functionality when path conventions
-   * or convention priority is specified. Otherwise, it uses the standard loading method.
+   * <p>This method uses the new convention-based loading functionality when path conventions or
+   * convention priority is specified. Otherwise, it uses the standard loading method.
    *
    * @param baseConfig the base configuration
    * @return the enhanced configuration (currently returns the same config)
@@ -301,9 +301,9 @@ public final class NativeLoaderBuilder {
   private NativeLibraryConfig applyAdvancedConfiguration(final NativeLibraryConfig baseConfig) {
     // The advanced configuration is applied during loading, not in config building
     // This preserves the existing NativeLibraryConfig interface
-    
+
     // TODO: Implement security level validation
-    
+
     return baseConfig;
   }
 
@@ -316,15 +316,14 @@ public final class NativeLoaderBuilder {
   private NativeLibraryUtils.LibraryLoadInfo performLoad(final NativeLibraryConfig config) {
     // Determine which conventions to use
     final PathConvention[] conventions = getConventionsToTry();
-    
+
     if (customPathConvention != null) {
       // Use custom convention with fallback to standard conventions
       return NativeLibraryUtils.loadNativeLibraryWithCustomConvention(
           libraryName, config, customPathConvention, conventions);
     } else if (conventions.length > 1 || conventions[0] != PathConvention.WASMTIME4J) {
       // Use standard convention-based loading
-      return NativeLibraryUtils.loadNativeLibraryWithConventions(
-          libraryName, config, conventions);
+      return NativeLibraryUtils.loadNativeLibraryWithConventions(libraryName, config, conventions);
     } else {
       // Use legacy loading method for backward compatibility
       return NativeLibraryUtils.loadNativeLibrary(libraryName, config);
@@ -340,7 +339,7 @@ public final class NativeLoaderBuilder {
     if (conventionPriority != null && conventionPriority.length > 0) {
       return conventionPriority.clone();
     } else {
-      return new PathConvention[] { pathConvention };
+      return new PathConvention[] {pathConvention};
     }
   }
 

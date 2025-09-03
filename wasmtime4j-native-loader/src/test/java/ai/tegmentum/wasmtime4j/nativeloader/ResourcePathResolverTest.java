@@ -27,8 +27,8 @@ import org.junit.jupiter.api.TestInstance;
 /**
  * Tests for ResourcePathResolver utility class functionality.
  *
- * <p>This test class focuses on the pattern validation and resolution logic
- * used by path conventions to generate secure resource paths.
+ * <p>This test class focuses on the pattern validation and resolution logic used by path
+ * conventions to generate secure resource paths.
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 final class ResourcePathResolverTest {
@@ -39,17 +39,17 @@ final class ResourcePathResolverTest {
 
   @BeforeEach
   void setUp() {
-    linuxInfo = new PlatformDetector.PlatformInfo(
-        PlatformDetector.OperatingSystem.LINUX,
-        PlatformDetector.Architecture.X86_64);
-        
-    windowsInfo = new PlatformDetector.PlatformInfo(
-        PlatformDetector.OperatingSystem.WINDOWS,
-        PlatformDetector.Architecture.X86_64);
-        
-    darwinInfo = new PlatformDetector.PlatformInfo(
-        PlatformDetector.OperatingSystem.MACOS,
-        PlatformDetector.Architecture.X86_64);
+    linuxInfo =
+        new PlatformDetector.PlatformInfo(
+            PlatformDetector.OperatingSystem.LINUX, PlatformDetector.Architecture.X86_64);
+
+    windowsInfo =
+        new PlatformDetector.PlatformInfo(
+            PlatformDetector.OperatingSystem.WINDOWS, PlatformDetector.Architecture.X86_64);
+
+    darwinInfo =
+        new PlatformDetector.PlatformInfo(
+            PlatformDetector.OperatingSystem.MACOS, PlatformDetector.Architecture.X86_64);
   }
 
   @Test
@@ -69,12 +69,12 @@ final class ResourcePathResolverTest {
         SecurityException.class,
         () -> ResourcePathResolver.validatePattern("../../../etc/passwd"),
         "Should reject basic path traversal");
-        
+
     assertThrows(
         SecurityException.class,
         () -> ResourcePathResolver.validatePattern("/lib/{name}/../secrets"),
         "Should reject path traversal in middle of pattern");
-        
+
     assertThrows(
         SecurityException.class,
         () -> ResourcePathResolver.validatePattern("..\\windows\\system32"),
@@ -123,7 +123,7 @@ final class ResourcePathResolverTest {
         IllegalArgumentException.class,
         () -> ResourcePathResolver.validatePattern("/lib/{invalid placeholder}.so"),
         "Should reject placeholders with spaces");
-        
+
     assertThrows(
         IllegalArgumentException.class,
         () -> ResourcePathResolver.validatePattern("/lib/{.so"),
@@ -135,8 +135,10 @@ final class ResourcePathResolverTest {
   void testStandardPlaceholderSubstitution() {
     final String pattern = "/{platform}/{os}/{arch}/{lib}{name}{ext}";
     final String resolved = ResourcePathResolver.resolvePath(pattern, "testlib", linuxInfo);
-    
-    assertEquals("/linux-x86_64/linux/x86_64/libtestlib.so", resolved,
+
+    assertEquals(
+        "/linux-x86_64/linux/x86_64/libtestlib.so",
+        resolved,
         "All standard placeholders should be substituted");
   }
 
@@ -145,16 +147,19 @@ final class ResourcePathResolverTest {
   void testMultiPlatformResolution() {
     final String pattern = "/native/{platform}/{lib}{name}{ext}";
     final String libraryName = "mylib";
-    
-    assertEquals("/native/linux-x86_64/libmylib.so",
+
+    assertEquals(
+        "/native/linux-x86_64/libmylib.so",
         ResourcePathResolver.resolvePath(pattern, libraryName, linuxInfo),
         "Linux path should be resolved correctly");
-        
-    assertEquals("/native/windows-x86_64/mylib.dll",
+
+    assertEquals(
+        "/native/windows-x86_64/mylib.dll",
         ResourcePathResolver.resolvePath(pattern, libraryName, windowsInfo),
         "Windows path should be resolved correctly");
-        
-    assertEquals("/native/macos-x86_64/libmylib.dylib",
+
+    assertEquals(
+        "/native/macos-x86_64/libmylib.dylib",
         ResourcePathResolver.resolvePath(pattern, libraryName, darwinInfo),
         "macOS path should be resolved correctly");
   }
@@ -163,27 +168,26 @@ final class ResourcePathResolverTest {
   @DisplayName("Library name sanitization should remove path separators")
   void testLibraryNameSanitization() {
     final String pattern = "/lib/{name}.so";
-    
-    final String result1 = ResourcePathResolver.resolvePath(
-        pattern, "lib/with/slashes", linuxInfo);
-    assertEquals("/lib/libwithslashes.so", result1,
-        "Forward slashes should be removed from library name");
-        
-    final String result2 = ResourcePathResolver.resolvePath(
-        pattern, "lib\\with\\backslashes", linuxInfo);
-    assertEquals("/lib/libwithbackslashes.so", result2,
-        "Backslashes should be removed from library name");
+
+    final String result1 = ResourcePathResolver.resolvePath(pattern, "lib/with/slashes", linuxInfo);
+    assertEquals(
+        "/lib/libwithslashes.so", result1, "Forward slashes should be removed from library name");
+
+    final String result2 =
+        ResourcePathResolver.resolvePath(pattern, "lib\\with\\backslashes", linuxInfo);
+    assertEquals(
+        "/lib/libwithbackslashes.so", result2, "Backslashes should be removed from library name");
   }
 
   @Test
   @DisplayName("Library name sanitization should remove control characters")
   void testLibraryNameControlCharacterRemoval() {
     final String pattern = "/lib/{name}.so";
-    
-    final String result = ResourcePathResolver.resolvePath(
-        pattern, "lib\u0001with\u0002control", linuxInfo);
-    assertEquals("/lib/libwithcontrol.so", result,
-        "Control characters should be removed from library name");
+
+    final String result =
+        ResourcePathResolver.resolvePath(pattern, "lib\u0001with\u0002control", linuxInfo);
+    assertEquals(
+        "/lib/libwithcontrol.so", result, "Control characters should be removed from library name");
   }
 
   @Test
@@ -191,16 +195,18 @@ final class ResourcePathResolverTest {
   void testUnresolvedPlaceholderDetection() {
     // This would happen if we had an unknown placeholder
     final String invalidPattern = "/lib/{unknown}/{name}.so";
-    
+
     // Note: This test validates the concept, but the current implementation
     // would just leave the placeholder as-is rather than throwing an exception.
     // The validation would catch it as an unresolved placeholder.
-    
+
     final String resolved = ResourcePathResolver.resolvePath(invalidPattern, "test", linuxInfo);
     // The resolved path would contain "{unknown}" which should trigger validation
-    
+
     // For now, we just verify the placeholder remains
-    assertEquals("/lib/{unknown}/test.so", resolved,
+    assertEquals(
+        "/lib/{unknown}/test.so",
+        resolved,
         "Unknown placeholders should remain in the resolved path");
   }
 
@@ -211,12 +217,12 @@ final class ResourcePathResolverTest {
         NullPointerException.class,
         () -> ResourcePathResolver.resolvePath(null, "test", linuxInfo),
         "Should throw NPE for null pattern");
-        
+
     assertThrows(
         NullPointerException.class,
         () -> ResourcePathResolver.resolvePath("/lib/{name}.so", null, linuxInfo),
         "Should throw NPE for null library name");
-        
+
     assertThrows(
         NullPointerException.class,
         () -> ResourcePathResolver.resolvePath("/lib/{name}.so", "test", null),
@@ -230,17 +236,17 @@ final class ResourcePathResolverTest {
         IllegalArgumentException.class,
         () -> ResourcePathResolver.resolvePath("", "test", linuxInfo),
         "Should throw IAE for empty pattern");
-        
+
     assertThrows(
         IllegalArgumentException.class,
         () -> ResourcePathResolver.resolvePath("   ", "test", linuxInfo),
         "Should throw IAE for whitespace-only pattern");
-        
+
     assertThrows(
         IllegalArgumentException.class,
         () -> ResourcePathResolver.resolvePath("/lib/{name}.so", "", linuxInfo),
         "Should throw IAE for empty library name");
-        
+
     assertThrows(
         IllegalArgumentException.class,
         () -> ResourcePathResolver.resolvePath("/lib/{name}.so", "   ", linuxInfo),
@@ -252,10 +258,10 @@ final class ResourcePathResolverTest {
   void testPatternValidationEdgeCases() {
     // Test minimal valid pattern
     ResourcePathResolver.validatePattern("{name}");
-    
+
     // Test pattern without placeholders
     ResourcePathResolver.validatePattern("/static/path/library.so");
-    
+
     // Test multiple same placeholders (should be valid)
     ResourcePathResolver.validatePattern("/{platform}/{platform}/{name}");
   }

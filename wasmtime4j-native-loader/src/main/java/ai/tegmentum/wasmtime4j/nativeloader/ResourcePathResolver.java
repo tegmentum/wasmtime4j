@@ -57,7 +57,8 @@ final class ResourcePathResolver {
   private static final Pattern ABSOLUTE_PATH_PATTERN = Pattern.compile("^[a-zA-Z]:|^[\\\\/]");
 
   /** Pattern to validate placeholder syntax. */
-  private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("\\{([a-zA-Z][a-zA-Z0-9_]*)\\}");
+  private static final Pattern PLACEHOLDER_PATTERN =
+      Pattern.compile("\\{([a-zA-Z][a-zA-Z0-9_]*)\\}");
 
   /** Private constructor to prevent instantiation. */
   private ResourcePathResolver() {
@@ -77,8 +78,10 @@ final class ResourcePathResolver {
    * @throws IllegalArgumentException if any parameter is null or invalid
    * @throws SecurityException if the pattern or result contains security violations
    */
-  static String resolvePath(final String pattern, final String libraryName,
-                           final PlatformDetector.PlatformInfo platformInfo) {
+  static String resolvePath(
+      final String pattern,
+      final String libraryName,
+      final PlatformDetector.PlatformInfo platformInfo) {
     Objects.requireNonNull(pattern, "pattern must not be null");
     Objects.requireNonNull(libraryName, "libraryName must not be null");
     Objects.requireNonNull(platformInfo, "platformInfo must not be null");
@@ -99,9 +102,11 @@ final class ResourcePathResolver {
     resolvedPath = resolvedPath.replace("{platform}", platformInfo.getPlatformId());
     resolvedPath = resolvedPath.replace("{os}", platformInfo.getOperatingSystem().getName());
     resolvedPath = resolvedPath.replace("{arch}", platformInfo.getArchitecture().getName());
-    resolvedPath = resolvedPath.replace("{lib}", platformInfo.getOperatingSystem().getLibraryPrefix());
+    resolvedPath =
+        resolvedPath.replace("{lib}", platformInfo.getOperatingSystem().getLibraryPrefix());
     resolvedPath = resolvedPath.replace("{name}", sanitizeLibraryName(libraryName));
-    resolvedPath = resolvedPath.replace("{ext}", platformInfo.getOperatingSystem().getLibraryExtension());
+    resolvedPath =
+        resolvedPath.replace("{ext}", platformInfo.getOperatingSystem().getLibraryExtension());
 
     // Validate the resolved path
     validateResolvedPath(resolvedPath);
@@ -138,9 +143,8 @@ final class ResourcePathResolver {
     }
 
     // Check for absolute paths (except for leading slash which is normal for resources)
-    final String patternWithoutLeadingSlash = pattern.startsWith("/") 
-        ? pattern.substring(1) 
-        : pattern;
+    final String patternWithoutLeadingSlash =
+        pattern.startsWith("/") ? pattern.substring(1) : pattern;
     if (ABSOLUTE_PATH_PATTERN.matcher(patternWithoutLeadingSlash).find()) {
       throw new SecurityException("Pattern contains absolute path references: " + pattern);
     }
@@ -174,7 +178,8 @@ final class ResourcePathResolver {
   private static void validateResolvedPath(final String resolvedPath) {
     // Check for remaining path traversal sequences after resolution
     if (PATH_TRAVERSAL_PATTERN.matcher(resolvedPath).find()) {
-      throw new SecurityException("Resolved path contains path traversal sequences: " + resolvedPath);
+      throw new SecurityException(
+          "Resolved path contains path traversal sequences: " + resolvedPath);
     }
 
     // Check for null bytes
@@ -184,8 +189,8 @@ final class ResourcePathResolver {
 
     // Check for unresolved placeholders (indicates missing platform information)
     if (resolvedPath.contains("{") && resolvedPath.contains("}")) {
-      throw new IllegalArgumentException("Resolved path contains unresolved placeholders: " 
-          + resolvedPath);
+      throw new IllegalArgumentException(
+          "Resolved path contains unresolved placeholders: " + resolvedPath);
     }
   }
 
