@@ -379,6 +379,150 @@ impl Default for ExecutionState {
 unsafe impl Send for Store {}
 unsafe impl Sync for Store {}
 
+/// Shared core functions for store operations used by both JNI and Panama interfaces
+/// 
+/// These functions eliminate code duplication and provide consistent behavior
+/// across interface implementations while maintaining defensive programming practices.
+pub mod core {
+    use super::*;
+    use std::os::raw::c_void;
+    use std::time::Duration;
+    use crate::error::{ffi_utils, validate_ptr_not_null};
+    use crate::engine::Engine;
+    
+    /// Core function to create a new store with default configuration
+    pub fn create_store(engine: &Engine) -> WasmtimeResult<Box<Store>> {
+        Store::new(engine).map(Box::new)
+    }
+    
+    /// Core function to create a store with custom configuration
+    pub fn create_store_with_config(
+        engine: &Engine,
+        fuel_limit: Option<u64>,
+        memory_limit_bytes: Option<usize>,
+        execution_timeout_secs: Option<u64>,
+        max_instances: Option<usize>,
+        max_table_elements: Option<u32>,
+        max_functions: Option<usize>,
+    ) -> WasmtimeResult<Box<Store>> {
+        let mut builder = Store::builder();
+        
+        if let Some(fuel) = fuel_limit {
+            builder = builder.fuel_limit(fuel);
+        }
+        
+        if let Some(memory) = memory_limit_bytes {
+            builder = builder.memory_limit(memory);
+        }
+        
+        if let Some(timeout_secs) = execution_timeout_secs {
+            builder = builder.execution_timeout(Duration::from_secs(timeout_secs));
+        }
+        
+        if let Some(instances) = max_instances {
+            builder = builder.max_instances(instances);
+        }
+        
+        if let Some(table_elements) = max_table_elements {
+            builder = builder.max_table_elements(table_elements);
+        }
+        
+        if let Some(functions) = max_functions {
+            builder = builder.max_functions(functions);
+        }
+        
+        builder.build(engine).map(Box::new)
+    }
+    
+    /// Core function to validate store pointer and get reference
+    pub unsafe fn get_store_ref(store_ptr: *const c_void) -> WasmtimeResult<&'static Store> {
+        validate_ptr_not_null!(store_ptr, "store");
+        Ok(&*(store_ptr as *const Store))
+    }
+    
+    /// Core function to validate store pointer and get mutable reference
+    pub unsafe fn get_store_mut(store_ptr: *mut c_void) -> WasmtimeResult<&'static mut Store> {
+        validate_ptr_not_null!(store_ptr, "store");
+        Ok(&mut *(store_ptr as *mut Store))
+    }
+    
+    /// Core function to add fuel to a store
+    pub fn add_fuel(store: &Store, fuel: u64) -> WasmtimeResult<()> {
+        store.add_fuel(fuel)
+    }
+    
+    /// Core function to get remaining fuel
+    pub fn get_fuel_remaining(store: &Store) -> WasmtimeResult<u64> {
+        store.fuel_remaining().map(|opt| opt.unwrap_or(0))
+    }
+    
+    /// Core function to consume fuel from a store
+    pub fn consume_fuel(store: &Store, fuel: u64) -> WasmtimeResult<u64> {
+        store.consume_fuel(fuel)
+    }
+    
+    /// Core function to set epoch deadline for interruption
+    pub fn set_epoch_deadline(store: &Store, ticks: u64) {
+        store.set_epoch_deadline(ticks)
+    }
+    
+    /// Core function to get execution statistics
+    pub fn get_execution_stats(store: &Store) -> WasmtimeResult<ExecutionState> {
+        store.execution_stats()
+    }
+    
+    /// Core function to get memory usage statistics
+    pub fn get_memory_usage(store: &Store) -> WasmtimeResult<MemoryUsage> {
+        store.memory_usage()
+    }
+    
+    /// Core function to force garbage collection
+    pub fn garbage_collect(store: &Store) -> WasmtimeResult<()> {
+        store.gc()
+    }
+    
+    /// Core function to get store metadata
+    pub fn get_store_metadata(store: &Store) -> &StoreMetadata {
+        store.metadata()
+    }
+    
+    /// Core function to validate store functionality
+    pub fn validate_store(store: &Store) -> WasmtimeResult<()> {
+        store.validate()
+    }
+    
+    /// Core function to destroy a store (safe cleanup)
+    pub unsafe fn destroy_store(store_ptr: *mut c_void) {
+        ffi_utils::destroy_resource::<Store>(store_ptr, "Store");
+    }
+    
+    /// Core function to execute with store context
+    pub fn with_store_context<T, F>(store: &Store, func: F) -> WasmtimeResult<T>
+    where
+        F: FnOnce(&mut wasmtime::StoreContextMut<StoreData>) -> WasmtimeResult<T>,
+    {
+        store.with_context(func)
+    }
+    
+    /// Core function to execute with read-only store context
+    pub fn with_store_context_ro<T, F>(store: &Store, func: F) -> WasmtimeResult<T>
+    where
+        F: FnOnce(&wasmtime::StoreContext<StoreData>) -> WasmtimeResult<T>,
+    {
+        store.with_context_ro(func)
+    }
+    
+    /// Core function to get current fuel level
+    pub fn get_fuel_level(store: &Store) -> WasmtimeResult<Option<u64>> {
+        store.fuel_remaining()
+    }
+    
+    /// Core function to set fuel level
+    pub fn set_fuel_level(store: &Store, fuel: u64) -> WasmtimeResult<()> {
+        store.add_fuel(fuel)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

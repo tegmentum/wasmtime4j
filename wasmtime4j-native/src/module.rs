@@ -538,6 +538,125 @@ fn signatures_compatible(required: &FunctionSignature, available: &FunctionSigna
     required.params == available.params && required.returns == available.returns
 }
 
+/// Shared core functions for module operations used by both JNI and Panama interfaces
+/// 
+/// These functions eliminate code duplication and provide consistent behavior
+/// across interface implementations while maintaining defensive programming practices.
+pub mod core {
+    use super::*;
+    use std::os::raw::c_void;
+    use crate::error::{ffi_utils, validate_ptr_not_null, validate_not_empty};
+    use crate::engine::Engine;
+    
+    /// Core function to compile a WebAssembly module from bytes
+    pub fn compile_module(engine: &Engine, wasm_bytes: &[u8]) -> WasmtimeResult<Box<Module>> {
+        validate_not_empty!(wasm_bytes, "WebAssembly bytes");
+        Module::compile(engine, wasm_bytes).map(Box::new)
+    }
+    
+    /// Core function to compile a WebAssembly module from WAT (WebAssembly Text format)
+    pub fn compile_module_wat(engine: &Engine, wat: &str) -> WasmtimeResult<Box<Module>> {
+        validate_not_empty!(wat.as_bytes(), "WAT string");
+        Module::compile_wat(engine, wat).map(Box::new)
+    }
+    
+    /// Core function to validate module pointer and get reference
+    pub unsafe fn get_module_ref(module_ptr: *const c_void) -> WasmtimeResult<&'static Module> {
+        validate_ptr_not_null!(module_ptr, "module");
+        Ok(&*(module_ptr as *const Module))
+    }
+    
+    /// Core function to validate module pointer and get mutable reference
+    pub unsafe fn get_module_mut(module_ptr: *mut c_void) -> WasmtimeResult<&'static mut Module> {
+        validate_ptr_not_null!(module_ptr, "module");
+        Ok(&mut *(module_ptr as *mut Module))
+    }
+    
+    /// Core function to get module metadata
+    pub fn get_metadata(module: &Module) -> &ModuleMetadata {
+        module.metadata()
+    }
+    
+    /// Core function to check if module has a specific export
+    pub fn has_export(module: &Module, name: &str) -> bool {
+        module.has_export(name)
+    }
+    
+    /// Core function to get export information by name
+    pub fn get_export_info(module: &Module, name: &str) -> Option<&ExportInfo> {
+        module.get_export(name)
+    }
+    
+    /// Core function to get all function exports
+    pub fn get_function_exports(module: &Module) -> Vec<&ExportInfo> {
+        module.function_exports()
+    }
+    
+    /// Core function to get all memory exports
+    pub fn get_memory_exports(module: &Module) -> Vec<&ExportInfo> {
+        module.memory_exports()
+    }
+    
+    /// Core function to get required imports
+    pub fn get_required_imports(module: &Module) -> &[ImportInfo] {
+        module.required_imports()
+    }
+    
+    /// Core function to validate that all required imports can be satisfied
+    pub fn validate_imports(
+        module: &Module, 
+        available_imports: &HashMap<String, HashMap<String, ImportKind>>
+    ) -> WasmtimeResult<()> {
+        module.validate_imports(available_imports)
+    }
+    
+    /// Core function to serialize module for caching
+    pub fn serialize_module(module: &Module) -> WasmtimeResult<Vec<u8>> {
+        module.serialize()
+    }
+    
+    /// Core function to deserialize module from cache
+    pub fn deserialize_module(engine: &Engine, bytes: &[u8]) -> WasmtimeResult<Box<Module>> {
+        validate_not_empty!(bytes, "serialized module bytes");
+        Module::deserialize(engine, bytes).map(Box::new)
+    }
+    
+    /// Core function to destroy a module (safe cleanup)
+    pub unsafe fn destroy_module(module_ptr: *mut c_void) {
+        ffi_utils::destroy_resource::<Module>(module_ptr, "Module");
+    }
+    
+    /// Core function to validate module functionality
+    pub fn validate_module(module: &Module) -> WasmtimeResult<()> {
+        module.validate()
+    }
+    
+    /// Core function to get module size in bytes
+    pub fn get_module_size(module: &Module) -> usize {
+        module.metadata().size_bytes
+    }
+    
+    /// Core function to get module name (if available)
+    pub fn get_module_name(module: &Module) -> Option<&str> {
+        module.metadata().name.as_deref()
+    }
+    
+    /// Core function to get number of exports
+    pub fn get_export_count(module: &Module) -> usize {
+        module.metadata().exports.len()
+    }
+    
+    /// Core function to get number of imports
+    pub fn get_import_count(module: &Module) -> usize {
+        module.metadata().imports.len()
+    }
+    
+    /// Core function to get number of functions
+    pub fn get_function_count(module: &Module) -> usize {
+        module.metadata().functions.len()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

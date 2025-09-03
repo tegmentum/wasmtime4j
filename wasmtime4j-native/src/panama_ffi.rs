@@ -9,32 +9,20 @@ use std::os::raw::{c_char, c_int, c_void};
 
 pub mod engine {
     use super::*;
+    use crate::engine::core;
+    use crate::error::ffi_utils;
     
     /// Create a new Wasmtime engine (Panama FFI version)
     #[no_mangle]
     pub extern "C" fn wasmtime4j_engine_create() -> *mut c_void {
-        use crate::engine::Engine;
-        
-        match Engine::new() {
-            Ok(engine) => Box::into_raw(Box::new(engine)) as *mut c_void,
-            Err(e) => {
-                log::error!("Failed to create engine: {:?}", e);
-                crate::error::ffi_utils::set_last_error(e);
-                std::ptr::null_mut()
-            }
-        }
+        ffi_utils::ffi_try_ptr(|| core::create_engine())
     }
     
     /// Destroy a Wasmtime engine (Panama FFI version)
     #[no_mangle]
     pub extern "C" fn wasmtime4j_engine_destroy(engine_ptr: *mut c_void) {
-        use crate::engine::Engine;
-        
-        if !engine_ptr.is_null() {
-            unsafe {
-                let _ = Box::from_raw(engine_ptr as *mut Engine);
-                log::debug!("Engine destroyed successfully");
-            }
+        unsafe {
+            core::destroy_engine(engine_ptr);
         }
     }
     
@@ -69,43 +57,27 @@ pub mod module {
         wasm_size: usize,
         module_ptr: *mut *mut c_void,
     ) -> c_int {
-        use crate::engine::Engine;
-        use crate::module::Module;
         use crate::error::{ffi_utils, ErrorCode};
         
-        if engine_ptr.is_null() || wasm_bytes.is_null() || module_ptr.is_null() {
-            return ErrorCode::InvalidParameterError as c_int;
-        }
-        
-        let engine = unsafe { &*(engine_ptr as *const Engine) };
-        let wasm_data = unsafe { std::slice::from_raw_parts(wasm_bytes, wasm_size) };
-        
-        match Module::compile(engine, wasm_data) {
-            Ok(module) => {
-                unsafe {
-                    *module_ptr = Box::into_raw(Box::new(module)) as *mut c_void;
-                }
-                ffi_utils::clear_last_error();
-                0
+        ffi_utils::ffi_try_code(|| {
+            let engine = unsafe { crate::engine::core::get_engine_ref(engine_ptr)? };
+            let wasm_data = unsafe { ffi_utils::slice_from_raw_parts(wasm_bytes, wasm_size, "wasm_bytes")? };
+            
+            let module = crate::module::core::compile_module(engine, wasm_data)?;
+            
+            unsafe {
+                *module_ptr = Box::into_raw(module) as *mut c_void;
             }
-            Err(e) => {
-                let error_code = e.to_error_code();
-                ffi_utils::set_last_error(e);
-                error_code as c_int
-            }
-        }
+            
+            Ok(())
+        })
     }
     
     /// Destroy a WebAssembly module (Panama FFI version)
     #[no_mangle]
     pub extern "C" fn wasmtime4j_module_destroy(module_ptr: *mut c_void) {
-        use crate::module::Module;
-        
-        if !module_ptr.is_null() {
-            unsafe {
-                let _ = Box::from_raw(module_ptr as *mut Module);
-                log::debug!("Module destroyed successfully");
-            }
+        unsafe {
+            crate::module::core::destroy_module(module_ptr);
         }
     }
 }
@@ -124,44 +96,27 @@ pub mod instance {
         module_ptr: *mut c_void,
         instance_ptr: *mut *mut c_void,
     ) -> c_int {
-        use crate::store::Store;
-        use crate::module::Module;
-        use crate::instance::Instance;
         use crate::error::{ffi_utils, ErrorCode};
         
-        if store_ptr.is_null() || module_ptr.is_null() || instance_ptr.is_null() {
-            return ErrorCode::InvalidParameterError as c_int;
-        }
-        
-        let store = unsafe { &mut *(store_ptr as *mut Store) };
-        let module = unsafe { &*(module_ptr as *const Module) };
-        
-        match Instance::new_without_imports(store, module) {
-            Ok(instance) => {
-                unsafe {
-                    *instance_ptr = Box::into_raw(Box::new(instance)) as *mut c_void;
-                }
-                ffi_utils::clear_last_error();
-                0
+        ffi_utils::ffi_try_code(|| {
+            let store = unsafe { crate::store::core::get_store_mut(store_ptr)? };
+            let module = unsafe { crate::module::core::get_module_ref(module_ptr)? };
+            
+            let instance = crate::instance::core::create_instance(store, module)?;
+            
+            unsafe {
+                *instance_ptr = Box::into_raw(instance) as *mut c_void;
             }
-            Err(e) => {
-                let error_code = e.to_error_code();
-                ffi_utils::set_last_error(e);
-                error_code as c_int
-            }
-        }
+            
+            Ok(())
+        })
     }
     
     /// Destroy a WebAssembly instance (Panama FFI version)
     #[no_mangle]
     pub extern "C" fn wasmtime4j_instance_destroy(instance_ptr: *mut c_void) {
-        use crate::instance::Instance;
-        
-        if !instance_ptr.is_null() {
-            unsafe {
-                let _ = Box::from_raw(instance_ptr as *mut Instance);
-                log::debug!("Instance destroyed successfully");
-            }
+        unsafe {
+            crate::instance::core::destroy_instance(instance_ptr);
         }
     }
 }
@@ -179,42 +134,26 @@ pub mod store {
         engine_ptr: *mut c_void,
         store_ptr: *mut *mut c_void,
     ) -> c_int {
-        use crate::engine::Engine;
-        use crate::store::Store;
         use crate::error::{ffi_utils, ErrorCode};
         
-        if engine_ptr.is_null() || store_ptr.is_null() {
-            return ErrorCode::InvalidParameterError as c_int;
-        }
-        
-        let engine = unsafe { &*(engine_ptr as *const Engine) };
-        
-        match Store::new(engine) {
-            Ok(store) => {
-                unsafe {
-                    *store_ptr = Box::into_raw(Box::new(store)) as *mut c_void;
-                }
-                ffi_utils::clear_last_error();
-                0
+        ffi_utils::ffi_try_code(|| {
+            let engine = unsafe { crate::engine::core::get_engine_ref(engine_ptr)? };
+            
+            let store = crate::store::core::create_store(engine)?;
+            
+            unsafe {
+                *store_ptr = Box::into_raw(store) as *mut c_void;
             }
-            Err(e) => {
-                let error_code = e.to_error_code();
-                ffi_utils::set_last_error(e);
-                error_code as c_int
-            }
-        }
+            
+            Ok(())
+        })
     }
     
     /// Destroy a WebAssembly store (Panama FFI version)
     #[no_mangle]
     pub extern "C" fn wasmtime4j_store_destroy(store_ptr: *mut c_void) {
-        use crate::store::Store;
-        
-        if !store_ptr.is_null() {
-            unsafe {
-                let _ = Box::from_raw(store_ptr as *mut Store);
-                log::debug!("Store destroyed successfully");
-            }
+        unsafe {
+            crate::store::core::destroy_store(store_ptr);
         }
     }
 }
@@ -229,20 +168,9 @@ pub mod component {
     /// Create a new component engine (Panama FFI version)
     #[no_mangle]
     pub extern "C" fn wasmtime4j_component_engine_create() -> *mut c_void {
-        use crate::component::ComponentEngine;
         use crate::error::ffi_utils;
         
-        match ComponentEngine::new() {
-            Ok(engine) => {
-                ffi_utils::clear_last_error();
-                Box::into_raw(Box::new(engine)) as *mut c_void
-            }
-            Err(e) => {
-                log::error!("Failed to create component engine: {:?}", e);
-                ffi_utils::set_last_error(e);
-                std::ptr::null_mut()
-            }
-        }
+        ffi_utils::ffi_try_ptr(|| crate::component::core::create_component_engine())
     }
     
     /// Load a component from WebAssembly bytes (Panama FFI version)
@@ -253,36 +181,20 @@ pub mod component {
         wasm_size: usize,
         component_ptr: *mut *mut c_void,
     ) -> c_int {
-        use crate::component::ComponentEngine;
         use crate::error::{ffi_utils, ErrorCode};
         
-        if engine_ptr.is_null() || wasm_bytes.is_null() || component_ptr.is_null() {
-            return ErrorCode::InvalidParameterError as c_int;
-        }
-        
-        if wasm_size == 0 {
-            log::error!("Component bytes cannot be empty");
-            return ErrorCode::InvalidParameterError as c_int;
-        }
-        
-        let engine = unsafe { &*(engine_ptr as *const ComponentEngine) };
-        let wasm_data = unsafe { std::slice::from_raw_parts(wasm_bytes, wasm_size) };
-        
-        match engine.load_component_from_bytes(wasm_data) {
-            Ok(component) => {
-                unsafe {
-                    *component_ptr = Box::into_raw(Box::new(component)) as *mut c_void;
-                }
-                ffi_utils::clear_last_error();
-                0
+        ffi_utils::ffi_try_code(|| {
+            let engine = unsafe { crate::component::core::get_component_engine_ref(engine_ptr)? };
+            let wasm_data = unsafe { ffi_utils::slice_from_raw_parts(wasm_bytes, wasm_size, "component_bytes")? };
+            
+            let component = crate::component::core::load_component_from_bytes(engine, wasm_data)?;
+            
+            unsafe {
+                *component_ptr = Box::into_raw(component) as *mut c_void;
             }
-            Err(e) => {
-                let error_code = e.to_error_code();
-                log::error!("Failed to load component: {:?}", e);
-                ffi_utils::set_last_error(e);
-                error_code as c_int
-            }
-        }
+            
+            Ok(())
+        })
     }
     
     /// Instantiate a component (Panama FFI version)
@@ -479,40 +391,24 @@ pub mod component {
     /// Destroy a component engine (Panama FFI version)
     #[no_mangle]
     pub extern "C" fn wasmtime4j_component_engine_destroy(engine_ptr: *mut c_void) {
-        use crate::component::ComponentEngine;
-        
-        if !engine_ptr.is_null() {
-            unsafe {
-                let _ = Box::from_raw(engine_ptr as *mut ComponentEngine);
-                log::debug!("Component engine destroyed successfully");
-            }
+        unsafe {
+            crate::component::core::destroy_component_engine(engine_ptr);
         }
     }
     
     /// Destroy a component (Panama FFI version)
     #[no_mangle]
     pub extern "C" fn wasmtime4j_component_destroy(component_ptr: *mut c_void) {
-        use crate::component::Component;
-        
-        if !component_ptr.is_null() {
-            unsafe {
-                let _ = Box::from_raw(component_ptr as *mut Component);
-                log::debug!("Component destroyed successfully");
-            }
+        unsafe {
+            crate::component::core::destroy_component(component_ptr);
         }
     }
     
     /// Destroy a component instance (Panama FFI version)
     #[no_mangle]
     pub extern "C" fn wasmtime4j_component_instance_destroy(instance_ptr: *mut c_void) {
-        use wasmtime::component::Instance as ComponentInstance;
-        use std::sync::Arc;
-        
-        if !instance_ptr.is_null() {
-            unsafe {
-                let _ = Box::from_raw(instance_ptr as *mut Arc<ComponentInstance>);
-                log::debug!("Component instance destroyed successfully");
-            }
+        unsafe {
+            crate::component::core::destroy_component_instance(instance_ptr);
         }
     }
 }

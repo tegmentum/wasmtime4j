@@ -105,6 +105,85 @@ impl Engine {
     }
 }
 
+/// Shared core functions for engine operations used by both JNI and Panama interfaces
+/// 
+/// These functions eliminate code duplication and provide consistent behavior
+/// across interface implementations while maintaining defensive programming practices.
+pub mod core {
+    use super::*;
+    use std::os::raw::c_void;
+    use crate::error::{ffi_utils, validate_ptr_not_null};
+    
+    /// Core function to create a new engine with default configuration
+    pub fn create_engine() -> WasmtimeResult<Box<Engine>> {
+        Engine::new().map(Box::new)
+    }
+    
+    /// Core function to create an engine with custom configuration
+    pub fn create_engine_with_config(
+        strategy: Option<Strategy>, 
+        opt_level: Option<OptLevel>,
+        debug_info: bool,
+        wasm_threads: bool,
+        wasm_simd: bool,
+        wasm_reference_types: bool,
+        wasm_bulk_memory: bool,
+        wasm_multi_value: bool,
+    ) -> WasmtimeResult<Box<Engine>> {
+        let mut builder = Engine::builder();
+        
+        if let Some(strategy) = strategy {
+            builder = builder.strategy(strategy);
+        }
+        
+        if let Some(opt_level) = opt_level {
+            builder = builder.opt_level(opt_level);
+        }
+        
+        builder = builder
+            .debug_info(debug_info)
+            .wasm_threads(wasm_threads)
+            .wasm_simd(wasm_simd)
+            .wasm_reference_types(wasm_reference_types)
+            .wasm_bulk_memory(wasm_bulk_memory)
+            .wasm_multi_value(wasm_multi_value);
+            
+        builder.build().map(Box::new)
+    }
+    
+    /// Core function to validate engine pointer and get reference
+    pub unsafe fn get_engine_ref(engine_ptr: *const c_void) -> WasmtimeResult<&'static Engine> {
+        validate_ptr_not_null!(engine_ptr, "engine");
+        Ok(&*(engine_ptr as *const Engine))
+    }
+    
+    /// Core function to validate engine pointer and get mutable reference
+    pub unsafe fn get_engine_mut(engine_ptr: *mut c_void) -> WasmtimeResult<&'static mut Engine> {
+        validate_ptr_not_null!(engine_ptr, "engine");
+        Ok(&mut *(engine_ptr as *mut Engine))
+    }
+    
+    /// Core function to check if engine supports a specific feature
+    pub fn check_feature_support(engine: &Engine, feature: WasmFeature) -> bool {
+        engine.supports_feature(feature)
+    }
+    
+    /// Core function to get engine configuration summary
+    pub fn get_config_summary(engine: &Engine) -> &EngineConfigSummary {
+        engine.config_summary()
+    }
+    
+    /// Core function to destroy an engine (safe cleanup)
+    pub unsafe fn destroy_engine(engine_ptr: *mut c_void) {
+        ffi_utils::destroy_resource::<Engine>(engine_ptr, "Engine");
+    }
+    
+    /// Core function to validate engine functionality
+    pub fn validate_engine(engine: &Engine) -> WasmtimeResult<()> {
+        engine.validate()
+    }
+}
+
 impl EngineBuilder {
     /// Create new engine builder with safe defaults
     fn new() -> Self {

@@ -662,6 +662,126 @@ impl ResourceManager {
     }
 }
 
+/// Shared core functions for component operations used by both JNI and Panama interfaces
+/// 
+/// These functions eliminate code duplication and provide consistent behavior
+/// across interface implementations while maintaining defensive programming practices.
+pub mod core {
+    use super::*;
+    use std::os::raw::c_void;
+    use crate::error::{ffi_utils, validate_ptr_not_null, validate_not_empty};
+    
+    /// Core function to create a new component engine
+    pub fn create_component_engine() -> WasmtimeResult<Box<ComponentEngine>> {
+        ComponentEngine::new().map(Box::new)
+    }
+    
+    /// Core function to create a component engine with a custom Wasmtime engine
+    pub fn create_component_engine_with_engine(engine: Engine) -> WasmtimeResult<Box<ComponentEngine>> {
+        ComponentEngine::with_engine(engine).map(Box::new)
+    }
+    
+    /// Core function to validate component engine pointer and get reference
+    pub unsafe fn get_component_engine_ref(engine_ptr: *const c_void) -> WasmtimeResult<&'static ComponentEngine> {
+        validate_ptr_not_null!(engine_ptr, "component engine");
+        Ok(&*(engine_ptr as *const ComponentEngine))
+    }
+    
+    /// Core function to validate component engine pointer and get mutable reference
+    pub unsafe fn get_component_engine_mut(engine_ptr: *mut c_void) -> WasmtimeResult<&'static mut ComponentEngine> {
+        validate_ptr_not_null!(engine_ptr, "component engine");
+        Ok(&mut *(engine_ptr as *mut ComponentEngine))
+    }
+    
+    /// Core function to load a component from bytes
+    pub fn load_component_from_bytes(engine: &ComponentEngine, bytes: &[u8]) -> WasmtimeResult<Box<Component>> {
+        validate_not_empty!(bytes, "component bytes");
+        engine.load_component_from_bytes(bytes).map(Box::new)
+    }
+    
+    /// Core function to load a component from a file
+    pub fn load_component_from_file<P: AsRef<std::path::Path>>(engine: &ComponentEngine, path: P) -> WasmtimeResult<Box<Component>> {
+        engine.load_component_from_file(path).map(Box::new)
+    }
+    
+    /// Core function to validate component pointer and get reference
+    pub unsafe fn get_component_ref(component_ptr: *const c_void) -> WasmtimeResult<&'static Component> {
+        validate_ptr_not_null!(component_ptr, "component");
+        Ok(&*(component_ptr as *const Component))
+    }
+    
+    /// Core function to validate component pointer and get mutable reference
+    pub unsafe fn get_component_mut(component_ptr: *mut c_void) -> WasmtimeResult<&'static mut Component> {
+        validate_ptr_not_null!(component_ptr, "component");
+        Ok(&mut *(component_ptr as *mut Component))
+    }
+    
+    /// Core function to instantiate a component
+    pub fn instantiate_component(engine: &ComponentEngine, component: &Component) -> WasmtimeResult<Arc<ComponentInstance>> {
+        engine.instantiate_component(component)
+    }
+    
+    /// Core function to add a host interface to the component linker
+    pub fn add_host_interface(engine: &mut ComponentEngine, interface_name: &str, implementation: HostInterface) -> WasmtimeResult<()> {
+        engine.add_host_interface(interface_name, implementation)
+    }
+    
+    /// Core function to get active component instances
+    pub fn get_active_instances(engine: &ComponentEngine) -> WasmtimeResult<Vec<InstanceInfo>> {
+        engine.get_active_instances()
+    }
+    
+    /// Core function to cleanup inactive component instances
+    pub fn cleanup_instances(engine: &ComponentEngine) -> WasmtimeResult<usize> {
+        engine.cleanup_instances()
+    }
+    
+    /// Core function to get component metadata
+    pub fn get_component_metadata(component: &Component) -> &ComponentMetadata {
+        component.metadata()
+    }
+    
+    /// Core function to get component size in bytes
+    pub fn get_component_size(component: &Component) -> usize {
+        component.size_bytes()
+    }
+    
+    /// Core function to check if component exports an interface
+    pub fn exports_interface(component: &Component, interface_name: &str) -> bool {
+        component.exports_interface(interface_name)
+    }
+    
+    /// Core function to check if component imports an interface
+    pub fn imports_interface(component: &Component, interface_name: &str) -> bool {
+        component.imports_interface(interface_name)
+    }
+    
+    /// Core function to destroy a component engine (safe cleanup)
+    pub unsafe fn destroy_component_engine(engine_ptr: *mut c_void) {
+        ffi_utils::destroy_resource::<ComponentEngine>(engine_ptr, "ComponentEngine");
+    }
+    
+    /// Core function to destroy a component (safe cleanup)
+    pub unsafe fn destroy_component(component_ptr: *mut c_void) {
+        ffi_utils::destroy_resource::<Component>(component_ptr, "Component");
+    }
+    
+    /// Core function to destroy a component instance (safe cleanup)
+    pub unsafe fn destroy_component_instance(instance_ptr: *mut c_void) {
+        ffi_utils::destroy_resource::<Arc<ComponentInstance>>(instance_ptr, "ComponentInstance");
+    }
+    
+    /// Core function to get number of exports in component
+    pub fn get_export_count(component: &Component) -> usize {
+        component.metadata().exports.len()
+    }
+    
+    /// Core function to get number of imports in component
+    pub fn get_import_count(component: &Component) -> usize {
+        component.metadata().imports.len()
+    }
+}
+
 impl Default for ComponentEngine {
     fn default() -> Self {
         Self::new().expect("Failed to create default ComponentEngine")

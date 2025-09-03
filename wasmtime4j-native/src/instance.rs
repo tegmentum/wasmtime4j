@@ -165,6 +165,127 @@ impl Instance {
 unsafe impl Send for Instance {}
 unsafe impl Sync for Instance {}
 
+/// Shared core functions for instance operations used by both JNI and Panama interfaces
+/// 
+/// These functions eliminate code duplication and provide consistent behavior
+/// across interface implementations while maintaining defensive programming practices.
+pub mod core {
+    use super::*;
+    use std::os::raw::c_void;
+    use crate::error::{ffi_utils, validate_ptr_not_null};
+    use crate::store::Store;
+    use crate::module::Module;
+    use wasmtime::Extern;
+    
+    /// Core function to create a new WebAssembly instance with imports
+    pub fn create_instance_with_imports(
+        store: &mut Store,
+        module: &Module,
+        imports: &[Extern],
+    ) -> WasmtimeResult<Box<Instance>> {
+        Instance::new(store, module, imports).map(Box::new)
+    }
+    
+    /// Core function to create a new WebAssembly instance without imports
+    pub fn create_instance(store: &mut Store, module: &Module) -> WasmtimeResult<Box<Instance>> {
+        Instance::new_without_imports(store, module).map(Box::new)
+    }
+    
+    /// Core function to validate instance pointer and get reference
+    pub unsafe fn get_instance_ref(instance_ptr: *const c_void) -> WasmtimeResult<&'static Instance> {
+        validate_ptr_not_null!(instance_ptr, "instance");
+        Ok(&*(instance_ptr as *const Instance))
+    }
+    
+    /// Core function to validate instance pointer and get mutable reference
+    pub unsafe fn get_instance_mut(instance_ptr: *mut c_void) -> WasmtimeResult<&'static mut Instance> {
+        validate_ptr_not_null!(instance_ptr, "instance");
+        Ok(&mut *(instance_ptr as *mut Instance))
+    }
+    
+    /// Core function to get exported function by name
+    pub fn get_exported_function(
+        instance: &Instance,
+        store: &mut Store,
+        name: &str,
+    ) -> WasmtimeResult<Option<wasmtime::Func>> {
+        instance.get_func(store, name)
+    }
+    
+    /// Core function to get exported global by name
+    pub fn get_exported_global(
+        instance: &Instance,
+        store: &mut Store,
+        name: &str,
+    ) -> WasmtimeResult<Option<wasmtime::Global>> {
+        instance.get_global(store, name)
+    }
+    
+    /// Core function to get exported memory by name
+    pub fn get_exported_memory(
+        instance: &Instance,
+        store: &mut Store,
+        name: &str,
+    ) -> WasmtimeResult<Option<wasmtime::Memory>> {
+        instance.get_memory(store, name)
+    }
+    
+    /// Core function to get exported table by name
+    pub fn get_exported_table(
+        instance: &Instance,
+        store: &mut Store,
+        name: &str,
+    ) -> WasmtimeResult<Option<wasmtime::Table>> {
+        instance.get_table(store, name)
+    }
+    
+    /// Core function to list all exports
+    pub fn list_exports(instance: &Instance, store: &mut Store) -> WasmtimeResult<Vec<String>> {
+        instance.exports(store)
+    }
+    
+    /// Core function to get instance metadata
+    pub fn get_instance_metadata(instance: &Instance) -> &InstanceMetadata {
+        instance.metadata()
+    }
+    
+    /// Core function to validate instance functionality
+    pub fn validate_instance(instance: &Instance) -> WasmtimeResult<()> {
+        instance.validate()
+    }
+    
+    /// Core function to destroy an instance (safe cleanup)
+    pub unsafe fn destroy_instance(instance_ptr: *mut c_void) {
+        ffi_utils::destroy_resource::<Instance>(instance_ptr, "Instance");
+    }
+    
+    /// Core function to check if instance has a specific export
+    pub fn has_export(instance: &Instance, store: &mut Store, name: &str) -> WasmtimeResult<bool> {
+        let exports = instance.exports(store)?;
+        Ok(exports.iter().any(|export| export == name))
+    }
+    
+    /// Core function to get export count
+    pub fn get_export_count(instance: &Instance) -> usize {
+        instance.metadata().export_count
+    }
+    
+    /// Core function to get import count
+    pub fn get_import_count(instance: &Instance) -> usize {
+        instance.metadata().import_count
+    }
+    
+    /// Core function to get memory usage in bytes
+    pub fn get_memory_bytes(instance: &Instance) -> usize {
+        instance.metadata().memory_bytes
+    }
+    
+    /// Core function to get instance name
+    pub fn get_instance_name(instance: &Instance) -> &str {
+        &instance.metadata().name
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

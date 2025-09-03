@@ -24,6 +24,8 @@ use crate::module::Module;
 #[cfg(feature = "jni-bindings")]
 pub mod jni_engine {
     use super::*;
+    use crate::engine::core;
+    use crate::error::ffi_utils;
     
     /// Create a new Wasmtime engine (JNI version)
     #[no_mangle]
@@ -31,13 +33,7 @@ pub mod jni_engine {
         _env: JNIEnv,
         _class: JClass,
     ) -> jlong {
-        match Engine::new() {
-            Ok(engine) => Box::into_raw(Box::new(engine)) as jlong,
-            Err(e) => {
-                log::error!("Failed to create engine: {:?}", e);
-                0
-            }
-        }
+        ffi_utils::ffi_try_ptr(|| core::create_engine()) as jlong
     }
     
     /// Compile WebAssembly module
@@ -48,25 +44,17 @@ pub mod jni_engine {
         engine_ptr: jlong,
         wasm_bytes: jbyteArray,
     ) -> jlong {
-        if engine_ptr == 0 {
-            return 0;
-        }
-        
-        let engine = unsafe { &*(engine_ptr as *const Engine) };
-        
-        // Get byte array from Java
-        let wasm_data = match env.convert_byte_array(unsafe { JByteArray::from_raw(wasm_bytes) }) {
-            Ok(data) => data,
-            Err(_) => return 0,
-        };
-        
-        match Module::compile(engine, &wasm_data) {
-            Ok(module) => Box::into_raw(Box::new(module)) as jlong,
-            Err(e) => {
-                log::error!("Failed to compile module: {:?}", e);
-                0
-            }
-        }
+        ffi_utils::ffi_try_ptr(|| {
+            let engine = unsafe { core::get_engine_ref(engine_ptr as *const std::os::raw::c_void)? };
+            
+            // Get byte array from Java
+            let wasm_data = env.convert_byte_array(unsafe { JByteArray::from_raw(wasm_bytes) })
+                .map_err(|e| crate::error::WasmtimeError::InvalidParameter {
+                    message: format!("Failed to convert Java byte array: {}", e),
+                })?;
+            
+            crate::module::core::compile_module(engine, &wasm_data)
+        }) as jlong
     }
     
     /// Create a new store
@@ -76,19 +64,10 @@ pub mod jni_engine {
         _class: JClass,
         engine_ptr: jlong,
     ) -> jlong {
-        if engine_ptr == 0 {
-            return 0;
-        }
-        
-        let engine = unsafe { &*(engine_ptr as *const Engine) };
-        
-        match Store::new(engine) {
-            Ok(store) => Box::into_raw(Box::new(store)) as jlong,
-            Err(e) => {
-                log::error!("Failed to create store: {:?}", e);
-                0
-            }
-        }
+        ffi_utils::ffi_try_ptr(|| {
+            let engine = unsafe { core::get_engine_ref(engine_ptr as *const std::os::raw::c_void)? };
+            crate::store::core::create_store(engine)
+        }) as jlong
     }
     
     /// Set optimization level
@@ -144,8 +123,8 @@ pub mod jni_engine {
         _class: JClass,
         engine_ptr: jlong,
     ) {
-        if engine_ptr != 0 {
-            let _ = unsafe { Box::from_raw(engine_ptr as *mut Engine) };
+        unsafe {
+            core::destroy_engine(engine_ptr as *mut std::os::raw::c_void);
         }
     }
 }
@@ -155,6 +134,7 @@ pub mod jni_engine {
 pub mod jni_instance {
     use super::*;
     use crate::instance::Instance;
+    use crate::instance::core;
     
     /// Create a new WebAssembly instance
     #[no_mangle]
@@ -164,20 +144,11 @@ pub mod jni_instance {
         store_ptr: jlong,
         module_ptr: jlong,
     ) -> jlong {
-        if store_ptr == 0 || module_ptr == 0 {
-            return 0;
-        }
-        
-        let store = unsafe { &mut *(store_ptr as *mut Store) };
-        let module = unsafe { &*(module_ptr as *const Module) };
-        
-        match Instance::new_without_imports(store, module) {
-            Ok(instance) => Box::into_raw(Box::new(instance)) as jlong,
-            Err(e) => {
-                log::error!("Failed to create instance: {:?}", e);
-                0
-            }
-        }
+        ffi_utils::ffi_try_ptr(|| {
+            let store = unsafe { crate::store::core::get_store_mut(store_ptr as *mut std::os::raw::c_void)? };
+            let module = unsafe { crate::module::core::get_module_ref(module_ptr as *const std::os::raw::c_void)? };
+            core::create_instance(store, module)
+        }) as jlong
     }
     
     /// Destroy an instance
@@ -187,8 +158,8 @@ pub mod jni_instance {
         _class: JClass,
         instance_ptr: jlong,
     ) {
-        if instance_ptr != 0 {
-            let _ = unsafe { Box::from_raw(instance_ptr as *mut Instance) };
+        unsafe {
+            core::destroy_instance(instance_ptr as *mut std::os::raw::c_void);
         }
     }
 }
@@ -197,6 +168,7 @@ pub mod jni_instance {
 #[cfg(feature = "jni-bindings")]
 pub mod jni_store {
     use super::*;
+    use crate::store::core;
     
     /// Create a new store
     #[no_mangle]
@@ -205,19 +177,10 @@ pub mod jni_store {
         _class: JClass,
         engine_ptr: jlong,
     ) -> jlong {
-        if engine_ptr == 0 {
-            return 0;
-        }
-        
-        let engine = unsafe { &*(engine_ptr as *const Engine) };
-        
-        match Store::new(engine) {
-            Ok(store) => Box::into_raw(Box::new(store)) as jlong,
-            Err(e) => {
-                log::error!("Failed to create store: {:?}", e);
-                0
-            }
-        }
+        ffi_utils::ffi_try_ptr(|| {
+            let engine = unsafe { crate::engine::core::get_engine_ref(engine_ptr as *const std::os::raw::c_void)? };
+            core::create_store(engine)
+        }) as jlong
     }
     
     /// Destroy a store
@@ -227,8 +190,8 @@ pub mod jni_store {
         _class: JClass,
         store_ptr: jlong,
     ) {
-        if store_ptr != 0 {
-            let _ = unsafe { Box::from_raw(store_ptr as *mut Store) };
+        unsafe {
+            core::destroy_store(store_ptr as *mut std::os::raw::c_void);
         }
     }
 }
@@ -237,6 +200,7 @@ pub mod jni_store {
 #[cfg(feature = "jni-bindings")]
 pub mod jni_module {
     use super::*;
+    use crate::module::core;
     
     /// Destroy a module
     #[no_mangle]
@@ -245,8 +209,8 @@ pub mod jni_module {
         _class: JClass,
         module_ptr: jlong,
     ) {
-        if module_ptr != 0 {
-            let _ = unsafe { Box::from_raw(module_ptr as *mut Module) };
+        unsafe {
+            core::destroy_module(module_ptr as *mut std::os::raw::c_void);
         }
     }
 }
@@ -271,13 +235,7 @@ pub mod jni_component {
         _env: JNIEnv,
         _class: JClass,
     ) -> jlong {
-        match ComponentEngine::new() {
-            Ok(engine) => Box::into_raw(Box::new(engine)) as jlong,
-            Err(e) => {
-                log::error!("Failed to create component engine: {:?}", e);
-                0
-            }
-        }
+        ffi_utils::ffi_try_ptr(|| crate::component::core::create_component_engine()) as jlong
     }
 
     /// Load component from WebAssembly bytes
@@ -288,34 +246,19 @@ pub mod jni_component {
         engine_ptr: jlong,
         wasm_bytes: jbyteArray,
     ) -> jlong {
-        if engine_ptr == 0 {
-            log::error!("Component engine pointer is null");
-            return 0;
-        }
+        ffi_utils::ffi_try_ptr(|| {
+            let engine = unsafe { 
+                crate::component::core::get_component_engine_ref(engine_ptr as *const std::os::raw::c_void)? 
+            };
 
-        let engine = unsafe { &*(engine_ptr as *const ComponentEngine) };
+            // Get byte array from Java
+            let wasm_data = env.convert_byte_array(unsafe { JByteArray::from_raw(wasm_bytes) })
+                .map_err(|e| crate::error::WasmtimeError::InvalidParameter {
+                    message: format!("Failed to convert Java byte array: {}", e),
+                })?;
 
-        // Get byte array from Java
-        let wasm_data = match env.convert_byte_array(unsafe { JByteArray::from_raw(wasm_bytes) }) {
-            Ok(data) => data,
-            Err(e) => {
-                log::error!("Failed to convert byte array: {:?}", e);
-                return 0;
-            }
-        };
-
-        if wasm_data.is_empty() {
-            log::error!("Component bytes cannot be empty");
-            return 0;
-        }
-
-        match engine.load_component_from_bytes(&wasm_data) {
-            Ok(component) => Box::into_raw(Box::new(component)) as jlong,
-            Err(e) => {
-                log::error!("Failed to load component: {:?}", e);
-                0
-            }
-        }
+            crate::component::core::load_component_from_bytes(engine, &wasm_data)
+        }) as jlong
     }
 
     /// Instantiate a component
@@ -326,21 +269,16 @@ pub mod jni_component {
         engine_ptr: jlong,
         component_ptr: jlong,
     ) -> jlong {
-        if engine_ptr == 0 || component_ptr == 0 {
-            log::error!("Engine or component pointer is null");
-            return 0;
-        }
+        ffi_utils::ffi_try_ptr(|| {
+            let engine = unsafe { 
+                crate::component::core::get_component_engine_ref(engine_ptr as *const std::os::raw::c_void)? 
+            };
+            let component = unsafe { 
+                crate::component::core::get_component_ref(component_ptr as *const std::os::raw::c_void)? 
+            };
 
-        let engine = unsafe { &*(engine_ptr as *const ComponentEngine) };
-        let component = unsafe { &*(component_ptr as *const Component) };
-
-        match engine.instantiate_component(component) {
-            Ok(instance) => Box::into_raw(Box::new(instance)) as jlong,
-            Err(e) => {
-                log::error!("Failed to instantiate component: {:?}", e);
-                0
-            }
-        }
+            crate::component::core::instantiate_component(engine, component).map(Box::new)
+        }) as jlong
     }
 
     /// Get component size in bytes
@@ -464,9 +402,8 @@ pub mod jni_component {
         _class: JClass,
         engine_ptr: jlong,
     ) {
-        if engine_ptr != 0 {
-            let _ = unsafe { Box::from_raw(engine_ptr as *mut ComponentEngine) };
-            log::debug!("Component engine destroyed successfully");
+        unsafe {
+            crate::component::core::destroy_component_engine(engine_ptr as *mut std::os::raw::c_void);
         }
     }
 
@@ -477,9 +414,8 @@ pub mod jni_component {
         _class: JClass,
         component_ptr: jlong,
     ) {
-        if component_ptr != 0 {
-            let _ = unsafe { Box::from_raw(component_ptr as *mut Component) };
-            log::debug!("Component destroyed successfully");
+        unsafe {
+            crate::component::core::destroy_component(component_ptr as *mut std::os::raw::c_void);
         }
     }
 
@@ -490,9 +426,8 @@ pub mod jni_component {
         _class: JClass,
         instance_ptr: jlong,
     ) {
-        if instance_ptr != 0 {
-            let _ = unsafe { Box::from_raw(instance_ptr as *mut Arc<ComponentInstance>) };
-            log::debug!("Component instance destroyed successfully");
+        unsafe {
+            crate::component::core::destroy_component_instance(instance_ptr as *mut std::os::raw::c_void);
         }
     }
 }
