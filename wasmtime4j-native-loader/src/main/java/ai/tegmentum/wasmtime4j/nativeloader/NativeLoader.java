@@ -16,8 +16,6 @@
 
 package ai.tegmentum.wasmtime4j.nativeloader;
 
-import java.util.Objects;
-
 /**
  * Main entry point for native library loading with a fluent builder API.
  *
