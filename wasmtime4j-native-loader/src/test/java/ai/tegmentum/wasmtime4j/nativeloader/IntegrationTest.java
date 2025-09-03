@@ -273,6 +273,10 @@ final class IntegrationTest {
             info.getLibraryFileName("test").startsWith("lib"),
             "macOS libraries should start with lib prefix");
         break;
+
+      default:
+        // Should not reach here with current supported platforms
+        throw new IllegalStateException("Unsupported operating system: " + info.getOperatingSystem());
     }
 
     // Architecture-specific checks
@@ -284,8 +288,12 @@ final class IntegrationTest {
         assertTrue(
             platformId.endsWith("-aarch64"), "aarch64 platform ID should end with '-aarch64'");
         break;
+
+      default:
+        // Should not reach here with current supported architectures
+        throw new IllegalStateException("Unsupported architecture: " + info.getArchitecture());
     }
-  }
+
 
   @Test
   @DisplayName("Should handle service loader integration patterns")
