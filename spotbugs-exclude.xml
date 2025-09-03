@@ -465,6 +465,12 @@
         <!-- Platform detection uses toLowerCase for OS name comparison -->
     </Match>
     
+    <Match>
+        <Bug pattern="IMPROPER_UNICODE"/>
+        <Class name="ai.tegmentum.wasmtime4j.nativeloader.PlatformDetector"/>
+        <!-- Platform detection uses toLowerCase for OS name comparison -->
+    </Match>
+    
     <!-- Case conversion exclusions for controlled strings -->
     <Match>
         <Bug pattern="DM_CONVERT_CASE"/>
