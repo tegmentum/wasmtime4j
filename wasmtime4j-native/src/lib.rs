@@ -31,6 +31,8 @@ pub mod engine;
 pub mod module;
 pub mod store;
 pub mod instance;
+pub mod hostfunc;
+pub mod memory;
 
 // Interface modules - will be implemented in later streams
 pub mod jni_bindings;
@@ -48,6 +50,8 @@ pub use error::{WasmtimeError, WasmtimeResult, ErrorCode};
 pub use module::{Module, ModuleMetadata, ValueType, ImportKind, ExportKind, FunctionSignature};
 pub use store::{Store, StoreBuilder, StoreData, StoreMetadata, ResourceLimits, ExecutionState, MemoryUsage};
 pub use instance::{Instance, InstanceMetadata, ImportBinding, ExportBinding, WasmValue, ExecutionResult};
+pub use hostfunc::{HostFunction, HostFunctionBuilder, HostFunctionCallback, MarshallingResult};
+pub use memory::{Memory, MemoryBuilder, MemoryConfig, MemoryMetadata, MemoryUsage as MemUsage, MemoryDataType, MemoryRegistry, MemoryError};
 
 // Re-export component model types for WASI Preview 2 support
 pub use component::{

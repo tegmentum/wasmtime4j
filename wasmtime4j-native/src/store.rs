@@ -6,9 +6,10 @@
 
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
-use wasmtime::{Store as WasmtimeStore, StoreContext, StoreContextMut, AsContext, AsContextMut};
+use wasmtime::{Store as WasmtimeStore, StoreContext, StoreContextMut, AsContext, AsContextMut, FuncType, Func};
 use crate::engine::Engine;
 use crate::error::{WasmtimeError, WasmtimeResult};
+use crate::hostfunc::{HostFunction, HostFunctionCallback};
 
 /// Thread-safe wrapper around Wasmtime store with resource management
 pub struct Store {
@@ -247,6 +248,30 @@ impl Store {
             used_bytes: 0,  // Not easily available
             instance_count: store.data().execution_state.execution_count as usize,
         })
+    }
+
+    /// Create a host function that can be imported by WebAssembly modules
+    pub fn create_host_function(
+        &self,
+        name: String,
+        func_type: FuncType,
+        callback: Box<dyn HostFunctionCallback + Send + Sync>,
+    ) -> WasmtimeResult<(u64, Func)> {
+        let store_weak = Arc::downgrade(&self.inner);
+        
+        // Create the host function wrapper
+        let host_function = HostFunction::new(name, func_type, store_weak, callback)?;
+        let host_function_id = host_function.id();
+        
+        // Create the Wasmtime Func
+        let wasmtime_func = {
+            let mut store = self.inner.lock().map_err(|e| WasmtimeError::Concurrency {
+                message: format!("Failed to acquire store lock: {}", e),
+            })?;
+            host_function.create_wasmtime_func(&mut store)?
+        };
+        
+        Ok((host_function_id, wasmtime_func))
     }
 }
 

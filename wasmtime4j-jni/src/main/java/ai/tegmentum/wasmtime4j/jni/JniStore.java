@@ -1,12 +1,16 @@
 package ai.tegmentum.wasmtime4j.jni;
 
 import ai.tegmentum.wasmtime4j.Engine;
+import ai.tegmentum.wasmtime4j.FunctionType;
+import ai.tegmentum.wasmtime4j.HostFunction;
 import ai.tegmentum.wasmtime4j.Store;
+import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
+import java.util.Objects;
 import java.util.logging.Logger;
 
 /**
@@ -290,6 +294,34 @@ public final class JniStore extends JniResource implements Store {
         throw e;
       }
       throw new WasmException("Unexpected error setting epoch deadline", e);
+    }
+  }
+
+  @Override
+  public WasmFunction createHostFunction(
+      final String name, final FunctionType functionType, final HostFunction implementation)
+      throws WasmException {
+    Objects.requireNonNull(name, "name cannot be null");
+    Objects.requireNonNull(functionType, "functionType cannot be null");
+    Objects.requireNonNull(implementation, "implementation cannot be null");
+    ensureNotClosed();
+
+    try {
+      // Create the JNI host function wrapper
+      final JniHostFunction hostFunction =
+          new JniHostFunction(name, functionType, implementation, this);
+
+      LOGGER.fine(
+          "Created host function '"
+              + name
+              + "' in store 0x"
+              + Long.toHexString(getNativeHandle()));
+      return hostFunction;
+    } catch (final Exception e) {
+      if (e instanceof WasmException) {
+        throw e;
+      }
+      throw new WasmException("Failed to create host function: " + name, e);
     }
   }
 
