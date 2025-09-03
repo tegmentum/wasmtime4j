@@ -279,8 +279,8 @@ final class PlatformDetectorErrorHandlingTest {
   @Test
   @DisplayName("Should handle special Unicode characters in system properties")
   void testUnicodeCharacterHandling() {
-    final String unicodeOsName = "Linux" + "中文αβγ";
-    final String unicodeArchName = "x86_64" + "ABC";
+    final String unicodeOsName = "Linux\u4E2D\u6587\u03B1\u03B2\u03B3";
+    final String unicodeArchName = "x86_64\u0041\u0042\u0043";
 
     try (final MockedStatic<System> systemMock = mockStatic(System.class)) {
       systemMock.when(() -> System.getProperty("os.name")).thenReturn(unicodeOsName);

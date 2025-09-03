@@ -22,6 +22,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
@@ -69,6 +72,8 @@ public final class NativeLibraryUtils {
     private final Path extractedPath;
     private final LoadingMethod loadingMethod;
     private final Exception error;
+    private final PathConvention usedConvention;
+    private final List<String> attemptedPaths;
 
     /** The method used to load the library. */
     public enum LoadingMethod {
@@ -83,7 +88,9 @@ public final class NativeLibraryUtils {
         final boolean foundInResources,
         final Path extractedPath,
         final LoadingMethod loadingMethod,
-        final Exception error) {
+        final Exception error,
+        final PathConvention usedConvention,
+        final List<String> attemptedPaths) {
       this.libraryName = libraryName;
       this.platformInfo = platformInfo;
       this.resourcePath = resourcePath;
@@ -91,6 +98,10 @@ public final class NativeLibraryUtils {
       this.extractedPath = extractedPath;
       this.loadingMethod = loadingMethod;
       this.error = error;
+      this.usedConvention = usedConvention;
+      this.attemptedPaths = attemptedPaths != null 
+          ? new ArrayList<>(attemptedPaths) 
+          : new ArrayList<>();
     }
 
     /**
@@ -163,6 +174,24 @@ public final class NativeLibraryUtils {
      */
     public String getErrorType() {
       return error != null ? error.getClass().getSimpleName() : null;
+    }
+
+    /**
+     * Gets the path convention that was successfully used to load the library.
+     *
+     * @return the used convention, or null if loading failed or used system path
+     */
+    public PathConvention getUsedConvention() {
+      return usedConvention;
+    }
+
+    /**
+     * Gets the list of resource paths that were attempted during loading.
+     *
+     * @return the list of attempted paths (never null)
+     */
+    public List<String> getAttemptedPaths() {
+      return new ArrayList<>(attemptedPaths);
     }
 
     /**
@@ -252,7 +281,8 @@ public final class NativeLibraryUtils {
       platformInfo = PlatformDetector.detect();
     } catch (final RuntimeException e) {
       LOGGER.log(Level.SEVERE, "Failed to detect platform", e);
-      return new LibraryLoadInfo(libraryName, null, null, false, null, null, e);
+      return new LibraryLoadInfo(libraryName, null, null, false, null, null, e, null, 
+          new ArrayList<>());
     }
 
     final String resourcePath = platformInfo.getLibraryResourcePath(libraryName);
@@ -270,7 +300,9 @@ public final class NativeLibraryUtils {
           false,
           null,
           LibraryLoadInfo.LoadingMethod.SYSTEM_LIBRARY_PATH,
-          null);
+          null,
+          null,
+          new ArrayList<>());
     } catch (final UnsatisfiedLinkError e) {
       LOGGER.fine("Failed to load from system library path: " + sanitizeForLog(e.getMessage()));
     }
@@ -292,7 +324,9 @@ public final class NativeLibraryUtils {
           true,
           extractedPath,
           LibraryLoadInfo.LoadingMethod.EXTRACTED_FROM_JAR,
-          null);
+          null,
+          null,
+          Arrays.asList(resourcePath));
     } catch (final Exception e) {
       LOGGER.log(Level.SEVERE, "Failed to load native library from JAR", e);
       return new LibraryLoadInfo(
@@ -302,8 +336,228 @@ public final class NativeLibraryUtils {
           checkResourceExists(resourcePath),
           null,
           null,
-          e);
+          e,
+          null,
+          Arrays.asList(resourcePath));
     }
+  }
+
+  /**
+   * Attempts to load a native library using multiple path conventions.
+   *
+   * <p>This method tries multiple path conventions in the specified priority order until
+   * a library resource is found and successfully loaded. It provides comprehensive
+   * diagnostic information about which paths were attempted.
+   *
+   * @param libraryName the base name of the library to load
+   * @param config the configuration to use for temporary file naming
+   * @param conventions the path conventions to try in order
+   * @return information about the loading attempt
+   * @throws IllegalArgumentException if libraryName or config is null
+   * @throws IllegalArgumentException if conventions is null or empty
+   */
+  public static LibraryLoadInfo loadNativeLibraryWithConventions(
+      final String libraryName, final NativeLibraryConfig config, 
+      final PathConvention... conventions) {
+    Objects.requireNonNull(libraryName, "libraryName must not be null");
+    Objects.requireNonNull(config, "config must not be null");
+    Objects.requireNonNull(conventions, "conventions must not be null");
+    
+    if (conventions.length == 0) {
+      throw new IllegalArgumentException("conventions must not be empty");
+    }
+
+    final PlatformDetector.PlatformInfo platformInfo;
+    try {
+      platformInfo = PlatformDetector.detect();
+    } catch (final RuntimeException e) {
+      LOGGER.log(Level.SEVERE, "Failed to detect platform", e);
+      return new LibraryLoadInfo(libraryName, null, null, false, null, null, e, null, 
+          new ArrayList<>());
+    }
+
+    final List<String> attemptedPaths = new ArrayList<>();
+
+    // Strategy 1: Try loading from system library path
+    try {
+      System.loadLibrary(libraryName);
+      LOGGER.info("Successfully loaded native library from system library path: " 
+          + sanitizeForLog(libraryName));
+      return new LibraryLoadInfo(libraryName, platformInfo, null, false, null, 
+          LibraryLoadInfo.LoadingMethod.SYSTEM_LIBRARY_PATH, null, null, attemptedPaths);
+    } catch (final UnsatisfiedLinkError e) {
+      LOGGER.fine("Failed to load from system library path: " + sanitizeForLog(e.getMessage()));
+    }
+
+    // Strategy 2: Try each convention in order
+    Exception lastException = null;
+    for (final PathConvention convention : conventions) {
+      try {
+        // Generate resource path using this convention
+        final String resourcePath = generateResourcePath(convention, libraryName, platformInfo);
+        attemptedPaths.add(resourcePath);
+        
+        LOGGER.fine("Trying convention " + convention + " with path: " 
+            + sanitizeForLog(resourcePath));
+
+        // Check if resource exists before attempting extraction
+        if (!checkResourceExists(resourcePath)) {
+          LOGGER.fine("Resource not found with convention " + convention + ": " 
+              + sanitizeForLog(resourcePath));
+          continue;
+        }
+
+        // Attempt to extract and load
+        final Path extractedPath = extractLibraryFromJar(libraryName, platformInfo, 
+            resourcePath, config);
+        System.load(extractedPath.toAbsolutePath().toString());
+        
+        LOGGER.info("Successfully loaded native library using convention " + convention 
+            + " from JAR: " + sanitizeForLog(resourcePath) + " -> " 
+            + sanitizeForLog(extractedPath.toString()));
+        
+        return new LibraryLoadInfo(libraryName, platformInfo, resourcePath, true, 
+            extractedPath, LibraryLoadInfo.LoadingMethod.EXTRACTED_FROM_JAR, null, 
+            convention, attemptedPaths);
+            
+      } catch (final Exception e) {
+        LOGGER.fine("Failed to load with convention " + convention + ": " 
+            + sanitizeForLog(e.getMessage()));
+        lastException = e;
+      }
+    }
+
+    // All conventions failed
+    LOGGER.log(Level.SEVERE, "Failed to load native library with any convention. " 
+        + "Attempted paths: " + attemptedPaths, lastException);
+    
+    return new LibraryLoadInfo(libraryName, platformInfo, null, false, null, null, 
+        lastException, null, attemptedPaths);
+  }
+
+  /**
+   * Overloaded method that supports a custom path pattern along with standard conventions.
+   *
+   * @param libraryName the base name of the library to load
+   * @param config the configuration to use for temporary file naming
+   * @param customConvention the custom path convention to try first
+   * @param conventions the standard path conventions to try after custom
+   * @return information about the loading attempt
+   * @throws IllegalArgumentException if libraryName, config, or customConvention is null
+   * @throws IllegalArgumentException if conventions is null
+   */
+  public static LibraryLoadInfo loadNativeLibraryWithCustomConvention(
+      final String libraryName, final NativeLibraryConfig config, 
+      final PathConvention.CustomPathConvention customConvention, 
+      final PathConvention... conventions) {
+    Objects.requireNonNull(libraryName, "libraryName must not be null");
+    Objects.requireNonNull(config, "config must not be null");
+    Objects.requireNonNull(customConvention, "customConvention must not be null");
+    Objects.requireNonNull(conventions, "conventions must not be null");
+
+    final PlatformDetector.PlatformInfo platformInfo;
+    try {
+      platformInfo = PlatformDetector.detect();
+    } catch (final RuntimeException e) {
+      LOGGER.log(Level.SEVERE, "Failed to detect platform", e);
+      return new LibraryLoadInfo(libraryName, null, null, false, null, null, e, null, 
+          new ArrayList<>());
+    }
+
+    final List<String> attemptedPaths = new ArrayList<>();
+
+    // Strategy 1: Try loading from system library path
+    try {
+      System.loadLibrary(libraryName);
+      LOGGER.info("Successfully loaded native library from system library path: " 
+          + sanitizeForLog(libraryName));
+      return new LibraryLoadInfo(libraryName, platformInfo, null, false, null, 
+          LibraryLoadInfo.LoadingMethod.SYSTEM_LIBRARY_PATH, null, null, attemptedPaths);
+    } catch (final UnsatisfiedLinkError e) {
+      LOGGER.fine("Failed to load from system library path: " + sanitizeForLog(e.getMessage()));
+    }
+
+    // Strategy 2: Try custom convention first
+    Exception lastException = null;
+    try {
+      final String resourcePath = customConvention.generatePath(libraryName, platformInfo);
+      attemptedPaths.add(resourcePath);
+      
+      LOGGER.fine("Trying custom convention with path: " + sanitizeForLog(resourcePath));
+
+      if (checkResourceExists(resourcePath)) {
+        final Path extractedPath = extractLibraryFromJar(libraryName, platformInfo, 
+            resourcePath, config);
+        System.load(extractedPath.toAbsolutePath().toString());
+        
+        LOGGER.info("Successfully loaded native library using custom convention from JAR: " 
+            + sanitizeForLog(resourcePath) + " -> " + sanitizeForLog(extractedPath.toString()));
+        
+        return new LibraryLoadInfo(libraryName, platformInfo, resourcePath, true, 
+            extractedPath, LibraryLoadInfo.LoadingMethod.EXTRACTED_FROM_JAR, null, 
+            PathConvention.CUSTOM, attemptedPaths);
+      }
+    } catch (final Exception e) {
+      LOGGER.fine("Failed to load with custom convention: " + sanitizeForLog(e.getMessage()));
+      lastException = e;
+    }
+
+    // Strategy 3: Try standard conventions
+    for (final PathConvention convention : conventions) {
+      try {
+        final String resourcePath = generateResourcePath(convention, libraryName, platformInfo);
+        attemptedPaths.add(resourcePath);
+        
+        LOGGER.fine("Trying convention " + convention + " with path: " 
+            + sanitizeForLog(resourcePath));
+
+        if (!checkResourceExists(resourcePath)) {
+          LOGGER.fine("Resource not found with convention " + convention + ": " 
+              + sanitizeForLog(resourcePath));
+          continue;
+        }
+
+        final Path extractedPath = extractLibraryFromJar(libraryName, platformInfo, 
+            resourcePath, config);
+        System.load(extractedPath.toAbsolutePath().toString());
+        
+        LOGGER.info("Successfully loaded native library using convention " + convention 
+            + " from JAR: " + sanitizeForLog(resourcePath) + " -> " 
+            + sanitizeForLog(extractedPath.toString()));
+        
+        return new LibraryLoadInfo(libraryName, platformInfo, resourcePath, true, 
+            extractedPath, LibraryLoadInfo.LoadingMethod.EXTRACTED_FROM_JAR, null, 
+            convention, attemptedPaths);
+            
+      } catch (final Exception e) {
+        LOGGER.fine("Failed to load with convention " + convention + ": " 
+            + sanitizeForLog(e.getMessage()));
+        lastException = e;
+      }
+    }
+
+    // All conventions failed
+    LOGGER.log(Level.SEVERE, "Failed to load native library with any convention. " 
+        + "Attempted paths: " + attemptedPaths, lastException);
+    
+    return new LibraryLoadInfo(libraryName, platformInfo, null, false, null, null, 
+        lastException, null, attemptedPaths);
+  }
+
+  /**
+   * Generates a resource path using the specified convention.
+   *
+   * @param convention the path convention to use
+   * @param libraryName the library name
+   * @param platformInfo the platform information
+   * @return the generated resource path
+   */
+  private static String generateResourcePath(final PathConvention convention, 
+      final String libraryName, final PlatformDetector.PlatformInfo platformInfo) {
+    if (convention == PathConvention.CUSTOM) {
+      throw new IllegalStateException("CUSTOM convention requires a pattern to be provided");
+    }
+    return convention.generatePath(libraryName, platformInfo);
   }
 
   /**
