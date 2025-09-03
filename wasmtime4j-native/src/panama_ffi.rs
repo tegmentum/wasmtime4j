@@ -12,10 +12,78 @@ pub mod engine {
     use crate::engine::core;
     use crate::error::ffi_utils;
     
-    /// Create a new Wasmtime engine (Panama FFI version)
+    /// Create a new Wasmtime engine with default configuration (Panama FFI version)
     #[no_mangle]
     pub extern "C" fn wasmtime4j_engine_create() -> *mut c_void {
         ffi_utils::ffi_try_ptr(|| core::create_engine())
+    }
+
+    /// Create a new Wasmtime engine with custom configuration (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_engine_create_with_config(
+        strategy: c_int,
+        opt_level: c_int,
+        debug_info: c_int,
+        wasm_threads: c_int,
+        wasm_simd: c_int,
+        wasm_reference_types: c_int,
+        wasm_bulk_memory: c_int,
+        wasm_multi_value: c_int,
+        fuel_enabled: c_int,
+        max_memory_pages: c_int,
+        max_stack_size: c_int,
+        epoch_interruption: c_int,
+        max_instances: c_int,
+    ) -> *mut c_void {
+        use wasmtime::{Strategy, OptLevel};
+        
+        ffi_utils::ffi_try_ptr(|| {
+            let strategy_opt = match strategy {
+                0 => Some(Strategy::Cranelift),
+                _ => None,
+            };
+            
+            let opt_level_opt = match opt_level {
+                0 => Some(OptLevel::None),
+                1 => Some(OptLevel::Speed),
+                2 => Some(OptLevel::SpeedAndSize),
+                _ => None,
+            };
+            
+            let max_memory_pages_opt = if max_memory_pages < 0 {
+                None
+            } else {
+                Some(max_memory_pages as u32)
+            };
+            
+            let max_stack_size_opt = if max_stack_size < 0 {
+                None
+            } else {
+                Some(max_stack_size as usize)
+            };
+            
+            let max_instances_opt = if max_instances < 0 {
+                None
+            } else {
+                Some(max_instances as u32)
+            };
+            
+            core::create_engine_with_config(
+                strategy_opt,
+                opt_level_opt,
+                debug_info != 0,
+                wasm_threads != 0,
+                wasm_simd != 0,
+                wasm_reference_types != 0,
+                wasm_bulk_memory != 0,
+                wasm_multi_value != 0,
+                fuel_enabled != 0,
+                max_memory_pages_opt,
+                max_stack_size_opt,
+                epoch_interruption != 0,
+                max_instances_opt,
+            )
+        })
     }
     
     /// Destroy a Wasmtime engine (Panama FFI version)
@@ -25,20 +93,91 @@ pub mod engine {
             core::destroy_engine(engine_ptr);
         }
     }
-    
-    /// Configure engine with options (Panama FFI version)
+
+    /// Check if fuel consumption is enabled (Panama FFI version)
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_engine_configure(
-        engine_ptr: *mut c_void,
-        option_name: *const c_char,
-        _option_value: *const c_char,
-    ) -> c_int {
-        // Placeholder implementation
-        // Returns 0 for success, negative for error
-        if engine_ptr.is_null() || option_name.is_null() {
-            return -1;
+    pub extern "C" fn wasmtime4j_engine_is_fuel_enabled(engine_ptr: *mut c_void) -> c_int {
+        match unsafe { core::get_engine_ref(engine_ptr) } {
+            Ok(engine) => if core::is_fuel_enabled(engine) { 1 } else { 0 },
+            Err(_) => -1,
         }
-        0
+    }
+
+    /// Check if epoch interruption is enabled (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_engine_is_epoch_interruption_enabled(engine_ptr: *mut c_void) -> c_int {
+        match unsafe { core::get_engine_ref(engine_ptr) } {
+            Ok(engine) => if core::is_epoch_interruption_enabled(engine) { 1 } else { 0 },
+            Err(_) => -1,
+        }
+    }
+
+    /// Get memory limit in pages (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_engine_get_memory_limit(engine_ptr: *mut c_void) -> c_int {
+        match unsafe { core::get_engine_ref(engine_ptr) } {
+            Ok(engine) => core::get_memory_limit(engine).map(|limit| limit as c_int).unwrap_or(-1),
+            Err(_) => -1,
+        }
+    }
+
+    /// Get stack size limit in bytes (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_engine_get_stack_limit(engine_ptr: *mut c_void) -> c_int {
+        match unsafe { core::get_engine_ref(engine_ptr) } {
+            Ok(engine) => core::get_stack_limit(engine).map(|limit| limit as c_int).unwrap_or(-1),
+            Err(_) => -1,
+        }
+    }
+
+    /// Get maximum instances limit (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_engine_get_max_instances(engine_ptr: *mut c_void) -> c_int {
+        match unsafe { core::get_engine_ref(engine_ptr) } {
+            Ok(engine) => core::get_max_instances(engine).map(|limit| limit as c_int).unwrap_or(-1),
+            Err(_) => -1,
+        }
+    }
+
+    /// Validate engine functionality (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_engine_validate(engine_ptr: *mut c_void) -> c_int {
+        match unsafe { core::get_engine_ref(engine_ptr) } {
+            Ok(engine) => if core::validate_engine(engine).is_ok() { 1 } else { 0 },
+            Err(_) => -1,
+        }
+    }
+
+    /// Check if engine supports WebAssembly feature (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_engine_supports_feature(
+        engine_ptr: *mut c_void,
+        feature_id: c_int,
+    ) -> c_int {
+        use crate::engine::WasmFeature;
+        
+        let feature = match feature_id {
+            0 => WasmFeature::Threads,
+            1 => WasmFeature::ReferenceTypes,
+            2 => WasmFeature::Simd,
+            3 => WasmFeature::BulkMemory,
+            4 => WasmFeature::MultiValue,
+            _ => return -1,
+        };
+
+        match unsafe { core::get_engine_ref(engine_ptr) } {
+            Ok(engine) => if core::check_feature_support(engine, feature) { 1 } else { 0 },
+            Err(_) => -1,
+        }
+    }
+
+    /// Get engine reference count for debugging (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_engine_get_reference_count(engine_ptr: *mut c_void) -> c_int {
+        match unsafe { core::get_engine_ref(engine_ptr) } {
+            Ok(engine) => core::get_reference_count(engine) as c_int,
+            Err(_) => -1,
+        }
     }
 }
 
