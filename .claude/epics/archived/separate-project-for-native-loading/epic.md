@@ -1,8 +1,9 @@
 ---
 name: separate-project-for-native-loading
-status: backlog
+status: completed
 created: 2025-09-01T22:56:11Z
-progress: 0%
+completed: 2025-09-03T07:19:24Z
+progress: 100%
 prd: .claude/prds/separate-project-for-native-loading.md
 github: https://github.com//issues/125
 ---
