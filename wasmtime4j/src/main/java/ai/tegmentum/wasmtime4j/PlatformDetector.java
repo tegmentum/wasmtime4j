@@ -29,6 +29,9 @@ package ai.tegmentum.wasmtime4j;
 @Deprecated
 public final class PlatformDetector {
 
+  /** Cached platform info instance. */
+  private static volatile PlatformInfo cachedPlatformInfo;
+
   /** Private constructor to prevent instantiation of utility class. */
   private PlatformDetector() {
     throw new AssertionError("Utility class should not be instantiated");
@@ -157,6 +160,23 @@ public final class PlatformDetector {
     }
 
     @Override
+    public boolean equals(final Object obj) {
+      if (this == obj) {
+        return true;
+      }
+      if (obj == null || getClass() != obj.getClass()) {
+        return false;
+      }
+      final PlatformInfo other = (PlatformInfo) obj;
+      return delegate.equals(other.delegate);
+    }
+
+    @Override
+    public int hashCode() {
+      return delegate.hashCode();
+    }
+
+    @Override
     public String toString() {
       return delegate.toString();
     }
@@ -168,7 +188,17 @@ public final class PlatformDetector {
    * @return platform information
    */
   public static PlatformInfo detect() {
-    return new PlatformInfo(ai.tegmentum.wasmtime4j.nativeloader.PlatformDetector.detect());
+    PlatformInfo result = cachedPlatformInfo;
+    if (result == null) {
+      synchronized (PlatformDetector.class) {
+        result = cachedPlatformInfo;
+        if (result == null) {
+          cachedPlatformInfo = result = new PlatformInfo(
+              ai.tegmentum.wasmtime4j.nativeloader.PlatformDetector.detect());
+        }
+      }
+    }
+    return result;
   }
 
   /**
