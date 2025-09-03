@@ -115,15 +115,54 @@ public final class JniEngine extends JniResource implements Engine {
 
     final byte[] wasmBytesCopy = JniValidation.defensiveCopy(wasmBytes);
 
+    // Start performance monitoring for compilation
+    final long startTime = ai.tegmentum.wasmtime4j.jni.performance.PerformanceMonitor
+        .startOperation("module_compilation", "compile");
+
     try {
+      // Try to load from compilation cache first
+      final String engineOptions = getEngineOptionsString();
+      final byte[] cachedModule = ai.tegmentum.wasmtime4j.jni.performance.CompilationCache
+          .loadFromCache(wasmBytesCopy, engineOptions);
+      
+      if (cachedModule != null) {
+        // Cache hit - use cached compilation (this is simulated for now)
+        LOGGER.fine("Using cached compilation for module");
+      }
+
+      // Compile the module (either fresh or validate cached)
       final long moduleHandle = nativeCompileModule(getNativeHandle(), wasmBytesCopy);
       JniValidation.requireValidHandle(moduleHandle, "moduleHandle");
+      
+      // Store compilation result in cache for future use
+      if (cachedModule == null) {
+        // This is a simplified implementation - in reality we'd store the actual compiled module data
+        ai.tegmentum.wasmtime4j.jni.performance.CompilationCache
+            .storeInCache(wasmBytesCopy, wasmBytesCopy, engineOptions);
+      }
+
       return new JniModule(moduleHandle, this);
     } catch (final Exception e) {
       if (e instanceof JniException) {
         throw new WasmException(e.getMessage(), e);
       }
       throw new WasmException("Failed to compile WebAssembly module", e);
+    } finally {
+      ai.tegmentum.wasmtime4j.jni.performance.PerformanceMonitor
+          .endOperation("module_compilation", startTime);
+    }
+  }
+
+  /**
+   * Gets a string representation of current engine options for cache keys.
+   * 
+   * @return engine options string
+   */
+  private String getEngineOptionsString() {
+    try {
+      return "opt_" + getOptimizationLevel() + "_debug_" + isDebugInfo();
+    } catch (final Exception e) {
+      return "default";
     }
   }
 
