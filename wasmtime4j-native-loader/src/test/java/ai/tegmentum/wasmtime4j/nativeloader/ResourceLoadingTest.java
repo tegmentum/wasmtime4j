@@ -322,7 +322,7 @@ final class ResourceLoadingTest {
     }
 
     // Wait for all threads to complete
-    CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).get(10, TimeUnit.SECONDS);
+    CompletableFuture.allOf(futures.toArray(new CompletableFuture<?>[0])).get(10, TimeUnit.SECONDS);
 
     // Verify all files were created
     for (int i = 0; i < threadCount; i++) {

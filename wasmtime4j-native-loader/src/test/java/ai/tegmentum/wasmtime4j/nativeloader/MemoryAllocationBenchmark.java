@@ -61,6 +61,7 @@ import org.openjdk.jmh.infra.Blackhole;
  * absolute memory usage, as JMH provides better control over allocation measurement than direct
  * heap inspection.
  */
+@SuppressWarnings({"exports", "module"})
 @BenchmarkMode({Mode.AverageTime, Mode.Throughput})
 @OutputTimeUnit(TimeUnit.MICROSECONDS)
 @Warmup(iterations = 10, time = 1, timeUnit = TimeUnit.SECONDS)
@@ -76,6 +77,11 @@ public class MemoryAllocationBenchmark {
 
   private Runtime runtime;
   private List<Object> retainedObjects;
+
+  /** Public constructor required for JMH. */
+  public MemoryAllocationBenchmark() {
+    // JMH will instantiate this class
+  }
 
   /** Sets up the benchmark environment with memory monitoring. */
   @Setup(Level.Trial)
@@ -131,7 +137,6 @@ public class MemoryAllocationBenchmark {
         NativeLibraryConfig.builder()
             .libraryName(TEST_LIBRARY_NAME)
             .tempFilePrefix("benchmark-")
-            .pathConventions(PathConvention.MAVEN_NATIVE, PathConvention.GRAALVM_NATIVE_IMAGE)
             .build();
     blackhole.consume(config);
   }
@@ -272,7 +277,6 @@ public class MemoryAllocationBenchmark {
         NativeLibraryConfig.builder()
             .libraryName(TEST_LIBRARY_NAME)
             .tempFilePrefix("heavy-concurrent-")
-            .pathConventions(PathConvention.MAVEN_NATIVE)
             .build();
 
     blackhole.consume(config);
@@ -312,7 +316,7 @@ public class MemoryAllocationBenchmark {
     // Test various array sizes
     final PathConvention[] single = {PathConvention.MAVEN_NATIVE};
     final PathConvention[] multiple = {
-      PathConvention.MAVEN_NATIVE, PathConvention.GRAALVM_NATIVE_IMAGE
+      PathConvention.MAVEN_NATIVE, PathConvention.MAVEN_NATIVE
     };
     final PathConvention[] all = PathConvention.values();
 
