@@ -144,8 +144,9 @@ public final class PlatformDetector {
      */
     public String getLibraryFileName(final String libraryName) {
       Objects.requireNonNull(libraryName, "libraryName must not be null");
+      final String sanitizedName = sanitizeLibraryName(libraryName);
       return operatingSystem.getLibraryPrefix()
-          + libraryName
+          + sanitizedName
           + operatingSystem.getLibraryExtension();
     }
 
@@ -202,6 +203,61 @@ public final class PlatformDetector {
     }
     // Remove all control and format characters to prevent log injection
     return input.replaceAll("[\\p{Cntrl}\\p{Cf}]", "_");
+  }
+
+  /**
+   * Sanitizes a library name for safe use in file paths by removing malicious characters
+   * and path traversal sequences. Optimized for performance.
+   *
+   * @param libraryName the library name to sanitize
+   * @return the sanitized library name safe for use in file paths
+   */
+  private static String sanitizeLibraryName(final String libraryName) {
+    if (libraryName == null) {
+      return "";
+    }
+    
+    // Fast path: if the library name looks safe, return as-is
+    boolean needsSanitization = false;
+    final int len = libraryName.length();
+    for (int i = 0; i < len; i++) {
+      final char c = libraryName.charAt(i);
+      if (c < 32 || c == '/' || c == '\\' || c == '\0' || c == '\r' || c == '\n') {
+        needsSanitization = true;
+        break;
+      }
+    }
+    
+    // Also check for .. sequences
+    if (!needsSanitization && libraryName.contains("..")) {
+      needsSanitization = true;
+    }
+    
+    if (!needsSanitization) {
+      return libraryName;
+    }
+    
+    // Slow path: build sanitized string
+    final StringBuilder result = new StringBuilder(len);
+    boolean lastWasDot = false;
+    for (int i = 0; i < len; i++) {
+      final char c = libraryName.charAt(i);
+      if (c >= 32 && c != '/' && c != '\\' && c != '\0' && c != '\r' && c != '\n') {
+        if (c == '.') {
+          if (lastWasDot) {
+            // Skip second dot in .. sequence
+            lastWasDot = false;
+            continue;
+          }
+          lastWasDot = true;
+        } else {
+          lastWasDot = false;
+        }
+        result.append(c);
+      }
+    }
+    
+    return result.toString();
   }
 
   /**

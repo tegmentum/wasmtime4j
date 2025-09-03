@@ -392,13 +392,13 @@ final class ResourceLoadingTest {
   @Test
   @DisplayName("Should handle error conditions in resource operations")
   void testResourceOperationErrorConditions() {
-    // Test with invalid paths
+    // Test that resource path generation handles null/invalid input appropriately
+    final PlatformDetector.PlatformInfo info = PlatformDetector.detect();
+    
+    // Test null library name - should throw NullPointerException
     assertThrows(
-        IllegalArgumentException.class,
-        () -> {
-          final Path invalidPath = Paths.get("");
-          invalidPath.toFile().setExecutable(true);
-        },
-        "Should handle invalid path operations gracefully");
+        NullPointerException.class,
+        () -> info.getLibraryResourcePath(null),
+        "Should throw NullPointerException for null library name");
   }
 }

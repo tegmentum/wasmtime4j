@@ -16,6 +16,7 @@
 
 package ai.tegmentum.wasmtime4j.nativeloader;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -196,18 +197,16 @@ final class ResourcePathResolverTest {
     // This would happen if we had an unknown placeholder
     final String invalidPattern = "/lib/{unknown}/{name}.so";
 
-    // Note: This test validates the concept, but the current implementation
-    // would just leave the placeholder as-is rather than throwing an exception.
-    // The validation would catch it as an unresolved placeholder.
+    // The validation should catch unresolved placeholders and throw an exception
+    final IllegalArgumentException exception =
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> ResourcePathResolver.resolvePath(invalidPattern, "test", linuxInfo),
+            "Should throw IllegalArgumentException for unresolved placeholders");
 
-    final String resolved = ResourcePathResolver.resolvePath(invalidPattern, "test", linuxInfo);
-    // The resolved path would contain "{unknown}" which should trigger validation
-
-    // For now, we just verify the placeholder remains
-    assertEquals(
-        "/lib/{unknown}/test.so",
-        resolved,
-        "Unknown placeholders should remain in the resolved path");
+    assertThat(exception.getMessage())
+        .contains("Resolved path contains unresolved placeholders")
+        .contains("{unknown}");
   }
 
   @Test
