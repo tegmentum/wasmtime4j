@@ -1249,3 +1249,481 @@ pub mod jni_hostfunc {
 
 #[cfg(not(feature = "jni-bindings"))]
 pub mod instance {}
+
+/// JNI bindings for WebAssembly global variables
+#[cfg(feature = "jni-bindings")]
+pub mod jni_global {
+    use super::*;
+    use crate::global::{Global, GlobalValue, core};
+    use crate::store::Store;
+    use crate::error::ffi_utils;
+    use wasmtime::{ValType, Mutability};
+
+    /// Create a new WebAssembly global variable (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeCreateGlobal(
+        env: JNIEnv,
+        _class: JClass,
+        store_ptr: jlong,
+        value_type: jint,
+        mutability: jint,
+        i32_value: jint,
+        i64_value: jlong,
+        f32_value: f64,
+        f64_value: f64,
+        ref_id_present: jboolean,
+        ref_id: jlong,
+        name: JString,
+    ) -> jlong {
+        ffi_utils::jni_try_ptr(&env, || {
+            let store = unsafe { ffi_utils::deref_ptr::<Store>(store_ptr as *mut std::os::raw::c_void, "store")? };
+            
+            let val_type = match value_type {
+                0 => ValType::I32,
+                1 => ValType::I64,
+                2 => ValType::F32,
+                3 => ValType::F64,
+                4 => ValType::V128,
+                5 => ValType::FuncRef,
+                6 => ValType::ExternRef,
+                _ => return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: format!("Invalid value type: {}", value_type),
+                }),
+            };
+
+            let mutability_enum = match mutability {
+                0 => Mutability::Const,
+                1 => Mutability::Var,
+                _ => return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: format!("Invalid mutability: {}", mutability),
+                }),
+            };
+
+            let ref_id_opt = if ref_id_present != 0 { Some(ref_id as u64) } else { None };
+
+            let initial_value = core::create_global_value(
+                val_type, 
+                i32_value, 
+                i64_value, 
+                f32_value as f32, 
+                f64_value,
+                ref_id_opt,
+            )?;
+
+            let name_str = if name.is_null() {
+                None
+            } else {
+                Some(env.get_string(name)?.into())
+            };
+
+            let global = core::create_global(store, val_type, mutability_enum, initial_value, name_str)?;
+            
+            Ok(Box::into_raw(global) as jlong)
+        })
+    }
+
+    /// Get global variable value (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetGlobal(
+        env: JNIEnv,
+        _class: JClass,
+        global_ptr: jlong,
+        store_ptr: jlong,
+    ) -> jbyteArray {
+        ffi_utils::jni_try_ptr(&env, || {
+            let global = unsafe { core::get_global_ref(global_ptr as *mut std::os::raw::c_void)? };
+            let store = unsafe { ffi_utils::deref_ptr::<Store>(store_ptr as *mut std::os::raw::c_void, "store")? };
+            
+            let value = core::get_global_value(global, store)?;
+            let (i32_val, i64_val, f32_val, f64_val, ref_id_opt) = core::extract_global_value(&value);
+            
+            // Pack the values into a byte array
+            let mut data = Vec::with_capacity(29); // 5 * 8 bytes for values + 1 byte for presence flag
+            data.extend_from_slice(&i32_val.to_le_bytes());
+            data.extend_from_slice(&i64_val.to_le_bytes());
+            data.extend_from_slice(&f32_val.to_le_bytes());
+            data.extend_from_slice(&f64_val.to_le_bytes());
+            data.push(if ref_id_opt.is_some() { 1 } else { 0 });
+            data.extend_from_slice(&ref_id_opt.unwrap_or(0).to_le_bytes());
+            
+            let byte_array = env.new_byte_array(data.len() as i32)?;
+            env.set_byte_array_region(byte_array, 0, &data.iter().map(|&b| b as i8).collect::<Vec<i8>>())?;
+            
+            Ok(byte_array)
+        })
+    }
+
+    /// Set global variable value (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeSetGlobal(
+        env: JNIEnv,
+        _class: JClass,
+        global_ptr: jlong,
+        store_ptr: jlong,
+        value_type: jint,
+        i32_value: jint,
+        i64_value: jlong,
+        f32_value: f64,
+        f64_value: f64,
+        ref_id_present: jboolean,
+        ref_id: jlong,
+    ) -> jint {
+        ffi_utils::jni_try_code(&env, || {
+            let global = unsafe { core::get_global_ref(global_ptr as *mut std::os::raw::c_void)? };
+            let store = unsafe { ffi_utils::deref_ptr::<Store>(store_ptr as *mut std::os::raw::c_void, "store")? };
+            
+            let val_type = match value_type {
+                0 => ValType::I32,
+                1 => ValType::I64,
+                2 => ValType::F32,
+                3 => ValType::F64,
+                4 => ValType::V128,
+                5 => ValType::FuncRef,
+                6 => ValType::ExternRef,
+                _ => return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: format!("Invalid value type: {}", value_type),
+                }),
+            };
+
+            let ref_id_opt = if ref_id_present != 0 { Some(ref_id as u64) } else { None };
+
+            let value = core::create_global_value(
+                val_type, 
+                i32_value, 
+                i64_value, 
+                f32_value as f32, 
+                f64_value,
+                ref_id_opt,
+            )?;
+
+            core::set_global_value(global, store, value)?;
+            
+            Ok(())
+        })
+    }
+
+    /// Get global variable metadata (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetMetadata(
+        env: JNIEnv,
+        _class: JClass,
+        global_ptr: jlong,
+    ) -> jbyteArray {
+        ffi_utils::jni_try_ptr(&env, || {
+            let global = unsafe { core::get_global_ref(global_ptr as *mut std::os::raw::c_void)? };
+            let metadata = core::get_global_metadata(global);
+            
+            let mut data = Vec::with_capacity(9); // 2 ints + 1 byte for name presence
+            
+            let value_type_code = match metadata.value_type {
+                ValType::I32 => 0,
+                ValType::I64 => 1,
+                ValType::F32 => 2,
+                ValType::F64 => 3,
+                ValType::V128 => 4,
+                ValType::FuncRef => 5,
+                ValType::ExternRef => 6,
+            };
+            data.extend_from_slice(&(value_type_code as i32).to_le_bytes());
+            
+            let mutability_code = match metadata.mutability {
+                Mutability::Const => 0,
+                Mutability::Var => 1,
+            };
+            data.extend_from_slice(&(mutability_code as i32).to_le_bytes());
+            
+            data.push(if metadata.name.is_some() { 1 } else { 0 });
+            
+            let byte_array = env.new_byte_array(data.len() as i32)?;
+            env.set_byte_array_region(byte_array, 0, &data.iter().map(|&b| b as i8).collect::<Vec<i8>>())?;
+            
+            Ok(byte_array)
+        })
+    }
+
+    /// Get global variable name (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetName(
+        env: JNIEnv,
+        _class: JClass,
+        global_ptr: jlong,
+    ) -> JString {
+        ffi_utils::jni_try_ptr(&env, || {
+            let global = unsafe { core::get_global_ref(global_ptr as *mut std::os::raw::c_void)? };
+            let metadata = core::get_global_metadata(global);
+            
+            if let Some(ref name) = metadata.name {
+                Ok(env.new_string(name)?)
+            } else {
+                Ok(JString::default())
+            }
+        })
+    }
+
+    /// Destroy a global variable (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeDestroy(
+        _env: JNIEnv,
+        _class: JClass,
+        global_ptr: jlong,
+    ) {
+        unsafe {
+            core::destroy_global(global_ptr as *mut std::os::raw::c_void);
+        }
+    }
+}
+
+/// JNI bindings for WebAssembly tables
+#[cfg(feature = "jni-bindings")]
+pub mod jni_table {
+    use super::*;
+    use crate::table::{Table, TableElement, core};
+    use crate::store::Store;
+    use crate::error::ffi_utils;
+    use wasmtime::ValType;
+
+    /// Create a new WebAssembly table (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeCreateTable(
+        env: JNIEnv,
+        _class: JClass,
+        store_ptr: jlong,
+        element_type: jint,
+        initial_size: jint,
+        has_maximum: jboolean,
+        maximum_size: jint,
+        name: JString,
+    ) -> jlong {
+        ffi_utils::jni_try_ptr(&env, || {
+            let store = unsafe { ffi_utils::deref_ptr::<Store>(store_ptr as *mut std::os::raw::c_void, "store")? };
+            
+            let val_type = match element_type {
+                5 => ValType::FuncRef,
+                6 => ValType::ExternRef,
+                _ => return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: format!("Invalid table element type: {}", element_type),
+                }),
+            };
+
+            let max_size = if has_maximum != 0 { Some(maximum_size as u32) } else { None };
+
+            let name_str = if name.is_null() {
+                None
+            } else {
+                Some(env.get_string(name)?.into())
+            };
+
+            let table = core::create_table(store, val_type, initial_size as u32, max_size, name_str)?;
+            
+            Ok(Box::into_raw(table) as jlong)
+        })
+    }
+
+    /// Get table size (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeGetSize(
+        env: JNIEnv,
+        _class: JClass,
+        table_ptr: jlong,
+        store_ptr: jlong,
+    ) -> jint {
+        ffi_utils::jni_try_default(&env, -1, || {
+            let table = unsafe { core::get_table_ref(table_ptr as *mut std::os::raw::c_void)? };
+            let store = unsafe { ffi_utils::deref_ptr::<Store>(store_ptr as *mut std::os::raw::c_void, "store")? };
+            
+            let table_size = core::get_table_size(table, store)?;
+            
+            Ok(table_size as jint)
+        })
+    }
+
+    /// Get table element (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeGetElement(
+        env: JNIEnv,
+        _class: JClass,
+        table_ptr: jlong,
+        store_ptr: jlong,
+        index: jint,
+    ) -> jbyteArray {
+        ffi_utils::jni_try_ptr(&env, || {
+            let table = unsafe { core::get_table_ref(table_ptr as *mut std::os::raw::c_void)? };
+            let store = unsafe { ffi_utils::deref_ptr::<Store>(store_ptr as *mut std::os::raw::c_void, "store")? };
+            
+            let element = core::get_table_element(table, store, index as u32)?;
+            let ref_id_opt = core::extract_table_element_ref_id(&element);
+            
+            // Pack the values into a byte array
+            let mut data = Vec::with_capacity(9); // 1 byte for presence + 8 bytes for ref_id
+            data.push(if ref_id_opt.is_some() { 1 } else { 0 });
+            data.extend_from_slice(&ref_id_opt.unwrap_or(0).to_le_bytes());
+            
+            let byte_array = env.new_byte_array(data.len() as i32)?;
+            env.set_byte_array_region(byte_array, 0, &data.iter().map(|&b| b as i8).collect::<Vec<i8>>())?;
+            
+            Ok(byte_array)
+        })
+    }
+
+    /// Set table element (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeSetElement(
+        env: JNIEnv,
+        _class: JClass,
+        table_ptr: jlong,
+        store_ptr: jlong,
+        index: jint,
+        element_type: jint,
+        ref_id_present: jboolean,
+        ref_id: jlong,
+    ) -> jint {
+        ffi_utils::jni_try_code(&env, || {
+            let table = unsafe { core::get_table_ref(table_ptr as *mut std::os::raw::c_void)? };
+            let store = unsafe { ffi_utils::deref_ptr::<Store>(store_ptr as *mut std::os::raw::c_void, "store")? };
+            
+            let val_type = match element_type {
+                5 => ValType::FuncRef,
+                6 => ValType::ExternRef,
+                _ => return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: format!("Invalid table element type: {}", element_type),
+                }),
+            };
+
+            let ref_id_opt = if ref_id_present != 0 { Some(ref_id as u64) } else { None };
+            let element = core::create_table_element(val_type, ref_id_opt)?;
+
+            core::set_table_element(table, store, index as u32, element)?;
+            
+            Ok(())
+        })
+    }
+
+    /// Grow table (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeGrow(
+        env: JNIEnv,
+        _class: JClass,
+        table_ptr: jlong,
+        store_ptr: jlong,
+        delta: jint,
+        element_type: jint,
+        ref_id_present: jboolean,
+        ref_id: jlong,
+    ) -> jint {
+        ffi_utils::jni_try_default(&env, -1, || {
+            let table = unsafe { core::get_table_ref(table_ptr as *mut std::os::raw::c_void)? };
+            let store = unsafe { ffi_utils::deref_ptr::<Store>(store_ptr as *mut std::os::raw::c_void, "store")? };
+            
+            let val_type = match element_type {
+                5 => ValType::FuncRef,
+                6 => ValType::ExternRef,
+                _ => return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: format!("Invalid table element type: {}", element_type),
+                }),
+            };
+
+            let ref_id_opt = if ref_id_present != 0 { Some(ref_id as u64) } else { None };
+            let init_value = core::create_table_element(val_type, ref_id_opt)?;
+
+            let previous_size = core::grow_table(table, store, delta as u32, init_value)?;
+            
+            Ok(previous_size as jint)
+        })
+    }
+
+    /// Fill table range (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeFill(
+        env: JNIEnv,
+        _class: JClass,
+        table_ptr: jlong,
+        store_ptr: jlong,
+        dst: jint,
+        len: jint,
+        element_type: jint,
+        ref_id_present: jboolean,
+        ref_id: jlong,
+    ) -> jint {
+        ffi_utils::jni_try_code(&env, || {
+            let table = unsafe { core::get_table_ref(table_ptr as *mut std::os::raw::c_void)? };
+            let store = unsafe { ffi_utils::deref_ptr::<Store>(store_ptr as *mut std::os::raw::c_void, "store")? };
+            
+            let val_type = match element_type {
+                5 => ValType::FuncRef,
+                6 => ValType::ExternRef,
+                _ => return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: format!("Invalid table element type: {}", element_type),
+                }),
+            };
+
+            let ref_id_opt = if ref_id_present != 0 { Some(ref_id as u64) } else { None };
+            let value = core::create_table_element(val_type, ref_id_opt)?;
+
+            core::fill_table(table, store, dst as u32, value, len as u32)?;
+            
+            Ok(())
+        })
+    }
+
+    /// Get table metadata (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeGetMetadata(
+        env: JNIEnv,
+        _class: JClass,
+        table_ptr: jlong,
+    ) -> jbyteArray {
+        ffi_utils::jni_try_ptr(&env, || {
+            let table = unsafe { core::get_table_ref(table_ptr as *mut std::os::raw::c_void)? };
+            let metadata = core::get_table_metadata(table);
+            
+            let mut data = Vec::with_capacity(13); // 3 ints + 1 byte for name presence
+            
+            let element_type_code = match metadata.element_type {
+                ValType::FuncRef => 5,
+                ValType::ExternRef => 6,
+                _ => -1,
+            };
+            data.extend_from_slice(&element_type_code.to_le_bytes());
+            data.extend_from_slice(&(metadata.initial_size as i32).to_le_bytes());
+            data.extend_from_slice(&(metadata.maximum_size.unwrap_or(0) as i32).to_le_bytes());
+            data.push(if metadata.maximum_size.is_some() { 1 } else { 0 });
+            data.push(if metadata.name.is_some() { 1 } else { 0 });
+            
+            let byte_array = env.new_byte_array(data.len() as i32)?;
+            env.set_byte_array_region(byte_array, 0, &data.iter().map(|&b| b as i8).collect::<Vec<i8>>())?;
+            
+            Ok(byte_array)
+        })
+    }
+
+    /// Get table name (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeGetName(
+        env: JNIEnv,
+        _class: JClass,
+        table_ptr: jlong,
+    ) -> JString {
+        ffi_utils::jni_try_ptr(&env, || {
+            let table = unsafe { core::get_table_ref(table_ptr as *mut std::os::raw::c_void)? };
+            let metadata = core::get_table_metadata(table);
+            
+            if let Some(ref name) = metadata.name {
+                Ok(env.new_string(name)?)
+            } else {
+                Ok(JString::default())
+            }
+        })
+    }
+
+    /// Destroy a table (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeDestroy(
+        _env: JNIEnv,
+        _class: JClass,
+        table_ptr: jlong,
+    ) {
+        unsafe {
+            core::destroy_table(table_ptr as *mut std::os::raw::c_void);
+        }
+    }
+}

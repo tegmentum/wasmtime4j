@@ -33,6 +33,8 @@ pub mod store;
 pub mod instance;
 pub mod hostfunc;
 pub mod memory;
+pub mod global;
+pub mod table;
 
 // Interface modules - will be implemented in later streams
 pub mod jni_bindings;
@@ -52,6 +54,8 @@ pub use store::{Store, StoreBuilder, StoreData, StoreMetadata, ResourceLimits, E
 pub use instance::{Instance, InstanceMetadata, ImportBinding, ExportBinding, WasmValue, ExecutionResult};
 pub use hostfunc::{HostFunction, HostFunctionBuilder, HostFunctionCallback, MarshallingResult};
 pub use memory::{Memory, MemoryBuilder, MemoryConfig, MemoryMetadata, MemoryUsage as MemUsage, MemoryDataType, MemoryRegistry, MemoryError};
+pub use global::{Global, GlobalValue, GlobalMetadata, ReferenceType as GlobalReferenceType};
+pub use table::{Table, TableElement, TableMetadata, ReferenceType as TableReferenceType};
 
 // Re-export component model types for WASI Preview 2 support
 pub use component::{
