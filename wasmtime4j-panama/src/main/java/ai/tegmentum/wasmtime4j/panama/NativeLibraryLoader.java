@@ -16,7 +16,8 @@
 
 package ai.tegmentum.wasmtime4j.panama;
 
-import ai.tegmentum.wasmtime4j.NativeLibraryUtils;
+import ai.tegmentum.wasmtime4j.nativeloader.NativeLibraryUtils;
+import ai.tegmentum.wasmtime4j.nativeloader.NativeLoader;
 import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.Linker;
@@ -60,7 +61,7 @@ public final class NativeLibraryLoader {
     this.methodHandleCache = new ConcurrentHashMap<>();
 
     // Load the native library using shared utilities
-    this.loadInfo = NativeLibraryUtils.loadNativeLibrary();
+    this.loadInfo = NativeLoader.loadLibrary("wasmtime4j");
 
     if (!loadInfo.isSuccessful()) {
       final String errorMessage = loadInfo.getErrorMessage();

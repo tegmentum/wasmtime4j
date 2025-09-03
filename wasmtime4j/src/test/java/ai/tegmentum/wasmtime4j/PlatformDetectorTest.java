@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 
 /** Tests for {@link PlatformDetector}. */
+@SuppressWarnings("deprecation") // Testing deprecated wrapper class
 final class PlatformDetectorTest {
 
   @Test

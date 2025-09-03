@@ -16,7 +16,6 @@
 
 package ai.tegmentum.wasmtime4j;
 
-import ai.tegmentum.wasmtime4j.nativeloader.PlatformDetector;
 import java.io.IOException;
 import java.nio.file.Path;
 
@@ -48,6 +47,7 @@ public final class NativeLibraryUtils {
       this.delegate = delegate;
     }
 
+
     /** The method used to load the library. */
     public enum LoadingMethod {
       SYSTEM_LIBRARY_PATH,
@@ -69,7 +69,7 @@ public final class NativeLibraryUtils {
      * @return the platform info
      */
     public PlatformDetector.PlatformInfo getPlatformInfo() {
-      return delegate.getPlatformInfo();
+      return new PlatformDetector.PlatformInfo(delegate.getPlatformInfo());
     }
 
     /**
@@ -195,8 +195,22 @@ public final class NativeLibraryUtils {
       final PlatformDetector.PlatformInfo platformInfo,
       final String resourcePath)
       throws IOException {
+    // Validate null parameters to maintain backward compatibility
+    if (libraryName == null) {
+      throw new NullPointerException("libraryName cannot be null");
+    }
+    if (platformInfo == null) {
+      throw new NullPointerException("platformInfo cannot be null");
+    }
+    if (resourcePath == null) {
+      throw new NullPointerException("resourcePath cannot be null");
+    }
+    
+    // Convert the wrapper PlatformInfo to native PlatformInfo
+    final ai.tegmentum.wasmtime4j.nativeloader.PlatformDetector.PlatformInfo nativePlatformInfo =
+        ai.tegmentum.wasmtime4j.nativeloader.PlatformDetector.detect();
     return ai.tegmentum.wasmtime4j.nativeloader.NativeLibraryUtils.extractLibraryFromJar(
-        libraryName, platformInfo, resourcePath);
+        libraryName, nativePlatformInfo, resourcePath);
   }
 
   /**
