@@ -36,6 +36,9 @@ pub mod memory;
 pub mod global;
 pub mod table;
 
+// Shared FFI architecture with trait-based conversions
+pub mod shared_ffi;
+
 // Interface modules - will be implemented in later streams
 pub mod jni_bindings;
 pub mod panama_ffi;
@@ -70,6 +73,16 @@ pub use wasi::{
     WasiContext, WasiConfig, EnvironmentPolicy, DirectoryMapping,
     WasiDirPermissions, WasiFilePermissions, StdioConfig, StdioSource, StdioSink,
     WasiExecutionResult
+};
+
+// Re-export shared FFI utilities for interface implementations
+pub use shared_ffi::{
+    ParameterConverter, ReturnValueConverter, 
+    FFI_SUCCESS, FFI_ERROR,
+    FfiStrategy, FfiOptLevel, FfiWasmFeature,
+    BooleanReturnConverter, IntegerReturnConverter, PointerReturnConverter,
+    convert_wasm_features, validate_wasm_features,
+    validation, error_mapping
 };
 
 /// Library version information
