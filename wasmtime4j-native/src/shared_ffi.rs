@@ -393,6 +393,985 @@ pub mod error_mapping {
     }
 }
 
+/// Component operations shared between JNI and Panama FFI implementations
+/// 
+/// This module provides consolidated implementations for WebAssembly Component Model operations,
+/// eliminating code duplication between interface implementations while maintaining
+/// defensive programming practices and consistent error handling.
+pub mod component {
+    use crate::component::{ComponentEngine, Component};
+    use crate::error::{WasmtimeResult, WasmtimeError};
+    use std::os::raw::c_void;
+    use std::sync::Arc;
+    use super::{PointerReturnConverter, ReturnValueConverter, IntegerReturnConverter, validation};
+
+    /// Shared implementation for creating component engine
+    pub fn create_component_engine_shared() -> WasmtimeResult<Box<ComponentEngine>> {
+        crate::component::core::create_component_engine()
+    }
+
+    /// Shared implementation for loading component from bytes
+    pub fn load_component_from_bytes_shared<B>(
+        engine_ptr: *mut c_void,
+        component_bytes: B
+    ) -> WasmtimeResult<Box<Component>>
+    where
+        B: super::module::ByteArrayConverter,
+    {
+        validation::validate_not_null(engine_ptr, "component_engine")?;
+        
+        if component_bytes.is_empty() {
+            return Err(WasmtimeError::InvalidParameter(
+                "Component bytes cannot be empty".to_string()
+            ));
+        }
+
+        let engine = unsafe { crate::component::core::get_component_engine_ref(engine_ptr)? };
+        let bytes = unsafe { component_bytes.get_bytes()? };
+        crate::component::core::load_component_from_bytes(engine, bytes)
+    }
+
+    /// Shared implementation for component instantiation
+    pub fn instantiate_component_shared(
+        engine_ptr: *mut c_void,
+        component_ptr: *mut c_void
+    ) -> WasmtimeResult<*mut c_void> {
+        validation::validate_not_null(engine_ptr, "component_engine")?;
+        validation::validate_not_null(component_ptr, "component")?;
+
+        let engine = unsafe { crate::component::core::get_component_engine_ref(engine_ptr)? };
+        let component = unsafe { crate::component::core::get_component_ref(component_ptr)? };
+        
+        let instance = crate::component::core::instantiate_component(engine, component)?;
+        Ok(Arc::into_raw(instance) as *mut c_void)
+    }
+
+    /// Shared implementation for getting component size
+    pub fn get_component_size_shared(component_ptr: *mut c_void) -> WasmtimeResult<usize> {
+        validation::validate_not_null(component_ptr, "component")?;
+        
+        let component = unsafe { crate::component::core::get_component_ref(component_ptr)? };
+        Ok(crate::component::core::get_component_size(component))
+    }
+
+    /// Shared implementation for getting component exports count
+    pub fn get_component_exports_count_shared(component_ptr: *mut c_void) -> WasmtimeResult<usize> {
+        validation::validate_not_null(component_ptr, "component")?;
+        
+        let component = unsafe { crate::component::core::get_component_ref(component_ptr)? };
+        Ok(crate::component::core::get_export_count(component))
+    }
+
+    /// Shared implementation for getting component imports count
+    pub fn get_component_imports_count_shared(component_ptr: *mut c_void) -> WasmtimeResult<usize> {
+        validation::validate_not_null(component_ptr, "component")?;
+        
+        let component = unsafe { crate::component::core::get_component_ref(component_ptr)? };
+        Ok(crate::component::core::get_import_count(component))
+    }
+
+    /// Shared implementation for getting active instances count
+    pub fn get_active_instances_count_shared(engine_ptr: *mut c_void) -> WasmtimeResult<usize> {
+        validation::validate_not_null(engine_ptr, "component_engine")?;
+        
+        let engine = unsafe { crate::component::core::get_component_engine_ref(engine_ptr)? };
+        let instances = crate::component::core::get_active_instances(engine)?;
+        Ok(instances.len())
+    }
+
+    /// Shared implementation for cleanup instances
+    pub fn cleanup_instances_shared(engine_ptr: *mut c_void) -> WasmtimeResult<usize> {
+        validation::validate_not_null(engine_ptr, "component_engine")?;
+        
+        let engine = unsafe { crate::component::core::get_component_engine_ref(engine_ptr)? };
+        let instances_before = crate::component::core::get_active_instances(engine)?.len();
+        // Note: The actual cleanup of inactive instances would need to be implemented
+        // in the component engine, currently we just return the current count
+        Ok(instances_before)
+    }
+
+    /// Shared implementation for component engine destruction
+    pub fn destroy_component_engine_shared(engine_ptr: *mut c_void) {
+        if !engine_ptr.is_null() {
+            unsafe { crate::component::core::destroy_component_engine(engine_ptr); }
+        }
+    }
+
+    /// Shared implementation for component destruction
+    pub fn destroy_component_shared(component_ptr: *mut c_void) {
+        if !component_ptr.is_null() {
+            unsafe { crate::component::core::destroy_component(component_ptr); }
+        }
+    }
+
+    /// Shared implementation for component instance destruction
+    pub fn destroy_component_instance_shared(instance_ptr: *mut c_void) {
+        if !instance_ptr.is_null() {
+            unsafe { crate::component::core::destroy_component_instance(instance_ptr); }
+        }
+    }
+
+    /// Helper function to convert create result to FFI pointer
+    pub fn create_result_to_ffi_ptr(result: WasmtimeResult<Box<ComponentEngine>>) -> *mut c_void {
+        PointerReturnConverter::to_ffi_ptr(result)
+    }
+
+    /// Helper function to convert load result to FFI pointer
+    pub fn load_result_to_ffi_ptr(result: WasmtimeResult<Box<Component>>) -> *mut c_void {
+        PointerReturnConverter::to_ffi_ptr(result)
+    }
+
+    /// Helper function to convert instantiate result to FFI code and pointer
+    pub fn instantiate_result_to_ffi_result(result: WasmtimeResult<*mut c_void>) -> (i32, *mut c_void) {
+        match result {
+            Ok(ptr) => (super::FFI_SUCCESS, ptr),
+            Err(_) => (super::FFI_ERROR, std::ptr::null_mut()),
+        }
+    }
+
+    /// Helper function to convert size result to FFI result tuple
+    pub fn size_result_to_ffi_result(result: WasmtimeResult<usize>) -> (i32, usize) {
+        match result {
+            Ok(size) => (super::FFI_SUCCESS, size),
+            Err(_) => (super::FFI_ERROR, 0),
+        }
+    }
+
+    /// Helper function to convert count result to FFI result tuple
+    pub fn count_result_to_ffi_result(result: WasmtimeResult<usize>) -> (i32, i32) {
+        match result {
+            Ok(count) => (super::FFI_SUCCESS, count as i32),
+            Err(_) => (super::FFI_ERROR, -1),
+        }
+    }
+}
+
+/// Memory operations shared between JNI and Panama FFI implementations
+/// 
+/// This module provides consolidated implementations for WebAssembly memory operations,
+/// eliminating code duplication between interface implementations while maintaining
+/// defensive programming practices and consistent error handling.
+pub mod memory {
+    use crate::memory::{Memory, MemoryBuilder, MemoryConfig, MemoryUsage, MemoryDataType, MemoryRegistry};
+    use crate::store::Store;
+    use crate::error::{WasmtimeResult, WasmtimeError};
+    use std::os::raw::c_void;
+    use std::sync::Arc;
+    use super::{PointerReturnConverter, ReturnValueConverter, IntegerReturnConverter, validation};
+
+    /// Shared implementation for creating memory
+    pub fn create_memory_shared(
+        store_ptr: *mut c_void,
+        initial_pages: u32
+    ) -> WasmtimeResult<Box<Memory>> {
+        validation::validate_not_null(store_ptr, "store")?;
+        
+        let mut store = unsafe { &mut *(store_ptr as *mut Store) };
+        Memory::new(store, initial_pages as u64).map(|memory| Box::new(memory))
+    }
+
+    /// Shared implementation for creating memory with configuration
+    pub fn create_memory_with_config_shared<S>(
+        store_ptr: *mut c_void,
+        initial_pages: u32,
+        maximum_pages: i32,
+        is_shared: bool,
+        memory_index: u32,
+        name: S
+    ) -> WasmtimeResult<Box<Memory>>
+    where
+        S: super::module::StringConverter,
+    {
+        validation::validate_not_null(store_ptr, "store")?;
+        
+        let mut store = unsafe { &mut *(store_ptr as *mut Store) };
+        
+        let mut config = MemoryConfig::new(initial_pages as u64);
+        
+        if maximum_pages >= 0 {
+            config = config.maximum_pages(maximum_pages as u64);
+        }
+        
+        if is_shared {
+            config = config.shared();
+        }
+        
+        config = config.memory_index(memory_index);
+        
+        if !name.is_empty() {
+            let name_str = unsafe { name.get_string()? };
+            config = config.name(name_str);
+        }
+        
+        Memory::new_with_config(store, config).map(|memory| Box::new(memory))
+    }
+
+    /// Shared implementation for getting memory size in pages
+    pub fn get_memory_size_pages_shared(
+        memory_ptr: *mut c_void,
+        store_ptr: *mut c_void
+    ) -> WasmtimeResult<u64> {
+        validation::validate_not_null(memory_ptr, "memory")?;
+        validation::validate_not_null(store_ptr, "store")?;
+        
+        let memory = unsafe { &*(memory_ptr as *const Memory) };
+        let store = unsafe { &*(store_ptr as *const Store) };
+        memory.size_pages(store)
+    }
+
+    /// Shared implementation for getting memory size in bytes
+    pub fn get_memory_size_bytes_shared(
+        memory_ptr: *mut c_void,
+        store_ptr: *mut c_void
+    ) -> WasmtimeResult<usize> {
+        validation::validate_not_null(memory_ptr, "memory")?;
+        validation::validate_not_null(store_ptr, "store")?;
+        
+        let memory = unsafe { &*(memory_ptr as *const Memory) };
+        let store = unsafe { &*(store_ptr as *const Store) };
+        memory.size_bytes(store)
+    }
+
+    /// Shared implementation for growing memory
+    pub fn grow_memory_shared(
+        memory_ptr: *mut c_void,
+        store_ptr: *mut c_void,
+        additional_pages: u64
+    ) -> WasmtimeResult<u64> {
+        validation::validate_not_null(memory_ptr, "memory")?;
+        validation::validate_not_null(store_ptr, "store")?;
+        
+        let memory = unsafe { &*(memory_ptr as *const Memory) };
+        let mut store = unsafe { &mut *(store_ptr as *mut Store) };
+        memory.grow(store, additional_pages)
+    }
+
+    /// Shared implementation for reading memory bytes
+    pub fn read_memory_bytes_shared(
+        memory_ptr: *mut c_void,
+        store_ptr: *mut c_void,
+        offset: usize,
+        length: usize
+    ) -> WasmtimeResult<Vec<u8>> {
+        validation::validate_not_null(memory_ptr, "memory")?;
+        validation::validate_not_null(store_ptr, "store")?;
+        
+        let memory = unsafe { &*(memory_ptr as *const Memory) };
+        let store = unsafe { &*(store_ptr as *const Store) };
+        memory.read_bytes(store, offset, length)
+    }
+
+    /// Shared implementation for writing memory bytes
+    pub fn write_memory_bytes_shared(
+        memory_ptr: *mut c_void,
+        store_ptr: *mut c_void,
+        offset: usize,
+        data: &[u8]
+    ) -> WasmtimeResult<()> {
+        validation::validate_not_null(memory_ptr, "memory")?;
+        validation::validate_not_null(store_ptr, "store")?;
+        
+        let memory = unsafe { &*(memory_ptr as *const Memory) };
+        let mut store = unsafe { &mut *(store_ptr as *mut Store) };
+        memory.write_bytes(store, offset, data)
+    }
+
+    /// Shared implementation for reading typed memory data
+    pub fn read_memory_u32_shared(
+        memory_ptr: *mut c_void,
+        store_ptr: *mut c_void,
+        offset: usize
+    ) -> WasmtimeResult<u32> {
+        validation::validate_not_null(memory_ptr, "memory")?;
+        validation::validate_not_null(store_ptr, "store")?;
+        
+        let memory = unsafe { &*(memory_ptr as *const Memory) };
+        let store = unsafe { &*(store_ptr as *const Store) };
+        memory.read_typed::<u32>(store, offset, MemoryDataType::U32)
+    }
+
+    /// Shared implementation for writing typed memory data
+    pub fn write_memory_u32_shared(
+        memory_ptr: *mut c_void,
+        store_ptr: *mut c_void,
+        offset: usize,
+        value: u32
+    ) -> WasmtimeResult<()> {
+        validation::validate_not_null(memory_ptr, "memory")?;
+        validation::validate_not_null(store_ptr, "store")?;
+        
+        let memory = unsafe { &*(memory_ptr as *const Memory) };
+        let mut store = unsafe { &mut *(store_ptr as *mut Store) };
+        memory.write_typed(store, offset, value, MemoryDataType::U32)
+    }
+
+    /// Shared implementation for getting memory usage
+    pub fn get_memory_usage_shared(
+        memory_ptr: *mut c_void,
+        store_ptr: *mut c_void
+    ) -> WasmtimeResult<MemoryUsage> {
+        validation::validate_not_null(memory_ptr, "memory")?;
+        validation::validate_not_null(store_ptr, "store")?;
+        
+        let memory = unsafe { &*(memory_ptr as *const Memory) };
+        let store = unsafe { &*(store_ptr as *const Store) };
+        memory.get_usage(store)
+    }
+
+    /// Shared implementation for creating memory registry
+    pub fn create_memory_registry_shared() -> WasmtimeResult<Box<MemoryRegistry>> {
+        Ok(Box::new(MemoryRegistry::new()))
+    }
+
+    /// Shared implementation for registering memory
+    pub fn register_memory_shared(
+        registry_ptr: *mut c_void,
+        memory_ptr: *mut c_void
+    ) -> WasmtimeResult<u32> {
+        validation::validate_not_null(registry_ptr, "memory_registry")?;
+        validation::validate_not_null(memory_ptr, "memory")?;
+        
+        let registry = unsafe { &*(registry_ptr as *const MemoryRegistry) };
+        let memory = unsafe { &*(memory_ptr as *const Memory) };
+        registry.register(memory.clone())
+    }
+
+    /// Shared implementation for getting memory from registry
+    pub fn get_memory_from_registry_shared(
+        registry_ptr: *mut c_void,
+        memory_id: u32
+    ) -> WasmtimeResult<Arc<Memory>> {
+        validation::validate_not_null(registry_ptr, "memory_registry")?;
+        
+        let registry = unsafe { &*(registry_ptr as *const MemoryRegistry) };
+        registry.get(memory_id)
+    }
+
+    /// Shared implementation for memory destruction
+    pub fn destroy_memory_shared(memory_ptr: *mut c_void) {
+        if !memory_ptr.is_null() {
+            unsafe { 
+                let _ = Box::from_raw(memory_ptr as *mut Memory);
+            }
+        }
+    }
+
+    /// Shared implementation for memory registry destruction
+    pub fn destroy_memory_registry_shared(registry_ptr: *mut c_void) {
+        if !registry_ptr.is_null() {
+            unsafe { 
+                let _ = Box::from_raw(registry_ptr as *mut MemoryRegistry);
+            }
+        }
+    }
+
+    /// Helper function to convert create result to FFI pointer
+    pub fn create_result_to_ffi_ptr(result: WasmtimeResult<Box<Memory>>) -> *mut c_void {
+        PointerReturnConverter::to_ffi_ptr(result)
+    }
+
+    /// Helper function to convert registry create result to FFI code and pointer
+    pub fn registry_create_result_to_ffi_result(result: WasmtimeResult<Box<MemoryRegistry>>) -> (i32, *mut c_void) {
+        match result {
+            Ok(registry) => (super::FFI_SUCCESS, Box::into_raw(registry) as *mut c_void),
+            Err(_) => (super::FFI_ERROR, std::ptr::null_mut()),
+        }
+    }
+
+    /// Helper function to convert size result to FFI result tuple
+    pub fn size_result_to_ffi_result(result: WasmtimeResult<u64>) -> (i32, u64) {
+        match result {
+            Ok(size) => (super::FFI_SUCCESS, size),
+            Err(_) => (super::FFI_ERROR, 0),
+        }
+    }
+
+    /// Helper function to convert bytes size result to FFI result tuple
+    pub fn bytes_size_result_to_ffi_result(result: WasmtimeResult<usize>) -> (i32, usize) {
+        match result {
+            Ok(size) => (super::FFI_SUCCESS, size),
+            Err(_) => (super::FFI_ERROR, 0),
+        }
+    }
+
+    /// Helper function to convert u32 result to FFI result tuple
+    pub fn u32_result_to_ffi_result(result: WasmtimeResult<u32>) -> (i32, u32) {
+        match result {
+            Ok(value) => (super::FFI_SUCCESS, value),
+            Err(_) => (super::FFI_ERROR, 0),
+        }
+    }
+
+    /// Helper function to convert register result to FFI result tuple
+    pub fn register_result_to_ffi_result(result: WasmtimeResult<u32>) -> (i32, u32) {
+        match result {
+            Ok(id) => (super::FFI_SUCCESS, id),
+            Err(_) => (super::FFI_ERROR, u32::MAX),
+        }
+    }
+
+    /// Helper function to convert operation result to FFI error code
+    pub fn operation_result_to_ffi_code(result: WasmtimeResult<()>) -> i32 {
+        IntegerReturnConverter::to_ffi_code(result)
+    }
+}
+
+/// Global operations shared between JNI and Panama FFI implementations
+/// 
+/// This module provides consolidated implementations for WebAssembly global operations,
+/// eliminating code duplication between interface implementations while maintaining
+/// defensive programming practices and consistent error handling.
+pub mod global {
+    use crate::global::{Global, GlobalValue, GlobalMetadata, GlobalType, core};
+    use crate::store::Store;
+    use crate::error::{WasmtimeResult, WasmtimeError};
+    use std::os::raw::c_void;
+    use wasmtime::{ValType, Mutability};
+    use super::{PointerReturnConverter, ReturnValueConverter, IntegerReturnConverter, validation};
+
+    /// FFI-compatible representation of GlobalValue
+    #[repr(C)]
+    #[derive(Debug, Clone, Copy)]
+    pub struct FfiGlobalValue {
+        pub value_type: i32,  // 0=I32, 1=I64, 2=F32, 3=F64, 4=V128, 5=AnyRef, 6=FuncRef, 7=ExternRef
+        pub i32_value: i32,
+        pub i64_value: i64,
+        pub f32_value: f32,
+        pub f64_value: f64,
+        pub v128_value: u128,
+    }
+
+    impl FfiGlobalValue {
+        /// Convert FFI global value to native GlobalValue
+        pub fn to_native(self) -> WasmtimeResult<GlobalValue> {
+            match self.value_type {
+                0 => Ok(GlobalValue::I32(self.i32_value)),
+                1 => Ok(GlobalValue::I64(self.i64_value)),
+                2 => Ok(GlobalValue::F32(self.f32_value)),
+                3 => Ok(GlobalValue::F64(self.f64_value)),
+                4 => Ok(GlobalValue::V128(self.v128_value)),
+                5 => Ok(GlobalValue::AnyRef(None)),
+                6 => Ok(GlobalValue::FuncRef(None)),
+                7 => Ok(GlobalValue::ExternRef(None)),
+                _ => Err(WasmtimeError::InvalidParameter(
+                    format!("Invalid global value type: {}", self.value_type)
+                )),
+            }
+        }
+
+        /// Convert native GlobalValue to FFI representation
+        pub fn from_native(value: &GlobalValue) -> Self {
+            match value {
+                GlobalValue::I32(v) => FfiGlobalValue {
+                    value_type: 0,
+                    i32_value: *v,
+                    i64_value: 0,
+                    f32_value: 0.0,
+                    f64_value: 0.0,
+                    v128_value: 0,
+                },
+                GlobalValue::I64(v) => FfiGlobalValue {
+                    value_type: 1,
+                    i32_value: 0,
+                    i64_value: *v,
+                    f32_value: 0.0,
+                    f64_value: 0.0,
+                    v128_value: 0,
+                },
+                GlobalValue::F32(v) => FfiGlobalValue {
+                    value_type: 2,
+                    i32_value: 0,
+                    i64_value: 0,
+                    f32_value: *v,
+                    f64_value: 0.0,
+                    v128_value: 0,
+                },
+                GlobalValue::F64(v) => FfiGlobalValue {
+                    value_type: 3,
+                    i32_value: 0,
+                    i64_value: 0,
+                    f32_value: 0.0,
+                    f64_value: *v,
+                    v128_value: 0,
+                },
+                GlobalValue::V128(v) => FfiGlobalValue {
+                    value_type: 4,
+                    i32_value: 0,
+                    i64_value: 0,
+                    f32_value: 0.0,
+                    f64_value: 0.0,
+                    v128_value: *v,
+                },
+                GlobalValue::AnyRef(_) => FfiGlobalValue {
+                    value_type: 5,
+                    i32_value: 0,
+                    i64_value: 0,
+                    f32_value: 0.0,
+                    f64_value: 0.0,
+                    v128_value: 0,
+                },
+                GlobalValue::FuncRef(_) => FfiGlobalValue {
+                    value_type: 6,
+                    i32_value: 0,
+                    i64_value: 0,
+                    f32_value: 0.0,
+                    f64_value: 0.0,
+                    v128_value: 0,
+                },
+                GlobalValue::ExternRef(_) => FfiGlobalValue {
+                    value_type: 7,
+                    i32_value: 0,
+                    i64_value: 0,
+                    f32_value: 0.0,
+                    f64_value: 0.0,
+                    v128_value: 0,
+                },
+            }
+        }
+    }
+
+    /// Shared implementation for creating global variable
+    pub fn create_global_shared(
+        store_ptr: *mut c_void,
+        value_type: i32,
+        is_mutable: bool,
+        initial_value: FfiGlobalValue
+    ) -> WasmtimeResult<Box<Global>> {
+        validation::validate_not_null(store_ptr, "store")?;
+        
+        let store = unsafe { &*(store_ptr as *const Store) };
+        let native_value = initial_value.to_native()?;
+        
+        // Convert FFI value type to native ValType
+        let val_type = match value_type {
+            0 => ValType::I32,
+            1 => ValType::I64,
+            2 => ValType::F32,
+            3 => ValType::F64,
+            4 => ValType::V128,
+            5 | 6 | 7 => ValType::ANYREF,
+            _ => return Err(WasmtimeError::InvalidParameter(
+                format!("Invalid value type: {}", value_type)
+            )),
+        };
+
+        let mutability = if is_mutable { 
+            Mutability::Var 
+        } else { 
+            Mutability::Const 
+        };
+
+        core::create_global(store, val_type, mutability, native_value, None)
+    }
+
+    /// Shared implementation for getting global variable value
+    pub fn get_global_value_shared(
+        global_ptr: *mut c_void,
+        store_ptr: *mut c_void
+    ) -> WasmtimeResult<FfiGlobalValue> {
+        validation::validate_not_null(global_ptr, "global")?;
+        validation::validate_not_null(store_ptr, "store")?;
+        
+        let global = unsafe { core::get_global_ref(global_ptr)? };
+        let store = unsafe { &*(store_ptr as *const Store) };
+        
+        let value = core::get_global_value(global, store)?;
+        Ok(FfiGlobalValue::from_native(&value))
+    }
+
+    /// Shared implementation for setting global variable value
+    pub fn set_global_value_shared(
+        global_ptr: *mut c_void,
+        store_ptr: *mut c_void,
+        value: FfiGlobalValue
+    ) -> WasmtimeResult<()> {
+        validation::validate_not_null(global_ptr, "global")?;
+        validation::validate_not_null(store_ptr, "store")?;
+        
+        let global = unsafe { core::get_global_ref(global_ptr)? };
+        let store = unsafe { &*(store_ptr as *const Store) };
+        let native_value = value.to_native()?;
+        
+        core::set_global_value(global, store, native_value)
+    }
+
+    /// Shared implementation for getting global metadata
+    pub fn get_global_metadata_shared(global_ptr: *mut c_void) -> WasmtimeResult<GlobalMetadata> {
+        validation::validate_not_null(global_ptr, "global")?;
+        
+        let global = unsafe { core::get_global_ref(global_ptr)? };
+        Ok(core::get_global_metadata(global).clone())
+    }
+
+    /// Shared implementation for global destruction
+    pub fn destroy_global_shared(global_ptr: *mut c_void) {
+        if !global_ptr.is_null() {
+            unsafe { core::destroy_global(global_ptr); }
+        }
+    }
+
+    /// Helper function to convert create result to FFI pointer
+    pub fn create_result_to_ffi_ptr(result: WasmtimeResult<Box<Global>>) -> *mut c_void {
+        PointerReturnConverter::to_ffi_ptr(result)
+    }
+
+    /// Helper function to convert get value result to FFI result tuple
+    pub fn get_value_result_to_ffi_result(result: WasmtimeResult<FfiGlobalValue>) -> (i32, FfiGlobalValue) {
+        match result {
+            Ok(value) => (super::FFI_SUCCESS, value),
+            Err(_) => (super::FFI_ERROR, FfiGlobalValue {
+                value_type: -1,
+                i32_value: 0,
+                i64_value: 0,
+                f32_value: 0.0,
+                f64_value: 0.0,
+                v128_value: 0,
+            }),
+        }
+    }
+
+    /// Helper function to convert operation result to FFI error code
+    pub fn operation_result_to_ffi_code(result: WasmtimeResult<()>) -> i32 {
+        IntegerReturnConverter::to_ffi_code(result)
+    }
+}
+
+/// Table operations shared between JNI and Panama FFI implementations
+/// 
+/// This module provides consolidated implementations for WebAssembly table operations,
+/// eliminating code duplication between interface implementations while maintaining
+/// defensive programming practices and consistent error handling.
+pub mod table {
+    use crate::table::{Table, TableElement, TableMetadata, TableType, ReferenceType, core};
+    use crate::store::Store;
+    use crate::error::{WasmtimeResult, WasmtimeError};
+    use std::os::raw::c_void;
+    use wasmtime::ValType;
+    use super::{PointerReturnConverter, ReturnValueConverter, IntegerReturnConverter, validation};
+
+    /// FFI-compatible representation of TableElement
+    #[repr(C)]
+    #[derive(Debug, Clone, Copy)]
+    pub struct FfiTableElement {
+        pub element_type: i32,  // 0=FuncRef, 1=ExternRef, 2=AnyRef
+        pub ptr_value: *mut c_void,  // For storing reference pointers
+    }
+
+    impl FfiTableElement {
+        /// Convert FFI table element to native TableElement
+        pub fn to_native(self) -> WasmtimeResult<TableElement> {
+            match self.element_type {
+                0 => Ok(TableElement::FuncRef(None)),
+                1 => Ok(TableElement::ExternRef(None)),
+                2 => Ok(TableElement::AnyRef(None)),
+                _ => Err(WasmtimeError::InvalidParameter(
+                    format!("Invalid table element type: {}", self.element_type)
+                )),
+            }
+        }
+
+        /// Convert native TableElement to FFI representation
+        pub fn from_native(element: &TableElement) -> Self {
+            match element {
+                TableElement::FuncRef(_) => FfiTableElement {
+                    element_type: 0,
+                    ptr_value: std::ptr::null_mut(),
+                },
+                TableElement::ExternRef(_) => FfiTableElement {
+                    element_type: 1,
+                    ptr_value: std::ptr::null_mut(),
+                },
+                TableElement::AnyRef(_) => FfiTableElement {
+                    element_type: 2,
+                    ptr_value: std::ptr::null_mut(),
+                },
+            }
+        }
+    }
+
+    /// Shared implementation for creating table
+    pub fn create_table_shared(
+        store_ptr: *mut c_void,
+        element_type: i32,
+        initial_size: u32,
+        maximum_size: i32
+    ) -> WasmtimeResult<Box<Table>> {
+        validation::validate_not_null(store_ptr, "store")?;
+        
+        let store = unsafe { &*(store_ptr as *const Store) };
+        
+        // Convert FFI element type to native reference type
+        let ref_type = match element_type {
+            0 => ReferenceType::FuncRef,
+            1 => ReferenceType::ExternRef,
+            2 => ReferenceType::AnyRef,
+            _ => return Err(WasmtimeError::InvalidParameter(
+                format!("Invalid element type: {}", element_type)
+            )),
+        };
+
+        let max_size = if maximum_size < 0 { None } else { Some(maximum_size as u32) };
+        
+        core::create_table(store, ref_type, initial_size, max_size, None)
+    }
+
+    /// Shared implementation for getting table size
+    pub fn get_table_size_shared(
+        table_ptr: *mut c_void,
+        store_ptr: *mut c_void
+    ) -> WasmtimeResult<u32> {
+        validation::validate_not_null(table_ptr, "table")?;
+        validation::validate_not_null(store_ptr, "store")?;
+        
+        let table = unsafe { core::get_table_ref(table_ptr)? };
+        let store = unsafe { &*(store_ptr as *const Store) };
+        core::get_table_size(table, store)
+    }
+
+    /// Shared implementation for getting table element
+    pub fn get_table_element_shared(
+        table_ptr: *mut c_void,
+        store_ptr: *mut c_void,
+        index: u32
+    ) -> WasmtimeResult<FfiTableElement> {
+        validation::validate_not_null(table_ptr, "table")?;
+        validation::validate_not_null(store_ptr, "store")?;
+        
+        let table = unsafe { core::get_table_ref(table_ptr)? };
+        let store = unsafe { &*(store_ptr as *const Store) };
+        
+        let element = core::get_table_element(table, store, index)?;
+        Ok(FfiTableElement::from_native(&element))
+    }
+
+    /// Shared implementation for setting table element
+    pub fn set_table_element_shared(
+        table_ptr: *mut c_void,
+        store_ptr: *mut c_void,
+        index: u32,
+        element: FfiTableElement
+    ) -> WasmtimeResult<()> {
+        validation::validate_not_null(table_ptr, "table")?;
+        validation::validate_not_null(store_ptr, "store")?;
+        
+        let table = unsafe { core::get_table_ref(table_ptr)? };
+        let store = unsafe { &*(store_ptr as *const Store) };
+        let native_element = element.to_native()?;
+        
+        core::set_table_element(table, store, index, native_element)
+    }
+
+    /// Shared implementation for growing table
+    pub fn grow_table_shared(
+        table_ptr: *mut c_void,
+        store_ptr: *mut c_void,
+        delta: u32,
+        init_element: FfiTableElement
+    ) -> WasmtimeResult<u32> {
+        validation::validate_not_null(table_ptr, "table")?;
+        validation::validate_not_null(store_ptr, "store")?;
+        
+        let table = unsafe { core::get_table_ref(table_ptr)? };
+        let store = unsafe { &*(store_ptr as *const Store) };
+        let native_init = init_element.to_native()?;
+        
+        core::grow_table(table, store, delta, native_init)
+    }
+
+    /// Shared implementation for filling table
+    pub fn fill_table_shared(
+        table_ptr: *mut c_void,
+        store_ptr: *mut c_void,
+        start_index: u32,
+        count: u32,
+        fill_element: FfiTableElement
+    ) -> WasmtimeResult<()> {
+        validation::validate_not_null(table_ptr, "table")?;
+        validation::validate_not_null(store_ptr, "store")?;
+        
+        let table = unsafe { core::get_table_ref(table_ptr)? };
+        let store = unsafe { &*(store_ptr as *const Store) };
+        let native_fill = fill_element.to_native()?;
+        
+        core::fill_table(table, store, start_index, count, native_fill)
+    }
+
+    /// Shared implementation for getting table metadata
+    pub fn get_table_metadata_shared(table_ptr: *mut c_void) -> WasmtimeResult<TableMetadata> {
+        validation::validate_not_null(table_ptr, "table")?;
+        
+        let table = unsafe { core::get_table_ref(table_ptr)? };
+        Ok(core::get_table_metadata(table).clone())
+    }
+
+    /// Shared implementation for table destruction
+    pub fn destroy_table_shared(table_ptr: *mut c_void) {
+        if !table_ptr.is_null() {
+            unsafe { core::destroy_table(table_ptr); }
+        }
+    }
+
+    /// Helper function to convert create result to FFI pointer
+    pub fn create_result_to_ffi_ptr(result: WasmtimeResult<Box<Table>>) -> *mut c_void {
+        PointerReturnConverter::to_ffi_ptr(result)
+    }
+
+    /// Helper function to convert size result to FFI result tuple
+    pub fn size_result_to_ffi_result(result: WasmtimeResult<u32>) -> (i32, u32) {
+        match result {
+            Ok(size) => (super::FFI_SUCCESS, size),
+            Err(_) => (super::FFI_ERROR, 0),
+        }
+    }
+
+    /// Helper function to convert get element result to FFI result tuple
+    pub fn get_element_result_to_ffi_result(result: WasmtimeResult<FfiTableElement>) -> (i32, FfiTableElement) {
+        match result {
+            Ok(element) => (super::FFI_SUCCESS, element),
+            Err(_) => (super::FFI_ERROR, FfiTableElement {
+                element_type: -1,
+                ptr_value: std::ptr::null_mut(),
+            }),
+        }
+    }
+
+    /// Helper function to convert operation result to FFI error code
+    pub fn operation_result_to_ffi_code(result: WasmtimeResult<()>) -> i32 {
+        IntegerReturnConverter::to_ffi_code(result)
+    }
+
+    /// Helper function to convert grow result to FFI result tuple
+    pub fn grow_result_to_ffi_result(result: WasmtimeResult<u32>) -> (i32, u32) {
+        match result {
+            Ok(previous_size) => (super::FFI_SUCCESS, previous_size),
+            Err(_) => (super::FFI_ERROR, u32::MAX),
+        }
+    }
+}
+
+/// Host function operations shared between JNI and Panama FFI implementations
+/// 
+/// This module provides consolidated implementations for WebAssembly host function operations,
+/// eliminating code duplication between interface implementations while maintaining
+/// defensive programming practices and consistent error handling.
+/// 
+/// Note: Callback handling remains interface-specific due to different calling conventions.
+pub mod hostfunc {
+    use crate::hostfunc::{HostFunction, HostFunctionBuilder, core};
+    use crate::error::{WasmtimeResult, WasmtimeError};
+    use std::os::raw::c_void;
+    use std::sync::Arc;
+    use wasmtime::ValType;
+    use super::{PointerReturnConverter, ReturnValueConverter, IntegerReturnConverter, validation};
+
+    /// Shared implementation for creating host function builder
+    pub fn create_host_function_builder_shared<S>(name: S) -> WasmtimeResult<Box<HostFunctionBuilder>>
+    where
+        S: super::module::StringConverter,
+    {
+        if name.is_empty() {
+            return Err(WasmtimeError::InvalidParameter(
+                "Host function name cannot be empty".to_string()
+            ));
+        }
+
+        let name_str = unsafe { name.get_string()? };
+        Ok(core::create_host_function_builder(&name_str))
+    }
+
+    /// Shared implementation for adding parameter type to builder
+    pub fn add_param_type_shared(
+        builder_ptr: *mut c_void,
+        val_type: i32
+    ) -> WasmtimeResult<()> {
+        validation::validate_not_null(builder_ptr, "host_function_builder")?;
+        
+        let builder = unsafe { &mut *(builder_ptr as *mut HostFunctionBuilder) };
+        
+        let wasmtime_val_type = match val_type {
+            0 => ValType::I32,
+            1 => ValType::I64,
+            2 => ValType::F32,
+            3 => ValType::F64,
+            4 => ValType::V128,
+            5 => ValType::ANYREF,
+            _ => return Err(WasmtimeError::InvalidParameter(
+                format!("Invalid parameter type: {}", val_type)
+            )),
+        };
+        
+        core::builder_add_param(builder, wasmtime_val_type);
+        Ok(())
+    }
+
+    /// Shared implementation for adding return type to builder
+    pub fn add_return_type_shared(
+        builder_ptr: *mut c_void,
+        val_type: i32
+    ) -> WasmtimeResult<()> {
+        validation::validate_not_null(builder_ptr, "host_function_builder")?;
+        
+        let builder = unsafe { &mut *(builder_ptr as *mut HostFunctionBuilder) };
+        
+        let wasmtime_val_type = match val_type {
+            0 => ValType::I32,
+            1 => ValType::I64,
+            2 => ValType::F32,
+            3 => ValType::F64,
+            4 => ValType::V128,
+            5 => ValType::ANYREF,
+            _ => return Err(WasmtimeError::InvalidParameter(
+                format!("Invalid return type: {}", val_type)
+            )),
+        };
+        
+        core::builder_add_result(builder, wasmtime_val_type);
+        Ok(())
+    }
+
+    /// Shared implementation for getting host function from registry
+    pub fn get_host_function_shared(id: u64) -> WasmtimeResult<Arc<HostFunction>> {
+        core::get_host_function(id)
+    }
+
+    /// Shared implementation for removing host function from registry
+    pub fn remove_host_function_shared(id: u64) -> WasmtimeResult<()> {
+        core::remove_host_function(id)
+    }
+
+    /// Shared implementation for getting registry statistics
+    pub fn get_registry_stats_shared() -> WasmtimeResult<(usize, u64)> {
+        core::get_registry_stats()
+    }
+
+    /// Shared implementation for host function builder destruction
+    pub fn destroy_builder_shared(builder_ptr: *mut c_void) {
+        if !builder_ptr.is_null() {
+            unsafe { 
+                let _ = Box::from_raw(builder_ptr as *mut HostFunctionBuilder);
+            }
+        }
+    }
+
+    /// Helper function to convert create builder result to FFI pointer
+    pub fn create_builder_result_to_ffi_ptr(result: WasmtimeResult<Box<HostFunctionBuilder>>) -> *mut c_void {
+        PointerReturnConverter::to_ffi_ptr(result)
+    }
+
+    /// Helper function to convert operation result to FFI error code
+    pub fn operation_result_to_ffi_code(result: WasmtimeResult<()>) -> i32 {
+        IntegerReturnConverter::to_ffi_code(result)
+    }
+
+    /// Helper function to convert registry stats result to FFI result tuple
+    pub fn stats_result_to_ffi_result(result: WasmtimeResult<(usize, u64)>) -> (i32, usize, u64) {
+        match result {
+            Ok((count, next_id)) => (super::FFI_SUCCESS, count, next_id),
+            Err(_) => (super::FFI_ERROR, 0, 0),
+        }
+    }
+}
+
 /// Module operations shared between JNI and Panama FFI implementations
 /// 
 /// This module provides consolidated implementations for WebAssembly module operations,
