@@ -393,6 +393,282 @@ pub mod error_mapping {
     }
 }
 
+/// Module operations shared between JNI and Panama FFI implementations
+/// 
+/// This module provides consolidated implementations for WebAssembly module operations,
+/// eliminating code duplication between interface implementations while maintaining
+/// defensive programming practices and consistent error handling.
+pub mod module {
+    use crate::engine::Engine;
+    use crate::module::{Module, core};
+    use crate::error::{WasmtimeResult, WasmtimeError};
+    use std::os::raw::c_void;
+    use super::{PointerReturnConverter, ReturnValueConverter, IntegerReturnConverter, validation};
+
+    /// Trait for handling byte array conversion in module operations
+    /// 
+    /// Different FFI interfaces (JNI vs Panama) handle byte arrays differently.
+    /// This trait provides a consistent interface for byte array access.
+    pub trait ByteArrayConverter {
+        /// Get a slice to the byte data with validation
+        unsafe fn get_bytes(&self) -> WasmtimeResult<&[u8]>;
+        
+        /// Get the length of the byte array
+        fn len(&self) -> usize;
+        
+        /// Check if the byte array is empty
+        fn is_empty(&self) -> bool {
+            self.len() == 0
+        }
+    }
+
+    /// Trait for handling string conversion in module operations
+    /// 
+    /// Different FFI interfaces handle strings differently (JString vs char*).
+    /// This trait provides a consistent interface for string access.
+    pub trait StringConverter {
+        /// Get string content with validation
+        unsafe fn get_string(&self) -> WasmtimeResult<String>;
+        
+        /// Check if string is empty or null
+        fn is_empty(&self) -> bool;
+    }
+
+    /// Shared implementation for module compilation from bytes
+    /// 
+    /// This function provides unified module compilation logic that works
+    /// with any byte array representation through the ByteArrayConverter trait.
+    pub fn compile_module_shared<B>(
+        engine: &Engine,
+        wasm_bytes: B
+    ) -> WasmtimeResult<Box<Module>>
+    where
+        B: ByteArrayConverter,
+    {
+        // Validate byte array
+        if wasm_bytes.is_empty() {
+            return Err(WasmtimeError::InvalidParameter(
+                "WebAssembly bytes cannot be empty".to_string()
+            ));
+        }
+
+        // Get bytes safely and compile
+        let bytes = unsafe { wasm_bytes.get_bytes()? };
+        core::compile_module(engine, bytes)
+    }
+
+    /// Shared implementation for module compilation from WAT
+    /// 
+    /// This function provides unified WAT compilation logic that works
+    /// with any string representation through the StringConverter trait.
+    pub fn compile_module_wat_shared<S>(
+        engine: &Engine,
+        wat_string: S
+    ) -> WasmtimeResult<Box<Module>>
+    where
+        S: StringConverter,
+    {
+        // Validate string
+        if wat_string.is_empty() {
+            return Err(WasmtimeError::InvalidParameter(
+                "WAT string cannot be empty".to_string()
+            ));
+        }
+
+        // Get string safely and compile
+        let wat = unsafe { wat_string.get_string()? };
+        core::compile_module_wat(engine, &wat)
+    }
+
+    /// Shared implementation for module validation
+    /// 
+    /// Validates WebAssembly bytecode without compilation using shared logic.
+    pub fn validate_module_shared<B>(wasm_bytes: B) -> WasmtimeResult<()>
+    where
+        B: ByteArrayConverter,
+    {
+        // Validate byte array
+        if wasm_bytes.is_empty() {
+            return Err(WasmtimeError::InvalidParameter(
+                "WebAssembly bytes cannot be empty".to_string()
+            ));
+        }
+
+        // Get bytes safely and validate
+        let bytes = unsafe { wasm_bytes.get_bytes()? };
+        core::validate_module_bytes(bytes)
+    }
+
+    /// Shared implementation for module serialization
+    /// 
+    /// Serializes a compiled module to bytes for caching purposes.
+    pub fn serialize_module_shared(module_ptr: *mut c_void) -> WasmtimeResult<Vec<u8>> {
+        validation::validate_not_null(module_ptr, "module")?;
+        
+        let module = unsafe { core::get_module_ref(module_ptr)? };
+        core::serialize_module(module)
+    }
+
+    /// Shared implementation for module deserialization
+    /// 
+    /// Deserializes a module from bytes using shared logic.
+    pub fn deserialize_module_shared<B>(
+        engine: &Engine,
+        serialized_bytes: B
+    ) -> WasmtimeResult<Box<Module>>
+    where
+        B: ByteArrayConverter,
+    {
+        // Validate byte array
+        if serialized_bytes.is_empty() {
+            return Err(WasmtimeError::InvalidParameter(
+                "Serialized module bytes cannot be empty".to_string()
+            ));
+        }
+
+        // Get bytes safely and deserialize
+        let bytes = unsafe { serialized_bytes.get_bytes()? };
+        core::deserialize_module(engine, bytes)
+    }
+
+    /// Shared implementation for getting module size
+    pub fn get_module_size_shared(module_ptr: *mut c_void) -> WasmtimeResult<usize> {
+        validation::validate_not_null(module_ptr, "module")?;
+        
+        let module = unsafe { core::get_module_ref(module_ptr)? };
+        Ok(core::get_module_size(module))
+    }
+
+    /// Shared implementation for getting module name
+    pub fn get_module_name_shared(module_ptr: *mut c_void) -> WasmtimeResult<Option<String>> {
+        validation::validate_not_null(module_ptr, "module")?;
+        
+        let module = unsafe { core::get_module_ref(module_ptr)? };
+        Ok(core::get_module_name(module).map(String::from))
+    }
+
+    /// Shared implementation for getting export count
+    pub fn get_export_count_shared(module_ptr: *mut c_void) -> WasmtimeResult<usize> {
+        validation::validate_not_null(module_ptr, "module")?;
+        
+        let module = unsafe { core::get_module_ref(module_ptr)? };
+        Ok(core::get_export_count(module))
+    }
+
+    /// Shared implementation for getting import count
+    pub fn get_import_count_shared(module_ptr: *mut c_void) -> WasmtimeResult<usize> {
+        validation::validate_not_null(module_ptr, "module")?;
+        
+        let module = unsafe { core::get_module_ref(module_ptr)? };
+        Ok(core::get_import_count(module))
+    }
+
+    /// Shared implementation for getting function count
+    pub fn get_function_count_shared(module_ptr: *mut c_void) -> WasmtimeResult<usize> {
+        validation::validate_not_null(module_ptr, "module")?;
+        
+        let module = unsafe { core::get_module_ref(module_ptr)? };
+        Ok(core::get_function_count(module))
+    }
+
+    /// Shared implementation for checking if module has export
+    pub fn has_export_shared<S>(
+        module_ptr: *mut c_void,
+        export_name: S
+    ) -> WasmtimeResult<bool>
+    where
+        S: StringConverter,
+    {
+        validation::validate_not_null(module_ptr, "module")?;
+        
+        if export_name.is_empty() {
+            return Err(WasmtimeError::InvalidParameter(
+                "Export name cannot be empty".to_string()
+            ));
+        }
+
+        let module = unsafe { core::get_module_ref(module_ptr)? };
+        let name = unsafe { export_name.get_string()? };
+        Ok(core::has_export(module, &name))
+    }
+
+    /// Shared implementation for getting function export names
+    pub fn get_function_exports_shared(module_ptr: *mut c_void) -> WasmtimeResult<Vec<String>> {
+        validation::validate_not_null(module_ptr, "module")?;
+        
+        let module = unsafe { core::get_module_ref(module_ptr)? };
+        let function_exports = core::get_function_exports(module);
+        Ok(function_exports.into_iter().map(|exp| exp.name.clone()).collect())
+    }
+
+    /// Shared implementation for getting memory export names
+    pub fn get_memory_exports_shared(module_ptr: *mut c_void) -> WasmtimeResult<Vec<String>> {
+        validation::validate_not_null(module_ptr, "module")?;
+        
+        let module = unsafe { core::get_module_ref(module_ptr)? };
+        let memory_exports = core::get_memory_exports(module);
+        Ok(memory_exports.into_iter().map(|exp| exp.name.clone()).collect())
+    }
+
+    /// Shared implementation for getting required import names
+    pub fn get_required_imports_shared(module_ptr: *mut c_void) -> WasmtimeResult<Vec<String>> {
+        validation::validate_not_null(module_ptr, "module")?;
+        
+        let module = unsafe { core::get_module_ref(module_ptr)? };
+        let imports = core::get_required_imports(module);
+        Ok(imports.iter().map(|imp| format!("{}::{}", imp.module, imp.name)).collect())
+    }
+
+    /// Shared implementation for module validation (defensive check)
+    pub fn validate_module_functionality_shared(module_ptr: *mut c_void) -> WasmtimeResult<()> {
+        validation::validate_not_null(module_ptr, "module")?;
+        
+        let module = unsafe { core::get_module_ref(module_ptr)? };
+        core::validate_module(module)
+    }
+
+    /// Shared implementation for module destruction
+    pub fn destroy_module_shared(module_ptr: *mut c_void) {
+        if !module_ptr.is_null() {
+            unsafe { core::destroy_module(module_ptr); }
+        }
+    }
+
+    /// Helper function to convert compile result to FFI pointer
+    pub fn compile_result_to_ffi_ptr(result: WasmtimeResult<Box<Module>>) -> *mut c_void {
+        PointerReturnConverter::to_ffi_ptr(result)
+    }
+
+    /// Helper function to convert validation result to FFI error code
+    pub fn validation_result_to_ffi_code(result: WasmtimeResult<()>) -> i32 {
+        IntegerReturnConverter::to_ffi_code(result)
+    }
+
+    /// Helper function to convert size result to FFI result tuple
+    pub fn size_result_to_ffi_result(result: WasmtimeResult<usize>) -> (i32, usize) {
+        match result {
+            Ok(size) => (super::FFI_SUCCESS, size),
+            Err(_) => (super::FFI_ERROR, 0),
+        }
+    }
+
+    /// Helper function to convert count result to FFI result tuple
+    pub fn count_result_to_ffi_result(result: WasmtimeResult<usize>) -> (i32, i32) {
+        match result {
+            Ok(count) => (super::FFI_SUCCESS, count as i32),
+            Err(_) => (super::FFI_ERROR, -1),
+        }
+    }
+
+    /// Helper function to convert boolean result to FFI result tuple
+    pub fn bool_result_to_ffi_result(result: WasmtimeResult<bool>) -> (i32, bool) {
+        match result {
+            Ok(value) => (super::FFI_SUCCESS, value),
+            Err(_) => (super::FFI_ERROR, false),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

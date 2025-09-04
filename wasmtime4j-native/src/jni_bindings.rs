@@ -103,7 +103,7 @@ pub mod jni_engine {
     /// Destroy a Wasmtime engine (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeDestroyEngine(
-        _env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         engine_ptr: jlong,
     ) {
@@ -120,27 +120,21 @@ pub mod jni_engine {
         engine_ptr: jlong,
         wasm_bytes: jbyteArray,
     ) -> jlong {
-        ffi_utils::ffi_try_ptr(|| {
+        jni_utils::jni_try_ptr(env, || {
             let engine = unsafe { core::get_engine_ref(engine_ptr as *const std::os::raw::c_void)? };
-            
-            // Get byte array from Java
-            let wasm_data = env.convert_byte_array(unsafe { JByteArray::from_raw(wasm_bytes) })
-                .map_err(|e| crate::error::WasmtimeError::InvalidParameter {
-                    message: format!("Failed to convert Java byte array: {}", e),
-                })?;
-            
-            crate::module::core::compile_module(engine, &wasm_data)
+            let byte_converter = crate::jni_bindings::jni_module::JniByteArrayConverter::new(&env, wasm_bytes);
+            crate::shared_ffi::module::compile_module_shared(engine, byte_converter)
         }) as jlong
     }
     
     /// Create a new store
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeCreateStore(
-        _env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         engine_ptr: jlong,
     ) -> jlong {
-        ffi_utils::ffi_try_ptr(|| {
+        jni_utils::jni_try_ptr(env, || {
             let engine = unsafe { core::get_engine_ref(engine_ptr as *const std::os::raw::c_void)? };
             crate::store::core::create_store(engine)
         }) as jlong
@@ -149,7 +143,7 @@ pub mod jni_engine {
     /// Set optimization level
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeSetOptimizationLevel(
-        _env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         _engine_ptr: jlong,
         _level: jint,
@@ -161,7 +155,7 @@ pub mod jni_engine {
     /// Check if fuel consumption is enabled (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeIsFuelEnabled(
-        _env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         engine_ptr: jlong,
     ) -> jboolean {
@@ -174,7 +168,7 @@ pub mod jni_engine {
     /// Check if epoch interruption is enabled (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeIsEpochInterruptionEnabled(
-        _env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         engine_ptr: jlong,
     ) -> jboolean {
@@ -187,7 +181,7 @@ pub mod jni_engine {
     /// Get memory limit in pages (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeGetMemoryLimit(
-        _env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         engine_ptr: jlong,
     ) -> jint {
@@ -200,7 +194,7 @@ pub mod jni_engine {
     /// Get stack size limit in bytes (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeGetStackLimit(
-        _env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         engine_ptr: jlong,
     ) -> jint {
@@ -213,7 +207,7 @@ pub mod jni_engine {
     /// Get maximum instances limit (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeGetMaxInstances(
-        _env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         engine_ptr: jlong,
     ) -> jint {
@@ -226,7 +220,7 @@ pub mod jni_engine {
     /// Validate engine functionality (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeValidateEngine(
-        _env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         engine_ptr: jlong,
     ) -> jboolean {
@@ -239,7 +233,7 @@ pub mod jni_engine {
     /// Check if engine supports WebAssembly feature (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeSupportsFeature(
-        _env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         engine_ptr: jlong,
         feature_id: jint,
@@ -264,7 +258,7 @@ pub mod jni_engine {
     /// Get engine reference count for debugging (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeGetReferenceCount(
-        _env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         engine_ptr: jlong,
     ) -> jint {
@@ -277,7 +271,7 @@ pub mod jni_engine {
     /// Check if debug info is enabled
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeIsDebugInfo(
-        _env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         _engine_ptr: jlong,
     ) -> jboolean {
@@ -291,17 +285,17 @@ pub mod jni_engine {
 pub mod jni_instance {
     use super::*;
     use crate::instance::core;
-    use crate::error::ffi_utils;
+    use crate::error::jni_utils;
     
     /// Create a new WebAssembly instance
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeCreateInstance(
-        _env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         store_ptr: jlong,
         module_ptr: jlong,
     ) -> jlong {
-        ffi_utils::ffi_try_ptr(|| {
+        jni_utils::jni_try_ptr(env, || {
             let store = unsafe { crate::store::core::get_store_mut(store_ptr as *mut std::os::raw::c_void)? };
             let module = unsafe { crate::module::core::get_module_ref(module_ptr as *const std::os::raw::c_void)? };
             core::create_instance(store, module)
@@ -311,7 +305,7 @@ pub mod jni_instance {
     /// Destroy an instance
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeDestroyInstance(
-        _env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         instance_ptr: jlong,
     ) {
@@ -326,16 +320,16 @@ pub mod jni_instance {
 pub mod jni_store {
     use super::*;
     use crate::store::core;
-    use crate::error::ffi_utils;
+    use crate::error::jni_utils;
     
     /// Create a new store
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeCreateStore(
-        _env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         engine_ptr: jlong,
     ) -> jlong {
-        ffi_utils::ffi_try_ptr(|| {
+        jni_utils::jni_try_ptr(env, || {
             let engine = unsafe { crate::engine::core::get_engine_ref(engine_ptr as *const std::os::raw::c_void)? };
             core::create_store(engine)
         }) as jlong
@@ -344,7 +338,7 @@ pub mod jni_store {
     /// Destroy a store
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeDestroyStore(
-        _env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         store_ptr: jlong,
     ) {
@@ -359,18 +353,92 @@ pub mod jni_store {
 pub mod jni_module {
     use super::*;
     use crate::module::core;
-    use crate::error::ffi_utils;
+    use crate::error::jni_utils;
+    use crate::shared_ffi::module::{ByteArrayConverter, StringConverter};
     use jni::sys::{jobjectArray, jstring};
+
+    /// JNI-specific byte array converter implementation
+    pub struct JniByteArrayConverter<'a> {
+        env: &'a JNIEnv<'a>,
+        array: jbyteArray,
+    }
+
+    impl<'a> JniByteArrayConverter<'a> {
+        pub fn new(env: &'a JNIEnv<'a>, array: jbyteArray) -> Self {
+            Self { env, array }
+        }
+    }
+
+    impl<'a> ByteArrayConverter for JniByteArrayConverter<'a> {
+        unsafe fn get_bytes(&self) -> crate::error::WasmtimeResult<&[u8]> {
+            if self.array.is_null() {
+                return Err(crate::error::WasmtimeError::InvalidParameter(
+                    "Byte array cannot be null".to_string()
+                ));
+            }
+            
+            let elements = self.env.get_byte_array_elements(self.array, jni::objects::ReleaseMode::NoCopyBack)?;
+            let len = self.env.get_array_length(self.array)? as usize;
+            Ok(std::slice::from_raw_parts(elements.as_ptr() as *const u8, len))
+        }
+
+        fn len(&self) -> usize {
+            if self.array.is_null() {
+                0
+            } else {
+                self.env.get_array_length(self.array).unwrap_or(0) as usize
+            }
+        }
+    }
+
+    /// JNI-specific string converter implementation
+    pub struct JniStringConverter<'a> {
+        env: &'a JNIEnv<'a>,
+        string: jstring,
+    }
+
+    impl<'a> JniStringConverter<'a> {
+        pub fn new(env: &'a JNIEnv<'a>, string: jstring) -> Self {
+            Self { env, string }
+        }
+    }
+
+    impl<'a> StringConverter for JniStringConverter<'a> {
+        unsafe fn get_string(&self) -> crate::error::WasmtimeResult<String> {
+            if self.string.is_null() {
+                return Err(crate::error::WasmtimeError::InvalidParameter(
+                    "String cannot be null".to_string()
+                ));
+            }
+            
+            let java_str = self.env.get_string(self.string.into())?;
+            Ok(java_str.into())
+        }
+
+        fn is_empty(&self) -> bool {
+            self.string.is_null() || self.len() == 0
+        }
+    }
+
+    impl<'a> JniStringConverter<'a> {
+        fn len(&self) -> usize {
+            if self.string.is_null() {
+                0
+            } else {
+                self.env.get_string_utf_length(self.string.into()).unwrap_or(0) as usize
+            }
+        }
+    }
     
     /// Instantiate a module within a store context
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeInstantiateModule(
-        _env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         module_ptr: jlong,
         store_ptr: jlong,
     ) -> jlong {
-        ffi_utils::ffi_try_ptr(|| {
+        jni_utils::jni_try_ptr(env, || {
             let module = unsafe { core::get_module_ref(module_ptr as *const std::os::raw::c_void)? };
             let store = unsafe { crate::store::core::get_store_mut(store_ptr as *mut std::os::raw::c_void)? };
             crate::instance::core::create_instance(store, module)
@@ -380,13 +448,13 @@ pub mod jni_module {
     /// Instantiate a module with specific imports
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeInstantiateModuleWithImports(
-        _env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         module_ptr: jlong,
         store_ptr: jlong,
         import_map_ptr: jlong,
     ) -> jlong {
-        ffi_utils::ffi_try_ptr(|| {
+        jni_utils::jni_try_ptr(env, || {
             let module = unsafe { core::get_module_ref(module_ptr as *const std::os::raw::c_void)? };
             let store = unsafe { crate::store::core::get_store_mut(store_ptr as *mut std::os::raw::c_void)? };
             // For now, ignore imports - this would need proper ImportMap implementation
@@ -589,32 +657,27 @@ pub mod jni_module {
     /// Validate WebAssembly bytecode without compiling
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeValidateModule(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         bytecode: jbyteArray,
     ) -> jboolean {
-        match env.convert_byte_array(unsafe { JByteArray::from_raw(bytecode) }) {
-            Ok(wasm_data) => {
-                match core::validate_module_bytes(&wasm_data) {
-                    Ok(()) => 1, // Valid
-                    Err(_) => 0, // Invalid
-                }
-            }
-            Err(_) => 0, // Invalid - couldn't convert byte array
+        let byte_converter = JniByteArrayConverter::new(&env, bytecode);
+        match crate::shared_ffi::module::validate_module_shared(byte_converter) {
+            Ok(()) => 1, // Valid
+            Err(_) => 0, // Invalid
         }
     }
     
     /// Get the size of a compiled module in bytes
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetModuleSize(
-        _env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         module_ptr: jlong,
     ) -> jlong {
-        match unsafe { core::get_module_ref(module_ptr as *const std::os::raw::c_void) } {
-            Ok(module) => core::get_module_size(module) as jlong,
-            Err(_) => -1,
-        }
+        let result = crate::shared_ffi::module::get_module_size_shared(module_ptr as *mut std::os::raw::c_void);
+        let (_, size) = crate::shared_ffi::module::size_result_to_ffi_result(result);
+        size as jlong
     }
     
     /// Get comprehensive export metadata for a module
@@ -802,15 +865,10 @@ pub mod jni_module {
         _class: JClass,
         module_ptr: jlong,
     ) -> jbyteArray {
-        match unsafe { core::get_module_ref(module_ptr as *const std::os::raw::c_void) } {
-            Ok(module) => {
-                match core::serialize_module(module) {
-                    Ok(bytes) => {
-                        match env.byte_array_from_slice(&bytes) {
-                            Ok(jarray) => jarray.into_raw(),
-                            Err(_) => std::ptr::null_mut(),
-                        }
-                    }
+        match crate::shared_ffi::module::serialize_module_shared(module_ptr as *mut std::os::raw::c_void) {
+            Ok(bytes) => {
+                match env.byte_array_from_slice(&bytes) {
+                    Ok(jarray) => jarray.into_raw(),
                     Err(_) => std::ptr::null_mut(),
                 }
             }
@@ -821,28 +879,22 @@ pub mod jni_module {
     /// Deserialize a module from bytes
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeDeserializeModule(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         engine_ptr: jlong,
         serialized_data: jbyteArray,
     ) -> jlong {
-        ffi_utils::ffi_try_ptr(|| {
+        jni_utils::jni_try_ptr(env, || {
             let engine = unsafe { crate::engine::core::get_engine_ref(engine_ptr as *const std::os::raw::c_void)? };
-            
-            // Get byte array from Java
-            let data = env.convert_byte_array(unsafe { JByteArray::from_raw(serialized_data) })
-                .map_err(|e| crate::error::WasmtimeError::InvalidParameter {
-                    message: format!("Failed to convert Java byte array: {}", e),
-                })?;
-            
-            core::deserialize_module(engine, &data)
+            let byte_converter = JniByteArrayConverter::new(&env, serialized_data);
+            crate::shared_ffi::module::deserialize_module_shared(engine, byte_converter)
         }) as jlong
     }
     
     /// Create a native import map from serialized data
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeCreateImportMap(
-        _env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         _store_ptr: jlong,
         _import_data: jbyteArray,
@@ -854,7 +906,7 @@ pub mod jni_module {
     /// Destroy a native import map
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeDestroyImportMap(
-        _env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         _import_map_ptr: jlong,
     ) {
@@ -864,13 +916,11 @@ pub mod jni_module {
     /// Destroy a module
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeDestroyModule(
-        _env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         module_ptr: jlong,
     ) {
-        unsafe {
-            core::destroy_module(module_ptr as *mut std::os::raw::c_void);
-        }
+        crate::shared_ffi::module::destroy_module_shared(module_ptr as *mut std::os::raw::c_void);
     }
 }
 
@@ -885,12 +935,12 @@ pub mod module {}
 pub mod jni_component {
     use super::*;
     use crate::component::{ComponentEngine, Component};
-    use crate::error::ffi_utils;
+    use crate::error::jni_utils;
 
     /// Create a new component engine
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeCreateComponentEngine(
-        _env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
     ) -> jlong {
         ffi_utils::ffi_try_ptr(|| crate::component::core::create_component_engine()) as jlong
@@ -904,7 +954,7 @@ pub mod jni_component {
         engine_ptr: jlong,
         wasm_bytes: jbyteArray,
     ) -> jlong {
-        ffi_utils::ffi_try_ptr(|| {
+        jni_utils::jni_try_ptr(env, || {
             let engine = unsafe { 
                 crate::component::core::get_component_engine_ref(engine_ptr as *const std::os::raw::c_void)? 
             };
@@ -922,12 +972,12 @@ pub mod jni_component {
     /// Instantiate a component
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeInstantiateComponent(
-        _env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         engine_ptr: jlong,
         component_ptr: jlong,
     ) -> jlong {
-        ffi_utils::ffi_try_ptr(|| {
+        jni_utils::jni_try_ptr(env, || {
             let engine = unsafe { 
                 crate::component::core::get_component_engine_ref(engine_ptr as *const std::os::raw::c_void)? 
             };
@@ -942,7 +992,7 @@ pub mod jni_component {
     /// Get component size in bytes
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeGetComponentSize(
-        _env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         component_ptr: jlong,
     ) -> jlong {
@@ -1010,7 +1060,7 @@ pub mod jni_component {
     /// Get active component instances count
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeGetActiveInstancesCount(
-        _env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         engine_ptr: jlong,
     ) -> jint {
@@ -1033,7 +1083,7 @@ pub mod jni_component {
     /// Cleanup inactive component instances
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeCleanupInstances(
-        _env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         engine_ptr: jlong,
     ) -> jint {
@@ -1056,7 +1106,7 @@ pub mod jni_component {
     /// Destroy a component engine
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeDestroyComponentEngine(
-        _env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         engine_ptr: jlong,
     ) {
@@ -1068,7 +1118,7 @@ pub mod jni_component {
     /// Destroy a component
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeDestroyComponent(
-        _env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         component_ptr: jlong,
     ) {
@@ -1080,7 +1130,7 @@ pub mod jni_component {
     /// Destroy a component instance
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeDestroyComponentInstance(
-        _env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         instance_ptr: jlong,
     ) {
@@ -1094,7 +1144,7 @@ pub mod jni_component {
 #[cfg(feature = "jni-bindings")]
 pub mod jni_hostfunc {
     use super::*;
-    use crate::error::ffi_utils;
+    use crate::error::jni_utils;
     use crate::hostfunc::{HostFunction, HostFunctionCallback};
     use crate::instance::WasmValue;
     use crate::{WasmtimeError, WasmtimeResult};
@@ -1127,7 +1177,7 @@ pub mod jni_hostfunc {
         function_type_data: jbyteArray,
         host_function_id: jlong,
     ) -> jlong {
-        ffi_utils::ffi_try_ptr(|| {
+        jni_utils::jni_try_ptr(env, || {
             // Convert JString to native string
             let name_string = env.get_string(function_name.into()).map_err(|e| WasmtimeError::Validation {
                 message: format!("Invalid function name: {}", e),
@@ -1166,7 +1216,7 @@ pub mod jni_hostfunc {
     /// Destroy a host function (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniHostFunction_nativeDestroyHostFunction(
-        _env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         host_func_handle: jlong,
     ) {
@@ -1256,7 +1306,7 @@ pub mod jni_global {
     use super::*;
     use crate::global::{Global, GlobalValue, core};
     use crate::store::Store;
-    use crate::error::ffi_utils;
+    use crate::error::jni_utils;
     use wasmtime::{ValType, Mutability};
 
     /// Create a new WebAssembly global variable (JNI version)
@@ -1443,12 +1493,12 @@ pub mod jni_global {
 
     /// Get global variable name (JNI version)
     #[no_mangle]
-    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetName(
-        env: JNIEnv,
-        _class: JClass,
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetName<'a>(
+        env: JNIEnv<'a>,
+        _class: JClass<'a>,
         global_ptr: jlong,
-    ) -> JString {
-        ffi_utils::jni_try_ptr(&env, || {
+    ) -> JString<'a> {
+        jni_utils::jni_try_ptr(env, || {
             let global = unsafe { core::get_global_ref(global_ptr as *mut std::os::raw::c_void)? };
             let metadata = core::get_global_metadata(global);
             
@@ -1463,7 +1513,7 @@ pub mod jni_global {
     /// Destroy a global variable (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeDestroy(
-        _env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         global_ptr: jlong,
     ) {
@@ -1479,7 +1529,7 @@ pub mod jni_table {
     use super::*;
     use crate::table::{Table, TableElement, core};
     use crate::store::Store;
-    use crate::error::ffi_utils;
+    use crate::error::jni_utils;
     use wasmtime::ValType;
 
     /// Create a new WebAssembly table (JNI version)
@@ -1698,12 +1748,12 @@ pub mod jni_table {
 
     /// Get table name (JNI version)
     #[no_mangle]
-    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeGetName(
-        env: JNIEnv,
-        _class: JClass,
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeGetName<'a>(
+        env: JNIEnv<'a>,
+        _class: JClass<'a>,
         table_ptr: jlong,
-    ) -> JString {
-        ffi_utils::jni_try_ptr(&env, || {
+    ) -> JString<'a> {
+        jni_utils::jni_try_ptr(env, || {
             let table = unsafe { core::get_table_ref(table_ptr as *mut std::os::raw::c_void)? };
             let metadata = core::get_table_metadata(table);
             
@@ -1718,7 +1768,7 @@ pub mod jni_table {
     /// Destroy a table (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeDestroy(
-        _env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         table_ptr: jlong,
     ) {
