@@ -190,6 +190,77 @@ pub mod module {
     use super::*;
     use crate::module::core;
     use crate::error::ffi_utils;
+    use crate::shared_ffi::module::{ByteArrayConverter, StringConverter};
+
+    /// Panama-specific byte array converter implementation
+    pub struct PanamaByteArrayConverter {
+        data: *const u8,
+        len: usize,
+    }
+
+    impl PanamaByteArrayConverter {
+        pub unsafe fn new(data: *const u8, len: usize) -> Self {
+            Self { data, len }
+        }
+    }
+
+    impl ByteArrayConverter for PanamaByteArrayConverter {
+        unsafe fn get_bytes(&self) -> crate::error::WasmtimeResult<&[u8]> {
+            if self.data.is_null() {
+                return Err(crate::error::WasmtimeError::InvalidParameter(
+                    "Byte data pointer cannot be null".to_string()
+                ));
+            }
+            
+            if self.len == 0 {
+                return Err(crate::error::WasmtimeError::InvalidParameter(
+                    "Byte data length cannot be zero".to_string()
+                ));
+            }
+            
+            Ok(std::slice::from_raw_parts(self.data, self.len))
+        }
+
+        fn len(&self) -> usize {
+            self.len
+        }
+    }
+
+    /// Panama-specific string converter implementation
+    pub struct PanamaStringConverter {
+        string_ptr: *const c_char,
+    }
+
+    impl PanamaStringConverter {
+        pub unsafe fn new(string_ptr: *const c_char) -> Self {
+            Self { string_ptr }
+        }
+    }
+
+    impl StringConverter for PanamaStringConverter {
+        unsafe fn get_string(&self) -> crate::error::WasmtimeResult<String> {
+            if self.string_ptr.is_null() {
+                return Err(crate::error::WasmtimeError::InvalidParameter(
+                    "String pointer cannot be null".to_string()
+                ));
+            }
+            
+            let c_str = std::ffi::CStr::from_ptr(self.string_ptr);
+            let string = c_str.to_string_lossy().into_owned();
+            Ok(string)
+        }
+
+        fn is_empty(&self) -> bool {
+            if self.string_ptr.is_null() {
+                true
+            } else {
+                unsafe {
+                    let c_str = std::ffi::CStr::from_ptr(self.string_ptr);
+                    c_str.to_bytes().is_empty()
+                }
+            }
+        }
+    }
     
     /// Compile a WebAssembly module (Panama FFI version)
     #[no_mangle]
@@ -201,9 +272,9 @@ pub mod module {
     ) -> c_int {
         ffi_utils::ffi_try_code(|| {
             let engine = unsafe { crate::engine::core::get_engine_ref(engine_ptr)? };
-            let wasm_data = unsafe { ffi_utils::slice_from_raw_parts(wasm_bytes, wasm_size, "wasm_bytes")? };
+            let byte_converter = unsafe { PanamaByteArrayConverter::new(wasm_bytes, wasm_size) };
             
-            let module = crate::module::core::compile_module(engine, wasm_data)?;
+            let module = crate::shared_ffi::module::compile_module_shared(engine, byte_converter)?;
             
             unsafe {
                 *module_ptr = Box::into_raw(module) as *mut c_void;
@@ -222,9 +293,9 @@ pub mod module {
     ) -> c_int {
         ffi_utils::ffi_try_code(|| {
             let engine = unsafe { crate::engine::core::get_engine_ref(engine_ptr)? };
-            let wat_str = unsafe { ffi_utils::c_str_to_string(wat_text, "WAT text")? };
+            let string_converter = unsafe { PanamaStringConverter::new(wat_text) };
             
-            let module = core::compile_module_wat(engine, &wat_str)?;
+            let module = crate::shared_ffi::module::compile_module_wat_shared(engine, string_converter)?;
             
             unsafe {
                 *module_ptr = Box::into_raw(module) as *mut c_void;
@@ -239,64 +310,56 @@ pub mod module {
         wasm_bytes: *const u8,
         wasm_size: usize,
     ) -> c_int {
-        ffi_utils::ffi_try_code(|| {
-            let wasm_data = unsafe { ffi_utils::slice_from_raw_parts(wasm_bytes, wasm_size, "wasm_bytes")? };
-            core::validate_module_bytes(wasm_data)
-        })
+        let byte_converter = unsafe { PanamaByteArrayConverter::new(wasm_bytes, wasm_size) };
+        crate::shared_ffi::module::validation_result_to_ffi_code(
+            crate::shared_ffi::module::validate_module_shared(byte_converter)
+        )
     }
 
     /// Get module size in bytes
     #[no_mangle]
     pub extern "C" fn wasmtime4j_module_get_size(module_ptr: *mut c_void) -> usize {
-        match unsafe { core::get_module_ref(module_ptr) } {
-            Ok(module) => core::get_module_size(module),
-            Err(_) => 0,
-        }
+        let result = crate::shared_ffi::module::get_module_size_shared(module_ptr);
+        let (_, size) = crate::shared_ffi::module::size_result_to_ffi_result(result);
+        size
     }
 
     /// Get module name (if available)
     #[no_mangle]
     pub extern "C" fn wasmtime4j_module_get_name(module_ptr: *mut c_void) -> *mut c_char {
-        match unsafe { core::get_module_ref(module_ptr) } {
-            Ok(module) => {
-                if let Some(name) = core::get_module_name(module) {
-                    match std::ffi::CString::new(name) {
-                        Ok(c_str) => c_str.into_raw(),
-                        Err(_) => std::ptr::null_mut(),
-                    }
-                } else {
-                    std::ptr::null_mut()
+        match crate::shared_ffi::module::get_module_name_shared(module_ptr) {
+            Ok(Some(name)) => {
+                match std::ffi::CString::new(name) {
+                    Ok(c_str) => c_str.into_raw(),
+                    Err(_) => std::ptr::null_mut(),
                 }
             }
-            Err(_) => std::ptr::null_mut(),
+            _ => std::ptr::null_mut(),
         }
     }
 
     /// Get number of exports
     #[no_mangle]
     pub extern "C" fn wasmtime4j_module_get_export_count(module_ptr: *mut c_void) -> c_int {
-        match unsafe { core::get_module_ref(module_ptr) } {
-            Ok(module) => core::get_export_count(module) as c_int,
-            Err(_) => -1,
-        }
+        let result = crate::shared_ffi::module::get_export_count_shared(module_ptr);
+        let (_, count) = crate::shared_ffi::module::count_result_to_ffi_result(result);
+        count
     }
 
     /// Get number of imports
     #[no_mangle]
     pub extern "C" fn wasmtime4j_module_get_import_count(module_ptr: *mut c_void) -> c_int {
-        match unsafe { core::get_module_ref(module_ptr) } {
-            Ok(module) => core::get_import_count(module) as c_int,
-            Err(_) => -1,
-        }
+        let result = crate::shared_ffi::module::get_import_count_shared(module_ptr);
+        let (_, count) = crate::shared_ffi::module::count_result_to_ffi_result(result);
+        count
     }
 
     /// Get number of functions
     #[no_mangle]
     pub extern "C" fn wasmtime4j_module_get_function_count(module_ptr: *mut c_void) -> c_int {
-        match unsafe { core::get_module_ref(module_ptr) } {
-            Ok(module) => core::get_function_count(module) as c_int,
-            Err(_) => -1,
-        }
+        let result = crate::shared_ffi::module::get_function_count_shared(module_ptr);
+        let (_, count) = crate::shared_ffi::module::count_result_to_ffi_result(result);
+        count
     }
 
     /// Check if module has a specific export
@@ -305,17 +368,10 @@ pub mod module {
         module_ptr: *mut c_void,
         name: *const c_char,
     ) -> c_int {
-        match unsafe { core::get_module_ref(module_ptr) } {
-            Ok(module) => {
-                match unsafe { ffi_utils::c_str_to_string(name, "export name") } {
-                    Ok(export_name) => {
-                        if core::has_export(module, &export_name) { 1 } else { 0 }
-                    }
-                    Err(_) => 0,
-                }
-            }
-            Err(_) => 0,
-        }
+        let string_converter = unsafe { PanamaStringConverter::new(name) };
+        let result = crate::shared_ffi::module::has_export_shared(module_ptr, string_converter);
+        let (_, has_export) = crate::shared_ffi::module::bool_result_to_ffi_result(result);
+        if has_export { 1 } else { 0 }
     }
 
     /// Serialize a module for caching
@@ -325,20 +381,20 @@ pub mod module {
         data_ptr: *mut *mut u8,
         len_ptr: *mut usize,
     ) -> c_int {
-        ffi_utils::ffi_try_code(|| {
-            let module = unsafe { core::get_module_ref(module_ptr)? };
-            let serialized = core::serialize_module(module)?;
-            
-            let len = serialized.len();
-            let data = Box::into_raw(serialized.into_boxed_slice()) as *mut u8;
-            
-            unsafe {
-                *data_ptr = data;
-                *len_ptr = len;
+        match crate::shared_ffi::module::serialize_module_shared(module_ptr) {
+            Ok(serialized) => {
+                let len = serialized.len();
+                let data = Box::into_raw(serialized.into_boxed_slice()) as *mut u8;
+                
+                unsafe {
+                    *data_ptr = data;
+                    *len_ptr = len;
+                }
+                
+                crate::shared_ffi::FFI_SUCCESS
             }
-            
-            Ok(())
-        })
+            Err(_) => crate::shared_ffi::FFI_ERROR,
+        }
     }
 
     /// Deserialize a module from cache
@@ -349,26 +405,29 @@ pub mod module {
         len: usize,
         module_ptr: *mut *mut c_void,
     ) -> c_int {
-        ffi_utils::ffi_try_code(|| {
-            let engine = unsafe { crate::engine::core::get_engine_ref(engine_ptr)? };
-            let data = unsafe { ffi_utils::slice_from_raw_parts(data_ptr, len, "serialized data")? };
-            
-            let module = core::deserialize_module(engine, data)?;
-            
-            unsafe {
-                *module_ptr = Box::into_raw(module) as *mut c_void;
+        match unsafe { crate::engine::core::get_engine_ref(engine_ptr) } {
+            Ok(engine) => {
+                let byte_converter = unsafe { PanamaByteArrayConverter::new(data_ptr, len) };
+                match crate::shared_ffi::module::deserialize_module_shared(engine, byte_converter) {
+                    Ok(module) => {
+                        unsafe {
+                            *module_ptr = Box::into_raw(module) as *mut c_void;
+                        }
+                        crate::shared_ffi::FFI_SUCCESS
+                    }
+                    Err(_) => crate::shared_ffi::FFI_ERROR,
+                }
             }
-            Ok(())
-        })
+            Err(_) => crate::shared_ffi::FFI_ERROR,
+        }
     }
 
     /// Validate module functionality (defensive check)
     #[no_mangle]
     pub extern "C" fn wasmtime4j_module_validate_functionality(module_ptr: *mut c_void) -> c_int {
-        ffi_utils::ffi_try_code(|| {
-            let module = unsafe { core::get_module_ref(module_ptr)? };
-            core::validate_module(module)
-        })
+        crate::shared_ffi::module::validation_result_to_ffi_code(
+            crate::shared_ffi::module::validate_module_functionality_shared(module_ptr)
+        )
     }
 
     /// Free serialized data
@@ -394,9 +453,7 @@ pub mod module {
     /// Destroy a WebAssembly module (Panama FFI version)
     #[no_mangle]
     pub extern "C" fn wasmtime4j_module_destroy(module_ptr: *mut c_void) {
-        unsafe {
-            crate::module::core::destroy_module(module_ptr);
-        }
+        crate::shared_ffi::module::destroy_module_shared(module_ptr);
     }
 }
 

@@ -482,7 +482,7 @@ pub mod ffi_utils {
     {
         match operation() {
             Ok(result) => {
-                clear_last_error();
+                jni_utils::clear_last_error();
                 (ErrorCode::Success, result)
             }
             Err(error) => {
@@ -500,7 +500,7 @@ pub mod ffi_utils {
     {
         match operation() {
             Ok(result) => {
-                clear_last_error();
+                jni_utils::clear_last_error();
                 Box::into_raw(result) as *mut c_void
             }
             Err(error) => {
@@ -517,7 +517,7 @@ pub mod ffi_utils {
     {
         match operation() {
             Ok(()) => {
-                clear_last_error();
+                jni_utils::clear_last_error();
                 ErrorCode::Success as i32
             }
             Err(error) => {
@@ -595,6 +595,13 @@ pub mod ffi_utils {
 /// JNI error conversion utilities
 pub mod jni_utils {
     use super::*;
+    use std::os::raw::c_void;
+
+    /// Clear the last error (stub for JNI compatibility)
+    pub fn clear_last_error() {
+        // For now, this is a no-op since we don't maintain global error state
+        // This could be extended to clear thread-local error storage if needed
+    }
 
     /// Convert WasmtimeError to JNI exception class name
     pub fn error_to_exception_class(error: &WasmtimeError) -> &'static str {
@@ -644,7 +651,7 @@ pub mod jni_utils {
     {
         match operation() {
             Ok(result) => {
-                clear_last_error();
+                jni_utils::clear_last_error();
                 Box::into_raw(result) as *mut c_void
             }
             Err(error) => {
@@ -662,7 +669,7 @@ pub mod jni_utils {
     {
         match operation() {
             Ok(()) => {
-                clear_last_error();
+                jni_utils::clear_last_error();
                 ErrorCode::Success as i32
             }
             Err(error) => {
@@ -681,7 +688,7 @@ pub mod jni_utils {
     {
         match operation() {
             Ok(result) => {
-                clear_last_error();
+                jni_utils::clear_last_error();
                 (ErrorCode::Success, result)
             }
             Err(error) => {
