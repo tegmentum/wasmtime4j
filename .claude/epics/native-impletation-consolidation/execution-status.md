@@ -24,6 +24,20 @@ Consolidate duplicate FFI implementations in `panama_ffi.rs` and `jni_bindings.r
 - Files: `shared_ffi.rs`, `error.rs`, `lib.rs` updated
 - Commits: Multiple implementation commits
 
+**Issue #160**: Extract store and instance operations  
+- Status: ✅ **COMPLETE**
+- Completed: Store and instance operations successfully consolidated
+- Implementation delivered:
+  - StoreConfigParams and InstanceConfigParams structures
+  - JniStoreConfigConverter and PanamaStoreConfigConverter implementations
+  - JniInstanceConfigConverter and PanamaInstanceConfigConverter implementations
+  - create_store_with_shared_config() and create_instance_with_shared_config() functions
+  - destroy_store_shared() and destroy_instance_shared() functions
+  - Comprehensive test coverage for all converters
+- Files: `shared_ffi.rs`, `panama_ffi.rs`, `jni_bindings.rs` updated
+- Commit: 87de4c3 "Issue #160: extract store and instance operations to shared FFI"
+- Dependencies: ✅ Issue #157 completed
+
 ### Active Tasks 🔄
 
 **Issue #161**: Extract component and advanced operations
@@ -43,18 +57,12 @@ Consolidate duplicate FFI implementations in `panama_ffi.rs` and `jni_bindings.r
 **Issue #159**: Extract module operations  
 - Status: ⏸ **READY** (depends on #157 complete)
 - Dependencies: ✅ Issue #157 completed
-- Conflicts: Cannot run with #158, #160, #161
+- Conflicts: Cannot run with #158, #161
 - Estimated: 20 hours
 
-**Issue #160**: Extract store and instance operations
-- Status: ⏸ **READY** (depends on #157 complete) 
-- Dependencies: ✅ Issue #157 completed
-- Conflicts: Cannot run with #158, #159, #161
-- Estimated: 16 hours
-
 **Issue #162**: Comprehensive testing and validation
-- Status: ⏸ **BLOCKED** (depends on #158, #159, #160, #161)
-- Dependencies: Waiting for all extraction tasks
+- Status: ⏸ **BLOCKED** (depends on #158, #159, #161)
+- Dependencies: Waiting for remaining extraction tasks (#158, #159, #161)
 - Parallel: Can run independently once extraction complete
 - Estimated: 24 hours
 
@@ -66,7 +74,7 @@ Consolidate duplicate FFI implementations in `panama_ffi.rs` and `jni_bindings.r
 ### Phase 2: Logic Extraction 🔄 IN PROGRESS  
 - [ ] Issue #158: Engine operations (24 hours)
 - [ ] Issue #159: Module operations (20 hours) 
-- [ ] Issue #160: Store/instance operations (16 hours)
+- [x] Issue #160: Store/instance operations (16 hours) - **COMPLETE**
 - [x] Issue #161: Component/advanced operations (32 hours) - **IN PROGRESS**
 
 ### Phase 3: Validation ⏸ PENDING
@@ -123,9 +131,9 @@ Consolidate duplicate FFI implementations in `panama_ffi.rs` and `jni_bindings.r
 - ✅ **Issue #160**: Store/instance operations extraction - Analysis complete, awaiting sequential slot
 - ✅ **Issue #162**: Testing and validation - Analysis complete, awaiting all extractions
 
-**Last Updated**: 2025-09-04T17:30:00Z
-**Epic Progress**: 1/6 tasks complete (17%)
-**Phase Progress**: Phase 2 in progress (1/4 extraction tasks active)
+**Last Updated**: 2025-09-04T19:30:00Z
+**Epic Progress**: 2/6 tasks complete (33%)
+**Phase Progress**: Phase 2 in progress (2/4 extraction tasks complete, 1 active)
 **Analysis Status**: All issues analyzed, ready for sequential execution
 
 ## Epic Startup Status
