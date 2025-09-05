@@ -1,200 +1,157 @@
 ---
 name: complete-async-support
 status: backlog
-created: 2025-09-01T14:26:08Z
+created: 2025-09-05T00:49:38Z
 progress: 0%
 prd: .claude/prds/complete-async-support.md
-github: https://github.com/tegmentum/wasmtime4j/issues/111
+github: https://github.com/tegmentum/wasmtime4j/issues/165
 ---
 
 # Epic: complete-async-support
 
 ## Overview
 
-Transform wasmtime4j from Java-wrapper async execution to comprehensive native async WebAssembly capabilities by exposing Wasmtime's async engine features through enhanced Rust bindings and implementing complete async APIs across all components. This epic leverages existing infrastructure while adding true async execution pipeline: `Engine.createAsyncStore() → Store.compileModuleAsync() → Instance.callAsyncNative()`.
+Transform wasmtime4j from partial async support (currently ~25% coverage) to comprehensive native async WebAssembly execution. Build upon existing infrastructure: WasiAsyncFileOperations, JniConcurrencyManager, and native Tokio runtime to create consistent async APIs across all public interfaces.
+
+**Current State**: WASI async file I/O exists, native Tokio runtime available, but core APIs (Engine, Module, WasmFunction) lack async methods.
+**Target State**: Complete async API parity with sync operations, native performance through Tokio integration.
 
 ## Architecture Decisions
 
-**Native Async Integration Strategy**
-- **Leverage Existing Wasmtime Async Features**: Utilize already-configured `wasmtime/async` and `component-model-async` features in Cargo.toml
-- **Rust-First Async Implementation**: Implement async operations at the Rust binding level using Tokio runtime integration
-- **Unified Async API Design**: Extend existing public interfaces with async variants rather than creating parallel async-only APIs
-- **Cross-Runtime Consistency**: Ensure identical async behavior between JNI and Panama implementations using shared Rust async core
+### 1. Leverage Existing Infrastructure
+- **Tokio Runtime**: Use existing native Tokio setup (Cargo.toml:27,68,72) instead of building new async runtime
+- **CompletableFuture Pattern**: Extend existing WasiAsyncFileOperations pattern to all async operations
+- **Concurrency Management**: Build on existing JniConcurrencyManager and ConcurrentAccessCoordinator
 
-**Technology Stack Decisions**
-- **Tokio Integration**: Use existing Tokio async runtime already configured in wasmtime4j-native
-- **CompletableFuture Mapping**: Map Rust async operations to Java CompletableFuture for seamless Java integration
-- **Resource Management**: Extend existing resource tracking (PhantomReferences, ResourceTracker) to handle async lifecycles
-- **Error Propagation**: Enhance existing error mapping to properly handle async operation failures
+### 2. Incremental API Addition
+- Add async methods alongside existing sync APIs (no breaking changes)
+- Follow existing naming pattern: `callAsync()` (matches WasiInstance.callAsync())
+- Maintain API consistency across JNI and Panama implementations
 
-**Design Pattern Choices**
-- **Async Wrapper Pattern**: Add async methods alongside existing sync methods (e.g., `Engine.compileModule()` + `Engine.compileModuleAsync()`)
-- **Builder Pattern Extension**: Enhance existing configuration builders with async-specific options
-- **Factory Method Enhancement**: Extend existing factory methods to support async engine/store creation
-- **Defensive Async Programming**: Apply existing defensive programming patterns to async operations (null checks, resource limits, timeout handling)
+### 3. Native-First Async Implementation
+- Implement true async execution at Rust/native layer using Wasmtime's async engine
+- Bridge native async operations through JNI/Panama callbacks
+- Avoid Java-wrapper async (CompletableFuture.supplyAsync(() -> syncCall()))
 
 ## Technical Approach
 
-### Native Layer Enhancements
-**Rust Binding Extensions (wasmtime4j-native)**
-- Expose Wasmtime async engine creation through FFI
-- Implement async module compilation using Tokio runtime
-- Add async instance creation and function invocation bindings
-- Integrate async WASI operations beyond current file I/O limitations
+### Core Components
+**Public API Layer** (wasmtime4j module):
+- Add `Engine.compileModuleAsync()` - asynchronous module compilation
+- Add `WasmFunction.callAsync()` - asynchronous function invocation  
+- Add `Module.instantiateAsync()` - asynchronous instance creation
+- Extend existing async WASI operations for consistency
 
-**FFI Async Bridge**
-- Create async callback mechanisms for JNI integration
-- Implement Panama-compatible async operation handles
-- Add async error propagation from Rust to Java layer
-- Ensure thread-safe async resource management
+**Implementation Layer** (JNI/Panama):
+- Create async bindings bridge to existing Tokio runtime
+- Implement native-to-Java callback mechanisms
+- Unify async thread management using existing concurrency infrastructure
 
-### Java Implementation Layer
-**JNI Backend (wasmtime4j-jni)**
-- Enhance existing JniEngine with async configuration methods
-- Extend JniModule with async compilation capabilities
-- Add async methods to JniInstance and JniFunction
-- Expand JniWasiContext with comprehensive async WASI operations
+**Native Layer** (Rust):
+- Leverage existing Tokio async runtime
+- Use Wasmtime's native async engine and store capabilities
+- Implement async FFI bindings for JNI and Panama
 
-**Panama Backend (wasmtime4j-panama)**
-- Mirror JNI async enhancements in Panama implementation
-- Utilize Panama's async-friendly memory management for async operations
-- Ensure cross-runtime async behavior consistency
-- Leverage Panama's improved native call performance for async operations
-
-### Public API Enhancement
-**Core Interface Extensions**
-- Add async methods to Engine, Store, Module, Instance interfaces
-- Extend WasmFunction interface with CompletableFuture-based async invocation
-- Enhance EngineConfig with async engine configuration options
-- Add async variants to all factory methods (EngineFactory, etc.)
-
-**Async API Design Principles**
-- Consistent async method naming: `methodName()` → `methodNameAsync()`
-- CompletableFuture return types for all async operations
-- Optional timeout parameters for async operations
-- Async error handling with specialized exception types
+### Integration Points
+- **Existing WASI Async**: Align new core async APIs with WasiAsyncFileOperations patterns
+- **Concurrency Management**: Extend existing JniConcurrencyManager for unified async execution
+- **Testing Infrastructure**: Build on existing ConcurrencyBenchmark and test suites
+- **Performance Monitoring**: Extend existing JMH benchmark infrastructure
 
 ## Implementation Strategy
 
-**Phase 1: Native Async Foundation (Weeks 1-3)**
-- Enhance wasmtime4j-native Rust bindings with async engine/store creation
-- Implement async module compilation at native layer
-- Add basic async function invocation support
-- Establish async error propagation mechanisms
+### Phase-Based Development
+1. **Core API Methods** (3 weeks): Add missing async methods to public interfaces
+2. **Native Bridge** (3 weeks): Connect Java async APIs to existing Tokio runtime  
+3. **Consistency & Enhancement** (3 weeks): Align all async patterns and extend WASI
+4. **Testing & Optimization** (3 weeks): Comprehensive testing using existing infrastructure
 
-**Phase 2: Core Async APIs (Weeks 4-6)**
-- Implement async methods in public Java interfaces
-- Add async capabilities to JNI and Panama backends
-- Ensure cross-runtime async consistency
-- Add comprehensive async configuration options
+### Risk Mitigation
+- **Performance**: Continuous benchmarking using existing JMH infrastructure
+- **Consistency**: Shared test suite across JNI/Panama implementations
+- **Complexity**: Build incrementally on proven existing patterns
 
-**Phase 3: Advanced Async Features (Weeks 7-9)**
-- Extend async WASI operations beyond file I/O
-- Add async performance monitoring and profiling
-- Implement advanced async error handling and timeout management
-- Add async resource management and cleanup
-
-**Risk Mitigation Strategy**
-- **Incremental Implementation**: Build on existing sync infrastructure to minimize risk
-- **Extensive Testing**: Leverage existing cross-runtime test framework for async validation
-- **Performance Monitoring**: Use existing performance test infrastructure to validate async improvements
-- **Backward Compatibility**: Maintain all existing sync APIs unchanged
+### Quality Approach
+- Extend existing comprehensive test suites with async-specific tests
+- Use existing static analysis and code quality tools
+- Build on existing cross-platform testing infrastructure
 
 ## Task Breakdown Preview
 
 High-level task categories that will be created:
-- [ ] **Native Async Engine Foundation**: Expose Wasmtime async engines through Rust bindings and implement async store creation
-- [ ] **Async Module Operations**: Implement async module compilation, caching, and validation with timeout support
-- [ ] **Async Instance Management**: Add async instance creation, function invocation, and export management
-- [ ] **Comprehensive Async WASI**: Extend async WASI operations beyond file I/O to include network, process, and streaming I/O
-- [ ] **Public API Async Integration**: Add async methods to all public interfaces with CompletableFuture return types
-- [ ] **Cross-Runtime Async Consistency**: Ensure identical async behavior between JNI and Panama implementations
-- [ ] **Async Performance & Monitoring**: Implement async operation profiling, monitoring, and performance optimization
-- [ ] **Async Testing & Validation**: Create comprehensive async test suite with performance benchmarks and cross-platform validation
+- [ ] **Core Async API Implementation**: Add async methods to Engine, Module, WasmFunction interfaces
+- [ ] **Native Async Bridge**: Connect Java async APIs to existing Tokio runtime via JNI/Panama
+- [ ] **WASI Async Enhancement**: Extend existing WasiAsyncFileOperations to full WASI async support
+- [ ] **Cross-Runtime Consistency**: Ensure JNI/Panama async behavior parity
+- [ ] **Unified Async Framework**: Replace ad-hoc ExecutorService with consistent async patterns
+- [ ] **Testing & Benchmarking**: Extend existing test and benchmark infrastructure for async operations
+- [ ] **Documentation & Examples**: Update docs and examples with new async API usage
 
 ## Dependencies
 
-**External Dependencies**
-- **Wasmtime 26.0.2+**: Required for stable async engine and store APIs
-- **Tokio Runtime**: Already configured in wasmtime4j-native, needs integration enhancement
-- **Java 8+ CompletableFuture**: Target platform requirement for async API design
+### External Dependencies
+- **Wasmtime 26.0.2+**: Native async engine capabilities (already available)
+- **Tokio Runtime**: Async execution infrastructure (already configured in Cargo.toml)
 
-**Internal Dependencies**
-- **Existing Test Infrastructure**: Cross-runtime validation framework for async consistency testing
-- **Performance Benchmarking**: Existing JMH benchmark infrastructure for async performance validation
-- **Resource Management**: Current PhantomReference and ResourceTracker systems for async resource lifecycle
-- **Error Handling**: Existing exception mapping and error propagation mechanisms
+### Internal Dependencies  
+- **Existing Infrastructure**: WasiAsyncFileOperations, JniConcurrencyManager, ConcurrentAccessCoordinator
+- **Native Library**: wasmtime4j-native Rust enhancements
+- **Test Framework**: Existing JUnit 5 and JMH benchmark infrastructure
 
-**Critical Path Prerequisites**
-- Complete comprehensive-testing epic (provides test infrastructure for async validation)
-- Stable wasmtime4j-native build system (required for async Rust binding enhancements)
-- Existing cross-platform support validation (ensures async works on all 6 supported platforms)
+### Critical Path Items
+1. **Public API Design**: Consistent async method signatures across all interfaces
+2. **Native Async Bindings**: Bridge existing Tokio runtime to Java layer
+3. **Cross-Runtime Parity**: Ensure JNI and Panama implementations behave identically
+4. **Performance Validation**: Achieve target performance using existing benchmark infrastructure
 
 ## Success Criteria (Technical)
 
-**Performance Benchmarks**
-- **Async Throughput**: Achieve >10,000 concurrent async WebAssembly function calls per second
-- **Latency Improvement**: 50% reduction in P99 latency for concurrent operations compared to current Java-wrapper async
-- **Resource Efficiency**: 30% reduction in thread usage for equivalent workload
-- **Compilation Performance**: Async module compilation 40% faster than synchronous compilation
+### Performance Benchmarks
+- **Throughput**: >10,000 concurrent async function calls/second
+- **Latency**: 50% improvement in P99 latency for concurrent operations  
+- **Resource Efficiency**: 30% reduction in thread usage vs current approach
+- **Native Performance**: >90% of native Wasmtime async performance
 
-**Quality Gates**
-- **API Coverage**: 100% of sync APIs have async equivalents with identical behavior
-- **Cross-Runtime Parity**: Zero behavioral differences between JNI and Panama async implementations
-- **Error Handling**: <1% async operation failure rate under normal load conditions
-- **Resource Management**: Zero async resource leaks in 24-hour stress testing
+### Quality Gates
+- **API Coverage**: 100% of sync APIs have async equivalents
+- **Test Coverage**: >95% async API test coverage using existing test infrastructure
+- **Cross-Runtime Parity**: 100% behavioral consistency between JNI/Panama
+- **Memory Safety**: Zero async resource leaks in 24-hour stress tests
 
-**Acceptance Criteria**
-- **Native Integration**: Successfully expose and utilize Wasmtime's async engine capabilities
-- **Public API Completeness**: All WebAssembly operations available through async APIs
-- **Performance Validation**: Async operations achieve target performance benchmarks
-- **Production Readiness**: Comprehensive async testing suite with >95% code coverage
+### Acceptance Criteria
+- All sync APIs have corresponding async variants
+- Async performance exceeds Java-wrapper async approach
+- Consistent async behavior across JNI and Panama implementations
+- Integration with existing Java async frameworks (Spring WebFlux, etc.)
 
 ## Estimated Effort
 
-**Overall Timeline**: 8-10 weeks for complete async support implementation
+### Overall Timeline
+**12 weeks total** (3 weeks per phase)
 
-**Resource Requirements**
-- 1 senior developer with Rust and Java expertise (full-time)
-- Access to all 6 supported platforms for async validation
-- Performance testing infrastructure for async benchmarking
+### Resource Requirements
+- **1-2 senior developers** with Rust and Java expertise
+- **Existing infrastructure**: Leverage current testing, CI/CD, and build systems
 
-**Critical Path Items**
-- **Weeks 1-3**: Native async foundation (Rust bindings, async engine integration)
-- **Weeks 4-6**: Core async API implementation (public interfaces, JNI/Panama backends)
-- **Weeks 7-8**: Advanced async features (WASI operations, performance monitoring)
-- **Weeks 9-10**: Comprehensive testing and performance optimization
+### Critical Path Items
+1. **Week 1-3**: Core async API implementation and design consistency
+2. **Week 4-6**: Native async bridge implementation using existing Tokio runtime
+3. **Week 7-9**: Cross-runtime consistency and WASI async enhancement  
+4. **Week 10-12**: Testing, performance optimization, and documentation
 
-**Risk Mitigation Timeline**
-- Early prototype validation to identify integration challenges
-- Incremental cross-runtime testing throughout development
-- Performance baseline establishment before optimization phase
-- Comprehensive documentation and examples for adoption success
+**Key Advantage**: Building on existing async infrastructure (WasiAsyncFileOperations, Tokio runtime, concurrency management) reduces implementation complexity and risk compared to ground-up async implementation.
 
 ## Tasks Created
-- [ ] #115 - Native Async Engine Foundation (parallel: false)
-- [ ] #117 - Async Module Operations (parallel: true)
-- [ ] #119 - Async Instance Management (parallel: true)
-- [ ] #114 - Comprehensive Async WASI (parallel: true)
-- [ ] #116 - Public API Async Integration (parallel: false)
-- [ ] #118 - Cross-Runtime Async Consistency (parallel: false)
-- [ ] #112 - Async Performance & Monitoring (parallel: true)
-- [ ] #113 - Async Testing & Validation (parallel: true)
+- [ ] #166 - Add async methods to Engine interface (parallel: true)
+- [ ] #167 - Add async methods to WasmFunction interface (parallel: true)
+- [ ] #168 - Add async methods to Module interface (parallel: true)
+- [ ] #169 - Implement JNI async bindings bridge (parallel: false)
+- [ ] #170 - Implement Panama async bindings bridge (parallel: false)
+- [ ] #171 - Extend WASI async operations for consistency (parallel: true)
+- [ ] #172 - Replace ad-hoc ExecutorService with unified async framework (parallel: true)
+- [ ] #173 - Extend async testing and benchmarking infrastructure (parallel: true)
 
 Total tasks: 8
-Parallel tasks: 5
-Sequential tasks: 3
-Estimated total effort: 200-220 hours
-## Technical Innovation
-
-**Leveraging Existing Infrastructure**
-- Build upon proven cross-runtime architecture for async consistency
-- Utilize existing defensive programming patterns for async safety
-- Extend current resource management for async lifecycle handling
-- Enhance proven test infrastructure for async validation
-
-**Minimizing Implementation Complexity**
-- Async-first native layer with Java wrapper simplicity
-- Consistent async API patterns across all components
-- Reuse existing configuration and factory patterns for async variants
-- Maintain backward compatibility with zero sync API changes
+Parallel tasks: 6
+Sequential tasks: 2
+Estimated total effort: 108-148 hours (13-18.5 days)

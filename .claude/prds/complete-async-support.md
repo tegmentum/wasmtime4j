@@ -3,6 +3,7 @@ name: complete-async-support
 description: Implement comprehensive native async WebAssembly execution capabilities in wasmtime4j
 status: backlog
 created: 2025-09-01T14:19:09Z
+updated: 2025-09-05T00:47:13Z
 ---
 
 # PRD: complete-async-support
@@ -103,41 +104,47 @@ Transform wasmtime4j from Java-wrapper async execution to comprehensive native a
 
 ### Functional Requirements
 
-#### FR1: Async Engine Configuration
-- **FR1.1**: Async engine creation with configurable execution models
-- **FR1.2**: Thread pool configuration for async operations
-- **FR1.3**: Async store creation and management
-- **FR1.4**: Engine-level async performance tuning options
+#### FR1: Core Async API Implementation (New)
+- **FR1.1**: Add `compileModuleAsync()` to Engine interface (Engine.java:51)
+- **FR1.2**: Add `callAsync()` to WasmFunction interface (WasmFunction.java:22)
+- **FR1.3**: Add `instantiateAsync()` variants to Module interface (Module.java:32,43)
+- **FR1.4**: Standardize async method signatures across all public APIs
 
-#### FR2: Async Module Operations
-- **FR2.1**: Asynchronous WebAssembly module compilation
-- **FR2.2**: Async module caching and serialization
-- **FR2.3**: Async module validation and metadata extraction
-- **FR2.4**: Concurrent module compilation with resource limits
+#### FR2: Async Engine Configuration (Enhanced)
+- **FR2.1**: Leverage existing Tokio runtime infrastructure (Cargo.toml:27,68,72)
+- **FR2.2**: Build on existing JniConcurrencyManager for thread pool configuration
+- **FR2.3**: Async store creation and management
+- **FR2.4**: Engine-level async performance tuning options
 
-#### FR3: Async Instance Management
-- **FR3.1**: Asynchronous WebAssembly instance creation
-- **FR3.2**: Async function invocation with all WebAssembly types
-- **FR3.3**: Async export discovery and binding
-- **FR3.4**: Concurrent instance execution with isolation
+#### FR3: Async Module Operations (Prioritized)
+- **FR3.1**: Asynchronous WebAssembly module compilation (PRIMARY MISSING)
+- **FR3.2**: Async module caching and serialization
+- **FR3.3**: Async module validation and metadata extraction
+- **FR3.4**: Extend existing concurrent capabilities to module compilation
 
-#### FR4: Comprehensive Async WASI
-- **FR4.1**: Async WASI context creation and configuration
-- **FR4.2**: Async filesystem operations beyond current file I/O
-- **FR4.3**: Async network operations (HTTP, TCP, UDP)
-- **FR4.4**: Async process execution and I/O redirection
+#### FR4: Async Instance Management (Core Gap)
+- **FR4.1**: Asynchronous WebAssembly instance creation (PRIMARY MISSING)
+- **FR4.2**: Async function invocation with all WebAssembly types (PRIMARY MISSING)
+- **FR4.3**: Async export discovery and binding
+- **FR4.4**: Build on existing concurrency infrastructure for isolation
 
-#### FR5: Native Async Integration
-- **FR5.1**: Expose Wasmtime's native async engine capabilities
-- **FR5.2**: Implement async execution at Rust binding level
-- **FR5.3**: Integrate with Tokio async runtime
-- **FR5.4**: Native async error propagation to Java layer
+#### FR5: WASI Async Enhancement (Partial Existing)
+- **FR5.1**: Extend existing WasiAsyncFileOperations to full WASI context
+- **FR5.2**: Add async network operations (HTTP, TCP, UDP)
+- **FR5.3**: Add async process execution and I/O redirection
+- **FR5.4**: Align WASI async patterns with core WasmFunction async API
 
-#### FR6: Public API Enhancement
-- **FR6.1**: Add async methods to all public interfaces
-- **FR6.2**: CompletableFuture-based async API design
-- **FR6.3**: Consistent async method naming and behavior
-- **FR6.4**: Backward compatibility with existing sync APIs
+#### FR6: Native Async Bridge Implementation (Infrastructure Gap)
+- **FR6.1**: Create JNI async bindings bridge to utilize existing Tokio runtime
+- **FR6.2**: Create Panama async bindings bridge to utilize existing Tokio runtime
+- **FR6.3**: Implement native async error propagation to Java layer
+- **FR6.4**: Unify existing JniConcurrencyManager and ConcurrentAccessCoordinator
+
+#### FR7: Async Framework Unification (New)
+- **FR7.1**: Replace ad-hoc ExecutorService usage with unified async framework
+- **FR7.2**: CompletableFuture-based async API design (consistent with existing WASI)
+- **FR7.3**: Consistent async method naming and behavior across all components
+- **FR7.4**: Backward compatibility with existing sync APIs
 
 ### Non-Functional Requirements
 
@@ -257,25 +264,37 @@ Transform wasmtime4j from Java-wrapper async execution to comprehensive native a
 
 ## Implementation Phases
 
-### Phase 1: Foundation (Weeks 1-3)
-- Native async engine and store configuration
-- Basic async module compilation
-- Core async API design and contracts
+### Phase 1: Core Public API Async Methods (Weeks 1-3)
+**Based on Analysis: Primary missing functionality in public interfaces**
+- Add `Engine.compileModuleAsync()` method (Engine.java:51)
+- Add `WasmFunction.callAsync()` method (WasmFunction.java:22) 
+- Add `Module.instantiateAsync()` variants (Module.java:32,43)
+- Standardize async method signatures to match existing WasiInstance.callAsync() pattern
+- **Foundation**: Build on existing CompletableFuture patterns from WasiAsyncFileOperations
 
-### Phase 2: Core Operations (Weeks 4-6)
-- Async instance creation and management
-- Async function invocation implementation
-- Cross-runtime async consistency
+### Phase 2: Native Async Bridge Implementation (Weeks 4-6)
+**Based on Analysis: Bridge gap between existing Tokio infrastructure and Java APIs**
+- Create JNI async bindings to utilize existing Tokio runtime (Cargo.toml:27,68,72)
+- Create Panama async bindings to utilize existing Tokio runtime
+- Implement native-to-Java async callback mechanisms
+- Extend existing JniConcurrencyManager for unified async thread management
+- **Foundation**: Leverage existing native Tokio and async component features
 
-### Phase 3: Advanced Features (Weeks 7-9)
-- Comprehensive async WASI operations
-- Async performance monitoring and profiling
-- Advanced async error handling
+### Phase 3: Cross-Runtime Consistency & WASI Enhancement (Weeks 7-9)
+**Based on Analysis: Address inconsistencies and extend existing WASI capabilities**
+- Ensure JNI/Panama async implementation parity
+- Extend existing WasiAsyncFileOperations to comprehensive WASI async support
+- Align WASI async patterns with new core async APIs for consistency
+- Replace ad-hoc ExecutorService usage in examples with unified async framework
+- **Foundation**: Build on existing WasiAsyncFileOperations and concurrency infrastructure
 
-### Phase 4: Quality & Documentation (Weeks 10-12)
-- Comprehensive async testing suite
-- Performance benchmarking and optimization
-- Complete documentation and examples
+### Phase 4: Testing, Performance & Documentation (Weeks 10-12)
+**Based on Analysis: Extend existing testing and benchmarking infrastructure**
+- Extend existing ConcurrencyBenchmark to cover new async APIs
+- Add async-specific tests to existing comprehensive test suites
+- Performance optimization using existing JMH benchmark infrastructure
+- Update documentation and examples to use new async APIs consistently
+- **Foundation**: Build on existing benchmarking and testing frameworks
 
 ## Risk Mitigation
 

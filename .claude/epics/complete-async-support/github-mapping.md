@@ -1,15 +1,15 @@
 # GitHub Issue Mapping
 
-Epic: #111 - https://github.com/tegmentum/wasmtime4j/issues/111
+Epic: #165 - https://github.com/tegmentum/wasmtime4j/issues/165
 
 Tasks:
-- #115: Native Async Engine Foundation - https://github.com/tegmentum/wasmtime4j/issues/115
-- #117: Async Module Operations - https://github.com/tegmentum/wasmtime4j/issues/117
-- #119: Async Instance Management - https://github.com/tegmentum/wasmtime4j/issues/119
-- #114: Comprehensive Async WASI - https://github.com/tegmentum/wasmtime4j/issues/114
-- #116: Public API Async Integration - https://github.com/tegmentum/wasmtime4j/issues/116
-- #118: Cross-Runtime Async Consistency - https://github.com/tegmentum/wasmtime4j/issues/118
-- #112: Async Performance & Monitoring - https://github.com/tegmentum/wasmtime4j/issues/112
-- #113: Async Testing & Validation - https://github.com/tegmentum/wasmtime4j/issues/113
+- #166: Add async methods to Engine interface - https://github.com/tegmentum/wasmtime4j/issues/166
+- #167: Add async methods to WasmFunction interface - https://github.com/tegmentum/wasmtime4j/issues/167
+- #168: Add async methods to Module interface - https://github.com/tegmentum/wasmtime4j/issues/168
+- #169: Implement JNI async bindings bridge - https://github.com/tegmentum/wasmtime4j/issues/169
+- #170: Implement Panama async bindings bridge - https://github.com/tegmentum/wasmtime4j/issues/170
+- #171: Extend WASI async operations for consistency - https://github.com/tegmentum/wasmtime4j/issues/171
+- #172: Replace ad-hoc ExecutorService with unified async framework - https://github.com/tegmentum/wasmtime4j/issues/172
+- #173: Extend async testing and benchmarking infrastructure - https://github.com/tegmentum/wasmtime4j/issues/173
 
 Synced: 
