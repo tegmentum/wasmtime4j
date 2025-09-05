@@ -2,6 +2,8 @@
 
 use std::os::raw::{c_char, c_int, c_uint, c_ulong, c_void};
 use std::sync::Arc;
+use crate::error::ffi_utils;
+use crate::ffi_common::error_handling;
 
 /// Panama FFI bindings module
 /// 
@@ -12,6 +14,7 @@ pub mod engine {
     use super::*;
     use crate::engine::core;
     use crate::error::ffi_utils;
+    use crate::ffi_common::parameter_conversion;
     
     /// Create a new Wasmtime engine with default configuration (Panama FFI version)
     #[no_mangle]
@@ -39,49 +42,25 @@ pub mod engine {
         use wasmtime::{Strategy, OptLevel};
         
         ffi_utils::ffi_try_ptr(|| {
-            let strategy_opt = match strategy {
-                0 => Some(Strategy::Cranelift),
-                _ => None,
-            };
-            
-            let opt_level_opt = match opt_level {
-                0 => Some(OptLevel::None),
-                1 => Some(OptLevel::Speed),
-                2 => Some(OptLevel::SpeedAndSize),
-                _ => None,
-            };
-            
-            let max_memory_pages_opt = if max_memory_pages < 0 {
-                None
-            } else {
-                Some(max_memory_pages as u32)
-            };
-            
-            let max_stack_size_opt = if max_stack_size < 0 {
-                None
-            } else {
-                Some(max_stack_size as usize)
-            };
-            
-            let max_instances_opt = if max_instances < 0 {
-                None
-            } else {
-                Some(max_instances as u32)
-            };
+            let strategy_opt = parameter_conversion::convert_strategy(strategy);
+            let opt_level_opt = parameter_conversion::convert_opt_level(opt_level);
+            let max_memory_pages_opt = parameter_conversion::convert_int_to_optional_u32(max_memory_pages);
+            let max_stack_size_opt = parameter_conversion::convert_int_to_optional_usize(max_stack_size);
+            let max_instances_opt = parameter_conversion::convert_int_to_optional_u32(max_instances);
             
             core::create_engine_with_config(
                 strategy_opt,
                 opt_level_opt,
-                debug_info != 0,
-                wasm_threads != 0,
-                wasm_simd != 0,
-                wasm_reference_types != 0,
-                wasm_bulk_memory != 0,
-                wasm_multi_value != 0,
-                fuel_enabled != 0,
+                parameter_conversion::convert_int_to_bool(debug_info),
+                parameter_conversion::convert_int_to_bool(wasm_threads),
+                parameter_conversion::convert_int_to_bool(wasm_simd),
+                parameter_conversion::convert_int_to_bool(wasm_reference_types),
+                parameter_conversion::convert_int_to_bool(wasm_bulk_memory),
+                parameter_conversion::convert_int_to_bool(wasm_multi_value),
+                parameter_conversion::convert_int_to_bool(fuel_enabled),
                 max_memory_pages_opt,
                 max_stack_size_opt,
-                epoch_interruption != 0,
+                parameter_conversion::convert_int_to_bool(epoch_interruption),
                 max_instances_opt,
             )
         })
@@ -175,9 +154,24 @@ pub mod engine {
     /// Get engine reference count for debugging (Panama FFI version)
     #[no_mangle]
     pub extern "C" fn wasmtime4j_engine_get_reference_count(engine_ptr: *mut c_void) -> c_int {
-        match unsafe { core::get_engine_ref(engine_ptr) } {
-            Ok(engine) => core::get_reference_count(engine) as c_int,
-            Err(_) => -1,
+        // Demonstrate shared error handling utilities
+        match error_handling::validate_void_pointer_as::<crate::engine::Engine>(engine_ptr, "engine") {
+            Ok(_) => {
+                // Now we can safely use the engine
+                match unsafe { core::get_engine_ref(engine_ptr) } {
+                    Ok(engine) => core::get_reference_count(engine) as c_int,
+                    Err(e) => {
+                        let error_info = error_handling::convert_internal_error(&e);
+                        log::error!("Engine access failed: {}", error_info.message);
+                        -1
+                    }
+                }
+            },
+            Err(validation_error) => {
+                let error_info = error_handling::validation_error_to_info(validation_error);
+                log::error!("Parameter validation failed: {}", error_info.message);
+                -1
+            }
         }
     }
 }
@@ -480,7 +474,8 @@ pub mod instance {
             let instance = crate::instance::core::create_instance(store, module)?;
             
             unsafe {
-                *instance_ptr = Box::into_raw(instance) as *mut c_void;
+                // SAFETY IMPROVEMENT: Using safe Box management utilities
+                *instance_ptr = crate::ffi_common::memory_utils::box_into_raw_safe(instance) as *mut c_void;
             }
             
             Ok(())
@@ -830,7 +825,11 @@ pub mod memory {
         memory_ptr: *mut *mut c_void,
     ) -> c_int {
         ffi_utils::ffi_try_code(|| {
-            let mut store = unsafe { ffi_utils::deref_ptr_mut::<Store>(store_ptr, "store")? };
+            // SAFETY IMPROVEMENT: Using new memory utilities with comprehensive validation
+            let mut store = crate::ffi_common::memory_utils::safe_deref_mut(
+                store_ptr as *mut Store, 
+                "store"
+            ).map_err(|e| e.to_wasmtime_error())?;
             
             let mut builder = MemoryBuilder::new(initial_pages as u64);
             
@@ -1131,11 +1130,9 @@ pub mod memory {
     /// Destroy a memory instance (Panama FFI version)
     #[no_mangle]
     pub extern "C" fn wasmtime4j_memory_destroy(memory_ptr: *mut c_void) {
-        if !memory_ptr.is_null() {
-            unsafe {
-                let _ = Box::from_raw(memory_ptr as *mut Memory);
-            }
-            log::debug!("Memory destroyed successfully");
+        // SAFETY IMPROVEMENT: Using safe resource destruction with validation
+        unsafe {
+            crate::ffi_common::memory_utils::destroy_ffi_resource::<Memory>(memory_ptr, "Memory");
         }
     }
 

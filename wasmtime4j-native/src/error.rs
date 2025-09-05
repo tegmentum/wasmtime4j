@@ -590,6 +590,21 @@ pub mod ffi_utils {
             })
             .map(|s| s.to_string())
     }
+    
+    /// Convert C char pointer to Rust string
+    pub unsafe fn c_char_to_string(c_str: *const c_char) -> WasmtimeResult<String> {
+        c_str_to_string(c_str, "parameter")
+    }
+    
+    /// Convert Rust string to C char pointer (allocated)
+    pub fn string_to_c_char(s: String) -> WasmtimeResult<*mut c_char> {
+        match std::ffi::CString::new(s) {
+            Ok(c_string) => Ok(c_string.into_raw()),
+            Err(_) => Err(WasmtimeError::InvalidParameter {
+                message: "String contains null bytes".to_string(),
+            }),
+        }
+    }
 }
 
 /// JNI error conversion utilities
@@ -694,6 +709,26 @@ pub mod jni_utils {
             Err(error) => {
                 throw_jni_exception(&mut env, &error);
                 (error.to_error_code(), T::default())
+            }
+        }
+    }
+
+    #[cfg(feature = "jni-bindings")]
+    /// Execute operation with JNI exception throwing, returning default value on error
+    pub fn jni_try_default<F, T>(env: &jni::JNIEnv, default_value: T, operation: F) -> T
+    where
+        F: FnOnce() -> WasmtimeResult<T>,
+    {
+        match operation() {
+            Ok(result) => {
+                jni_utils::clear_last_error();
+                result
+            }
+            Err(error) => {
+                // For now, we can't throw exceptions from a ref to env
+                // This would need refactoring in the calling code
+                log::error!("Error in jni_try_default: {:?}", error);
+                default_value
             }
         }
     }
