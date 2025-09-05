@@ -1306,15 +1306,9 @@ pub mod jni_global {
         name: JString,
     ) -> jlong {
         jni_utils::jni_try_ptr(env, || {
-            // Use shared pointer validation
-            let store_handle = error_handling::validate_handle(store_ptr, "store")
-                .map_err(|e| e.to_wasmtime_error())?;
-            let store = unsafe { ffi_utils::deref_ptr::<Store>(store_handle as *mut std::os::raw::c_void, "store")? };
+            let store = unsafe { ffi_utils::deref_ptr::<Store>(store_ptr as *mut std::os::raw::c_void, "store")? };
             
-            // Use shared range validation for value type
-            let validated_type = error_handling::validate_range(value_type, 0, 6, "value_type")
-                .map_err(|e| e.to_wasmtime_error())?;
-            let val_type = match validated_type {
+            let val_type = match value_type {
                 0 => ValType::I32,
                 1 => ValType::I64,
                 2 => ValType::F32,
@@ -1322,16 +1316,17 @@ pub mod jni_global {
                 4 => ValType::V128,
                 5 => ValType::FuncRef,
                 6 => ValType::ExternRef,
-                _ => unreachable!(), // Already validated
+                _ => return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: format!("Invalid value type: {}", value_type),
+                }),
             };
 
-            // Use shared range validation for mutability
-            let validated_mut = error_handling::validate_range(mutability, 0, 1, "mutability")
-                .map_err(|e| e.to_wasmtime_error())?;
-            let mutability_enum = match validated_mut {
+            let mutability_enum = match mutability {
                 0 => Mutability::Const,
                 1 => Mutability::Var,
-                _ => unreachable!(), // Already validated
+                _ => return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: format!("Invalid mutability: {}", mutability),
+                }),
             };
 
             let ref_id_opt = if ref_id_present != 0 { Some(ref_id as u64) } else { None };
@@ -1365,7 +1360,7 @@ pub mod jni_global {
         global_ptr: jlong,
         store_ptr: jlong,
     ) -> jbyteArray {
-        ffi_utils::jni_try_ptr(&env, || {
+        jni_utils::jni_try_ptr(env, || {
             let global = unsafe { core::get_global_ref(global_ptr as *mut std::os::raw::c_void)? };
             let store = unsafe { ffi_utils::deref_ptr::<Store>(store_ptr as *mut std::os::raw::c_void, "store")? };
             
@@ -1403,7 +1398,7 @@ pub mod jni_global {
         ref_id_present: jboolean,
         ref_id: jlong,
     ) -> jint {
-        ffi_utils::jni_try_code(&env, || {
+        jni_utils::jni_try_code(env, || {
             let global = unsafe { core::get_global_ref(global_ptr as *mut std::os::raw::c_void)? };
             let store = unsafe { ffi_utils::deref_ptr::<Store>(store_ptr as *mut std::os::raw::c_void, "store")? };
             
@@ -1444,7 +1439,7 @@ pub mod jni_global {
         _class: JClass,
         global_ptr: jlong,
     ) -> jbyteArray {
-        ffi_utils::jni_try_ptr(&env, || {
+        jni_utils::jni_try_ptr(env, || {
             let global = unsafe { core::get_global_ref(global_ptr as *mut std::os::raw::c_void)? };
             let metadata = core::get_global_metadata(global);
             
@@ -1514,7 +1509,7 @@ pub mod jni_table {
     use super::*;
     use crate::table::{Table, TableElement, core};
     use crate::store::Store;
-    use crate::error::jni_utils;
+    use crate::error::{jni_utils, ffi_utils};
     use wasmtime::ValType;
 
     /// Create a new WebAssembly table (JNI version)
@@ -1529,7 +1524,7 @@ pub mod jni_table {
         maximum_size: jint,
         name: JString,
     ) -> jlong {
-        ffi_utils::jni_try_ptr(&env, || {
+        jni_utils::jni_try_ptr(env, || {
             let store = unsafe { ffi_utils::deref_ptr::<Store>(store_ptr as *mut std::os::raw::c_void, "store")? };
             
             let val_type = match element_type {
@@ -1562,7 +1557,7 @@ pub mod jni_table {
         table_ptr: jlong,
         store_ptr: jlong,
     ) -> jint {
-        ffi_utils::jni_try_default(&env, -1, || {
+        jni_utils::jni_try_default(&env, -1, || {
             let table = unsafe { core::get_table_ref(table_ptr as *mut std::os::raw::c_void)? };
             let store = unsafe { ffi_utils::deref_ptr::<Store>(store_ptr as *mut std::os::raw::c_void, "store")? };
             
@@ -1581,7 +1576,7 @@ pub mod jni_table {
         store_ptr: jlong,
         index: jint,
     ) -> jbyteArray {
-        ffi_utils::jni_try_ptr(&env, || {
+        jni_utils::jni_try_ptr(env, || {
             let table = unsafe { core::get_table_ref(table_ptr as *mut std::os::raw::c_void)? };
             let store = unsafe { ffi_utils::deref_ptr::<Store>(store_ptr as *mut std::os::raw::c_void, "store")? };
             
@@ -1612,7 +1607,7 @@ pub mod jni_table {
         ref_id_present: jboolean,
         ref_id: jlong,
     ) -> jint {
-        ffi_utils::jni_try_code(&env, || {
+        jni_utils::jni_try_code(env, || {
             let table = unsafe { core::get_table_ref(table_ptr as *mut std::os::raw::c_void)? };
             let store = unsafe { ffi_utils::deref_ptr::<Store>(store_ptr as *mut std::os::raw::c_void, "store")? };
             
@@ -1645,7 +1640,7 @@ pub mod jni_table {
         ref_id_present: jboolean,
         ref_id: jlong,
     ) -> jint {
-        ffi_utils::jni_try_default(&env, -1, || {
+        jni_utils::jni_try_default(&env, -1, || {
             let table = unsafe { core::get_table_ref(table_ptr as *mut std::os::raw::c_void)? };
             let store = unsafe { ffi_utils::deref_ptr::<Store>(store_ptr as *mut std::os::raw::c_void, "store")? };
             
@@ -1679,7 +1674,7 @@ pub mod jni_table {
         ref_id_present: jboolean,
         ref_id: jlong,
     ) -> jint {
-        ffi_utils::jni_try_code(&env, || {
+        jni_utils::jni_try_code(env, || {
             let table = unsafe { core::get_table_ref(table_ptr as *mut std::os::raw::c_void)? };
             let store = unsafe { ffi_utils::deref_ptr::<Store>(store_ptr as *mut std::os::raw::c_void, "store")? };
             
@@ -1707,7 +1702,7 @@ pub mod jni_table {
         _class: JClass,
         table_ptr: jlong,
     ) -> jbyteArray {
-        ffi_utils::jni_try_ptr(&env, || {
+        jni_utils::jni_try_ptr(env, || {
             let table = unsafe { core::get_table_ref(table_ptr as *mut std::os::raw::c_void)? };
             let metadata = core::get_table_metadata(table);
             

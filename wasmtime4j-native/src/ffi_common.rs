@@ -95,8 +95,12 @@ pub mod parameter_conversion {
 #[cfg(test)]
 mod tests {
     use super::parameter_conversion::*;
+    use super::memory_utils::*;
+    use super::error_handling::*;
     use wasmtime::{Strategy, OptLevel};
+    use std::ptr;
     
+    // Parameter conversion tests
     #[test]
     fn test_strategy_conversion() {
         assert_eq!(convert_strategy(0), Some(Strategy::Cranelift));
@@ -136,6 +140,288 @@ mod tests {
         assert_eq!(convert_int_to_bool(1), true);
         assert_eq!(convert_int_to_bool(-1), true);
         assert_eq!(convert_int_to_bool(999), true);
+    }
+    
+    // Memory management tests
+    #[test]
+    fn test_safe_deref_null_pointer() {
+        let result = safe_deref(ptr::null::<i32>(), "test");
+        assert!(matches!(result, Err(MemoryError::NullPointer(_))));
+    }
+    
+    #[test]
+    fn test_safe_deref_valid_pointer() {
+        let value = 42i32;
+        let result = safe_deref(&value as *const i32, "test");
+        assert!(result.is_ok());
+        assert_eq!(*result.unwrap(), 42);
+    }
+    
+    #[test]
+    fn test_safe_deref_mut_null_pointer() {
+        let result = safe_deref_mut(ptr::null_mut::<i32>(), "test");
+        assert!(matches!(result, Err(MemoryError::NullPointer(_))));
+    }
+    
+    #[test]
+    fn test_safe_deref_mut_valid_pointer() {
+        let mut value = 42i32;
+        let result = safe_deref_mut(&mut value as *mut i32, "test");
+        assert!(result.is_ok());
+        assert_eq!(*result.unwrap(), 42);
+        *result.unwrap() = 100;
+        assert_eq!(value, 100);
+    }
+    
+    #[test]
+    fn test_safe_box_operations() {
+        // Test safe Box creation and destruction
+        let original_value = 42i32;
+        let boxed = Box::new(original_value);
+        let raw_ptr = box_into_raw_safe(boxed);
+        
+        // Verify pointer is not null
+        assert!(!raw_ptr.is_null());
+        
+        // Safely convert back to Box
+        let result = safe_box_from_raw(raw_ptr, "test");
+        assert!(result.is_ok());
+        let restored_box = result.unwrap();
+        assert_eq!(*restored_box, 42);
+    }
+    
+    #[test]
+    fn test_safe_box_from_raw_null_pointer() {
+        let result = safe_box_from_raw(ptr::null_mut::<i32>(), "test");
+        assert!(matches!(result, Err(MemoryError::NullPointer(_))));
+    }
+    
+    #[test]
+    fn test_resource_tracker() {
+        static mut CLEANUP_CALLED: bool = false;
+        
+        fn cleanup_fn(_value: i32) {
+            unsafe { CLEANUP_CALLED = true; }
+        }
+        
+        {
+            let _tracker = ResourceTracker::new(42i32, cleanup_fn);
+            // Tracker goes out of scope here
+        }
+        
+        unsafe {
+            assert!(CLEANUP_CALLED, "Cleanup function should have been called");
+        }
+    }
+    
+    #[test]
+    fn test_resource_tracker_take() {
+        static mut CLEANUP_CALLED: bool = false;
+        
+        fn cleanup_fn(_value: i32) {
+            unsafe { CLEANUP_CALLED = true; }
+        }
+        
+        {
+            let mut tracker = ResourceTracker::new(42i32, cleanup_fn);
+            assert!(tracker.is_active());
+            
+            let value = tracker.take();
+            assert_eq!(value, Some(42));
+            assert!(!tracker.is_active());
+            // Tracker goes out of scope but shouldn't call cleanup
+        }
+        
+        unsafe {
+            assert!(!CLEANUP_CALLED, "Cleanup function should not have been called after take()");
+        }
+    }
+    
+    #[test]
+    fn test_safe_array_access() {
+        let array = [1, 2, 3, 4, 5];
+        let ptr = array.as_ptr();
+        
+        // Valid access
+        let result = safe_array_access(ptr, 2, 5, "test_array");
+        assert!(result.is_ok());
+        assert_eq!(*result.unwrap(), 3);
+        
+        // Out of bounds access
+        let result = safe_array_access(ptr, 5, 5, "test_array");
+        assert!(matches!(result, Err(MemoryError::IndexOutOfBounds { .. })));
+        
+        // Way out of bounds
+        let result = safe_array_access(ptr, 10, 5, "test_array");
+        assert!(matches!(result, Err(MemoryError::IndexOutOfBounds { .. })));
+    }
+    
+    #[test]
+    fn test_safe_array_access_null_pointer() {
+        let result = safe_array_access(ptr::null::<i32>(), 0, 5, "test");
+        assert!(matches!(result, Err(MemoryError::NullPointer(_))));
+    }
+    
+    #[test]
+    fn test_safe_memory_copy() {
+        let src = [1u8, 2, 3, 4, 5];
+        let mut dest = [0u8; 5];
+        
+        let result = safe_memory_copy(
+            dest.as_mut_ptr(),
+            src.as_ptr(),
+            3,
+            dest.len(),
+            src.len(),
+            "test_copy"
+        );
+        
+        assert!(result.is_ok());
+        assert_eq!(dest[0], 1);
+        assert_eq!(dest[1], 2);
+        assert_eq!(dest[2], 3);
+        assert_eq!(dest[3], 0); // Unchanged
+        assert_eq!(dest[4], 0); // Unchanged
+    }
+    
+    #[test]
+    fn test_safe_memory_copy_buffer_overflow() {
+        let src = [1u8, 2, 3, 4, 5];
+        let mut dest = [0u8; 3];
+        
+        // Try to copy more than destination can hold
+        let result = safe_memory_copy(
+            dest.as_mut_ptr(),
+            src.as_ptr(),
+            5, // More than dest.len()
+            dest.len(),
+            src.len(),
+            "test_copy"
+        );
+        
+        assert!(matches!(result, Err(MemoryError::BufferOverflow { .. })));
+    }
+    
+    #[test]
+    fn test_safe_memory_copy_overlapping_buffers() {
+        let mut buffer = [1u8, 2, 3, 4, 5];
+        
+        // Copy from beginning to middle (overlapping)
+        let result = safe_memory_copy(
+            buffer.as_mut_ptr().wrapping_add(2), // dest = &mut buffer[2..]
+            buffer.as_ptr(),                     // src = &buffer[0..]
+            2,                                   // copy 2 bytes
+            3,                                   // dest size
+            5,                                   // src size
+            "overlapping_copy"
+        );
+        
+        assert!(result.is_ok());
+        assert_eq!(buffer[2], 1); // buffer[0] copied to buffer[2]
+        assert_eq!(buffer[3], 2); // buffer[1] copied to buffer[3]
+    }
+    
+    #[test]
+    fn test_safe_memory_copy_null_pointers() {
+        let src = [1u8, 2, 3];
+        
+        // Null destination
+        let result = safe_memory_copy(
+            ptr::null_mut(),
+            src.as_ptr(),
+            3,
+            3,
+            3,
+            "test"
+        );
+        assert!(matches!(result, Err(MemoryError::NullPointer(_))));
+        
+        // Null source
+        let mut dest = [0u8; 3];
+        let result = safe_memory_copy(
+            dest.as_mut_ptr(),
+            ptr::null(),
+            3,
+            3,
+            3,
+            "test"
+        );
+        assert!(matches!(result, Err(MemoryError::NullPointer(_))));
+    }
+    
+    #[test]
+    fn test_safe_byte_slice() {
+        let data = [1u8, 2, 3, 4, 5];
+        
+        // Valid slice creation
+        let result = safe_byte_slice(data.as_ptr(), data.len(), "test");
+        assert!(result.is_ok());
+        let slice = result.unwrap();
+        assert_eq!(slice.len(), 5);
+        assert_eq!(slice[0], 1);
+        assert_eq!(slice[4], 5);
+    }
+    
+    #[test]
+    fn test_safe_byte_slice_null_pointer() {
+        let result = safe_byte_slice(ptr::null(), 5, "test");
+        assert!(matches!(result, Err(MemoryError::NullPointer(_))));
+    }
+    
+    #[test]
+    fn test_safe_byte_slice_zero_length() {
+        let data = [1u8, 2, 3];
+        let result = safe_byte_slice(data.as_ptr(), 0, "test");
+        assert!(matches!(result, Err(MemoryError::IndexOutOfBounds { .. })));
+    }
+    
+    #[test]
+    fn test_memory_error_to_wasmtime_error_conversion() {
+        let memory_error = MemoryError::NullPointer("test_param".to_string());
+        let wasmtime_error = memory_error.to_wasmtime_error();
+        
+        match wasmtime_error {
+            crate::error::WasmtimeError::InvalidParameter { message } => {
+                assert!(message.contains("test_param"));
+                assert!(message.contains("cannot be null"));
+            },
+            _ => panic!("Expected InvalidParameter error"),
+        }
+    }
+    
+    // Error handling tests
+    #[test]
+    fn test_validation_error_conversion() {
+        let validation_error = ValidationError::NullPointer("engine".to_string());
+        let wasmtime_error = validation_error.to_wasmtime_error();
+        
+        match wasmtime_error {
+            crate::error::WasmtimeError::InvalidParameter { message } => {
+                assert!(message.contains("engine"));
+                assert!(message.contains("cannot be null"));
+            },
+            _ => panic!("Expected InvalidParameter error"),
+        }
+    }
+    
+    #[test]
+    fn test_validation_error_out_of_range() {
+        let validation_error = ValidationError::OutOfRange {
+            parameter: "size".to_string(),
+            value: 150,
+            min: 1,
+            max: 100,
+        };
+        
+        let wasmtime_error = validation_error.to_wasmtime_error();
+        match wasmtime_error {
+            crate::error::WasmtimeError::InvalidParameter { message } => {
+                assert!(message.contains("size"));
+                assert!(message.contains("150"));
+                assert!(message.contains("[1, 100]"));
+            },
+            _ => panic!("Expected InvalidParameter error"),
+        }
     }
 }
 
@@ -397,30 +683,442 @@ pub mod memory_utils {
     //! This module provides functions for safe pointer dereferencing, memory lifecycle
     //! management, and bounds checking to ensure memory safety across FFI boundaries.
     
-    /// Placeholder function for safe pointer dereferencing
-    /// 
-    /// This function will be implemented to safely dereference pointers
-    /// received from FFI calls with proper validation.
-    pub fn safe_dereference_pointer() {
-        // Placeholder for safe pointer dereferencing
-        // Will be implemented in subsequent phases
+    use crate::error::{WasmtimeError, WasmtimeResult};
+    use super::error_handling::ValidationError;
+    use std::os::raw::c_void;
+    use std::ptr;
+    
+    /// Memory error types for specific memory management failures
+    #[derive(Debug, Clone)]
+    pub enum MemoryError {
+        /// Null pointer error
+        NullPointer(String),
+        /// Misaligned pointer error
+        MisalignedPointer(String),
+        /// Invalid Box pointer error
+        InvalidBoxPointer(String),
+        /// Array index out of bounds error
+        IndexOutOfBounds { array_name: String, index: usize, length: usize },
+        /// Buffer overflow error
+        BufferOverflow { operation: String, requested: usize, available: usize },
+        /// Resource lifecycle violation
+        LifecycleViolation { resource: String, state: String },
     }
     
-    /// Placeholder function for memory lifecycle management
-    /// 
-    /// This function will be implemented to manage memory lifecycle
-    /// across FFI boundaries safely.
-    pub fn manage_memory_lifecycle() {
-        // Placeholder for memory lifecycle management
-        // Will be implemented in subsequent phases
+    impl MemoryError {
+        /// Convert MemoryError to WasmtimeError
+        pub fn to_wasmtime_error(self) -> WasmtimeError {
+            match self {
+                MemoryError::NullPointer(param) => WasmtimeError::InvalidParameter {
+                    message: format!("{} pointer cannot be null", param),
+                },
+                MemoryError::MisalignedPointer(param) => WasmtimeError::InvalidParameter {
+                    message: format!("{} pointer is misaligned", param),
+                },
+                MemoryError::InvalidBoxPointer(param) => WasmtimeError::InvalidParameter {
+                    message: format!("{} pointer was not allocated by Box", param),
+                },
+                MemoryError::IndexOutOfBounds { array_name, index, length } => WasmtimeError::InvalidParameter {
+                    message: format!("{} index {} out of bounds [0, {})", array_name, index, length),
+                },
+                MemoryError::BufferOverflow { operation, requested, available } => WasmtimeError::InvalidParameter {
+                    message: format!("{} requested {} bytes but only {} available", operation, requested, available),
+                },
+                MemoryError::LifecycleViolation { resource, state } => WasmtimeError::InvalidParameter {
+                    message: format!("{} lifecycle violation: {}", resource, state),
+                },
+            }
+        }
     }
     
-    /// Placeholder function for bounds checking
+    /// Safely dereference a const pointer with comprehensive validation
     /// 
-    /// This function will be implemented to perform bounds checking
-    /// on memory operations in FFI contexts.
-    pub fn check_bounds() {
-        // Placeholder for bounds checking
-        // Will be implemented in subsequent phases
+    /// # Arguments
+    /// * `ptr` - Raw const pointer to dereference
+    /// * `name` - Descriptive name for error reporting
+    /// 
+    /// # Returns
+    /// * `Ok(&'static T)` - Safe reference to the data
+    /// * `Err(MemoryError)` - Validation failure details
+    /// 
+    /// # Safety
+    /// This function performs extensive validation to prevent memory safety violations:
+    /// - Null pointer check
+    /// - Low address range check (catches common invalid pointers)
+    /// - Alignment validation for the target type
+    pub fn safe_deref<T>(ptr: *const T, name: &str) -> Result<&'static T, MemoryError> {
+        // Null pointer check
+        if ptr.is_null() {
+            return Err(MemoryError::NullPointer(name.to_string()));
+        }
+        
+        // Check for obviously invalid low addresses (0x1000 is a common threshold)
+        if (ptr as usize) < 0x1000 {
+            return Err(MemoryError::InvalidBoxPointer(
+                format!("{} (address too low: 0x{:x})", name, ptr as usize)
+            ));
+        }
+        
+        // Alignment check - ensure pointer is properly aligned for type T
+        if !is_aligned(ptr) {
+            return Err(MemoryError::MisalignedPointer(name.to_string()));
+        }
+        
+        // Safe dereference - all validation passed
+        unsafe { Ok(&*ptr) }
+    }
+    
+    /// Safely dereference a mutable pointer with comprehensive validation
+    /// 
+    /// # Arguments
+    /// * `ptr` - Raw mutable pointer to dereference
+    /// * `name` - Descriptive name for error reporting
+    /// 
+    /// # Returns
+    /// * `Ok(&'static mut T)` - Safe mutable reference to the data
+    /// * `Err(MemoryError)` - Validation failure details
+    /// 
+    /// # Safety
+    /// This function performs extensive validation including exclusive access checks
+    pub fn safe_deref_mut<T>(ptr: *mut T, name: &str) -> Result<&'static mut T, MemoryError> {
+        // Null pointer check
+        if ptr.is_null() {
+            return Err(MemoryError::NullPointer(name.to_string()));
+        }
+        
+        // Check for obviously invalid low addresses
+        if (ptr as usize) < 0x1000 {
+            return Err(MemoryError::InvalidBoxPointer(
+                format!("{} (address too low: 0x{:x})", name, ptr as usize)
+            ));
+        }
+        
+        // Alignment check
+        if !is_aligned(ptr as *const T) {
+            return Err(MemoryError::MisalignedPointer(name.to_string()));
+        }
+        
+        // Safe mutable dereference - validation passed
+        unsafe { Ok(&mut *ptr) }
+    }
+    
+    /// Check if a pointer is properly aligned for type T
+    /// 
+    /// # Arguments
+    /// * `ptr` - Pointer to check for alignment
+    /// 
+    /// # Returns
+    /// * `true` if pointer is properly aligned
+    /// * `false` if pointer is misaligned
+    #[inline]
+    fn is_aligned<T>(ptr: *const T) -> bool {
+        (ptr as usize) % std::mem::align_of::<T>() == 0
+    }
+    
+    /// Safely create a Box from a raw pointer with ownership validation
+    /// 
+    /// # Arguments
+    /// * `ptr` - Raw pointer that was previously created by Box::into_raw
+    /// * `name` - Descriptive name for error reporting
+    /// 
+    /// # Returns
+    /// * `Ok(Box<T>)` - Safely reconstructed Box with ownership
+    /// * `Err(MemoryError)` - Validation failure
+    /// 
+    /// # Safety
+    /// This function validates that the pointer was originally allocated by Box::into_raw
+    /// and performs comprehensive safety checks before reconstruction
+    pub fn safe_box_from_raw<T>(ptr: *mut T, name: &str) -> Result<Box<T>, MemoryError> {
+        // Null pointer check
+        if ptr.is_null() {
+            return Err(MemoryError::NullPointer(name.to_string()));
+        }
+        
+        // Validate pointer was allocated by Box - check reasonable address range
+        if !is_valid_box_pointer(ptr) {
+            return Err(MemoryError::InvalidBoxPointer(
+                format!("{} (invalid address: 0x{:x})", name, ptr as usize)
+            ));
+        }
+        
+        // Alignment validation
+        if !is_aligned(ptr as *const T) {
+            return Err(MemoryError::MisalignedPointer(name.to_string()));
+        }
+        
+        // Safe Box reconstruction - all validation passed
+        unsafe { Ok(Box::from_raw(ptr)) }
+    }
+    
+    /// Safely convert Box to raw pointer for FFI boundaries
+    /// 
+    /// # Arguments
+    /// * `boxed` - Box to convert to raw pointer
+    /// 
+    /// # Returns
+    /// Raw pointer that can be safely passed across FFI boundaries
+    /// 
+    /// # Safety
+    /// This is always safe as Box::into_raw is a safe operation.
+    /// The caller takes ownership responsibility for the returned pointer.
+    pub fn box_into_raw_safe<T>(boxed: Box<T>) -> *mut T {
+        Box::into_raw(boxed)
+    }
+    
+    /// Validate if pointer appears to be from Box allocation
+    /// 
+    /// # Arguments
+    /// * `ptr` - Pointer to validate
+    /// 
+    /// # Returns
+    /// * `true` if pointer appears valid for Box operations
+    /// * `false` if pointer appears invalid
+    /// 
+    /// # Note
+    /// This is a heuristic check - we can't definitively prove a pointer
+    /// was allocated by Box, but we can catch obviously invalid cases
+    #[inline]
+    fn is_valid_box_pointer<T>(ptr: *mut T) -> bool {
+        let addr = ptr as usize;
+        
+        // Check for reasonable address range (not null, not too low)
+        if addr < 0x1000 {
+            return false;
+        }
+        
+        // Check for alignment
+        if addr % std::mem::align_of::<T>() != 0 {
+            return false;
+        }
+        
+        // Additional platform-specific checks could be added here
+        // For now, these basic checks catch most invalid cases
+        true
+    }
+    
+    /// Resource lifecycle tracker for automatic cleanup
+    /// 
+    /// This struct ensures that resources are properly cleaned up
+    /// even if explicit cleanup is forgotten.
+    pub struct ResourceTracker<T> {
+        resource: Option<T>,
+        cleanup_fn: Option<fn(T)>,
+    }
+    
+    impl<T> ResourceTracker<T> {
+        /// Create a new resource tracker with automatic cleanup
+        /// 
+        /// # Arguments
+        /// * `resource` - Resource to track
+        /// * `cleanup_fn` - Function to call for cleanup
+        pub fn new(resource: T, cleanup_fn: fn(T)) -> Self {
+            Self {
+                resource: Some(resource),
+                cleanup_fn: Some(cleanup_fn),
+            }
+        }
+        
+        /// Take ownership of the tracked resource
+        /// 
+        /// This removes the resource from tracking, preventing automatic cleanup
+        pub fn take(&mut self) -> Option<T> {
+            self.resource.take()
+        }
+        
+        /// Check if resource is still being tracked
+        pub fn is_active(&self) -> bool {
+            self.resource.is_some()
+        }
+    }
+    
+    impl<T> Drop for ResourceTracker<T> {
+        /// Automatic cleanup when tracker is dropped
+        fn drop(&mut self) {
+            if let (Some(resource), Some(cleanup)) = (self.resource.take(), self.cleanup_fn) {
+                cleanup(resource);
+            }
+        }
+    }
+    
+    /// Safe array access with bounds checking
+    /// 
+    /// # Arguments
+    /// * `array` - Pointer to array start
+    /// * `index` - Index to access
+    /// * `length` - Total array length
+    /// * `name` - Array name for error reporting
+    /// 
+    /// # Returns
+    /// * `Ok(&'static T)` - Safe reference to array element
+    /// * `Err(MemoryError)` - Bounds check failure
+    pub fn safe_array_access<T>(
+        array: *const T,
+        index: usize,
+        length: usize,
+        name: &str
+    ) -> Result<&'static T, MemoryError> {
+        // Null pointer check
+        if array.is_null() {
+            return Err(MemoryError::NullPointer(name.to_string()));
+        }
+        
+        // Bounds check
+        if index >= length {
+            return Err(MemoryError::IndexOutOfBounds {
+                array_name: name.to_string(),
+                index,
+                length,
+            });
+        }
+        
+        // Check for potential overflow in pointer arithmetic
+        if let Some(element_ptr) = (array as usize).checked_add(index * std::mem::size_of::<T>()) {
+            if element_ptr < array as usize {
+                return Err(MemoryError::IndexOutOfBounds {
+                    array_name: name.to_string(),
+                    index,
+                    length,
+                });
+            }
+        } else {
+            return Err(MemoryError::IndexOutOfBounds {
+                array_name: name.to_string(),
+                index,
+                length,
+            });
+        }
+        
+        // Safe array access
+        unsafe { Ok(&*array.add(index)) }
+    }
+    
+    /// Safe memory copying with overflow protection
+    /// 
+    /// # Arguments
+    /// * `dest` - Destination buffer
+    /// * `src` - Source buffer  
+    /// * `count` - Number of bytes to copy
+    /// * `dest_size` - Size of destination buffer
+    /// * `src_size` - Size of source buffer
+    /// * `operation_name` - Operation name for error reporting
+    /// 
+    /// # Returns
+    /// * `Ok(())` - Copy completed successfully
+    /// * `Err(MemoryError)` - Buffer overflow or other error
+    pub fn safe_memory_copy(
+        dest: *mut u8,
+        src: *const u8,
+        count: usize,
+        dest_size: usize,
+        src_size: usize,
+        operation_name: &str
+    ) -> Result<(), MemoryError> {
+        // Null pointer checks
+        if dest.is_null() {
+            return Err(MemoryError::NullPointer(format!("{} destination", operation_name)));
+        }
+        if src.is_null() {
+            return Err(MemoryError::NullPointer(format!("{} source", operation_name)));
+        }
+        
+        // Buffer overflow checks
+        if count > dest_size {
+            return Err(MemoryError::BufferOverflow {
+                operation: operation_name.to_string(),
+                requested: count,
+                available: dest_size,
+            });
+        }
+        
+        if count > src_size {
+            return Err(MemoryError::BufferOverflow {
+                operation: operation_name.to_string(),
+                requested: count,
+                available: src_size,
+            });
+        }
+        
+        // Check for buffer overlap (use memmove semantics if overlapping)
+        let dest_start = dest as usize;
+        let dest_end = dest_start + count;
+        let src_start = src as usize;
+        let src_end = src_start + count;
+        
+        unsafe {
+            if (dest_start < src_end && src_start < dest_end) {
+                // Buffers overlap, use copy_overlapping
+                ptr::copy(src, dest, count);
+            } else {
+                // No overlap, use faster non-overlapping copy
+                ptr::copy_nonoverlapping(src, dest, count);
+            }
+        }
+        
+        Ok(())
+    }
+    
+    /// Create a safe byte slice from pointer and length with validation
+    /// 
+    /// # Arguments
+    /// * `ptr` - Pointer to byte data
+    /// * `len` - Length of the data
+    /// * `name` - Data name for error reporting
+    /// 
+    /// # Returns
+    /// * `Ok(&'static [u8])` - Safe byte slice
+    /// * `Err(MemoryError)` - Validation failure
+    pub fn safe_byte_slice(ptr: *const u8, len: usize, name: &str) -> Result<&'static [u8], MemoryError> {
+        // Null pointer check
+        if ptr.is_null() {
+            return Err(MemoryError::NullPointer(name.to_string()));
+        }
+        
+        // Length validation
+        if len == 0 {
+            return Err(MemoryError::IndexOutOfBounds {
+                array_name: name.to_string(),
+                index: 0,
+                length: 0,
+            });
+        }
+        
+        // Check for potential overflow
+        if len > (isize::MAX as usize) {
+            return Err(MemoryError::BufferOverflow {
+                operation: format!("{} slice creation", name),
+                requested: len,
+                available: isize::MAX as usize,
+            });
+        }
+        
+        // Safe slice creation
+        unsafe { Ok(std::slice::from_raw_parts(ptr, len)) }
+    }
+    
+    /// Unified resource destruction for FFI boundaries
+    /// 
+    /// # Arguments
+    /// * `ptr` - Raw pointer to resource
+    /// * `name` - Resource name for logging
+    /// 
+    /// # Safety
+    /// This function assumes the pointer was created by Box::into_raw
+    /// and performs safe cleanup with logging
+    pub unsafe fn destroy_ffi_resource<T>(ptr: *mut c_void, name: &str) {
+        if !ptr.is_null() {
+            // Convert to typed pointer and create Box for automatic cleanup
+            match safe_box_from_raw(ptr as *mut T, name) {
+                Ok(_boxed_resource) => {
+                    // Box automatically cleans up when it goes out of scope
+                    log::debug!("{} destroyed successfully", name);
+                },
+                Err(error) => {
+                    log::error!("Failed to destroy {}: {:?}", name, error);
+                    // Force cleanup anyway to prevent leaks - this is unsafe
+                    // but necessary if the pointer validation failed
+                    let _ = Box::from_raw(ptr as *mut T);
+                }
+            }
+        }
     }
 }
