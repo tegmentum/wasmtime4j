@@ -20,6 +20,7 @@ pub mod jni_engine {
     use super::*;
     use crate::engine::core;
     use crate::error::{ffi_utils, jni_utils};
+    use crate::ffi_common::parameter_conversion;
     
     /// Create a new Wasmtime engine with default configuration (JNI version)
     #[no_mangle]
@@ -52,49 +53,25 @@ pub mod jni_engine {
         use wasmtime::{Strategy, OptLevel};
         
         jni_utils::jni_try_ptr(env, || {
-            let strategy_opt = match strategy {
-                0 => Some(Strategy::Cranelift),
-                _ => None,
-            };
-            
-            let opt_level_opt = match opt_level {
-                0 => Some(OptLevel::None),
-                1 => Some(OptLevel::Speed),
-                2 => Some(OptLevel::SpeedAndSize),
-                _ => None,
-            };
-            
-            let max_memory_pages_opt = if max_memory_pages < 0 {
-                None
-            } else {
-                Some(max_memory_pages as u32)
-            };
-            
-            let max_stack_size_opt = if max_stack_size < 0 {
-                None
-            } else {
-                Some(max_stack_size as usize)
-            };
-            
-            let max_instances_opt = if max_instances < 0 {
-                None
-            } else {
-                Some(max_instances as u32)
-            };
+            let strategy_opt = parameter_conversion::convert_strategy(strategy);
+            let opt_level_opt = parameter_conversion::convert_opt_level(opt_level);
+            let max_memory_pages_opt = parameter_conversion::convert_int_to_optional_u32(max_memory_pages);
+            let max_stack_size_opt = parameter_conversion::convert_int_to_optional_usize(max_stack_size);
+            let max_instances_opt = parameter_conversion::convert_int_to_optional_u32(max_instances);
             
             core::create_engine_with_config(
                 strategy_opt,
                 opt_level_opt,
-                debug_info != 0,
-                wasm_threads != 0,
-                wasm_simd != 0,
-                wasm_reference_types != 0,
-                wasm_bulk_memory != 0,
-                wasm_multi_value != 0,
-                fuel_enabled != 0,
+                parameter_conversion::convert_int_to_bool(debug_info as i32),
+                parameter_conversion::convert_int_to_bool(wasm_threads as i32),
+                parameter_conversion::convert_int_to_bool(wasm_simd as i32),
+                parameter_conversion::convert_int_to_bool(wasm_reference_types as i32),
+                parameter_conversion::convert_int_to_bool(wasm_bulk_memory as i32),
+                parameter_conversion::convert_int_to_bool(wasm_multi_value as i32),
+                parameter_conversion::convert_int_to_bool(fuel_enabled as i32),
                 max_memory_pages_opt,
                 max_stack_size_opt,
-                epoch_interruption != 0,
+                parameter_conversion::convert_int_to_bool(epoch_interruption as i32),
                 max_instances_opt,
             )
         }) as jlong
@@ -935,7 +912,8 @@ pub mod module {}
 pub mod jni_component {
     use super::*;
     use crate::component::{ComponentEngine, Component};
-    use crate::error::jni_utils;
+    use crate::error::{jni_utils, ffi_utils};
+    use crate::ffi_common::error_handling;
 
     /// Create a new component engine
     #[no_mangle]
@@ -943,7 +921,7 @@ pub mod jni_component {
         env: JNIEnv,
         _class: JClass,
     ) -> jlong {
-        ffi_utils::ffi_try_ptr(|| crate::component::core::create_component_engine()) as jlong
+        jni_utils::jni_try_ptr(env, || crate::component::core::create_component_engine()) as jlong
     }
 
     /// Load component from WebAssembly bytes
@@ -1307,6 +1285,8 @@ pub mod jni_global {
     use crate::global::{Global, GlobalValue, core};
     use crate::store::Store;
     use crate::error::jni_utils;
+    use crate::error::ffi_utils;
+    use crate::ffi_common::error_handling;
     use wasmtime::{ValType, Mutability};
 
     /// Create a new WebAssembly global variable (JNI version)
@@ -1325,10 +1305,16 @@ pub mod jni_global {
         ref_id: jlong,
         name: JString,
     ) -> jlong {
-        ffi_utils::jni_try_ptr(&env, || {
-            let store = unsafe { ffi_utils::deref_ptr::<Store>(store_ptr as *mut std::os::raw::c_void, "store")? };
+        jni_utils::jni_try_ptr(env, || {
+            // Use shared pointer validation
+            let store_handle = error_handling::validate_handle(store_ptr, "store")
+                .map_err(|e| e.to_wasmtime_error())?;
+            let store = unsafe { ffi_utils::deref_ptr::<Store>(store_handle as *mut std::os::raw::c_void, "store")? };
             
-            let val_type = match value_type {
+            // Use shared range validation for value type
+            let validated_type = error_handling::validate_range(value_type, 0, 6, "value_type")
+                .map_err(|e| e.to_wasmtime_error())?;
+            let val_type = match validated_type {
                 0 => ValType::I32,
                 1 => ValType::I64,
                 2 => ValType::F32,
@@ -1336,17 +1322,16 @@ pub mod jni_global {
                 4 => ValType::V128,
                 5 => ValType::FuncRef,
                 6 => ValType::ExternRef,
-                _ => return Err(crate::error::WasmtimeError::InvalidParameter {
-                    message: format!("Invalid value type: {}", value_type),
-                }),
+                _ => unreachable!(), // Already validated
             };
 
-            let mutability_enum = match mutability {
+            // Use shared range validation for mutability
+            let validated_mut = error_handling::validate_range(mutability, 0, 1, "mutability")
+                .map_err(|e| e.to_wasmtime_error())?;
+            let mutability_enum = match validated_mut {
                 0 => Mutability::Const,
                 1 => Mutability::Var,
-                _ => return Err(crate::error::WasmtimeError::InvalidParameter {
-                    message: format!("Invalid mutability: {}", mutability),
-                }),
+                _ => unreachable!(), // Already validated
             };
 
             let ref_id_opt = if ref_id_present != 0 { Some(ref_id as u64) } else { None };
@@ -1368,8 +1353,8 @@ pub mod jni_global {
 
             let global = core::create_global(store, val_type, mutability_enum, initial_value, name_str)?;
             
-            Ok(Box::into_raw(global) as jlong)
-        })
+            Ok(Box::into_raw(global))
+        }) as jlong
     }
 
     /// Get global variable value (JNI version)
