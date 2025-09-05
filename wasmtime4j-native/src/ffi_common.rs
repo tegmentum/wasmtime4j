@@ -140,11 +140,15 @@ mod tests {
 }
 
 /// Error handling utilities for consistent error reporting
-/*pub mod error_handling {
+pub mod error_handling {
     //! Utilities for consistent error handling across FFI interfaces.
     //!
     //! This module provides functions for error conversion, pointer validation,
     //! and standardized error reporting between JNI and Panama implementations.
+    
+    use crate::error::{WasmtimeError, WasmtimeResult, ErrorCode};
+    use std::os::raw::c_void;
+    use wasmtime::Error as WasmtimeEngineError;
     
     /// Standardized error information structure for FFI operations
     #[derive(Debug, Clone)]
@@ -384,7 +388,7 @@ mod tests {
             debug_info: Some(format!("Validation error: {:?}", wasmtime_error)),
         }
     }
-}*/
+}
 
 /// Memory management utilities for safe FFI operations
 pub mod memory_utils {
