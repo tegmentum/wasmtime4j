@@ -39,6 +39,9 @@ pub mod table;
 // Shared FFI architecture with trait-based conversions
 pub mod shared_ffi;
 
+// Common FFI utilities shared between JNI and Panama implementations
+pub mod ffi_common;
+
 // Interface modules - will be implemented in later streams
 pub mod jni_bindings;
 pub mod panama_ffi;
