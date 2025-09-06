@@ -1,8 +1,9 @@
 ---
 name: complete-async-support
-status: backlog
+status: completed
 created: 2025-09-05T00:49:38Z
-progress: 0%
+completed: 2025-09-06T16:12:15Z
+progress: 100%
 prd: .claude/prds/complete-async-support.md
 github: https://github.com/tegmentum/wasmtime4j/issues/165
 ---
