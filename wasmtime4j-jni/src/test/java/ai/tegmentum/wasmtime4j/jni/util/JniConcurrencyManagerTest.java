@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.jni.exception.JniValidationException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -82,12 +83,12 @@ class JniConcurrencyManagerTest {
     @DisplayName("Should reject invalid max concurrent operations")
     void shouldRejectInvalidMaxConcurrentOperations() {
       assertThrows(
-          IllegalArgumentException.class,
+          JniValidationException.class,
           () -> new JniConcurrencyManager(0, 1000),
           "Should reject zero max concurrent operations");
 
       assertThrows(
-          IllegalArgumentException.class,
+          JniValidationException.class,
           () -> new JniConcurrencyManager(-1, 1000),
           "Should reject negative max concurrent operations");
     }
@@ -96,7 +97,7 @@ class JniConcurrencyManagerTest {
     @DisplayName("Should reject negative timeout")
     void shouldRejectNegativeTimeout() {
       assertThrows(
-          IllegalArgumentException.class,
+          JniValidationException.class,
           () -> new JniConcurrencyManager(10, -1),
           "Should reject negative timeout");
     }
@@ -145,7 +146,7 @@ class JniConcurrencyManagerTest {
     @DisplayName("Should reject invalid handle")
     void shouldRejectInvalidHandle() {
       assertThrows(
-          IllegalArgumentException.class,
+          JniValidationException.class,
           () -> concurrencyManager.registerResource(0L),
           "Should reject zero handle");
     }
@@ -263,7 +264,7 @@ class JniConcurrencyManagerTest {
     @DisplayName("Should reject null operation")
     void shouldRejectNullOperation() {
       assertThrows(
-          IllegalArgumentException.class,
+          JniValidationException.class,
           () -> concurrencyManager.executeWithReadLock(VALID_HANDLE, null),
           "Should reject null operation");
     }
@@ -272,7 +273,7 @@ class JniConcurrencyManagerTest {
     @DisplayName("Should reject invalid handle")
     void shouldRejectInvalidHandleInReadLock() {
       assertThrows(
-          IllegalArgumentException.class,
+          JniValidationException.class,
           () -> concurrencyManager.executeWithReadLock(0L, () -> "test"),
           "Should reject invalid handle");
     }

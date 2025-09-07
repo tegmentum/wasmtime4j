@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.WasmRuntime;
+import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
 import ai.tegmentum.wasmtime4j.memory.MemoryLeakDetector;
 import ai.tegmentum.wasmtime4j.utils.TestUtils;
@@ -111,7 +112,7 @@ public abstract class BaseNativeFunctionTest {
    * @param runtimeType the runtime type to create
    * @return the created runtime
    */
-  protected WasmRuntime createRuntime(final RuntimeType runtimeType) {
+  protected WasmRuntime createRuntime(final RuntimeType runtimeType) throws WasmException {
     final WasmRuntime runtime = WasmRuntimeFactory.create(runtimeType);
     testResources.add(runtime);
     this.runtime = runtime;
@@ -124,7 +125,7 @@ public abstract class BaseNativeFunctionTest {
    *
    * @return the created runtime
    */
-  protected WasmRuntime createRuntime() {
+  protected WasmRuntime createRuntime() throws WasmException {
     return createRuntime(getBestAvailableRuntime());
   }
 

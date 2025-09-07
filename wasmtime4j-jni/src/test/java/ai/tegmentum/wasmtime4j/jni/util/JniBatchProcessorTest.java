@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.jni.exception.JniValidationException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -76,12 +77,12 @@ class JniBatchProcessorTest {
     @DisplayName("Should reject invalid batch size")
     void shouldRejectInvalidBatchSize() {
       assertThrows(
-          IllegalArgumentException.class,
+          JniValidationException.class,
           () -> new JniBatchProcessor(0, 10),
           "Should reject zero batch size");
 
       assertThrows(
-          IllegalArgumentException.class,
+          JniValidationException.class,
           () -> new JniBatchProcessor(-1, 10),
           "Should reject negative batch size");
     }
@@ -90,7 +91,7 @@ class JniBatchProcessorTest {
     @DisplayName("Should reject negative timeout")
     void shouldRejectNegativeTimeout() {
       assertThrows(
-          IllegalArgumentException.class,
+          JniValidationException.class,
           () -> new JniBatchProcessor(10, -1),
           "Should reject negative timeout");
     }
@@ -150,7 +151,7 @@ class JniBatchProcessorTest {
     @DisplayName("Should reject null operation")
     void shouldRejectNullOperation() {
       assertThrows(
-          IllegalArgumentException.class,
+          JniValidationException.class,
           () -> batchProcessor.execute(null),
           "Should reject null operation");
     }

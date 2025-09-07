@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.jni.exception.JniValidationException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -91,7 +92,7 @@ class JniPhantomReferenceManagerTest {
     @DisplayName("Should reject null object")
     void shouldRejectNullObject() {
       assertThrows(
-          IllegalArgumentException.class,
+          JniValidationException.class,
           () -> manager.register(null, 0x12345678L, "testCleanup"),
           "Should reject null object");
     }
@@ -102,7 +103,7 @@ class JniPhantomReferenceManagerTest {
       final Object testObject = new Object();
 
       assertThrows(
-          IllegalArgumentException.class,
+          JniValidationException.class,
           () -> manager.register(testObject, 0L, "testCleanup"),
           "Should reject zero handle");
     }
@@ -113,7 +114,7 @@ class JniPhantomReferenceManagerTest {
       final Object testObject = new Object();
 
       assertThrows(
-          IllegalArgumentException.class,
+          JniValidationException.class,
           () -> manager.register(testObject, 0x12345678L, null),
           "Should reject null cleanup method");
     }
@@ -146,7 +147,7 @@ class JniPhantomReferenceManagerTest {
     @DisplayName("Should reject null object in unregister")
     void shouldRejectNullObjectInUnregister() {
       assertThrows(
-          IllegalArgumentException.class,
+          JniValidationException.class,
           () -> manager.unregister(null),
           "Should reject null object in unregister");
     }

@@ -1,5 +1,6 @@
 package ai.tegmentum.wasmtime4j.webassembly;
 
+import ai.tegmentum.wasmtime4j.ImportMap;
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
@@ -209,7 +210,7 @@ public final class WasmTestSuiteRunner {
               () -> {
                 final RuntimeTestExecution result =
                     executeTestCase(testCase, runtime, runtimeType, options);
-                results.put(testCase.getName(), result);
+                results.put(testCase.getTestName(), result);
                 return null;
               });
       futures.add(future);
@@ -246,7 +247,7 @@ public final class WasmTestSuiteRunner {
 
     for (final WasmTestCase testCase : testCases) {
       final RuntimeTestExecution result = executeTestCase(testCase, runtime, runtimeType, options);
-      results.put(testCase.getName(), result);
+      results.put(testCase.getTestName(), result);
     }
   }
 
@@ -278,7 +279,7 @@ public final class WasmTestSuiteRunner {
 
         LOGGER.fine(
             "Test "
-                + testCase.getName()
+                + testCase.getTestName()
                 + " completed successfully with "
                 + runtimeType
                 + " in "
@@ -294,7 +295,7 @@ public final class WasmTestSuiteRunner {
         if (retryCount <= options.getMaxRetryAttempts()) {
           LOGGER.warning(
               "Test "
-                  + testCase.getName()
+                  + testCase.getTestName()
                   + " failed (attempt "
                   + retryCount
                   + "): "
@@ -314,7 +315,7 @@ public final class WasmTestSuiteRunner {
     final Duration duration = Duration.between(startTime, Instant.now());
     LOGGER.warning(
         "Test "
-            + testCase.getName()
+            + testCase.getTestName()
             + " failed after "
             + options.getMaxRetryAttempts()
             + " attempts with "
@@ -337,7 +338,7 @@ public final class WasmTestSuiteRunner {
       throws Exception {
     // Validate that the module bytes are valid WebAssembly
     if (!WasmTestSuiteLoader.isValidWasmModule(testCase.getModuleBytes())) {
-      throw new IllegalArgumentException("Invalid WebAssembly module: " + testCase.getName());
+      throw new IllegalArgumentException("Invalid WebAssembly module: " + testCase.getTestName());
     }
 
     // Create engine and store
@@ -349,10 +350,10 @@ public final class WasmTestSuiteRunner {
       final var module = engine.compileModule(testCase.getModuleBytes());
 
       // Instantiate the module
-      final var instance = store.instantiate(module);
+      final var instance = module.instantiate(store, ImportMap.empty());
 
       // Basic validation - module should instantiate successfully
-      return "Module " + testCase.getName() + " instantiated successfully";
+      return "Module " + testCase.getTestName() + " instantiated successfully";
 
     } finally {
       // Clean up resources
@@ -391,7 +392,7 @@ public final class WasmTestSuiteRunner {
       final WasmTestCase testCase, final TestExecutionOptions options) {
     // Check skip patterns
     for (final Pattern skipPattern : DEFAULT_SKIP_PATTERNS) {
-      if (skipPattern.matcher(testCase.getName()).matches()) {
+      if (skipPattern.matcher(testCase.getTestName()).matches()) {
         return false;
       }
     }
@@ -406,12 +407,12 @@ public final class WasmTestSuiteRunner {
     // Check include patterns
     if (!options.getIncludePatterns().isEmpty()) {
       return options.getIncludePatterns().stream()
-          .anyMatch(pattern -> pattern.matcher(testCase.getName()).matches());
+          .anyMatch(pattern -> pattern.matcher(testCase.getTestName()).matches());
     }
 
     // Check exclude patterns
     return options.getExcludePatterns().stream()
-        .noneMatch(pattern -> pattern.matcher(testCase.getName()).matches());
+        .noneMatch(pattern -> pattern.matcher(testCase.getTestName()).matches());
   }
 
   /**

@@ -21,13 +21,13 @@ class PerformanceOptimizationTest {
     PerformanceMonitor.reset();
     CompilationCache.clear();
     OptimizedMarshalling.reset();
-    NativeObjectPool.clearAllPools();
+    // Note: Not clearing pools in setup as tests need them available
   }
 
   @AfterEach
   void tearDown() {
-    // Clean up after tests
-    NativeObjectPool.clearAllPools();
+    // Clean up after tests - clear pool contents but don't close the pools
+    // as subsequent tests may need them
   }
 
   @Test

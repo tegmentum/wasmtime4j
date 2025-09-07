@@ -34,7 +34,7 @@ class JniErrorHandlingTest {
       JniException exception = JniExceptionMapper.mapNativeError(errorCode, "test message");
 
       assertNotNull(exception, "Error code " + errorCode + " should map to exception");
-      assertEquals(errorCode, exception.getErrorCode(), "Error code should be preserved");
+      assertEquals(errorCode, exception.getNativeErrorCode(), "Error code should be preserved");
       assertTrue(
           exception.getMessage().contains("test message"),
           "Exception should contain original message");
@@ -295,7 +295,7 @@ class JniErrorHandlingTest {
                         JniExceptionMapper.mapNativeError(
                             errorCode, "Thread " + threadId + " iteration " + j);
                     assertNotNull(exception);
-                    assertEquals(errorCode, exception.getErrorCode());
+                    assertEquals(errorCode, exception.getNativeErrorCode());
                   }
                 } catch (Exception e) {
                   exceptions[threadId] = e;
@@ -317,7 +317,11 @@ class JniErrorHandlingTest {
   @DisplayName("Large message handling")
   void testLargeMessageHandling() {
     // Test very long error message
-    String longMessage = "x".repeat(10000);
+    StringBuilder sb = new StringBuilder(10000);
+    for (int i = 0; i < 10000; i++) {
+      sb.append("x");
+    }
+    String longMessage = sb.toString();
     JniException exception = JniExceptionMapper.mapNativeError(-1, longMessage);
 
     assertNotNull(exception);

@@ -117,15 +117,15 @@ public final class WasmPerformanceTestFramework {
 
     for (final WasmTestCase testCase : testCases) {
       try {
-        LOGGER.fine("Benchmarking " + testCase.getName() + " with " + runtimeType);
+        LOGGER.fine("Benchmarking " + testCase.getTestName() + " with " + runtimeType);
         final PerformanceBenchmarkResult result =
             benchmarkTestCase(testCase, runtime, runtimeType, config);
-        results.put(testCase.getName(), result);
+        results.put(testCase.getTestName(), result);
 
       } catch (final Exception e) {
         LOGGER.warning(
             "Performance test failed for "
-                + testCase.getName()
+                + testCase.getTestName()
                 + " with "
                 + runtimeType
                 + ": "
@@ -133,8 +133,8 @@ public final class WasmPerformanceTestFramework {
 
         // Record failed benchmark
         final PerformanceBenchmarkResult failedResult =
-            PerformanceBenchmarkResult.failed(testCase.getName(), runtimeType, e);
-        results.put(testCase.getName(), failedResult);
+            PerformanceBenchmarkResult.failed(testCase.getTestName(), runtimeType, e);
+        results.put(testCase.getTestName(), failedResult);
       }
     }
 
@@ -159,18 +159,18 @@ public final class WasmPerformanceTestFramework {
       throws Exception {
 
     final PerformanceBenchmarkResult.Builder resultBuilder =
-        new PerformanceBenchmarkResult.Builder(testCase.getName(), runtimeType);
+        new PerformanceBenchmarkResult.Builder(testCase.getTestName(), runtimeType);
 
     // Validate test module
     if (!WasmTestSuiteLoader.isValidWasmModule(testCase.getModuleBytes())) {
-      throw new IllegalArgumentException("Invalid WebAssembly module: " + testCase.getName());
+      throw new IllegalArgumentException("Invalid WebAssembly module: " + testCase.getTestName());
     }
 
     // Prepare WebAssembly components
     final var engine = runtime.createEngine();
     final var store = engine.createStore();
     final var module = engine.compileModule(testCase.getModuleBytes());
-    final var instance = store.instantiate(module);
+    final var instance = module.instantiate(store);
 
     try {
       // Warmup phase
@@ -188,7 +188,7 @@ public final class WasmPerformanceTestFramework {
             "Benchmark run "
                 + (run + 1)
                 + " for "
-                + testCase.getName()
+                + testCase.getTestName()
                 + ": "
                 + benchmarkRun.getAverageExecutionTime().toNanos()
                 + "ns avg");
