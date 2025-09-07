@@ -192,6 +192,7 @@ pub mod module {
     }
 
     impl PanamaByteArrayConverter {
+        /// Creates a new PanamaByteArrayConverter
         pub unsafe fn new(data: *const u8, len: usize) -> Self {
             Self { data, len }
         }
@@ -225,6 +226,7 @@ pub mod module {
     }
 
     impl PanamaStringConverter {
+        /// Creates a new PanamaStringConverter
         pub unsafe fn new(string_ptr: *const c_char) -> Self {
             Self { string_ptr }
         }

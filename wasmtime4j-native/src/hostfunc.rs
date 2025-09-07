@@ -41,6 +41,7 @@ pub struct HostFunction {
     /// WebAssembly function type signature
     pub func_type: FuncType,
     /// Weak reference to avoid circular dependency with store
+    #[allow(dead_code)]
     store_weak: Weak<Mutex<wasmtime::Store<StoreData>>>,
     /// Callback interface for language-specific implementations
     callback: Box<dyn HostFunctionCallback + Send + Sync>,
