@@ -715,7 +715,7 @@ pub mod jni_utils {
 
     #[cfg(feature = "jni-bindings")]
     /// Execute operation with JNI exception throwing, returning default value on error
-    pub fn jni_try_default<F, T>(env: &jni::JNIEnv, default_value: T, operation: F) -> T
+    pub fn jni_try_default<F, T>(_env: &jni::JNIEnv, default_value: T, operation: F) -> T
     where
         F: FnOnce() -> WasmtimeResult<T>,
     {
