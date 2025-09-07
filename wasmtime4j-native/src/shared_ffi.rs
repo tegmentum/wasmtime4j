@@ -26,7 +26,8 @@
 //! let native_strategy = strategy.to_native();
 //! ```
 
-use crate::engine::{Strategy, OptLevel, WasmFeature};
+use wasmtime::{Strategy, OptLevel};
+use crate::engine::WasmFeature;
 use crate::error::{WasmtimeResult, WasmtimeError};
 use std::os::raw::c_void;
 
@@ -77,9 +78,9 @@ impl ParameterConverter<Strategy> for FfiStrategy {
         match value {
             0 => Ok(Strategy::Auto),
             1 => Ok(Strategy::Cranelift),
-            _ => Err(WasmtimeError::InvalidParameter(
-                format!("Invalid strategy value: {}. Expected 0 (Auto) or 1 (Cranelift)", value)
-            )),
+            _ => Err(WasmtimeError::InvalidParameter {
+                message: format!("Invalid strategy value: {}. Expected 0 (Auto) or 1 (Cranelift)", value)
+            }),
         }
     }
     
@@ -87,15 +88,16 @@ impl ParameterConverter<Strategy> for FfiStrategy {
         match enum_value {
             Strategy::Auto => 0,
             Strategy::Cranelift => 1,
+            _ => 1, // Default to Cranelift for unknown strategies
         }
     }
     
     fn validate(value: i32) -> WasmtimeResult<()> {
         match value {
             0 | 1 => Ok(()),
-            _ => Err(WasmtimeError::InvalidParameter(
-                format!("Invalid strategy value: {}. Expected 0 (Auto) or 1 (Cranelift)", value)
-            )),
+            _ => Err(WasmtimeError::InvalidParameter {
+                message: format!("Invalid strategy value: {}. Expected 0 (Auto) or 1 (Cranelift)", value)
+            }),
         }
     }
 }
@@ -114,6 +116,7 @@ impl FfiStrategy {
         match strategy {
             Strategy::Auto => FfiStrategy::Auto,
             Strategy::Cranelift => FfiStrategy::Cranelift,
+            _ => FfiStrategy::Cranelift, // Default to Cranelift for unknown strategies
         }
     }
 }
@@ -133,9 +136,9 @@ impl ParameterConverter<OptLevel> for FfiOptLevel {
             0 => Ok(OptLevel::None),
             1 => Ok(OptLevel::Speed),
             2 => Ok(OptLevel::SpeedAndSize),
-            _ => Err(WasmtimeError::InvalidParameter(
-                format!("Invalid optimization level: {}. Expected 0 (None), 1 (Speed), or 2 (SpeedAndSize)", value)
-            )),
+            _ => Err(WasmtimeError::InvalidParameter {
+                message: format!("Invalid optimization level: {}. Expected 0 (None), 1 (Speed), or 2 (SpeedAndSize)", value)
+            }),
         }
     }
     
@@ -144,15 +147,16 @@ impl ParameterConverter<OptLevel> for FfiOptLevel {
             OptLevel::None => 0,
             OptLevel::Speed => 1,
             OptLevel::SpeedAndSize => 2,
+            _ => 1, // Default to Speed for any new variants
         }
     }
     
     fn validate(value: i32) -> WasmtimeResult<()> {
         match value {
             0..=2 => Ok(()),
-            _ => Err(WasmtimeError::InvalidParameter(
-                format!("Invalid optimization level: {}. Expected 0 (None), 1 (Speed), or 2 (SpeedAndSize)", value)
-            )),
+            _ => Err(WasmtimeError::InvalidParameter {
+                message: format!("Invalid optimization level: {}. Expected 0 (None), 1 (Speed), or 2 (SpeedAndSize)", value)
+            }),
         }
     }
 }
@@ -173,6 +177,7 @@ impl FfiOptLevel {
             OptLevel::None => FfiOptLevel::None,
             OptLevel::Speed => FfiOptLevel::Speed,
             OptLevel::SpeedAndSize => FfiOptLevel::SpeedAndSize,
+            _ => FfiOptLevel::Speed, // Default to Speed for any new variants
         }
     }
 }
@@ -196,9 +201,9 @@ impl ParameterConverter<WasmFeature> for FfiWasmFeature {
             2 => Ok(WasmFeature::Simd),
             3 => Ok(WasmFeature::BulkMemory),
             4 => Ok(WasmFeature::MultiValue),
-            _ => Err(WasmtimeError::InvalidParameter(
-                format!("Invalid WASM feature: {}. Expected 0-4", value)
-            )),
+            _ => Err(WasmtimeError::InvalidParameter {
+                message: format!("Invalid WASM feature: {}. Expected 0-4", value)
+            }),
         }
     }
     
@@ -215,9 +220,9 @@ impl ParameterConverter<WasmFeature> for FfiWasmFeature {
     fn validate(value: i32) -> WasmtimeResult<()> {
         match value {
             0..=4 => Ok(()),
-            _ => Err(WasmtimeError::InvalidParameter(
-                format!("Invalid WASM feature: {}. Expected 0-4", value)
-            )),
+            _ => Err(WasmtimeError::InvalidParameter {
+                message: format!("Invalid WASM feature: {}. Expected 0-4", value)
+            }),
         }
     }
 }
@@ -346,7 +351,9 @@ pub mod validation {
     /// Validate that a pointer is not null
     pub fn validate_not_null<T>(ptr: *const T, name: &str) -> WasmtimeResult<()> {
         if ptr.is_null() {
-            Err(WasmtimeError::InvalidParameter(format!("{} cannot be null", name)))
+            Err(WasmtimeError::InvalidParameter {
+                message: format!("{} cannot be null", name)
+            })
         } else {
             Ok(())
         }
@@ -355,9 +362,9 @@ pub mod validation {
     /// Validate array bounds
     pub fn validate_array_bounds(array_len: usize, index: usize, name: &str) -> WasmtimeResult<()> {
         if index >= array_len {
-            Err(WasmtimeError::InvalidParameter(
-                format!("{} index {} out of bounds (length: {})", name, index, array_len)
-            ))
+            Err(WasmtimeError::InvalidParameter {
+                message: format!("{} index {} out of bounds (length: {})", name, index, array_len)
+            })
         } else {
             Ok(())
         }
@@ -366,9 +373,9 @@ pub mod validation {
     /// Validate that a slice has valid bounds
     pub fn validate_slice_bounds<T>(slice: &[T], start: usize, len: usize, name: &str) -> WasmtimeResult<()> {
         if start >= slice.len() || start.saturating_add(len) > slice.len() {
-            Err(WasmtimeError::InvalidParameter(
-                format!("{} slice bounds invalid: start={}, len={}, slice_len={}", name, start, len, slice.len())
-            ))
+            Err(WasmtimeError::InvalidParameter {
+                message: format!("{} slice bounds invalid: start={}, len={}, slice_len={}", name, start, len, slice.len())
+            })
         } else {
             Ok(())
         }
@@ -421,9 +428,9 @@ pub mod component {
         validation::validate_not_null(engine_ptr, "component_engine")?;
         
         if component_bytes.is_empty() {
-            return Err(WasmtimeError::InvalidParameter(
-                "Component bytes cannot be empty".to_string()
-            ));
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Component bytes cannot be empty".to_string()
+            });
         }
 
         let engine = unsafe { crate::component::core::get_component_engine_ref(engine_ptr)? };
@@ -586,22 +593,24 @@ pub mod memory {
         
         let mut store = unsafe { &mut *(store_ptr as *mut Store) };
         
-        let mut config = MemoryConfig::new(initial_pages as u64);
+        let mut builder = MemoryBuilder::new(initial_pages as u64);
         
         if maximum_pages >= 0 {
-            config = config.maximum_pages(maximum_pages as u64);
+            builder = builder.maximum_pages(maximum_pages as u64);
         }
         
         if is_shared {
-            config = config.shared();
+            builder = builder.shared();
         }
         
-        config = config.memory_index(memory_index);
+        builder = builder.memory_index(memory_index);
         
         if !name.is_empty() {
             let name_str = unsafe { name.get_string()? };
-            config = config.name(name_str);
+            builder = builder.name(name_str);
         }
+        
+        let config = MemoryConfig::from(builder);
         
         Memory::new_with_config(store, config).map(|memory| Box::new(memory))
     }
@@ -687,7 +696,7 @@ pub mod memory {
         
         let memory = unsafe { &*(memory_ptr as *const Memory) };
         let store = unsafe { &*(store_ptr as *const Store) };
-        memory.read_typed::<u32>(store, offset, MemoryDataType::U32)
+        memory.read_typed::<u32>(store, offset, MemoryDataType::U32Le)
     }
 
     /// Shared implementation for writing typed memory data
@@ -702,7 +711,7 @@ pub mod memory {
         
         let memory = unsafe { &*(memory_ptr as *const Memory) };
         let mut store = unsafe { &mut *(store_ptr as *mut Store) };
-        memory.write_typed(store, offset, value, MemoryDataType::U32)
+        memory.write_typed(store, offset, value, MemoryDataType::U32Le)
     }
 
     /// Shared implementation for getting memory usage
@@ -732,8 +741,8 @@ pub mod memory {
         validation::validate_not_null(memory_ptr, "memory")?;
         
         let registry = unsafe { &*(registry_ptr as *const MemoryRegistry) };
-        let memory = unsafe { &*(memory_ptr as *const Memory) };
-        registry.register(memory.clone())
+        let memory = unsafe { (memory_ptr as *const Memory).read() };
+        registry.register(memory)
     }
 
     /// Shared implementation for getting memory from registry
@@ -822,7 +831,8 @@ pub mod memory {
 /// eliminating code duplication between interface implementations while maintaining
 /// defensive programming practices and consistent error handling.
 pub mod global {
-    use crate::global::{Global, GlobalValue, GlobalMetadata, GlobalType, core};
+    use crate::global::{Global, GlobalValue, GlobalMetadata, core};
+    use wasmtime::GlobalType;
     use crate::store::Store;
     use crate::error::{WasmtimeResult, WasmtimeError};
     use std::os::raw::c_void;
@@ -849,13 +859,14 @@ pub mod global {
                 1 => Ok(GlobalValue::I64(self.i64_value)),
                 2 => Ok(GlobalValue::F32(self.f32_value)),
                 3 => Ok(GlobalValue::F64(self.f64_value)),
-                4 => Ok(GlobalValue::V128(self.v128_value)),
+                4 => Ok(GlobalValue::V128(self.v128_value.to_le_bytes())),
                 5 => Ok(GlobalValue::AnyRef(None)),
                 6 => Ok(GlobalValue::FuncRef(None)),
                 7 => Ok(GlobalValue::ExternRef(None)),
-                _ => Err(WasmtimeError::InvalidParameter(
+                _ => Err(WasmtimeError::InvalidParameter {
+                message:
                     format!("Invalid global value type: {}", self.value_type)
-                )),
+                }),
             }
         }
 
@@ -900,7 +911,7 @@ pub mod global {
                     i64_value: 0,
                     f32_value: 0.0,
                     f64_value: 0.0,
-                    v128_value: *v,
+                    v128_value: u128::from_le_bytes(*v),
                 },
                 GlobalValue::AnyRef(_) => FfiGlobalValue {
                     value_type: 5,
@@ -950,9 +961,9 @@ pub mod global {
             3 => ValType::F64,
             4 => ValType::V128,
             5 | 6 | 7 => ValType::ANYREF,
-            _ => return Err(WasmtimeError::InvalidParameter(
-                format!("Invalid value type: {}", value_type)
-            )),
+            _ => return Err(WasmtimeError::InvalidParameter {
+                message: format!("Invalid value type: {}", value_type)
+            }),
         };
 
         let mutability = if is_mutable { 
@@ -1042,11 +1053,12 @@ pub mod global {
 /// eliminating code duplication between interface implementations while maintaining
 /// defensive programming practices and consistent error handling.
 pub mod table {
-    use crate::table::{Table, TableElement, TableMetadata, TableType, ReferenceType, core};
+    use crate::table::{Table, TableElement, TableMetadata, core};
+    use wasmtime::{TableType, ValType, RefType};
+    use crate::global::ReferenceType;
     use crate::store::Store;
     use crate::error::{WasmtimeResult, WasmtimeError};
     use std::os::raw::c_void;
-    use wasmtime::ValType;
     use super::{PointerReturnConverter, ReturnValueConverter, IntegerReturnConverter, validation};
 
     /// FFI-compatible representation of TableElement
@@ -1064,9 +1076,10 @@ pub mod table {
                 0 => Ok(TableElement::FuncRef(None)),
                 1 => Ok(TableElement::ExternRef(None)),
                 2 => Ok(TableElement::AnyRef(None)),
-                _ => Err(WasmtimeError::InvalidParameter(
+                _ => Err(WasmtimeError::InvalidParameter {
+                message:
                     format!("Invalid table element type: {}", self.element_type)
-                )),
+                }),
             }
         }
 
@@ -1100,19 +1113,19 @@ pub mod table {
         
         let store = unsafe { &*(store_ptr as *const Store) };
         
-        // Convert FFI element type to native reference type
-        let ref_type = match element_type {
-            0 => ReferenceType::FuncRef,
-            1 => ReferenceType::ExternRef,
-            2 => ReferenceType::AnyRef,
-            _ => return Err(WasmtimeError::InvalidParameter(
-                format!("Invalid element type: {}", element_type)
-            )),
+        // Convert FFI element type to ValType 
+        let val_type = match element_type {
+            0 => ValType::Ref(RefType::FUNCREF),
+            1 => ValType::Ref(RefType::EXTERNREF), 
+            2 => ValType::Ref(RefType::FUNCREF), // Default AnyRef to FuncRef for now
+            _ => return Err(WasmtimeError::InvalidParameter {
+                message: format!("Invalid element type: {}", element_type)
+            }),
         };
 
         let max_size = if maximum_size < 0 { None } else { Some(maximum_size as u32) };
         
-        core::create_table(store, ref_type, initial_size, max_size, None)
+        core::create_table(store, val_type, initial_size, max_size, None)
     }
 
     /// Shared implementation for getting table size
@@ -1193,7 +1206,7 @@ pub mod table {
         let store = unsafe { &*(store_ptr as *const Store) };
         let native_fill = fill_element.to_native()?;
         
-        core::fill_table(table, store, start_index, count, native_fill)
+        core::fill_table(table, store, start_index, native_fill, count)
     }
 
     /// Shared implementation for getting table metadata
@@ -1270,9 +1283,10 @@ pub mod hostfunc {
         S: super::module::StringConverter,
     {
         if name.is_empty() {
-            return Err(WasmtimeError::InvalidParameter(
+            return Err(WasmtimeError::InvalidParameter {
+                message:
                 "Host function name cannot be empty".to_string()
-            ));
+            });
         }
 
         let name_str = unsafe { name.get_string()? };
@@ -1295,9 +1309,9 @@ pub mod hostfunc {
             3 => ValType::F64,
             4 => ValType::V128,
             5 => ValType::ANYREF,
-            _ => return Err(WasmtimeError::InvalidParameter(
-                format!("Invalid parameter type: {}", val_type)
-            )),
+            _ => return Err(WasmtimeError::InvalidParameter {
+                message: format!("Invalid parameter type: {}", val_type)
+            }),
         };
         
         core::builder_add_param(builder, wasmtime_val_type);
@@ -1320,9 +1334,9 @@ pub mod hostfunc {
             3 => ValType::F64,
             4 => ValType::V128,
             5 => ValType::ANYREF,
-            _ => return Err(WasmtimeError::InvalidParameter(
-                format!("Invalid return type: {}", val_type)
-            )),
+            _ => return Err(WasmtimeError::InvalidParameter {
+                message: format!("Invalid return type: {}", val_type)
+            }),
         };
         
         core::builder_add_result(builder, wasmtime_val_type);
@@ -1426,9 +1440,10 @@ pub mod module {
     {
         // Validate byte array
         if wasm_bytes.is_empty() {
-            return Err(WasmtimeError::InvalidParameter(
+            return Err(WasmtimeError::InvalidParameter {
+                message:
                 "WebAssembly bytes cannot be empty".to_string()
-            ));
+            });
         }
 
         // Get bytes safely and compile
@@ -1449,9 +1464,10 @@ pub mod module {
     {
         // Validate string
         if wat_string.is_empty() {
-            return Err(WasmtimeError::InvalidParameter(
+            return Err(WasmtimeError::InvalidParameter {
+                message:
                 "WAT string cannot be empty".to_string()
-            ));
+            });
         }
 
         // Get string safely and compile
@@ -1468,9 +1484,10 @@ pub mod module {
     {
         // Validate byte array
         if wasm_bytes.is_empty() {
-            return Err(WasmtimeError::InvalidParameter(
+            return Err(WasmtimeError::InvalidParameter {
+                message:
                 "WebAssembly bytes cannot be empty".to_string()
-            ));
+            });
         }
 
         // Get bytes safely and validate
@@ -1500,9 +1517,10 @@ pub mod module {
     {
         // Validate byte array
         if serialized_bytes.is_empty() {
-            return Err(WasmtimeError::InvalidParameter(
+            return Err(WasmtimeError::InvalidParameter {
+                message:
                 "Serialized module bytes cannot be empty".to_string()
-            ));
+            });
         }
 
         // Get bytes safely and deserialize
@@ -1561,9 +1579,10 @@ pub mod module {
         validation::validate_not_null(module_ptr, "module")?;
         
         if export_name.is_empty() {
-            return Err(WasmtimeError::InvalidParameter(
+            return Err(WasmtimeError::InvalidParameter {
+                message:
                 "Export name cannot be empty".to_string()
-            ));
+            });
         }
 
         let module = unsafe { core::get_module_ref(module_ptr)? };
@@ -1715,13 +1734,15 @@ mod tests {
         assert_eq!(code, FFI_SUCCESS);
         assert_eq!(value, true);
         
-        let (code, value) = BooleanReturnConverter::to_ffi_result(Err(WasmtimeError::InvalidParameter("test".to_string())));
+        let (code, value) = BooleanReturnConverter::to_ffi_result(Err(WasmtimeError::InvalidParameter {
+                message:"test".to_string()}));
         assert_eq!(code, FFI_ERROR);
         assert_eq!(value, false);
         
         // Test error code converter
         assert_eq!(BooleanReturnConverter::to_ffi_code(Ok(())), FFI_SUCCESS);
-        assert_eq!(BooleanReturnConverter::to_ffi_code(Err(WasmtimeError::InvalidParameter("test".to_string()))), FFI_ERROR);
+        assert_eq!(BooleanReturnConverter::to_ffi_code(Err(WasmtimeError::InvalidParameter {
+                message:"test".to_string()})), FFI_ERROR);
     }
     
     #[test]

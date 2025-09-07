@@ -49,7 +49,7 @@ pub enum GlobalValue {
     /// 64-bit floating point value
     F64(f64),
     /// 128-bit SIMD vector value
-    V128(u128),
+    V128([u8; 16]),
     /// Function reference
     FuncRef(Option<u64>), // Function ID, None for null reference
     /// External reference
@@ -99,8 +99,8 @@ impl Global {
             message: format!("Failed to acquire global lock: {}", e),
         })?;
 
-        let wasmtime_value = store.with_context_ro(|ctx| {
-            Ok(global.get(&ctx))
+        let wasmtime_value = store.with_context(|ctx| {
+            Ok(global.get(ctx))
         })?;
 
         Self::wasmtime_val_to_global_value(wasmtime_value)
@@ -182,18 +182,17 @@ impl Global {
             GlobalValue::I64(val) => Val::I64(val),
             GlobalValue::F32(val) => Val::F32(val.to_bits()),
             GlobalValue::F64(val) => Val::F64(val.to_bits()),
-            GlobalValue::V128(val) => Val::V128(val),
-            // TODO: Add reference types back when properly supported
-            // GlobalValue::FuncRef(_) => {
-            //     // For now, we only support null function references
-            //     // TODO: Implement proper function reference handling
-            //     Val::FuncRef(None)
-            // },
-            // GlobalValue::ExternRef(_) => {
-            //     // For now, we only support null external references
-            //     // TODO: Implement proper external reference handling
-            //     Val::ExternRef(None)
-            // },
+            GlobalValue::V128(val) => Val::V128(wasmtime::V128::from(u128::from_le_bytes(val))),
+            GlobalValue::FuncRef(_) => {
+                // For now, we only support null function references
+                // TODO: Implement proper function reference handling
+                Val::FuncRef(None)
+            },
+            GlobalValue::ExternRef(_) => {
+                // For now, we only support null external references
+                // TODO: Implement proper external reference handling
+                Val::ExternRef(None)
+            },
             GlobalValue::AnyRef(_) => {
                 // AnyRef is not directly supported by wasmtime::Val
                 return Err(WasmtimeError::Type {
@@ -212,16 +211,25 @@ impl Global {
             Val::I64(val) => GlobalValue::I64(val),
             Val::F32(val) => GlobalValue::F32(f32::from_bits(val)),
             Val::F64(val) => GlobalValue::F64(f64::from_bits(val)),
-            Val::V128(val) => GlobalValue::V128(val),
-            // TODO: Add reference types back when properly supported
-            // Val::FuncRef(func_ref) => {
-            //     // TODO: Implement proper function reference ID mapping
-            //     GlobalValue::FuncRef(func_ref.map(|_| 0))
-            // },
-            // Val::ExternRef(extern_ref) => {
-            //     // TODO: Implement proper external reference ID mapping
-            //     GlobalValue::ExternRef(extern_ref.map(|_| 0))
-            // },
+            Val::V128(val) => GlobalValue::V128(u128::from(val).to_le_bytes()),
+            Val::FuncRef(func_ref) => {
+                // TODO: Implement proper function reference ID mapping
+                GlobalValue::FuncRef(func_ref.map(|_| 0))
+            },
+            Val::ExternRef(extern_ref) => {
+                // TODO: Implement proper external reference ID mapping
+                GlobalValue::ExternRef(extern_ref.map(|_| 0))
+            },
+            Val::AnyRef(_) => {
+                // TODO: Implement proper any reference ID mapping
+                GlobalValue::AnyRef(Some(0))
+            },
+            Val::ExnRef(_) => {
+                // ExnRef is not supported in GlobalValue, return error
+                return Err(WasmtimeError::Type {
+                    message: "ExnRef type not supported in globals".to_string(),
+                });
+            },
         };
 
         Ok(global_value)
@@ -331,10 +339,11 @@ pub mod core {
             ValType::I64 => GlobalValue::I64(i64_value),
             ValType::F32 => GlobalValue::F32(f32_value),
             ValType::F64 => GlobalValue::F64(f64_value),
-            ValType::V128 => GlobalValue::V128(i64_value as u128), // Use i64_value as V128
-            // TODO: Add reference types back when properly supported
-            // ValType::FuncRef => GlobalValue::FuncRef(ref_id),
-            // ValType::ExternRef => GlobalValue::ExternRef(ref_id),
+            ValType::V128 => GlobalValue::V128((i64_value as u128).to_le_bytes()),
+            ValType::Ref(_ref_type) => {
+                // TODO: Discriminate between different reference types
+                GlobalValue::AnyRef(ref_id)
+            },
         };
 
         Ok(global_value)
@@ -347,7 +356,7 @@ pub mod core {
             GlobalValue::I64(val) => (0, *val, 0.0, 0.0, None),
             GlobalValue::F32(val) => (0, 0, *val, 0.0, None),
             GlobalValue::F64(val) => (0, 0, 0.0, *val, None),
-            GlobalValue::V128(val) => (0, *val as i64, 0.0, 0.0, None),
+            GlobalValue::V128(val) => (0, i64::from_le_bytes([val[0], val[1], val[2], val[3], val[4], val[5], val[6], val[7]]), 0.0, 0.0, None),
             GlobalValue::FuncRef(ref_id) => (0, 0, 0.0, 0.0, *ref_id),
             GlobalValue::ExternRef(ref_id) => (0, 0, 0.0, 0.0, *ref_id),
             GlobalValue::AnyRef(ref_id) => (0, 0, 0.0, 0.0, *ref_id),

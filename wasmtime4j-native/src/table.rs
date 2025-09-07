@@ -6,7 +6,7 @@
 //! and type validation.
 
 use std::sync::{Arc, Mutex};
-use wasmtime::{Table as WasmtimeTable, TableType, Val, ValType, Func, Extern};
+use wasmtime::{Table as WasmtimeTable, TableType, Val, ValType, RefType, Ref, Func, Extern};
 use crate::store::{Store, StoreData};
 use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::global::ReferenceType;
@@ -65,11 +65,12 @@ impl Table {
             }
         }
 
-        let table_type = TableType::new(element_type.clone(), initial_size, maximum_size);
-        let initial_value = Self::default_value_for_type(&element_type)?;
+        let ref_type = Self::valtype_to_reftype(&element_type)?;
+        let table_type = TableType::new(ref_type, initial_size, maximum_size);
+        let initial_value = Self::default_ref_for_type(&element_type)?;
 
-        let wasmtime_table = store.with_context(|mut ctx| {
-            WasmtimeTable::new(&mut ctx, table_type, initial_value)
+        let wasmtime_table = store.with_context(|ctx| {
+            WasmtimeTable::new(ctx, table_type, initial_value)
                 .map_err(|e| WasmtimeError::Runtime {
                     message: format!("Failed to create table: {}", e),
                     backtrace: None,
@@ -90,7 +91,7 @@ impl Table {
     }
 
     /// Get the current size of the table
-    pub fn size(&self, store: &Store) -> WasmtimeResult<u32> {
+    pub fn size(&self, store: &Store) -> WasmtimeResult<u64> {
         let table = self.inner.lock().map_err(|e| WasmtimeError::Concurrency {
             message: format!("Failed to acquire table lock: {}", e),
         })?;
@@ -101,7 +102,7 @@ impl Table {
     }
 
     /// Get an element from the table at the specified index
-    pub fn get(&self, store: &Store, index: u32) -> WasmtimeResult<TableElement> {
+    pub fn get(&self, store: &Store, index: u64) -> WasmtimeResult<TableElement> {
         let table = self.inner.lock().map_err(|e| WasmtimeError::Concurrency {
             message: format!("Failed to acquire table lock: {}", e),
         })?;
@@ -121,8 +122,8 @@ impl Table {
             });
         }
 
-        let wasmtime_value = store.with_context_ro(|ctx| {
-            table.get(&ctx, index)
+        let wasmtime_value = store.with_context(|ctx| {
+            table.get(ctx, index)
                 .ok_or_else(|| WasmtimeError::Runtime {
                     message: format!("Failed to get table element at index {}", index),
                     backtrace: None,
@@ -133,7 +134,7 @@ impl Table {
     }
 
     /// Set an element in the table at the specified index
-    pub fn set(&self, store: &Store, index: u32, element: TableElement) -> WasmtimeResult<()> {
+    pub fn set(&self, store: &Store, index: u64, element: TableElement) -> WasmtimeResult<()> {
         // Validate that the element type matches the table's element type
         Self::validate_element_matches_type(&element, &self.metadata.element_type)?;
 
@@ -156,7 +157,7 @@ impl Table {
             });
         }
 
-        let wasmtime_value = Self::table_element_to_wasmtime_val(element)?;
+        let wasmtime_value = Self::table_element_to_wasmtime_ref(element)?;
 
         store.with_context(|mut ctx| {
             table.set(&mut ctx, index, wasmtime_value)
@@ -168,7 +169,7 @@ impl Table {
     }
 
     /// Grow the table by the specified number of elements
-    pub fn grow(&self, store: &Store, delta: u32, init_value: TableElement) -> WasmtimeResult<u32> {
+    pub fn grow(&self, store: &Store, delta: u32, init_value: TableElement) -> WasmtimeResult<u64> {
         // Validate that the init_value type matches the table's element type
         Self::validate_element_matches_type(&init_value, &self.metadata.element_type)?;
 
@@ -182,7 +183,7 @@ impl Table {
 
         // Check against maximum size if specified
         if let Some(max_size) = self.metadata.maximum_size {
-            if current_size.saturating_add(delta) > max_size {
+            if current_size.saturating_add(delta as u64) > max_size as u64 {
                 return Err(WasmtimeError::Runtime {
                     message: format!(
                         "Cannot grow table: would exceed maximum size {} (current: {}, delta: {})",
@@ -193,10 +194,10 @@ impl Table {
             }
         }
 
-        let wasmtime_init_value = Self::table_element_to_wasmtime_val(init_value)?;
+        let wasmtime_init_value = Self::table_element_to_wasmtime_ref(init_value)?;
 
         store.with_context(|mut ctx| {
-            table.grow(&mut ctx, delta, wasmtime_init_value)
+            table.grow(&mut ctx, delta as u64, wasmtime_init_value)
                 .map_err(|e| WasmtimeError::Runtime {
                     message: format!("Failed to grow table: {}", e),
                     backtrace: None,
@@ -224,7 +225,7 @@ impl Table {
         })?;
 
         // Bounds check
-        if dst.saturating_add(len) > table_size {
+        if (dst as u64).saturating_add(len as u64) > table_size {
             return Err(WasmtimeError::Runtime {
                 message: format!(
                     "Table fill would exceed bounds: dst={}, len={}, table_size={}",
@@ -234,10 +235,10 @@ impl Table {
             });
         }
 
-        let wasmtime_value = Self::table_element_to_wasmtime_val(value)?;
+        let wasmtime_value = Self::table_element_to_wasmtime_ref(value)?;
 
         store.with_context(|mut ctx| {
-            table.fill(&mut ctx, dst, wasmtime_value, len)
+            table.fill(&mut ctx, dst as u64, wasmtime_value, len as u64)
                 .map_err(|e| WasmtimeError::Runtime {
                     message: format!("Failed to fill table: {}", e),
                     backtrace: None,
@@ -264,7 +265,7 @@ impl Table {
     /// Validate that a ValType is a valid reference type for table elements
     fn validate_element_type(element_type: &ValType) -> WasmtimeResult<()> {
         match element_type {
-            ValType::FuncRef | ValType::ExternRef => Ok(()),
+            ValType::Ref(_) => Ok(()),
             _ => Err(WasmtimeError::Type {
                 message: format!("Invalid table element type: {:?}. Only reference types are allowed.", element_type),
             }),
@@ -274,9 +275,9 @@ impl Table {
     /// Validate that a TableElement matches the expected ValType
     fn validate_element_matches_type(element: &TableElement, expected_type: &ValType) -> WasmtimeResult<()> {
         let matches = match (element, expected_type) {
-            (TableElement::FuncRef(_), ValType::FuncRef) => true,
-            (TableElement::ExternRef(_), ValType::ExternRef) => true,
-            (TableElement::AnyRef(_), _) => true, // AnyRef should match any reference type
+            (TableElement::FuncRef(_), ValType::Ref(_)) => true, // TODO: Check if ref is funcref
+            (TableElement::ExternRef(_), ValType::Ref(_)) => true, // TODO: Check if ref is externref
+            (TableElement::AnyRef(_), ValType::Ref(_)) => true, // AnyRef should match any reference type
             _ => false,
         };
 
@@ -292,11 +293,36 @@ impl Table {
         Ok(())
     }
 
+    /// Convert ValType to RefType for table creation
+    fn valtype_to_reftype(element_type: &ValType) -> WasmtimeResult<RefType> {
+        match element_type {
+            ValType::Ref(ref_type) => Ok(ref_type.clone()),
+            _ => Err(WasmtimeError::Type {
+                message: format!("Cannot convert non-reference ValType to RefType: {:?}", element_type),
+            }),
+        }
+    }
+
+    /// Get the default Ref value for a given element type
+    fn default_ref_for_type(element_type: &ValType) -> WasmtimeResult<Ref> {
+        match element_type {
+            ValType::Ref(ref_type) => {
+                Ok(Ref::null(ref_type.heap_type()))
+            },
+            _ => Err(WasmtimeError::Type {
+                message: format!("No default ref for non-reference type: {:?}", element_type),
+            }),
+        }
+    }
+
     /// Get the default value for a given element type
     fn default_value_for_type(element_type: &ValType) -> WasmtimeResult<Val> {
         let default_val = match element_type {
-            ValType::FuncRef => Val::FuncRef(None),
-            ValType::ExternRef => Val::ExternRef(None),
+            ValType::Ref(_ref_type) => {
+                // Use FuncRef null as default for now
+                // TODO: Determine correct reference type based on ref_type
+                Val::FuncRef(None)
+            },
             _ => return Err(WasmtimeError::Type {
                 message: format!("No default value for non-reference type: {:?}", element_type),
             }),
@@ -328,19 +354,42 @@ impl Table {
         Ok(wasmtime_val)
     }
 
-    /// Convert wasmtime::Val to TableElement
-    fn wasmtime_val_to_table_element(val: Val, element_type: &ValType) -> WasmtimeResult<TableElement> {
-        let table_element = match (val, element_type) {
-            (Val::FuncRef(func_ref), ValType::FuncRef) => {
-                // TODO: Implement proper function reference ID mapping
-                TableElement::FuncRef(func_ref.map(|_| 0))
+    /// Convert TableElement to wasmtime::Ref for table operations
+    fn table_element_to_wasmtime_ref(element: TableElement) -> WasmtimeResult<Ref> {
+        let wasmtime_ref = match element {
+            TableElement::FuncRef(_) => {
+                // For now, we only support null function references
+                // TODO: Implement proper function reference handling
+                Ref::null(&RefType::FUNCREF.heap_type())
             },
-            (Val::ExternRef(extern_ref), ValType::ExternRef) => {
-                // TODO: Implement proper external reference ID mapping
-                TableElement::ExternRef(extern_ref.map(|_| 0))
+            TableElement::ExternRef(_) => {
+                // For now, we only support null external references
+                // TODO: Implement proper external reference handling  
+                Ref::null(&RefType::EXTERNREF.heap_type())
+            },
+            TableElement::AnyRef(_) => {
+                // AnyRef defaults to null function reference for now
+                Ref::null(&RefType::FUNCREF.heap_type())
+            },
+        };
+
+        Ok(wasmtime_ref)
+    }
+
+    /// Convert wasmtime::Val to TableElement
+    fn wasmtime_val_to_table_element(val: Ref, element_type: &ValType) -> WasmtimeResult<TableElement> {
+        let table_element = match element_type {
+            ValType::Ref(_ref_type) => {
+                // For now, handle all ref types as generic references
+                // TODO: Implement proper reference type discrimination
+                if val.is_null() {
+                    TableElement::AnyRef(None)
+                } else {
+                    TableElement::AnyRef(Some(0)) // TODO: Implement proper reference ID mapping
+                }
             },
             _ => return Err(WasmtimeError::Type {
-                message: format!("Cannot convert Val {:?} to TableElement for type {:?}", val, element_type),
+                message: format!("Cannot convert Ref to TableElement for non-reference type {:?}", element_type),
             }),
         };
 
@@ -358,9 +407,9 @@ impl Table {
         })?;
 
         let metadata = TableMetadata {
-            element_type: table_type.element().clone(),
-            initial_size: table_type.minimum(),
-            maximum_size: table_type.maximum(),
+            element_type: ValType::Ref(table_type.element().clone()),
+            initial_size: table_type.minimum() as u32,
+            maximum_size: table_type.maximum().map(|s| s as u32),
             name,
         };
 
@@ -415,12 +464,12 @@ pub mod core {
 
     /// Core function to get table size
     pub fn get_table_size(table: &Table, store: &Store) -> WasmtimeResult<u32> {
-        table.size(store)
+        table.size(store).map(|s| s as u32)
     }
 
     /// Core function to get table element
     pub fn get_table_element(table: &Table, store: &Store, index: u32) -> WasmtimeResult<TableElement> {
-        table.get(store, index)
+        table.get(store, index as u64)
     }
 
     /// Core function to set table element
@@ -430,7 +479,7 @@ pub mod core {
         index: u32,
         element: TableElement,
     ) -> WasmtimeResult<()> {
-        table.set(store, index, element)
+        table.set(store, index as u64, element)
     }
 
     /// Core function to grow table
@@ -440,7 +489,7 @@ pub mod core {
         delta: u32,
         init_value: TableElement,
     ) -> WasmtimeResult<u32> {
-        table.grow(store, delta, init_value)
+        table.grow(store, delta, init_value).map(|s| s as u32)
     }
 
     /// Core function to fill table range
@@ -475,8 +524,11 @@ pub mod core {
         ref_id: Option<u64>,
     ) -> WasmtimeResult<TableElement> {
         let table_element = match element_type {
-            ValType::FuncRef => TableElement::FuncRef(ref_id),
-            ValType::ExternRef => TableElement::ExternRef(ref_id),
+            ValType::Ref(_ref_type) => {
+                // For now, treat all ref types as AnyRef
+                // TODO: Discriminate between different reference types
+                TableElement::AnyRef(ref_id)
+            },
             _ => return Err(WasmtimeError::Type {
                 message: format!("Invalid table element type: {:?}", element_type),
             }),

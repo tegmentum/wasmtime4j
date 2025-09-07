@@ -9,14 +9,30 @@ use std::sync::{Arc, Mutex, Weak};
 use std::collections::HashMap;
 use std::ffi::{CStr, CString};
 use std::os::raw::{c_char, c_void};
-use wasmtime::{Func, FuncType, Caller, Val, ValType};
+use wasmtime::{Func, FuncType, Caller, Val, ValType, RefType};
 use crate::store::{Store, StoreData};
 use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::instance::WasmValue;
 
+/// Compare ValType values since they don't implement PartialEq
+fn valtype_eq(a: &ValType, b: &ValType) -> bool {
+    match (a, b) {
+        (ValType::I32, ValType::I32) => true,
+        (ValType::I64, ValType::I64) => true,
+        (ValType::F32, ValType::F32) => true,
+        (ValType::F64, ValType::F64) => true,
+        (ValType::V128, ValType::V128) => true,
+        _ => false,
+    }
+}
+
 /// Registry for managing host function callbacks to prevent GC
-static HOST_FUNCTION_REGISTRY: Mutex<HashMap<u64, Arc<HostFunction>>> = Mutex::new(HashMap::new());
+static HOST_FUNCTION_REGISTRY: std::sync::OnceLock<Mutex<HashMap<u64, Arc<HostFunction>>>> = std::sync::OnceLock::new();
 static NEXT_HOST_FUNCTION_ID: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
+
+fn get_host_function_registry() -> &'static Mutex<HashMap<u64, Arc<HostFunction>>> {
+    HOST_FUNCTION_REGISTRY.get_or_init(|| Mutex::new(HashMap::new()))
+}
 
 /// Host function wrapper with callback management
 pub struct HostFunction {
@@ -75,7 +91,7 @@ impl HostFunction {
 
         // Register to prevent GC
         {
-            let mut registry = HOST_FUNCTION_REGISTRY.lock().map_err(|e| WasmtimeError::Concurrency {
+            let mut registry = get_host_function_registry().lock().map_err(|e| WasmtimeError::Concurrency {
                 message: format!("Failed to lock host function registry: {}", e),
             })?;
             registry.insert(id, Arc::clone(&host_func));
@@ -93,12 +109,12 @@ impl HostFunction {
         let func = Func::new(store, func_type, move |_caller, params, results| {
             // Look up the host function in the registry
             let host_function = {
-                let registry = HOST_FUNCTION_REGISTRY.lock().map_err(|e| {
-                    wasmtime::Trap::new(format!("Failed to lock host function registry: {}", e))
+                let registry = get_host_function_registry().lock().map_err(|e| {
+                    anyhow::anyhow!("Failed to lock host function registry: {}", e)
                 })?;
                 
                 registry.get(&host_func_id).cloned().ok_or_else(|| {
-                    wasmtime::Trap::new(format!("Host function not found in registry: {}", host_func_id))
+                    anyhow::anyhow!("Host function not found in registry: {}", host_func_id)
                 })?
             };
 
@@ -107,7 +123,7 @@ impl HostFunction {
             
             // Execute the callback
             let wasm_results = host_function.callback.execute(&wasm_params).map_err(|e| {
-                wasmtime::Trap::new(format!("Host function execution failed: {}", e))
+                anyhow::anyhow!("Host function execution failed: {}", e)
             })?;
             
             // Marshal results back to Wasmtime Val
@@ -138,7 +154,7 @@ impl HostFunction {
 impl Drop for HostFunction {
     fn drop(&mut self) {
         // Remove from registry when dropping
-        if let Ok(mut registry) = HOST_FUNCTION_REGISTRY.lock() {
+        if let Ok(mut registry) = get_host_function_registry().lock() {
             registry.remove(&self.id);
             log::debug!("Removed host function from registry: {}", self.id);
         }
@@ -189,20 +205,21 @@ impl HostFunctionBuilder {
     /// Build the host function
     pub fn build(
         self,
+        engine: &wasmtime::Engine,
         store_weak: Weak<Mutex<wasmtime::Store<StoreData>>>,
     ) -> WasmtimeResult<Arc<HostFunction>> {
         let callback = self.callback.ok_or_else(|| WasmtimeError::Validation {
             message: "Host function callback not set".to_string(),
         })?;
 
-        let func_type = FuncType::new(self.param_types, self.return_types);
+        let func_type = FuncType::new(engine, self.param_types, self.return_types);
         
         HostFunction::new(self.name, func_type, store_weak, callback)
     }
 }
 
 /// Marshal parameters from Wasmtime Val to WasmValue
-fn marshal_params_from_wasmtime(params: &[Val]) -> Result<Vec<WasmValue>, wasmtime::Trap> {
+fn marshal_params_from_wasmtime(params: &[Val]) -> Result<Vec<WasmValue>, anyhow::Error> {
     let mut wasm_params = Vec::with_capacity(params.len());
     
     for param in params {
@@ -211,9 +228,11 @@ fn marshal_params_from_wasmtime(params: &[Val]) -> Result<Vec<WasmValue>, wasmti
             Val::I64(v) => WasmValue::I64(*v),
             Val::F32(v) => WasmValue::F32(f32::from_bits(*v)),
             Val::F64(v) => WasmValue::F64(f64::from_bits(*v)),
-            Val::V128(v) => WasmValue::V128(*v),
-            Val::FuncRef(_) => return Err(wasmtime::Trap::new("FuncRef parameters not yet supported")),
-            Val::ExternRef(_) => return Err(wasmtime::Trap::new("ExternRef parameters not yet supported")),
+            Val::V128(v) => WasmValue::V128(u128::from(*v).to_le_bytes()),
+            Val::FuncRef(_) => return Err(anyhow::anyhow!("FuncRef parameters not yet supported")),
+            Val::ExternRef(_) => return Err(anyhow::anyhow!("ExternRef parameters not yet supported")),
+            Val::AnyRef(_) => return Err(anyhow::anyhow!("AnyRef parameters not yet supported")),
+            Val::ExnRef(_) => return Err(anyhow::anyhow!("ExnRef parameters not yet supported")),
         };
         wasm_params.push(wasm_value);
     }
@@ -225,13 +244,13 @@ fn marshal_params_from_wasmtime(params: &[Val]) -> Result<Vec<WasmValue>, wasmti
 fn marshal_results_to_wasmtime(
     wasm_results: &[WasmValue],
     results: &mut [Val],
-) -> Result<(), wasmtime::Trap> {
+) -> Result<(), anyhow::Error> {
     if wasm_results.len() != results.len() {
-        return Err(wasmtime::Trap::new(format!(
+        return Err(anyhow::anyhow!(
             "Host function returned {} values, expected {}",
             wasm_results.len(),
             results.len()
-        )));
+        ));
     }
 
     for (wasm_result, wasmtime_result) in wasm_results.iter().zip(results.iter_mut()) {
@@ -240,11 +259,11 @@ fn marshal_results_to_wasmtime(
             (WasmValue::I64(v), Val::I64(ref mut r)) => *r = *v,
             (WasmValue::F32(v), Val::F32(ref mut r)) => *r = v.to_bits(),
             (WasmValue::F64(v), Val::F64(ref mut r)) => *r = v.to_bits(),
-            (WasmValue::V128(v), Val::V128(ref mut r)) => *r = *v,
-            _ => return Err(wasmtime::Trap::new(format!(
-                "Type mismatch in host function result: {:?} vs {:?}",
-                wasm_result, wasmtime_result
-            ))),
+            (WasmValue::V128(v), Val::V128(ref mut r)) => *r = wasmtime::V128::from(u128::from_le_bytes(*v)),
+            _ => return Err(anyhow::anyhow!(
+                "Type mismatch in host function result: {:?}",
+                wasm_result
+            )),
         }
     }
     
@@ -275,9 +294,11 @@ pub fn validate_parameter_types(
             WasmValue::F32(_) => ValType::F32,
             WasmValue::F64(_) => ValType::F64,
             WasmValue::V128(_) => ValType::V128,
+            WasmValue::FuncRef => ValType::Ref(RefType::FUNCREF),
+            WasmValue::ExternRef => ValType::Ref(RefType::EXTERNREF),
         };
 
-        if param_type != *expected_type {
+        if !valtype_eq(&param_type, expected_type) {
             return Err(WasmtimeError::Validation {
                 message: format!(
                     "Parameter {} type mismatch: got {:?}, expected {:?}",
@@ -315,9 +336,11 @@ pub fn validate_return_types(
             WasmValue::F32(_) => ValType::F32,
             WasmValue::F64(_) => ValType::F64,
             WasmValue::V128(_) => ValType::V128,
+            WasmValue::FuncRef => ValType::Ref(RefType::FUNCREF),
+            WasmValue::ExternRef => ValType::Ref(RefType::EXTERNREF),
         };
 
-        if result_type != *expected_type {
+        if !valtype_eq(&result_type, expected_type) {
             return Err(WasmtimeError::Validation {
                 message: format!(
                     "Return {} type mismatch: got {:?}, expected {:?}",
@@ -352,7 +375,7 @@ pub mod core {
     
     /// Core function to get host function from registry
     pub fn get_host_function(id: u64) -> WasmtimeResult<Arc<HostFunction>> {
-        let registry = HOST_FUNCTION_REGISTRY.lock().map_err(|e| WasmtimeError::Concurrency {
+        let registry = get_host_function_registry().lock().map_err(|e| WasmtimeError::Concurrency {
             message: format!("Failed to lock host function registry: {}", e),
         })?;
         
@@ -363,7 +386,7 @@ pub mod core {
     
     /// Core function to remove host function from registry
     pub fn remove_host_function(id: u64) -> WasmtimeResult<()> {
-        let mut registry = HOST_FUNCTION_REGISTRY.lock().map_err(|e| WasmtimeError::Concurrency {
+        let mut registry = get_host_function_registry().lock().map_err(|e| WasmtimeError::Concurrency {
             message: format!("Failed to lock host function registry: {}", e),
         })?;
         
@@ -376,7 +399,7 @@ pub mod core {
     
     /// Core function to get registry statistics
     pub fn get_registry_stats() -> WasmtimeResult<(usize, u64)> {
-        let registry = HOST_FUNCTION_REGISTRY.lock().map_err(|e| WasmtimeError::Concurrency {
+        let registry = get_host_function_registry().lock().map_err(|e| WasmtimeError::Concurrency {
             message: format!("Failed to lock host function registry: {}", e),
         })?;
         
@@ -426,7 +449,7 @@ mod tests {
             .param(ValType::I32)
             .result(ValType::I32)
             .callback(Box::new(TestCallback))
-            .build(store_weak)
+            .build(&engine, store_weak)
             .expect("Failed to build host function");
 
         assert_eq!(host_func.name(), "test_add");
@@ -487,7 +510,7 @@ mod tests {
             .param(ValType::I32)
             .result(ValType::I32)
             .callback(Box::new(TestCallback))
-            .build(store_weak)
+            .build(&engine, store_weak)
             .expect("Failed to build host function");
         
         let host_func_id = host_func.id();

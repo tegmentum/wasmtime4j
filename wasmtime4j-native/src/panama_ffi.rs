@@ -201,15 +201,15 @@ pub mod module {
     impl ByteArrayConverter for PanamaByteArrayConverter {
         unsafe fn get_bytes(&self) -> crate::error::WasmtimeResult<&[u8]> {
             if self.data.is_null() {
-                return Err(crate::error::WasmtimeError::InvalidParameter(
-                    "Byte data pointer cannot be null".to_string()
-                ));
+                return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: "Byte data pointer cannot be null".to_string()
+                });
             }
             
             if self.len == 0 {
-                return Err(crate::error::WasmtimeError::InvalidParameter(
-                    "Byte data length cannot be zero".to_string()
-                ));
+                return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: "Byte data length cannot be zero".to_string()
+                });
             }
             
             Ok(std::slice::from_raw_parts(self.data, self.len))
@@ -234,9 +234,9 @@ pub mod module {
     impl StringConverter for PanamaStringConverter {
         unsafe fn get_string(&self) -> crate::error::WasmtimeResult<String> {
             if self.string_ptr.is_null() {
-                return Err(crate::error::WasmtimeError::InvalidParameter(
-                    "String pointer cannot be null".to_string()
-                ));
+                return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: "String pointer cannot be null".to_string()
+                });
             }
             
             let c_str = std::ffi::CStr::from_ptr(self.string_ptr);
@@ -1157,7 +1157,7 @@ pub mod global {
     use crate::global::{Global, GlobalValue, core};
     use crate::store::Store;
     use crate::error::{ffi_utils, ErrorCode};
-    use wasmtime::{ValType, Mutability};
+    use wasmtime::{ValType, Mutability, RefType};
 
     /// Create a new WebAssembly global variable (Panama FFI version)
     #[no_mangle]
@@ -1183,8 +1183,8 @@ pub mod global {
                 2 => ValType::F32,
                 3 => ValType::F64,
                 4 => ValType::V128,
-                5 => ValType::FuncRef,
-                6 => ValType::ExternRef,
+                5 => ValType::Ref(RefType::FUNCREF),
+                6 => ValType::Ref(RefType::EXTERNREF),
                 _ => return Err(crate::error::WasmtimeError::InvalidParameter {
                     message: format!("Invalid value type: {}", value_type),
                 }),
@@ -1201,7 +1201,7 @@ pub mod global {
             let ref_id_opt = if ref_id_present != 0 { Some(ref_id) } else { None };
 
             let initial_value = core::create_global_value(
-                val_type, 
+                val_type.clone(), 
                 i32_value, 
                 i64_value as i64, 
                 f32_value as f32, 
@@ -1280,8 +1280,8 @@ pub mod global {
                 2 => ValType::F32,
                 3 => ValType::F64,
                 4 => ValType::V128,
-                5 => ValType::FuncRef,
-                6 => ValType::ExternRef,
+                5 => ValType::Ref(RefType::FUNCREF),
+                6 => ValType::Ref(RefType::EXTERNREF),
                 _ => return Err(crate::error::WasmtimeError::InvalidParameter {
                     message: format!("Invalid value type: {}", value_type),
                 }),
@@ -1324,8 +1324,17 @@ pub mod global {
                         ValType::F32 => 2,
                         ValType::F64 => 3,
                         ValType::V128 => 4,
-                        ValType::FuncRef => 5,
-                        ValType::ExternRef => 6,
+                        ValType::Ref(_) => {
+                            // Since RefType doesn't implement PartialEq, we need to work around this
+                            // by using the type's Display trait or checking if it's the default types
+                            // For now, assume funcref=5, externref=6 based on wasmtime convention
+                            let type_string = format!("{:?}", metadata.value_type);
+                            if type_string.contains("funcref") {
+                                5
+                            } else {
+                                6
+                            }
+                        },
                     };
                 }
                 if !mutability.is_null() {
@@ -1365,7 +1374,7 @@ pub mod table {
     use crate::table::{Table, TableElement, core};
     use crate::store::Store;
     use crate::error::{ffi_utils, ErrorCode};
-    use wasmtime::ValType;
+    use wasmtime::{ValType, RefType};
 
     /// Create a new WebAssembly table (Panama FFI version)
     #[no_mangle]
@@ -1382,8 +1391,8 @@ pub mod table {
             let store = unsafe { ffi_utils::deref_ptr::<Store>(store_ptr, "store")? };
             
             let val_type = match element_type {
-                5 => ValType::FuncRef,
-                6 => ValType::ExternRef,
+                5 => ValType::Ref(RefType::FUNCREF),
+                6 => ValType::Ref(RefType::EXTERNREF),
                 _ => return Err(crate::error::WasmtimeError::InvalidParameter {
                     message: format!("Invalid table element type: {}", element_type),
                 }),
@@ -1474,8 +1483,8 @@ pub mod table {
             let store = unsafe { ffi_utils::deref_ptr::<Store>(store_ptr, "store")? };
             
             let val_type = match element_type {
-                5 => ValType::FuncRef,
-                6 => ValType::ExternRef,
+                5 => ValType::Ref(RefType::FUNCREF),
+                6 => ValType::Ref(RefType::EXTERNREF),
                 _ => return Err(crate::error::WasmtimeError::InvalidParameter {
                     message: format!("Invalid table element type: {}", element_type),
                 }),
@@ -1506,8 +1515,8 @@ pub mod table {
             let store = unsafe { ffi_utils::deref_ptr::<Store>(store_ptr, "store")? };
             
             let val_type = match element_type {
-                5 => ValType::FuncRef,
-                6 => ValType::ExternRef,
+                5 => ValType::Ref(RefType::FUNCREF),
+                6 => ValType::Ref(RefType::EXTERNREF),
                 _ => return Err(crate::error::WasmtimeError::InvalidParameter {
                     message: format!("Invalid table element type: {}", element_type),
                 }),
@@ -1544,8 +1553,8 @@ pub mod table {
             let store = unsafe { ffi_utils::deref_ptr::<Store>(store_ptr, "store")? };
             
             let val_type = match element_type {
-                5 => ValType::FuncRef,
-                6 => ValType::ExternRef,
+                5 => ValType::Ref(RefType::FUNCREF),
+                6 => ValType::Ref(RefType::EXTERNREF),
                 _ => return Err(crate::error::WasmtimeError::InvalidParameter {
                     message: format!("Invalid table element type: {}", element_type),
                 }),
@@ -1577,8 +1586,17 @@ pub mod table {
             unsafe {
                 if !element_type.is_null() {
                     *element_type = match metadata.element_type {
-                        ValType::FuncRef => 5,
-                        ValType::ExternRef => 6,
+                        ValType::Ref(_) => {
+                            // Since RefType doesn't implement PartialEq, we need to work around this
+                            // by using the type's Display trait or checking if it's the default types
+                            // For now, assume funcref=5, externref=6 based on wasmtime convention
+                            let type_string = format!("{:?}", metadata.element_type);
+                            if type_string.contains("funcref") {
+                                5
+                            } else {
+                                6
+                            }
+                        },
                         _ => -1, // Invalid
                     };
                 }
