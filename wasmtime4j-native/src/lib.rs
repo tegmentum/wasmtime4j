@@ -61,7 +61,7 @@ pub use instance::{Instance, InstanceMetadata, ImportBinding, ExportBinding, Was
 pub use hostfunc::{HostFunction, HostFunctionBuilder, HostFunctionCallback, MarshallingResult};
 pub use memory::{Memory, MemoryBuilder, MemoryConfig, MemoryMetadata, MemoryUsage as MemUsage, MemoryDataType, MemoryRegistry, MemoryError};
 pub use global::{Global, GlobalValue, GlobalMetadata, ReferenceType as GlobalReferenceType};
-pub use table::{Table, TableElement, TableMetadata, ReferenceType as TableReferenceType};
+pub use table::{Table, TableElement, TableMetadata};
 
 // Re-export component model types for WASI Preview 2 support
 pub use component::{
