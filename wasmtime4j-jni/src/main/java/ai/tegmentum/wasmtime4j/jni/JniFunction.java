@@ -209,7 +209,7 @@ public final class JniFunction extends JniResource implements WasmFunction {
       }
 
       // Use optimized parameter marshalling
-      final Object[] nativeParams;
+      Object[] nativeParams;
       try {
         nativeParams =
             ai.tegmentum.wasmtime4j.jni.performance.OptimizedMarshalling.marshalParameters(params);
@@ -225,7 +225,7 @@ public final class JniFunction extends JniResource implements WasmFunction {
       }
 
       // Convert native results back to WasmValue array
-      final WasmValue[] results;
+      WasmValue[] results;
       try {
         results =
             ai.tegmentum.wasmtime4j.jni.performance.OptimizedMarshalling.unmarshalResults(

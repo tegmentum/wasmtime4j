@@ -1,7 +1,6 @@
 package ai.tegmentum.wasmtime4j.webassembly;
 
 import ai.tegmentum.wasmtime4j.RuntimeType;
-import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -9,8 +8,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * Comparison of performance results between two WebAssembly runtimes.
- * Provides statistical analysis of performance differences and significance testing.
+ * Comparison of performance results between two WebAssembly runtimes. Provides statistical analysis
+ * of performance differences and significance testing.
  */
 public final class RuntimePerformanceComparison {
   private final RuntimeType runtime1;
@@ -20,9 +19,10 @@ public final class RuntimePerformanceComparison {
   private final double averagePerformanceDifference;
   private final int significantDifferences;
 
-  private RuntimePerformanceComparison(final RuntimeType runtime1,
-                                       final RuntimeType runtime2,
-                                       final Map<String, PerformanceComparison> testComparisons) {
+  private RuntimePerformanceComparison(
+      final RuntimeType runtime1,
+      final RuntimeType runtime2,
+      final Map<String, PerformanceComparison> testComparisons) {
     this.runtime1 = runtime1;
     this.runtime2 = runtime2;
     this.testComparisons = Map.copyOf(testComparisons);
@@ -30,15 +30,18 @@ public final class RuntimePerformanceComparison {
 
     // Calculate aggregate statistics
     if (!testComparisons.isEmpty()) {
-      this.averagePerformanceDifference = testComparisons.values().stream()
-          .filter(comparison -> comparison.isSuccessful())
-          .mapToDouble(PerformanceComparison::getPerformanceDifference)
-          .average()
-          .orElse(0.0);
+      this.averagePerformanceDifference =
+          testComparisons.values().stream()
+              .filter(comparison -> comparison.isSuccessful())
+              .mapToDouble(PerformanceComparison::getPerformanceDifference)
+              .average()
+              .orElse(0.0);
 
-      this.significantDifferences = (int) testComparisons.values().stream()
-          .filter(PerformanceComparison::isStatisticallySignificant)
-          .count();
+      this.significantDifferences =
+          (int)
+              testComparisons.values().stream()
+                  .filter(PerformanceComparison::isStatisticallySignificant)
+                  .count();
     } else {
       this.averagePerformanceDifference = 0.0;
       this.significantDifferences = 0;
@@ -54,10 +57,11 @@ public final class RuntimePerformanceComparison {
    * @param results2 the second runtime results
    * @return the performance comparison
    */
-  public static RuntimePerformanceComparison create(final RuntimeType runtime1,
-                                                    final RuntimeType runtime2,
-                                                    final Map<String, PerformanceBenchmarkResult> results1,
-                                                    final Map<String, PerformanceBenchmarkResult> results2) {
+  public static RuntimePerformanceComparison create(
+      final RuntimeType runtime1,
+      final RuntimeType runtime2,
+      final Map<String, PerformanceBenchmarkResult> results1,
+      final Map<String, PerformanceBenchmarkResult> results2) {
     Objects.requireNonNull(runtime1, "runtime1 cannot be null");
     Objects.requireNonNull(runtime2, "runtime2 cannot be null");
     Objects.requireNonNull(results1, "results1 cannot be null");
@@ -66,9 +70,8 @@ public final class RuntimePerformanceComparison {
     final Map<String, PerformanceComparison> testComparisons = new HashMap<>();
 
     // Find common test cases
-    final Set<String> commonTests = results1.keySet().stream()
-        .filter(results2::containsKey)
-        .collect(Collectors.toSet());
+    final Set<String> commonTests =
+        results1.keySet().stream().filter(results2::containsKey).collect(Collectors.toSet());
 
     for (final String testName : commonTests) {
       final PerformanceBenchmarkResult result1 = results1.get(testName);
@@ -172,18 +175,23 @@ public final class RuntimePerformanceComparison {
    */
   public String createSummaryReport() {
     final StringBuilder report = new StringBuilder();
-    report.append(String.format("Runtime Performance Comparison: %s vs %s\n", 
-        runtime1.name(), runtime2.name()));
+    report.append(
+        String.format(
+            "Runtime Performance Comparison: %s vs %s\n", runtime1.name(), runtime2.name()));
     report.append("=".repeat(50)).append("\n\n");
 
     report.append(String.format("Compared Tests: %d\n", comparedTestCount));
-    report.append(String.format("Average Performance Difference: %.2f%%\n", averagePerformanceDifference * 100));
-    report.append(String.format("Statistically Significant Differences: %d\n", significantDifferences));
+    report.append(
+        String.format(
+            "Average Performance Difference: %.2f%%\n", averagePerformanceDifference * 100));
+    report.append(
+        String.format("Statistically Significant Differences: %d\n", significantDifferences));
 
     if (comparedTestCount > 0) {
       final String fasterRuntime = isRuntime1Faster() ? runtime1.name() : runtime2.name();
       final double absDifference = Math.abs(averagePerformanceDifference * 100);
-      report.append(String.format("Generally Faster: %s (by %.2f%%)\n", fasterRuntime, absDifference));
+      report.append(
+          String.format("Generally Faster: %s (by %.2f%%)\n", fasterRuntime, absDifference));
     }
 
     if (hasSignificantDifferences()) {
@@ -192,12 +200,15 @@ public final class RuntimePerformanceComparison {
 
       testComparisons.entrySet().stream()
           .filter(entry -> entry.getValue().isStatisticallySignificant())
-          .forEach(entry -> {
-            final String testName = entry.getKey();
-            final PerformanceComparison comparison = entry.getValue();
-            report.append(String.format("  %s: %.2f%% difference\n", 
-                testName, comparison.getPerformanceDifference() * 100));
-          });
+          .forEach(
+              entry -> {
+                final String testName = entry.getKey();
+                final PerformanceComparison comparison = entry.getValue();
+                report.append(
+                    String.format(
+                        "  %s: %.2f%% difference\n",
+                        testName, comparison.getPerformanceDifference() * 100));
+              });
     }
 
     return report.toString();
@@ -205,7 +216,8 @@ public final class RuntimePerformanceComparison {
 
   @Override
   public String toString() {
-    return String.format("RuntimePerformanceComparison{%s vs %s, tests=%d, avgDiff=%.2f%%}",
+    return String.format(
+        "RuntimePerformanceComparison{%s vs %s, tests=%d, avgDiff=%.2f%%}",
         runtime1.name(), runtime2.name(), comparedTestCount, averagePerformanceDifference * 100);
   }
 }

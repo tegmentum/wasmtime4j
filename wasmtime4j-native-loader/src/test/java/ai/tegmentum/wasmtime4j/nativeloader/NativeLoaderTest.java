@@ -78,17 +78,19 @@ final class NativeLoaderTest {
   @DisplayName("Should not allow instantiation of utility class")
   void testUtilityClassInstantiation() {
     // Use reflection to try to instantiate the utility class
-    final var exception = assertThrows(
-        InvocationTargetException.class,
-        () -> {
-          final var constructor = NativeLoader.class.getDeclaredConstructor();
-          constructor.setAccessible(true);
-          constructor.newInstance();
-        },
-        "Should throw InvocationTargetException when trying to instantiate utility class");
-    
+    final var exception =
+        assertThrows(
+            InvocationTargetException.class,
+            () -> {
+              final var constructor = NativeLoader.class.getDeclaredConstructor();
+              constructor.setAccessible(true);
+              constructor.newInstance();
+            },
+            "Should throw InvocationTargetException when trying to instantiate utility class");
+
     // Verify the cause is AssertionError
-    assertTrue(exception.getCause() instanceof AssertionError,
+    assertTrue(
+        exception.getCause() instanceof AssertionError,
         "The cause should be AssertionError to prevent instantiation");
   }
 

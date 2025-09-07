@@ -394,7 +394,7 @@ final class ResourceLoadingTest {
   void testResourceOperationErrorConditions() {
     // Test that resource path generation handles null/invalid input appropriately
     final PlatformDetector.PlatformInfo info = PlatformDetector.detect();
-    
+
     // Test null library name - should throw NullPointerException
     assertThrows(
         NullPointerException.class,

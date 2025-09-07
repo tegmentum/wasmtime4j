@@ -8,8 +8,8 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * Results from benchmarking a single WebAssembly test case with a specific runtime.
- * Contains detailed performance metrics, statistics, and failure information.
+ * Results from benchmarking a single WebAssembly test case with a specific runtime. Contains
+ * detailed performance metrics, statistics, and failure information.
  */
 public final class PerformanceBenchmarkResult {
   private final String testName;
@@ -26,9 +26,11 @@ public final class PerformanceBenchmarkResult {
     this.runtimeType = builder.runtimeType;
     this.successful = builder.successful;
     this.warmupTime = builder.warmupTime;
-    this.benchmarkRuns = builder.benchmarkRuns != null ? 
-        java.util.Collections.unmodifiableList(new java.util.ArrayList<>(builder.benchmarkRuns)) :
-        java.util.Collections.emptyList();
+    this.benchmarkRuns =
+        builder.benchmarkRuns != null
+            ? java.util.Collections.unmodifiableList(
+                new java.util.ArrayList<>(builder.benchmarkRuns))
+            : java.util.Collections.emptyList();
     this.statistics = builder.statistics;
     this.failureException = builder.failureException;
     this.benchmarkTime = Instant.now();
@@ -42,13 +44,9 @@ public final class PerformanceBenchmarkResult {
    * @param exception the failure exception
    * @return the failed benchmark result
    */
-  public static PerformanceBenchmarkResult failed(final String testName,
-                                                  final RuntimeType runtimeType,
-                                                  final Exception exception) {
-    return new Builder(testName, runtimeType)
-        .successful(false)
-        .failureException(exception)
-        .build();
+  public static PerformanceBenchmarkResult failed(
+      final String testName, final RuntimeType runtimeType, final Exception exception) {
+    return new Builder(testName, runtimeType).successful(false).failureException(exception).build();
   }
 
   /**
@@ -142,7 +140,9 @@ public final class PerformanceBenchmarkResult {
    * @return the total number of iterations
    */
   public int getTotalIterations() {
-    return benchmarkRuns.stream().mapToInt(WasmPerformanceTestFramework.BenchmarkRun::getIterationCount).sum();
+    return benchmarkRuns.stream()
+        .mapToInt(WasmPerformanceTestFramework.BenchmarkRun::getIterationCount)
+        .sum();
   }
 
   /**
@@ -180,7 +180,7 @@ public final class PerformanceBenchmarkResult {
    */
   public PerformanceComparison compareWith(final PerformanceBenchmarkResult other) {
     Objects.requireNonNull(other, "other cannot be null");
-    
+
     if (!testName.equals(other.testName)) {
       throw new IllegalArgumentException("Cannot compare results from different tests");
     }
@@ -197,7 +197,7 @@ public final class PerformanceBenchmarkResult {
     final StringBuilder report = new StringBuilder();
     report.append("Performance Benchmark Result\n");
     report.append("===========================\n\n");
-    
+
     report.append(String.format("Test: %s\n", testName));
     report.append(String.format("Runtime: %s\n", runtimeType.name()));
     report.append(String.format("Status: %s\n", successful ? "SUCCESSFUL" : "FAILED"));
@@ -205,29 +205,46 @@ public final class PerformanceBenchmarkResult {
 
     if (successful) {
       report.append(String.format("Warmup Time: %.3fms\n", warmupTime.toNanos() / 1_000_000.0));
-      report.append(String.format("Total Benchmark Time: %.3fs\n", getTotalBenchmarkTime().toMillis() / 1000.0));
+      report.append(
+          String.format(
+              "Total Benchmark Time: %.3fs\n", getTotalBenchmarkTime().toMillis() / 1000.0));
       report.append(String.format("Total Iterations: %d\n", getTotalIterations()));
       report.append(String.format("Benchmark Runs: %d\n\n", benchmarkRuns.size()));
 
       // Performance statistics
       report.append("Performance Statistics:\n");
       report.append("-----------------------\n");
-      report.append(String.format("Mean Execution Time: %.3fms\n", 
-          statistics.getMeanExecutionTime().toNanos() / 1_000_000.0));
-      report.append(String.format("Median Execution Time: %.3fms\n", 
-          statistics.getMedianExecutionTime().toNanos() / 1_000_000.0));
-      report.append(String.format("Min Execution Time: %.3fms\n", 
-          statistics.getMinExecutionTime().toNanos() / 1_000_000.0));
-      report.append(String.format("Max Execution Time: %.3fms\n", 
-          statistics.getMaxExecutionTime().toNanos() / 1_000_000.0));
-      report.append(String.format("95th Percentile: %.3fms\n", 
-          statistics.getP95ExecutionTime().toNanos() / 1_000_000.0));
-      report.append(String.format("99th Percentile: %.3fms\n", 
-          statistics.getP99ExecutionTime().toNanos() / 1_000_000.0));
-      report.append(String.format("Standard Deviation: %.3fms\n", 
-          statistics.getStandardDeviation().toNanos() / 1_000_000.0));
-      report.append(String.format("Coefficient of Variation: %.2f%%\n", 
-          statistics.getCoefficientOfVariation()));
+      report.append(
+          String.format(
+              "Mean Execution Time: %.3fms\n",
+              statistics.getMeanExecutionTime().toNanos() / 1_000_000.0));
+      report.append(
+          String.format(
+              "Median Execution Time: %.3fms\n",
+              statistics.getMedianExecutionTime().toNanos() / 1_000_000.0));
+      report.append(
+          String.format(
+              "Min Execution Time: %.3fms\n",
+              statistics.getMinExecutionTime().toNanos() / 1_000_000.0));
+      report.append(
+          String.format(
+              "Max Execution Time: %.3fms\n",
+              statistics.getMaxExecutionTime().toNanos() / 1_000_000.0));
+      report.append(
+          String.format(
+              "95th Percentile: %.3fms\n",
+              statistics.getP95ExecutionTime().toNanos() / 1_000_000.0));
+      report.append(
+          String.format(
+              "99th Percentile: %.3fms\n",
+              statistics.getP99ExecutionTime().toNanos() / 1_000_000.0));
+      report.append(
+          String.format(
+              "Standard Deviation: %.3fms\n",
+              statistics.getStandardDeviation().toNanos() / 1_000_000.0));
+      report.append(
+          String.format(
+              "Coefficient of Variation: %.2f%%\n", statistics.getCoefficientOfVariation()));
       report.append(String.format("Sample Size: %d\n", statistics.getSampleSize()));
 
       // Benchmark run breakdown
@@ -235,21 +252,23 @@ public final class PerformanceBenchmarkResult {
       report.append("----------------------\n");
       for (int i = 0; i < benchmarkRuns.size(); i++) {
         final WasmPerformanceTestFramework.BenchmarkRun run = benchmarkRuns.get(i);
-        report.append(String.format("Run %d: %d iterations, %.3fms average, %.3fs total\n",
-            i + 1,
-            run.getIterationCount(),
-            run.getAverageExecutionTime().toNanos() / 1_000_000.0,
-            run.getTotalRunTime().toMillis() / 1000.0));
+        report.append(
+            String.format(
+                "Run %d: %d iterations, %.3fms average, %.3fs total\n",
+                i + 1,
+                run.getIterationCount(),
+                run.getAverageExecutionTime().toNanos() / 1_000_000.0,
+                run.getTotalRunTime().toMillis() / 1000.0));
       }
 
     } else {
       report.append("Failure Information:\n");
       report.append("-------------------\n");
-      getFailureReason().ifPresent(reason -> 
-          report.append(String.format("Reason: %s\n", reason)));
-      
+      getFailureReason().ifPresent(reason -> report.append(String.format("Reason: %s\n", reason)));
+
       if (failureException != null) {
-        report.append(String.format("Exception: %s\n", failureException.getClass().getSimpleName()));
+        report.append(
+            String.format("Exception: %s\n", failureException.getClass().getSimpleName()));
         if (failureException.getMessage() != null) {
           report.append(String.format("Message: %s\n", failureException.getMessage()));
         }
@@ -266,35 +285,34 @@ public final class PerformanceBenchmarkResult {
    */
   public String createBriefSummary() {
     if (successful) {
-      return String.format("[%s] %s: %.3fms mean (±%.2f%%)", 
-          runtimeType.name(), 
+      return String.format(
+          "[%s] %s: %.3fms mean (±%.2f%%)",
+          runtimeType.name(),
           testName,
           statistics.getMeanExecutionTime().toNanos() / 1_000_000.0,
           statistics.getCoefficientOfVariation());
     } else {
-      return String.format("[%s] %s: FAILED - %s", 
-          runtimeType.name(), 
-          testName,
-          getFailureReason().orElse("Unknown error"));
+      return String.format(
+          "[%s] %s: FAILED - %s",
+          runtimeType.name(), testName, getFailureReason().orElse("Unknown error"));
     }
   }
 
   @Override
   public String toString() {
-    return String.format("PerformanceBenchmarkResult{test=%s, runtime=%s, successful=%s}", 
+    return String.format(
+        "PerformanceBenchmarkResult{test=%s, runtime=%s, successful=%s}",
         testName, runtimeType.name(), successful);
   }
 
-  /**
-   * Builder for PerformanceBenchmarkResult.
-   */
+  /** Builder for PerformanceBenchmarkResult. */
   public static final class Builder {
     private final String testName;
     private final RuntimeType runtimeType;
     private boolean successful = true;
     private Duration warmupTime = Duration.ZERO;
     private List<WasmPerformanceTestFramework.BenchmarkRun> benchmarkRuns;
-    private WasmPerformanceTestFramework.PerformanceStatistics statistics = 
+    private WasmPerformanceTestFramework.PerformanceStatistics statistics =
         WasmPerformanceTestFramework.PerformanceStatistics.empty();
     private Exception failureException;
 
@@ -337,7 +355,8 @@ public final class PerformanceBenchmarkResult {
      * @param benchmarkRuns the benchmark runs
      * @return this builder
      */
-    public Builder benchmarkRuns(final List<WasmPerformanceTestFramework.BenchmarkRun> benchmarkRuns) {
+    public Builder benchmarkRuns(
+        final List<WasmPerformanceTestFramework.BenchmarkRun> benchmarkRuns) {
       this.benchmarkRuns = benchmarkRuns;
       return this;
     }

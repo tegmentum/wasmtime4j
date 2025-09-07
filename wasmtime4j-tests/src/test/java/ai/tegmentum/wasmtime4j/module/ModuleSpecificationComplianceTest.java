@@ -7,8 +7,6 @@ import ai.tegmentum.wasmtime4j.ExportType;
 import ai.tegmentum.wasmtime4j.ImportType;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.RuntimeType;
-import ai.tegmentum.wasmtime4j.exception.CompilationException;
-import ai.tegmentum.wasmtime4j.exception.ValidationException;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.utils.BaseIntegrationTest;
 import ai.tegmentum.wasmtime4j.utils.TestUtils;

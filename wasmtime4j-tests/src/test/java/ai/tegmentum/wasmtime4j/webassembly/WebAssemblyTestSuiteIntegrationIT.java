@@ -17,36 +17,38 @@ import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 
 /**
- * Comprehensive integration test for WebAssembly test suite execution and validation.
- * This test orchestrates the complete testing workflow including test suite download,
- * cross-runtime execution, failure analysis, and performance benchmarking.
+ * Comprehensive integration test for WebAssembly test suite execution and validation. This test
+ * orchestrates the complete testing workflow including test suite download, cross-runtime
+ * execution, failure analysis, and performance benchmarking.
  *
- * <p>This test is designed to be used in CI/CD pipelines and can be configured via
- * system properties to control test execution scope and reporting detail.</p>
+ * <p>This test is designed to be used in CI/CD pipelines and can be configured via system
+ * properties to control test execution scope and reporting detail.
  *
- * <p>System properties for configuration:</p>
+ * <p>System properties for configuration:
+ *
  * <ul>
- *   <li>{@code wasmtime4j.test.download-suites} - Enable automatic test suite download</li>
- *   <li>{@code wasmtime4j.test.performance} - Enable performance testing</li>
- *   <li>{@code wasmtime4j.test.generate-custom} - Enable custom test generation</li>
- *   <li>{@code wasmtime4j.test.failure-analysis} - Enable detailed failure analysis</li>
- *   <li>{@code wasmtime4j.test.success-threshold} - Minimum success rate (default: 95%)</li>
+ *   <li>{@code wasmtime4j.test.download-suites} - Enable automatic test suite download
+ *   <li>{@code wasmtime4j.test.performance} - Enable performance testing
+ *   <li>{@code wasmtime4j.test.generate-custom} - Enable custom test generation
+ *   <li>{@code wasmtime4j.test.failure-analysis} - Enable detailed failure analysis
+ *   <li>{@code wasmtime4j.test.success-threshold} - Minimum success rate (default: 95%)
  * </ul>
  */
 @DisplayName("WebAssembly Test Suite Integration")
 public class WebAssemblyTestSuiteIntegrationIT {
-  private static final Logger LOGGER = Logger.getLogger(WebAssemblyTestSuiteIntegrationIT.class.getName());
+  private static final Logger LOGGER =
+      Logger.getLogger(WebAssemblyTestSuiteIntegrationIT.class.getName());
 
   // Configuration from system properties
-  private static final boolean ENABLE_SUITE_DOWNLOAD = 
+  private static final boolean ENABLE_SUITE_DOWNLOAD =
       Boolean.parseBoolean(System.getProperty("wasmtime4j.test.download-suites", "true"));
-  private static final boolean ENABLE_PERFORMANCE_TESTING = 
+  private static final boolean ENABLE_PERFORMANCE_TESTING =
       Boolean.parseBoolean(System.getProperty("wasmtime4j.test.performance", "true"));
-  private static final boolean ENABLE_CUSTOM_TEST_GENERATION = 
+  private static final boolean ENABLE_CUSTOM_TEST_GENERATION =
       Boolean.parseBoolean(System.getProperty("wasmtime4j.test.generate-custom", "true"));
-  private static final boolean ENABLE_FAILURE_ANALYSIS = 
+  private static final boolean ENABLE_FAILURE_ANALYSIS =
       Boolean.parseBoolean(System.getProperty("wasmtime4j.test.failure-analysis", "true"));
-  private static final double SUCCESS_THRESHOLD = 
+  private static final double SUCCESS_THRESHOLD =
       Double.parseDouble(System.getProperty("wasmtime4j.test.success-threshold", "95.0"));
 
   // Test execution results for cleanup and reporting
@@ -57,15 +59,23 @@ public class WebAssemblyTestSuiteIntegrationIT {
   @BeforeAll
   static void setupTestSuite() throws IOException {
     LOGGER.info("Setting up WebAssembly test suite integration");
-    LOGGER.info("Configuration: download=" + ENABLE_SUITE_DOWNLOAD 
-        + ", performance=" + ENABLE_PERFORMANCE_TESTING 
-        + ", custom=" + ENABLE_CUSTOM_TEST_GENERATION
-        + ", failure-analysis=" + ENABLE_FAILURE_ANALYSIS
-        + ", success-threshold=" + SUCCESS_THRESHOLD + "%");
+    LOGGER.info(
+        "Configuration: download="
+            + ENABLE_SUITE_DOWNLOAD
+            + ", performance="
+            + ENABLE_PERFORMANCE_TESTING
+            + ", custom="
+            + ENABLE_CUSTOM_TEST_GENERATION
+            + ", failure-analysis="
+            + ENABLE_FAILURE_ANALYSIS
+            + ", success-threshold="
+            + SUCCESS_THRESHOLD
+            + "%");
 
     // Initialize test resources
-    final Path testResourcesPath = WasmTestSuiteLoader.getTestSuiteDirectory(
-        WasmTestSuiteLoader.TestSuiteType.CUSTOM_TESTS).getParent();
+    final Path testResourcesPath =
+        WasmTestSuiteLoader.getTestSuiteDirectory(WasmTestSuiteLoader.TestSuiteType.CUSTOM_TESTS)
+            .getParent();
 
     // Download official test suites if enabled
     if (ENABLE_SUITE_DOWNLOAD) {
@@ -83,7 +93,8 @@ public class WebAssemblyTestSuiteIntegrationIT {
     if (ENABLE_CUSTOM_TEST_GENERATION) {
       LOGGER.info("Generating custom Java-specific test cases...");
       final Path customTestsPath = testResourcesPath.resolve("custom-tests");
-      final int generatedTests = JavaSpecificTestGenerator.generateAllJavaSpecificTests(customTestsPath);
+      final int generatedTests =
+          JavaSpecificTestGenerator.generateAllJavaSpecificTests(customTestsPath);
       LOGGER.info("Generated " + generatedTests + " custom test cases");
     }
 
@@ -113,7 +124,7 @@ public class WebAssemblyTestSuiteIntegrationIT {
     LOGGER.info("Starting comprehensive WebAssembly test suite validation");
 
     // Configure test execution options
-    final WasmTestSuiteRunner.TestExecutionOptions.Builder optionsBuilder = 
+    final WasmTestSuiteRunner.TestExecutionOptions.Builder optionsBuilder =
         WasmTestSuiteRunner.TestExecutionOptions.builder()
             .parallelExecution(true)
             .testTimeout(Duration.ofSeconds(30))
@@ -140,15 +151,16 @@ public class WebAssemblyTestSuiteIntegrationIT {
     // Validate success threshold
     final double overallSuccessRate = testSuiteResults.getOverallSuccessRate();
     if (overallSuccessRate < SUCCESS_THRESHOLD) {
-      final String message = String.format(
-          "Test suite success rate %.1f%% is below threshold %.1f%%", 
-          overallSuccessRate, SUCCESS_THRESHOLD);
+      final String message =
+          String.format(
+              "Test suite success rate %.1f%% is below threshold %.1f%%",
+              overallSuccessRate, SUCCESS_THRESHOLD);
       LOGGER.severe(message);
-      
+
       if (ENABLE_FAILURE_ANALYSIS) {
         performFailureAnalysis();
       }
-      
+
       throw new AssertionError(message);
     }
 
@@ -176,42 +188,48 @@ public class WebAssemblyTestSuiteIntegrationIT {
     int inconsistentTests = 0;
 
     for (final WasmTestCase testCase : testCases) {
-      final CrossRuntimeValidationResult validationResult = CrossRuntimeTestRunner.validateConsistency(
-          testCase.getName(),
-          runtime -> {
-            try {
-              // Simplified test execution - in real implementation would use actual WebAssembly operations
-              return "Test completed successfully";
-            } catch (final Exception e) {
-              throw new RuntimeException("Test execution failed", e);
-            }
-          },
-          comparison -> {
-            // Simple consistency check - in real implementation would compare actual results
-            return comparison.getJniExecution().isSuccessful() == 
-                   comparison.getPanamaExecution().isSuccessful();
-          });
+      final CrossRuntimeValidationResult validationResult =
+          CrossRuntimeTestRunner.validateConsistency(
+              testCase.getName(),
+              runtime -> {
+                try {
+                  // Simplified test execution - in real implementation would use actual WebAssembly
+                  // operations
+                  return "Test completed successfully";
+                } catch (final Exception e) {
+                  throw new RuntimeException("Test execution failed", e);
+                }
+              },
+              comparison -> {
+                // Simple consistency check - in real implementation would compare actual results
+                return comparison.getJniExecution().isSuccessful()
+                    == comparison.getPanamaExecution().isSuccessful();
+              });
 
       if (validationResult.isConsistent()) {
         consistentTests++;
       } else {
         inconsistentTests++;
         LOGGER.warning("Inconsistent behavior detected for test: " + testCase.getName());
-        
+
         if (ENABLE_FAILURE_ANALYSIS) {
           LOGGER.warning("Validation details: " + validationResult.getValidationDetails());
         }
       }
     }
 
-    final double consistencyRate = (double) consistentTests / (consistentTests + inconsistentTests) * 100.0;
-    LOGGER.info(String.format("Cross-runtime consistency: %d consistent, %d inconsistent (%.1f%% consistent)",
-        consistentTests, inconsistentTests, consistencyRate));
+    final double consistencyRate =
+        (double) consistentTests / (consistentTests + inconsistentTests) * 100.0;
+    LOGGER.info(
+        String.format(
+            "Cross-runtime consistency: %d consistent, %d inconsistent (%.1f%% consistent)",
+            consistentTests, inconsistentTests, consistencyRate));
 
     // Validate consistency threshold (should be very high for cross-runtime consistency)
     if (consistencyRate < 98.0) {
-      final String message = String.format(
-          "Cross-runtime consistency rate %.1f%% is below required 98%%", consistencyRate);
+      final String message =
+          String.format(
+              "Cross-runtime consistency rate %.1f%% is below required 98%%", consistencyRate);
       LOGGER.severe(message);
       throw new AssertionError(message);
     }
@@ -229,7 +247,7 @@ public class WebAssemblyTestSuiteIntegrationIT {
     final List<WasmTestCase> performanceTestCases = loadPerformanceTestCases();
 
     // Configure performance test settings
-    final WasmPerformanceTestFramework.PerformanceTestConfiguration config = 
+    final WasmPerformanceTestFramework.PerformanceTestConfiguration config =
         WasmPerformanceTestFramework.PerformanceTestConfiguration.builder()
             .warmupIterations(100)
             .measurementIterations(1000)
@@ -238,7 +256,8 @@ public class WebAssemblyTestSuiteIntegrationIT {
             .build();
 
     // Execute performance tests
-    performanceResults = WasmPerformanceTestFramework.executePerformanceTests(performanceTestCases, config);
+    performanceResults =
+        WasmPerformanceTestFramework.executePerformanceTests(performanceTestCases, config);
 
     // Log performance results
     LOGGER.info("Performance benchmarking completed");
@@ -247,9 +266,10 @@ public class WebAssemblyTestSuiteIntegrationIT {
     // Validate performance success rate
     final double performanceSuccessRate = performanceResults.getSuccessRate();
     if (performanceSuccessRate < SUCCESS_THRESHOLD) {
-      final String message = String.format(
-          "Performance test success rate %.1f%% is below threshold %.1f%%", 
-          performanceSuccessRate, SUCCESS_THRESHOLD);
+      final String message =
+          String.format(
+              "Performance test success rate %.1f%% is below threshold %.1f%%",
+              performanceSuccessRate, SUCCESS_THRESHOLD);
       LOGGER.severe(message);
       throw new AssertionError(message);
     }
@@ -279,7 +299,8 @@ public class WebAssemblyTestSuiteIntegrationIT {
     }
 
     // Validate that each test suite type has some tests (if directories exist)
-    for (final WasmTestSuiteLoader.TestSuiteType suiteType : WasmTestSuiteLoader.TestSuiteType.values()) {
+    for (final WasmTestSuiteLoader.TestSuiteType suiteType :
+        WasmTestSuiteLoader.TestSuiteType.values()) {
       final Path suiteDir = WasmTestSuiteLoader.getTestSuiteDirectory(suiteType);
       if (Files.exists(suiteDir) && stats.getTestCount(suiteType) == 0) {
         LOGGER.warning("Test suite directory exists but contains no tests: " + suiteType.name());
@@ -289,22 +310,21 @@ public class WebAssemblyTestSuiteIntegrationIT {
     LOGGER.info("Test suite statistics and coverage validation completed");
   }
 
-  /**
-   * Performs detailed failure analysis on failed test cases.
-   */
+  /** Performs detailed failure analysis on failed test cases. */
   private void performFailureAnalysis() {
     LOGGER.info("Performing detailed failure analysis");
 
-    for (final WasmTestSuiteLoader.TestSuiteType suiteType : WasmTestSuiteLoader.TestSuiteType.values()) {
+    for (final WasmTestSuiteLoader.TestSuiteType suiteType :
+        WasmTestSuiteLoader.TestSuiteType.values()) {
       final WasmTestSuiteResults suiteResults = testSuiteResults.getSuiteResults(suiteType);
       if (suiteResults != null && suiteResults.getFailedTests() > 0) {
-        
+
         LOGGER.info("Analyzing failures for test suite: " + suiteType.name());
-        final TestSuiteFailureReport failureReport = 
+        final TestSuiteFailureReport failureReport =
             WasmTestFailureAnalyzer.generateFailureReport(suiteResults);
-        
+
         failureReports.add(failureReport);
-        
+
         LOGGER.info("Failure analysis for " + suiteType.name() + ":");
         LOGGER.info(failureReport.createComprehensiveReport());
       }
@@ -313,9 +333,7 @@ public class WebAssemblyTestSuiteIntegrationIT {
     LOGGER.info("Failure analysis completed");
   }
 
-  /**
-   * Validates performance consistency between runtimes.
-   */
+  /** Validates performance consistency between runtimes. */
   private void validatePerformanceConsistency() {
     LOGGER.info("Validating performance consistency between runtimes");
 
@@ -326,10 +344,11 @@ public class WebAssemblyTestSuiteIntegrationIT {
     }
 
     // Compare performance between the first two runtimes
-    final RuntimePerformanceComparison comparison = 
+    final RuntimePerformanceComparison comparison =
         performanceResults.compareRuntimes(runtimes.get(0), runtimes.get(1));
 
-    LOGGER.info("Performance comparison between " + runtimes.get(0) + " and " + runtimes.get(1) + ":");
+    LOGGER.info(
+        "Performance comparison between " + runtimes.get(0) + " and " + runtimes.get(1) + ":");
     LOGGER.info(comparison.createSummaryReport());
 
     // Log any significant performance differences
@@ -337,41 +356,38 @@ public class WebAssemblyTestSuiteIntegrationIT {
     LOGGER.info("Performance consistency validation completed");
   }
 
-  /**
-   * Loads a representative sample of test cases for consistency validation.
-   */
+  /** Loads a representative sample of test cases for consistency validation. */
   private List<WasmTestCase> loadRepresentativeTestSample() throws IOException {
     final List<WasmTestCase> testCases = new ArrayList<>();
-    
+
     // Load a sample from each available test suite
-    for (final WasmTestSuiteLoader.TestSuiteType suiteType : WasmTestSuiteLoader.TestSuiteType.values()) {
+    for (final WasmTestSuiteLoader.TestSuiteType suiteType :
+        WasmTestSuiteLoader.TestSuiteType.values()) {
       final List<WasmTestCase> suiteTests = WasmTestSuiteLoader.loadTestSuite(suiteType);
-      
+
       // Take up to 5 tests from each suite for consistency validation
       final int sampleSize = Math.min(5, suiteTests.size());
       testCases.addAll(suiteTests.subList(0, sampleSize));
     }
-    
+
     return testCases;
   }
 
-  /**
-   * Loads test cases suitable for performance testing.
-   */
+  /** Loads test cases suitable for performance testing. */
   private List<WasmTestCase> loadPerformanceTestCases() throws IOException {
     // Load custom tests which are designed for performance testing
-    final List<WasmTestCase> customTests = WasmTestSuiteLoader.loadTestSuite(
-        WasmTestSuiteLoader.TestSuiteType.CUSTOM_TESTS);
+    final List<WasmTestCase> customTests =
+        WasmTestSuiteLoader.loadTestSuite(WasmTestSuiteLoader.TestSuiteType.CUSTOM_TESTS);
 
     // Filter for performance-oriented tests
     return customTests.stream()
-        .filter(testCase -> testCase.getName().contains("performance") || testCase.getName().contains("stress"))
+        .filter(
+            testCase ->
+                testCase.getName().contains("performance") || testCase.getName().contains("stress"))
         .collect(java.util.stream.Collectors.toList());
   }
 
-  /**
-   * Generates a comprehensive final report of all test execution results.
-   */
+  /** Generates a comprehensive final report of all test execution results. */
   private static void generateFinalReport() {
     LOGGER.info("Generating final comprehensive test report");
 
@@ -410,8 +426,12 @@ public class WebAssemblyTestSuiteIntegrationIT {
     finalReport.append("-".repeat(20)).append("\n");
     finalReport.append("Java Version: ").append(System.getProperty("java.version")).append("\n");
     finalReport.append("Java VM: ").append(System.getProperty("java.vm.name")).append("\n");
-    finalReport.append("OS: ").append(System.getProperty("os.name")).append(" ")
-              .append(System.getProperty("os.version")).append("\n");
+    finalReport
+        .append("OS: ")
+        .append(System.getProperty("os.name"))
+        .append(" ")
+        .append(System.getProperty("os.version"))
+        .append("\n");
     finalReport.append("Architecture: ").append(System.getProperty("os.arch")).append("\n");
     finalReport.append("Panama Available: ").append(TestUtils.isPanamaAvailable()).append("\n");
 

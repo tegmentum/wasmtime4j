@@ -26,7 +26,8 @@ public final class PerformanceTestUtils {
    * @param operation the operation to measure
    * @return the duration of the operation
    */
-  public static Duration measureExecutionTimeAndReturnDuration(final String description, final Runnable operation) {
+  public static Duration measureExecutionTimeAndReturnDuration(
+      final String description, final Runnable operation) {
     final Instant start = Instant.now();
     try {
       operation.run();
@@ -35,7 +36,9 @@ public final class PerformanceTestUtils {
       return duration;
     } catch (final Exception e) {
       final Duration duration = Duration.between(start, Instant.now());
-      LOGGER.warning(String.format("%s failed after %d ms: %s", description, duration.toMillis(), e.getMessage()));
+      LOGGER.warning(
+          String.format(
+              "%s failed after %d ms: %s", description, duration.toMillis(), e.getMessage()));
       throw new RuntimeException(e);
     }
   }

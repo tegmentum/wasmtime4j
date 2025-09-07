@@ -20,11 +20,13 @@ package ai.tegmentum.wasmtime4j.nativeloader;
  * Main entry point for native library loading with a fluent builder API.
  *
  * <p>This class provides a comprehensive solution for loading native libraries in Java applications
- * with automatic platform detection, secure resource extraction, and flexible configuration options.
- * It serves as a high-level facade over the underlying {@link NativeLibraryUtils} while providing
- * additional features like security levels, resource path conventions, and fallback strategies.
+ * with automatic platform detection, secure resource extraction, and flexible configuration
+ * options. It serves as a high-level facade over the underlying {@link NativeLibraryUtils} while
+ * providing additional features like security levels, resource path conventions, and fallback
+ * strategies.
  *
  * <p><strong>Key Features:</strong>
+ *
  * <ul>
  *   <li>Automatic platform detection (Linux, Windows, macOS on x86_64 and ARM64)
  *   <li>Multiple security levels with comprehensive validation
@@ -39,7 +41,7 @@ package ai.tegmentum.wasmtime4j.nativeloader;
  * <pre>{@code
  * // Load with default configuration - tries system path first, then extracts from JAR
  * LibraryLoadInfo info = NativeLoader.loadLibrary("wasmtime4j");
- * 
+ *
  * if (info.isLoadedSuccessfully()) {
  *     System.out.println("Library loaded from: " + info.getLoadedFromPath());
  * } else {
@@ -90,9 +92,9 @@ package ai.tegmentum.wasmtime4j.nativeloader;
  *         .tempFilePrefix("myapp-")
  *         .securityLevel(SecurityLevel.MODERATE)
  *         .load();
- *         
+ *
  *     if (!info.isLoadedSuccessfully()) {
- *         throw new RuntimeException("Native library initialization failed: " + 
+ *         throw new RuntimeException("Native library initialization failed: " +
  *             info.getErrorMessage());
  *     }
  * }
@@ -100,20 +102,21 @@ package ai.tegmentum.wasmtime4j.nativeloader;
  * // Error handling with detailed diagnostics
  * public void loadWithDiagnostics(String libraryName) {
  *     LibraryLoadInfo info = NativeLoader.loadLibrary(libraryName);
- *     
+ *
  *     if (!info.isLoadedSuccessfully()) {
  *         System.err.println("Library loading failed:");
  *         System.err.println("  Library: " + info.getLibraryName());
  *         System.err.println("  Platform: " + info.getPlatformInfo().getPlatform());
  *         System.err.println("  Error: " + info.getErrorMessage());
  *         System.err.println("  Attempted paths:");
- *         info.getAttemptedPaths().forEach(path -> 
+ *         info.getAttemptedPaths().forEach(path ->
  *             System.err.println("    - " + path));
  *     }
  * }
  * }</pre>
  *
  * <p><strong>Performance Characteristics:</strong>
+ *
  * <ul>
  *   <li>Platform detection: ~50,000 ops/ms (cached after first call)
  *   <li>Path resolution: ~25,000 ops/ms
@@ -122,8 +125,8 @@ package ai.tegmentum.wasmtime4j.nativeloader;
  * </ul>
  *
  * <p>All operations are thread-safe and configurations are immutable. Builder instances can be
- * reused safely across threads, and each call to {@link NativeLoaderBuilder#load()} creates a
- * new configuration and performs loading independently.
+ * reused safely across threads, and each call to {@link NativeLoaderBuilder#load()} creates a new
+ * configuration and performs loading independently.
  *
  * @since 1.0.0
  * @author Tegmentum AI
@@ -139,6 +142,7 @@ public final class NativeLoader {
    * Loads a native library using default configuration.
    *
    * <p>This convenience method uses default settings suitable for most applications:
+   *
    * <ul>
    *   <li>Security level: MODERATE (balanced security and compatibility)
    *   <li>Path convention: WASMTIME4J ({@code /native/{platform}/{lib}{name}{ext}})
@@ -147,6 +151,7 @@ public final class NativeLoader {
    * </ul>
    *
    * <p><strong>Loading Process:</strong>
+   *
    * <ol>
    *   <li>Attempts to load from system library path using {@code System.loadLibrary()}
    *   <li>If system loading fails, detects current platform automatically
@@ -156,6 +161,7 @@ public final class NativeLoader {
    * </ol>
    *
    * <p><strong>Example Usage:</strong>
+   *
    * <pre>{@code
    * // Simple loading with error checking
    * LibraryLoadInfo info = NativeLoader.loadLibrary("mylib");
@@ -183,6 +189,7 @@ public final class NativeLoader {
    * Creates a new builder for configuring native library loading with advanced options.
    *
    * <p>The builder provides comprehensive configuration options for specialized loading scenarios:
+   *
    * <ul>
    *   <li>Custom security levels (STRICT, MODERATE, PERMISSIVE)
    *   <li>Multiple path conventions with fallback priority
@@ -191,8 +198,10 @@ public final class NativeLoader {
    * </ul>
    *
    * <p><strong>Default Configuration:</strong>
+   *
    * <ul>
-   *   <li>Library name: "wasmtime4j" (must be changed via {@link NativeLoaderBuilder#libraryName(String)})
+   *   <li>Library name: "wasmtime4j" (must be changed via {@link
+   *       NativeLoaderBuilder#libraryName(String)})
    *   <li>Security level: {@link NativeLoaderBuilder.SecurityLevel#MODERATE MODERATE}
    *   <li>Path convention: {@link PathConvention#WASMTIME4J WASMTIME4J}
    *   <li>Temp file prefix: "wasmtime4j-native-"
@@ -200,6 +209,7 @@ public final class NativeLoader {
    * </ul>
    *
    * <p><strong>Configuration Examples:</strong>
+   *
    * <pre>{@code
    * // Basic configuration
    * LibraryLoadInfo info = NativeLoader.builder()

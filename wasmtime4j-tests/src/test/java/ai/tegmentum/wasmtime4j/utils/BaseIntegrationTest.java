@@ -21,7 +21,7 @@ import org.junit.jupiter.api.TestInfo;
 public abstract class BaseIntegrationTest {
 
   protected static final Logger LOGGER = Logger.getLogger(BaseIntegrationTest.class.getName());
-  
+
   private final List<AutoCloseable> cleanupResources = new ArrayList<>();
 
   /**
@@ -165,7 +165,8 @@ public abstract class BaseIntegrationTest {
    * @param <T> the return type of the operation
    * @return the result of the operation
    */
-  protected final <T> T measureExecutionTime(final String description, final Callable<T> operation) {
+  protected final <T> T measureExecutionTime(
+      final String description, final Callable<T> operation) {
     final Instant start = Instant.now();
     try {
       final T result = operation.call();
@@ -174,7 +175,8 @@ public abstract class BaseIntegrationTest {
       return result;
     } catch (final Exception e) {
       final Duration duration = Duration.between(start, Instant.now());
-      LOGGER.warning(description + " failed after " + duration.toMillis() + "ms: " + e.getMessage());
+      LOGGER.warning(
+          description + " failed after " + duration.toMillis() + "ms: " + e.getMessage());
       throw new RuntimeException(e);
     }
   }
@@ -193,7 +195,8 @@ public abstract class BaseIntegrationTest {
       LOGGER.info(description + " completed in " + duration.toMillis() + "ms");
     } catch (final Exception e) {
       final Duration duration = Duration.between(start, Instant.now());
-      LOGGER.warning(description + " failed after " + duration.toMillis() + "ms: " + e.getMessage());
+      LOGGER.warning(
+          description + " failed after " + duration.toMillis() + "ms: " + e.getMessage());
       throw new RuntimeException(e);
     }
   }
@@ -214,7 +217,8 @@ public abstract class BaseIntegrationTest {
       return duration;
     } catch (final Exception e) {
       final Duration duration = Duration.between(start, Instant.now());
-      LOGGER.warning(description + " failed after " + duration.toMillis() + "ms: " + e.getMessage());
+      LOGGER.warning(
+          description + " failed after " + duration.toMillis() + "ms: " + e.getMessage());
       throw new RuntimeException(e);
     }
   }
@@ -226,23 +230,27 @@ public abstract class BaseIntegrationTest {
    * @param operation the operation to time
    * @param description a description of the operation
    */
-  protected final void assertExecutionTime(final Duration maxDuration, final Runnable operation,
-      final String description) {
+  protected final void assertExecutionTime(
+      final Duration maxDuration, final Runnable operation, final String description) {
     final Instant start = Instant.now();
     try {
       operation.run();
       final Duration elapsed = Duration.between(start, Instant.now());
       if (elapsed.compareTo(maxDuration) > 0) {
-        throw new AssertionError(String.format(
-            "%s took %dms, which exceeds the maximum allowed %dms",
-            description, elapsed.toMillis(), maxDuration.toMillis()));
+        throw new AssertionError(
+            String.format(
+                "%s took %dms, which exceeds the maximum allowed %dms",
+                description, elapsed.toMillis(), maxDuration.toMillis()));
       }
-      LOGGER.info(String.format("%s completed in %dms (limit: %dms)",
-          description, elapsed.toMillis(), maxDuration.toMillis()));
+      LOGGER.info(
+          String.format(
+              "%s completed in %dms (limit: %dms)",
+              description, elapsed.toMillis(), maxDuration.toMillis()));
     } catch (final Exception e) {
       final Duration elapsed = Duration.between(start, Instant.now());
-      LOGGER.warning(String.format("%s failed after %dms: %s",
-          description, elapsed.toMillis(), e.getMessage()));
+      LOGGER.warning(
+          String.format(
+              "%s failed after %dms: %s", description, elapsed.toMillis(), e.getMessage()));
       throw new RuntimeException(e);
     }
   }
@@ -258,9 +266,7 @@ public abstract class BaseIntegrationTest {
     }
   }
 
-  /**
-   * Cleans up all registered resources. Should be called after each test.
-   */
+  /** Cleans up all registered resources. Should be called after each test. */
   protected final void cleanupResources() {
     for (final AutoCloseable resource : cleanupResources) {
       try {

@@ -27,8 +27,8 @@ import java.nio.file.Path;
  * compatibility for existing code while enabling the new configurable functionality.
  *
  * @deprecated This class is maintained for backward compatibility. New code should use {@link
- *     ai.tegmentum.wasmtime4j.nativeloader.NativeLibraryUtils} directly for access to
- *     configuration options.
+ *     ai.tegmentum.wasmtime4j.nativeloader.NativeLibraryUtils} directly for access to configuration
+ *     options.
  */
 @Deprecated
 public final class NativeLibraryUtils {
@@ -46,7 +46,6 @@ public final class NativeLibraryUtils {
         final ai.tegmentum.wasmtime4j.nativeloader.NativeLibraryUtils.LibraryLoadInfo delegate) {
       this.delegate = delegate;
     }
-
 
     /** The method used to load the library. */
     public enum LoadingMethod {
@@ -205,7 +204,7 @@ public final class NativeLibraryUtils {
     if (resourcePath == null) {
       throw new NullPointerException("resourcePath cannot be null");
     }
-    
+
     // Convert the wrapper PlatformInfo to native PlatformInfo
     final ai.tegmentum.wasmtime4j.nativeloader.PlatformDetector.PlatformInfo nativePlatformInfo =
         ai.tegmentum.wasmtime4j.nativeloader.PlatformDetector.detect();

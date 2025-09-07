@@ -6,7 +6,7 @@
 
 use std::sync::{Arc, Mutex};
 use wasmtime::{Global as WasmtimeGlobal, GlobalType, Val, Mutability, ValType};
-use crate::store::{Store, StoreData};
+use crate::store::Store;
 use crate::error::{WasmtimeError, WasmtimeResult};
 
 /// Thread-safe wrapper around Wasmtime global with type safety

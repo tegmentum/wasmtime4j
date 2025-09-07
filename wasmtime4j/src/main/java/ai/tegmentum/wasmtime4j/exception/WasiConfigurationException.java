@@ -318,12 +318,12 @@ public class WasiConfigurationException extends WasiException {
     }
 
     final String areaName = configurationArea.name().toLowerCase().replace('_', '-');
-    
+
     // Avoid redundant "-configuration" suffix for areas that already include "configuration"
     if (areaName.endsWith("-configuration")) {
       return areaName;
     }
-    
+
     return areaName + "-configuration";
   }
 

@@ -8,8 +8,8 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Results from executing a single WebAssembly test suite type across multiple runtimes.
- * Provides detailed statistics and cross-runtime comparison data.
+ * Results from executing a single WebAssembly test suite type across multiple runtimes. Provides
+ * detailed statistics and cross-runtime comparison data.
  */
 public final class WasmTestSuiteResults {
   private final WasmTestSuiteLoader.TestSuiteType suiteType;
@@ -23,7 +23,7 @@ public final class WasmTestSuiteResults {
   private WasmTestSuiteResults(final Builder builder) {
     this.suiteType = builder.suiteType;
     this.runtimeResults = Collections.unmodifiableMap(new EnumMap<>(builder.runtimeResults));
-    
+
     // Calculate aggregated statistics
     int testsExecuted = 0;
     int successful = 0;
@@ -33,7 +33,7 @@ public final class WasmTestSuiteResults {
 
     for (final Map<String, RuntimeTestExecution> runtimeExecutions : runtimeResults.values()) {
       testsExecuted += runtimeExecutions.size();
-      
+
       for (final RuntimeTestExecution execution : runtimeExecutions.values()) {
         if (execution.isSuccessful()) {
           successful++;
@@ -42,7 +42,7 @@ public final class WasmTestSuiteResults {
         } else {
           failed++;
         }
-        
+
         totalTime = totalTime.plus(execution.getDuration());
       }
     }
@@ -120,6 +120,32 @@ public final class WasmTestSuiteResults {
   }
 
   /**
+   * Gets tests that failed on any runtime.
+   *
+   * @return map of failed test names to runtime types
+   */
+  public Map<String, java.util.Set<RuntimeType>> getFailedTests() {
+    final Map<String, java.util.Set<RuntimeType>> failedTests = new java.util.HashMap<>();
+
+    for (final Map.Entry<RuntimeType, Map<String, RuntimeTestExecution>> entry :
+        runtimeResults.entrySet()) {
+      final RuntimeType runtimeType = entry.getKey();
+      final Map<String, RuntimeTestExecution> results = entry.getValue();
+
+      for (final Map.Entry<String, RuntimeTestExecution> testEntry : results.entrySet()) {
+        final String testName = testEntry.getKey();
+        final RuntimeTestExecution execution = testEntry.getValue();
+
+        if (!execution.isSuccessful() && !execution.isSkipped()) {
+          failedTests.computeIfAbsent(testName, k -> new java.util.HashSet<>()).add(runtimeType);
+        }
+      }
+    }
+
+    return failedTests;
+  }
+
+  /**
    * Gets the number of skipped tests.
    *
    * @return the number of skipped tests
@@ -187,34 +213,10 @@ public final class WasmTestSuiteResults {
         return false;
       }
     }
-    
+
     return true;
   }
 
-  /**
-   * Gets tests that failed on any runtime.
-   *
-   * @return map of failed test names to runtime types
-   */
-  public Map<String, java.util.Set<RuntimeType>> getFailedTests() {
-    final Map<String, java.util.Set<RuntimeType>> failedTests = new java.util.HashMap<>();
-
-    for (final Map.Entry<RuntimeType, Map<String, RuntimeTestExecution>> entry : runtimeResults.entrySet()) {
-      final RuntimeType runtimeType = entry.getKey();
-      final Map<String, RuntimeTestExecution> results = entry.getValue();
-
-      for (final Map.Entry<String, RuntimeTestExecution> testEntry : results.entrySet()) {
-        final String testName = testEntry.getKey();
-        final RuntimeTestExecution execution = testEntry.getValue();
-
-        if (!execution.isSuccessful() && !execution.isSkipped()) {
-          failedTests.computeIfAbsent(testName, k -> new java.util.HashSet<>()).add(runtimeType);
-        }
-      }
-    }
-
-    return failedTests;
-  }
 
   /**
    * Gets tests that have inconsistent results between runtimes.
@@ -225,9 +227,10 @@ public final class WasmTestSuiteResults {
     final java.util.Set<String> inconsistentTests = new java.util.HashSet<>();
 
     // Get all unique test names
-    final java.util.Set<String> allTestNames = runtimeResults.values().stream()
-        .flatMap(results -> results.keySet().stream())
-        .collect(java.util.stream.Collectors.toSet());
+    final java.util.Set<String> allTestNames =
+        runtimeResults.values().stream()
+            .flatMap(results -> results.keySet().stream())
+            .collect(java.util.stream.Collectors.toSet());
 
     for (final String testName : allTestNames) {
       boolean hasSuccess = false;
@@ -267,21 +270,29 @@ public final class WasmTestSuiteResults {
     report.append(String.format("Successful: %d (%.1f%%)\n", successfulTests, getSuccessRate()));
     report.append(String.format("Failed: %d\n", failedTests));
     report.append(String.format("Skipped: %d\n", skippedTests));
-    report.append(String.format("Total Execution Time: %.2fs\n\n", totalExecutionTime.toMillis() / 1000.0));
+    report.append(
+        String.format("Total Execution Time: %.2fs\n\n", totalExecutionTime.toMillis() / 1000.0));
 
     // Runtime breakdown
     report.append("Runtime Breakdown:\n");
     report.append("------------------\n");
-    for (final Map.Entry<RuntimeType, Map<String, RuntimeTestExecution>> entry : runtimeResults.entrySet()) {
+    for (final Map.Entry<RuntimeType, Map<String, RuntimeTestExecution>> entry :
+        runtimeResults.entrySet()) {
       final RuntimeType runtimeType = entry.getKey();
       final Map<String, RuntimeTestExecution> results = entry.getValue();
 
-      final long successful = results.values().stream().mapToLong(e -> e.isSuccessful() ? 1 : 0).sum();
-      final long failed = results.values().stream().mapToLong(e -> !e.isSuccessful() && !e.isSkipped() ? 1 : 0).sum();
+      final long successful =
+          results.values().stream().mapToLong(e -> e.isSuccessful() ? 1 : 0).sum();
+      final long failed =
+          results.values().stream()
+              .mapToLong(e -> !e.isSuccessful() && !e.isSkipped() ? 1 : 0)
+              .sum();
       final long skipped = results.values().stream().mapToLong(e -> e.isSkipped() ? 1 : 0).sum();
-      
-      report.append(String.format("  %s: %d tests, %d successful, %d failed, %d skipped\n",
-          runtimeType.name(), results.size(), successful, failed, skipped));
+
+      report.append(
+          String.format(
+              "  %s: %d tests, %d successful, %d failed, %d skipped\n",
+              runtimeType.name(), results.size(), successful, failed, skipped));
     }
 
     // Inconsistent tests
@@ -299,20 +310,16 @@ public final class WasmTestSuiteResults {
 
   @Override
   public String toString() {
-    return String.format("WasmTestSuiteResults{suite=%s, tests=%d, successful=%d, failed=%d, skipped=%d}",
-        suiteType.name(),
-        totalTestsExecuted,
-        successfulTests,
-        failedTests,
-        skippedTests);
+    return String.format(
+        "WasmTestSuiteResults{suite=%s, tests=%d, successful=%d, failed=%d, skipped=%d}",
+        suiteType.name(), totalTestsExecuted, successfulTests, failedTests, skippedTests);
   }
 
-  /**
-   * Builder for WasmTestSuiteResults.
-   */
+  /** Builder for WasmTestSuiteResults. */
   public static final class Builder {
     private final WasmTestSuiteLoader.TestSuiteType suiteType;
-    private final Map<RuntimeType, Map<String, RuntimeTestExecution>> runtimeResults = new EnumMap<>(RuntimeType.class);
+    private final Map<RuntimeType, Map<String, RuntimeTestExecution>> runtimeResults =
+        new EnumMap<>(RuntimeType.class);
 
     /**
      * Creates a builder for the specified test suite type.
@@ -330,11 +337,11 @@ public final class WasmTestSuiteResults {
      * @param results the runtime test results
      * @return this builder
      */
-    public Builder addRuntimeResults(final RuntimeType runtimeType, 
-                                     final Map<String, RuntimeTestExecution> results) {
+    public Builder addRuntimeResults(
+        final RuntimeType runtimeType, final Map<String, RuntimeTestExecution> results) {
       Objects.requireNonNull(runtimeType, "runtimeType cannot be null");
       Objects.requireNonNull(results, "results cannot be null");
-      
+
       runtimeResults.put(runtimeType, new java.util.HashMap<>(results));
       return this;
     }

@@ -473,6 +473,8 @@ public final class PerformanceMonitor {
     final long startTime = startOperation(category);
     try {
       return operation.execute();
+    } catch (Exception e) {
+      throw new RuntimeException(e);
     } finally {
       endOperation(category, startTime);
     }

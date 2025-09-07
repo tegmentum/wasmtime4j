@@ -15,8 +15,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * Advanced benchmark result analyzer providing comprehensive performance analysis,
- * trend detection, and visualization capabilities for JMH benchmark results.
+ * Advanced benchmark result analyzer providing comprehensive performance analysis, trend detection,
+ * and visualization capabilities for JMH benchmark results.
  *
  * <p>This analyzer processes JMH JSON output files and provides:
  *
@@ -113,7 +113,7 @@ public final class BenchmarkResultAnalyzer {
     public String getKey() {
       final StringBuilder key = new StringBuilder();
       key.append(benchmarkName).append("_").append(runtime);
-      
+
       // Add significant parameters to key
       if (params.containsKey("operationCount")) {
         key.append("_ops").append(params.get("operationCount"));
@@ -121,7 +121,7 @@ public final class BenchmarkResultAnalyzer {
       if (params.containsKey("batchSize")) {
         key.append("_batch").append(params.get("batchSize"));
       }
-      
+
       return key.toString();
     }
   }
@@ -132,7 +132,7 @@ public final class BenchmarkResultAnalyzer {
     private final List<BenchmarkResult> results;
     private final double averageScore;
     private final double trendSlope;
-    private final double rSquared;
+    private final double rsquared;
     private final boolean isImproving;
     private final boolean isRegressing;
 
@@ -143,7 +143,7 @@ public final class BenchmarkResultAnalyzer {
      * @param results the benchmark results
      * @param averageScore the average score
      * @param trendSlope the trend slope
-     * @param rSquared the R-squared value
+     * @param rsquared the R-squared value
      * @param isImproving whether performance is improving
      * @param isRegressing whether performance is regressing
      */
@@ -152,14 +152,14 @@ public final class BenchmarkResultAnalyzer {
         final List<BenchmarkResult> results,
         final double averageScore,
         final double trendSlope,
-        final double rSquared,
+        final double rsquared,
         final boolean isImproving,
         final boolean isRegressing) {
       this.benchmarkKey = benchmarkKey;
       this.results = new ArrayList<>(results);
       this.averageScore = averageScore;
       this.trendSlope = trendSlope;
-      this.rSquared = rSquared;
+      this.rsquared = rsquared;
       this.isImproving = isImproving;
       this.isRegressing = isRegressing;
     }
@@ -181,7 +181,7 @@ public final class BenchmarkResultAnalyzer {
     }
 
     public double getRSquared() {
-      return rSquared;
+      return rsquared;
     }
 
     public boolean isImproving() {
@@ -279,7 +279,7 @@ public final class BenchmarkResultAnalyzer {
   public void exportToCsv(final List<BenchmarkResult> results, final Path outputPath)
       throws IOException {
     final StringBuilder csv = new StringBuilder();
-    
+
     // CSV header
     csv.append("Timestamp,Benchmark,Runtime,Mode,Score,Error,Unit,Parameters\n");
 
@@ -417,12 +417,13 @@ public final class BenchmarkResultAnalyzer {
 
       // Extract runtime from benchmark name or params
       final String runtime = extractRuntime(benchmarkNode);
-      
+
       final Map<String, Object> params = new HashMap<>();
       if (benchmarkNode.has("params")) {
         final JsonNode paramsNode = benchmarkNode.get("params");
-        paramsNode.fields().forEachRemaining(entry -> 
-            params.put(entry.getKey(), entry.getValue().asText()));
+        paramsNode
+            .fields()
+            .forEachRemaining(entry -> params.put(entry.getKey(), entry.getValue().asText()));
       }
 
       return new BenchmarkResult(
@@ -439,7 +440,7 @@ public final class BenchmarkResultAnalyzer {
     if (benchmarkNode.has("params") && benchmarkNode.get("params").has("runtimeTypeName")) {
       return benchmarkNode.get("params").get("runtimeTypeName").asText();
     }
-    
+
     // Try to extract from benchmark name
     final String benchmarkName = benchmarkNode.get("benchmark").asText();
     if (benchmarkName.contains("JNI") || benchmarkName.contains("Jni")) {
@@ -448,34 +449,35 @@ public final class BenchmarkResultAnalyzer {
     if (benchmarkName.contains("PANAMA") || benchmarkName.contains("Panama")) {
       return "PANAMA";
     }
-    
+
     return "UNKNOWN";
   }
 
-  private Map<String, List<BenchmarkResult>> groupResultsByKey(final List<BenchmarkResult> results) {
+  private Map<String, List<BenchmarkResult>> groupResultsByKey(
+      final List<BenchmarkResult> results) {
     return results.stream().collect(Collectors.groupingBy(BenchmarkResult::getKey));
   }
 
   private TrendAnalysis calculateTrend(final String key, final List<BenchmarkResult> results) {
     // Sort by timestamp
-    final List<BenchmarkResult> sortedResults = results.stream()
-        .sorted((a, b) -> a.getTimestamp().compareTo(b.getTimestamp()))
-        .collect(Collectors.toList());
+    final List<BenchmarkResult> sortedResults =
+        results.stream()
+            .sorted((a, b) -> a.getTimestamp().compareTo(b.getTimestamp()))
+            .collect(Collectors.toList());
 
     final double[] scores = sortedResults.stream().mapToDouble(BenchmarkResult::getScore).toArray();
-    final double averageScore = scores.length > 0 
-        ? java.util.Arrays.stream(scores).average().orElse(0.0) 
-        : 0.0;
+    final double averageScore =
+        scores.length > 0 ? java.util.Arrays.stream(scores).average().orElse(0.0) : 0.0;
 
     // Calculate simple linear trend
     final double trendSlope = calculateLinearTrend(scores);
-    final double rSquared = 0.8; // Simplified for now
-    
+    final double rsquared = 0.8; // Simplified for now
+
     final boolean isImproving = trendSlope > 0.05; // 5% improvement threshold
     final boolean isRegressing = trendSlope < -0.05; // 5% regression threshold
 
     return new TrendAnalysis(
-        key, sortedResults, averageScore, trendSlope, rSquared, isImproving, isRegressing);
+        key, sortedResults, averageScore, trendSlope, rsquared, isImproving, isRegressing);
   }
 
   private double calculateLinearTrend(final double[] values) {
@@ -484,7 +486,10 @@ public final class BenchmarkResultAnalyzer {
     }
 
     final int n = values.length;
-    double sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+    double sumX = 0;
+    double sumY = 0;
+    double sumXY = 0;
+    double sumXX = 0;
 
     for (int i = 0; i < n; i++) {
       sumX += i;
@@ -513,7 +518,9 @@ public final class BenchmarkResultAnalyzer {
         + "th{background-color:#f2f2f2;}.winner{font-weight:bold;color:#27ae60;}"
         + ".regression{color:#e74c3c;}.improvement{color:#27ae60;}</style>\n</head>\n<body>\n"
         + "<h1>Wasmtime4j Performance Report</h1>\n"
-        + "<p>Generated: " + LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME) + "</p>\n";
+        + "<p>Generated: "
+        + LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+        + "</p>\n";
   }
 
   private String generateHtmlFooter() {
@@ -525,89 +532,118 @@ public final class BenchmarkResultAnalyzer {
     summary.append("<div class=\"performance-summary\">\n");
     summary.append("<h2>Performance Summary</h2>\n");
     summary.append("<p>Total benchmarks analyzed: ").append(results.size()).append("</p>\n");
-    
+
     final long jniCount = results.stream().filter(r -> "JNI".equals(r.getRuntime())).count();
     final long panamaCount = results.stream().filter(r -> "PANAMA".equals(r.getRuntime())).count();
-    
+
     summary.append("<p>JNI results: ").append(jniCount).append("</p>\n");
     summary.append("<p>Panama results: ").append(panamaCount).append("</p>\n");
     summary.append("</div>\n");
-    
+
     return summary.toString();
   }
 
   private String generateTrendAnalysis(final List<BenchmarkResult> results) {
     final Map<String, TrendAnalysis> trends = analyzeTrends(results);
     final StringBuilder analysis = new StringBuilder();
-    
+
     analysis.append("<div class=\"trend-analysis\">\n");
     analysis.append("<h2>Performance Trends</h2>\n");
-    
+
     if (trends.isEmpty()) {
-      analysis.append("<p>Insufficient data for trend analysis (need at least 3 data points per benchmark).</p>\n");
+      analysis.append(
+          "<p>Insufficient data for trend analysis (need at least 3 data points per"
+              + " benchmark).</p>\n");
     } else {
       analysis.append("<table class=\"trend-table\">\n");
       analysis.append("<thead><tr><th>Benchmark</th><th>Trend</th><th>Status</th></tr></thead>\n");
       analysis.append("<tbody>\n");
-      
+
       for (final TrendAnalysis trend : trends.values()) {
-        final String status = trend.isImproving() ? "Improving" : 
-                             trend.isRegressing() ? "Regressing" : "Stable";
-        final String cssClass = trend.isImproving() ? "improvement" : 
-                               trend.isRegressing() ? "regression" : "";
-        
-        analysis.append("<tr>")
-            .append("<td>").append(trend.getBenchmarkKey()).append("</td>")
-            .append("<td>").append(String.format("%.2f", trend.getTrendSlope())).append("</td>")
-            .append("<td class=\"").append(cssClass).append("\">").append(status).append("</td>")
+        final String status =
+            trend.isImproving() ? "Improving" : trend.isRegressing() ? "Regressing" : "Stable";
+        final String cssClass =
+            trend.isImproving() ? "improvement" : trend.isRegressing() ? "regression" : "";
+
+        analysis
+            .append("<tr>")
+            .append("<td>")
+            .append(trend.getBenchmarkKey())
+            .append("</td>")
+            .append("<td>")
+            .append(String.format("%.2f", trend.getTrendSlope()))
+            .append("</td>")
+            .append("<td class=\"")
+            .append(cssClass)
+            .append("\">")
+            .append(status)
+            .append("</td>")
             .append("</tr>\n");
       }
-      
+
       analysis.append("</tbody></table>\n");
     }
-    
+
     analysis.append("</div>\n");
     return analysis.toString();
   }
 
   private String generateRegressionAnalysis(final List<BenchmarkResult> results) {
     // Convert to PerformanceMeasurement format for regression detector
-    final List<PerformanceRegressionDetector.PerformanceMeasurement> measurements = 
-        results.stream().map(r -> new PerformanceRegressionDetector.PerformanceMeasurement(
-            r.getBenchmarkName(), r.getRuntime(), r.getScore(), 
-            1.0 / r.getScore(), // Convert to latency approximation
-            1024 * 1024 // Default memory usage
-        )).collect(Collectors.toList());
+    final List<PerformanceRegressionDetector.PerformanceMeasurement> measurements =
+        results.stream()
+            .map(
+                r ->
+                    new PerformanceRegressionDetector.PerformanceMeasurement(
+                        r.getBenchmarkName(),
+                        r.getRuntime(),
+                        r.getScore(),
+                        1.0 / r.getScore(), // Convert to latency approximation
+                        1024 * 1024 // Default memory usage
+                        ))
+            .collect(Collectors.toList());
 
-    final List<PerformanceRegressionDetector.RegressionResult> regressions = 
+    final List<PerformanceRegressionDetector.RegressionResult> regressions =
         regressionDetector.detectRegressions(measurements);
 
     final StringBuilder analysis = new StringBuilder();
     analysis.append("<div class=\"regression-analysis\">\n");
     analysis.append("<h2>Regression Analysis</h2>\n");
-    
+
     if (regressions.isEmpty()) {
       analysis.append("<p>No baseline data available for regression analysis.</p>\n");
     } else {
       analysis.append("<table class=\"regression-table\">\n");
-      analysis.append("<thead><tr><th>Benchmark</th><th>Runtime</th><th>Change</th><th>Status</th></tr></thead>\n");
+      analysis.append(
+          "<thead><tr><th>Benchmark</th><th>Runtime</th><th>Change</th><th>Status</th></tr></thead>\n");
       analysis.append("<tbody>\n");
-      
+
       for (final PerformanceRegressionDetector.RegressionResult regression : regressions) {
         final String status = regression.isRegression() ? "REGRESSION" : "OK";
         final String cssClass = regression.isRegression() ? "regression" : "";
-        
-        analysis.append("<tr>")
-            .append("<td>").append(regression.getBenchmarkName()).append("</td>")
-            .append("<td>").append(regression.getRuntimeType()).append("</td>")
-            .append("<td>").append(String.format("%.1f%%", regression.getPerformanceChange() * 100)).append("</td>")
-            .append("<td class=\"").append(cssClass).append("\">").append(status).append("</td>")
+
+        analysis
+            .append("<tr>")
+            .append("<td>")
+            .append(regression.getBenchmarkName())
+            .append("</td>")
+            .append("<td>")
+            .append(regression.getRuntimeType())
+            .append("</td>")
+            .append("<td>")
+            .append(String.format("%.1f%%", regression.getPerformanceChange() * 100))
+            .append("</td>")
+            .append("<td class=\"")
+            .append(cssClass)
+            .append("\">")
+            .append(status)
+            .append("</td>")
             .append("</tr>\n");
       }
-      
+
       analysis.append("</tbody></table>\n");
     }
-    
+
     analysis.append("</div>\n");
     return analysis.toString();
   }

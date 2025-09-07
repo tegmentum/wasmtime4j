@@ -7,10 +7,8 @@
 
 use std::sync::{Arc, Mutex, Weak};
 use std::collections::HashMap;
-use std::ffi::{CStr, CString};
-use std::os::raw::{c_char, c_void};
-use wasmtime::{Func, FuncType, Caller, Val, ValType, RefType};
-use crate::store::{Store, StoreData};
+use wasmtime::{Func, FuncType, Val, ValType, RefType};
+use crate::store::StoreData;
 use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::instance::WasmValue;
 
@@ -275,7 +273,7 @@ pub fn validate_parameter_types(
     params: &[WasmValue],
     expected_types: &[ValType],
 ) -> WasmtimeResult<MarshallingResult> {
-    let mut warnings = Vec::new();
+    let warnings = Vec::new();
     
     if params.len() != expected_types.len() {
         return Err(WasmtimeError::Validation {

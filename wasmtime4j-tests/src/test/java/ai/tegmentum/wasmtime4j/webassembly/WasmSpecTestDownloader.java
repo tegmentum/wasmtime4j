@@ -11,7 +11,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import java.util.zip.ZipEntry;
@@ -26,7 +25,8 @@ public final class WasmSpecTestDownloader {
 
   // Official WebAssembly specification test suite
   private static final String WASM_SPEC_REPO_URL = "https://github.com/WebAssembly/spec";
-  private static final String WASM_SPEC_ZIP_URL = WASM_SPEC_REPO_URL + "/archive/refs/heads/main.zip";
+  private static final String WASM_SPEC_ZIP_URL =
+      WASM_SPEC_REPO_URL + "/archive/refs/heads/main.zip";
   private static final String WASM_SPEC_BRANCH = "main";
 
   // Wasmtime test suite
@@ -67,7 +67,8 @@ public final class WasmSpecTestDownloader {
       // Extract test files from the ZIP
       extractWebAssemblySpecTests(zipData, specTestsDir);
 
-      LOGGER.info("Successfully downloaded and extracted WebAssembly spec tests to: " + specTestsDir);
+      LOGGER.info(
+          "Successfully downloaded and extracted WebAssembly spec tests to: " + specTestsDir);
 
     } catch (final Exception e) {
       // Clean up on failure
@@ -211,7 +212,8 @@ public final class WasmSpecTestDownloader {
         final String entryName = entry.getName();
 
         // Only extract test files (*.wast, *.wasm files in test directories)
-        if (entryName.contains("/test/") && (entryName.endsWith(".wast") || entryName.endsWith(".wasm"))) {
+        if (entryName.contains("/test/")
+            && (entryName.endsWith(".wast") || entryName.endsWith(".wasm"))) {
           final Path outputFile = targetDirectory.resolve(getRelativeTestPath(entryName));
           Files.createDirectories(outputFile.getParent());
 
@@ -257,9 +259,10 @@ public final class WasmSpecTestDownloader {
         final String entryName = entry.getName();
 
         // Extract relevant test files from tests directory
-        if (entryName.contains("/tests/") && (entryName.endsWith(".wat")
-            || entryName.endsWith(".wasm")
-            || entryName.endsWith(".wast"))) {
+        if (entryName.contains("/tests/")
+            && (entryName.endsWith(".wat")
+                || entryName.endsWith(".wasm")
+                || entryName.endsWith(".wast"))) {
           final Path outputFile = targetDirectory.resolve(getRelativeTestPath(entryName));
           Files.createDirectories(outputFile.getParent());
 
@@ -335,13 +338,14 @@ public final class WasmSpecTestDownloader {
     if (Files.exists(directory)) {
       Files.walk(directory)
           .sorted((a, b) -> b.compareTo(a)) // Reverse order to delete files before directories
-          .forEach(path -> {
-            try {
-              Files.delete(path);
-            } catch (final IOException e) {
-              LOGGER.warning("Failed to delete: " + path + " - " + e.getMessage());
-            }
-          });
+          .forEach(
+              path -> {
+                try {
+                  Files.delete(path);
+                } catch (final IOException e) {
+                  LOGGER.warning("Failed to delete: " + path + " - " + e.getMessage());
+                }
+              });
     }
   }
 
@@ -357,7 +361,8 @@ public final class WasmSpecTestDownloader {
 
     try {
       final boolean specExists = Files.exists(specTestsDir) && !isDirectoryEmpty(specTestsDir);
-      final boolean wasmtimeExists = Files.exists(wasmtimeTestsDir) && !isDirectoryEmpty(wasmtimeTestsDir);
+      final boolean wasmtimeExists =
+          Files.exists(wasmtimeTestsDir) && !isDirectoryEmpty(wasmtimeTestsDir);
 
       if (specExists) {
         LOGGER.info("WebAssembly spec tests available at: " + specTestsDir);

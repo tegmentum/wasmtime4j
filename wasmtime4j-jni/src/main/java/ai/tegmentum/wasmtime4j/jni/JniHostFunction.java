@@ -94,6 +94,48 @@ public final class JniHostFunction extends JniResource implements WasmFunction {
   private final HostFunction implementation;
   private final WeakReference<JniStore> storeRef;
 
+  /** Helper class to hold both the native handle and host function ID. */
+  private static class HostFunctionHandle {
+    final long nativeHandle;
+    final long hostFunctionId;
+
+    HostFunctionHandle(final long nativeHandle, final long hostFunctionId) {
+      this.nativeHandle = nativeHandle;
+      this.hostFunctionId = hostFunctionId;
+    }
+  }
+
+  /**
+   * Creates the native handle for a host function.
+   *
+   * @param functionName the name of the function
+   * @param functionType the WebAssembly function type signature
+   * @param store the store this host function belongs to
+   * @return the host function handle containing native handle and ID
+   * @throws WasmException if creation fails
+   */
+  private static HostFunctionHandle createNativeHandle(
+      final String functionName, final FunctionType functionType, final JniStore store)
+      throws WasmException {
+    Objects.requireNonNull(functionName, "Function name cannot be null");
+    Objects.requireNonNull(functionType, "Function type cannot be null");
+    Objects.requireNonNull(store, "Store cannot be null");
+
+    final long hostFunctionId = NEXT_HOST_FUNCTION_ID.getAndIncrement();
+    final long nativeHandle =
+        nativeCreateHostFunction(
+            store.getNativeHandle(),
+            functionName,
+            JniTypeConverter.marshalFunctionType(functionType),
+            hostFunctionId);
+
+    if (nativeHandle == 0) {
+      throw new WasmException("Failed to create native host function: " + functionName);
+    }
+
+    return new HostFunctionHandle(nativeHandle, hostFunctionId);
+  }
+
   /**
    * Creates a new host function with the specified signature and implementation.
    *
@@ -110,9 +152,24 @@ public final class JniHostFunction extends JniResource implements WasmFunction {
       final HostFunction implementation,
       final JniStore store)
       throws WasmException {
-    super(0); // Will be set by native creation
+    this(
+        createNativeHandle(functionName, functionType, store),
+        functionName,
+        functionType,
+        implementation,
+        store);
+  }
 
-    this.hostFunctionId = NEXT_HOST_FUNCTION_ID.getAndIncrement();
+  private JniHostFunction(
+      final HostFunctionHandle handle,
+      final String functionName,
+      final FunctionType functionType,
+      final HostFunction implementation,
+      final JniStore store)
+      throws WasmException {
+    super(handle.nativeHandle);
+
+    this.hostFunctionId = handle.hostFunctionId;
     this.functionName = Objects.requireNonNull(functionName, "Function name cannot be null");
     this.functionType = Objects.requireNonNull(functionType, "Function type cannot be null");
     this.implementation = Objects.requireNonNull(implementation, "Implementation cannot be null");
@@ -121,21 +178,6 @@ public final class JniHostFunction extends JniResource implements WasmFunction {
     try {
       // Register this host function to prevent GC
       HOST_FUNCTION_REGISTRY.put(hostFunctionId, this);
-
-      // Create native host function
-      final long nativeHandle =
-          nativeCreateHostFunction(
-              store.getNativeHandle(),
-              functionName,
-              marshalFunctionType(functionType),
-              hostFunctionId);
-
-      if (nativeHandle == 0) {
-        throw new WasmException("Failed to create native host function: " + functionName);
-      }
-
-      // Set the native handle
-      setNativeHandle(nativeHandle);
 
       if (LOGGER.isLoggable(Level.FINE)) {
         LOGGER.fine(

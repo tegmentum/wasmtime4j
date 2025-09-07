@@ -47,8 +47,7 @@ public final class PlatformDetector {
     private final String libraryPrefix;
     private final String libraryExtension;
 
-    OperatingSystem(
-        final String name, final String libraryPrefix, final String libraryExtension) {
+    OperatingSystem(final String name, final String libraryPrefix, final String libraryExtension) {
       this.name = name;
       this.libraryPrefix = libraryPrefix;
       this.libraryExtension = libraryExtension;
@@ -193,8 +192,9 @@ public final class PlatformDetector {
       synchronized (PlatformDetector.class) {
         result = cachedPlatformInfo;
         if (result == null) {
-          cachedPlatformInfo = result = new PlatformInfo(
-              ai.tegmentum.wasmtime4j.nativeloader.PlatformDetector.detect());
+          cachedPlatformInfo =
+              result =
+                  new PlatformInfo(ai.tegmentum.wasmtime4j.nativeloader.PlatformDetector.detect());
         }
       }
     }

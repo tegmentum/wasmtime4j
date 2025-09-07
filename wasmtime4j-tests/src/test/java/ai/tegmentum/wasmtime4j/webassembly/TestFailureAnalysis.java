@@ -7,8 +7,8 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * Detailed analysis of a single test failure, providing categorization, root cause analysis,
- * and actionable debugging recommendations.
+ * Detailed analysis of a single test failure, providing categorization, root cause analysis, and
+ * actionable debugging recommendations.
  */
 public final class TestFailureAnalysis {
   private final String testName;
@@ -131,9 +131,9 @@ public final class TestFailureAnalysis {
    * @return true if the failure is critical
    */
   public boolean isCritical() {
-    return category == WasmTestFailureAnalyzer.FailureCategory.NATIVE_ERROR ||
-           category == WasmTestFailureAnalyzer.FailureCategory.MEMORY_ERROR ||
-           category == WasmTestFailureAnalyzer.FailureCategory.CONFIGURATION_ERROR;
+    return category == WasmTestFailureAnalyzer.FailureCategory.NATIVE_ERROR
+        || category == WasmTestFailureAnalyzer.FailureCategory.MEMORY_ERROR
+        || category == WasmTestFailureAnalyzer.FailureCategory.CONFIGURATION_ERROR;
   }
 
   /**
@@ -142,9 +142,9 @@ public final class TestFailureAnalysis {
    * @return true if the failure is environment-related
    */
   public boolean isEnvironmentRelated() {
-    return category == WasmTestFailureAnalyzer.FailureCategory.TIMEOUT ||
-           category == WasmTestFailureAnalyzer.FailureCategory.NATIVE_ERROR ||
-           category == WasmTestFailureAnalyzer.FailureCategory.CONFIGURATION_ERROR;
+    return category == WasmTestFailureAnalyzer.FailureCategory.TIMEOUT
+        || category == WasmTestFailureAnalyzer.FailureCategory.NATIVE_ERROR
+        || category == WasmTestFailureAnalyzer.FailureCategory.CONFIGURATION_ERROR;
   }
 
   /**
@@ -153,9 +153,9 @@ public final class TestFailureAnalysis {
    * @return true if the failure is module-related
    */
   public boolean isModuleRelated() {
-    return category == WasmTestFailureAnalyzer.FailureCategory.COMPILATION_ERROR ||
-           category == WasmTestFailureAnalyzer.FailureCategory.VALIDATION_ERROR ||
-           category == WasmTestFailureAnalyzer.FailureCategory.INSTANTIATION_ERROR;
+    return category == WasmTestFailureAnalyzer.FailureCategory.COMPILATION_ERROR
+        || category == WasmTestFailureAnalyzer.FailureCategory.VALIDATION_ERROR
+        || category == WasmTestFailureAnalyzer.FailureCategory.INSTANTIATION_ERROR;
   }
 
   /**
@@ -167,7 +167,7 @@ public final class TestFailureAnalysis {
     final StringBuilder report = new StringBuilder();
     report.append("Test Failure Analysis\n");
     report.append("====================\n\n");
-    
+
     report.append(String.format("Test Name: %s\n", testName));
     report.append(String.format("Runtime: %s\n", runtimeType.name()));
     report.append(String.format("Category: %s\n", category.getDescription()));
@@ -176,14 +176,18 @@ public final class TestFailureAnalysis {
     report.append(String.format("Execution Time: %.3fs\n", executionTime.toMillis() / 1000.0));
     report.append(String.format("Analysis Time: %s\n\n", analysisTime));
 
-    getExceptionType().ifPresent(type -> report.append(String.format("Exception Type: %s\n", type)));
-    getExceptionMessage().ifPresent(message -> report.append(String.format("Exception Message: %s\n", message)));
-    
-    getStackTrace().ifPresent(stack -> {
-      report.append("\nStack Trace:\n");
-      report.append("------------\n");
-      report.append(stack);
-    });
+    getExceptionType()
+        .ifPresent(type -> report.append(String.format("Exception Type: %s\n", type)));
+    getExceptionMessage()
+        .ifPresent(message -> report.append(String.format("Exception Message: %s\n", message)));
+
+    getStackTrace()
+        .ifPresent(
+            stack -> {
+              report.append("\nStack Trace:\n");
+              report.append("------------\n");
+              report.append(stack);
+            });
 
     return report.toString();
   }
@@ -194,26 +198,23 @@ public final class TestFailureAnalysis {
    * @return a brief summary
    */
   public String createBriefSummary() {
-    return String.format("[%s] %s: %s (%s)", 
-        runtimeType.name(), 
-        testName, 
-        category.getDescription(),
-        summary);
+    return String.format(
+        "[%s] %s: %s (%s)", runtimeType.name(), testName, category.getDescription(), summary);
   }
 
   @Override
   public String toString() {
-    return String.format("TestFailureAnalysis{test=%s, runtime=%s, category=%s}", 
+    return String.format(
+        "TestFailureAnalysis{test=%s, runtime=%s, category=%s}",
         testName, runtimeType.name(), category.name());
   }
 
-  /**
-   * Builder for TestFailureAnalysis.
-   */
+  /** Builder for TestFailureAnalysis. */
   public static final class Builder {
     private final String testName;
     private RuntimeType runtimeType;
-    private WasmTestFailureAnalyzer.FailureCategory category = WasmTestFailureAnalyzer.FailureCategory.UNKNOWN;
+    private WasmTestFailureAnalyzer.FailureCategory category =
+        WasmTestFailureAnalyzer.FailureCategory.UNKNOWN;
     private String summary = "Unknown failure";
     private String recommendation = "No specific recommendation available";
     private String exceptionType;

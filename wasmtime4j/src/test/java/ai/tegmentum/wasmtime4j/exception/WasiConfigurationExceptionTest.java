@@ -61,7 +61,8 @@ class WasiConfigurationExceptionTest {
           new WasiConfigurationException(message, configArea);
 
       assertEquals(
-          "Environment configuration failed (operation: environment-configuration) (resource: environment)",
+          "Environment configuration failed (operation: environment-configuration) (resource:"
+              + " environment)",
           exception.getMessage());
       assertEquals("environment-configuration", exception.getOperation());
       assertEquals("environment", exception.getResource());

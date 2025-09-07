@@ -1,4 +1,4 @@
-package ai.tegmentum.wasmtime4j.native_functions;
+package ai.tegmentum.wasmtime4j.nativefunctions;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -108,7 +108,7 @@ public class StoreNativeFunctionTest extends BaseNativeFunctionTest {
                   try (final var store = engine.createStore()) {
                     // Test store data operations if available
                     exerciseStoreDataOperations(store);
-                    
+
                     // Test repeated data operations
                     for (int i = 0; i < 10; i++) {
                       exerciseStoreDataOperations(store);
@@ -134,7 +134,7 @@ public class StoreNativeFunctionTest extends BaseNativeFunctionTest {
                   try (final var store = engine.createStore()) {
                     // Test fuel operations if available
                     exerciseStoreFuelOperations(store);
-                    
+
                     // Test fuel operations with actual execution
                     final byte[] moduleBytes = testUtils.getSimpleAddModule();
                     try (final var module = engine.compileModule(moduleBytes)) {
@@ -166,17 +166,18 @@ public class StoreNativeFunctionTest extends BaseNativeFunctionTest {
                   try (final var store = engine.createStore()) {
                     // Exercise store operations concurrently
                     exerciseStoreOperations(store, engine, r);
-                    
+
                     // Test with module instantiation
                     try (final var module = engine.compileModule(moduleBytes)) {
                       try (final var instance = r.instantiate(module)) {
                         // Execute functions to stress test store
                         final var addFunction = instance.getFunction("add");
                         if (addFunction.isPresent()) {
-                          final var args = new ai.tegmentum.wasmtime4j.WasmValue[] {
-                            ai.tegmentum.wasmtime4j.WasmValue.i32(threadId),
-                            ai.tegmentum.wasmtime4j.WasmValue.i32(operationId)
-                          };
+                          final var args =
+                              new ai.tegmentum.wasmtime4j.WasmValue[] {
+                                ai.tegmentum.wasmtime4j.WasmValue.i32(threadId),
+                                ai.tegmentum.wasmtime4j.WasmValue.i32(operationId)
+                              };
                           final var resultValue = addFunction.get().call(args);
                           assertThat(resultValue[0].asI32()).isEqualTo(threadId + operationId);
                         }
@@ -220,7 +221,7 @@ public class StoreNativeFunctionTest extends BaseNativeFunctionTest {
       assertThreadSafety(result, "concurrent_store_creation");
       LOGGER.info(
           String.format(
-              "Concurrent store creation completed: %.2f ops/sec", 
+              "Concurrent store creation completed: %.2f ops/sec",
               result.getOperationsPerSecond()));
     }
   }
@@ -239,7 +240,7 @@ public class StoreNativeFunctionTest extends BaseNativeFunctionTest {
                 try (final var store = engine.createStore()) {
                   // Test store functionality across runtimes
                   exerciseStoreOperations(store, engine, runtime);
-                  
+
                   // Test with module execution
                   try (final var module = engine.compileModule(moduleBytes)) {
                     try (final var instance = runtime.instantiate(module)) {
@@ -247,13 +248,14 @@ public class StoreNativeFunctionTest extends BaseNativeFunctionTest {
                       if (instance.hasExport("set_state")) {
                         final var setStateFunc = instance.getFunction("set_state");
                         if (setStateFunc.isPresent()) {
-                          final var args = new ai.tegmentum.wasmtime4j.WasmValue[] {
-                            ai.tegmentum.wasmtime4j.WasmValue.i32(42)
-                          };
+                          final var args =
+                              new ai.tegmentum.wasmtime4j.WasmValue[] {
+                                ai.tegmentum.wasmtime4j.WasmValue.i32(42)
+                              };
                           setStateFunc.get().call(args);
                         }
                       }
-                      
+
                       if (instance.hasExport("get_state")) {
                         final var getStateFunc = instance.getFunction("get_state");
                         if (getStateFunc.isPresent()) {
@@ -274,7 +276,8 @@ public class StoreNativeFunctionTest extends BaseNativeFunctionTest {
           assertNoMemoryLeaks(result, "cross_runtime_store_test_" + runtimeType);
         });
 
-    LOGGER.info("Cross-runtime store compatibility test completed for " + results.size() + " runtimes");
+    LOGGER.info(
+        "Cross-runtime store compatibility test completed for " + results.size() + " runtimes");
   }
 
   @ParameterizedTest
@@ -289,7 +292,7 @@ public class StoreNativeFunctionTest extends BaseNativeFunctionTest {
               r -> {
                 try (final var engine = r.createEngine()) {
                   final AtomicInteger successCount = new AtomicInteger(0);
-                  
+
                   for (int i = 0; i < cycleCount; i++) {
                     try (final var store = engine.createStore()) {
                       assertThat(store).isNotNull();
@@ -297,7 +300,7 @@ public class StoreNativeFunctionTest extends BaseNativeFunctionTest {
                       successCount.incrementAndGet();
                     }
                   }
-                  
+
                   assertThat(successCount.get()).isEqualTo(cycleCount);
                 }
               });
@@ -320,7 +323,7 @@ public class StoreNativeFunctionTest extends BaseNativeFunctionTest {
                   try (final var store = engine.createStore()) {
                     // Test resource limit operations if available
                     exerciseStoreResourceLimits(store);
-                    
+
                     // Test with actual resource usage
                     final byte[] moduleBytes = testUtils.getMemoryModule();
                     try (final var module = engine.compileModule(moduleBytes)) {
@@ -351,27 +354,29 @@ public class StoreNativeFunctionTest extends BaseNativeFunctionTest {
           switch (testCase.getPattern()) {
             case NORMAL:
               // Normal lifecycle
-              assertDoesNotThrow(() -> {
-                try (final var store = engine.createStore()) {
-                  exerciseStoreOperations(store, engine, runtime);
-                }
-              });
+              assertDoesNotThrow(
+                  () -> {
+                    try (final var store = engine.createStore()) {
+                      exerciseStoreOperations(store, engine, runtime);
+                    }
+                  });
               break;
 
             case DOUBLE_CLOSE:
               // Double close
-              assertDoesNotThrow(() -> {
-                final var store = engine.createStore();
-                store.close();
-                store.close(); // Should not throw
-              });
+              assertDoesNotThrow(
+                  () -> {
+                    final var store = engine.createStore();
+                    store.close();
+                    store.close(); // Should not throw
+                  });
               break;
 
             case USE_AFTER_CLOSE:
               // Use after close
               final var closedStore = engine.createStore();
               closedStore.close();
-              
+
               assertThrows(
                   Exception.class,
                   () -> exerciseStoreOperations(closedStore, engine, runtime),
@@ -381,14 +386,15 @@ public class StoreNativeFunctionTest extends BaseNativeFunctionTest {
             case RAPID_CYCLES:
               // Rapid cycles
               final AtomicInteger cycleCount = new AtomicInteger(0);
-              assertDoesNotThrow(() -> {
-                for (int i = 0; i < 30; i++) {
-                  try (final var store = engine.createStore()) {
-                    exerciseStoreOperations(store, engine, runtime);
-                    cycleCount.incrementAndGet();
-                  }
-                }
-              });
+              assertDoesNotThrow(
+                  () -> {
+                    for (int i = 0; i < 30; i++) {
+                      try (final var store = engine.createStore()) {
+                        exerciseStoreOperations(store, engine, runtime);
+                        cycleCount.incrementAndGet();
+                      }
+                    }
+                  });
               assertThat(cycleCount.get()).isEqualTo(30);
               break;
 
@@ -411,6 +417,8 @@ public class StoreNativeFunctionTest extends BaseNativeFunctionTest {
 
               LOGGER.info("Store no-close test result: " + result.isLeakDetected());
               break;
+            default:
+              throw new IllegalArgumentException("Unsupported pattern: " + testCase.getPattern());
           }
         }
       }
@@ -424,23 +432,25 @@ public class StoreNativeFunctionTest extends BaseNativeFunctionTest {
    * @param engine the engine associated with the store
    * @param runtime the runtime context
    */
-  private void exerciseStoreOperations(final Object store, final Object engine, final WasmRuntime runtime) {
-    assertDoesNotThrow(() -> {
-      // Test store state access if available
-      if (store instanceof ai.tegmentum.wasmtime4j.Store) {
-        final var wasmStore = (ai.tegmentum.wasmtime4j.Store) store;
-        
-        // These would exercise native functions for store operations
-        // The exact methods depend on the store interface
-        LOGGER.fine("Exercising store operations");
-        
-        // Test store data operations
-        exerciseStoreDataOperations(wasmStore);
-        
-        // Test fuel operations
-        exerciseStoreFuelOperations(wasmStore);
-      }
-    });
+  private void exerciseStoreOperations(
+      final Object store, final Object engine, final WasmRuntime runtime) {
+    assertDoesNotThrow(
+        () -> {
+          // Test store state access if available
+          if (store instanceof ai.tegmentum.wasmtime4j.Store) {
+            final var wasmStore = (ai.tegmentum.wasmtime4j.Store) store;
+
+            // These would exercise native functions for store operations
+            // The exact methods depend on the store interface
+            LOGGER.fine("Exercising store operations");
+
+            // Test store data operations
+            exerciseStoreDataOperations(wasmStore);
+
+            // Test fuel operations
+            exerciseStoreFuelOperations(wasmStore);
+          }
+        });
   }
 
   /**
@@ -449,11 +459,12 @@ public class StoreNativeFunctionTest extends BaseNativeFunctionTest {
    * @param store the store to test
    */
   private void exerciseStoreDataOperations(final Object store) {
-    assertDoesNotThrow(() -> {
-      // Test store data native functions
-      // Implementation depends on store interface
-      LOGGER.fine("Exercising store data operations");
-    });
+    assertDoesNotThrow(
+        () -> {
+          // Test store data native functions
+          // Implementation depends on store interface
+          LOGGER.fine("Exercising store data operations");
+        });
   }
 
   /**
@@ -462,11 +473,12 @@ public class StoreNativeFunctionTest extends BaseNativeFunctionTest {
    * @param store the store to test
    */
   private void exerciseStoreFuelOperations(final Object store) {
-    assertDoesNotThrow(() -> {
-      // Test fuel native functions if available
-      // Implementation depends on store interface
-      LOGGER.fine("Exercising store fuel operations");
-    });
+    assertDoesNotThrow(
+        () -> {
+          // Test fuel native functions if available
+          // Implementation depends on store interface
+          LOGGER.fine("Exercising store fuel operations");
+        });
   }
 
   /**
@@ -476,24 +488,26 @@ public class StoreNativeFunctionTest extends BaseNativeFunctionTest {
    * @param instance the instance to execute functions on
    */
   private void exerciseStoreFuelWithExecution(final Object store, final Object instance) {
-    assertDoesNotThrow(() -> {
-      // Execute functions that consume fuel
-      if (instance instanceof ai.tegmentum.wasmtime4j.Instance) {
-        final var wasmInstance = (ai.tegmentum.wasmtime4j.Instance) instance;
-        
-        final var addFunction = wasmInstance.getFunction("add");
-        if (addFunction.isPresent()) {
-          for (int i = 0; i < 10; i++) {
-            final var args = new ai.tegmentum.wasmtime4j.WasmValue[] {
-              ai.tegmentum.wasmtime4j.WasmValue.i32(i),
-              ai.tegmentum.wasmtime4j.WasmValue.i32(i * 2)
-            };
-            final var result = addFunction.get().call(args);
-            assertThat(result[0].asI32()).isEqualTo(i * 3);
+    assertDoesNotThrow(
+        () -> {
+          // Execute functions that consume fuel
+          if (instance instanceof ai.tegmentum.wasmtime4j.Instance) {
+            final var wasmInstance = (ai.tegmentum.wasmtime4j.Instance) instance;
+
+            final var addFunction = wasmInstance.getFunction("add");
+            if (addFunction.isPresent()) {
+              for (int i = 0; i < 10; i++) {
+                final var args =
+                    new ai.tegmentum.wasmtime4j.WasmValue[] {
+                      ai.tegmentum.wasmtime4j.WasmValue.i32(i),
+                      ai.tegmentum.wasmtime4j.WasmValue.i32(i * 2)
+                    };
+                final var result = addFunction.get().call(args);
+                assertThat(result[0].asI32()).isEqualTo(i * 3);
+              }
+            }
           }
-        }
-      }
-    });
+        });
   }
 
   /**
@@ -502,10 +516,11 @@ public class StoreNativeFunctionTest extends BaseNativeFunctionTest {
    * @param store the store to test
    */
   private void exerciseStoreResourceLimits(final Object store) {
-    assertDoesNotThrow(() -> {
-      // Test resource limit native functions
-      LOGGER.fine("Exercising store resource limits");
-    });
+    assertDoesNotThrow(
+        () -> {
+          // Test resource limit native functions
+          LOGGER.fine("Exercising store resource limits");
+        });
   }
 
   /**
@@ -515,28 +530,31 @@ public class StoreNativeFunctionTest extends BaseNativeFunctionTest {
    * @param instance the instance to execute on
    */
   private void exerciseResourceConsumingOperations(final Object store, final Object instance) {
-    assertDoesNotThrow(() -> {
-      // Execute operations that consume memory and other resources
-      if (instance instanceof ai.tegmentum.wasmtime4j.Instance) {
-        final var wasmInstance = (ai.tegmentum.wasmtime4j.Instance) instance;
-        
-        // Test memory growth if available
-        if (wasmInstance.hasExport("grow_memory")) {
-          final var growFunc = wasmInstance.getFunction("grow_memory");
-          if (growFunc.isPresent()) {
-            try {
-              final var args = new ai.tegmentum.wasmtime4j.WasmValue[] {
-                ai.tegmentum.wasmtime4j.WasmValue.i32(1) // Grow by 1 page
-              };
-              final var result = growFunc.get().call(args);
-              LOGGER.fine("Memory grow result: " + (result.length > 0 ? result[0].asI32() : "none"));
-            } catch (final Exception e) {
-              // May fail due to resource limits - that's expected
-              LOGGER.fine("Memory growth failed as expected: " + e.getMessage());
+    assertDoesNotThrow(
+        () -> {
+          // Execute operations that consume memory and other resources
+          if (instance instanceof ai.tegmentum.wasmtime4j.Instance) {
+            final var wasmInstance = (ai.tegmentum.wasmtime4j.Instance) instance;
+
+            // Test memory growth if available
+            if (wasmInstance.hasExport("grow_memory")) {
+              final var growFunc = wasmInstance.getFunction("grow_memory");
+              if (growFunc.isPresent()) {
+                try {
+                  final var args =
+                      new ai.tegmentum.wasmtime4j.WasmValue[] {
+                        ai.tegmentum.wasmtime4j.WasmValue.i32(1) // Grow by 1 page
+                      };
+                  final var result = growFunc.get().call(args);
+                  LOGGER.fine(
+                      "Memory grow result: " + (result.length > 0 ? result[0].asI32() : "none"));
+                } catch (final Exception e) {
+                  // May fail due to resource limits - that's expected
+                  LOGGER.fine("Memory growth failed as expected: " + e.getMessage());
+                }
+              }
             }
           }
-        }
-      }
-    });
+        });
   }
 }

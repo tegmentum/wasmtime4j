@@ -315,9 +315,7 @@ public class MemoryAllocationBenchmark {
   public void benchmarkArrayAllocationPathConventions(final Blackhole blackhole) {
     // Test various array sizes
     final PathConvention[] single = {PathConvention.MAVEN_NATIVE};
-    final PathConvention[] multiple = {
-      PathConvention.MAVEN_NATIVE, PathConvention.MAVEN_NATIVE
-    };
+    final PathConvention[] multiple = {PathConvention.MAVEN_NATIVE, PathConvention.MAVEN_NATIVE};
     final PathConvention[] all = PathConvention.values();
 
     blackhole.consume(single);

@@ -1,4 +1,4 @@
-package ai.tegmentum.wasmtime4j.native_functions;
+package ai.tegmentum.wasmtime4j.nativefunctions;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -9,7 +9,7 @@ import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.exception.CompilationException;
 import ai.tegmentum.wasmtime4j.exception.ValidationException;
 import ai.tegmentum.wasmtime4j.memory.MemoryLeakDetector;
-import ai.tegmentum.wasmtime4j.native_functions.NativeFunctionTestUtils.TestModule;
+import ai.tegmentum.wasmtime4j.nativefunctions.NativeFunctionTestUtils.TestModule;
 import ai.tegmentum.wasmtime4j.utils.TestUtils;
 import java.util.List;
 import java.util.Map;
@@ -25,8 +25,8 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * Comprehensive native function tests for Module operations. Tests all native functions related to
- * WebAssembly module compilation, validation, metadata access, and resource management for both
- * JNI and Panama FFI implementations.
+ * WebAssembly module compilation, validation, metadata access, and resource management for both JNI
+ * and Panama FFI implementations.
  *
  * <p>This test class validates:
  *
@@ -59,12 +59,12 @@ public class ModuleNativeFunctionTest extends BaseNativeFunctionTest {
                   // Compile module
                   try (final var module = engine.compileModule(moduleBytes)) {
                     assertThat(module).isNotNull();
-                    
+
                     // Access module metadata to exercise native functions
                     if (module.getExports() != null) {
                       assertThat(module.getExports()).isNotEmpty();
                     }
-                    
+
                     // Verify module can be instantiated
                     try (final var instance = r.instantiate(module)) {
                       assertThat(instance).isNotNull();
@@ -99,15 +99,14 @@ public class ModuleNativeFunctionTest extends BaseNativeFunctionTest {
                   try (final var engine = r.createEngine()) {
                     try (final var module = engine.compileModule(testModule.getModuleBytes())) {
                       assertThat(module).isNotNull();
-                      
+
                       // Exercise native functions for metadata access
                       exerciseModuleMetadataAccess(module);
                     }
                   }
                 });
 
-        assertNoMemoryLeaks(
-            result, "module_compile_" + runtimeType + "_" + testModule.getName());
+        assertNoMemoryLeaks(result, "module_compile_" + runtimeType + "_" + testModule.getName());
       }
     }
   }
@@ -126,7 +125,8 @@ public class ModuleNativeFunctionTest extends BaseNativeFunctionTest {
                   final List<TestModule> validModules = testUtils.getAllTestModules();
                   for (final TestModule module : validModules) {
                     try {
-                      try (final var compiledModule = engine.compileModule(module.getModuleBytes())) {
+                      try (final var compiledModule =
+                          engine.compileModule(module.getModuleBytes())) {
                         assertThat(compiledModule).isNotNull();
                       }
                     } catch (final CompilationException | ValidationException e) {
@@ -159,7 +159,7 @@ public class ModuleNativeFunctionTest extends BaseNativeFunctionTest {
                   try (final var module = engine.compileModule(moduleBytes)) {
                     // Test all metadata access functions
                     exerciseModuleMetadataAccess(module);
-                    
+
                     // Test repeated access to ensure native functions are stable
                     for (int i = 0; i < 10; i++) {
                       exerciseModuleMetadataAccess(module);
@@ -187,10 +187,10 @@ public class ModuleNativeFunctionTest extends BaseNativeFunctionTest {
                   // Compile module
                   try (final var module = engine.compileModule(moduleBytes)) {
                     assertThat(module).isNotNull();
-                    
+
                     // Access metadata concurrently
                     exerciseModuleMetadataAccess(module);
-                    
+
                     // Instantiate module
                     try (final var instance = r.instantiate(module)) {
                       assertThat(instance).isNotNull();
@@ -204,7 +204,8 @@ public class ModuleNativeFunctionTest extends BaseNativeFunctionTest {
       assertThreadSafety(result, "concurrent_module_operations");
       LOGGER.info(
           String.format(
-              "Module thread safety test completed: %.2f ops/sec", result.getOperationsPerSecond()));
+              "Module thread safety test completed: %.2f ops/sec",
+              result.getOperationsPerSecond()));
     }
   }
 
@@ -222,11 +223,11 @@ public class ModuleNativeFunctionTest extends BaseNativeFunctionTest {
                 try (final var engine = r.createEngine()) {
                   // Use different modules for different threads to test various scenarios
                   final TestModule testModule = modules.get(threadId % modules.size());
-                  
+
                   try {
                     try (final var module = engine.compileModule(testModule.getModuleBytes())) {
                       assertThat(module).isNotNull();
-                      
+
                       // Quick validation that module is usable
                       exerciseModuleMetadataAccess(module);
                     }
@@ -242,7 +243,7 @@ public class ModuleNativeFunctionTest extends BaseNativeFunctionTest {
       assertThreadSafety(result, "concurrent_module_compilation");
       LOGGER.info(
           String.format(
-              "Concurrent module compilation completed: %.2f ops/sec", 
+              "Concurrent module compilation completed: %.2f ops/sec",
               result.getOperationsPerSecond()));
     }
   }
@@ -261,11 +262,11 @@ public class ModuleNativeFunctionTest extends BaseNativeFunctionTest {
                 try (final var module = engine.compileModule(moduleBytes)) {
                   // Test metadata access across runtimes
                   exerciseModuleMetadataAccess(module);
-                  
+
                   // Test module instantiation
                   try (final var instance = runtime.instantiate(module)) {
                     assertThat(instance).isNotNull();
-                    
+
                     // Verify functionality is consistent across runtimes
                     if (instance.hasExport("get_state")) {
                       final var getStateFunc = instance.getFunction("get_state");
@@ -284,7 +285,8 @@ public class ModuleNativeFunctionTest extends BaseNativeFunctionTest {
           assertNoMemoryLeaks(result, "cross_runtime_module_test_" + runtimeType);
         });
 
-    LOGGER.info("Cross-runtime module compatibility test completed for " + results.size() + " runtimes");
+    LOGGER.info(
+        "Cross-runtime module compatibility test completed for " + results.size() + " runtimes");
   }
 
   @ParameterizedTest
@@ -301,7 +303,7 @@ public class ModuleNativeFunctionTest extends BaseNativeFunctionTest {
               r -> {
                 try (final var engine = r.createEngine()) {
                   final AtomicInteger successCount = new AtomicInteger(0);
-                  
+
                   for (int i = 0; i < cycleCount; i++) {
                     try (final var module = engine.compileModule(moduleBytes)) {
                       assertThat(module).isNotNull();
@@ -309,7 +311,7 @@ public class ModuleNativeFunctionTest extends BaseNativeFunctionTest {
                       successCount.incrementAndGet();
                     }
                   }
-                  
+
                   assertThat(successCount.get()).isEqualTo(cycleCount);
                 }
               });
@@ -325,37 +327,37 @@ public class ModuleNativeFunctionTest extends BaseNativeFunctionTest {
   void shouldHandleModuleParameterBoundaryConditions() {
     try (final WasmRuntime runtime = createRuntime()) {
       try (final var engine = runtime.createEngine()) {
-        
+
         // Test null module bytes
         assertThrows(
             Exception.class,
             () -> engine.compileModule(null),
             "Should throw exception for null module bytes");
-            
+
         // Test empty module bytes
         assertThrows(
             Exception.class,
             () -> engine.compileModule(new byte[0]),
             "Should throw exception for empty module bytes");
-            
+
         // Test invalid WebAssembly magic number
         final byte[] invalidMagic = {0x00, 0x61, 0x73, 0x6D}; // Incorrect magic
         assertThrows(
             Exception.class,
             () -> engine.compileModule(invalidMagic),
             "Should throw exception for invalid magic number");
-            
+
         // Test truncated module
         final byte[] truncated = {0x00, 0x61, 0x73, 0x6D, 0x01, 0x00}; // Valid magic but truncated
         assertThrows(
             Exception.class,
             () -> engine.compileModule(truncated),
             "Should throw exception for truncated module");
-            
+
         // Test very large invalid module
         final byte[] largeInvalid = new byte[1024 * 1024]; // 1MB of invalid data
         java.util.Arrays.fill(largeInvalid, (byte) 0xFF);
-        
+
         assertThrows(
             Exception.class,
             () -> engine.compileModule(largeInvalid),
@@ -379,27 +381,29 @@ public class ModuleNativeFunctionTest extends BaseNativeFunctionTest {
           switch (testCase.getPattern()) {
             case NORMAL:
               // Normal lifecycle
-              assertDoesNotThrow(() -> {
-                try (final var module = engine.compileModule(moduleBytes)) {
-                  exerciseModuleMetadataAccess(module);
-                }
-              });
+              assertDoesNotThrow(
+                  () -> {
+                    try (final var module = engine.compileModule(moduleBytes)) {
+                      exerciseModuleMetadataAccess(module);
+                    }
+                  });
               break;
 
             case DOUBLE_CLOSE:
               // Double close
-              assertDoesNotThrow(() -> {
-                final var module = engine.compileModule(moduleBytes);
-                module.close();
-                module.close(); // Should not throw
-              });
+              assertDoesNotThrow(
+                  () -> {
+                    final var module = engine.compileModule(moduleBytes);
+                    module.close();
+                    module.close(); // Should not throw
+                  });
               break;
 
             case USE_AFTER_CLOSE:
               // Use after close
               final var closedModule = engine.compileModule(moduleBytes);
               closedModule.close();
-              
+
               assertThrows(
                   Exception.class,
                   () -> exerciseModuleMetadataAccess(closedModule),
@@ -409,14 +413,15 @@ public class ModuleNativeFunctionTest extends BaseNativeFunctionTest {
             case RAPID_CYCLES:
               // Rapid cycles
               final AtomicInteger cycleCount = new AtomicInteger(0);
-              assertDoesNotThrow(() -> {
-                for (int i = 0; i < 50; i++) {
-                  try (final var module = engine.compileModule(moduleBytes)) {
-                    exerciseModuleMetadataAccess(module);
-                    cycleCount.incrementAndGet();
-                  }
-                }
-              });
+              assertDoesNotThrow(
+                  () -> {
+                    for (int i = 0; i < 50; i++) {
+                      try (final var module = engine.compileModule(moduleBytes)) {
+                        exerciseModuleMetadataAccess(module);
+                        cycleCount.incrementAndGet();
+                      }
+                    }
+                  });
               assertThat(cycleCount.get()).isEqualTo(50);
               break;
 
@@ -439,6 +444,8 @@ public class ModuleNativeFunctionTest extends BaseNativeFunctionTest {
 
               LOGGER.info("Module no-close test result: " + result.isLeakDetected());
               break;
+            default:
+              throw new IllegalArgumentException("Unsupported lifecycle pattern: " + testCase.getPattern());
           }
         }
       }
@@ -453,24 +460,25 @@ public class ModuleNativeFunctionTest extends BaseNativeFunctionTest {
   private void exerciseModuleMetadataAccess(final Object module) {
     // This method would call various metadata access methods on the module
     // The exact methods depend on the module interface
-    
-    assertDoesNotThrow(() -> {
-      // Access exports (if available)
-      if (module instanceof ai.tegmentum.wasmtime4j.Module) {
-        final var wasmModule = (ai.tegmentum.wasmtime4j.Module) module;
-        
-        // These would exercise native functions for metadata access
-        final var exports = wasmModule.getExports();
-        if (exports != null && !exports.isEmpty()) {
-          LOGGER.fine("Module has " + exports.size() + " exports");
-        }
-        
-        final var imports = wasmModule.getImports();
-        if (imports != null && !imports.isEmpty()) {
-          LOGGER.fine("Module has " + imports.size() + " imports");
-        }
-      }
-    });
+
+    assertDoesNotThrow(
+        () -> {
+          // Access exports (if available)
+          if (module instanceof ai.tegmentum.wasmtime4j.Module) {
+            final var wasmModule = (ai.tegmentum.wasmtime4j.Module) module;
+
+            // These would exercise native functions for metadata access
+            final var exports = wasmModule.getExports();
+            if (exports != null && !exports.isEmpty()) {
+              LOGGER.fine("Module has " + exports.size() + " exports");
+            }
+
+            final var imports = wasmModule.getImports();
+            if (imports != null && !imports.isEmpty()) {
+              LOGGER.fine("Module has " + imports.size() + " imports");
+            }
+          }
+        });
   }
 
   /**
@@ -481,22 +489,22 @@ public class ModuleNativeFunctionTest extends BaseNativeFunctionTest {
   private void testInvalidModuleHandling(final Object engine) {
     // Test various invalid module scenarios
     final byte[][] invalidModules = {
-        // Invalid magic number
-        {0x00, 0x62, 0x73, 0x6D, 0x01, 0x00, 0x00, 0x00},
-        
-        // Invalid version
-        {0x00, 0x61, 0x73, 0x6D, 0x02, 0x00, 0x00, 0x00},
-        
-        // Corrupted section
-        {0x00, 0x61, 0x73, 0x6D, 0x01, 0x00, 0x00, 0x00, (byte) 0xFF, (byte) 0xFF},
-        
-        // Random data
-        {(byte) 0xDE, (byte) 0xAD, (byte) 0xBE, (byte) 0xEF}
+      // Invalid magic number
+      {0x00, 0x62, 0x73, 0x6D, 0x01, 0x00, 0x00, 0x00},
+
+      // Invalid version
+      {0x00, 0x61, 0x73, 0x6D, 0x02, 0x00, 0x00, 0x00},
+
+      // Corrupted section
+      {0x00, 0x61, 0x73, 0x6D, 0x01, 0x00, 0x00, 0x00, (byte) 0xFF, (byte) 0xFF},
+
+      // Random data
+      {(byte) 0xDE, (byte) 0xAD, (byte) 0xBE, (byte) 0xEF}
     };
 
     if (engine instanceof ai.tegmentum.wasmtime4j.Engine) {
       final var wasmEngine = (ai.tegmentum.wasmtime4j.Engine) engine;
-      
+
       for (final byte[] invalidModule : invalidModules) {
         assertThrows(
             Exception.class,

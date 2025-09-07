@@ -1,4 +1,4 @@
-package ai.tegmentum.wasmtime4j.native_functions;
+package ai.tegmentum.wasmtime4j.nativefunctions;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -7,7 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.memory.MemoryLeakDetector;
-import ai.tegmentum.wasmtime4j.native_functions.NativeFunctionTestUtils.TestModule;
+import ai.tegmentum.wasmtime4j.nativefunctions.NativeFunctionTestUtils.TestModule;
 import ai.tegmentum.wasmtime4j.utils.TestUtils;
 import java.util.List;
 import java.util.Map;
@@ -104,8 +104,7 @@ public class InstanceNativeFunctionTest extends BaseNativeFunctionTest {
                   }
                 });
 
-        assertNoMemoryLeaks(
-            result, "instance_create_" + runtimeType + "_" + testModule.getName());
+        assertNoMemoryLeaks(result, "instance_create_" + runtimeType + "_" + testModule.getName());
       }
     }
   }
@@ -128,10 +127,11 @@ public class InstanceNativeFunctionTest extends BaseNativeFunctionTest {
                       final var addFunction = instance.getFunction("add");
                       if (addFunction.isPresent()) {
                         for (int i = 0; i < 20; i++) {
-                          final var args = new ai.tegmentum.wasmtime4j.WasmValue[] {
-                            ai.tegmentum.wasmtime4j.WasmValue.i32(i),
-                            ai.tegmentum.wasmtime4j.WasmValue.i32(i * 2)
-                          };
+                          final var args =
+                              new ai.tegmentum.wasmtime4j.WasmValue[] {
+                                ai.tegmentum.wasmtime4j.WasmValue.i32(i),
+                                ai.tegmentum.wasmtime4j.WasmValue.i32(i * 2)
+                              };
                           final var result = addFunction.get().call(args);
                           assertThat(result[0].asI32()).isEqualTo(i * 3);
                         }
@@ -161,7 +161,7 @@ public class InstanceNativeFunctionTest extends BaseNativeFunctionTest {
                     try (final var instance = r.instantiate(module)) {
                       // Test memory operations
                       exerciseMemoryOperations(instance);
-                      
+
                       // Test repeated memory access
                       for (int i = 0; i < 10; i++) {
                         exerciseMemoryOperations(instance);
@@ -191,7 +191,7 @@ public class InstanceNativeFunctionTest extends BaseNativeFunctionTest {
                     try (final var instance = r.instantiate(module)) {
                       // Test table operations
                       exerciseTableOperations(instance);
-                      
+
                       // Test repeated table access
                       for (int i = 0; i < 5; i++) {
                         exerciseTableOperations(instance);
@@ -221,7 +221,7 @@ public class InstanceNativeFunctionTest extends BaseNativeFunctionTest {
                     try (final var instance = r.instantiate(module)) {
                       // Test global operations
                       exerciseGlobalOperations(instance);
-                      
+
                       // Test state consistency
                       for (int i = 0; i < 15; i++) {
                         exerciseGlobalOperations(instance);
@@ -251,17 +251,18 @@ public class InstanceNativeFunctionTest extends BaseNativeFunctionTest {
                     try (final var instance = r.instantiate(module)) {
                       // Exercise various instance operations concurrently
                       exerciseInstanceOperations(instance);
-                      
+
                       // Test function calls with thread-specific data
                       if (instance.hasExport("set_state")) {
                         final var setStateFunc = instance.getFunction("set_state");
                         if (setStateFunc.isPresent()) {
                           final int stateValue = threadId * 1000 + operationId;
-                          final var args = new ai.tegmentum.wasmtime4j.WasmValue[] {
-                            ai.tegmentum.wasmtime4j.WasmValue.i32(stateValue)
-                          };
+                          final var args =
+                              new ai.tegmentum.wasmtime4j.WasmValue[] {
+                                ai.tegmentum.wasmtime4j.WasmValue.i32(stateValue)
+                              };
                           setStateFunc.get().call(args);
-                          
+
                           // Verify state was set
                           final var getStateFunc = instance.getFunction("get_state");
                           if (getStateFunc.isPresent()) {
@@ -276,13 +277,13 @@ public class InstanceNativeFunctionTest extends BaseNativeFunctionTest {
                   }
                 }
               },
-              4, // 4 threads  
+              4, // 4 threads
               10); // 10 operations per thread
 
       assertThreadSafety(result, "concurrent_instance_operations");
       LOGGER.info(
           String.format(
-              "Instance thread safety test completed: %.2f ops/sec", 
+              "Instance thread safety test completed: %.2f ops/sec",
               result.getOperationsPerSecond()));
     }
   }
@@ -307,10 +308,11 @@ public class InstanceNativeFunctionTest extends BaseNativeFunctionTest {
                         for (int i = 0; i < 5; i++) {
                           final int a = threadId + i;
                           final int b = operationId + i;
-                          final var args = new ai.tegmentum.wasmtime4j.WasmValue[] {
-                            ai.tegmentum.wasmtime4j.WasmValue.i32(a),
-                            ai.tegmentum.wasmtime4j.WasmValue.i32(b)
-                          };
+                          final var args =
+                              new ai.tegmentum.wasmtime4j.WasmValue[] {
+                                ai.tegmentum.wasmtime4j.WasmValue.i32(a),
+                                ai.tegmentum.wasmtime4j.WasmValue.i32(b)
+                              };
                           final var result = addFunction.get().call(args);
                           assertThat(result[0].asI32()).isEqualTo(a + b);
                         }
@@ -325,7 +327,7 @@ public class InstanceNativeFunctionTest extends BaseNativeFunctionTest {
       assertThreadSafety(result, "concurrent_function_invocation");
       LOGGER.info(
           String.format(
-              "Concurrent function invocation completed: %.2f ops/sec", 
+              "Concurrent function invocation completed: %.2f ops/sec",
               result.getOperationsPerSecond()));
     }
   }
@@ -345,28 +347,30 @@ public class InstanceNativeFunctionTest extends BaseNativeFunctionTest {
                   try (final var instance = runtime.instantiate(module)) {
                     // Test instance functionality across runtimes
                     exerciseInstanceOperations(instance);
-                    
+
                     // Test specific function calls
                     if (instance.hasExport("fibonacci")) {
                       final var fibFunction = instance.getFunction("fibonacci");
                       if (fibFunction.isPresent()) {
-                        final var args = new ai.tegmentum.wasmtime4j.WasmValue[] {
-                          ai.tegmentum.wasmtime4j.WasmValue.i32(10)
-                        };
+                        final var args =
+                            new ai.tegmentum.wasmtime4j.WasmValue[] {
+                              ai.tegmentum.wasmtime4j.WasmValue.i32(10)
+                            };
                         final var result = fibFunction.get().call(args);
                         // Fibonacci(10) = 55
                         assertThat(result[0].asI32()).isEqualTo(55);
                       }
                     }
-                    
+
                     // Test memory operations
                     if (instance.hasExport("store_load")) {
                       final var storeLoadFunc = instance.getFunction("store_load");
                       if (storeLoadFunc.isPresent()) {
-                        final var args = new ai.tegmentum.wasmtime4j.WasmValue[] {
-                          ai.tegmentum.wasmtime4j.WasmValue.i32(0), // address
-                          ai.tegmentum.wasmtime4j.WasmValue.i32(123) // value
-                        };
+                        final var args =
+                            new ai.tegmentum.wasmtime4j.WasmValue[] {
+                              ai.tegmentum.wasmtime4j.WasmValue.i32(0), // address
+                              ai.tegmentum.wasmtime4j.WasmValue.i32(123) // value
+                            };
                         final var result = storeLoadFunc.get().call(args);
                         assertThat(result[0].asI32()).isEqualTo(123);
                       }
@@ -381,7 +385,8 @@ public class InstanceNativeFunctionTest extends BaseNativeFunctionTest {
           assertNoMemoryLeaks(result, "cross_runtime_instance_test_" + runtimeType);
         });
 
-    LOGGER.info("Cross-runtime instance compatibility test completed for " + results.size() + " runtimes");
+    LOGGER.info(
+        "Cross-runtime instance compatibility test completed for " + results.size() + " runtimes");
   }
 
   @ParameterizedTest
@@ -399,7 +404,7 @@ public class InstanceNativeFunctionTest extends BaseNativeFunctionTest {
                 try (final var engine = r.createEngine()) {
                   try (final var module = engine.compileModule(moduleBytes)) {
                     final AtomicInteger successCount = new AtomicInteger(0);
-                    
+
                     for (int i = 0; i < cycleCount; i++) {
                       try (final var instance = r.instantiate(module)) {
                         assertThat(instance).isNotNull();
@@ -407,7 +412,7 @@ public class InstanceNativeFunctionTest extends BaseNativeFunctionTest {
                         successCount.incrementAndGet();
                       }
                     }
-                    
+
                     assertThat(successCount.get()).isEqualTo(cycleCount);
                   }
                 }
@@ -428,34 +433,36 @@ public class InstanceNativeFunctionTest extends BaseNativeFunctionTest {
 
       try (final var engine = runtime.createEngine()) {
         try (final var module = engine.compileModule(moduleBytes)) {
-          
+
           for (final var testCase : lifecycleData.getTestCases()) {
             LOGGER.info("Testing instance lifecycle pattern: " + testCase.getName());
 
             switch (testCase.getPattern()) {
               case NORMAL:
                 // Normal lifecycle
-                assertDoesNotThrow(() -> {
-                  try (final var instance = runtime.instantiate(module)) {
-                    exerciseInstanceOperations(instance);
-                  }
-                });
+                assertDoesNotThrow(
+                    () -> {
+                      try (final var instance = runtime.instantiate(module)) {
+                        exerciseInstanceOperations(instance);
+                      }
+                    });
                 break;
 
               case DOUBLE_CLOSE:
                 // Double close
-                assertDoesNotThrow(() -> {
-                  final var instance = runtime.instantiate(module);
-                  instance.close();
-                  instance.close(); // Should not throw
-                });
+                assertDoesNotThrow(
+                    () -> {
+                      final var instance = runtime.instantiate(module);
+                      instance.close();
+                      instance.close(); // Should not throw
+                    });
                 break;
 
               case USE_AFTER_CLOSE:
                 // Use after close
                 final var closedInstance = runtime.instantiate(module);
                 closedInstance.close();
-                
+
                 assertThrows(
                     Exception.class,
                     () -> exerciseInstanceOperations(closedInstance),
@@ -465,14 +472,15 @@ public class InstanceNativeFunctionTest extends BaseNativeFunctionTest {
               case RAPID_CYCLES:
                 // Rapid cycles
                 final AtomicInteger cycleCount = new AtomicInteger(0);
-                assertDoesNotThrow(() -> {
-                  for (int i = 0; i < 25; i++) {
-                    try (final var instance = runtime.instantiate(module)) {
-                      exerciseInstanceOperations(instance);
-                      cycleCount.incrementAndGet();
-                    }
-                  }
-                });
+                assertDoesNotThrow(
+                    () -> {
+                      for (int i = 0; i < 25; i++) {
+                        try (final var instance = runtime.instantiate(module)) {
+                          exerciseInstanceOperations(instance);
+                          cycleCount.incrementAndGet();
+                        }
+                      }
+                    });
                 assertThat(cycleCount.get()).isEqualTo(25);
                 break;
 
@@ -497,6 +505,8 @@ public class InstanceNativeFunctionTest extends BaseNativeFunctionTest {
 
                 LOGGER.info("Instance no-close test result: " + result.isLeakDetected());
                 break;
+              default:
+                throw new IllegalArgumentException("Unsupported lifecycle pattern: " + testCase.getPattern());
             }
           }
         }
@@ -510,26 +520,28 @@ public class InstanceNativeFunctionTest extends BaseNativeFunctionTest {
    * @param instance the instance to exercise
    */
   private void exerciseInstanceOperations(final Object instance) {
-    assertDoesNotThrow(() -> {
-      if (instance instanceof ai.tegmentum.wasmtime4j.Instance) {
-        final var wasmInstance = (ai.tegmentum.wasmtime4j.Instance) instance;
-        
-        // Test export checking
-        final boolean hasAdd = wasmInstance.hasExport("add");
-        LOGGER.fine("Instance has 'add' export: " + hasAdd);
-        
-        // Test function access
-        final var addFunction = wasmInstance.getFunction("add");
-        if (addFunction.isPresent()) {
-          final var args = new ai.tegmentum.wasmtime4j.WasmValue[] {
-            ai.tegmentum.wasmtime4j.WasmValue.i32(5),
-            ai.tegmentum.wasmtime4j.WasmValue.i32(3)
-          };
-          final var result = addFunction.get().call(args);
-          assertThat(result[0].asI32()).isEqualTo(8);
-        }
-      }
-    });
+    assertDoesNotThrow(
+        () -> {
+          if (instance instanceof ai.tegmentum.wasmtime4j.Instance) {
+            final var wasmInstance = (ai.tegmentum.wasmtime4j.Instance) instance;
+
+            // Test export checking
+            final boolean hasAdd = wasmInstance.hasExport("add");
+            LOGGER.fine("Instance has 'add' export: " + hasAdd);
+
+            // Test function access
+            final var addFunction = wasmInstance.getFunction("add");
+            if (addFunction.isPresent()) {
+              final var args =
+                  new ai.tegmentum.wasmtime4j.WasmValue[] {
+                    ai.tegmentum.wasmtime4j.WasmValue.i32(5),
+                    ai.tegmentum.wasmtime4j.WasmValue.i32(3)
+                  };
+              final var result = addFunction.get().call(args);
+              assertThat(result[0].asI32()).isEqualTo(8);
+            }
+          }
+        });
   }
 
   /**
@@ -538,24 +550,25 @@ public class InstanceNativeFunctionTest extends BaseNativeFunctionTest {
    * @param instance the instance to test
    */
   private void exerciseMemoryOperations(final Object instance) {
-    assertDoesNotThrow(() -> {
-      if (instance instanceof ai.tegmentum.wasmtime4j.Instance) {
-        final var wasmInstance = (ai.tegmentum.wasmtime4j.Instance) instance;
-        
-        // Test memory access if available
-        final var memory = wasmInstance.getMemory("memory");
-        if (memory.isPresent()) {
-          LOGGER.fine("Instance has memory export");
-        }
-        
-        // Test memory functions
-        final var getSizeFunc = wasmInstance.getFunction("get_memory_size");
-        if (getSizeFunc.isPresent()) {
-          final var result = getSizeFunc.get().call();
-          LOGGER.fine("Memory size: " + (result.length > 0 ? result[0].asI32() : "unknown"));
-        }
-      }
-    });
+    assertDoesNotThrow(
+        () -> {
+          if (instance instanceof ai.tegmentum.wasmtime4j.Instance) {
+            final var wasmInstance = (ai.tegmentum.wasmtime4j.Instance) instance;
+
+            // Test memory access if available
+            final var memory = wasmInstance.getMemory("memory");
+            if (memory.isPresent()) {
+              LOGGER.fine("Instance has memory export");
+            }
+
+            // Test memory functions
+            final var getSizeFunc = wasmInstance.getFunction("get_memory_size");
+            if (getSizeFunc.isPresent()) {
+              final var result = getSizeFunc.get().call();
+              LOGGER.fine("Memory size: " + (result.length > 0 ? result[0].asI32() : "unknown"));
+            }
+          }
+        });
   }
 
   /**
@@ -564,24 +577,25 @@ public class InstanceNativeFunctionTest extends BaseNativeFunctionTest {
    * @param instance the instance to test
    */
   private void exerciseTableOperations(final Object instance) {
-    assertDoesNotThrow(() -> {
-      if (instance instanceof ai.tegmentum.wasmtime4j.Instance) {
-        final var wasmInstance = (ai.tegmentum.wasmtime4j.Instance) instance;
-        
-        // Test table access if available
-        final var table = wasmInstance.getTable("table");
-        if (table.isPresent()) {
-          LOGGER.fine("Instance has table export");
-        }
-        
-        // Test table functions
-        final var getTableSizeFunc = wasmInstance.getFunction("get_table_size");
-        if (getTableSizeFunc.isPresent()) {
-          final var result = getTableSizeFunc.get().call();
-          LOGGER.fine("Table size: " + (result.length > 0 ? result[0].asI32() : "unknown"));
-        }
-      }
-    });
+    assertDoesNotThrow(
+        () -> {
+          if (instance instanceof ai.tegmentum.wasmtime4j.Instance) {
+            final var wasmInstance = (ai.tegmentum.wasmtime4j.Instance) instance;
+
+            // Test table access if available
+            final var table = wasmInstance.getTable("table");
+            if (table.isPresent()) {
+              LOGGER.fine("Instance has table export");
+            }
+
+            // Test table functions
+            final var getTableSizeFunc = wasmInstance.getFunction("get_table_size");
+            if (getTableSizeFunc.isPresent()) {
+              final var result = getTableSizeFunc.get().call();
+              LOGGER.fine("Table size: " + (result.length > 0 ? result[0].asI32() : "unknown"));
+            }
+          }
+        });
   }
 
   /**
@@ -590,35 +604,36 @@ public class InstanceNativeFunctionTest extends BaseNativeFunctionTest {
    * @param instance the instance to test
    */
   private void exerciseGlobalOperations(final Object instance) {
-    assertDoesNotThrow(() -> {
-      if (instance instanceof ai.tegmentum.wasmtime4j.Instance) {
-        final var wasmInstance = (ai.tegmentum.wasmtime4j.Instance) instance;
-        
-        // Test global access if available
-        final var global = wasmInstance.getGlobal("counter");
-        if (global.isPresent()) {
-          LOGGER.fine("Instance has counter global");
-        }
-        
-        // Test global functions
-        final var getCounterFunc = wasmInstance.getFunction("get_counter");
-        if (getCounterFunc.isPresent()) {
-          final var result = getCounterFunc.get().call();
-          final int counterValue = result.length > 0 ? result[0].asI32() : 0;
-          LOGGER.fine("Counter value: " + counterValue);
-          
-          // Test increment
-          final var incrementFunc = wasmInstance.getFunction("increment_counter");
-          if (incrementFunc.isPresent()) {
-            incrementFunc.get().call();
-            
-            // Verify increment
-            final var newResult = getCounterFunc.get().call();
-            final int newCounterValue = newResult.length > 0 ? newResult[0].asI32() : 0;
-            assertThat(newCounterValue).isEqualTo(counterValue + 1);
+    assertDoesNotThrow(
+        () -> {
+          if (instance instanceof ai.tegmentum.wasmtime4j.Instance) {
+            final var wasmInstance = (ai.tegmentum.wasmtime4j.Instance) instance;
+
+            // Test global access if available
+            final var global = wasmInstance.getGlobal("counter");
+            if (global.isPresent()) {
+              LOGGER.fine("Instance has counter global");
+            }
+
+            // Test global functions
+            final var getCounterFunc = wasmInstance.getFunction("get_counter");
+            if (getCounterFunc.isPresent()) {
+              final var result = getCounterFunc.get().call();
+              final int counterValue = result.length > 0 ? result[0].asI32() : 0;
+              LOGGER.fine("Counter value: " + counterValue);
+
+              // Test increment
+              final var incrementFunc = wasmInstance.getFunction("increment_counter");
+              if (incrementFunc.isPresent()) {
+                incrementFunc.get().call();
+
+                // Verify increment
+                final var newResult = getCounterFunc.get().call();
+                final int newCounterValue = newResult.length > 0 ? newResult[0].asI32() : 0;
+                assertThat(newCounterValue).isEqualTo(counterValue + 1);
+              }
+            }
           }
-        }
-      }
-    });
+        });
   }
 }

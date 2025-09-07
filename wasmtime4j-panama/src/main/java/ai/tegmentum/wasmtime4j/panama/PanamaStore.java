@@ -17,7 +17,10 @@
 package ai.tegmentum.wasmtime4j.panama;
 
 import ai.tegmentum.wasmtime4j.Engine;
+import ai.tegmentum.wasmtime4j.FunctionType;
+import ai.tegmentum.wasmtime4j.HostFunction;
 import ai.tegmentum.wasmtime4j.Store;
+import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.lang.foreign.MemorySegment;
 import java.util.Objects;
@@ -267,6 +270,21 @@ public final class PanamaStore implements Store, AutoCloseable {
               "Module instantiation", "module=" + module.getModulePointer(), e.getMessage());
       throw new WasmException(detailedMessage, e);
     }
+  }
+
+  @Override
+  public WasmFunction createHostFunction(
+      final String name, final FunctionType functionType, final HostFunction implementation)
+      throws WasmException {
+    Objects.requireNonNull(name, "name cannot be null");
+    Objects.requireNonNull(functionType, "functionType cannot be null");
+    Objects.requireNonNull(implementation, "implementation cannot be null");
+    ensureNotClosed();
+
+    // TODO: Implement PanamaHostFunction when host function support is added
+    throw new UnsupportedOperationException(
+        "Host function creation is not yet implemented in Panama backend. "
+            + "Use JNI backend for host function support.");
   }
 
   /**

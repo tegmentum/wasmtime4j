@@ -5,14 +5,12 @@ import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
 import ai.tegmentum.wasmtime4j.utils.TestUtils;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -40,15 +38,16 @@ public final class WasmTestSuiteRunner {
   private static final int MAX_RETRY_ATTEMPTS = 3;
 
   // Test filtering patterns
-  private static final List<Pattern> DEFAULT_SKIP_PATTERNS = Arrays.asList(
-      Pattern.compile(".*\\.expected$"), // Skip expected result files
-      Pattern.compile(".*\\.json$"),     // Skip metadata files
-      Pattern.compile(".*\\.txt$"),      // Skip text files
-      Pattern.compile(".*README.*", Pattern.CASE_INSENSITIVE)
-  );
+  private static final List<Pattern> DEFAULT_SKIP_PATTERNS =
+      Arrays.asList(
+          Pattern.compile(".*\\.expected$"), // Skip expected result files
+          Pattern.compile(".*\\.json$"), // Skip metadata files
+          Pattern.compile(".*\\.txt$"), // Skip text files
+          Pattern.compile(".*README.*", Pattern.CASE_INSENSITIVE));
 
   // Runtime instances cache
-  private static final ConcurrentMap<RuntimeType, WasmRuntime> runtimeCache = new ConcurrentHashMap<>();
+  private static final ConcurrentMap<RuntimeType, WasmRuntime> runtimeCache =
+      new ConcurrentHashMap<>();
 
   private WasmTestSuiteRunner() {
     // Utility class - prevent instantiation
@@ -71,8 +70,8 @@ public final class WasmTestSuiteRunner {
    * @return comprehensive execution results
    * @throws IOException if test execution fails
    */
-  public static WasmTestSuiteExecutionResults executeAllTestSuites(final TestExecutionOptions options)
-      throws IOException {
+  public static WasmTestSuiteExecutionResults executeAllTestSuites(
+      final TestExecutionOptions options) throws IOException {
     Objects.requireNonNull(options, "options cannot be null");
 
     LOGGER.info("Starting comprehensive WebAssembly test suite execution");
@@ -91,10 +90,16 @@ public final class WasmTestSuiteRunner {
       final WasmTestSuiteResults suiteResults = executeSingleTestSuite(suiteType, options);
       resultsBuilder.addSuiteResults(suiteType, suiteResults);
 
-      LOGGER.info("Completed test suite " + suiteType.name() + ": "
-          + suiteResults.getTotalTestsExecuted() + " tests executed, "
-          + suiteResults.getSuccessfulTests() + " successful, "
-          + suiteResults.getFailedTests() + " failed");
+      LOGGER.info(
+          "Completed test suite "
+              + suiteType.name()
+              + ": "
+              + suiteResults.getTotalTestsExecuted()
+              + " tests executed, "
+              + suiteResults.getSuccessfulTests()
+              + " successful, "
+              + suiteResults.getFailedTests()
+              + " failed");
     }
 
     final Duration totalDuration = Duration.between(startTime, Instant.now());
@@ -102,10 +107,18 @@ public final class WasmTestSuiteRunner {
 
     final WasmTestSuiteExecutionResults results = resultsBuilder.build();
 
-    LOGGER.info("WebAssembly test suite execution completed in " + totalDuration.toSeconds() + "s. "
-        + "Total: " + results.getTotalTestsExecuted() + " tests, "
-        + "Successful: " + results.getTotalSuccessfulTests() + ", "
-        + "Failed: " + results.getTotalFailedTests());
+    LOGGER.info(
+        "WebAssembly test suite execution completed in "
+            + totalDuration.toSeconds()
+            + "s. "
+            + "Total: "
+            + results.getTotalTestsExecuted()
+            + " tests, "
+            + "Successful: "
+            + results.getTotalSuccessfulTests()
+            + ", "
+            + "Failed: "
+            + results.getTotalFailedTests());
 
     return results;
   }
@@ -119,8 +132,8 @@ public final class WasmTestSuiteRunner {
    * @throws IOException if execution fails
    */
   private static WasmTestSuiteResults executeSingleTestSuite(
-      final WasmTestSuiteLoader.TestSuiteType suiteType,
-      final TestExecutionOptions options) throws IOException {
+      final WasmTestSuiteLoader.TestSuiteType suiteType, final TestExecutionOptions options)
+      throws IOException {
 
     final List<WasmTestCase> testCases = WasmTestSuiteLoader.loadTestSuite(suiteType);
 
@@ -143,8 +156,9 @@ public final class WasmTestSuiteRunner {
         continue;
       }
 
-      LOGGER.info("Executing " + filteredTestCases.size() + " tests with " + runtimeType + " runtime");
-      final Map<String, RuntimeTestExecution> runtimeResults = 
+      LOGGER.info(
+          "Executing " + filteredTestCases.size() + " tests with " + runtimeType + " runtime");
+      final Map<String, RuntimeTestExecution> runtimeResults =
           executeTestsWithRuntime(filteredTestCases, runtimeType, options);
 
       resultsBuilder.addRuntimeResults(runtimeType, runtimeResults);
@@ -178,9 +192,7 @@ public final class WasmTestSuiteRunner {
     return results;
   }
 
-  /**
-   * Executes tests in parallel using a thread pool.
-   */
+  /** Executes tests in parallel using a thread pool. */
   private static void executeTestsInParallel(
       final List<WasmTestCase> testCases,
       final WasmRuntime runtime,
@@ -192,11 +204,14 @@ public final class WasmTestSuiteRunner {
     final List<Future<Void>> futures = new ArrayList<>();
 
     for (final WasmTestCase testCase : testCases) {
-      final Future<Void> future = executor.submit(() -> {
-        final RuntimeTestExecution result = executeTestCase(testCase, runtime, runtimeType, options);
-        results.put(testCase.getName(), result);
-        return null;
-      });
+      final Future<Void> future =
+          executor.submit(
+              () -> {
+                final RuntimeTestExecution result =
+                    executeTestCase(testCase, runtime, runtimeType, options);
+                results.put(testCase.getName(), result);
+                return null;
+              });
       futures.add(future);
     }
 
@@ -221,9 +236,7 @@ public final class WasmTestSuiteRunner {
     }
   }
 
-  /**
-   * Executes tests sequentially.
-   */
+  /** Executes tests sequentially. */
   private static void executeTestsSequentially(
       final List<WasmTestCase> testCases,
       final WasmRuntime runtime,
@@ -263,8 +276,14 @@ public final class WasmTestSuiteRunner {
         final Object result = executeTestCaseLogic(testCase, runtime);
         final Duration duration = Duration.between(startTime, Instant.now());
 
-        LOGGER.fine("Test " + testCase.getName() + " completed successfully with " + runtimeType 
-            + " in " + duration.toMillis() + "ms");
+        LOGGER.fine(
+            "Test "
+                + testCase.getName()
+                + " completed successfully with "
+                + runtimeType
+                + " in "
+                + duration.toMillis()
+                + "ms");
 
         return RuntimeTestExecution.successful(runtimeType, result, duration);
 
@@ -273,8 +292,14 @@ public final class WasmTestSuiteRunner {
         retryCount++;
 
         if (retryCount <= options.getMaxRetryAttempts()) {
-          LOGGER.warning("Test " + testCase.getName() + " failed (attempt " + retryCount + "): "
-              + e.getMessage() + ". Retrying...");
+          LOGGER.warning(
+              "Test "
+                  + testCase.getName()
+                  + " failed (attempt "
+                  + retryCount
+                  + "): "
+                  + e.getMessage()
+                  + ". Retrying...");
 
           try {
             Thread.sleep(100 * retryCount); // Exponential backoff
@@ -287,8 +312,15 @@ public final class WasmTestSuiteRunner {
     }
 
     final Duration duration = Duration.between(startTime, Instant.now());
-    LOGGER.warning("Test " + testCase.getName() + " failed after " + options.getMaxRetryAttempts()
-        + " attempts with " + runtimeType + ": " + lastException.getMessage());
+    LOGGER.warning(
+        "Test "
+            + testCase.getName()
+            + " failed after "
+            + options.getMaxRetryAttempts()
+            + " attempts with "
+            + runtimeType
+            + ": "
+            + lastException.getMessage());
 
     return RuntimeTestExecution.failed(runtimeType, lastException, duration);
   }
@@ -342,7 +374,7 @@ public final class WasmTestSuiteRunner {
    */
   private static List<WasmTestCase> filterTestCases(
       final List<WasmTestCase> testCases, final TestExecutionOptions options) {
-    
+
     return testCases.stream()
         .filter(testCase -> shouldIncludeTestCase(testCase, options))
         .collect(Collectors.toList());
@@ -355,7 +387,8 @@ public final class WasmTestSuiteRunner {
    * @param options the execution options
    * @return true if the test case should be included
    */
-  private static boolean shouldIncludeTestCase(final WasmTestCase testCase, final TestExecutionOptions options) {
+  private static boolean shouldIncludeTestCase(
+      final WasmTestCase testCase, final TestExecutionOptions options) {
     // Check skip patterns
     for (final Pattern skipPattern : DEFAULT_SKIP_PATTERNS) {
       if (skipPattern.matcher(testCase.getName()).matches()) {
@@ -389,14 +422,16 @@ public final class WasmTestSuiteRunner {
    * @throws RuntimeException if runtime creation fails
    */
   private static WasmRuntime getRuntimeInstance(final RuntimeType runtimeType) {
-    return runtimeCache.computeIfAbsent(runtimeType, type -> {
-      LOGGER.info("Creating runtime instance for " + type);
-      try {
-        return WasmRuntimeFactory.create(type);
-      } catch (final ai.tegmentum.wasmtime4j.exception.WasmException e) {
-        throw new RuntimeException("Failed to create runtime for " + type, e);
-      }
-    });
+    return runtimeCache.computeIfAbsent(
+        runtimeType,
+        type -> {
+          LOGGER.info("Creating runtime instance for " + type);
+          try {
+            return WasmRuntimeFactory.create(type);
+          } catch (final ai.tegmentum.wasmtime4j.exception.WasmException e) {
+            throw new RuntimeException("Failed to create runtime for " + type, e);
+          }
+        });
   }
 
   /**
@@ -409,39 +444,41 @@ public final class WasmTestSuiteRunner {
     WasmTestSuiteLoader.ensureTestSuitesAvailable();
 
     // Check if we need to download test suites
-    final Path testResourcesPath = WasmTestSuiteLoader.getTestSuiteDirectory(
-        WasmTestSuiteLoader.TestSuiteType.WEBASSEMBLY_SPEC).getParent();
+    final Path testResourcesPath =
+        WasmTestSuiteLoader.getTestSuiteDirectory(
+                WasmTestSuiteLoader.TestSuiteType.WEBASSEMBLY_SPEC)
+            .getParent();
 
     if (!WasmSpecTestDownloader.validateTestSuites(testResourcesPath)) {
       LOGGER.info("Test suites not found, attempting to download...");
-      
+
       try {
         WasmSpecTestDownloader.downloadAllTestSuites(testResourcesPath);
       } catch (final IOException e) {
         LOGGER.warning("Failed to download test suites automatically: " + e.getMessage());
-        LOGGER.warning("Please manually download test suites or tests will be limited to custom tests only");
+        LOGGER.warning(
+            "Please manually download test suites or tests will be limited to custom tests only");
       }
     }
   }
 
-  /**
-   * Clears all cached runtime instances.
-   */
+  /** Clears all cached runtime instances. */
   public static void clearRuntimeCache() {
-    runtimeCache.values().forEach(runtime -> {
-      try {
-        runtime.close();
-      } catch (final Exception e) {
-        LOGGER.warning("Failed to close runtime: " + e.getMessage());
-      }
-    });
+    runtimeCache
+        .values()
+        .forEach(
+            runtime -> {
+              try {
+                runtime.close();
+              } catch (final Exception e) {
+                LOGGER.warning("Failed to close runtime: " + e.getMessage());
+              }
+            });
     runtimeCache.clear();
     LOGGER.info("Cleared runtime cache");
   }
 
-  /**
-   * Configuration options for test execution.
-   */
+  /** Configuration options for test execution. */
   public static final class TestExecutionOptions {
     private final List<WasmTestSuiteLoader.TestSuiteType> includedSuites;
     private final List<RuntimeType> targetRuntimes;
@@ -524,6 +561,12 @@ public final class WasmTestSuiteRunner {
         }
       }
 
+      /**
+       * Includes a WebAssembly test suite for execution.
+       *
+       * @param suiteType the test suite type to include
+       * @return this builder instance for method chaining
+       */
       public Builder includeSuite(final WasmTestSuiteLoader.TestSuiteType suiteType) {
         if (!includedSuites.contains(suiteType)) {
           includedSuites.add(suiteType);
@@ -536,6 +579,12 @@ public final class WasmTestSuiteRunner {
         return this;
       }
 
+      /**
+       * Adds a target runtime for test execution.
+       *
+       * @param runtimeType the runtime type to target
+       * @return this builder instance for method chaining
+       */
       public Builder targetRuntime(final RuntimeType runtimeType) {
         if (!targetRuntimes.contains(runtimeType)) {
           targetRuntimes.add(runtimeType);
@@ -568,6 +617,13 @@ public final class WasmTestSuiteRunner {
         return this;
       }
 
+      /**
+       * Sets the maximum number of retry attempts for failed tests.
+       *
+       * @param attempts the maximum retry attempts (must be non-negative)
+       * @return this builder instance for method chaining
+       * @throws IllegalArgumentException if attempts is negative
+       */
       public Builder maxRetryAttempts(final int attempts) {
         if (attempts < 0) {
           throw new IllegalArgumentException("maxRetryAttempts cannot be negative");
@@ -576,6 +632,12 @@ public final class WasmTestSuiteRunner {
         return this;
       }
 
+      /**
+       * Builds the test execution options configuration.
+       *
+       * @return the configured test execution options
+       * @throws IllegalStateException if no test suites are included
+       */
       public TestExecutionOptions build() {
         if (includedSuites.isEmpty()) {
           throw new IllegalStateException("At least one test suite must be included");

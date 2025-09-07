@@ -60,7 +60,7 @@ class ComprehensiveIntegrationIT extends BaseIntegrationTest {
 
             final var module = engine.compileModule(moduleBytes);
             final var instance = runtime.instantiate(module);
-            
+
             // Verify store is properly created
             assertThat(store).isNotNull();
 
@@ -278,11 +278,12 @@ class ComprehensiveIntegrationIT extends BaseIntegrationTest {
     try {
       // Test WASI context creation using factory
       final WasiContext wasiContext = WasiFactory.createContext();
-      
+
       // Basic validation that WASI context is available
       if (wasiContext != null) {
         wasiContext.close(); // Clean up resources
-        return "WASI integration successful - context created with " + WasiFactory.getSelectedRuntimeType();
+        return "WASI integration successful - context created with "
+            + WasiFactory.getSelectedRuntimeType();
       } else {
         return "WASI integration failed - context is null";
       }
@@ -299,21 +300,25 @@ class ComprehensiveIntegrationIT extends BaseIntegrationTest {
   private String createWasiExecutionSummary() {
     final StringBuilder summary = new StringBuilder();
     summary.append("WASI Factory Integration Summary:\n");
-    summary.append("Selected Runtime Type: ").append(WasiFactory.getSelectedRuntimeType()).append("\n");
-    
+    summary
+        .append("Selected Runtime Type: ")
+        .append(WasiFactory.getSelectedRuntimeType())
+        .append("\n");
+
     // Check availability of different runtime types
-    summary.append("JNI Runtime Available: ").append(WasiFactory.isRuntimeAvailable(WasiRuntimeType.JNI)).append("\n");
+    summary
+        .append("JNI Runtime Available: ")
+        .append(WasiFactory.isRuntimeAvailable(WasiRuntimeType.JNI))
+        .append("\n");
     summary
         .append("Panama Runtime Available: ")
         .append(WasiFactory.isRuntimeAvailable(WasiRuntimeType.PANAMA))
         .append("\n");
-    
+
     return summary.toString();
   }
 
-  /**
-   * Clears WASI test results (placeholder for compatibility).
-   */
+  /** Clears WASI test results (placeholder for compatibility). */
   private void clearWasiTestResults() {
     // Since we're using WasiFactory pattern, there's no specific cleanup needed
     // This method exists for compatibility with the test structure

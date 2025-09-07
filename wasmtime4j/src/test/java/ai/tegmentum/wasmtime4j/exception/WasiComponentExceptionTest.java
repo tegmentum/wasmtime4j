@@ -23,7 +23,8 @@ class WasiComponentExceptionTest {
       final String message = "Component operation failed";
       final WasiComponentException exception = new WasiComponentException(message);
 
-      assertEquals("Component operation failed (operation: component-operation)", exception.getMessage());
+      assertEquals(
+          "Component operation failed (operation: component-operation)", exception.getMessage());
       assertNull(exception.getCause());
       assertEquals("component-operation", exception.getOperation());
       assertNull(exception.getComponentId());
