@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -70,9 +71,9 @@ public final class WasmTestFailureAnalyzer {
       analysisBuilder.recommendation("Check test execution conditions and runtime availability");
     } else {
       // Analyze the exception and categorize the failure
-      final Exception exception = execution.getException();
-      if (exception != null) {
-        analyzeException(exception, analysisBuilder);
+      final Optional<Exception> exceptionOpt = execution.getException();
+      if (exceptionOpt.isPresent()) {
+        analyzeException(exceptionOpt.get(), analysisBuilder);
       } else {
         analysisBuilder.category(FailureCategory.UNKNOWN);
         analysisBuilder.summary("Test failed without exception information");
@@ -168,7 +169,7 @@ public final class WasmTestFailureAnalyzer {
     final TestSuiteFailureReport.Builder reportBuilder =
         new TestSuiteFailureReport.Builder(suiteResults.getSuiteType());
 
-    final Map<String, Set<RuntimeType>> failedTests = suiteResults.getFailedTests();
+    final Map<String, Set<RuntimeType>> failedTests = suiteResults.getFailedTestsByRuntime();
     final Set<String> inconsistentTests = suiteResults.getInconsistentTests();
 
     reportBuilder.totalTests(suiteResults.getTotalTestsExecuted());
@@ -376,10 +377,10 @@ public final class WasmTestFailureAnalyzer {
   private static String createCacheKey(
       final String testName, final RuntimeTestExecution execution) {
     final String exceptionKey =
-        execution.getException() != null
-            ? execution.getException().getClass().getSimpleName()
+        execution.getException().isPresent()
+            ? execution.getException().get().getClass().getSimpleName()
                 + ":"
-                + execution.getException().getMessage()
+                + execution.getException().get().getMessage()
             : "no-exception";
     return testName + ":" + execution.getRuntimeType().name() + ":" + exceptionKey;
   }

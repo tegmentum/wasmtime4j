@@ -8,6 +8,7 @@ import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.exception.CompilationException;
 import ai.tegmentum.wasmtime4j.exception.ValidationException;
+import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.memory.MemoryLeakDetector;
 import ai.tegmentum.wasmtime4j.nativefunctions.NativeFunctionTestUtils.TestModule;
 import ai.tegmentum.wasmtime4j.utils.TestUtils;
@@ -42,12 +43,13 @@ import org.junit.jupiter.params.provider.ValueSource;
  */
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @DisplayName("Module Native Function Tests")
+@SuppressWarnings("try")
 public class ModuleNativeFunctionTest extends BaseNativeFunctionTest {
 
   @Test
   @Order(1)
   @DisplayName("Should compile and destroy module without memory leaks")
-  void shouldCompileAndDestroyModuleWithoutMemoryLeaks() {
+  void shouldCompileAndDestroyModuleWithoutMemoryLeaks() throws WasmException {
     try (final WasmRuntime runtime = createRuntime()) {
       final byte[] moduleBytes = testUtils.getSimpleAddModule();
 
@@ -82,7 +84,7 @@ public class ModuleNativeFunctionTest extends BaseNativeFunctionTest {
   @EnumSource(RuntimeType.class)
   @Order(2)
   @DisplayName("Should compile modules across all runtime types")
-  void shouldCompileModulesAcrossAllRuntimeTypes(final RuntimeType runtimeType) {
+  void shouldCompileModulesAcrossAllRuntimeTypes(final RuntimeType runtimeType) throws WasmException {
     if (runtimeType == RuntimeType.PANAMA && !TestUtils.isPanamaAvailable()) {
       LOGGER.info("Skipping Panama test - not available on this platform");
       return;
@@ -114,7 +116,7 @@ public class ModuleNativeFunctionTest extends BaseNativeFunctionTest {
   @Test
   @Order(3)
   @DisplayName("Should handle module validation with memory leak detection")
-  void shouldHandleModuleValidationWithMemoryLeakDetection() {
+  void shouldHandleModuleValidationWithMemoryLeakDetection() throws WasmException {
     try (final WasmRuntime runtime = createRuntime()) {
       final MemoryLeakDetector.LeakAnalysisResult result =
           testWithFastMemoryLeakDetection(
@@ -147,7 +149,7 @@ public class ModuleNativeFunctionTest extends BaseNativeFunctionTest {
   @Test
   @Order(4)
   @DisplayName("Should handle module metadata access")
-  void shouldHandleModuleMetadataAccess() {
+  void shouldHandleModuleMetadataAccess() throws WasmException {
     try (final WasmRuntime runtime = createRuntime()) {
       final byte[] moduleBytes = testUtils.getComplexModule();
 
@@ -175,7 +177,7 @@ public class ModuleNativeFunctionTest extends BaseNativeFunctionTest {
   @Test
   @Order(5)
   @DisplayName("Should test thread safety of module operations")
-  void shouldTestThreadSafetyOfModuleOperations() {
+  void shouldTestThreadSafetyOfModuleOperations() throws WasmException {
     try (final WasmRuntime runtime = createRuntime()) {
       final byte[] moduleBytes = testUtils.getSimpleAddModule();
 
@@ -212,7 +214,7 @@ public class ModuleNativeFunctionTest extends BaseNativeFunctionTest {
   @Test
   @Order(6)
   @DisplayName("Should test concurrent module compilation")
-  void shouldTestConcurrentModuleCompilation() {
+  void shouldTestConcurrentModuleCompilation() throws WasmException {
     try (final WasmRuntime runtime = createRuntime()) {
       final List<TestModule> modules = testUtils.getAllTestModules();
 
@@ -268,7 +270,7 @@ public class ModuleNativeFunctionTest extends BaseNativeFunctionTest {
                     assertThat(instance).isNotNull();
 
                     // Verify functionality is consistent across runtimes
-                    if (instance.hasExport("get_state")) {
+                    if (instance.getFunction("get_state").isPresent()) {
                       final var getStateFunc = instance.getFunction("get_state");
                       if (getStateFunc.isPresent()) {
                         final var result = getStateFunc.get().call();
@@ -293,7 +295,7 @@ public class ModuleNativeFunctionTest extends BaseNativeFunctionTest {
   @ValueSource(ints = {1, 10, 100, 1000})
   @Order(8)
   @DisplayName("Should handle multiple module compilation cycles")
-  void shouldHandleMultipleModuleCompilationCycles(final int cycleCount) {
+  void shouldHandleMultipleModuleCompilationCycles(final int cycleCount) throws WasmException {
     try (final WasmRuntime runtime = createRuntime()) {
       final byte[] moduleBytes = testUtils.getSimpleAddModule();
 
@@ -324,7 +326,7 @@ public class ModuleNativeFunctionTest extends BaseNativeFunctionTest {
   @Test
   @Order(9)
   @DisplayName("Should handle module parameter boundary conditions")
-  void shouldHandleModuleParameterBoundaryConditions() {
+  void shouldHandleModuleParameterBoundaryConditions() throws WasmException {
     try (final WasmRuntime runtime = createRuntime()) {
       try (final var engine = runtime.createEngine()) {
 
@@ -369,7 +371,7 @@ public class ModuleNativeFunctionTest extends BaseNativeFunctionTest {
   @Test
   @Order(10)
   @DisplayName("Should handle module resource lifecycle patterns")
-  void shouldHandleModuleResourceLifecyclePatterns() {
+  void shouldHandleModuleResourceLifecyclePatterns() throws WasmException {
     try (final WasmRuntime runtime = createRuntime()) {
       final byte[] moduleBytes = testUtils.getSimpleAddModule();
       final var lifecycleData = testUtils.createResourceLifecycleTest();

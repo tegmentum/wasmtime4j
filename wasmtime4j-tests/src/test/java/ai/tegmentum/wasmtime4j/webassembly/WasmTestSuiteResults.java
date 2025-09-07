@@ -124,7 +124,7 @@ public final class WasmTestSuiteResults {
    *
    * @return map of failed test names to runtime types
    */
-  public Map<String, java.util.Set<RuntimeType>> getFailedTests() {
+  public Map<String, java.util.Set<RuntimeType>> getFailedTestsByRuntime() {
     final Map<String, java.util.Set<RuntimeType>> failedTests = new java.util.HashMap<>();
 
     for (final Map.Entry<RuntimeType, Map<String, RuntimeTestExecution>> entry :

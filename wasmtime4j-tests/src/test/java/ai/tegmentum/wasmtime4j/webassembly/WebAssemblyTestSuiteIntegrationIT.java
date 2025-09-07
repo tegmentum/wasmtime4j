@@ -190,7 +190,7 @@ public class WebAssemblyTestSuiteIntegrationIT {
     for (final WasmTestCase testCase : testCases) {
       final CrossRuntimeValidationResult validationResult =
           CrossRuntimeTestRunner.validateConsistency(
-              testCase.getName(),
+              testCase.getTestName(),
               runtime -> {
                 try {
                   // Simplified test execution - in real implementation would use actual WebAssembly
@@ -210,10 +210,10 @@ public class WebAssemblyTestSuiteIntegrationIT {
         consistentTests++;
       } else {
         inconsistentTests++;
-        LOGGER.warning("Inconsistent behavior detected for test: " + testCase.getName());
+        LOGGER.warning("Inconsistent behavior detected for test: " + testCase.getTestName());
 
         if (ENABLE_FAILURE_ANALYSIS) {
-          LOGGER.warning("Validation details: " + validationResult.getValidationDetails());
+          LOGGER.warning("Validation details: " + validationResult.getSummary());
         }
       }
     }
@@ -383,7 +383,7 @@ public class WebAssemblyTestSuiteIntegrationIT {
     return customTests.stream()
         .filter(
             testCase ->
-                testCase.getName().contains("performance") || testCase.getName().contains("stress"))
+                testCase.getTestName().contains("performance") || testCase.getTestName().contains("stress"))
         .collect(java.util.stream.Collectors.toList());
   }
 

@@ -8,6 +8,7 @@ import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.exception.CompilationException;
 import ai.tegmentum.wasmtime4j.exception.ValidationException;
+import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.memory.MemoryLeakDetector;
 import ai.tegmentum.wasmtime4j.nativefunctions.NativeFunctionTestUtils.ParameterFuzzingData;
 import ai.tegmentum.wasmtime4j.nativefunctions.NativeFunctionTestUtils.TestModule;
@@ -44,6 +45,7 @@ import org.junit.jupiter.params.provider.ValueSource;
  */
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @DisplayName("Engine Native Function Tests")
+@SuppressWarnings("try")
 public class EngineNativeFunctionTest extends BaseNativeFunctionTest {
 
   @Test
@@ -78,7 +80,7 @@ public class EngineNativeFunctionTest extends BaseNativeFunctionTest {
   @EnumSource(RuntimeType.class)
   @Order(2)
   @DisplayName("Should create engine across all runtime types")
-  void shouldCreateEngineAcrossAllRuntimeTypes(final RuntimeType runtimeType) {
+  void shouldCreateEngineAcrossAllRuntimeTypes(final RuntimeType runtimeType) throws WasmException {
     // Skip Panama tests if not available
     if (runtimeType == RuntimeType.PANAMA && !TestUtils.isPanamaAvailable()) {
       LOGGER.info("Skipping Panama test - not available on this platform");
@@ -108,7 +110,7 @@ public class EngineNativeFunctionTest extends BaseNativeFunctionTest {
   @Test
   @Order(3)
   @DisplayName("Should handle module compilation with memory leak detection")
-  void shouldHandleModuleCompilationWithMemoryLeakDetection() {
+  void shouldHandleModuleCompilationWithMemoryLeakDetection() throws WasmException {
     try (final WasmRuntime runtime = createRuntime()) {
       final List<TestModule> testModules = testUtils.getAllTestModules();
 
@@ -137,7 +139,7 @@ public class EngineNativeFunctionTest extends BaseNativeFunctionTest {
   @Test
   @Order(4)
   @DisplayName("Should handle store creation with memory leak detection")
-  void shouldHandleStoreCreationWithMemoryLeakDetection() {
+  void shouldHandleStoreCreationWithMemoryLeakDetection() throws WasmException {
     try (final WasmRuntime runtime = createRuntime()) {
       final MemoryLeakDetector.LeakAnalysisResult result =
           testWithFastMemoryLeakDetection(
@@ -160,7 +162,7 @@ public class EngineNativeFunctionTest extends BaseNativeFunctionTest {
   @Test
   @Order(5)
   @DisplayName("Should test thread safety of engine operations")
-  void shouldTestThreadSafetyOfEngineOperations() {
+  void shouldTestThreadSafetyOfEngineOperations() throws WasmException {
     try (final WasmRuntime runtime = createRuntime()) {
       final byte[] moduleBytes = testUtils.getSimpleAddModule();
 
@@ -236,7 +238,7 @@ public class EngineNativeFunctionTest extends BaseNativeFunctionTest {
   @Test
   @Order(7)
   @DisplayName("Should handle parameter fuzzing for engine operations")
-  void shouldHandleParameterFuzzingForEngineOperations() {
+  void shouldHandleParameterFuzzingForEngineOperations() throws WasmException {
     try (final WasmRuntime runtime = createRuntime()) {
       final ParameterFuzzingData fuzzingData = testUtils.generateFuzzingData();
 
@@ -277,7 +279,7 @@ public class EngineNativeFunctionTest extends BaseNativeFunctionTest {
   @Test
   @Order(8)
   @DisplayName("Should handle resource lifecycle patterns")
-  void shouldHandleResourceLifecyclePatterns() {
+  void shouldHandleResourceLifecyclePatterns() throws WasmException {
     try (final WasmRuntime runtime = createRuntime()) {
       final var lifecycleData = testUtils.createResourceLifecycleTest();
       final byte[] moduleBytes = testUtils.getSimpleAddModule();
@@ -365,7 +367,7 @@ public class EngineNativeFunctionTest extends BaseNativeFunctionTest {
   @Test
   @Order(9)
   @DisplayName("Should handle invalid native handles")
-  void shouldHandleInvalidNativeHandles() {
+  void shouldHandleInvalidNativeHandles() throws WasmException {
     try (final WasmRuntime runtime = createRuntime()) {
       final long[] invalidHandles = testUtils.getInvalidHandles();
       final long[] edgeCaseHandles = testUtils.getEdgeCaseHandles();
@@ -400,7 +402,7 @@ public class EngineNativeFunctionTest extends BaseNativeFunctionTest {
   @ValueSource(ints = {1, 2, 4, 8, 16})
   @Order(10)
   @DisplayName("Should handle concurrent engine creation")
-  void shouldHandleConcurrentEngineCreation(final int threadCount) {
+  void shouldHandleConcurrentEngineCreation(final int threadCount) throws WasmException {
     try (final WasmRuntime runtime = createRuntime()) {
       final ThreadSafetyTestResult result =
           testThreadSafety(
@@ -431,7 +433,7 @@ public class EngineNativeFunctionTest extends BaseNativeFunctionTest {
   @Order(11)
   @EnabledIf("isPanamaAvailable")
   @DisplayName("Should test Panama-specific FFI error handling")
-  void shouldTestPanamaSpecificFfiErrorHandling() {
+  void shouldTestPanamaSpecificFfiErrorHandling() throws WasmException {
     // This test is specific to Panama FFI implementation
     try (final WasmRuntime runtime = createRuntime(RuntimeType.PANAMA)) {
       final MemoryLeakDetector.LeakAnalysisResult result =

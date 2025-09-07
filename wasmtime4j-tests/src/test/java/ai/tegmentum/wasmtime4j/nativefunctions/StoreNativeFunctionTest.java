@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.WasmRuntime;
+import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.memory.MemoryLeakDetector;
 import ai.tegmentum.wasmtime4j.utils.TestUtils;
 import java.util.Map;
@@ -38,12 +39,13 @@ import org.junit.jupiter.params.provider.ValueSource;
  */
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @DisplayName("Store Native Function Tests")
+@SuppressWarnings("try")
 public class StoreNativeFunctionTest extends BaseNativeFunctionTest {
 
   @Test
   @Order(1)
   @DisplayName("Should create and destroy store without memory leaks")
-  void shouldCreateAndDestroyStoreWithoutMemoryLeaks() {
+  void shouldCreateAndDestroyStoreWithoutMemoryLeaks() throws WasmException {
     try (final WasmRuntime runtime = createRuntime()) {
       final MemoryLeakDetector.LeakAnalysisResult result =
           testWithFastMemoryLeakDetection(
@@ -69,7 +71,7 @@ public class StoreNativeFunctionTest extends BaseNativeFunctionTest {
   @EnumSource(RuntimeType.class)
   @Order(2)
   @DisplayName("Should create stores across all runtime types")
-  void shouldCreateStoresAcrossAllRuntimeTypes(final RuntimeType runtimeType) {
+  void shouldCreateStoresAcrossAllRuntimeTypes(final RuntimeType runtimeType) throws WasmException {
     if (runtimeType == RuntimeType.PANAMA && !TestUtils.isPanamaAvailable()) {
       LOGGER.info("Skipping Panama test - not available on this platform");
       return;
@@ -98,7 +100,7 @@ public class StoreNativeFunctionTest extends BaseNativeFunctionTest {
   @Test
   @Order(3)
   @DisplayName("Should handle store data management")
-  void shouldHandleStoreDataManagement() {
+  void shouldHandleStoreDataManagement() throws WasmException {
     try (final WasmRuntime runtime = createRuntime()) {
       final MemoryLeakDetector.LeakAnalysisResult result =
           testWithFastMemoryLeakDetection(
@@ -124,7 +126,7 @@ public class StoreNativeFunctionTest extends BaseNativeFunctionTest {
   @Test
   @Order(4)
   @DisplayName("Should handle store fuel management")
-  void shouldHandleStoreFuelManagement() {
+  void shouldHandleStoreFuelManagement() throws WasmException {
     try (final WasmRuntime runtime = createRuntime()) {
       final MemoryLeakDetector.LeakAnalysisResult result =
           testWithFastMemoryLeakDetection(
@@ -154,7 +156,7 @@ public class StoreNativeFunctionTest extends BaseNativeFunctionTest {
   @Test
   @Order(5)
   @DisplayName("Should test thread safety of store operations")
-  void shouldTestThreadSafetyOfStoreOperations() {
+  void shouldTestThreadSafetyOfStoreOperations() throws WasmException {
     try (final WasmRuntime runtime = createRuntime()) {
       final byte[] moduleBytes = testUtils.getSimpleAddModule();
 
@@ -199,7 +201,7 @@ public class StoreNativeFunctionTest extends BaseNativeFunctionTest {
   @Test
   @Order(6)
   @DisplayName("Should test concurrent store creation")
-  void shouldTestConcurrentStoreCreation() {
+  void shouldTestConcurrentStoreCreation() throws WasmException {
     try (final WasmRuntime runtime = createRuntime()) {
       final ThreadSafetyTestResult result =
           testThreadSafety(
@@ -245,7 +247,7 @@ public class StoreNativeFunctionTest extends BaseNativeFunctionTest {
                   try (final var module = engine.compileModule(moduleBytes)) {
                     try (final var instance = runtime.instantiate(module)) {
                       // Execute functions using the store
-                      if (instance.hasExport("set_state")) {
+                      if (instance.getFunction("set_state").isPresent()) {
                         final var setStateFunc = instance.getFunction("set_state");
                         if (setStateFunc.isPresent()) {
                           final var args =
@@ -256,7 +258,7 @@ public class StoreNativeFunctionTest extends BaseNativeFunctionTest {
                         }
                       }
 
-                      if (instance.hasExport("get_state")) {
+                      if (instance.getFunction("get_state").isPresent()) {
                         final var getStateFunc = instance.getFunction("get_state");
                         if (getStateFunc.isPresent()) {
                           final var result = getStateFunc.get().call();
@@ -284,7 +286,7 @@ public class StoreNativeFunctionTest extends BaseNativeFunctionTest {
   @ValueSource(ints = {1, 5, 10, 25})
   @Order(8)
   @DisplayName("Should handle multiple store lifecycle cycles")
-  void shouldHandleMultipleStoreLifecycleCycles(final int cycleCount) {
+  void shouldHandleMultipleStoreLifecycleCycles(final int cycleCount) throws WasmException {
     try (final WasmRuntime runtime = createRuntime()) {
       final MemoryLeakDetector.LeakAnalysisResult result =
           testWithThoroughMemoryLeakDetection(
@@ -313,7 +315,7 @@ public class StoreNativeFunctionTest extends BaseNativeFunctionTest {
   @Test
   @Order(9)
   @DisplayName("Should handle store resource limits")
-  void shouldHandleStoreResourceLimits() {
+  void shouldHandleStoreResourceLimits() throws WasmException {
     try (final WasmRuntime runtime = createRuntime()) {
       final MemoryLeakDetector.LeakAnalysisResult result =
           testWithFastMemoryLeakDetection(
@@ -343,7 +345,7 @@ public class StoreNativeFunctionTest extends BaseNativeFunctionTest {
   @Test
   @Order(10)
   @DisplayName("Should handle store resource lifecycle patterns")
-  void shouldHandleStoreResourceLifecyclePatterns() {
+  void shouldHandleStoreResourceLifecyclePatterns() throws WasmException {
     try (final WasmRuntime runtime = createRuntime()) {
       final var lifecycleData = testUtils.createResourceLifecycleTest();
 
@@ -537,7 +539,7 @@ public class StoreNativeFunctionTest extends BaseNativeFunctionTest {
             final var wasmInstance = (ai.tegmentum.wasmtime4j.Instance) instance;
 
             // Test memory growth if available
-            if (wasmInstance.hasExport("grow_memory")) {
+            if (wasmInstance.getFunction("grow_memory").isPresent()) {
               final var growFunc = wasmInstance.getFunction("grow_memory");
               if (growFunc.isPresent()) {
                 try {

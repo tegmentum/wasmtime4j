@@ -109,9 +109,9 @@ class JniTypeConverterTest {
   void testWasmValueToNativeParamV128InvalidSize() {
     final byte[] invalidBytes = new byte[8]; // Wrong size
 
-    final JniValidationException exception =
+    final IllegalArgumentException exception =
         assertThrows(
-            JniValidationException.class,
+            IllegalArgumentException.class,
             () -> {
               final WasmValue v128Value = WasmValue.v128(invalidBytes);
               // This should fail during WasmValue.v128() creation, not in converter

@@ -45,6 +45,7 @@ import org.junit.jupiter.api.condition.EnabledIf;
  */
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @DisplayName("Comprehensive Native Function Test Suite")
+@SuppressWarnings("try")
 public class ComprehensiveNativeFunctionTestSuite extends BaseNativeFunctionTest {
   private static final Logger SUITE_LOGGER =
       Logger.getLogger(ComprehensiveNativeFunctionTestSuite.class.getName());
@@ -315,7 +316,7 @@ public class ComprehensiveNativeFunctionTestSuite extends BaseNativeFunctionTest
                   try (final var module = engine.compileModule(testModule.getModuleBytes())) {
                     try (final var instance = runtime.instantiate(module)) {
                       // Test export checking
-                      final boolean hasAdd = instance.hasExport("add");
+                      final boolean hasAdd = instance.getFunction("add").isPresent();
 
                       // Test function invocation if available
                       if (hasAdd) {
@@ -332,12 +333,12 @@ public class ComprehensiveNativeFunctionTestSuite extends BaseNativeFunctionTest
                       }
 
                       // Test other exports if available
-                      if (instance.hasExport("memory")) {
+                      if (instance.getMemory("memory").isPresent()) {
                         final var memory = instance.getMemory("memory");
                         assertThat(memory).isNotNull();
                       }
 
-                      if (instance.hasExport("table")) {
+                      if (instance.getTable("table").isPresent()) {
                         final var table = instance.getTable("table");
                         assertThat(table).isNotNull();
                       }
@@ -463,7 +464,7 @@ public class ComprehensiveNativeFunctionTestSuite extends BaseNativeFunctionTest
                     try (final var module = engine.compileModule(testModule.getModuleBytes())) {
                       try (final var instance = runtime.instantiate(module)) {
                         // Exercise all available functions
-                        if (instance.hasExport("add")) {
+                        if (instance.getFunction("add").isPresent()) {
                           final var addFunction = instance.getFunction("add");
                           if (addFunction.isPresent()) {
                             for (int i = 0; i < 10; i++) {

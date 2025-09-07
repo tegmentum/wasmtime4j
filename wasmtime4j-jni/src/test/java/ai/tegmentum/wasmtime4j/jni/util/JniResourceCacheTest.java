@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.jni.exception.JniValidationException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -77,12 +78,12 @@ class JniResourceCacheTest {
     @DisplayName("Should reject invalid max size")
     void shouldRejectInvalidMaxSize() {
       assertThrows(
-          IllegalArgumentException.class,
+          JniValidationException.class,
           () -> new JniResourceCache<String, String>(0),
           "Should reject zero max size");
 
       assertThrows(
-          IllegalArgumentException.class,
+          JniValidationException.class,
           () -> new JniResourceCache<String, String>(-1),
           "Should reject negative max size");
     }
@@ -158,17 +159,17 @@ class JniResourceCacheTest {
     @DisplayName("Should reject null key")
     void shouldRejectNullKey() {
       assertThrows(
-          IllegalArgumentException.class,
+          JniValidationException.class,
           () -> cache.get(null, key -> "value"),
           "Should reject null key in get");
 
       assertThrows(
-          IllegalArgumentException.class,
+          JniValidationException.class,
           () -> cache.put(null, "value"),
           "Should reject null key in put");
 
       assertThrows(
-          IllegalArgumentException.class,
+          JniValidationException.class,
           () -> cache.remove(null),
           "Should reject null key in remove");
     }
@@ -177,7 +178,7 @@ class JniResourceCacheTest {
     @DisplayName("Should reject null factory")
     void shouldRejectNullFactory() {
       assertThrows(
-          IllegalArgumentException.class,
+          JniValidationException.class,
           () -> cache.get("key", null),
           "Should reject null factory");
     }
@@ -186,7 +187,7 @@ class JniResourceCacheTest {
     @DisplayName("Should reject null resource in put")
     void shouldRejectNullResourceInPut() {
       assertThrows(
-          IllegalArgumentException.class,
+          JniValidationException.class,
           () -> cache.put("key", null),
           "Should reject null resource in put");
     }

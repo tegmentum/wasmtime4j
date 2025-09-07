@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
+import ai.tegmentum.wasmtime4j.jni.exception.JniValidationException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -109,9 +110,9 @@ class JniTableTest {
     void shouldRejectNegativeIndexInGet() {
       final JniTable table = new JniTable(VALID_HANDLE);
       assertThrows(
-          IllegalArgumentException.class,
+          JniValidationException.class,
           () -> table.get(-1),
-          "Should throw IllegalArgumentException for negative index");
+          "Should throw JniValidationException for negative index");
       // Note: Not calling close() in unit test since it requires native methods
     }
 
@@ -120,9 +121,9 @@ class JniTableTest {
     void shouldRejectNegativeIndexInSet() {
       final JniTable table = new JniTable(VALID_HANDLE);
       assertThrows(
-          IllegalArgumentException.class,
+          JniValidationException.class,
           () -> table.set(-1, "value"),
-          "Should throw IllegalArgumentException for negative index");
+          "Should throw JniValidationException for negative index");
       // Note: Not calling close() in unit test since it requires native methods
     }
 
@@ -131,9 +132,9 @@ class JniTableTest {
     void shouldRejectNegativeDeltaInGrow() {
       final JniTable table = new JniTable(VALID_HANDLE);
       assertThrows(
-          IllegalArgumentException.class,
+          JniValidationException.class,
           () -> table.grow(-1, null),
-          "Should throw IllegalArgumentException for negative delta");
+          "Should throw JniValidationException for negative delta");
       // Note: Not calling close() in unit test since it requires native methods
     }
 
@@ -142,9 +143,9 @@ class JniTableTest {
     void shouldRejectNegativeStartInFill() {
       final JniTable table = new JniTable(VALID_HANDLE);
       assertThrows(
-          IllegalArgumentException.class,
+          JniValidationException.class,
           () -> table.fill(-1, 1, "value"),
-          "Should throw IllegalArgumentException for negative start");
+          "Should throw JniValidationException for negative start");
       // Note: Not calling close() in unit test since it requires native methods
     }
 
@@ -153,9 +154,9 @@ class JniTableTest {
     void shouldRejectNegativeCountInFill() {
       final JniTable table = new JniTable(VALID_HANDLE);
       assertThrows(
-          IllegalArgumentException.class,
+          JniValidationException.class,
           () -> table.fill(0, -1, "value"),
-          "Should throw IllegalArgumentException for negative count");
+          "Should throw JniValidationException for negative count");
       // Note: Not calling close() in unit test since it requires native methods
     }
   }
