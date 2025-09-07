@@ -4,19 +4,14 @@ import ai.tegmentum.wasmtime4j.RuntimeType;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.function.Function;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -29,10 +24,12 @@ public final class WasmTestFailureAnalyzer {
   private static final Logger LOGGER = Logger.getLogger(WasmTestFailureAnalyzer.class.getName());
 
   // Failure pattern categories
-  private static final Map<FailureCategory, List<Pattern>> FAILURE_PATTERNS = createFailurePatterns();
+  private static final Map<FailureCategory, List<Pattern>> FAILURE_PATTERNS =
+      createFailurePatterns();
 
   // Analysis cache for performance
-  private static final ConcurrentMap<String, TestFailureAnalysis> analysisCache = new ConcurrentHashMap<>();
+  private static final ConcurrentMap<String, TestFailureAnalysis> analysisCache =
+      new ConcurrentHashMap<>();
 
   private WasmTestFailureAnalyzer() {
     // Utility class - prevent instantiation
@@ -45,8 +42,8 @@ public final class WasmTestFailureAnalyzer {
    * @param execution the failed test execution
    * @return detailed failure analysis
    */
-  public static TestFailureAnalysis analyzeFailure(final String testName, 
-                                                   final RuntimeTestExecution execution) {
+  public static TestFailureAnalysis analyzeFailure(
+      final String testName, final RuntimeTestExecution execution) {
     Objects.requireNonNull(testName, "testName cannot be null");
     Objects.requireNonNull(execution, "execution cannot be null");
 
@@ -85,7 +82,8 @@ public final class WasmTestFailureAnalyzer {
     final TestFailureAnalysis analysis = analysisBuilder.build();
     analysisCache.put(cacheKey, analysis);
 
-    LOGGER.info("Failure analysis completed for " + testName + ": " + analysis.getCategory().name());
+    LOGGER.info(
+        "Failure analysis completed for " + testName + ": " + analysis.getCategory().name());
     return analysis;
   }
 
@@ -97,15 +95,14 @@ public final class WasmTestFailureAnalyzer {
    * @return cross-runtime failure analysis
    */
   public static CrossRuntimeFailureAnalysis analyzeCrossRuntimeFailure(
-      final String testName,
-      final Map<RuntimeType, RuntimeTestExecution> executions) {
-    
+      final String testName, final Map<RuntimeType, RuntimeTestExecution> executions) {
+
     Objects.requireNonNull(testName, "testName cannot be null");
     Objects.requireNonNull(executions, "executions cannot be null");
 
     LOGGER.info("Analyzing cross-runtime failure for test: " + testName);
 
-    final CrossRuntimeFailureAnalysis.Builder analysisBuilder = 
+    final CrossRuntimeFailureAnalysis.Builder analysisBuilder =
         new CrossRuntimeFailureAnalysis.Builder(testName);
 
     final Map<RuntimeType, TestFailureAnalysis> runtimeAnalyses = new HashMap<>();
@@ -136,9 +133,10 @@ public final class WasmTestFailureAnalyzer {
       analysisBuilder.summary("Test succeeded on some runtimes but failed on others");
     } else if (failedRuntimes.size() > 1) {
       // Check if failures are consistent across runtimes
-      final Set<FailureCategory> failureCategories = runtimeAnalyses.values().stream()
-          .map(TestFailureAnalysis::getCategory)
-          .collect(Collectors.toSet());
+      final Set<FailureCategory> failureCategories =
+          runtimeAnalyses.values().stream()
+              .map(TestFailureAnalysis::getCategory)
+              .collect(Collectors.toSet());
 
       if (failureCategories.size() == 1) {
         analysisBuilder.inconsistencyType(InconsistencyType.CONSISTENT_FAILURE);
@@ -161,12 +159,13 @@ public final class WasmTestFailureAnalyzer {
    * @param suiteResults the test suite results
    * @return detailed failure report
    */
-  public static TestSuiteFailureReport generateFailureReport(final WasmTestSuiteResults suiteResults) {
+  public static TestSuiteFailureReport generateFailureReport(
+      final WasmTestSuiteResults suiteResults) {
     Objects.requireNonNull(suiteResults, "suiteResults cannot be null");
 
     LOGGER.info("Generating failure report for test suite: " + suiteResults.getSuiteType().name());
 
-    final TestSuiteFailureReport.Builder reportBuilder = 
+    final TestSuiteFailureReport.Builder reportBuilder =
         new TestSuiteFailureReport.Builder(suiteResults.getSuiteType());
 
     final Map<String, Set<RuntimeType>> failedTests = suiteResults.getFailedTests();
@@ -179,9 +178,9 @@ public final class WasmTestFailureAnalyzer {
     // Analyze each failed test
     for (final String testName : failedTests.keySet()) {
       final Map<RuntimeType, RuntimeTestExecution> testExecutions = new HashMap<>();
-      
-      for (final Map.Entry<RuntimeType, Map<String, RuntimeTestExecution>> entry : 
-           suiteResults.getAllRuntimeResults().entrySet()) {
+
+      for (final Map.Entry<RuntimeType, Map<String, RuntimeTestExecution>> entry :
+          suiteResults.getAllRuntimeResults().entrySet()) {
         final RuntimeType runtimeType = entry.getKey();
         final RuntimeTestExecution execution = entry.getValue().get(testName);
         if (execution != null) {
@@ -190,7 +189,7 @@ public final class WasmTestFailureAnalyzer {
       }
 
       if (!testExecutions.isEmpty()) {
-        final CrossRuntimeFailureAnalysis analysis = 
+        final CrossRuntimeFailureAnalysis analysis =
             analyzeCrossRuntimeFailure(testName, testExecutions);
         reportBuilder.addFailureAnalysis(analysis);
       }
@@ -205,8 +204,8 @@ public final class WasmTestFailureAnalyzer {
    * @param exception the exception to analyze
    * @param analysisBuilder the analysis builder to populate
    */
-  private static void analyzeException(final Exception exception, 
-                                       final TestFailureAnalysis.Builder analysisBuilder) {
+  private static void analyzeException(
+      final Exception exception, final TestFailureAnalysis.Builder analysisBuilder) {
     final String exceptionMessage = exception.getMessage();
     final String exceptionClass = exception.getClass().getSimpleName();
     final String stackTrace = getStackTrace(exception);
@@ -225,8 +224,8 @@ public final class WasmTestFailureAnalyzer {
       final List<Pattern> patterns = entry.getValue();
 
       for (final Pattern pattern : patterns) {
-        if (pattern.matcher(exceptionMessage != null ? exceptionMessage : "").find() ||
-            pattern.matcher(exceptionClass).find()) {
+        if (pattern.matcher(exceptionMessage != null ? exceptionMessage : "").find()
+            || pattern.matcher(exceptionClass).find()) {
           category = candidateCategory;
           break;
         }
@@ -289,58 +288,66 @@ public final class WasmTestFailureAnalyzer {
   private static Map<FailureCategory, List<Pattern>> createFailurePatterns() {
     final Map<FailureCategory, List<Pattern>> patterns = new HashMap<>();
 
-    patterns.put(FailureCategory.COMPILATION_ERROR, List.of(
-        Pattern.compile("compilation.*(failed|error)", Pattern.CASE_INSENSITIVE),
-        Pattern.compile("invalid.*module", Pattern.CASE_INSENSITIVE),
-        Pattern.compile("CompilationException"),
-        Pattern.compile("parse.*error", Pattern.CASE_INSENSITIVE)
-    ));
+    patterns.put(
+        FailureCategory.COMPILATION_ERROR,
+        List.of(
+            Pattern.compile("compilation.*(failed|error)", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("invalid.*module", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("CompilationException"),
+            Pattern.compile("parse.*error", Pattern.CASE_INSENSITIVE)));
 
-    patterns.put(FailureCategory.INSTANTIATION_ERROR, List.of(
-        Pattern.compile("instantiation.*(failed|error)", Pattern.CASE_INSENSITIVE),
-        Pattern.compile("import.*not.*found", Pattern.CASE_INSENSITIVE),
-        Pattern.compile("InstantiationException"),
-        Pattern.compile("link.*error", Pattern.CASE_INSENSITIVE)
-    ));
+    patterns.put(
+        FailureCategory.INSTANTIATION_ERROR,
+        List.of(
+            Pattern.compile("instantiation.*(failed|error)", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("import.*not.*found", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("InstantiationException"),
+            Pattern.compile("link.*error", Pattern.CASE_INSENSITIVE)));
 
-    patterns.put(FailureCategory.RUNTIME_ERROR, List.of(
-        Pattern.compile("runtime.*error", Pattern.CASE_INSENSITIVE),
-        Pattern.compile("execution.*failed", Pattern.CASE_INSENSITIVE),
-        Pattern.compile("RuntimeException"),
-        Pattern.compile("trap.*occurred", Pattern.CASE_INSENSITIVE)
-    ));
+    patterns.put(
+        FailureCategory.RUNTIME_ERROR,
+        List.of(
+            Pattern.compile("runtime.*error", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("execution.*failed", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("RuntimeException"),
+            Pattern.compile("trap.*occurred", Pattern.CASE_INSENSITIVE)));
 
-    patterns.put(FailureCategory.VALIDATION_ERROR, List.of(
-        Pattern.compile("validation.*(failed|error)", Pattern.CASE_INSENSITIVE),
-        Pattern.compile("ValidationException"),
-        Pattern.compile("invalid.*format", Pattern.CASE_INSENSITIVE)
-    ));
+    patterns.put(
+        FailureCategory.VALIDATION_ERROR,
+        List.of(
+            Pattern.compile("validation.*(failed|error)", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("ValidationException"),
+            Pattern.compile("invalid.*format", Pattern.CASE_INSENSITIVE)));
 
-    patterns.put(FailureCategory.MEMORY_ERROR, List.of(
-        Pattern.compile("memory.*error", Pattern.CASE_INSENSITIVE),
-        Pattern.compile("out.*of.*memory", Pattern.CASE_INSENSITIVE),
-        Pattern.compile("OutOfMemoryError"),
-        Pattern.compile("bounds.*check", Pattern.CASE_INSENSITIVE)
-    ));
+    patterns.put(
+        FailureCategory.MEMORY_ERROR,
+        List.of(
+            Pattern.compile("memory.*error", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("out.*of.*memory", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("OutOfMemoryError"),
+            Pattern.compile("bounds.*check", Pattern.CASE_INSENSITIVE)));
 
-    patterns.put(FailureCategory.TIMEOUT, List.of(
-        Pattern.compile("timeout", Pattern.CASE_INSENSITIVE),
-        Pattern.compile("TimeoutException"),
-        Pattern.compile("execution.*time.*exceeded", Pattern.CASE_INSENSITIVE)
-    ));
+    patterns.put(
+        FailureCategory.TIMEOUT,
+        List.of(
+            Pattern.compile("timeout", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("TimeoutException"),
+            Pattern.compile("execution.*time.*exceeded", Pattern.CASE_INSENSITIVE)));
 
-    patterns.put(FailureCategory.NATIVE_ERROR, List.of(
-        Pattern.compile("native.*library", Pattern.CASE_INSENSITIVE),
-        Pattern.compile("JNI.*error", Pattern.CASE_INSENSITIVE),
-        Pattern.compile("panama.*error", Pattern.CASE_INSENSITIVE),
-        Pattern.compile("UnsatisfiedLinkError")
-    ));
+    patterns.put(
+        FailureCategory.NATIVE_ERROR,
+        List.of(
+            Pattern.compile("native.*library", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("JNI.*error", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("panama.*error", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("UnsatisfiedLinkError")));
 
-    patterns.put(FailureCategory.CONFIGURATION_ERROR, List.of(
-        Pattern.compile("configuration.*error", Pattern.CASE_INSENSITIVE),
-        Pattern.compile("IllegalStateException"),
-        Pattern.compile("setup.*failed", Pattern.CASE_INSENSITIVE)
-    ));
+    patterns.put(
+        FailureCategory.CONFIGURATION_ERROR,
+        List.of(
+            Pattern.compile("configuration.*error", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("IllegalStateException"),
+            Pattern.compile("setup.*failed", Pattern.CASE_INSENSITIVE)));
 
     return patterns;
   }
@@ -366,16 +373,18 @@ public final class WasmTestFailureAnalyzer {
    * @param execution the execution result
    * @return the cache key
    */
-  private static String createCacheKey(final String testName, final RuntimeTestExecution execution) {
-    final String exceptionKey = execution.getException() != null ? 
-        execution.getException().getClass().getSimpleName() + ":" + execution.getException().getMessage() :
-        "no-exception";
+  private static String createCacheKey(
+      final String testName, final RuntimeTestExecution execution) {
+    final String exceptionKey =
+        execution.getException() != null
+            ? execution.getException().getClass().getSimpleName()
+                + ":"
+                + execution.getException().getMessage()
+            : "no-exception";
     return testName + ":" + execution.getRuntimeType().name() + ":" + exceptionKey;
   }
 
-  /**
-   * Clears the analysis cache.
-   */
+  /** Clears the analysis cache. */
   public static void clearCache() {
     analysisCache.clear();
     LOGGER.info("Cleared failure analysis cache");
@@ -390,9 +399,7 @@ public final class WasmTestFailureAnalyzer {
     return new CacheStatistics(analysisCache.size());
   }
 
-  /**
-   * Failure categories for test failures.
-   */
+  /** Failure categories for test failures. */
   public enum FailureCategory {
     COMPILATION_ERROR("Module compilation failed"),
     INSTANTIATION_ERROR("Module instantiation failed"),
@@ -416,9 +423,7 @@ public final class WasmTestFailureAnalyzer {
     }
   }
 
-  /**
-   * Types of cross-runtime inconsistencies.
-   */
+  /** Types of cross-runtime inconsistencies. */
   public enum InconsistencyType {
     NONE("No inconsistency detected"),
     PARTIAL_FAILURE("Test succeeded on some runtimes but failed on others"),
@@ -436,9 +441,7 @@ public final class WasmTestFailureAnalyzer {
     }
   }
 
-  /**
-   * Cache statistics for failure analysis.
-   */
+  /** Cache statistics for failure analysis. */
   public static final class CacheStatistics {
     private final int cacheSize;
 

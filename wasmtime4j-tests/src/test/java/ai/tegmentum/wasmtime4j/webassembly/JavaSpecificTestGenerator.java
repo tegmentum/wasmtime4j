@@ -5,16 +5,14 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.logging.Logger;
 
 /**
  * Generates custom WebAssembly test scenarios specifically designed for Java integration testing.
- * Creates test modules that exercise Java-specific patterns, host function integration,
- * memory management, and cross-runtime consistency validation.
+ * Creates test modules that exercise Java-specific patterns, host function integration, memory
+ * management, and cross-runtime consistency validation.
  */
 public final class JavaSpecificTestGenerator {
   private static final Logger LOGGER = Logger.getLogger(JavaSpecificTestGenerator.class.getName());
@@ -47,13 +45,15 @@ public final class JavaSpecificTestGenerator {
   }
 
   /**
-   * Generates all Java-specific WebAssembly test cases and saves them to the custom tests directory.
+   * Generates all Java-specific WebAssembly test cases and saves them to the custom tests
+   * directory.
    *
    * @param customTestsDirectory the directory to save generated tests
    * @return the number of tests generated
    * @throws IOException if test generation or file writing fails
    */
-  public static int generateAllJavaSpecificTests(final Path customTestsDirectory) throws IOException {
+  public static int generateAllJavaSpecificTests(final Path customTestsDirectory)
+      throws IOException {
     Objects.requireNonNull(customTestsDirectory, "customTestsDirectory cannot be null");
 
     LOGGER.info("Generating Java-specific WebAssembly test cases in: " + customTestsDirectory);
@@ -133,22 +133,27 @@ public final class JavaSpecificTestGenerator {
     final WasmModuleBuilder builder = new WasmModuleBuilder("java_basic_arithmetic");
 
     // Define function type: (i32, i32) -> i32
-    builder.addFunctionType(new byte[]{TYPE_I32, TYPE_I32}, new byte[]{TYPE_I32});
+    builder.addFunctionType(new byte[] {TYPE_I32, TYPE_I32}, new byte[] {TYPE_I32});
 
     // Add function that adds two numbers
-    builder.addFunction(0, new byte[]{
-        OP_GET_LOCAL, 0x00, // get first parameter
-        OP_GET_LOCAL, 0x01, // get second parameter
-        OP_I32_ADD,         // add them
-        OP_END              // end function
-    });
+    builder.addFunction(
+        0,
+        new byte[] {
+          OP_GET_LOCAL,
+          0x00, // get first parameter
+          OP_GET_LOCAL,
+          0x01, // get second parameter
+          OP_I32_ADD, // add them
+          OP_END // end function
+        });
 
     // Export the function as "add"
     builder.exportFunction(0, "add");
 
     final byte[] moduleBytes = builder.build();
 
-    final String expectedResults = """
+    final String expectedResults =
+        """
         Test: java_basic_arithmetic
         Function: add(5, 3) -> 8
         Function: add(0, 0) -> 0
@@ -156,7 +161,8 @@ public final class JavaSpecificTestGenerator {
         Function: add(2147483647, 1) -> -2147483648 (overflow)
         """;
 
-    final String metadata = """
+    final String metadata =
+        """
         {
           "name": "java_basic_arithmetic",
           "description": "Basic arithmetic test for cross-runtime consistency validation",
@@ -187,13 +193,16 @@ public final class JavaSpecificTestGenerator {
     builder.addMemory(1, 1);
 
     // Define function type: () -> i32
-    builder.addFunctionType(new byte[]{}, new byte[]{TYPE_I32});
+    builder.addFunctionType(new byte[] {}, new byte[] {TYPE_I32});
 
     // Add function that returns a constant (simplified for this example)
-    builder.addFunction(0, new byte[]{
-        OP_I32_CONST, 0x2A, // constant 42
-        OP_END              // end function
-    });
+    builder.addFunction(
+        0,
+        new byte[] {
+          OP_I32_CONST,
+          0x2A, // constant 42
+          OP_END // end function
+        });
 
     // Export the function and memory
     builder.exportFunction(0, "get_value");
@@ -201,13 +210,15 @@ public final class JavaSpecificTestGenerator {
 
     final byte[] moduleBytes = builder.build();
 
-    final String expectedResults = """
+    final String expectedResults =
+        """
         Test: java_memory_access
         Function: get_value() -> 42
         Memory: 1 page (64KB) allocated
         """;
 
-    final String metadata = """
+    final String metadata =
+        """
         {
           "name": "java_memory_access",
           "description": "Memory allocation and access test for Java integration",
@@ -230,29 +241,35 @@ public final class JavaSpecificTestGenerator {
     final WasmModuleBuilder builder = new WasmModuleBuilder("java_function_export");
 
     // Define function type: (i32) -> i32
-    builder.addFunctionType(new byte[]{TYPE_I32}, new byte[]{TYPE_I32});
+    builder.addFunctionType(new byte[] {TYPE_I32}, new byte[] {TYPE_I32});
 
     // Add function that doubles a number
-    builder.addFunction(0, new byte[]{
-        OP_GET_LOCAL, 0x00, // get parameter
-        OP_GET_LOCAL, 0x00, // get parameter again
-        OP_I32_ADD,         // add them (double)
-        OP_END              // end function
-    });
+    builder.addFunction(
+        0,
+        new byte[] {
+          OP_GET_LOCAL,
+          0x00, // get parameter
+          OP_GET_LOCAL,
+          0x00, // get parameter again
+          OP_I32_ADD, // add them (double)
+          OP_END // end function
+        });
 
     // Export the function as "double_value"
     builder.exportFunction(0, "double_value");
 
     final byte[] moduleBytes = builder.build();
 
-    final String expectedResults = """
+    final String expectedResults =
+        """
         Test: java_function_export
         Function: double_value(5) -> 10
         Function: double_value(0) -> 0
         Function: double_value(-3) -> -6
         """;
 
-    final String metadata = """
+    final String metadata =
+        """
         {
           "name": "java_function_export",
           "description": "Function export test for Java host integration",
@@ -265,26 +282,27 @@ public final class JavaSpecificTestGenerator {
     return new JavaTestCase("java_function_export", moduleBytes, expectedResults, metadata);
   }
 
-  /**
-   * Creates additional test cases for comprehensive Java integration testing.
-   */
-
+  /** Creates additional test cases for comprehensive Java integration testing. */
   private static JavaTestCase createLargeMemoryTest() throws IOException {
     final WasmModuleBuilder builder = new WasmModuleBuilder("java_large_memory");
 
     // Add memory with multiple pages
     builder.addMemory(10, 10); // 10 pages = 640KB
 
-    builder.addFunctionType(new byte[]{}, new byte[]{TYPE_I32});
-    builder.addFunction(0, new byte[]{
-        OP_I32_CONST, 0x0A, // constant 10 (number of pages)
-        OP_END
-    });
+    builder.addFunctionType(new byte[] {}, new byte[] {TYPE_I32});
+    builder.addFunction(
+        0,
+        new byte[] {
+          OP_I32_CONST,
+          0x0A, // constant 10 (number of pages)
+          OP_END
+        });
 
     builder.exportFunction(0, "get_page_count");
     builder.exportMemory("memory");
 
-    final String metadata = """
+    final String metadata =
+        """
         {
           "name": "java_large_memory",
           "description": "Large memory allocation test for resource management",
@@ -302,28 +320,28 @@ public final class JavaSpecificTestGenerator {
     final WasmModuleBuilder builder = new WasmModuleBuilder("java_multiple_functions");
 
     // Function type for unary operations: i32 -> i32
-    builder.addFunctionType(new byte[]{TYPE_I32}, new byte[]{TYPE_I32});
+    builder.addFunctionType(new byte[] {TYPE_I32}, new byte[] {TYPE_I32});
 
     // Function 1: increment
-    builder.addFunction(0, new byte[]{
-        OP_GET_LOCAL, 0x00,
-        OP_I32_CONST, 0x01,
-        OP_I32_ADD,
-        OP_END
-    });
+    builder.addFunction(0, new byte[] {OP_GET_LOCAL, 0x00, OP_I32_CONST, 0x01, OP_I32_ADD, OP_END});
 
     // Function 2: decrement
-    builder.addFunction(0, new byte[]{
-        OP_GET_LOCAL, 0x00,
-        OP_I32_CONST, 0x01,
-        OP_I32_ADD, // Would need I32_SUB opcode in real implementation
-        OP_END
-    });
+    builder.addFunction(
+        0,
+        new byte[] {
+          OP_GET_LOCAL,
+          0x00,
+          OP_I32_CONST,
+          0x01,
+          OP_I32_ADD, // Would need I32_SUB opcode in real implementation
+          OP_END
+        });
 
     builder.exportFunction(0, "increment");
     builder.exportFunction(1, "decrement");
 
-    final String metadata = """
+    final String metadata =
+        """
         {
           "name": "java_multiple_functions",
           "description": "Multiple function export test for Java integration",
@@ -339,17 +357,15 @@ public final class JavaSpecificTestGenerator {
   private static JavaTestCase createEdgeCaseTest() throws IOException {
     final WasmModuleBuilder builder = new WasmModuleBuilder("java_edge_cases");
 
-    builder.addFunctionType(new byte[]{TYPE_I32}, new byte[]{TYPE_I32});
-    
+    builder.addFunctionType(new byte[] {TYPE_I32}, new byte[] {TYPE_I32});
+
     // Function that tests edge cases (simplified)
-    builder.addFunction(0, new byte[]{
-        OP_GET_LOCAL, 0x00,
-        OP_END
-    });
+    builder.addFunction(0, new byte[] {OP_GET_LOCAL, 0x00, OP_END});
 
     builder.exportFunction(0, "identity");
 
-    final String metadata = """
+    final String metadata =
+        """
         {
           "name": "java_edge_cases",
           "description": "Edge case testing for runtime stability",
@@ -365,19 +381,15 @@ public final class JavaSpecificTestGenerator {
   private static JavaTestCase createPerformanceStressTest() throws IOException {
     final WasmModuleBuilder builder = new WasmModuleBuilder("java_performance_stress");
 
-    builder.addFunctionType(new byte[]{TYPE_I32}, new byte[]{TYPE_I32});
-    
+    builder.addFunctionType(new byte[] {TYPE_I32}, new byte[] {TYPE_I32});
+
     // Simple function for performance testing
-    builder.addFunction(0, new byte[]{
-        OP_GET_LOCAL, 0x00,
-        OP_GET_LOCAL, 0x00,
-        OP_I32_ADD,
-        OP_END
-    });
+    builder.addFunction(0, new byte[] {OP_GET_LOCAL, 0x00, OP_GET_LOCAL, 0x00, OP_I32_ADD, OP_END});
 
     builder.exportFunction(0, "compute");
 
-    final String metadata = """
+    final String metadata =
+        """
         {
           "name": "java_performance_stress",
           "description": "Performance stress test for runtime comparison",
@@ -395,17 +407,21 @@ public final class JavaSpecificTestGenerator {
     final WasmModuleBuilder builder = new WasmModuleBuilder("java_resource_management");
 
     builder.addMemory(1, 1);
-    builder.addFunctionType(new byte[]{}, new byte[]{TYPE_I32});
-    
-    builder.addFunction(0, new byte[]{
-        OP_I32_CONST, 0x01, // return 1 to indicate success
-        OP_END
-    });
+    builder.addFunctionType(new byte[] {}, new byte[] {TYPE_I32});
+
+    builder.addFunction(
+        0,
+        new byte[] {
+          OP_I32_CONST,
+          0x01, // return 1 to indicate success
+          OP_END
+        });
 
     builder.exportFunction(0, "allocate_resource");
     builder.exportMemory("memory");
 
-    final String metadata = """
+    final String metadata =
+        """
         {
           "name": "java_resource_management",
           "description": "Resource allocation and cleanup test",
@@ -418,9 +434,7 @@ public final class JavaSpecificTestGenerator {
     return new JavaTestCase("java_resource_management", builder.build(), null, metadata);
   }
 
-  /**
-   * Simple WebAssembly module builder for generating test modules.
-   */
+  /** Simple WebAssembly module builder for generating test modules. */
   private static final class WasmModuleBuilder {
     private final String name;
     private final List<FunctionType> functionTypes = new ArrayList<>();
@@ -489,13 +503,13 @@ public final class JavaSpecificTestGenerator {
 
     private void writeTypeSection(final ByteArrayOutputStream output) throws IOException {
       final ByteArrayOutputStream section = new ByteArrayOutputStream();
-      writeULEB128(section, functionTypes.size());
-      
+      writeUleb128(section, functionTypes.size());
+
       for (final FunctionType type : functionTypes) {
         section.write(0x60); // func type
-        writeULEB128(section, type.paramTypes.length);
+        writeUleb128(section, type.paramTypes.length);
         section.write(type.paramTypes);
-        writeULEB128(section, type.resultTypes.length);
+        writeUleb128(section, type.resultTypes.length);
         section.write(type.resultTypes);
       }
 
@@ -504,10 +518,10 @@ public final class JavaSpecificTestGenerator {
 
     private void writeFunctionSection(final ByteArrayOutputStream output) throws IOException {
       final ByteArrayOutputStream section = new ByteArrayOutputStream();
-      writeULEB128(section, functions.size());
-      
+      writeUleb128(section, functions.size());
+
       for (final FunctionDef function : functions) {
-        writeULEB128(section, function.typeIndex);
+        writeUleb128(section, function.typeIndex);
       }
 
       writeSectionHeader(output, SECTION_FUNCTION, section.toByteArray());
@@ -515,15 +529,15 @@ public final class JavaSpecificTestGenerator {
 
     private void writeMemorySection(final ByteArrayOutputStream output) throws IOException {
       final ByteArrayOutputStream section = new ByteArrayOutputStream();
-      writeULEB128(section, 1); // one memory
-      
+      writeUleb128(section, 1); // one memory
+
       if (memory.max == memory.min) {
         section.write(0x00); // no maximum
-        writeULEB128(section, memory.min);
+        writeUleb128(section, memory.min);
       } else {
         section.write(0x01); // has maximum
-        writeULEB128(section, memory.min);
-        writeULEB128(section, memory.max);
+        writeUleb128(section, memory.min);
+        writeUleb128(section, memory.max);
       }
 
       writeSectionHeader(output, SECTION_MEMORY, section.toByteArray());
@@ -531,12 +545,12 @@ public final class JavaSpecificTestGenerator {
 
     private void writeExportSection(final ByteArrayOutputStream output) throws IOException {
       final ByteArrayOutputStream section = new ByteArrayOutputStream();
-      writeULEB128(section, exports.size());
-      
+      writeUleb128(section, exports.size());
+
       for (final Export export : exports) {
         writeString(section, export.name);
         section.write(export.kind);
-        writeULEB128(section, export.index);
+        writeUleb128(section, export.index);
       }
 
       writeSectionHeader(output, SECTION_EXPORT, section.toByteArray());
@@ -544,28 +558,30 @@ public final class JavaSpecificTestGenerator {
 
     private void writeCodeSection(final ByteArrayOutputStream output) throws IOException {
       final ByteArrayOutputStream section = new ByteArrayOutputStream();
-      writeULEB128(section, functions.size());
-      
+      writeUleb128(section, functions.size());
+
       for (final FunctionDef function : functions) {
         final ByteArrayOutputStream funcBody = new ByteArrayOutputStream();
-        writeULEB128(funcBody, 0); // no locals
+        writeUleb128(funcBody, 0); // no locals
         funcBody.write(function.code);
-        
-        writeULEB128(section, funcBody.size());
+
+        writeUleb128(section, funcBody.size());
         section.write(funcBody.toByteArray());
       }
 
       writeSectionHeader(output, SECTION_CODE, section.toByteArray());
     }
 
-    private void writeSectionHeader(final ByteArrayOutputStream output, final byte sectionType, 
-                                    final byte[] sectionData) throws IOException {
+    private void writeSectionHeader(
+        final ByteArrayOutputStream output, final byte sectionType, final byte[] sectionData)
+        throws IOException {
       output.write(sectionType);
-      writeULEB128(output, sectionData.length);
+      writeUleb128(output, sectionData.length);
       output.write(sectionData);
     }
 
-    private void writeULEB128(final ByteArrayOutputStream output, final int value) throws IOException {
+    private void writeUleb128(final ByteArrayOutputStream output, final int value)
+        throws IOException {
       int remaining = value;
       while (remaining >= 0x80) {
         output.write((remaining & 0x7F) | 0x80);
@@ -574,9 +590,10 @@ public final class JavaSpecificTestGenerator {
       output.write(remaining & 0x7F);
     }
 
-    private void writeString(final ByteArrayOutputStream output, final String str) throws IOException {
+    private void writeString(final ByteArrayOutputStream output, final String str)
+        throws IOException {
       final byte[] bytes = str.getBytes();
-      writeULEB128(output, bytes.length);
+      writeUleb128(output, bytes.length);
       output.write(bytes);
     }
   }
@@ -634,8 +651,11 @@ public final class JavaSpecificTestGenerator {
     private final String expectedResults;
     private final String metadata;
 
-    JavaTestCase(final String name, final byte[] moduleBytes, final String expectedResults, 
-                 final String metadata) {
+    JavaTestCase(
+        final String name,
+        final byte[] moduleBytes,
+        final String expectedResults,
+        final String metadata) {
       this.name = name;
       this.moduleBytes = moduleBytes;
       this.expectedResults = expectedResults;

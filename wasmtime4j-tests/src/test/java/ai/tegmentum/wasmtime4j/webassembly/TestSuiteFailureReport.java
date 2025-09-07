@@ -149,9 +149,9 @@ public final class TestSuiteFailureReport {
    */
   public Map<WasmTestFailureAnalyzer.InconsistencyType, Long> getInconsistencyTypeDistribution() {
     return failureAnalyses.stream()
-        .collect(Collectors.groupingBy(
-            CrossRuntimeFailureAnalysis::getInconsistencyType, 
-            Collectors.counting()));
+        .collect(
+            Collectors.groupingBy(
+                CrossRuntimeFailureAnalysis::getInconsistencyType, Collectors.counting()));
   }
 
   /**
@@ -188,32 +188,39 @@ public final class TestSuiteFailureReport {
     final List<String> recommendations = new ArrayList<>();
 
     // Add recommendations based on failure patterns
-    final WasmTestFailureAnalyzer.FailureCategory mostCommonCategory = getMostCommonFailureCategory();
+    final WasmTestFailureAnalyzer.FailureCategory mostCommonCategory =
+        getMostCommonFailureCategory();
     if (mostCommonCategory != null) {
-      recommendations.add(String.format(
-          "Primary focus: Address %s issues (most common failure category)",
-          mostCommonCategory.getDescription().toLowerCase()));
+      recommendations.add(
+          String.format(
+              "Primary focus: Address %s issues (most common failure category)",
+              mostCommonCategory.getDescription().toLowerCase()));
     }
 
-    final WasmTestFailureAnalyzer.InconsistencyType mostCommonInconsistency = getMostCommonInconsistencyType();
+    final WasmTestFailureAnalyzer.InconsistencyType mostCommonInconsistency =
+        getMostCommonInconsistencyType();
     if (mostCommonInconsistency != null) {
-      recommendations.add(String.format(
-          "Cross-runtime focus: Investigate %s patterns",
-          mostCommonInconsistency.getDescription().toLowerCase()));
+      recommendations.add(
+          String.format(
+              "Cross-runtime focus: Investigate %s patterns",
+              mostCommonInconsistency.getDescription().toLowerCase()));
     }
 
     // Add critical failure recommendations
     final List<CrossRuntimeFailureAnalysis> criticalFailures = getCriticalFailures();
     if (!criticalFailures.isEmpty()) {
-      recommendations.add(String.format(
-          "Immediate attention: %d critical failures require urgent resolution",
-          criticalFailures.size()));
+      recommendations.add(
+          String.format(
+              "Immediate attention: %d critical failures require urgent resolution",
+              criticalFailures.size()));
     }
 
     // Add suite-specific recommendations
     final double failureRate = getFailureRate();
     if (failureRate > 50.0) {
-      recommendations.add("High failure rate suggests systematic issues - review test environment and module validity");
+      recommendations.add(
+          "High failure rate suggests systematic issues - review test environment and module"
+              + " validity");
     } else if (failureRate > 20.0) {
       recommendations.add("Moderate failure rate - focus on most common failure patterns first");
     }
@@ -224,10 +231,11 @@ public final class TestSuiteFailureReport {
     }
 
     // Collect unique recommendations from individual failure analyses
-    final List<String> individualRecommendations = failureAnalyses.stream()
-        .flatMap(analysis -> analysis.getRecommendations().stream())
-        .distinct()
-        .collect(Collectors.toList());
+    final List<String> individualRecommendations =
+        failureAnalyses.stream()
+            .flatMap(analysis -> analysis.getRecommendations().stream())
+            .distinct()
+            .collect(Collectors.toList());
 
     recommendations.addAll(individualRecommendations);
 
@@ -243,37 +251,51 @@ public final class TestSuiteFailureReport {
     final StringBuilder report = new StringBuilder();
     report.append("Test Suite Failure Report\n");
     report.append("=========================\n\n");
-    
+
     report.append(String.format("Suite: %s\n", suiteType.name()));
     report.append(String.format("Report Generated: %s\n", reportTime));
     report.append(String.format("Total Tests: %d\n", totalTests));
     report.append(String.format("Failed Tests: %d (%.1f%%)\n", failedTestCount, getFailureRate()));
-    report.append(String.format("Inconsistent Tests: %d (%.1f%%)\n", inconsistentTestCount, getInconsistencyRate()));
+    report.append(
+        String.format(
+            "Inconsistent Tests: %d (%.1f%%)\n", inconsistentTestCount, getInconsistencyRate()));
     report.append("\n");
 
     // Failure category distribution
-    final Map<WasmTestFailureAnalyzer.FailureCategory, Long> categoryDistribution = 
+    final Map<WasmTestFailureAnalyzer.FailureCategory, Long> categoryDistribution =
         getFailureCategoryDistribution();
     if (!categoryDistribution.isEmpty()) {
       report.append("Failure Category Distribution:\n");
       report.append("------------------------------\n");
       categoryDistribution.entrySet().stream()
-          .sorted(Map.Entry.<WasmTestFailureAnalyzer.FailureCategory, Long>comparingByValue().reversed())
-          .forEach(entry -> report.append(String.format("  %s: %d occurrences\n", 
-              entry.getKey().getDescription(), entry.getValue())));
+          .sorted(
+              Map.Entry.<WasmTestFailureAnalyzer.FailureCategory, Long>comparingByValue()
+                  .reversed())
+          .forEach(
+              entry ->
+                  report.append(
+                      String.format(
+                          "  %s: %d occurrences\n",
+                          entry.getKey().getDescription(), entry.getValue())));
       report.append("\n");
     }
 
     // Inconsistency type distribution
-    final Map<WasmTestFailureAnalyzer.InconsistencyType, Long> inconsistencyDistribution = 
+    final Map<WasmTestFailureAnalyzer.InconsistencyType, Long> inconsistencyDistribution =
         getInconsistencyTypeDistribution();
     if (!inconsistencyDistribution.isEmpty()) {
       report.append("Inconsistency Type Distribution:\n");
       report.append("--------------------------------\n");
       inconsistencyDistribution.entrySet().stream()
-          .sorted(Map.Entry.<WasmTestFailureAnalyzer.InconsistencyType, Long>comparingByValue().reversed())
-          .forEach(entry -> report.append(String.format("  %s: %d occurrences\n", 
-              entry.getKey().getDescription(), entry.getValue())));
+          .sorted(
+              Map.Entry.<WasmTestFailureAnalyzer.InconsistencyType, Long>comparingByValue()
+                  .reversed())
+          .forEach(
+              entry ->
+                  report.append(
+                      String.format(
+                          "  %s: %d occurrences\n",
+                          entry.getKey().getDescription(), entry.getValue())));
       report.append("\n");
     }
 
@@ -283,9 +305,7 @@ public final class TestSuiteFailureReport {
       report.append("Critical Failures (Requiring Immediate Attention):\n");
       report.append("--------------------------------------------------\n");
       for (final CrossRuntimeFailureAnalysis analysis : criticalFailures) {
-        report.append(String.format("  %s: %s\n", 
-            analysis.getTestName(), 
-            analysis.getSummary()));
+        report.append(String.format("  %s: %s\n", analysis.getTestName(), analysis.getSummary()));
       }
       report.append("\n");
     }
@@ -319,23 +339,19 @@ public final class TestSuiteFailureReport {
    * @return a brief summary
    */
   public String createBriefSummary() {
-    return String.format("[%s] %d/%d tests failed (%.1f%%), %d inconsistent", 
-        suiteType.name(), 
-        failedTestCount, 
-        totalTests, 
-        getFailureRate(),
-        inconsistentTestCount);
+    return String.format(
+        "[%s] %d/%d tests failed (%.1f%%), %d inconsistent",
+        suiteType.name(), failedTestCount, totalTests, getFailureRate(), inconsistentTestCount);
   }
 
   @Override
   public String toString() {
-    return String.format("TestSuiteFailureReport{suite=%s, total=%d, failed=%d, inconsistent=%d}", 
+    return String.format(
+        "TestSuiteFailureReport{suite=%s, total=%d, failed=%d, inconsistent=%d}",
         suiteType.name(), totalTests, failedTestCount, inconsistentTestCount);
   }
 
-  /**
-   * Builder for TestSuiteFailureReport.
-   */
+  /** Builder for TestSuiteFailureReport. */
   public static final class Builder {
     private final WasmTestSuiteLoader.TestSuiteType suiteType;
     private int totalTests = 0;

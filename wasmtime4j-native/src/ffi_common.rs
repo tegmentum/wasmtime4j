@@ -432,7 +432,7 @@ pub mod error_handling {
     //! This module provides functions for error conversion, pointer validation,
     //! and standardized error reporting between JNI and Panama implementations.
     
-    use crate::error::{WasmtimeError, WasmtimeResult, ErrorCode};
+    use crate::error::{WasmtimeError, ErrorCode};
     use std::os::raw::c_void;
     use wasmtime::Error as WasmtimeEngineError;
     
@@ -683,8 +683,8 @@ pub mod memory_utils {
     //! This module provides functions for safe pointer dereferencing, memory lifecycle
     //! management, and bounds checking to ensure memory safety across FFI boundaries.
     
-    use crate::error::{WasmtimeError, WasmtimeResult};
-    use super::error_handling::ValidationError;
+    use crate::error::WasmtimeError;
+    
     use std::os::raw::c_void;
     use std::ptr;
     
@@ -1045,7 +1045,7 @@ pub mod memory_utils {
         let src_end = src_start + count;
         
         unsafe {
-            if (dest_start < src_end && src_start < dest_end) {
+            if dest_start < src_end && src_start < dest_end {
                 // Buffers overlap, use copy_overlapping
                 ptr::copy(src, dest, count);
             } else {

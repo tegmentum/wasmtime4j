@@ -7,7 +7,7 @@ This document demonstrates the comprehensive memory management utilities impleme
 The `ffi_common::memory_utils` module provides safety-first memory management utilities that prevent common memory safety issues:
 
 - **Memory corruption prevention** through comprehensive pointer validation
-- **Memory leak prevention** through proper resource lifecycle management  
+- **Memory leak prevention** through proper resource lifecycle management
 - **Buffer overflow prevention** through bounds checking
 - **Use-after-free prevention** through ownership validation
 
@@ -25,7 +25,7 @@ unsafe {
     }
 }
 
-// In panama_ffi.rs - SIMILAR UNSAFE PATTERNS  
+// In panama_ffi.rs - SIMILAR UNSAFE PATTERNS
 unsafe {
     if engine_ptr != std::ptr::null_mut() {  // Different null check style
         let engine = &mut *engine_ptr;       // Same unsafe pattern
@@ -65,7 +65,7 @@ let restored_box = memory_utils::safe_box_from_raw(raw_ptr, "resource")?;
 
 **Before (No Bounds Checking):**
 ```rust
-unsafe { 
+unsafe {
     let element = &*array_ptr.add(index);  // No bounds validation
 }
 ```
@@ -87,8 +87,8 @@ unsafe {
 **After (Overflow Protection):**
 ```rust
 memory_utils::safe_memory_copy(
-    dest, src, count, 
-    dest_size, src_size, 
+    dest, src, count,
+    dest_size, src_size,
     "copy_operation"
 )?;
 ```
@@ -100,7 +100,7 @@ The utilities provide comprehensive error reporting with the `MemoryError` enum:
 ```rust
 pub enum MemoryError {
     NullPointer(String),                    // Null pointer detected
-    MisalignedPointer(String),             // Pointer alignment violation  
+    MisalignedPointer(String),             // Pointer alignment violation
     InvalidBoxPointer(String),             // Invalid Box reconstruction
     IndexOutOfBounds { ... },              // Array bounds violation
     BufferOverflow { ... },                // Buffer size violation
@@ -127,7 +127,7 @@ let resource = tracker.take().unwrap();
 The implementation includes extensive test coverage for all memory operations:
 
 - ✅ Null pointer detection
-- ✅ Valid pointer dereferencing  
+- ✅ Valid pointer dereferencing
 - ✅ Box lifecycle management
 - ✅ Automatic resource cleanup
 - ✅ Bounds checking validation
@@ -141,7 +141,7 @@ The memory utilities provide these critical safety guarantees:
 
 1. **No Unsafe Undefined Behavior**: All unsafe code is thoroughly validated
 2. **Memory Leak Prevention**: Clear cleanup paths for all allocated memory
-3. **Double-Free Prevention**: Ownership tracking prevents multiple deallocations  
+3. **Double-Free Prevention**: Ownership tracking prevents multiple deallocations
 4. **Use-After-Free Prevention**: Lifetime management prevents access to freed memory
 5. **Buffer Overflow Prevention**: Bounds checking for all array/buffer operations
 
@@ -149,7 +149,7 @@ The memory utilities provide these critical safety guarantees:
 
 - ✅ **Memory utilities implemented** with comprehensive validation
 - ✅ **Safety tests implemented** covering all edge cases
-- ✅ **Error handling integrated** with existing infrastructure 
+- ✅ **Error handling integrated** with existing infrastructure
 - 🔄 **JNI bindings integration** - in progress
 - 🔄 **Panama FFI integration** - pending
 - 📋 **Performance validation** - pending
@@ -162,7 +162,7 @@ let validated_ref = memory_utils::safe_deref(ptr, "parameter_name")?;
 ```
 
 ### Resource Management
-```rust  
+```rust
 let ffi_ptr = memory_utils::box_into_raw_safe(Box::new(resource));
 // ... pass to FFI ...
 let resource = memory_utils::safe_box_from_raw(ffi_ptr, "resource")?;

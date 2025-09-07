@@ -76,9 +76,10 @@ public class PerformanceOptimizationBenchmark extends BenchmarkBase {
   private WasmValue[] testParams;
 
   private List<byte[]> allocatedBuffers;
-  
+
   /** Performance tracking fields. */
   private MemoryMXBean memoryBean;
+
   private List<GarbageCollectorMXBean> gcBeans;
 
   /**
@@ -114,7 +115,8 @@ public class PerformanceOptimizationBenchmark extends BenchmarkBase {
     // Initialize buffer list for memory allocation testing
     allocatedBuffers = new ArrayList<>();
 
-    System.out.printf("Setup completed for %s runtime with %d operations%n", runtimeType, operationCount);
+    System.out.printf(
+        "Setup completed for %s runtime with %d operations%n", runtimeType, operationCount);
   }
 
   /**
@@ -165,7 +167,7 @@ public class PerformanceOptimizationBenchmark extends BenchmarkBase {
   public byte[][] benchmarkMemoryAllocationPressure(final Blackhole bh) {
     final MemoryUsage beforeHeap = memoryBean.getHeapMemoryUsage();
     final long beforeGc = getTotalGcCollections();
-    
+
     final byte[][] results = new byte[operationCount][];
 
     // Allocate memory to simulate GC pressure
@@ -173,7 +175,7 @@ public class PerformanceOptimizationBenchmark extends BenchmarkBase {
       results[i] = new byte[1024]; // 1KB allocations
       results[i][0] = (byte) i;
       bh.consume(results[i]);
-      
+
       // Add to tracking list
       allocatedBuffers.add(results[i]);
     }
@@ -181,12 +183,12 @@ public class PerformanceOptimizationBenchmark extends BenchmarkBase {
     // Measure GC impact
     final MemoryUsage afterHeap = memoryBean.getHeapMemoryUsage();
     final long afterGc = getTotalGcCollections();
-    
+
     // Force some cleanup periodically
     if (allocatedBuffers.size() > 10000) {
       allocatedBuffers.clear();
     }
-    
+
     bh.consume(afterHeap.getUsed() - beforeHeap.getUsed());
     bh.consume(afterGc - beforeGc);
 
@@ -205,7 +207,7 @@ public class PerformanceOptimizationBenchmark extends BenchmarkBase {
       bh.consume(result);
       lastResult = result;
     }
-    
+
     final long duration = System.nanoTime() - startTime;
     bh.consume(duration);
 
@@ -220,10 +222,10 @@ public class PerformanceOptimizationBenchmark extends BenchmarkBase {
     // Measure just the FFI boundary crossing overhead
     final WasmValue a = WasmValue.i32(42);
     final WasmValue b = WasmValue.i32(24);
-    
+
     final WasmValue[] result = addFunction.call(a, b);
     bh.consume(result);
-    
+
     return result;
   }
 
@@ -235,10 +237,10 @@ public class PerformanceOptimizationBenchmark extends BenchmarkBase {
     // Compile the same module repeatedly to measure compilation throughput
     final Module compiledModule = engine.compileModule(SIMPLE_WASM_MODULE);
     bh.consume(compiledModule);
-    
+
     // Clean up immediately to avoid resource leaks
     compiledModule.close();
-    
+
     return compiledModule;
   }
 
@@ -258,17 +260,15 @@ public class PerformanceOptimizationBenchmark extends BenchmarkBase {
   public WasmValue[] benchmarkParameterMarshalling(final Blackhole bh) throws WasmException {
     // Test different parameter patterns
     final WasmValue[] singleI32 = new WasmValue[] {WasmValue.i32(42)};
-    final WasmValue[] mixedTypes = new WasmValue[] {
-      WasmValue.i32(1), 
-      WasmValue.i64(2L), 
-      WasmValue.f32(3.0f), 
-      WasmValue.f64(4.0)
-    };
-    
+    final WasmValue[] mixedTypes =
+        new WasmValue[] {
+          WasmValue.i32(1), WasmValue.i64(2L), WasmValue.f32(3.0f), WasmValue.f64(4.0)
+        };
+
     // Use single parameter function for now since we only have "add"
     WasmValue[] result1 = null;
     WasmValue[] result2 = null;
-    
+
     try {
       result1 = addFunction.call(singleI32[0], WasmValue.i32(0));
       result2 = addFunction.call(mixedTypes[0], mixedTypes[1]);
@@ -277,10 +277,10 @@ public class PerformanceOptimizationBenchmark extends BenchmarkBase {
       result1 = addFunction.call(testParams);
       result2 = result1;
     }
-    
+
     bh.consume(result1);
     bh.consume(result2);
-    
+
     return result2;
   }
 
@@ -291,24 +291,24 @@ public class PerformanceOptimizationBenchmark extends BenchmarkBase {
   public long benchmarkMemoryManagement(final Blackhole bh) throws WasmException {
     final MemoryUsage before = memoryBean.getHeapMemoryUsage();
     final long beforeUsed = before.getUsed();
-    
+
     // Create temporary modules and instances
     for (int i = 0; i < Math.min(operationCount, 50); i++) {
       try (final Module tempModule = engine.compileModule(SIMPLE_WASM_MODULE);
-           final Instance tempInstance = tempModule.instantiate(store)) {
-        
+          final Instance tempInstance = tempModule.instantiate(store)) {
+
         final WasmFunction tempFunc = tempInstance.getFunction("add").orElse(addFunction);
         final WasmValue[] result = tempFunc.call(testParams);
         bh.consume(result);
       }
     }
-    
+
     // Suggest garbage collection
     System.gc();
-    
+
     final MemoryUsage after = memoryBean.getHeapMemoryUsage();
     final long memoryDelta = after.getUsed() - beforeUsed;
-    
+
     bh.consume(memoryDelta);
     return memoryDelta;
   }
@@ -318,7 +318,7 @@ public class PerformanceOptimizationBenchmark extends BenchmarkBase {
   public WasmValue[] benchmarkConcurrentAccessSimulation(final Blackhole bh) throws WasmException {
     // Simulate concurrent access by interleaving different operations
     WasmValue[] lastResult = null;
-    
+
     for (int i = 0; i < operationCount; i++) {
       switch (i % 3) {
         case 0:
@@ -340,7 +340,7 @@ public class PerformanceOptimizationBenchmark extends BenchmarkBase {
       }
       bh.consume(lastResult);
     }
-    
+
     return lastResult;
   }
 
@@ -349,7 +349,7 @@ public class PerformanceOptimizationBenchmark extends BenchmarkBase {
   public WasmValue[] benchmarkCompletePerformancePipeline(final Blackhole bh) throws WasmException {
     final long startTime = System.nanoTime();
     final MemoryUsage memBefore = memoryBean.getHeapMemoryUsage();
-    
+
     try {
       // Perform operations
       WasmValue[] result = null;
@@ -357,13 +357,13 @@ public class PerformanceOptimizationBenchmark extends BenchmarkBase {
         result = addFunction.call(WasmValue.i32(i), WasmValue.i32(i + 1));
         bh.consume(result);
       }
-      
+
       return result;
-      
+
     } finally {
       final long duration = System.nanoTime() - startTime;
       final MemoryUsage memAfter = memoryBean.getHeapMemoryUsage();
-      
+
       bh.consume(duration);
       bh.consume(memAfter.getUsed() - memBefore.getUsed());
     }
@@ -371,31 +371,28 @@ public class PerformanceOptimizationBenchmark extends BenchmarkBase {
 
   /** Helper method to get total GC collections across all collectors. */
   private long getTotalGcCollections() {
-    return gcBeans.stream()
-        .mapToLong(bean -> Math.max(0, bean.getCollectionCount()))
-        .sum();
+    return gcBeans.stream().mapToLong(bean -> Math.max(0, bean.getCollectionCount())).sum();
   }
 
   /** Helper method to print memory statistics. */
   private void printMemoryStatistics() {
     final MemoryUsage heap = memoryBean.getHeapMemoryUsage();
     final MemoryUsage nonHeap = memoryBean.getNonHeapMemoryUsage();
-    
-    System.out.printf("Heap Memory - Used: %d MB, Max: %d MB%n", 
-        heap.getUsed() / (1024 * 1024), 
-        heap.getMax() / (1024 * 1024));
-    System.out.printf("Non-Heap Memory - Used: %d MB, Max: %d MB%n", 
-        nonHeap.getUsed() / (1024 * 1024), 
-        nonHeap.getMax() / (1024 * 1024));
+
+    System.out.printf(
+        "Heap Memory - Used: %d MB, Max: %d MB%n",
+        heap.getUsed() / (1024 * 1024), heap.getMax() / (1024 * 1024));
+    System.out.printf(
+        "Non-Heap Memory - Used: %d MB, Max: %d MB%n",
+        nonHeap.getUsed() / (1024 * 1024), nonHeap.getMax() / (1024 * 1024));
   }
 
   /** Helper method to print GC statistics. */
   private void printGcStatistics() {
     for (final GarbageCollectorMXBean gcBean : gcBeans) {
-      System.out.printf("GC %s - Collections: %d, Time: %d ms%n", 
-          gcBean.getName(), 
-          gcBean.getCollectionCount(), 
-          gcBean.getCollectionTime());
+      System.out.printf(
+          "GC %s - Collections: %d, Time: %d ms%n",
+          gcBean.getName(), gcBean.getCollectionCount(), gcBean.getCollectionTime());
     }
   }
 }

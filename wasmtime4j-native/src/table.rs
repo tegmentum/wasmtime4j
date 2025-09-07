@@ -6,8 +6,8 @@
 //! and type validation.
 
 use std::sync::{Arc, Mutex};
-use wasmtime::{Table as WasmtimeTable, TableType, Val, ValType, RefType, Ref, Func, Extern};
-use crate::store::{Store, StoreData};
+use wasmtime::{Table as WasmtimeTable, TableType, Val, ValType, RefType, Ref};
+use crate::store::Store;
 use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::global::ReferenceType;
 

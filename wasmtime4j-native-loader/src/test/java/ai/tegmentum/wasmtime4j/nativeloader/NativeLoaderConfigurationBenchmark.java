@@ -292,21 +292,15 @@ public class NativeLoaderConfigurationBenchmark {
   public void benchmarkVariousPathConventionConfigs(final Blackhole blackhole) {
     // Single convention
     final NativeLibraryConfig config1 =
-        NativeLibraryConfig.builder()
-            .libraryName(TEST_LIBRARY_NAME)
-            .build();
+        NativeLibraryConfig.builder().libraryName(TEST_LIBRARY_NAME).build();
 
     // Multiple conventions
     final NativeLibraryConfig config2 =
-        NativeLibraryConfig.builder()
-            .libraryName(TEST_LIBRARY_NAME)
-            .build();
+        NativeLibraryConfig.builder().libraryName(TEST_LIBRARY_NAME).build();
 
     // All conventions
     final NativeLibraryConfig config3 =
-        NativeLibraryConfig.builder()
-            .libraryName(TEST_LIBRARY_NAME)
-            .build();
+        NativeLibraryConfig.builder().libraryName(TEST_LIBRARY_NAME).build();
 
     blackhole.consume(config1);
     blackhole.consume(config2);

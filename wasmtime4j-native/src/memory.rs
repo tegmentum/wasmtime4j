@@ -7,11 +7,9 @@
 use std::sync::{Arc, Mutex, RwLock};
 use std::time::Instant;
 use std::collections::HashMap;
-use wasmtime::{Memory as WasmtimeMemory, MemoryType, Store as WasmtimeStore, StoreContext, StoreContextMut, AsContext, AsContextMut};
+use wasmtime::{Memory as WasmtimeMemory, MemoryType};
 use crate::error::{WasmtimeError, WasmtimeResult};
-use crate::{validate_not_null, validate_slice_bounds, validate_handle};
-use crate::store::{Store, StoreData};
-use crate::engine::Engine;
+use crate::store::Store;
 
 /// Thread-safe WebAssembly memory wrapper with comprehensive bounds checking
 #[derive(Debug)]

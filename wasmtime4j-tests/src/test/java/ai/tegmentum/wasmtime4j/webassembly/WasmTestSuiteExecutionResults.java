@@ -145,27 +145,32 @@ public final class WasmTestSuiteExecutionResults {
     report.append("WebAssembly Test Suite Execution Summary\n");
     report.append("========================================\n\n");
 
-    report.append(String.format("Total Execution Time: %.2fs\n", totalExecutionTime.toMillis() / 1000.0));
+    report.append(
+        String.format("Total Execution Time: %.2fs\n", totalExecutionTime.toMillis() / 1000.0));
     report.append(String.format("Test Suites Executed: %d\n", getExecutedSuiteCount()));
     report.append(String.format("Total Tests: %d\n", totalTestsExecuted));
-    report.append(String.format("Successful: %d (%.1f%%)\n", totalSuccessfulTests, getOverallSuccessRate()));
+    report.append(
+        String.format("Successful: %d (%.1f%%)\n", totalSuccessfulTests, getOverallSuccessRate()));
     report.append(String.format("Failed: %d\n", totalFailedTests));
     report.append(String.format("Skipped: %d\n\n", totalSkippedTests));
 
     // Breakdown by test suite
     report.append("Test Suite Breakdown:\n");
     report.append("---------------------\n");
-    for (final Map.Entry<WasmTestSuiteLoader.TestSuiteType, WasmTestSuiteResults> entry : suiteResults.entrySet()) {
+    for (final Map.Entry<WasmTestSuiteLoader.TestSuiteType, WasmTestSuiteResults> entry :
+        suiteResults.entrySet()) {
       final WasmTestSuiteLoader.TestSuiteType suiteType = entry.getKey();
       final WasmTestSuiteResults results = entry.getValue();
 
       report.append(String.format("  %s:\n", suiteType.name()));
-      report.append(String.format("    Tests: %d, Successful: %d (%.1f%%), Failed: %d, Skipped: %d\n",
-          results.getTotalTestsExecuted(),
-          results.getSuccessfulTests(),
-          results.getSuccessRate(),
-          results.getFailedTests(),
-          results.getSkippedTests()));
+      report.append(
+          String.format(
+              "    Tests: %d, Successful: %d (%.1f%%), Failed: %d, Skipped: %d\n",
+              results.getTotalTestsExecuted(),
+              results.getSuccessfulTests(),
+              results.getSuccessRate(),
+              results.getFailedTests(),
+              results.getSkippedTests()));
     }
 
     return report.toString();
@@ -173,7 +178,8 @@ public final class WasmTestSuiteExecutionResults {
 
   @Override
   public String toString() {
-    return String.format("WasmTestSuiteExecutionResults{suites=%d, tests=%d, successful=%d, failed=%d, time=%.2fs}",
+    return String.format(
+        "WasmTestSuiteExecutionResults{suites=%d, tests=%d, successful=%d, failed=%d, time=%.2fs}",
         getExecutedSuiteCount(),
         totalTestsExecuted,
         totalSuccessfulTests,
@@ -181,12 +187,10 @@ public final class WasmTestSuiteExecutionResults {
         totalExecutionTime.toMillis() / 1000.0);
   }
 
-  /**
-   * Builder for WasmTestSuiteExecutionResults.
-   */
+  /** Builder for WasmTestSuiteExecutionResults. */
   public static final class Builder {
-    private final Map<WasmTestSuiteLoader.TestSuiteType, WasmTestSuiteResults> suiteResults = new EnumMap<>(
-        WasmTestSuiteLoader.TestSuiteType.class);
+    private final Map<WasmTestSuiteLoader.TestSuiteType, WasmTestSuiteResults> suiteResults =
+        new EnumMap<>(WasmTestSuiteLoader.TestSuiteType.class);
     private Duration totalExecutionTime = Duration.ZERO;
 
     /**
@@ -196,11 +200,11 @@ public final class WasmTestSuiteExecutionResults {
      * @param results the test suite results
      * @return this builder
      */
-    public Builder addSuiteResults(final WasmTestSuiteLoader.TestSuiteType suiteType, 
-                                   final WasmTestSuiteResults results) {
+    public Builder addSuiteResults(
+        final WasmTestSuiteLoader.TestSuiteType suiteType, final WasmTestSuiteResults results) {
       Objects.requireNonNull(suiteType, "suiteType cannot be null");
       Objects.requireNonNull(results, "results cannot be null");
-      
+
       suiteResults.put(suiteType, results);
       return this;
     }
@@ -212,7 +216,8 @@ public final class WasmTestSuiteExecutionResults {
      * @return this builder
      */
     public Builder totalExecutionTime(final Duration executionTime) {
-      this.totalExecutionTime = Objects.requireNonNull(executionTime, "executionTime cannot be null");
+      this.totalExecutionTime =
+          Objects.requireNonNull(executionTime, "executionTime cannot be null");
       return this;
     }
 

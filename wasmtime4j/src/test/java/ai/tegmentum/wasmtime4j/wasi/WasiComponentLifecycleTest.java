@@ -50,7 +50,8 @@ class WasiComponentLifecycleTest {
           "Created WASI context with runtime: " + context.getRuntimeInfo().getRuntimeType());
     } catch (WasmException e) {
       // If no implementations available, skip the test
-      Assumptions.assumeTrue(false, "Skipping test - no WASI implementation available: " + e.getMessage());
+      Assumptions.assumeTrue(
+          false, "Skipping test - no WASI implementation available: " + e.getMessage());
     }
   }
 

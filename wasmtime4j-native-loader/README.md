@@ -181,7 +181,7 @@ Based on JMH benchmarks with Java 17 on Linux x86_64:
 ```java
 @Component
 public class NativeLibraryInitializer {
-    
+
     @PostConstruct
     public void loadNativeLibraries() {
         LibraryLoadInfo info = NativeLoader.builder()
@@ -189,9 +189,9 @@ public class NativeLibraryInitializer {
             .securityLevel(SecurityLevel.MODERATE)
             .tempFilePrefix("myapp-")
             .load();
-            
+
         if (!info.isLoadedSuccessfully()) {
-            throw new RuntimeException("Failed to load native library: " + 
+            throw new RuntimeException("Failed to load native library: " +
                 info.getErrorMessage());
         }
     }
@@ -202,7 +202,7 @@ public class NativeLibraryInitializer {
 
 ```java
 public class MyFrameworkNativeLoader {
-    
+
     public static void loadFrameworkNatives() {
         // Try framework-specific path first, then fallback to standard
         LibraryLoadInfo info = NativeLoader.builder()
@@ -213,7 +213,7 @@ public class MyFrameworkNativeLoader {
             )
             .securityLevel(SecurityLevel.STRICT)
             .load();
-            
+
         if (!info.isLoadedSuccessfully()) {
             // Handle error appropriately
             throw new RuntimeException("Framework native library not found");

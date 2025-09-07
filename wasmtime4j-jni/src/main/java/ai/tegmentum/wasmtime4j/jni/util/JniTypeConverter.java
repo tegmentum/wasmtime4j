@@ -512,7 +512,7 @@ public final class JniTypeConverter {
         System.arraycopy(data, offset, v128Data, 0, 16);
         return WasmValue.v128(v128Data);
       case FUNCREF:
-        return WasmValue.funcref();
+        return WasmValue.funcref(null);
       case EXTERNREF:
         return WasmValue.externref(null);
       default:

@@ -1,4 +1,4 @@
-package ai.tegmentum.wasmtime4j.native_functions;
+package ai.tegmentum.wasmtime4j.nativefunctions;
 
 import ai.tegmentum.wasmtime4j.utils.TestUtils;
 import java.util.ArrayList;
@@ -84,7 +84,7 @@ public final class NativeFunctionTestUtils {
         (memory 2)
         (table 5 funcref)
         (global $state (mut i32) (i32.const 0))
-        
+
         (func $fibonacci (param i32) (result i32)
           (local i32 i32)
           local.get 0
@@ -103,21 +103,21 @@ public final class NativeFunctionTestUtils {
             call $fibonacci
             i32.add
           end)
-        
+
         (func $store_load (param i32 i32) (result i32)
           local.get 0
           local.get 1
           i32.store
           local.get 0
           i32.load)
-        
+
         (func $set_state (param i32)
           local.get 0
           global.set $state)
-        
+
         (func $get_state (result i32)
           global.get $state)
-        
+
         (export "memory" (memory 0))
         (export "table" (table 0))
         (export "state" (global $state))
@@ -134,14 +134,14 @@ public final class NativeFunctionTestUtils {
           i32.const 10
           i32.const 0
           i32.div_s)
-        
+
         (func $unreachable_trap
           unreachable)
-        
+
         (func $out_of_bounds_memory (result i32)
           i32.const 1048576
           i32.load)
-        
+
         (export "divide_by_zero" (func $divide_by_zero))
         (export "unreachable_trap" (func $unreachable_trap))
         (export "out_of_bounds_memory" (func $out_of_bounds_memory)))
@@ -209,11 +209,11 @@ public final class NativeFunctionTestUtils {
    */
   public byte[] generateRandomModule(final long seed) {
     final Random random = new Random(seed);
-    
+
     // Generate a simple module with random constants and operations
     final StringBuilder wat = new StringBuilder();
     wat.append("(module\n");
-    
+
     // Add random functions
     final int functionCount = random.nextInt(5) + 1;
     for (int i = 0; i < functionCount; i++) {
@@ -223,9 +223,9 @@ public final class NativeFunctionTestUtils {
       wat.append("    i32.add)\n");
       wat.append("  (export \"func").append(i).append("\" (func $func").append(i).append("))\n");
     }
-    
+
     wat.append(")");
-    
+
     return compileWatModule(wat.toString());
   }
 
@@ -236,14 +236,14 @@ public final class NativeFunctionTestUtils {
    */
   public List<TestModule> getAllTestModules() {
     final List<TestModule> modules = new ArrayList<>();
-    
+
     modules.add(new TestModule("simple_add", getSimpleAddModule(), "Simple addition function"));
     modules.add(new TestModule("memory_ops", getMemoryModule(), "Memory operations"));
     modules.add(new TestModule("table_ops", getTableModule(), "Table operations"));
     modules.add(new TestModule("global_vars", getGlobalModule(), "Global variables"));
     modules.add(new TestModule("complex", getComplexModule(), "Complex multi-feature module"));
     modules.add(new TestModule("error_cases", getErrorModule(), "Error-triggering module"));
-    
+
     // Add some random modules for fuzzing
     for (int i = 0; i < 3; i++) {
       final long seed = ThreadLocalRandom.current().nextLong();
@@ -251,7 +251,7 @@ public final class NativeFunctionTestUtils {
           new TestModule(
               "random_" + i, generateRandomModule(seed), "Random module (seed: " + seed + ")"));
     }
-    
+
     return modules;
   }
 
@@ -323,6 +323,13 @@ public final class NativeFunctionTestUtils {
     private final byte[] moduleBytes;
     private final String description;
 
+    /**
+     * Creates a new test module.
+     *
+     * @param name the module name
+     * @param moduleBytes the compiled WebAssembly module bytes
+     * @param description the module description
+     */
     public TestModule(final String name, final byte[] moduleBytes, final String description) {
       this.name = name;
       this.moduleBytes = moduleBytes.clone();
@@ -403,37 +410,27 @@ public final class NativeFunctionTestUtils {
       // Normal lifecycle
       testCases.add(
           new LifecycleTestCase(
-              "normal_lifecycle", 
-              "Create -> Use -> Close", 
-              LifecyclePattern.NORMAL));
+              "normal_lifecycle", "Create -> Use -> Close", LifecyclePattern.NORMAL));
 
       // Double close
       testCases.add(
           new LifecycleTestCase(
-              "double_close", 
-              "Create -> Close -> Close", 
-              LifecyclePattern.DOUBLE_CLOSE));
+              "double_close", "Create -> Close -> Close", LifecyclePattern.DOUBLE_CLOSE));
 
       // Use after close
       testCases.add(
           new LifecycleTestCase(
-              "use_after_close", 
-              "Create -> Close -> Use", 
-              LifecyclePattern.USE_AFTER_CLOSE));
+              "use_after_close", "Create -> Close -> Use", LifecyclePattern.USE_AFTER_CLOSE));
 
       // No close (resource leak test)
       testCases.add(
           new LifecycleTestCase(
-              "no_close", 
-              "Create -> Use -> (no close)", 
-              LifecyclePattern.NO_CLOSE));
+              "no_close", "Create -> Use -> (no close)", LifecyclePattern.NO_CLOSE));
 
       // Rapid create/close cycles
       testCases.add(
           new LifecycleTestCase(
-              "rapid_cycles", 
-              "Rapid create/close cycles", 
-              LifecyclePattern.RAPID_CYCLES));
+              "rapid_cycles", "Rapid create/close cycles", LifecyclePattern.RAPID_CYCLES));
     }
 
     public List<LifecycleTestCase> getTestCases() {
@@ -447,6 +444,13 @@ public final class NativeFunctionTestUtils {
     private final String description;
     private final LifecyclePattern pattern;
 
+    /**
+     * Creates a new lifecycle test case.
+     *
+     * @param name the test case name
+     * @param description the test case description
+     * @param pattern the lifecycle pattern to test
+     */
     public LifecycleTestCase(
         final String name, final String description, final LifecyclePattern pattern) {
       this.name = name;

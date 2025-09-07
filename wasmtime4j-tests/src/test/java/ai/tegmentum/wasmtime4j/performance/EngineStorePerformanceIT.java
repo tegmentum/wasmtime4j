@@ -197,18 +197,20 @@ final class EngineStorePerformanceIT extends BaseIntegrationTest {
                                               final List<Duration> threadTimes = new ArrayList<>();
                                               for (int op = 0; op < operationsPerThread; op++) {
                                                 final Duration opTime =
-                                                    PerformanceTestUtils.measureExecutionTimeAndReturnDuration(
-                                                        "Thread " + threadId + " op " + op,
-                                                        () -> {
-                                                          try {
-                                                            final Engine engine =
-                                                                runtime.createEngine();
-                                                            assertThat(engine.isValid()).isTrue();
-                                                            engine.close();
-                                                          } catch (final Exception e) {
-                                                            throw new RuntimeException(e);
-                                                          }
-                                                        });
+                                                    PerformanceTestUtils
+                                                        .measureExecutionTimeAndReturnDuration(
+                                                            "Thread " + threadId + " op " + op,
+                                                            () -> {
+                                                              try {
+                                                                final Engine engine =
+                                                                    runtime.createEngine();
+                                                                assertThat(engine.isValid())
+                                                                    .isTrue();
+                                                                engine.close();
+                                                              } catch (final Exception e) {
+                                                                throw new RuntimeException(e);
+                                                              }
+                                                            });
                                                 threadTimes.add(opTime);
                                               }
                                               return threadTimes.stream()
@@ -411,7 +413,8 @@ final class EngineStorePerformanceIT extends BaseIntegrationTest {
               compilationTimes.add(compilationTime);
             }
 
-            final PerformanceMetrics metrics = PerformanceTestUtils.calculateMetrics(compilationTimes);
+            final PerformanceMetrics metrics =
+                PerformanceTestUtils.calculateMetrics(compilationTimes);
             PerformanceTestUtils.logPerformanceMetrics("Module compilation", metrics, runtimeType);
 
             assertThat(metrics.getAverage())
@@ -471,7 +474,8 @@ final class EngineStorePerformanceIT extends BaseIntegrationTest {
               compilationTimes.add(compilationTime);
             }
 
-            final PerformanceMetrics metrics = PerformanceTestUtils.calculateMetrics(compilationTimes);
+            final PerformanceMetrics metrics =
+                PerformanceTestUtils.calculateMetrics(compilationTimes);
             PerformanceTestUtils.logPerformanceMetrics(
                 "Module compilation (" + optimizationLevel + ")", metrics, runtimeType);
 
@@ -516,7 +520,8 @@ final class EngineStorePerformanceIT extends BaseIntegrationTest {
               operationTimes.add(operationTime);
             }
 
-            final PerformanceMetrics metrics = PerformanceTestUtils.calculateMetrics(operationTimes);
+            final PerformanceMetrics metrics =
+                PerformanceTestUtils.calculateMetrics(operationTimes);
             PerformanceTestUtils.logPerformanceMetrics("Data operations", metrics, runtimeType);
 
             assertThat(metrics.getAverage())
@@ -568,7 +573,8 @@ final class EngineStorePerformanceIT extends BaseIntegrationTest {
               operationTimes.add(operationTime);
             }
 
-            final PerformanceMetrics metrics = PerformanceTestUtils.calculateMetrics(operationTimes);
+            final PerformanceMetrics metrics =
+                PerformanceTestUtils.calculateMetrics(operationTimes);
             PerformanceTestUtils.logPerformanceMetrics("Fuel operations", metrics, runtimeType);
 
             assertThat(metrics.getAverage())
@@ -709,7 +715,8 @@ final class EngineStorePerformanceIT extends BaseIntegrationTest {
           }
 
           engine.close();
-          performanceMap.put(runtimeType.toString(), PerformanceTestUtils.calculateMetrics(compilationTimes));
+          performanceMap.put(
+              runtimeType.toString(), PerformanceTestUtils.calculateMetrics(compilationTimes));
         } catch (final Exception e) {
           LOGGER.warning(
               runtimeType + " compilation performance measurement failed: " + e.getMessage());
@@ -740,7 +747,6 @@ final class EngineStorePerformanceIT extends BaseIntegrationTest {
     }
 
     // Helper methods moved to PerformanceTestUtils
-
 
     // Mock classes for cross-runtime comparison - commented out due to final class inheritance
     /*

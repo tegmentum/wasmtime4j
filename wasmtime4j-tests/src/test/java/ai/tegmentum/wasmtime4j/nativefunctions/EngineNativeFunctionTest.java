@@ -1,4 +1,4 @@
-package ai.tegmentum.wasmtime4j.native_functions;
+package ai.tegmentum.wasmtime4j.nativefunctions;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -9,8 +9,8 @@ import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.exception.CompilationException;
 import ai.tegmentum.wasmtime4j.exception.ValidationException;
 import ai.tegmentum.wasmtime4j.memory.MemoryLeakDetector;
-import ai.tegmentum.wasmtime4j.native_functions.NativeFunctionTestUtils.ParameterFuzzingData;
-import ai.tegmentum.wasmtime4j.native_functions.NativeFunctionTestUtils.TestModule;
+import ai.tegmentum.wasmtime4j.nativefunctions.NativeFunctionTestUtils.ParameterFuzzingData;
+import ai.tegmentum.wasmtime4j.nativefunctions.NativeFunctionTestUtils.TestModule;
 import ai.tegmentum.wasmtime4j.utils.TestUtils;
 import java.util.List;
 import java.util.Map;
@@ -27,8 +27,8 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * Comprehensive native function tests for Engine operations. Tests all native functions related to
- * WebAssembly engine creation, configuration, compilation, and resource management for both JNI
- * and Panama FFI implementations.
+ * WebAssembly engine creation, configuration, compilation, and resource management for both JNI and
+ * Panama FFI implementations.
  *
  * <p>This test class validates:
  *
@@ -92,7 +92,7 @@ public class EngineNativeFunctionTest extends BaseNativeFunctionTest {
               r -> {
                 try (final var engine = r.createEngine()) {
                   assertThat(engine).isNotNull();
-                  
+
                   // Verify engine can be used for compilation
                   final byte[] moduleBytes = testUtils.getSimpleAddModule();
                   try (final var module = engine.compileModule(moduleBytes)) {
@@ -120,7 +120,7 @@ public class EngineNativeFunctionTest extends BaseNativeFunctionTest {
                   try (final var engine = r.createEngine()) {
                     try (final var module = engine.compileModule(testModule.getModuleBytes())) {
                       assertThat(module).isNotNull();
-                      
+
                       // Verify module metadata if available
                       if (module.getExports() != null) {
                         assertThat(module.getExports()).isNotEmpty();
@@ -209,10 +209,11 @@ public class EngineNativeFunctionTest extends BaseNativeFunctionTest {
                       // Call a function to verify full functionality
                       final var addFunction = instance.getFunction("add");
                       if (addFunction.isPresent()) {
-                        final var args = new ai.tegmentum.wasmtime4j.WasmValue[] {
-                          ai.tegmentum.wasmtime4j.WasmValue.i32(10),
-                          ai.tegmentum.wasmtime4j.WasmValue.i32(20)
-                        };
+                        final var args =
+                            new ai.tegmentum.wasmtime4j.WasmValue[] {
+                              ai.tegmentum.wasmtime4j.WasmValue.i32(10),
+                              ai.tegmentum.wasmtime4j.WasmValue.i32(20)
+                            };
                         final var result = addFunction.get().call(args);
                         assertThat(result[0].asI32()).isEqualTo(30);
                       }
@@ -228,7 +229,8 @@ public class EngineNativeFunctionTest extends BaseNativeFunctionTest {
           assertNoMemoryLeaks(result, "cross_runtime_engine_test_" + runtimeType);
         });
 
-    LOGGER.info("Cross-runtime engine compatibility test completed for " + results.size() + " runtimes");
+    LOGGER.info(
+        "Cross-runtime engine compatibility test completed for " + results.size() + " runtimes");
   }
 
   @Test
@@ -286,29 +288,31 @@ public class EngineNativeFunctionTest extends BaseNativeFunctionTest {
         switch (testCase.getPattern()) {
           case NORMAL:
             // Normal lifecycle: create -> use -> close
-            assertDoesNotThrow(() -> {
-              try (final var engine = runtime.createEngine()) {
-                try (final var module = engine.compileModule(moduleBytes)) {
-                  assertThat(module).isNotNull();
-                }
-              }
-            });
+            assertDoesNotThrow(
+                () -> {
+                  try (final var engine = runtime.createEngine()) {
+                    try (final var module = engine.compileModule(moduleBytes)) {
+                      assertThat(module).isNotNull();
+                    }
+                  }
+                });
             break;
 
           case DOUBLE_CLOSE:
             // Double close: create -> close -> close
-            assertDoesNotThrow(() -> {
-              final var engine = runtime.createEngine();
-              engine.close();
-              engine.close(); // Should not throw
-            });
+            assertDoesNotThrow(
+                () -> {
+                  final var engine = runtime.createEngine();
+                  engine.close();
+                  engine.close(); // Should not throw
+                });
             break;
 
           case USE_AFTER_CLOSE:
             // Use after close: create -> close -> use (should throw)
             final var closedEngine = runtime.createEngine();
             closedEngine.close();
-            
+
             assertThrows(
                 Exception.class,
                 () -> closedEngine.compileModule(moduleBytes),
@@ -318,15 +322,16 @@ public class EngineNativeFunctionTest extends BaseNativeFunctionTest {
           case RAPID_CYCLES:
             // Rapid create/close cycles
             final AtomicInteger cycleCount = new AtomicInteger(0);
-            assertDoesNotThrow(() -> {
-              for (int i = 0; i < 100; i++) {
-                try (final var engine = runtime.createEngine()) {
-                  try (final var module = engine.compileModule(moduleBytes)) {
-                    cycleCount.incrementAndGet();
+            assertDoesNotThrow(
+                () -> {
+                  for (int i = 0; i < 100; i++) {
+                    try (final var engine = runtime.createEngine()) {
+                      try (final var module = engine.compileModule(moduleBytes)) {
+                        cycleCount.incrementAndGet();
+                      }
+                    }
                   }
-                }
-              }
-            });
+                });
             assertThat(cycleCount.get()).isEqualTo(100);
             break;
 
@@ -350,6 +355,8 @@ public class EngineNativeFunctionTest extends BaseNativeFunctionTest {
             // This test may or may not show leaks depending on GC behavior
             LOGGER.info("No-close test result: " + result.isLeakDetected());
             break;
+          default:
+            throw new IllegalArgumentException("Unsupported lifecycle pattern: " + testCase.getPattern());
         }
       }
     }
@@ -368,21 +375,23 @@ public class EngineNativeFunctionTest extends BaseNativeFunctionTest {
       // Test invalid handles (implementation-specific behavior)
       for (final long invalidHandle : invalidHandles) {
         LOGGER.fine("Testing invalid handle: 0x" + Long.toHexString(invalidHandle));
-        
+
         // The exact behavior depends on implementation, but it should not crash the JVM
-        assertDoesNotThrow(() -> {
-          // Attempt to use invalid handle - should either throw exception or handle gracefully
-          testUtils.isValidNativeHandle(invalidHandle);
-        });
+        assertDoesNotThrow(
+            () -> {
+              // Attempt to use invalid handle - should either throw exception or handle gracefully
+              testUtils.isValidNativeHandle(invalidHandle);
+            });
       }
 
       // Test edge case handles
       for (final long edgeCaseHandle : edgeCaseHandles) {
         LOGGER.fine("Testing edge case handle: 0x" + Long.toHexString(edgeCaseHandle));
-        
-        assertDoesNotThrow(() -> {
-          testUtils.isValidNativeHandle(edgeCaseHandle);
-        });
+
+        assertDoesNotThrow(
+            () -> {
+              testUtils.isValidNativeHandle(edgeCaseHandle);
+            });
       }
     }
   }
@@ -399,7 +408,7 @@ public class EngineNativeFunctionTest extends BaseNativeFunctionTest {
               (r, threadId, operationId) -> {
                 try (final var engine = r.createEngine()) {
                   assertThat(engine).isNotNull();
-                  
+
                   // Verify engine functionality
                   final byte[] moduleBytes = testUtils.getSimpleAddModule();
                   try (final var module = engine.compileModule(moduleBytes)) {
@@ -431,17 +440,18 @@ public class EngineNativeFunctionTest extends BaseNativeFunctionTest {
               r -> {
                 try (final var engine = r.createEngine()) {
                   // Test various error conditions specific to Panama FFI
-                  final byte[] invalidModule = new byte[] {0x00, 0x61, 0x73, 0x6D}; // Incomplete header
-                  
+                  final byte[] invalidModule =
+                      new byte[] {0x00, 0x61, 0x73, 0x6D}; // Incomplete header
+
                   assertThrows(
                       Exception.class,
                       () -> engine.compileModule(invalidModule),
                       "Should handle Panama FFI compilation errors");
-                      
+
                   // Test with completely invalid data
                   final byte[] corruptedModule = new byte[1024];
                   java.util.Arrays.fill(corruptedModule, (byte) 0xFF);
-                  
+
                   assertThrows(
                       Exception.class,
                       () -> engine.compileModule(corruptedModule),

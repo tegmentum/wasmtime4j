@@ -206,8 +206,8 @@ public final class PlatformDetector {
   }
 
   /**
-   * Sanitizes a library name for safe use in file paths by removing malicious characters
-   * and path traversal sequences. Optimized for performance.
+   * Sanitizes a library name for safe use in file paths by removing malicious characters and path
+   * traversal sequences. Optimized for performance.
    *
    * @param libraryName the library name to sanitize
    * @return the sanitized library name safe for use in file paths
@@ -216,7 +216,7 @@ public final class PlatformDetector {
     if (libraryName == null) {
       return "";
     }
-    
+
     // Fast path: if the library name looks safe, return as-is
     boolean needsSanitization = false;
     final int len = libraryName.length();
@@ -227,16 +227,16 @@ public final class PlatformDetector {
         break;
       }
     }
-    
+
     // Also check for .. sequences
     if (!needsSanitization && libraryName.contains("..")) {
       needsSanitization = true;
     }
-    
+
     if (!needsSanitization) {
       return libraryName;
     }
-    
+
     // Slow path: build sanitized string
     final StringBuilder result = new StringBuilder(len);
     boolean lastWasDot = false;
@@ -256,7 +256,7 @@ public final class PlatformDetector {
         result.append(c);
       }
     }
-    
+
     return result.toString();
   }
 

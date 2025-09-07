@@ -2,7 +2,6 @@
 
 use std::os::raw::{c_char, c_int, c_uint, c_ulong, c_void};
 use std::sync::Arc;
-use crate::error::ffi_utils;
 use crate::ffi_common::error_handling;
 
 /// Panama FFI bindings module
@@ -39,7 +38,7 @@ pub mod engine {
         epoch_interruption: c_int,
         max_instances: c_int,
     ) -> *mut c_void {
-        use wasmtime::{Strategy, OptLevel};
+        
         
         ffi_utils::ffi_try_ptr(|| {
             let strategy_opt = parameter_conversion::convert_strategy(strategy);
@@ -182,7 +181,7 @@ pub mod engine {
 /// and managing WebAssembly modules through the Panama Foreign Function Interface.
 pub mod module {
     use super::*;
-    use crate::module::core;
+    
     use crate::error::ffi_utils;
     use crate::shared_ffi::module::{ByteArrayConverter, StringConverter};
 
@@ -465,7 +464,7 @@ pub mod instance {
         module_ptr: *mut c_void,
         instance_ptr: *mut *mut c_void,
     ) -> c_int {
-        use crate::error::{ffi_utils, ErrorCode};
+        use crate::error::ffi_utils;
         
         ffi_utils::ffi_try_code(|| {
             let store = unsafe { crate::store::core::get_store_mut(store_ptr)? };
@@ -504,7 +503,7 @@ pub mod store {
         engine_ptr: *mut c_void,
         store_ptr: *mut *mut c_void,
     ) -> c_int {
-        use crate::error::{ffi_utils, ErrorCode};
+        use crate::error::ffi_utils;
         
         ffi_utils::ffi_try_code(|| {
             let engine = unsafe { crate::engine::core::get_engine_ref(engine_ptr)? };
@@ -538,7 +537,7 @@ pub mod component {
     /// Create a new component engine (Panama FFI version)
     #[no_mangle]
     pub extern "C" fn wasmtime4j_component_engine_create() -> *mut c_void {
-        use crate::error::{ffi_utils, ErrorCode};
+        use crate::error::ffi_utils;
         
         ffi_utils::ffi_try_ptr(|| crate::component::core::create_component_engine())
     }
@@ -551,7 +550,7 @@ pub mod component {
         wasm_size: usize,
         component_ptr: *mut *mut c_void,
     ) -> c_int {
-        use crate::error::{ffi_utils, ErrorCode};
+        use crate::error::ffi_utils;
         
         ffi_utils::ffi_try_code(|| {
             let engine = unsafe { crate::component::core::get_component_engine_ref(engine_ptr)? };
@@ -789,9 +788,9 @@ pub mod component {
 /// and accessing WebAssembly linear memory with comprehensive bounds checking.
 pub mod memory {
     use super::*;
-    use crate::memory::{Memory, MemoryBuilder, MemoryConfig, MemoryUsage as MemUsage, MemoryDataType, MemoryRegistry};
+    use crate::memory::{Memory, MemoryBuilder, MemoryDataType, MemoryRegistry};
     use crate::store::Store;
-    use crate::error::{ffi_utils, ErrorCode};
+    use crate::error::ffi_utils;
 
     /// Create a new WebAssembly memory with default configuration (Panama FFI version)
     #[no_mangle]
@@ -801,7 +800,7 @@ pub mod memory {
         memory_ptr: *mut *mut c_void,
     ) -> c_int {
         ffi_utils::ffi_try_code(|| {
-            let mut store = unsafe { ffi_utils::deref_ptr_mut::<Store>(store_ptr, "store")? };
+            let store = unsafe { ffi_utils::deref_ptr_mut::<Store>(store_ptr, "store")? };
             
             let memory = Memory::new(store, initial_pages as u64)?;
             
@@ -826,7 +825,7 @@ pub mod memory {
     ) -> c_int {
         ffi_utils::ffi_try_code(|| {
             // SAFETY IMPROVEMENT: Using new memory utilities with comprehensive validation
-            let mut store = crate::ffi_common::memory_utils::safe_deref_mut(
+            let store = crate::ffi_common::memory_utils::safe_deref_mut(
                 store_ptr as *mut Store, 
                 "store"
             ).map_err(|e| e.to_wasmtime_error())?;
@@ -910,7 +909,7 @@ pub mod memory {
     ) -> c_int {
         ffi_utils::ffi_try_code(|| {
             let memory = unsafe { ffi_utils::deref_ptr::<Memory>(memory_ptr, "memory")? };
-            let mut store = unsafe { ffi_utils::deref_ptr_mut::<Store>(store_ptr, "store")? };
+            let store = unsafe { ffi_utils::deref_ptr_mut::<Store>(store_ptr, "store")? };
             
             let previous_pages = memory.grow(store, additional_pages as u64)?;
             
@@ -962,7 +961,7 @@ pub mod memory {
     ) -> c_int {
         ffi_utils::ffi_try_code(|| {
             let memory = unsafe { ffi_utils::deref_ptr::<Memory>(memory_ptr, "memory")? };
-            let mut store = unsafe { ffi_utils::deref_ptr_mut::<Store>(store_ptr, "store")? };
+            let store = unsafe { ffi_utils::deref_ptr_mut::<Store>(store_ptr, "store")? };
             
             if buffer.is_null() {
                 return Err(crate::error::WasmtimeError::InvalidParameter {
@@ -1015,7 +1014,7 @@ pub mod memory {
     ) -> c_int {
         ffi_utils::ffi_try_code(|| {
             let memory = unsafe { ffi_utils::deref_ptr::<Memory>(memory_ptr, "memory")? };
-            let mut store = unsafe { ffi_utils::deref_ptr_mut::<Store>(store_ptr, "store")? };
+            let store = unsafe { ffi_utils::deref_ptr_mut::<Store>(store_ptr, "store")? };
             
             memory.write_typed(store, offset, value, MemoryDataType::U32Le)?;
             
@@ -1154,9 +1153,9 @@ pub mod memory {
 /// and accessing WebAssembly global variables with type safety and mutability enforcement.
 pub mod global {
     use super::*;
-    use crate::global::{Global, GlobalValue, core};
+    use crate::global::core;
     use crate::store::Store;
-    use crate::error::{ffi_utils, ErrorCode};
+    use crate::error::ffi_utils;
     use wasmtime::{ValType, Mutability, RefType};
 
     /// Create a new WebAssembly global variable (Panama FFI version)
@@ -1371,9 +1370,9 @@ pub mod global {
 /// and accessing WebAssembly tables with bounds checking and reference type support.
 pub mod table {
     use super::*;
-    use crate::table::{Table, TableElement, core};
+    use crate::table::core;
     use crate::store::Store;
-    use crate::error::{ffi_utils, ErrorCode};
+    use crate::error::ffi_utils;
     use wasmtime::{ValType, RefType};
 
     /// Create a new WebAssembly table (Panama FFI version)

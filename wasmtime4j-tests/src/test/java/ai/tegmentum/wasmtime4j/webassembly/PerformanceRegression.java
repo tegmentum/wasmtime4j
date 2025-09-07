@@ -6,8 +6,8 @@ import java.time.Instant;
 import java.util.Objects;
 
 /**
- * Represents a performance regression detected by comparing current performance
- * results against baseline performance results.
+ * Represents a performance regression detected by comparing current performance results against
+ * baseline performance results.
  */
 public final class PerformanceRegression {
   private final String testName;
@@ -26,15 +26,18 @@ public final class PerformanceRegression {
    * @param currentPerformance the current performance time
    * @param regressionPercentage the regression as a percentage (positive = slower)
    */
-  public PerformanceRegression(final String testName,
-                               final RuntimeType runtimeType,
-                               final Duration baselinePerformance,
-                               final Duration currentPerformance,
-                               final double regressionPercentage) {
+  public PerformanceRegression(
+      final String testName,
+      final RuntimeType runtimeType,
+      final Duration baselinePerformance,
+      final Duration currentPerformance,
+      final double regressionPercentage) {
     this.testName = Objects.requireNonNull(testName, "testName cannot be null");
     this.runtimeType = Objects.requireNonNull(runtimeType, "runtimeType cannot be null");
-    this.baselinePerformance = Objects.requireNonNull(baselinePerformance, "baselinePerformance cannot be null");
-    this.currentPerformance = Objects.requireNonNull(currentPerformance, "currentPerformance cannot be null");
+    this.baselinePerformance =
+        Objects.requireNonNull(baselinePerformance, "baselinePerformance cannot be null");
+    this.currentPerformance =
+        Objects.requireNonNull(currentPerformance, "currentPerformance cannot be null");
     this.regressionPercentage = regressionPercentage;
     this.detectionTime = Instant.now();
   }
@@ -155,20 +158,23 @@ public final class PerformanceRegression {
     final StringBuilder report = new StringBuilder();
     report.append("Performance Regression Detected\n");
     report.append("===============================\n\n");
-    
+
     report.append(String.format("Test: %s\n", testName));
     report.append(String.format("Runtime: %s\n", runtimeType.name()));
     report.append(String.format("Severity: %s\n", getSeverity().getDescription()));
     report.append(String.format("Detection Time: %s\n\n", detectionTime));
-    
-    report.append(String.format("Baseline Performance: %.3fms\n", 
-        baselinePerformance.toNanos() / 1_000_000.0));
-    report.append(String.format("Current Performance: %.3fms\n", 
-        currentPerformance.toNanos() / 1_000_000.0));
-    report.append(String.format("Performance Difference: +%.3fms\n", 
-        getPerformanceDifference().toNanos() / 1_000_000.0));
+
+    report.append(
+        String.format(
+            "Baseline Performance: %.3fms\n", baselinePerformance.toNanos() / 1_000_000.0));
+    report.append(
+        String.format("Current Performance: %.3fms\n", currentPerformance.toNanos() / 1_000_000.0));
+    report.append(
+        String.format(
+            "Performance Difference: +%.3fms\n",
+            getPerformanceDifference().toNanos() / 1_000_000.0));
     report.append(String.format("Regression Percentage: +%.1f%%\n", regressionPercentage * 100));
-    
+
     return report.toString();
   }
 
@@ -178,7 +184,8 @@ public final class PerformanceRegression {
    * @return a brief summary
    */
   public String createBriefSummary() {
-    return String.format("[%s] %s: %s regression (+%.1f%%) on %s - %.3fms → %.3fms",
+    return String.format(
+        "[%s] %s: %s regression (+%.1f%%) on %s - %.3fms → %.3fms",
         getSeverity().name(),
         testName,
         getSeverity().getDescription().toLowerCase(),
@@ -190,13 +197,12 @@ public final class PerformanceRegression {
 
   @Override
   public String toString() {
-    return String.format("PerformanceRegression{test=%s, runtime=%s, regression=+%.1f%%}",
+    return String.format(
+        "PerformanceRegression{test=%s, runtime=%s, regression=+%.1f%%}",
         testName, runtimeType.name(), regressionPercentage * 100);
   }
 
-  /**
-   * Severity levels for performance regressions.
-   */
+  /** Severity levels for performance regressions. */
   public enum RegressionSeverity {
     SEVERE("Severe regression requiring immediate attention"),
     MODERATE("Moderate regression requiring investigation"),

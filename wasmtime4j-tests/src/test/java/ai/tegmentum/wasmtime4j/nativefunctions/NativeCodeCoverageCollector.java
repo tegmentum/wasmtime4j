@@ -1,11 +1,8 @@
-package ai.tegmentum.wasmtime4j.native_functions;
+package ai.tegmentum.wasmtime4j.nativefunctions;
 
 import ai.tegmentum.wasmtime4j.RuntimeType;
-import ai.tegmentum.wasmtime4j.utils.TestUtils;
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -35,17 +32,16 @@ import java.util.logging.Logger;
  * </ul>
  */
 public final class NativeCodeCoverageCollector {
-  private static final Logger LOGGER = Logger.getLogger(NativeCodeCoverageCollector.class.getName());
+  private static final Logger LOGGER =
+      Logger.getLogger(NativeCodeCoverageCollector.class.getName());
 
   // Coverage tool paths (configurable via system properties)
-  private static final String JACOCO_AGENT_PATH = 
+  private static final String JACOCO_AGENT_PATH =
       System.getProperty("wasmtime4j.jacoco.agent", "jacoco-agent.jar");
-  private static final String LLVM_PROFDATA_PATH = 
+  private static final String LLVM_PROFDATA_PATH =
       System.getProperty("wasmtime4j.llvm.profdata", "llvm-profdata");
-  private static final String LLVM_COV_PATH = 
-      System.getProperty("wasmtime4j.llvm.cov", "llvm-cov");
-  private static final String GCOV_PATH = 
-      System.getProperty("wasmtime4j.gcov", "gcov");
+  private static final String LLVM_COV_PATH = System.getProperty("wasmtime4j.llvm.cov", "llvm-cov");
+  private static final String GCOV_PATH = System.getProperty("wasmtime4j.gcov", "gcov");
 
   // Coverage thresholds
   private static final double MINIMUM_COVERAGE_THRESHOLD = 95.0;
@@ -56,9 +52,13 @@ public final class NativeCodeCoverageCollector {
   private final List<String> coverageCommands = new ArrayList<>();
   private final Path coverageOutputDir;
 
+  /**
+   * Constructs a new NativeCodeCoverageCollector with timestamp-based output directory.
+   */
   public NativeCodeCoverageCollector() {
     // Initialize coverage output directory
-    final String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+    final String timestamp =
+        LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
     this.coverageOutputDir = Paths.get("target", "coverage", "native-functions-" + timestamp);
     try {
       Files.createDirectories(coverageOutputDir);
@@ -148,20 +148,26 @@ public final class NativeCodeCoverageCollector {
   public void validateCoverageThreshold(final ComprehensiveCoverageAnalysis analysis) {
     final double averageCoverage = analysis.getAverageCoverage();
 
-    LOGGER.info("Validating coverage threshold: " + averageCoverage + "% (minimum: " + 
-                MINIMUM_COVERAGE_THRESHOLD + "%)");
+    LOGGER.info(
+        "Validating coverage threshold: "
+            + averageCoverage
+            + "% (minimum: "
+            + MINIMUM_COVERAGE_THRESHOLD
+            + "%)");
 
     if (averageCoverage < MINIMUM_COVERAGE_THRESHOLD) {
-      final String errorMessage = String.format(
-          "Native function coverage %.2f%% is below minimum threshold %.2f%%",
-          averageCoverage, MINIMUM_COVERAGE_THRESHOLD);
+      final String errorMessage =
+          String.format(
+              "Native function coverage %.2f%% is below minimum threshold %.2f%%",
+              averageCoverage, MINIMUM_COVERAGE_THRESHOLD);
       throw new AssertionError(errorMessage);
     }
 
     if (averageCoverage < WARNING_COVERAGE_THRESHOLD) {
-      LOGGER.warning(String.format(
-          "Coverage %.2f%% is below warning threshold %.2f%%", 
-          averageCoverage, WARNING_COVERAGE_THRESHOLD));
+      LOGGER.warning(
+          String.format(
+              "Coverage %.2f%% is below warning threshold %.2f%%",
+              averageCoverage, WARNING_COVERAGE_THRESHOLD));
     }
 
     LOGGER.info("Coverage validation passed: " + averageCoverage + "%");
@@ -173,7 +179,8 @@ public final class NativeCodeCoverageCollector {
    * @param runtimeType the runtime type
    * @param coverageData the coverage data container
    */
-  private void initializeCoverageTools(final RuntimeType runtimeType, final CoverageData coverageData) {
+  private void initializeCoverageTools(
+      final RuntimeType runtimeType, final CoverageData coverageData) {
     // Initialize JaCoCo for Java code coverage
     initializeJacocoCoverage(coverageData);
 
@@ -185,6 +192,8 @@ public final class NativeCodeCoverageCollector {
       case PANAMA:
         initializePanamaCoverage(coverageData);
         break;
+      default:
+        throw new IllegalArgumentException("Unsupported runtime type: " + runtimeType);
     }
   }
 
@@ -195,11 +204,12 @@ public final class NativeCodeCoverageCollector {
    */
   private void initializeJacocoCoverage(final CoverageData coverageData) {
     if (isJacocoAvailable()) {
-      final String jacocoOutputFile = coverageOutputDir.resolve("jacoco-" + 
-                                                               coverageData.getRuntimeType().name().toLowerCase() + 
-                                                               ".exec").toString();
+      final String jacocoOutputFile =
+          coverageOutputDir
+              .resolve("jacoco-" + coverageData.getRuntimeType().name().toLowerCase() + ".exec")
+              .toString();
       coverageData.setJacocoOutputFile(jacocoOutputFile);
-      
+
       // JaCoCo is typically configured via Maven plugin
       LOGGER.info("JaCoCo coverage initialized: " + jacocoOutputFile);
     } else {
@@ -230,7 +240,8 @@ public final class NativeCodeCoverageCollector {
   private void initializePanamaCoverage(final CoverageData coverageData) {
     // Panama uses Rust native code, so we can use LLVM coverage tools
     if (isLlvmCoverageAvailable()) {
-      final String profileOutputFile = coverageOutputDir.resolve("panama-coverage.profraw").toString();
+      final String profileOutputFile =
+          coverageOutputDir.resolve("panama-coverage.profraw").toString();
       coverageData.setNativeProfileFile(profileOutputFile);
       coverageData.setNativeCoverageEnabled(true);
       LOGGER.info("Panama native coverage initialized with LLVM: " + profileOutputFile);
@@ -265,7 +276,8 @@ public final class NativeCodeCoverageCollector {
    * @param runtimeType the runtime type
    * @param coverageData the coverage data container
    */
-  private void collectNativeCoverage(final RuntimeType runtimeType, final CoverageData coverageData) {
+  private void collectNativeCoverage(
+      final RuntimeType runtimeType, final CoverageData coverageData) {
     if (!coverageData.isNativeCoverageEnabled()) {
       return;
     }
@@ -277,6 +289,8 @@ public final class NativeCodeCoverageCollector {
       case PANAMA:
         collectPanamaCoverage(coverageData);
         break;
+      default:
+        throw new IllegalArgumentException("Unsupported runtime type: " + runtimeType);
     }
   }
 
@@ -287,9 +301,12 @@ public final class NativeCodeCoverageCollector {
    */
   private void collectJniCoverage(final CoverageData coverageData) {
     try {
-      final ProcessBuilder processBuilder = new ProcessBuilder(
-          GCOV_PATH, "--json-format", "--output-file", 
-          coverageOutputDir.resolve("jni-coverage.json").toString());
+      final ProcessBuilder processBuilder =
+          new ProcessBuilder(
+              GCOV_PATH,
+              "--json-format",
+              "--output-file",
+              coverageOutputDir.resolve("jni-coverage.json").toString());
 
       processBuilder.directory(new File("wasmtime4j-native"));
       final Process process = processBuilder.start();
@@ -324,17 +341,22 @@ public final class NativeCodeCoverageCollector {
     try {
       // Convert raw profile data
       final String profdataFile = coverageOutputDir.resolve("panama-coverage.profdata").toString();
-      final ProcessBuilder profdataBuilder = new ProcessBuilder(
-          LLVM_PROFDATA_PATH, "merge", "-sparse", profileFile, "-o", profdataFile);
+      final ProcessBuilder profdataBuilder =
+          new ProcessBuilder(
+              LLVM_PROFDATA_PATH, "merge", "-sparse", profileFile, "-o", profdataFile);
 
       final Process profdataProcess = profdataBuilder.start();
       if (profdataProcess.waitFor(30, TimeUnit.SECONDS)) {
         if (profdataProcess.exitValue() == 0) {
           // Generate coverage report
           final String reportFile = coverageOutputDir.resolve("panama-coverage.txt").toString();
-          final ProcessBuilder covBuilder = new ProcessBuilder(
-              LLVM_COV_PATH, "report", "target/cargo/release/wasmtime4j_native", 
-              "-instr-profile=" + profdataFile, "-format=text");
+          final ProcessBuilder covBuilder =
+              new ProcessBuilder(
+                  LLVM_COV_PATH,
+                  "report",
+                  "target/cargo/release/wasmtime4j_native",
+                  "-instr-profile=" + profdataFile,
+                  "-format=text");
 
           final Process covProcess = covBuilder.start();
           if (covProcess.waitFor(30, TimeUnit.SECONDS) && covProcess.exitValue() == 0) {
@@ -355,18 +377,18 @@ public final class NativeCodeCoverageCollector {
    * @return coverage report
    */
   private CoverageReport generateCoverageReport(final CoverageData coverageData) {
-    final CoverageReport.Builder reportBuilder = CoverageReport.builder()
-        .runtimeType(coverageData.getRuntimeType())
-        .javaCoverageAvailable(coverageData.isJavaCoverageCollected())
-        .nativeCoverageAvailable(coverageData.isNativeCoverageCollected());
+    final CoverageReport.Builder reportBuilder =
+        CoverageReport.builder()
+            .runtimeType(coverageData.getRuntimeType())
+            .javaCoverageAvailable(coverageData.isJavaCoverageCollected())
+            .nativeCoverageAvailable(coverageData.isNativeCoverageCollected());
 
     // Parse coverage data and calculate percentages
     // This would integrate with actual coverage tool output parsing
     final double javaCoverage = parseJavaCoverage(coverageData);
     final double nativeCoverage = parseNativeCoverage(coverageData);
 
-    reportBuilder.javaCoveragePercentage(javaCoverage)
-                 .nativeCoveragePercentage(nativeCoverage);
+    reportBuilder.javaCoveragePercentage(javaCoverage).nativeCoveragePercentage(nativeCoverage);
 
     return reportBuilder.build();
   }
@@ -380,7 +402,7 @@ public final class NativeCodeCoverageCollector {
    */
   private CoverageAnalysisResult analyzeCoverageResults(
       final RuntimeType runtimeType, final CoverageReport report) {
-    
+
     final double overallCoverage = calculateOverallCoverage(report);
     final boolean meetsThreshold = overallCoverage >= MINIMUM_COVERAGE_THRESHOLD;
 
@@ -436,8 +458,7 @@ public final class NativeCodeCoverageCollector {
 
   // Tool availability checks
   private boolean isJacocoAvailable() {
-    return new File(JACOCO_AGENT_PATH).exists() || 
-           System.getProperty("jacoco.agent.jar") != null;
+    return new File(JACOCO_AGENT_PATH).exists() || System.getProperty("jacoco.agent.jar") != null;
   }
 
   private boolean isGcovAvailable() {
@@ -491,17 +512,49 @@ public final class NativeCodeCoverageCollector {
     }
 
     // Getters and setters
-    public RuntimeType getRuntimeType() { return runtimeType; }
-    public String getJacocoOutputFile() { return jacocoOutputFile; }
-    public void setJacocoOutputFile(final String jacocoOutputFile) { this.jacocoOutputFile = jacocoOutputFile; }
-    public String getNativeProfileFile() { return nativeProfileFile; }
-    public void setNativeProfileFile(final String nativeProfileFile) { this.nativeProfileFile = nativeProfileFile; }
-    public boolean isNativeCoverageEnabled() { return nativeCoverageEnabled; }
-    public void setNativeCoverageEnabled(final boolean nativeCoverageEnabled) { this.nativeCoverageEnabled = nativeCoverageEnabled; }
-    public boolean isJavaCoverageCollected() { return javaCoverageCollected; }
-    public void setJavaCoverageCollected(final boolean javaCoverageCollected) { this.javaCoverageCollected = javaCoverageCollected; }
-    public boolean isNativeCoverageCollected() { return nativeCoverageCollected; }
-    public void setNativeCoverageCollected(final boolean nativeCoverageCollected) { this.nativeCoverageCollected = nativeCoverageCollected; }
+    public RuntimeType getRuntimeType() {
+      return runtimeType;
+    }
+
+    public String getJacocoOutputFile() {
+      return jacocoOutputFile;
+    }
+
+    public void setJacocoOutputFile(final String jacocoOutputFile) {
+      this.jacocoOutputFile = jacocoOutputFile;
+    }
+
+    public String getNativeProfileFile() {
+      return nativeProfileFile;
+    }
+
+    public void setNativeProfileFile(final String nativeProfileFile) {
+      this.nativeProfileFile = nativeProfileFile;
+    }
+
+    public boolean isNativeCoverageEnabled() {
+      return nativeCoverageEnabled;
+    }
+
+    public void setNativeCoverageEnabled(final boolean nativeCoverageEnabled) {
+      this.nativeCoverageEnabled = nativeCoverageEnabled;
+    }
+
+    public boolean isJavaCoverageCollected() {
+      return javaCoverageCollected;
+    }
+
+    public void setJavaCoverageCollected(final boolean javaCoverageCollected) {
+      this.javaCoverageCollected = javaCoverageCollected;
+    }
+
+    public boolean isNativeCoverageCollected() {
+      return nativeCoverageCollected;
+    }
+
+    public void setNativeCoverageCollected(final boolean nativeCoverageCollected) {
+      this.nativeCoverageCollected = nativeCoverageCollected;
+    }
   }
 
   /** Coverage report data structure. */
@@ -520,15 +573,32 @@ public final class NativeCodeCoverageCollector {
       this.nativeCoverageAvailable = builder.nativeCoverageAvailable;
     }
 
-    public static Builder builder() { return new Builder(); }
+    public static Builder builder() {
+      return new Builder();
+    }
 
     // Getters
-    public RuntimeType getRuntimeType() { return runtimeType; }
-    public double getJavaCoveragePercentage() { return javaCoveragePercentage; }
-    public double getNativeCoveragePercentage() { return nativeCoveragePercentage; }
-    public boolean isJavaCoverageAvailable() { return javaCoverageAvailable; }
-    public boolean isNativeCoverageAvailable() { return nativeCoverageAvailable; }
+    public RuntimeType getRuntimeType() {
+      return runtimeType;
+    }
 
+    public double getJavaCoveragePercentage() {
+      return javaCoveragePercentage;
+    }
+
+    public double getNativeCoveragePercentage() {
+      return nativeCoveragePercentage;
+    }
+
+    public boolean isJavaCoverageAvailable() {
+      return javaCoverageAvailable;
+    }
+
+    public boolean isNativeCoverageAvailable() {
+      return nativeCoverageAvailable;
+    }
+
+    /** Builder for creating RuntimeCoverageInfo instances. */
     public static final class Builder {
       private RuntimeType runtimeType;
       private double javaCoveragePercentage;
@@ -536,13 +606,34 @@ public final class NativeCodeCoverageCollector {
       private boolean javaCoverageAvailable;
       private boolean nativeCoverageAvailable;
 
-      public Builder runtimeType(final RuntimeType runtimeType) { this.runtimeType = runtimeType; return this; }
-      public Builder javaCoveragePercentage(final double percentage) { this.javaCoveragePercentage = percentage; return this; }
-      public Builder nativeCoveragePercentage(final double percentage) { this.nativeCoveragePercentage = percentage; return this; }
-      public Builder javaCoverageAvailable(final boolean available) { this.javaCoverageAvailable = available; return this; }
-      public Builder nativeCoverageAvailable(final boolean available) { this.nativeCoverageAvailable = available; return this; }
+      public Builder runtimeType(final RuntimeType runtimeType) {
+        this.runtimeType = runtimeType;
+        return this;
+      }
 
-      public CoverageReport build() { return new CoverageReport(this); }
+      public Builder javaCoveragePercentage(final double percentage) {
+        this.javaCoveragePercentage = percentage;
+        return this;
+      }
+
+      public Builder nativeCoveragePercentage(final double percentage) {
+        this.nativeCoveragePercentage = percentage;
+        return this;
+      }
+
+      public Builder javaCoverageAvailable(final boolean available) {
+        this.javaCoverageAvailable = available;
+        return this;
+      }
+
+      public Builder nativeCoverageAvailable(final boolean available) {
+        this.nativeCoverageAvailable = available;
+        return this;
+      }
+
+      public CoverageReport build() {
+        return new CoverageReport(this);
+      }
     }
   }
 
@@ -554,6 +645,15 @@ public final class NativeCodeCoverageCollector {
     private final CoverageReport report;
     private final List<String> recommendations;
 
+    /**
+     * Creates a new coverage analysis result.
+     *
+     * @param runtimeType the runtime type analyzed
+     * @param overallCoverage the overall coverage percentage
+     * @param meetsThreshold whether the coverage meets the required threshold
+     * @param report the detailed coverage report
+     * @param recommendations list of coverage improvement recommendations
+     */
     public CoverageAnalysisResult(
         final RuntimeType runtimeType,
         final double overallCoverage,
@@ -568,11 +668,25 @@ public final class NativeCodeCoverageCollector {
     }
 
     // Getters
-    public RuntimeType getRuntimeType() { return runtimeType; }
-    public double getOverallCoverage() { return overallCoverage; }
-    public boolean meetsThreshold() { return meetsThreshold; }
-    public CoverageReport getReport() { return report; }
-    public List<String> getRecommendations() { return new ArrayList<>(recommendations); }
+    public RuntimeType getRuntimeType() {
+      return runtimeType;
+    }
+
+    public double getOverallCoverage() {
+      return overallCoverage;
+    }
+
+    public boolean meetsThreshold() {
+      return meetsThreshold;
+    }
+
+    public CoverageReport getReport() {
+      return report;
+    }
+
+    public List<String> getRecommendations() {
+      return new ArrayList<>(recommendations);
+    }
   }
 
   /** Comprehensive coverage analysis across all runtimes. */
@@ -581,6 +695,13 @@ public final class NativeCodeCoverageCollector {
     private final double averageCoverage;
     private final Path outputDirectory;
 
+    /**
+     * Creates a comprehensive coverage analysis.
+     *
+     * @param runtimeResults coverage results for each runtime type
+     * @param averageCoverage average coverage percentage across all runtimes
+     * @param outputDirectory directory where coverage reports are stored
+     */
     public ComprehensiveCoverageAnalysis(
         final Map<RuntimeType, CoverageAnalysisResult> runtimeResults,
         final double averageCoverage,
@@ -591,8 +712,16 @@ public final class NativeCodeCoverageCollector {
     }
 
     // Getters
-    public Map<RuntimeType, CoverageAnalysisResult> getRuntimeResults() { return new HashMap<>(runtimeResults); }
-    public double getAverageCoverage() { return averageCoverage; }
-    public Path getOutputDirectory() { return outputDirectory; }
+    public Map<RuntimeType, CoverageAnalysisResult> getRuntimeResults() {
+      return new HashMap<>(runtimeResults);
+    }
+
+    public double getAverageCoverage() {
+      return averageCoverage;
+    }
+
+    public Path getOutputDirectory() {
+      return outputDirectory;
+    }
   }
 }

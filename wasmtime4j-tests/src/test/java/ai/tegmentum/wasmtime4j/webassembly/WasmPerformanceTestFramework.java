@@ -9,23 +9,22 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.function.Function;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 /**
- * Comprehensive performance testing framework for WebAssembly implementations. Provides
- * detailed performance comparisons between JNI and Panama runtimes, with statistical
- * analysis and regression detection.
+ * Comprehensive performance testing framework for WebAssembly implementations. Provides detailed
+ * performance comparisons between JNI and Panama runtimes, with statistical analysis and regression
+ * detection.
  */
 public final class WasmPerformanceTestFramework {
-  private static final Logger LOGGER = Logger.getLogger(WasmPerformanceTestFramework.class.getName());
+  private static final Logger LOGGER =
+      Logger.getLogger(WasmPerformanceTestFramework.class.getName());
 
   // Performance test configuration
   private static final int DEFAULT_WARMUP_ITERATIONS = 1000;
@@ -38,7 +37,8 @@ public final class WasmPerformanceTestFramework {
   private static final double STATISTICAL_CONFIDENCE = 0.95; // 95%
 
   // Runtime cache for consistent testing
-  private static final ConcurrentMap<RuntimeType, WasmRuntime> runtimeCache = new ConcurrentHashMap<>();
+  private static final ConcurrentMap<RuntimeType, WasmRuntime> runtimeCache =
+      new ConcurrentHashMap<>();
 
   private WasmPerformanceTestFramework() {
     // Utility class - prevent instantiation
@@ -53,27 +53,29 @@ public final class WasmPerformanceTestFramework {
    * @throws IOException if performance testing fails
    */
   public static WasmPerformanceTestResults executePerformanceTests(
-      final List<WasmTestCase> testCases,
-      final PerformanceTestConfiguration config) throws IOException {
-    
+      final List<WasmTestCase> testCases, final PerformanceTestConfiguration config)
+      throws IOException {
+
     Objects.requireNonNull(testCases, "testCases cannot be null");
     Objects.requireNonNull(config, "config cannot be null");
 
     LOGGER.info("Starting comprehensive WebAssembly performance testing");
     final Instant startTime = Instant.now();
 
-    final WasmPerformanceTestResults.Builder resultsBuilder = 
+    final WasmPerformanceTestResults.Builder resultsBuilder =
         new WasmPerformanceTestResults.Builder();
 
     // Execute performance tests for each available runtime
     for (final RuntimeType runtimeType : config.getTargetRuntimes()) {
       if (runtimeType == RuntimeType.PANAMA && !TestUtils.isPanamaAvailable()) {
-        LOGGER.info("Skipping Panama performance tests - not available on Java " + TestUtils.getJavaVersion());
+        LOGGER.info(
+            "Skipping Panama performance tests - not available on Java "
+                + TestUtils.getJavaVersion());
         continue;
       }
 
       LOGGER.info("Executing performance tests with " + runtimeType + " runtime");
-      final Map<String, PerformanceBenchmarkResult> runtimeResults = 
+      final Map<String, PerformanceBenchmarkResult> runtimeResults =
           executeRuntimePerformanceTests(testCases, runtimeType, config);
 
       resultsBuilder.addRuntimeResults(runtimeType, runtimeResults);
@@ -84,9 +86,15 @@ public final class WasmPerformanceTestFramework {
 
     final WasmPerformanceTestResults results = resultsBuilder.build();
 
-    LOGGER.info("Performance testing completed in " + totalDuration.toSeconds() + "s. "
-        + "Tested " + testCases.size() + " test cases across " 
-        + results.getTestedRuntimes().size() + " runtimes");
+    LOGGER.info(
+        "Performance testing completed in "
+            + totalDuration.toSeconds()
+            + "s. "
+            + "Tested "
+            + testCases.size()
+            + " test cases across "
+            + results.getTestedRuntimes().size()
+            + " runtimes");
 
     return results;
   }
@@ -110,17 +118,22 @@ public final class WasmPerformanceTestFramework {
     for (final WasmTestCase testCase : testCases) {
       try {
         LOGGER.fine("Benchmarking " + testCase.getName() + " with " + runtimeType);
-        final PerformanceBenchmarkResult result = 
+        final PerformanceBenchmarkResult result =
             benchmarkTestCase(testCase, runtime, runtimeType, config);
         results.put(testCase.getName(), result);
 
       } catch (final Exception e) {
-        LOGGER.warning("Performance test failed for " + testCase.getName() 
-            + " with " + runtimeType + ": " + e.getMessage());
-        
+        LOGGER.warning(
+            "Performance test failed for "
+                + testCase.getName()
+                + " with "
+                + runtimeType
+                + ": "
+                + e.getMessage());
+
         // Record failed benchmark
-        final PerformanceBenchmarkResult failedResult = PerformanceBenchmarkResult.failed(
-            testCase.getName(), runtimeType, e);
+        final PerformanceBenchmarkResult failedResult =
+            PerformanceBenchmarkResult.failed(testCase.getName(), runtimeType, e);
         results.put(testCase.getName(), failedResult);
       }
     }
@@ -142,9 +155,10 @@ public final class WasmPerformanceTestFramework {
       final WasmTestCase testCase,
       final WasmRuntime runtime,
       final RuntimeType runtimeType,
-      final PerformanceTestConfiguration config) throws Exception {
+      final PerformanceTestConfiguration config)
+      throws Exception {
 
-    final PerformanceBenchmarkResult.Builder resultBuilder = 
+    final PerformanceBenchmarkResult.Builder resultBuilder =
         new PerformanceBenchmarkResult.Builder(testCase.getName(), runtimeType);
 
     // Validate test module
@@ -165,13 +179,19 @@ public final class WasmPerformanceTestFramework {
 
       // Collect multiple benchmark runs
       final List<BenchmarkRun> benchmarkRuns = new ArrayList<>();
-      
+
       for (int run = 0; run < config.getBenchmarkRuns(); run++) {
         final BenchmarkRun benchmarkRun = executeBenchmarkRun(instance, config);
         benchmarkRuns.add(benchmarkRun);
-        
-        LOGGER.fine("Benchmark run " + (run + 1) + " for " + testCase.getName() 
-            + ": " + benchmarkRun.getAverageExecutionTime().toNanos() + "ns avg");
+
+        LOGGER.fine(
+            "Benchmark run "
+                + (run + 1)
+                + " for "
+                + testCase.getName()
+                + ": "
+                + benchmarkRun.getAverageExecutionTime().toNanos()
+                + "ns avg");
       }
 
       resultBuilder.benchmarkRuns(benchmarkRuns);
@@ -207,8 +227,8 @@ public final class WasmPerformanceTestFramework {
    * @return the total warmup time
    * @throws Exception if warmup fails
    */
-  private static Duration executeWarmup(final Object instance, 
-                                        final PerformanceTestConfiguration config) throws Exception {
+  private static Duration executeWarmup(
+      final Object instance, final PerformanceTestConfiguration config) throws Exception {
     final Instant startTime = Instant.now();
 
     // Execute warmup iterations (simplified - in real implementation would call actual functions)
@@ -228,17 +248,17 @@ public final class WasmPerformanceTestFramework {
    * @return the benchmark run result
    * @throws Exception if benchmark execution fails
    */
-  private static BenchmarkRun executeBenchmarkRun(final Object instance,
-                                                  final PerformanceTestConfiguration config) throws Exception {
+  private static BenchmarkRun executeBenchmarkRun(
+      final Object instance, final PerformanceTestConfiguration config) throws Exception {
     final List<Duration> executionTimes = new ArrayList<>();
     final Instant runStartTime = Instant.now();
 
     for (int i = 0; i < config.getMeasurementIterations(); i++) {
       final Instant iterationStart = Instant.now();
-      
+
       // Execute the test operation (simplified - would call actual WebAssembly functions)
       Thread.yield(); // Minimal operation for timing simulation
-      
+
       final Duration iterationTime = Duration.between(iterationStart, Instant.now());
       executionTimes.add(iterationTime);
     }
@@ -255,20 +275,22 @@ public final class WasmPerformanceTestFramework {
    * @return the performance statistics
    */
   private static PerformanceStatistics calculateStatistics(final List<BenchmarkRun> benchmarkRuns) {
-    final List<Duration> allExecutionTimes = benchmarkRuns.stream()
-        .flatMap(run -> run.getExecutionTimes().stream())
-        .collect(Collectors.toList());
+    final List<Duration> allExecutionTimes =
+        benchmarkRuns.stream()
+            .flatMap(run -> run.getExecutionTimes().stream())
+            .collect(Collectors.toList());
 
     if (allExecutionTimes.isEmpty()) {
       return PerformanceStatistics.empty();
     }
 
     // Sort for percentile calculations
-    final List<Long> sortedNanos = allExecutionTimes.stream()
-        .mapToLong(Duration::toNanos)
-        .sorted()
-        .boxed()
-        .collect(Collectors.toList());
+    final List<Long> sortedNanos =
+        allExecutionTimes.stream()
+            .mapToLong(Duration::toNanos)
+            .sorted()
+            .boxed()
+            .collect(Collectors.toList());
 
     final double mean = sortedNanos.stream().mapToLong(Long::longValue).average().orElse(0.0);
     final long min = sortedNanos.get(0);
@@ -278,10 +300,8 @@ public final class WasmPerformanceTestFramework {
     final long p99 = sortedNanos.get((int) (sortedNanos.size() * 0.99));
 
     // Calculate standard deviation
-    final double variance = sortedNanos.stream()
-        .mapToDouble(nano -> Math.pow(nano - mean, 2))
-        .average()
-        .orElse(0.0);
+    final double variance =
+        sortedNanos.stream().mapToDouble(nano -> Math.pow(nano - mean, 2)).average().orElse(0.0);
     final double standardDeviation = Math.sqrt(variance);
 
     return new PerformanceStatistics(
@@ -292,8 +312,7 @@ public final class WasmPerformanceTestFramework {
         Duration.ofNanos(p95),
         Duration.ofNanos(p99),
         Duration.ofNanos((long) standardDeviation),
-        allExecutionTimes.size()
-    );
+        allExecutionTimes.size());
   }
 
   /**
@@ -304,34 +323,35 @@ public final class WasmPerformanceTestFramework {
    * @throws RuntimeException if runtime creation fails
    */
   private static WasmRuntime getRuntimeInstance(final RuntimeType runtimeType) {
-    return runtimeCache.computeIfAbsent(runtimeType, type -> {
-      LOGGER.info("Creating runtime instance for performance testing: " + type);
-      try {
-        return WasmRuntimeFactory.create(type);
-      } catch (final ai.tegmentum.wasmtime4j.exception.WasmException e) {
-        throw new RuntimeException("Failed to create runtime for " + type, e);
-      }
-    });
+    return runtimeCache.computeIfAbsent(
+        runtimeType,
+        type -> {
+          LOGGER.info("Creating runtime instance for performance testing: " + type);
+          try {
+            return WasmRuntimeFactory.create(type);
+          } catch (final ai.tegmentum.wasmtime4j.exception.WasmException e) {
+            throw new RuntimeException("Failed to create runtime for " + type, e);
+          }
+        });
   }
 
-  /**
-   * Clears all cached runtime instances.
-   */
+  /** Clears all cached runtime instances. */
   public static void clearRuntimeCache() {
-    runtimeCache.values().forEach(runtime -> {
-      try {
-        runtime.close();
-      } catch (final Exception e) {
-        LOGGER.warning("Failed to close runtime during cache clear: " + e.getMessage());
-      }
-    });
+    runtimeCache
+        .values()
+        .forEach(
+            runtime -> {
+              try {
+                runtime.close();
+              } catch (final Exception e) {
+                LOGGER.warning("Failed to close runtime during cache clear: " + e.getMessage());
+              }
+            });
     runtimeCache.clear();
     LOGGER.info("Cleared performance test runtime cache");
   }
 
-  /**
-   * Configuration for performance testing.
-   */
+  /** Configuration for performance testing. */
   public static final class PerformanceTestConfiguration {
     private final List<RuntimeType> targetRuntimes;
     private final int warmupIterations;
@@ -376,9 +396,7 @@ public final class WasmPerformanceTestFramework {
       return maxTestDuration;
     }
 
-    /**
-     * Builder for PerformanceTestConfiguration.
-     */
+    /** Builder for PerformanceTestConfiguration. */
     public static final class Builder {
       private final List<RuntimeType> targetRuntimes = new ArrayList<>();
       private int warmupIterations = DEFAULT_WARMUP_ITERATIONS;
@@ -394,6 +412,12 @@ public final class WasmPerformanceTestFramework {
         }
       }
 
+      /**
+       * Adds a target runtime for performance testing.
+       *
+       * @param runtimeType the runtime type to target
+       * @return this builder instance for method chaining
+       */
       public Builder targetRuntime(final RuntimeType runtimeType) {
         if (!targetRuntimes.contains(runtimeType)) {
           targetRuntimes.add(runtimeType);
@@ -401,6 +425,13 @@ public final class WasmPerformanceTestFramework {
         return this;
       }
 
+      /**
+       * Sets the number of warmup iterations before measurement.
+       *
+       * @param iterations the number of warmup iterations (must be non-negative)
+       * @return this builder instance for method chaining
+       * @throws IllegalArgumentException if iterations is negative
+       */
       public Builder warmupIterations(final int iterations) {
         if (iterations < 0) {
           throw new IllegalArgumentException("warmupIterations cannot be negative");
@@ -409,6 +440,13 @@ public final class WasmPerformanceTestFramework {
         return this;
       }
 
+      /**
+       * Sets the number of measurement iterations for performance data collection.
+       *
+       * @param iterations the number of measurement iterations (must be positive)
+       * @return this builder instance for method chaining
+       * @throws IllegalArgumentException if iterations is not positive
+       */
       public Builder measurementIterations(final int iterations) {
         if (iterations <= 0) {
           throw new IllegalArgumentException("measurementIterations must be positive");
@@ -417,6 +455,13 @@ public final class WasmPerformanceTestFramework {
         return this;
       }
 
+      /**
+       * Sets the number of benchmark runs to perform for statistical reliability.
+       *
+       * @param runs the number of benchmark runs (must be positive)
+       * @return this builder instance for method chaining
+       * @throws IllegalArgumentException if runs is not positive
+       */
       public Builder benchmarkRuns(final int runs) {
         if (runs <= 0) {
           throw new IllegalArgumentException("benchmarkRuns must be positive");
@@ -425,11 +470,24 @@ public final class WasmPerformanceTestFramework {
         return this;
       }
 
+      /**
+       * Sets the maximum duration allowed for a single test execution.
+       *
+       * @param duration the maximum test duration (cannot be null)
+       * @return this builder instance for method chaining
+       * @throws NullPointerException if duration is null
+       */
       public Builder maxTestDuration(final Duration duration) {
         this.maxTestDuration = Objects.requireNonNull(duration, "maxTestDuration cannot be null");
         return this;
       }
 
+      /**
+       * Builds the performance test configuration with the specified parameters.
+       *
+       * @return the configured performance test configuration
+       * @throws IllegalStateException if no target runtimes have been specified
+       */
       public PerformanceTestConfiguration build() {
         if (targetRuntimes.isEmpty()) {
           throw new IllegalStateException("At least one target runtime must be specified");
@@ -439,9 +497,7 @@ public final class WasmPerformanceTestFramework {
     }
   }
 
-  /**
-   * Represents a single benchmark run with multiple iterations.
-   */
+  /** Represents a single benchmark run with multiple iterations. */
   public static final class BenchmarkRun {
     private final List<Duration> executionTimes;
     private final Duration totalRunTime;
@@ -450,7 +506,7 @@ public final class WasmPerformanceTestFramework {
     private BenchmarkRun(final List<Duration> executionTimes, final Duration totalRunTime) {
       this.executionTimes = Collections.unmodifiableList(new ArrayList<>(executionTimes));
       this.totalRunTime = totalRunTime;
-      
+
       final long totalNanos = executionTimes.stream().mapToLong(Duration::toNanos).sum();
       this.averageExecutionTime = Duration.ofNanos(totalNanos / executionTimes.size());
     }
@@ -472,9 +528,7 @@ public final class WasmPerformanceTestFramework {
     }
   }
 
-  /**
-   * Statistical analysis of performance measurements.
-   */
+  /** Statistical analysis of performance measurements. */
   public static final class PerformanceStatistics {
     private final Duration meanExecutionTime;
     private final Duration minExecutionTime;
@@ -485,14 +539,15 @@ public final class WasmPerformanceTestFramework {
     private final Duration standardDeviation;
     private final int sampleSize;
 
-    private PerformanceStatistics(final Duration meanExecutionTime,
-                                  final Duration minExecutionTime,
-                                  final Duration maxExecutionTime,
-                                  final Duration medianExecutionTime,
-                                  final Duration p95ExecutionTime,
-                                  final Duration p99ExecutionTime,
-                                  final Duration standardDeviation,
-                                  final int sampleSize) {
+    private PerformanceStatistics(
+        final Duration meanExecutionTime,
+        final Duration minExecutionTime,
+        final Duration maxExecutionTime,
+        final Duration medianExecutionTime,
+        final Duration p95ExecutionTime,
+        final Duration p99ExecutionTime,
+        final Duration standardDeviation,
+        final int sampleSize) {
       this.meanExecutionTime = meanExecutionTime;
       this.minExecutionTime = minExecutionTime;
       this.maxExecutionTime = maxExecutionTime;
@@ -503,21 +558,55 @@ public final class WasmPerformanceTestFramework {
       this.sampleSize = sampleSize;
     }
 
+    /**
+     * Creates an empty performance statistics instance with zero values.
+     *
+     * @return empty performance statistics
+     */
     public static PerformanceStatistics empty() {
       return new PerformanceStatistics(
-          Duration.ZERO, Duration.ZERO, Duration.ZERO, Duration.ZERO,
-          Duration.ZERO, Duration.ZERO, Duration.ZERO, 0);
+          Duration.ZERO,
+          Duration.ZERO,
+          Duration.ZERO,
+          Duration.ZERO,
+          Duration.ZERO,
+          Duration.ZERO,
+          Duration.ZERO,
+          0);
     }
 
     // Getters
-    public Duration getMeanExecutionTime() { return meanExecutionTime; }
-    public Duration getMinExecutionTime() { return minExecutionTime; }
-    public Duration getMaxExecutionTime() { return maxExecutionTime; }
-    public Duration getMedianExecutionTime() { return medianExecutionTime; }
-    public Duration getP95ExecutionTime() { return p95ExecutionTime; }
-    public Duration getP99ExecutionTime() { return p99ExecutionTime; }
-    public Duration getStandardDeviation() { return standardDeviation; }
-    public int getSampleSize() { return sampleSize; }
+    public Duration getMeanExecutionTime() {
+      return meanExecutionTime;
+    }
+
+    public Duration getMinExecutionTime() {
+      return minExecutionTime;
+    }
+
+    public Duration getMaxExecutionTime() {
+      return maxExecutionTime;
+    }
+
+    public Duration getMedianExecutionTime() {
+      return medianExecutionTime;
+    }
+
+    public Duration getP95ExecutionTime() {
+      return p95ExecutionTime;
+    }
+
+    public Duration getP99ExecutionTime() {
+      return p99ExecutionTime;
+    }
+
+    public Duration getStandardDeviation() {
+      return standardDeviation;
+    }
+
+    public int getSampleSize() {
+      return sampleSize;
+    }
 
     /**
      * Gets the coefficient of variation (relative standard deviation).

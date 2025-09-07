@@ -11,8 +11,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * Analysis of test failures across multiple WebAssembly runtimes, identifying inconsistencies
- * and providing comparative analysis for debugging cross-runtime issues.
+ * Analysis of test failures across multiple WebAssembly runtimes, identifying inconsistencies and
+ * providing comparative analysis for debugging cross-runtime issues.
  */
 public final class CrossRuntimeFailureAnalysis {
   private final String testName;
@@ -170,10 +170,11 @@ public final class CrossRuntimeFailureAnalysis {
    * @return list of recommendations
    */
   public List<String> getRecommendations() {
-    final List<String> recommendations = runtimeAnalyses.values().stream()
-        .map(TestFailureAnalysis::getRecommendation)
-        .distinct()
-        .collect(Collectors.toList());
+    final List<String> recommendations =
+        runtimeAnalyses.values().stream()
+            .map(TestFailureAnalysis::getRecommendation)
+            .distinct()
+            .collect(Collectors.toList());
 
     // Add cross-runtime specific recommendations
     if (hasInconsistencies()) {
@@ -207,7 +208,7 @@ public final class CrossRuntimeFailureAnalysis {
     final StringBuilder report = new StringBuilder();
     report.append("Cross-Runtime Failure Analysis\n");
     report.append("==============================\n\n");
-    
+
     report.append(String.format("Test Name: %s\n", testName));
     report.append(String.format("Inconsistency Type: %s\n", inconsistencyType.getDescription()));
     report.append(String.format("Summary: %s\n", summary));
@@ -217,12 +218,16 @@ public final class CrossRuntimeFailureAnalysis {
     report.append("Runtime Status:\n");
     report.append("---------------\n");
     if (!successfulRuntimes.isEmpty()) {
-      report.append(String.format("Successful: %s\n", 
-          successfulRuntimes.stream().map(Enum::name).collect(Collectors.joining(", "))));
+      report.append(
+          String.format(
+              "Successful: %s\n",
+              successfulRuntimes.stream().map(Enum::name).collect(Collectors.joining(", "))));
     }
     if (!failedRuntimes.isEmpty()) {
-      report.append(String.format("Failed: %s\n", 
-          failedRuntimes.stream().map(Enum::name).collect(Collectors.joining(", "))));
+      report.append(
+          String.format(
+              "Failed: %s\n",
+              failedRuntimes.stream().map(Enum::name).collect(Collectors.joining(", "))));
     }
     report.append("\n");
 
@@ -233,16 +238,20 @@ public final class CrossRuntimeFailureAnalysis {
       for (final Map.Entry<RuntimeType, TestFailureAnalysis> entry : runtimeAnalyses.entrySet()) {
         final RuntimeType runtime = entry.getKey();
         final TestFailureAnalysis analysis = entry.getValue();
-        
+
         report.append(String.format("\n%s Runtime:\n", runtime.name()));
         report.append(String.format("  Category: %s\n", analysis.getCategory().getDescription()));
         report.append(String.format("  Summary: %s\n", analysis.getSummary()));
-        report.append(String.format("  Execution Time: %.3fs\n", analysis.getExecutionTime().toMillis() / 1000.0));
-        
-        analysis.getExceptionType().ifPresent(type -> 
-            report.append(String.format("  Exception: %s\n", type)));
-        analysis.getExceptionMessage().ifPresent(message -> 
-            report.append(String.format("  Message: %s\n", message)));
+        report.append(
+            String.format(
+                "  Execution Time: %.3fs\n", analysis.getExecutionTime().toMillis() / 1000.0));
+
+        analysis
+            .getExceptionType()
+            .ifPresent(type -> report.append(String.format("  Exception: %s\n", type)));
+        analysis
+            .getExceptionMessage()
+            .ifPresent(message -> report.append(String.format("  Message: %s\n", message)));
       }
       report.append("\n");
     }
@@ -268,32 +277,33 @@ public final class CrossRuntimeFailureAnalysis {
   public String createBriefSummary() {
     final String status;
     if (!successfulRuntimes.isEmpty() && !failedRuntimes.isEmpty()) {
-      status = String.format("Mixed results: %d successful, %d failed", 
-          successfulRuntimes.size(), failedRuntimes.size());
+      status =
+          String.format(
+              "Mixed results: %d successful, %d failed",
+              successfulRuntimes.size(), failedRuntimes.size());
     } else if (!failedRuntimes.isEmpty()) {
       status = String.format("Failed on all %d runtimes", failedRuntimes.size());
     } else {
       status = "All runtimes successful";
     }
-    
+
     return String.format("[Cross-Runtime] %s: %s", testName, status);
   }
 
   @Override
   public String toString() {
-    return String.format("CrossRuntimeFailureAnalysis{test=%s, inconsistency=%s, successful=%d, failed=%d}", 
+    return String.format(
+        "CrossRuntimeFailureAnalysis{test=%s, inconsistency=%s, successful=%d, failed=%d}",
         testName, inconsistencyType.name(), successfulRuntimes.size(), failedRuntimes.size());
   }
 
-  /**
-   * Builder for CrossRuntimeFailureAnalysis.
-   */
+  /** Builder for CrossRuntimeFailureAnalysis. */
   public static final class Builder {
     private final String testName;
     private List<RuntimeType> successfulRuntimes = Collections.emptyList();
     private List<RuntimeType> failedRuntimes = Collections.emptyList();
     private final Map<RuntimeType, TestFailureAnalysis> runtimeAnalyses = new HashMap<>();
-    private WasmTestFailureAnalyzer.InconsistencyType inconsistencyType = 
+    private WasmTestFailureAnalyzer.InconsistencyType inconsistencyType =
         WasmTestFailureAnalyzer.InconsistencyType.NONE;
     private String summary = "No analysis summary available";
 
@@ -313,7 +323,8 @@ public final class CrossRuntimeFailureAnalysis {
      * @return this builder
      */
     public Builder successfulRuntimes(final List<RuntimeType> successfulRuntimes) {
-      this.successfulRuntimes = Objects.requireNonNull(successfulRuntimes, "successfulRuntimes cannot be null");
+      this.successfulRuntimes =
+          Objects.requireNonNull(successfulRuntimes, "successfulRuntimes cannot be null");
       return this;
     }
 
@@ -347,8 +358,10 @@ public final class CrossRuntimeFailureAnalysis {
      * @param inconsistencyType the inconsistency type
      * @return this builder
      */
-    public Builder inconsistencyType(final WasmTestFailureAnalyzer.InconsistencyType inconsistencyType) {
-      this.inconsistencyType = Objects.requireNonNull(inconsistencyType, "inconsistencyType cannot be null");
+    public Builder inconsistencyType(
+        final WasmTestFailureAnalyzer.InconsistencyType inconsistencyType) {
+      this.inconsistencyType =
+          Objects.requireNonNull(inconsistencyType, "inconsistencyType cannot be null");
       return this;
     }
 

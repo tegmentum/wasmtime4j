@@ -1,4 +1,4 @@
-package ai.tegmentum.wasmtime4j.native_functions;
+package ai.tegmentum.wasmtime4j.nativefunctions;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -7,7 +7,6 @@ import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
 import ai.tegmentum.wasmtime4j.memory.MemoryLeakDetector;
 import ai.tegmentum.wasmtime4j.utils.TestUtils;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -309,7 +308,9 @@ public abstract class BaseNativeFunctionTest {
           LOGGER.info(
               String.format(
                   "  %s: Leak=%s, Increase=%d bytes, Rate=%.2f bytes/sec",
-                  runtime, result.isLeakDetected(), result.getMemoryIncrease(),
+                  runtime,
+                  result.isLeakDetected(),
+                  result.getMemoryIncrease(),
                   result.getLeakRate()));
         });
 
@@ -332,9 +333,7 @@ public abstract class BaseNativeFunctionTest {
               result.getMemoryIncrease(),
               result.getLeakRate(),
               result.getAnalysis());
-      assertThat(result.isLeakDetected())
-          .withFailMessage(errorMessage)
-          .isFalse();
+      assertThat(result.isLeakDetected()).withFailMessage(errorMessage).isFalse();
     }
   }
 
@@ -370,9 +369,7 @@ public abstract class BaseNativeFunctionTest {
         .isLessThanOrEqualTo(maxAllowedErrors);
   }
 
-  /**
-   * Cleans up all test resources.
-   */
+  /** Cleans up all test resources. */
   private void cleanupTestResources() {
     for (final AutoCloseable resource : testResources) {
       try {

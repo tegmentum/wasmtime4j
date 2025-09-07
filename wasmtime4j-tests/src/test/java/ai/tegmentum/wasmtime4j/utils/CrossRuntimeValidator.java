@@ -3,7 +3,6 @@ package ai.tegmentum.wasmtime4j.utils;
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
-import ai.tegmentum.wasmtime4j.utils.TestUtils;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;

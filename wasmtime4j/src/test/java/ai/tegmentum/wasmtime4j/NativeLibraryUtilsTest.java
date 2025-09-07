@@ -84,13 +84,19 @@ final class NativeLibraryUtilsTest {
 
     assertThrows(
         NullPointerException.class,
-        () -> ai.tegmentum.wasmtime4j.NativeLibraryUtils.extractLibraryFromJar(null, platformInfo, "/test"));
+        () ->
+            ai.tegmentum.wasmtime4j.NativeLibraryUtils.extractLibraryFromJar(
+                null, platformInfo, "/test"));
     assertThrows(
         NullPointerException.class,
-        () -> ai.tegmentum.wasmtime4j.NativeLibraryUtils.extractLibraryFromJar("test", null, "/test"));
+        () ->
+            ai.tegmentum.wasmtime4j.NativeLibraryUtils.extractLibraryFromJar(
+                "test", null, "/test"));
     assertThrows(
         NullPointerException.class,
-        () -> ai.tegmentum.wasmtime4j.NativeLibraryUtils.extractLibraryFromJar("test", platformInfo, null));
+        () ->
+            ai.tegmentum.wasmtime4j.NativeLibraryUtils.extractLibraryFromJar(
+                "test", platformInfo, null));
   }
 
   @Test
@@ -107,7 +113,8 @@ final class NativeLibraryUtilsTest {
   @Test
   void testLibraryLoadInfoSuccessfulCheck() {
     // Test loading attempt with nonexistent library - should fail
-    final NativeLibraryUtils.LibraryLoadInfo failedInfo = NativeLibraryUtils.loadNativeLibrary("nonexistent");
+    final NativeLibraryUtils.LibraryLoadInfo failedInfo =
+        NativeLibraryUtils.loadNativeLibrary("nonexistent");
     assertFalse(failedInfo.isSuccessful(), "Loading nonexistent library should fail");
     assertNotNull(failedInfo.getLibraryName(), "Library name should be available even on failure");
     assertNotNull(failedInfo.getPlatformInfo(), "Platform info should always be available");
@@ -116,9 +123,10 @@ final class NativeLibraryUtilsTest {
   @Test
   void testLibraryLoadInfoToString() {
     // Test that toString works on actual load info
-    final NativeLibraryUtils.LibraryLoadInfo loadInfo = NativeLibraryUtils.loadNativeLibrary("testlib");
+    final NativeLibraryUtils.LibraryLoadInfo loadInfo =
+        NativeLibraryUtils.loadNativeLibrary("testlib");
     final String loadInfoString = loadInfo.toString();
-    
+
     assertNotNull(loadInfoString, "toString should not return null");
     assertTrue(loadInfoString.length() > 0, "toString should return a non-empty string");
     assertTrue(loadInfoString.contains("testlib"), "toString should contain the library name");
