@@ -3,7 +3,7 @@
 #[cfg(feature = "jni-bindings")]
 use jni::JNIEnv;
 #[cfg(feature = "jni-bindings")]
-use jni::objects::{JClass, JByteArray, JString, JObjectArray};
+use jni::objects::{JClass, JByteArray, JString};
 #[cfg(feature = "jni-bindings")]
 use jni::sys::{jlong, jint, jboolean, jbyteArray};
 
@@ -19,7 +19,7 @@ use jni::sys::{jlong, jint, jboolean, jbyteArray};
 pub mod jni_engine {
     use super::*;
     use crate::engine::core;
-    use crate::error::{ffi_utils, jni_utils};
+    use crate::error::jni_utils;
     use crate::ffi_common::parameter_conversion;
     
     /// Create a new Wasmtime engine with default configuration (JNI version)
@@ -50,7 +50,7 @@ pub mod jni_engine {
         epoch_interruption: jboolean,
         max_instances: jint,
     ) -> jlong {
-        use wasmtime::{Strategy, OptLevel};
+        
         
         jni_utils::jni_try_ptr(env, || {
             let strategy_opt = parameter_conversion::convert_strategy(strategy);
@@ -341,8 +341,8 @@ pub mod jni_store {
 pub mod jni_module {
     use super::*;
     use crate::module::core;
-    use crate::error::{jni_utils, WasmtimeError};
-    use crate::shared_ffi::module::{ByteArrayConverter, StringConverter};
+    use crate::error::jni_utils;
+    use crate::shared_ffi::module::ByteArrayConverter;
     use jni::sys::{jobjectArray, jstring};
 
     /// Vec<u8> byte array converter implementation for JNI
@@ -389,7 +389,7 @@ pub mod jni_module {
         _class: JClass,
         module_ptr: jlong,
         store_ptr: jlong,
-        import_map_ptr: jlong,
+        _import_map_ptr: jlong,
     ) -> jlong {
         jni_utils::jni_try_ptr(env, || {
             let module = unsafe { core::get_module_ref(module_ptr as *const std::os::raw::c_void)? };
@@ -721,7 +721,7 @@ pub mod jni_module {
     /// Get the name of a module if it has one
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetModuleName(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         module_ptr: jlong,
     ) -> jstring {
@@ -809,7 +809,7 @@ pub mod jni_module {
     /// Serialize a compiled module to bytes
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeSerializeModule(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         module_ptr: jlong,
     ) -> jbyteArray {
@@ -895,8 +895,8 @@ pub mod module {}
 pub mod jni_component {
     use super::*;
     use crate::component::{ComponentEngine, Component};
-    use crate::error::{jni_utils, ffi_utils};
-    use crate::ffi_common::error_handling;
+    use crate::error::jni_utils;
+    
 
     /// Create a new component engine
     #[no_mangle]
@@ -1112,7 +1112,7 @@ pub mod jni_hostfunc {
     use crate::hostfunc::{HostFunction, HostFunctionCallback};
     use crate::instance::WasmValue;
     use crate::{WasmtimeError, WasmtimeResult};
-    use wasmtime::{ValType, FuncType, RefType};
+    use wasmtime::{ValType, FuncType};
     use std::os::raw::c_void;
     use std::sync::Arc;
 
@@ -1154,7 +1154,7 @@ pub mod jni_hostfunc {
         };
         
         jni_utils::jni_try_ptr(env, || {
-            let name: String = name_string;
+            let _name: String = name_string;
             let type_data = type_data_bytes;
             
             // Get store reference  
@@ -1162,7 +1162,7 @@ pub mod jni_hostfunc {
             
             // For now, let's create a simple function type without engine dependency
             // TODO: This is a temporary workaround - need proper engine access from store
-            let func_type = store.with_context(|_ctx| {
+            let _func_type = store.with_context(|_ctx| {
                 // Create a temporary engine for function type creation
                 // This is not ideal but works around the private field access issue
                 let temp_engine = wasmtime::Engine::default();
@@ -1173,7 +1173,7 @@ pub mod jni_hostfunc {
             // For now, we'll need to modify the hostfunc creation to not require weak reference
             
             // Create callback wrapper
-            let callback = Box::new(JniHostFunctionCallback {
+            let _callback = Box::new(JniHostFunctionCallback {
                 java_callback_id: host_function_id as u64,
             });
             
@@ -1277,11 +1277,11 @@ pub mod instance {}
 #[cfg(feature = "jni-bindings")]
 pub mod jni_global {
     use super::*;
-    use crate::global::{Global, GlobalValue, core};
+    use crate::global::core;
     use crate::store::Store;
     use crate::error::{jni_utils, WasmtimeError, WasmtimeResult};
     use crate::error::ffi_utils;
-    use crate::ffi_common::error_handling;
+    
     use wasmtime::{ValType, Mutability, RefType};
 
     /// Create a new WebAssembly global variable (JNI version)
@@ -1521,7 +1521,7 @@ pub mod jni_global {
 #[cfg(feature = "jni-bindings")]
 pub mod jni_table {
     use super::*;
-    use crate::table::{Table, TableElement, core};
+    use crate::table::core;
     use crate::store::Store;
     use crate::error::{jni_utils, ffi_utils, WasmtimeError, WasmtimeResult};
     use wasmtime::{ValType, RefType};

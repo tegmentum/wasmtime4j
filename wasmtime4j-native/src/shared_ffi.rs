@@ -387,14 +387,14 @@ pub mod error_mapping {
     use crate::error::WasmtimeError;
     
     /// Map WasmtimeError to standardized FFI error codes
-    pub fn map_error_to_code(error: &WasmtimeError) -> i32 {
+    pub fn map_error_to_code(_error: &WasmtimeError) -> i32 {
         // All errors map to FFI_ERROR (-1) for simplicity and consistency
         // Detailed error information is available through error message retrieval
         super::FFI_ERROR
     }
     
     /// Check if an error should be propagated to FFI boundary
-    pub fn should_propagate_error(error: &WasmtimeError) -> bool {
+    pub fn should_propagate_error(_error: &WasmtimeError) -> bool {
         // All errors should be propagated as return codes, never as panics
         true
     }
@@ -410,7 +410,7 @@ pub mod component {
     use crate::error::{WasmtimeResult, WasmtimeError};
     use std::os::raw::c_void;
     use std::sync::Arc;
-    use super::{PointerReturnConverter, ReturnValueConverter, IntegerReturnConverter, validation};
+    use super::{PointerReturnConverter, ReturnValueConverter, validation};
 
     /// Shared implementation for creating component engine
     pub fn create_component_engine_shared() -> WasmtimeResult<Box<ComponentEngine>> {
@@ -561,7 +561,7 @@ pub mod component {
 pub mod memory {
     use crate::memory::{Memory, MemoryBuilder, MemoryConfig, MemoryUsage, MemoryDataType, MemoryRegistry};
     use crate::store::Store;
-    use crate::error::{WasmtimeResult, WasmtimeError};
+    use crate::error::WasmtimeResult;
     use std::os::raw::c_void;
     use std::sync::Arc;
     use super::{PointerReturnConverter, ReturnValueConverter, IntegerReturnConverter, validation};
@@ -573,7 +573,7 @@ pub mod memory {
     ) -> WasmtimeResult<Box<Memory>> {
         validation::validate_not_null(store_ptr, "store")?;
         
-        let mut store = unsafe { &mut *(store_ptr as *mut Store) };
+        let store = unsafe { &mut *(store_ptr as *mut Store) };
         Memory::new(store, initial_pages as u64).map(|memory| Box::new(memory))
     }
 
@@ -591,7 +591,7 @@ pub mod memory {
     {
         validation::validate_not_null(store_ptr, "store")?;
         
-        let mut store = unsafe { &mut *(store_ptr as *mut Store) };
+        let store = unsafe { &mut *(store_ptr as *mut Store) };
         
         let mut builder = MemoryBuilder::new(initial_pages as u64);
         
@@ -651,7 +651,7 @@ pub mod memory {
         validation::validate_not_null(store_ptr, "store")?;
         
         let memory = unsafe { &*(memory_ptr as *const Memory) };
-        let mut store = unsafe { &mut *(store_ptr as *mut Store) };
+        let store = unsafe { &mut *(store_ptr as *mut Store) };
         memory.grow(store, additional_pages)
     }
 
@@ -681,7 +681,7 @@ pub mod memory {
         validation::validate_not_null(store_ptr, "store")?;
         
         let memory = unsafe { &*(memory_ptr as *const Memory) };
-        let mut store = unsafe { &mut *(store_ptr as *mut Store) };
+        let store = unsafe { &mut *(store_ptr as *mut Store) };
         memory.write_bytes(store, offset, data)
     }
 
@@ -710,7 +710,7 @@ pub mod memory {
         validation::validate_not_null(store_ptr, "store")?;
         
         let memory = unsafe { &*(memory_ptr as *const Memory) };
-        let mut store = unsafe { &mut *(store_ptr as *mut Store) };
+        let store = unsafe { &mut *(store_ptr as *mut Store) };
         memory.write_typed(store, offset, value, MemoryDataType::U32Le)
     }
 
@@ -832,7 +832,7 @@ pub mod memory {
 /// defensive programming practices and consistent error handling.
 pub mod global {
     use crate::global::{Global, GlobalValue, GlobalMetadata, core};
-    use wasmtime::GlobalType;
+    
     use crate::store::Store;
     use crate::error::{WasmtimeResult, WasmtimeError};
     use std::os::raw::c_void;
@@ -1054,8 +1054,8 @@ pub mod global {
 /// defensive programming practices and consistent error handling.
 pub mod table {
     use crate::table::{Table, TableElement, TableMetadata, core};
-    use wasmtime::{TableType, ValType, RefType};
-    use crate::global::ReferenceType;
+    use wasmtime::{ValType, RefType};
+    
     use crate::store::Store;
     use crate::error::{WasmtimeResult, WasmtimeError};
     use std::os::raw::c_void;
