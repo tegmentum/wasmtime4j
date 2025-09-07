@@ -187,8 +187,8 @@ impl Instance {
     
     /// Build comprehensive instance metadata and binding maps
     fn build_instance_data(
-        instance: &WasmtimeInstance,
-        ctx: &mut wasmtime::StoreContextMut<StoreData>,
+        _instance: &WasmtimeInstance,
+        _ctx: &mut wasmtime::StoreContextMut<StoreData>,
         module: &Module,
         import_count: usize,
     ) -> WasmtimeResult<(InstanceMetadata, HashMap<String, ImportBinding>, HashMap<String, ExportBinding>)> {
@@ -522,6 +522,7 @@ impl Instance {
     // Helper methods for type conversion and validation
     
     /// Convert ExternType to ExportKind
+    #[allow(dead_code)]
     fn extern_to_export_kind(extern_type: ExternType) -> WasmtimeResult<ExportKind> {
         match extern_type {
             ExternType::Func(func_type) => {
@@ -823,26 +824,32 @@ pub mod core {
         WasmValue::I32(value)
     }
     
+    /// Creates an i64 WebAssembly value
     pub fn create_i64_value(value: i64) -> WasmValue {
         WasmValue::I64(value)
     }
     
+    /// Creates an f32 WebAssembly value
     pub fn create_f32_value(value: f32) -> WasmValue {
         WasmValue::F32(value)
     }
     
+    /// Creates an f64 WebAssembly value
     pub fn create_f64_value(value: f64) -> WasmValue {
         WasmValue::F64(value)
     }
     
+    /// Creates a v128 WebAssembly value from bytes
     pub fn create_v128_value(bytes: [u8; 16]) -> WasmValue {
         WasmValue::V128(bytes)
     }
     
+    /// Creates an externref WebAssembly value
     pub fn create_externref_value() -> WasmValue {
         WasmValue::ExternRef
     }
     
+    /// Creates a funcref WebAssembly value
     pub fn create_funcref_value() -> WasmValue {
         WasmValue::FuncRef
     }
@@ -857,6 +864,7 @@ pub mod core {
         }
     }
     
+    /// Extracts i64 value from WebAssembly value
     pub fn extract_i64_value(value: &WasmValue) -> WasmtimeResult<i64> {
         match value {
             WasmValue::I64(v) => Ok(*v),
@@ -866,6 +874,7 @@ pub mod core {
         }
     }
     
+    /// Extracts f32 value from WebAssembly value
     pub fn extract_f32_value(value: &WasmValue) -> WasmtimeResult<f32> {
         match value {
             WasmValue::F32(v) => Ok(*v),
@@ -875,6 +884,7 @@ pub mod core {
         }
     }
     
+    /// Extracts f64 value from WebAssembly value
     pub fn extract_f64_value(value: &WasmValue) -> WasmtimeResult<f64> {
         match value {
             WasmValue::F64(v) => Ok(*v),
@@ -884,6 +894,7 @@ pub mod core {
         }
     }
     
+    /// Extracts v128 value bytes from WebAssembly value
     pub fn extract_v128_value(value: &WasmValue) -> WasmtimeResult<[u8; 16]> {
         match value {
             WasmValue::V128(bytes) => Ok(*bytes),

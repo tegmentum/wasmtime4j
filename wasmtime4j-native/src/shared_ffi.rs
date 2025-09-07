@@ -33,6 +33,7 @@ use std::os::raw::c_void;
 
 /// Standard FFI return codes
 pub const FFI_SUCCESS: i32 = 0;
+/// Standard FFI error return code
 pub const FFI_ERROR: i32 = -1;
 
 /// Trait for converting between FFI-compatible and native Rust types
@@ -68,6 +69,7 @@ pub trait ReturnValueConverter<T> {
 /// FFI-compatible Strategy enum representation
 #[repr(i32)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[allow(missing_docs)]
 pub enum FfiStrategy {
     Auto = 0,
     Cranelift = 1,
@@ -124,6 +126,7 @@ impl FfiStrategy {
 /// FFI-compatible OptLevel enum representation
 #[repr(i32)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[allow(missing_docs)]
 pub enum FfiOptLevel {
     None = 0,
     Speed = 1,
@@ -185,6 +188,7 @@ impl FfiOptLevel {
 /// FFI-compatible WasmFeature enum representation
 #[repr(i32)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[allow(missing_docs)]
 pub enum FfiWasmFeature {
     Threads = 0,
     ReferenceTypes = 1,
@@ -842,6 +846,7 @@ pub mod global {
     /// FFI-compatible representation of GlobalValue
     #[repr(C)]
     #[derive(Debug, Clone, Copy)]
+    #[allow(missing_docs)]
     pub struct FfiGlobalValue {
         pub value_type: i32,  // 0=I32, 1=I64, 2=F32, 3=F64, 4=V128, 5=AnyRef, 6=FuncRef, 7=ExternRef
         pub i32_value: i32,
@@ -1064,6 +1069,7 @@ pub mod table {
     /// FFI-compatible representation of TableElement
     #[repr(C)]
     #[derive(Debug, Clone, Copy)]
+    #[allow(missing_docs)]
     pub struct FfiTableElement {
         pub element_type: i32,  // 0=FuncRef, 1=ExternRef, 2=AnyRef
         pub ptr_value: *mut c_void,  // For storing reference pointers

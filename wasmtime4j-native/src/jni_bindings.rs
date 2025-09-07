@@ -1,5 +1,7 @@
 //! JNI bindings for Java 8-22 compatibility
 
+#![allow(unused_variables)]
+
 #[cfg(feature = "jni-bindings")]
 use jni::JNIEnv;
 #[cfg(feature = "jni-bindings")]
@@ -351,6 +353,7 @@ pub mod jni_module {
     }
 
     impl VecByteArrayConverter {
+        /// Creates a new VecByteArrayConverter
         pub fn new(data: Vec<u8>) -> Self {
             Self { data }
         }
@@ -1118,6 +1121,7 @@ pub mod jni_hostfunc {
 
     /// JNI callback implementation that bridges to Java
     struct JniHostFunctionCallback {
+        #[allow(dead_code)]
         java_callback_id: u64,
     }
 

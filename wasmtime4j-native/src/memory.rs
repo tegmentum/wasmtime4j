@@ -125,6 +125,7 @@ pub type MemoryResult<T> = Result<T, MemoryError>;
 
 /// Specialized memory errors with detailed context
 #[derive(Debug, thiserror::Error)]
+#[allow(missing_docs)]
 pub enum MemoryError {
     /// Memory bounds check violation
     #[error("Memory bounds violation: attempted to access offset {offset} with length {length}, but memory size is {memory_size}")]
@@ -321,6 +322,7 @@ impl Memory {
     }
 
     /// Get memory data size for bounds checking
+    #[allow(dead_code)]
     fn get_data_size(&self, store: &Store) -> WasmtimeResult<usize> {
         store.with_context_ro(|ctx| {
             Ok(self.inner.data(ctx).len())

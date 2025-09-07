@@ -316,6 +316,7 @@ impl Table {
     }
 
     /// Get the default value for a given element type
+    #[allow(dead_code)]
     fn default_value_for_type(element_type: &ValType) -> WasmtimeResult<Val> {
         let default_val = match element_type {
             ValType::Ref(_ref_type) => {
@@ -332,6 +333,7 @@ impl Table {
     }
 
     /// Convert TableElement to wasmtime::Val
+    #[allow(dead_code)]
     fn table_element_to_wasmtime_val(element: TableElement) -> WasmtimeResult<Val> {
         let wasmtime_val = match element {
             TableElement::FuncRef(_) => {

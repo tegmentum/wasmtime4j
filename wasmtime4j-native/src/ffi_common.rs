@@ -449,6 +449,7 @@ pub mod error_handling {
     
     /// Validation error types for parameter checking
     #[derive(Debug, Clone)]
+    #[allow(missing_docs)]
     pub enum ValidationError {
         /// Null pointer parameter
         NullPointer(String),
@@ -690,6 +691,7 @@ pub mod memory_utils {
     
     /// Memory error types for specific memory management failures
     #[derive(Debug, Clone)]
+    #[allow(missing_docs)]
     pub enum MemoryError {
         /// Null pointer error
         NullPointer(String),
