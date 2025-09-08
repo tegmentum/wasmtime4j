@@ -1794,3 +1794,158 @@ pub mod jni_table {
         }
     }
 }
+
+/// JNI bindings for Memory operations
+#[cfg(feature = "jni-bindings")]
+pub mod jni_memory {
+    use super::*;
+    use crate::memory::core;
+    use crate::error::jni_utils;
+    use jni::objects::{JByteBuffer, JByteArray};
+    
+    /// Get memory size in bytes (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeGetSize(
+        env: JNIEnv,
+        _class: JClass,
+        memory_ptr: jlong,
+    ) -> jlong {
+        jni_utils::jni_try_default(&env, -1, || {
+            let memory = unsafe { core::get_memory_ref(memory_ptr as *const std::os::raw::c_void)? };
+            
+            // For now, return the size from memory metadata since we don't have access to store
+            // This is a limitation that needs to be resolved in the broader architecture
+            let metadata = memory.get_metadata()?;
+            let size = (metadata.current_pages * 65536) as usize; // 64KB per page
+            Ok(size as jlong)
+        })
+    }
+
+    /// Grow memory by pages (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeGrow(
+        env: JNIEnv,
+        _class: JClass,
+        memory_ptr: jlong,
+        pages: jlong,
+    ) -> jlong {
+        jni_utils::jni_try_default(&env, -1, || {
+            let memory = unsafe { core::get_memory_ref(memory_ptr as *const std::os::raw::c_void)? };
+            
+            // TODO: This method requires store context for memory growth
+            // For now, return error indicating this method needs implementation
+            Err(crate::error::WasmtimeError::InvalidParameter {
+                message: "Memory growth requires store context - method needs architectural changes".to_string(),
+            })
+        })
+    }
+
+    /// Read a single byte from memory (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeReadByte(
+        env: JNIEnv,
+        _class: JClass,
+        memory_ptr: jlong,
+        offset: jlong,
+    ) -> jint {
+        jni_utils::jni_try_default(&env, -1, || {
+            let memory = unsafe { core::get_memory_ref(memory_ptr as *const std::os::raw::c_void)? };
+            
+            // TODO: This method requires store context for memory access
+            // For now, return error indicating this method needs implementation
+            Err(crate::error::WasmtimeError::InvalidParameter {
+                message: "Memory read requires store context - method needs architectural changes".to_string(),
+            })
+        })
+    }
+
+    /// Write a single byte to memory (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeWriteByte(
+        env: JNIEnv,
+        _class: JClass,
+        memory_ptr: jlong,
+        offset: jlong,
+        value: jint,
+    ) {
+        jni_utils::jni_try_code(env, || {
+            let _memory = unsafe { core::get_memory_ref(memory_ptr as *const std::os::raw::c_void)? };
+            
+            // TODO: This method requires store context for memory access
+            // For now, return error indicating this method needs implementation
+            Err(crate::error::WasmtimeError::InvalidParameter {
+                message: "Memory write requires store context - method needs architectural changes".to_string(),
+            })
+        });
+    }
+
+    /// Read bytes from memory into a buffer (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeReadBytes(
+        env: JNIEnv,
+        _class: JClass,
+        memory_ptr: jlong,
+        offset: jlong,
+        buffer: JByteArray,
+    ) -> jint {
+        jni_utils::jni_try_default(&env, -1, || {
+            let _memory = unsafe { core::get_memory_ref(memory_ptr as *const std::os::raw::c_void)? };
+            
+            // TODO: This method requires store context for memory access
+            // For now, return error indicating this method needs implementation
+            Err(crate::error::WasmtimeError::InvalidParameter {
+                message: "Memory read requires store context - method needs architectural changes".to_string(),
+            })
+        })
+    }
+
+    /// Write bytes from a buffer to memory (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeWriteBytes(
+        env: JNIEnv,
+        _class: JClass,
+        memory_ptr: jlong,
+        offset: jlong,
+        buffer: JByteArray,
+    ) -> jint {
+        jni_utils::jni_try_default(&env, -1, || {
+            let _memory = unsafe { core::get_memory_ref(memory_ptr as *const std::os::raw::c_void)? };
+            
+            // TODO: This method requires store context for memory access
+            // For now, return error indicating this method needs implementation
+            Err(crate::error::WasmtimeError::InvalidParameter {
+                message: "Memory write requires store context - method needs architectural changes".to_string(),
+            })
+        })
+    }
+
+    /// Get direct ByteBuffer view of memory (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeGetBuffer<'a>(
+        env: JNIEnv<'a>,
+        _class: JClass<'a>,
+        memory_ptr: jlong,
+    ) -> JByteBuffer<'a> {
+        jni_utils::jni_try_default(&env, JByteBuffer::default(), || {
+            let _memory = unsafe { core::get_memory_ref(memory_ptr as *const std::os::raw::c_void)? };
+            
+            // TODO: This method requires store context for memory access
+            // For now, return error indicating this method needs implementation
+            Err(crate::error::WasmtimeError::InvalidParameter {
+                message: "Memory buffer access requires store context - method needs architectural changes".to_string(),
+            })
+        })
+    }
+
+    /// Destroy memory (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeDestroyMemory(
+        env: JNIEnv,
+        _class: JClass,
+        memory_ptr: jlong,
+    ) {
+        unsafe {
+            core::destroy_memory(memory_ptr as *mut std::os::raw::c_void);
+        }
+    }
+}
