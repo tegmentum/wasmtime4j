@@ -776,6 +776,92 @@ impl Default for MemoryRegistry {
     }
 }
 
+/// Core FFI-compatible functions for Memory operations
+/// 
+/// This module provides functions that can be safely called from both JNI and Panama FFI
+/// implementations. These functions eliminate code duplication and provide consistent behavior
+/// across interface implementations while maintaining defensive programming practices.
+pub mod core {
+    use super::*;
+    use std::os::raw::c_void;
+    use crate::error::ffi_utils;
+    use crate::store::Store;
+    
+    /// Get memory from pointer with validation
+    pub unsafe fn get_memory_ref(ptr: *const c_void) -> WasmtimeResult<&'static Memory> {
+        ffi_utils::deref_ptr::<Memory>(ptr, "memory")
+    }
+
+    /// Get mutable memory from pointer with validation
+    pub unsafe fn get_memory_mut(ptr: *mut c_void) -> WasmtimeResult<&'static mut Memory> {
+        ffi_utils::deref_ptr_mut::<Memory>(ptr, "memory")
+    }
+
+    /// Get store from pointer with validation (read-only)
+    pub unsafe fn get_store_ref(ptr: *const c_void) -> WasmtimeResult<&'static Store> {
+        ffi_utils::deref_ptr::<Store>(ptr, "store")
+    }
+
+    /// Get mutable store from pointer with validation
+    pub unsafe fn get_store_mut(ptr: *mut c_void) -> WasmtimeResult<&'static mut Store> {
+        ffi_utils::deref_ptr_mut::<Store>(ptr, "store")
+    }
+
+    /// Core function to get memory size in bytes
+    pub fn get_memory_size(memory: &Memory, store: &Store) -> WasmtimeResult<usize> {
+        memory.size_bytes(store)
+    }
+
+    /// Core function to grow memory by pages
+    pub fn grow_memory(memory: &Memory, store: &mut Store, pages: u64) -> WasmtimeResult<u64> {
+        memory.grow(store, pages)
+    }
+
+    /// Core function to get memory page count
+    pub fn get_memory_page_count(memory: &Memory, store: &Store) -> WasmtimeResult<u64> {
+        memory.size_pages(store)
+    }
+
+    /// Core function to read bytes from memory
+    pub fn read_memory_bytes(memory: &Memory, store: &Store, offset: usize, length: usize) -> WasmtimeResult<Vec<u8>> {
+        memory.read_bytes(store, offset, length)
+    }
+
+    /// Core function to write bytes to memory
+    pub fn write_memory_bytes(memory: &Memory, store: &mut Store, offset: usize, data: &[u8]) -> WasmtimeResult<()> {
+        memory.write_bytes(store, offset, data)
+    }
+
+    /// Core function to read a single byte from memory
+    pub fn read_memory_byte(memory: &Memory, store: &Store, offset: usize) -> WasmtimeResult<u8> {
+        let bytes = memory.read_bytes(store, offset, 1)?;
+        Ok(bytes[0])
+    }
+
+    /// Core function to write a single byte to memory
+    pub fn write_memory_byte(memory: &Memory, store: &mut Store, offset: usize, value: u8) -> WasmtimeResult<()> {
+        memory.write_bytes(store, offset, &[value])
+    }
+
+    /// Core function to get direct memory buffer access
+    pub fn get_memory_buffer(memory: &Memory, store: &Store) -> WasmtimeResult<(*mut u8, usize)> {
+        store.with_context_ro(|ctx| {
+            let data = memory.inner.data(ctx);
+            let ptr = data.as_ptr() as *mut u8;
+            let len = data.len();
+            Ok((ptr, len))
+        })
+    }
+
+    /// Core function to destroy memory (cleanup)
+    pub unsafe fn destroy_memory(ptr: *mut c_void) {
+        if !ptr.is_null() {
+            let _ = Box::from_raw(ptr as *mut Memory);
+            log::debug!("Memory destroyed");
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
