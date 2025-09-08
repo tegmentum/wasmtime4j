@@ -784,26 +784,228 @@ impl Default for MemoryRegistry {
 pub mod core {
     use super::*;
     use std::os::raw::c_void;
+    use std::sync::atomic::{AtomicU64, Ordering};
+    use std::collections::HashSet;
     use crate::error::ffi_utils;
     use crate::store::Store;
     
-    /// Get memory from pointer with validation
+    /// Memory handle validation magic number for integrity checking
+    const MEMORY_MAGIC: u64 = 0xDEADBEEF_CAFEBABE;
+    
+    /// Thread-safe registry for tracking valid memory handles (using usize for thread safety)
+    static VALID_MEMORY_HANDLES: once_cell::sync::Lazy<Arc<RwLock<HashSet<usize>>>> = 
+        once_cell::sync::Lazy::new(|| Arc::new(RwLock::new(HashSet::new())));
+    
+    /// Thread-safe registry for tracking valid store handles (using usize for thread safety)
+    static VALID_STORE_HANDLES: once_cell::sync::Lazy<Arc<RwLock<HashSet<usize>>>> = 
+        once_cell::sync::Lazy::new(|| Arc::new(RwLock::new(HashSet::new())));
+    
+    /// Memory access counter for detecting potential race conditions
+    static MEMORY_ACCESS_COUNTER: AtomicU64 = AtomicU64::new(0);
+    
+    /// Wrapper for memory with validation metadata
+    #[repr(C)]
+    pub struct ValidatedMemory {
+        magic: u64,
+        memory: Memory,
+        created_at: Instant,
+        access_count: AtomicU64,
+        is_destroyed: std::sync::atomic::AtomicBool,
+    }
+    
+    impl ValidatedMemory {
+        /// Create a new validated memory wrapper
+        pub fn new(memory: Memory) -> Self {
+            Self {
+                magic: MEMORY_MAGIC,
+                memory,
+                created_at: Instant::now(),
+                access_count: AtomicU64::new(0),
+                is_destroyed: std::sync::atomic::AtomicBool::new(false),
+            }
+        }
+        
+        /// Check if this memory instance is valid
+        pub fn is_valid(&self) -> bool {
+            self.magic == MEMORY_MAGIC && !self.is_destroyed.load(Ordering::Acquire)
+        }
+        
+        /// Mark this memory instance as destroyed
+        pub fn mark_destroyed(&self) {
+            self.is_destroyed.store(true, Ordering::Release);
+        }
+        
+        /// Increment access counter and return memory reference
+        pub fn access_memory(&self) -> WasmtimeResult<&Memory> {
+            if !self.is_valid() {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: "Attempt to access destroyed or corrupted memory".to_string(),
+                });
+            }
+            
+            self.access_count.fetch_add(1, Ordering::Relaxed);
+            MEMORY_ACCESS_COUNTER.fetch_add(1, Ordering::Relaxed);
+            Ok(&self.memory)
+        }
+        
+        /// Get access statistics
+        pub fn get_access_count(&self) -> u64 {
+            self.access_count.load(Ordering::Relaxed)
+        }
+    }
+    
+    /// Register a memory handle as valid
+    pub fn register_memory_handle(ptr: *const c_void) -> WasmtimeResult<()> {
+        let mut handles = VALID_MEMORY_HANDLES.write().map_err(|_| {
+            WasmtimeError::Concurrency {
+                message: "Failed to acquire memory handle registry lock".to_string(),
+            }
+        })?;
+        
+        handles.insert(ptr as usize);
+        log::debug!("Registered memory handle: {:p}", ptr);
+        Ok(())
+    }
+    
+    /// Unregister a memory handle
+    pub fn unregister_memory_handle(ptr: *const c_void) -> WasmtimeResult<()> {
+        let mut handles = VALID_MEMORY_HANDLES.write().map_err(|_| {
+            WasmtimeError::Concurrency {
+                message: "Failed to acquire memory handle registry lock".to_string(),
+            }
+        })?;
+        
+        if handles.remove(&(ptr as usize)) {
+            log::debug!("Unregistered memory handle: {:p}", ptr);
+            Ok(())
+        } else {
+            Err(WasmtimeError::InvalidParameter {
+                message: format!("Memory handle {:p} was not registered", ptr),
+            })
+        }
+    }
+    
+    /// Register a store handle as valid
+    pub fn register_store_handle(ptr: *const c_void) -> WasmtimeResult<()> {
+        let mut handles = VALID_STORE_HANDLES.write().map_err(|_| {
+            WasmtimeError::Concurrency {
+                message: "Failed to acquire store handle registry lock".to_string(),
+            }
+        })?;
+        
+        handles.insert(ptr as usize);
+        log::debug!("Registered store handle: {:p}", ptr);
+        Ok(())
+    }
+    
+    /// Unregister a store handle
+    pub fn unregister_store_handle(ptr: *const c_void) -> WasmtimeResult<()> {
+        let mut handles = VALID_STORE_HANDLES.write().map_err(|_| {
+            WasmtimeError::Concurrency {
+                message: "Failed to acquire store handle registry lock".to_string(),
+            }
+        })?;
+        
+        if handles.remove(&(ptr as usize)) {
+            log::debug!("Unregistered store handle: {:p}", ptr);
+            Ok(())
+        } else {
+            Err(WasmtimeError::InvalidParameter {
+                message: format!("Store handle {:p} was not registered", ptr),
+            })
+        }
+    }
+    
+    /// Validate memory handle with comprehensive checks
+    pub unsafe fn validate_memory_handle(ptr: *const c_void) -> WasmtimeResult<()> {
+        // Basic null check
+        if ptr.is_null() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Memory pointer cannot be null".to_string(),
+            });
+        }
+        
+        // Check if handle is registered
+        let handles = VALID_MEMORY_HANDLES.read().map_err(|_| {
+            WasmtimeError::Concurrency {
+                message: "Failed to acquire memory handle registry lock".to_string(),
+            }
+        })?;
+        
+        if !handles.contains(&(ptr as usize)) {
+            return Err(WasmtimeError::InvalidParameter {
+                message: format!("Memory handle {:p} is not registered or has been freed", ptr),
+            });
+        }
+        
+        // Check magic number and validity if using ValidatedMemory
+        let validated_memory = &*(ptr as *const ValidatedMemory);
+        if validated_memory.magic != MEMORY_MAGIC {
+            return Err(WasmtimeError::InvalidParameter {
+                message: format!("Memory handle {:p} has invalid magic number (corrupted)", ptr),
+            });
+        }
+        
+        if validated_memory.is_destroyed.load(Ordering::Acquire) {
+            return Err(WasmtimeError::InvalidParameter {
+                message: format!("Memory handle {:p} has been destroyed (use-after-free attempt)", ptr),
+            });
+        }
+        
+        Ok(())
+    }
+    
+    /// Validate store handle with comprehensive checks
+    pub unsafe fn validate_store_handle(ptr: *const c_void) -> WasmtimeResult<()> {
+        // Basic null check
+        if ptr.is_null() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Store pointer cannot be null".to_string(),
+            });
+        }
+        
+        // Check if handle is registered
+        let handles = VALID_STORE_HANDLES.read().map_err(|_| {
+            WasmtimeError::Concurrency {
+                message: "Failed to acquire store handle registry lock".to_string(),
+            }
+        })?;
+        
+        if !handles.contains(&(ptr as usize)) {
+            return Err(WasmtimeError::InvalidParameter {
+                message: format!("Store handle {:p} is not registered or has been freed", ptr),
+            });
+        }
+        
+        Ok(())
+    }
+    
+    /// Get memory from pointer with comprehensive validation
     pub unsafe fn get_memory_ref(ptr: *const c_void) -> WasmtimeResult<&'static Memory> {
-        ffi_utils::deref_ptr::<Memory>(ptr, "memory")
+        validate_memory_handle(ptr)?;
+        
+        let validated_memory = &*(ptr as *const ValidatedMemory);
+        validated_memory.access_memory()
     }
 
-    /// Get mutable memory from pointer with validation
+    /// Get mutable memory from pointer with comprehensive validation
     pub unsafe fn get_memory_mut(ptr: *mut c_void) -> WasmtimeResult<&'static mut Memory> {
-        ffi_utils::deref_ptr_mut::<Memory>(ptr, "memory")
+        validate_memory_handle(ptr)?;
+        
+        let validated_memory = &mut *(ptr as *mut ValidatedMemory);
+        let _memory_ref = validated_memory.access_memory()?; // Validate first
+        Ok(&mut validated_memory.memory)
     }
 
     /// Get store from pointer with validation (read-only)
     pub unsafe fn get_store_ref(ptr: *const c_void) -> WasmtimeResult<&'static Store> {
+        validate_store_handle(ptr)?;
         ffi_utils::deref_ptr::<Store>(ptr, "store")
     }
 
     /// Get mutable store from pointer with validation
     pub unsafe fn get_store_mut(ptr: *mut c_void) -> WasmtimeResult<&'static mut Store> {
+        validate_store_handle(ptr as *const c_void)?;
         ffi_utils::deref_ptr_mut::<Store>(ptr, "store")
     }
 
@@ -853,12 +1055,87 @@ pub mod core {
         })
     }
 
-    /// Core function to destroy memory (cleanup)
+    /// Create a validated memory instance with handle registration
+    pub fn create_validated_memory(memory: Memory) -> WasmtimeResult<*mut ValidatedMemory> {
+        let validated = ValidatedMemory::new(memory);
+        let boxed = Box::new(validated);
+        let ptr = Box::into_raw(boxed);
+        
+        // Register the handle
+        register_memory_handle(ptr as *const c_void)?;
+        
+        log::debug!("Created validated memory handle: {:p}", ptr);
+        Ok(ptr)
+    }
+    
+    /// Core function to destroy memory with proper cleanup and validation
     pub unsafe fn destroy_memory(ptr: *mut c_void) {
-        if !ptr.is_null() {
-            let _ = Box::from_raw(ptr as *mut Memory);
-            log::debug!("Memory destroyed");
+        if ptr.is_null() {
+            log::warn!("Attempted to destroy null memory pointer");
+            return;
         }
+        
+        // First try to validate the handle (this might fail if already destroyed)
+        match validate_memory_handle(ptr) {
+            Ok(_) => {
+                // Mark as destroyed first to prevent further access
+                let validated_memory = &*(ptr as *const ValidatedMemory);
+                validated_memory.mark_destroyed();
+                
+                // Unregister the handle
+                if let Err(e) = unregister_memory_handle(ptr) {
+                    log::error!("Failed to unregister memory handle {:p}: {}", ptr, e);
+                }
+                
+                // Finally, deallocate the memory
+                let _ = Box::from_raw(ptr as *mut ValidatedMemory);
+                log::debug!("Destroyed validated memory handle: {:p}", ptr);
+            }
+            Err(e) => {
+                log::warn!("Attempted to destroy invalid memory handle {:p}: {}", ptr, e);
+                // Still attempt cleanup in case it's a partially corrupted handle
+                if let Err(unregister_err) = unregister_memory_handle(ptr) {
+                    log::debug!("Handle was not registered (expected for corrupted handle): {}", unregister_err);
+                }
+            }
+        }
+    }
+    
+    /// Get diagnostic information about memory handle validation
+    pub fn get_memory_handle_diagnostics() -> WasmtimeResult<(usize, u64)> {
+        let handles = VALID_MEMORY_HANDLES.read().map_err(|_| {
+            WasmtimeError::Concurrency {
+                message: "Failed to acquire memory handle registry lock".to_string(),
+            }
+        })?;
+        
+        let handle_count = handles.len();
+        let total_accesses = MEMORY_ACCESS_COUNTER.load(Ordering::Relaxed);
+        
+        Ok((handle_count, total_accesses))
+    }
+    
+    /// Force cleanup of all registered handles (for emergency shutdown)
+    pub fn force_cleanup_all_handles() -> WasmtimeResult<usize> {
+        let mut memory_handles = VALID_MEMORY_HANDLES.write().map_err(|_| {
+            WasmtimeError::Concurrency {
+                message: "Failed to acquire memory handle registry lock".to_string(),
+            }
+        })?;
+        
+        let mut store_handles = VALID_STORE_HANDLES.write().map_err(|_| {
+            WasmtimeError::Concurrency {
+                message: "Failed to acquire store handle registry lock".to_string(),
+            }
+        })?;
+        
+        let total_cleaned = memory_handles.len() + store_handles.len();
+        
+        memory_handles.clear();
+        store_handles.clear();
+        
+        log::warn!("Force cleaned {} handles during emergency shutdown", total_cleaned);
+        Ok(total_cleaned)
     }
 }
 
@@ -937,5 +1214,190 @@ mod tests {
         
         registry.unregister(memory_id).expect("Failed to unregister memory");
         assert!(registry.get(memory_id).is_err());
+    }
+
+    #[test]
+    fn test_memory_handle_validation() {
+        let engine = Engine::new().expect("Failed to create engine");
+        let mut store = Store::new(&engine).expect("Failed to create store");
+        
+        let memory = Memory::new(&mut store, 1).expect("Failed to create memory");
+        let validated_ptr = core::create_validated_memory(memory).expect("Failed to create validated memory");
+        
+        // Validate the handle works
+        unsafe {
+            assert!(core::validate_memory_handle(validated_ptr as *const std::os::raw::c_void).is_ok());
+            let memory_ref = core::get_memory_ref(validated_ptr as *const std::os::raw::c_void);
+            assert!(memory_ref.is_ok());
+        }
+        
+        // Test destruction and use-after-free detection
+        unsafe {
+            core::destroy_memory(validated_ptr as *mut std::os::raw::c_void);
+            
+            // Now validation should fail
+            assert!(core::validate_memory_handle(validated_ptr as *const std::os::raw::c_void).is_err());
+        }
+    }
+
+    #[test]
+    fn test_null_pointer_validation() {
+        unsafe {
+            // Test null pointer validation
+            assert!(core::validate_memory_handle(std::ptr::null()).is_err());
+            assert!(core::validate_store_handle(std::ptr::null()).is_err());
+            
+            // Test getting memory from null pointer
+            let result = core::get_memory_ref(std::ptr::null());
+            assert!(result.is_err());
+        }
+    }
+
+    #[test]
+    fn test_invalid_pointer_validation() {
+        unsafe {
+            // Test with invalid but non-null pointer
+            let invalid_ptr = 0xDEADBEEF as *const std::os::raw::c_void;
+            assert!(core::validate_memory_handle(invalid_ptr).is_err());
+            
+            // Test getting memory from invalid pointer
+            let result = core::get_memory_ref(invalid_ptr);
+            assert!(result.is_err());
+        }
+    }
+
+    #[test]
+    fn test_memory_access_counting() {
+        let engine = Engine::new().expect("Failed to create engine");
+        let mut store = Store::new(&engine).expect("Failed to create store");
+        
+        let memory = Memory::new(&mut store, 1).expect("Failed to create memory");
+        let validated_ptr = core::create_validated_memory(memory).expect("Failed to create validated memory");
+        
+        unsafe {
+            let validated_memory = &*(validated_ptr as *const core::ValidatedMemory);
+            
+            // Initial access count should be 0
+            assert_eq!(validated_memory.get_access_count(), 0);
+            
+            // Access the memory a few times
+            let _memory1 = core::get_memory_ref(validated_ptr as *const std::os::raw::c_void);
+            let _memory2 = core::get_memory_ref(validated_ptr as *const std::os::raw::c_void);
+            let _memory3 = core::get_memory_ref(validated_ptr as *const std::os::raw::c_void);
+            
+            // Access count should have incremented (note: validation also increments count)
+            assert!(validated_memory.get_access_count() >= 3);
+            
+            // Cleanup
+            core::destroy_memory(validated_ptr as *mut std::os::raw::c_void);
+        }
+    }
+
+    #[test]
+    fn test_handle_registry_diagnostics() {
+        let engine = Engine::new().expect("Failed to create engine");
+        let mut store = Store::new(&engine).expect("Failed to create store");
+        
+        // Get initial state
+        let (initial_handles, _initial_accesses) = core::get_memory_handle_diagnostics()
+            .expect("Failed to get initial diagnostics");
+        
+        // Create some memory handles
+        let memory1 = Memory::new(&mut store, 1).expect("Failed to create memory 1");
+        let memory2 = Memory::new(&mut store, 1).expect("Failed to create memory 2");
+        
+        let validated_ptr1 = core::create_validated_memory(memory1).expect("Failed to create validated memory 1");
+        let validated_ptr2 = core::create_validated_memory(memory2).expect("Failed to create validated memory 2");
+        
+        // Check handle count increased
+        let (current_handles, _current_accesses) = core::get_memory_handle_diagnostics()
+            .expect("Failed to get current diagnostics");
+        assert_eq!(current_handles, initial_handles + 2);
+        
+        // Access the memories to increase access counter
+        unsafe {
+            let _mem1 = core::get_memory_ref(validated_ptr1 as *const std::os::raw::c_void);
+            let _mem2 = core::get_memory_ref(validated_ptr2 as *const std::os::raw::c_void);
+        }
+        
+        let (_final_handles, final_accesses) = core::get_memory_handle_diagnostics()
+            .expect("Failed to get final diagnostics");
+        assert!(final_accesses >= 2); // At least 2 accesses
+        
+        // Cleanup
+        unsafe {
+            core::destroy_memory(validated_ptr1 as *mut std::os::raw::c_void);
+            core::destroy_memory(validated_ptr2 as *mut std::os::raw::c_void);
+        }
+        
+        // Check handle count decreased
+        let (cleanup_handles, _cleanup_accesses) = core::get_memory_handle_diagnostics()
+            .expect("Failed to get cleanup diagnostics");
+        assert_eq!(cleanup_handles, initial_handles);
+    }
+
+    #[test]
+    fn test_corrupted_handle_detection() {
+        let engine = Engine::new().expect("Failed to create engine");
+        let mut store = Store::new(&engine).expect("Failed to create store");
+        
+        let memory = Memory::new(&mut store, 1).expect("Failed to create memory");
+        let validated_ptr = core::create_validated_memory(memory).expect("Failed to create validated memory");
+        
+        unsafe {
+            // First validate it works
+            assert!(core::validate_memory_handle(validated_ptr as *const std::os::raw::c_void).is_ok());
+            
+            // Corrupt the magic number by directly manipulating memory
+            let validated_memory_ptr = validated_ptr as *mut u64; // First field is magic
+            *validated_memory_ptr = 0xBADCAFE; // Wrong magic
+            
+            // Now validation should fail due to corrupted magic
+            let result = core::validate_memory_handle(validated_ptr as *const std::os::raw::c_void);
+            assert!(result.is_err());
+            let error_msg = result.unwrap_err().to_string();
+            assert!(error_msg.contains("invalid magic number"));
+            
+            // Cleanup (this will also fail validation but still clean up)
+            core::destroy_memory(validated_ptr as *mut std::os::raw::c_void);
+        }
+    }
+
+    #[test]
+    fn test_thread_safety_basic() {
+        use std::thread;
+        
+        let engine = Engine::new().expect("Failed to create engine");
+        let mut store = Store::new(&engine).expect("Failed to create store");
+        
+        let memory = Memory::new(&mut store, 1).expect("Failed to create memory");
+        let validated_ptr = core::create_validated_memory(memory).expect("Failed to create validated memory");
+        
+        let ptr_copy = validated_ptr as usize;
+        
+        // Spawn threads to access the handle concurrently
+        let handles: Vec<_> = (0..4).map(|_| {
+            let ptr = ptr_copy;
+            thread::spawn(move || {
+                unsafe {
+                    for _ in 0..10 {
+                        let result = core::validate_memory_handle(ptr as *const std::os::raw::c_void);
+                        // We don't assert success here because the memory might be destroyed
+                        // by another thread, but validation should not crash
+                        let _ = result;
+                    }
+                }
+            })
+        }).collect();
+        
+        // Wait for all threads to complete
+        for handle in handles {
+            handle.join().expect("Thread panicked");
+        }
+        
+        // Cleanup
+        unsafe {
+            core::destroy_memory(validated_ptr as *mut std::os::raw::c_void);
+        }
     }
 }

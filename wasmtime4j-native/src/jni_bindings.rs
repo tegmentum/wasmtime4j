@@ -1800,23 +1800,38 @@ pub mod jni_table {
 pub mod jni_memory {
     use super::*;
     use crate::memory::core;
-    use crate::error::jni_utils;
+    use crate::error::{jni_utils, ffi_utils};
     use jni::objects::{JByteBuffer, JByteArray};
     
-    /// Get memory size in bytes (JNI version)
+    /// Get memory size in bytes (JNI version) with comprehensive validation
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeGetSize(
         env: JNIEnv,
         _class: JClass,
         memory_ptr: jlong,
     ) -> jlong {
+        // Enhanced validation with detailed error logging
+        if memory_ptr == 0 {
+            log::error!("JNI Memory.nativeGetSize called with null memory pointer");
+            ffi_utils::set_last_error(crate::error::WasmtimeError::InvalidParameter {
+                message: "Memory pointer cannot be null".to_string(),
+            });
+            return -1;
+        }
+        
         jni_utils::jni_try_default(&env, -1, || {
-            let memory = unsafe { core::get_memory_ref(memory_ptr as *const std::os::raw::c_void)? };
+            // Use enhanced validation from core module
+            let memory = unsafe { 
+                core::validate_memory_handle(memory_ptr as *const std::os::raw::c_void)?;
+                core::get_memory_ref(memory_ptr as *const std::os::raw::c_void)?
+            };
             
-            // For now, return the size from memory metadata since we don't have access to store
+            // Return the size from memory metadata since we don't have access to store
             // This is a limitation that needs to be resolved in the broader architecture
             let metadata = memory.get_metadata()?;
             let size = (metadata.current_pages * 65536) as usize; // 64KB per page
+            
+            log::debug!("Memory size requested: {} bytes ({} pages)", size, metadata.current_pages);
             Ok(size as jlong)
         })
     }
@@ -1937,15 +1952,124 @@ pub mod jni_memory {
         })
     }
 
-    /// Destroy memory (JNI version)
+    /// Destroy memory (JNI version) with comprehensive validation and cleanup
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeDestroyMemory(
         env: JNIEnv,
         _class: JClass,
         memory_ptr: jlong,
     ) {
+        // Enhanced validation with detailed error logging
+        if memory_ptr == 0 {
+            log::warn!("JNI Memory.nativeDestroyMemory called with null memory pointer");
+            return;
+        }
+        
+        log::debug!("Destroying memory handle: 0x{:x}", memory_ptr);
+        
         unsafe {
+            // Use the enhanced destroy_memory function which includes validation
             core::destroy_memory(memory_ptr as *mut std::os::raw::c_void);
+        }
+        
+        log::debug!("Memory handle destruction completed: 0x{:x}", memory_ptr);
+    }
+    
+    /// Get memory page count (JNI version) with comprehensive validation
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeGetPageCount(
+        env: JNIEnv,
+        _class: JClass,
+        memory_ptr: jlong,
+    ) -> jlong {
+        // Enhanced validation with detailed error logging
+        if memory_ptr == 0 {
+            log::error!("JNI Memory.nativeGetPageCount called with null memory pointer");
+            ffi_utils::set_last_error(crate::error::WasmtimeError::InvalidParameter {
+                message: "Memory pointer cannot be null".to_string(),
+            });
+            return -1;
+        }
+        
+        jni_utils::jni_try_default(&env, -1, || {
+            // Use enhanced validation from core module
+            let memory = unsafe { 
+                core::validate_memory_handle(memory_ptr as *const std::os::raw::c_void)?;
+                core::get_memory_ref(memory_ptr as *const std::os::raw::c_void)?
+            };
+            
+            // Return the page count from memory metadata
+            let metadata = memory.get_metadata()?;
+            
+            log::debug!("Memory page count requested: {} pages", metadata.current_pages);
+            Ok(metadata.current_pages as jlong)
+        })
+    }
+    
+    /// Validate memory handle and return diagnostics (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeValidateHandle(
+        env: JNIEnv,
+        _class: JClass,
+        memory_ptr: jlong,
+    ) -> jboolean {
+        if memory_ptr == 0 {
+            log::debug!("Memory handle validation failed: null pointer");
+            return 0; // false
+        }
+        
+        match unsafe { core::validate_memory_handle(memory_ptr as *const std::os::raw::c_void) } {
+            Ok(_) => {
+                log::debug!("Memory handle validation succeeded: 0x{:x}", memory_ptr);
+                1 // true
+            }
+            Err(e) => {
+                log::debug!("Memory handle validation failed: 0x{:x}, error: {}", memory_ptr, e);
+                0 // false
+            }
+        }
+    }
+    
+    /// Get memory handle diagnostics (JNI version) - returns access count
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeGetAccessCount(
+        env: JNIEnv,
+        _class: JClass,
+        memory_ptr: jlong,
+    ) -> jlong {
+        if memory_ptr == 0 {
+            return -1;
+        }
+        
+        jni_utils::jni_try_default(&env, -1, || {
+            unsafe {
+                core::validate_memory_handle(memory_ptr as *const std::os::raw::c_void)?;
+                
+                let validated_memory = &*(memory_ptr as *const core::ValidatedMemory);
+                Ok(validated_memory.get_access_count() as jlong)
+            }
+        })
+    }
+    
+    /// Get global memory handle diagnostics (JNI version) - returns handle count and total accesses
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeGetGlobalDiagnostics(
+        env: JNIEnv,
+        _class: JClass,
+    ) -> jbyteArray {
+        match core::get_memory_handle_diagnostics() {
+            Ok((handle_count, total_accesses)) => {
+                // Pack both values into a byte array: [handle_count: 4 bytes][total_accesses: 8 bytes]
+                let mut data = Vec::with_capacity(12);
+                data.extend_from_slice(&(handle_count as u32).to_le_bytes());
+                data.extend_from_slice(&total_accesses.to_le_bytes());
+                
+                match env.byte_array_from_slice(&data) {
+                    Ok(jarray) => jarray.into_raw(),
+                    Err(_) => std::ptr::null_mut(),
+                }
+            }
+            Err(_) => std::ptr::null_mut(),
         }
     }
 }
