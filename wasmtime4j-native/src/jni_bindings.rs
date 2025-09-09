@@ -7,7 +7,7 @@ use jni::JNIEnv;
 #[cfg(feature = "jni-bindings")]
 use jni::objects::{JClass, JByteArray, JString};
 #[cfg(feature = "jni-bindings")]
-use jni::sys::{jlong, jint, jboolean, jbyteArray};
+use jni::sys::{jlong, jint, jboolean, jbyteArray, jstring};
 
 // Instance is imported locally in each module that needs it
 
@@ -292,6 +292,77 @@ pub mod jni_instance {
         }) as jlong
     }
     
+    /// Get a function from an instance by name (JNI version) - PLACEHOLDER
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeGetFunction(
+        mut env: JNIEnv,
+        _class: JClass,
+        instance_ptr: jlong,
+        name: JString,
+    ) -> jlong {
+        // Placeholder implementation - return null pointer
+        0
+    }
+    
+    /// Get a memory from an instance by name (JNI version) - PLACEHOLDER
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeGetMemory(
+        mut env: JNIEnv,
+        _class: JClass,
+        instance_ptr: jlong,
+        name: JString,
+    ) -> jlong {
+        // Placeholder implementation - return null pointer
+        0
+    }
+    
+    /// Get a table from an instance by name (JNI version) - PLACEHOLDER
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeGetTable(
+        mut env: JNIEnv,
+        _class: JClass,
+        instance_ptr: jlong,
+        name: JString,
+    ) -> jlong {
+        // Placeholder implementation - return null pointer
+        0
+    }
+    
+    /// Get a global from an instance by name (JNI version) - PLACEHOLDER
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeGetGlobal(
+        mut env: JNIEnv,
+        _class: JClass,
+        instance_ptr: jlong,
+        name: JString,
+    ) -> jlong {
+        // Placeholder implementation - return null pointer
+        0
+    }
+    
+    /// Check if an instance has an export with the given name (JNI version) - PLACEHOLDER
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeHasExport(
+        mut env: JNIEnv,
+        _class: JClass,
+        instance_ptr: jlong,
+        name: JString,
+    ) -> jboolean {
+        // Placeholder implementation - return false
+        0
+    }
+    
+    /// Get all export names from an instance (JNI version) - PLACEHOLDER
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeGetExportNames(
+        env: JNIEnv,
+        _class: JClass,
+        instance_ptr: jlong,
+    ) -> jbyteArray {
+        // Placeholder implementation - return null
+        std::ptr::null_mut()
+    }
+
     /// Destroy an instance
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeDestroyInstance(
@@ -302,6 +373,171 @@ pub mod jni_instance {
         unsafe {
             core::destroy_instance(instance_ptr as *mut std::os::raw::c_void);
         }
+    }
+}
+
+/// JNI bindings for Function operations
+#[cfg(feature = "jni-bindings")]
+pub mod jni_function {
+    use super::*;
+    use crate::error::{jni_utils, ffi_utils, WasmtimeError};
+    use jni::objects::{JObjectArray, JObject};
+    use jni::sys::{jintArray, jlongArray, jfloatArray, jdoubleArray, jobjectArray};
+    use wasmtime::{ValType, FuncType};
+    
+    /// Get parameter types of a function (JNI version) - PLACEHOLDER
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeGetParameterTypes(
+        env: JNIEnv,
+        _class: JClass,
+        function_ptr: jlong,
+    ) -> jintArray {
+        // Placeholder implementation - return null
+        std::ptr::null_mut()
+    }
+    
+    /// Get return types of a function (JNI version) - PLACEHOLDER
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeGetReturnTypes(
+        env: JNIEnv,
+        _class: JClass,
+        function_ptr: jlong,
+    ) -> jintArray {
+        // Placeholder implementation - return null
+        std::ptr::null_mut()
+    }
+    
+    /// Call a function with generic parameters (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCall(
+        env: JNIEnv,
+        _class: JClass,
+        function_ptr: jlong,
+        params: jobjectArray,
+    ) -> jobjectArray {
+        // For now, return null - this requires complex parameter conversion
+        std::ptr::null_mut()
+    }
+    
+    /// Call a function with multiple return values (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallMultiValue(
+        env: JNIEnv,
+        _class: JClass,
+        function_ptr: jlong,
+        params: jobjectArray,
+    ) -> jobjectArray {
+        // For now, return null - this requires complex parameter conversion
+        std::ptr::null_mut()
+    }
+    
+    /// Call a function with int parameters (JNI version) - PLACEHOLDER
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallInt(
+        env: JNIEnv,
+        _class: JClass,
+        function_ptr: jlong,
+        params: jintArray,
+    ) -> jint {
+        // Placeholder implementation - return 0
+        0
+    }
+    
+    /// Call a function with long parameters (JNI version) - PLACEHOLDER
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallLong(
+        env: JNIEnv,
+        _class: JClass,
+        function_ptr: jlong,
+        params: jlongArray,
+    ) -> jlong {
+        // Placeholder implementation - return 0
+        0
+    }
+    
+    /// Call a function with float parameters (JNI version) - PLACEHOLDER
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallFloat(
+        env: JNIEnv,
+        _class: JClass,
+        function_ptr: jlong,
+        params: jfloatArray,
+    ) -> f32 {
+        // Placeholder implementation - return 0.0
+        0.0
+    }
+    
+    /// Call a function with double parameters (JNI version) - PLACEHOLDER
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallDouble(
+        env: JNIEnv,
+        _class: JClass,
+        function_ptr: jlong,
+        params: jdoubleArray,
+    ) -> f64 {
+        // Placeholder implementation - return 0.0
+        0.0
+    }
+    
+    /// Destroy a function (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeDestroyFunction(
+        env: JNIEnv,
+        _class: JClass,
+        function_ptr: jlong,
+    ) {
+        if function_ptr != 0 {
+            unsafe {
+                let _ = Box::from_raw(function_ptr as *mut wasmtime::Func);
+            }
+        }
+    }
+}
+
+/// JNI bindings for NativeMethodBindings validation
+#[cfg(feature = "jni-bindings")]
+pub mod jni_native_method_bindings {
+    use super::*;
+    use std::ffi::CString;
+    
+    /// Get the Wasmtime version string (JNI version) - PLACEHOLDER
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_nativelib_NativeMethodBindings_nativeGetWasmtimeVersion(
+        env: JNIEnv,
+        _class: JClass,
+    ) -> jstring {
+        // Simple placeholder implementation - just return a hardcoded version string
+        // This will be improved later with proper JNI string creation
+        std::ptr::null_mut()
+    }
+    
+    /// Create a test runtime for validation (JNI version) - PLACEHOLDER
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_nativelib_NativeMethodBindings_nativeCreateRuntime(
+        env: JNIEnv,
+        _class: JClass,
+    ) -> jlong {
+        // Placeholder implementation - return a non-zero value to indicate "success"
+        1
+    }
+    
+    /// Destroy a test runtime (JNI version) - PLACEHOLDER
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_nativelib_NativeMethodBindings_nativeDestroyRuntime(
+        env: JNIEnv,
+        _class: JClass,
+        runtime_handle: jlong,
+    ) {
+        // Placeholder implementation - do nothing for now
+    }
+    
+    /// Initialize the native library (JNI version) - PLACEHOLDER
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_nativelib_NativeMethodBindings_nativeInitialize(
+        env: JNIEnv,
+        _class: JClass,
+    ) {
+        // Placeholder implementation - do nothing for now
     }
 }
 
@@ -1505,6 +1741,150 @@ pub mod jni_global {
         })() {
             Ok(result) => result,
             Err(_) => JString::default(), // Return empty string on error
+        }
+    }
+
+    /// Get the value type of a global variable (JNI version) - PLACEHOLDER
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetValueType(
+        env: JNIEnv,
+        _class: JClass,
+        global_ptr: jlong,
+    ) -> jint {
+        // Return I32 type as placeholder until proper implementation
+        0
+    }
+    
+    /// Check if a global variable is mutable (JNI version) - PLACEHOLDER
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeIsMutable(
+        env: JNIEnv,
+        _class: JClass,
+        global_ptr: jlong,
+    ) -> jboolean {
+        // Return false as placeholder
+        0
+    }
+    
+    /// Get the value of a global variable as Object (JNI version) - PLACEHOLDER
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetValue(
+        env: JNIEnv,
+        _class: JClass,
+        global_ptr: jlong,
+    ) -> jlong {
+        // Return 0 as placeholder
+        0
+    }
+    
+    /// Get the int value of a global variable (JNI version) - PLACEHOLDER
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetIntValue(
+        env: JNIEnv,
+        _class: JClass,
+        global_ptr: jlong,
+    ) -> jint {
+        // Return 0 as placeholder
+        0
+    }
+    
+    /// Get the long value of a global variable (JNI version) - PLACEHOLDER
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetLongValue(
+        env: JNIEnv,
+        _class: JClass,
+        global_ptr: jlong,
+    ) -> jlong {
+        // Return 0 as placeholder
+        0
+    }
+    
+    /// Get the float value of a global variable (JNI version) - PLACEHOLDER
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetFloatValue(
+        env: JNIEnv,
+        _class: JClass,
+        global_ptr: jlong,
+    ) -> f32 {
+        // Return 0.0 as placeholder
+        0.0
+    }
+    
+    /// Get the double value of a global variable (JNI version) - PLACEHOLDER
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetDoubleValue(
+        env: JNIEnv,
+        _class: JClass,
+        global_ptr: jlong,
+    ) -> f64 {
+        // Return 0.0 as placeholder
+        0.0
+    }
+    
+    /// Set the value of a global variable from Object (JNI version) - PLACEHOLDER
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeSetValue(
+        env: JNIEnv,
+        _class: JClass,
+        global_ptr: jlong,
+        value: jlong,
+    ) {
+        // Placeholder implementation
+    }
+    
+    /// Set the int value of a global variable (JNI version) - PLACEHOLDER
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeSetIntValue(
+        env: JNIEnv,
+        _class: JClass,
+        global_ptr: jlong,
+        value: jint,
+    ) {
+        // Placeholder implementation
+    }
+    
+    /// Set the long value of a global variable (JNI version) - PLACEHOLDER
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeSetLongValue(
+        env: JNIEnv,
+        _class: JClass,
+        global_ptr: jlong,
+        value: jlong,
+    ) {
+        // Placeholder implementation
+    }
+    
+    /// Set the float value of a global variable (JNI version) - PLACEHOLDER
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeSetFloatValue(
+        env: JNIEnv,
+        _class: JClass,
+        global_ptr: jlong,
+        value: f32,
+    ) {
+        // Placeholder implementation
+    }
+    
+    /// Set the double value of a global variable (JNI version) - PLACEHOLDER
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeSetDoubleValue(
+        env: JNIEnv,
+        _class: JClass,
+        global_ptr: jlong,
+        value: f64,
+    ) {
+        // Placeholder implementation
+    }
+    
+    /// Destroy a global variable (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeDestroyGlobal(
+        env: JNIEnv,
+        _class: JClass,
+        global_ptr: jlong,
+    ) {
+        unsafe {
+            core::destroy_global(global_ptr as *mut std::os::raw::c_void);
         }
     }
 
