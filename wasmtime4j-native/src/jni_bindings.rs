@@ -1775,11 +1775,7 @@ pub mod jni_global {
                 ValType::F32 => "f32",
                 ValType::F64 => "f64",
                 ValType::V128 => "v128",
-                ValType::Ref(ref_type) => match ref_type {
-                    wasmtime::RefType::FUNCREF => "funcref",
-                    wasmtime::RefType::EXTERNREF => "externref",
-                    _ => "anyref",
-                },
+                ValType::Ref(_) => "ref", // Simplified: return generic "ref" for all reference types
             };
             
             Ok(env.new_string(type_string)
@@ -1999,7 +1995,7 @@ pub mod jni_global {
                 });
             }
             
-            if metadata.value_type != ValType::I32 {
+            if !val_type_matches(&metadata.value_type, &ValType::I32) {
                 return Err(WasmtimeError::Type {
                     message: format!("Global is not I32 type, got {:?}", metadata.value_type),
                 });
@@ -2036,7 +2032,7 @@ pub mod jni_global {
                 });
             }
             
-            if metadata.value_type != ValType::I64 {
+            if !val_type_matches(&metadata.value_type, &ValType::I64) {
                 return Err(WasmtimeError::Type {
                     message: format!("Global is not I64 type, got {:?}", metadata.value_type),
                 });
@@ -2073,7 +2069,7 @@ pub mod jni_global {
                 });
             }
             
-            if metadata.value_type != ValType::F32 {
+            if !val_type_matches(&metadata.value_type, &ValType::F32) {
                 return Err(WasmtimeError::Type {
                     message: format!("Global is not F32 type, got {:?}", metadata.value_type),
                 });
@@ -2110,7 +2106,7 @@ pub mod jni_global {
                 });
             }
             
-            if metadata.value_type != ValType::F64 {
+            if !val_type_matches(&metadata.value_type, &ValType::F64) {
                 return Err(WasmtimeError::Type {
                     message: format!("Global is not F64 type, got {:?}", metadata.value_type),
                 });
