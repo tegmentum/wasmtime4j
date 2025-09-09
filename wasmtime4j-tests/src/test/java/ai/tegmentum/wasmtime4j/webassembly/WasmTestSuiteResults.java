@@ -217,7 +217,6 @@ public final class WasmTestSuiteResults {
     return true;
   }
 
-
   /**
    * Gets tests that have inconsistent results between runtimes.
    *

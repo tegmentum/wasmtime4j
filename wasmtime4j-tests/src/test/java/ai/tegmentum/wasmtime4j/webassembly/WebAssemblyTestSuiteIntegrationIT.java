@@ -383,7 +383,8 @@ public class WebAssemblyTestSuiteIntegrationIT {
     return customTests.stream()
         .filter(
             testCase ->
-                testCase.getTestName().contains("performance") || testCase.getTestName().contains("stress"))
+                testCase.getTestName().contains("performance")
+                    || testCase.getTestName().contains("stress"))
         .collect(java.util.stream.Collectors.toList());
   }
 

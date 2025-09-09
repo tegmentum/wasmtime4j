@@ -77,7 +77,8 @@ public class InstanceNativeFunctionTest extends BaseNativeFunctionTest {
   @EnumSource(RuntimeType.class)
   @Order(2)
   @DisplayName("Should create instances across all runtime types")
-  void shouldCreateInstancesAcrossAllRuntimeTypes(final RuntimeType runtimeType) throws WasmException {
+  void shouldCreateInstancesAcrossAllRuntimeTypes(final RuntimeType runtimeType)
+      throws WasmException {
     if (runtimeType == RuntimeType.PANAMA && !TestUtils.isPanamaAvailable()) {
       LOGGER.info("Skipping Panama test - not available on this platform");
       return;
@@ -434,7 +435,7 @@ public class InstanceNativeFunctionTest extends BaseNativeFunctionTest {
       final var lifecycleData = testUtils.createResourceLifecycleTest();
 
       try (final var engine = runtime.createEngine();
-           final var module = engine.compileModule(moduleBytes)) {
+          final var module = engine.compileModule(moduleBytes)) {
 
         for (final var testCase : lifecycleData.getTestCases()) {
           LOGGER.info("Testing instance lifecycle pattern: " + testCase.getName());
@@ -512,11 +513,13 @@ public class InstanceNativeFunctionTest extends BaseNativeFunctionTest {
               LOGGER.info("Instance no-close test result: " + result.isLeakDetected());
               break;
             default:
-              throw new IllegalArgumentException("Unsupported lifecycle pattern: " + testCase.getPattern());
+              throw new IllegalArgumentException(
+                  "Unsupported lifecycle pattern: " + testCase.getPattern());
           }
         }
       } catch (final Exception e) {
-        LOGGER.warning("Exception during instance resource lifecycle patterns test: " + e.getMessage());
+        LOGGER.warning(
+            "Exception during instance resource lifecycle patterns test: " + e.getMessage());
         throw new RuntimeException("Instance resource lifecycle patterns test failed", e);
       }
     }
