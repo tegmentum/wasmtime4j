@@ -31,6 +31,9 @@
         
         <!-- Skip quality checks for benchmark module by default -->
         <skipQuality>true</skipQuality>
+        <checkstyle.skip>true</checkstyle.skip>
+        <spotless.check.skip>true</spotless.check.skip>
+        <spotbugs.skip>true</spotbugs.skip>
     </properties>
 
     <dependencies>

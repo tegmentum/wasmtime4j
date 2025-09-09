@@ -178,9 +178,7 @@ class JniResourceCacheTest {
     @DisplayName("Should reject null factory")
     void shouldRejectNullFactory() {
       assertThrows(
-          JniValidationException.class,
-          () -> cache.get("key", null),
-          "Should reject null factory");
+          JniValidationException.class, () -> cache.get("key", null), "Should reject null factory");
     }
 
     @Test

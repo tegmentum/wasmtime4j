@@ -52,9 +52,7 @@ public final class NativeCodeCoverageCollector {
   private final List<String> coverageCommands = new ArrayList<>();
   private final Path coverageOutputDir;
 
-  /**
-   * Constructs a new NativeCodeCoverageCollector with timestamp-based output directory.
-   */
+  /** Constructs a new NativeCodeCoverageCollector with timestamp-based output directory. */
   public NativeCodeCoverageCollector() {
     // Initialize coverage output directory
     final String timestamp =

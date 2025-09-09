@@ -358,7 +358,8 @@ public class EngineNativeFunctionTest extends BaseNativeFunctionTest {
             LOGGER.info("No-close test result: " + result.isLeakDetected());
             break;
           default:
-            throw new IllegalArgumentException("Unsupported lifecycle pattern: " + testCase.getPattern());
+            throw new IllegalArgumentException(
+                "Unsupported lifecycle pattern: " + testCase.getPattern());
         }
       }
     }

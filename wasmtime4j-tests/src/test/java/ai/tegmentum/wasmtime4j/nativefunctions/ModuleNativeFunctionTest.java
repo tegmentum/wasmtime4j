@@ -84,7 +84,8 @@ public class ModuleNativeFunctionTest extends BaseNativeFunctionTest {
   @EnumSource(RuntimeType.class)
   @Order(2)
   @DisplayName("Should compile modules across all runtime types")
-  void shouldCompileModulesAcrossAllRuntimeTypes(final RuntimeType runtimeType) throws WasmException {
+  void shouldCompileModulesAcrossAllRuntimeTypes(final RuntimeType runtimeType)
+      throws WasmException {
     if (runtimeType == RuntimeType.PANAMA && !TestUtils.isPanamaAvailable()) {
       LOGGER.info("Skipping Panama test - not available on this platform");
       return;
@@ -447,7 +448,8 @@ public class ModuleNativeFunctionTest extends BaseNativeFunctionTest {
               LOGGER.info("Module no-close test result: " + result.isLeakDetected());
               break;
             default:
-              throw new IllegalArgumentException("Unsupported lifecycle pattern: " + testCase.getPattern());
+              throw new IllegalArgumentException(
+                  "Unsupported lifecycle pattern: " + testCase.getPattern());
           }
         }
       }
