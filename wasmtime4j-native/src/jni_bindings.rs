@@ -295,7 +295,7 @@ pub mod jni_instance {
     /// Get a function from an instance by name (JNI version) - PLACEHOLDER
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeGetFunction(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         instance_ptr: jlong,
         name: JString,
@@ -307,7 +307,7 @@ pub mod jni_instance {
     /// Get a memory from an instance by name (JNI version) - PLACEHOLDER
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeGetMemory(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         instance_ptr: jlong,
         name: JString,
@@ -319,7 +319,7 @@ pub mod jni_instance {
     /// Get a table from an instance by name (JNI version) - PLACEHOLDER
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeGetTable(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         instance_ptr: jlong,
         name: JString,
@@ -331,7 +331,7 @@ pub mod jni_instance {
     /// Get a global from an instance by name (JNI version) - PLACEHOLDER
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeGetGlobal(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         instance_ptr: jlong,
         name: JString,
@@ -343,7 +343,7 @@ pub mod jni_instance {
     /// Check if an instance has an export with the given name (JNI version) - PLACEHOLDER
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeHasExport(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         instance_ptr: jlong,
         name: JString,
@@ -380,10 +380,10 @@ pub mod jni_instance {
 #[cfg(feature = "jni-bindings")]
 pub mod jni_function {
     use super::*;
-    use crate::error::{jni_utils, ffi_utils, WasmtimeError};
-    use jni::objects::{JObjectArray, JObject};
+    
+    
     use jni::sys::{jintArray, jlongArray, jfloatArray, jdoubleArray, jobjectArray};
-    use wasmtime::{ValType, FuncType};
+    
     
     /// Get parameter types of a function (JNI version) - PLACEHOLDER
     #[no_mangle]
@@ -498,7 +498,7 @@ pub mod jni_function {
 #[cfg(feature = "jni-bindings")]
 pub mod jni_native_method_bindings {
     use super::*;
-    use std::ffi::CString;
+    
     
     /// Get the Wasmtime version string (JNI version) - PLACEHOLDER
     #[no_mangle]
