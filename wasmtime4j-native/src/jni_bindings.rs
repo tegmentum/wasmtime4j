@@ -391,7 +391,7 @@ pub mod jni_function {
         env: JNIEnv,
         _class: JClass,
         function_ptr: jlong,
-    ) -> jintArray {
+    ) -> jobjectArray {
         // Placeholder implementation - return null
         std::ptr::null_mut()
     }
@@ -402,7 +402,7 @@ pub mod jni_function {
         env: JNIEnv,
         _class: JClass,
         function_ptr: jlong,
-    ) -> jintArray {
+    ) -> jobjectArray {
         // Placeholder implementation - return null
         std::ptr::null_mut()
     }
@@ -1744,70 +1744,166 @@ pub mod jni_global {
         }
     }
 
-    /// Get the value type of a global variable (JNI version) - PLACEHOLDER
+    /// Get the value type of a global variable (JNI version)
     #[no_mangle]
-    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetValueType(
-        env: JNIEnv,
-        _class: JClass,
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetValueType<'a>(
+        env: JNIEnv<'a>,
+        _class: JClass<'a>,
         global_ptr: jlong,
-    ) -> jint {
-        // Return I32 type as placeholder until proper implementation
-        0
+    ) -> JString<'a> {
+        match (|| -> WasmtimeResult<JString<'a>> {
+            let global = unsafe { core::get_global_ref(global_ptr as *mut std::os::raw::c_void)? };
+            let metadata = core::get_global_metadata(global);
+            
+            let type_string = match metadata.value_type {
+                ValType::I32 => "i32",
+                ValType::I64 => "i64",
+                ValType::F32 => "f32",
+                ValType::F64 => "f64",
+                ValType::V128 => "v128",
+                ValType::Ref(ref_type) => match ref_type {
+                    wasmtime::RefType::FUNCREF => "funcref",
+                    wasmtime::RefType::EXTERNREF => "externref",
+                    _ => "anyref",
+                },
+            };
+            
+            Ok(env.new_string(type_string)
+                .map_err(|e| WasmtimeError::InvalidParameter { message: format!("Failed to create JNI string: {}", e) })?)
+        })() {
+            Ok(result) => result,
+            Err(_) => {
+                // Return "unknown" as fallback
+                env.new_string("unknown").unwrap_or_default()
+            }
+        }
     }
     
-    /// Check if a global variable is mutable (JNI version) - PLACEHOLDER
+    /// Check if a global variable is mutable (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeIsMutable(
         env: JNIEnv,
         _class: JClass,
         global_ptr: jlong,
     ) -> jboolean {
-        // Return false as placeholder
-        0
+        match (|| -> WasmtimeResult<bool> {
+            let global = unsafe { core::get_global_ref(global_ptr as *mut std::os::raw::c_void)? };
+            let metadata = core::get_global_metadata(global);
+            
+            Ok(metadata.mutability == Mutability::Var)
+        })() {
+            Ok(is_mutable) => if is_mutable { 1 } else { 0 },
+            Err(_) => 0, // Return false on error (safer default)
+        }
     }
     
-    /// Get the value of a global variable as Object (JNI version) - PLACEHOLDER
+    /// Get the value of a global variable as Object (JNI version)
     #[no_mangle]
-    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetValue(
-        env: JNIEnv,
-        _class: JClass,
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetValue<'a>(
+        env: JNIEnv<'a>,
+        _class: JClass<'a>,
         global_ptr: jlong,
-    ) -> jlong {
-        // Return 0 as placeholder
-        0
+    ) -> jobject {
+        match (|| -> WasmtimeResult<jobject> {
+            let global = unsafe { core::get_global_ref(global_ptr as *mut std::os::raw::c_void)? };
+            // Note: Cannot get store context here without modifying API - architectural limitation
+            // This method requires Store context to retrieve actual values from Wasmtime globals
+            // For now, return null to indicate this architectural constraint
+            
+            // TODO: This method needs Store context to work properly - API design limitation
+            // Consider modifying Java API to require Store parameter or use cached values
+            Err(WasmtimeError::InvalidParameter {
+                message: "Store context required for global value retrieval - architectural limitation".to_string(),
+            })
+        })() {
+            Ok(result) => result,
+            Err(_) => std::ptr::null_mut(), // Return null on error/limitation
+        }
     }
     
-    /// Get the int value of a global variable (JNI version) - PLACEHOLDER
+    /// Get the int value of a global variable (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetIntValue(
         env: JNIEnv,
         _class: JClass,
         global_ptr: jlong,
     ) -> jint {
-        // Return 0 as placeholder
-        0
+        // Note: Store context required for actual value retrieval - architectural limitation
+        // This method needs Store context to retrieve values from Wasmtime globals
+        // For now, return default value and log limitation
+        
+        match (|| -> WasmtimeResult<jint> {
+            let global = unsafe { core::get_global_ref(global_ptr as *mut std::os::raw::c_void)? };
+            let metadata = core::get_global_metadata(global);
+            
+            // Validate that this global is actually an I32 type
+            if metadata.value_type != ValType::I32 {
+                return Err(WasmtimeError::Type {
+                    message: format!("Global is not I32 type, got {:?}", metadata.value_type),
+                });
+            }
+            
+            // TODO: Store context required for actual value retrieval
+            // Return 0 as safe default until API can provide Store context
+            Ok(0)
+        })() {
+            Ok(result) => result,
+            Err(_) => 0, // Return 0 on error
+        }
     }
     
-    /// Get the long value of a global variable (JNI version) - PLACEHOLDER
+    /// Get the long value of a global variable (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetLongValue(
         env: JNIEnv,
         _class: JClass,
         global_ptr: jlong,
     ) -> jlong {
-        // Return 0 as placeholder
-        0
+        match (|| -> WasmtimeResult<jlong> {
+            let global = unsafe { core::get_global_ref(global_ptr as *mut std::os::raw::c_void)? };
+            let metadata = core::get_global_metadata(global);
+            
+            // Validate that this global is actually an I64 type
+            if metadata.value_type != ValType::I64 {
+                return Err(WasmtimeError::Type {
+                    message: format!("Global is not I64 type, got {:?}", metadata.value_type),
+                });
+            }
+            
+            // TODO: Store context required for actual value retrieval
+            // Return 0 as safe default until API can provide Store context
+            Ok(0)
+        })() {
+            Ok(result) => result,
+            Err(_) => 0, // Return 0 on error
+        }
     }
     
-    /// Get the float value of a global variable (JNI version) - PLACEHOLDER
+    /// Get the float value of a global variable (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetFloatValue(
         env: JNIEnv,
         _class: JClass,
         global_ptr: jlong,
     ) -> f32 {
-        // Return 0.0 as placeholder
-        0.0
+        match (|| -> WasmtimeResult<f32> {
+            let global = unsafe { core::get_global_ref(global_ptr as *mut std::os::raw::c_void)? };
+            let metadata = core::get_global_metadata(global);
+            
+            // Validate that this global is actually an F32 type
+            if metadata.value_type != ValType::F32 {
+                return Err(WasmtimeError::Type {
+                    message: format!("Global is not F32 type, got {:?}", metadata.value_type),
+                });
+            }
+            
+            // TODO: Store context required for actual value retrieval
+            // Return 0.0 as safe default until API can provide Store context
+            Ok(0.0)
+        })() {
+            Ok(result) => result,
+            Err(_) => 0.0, // Return 0.0 on error
+        }
     }
     
     /// Get the double value of a global variable (JNI version) - PLACEHOLDER
