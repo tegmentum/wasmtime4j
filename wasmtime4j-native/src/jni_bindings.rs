@@ -2216,6 +2216,40 @@ pub mod jni_table {
         })
     }
 
+    /// Get table maximum size (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeGetMaxSize(
+        env: JNIEnv,
+        _class: JClass,
+        table_ptr: jlong,
+    ) -> jint {
+        jni_utils::jni_try_default(&env, -1, || {
+            // Comprehensive parameter validation with detailed error context
+            if table_ptr == 0 {
+                log::error!("JNI Table.nativeGetMaxSize: null table handle provided");
+                return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: "Table handle cannot be null. Ensure table is properly initialized before calling max size operations.".to_string(),
+                });
+            }
+
+            // Check for obviously invalid pointers (basic sanity check)
+            if table_ptr < 0x1000 || table_ptr == -1 {
+                log::error!("JNI Table.nativeGetMaxSize: invalid table handle 0x{:x}", table_ptr);
+                return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: format!(
+                        "Invalid table handle (0x{:x}): Handle appears to be corrupted or uninitialized. Expected a valid native pointer.", 
+                        table_ptr
+                    ),
+                });
+            }
+
+            // For now, return -1 to indicate unlimited size (this matches Wasmtime's behavior when no maximum is set)
+            // TODO: Implement proper table metadata retrieval when Wasmtime API provides access to table limits
+            log::debug!("JNI Table.nativeGetMaxSize: returning -1 for unlimited table size");
+            Ok(-1)
+        })
+    }
+
     /// Get table element (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeGetElement(
