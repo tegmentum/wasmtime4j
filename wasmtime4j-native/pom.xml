@@ -32,7 +32,7 @@
         <native.platform>${native.host.platform}</native.platform>
         
         <!-- Cargo build configuration -->
-        <cargo.build.mode>release</cargo.build.mode>
+        <cargo.build.mode>debug</cargo.build.mode>
         <cargo.features>default</cargo.features>
     </properties>
 
@@ -462,7 +462,7 @@
         <profile>
             <id>native-release</id>
             <properties>
-                <cargo.build.mode>release</cargo.build.mode>
+                <cargo.build.mode>debug</cargo.build.mode>
                 <cargo.features>default</cargo.features>
             </properties>
             <build>
