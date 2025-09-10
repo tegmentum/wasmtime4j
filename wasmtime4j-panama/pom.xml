@@ -98,6 +98,7 @@
                     <argLine>
                         --enable-preview
                         --enable-native-access=ALL-UNNAMED
+                        -XX:+EnableDynamicAgentLoading
                     </argLine>
                     <systemPropertyVariables>
                         <java.util.logging.config.file>src/test/resources/logging.properties</java.util.logging.config.file>
