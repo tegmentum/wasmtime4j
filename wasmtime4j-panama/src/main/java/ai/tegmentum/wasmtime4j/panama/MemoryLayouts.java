@@ -66,6 +66,7 @@ public final class MemoryLayouts {
   public static final StructLayout WASMTIME_ERROR =
       MemoryLayout.structLayout(
               WASM_ERROR_CODE.withName("code"),
+              MemoryLayout.paddingLayout(4), // Padding to align pointer to 8-byte boundary
               C_POINTER.withName("message"),
               C_SIZE_T.withName("message_len"))
           .withName("wasmtime_error_t");
@@ -219,11 +220,8 @@ public final class MemoryLayouts {
       MemoryLayout.structLayout(WASM_VAL_VEC.withName("params"), WASM_VAL_VEC.withName("results"))
           .withName("wasm_functype_t");
 
-  // VarHandles for WASM_FUNCTYPE
-  public static final VarHandle WASM_FUNCTYPE_PARAMS =
-      WASM_FUNCTYPE.varHandle(MemoryLayout.PathElement.groupElement("params"));
-  public static final VarHandle WASM_FUNCTYPE_RESULTS =
-      WASM_FUNCTYPE.varHandle(MemoryLayout.PathElement.groupElement("results"));
+  // Note: WASM_FUNCTYPE contains nested structs, so we access them via MemorySegment slicing
+  // rather than VarHandles. VarHandles are only for primitive value layouts.
 
   /**
    * Layout for WebAssembly global type.
@@ -286,9 +284,7 @@ public final class MemoryLayouts {
   public static final StructLayout WASM_MEMORYTYPE =
       MemoryLayout.structLayout(WASM_LIMITS.withName("limits")).withName("wasm_memorytype_t");
 
-  // VarHandles for WASM_MEMORYTYPE
-  public static final VarHandle WASM_MEMORYTYPE_LIMITS =
-      WASM_MEMORYTYPE.varHandle(MemoryLayout.PathElement.groupElement("limits"));
+  // Note: WASM_MEMORYTYPE contains nested struct (WASM_LIMITS), access via MemorySegment slicing
 
   /**
    * Layout for WebAssembly table type.
@@ -310,8 +306,7 @@ public final class MemoryLayouts {
   // VarHandles for WASM_TABLETYPE
   public static final VarHandle WASM_TABLETYPE_ELEMENT =
       WASM_TABLETYPE.varHandle(MemoryLayout.PathElement.groupElement("element"));
-  public static final VarHandle WASM_TABLETYPE_LIMITS =
-      WASM_TABLETYPE.varHandle(MemoryLayout.PathElement.groupElement("limits"));
+  // Note: WASM_TABLETYPE limits field contains nested struct (WASM_LIMITS), access via MemorySegment slicing
 
   /**
    * Layout for WebAssembly import type.
@@ -332,10 +327,7 @@ public final class MemoryLayouts {
           .withName("wasm_importtype_t");
 
   // VarHandles for WASM_IMPORTTYPE
-  public static final VarHandle WASM_IMPORTTYPE_MODULE =
-      WASM_IMPORTTYPE.varHandle(MemoryLayout.PathElement.groupElement("module"));
-  public static final VarHandle WASM_IMPORTTYPE_NAME =
-      WASM_IMPORTTYPE.varHandle(MemoryLayout.PathElement.groupElement("name"));
+  // Note: module and name fields contain nested structs (WASM_BYTE_VEC), access via MemorySegment slicing
   public static final VarHandle WASM_IMPORTTYPE_TYPE =
       WASM_IMPORTTYPE.varHandle(MemoryLayout.PathElement.groupElement("type"));
 
@@ -353,9 +345,8 @@ public final class MemoryLayouts {
       MemoryLayout.structLayout(WASM_BYTE_VEC.withName("name"), C_POINTER.withName("type"))
           .withName("wasm_exporttype_t");
 
-  // VarHandles for WASM_EXPORTTYPE
-  public static final VarHandle WASM_EXPORTTYPE_NAME =
-      WASM_EXPORTTYPE.varHandle(MemoryLayout.PathElement.groupElement("name"));
+  // VarHandles for WASM_EXPORTTYPE  
+  // Note: name field contains nested struct (WASM_BYTE_VEC), access via MemorySegment slicing
   public static final VarHandle WASM_EXPORTTYPE_TYPE =
       WASM_EXPORTTYPE.varHandle(MemoryLayout.PathElement.groupElement("type"));
 
