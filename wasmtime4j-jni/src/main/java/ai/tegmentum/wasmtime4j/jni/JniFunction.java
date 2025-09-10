@@ -183,7 +183,7 @@ public final class JniFunction extends JniResource implements WasmFunction {
    */
   @Override
   public WasmValue[] call(final WasmValue... params) throws WasmException {
-    JniValidation.requireNonNull(params, "params");
+    JniValidation.requireNonNull(params, "parameters");
     ensureNotClosed();
 
     // Start performance monitoring
