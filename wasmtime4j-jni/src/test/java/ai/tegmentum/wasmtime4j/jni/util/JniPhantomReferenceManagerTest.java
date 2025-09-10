@@ -289,7 +289,8 @@ class JniPhantomReferenceManagerTest {
                   try {
                     for (int i = 0; i < objectsPerThread; i++) {
                       final Object obj = new Object();
-                      final long handle = (long) threadIndex * 1000 + i;
+                      // Add 1 to ensure handles are always positive
+                      final long handle = (long) threadIndex * 1000 + i + 1;
                       manager.register(obj, handle, "concurrentCleanup" + threadIndex + "_" + i);
                     }
                   } finally {

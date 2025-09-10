@@ -268,7 +268,7 @@ public final class JniResourceCache<K, V> implements AutoCloseable {
    * implementation could be added if needed.
    */
   private void evictOldestEntries() {
-    final int entriesToEvict = maxSize / 4; // Remove 25% of entries
+    final int entriesToEvict = Math.max(1, maxSize / 4); // Remove at least 1 entry, or 25% of entries
     int evicted = 0;
 
     for (final K key : cache.keySet()) {

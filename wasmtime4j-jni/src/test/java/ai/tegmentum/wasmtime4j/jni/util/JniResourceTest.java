@@ -243,20 +243,25 @@ class JniResourceTest {
 
   @Test
   void testResourceCreationWithDifferentHandleValues() {
-    // Test with various handle values
-    final long[] testHandles = {1L, -1L, Long.MAX_VALUE, Long.MIN_VALUE, 0xDEADBEEFL};
+    // Test with valid positive handle values
+    final long[] validHandles = {1L, Long.MAX_VALUE, 0xDEADBEEFL};
 
-    for (long handle : testHandles) {
-      if (handle == 0L) {
-        continue; // Skip invalid handle
-      }
-
+    for (long handle : validHandles) {
       final TestResource resource = new TestResource(handle, "Test");
       assertThat(resource.getNativeHandle()).isEqualTo(handle);
       assertFalse(resource.isClosed());
 
       resource.close();
       assertTrue(resource.isClosed());
+    }
+    
+    // Test that invalid handles (negative and zero) are properly rejected
+    final long[] invalidHandles = {0L, -1L, Long.MIN_VALUE};
+    
+    for (long handle : invalidHandles) {
+      assertThrows(JniValidationException.class, 
+          () -> new TestResource(handle, "Test"),
+          "Should reject invalid handle: " + handle);
     }
   }
 }
