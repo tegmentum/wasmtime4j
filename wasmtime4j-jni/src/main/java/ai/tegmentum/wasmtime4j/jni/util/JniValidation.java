@@ -196,6 +196,12 @@ public final class JniValidation {
           parameterName,
           handle);
     }
+    if (handle < 0L) {
+      throw new JniValidationException(
+          "Parameter '" + parameterName + "' is an invalid native handle (negative value)",
+          parameterName,
+          handle);
+    }
   }
 
   /**
