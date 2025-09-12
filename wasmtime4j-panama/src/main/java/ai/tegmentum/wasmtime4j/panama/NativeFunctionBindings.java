@@ -52,20 +52,32 @@ public final class NativeFunctionBindings {
 
   /** Private constructor for singleton pattern. */
   private NativeFunctionBindings() {
-    this.libraryLoader = NativeLibraryLoader.getInstance();
-    this.methodHandleCache = new MethodHandleCache();
-    this.functionBindings = new ConcurrentHashMap<>();
+    try {
+      this.libraryLoader = NativeLibraryLoader.getInstance();
+      this.methodHandleCache = new MethodHandleCache();
+      this.functionBindings = new ConcurrentHashMap<>();
 
-    initializeFunctionBindings();
-    this.initialized = true;
+      // Verify library loader is ready before proceeding
+      if (!this.libraryLoader.isLoaded()) {
+        throw new IllegalStateException("Native library loader is not properly initialized");
+      }
 
-    LOGGER.fine("Initialized NativeFunctionBindings");
+      initializeFunctionBindings();
+      this.initialized = true;
+
+      LOGGER.fine("Initialized NativeFunctionBindings successfully");
+    } catch (Exception e) {
+      LOGGER.severe("Failed to initialize NativeFunctionBindings: " + e.getMessage());
+      this.initialized = false;
+      throw new RuntimeException("Failed to initialize native function bindings", e);
+    }
   }
 
   /**
    * Gets the singleton instance.
    *
    * @return the singleton instance
+   * @throws RuntimeException if initialization fails
    */
   public static NativeFunctionBindings getInstance() {
     NativeFunctionBindings result = instance;
@@ -73,7 +85,13 @@ public final class NativeFunctionBindings {
       synchronized (INSTANCE_LOCK) {
         result = instance;
         if (result == null) {
-          instance = result = new NativeFunctionBindings();
+          try {
+            instance = result = new NativeFunctionBindings();
+          } catch (RuntimeException e) {
+            LOGGER.severe("Failed to create NativeFunctionBindings singleton: " + e.getMessage());
+            // Don't store failed instance, allow retry
+            throw e;
+          }
         }
       }
     }
@@ -97,7 +115,23 @@ public final class NativeFunctionBindings {
    * @return memory segment pointer to the engine, or null on failure
    */
   public MemorySegment engineCreate() {
-    return callNativeFunction("wasmtime4j_engine_create", MemorySegment.class);
+    try {
+      if (!isInitialized()) {
+        LOGGER.severe("NativeFunctionBindings not initialized, cannot create engine");
+        return null;
+      }
+      
+      MemorySegment result = callNativeFunction("wasmtime4j_engine_create", MemorySegment.class);
+      if (result == null || result.equals(MemorySegment.NULL)) {
+        LOGGER.warning("Engine creation returned null - this may indicate symbol lookup failure");
+      } else {
+        LOGGER.fine("Engine created successfully: " + result);
+      }
+      return result;
+    } catch (Exception e) {
+      LOGGER.severe("Exception during engine creation: " + e.getMessage());
+      return null;
+    }
   }
 
   /**
@@ -162,6 +196,32 @@ public final class NativeFunctionBindings {
   public void moduleDestroy(final MemorySegment modulePtr) {
     validatePointer(modulePtr, "modulePtr");
     callNativeFunction("wasmtime4j_module_destroy", Void.class, modulePtr);
+  }
+
+  // Store Functions
+
+  /**
+   * Creates a WebAssembly store.
+   *
+   * @param enginePtr pointer to the engine
+   * @param storePtr pointer to store the created store
+   * @return 0 on success, negative error code on failure
+   */
+  public int storeCreate(final MemorySegment enginePtr, final MemorySegment storePtr) {
+    validatePointer(enginePtr, "enginePtr");
+    validatePointer(storePtr, "storePtr");
+
+    return callNativeFunction("wasmtime4j_store_create", Integer.class, enginePtr, storePtr);
+  }
+
+  /**
+   * Destroys a WebAssembly store.
+   *
+   * @param storePtr pointer to the store to destroy
+   */
+  public void storeDestroy(final MemorySegment storePtr) {
+    validatePointer(storePtr, "storePtr");
+    callNativeFunction("wasmtime4j_store_destroy", Void.class, storePtr);
   }
 
   // Instance Functions
@@ -457,6 +517,35 @@ public final class NativeFunctionBindings {
     callNativeFunction("wasmtime4j_component_instance_destroy", Void.class, instancePtr);
   }
 
+  // Error Handling Functions
+
+  /**
+   * Gets the last error message from the native library.
+   *
+   * @return pointer to error message string, or null if no error
+   */
+  public MemorySegment getLastErrorMessage() {
+    return callNativeFunction("wasmtime4j_get_last_error_message", MemorySegment.class);
+  }
+
+  /**
+   * Frees an error message returned by getLastErrorMessage.
+   *
+   * @param messagePtr pointer to the error message to free
+   */
+  public void freeErrorMessage(final MemorySegment messagePtr) {
+    if (messagePtr != null && !messagePtr.equals(MemorySegment.NULL)) {
+      callNativeFunction("wasmtime4j_free_error_message", Void.class, messagePtr);
+    }
+  }
+
+  /**
+   * Clears any stored error state in the native library.
+   */
+  public void clearErrorState() {
+    callNativeFunction("wasmtime4j_clear_error_state", Void.class);
+  }
+
   /** Initializes all function bindings. */
   private void initializeFunctionBindings() {
     // Engine functions
@@ -483,6 +572,16 @@ public final class NativeFunctionBindings {
             ValueLayout.ADDRESS)); // module_ptr
 
     addFunctionBinding("wasmtime4j_module_destroy", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+
+    // Store functions
+    addFunctionBinding(
+        "wasmtime4j_store_create",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS, // engine_ptr
+            ValueLayout.ADDRESS)); // store_ptr
+
+    addFunctionBinding("wasmtime4j_store_destroy", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
     // Instance functions
     addFunctionBinding(
@@ -612,6 +711,19 @@ public final class NativeFunctionBindings {
     addFunctionBinding(
         "wasmtime4j_component_instance_destroy",
         FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // instance_ptr
+
+    // Error handling functions
+    addFunctionBinding(
+        "wasmtime4j_get_last_error_message",
+        FunctionDescriptor.of(ValueLayout.ADDRESS)); // returns char*
+
+    addFunctionBinding(
+        "wasmtime4j_free_error_message",
+        FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // message_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_clear_error_state",
+        FunctionDescriptor.ofVoid()); // no parameters
   }
 
   /**

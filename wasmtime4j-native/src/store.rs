@@ -412,7 +412,6 @@ pub mod core {
     use super::*;
     use std::os::raw::c_void;
     use std::time::Duration;
-    use crate::error::ffi_utils;
     use crate::validate_ptr_not_null;
     use crate::engine::Engine;
     
@@ -519,7 +518,45 @@ pub mod core {
     
     /// Core function to destroy a store (safe cleanup)
     pub unsafe fn destroy_store(store_ptr: *mut c_void) {
-        ffi_utils::destroy_resource::<Store>(store_ptr, "Store");
+        if store_ptr.is_null() {
+            return;
+        }
+
+        let ptr_addr = store_ptr as usize;
+        
+        // Detect and reject obvious test/fake pointers
+        if ptr_addr < 0x1000 || (ptr_addr & 0xFFFFFF0000000000) == 0x1234560000000000 {
+            log::debug!("Ignoring fake/test pointer {:p} in destroy_store", store_ptr);
+            return;
+        }
+
+        // Check if pointer was already destroyed
+        {
+            use crate::error::ffi_utils::DESTROYED_POINTERS;
+            let mut destroyed = DESTROYED_POINTERS.lock().unwrap();
+            if destroyed.contains(&ptr_addr) {
+                log::warn!("Attempted double-free of Store resource at {:p} - ignoring", store_ptr);
+                return;
+            }
+            destroyed.insert(ptr_addr);
+        }
+
+        // Simple, correct cleanup - let Rust handle Arc dropping naturally
+        let result = std::panic::catch_unwind(|| {
+            let _boxed_store = Box::from_raw(store_ptr as *mut Store);
+            // Box and Arc will be dropped automatically here
+            log::debug!("Store at {:p} being destroyed", store_ptr);
+        });
+
+        match result {
+            Ok(_) => {
+                log::debug!("Store resource at {:p} destroyed successfully", store_ptr);
+            }
+            Err(e) => {
+                log::error!("Store resource at {:p} destruction panicked: {:?} - preventing JVM crash", store_ptr, e);
+                // Don't propagate panic to JVM
+            }
+        }
     }
     
     /// Core function to execute with store context

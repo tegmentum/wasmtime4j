@@ -295,10 +295,8 @@ public final class PerformanceOptimizer {
 
       switch (pattern) {
         case HIGH_FREQUENCY_SIMPLE -> {
-          // Optimize for frequent calls with simple parameters
-          optimized =
-              MethodHandles.foldArguments(
-                  originalHandle, MethodHandles.identity(originalHandle.type().parameterType(0)));
+          // Optimize for frequent calls with simple parameters - preserve original signature
+          optimized = originalHandle; // Direct use avoids transformation overhead
         }
         case BULK_OPERATIONS -> {
           // Optimize for bulk operations with array parameters
@@ -372,8 +370,8 @@ public final class PerformanceOptimizer {
    * @return true if timeout-based processing should occur
    */
   private boolean shouldProcessTimeout() {
-    // Simple timeout logic - in practice, this would be more sophisticated
-    return !operationQueue.isEmpty() && operationQueue.size() > batchSize / 4;
+    // Simple timeout logic - process any queued operations to avoid indefinite waiting
+    return !operationQueue.isEmpty();
   }
 
   /** Usage patterns for method handle optimization. */

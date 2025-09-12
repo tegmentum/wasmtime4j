@@ -240,7 +240,7 @@ public final class JniTable extends JniResource implements WasmTable {
 
   @Override
   protected void doClose() throws Exception {
-    nativeDestroyTable(nativeHandle);
+    nativeDestroy(nativeHandle);
   }
 
   @Override
@@ -319,5 +319,5 @@ public final class JniTable extends JniResource implements WasmTable {
    *
    * @param tableHandle the native table handle
    */
-  private static native void nativeDestroyTable(long tableHandle);
+  private static native void nativeDestroy(long tableHandle);
 }

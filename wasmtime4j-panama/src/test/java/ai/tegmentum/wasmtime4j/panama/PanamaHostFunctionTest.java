@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -71,8 +72,10 @@ class PanamaHostFunctionTest {
     // Create a simple test callback
     testCallback = params -> new WasmValue[] {WasmValue.f32(42.0f)};
 
-    // Setup mock arena
-    when(mockArenaManager.getArena()).thenReturn(mockArena);
+    // Setup mock arena with real Arena instance (needed for Panama FFI)
+    // Use lenient() to avoid unnecessary stubbing warnings for tests that don't use arena
+    final Arena realArena = Arena.ofShared();
+    lenient().when(mockArenaManager.getArena()).thenReturn(realArena);
   }
 
   @Nested
@@ -234,7 +237,7 @@ class PanamaHostFunctionTest {
       final WasmValue[] expectedResults = {WasmValue.f32(30.0f)};
 
       final HostFunctionCallback mockCallback = mock(HostFunctionCallback.class);
-      when(mockCallback.execute(any())).thenReturn(expectedResults);
+      lenient().when(mockCallback.execute(any())).thenReturn(expectedResults);
 
       final PanamaHostFunction hostFunction =
           new PanamaHostFunction(
@@ -481,8 +484,6 @@ class PanamaHostFunctionTest {
     void shouldHandleUpcallStubCreationFailure() throws Exception {
       // Arrange
       when(mockArenaManager.getArena()).thenThrow(new RuntimeException("Arena creation failed"));
-      when(PanamaErrorHandler.mapToWasmException(any(), any()))
-          .thenReturn(new WasmException("Mapped exception"));
 
       // Act & Assert
       assertThrows(
@@ -507,8 +508,6 @@ class PanamaHostFunctionTest {
       doThrow(new RuntimeException("Unregister failed"))
           .when(mockArenaManager)
           .unregisterManagedResource(any());
-      when(PanamaErrorHandler.mapToWasmException(any(), any()))
-          .thenReturn(new WasmException("Close failed"));
 
       // Act & Assert
       assertThrows(WasmException.class, hostFunction::close);

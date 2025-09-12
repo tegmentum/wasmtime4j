@@ -3480,21 +3480,4 @@ pub mod jni_memory {
     }
 
 
-
-
-    /// Destroy table (JNI version)
-    #[no_mangle]
-    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeDestroyTable(
-        env: JNIEnv,
-        _class: JClass,
-        table_ptr: jlong,
-    ) {
-        if table_ptr == 0 {
-            log::debug!("JNI Table.nativeDestroyTable: ignoring null table handle");
-            return;
-        }
-
-        log::debug!("JNI Table.nativeDestroyTable: destroying table 0x{:x}", table_ptr);
-        // TODO: Implement proper table destruction when Wasmtime API provides access to table lifecycle
-    }
 }

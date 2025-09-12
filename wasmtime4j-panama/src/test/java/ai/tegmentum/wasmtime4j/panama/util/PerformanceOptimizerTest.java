@@ -229,6 +229,9 @@ class PerformanceOptimizerTest {
       final CompletableFuture<Integer> future =
           optimizer.executeBatched(testMethodHandle, new Object[] {5, 10}, failingOperation);
 
+      // Wait briefly for async batch processing to complete
+      Thread.sleep(10);
+
       // Assert
       assertTrue(future.isCompletedExceptionally());
     }
@@ -365,14 +368,7 @@ class PerformanceOptimizerTest {
     @Test
     @DisplayName("Should track performance statistics")
     void shouldTrackPerformanceStatistics() throws Throwable {
-      // Arrange
-      doAnswer(
-              invocation -> {
-                ((Runnable) invocation.getArgument(0)).run();
-                return null;
-              })
-          .when(mockExecutor)
-          .execute(any());
+      // Arrange - no executor stubbing needed for basic operations
 
       // Act - perform some operations
       optimizer.optimizeMethodHandle("test1", testMethodHandle, UsagePattern.HIGH_FREQUENCY_SIMPLE);

@@ -178,14 +178,16 @@ public final class PanamaEngine implements Engine, AutoCloseable {
 
   @Override
   public Store createStore() throws WasmException {
-    // TODO: Implement store creation
-    throw new UnsupportedOperationException("Store creation not yet implemented");
+    ensureNotClosed();
+    return new PanamaStore(this);
   }
 
   @Override
   public Store createStore(final Object data) throws WasmException {
-    // TODO: Implement store creation with data
-    throw new UnsupportedOperationException("Store creation with data not yet implemented");
+    ensureNotClosed();
+    PanamaStore store = new PanamaStore(this);
+    store.setData(data);
+    return store;
   }
 
   @Override
@@ -256,23 +258,96 @@ public final class PanamaEngine implements Engine, AutoCloseable {
    * @throws WasmException if the engine cannot be created
    */
   private MemorySegment createNativeEngine() throws WasmException {
-    try {
-      // Use optimized native function bindings from Stream 1
-      MemorySegment enginePtr = nativeFunctions.engineCreate();
+    return createNativeEngineWithRetry(2); // Try twice: original attempt + 1 retry
+  }
 
-      if (enginePtr == null || enginePtr.equals(MemorySegment.NULL)) {
-        throw new WasmException("Native engine creation returned null pointer");
+  private MemorySegment createNativeEngineWithRetry(int maxAttempts) throws WasmException {
+    WasmException lastException = null;
+    
+    for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        LOGGER.fine("Attempting native engine creation (attempt " + attempt + "/" + maxAttempts + ")");
+        
+        // Clear any previous error state before attempting creation
+        if (attempt > 1) {
+          LOGGER.fine("Clearing native error state before retry");
+          nativeFunctions.clearErrorState();
+        }
+        
+        MemorySegment enginePtr = nativeFunctions.engineCreate();
+        
+        if (enginePtr == null || enginePtr.equals(MemorySegment.NULL)) {
+          // Get detailed error message from native library
+          String nativeError = getNativeErrorMessage();
+          String errorMessage = nativeError != null 
+              ? "Native engine creation failed: " + nativeError
+              : "Native engine creation returned null pointer";
+          
+          lastException = new WasmException(errorMessage + " (attempt " + attempt + "/" + maxAttempts + ")");
+          
+          if (attempt < maxAttempts) {
+            LOGGER.warning("Engine creation attempt " + attempt + " failed, retrying: " + errorMessage);
+            // Add a small delay before retry to allow system state to settle
+            try {
+              Thread.sleep(10); // 10ms delay
+            } catch (InterruptedException ie) {
+              Thread.currentThread().interrupt();
+              throw new WasmException("Engine creation interrupted during retry", ie);
+            }
+            continue; // Try again
+          } else {
+            throw lastException; // Final attempt failed
+          }
+        }
+        
+        LOGGER.fine("Successfully created native engine with pointer: " + enginePtr + " (attempt " + attempt + ")");
+        return enginePtr;
+        
+      } catch (Exception e) {
+        if (e instanceof WasmException) {
+          lastException = (WasmException) e;
+        } else {
+          String detailedMessage = PanamaErrorHandler.createDetailedErrorMessage(
+              "Native engine creation", "attempt " + attempt, e.getMessage());
+          lastException = new WasmException(detailedMessage, e);
+        }
+        
+        if (attempt < maxAttempts) {
+          LOGGER.warning("Engine creation attempt " + attempt + " failed with exception, retrying: " + e.getMessage());
+          continue;
+        }
       }
-
-      LOGGER.fine("Created native engine with pointer: " + enginePtr);
-      return enginePtr;
-
-    } catch (Exception e) {
-      String detailedMessage =
-          PanamaErrorHandler.createDetailedErrorMessage(
-              "Native engine creation", "using NativeFunctionBindings", e.getMessage());
-      throw new WasmException(detailedMessage, e);
     }
+    
+    // If we get here, all attempts failed
+    throw lastException != null ? lastException 
+        : new WasmException("Engine creation failed after " + maxAttempts + " attempts");
+  }
+
+  /**
+   * Gets the last error message from the native library.
+   *
+   * @return the error message string, or null if no error
+   */
+  private String getNativeErrorMessage() {
+    try {
+      LOGGER.fine("Attempting to retrieve native error message");
+      MemorySegment errorPtr = nativeFunctions.getLastErrorMessage();
+      LOGGER.fine("Native error pointer: " + errorPtr);
+      if (errorPtr != null && !errorPtr.equals(MemorySegment.NULL)) {
+        // Convert C string to Java string
+        String errorMessage = errorPtr.getString(0);
+        LOGGER.fine("Retrieved native error message: " + errorMessage);
+        // Free the native error message
+        nativeFunctions.freeErrorMessage(errorPtr);
+        return errorMessage;
+      } else {
+        LOGGER.fine("No native error message available (null pointer)");
+      }
+    } catch (Exception e) {
+      LOGGER.warning("Failed to retrieve native error message: " + e.getMessage());
+    }
+    return null;
   }
 
   /**

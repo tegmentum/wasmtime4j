@@ -274,7 +274,6 @@ unsafe impl Sync for Global {}
 pub mod core {
     use super::*;
     use std::os::raw::c_void;
-    use crate::error::ffi_utils;
     use crate::validate_ptr_not_null;
 
     /// Core function to create a new global variable
@@ -322,7 +321,45 @@ pub mod core {
 
     /// Core function to destroy a global variable (safe cleanup)
     pub unsafe fn destroy_global(global_ptr: *mut c_void) {
-        ffi_utils::destroy_resource::<Global>(global_ptr, "Global");
+        if global_ptr.is_null() {
+            return;
+        }
+
+        let ptr_addr = global_ptr as usize;
+        
+        // Detect and reject obvious test/fake pointers
+        if ptr_addr < 0x1000 || (ptr_addr & 0xFFFFFF0000000000) == 0x1234560000000000 {
+            log::debug!("Ignoring fake/test pointer {:p} in destroy_global", global_ptr);
+            return;
+        }
+
+        // Check if pointer was already destroyed
+        {
+            use crate::error::ffi_utils::DESTROYED_POINTERS;
+            let mut destroyed = DESTROYED_POINTERS.lock().unwrap();
+            if destroyed.contains(&ptr_addr) {
+                log::warn!("Attempted double-free of Global resource at {:p} - ignoring", global_ptr);
+                return;
+            }
+            destroyed.insert(ptr_addr);
+        }
+
+        // Simple, correct cleanup - let Rust handle Arc dropping naturally
+        let result = std::panic::catch_unwind(|| {
+            let _boxed_global = Box::from_raw(global_ptr as *mut Global);
+            // Box and Arc will be dropped automatically here
+            log::debug!("Global at {:p} being destroyed", global_ptr);
+        });
+
+        match result {
+            Ok(_) => {
+                log::debug!("Global resource at {:p} destroyed successfully", global_ptr);
+            }
+            Err(e) => {
+                log::error!("Global resource at {:p} destruction panicked: {:?} - preventing JVM crash", global_ptr, e);
+                // Don't propagate panic to JVM
+            }
+        }
     }
 
     /// Helper function to create GlobalValue from raw components

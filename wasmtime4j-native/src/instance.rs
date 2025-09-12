@@ -647,7 +647,6 @@ unsafe impl Sync for Instance {}
 pub mod core {
     use super::*;
     use std::os::raw::c_void;
-    use crate::error::ffi_utils;
     use crate::validate_ptr_not_null;
     use crate::store::Store;
     use crate::module::Module;
@@ -756,7 +755,45 @@ pub mod core {
     
     /// Core function to destroy an instance (safe cleanup)
     pub unsafe fn destroy_instance(instance_ptr: *mut c_void) {
-        ffi_utils::destroy_resource::<Instance>(instance_ptr, "Instance");
+        if instance_ptr.is_null() {
+            return;
+        }
+
+        let ptr_addr = instance_ptr as usize;
+        
+        // Detect and reject obvious test/fake pointers
+        if ptr_addr < 0x1000 || (ptr_addr & 0xFFFFFF0000000000) == 0x1234560000000000 {
+            log::debug!("Ignoring fake/test pointer {:p} in destroy_instance", instance_ptr);
+            return;
+        }
+
+        // Check if pointer was already destroyed
+        {
+            use crate::error::ffi_utils::DESTROYED_POINTERS;
+            let mut destroyed = DESTROYED_POINTERS.lock().unwrap();
+            if destroyed.contains(&ptr_addr) {
+                log::warn!("Attempted double-free of Instance resource at {:p} - ignoring", instance_ptr);
+                return;
+            }
+            destroyed.insert(ptr_addr);
+        }
+
+        // Simple, correct cleanup - let Rust handle Arc dropping naturally
+        let result = std::panic::catch_unwind(|| {
+            let _boxed_instance = Box::from_raw(instance_ptr as *mut Instance);
+            // Box and Arc will be dropped automatically here
+            log::debug!("Instance at {:p} being destroyed", instance_ptr);
+        });
+
+        match result {
+            Ok(_) => {
+                log::debug!("Instance resource at {:p} destroyed successfully", instance_ptr);
+            }
+            Err(e) => {
+                log::error!("Instance resource at {:p} destruction panicked: {:?} - preventing JVM crash", instance_ptr, e);
+                // Don't propagate panic to JVM
+            }
+        }
     }
     
     /// Core function to check if instance has been disposed

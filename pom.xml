@@ -95,13 +95,11 @@
         <line.length>120</line.length>
     </properties>
 
-    <!-- Modules will be added as they are created -->
+    <!-- Core modules always included -->
     <modules>
         <module>wasmtime4j</module>
-        <module>wasmtime4j-jni</module>
         <module>wasmtime4j-native</module>
         <module>wasmtime4j-native-loader</module>
-        <module>wasmtime4j-panama</module>
         <module>wasmtime4j-benchmarks</module>
         <module>wasmtime4j-tests</module>
     </modules>
@@ -663,15 +661,33 @@
             </build>
         </profile>
 
-        <!-- Profile for Java 23+ with Panama FFI support -->
+        <!-- Profile for JNI runtime (Java 8-22) -->
+        <profile>
+            <id>jni</id>
+            <activation>
+                <jdk>(,23)</jdk>
+            </activation>
+            <modules>
+                <module>wasmtime4j-jni</module>
+            </modules>
+            <properties>
+                <wasmtime4j.runtime>jni</wasmtime4j.runtime>
+            </properties>
+        </profile>
+
+        <!-- Profile for Panama FFI runtime (Java 23+) -->
         <profile>
             <id>panama</id>
             <activation>
                 <jdk>[23,)</jdk>
             </activation>
+            <modules>
+                <module>wasmtime4j-panama</module>
+            </modules>
             <properties>
                 <maven.compiler.source>23</maven.compiler.source>
                 <maven.compiler.target>23</maven.compiler.target>
+                <wasmtime4j.runtime>panama</wasmtime4j.runtime>
             </properties>
             <build>
                 <plugins>

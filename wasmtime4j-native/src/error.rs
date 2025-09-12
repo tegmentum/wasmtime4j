@@ -5,8 +5,9 @@
 
 use std::ffi::CString;
 use std::os::raw::c_char;
+use std::collections::HashSet;
 use thiserror::Error;
-use once_cell;
+use once_cell::sync::Lazy;
 use wasmtime::{Trap, WasmBacktrace};
 
 /// Comprehensive error types for wasmtime4j operations
@@ -567,11 +568,42 @@ pub mod ffi_utils {
         Ok(std::slice::from_raw_parts(ptr, len))
     }
     
-    /// Safely destroy a boxed resource from raw pointer
+    /// Thread-safe tracking of destroyed pointers to prevent double-free
+    /// Using usize addresses instead of raw pointers for thread safety
+    pub(crate) static DESTROYED_POINTERS: Lazy<Mutex<HashSet<usize>>> = 
+        Lazy::new(|| Mutex::new(HashSet::new()));
+
+    /// Safely destroy a boxed resource from raw pointer with double-free protection
     pub unsafe fn destroy_resource<T>(ptr: *mut c_void, name: &str) {
-        if !ptr.is_null() {
+        if ptr.is_null() {
+            return;
+        }
+
+        // Acquire lock and check if this pointer was already destroyed
+        let ptr_addr = ptr as usize;
+        {
+            let mut destroyed = DESTROYED_POINTERS.lock().unwrap();
+            if destroyed.contains(&ptr_addr) {
+                log::warn!("Attempted double-free of {} resource at {:p} - ignoring", name, ptr);
+                return;
+            }
+            // Mark this pointer as destroyed before releasing the lock
+            destroyed.insert(ptr_addr);
+        }
+
+        // Use panic-safe destruction to prevent JVM crashes
+        let result = std::panic::catch_unwind(|| {
             let _ = Box::from_raw(ptr as *mut T);
-            log::debug!("{} destroyed successfully", name);
+        });
+
+        match result {
+            Ok(_) => {
+                log::debug!("{} at {:p} destroyed successfully", name, ptr);
+            }
+            Err(e) => {
+                log::error!("{} at {:p} destruction panicked: {:?} - preventing JVM crash", name, ptr, e);
+                // Don't propagate panic to JVM - just log and continue
+            }
         }
     }
     
