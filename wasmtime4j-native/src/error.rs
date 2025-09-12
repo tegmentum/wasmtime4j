@@ -197,8 +197,26 @@ pub enum ErrorCode {
     InternalError = -18,
 }
 
+// The impl WasmtimeError block is defined below to avoid duplication
+
+#[cfg(feature = "jni-bindings")]
+impl From<jni::errors::Error> for WasmtimeError {
+    fn from(error: jni::errors::Error) -> Self {
+        WasmtimeError::Internal {
+            message: format!("JNI error: {}", error),
+        }
+    }
+}
+
 impl WasmtimeError {
-    /// Convert to error code for FFI
+    /// Get error message as C string for FFI
+    pub fn to_c_string(&self) -> CString {
+        CString::new(self.to_string()).unwrap_or_else(|_| {
+            CString::new("Error message contains null bytes").unwrap()
+        })
+    }
+
+    /// Convert error to error code for FFI
     pub fn to_error_code(&self) -> ErrorCode {
         match self {
             WasmtimeError::Compilation { .. } => ErrorCode::CompilationError,
@@ -221,13 +239,6 @@ impl WasmtimeError {
             WasmtimeError::Interface { .. } => ErrorCode::InterfaceError,
             WasmtimeError::Internal { .. } => ErrorCode::InternalError,
         }
-    }
-
-    /// Get error message as C string for FFI
-    pub fn to_c_string(&self) -> CString {
-        CString::new(self.to_string()).unwrap_or_else(|_| {
-            CString::new("Error message contains null bytes").unwrap()
-        })
     }
 
     /// Create from Wasmtime trap
@@ -761,6 +772,76 @@ pub mod jni_utils {
                 // This would need refactoring in the calling code
                 log::error!("Error in jni_try_default: {:?}", error);
                 default_value
+            }
+        }
+    }
+
+    #[cfg(feature = "jni-bindings")]
+    /// Execute operation with JNI exception throwing, returning boolean result
+    pub fn jni_try_bool<F>(mut env: jni::JNIEnv, operation: F) -> bool
+    where
+        F: FnOnce() -> WasmtimeResult<bool>,
+    {
+        match operation() {
+            Ok(result) => {
+                jni_utils::clear_last_error();
+                result
+            }
+            Err(error) => {
+                throw_jni_exception(&mut env, &error);
+                false
+            }
+        }
+    }
+
+    #[cfg(feature = "jni-bindings")]
+    /// Execute operation with JNI exception throwing, returning default value on error
+    pub fn jni_try_with_default<F, T>(mut env: jni::JNIEnv, default_value: T, operation: F) -> T
+    where
+        F: FnOnce() -> WasmtimeResult<T>,
+    {
+        match operation() {
+            Ok(result) => {
+                jni_utils::clear_last_error();
+                result
+            }
+            Err(error) => {
+                throw_jni_exception(&mut env, &error);
+                default_value
+            }
+        }
+    }
+
+    #[cfg(feature = "jni-bindings")]
+    /// Execute operation with JNI exception throwing, returning void
+    pub fn jni_try_void<F>(mut env: jni::JNIEnv, operation: F)
+    where
+        F: FnOnce() -> WasmtimeResult<()>,
+    {
+        match operation() {
+            Ok(()) => {
+                jni_utils::clear_last_error();
+            }
+            Err(error) => {
+                throw_jni_exception(&mut env, &error);
+            }
+        }
+    }
+
+    #[cfg(feature = "jni-bindings")]
+    /// Execute operation with JNI exception throwing, returning JNI object as raw jobject
+    pub fn jni_try_object<F>(mut env: jni::JNIEnv, operation: F) -> jni::sys::jobject
+    where
+        F: FnOnce() -> WasmtimeResult<jni::objects::JObject<'static>>,
+    {
+        match operation() {
+            Ok(result) => {
+                jni_utils::clear_last_error();
+                result.as_raw()
+            }
+            Err(error) => {
+                throw_jni_exception(&mut env, &error);
+                std::ptr::null_mut()
             }
         }
     }

@@ -498,22 +498,211 @@ pub mod instance {
 /// and managing WebAssembly stores through the Panama Foreign Function Interface.
 pub mod store {
     use super::*;
+    use crate::error::ffi_utils;
+    use crate::store::core;
     
-    /// Create a new WebAssembly store (Panama FFI version)
+    /// Create a new WebAssembly store with default configuration (Panama FFI version)
     #[no_mangle]
     pub extern "C" fn wasmtime4j_store_create(
         engine_ptr: *mut c_void,
         store_ptr: *mut *mut c_void,
     ) -> c_int {
-        use crate::error::ffi_utils;
-        
         ffi_utils::ffi_try_code(|| {
             let engine = unsafe { crate::engine::core::get_engine_ref(engine_ptr)? };
             
-            let store = crate::store::core::create_store(engine)?;
+            let store = core::create_store(engine)?;
             
             unsafe {
                 *store_ptr = Box::into_raw(store) as *mut c_void;
+            }
+            
+            Ok(())
+        })
+    }
+    
+    /// Create a new WebAssembly store with custom configuration (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_store_create_with_config(
+        engine_ptr: *mut c_void,
+        fuel_limit: c_ulong,        // 0 = no limit
+        memory_limit_bytes: c_ulong, // 0 = no limit
+        execution_timeout_secs: c_ulong, // 0 = no timeout
+        max_instances: c_uint,      // 0 = no limit
+        max_table_elements: c_uint, // 0 = no limit
+        max_functions: c_uint,      // 0 = no limit
+        store_ptr: *mut *mut c_void,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let engine = unsafe { crate::engine::core::get_engine_ref(engine_ptr)? };
+            
+            let fuel_limit_opt = if fuel_limit == 0 { None } else { Some(fuel_limit as u64) };
+            let memory_limit_opt = if memory_limit_bytes == 0 { None } else { Some(memory_limit_bytes as usize) };
+            let timeout_opt = if execution_timeout_secs == 0 { None } else { Some(execution_timeout_secs) };
+            let max_instances_opt = if max_instances == 0 { None } else { Some(max_instances as usize) };
+            let max_table_elements_opt = if max_table_elements == 0 { None } else { Some(max_table_elements) };
+            let max_functions_opt = if max_functions == 0 { None } else { Some(max_functions as usize) };
+            
+            let store = core::create_store_with_config(
+                engine,
+                fuel_limit_opt,
+                memory_limit_opt,
+                timeout_opt,
+                max_instances_opt,
+                max_table_elements_opt,
+                max_functions_opt,
+            )?;
+            
+            unsafe {
+                *store_ptr = Box::into_raw(store) as *mut c_void;
+            }
+            
+            Ok(())
+        })
+    }
+    
+    /// Add fuel to the store for execution limiting (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_store_add_fuel(
+        store_ptr: *mut c_void,
+        fuel: c_ulong,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let store = unsafe { core::get_store_ref(store_ptr)? };
+            core::add_fuel(store, fuel as u64)?;
+            Ok(())
+        })
+    }
+    
+    /// Get remaining fuel in the store (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_store_get_fuel_remaining(
+        store_ptr: *mut c_void,
+        fuel_ptr: *mut c_ulong,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let store = unsafe { core::get_store_ref(store_ptr)? };
+            let fuel = core::get_fuel_remaining(store)?;
+            unsafe {
+                *fuel_ptr = fuel as c_ulong;
+            }
+            Ok(())
+        })
+    }
+    
+    /// Consume fuel from the store (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_store_consume_fuel(
+        store_ptr: *mut c_void,
+        fuel_to_consume: c_ulong,
+        fuel_consumed_ptr: *mut c_ulong,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let store = unsafe { core::get_store_ref(store_ptr)? };
+            let actual_consumed = core::consume_fuel(store, fuel_to_consume as u64)?;
+            unsafe {
+                *fuel_consumed_ptr = actual_consumed as c_ulong;
+            }
+            Ok(())
+        })
+    }
+    
+    /// Set epoch deadline for interruption (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_store_set_epoch_deadline(
+        store_ptr: *mut c_void,
+        ticks: c_ulong,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let store = unsafe { core::get_store_ref(store_ptr)? };
+            core::set_epoch_deadline(store, ticks as u64);
+            Ok(())
+        })
+    }
+    
+    /// Force garbage collection in the store (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_store_garbage_collect(store_ptr: *mut c_void) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let store = unsafe { core::get_store_ref(store_ptr)? };
+            core::garbage_collect(store)?;
+            Ok(())
+        })
+    }
+    
+    /// Validate store functionality (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_store_validate(store_ptr: *mut c_void) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let store = unsafe { core::get_store_ref(store_ptr)? };
+            core::validate_store(store)?;
+            Ok(())
+        })
+    }
+    
+    /// Get store execution statistics (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_store_get_execution_stats(
+        store_ptr: *mut c_void,
+        execution_count_ptr: *mut c_ulong,
+        total_execution_time_ms_ptr: *mut c_ulong,
+        fuel_consumed_ptr: *mut c_ulong,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let store = unsafe { core::get_store_ref(store_ptr)? };
+            let stats = core::get_execution_stats(store)?;
+            
+            unsafe {
+                *execution_count_ptr = stats.execution_count;
+                *total_execution_time_ms_ptr = stats.total_execution_time.as_millis() as c_ulong;
+                *fuel_consumed_ptr = stats.fuel_consumed;
+            }
+            
+            Ok(())
+        })
+    }
+    
+    /// Get store memory usage statistics (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_store_get_memory_usage(
+        store_ptr: *mut c_void,
+        total_bytes_ptr: *mut c_ulong,
+        used_bytes_ptr: *mut c_ulong,
+        instance_count_ptr: *mut c_ulong,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let store = unsafe { core::get_store_ref(store_ptr)? };
+            let usage = core::get_memory_usage(store)?;
+            
+            unsafe {
+                *total_bytes_ptr = usage.total_bytes as c_ulong;
+                *used_bytes_ptr = usage.used_bytes as c_ulong;
+                *instance_count_ptr = usage.instance_count as c_ulong;
+            }
+            
+            Ok(())
+        })
+    }
+    
+    /// Get store metadata (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_store_get_metadata(
+        store_ptr: *mut c_void,
+        fuel_limit_ptr: *mut c_ulong,
+        memory_limit_bytes_ptr: *mut c_ulong,
+        execution_timeout_secs_ptr: *mut c_ulong,
+        instance_count_ptr: *mut c_ulong,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let store = unsafe { core::get_store_ref(store_ptr)? };
+            let metadata = core::get_store_metadata(store);
+            
+            unsafe {
+                *fuel_limit_ptr = metadata.fuel_limit.unwrap_or(0) as c_ulong;
+                *memory_limit_bytes_ptr = metadata.memory_limit_bytes.unwrap_or(0) as c_ulong;
+                *execution_timeout_secs_ptr = metadata.execution_timeout
+                    .map(|d| d.as_secs())
+                    .unwrap_or(0) as c_ulong;
+                *instance_count_ptr = metadata.instance_count as c_ulong;
             }
             
             Ok(())
@@ -524,7 +713,7 @@ pub mod store {
     #[no_mangle]
     pub extern "C" fn wasmtime4j_store_destroy(store_ptr: *mut c_void) {
         unsafe {
-            crate::store::core::destroy_store(store_ptr);
+            core::destroy_store(store_ptr);
         }
     }
 }
