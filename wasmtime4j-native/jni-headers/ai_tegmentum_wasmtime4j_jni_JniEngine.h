@@ -33,6 +33,14 @@ JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeCreateS
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniEngine
+ * Method:    nativeCreateStoreWithConfig
+ * Signature: (JJJJIII)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeCreateStoreWithConfig
+  (JNIEnv *, jclass, jlong, jlong, jlong, jlong, jint, jint, jint);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniEngine
  * Method:    nativeSetOptimizationLevel
  * Signature: (JI)Z
  */

@@ -197,9 +197,55 @@ public final class JniEngine extends JniResource implements Engine {
 
   @Override
   public Store createStore(final Object data) {
-    // TODO: Implement support for custom store data
-    // For now, just create a regular store and ignore the data
-    return createStore();
+    final Store store = createStore();
+    if (data != null) {
+      store.setData(data);
+    }
+    return store;
+  }
+
+  /**
+   * Creates a new store with custom configuration.
+   *
+   * <p>This method allows fine-grained control over store behavior including resource limits,
+   * execution timeouts, and other advanced settings.
+   *
+   * @param fuelLimit the fuel limit (0 = no limit)
+   * @param memoryLimitBytes the memory limit in bytes (0 = no limit)
+   * @param executionTimeoutSecs the execution timeout in seconds (0 = no timeout)
+   * @param maxInstances the maximum number of instances (0 = no limit)
+   * @param maxTableElements the maximum table elements (0 = no limit)
+   * @param maxFunctions the maximum functions (0 = no limit)
+   * @return a new configured store instance
+   * @throws JniException if store creation fails
+   * @throws JniResourceException if this engine has been closed
+   */
+  public Store createStoreWithConfig(
+      final long fuelLimit,
+      final long memoryLimitBytes,
+      final long executionTimeoutSecs,
+      final int maxInstances,
+      final int maxTableElements,
+      final int maxFunctions) {
+    ensureNotClosed();
+
+    try {
+      final long storeHandle = nativeCreateStoreWithConfig(
+          getNativeHandle(),
+          fuelLimit,
+          memoryLimitBytes,
+          executionTimeoutSecs,
+          maxInstances,
+          maxTableElements,
+          maxFunctions);
+      JniValidation.requireValidHandle(storeHandle, "storeHandle");
+      return new JniStore(storeHandle, this);
+    } catch (final Exception e) {
+      if (e instanceof JniException) {
+        throw e;
+      }
+      throw new JniException("Failed to create store with configuration", e);
+    }
   }
 
   /**
@@ -356,6 +402,27 @@ public final class JniEngine extends JniResource implements Engine {
    * @return native store handle or 0 on failure
    */
   private static native long nativeCreateStore(long engineHandle);
+
+  /**
+   * Creates a new store with custom configuration.
+   *
+   * @param engineHandle the native engine handle
+   * @param fuelLimit the fuel limit (0 = no limit)
+   * @param memoryLimitBytes the memory limit in bytes (0 = no limit)
+   * @param executionTimeoutSecs the execution timeout in seconds (0 = no timeout)
+   * @param maxInstances the maximum number of instances (0 = no limit)
+   * @param maxTableElements the maximum table elements (0 = no limit)
+   * @param maxFunctions the maximum functions (0 = no limit)
+   * @return native store handle or 0 on failure
+   */
+  private static native long nativeCreateStoreWithConfig(
+      long engineHandle,
+      long fuelLimit,
+      long memoryLimitBytes,
+      long executionTimeoutSecs,
+      int maxInstances,
+      int maxTableElements,
+      int maxFunctions);
 
   /**
    * Sets the optimization level for an engine.
