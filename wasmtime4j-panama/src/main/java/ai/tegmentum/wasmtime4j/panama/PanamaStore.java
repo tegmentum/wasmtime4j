@@ -298,15 +298,30 @@ public final class PanamaStore implements Store, AutoCloseable {
     PanamaErrorHandler.requireValidPointer(enginePtr, "enginePtr");
 
     try {
-      // For now, create a placeholder store - actual implementation would call
-      // wasmtime_store_new() or similar native function through NativeFunctionBindings
-      LOGGER.fine("Creating native store with engine: " + enginePtr);
+      // Allocate memory for store pointer output
+      ArenaResourceManager.ManagedMemorySegment storeOutPtr =
+          resourceManager.allocate(MemoryLayouts.C_POINTER);
 
-      // Return a non-null placeholder pointer for now
-      // In actual implementation, this would be the result of the native call
-      return MemorySegment.ofAddress(0x1000); // Placeholder address
+      // Call native store creation function
+      int result = nativeFunctions.storeCreate(enginePtr, storeOutPtr.getSegment());
+
+      // Check for creation errors
+      PanamaErrorHandler.safeCheckError(
+          result, "Store creation", "WebAssembly store creation failed");
+
+      // Extract the created store pointer
+      MemorySegment storePtr =
+          (MemorySegment) MemoryLayouts.C_POINTER.varHandle().get(storeOutPtr.getSegment(), 0);
+
+      PanamaErrorHandler.requireValidPointer(storePtr, "created store pointer");
+
+      LOGGER.fine("Successfully created native store: " + storePtr);
+      return storePtr;
 
     } catch (Exception e) {
+      if (e instanceof WasmException) {
+        throw e;
+      }
       String detailedMessage =
           PanamaErrorHandler.createDetailedErrorMessage(
               "Native store creation", "engine=" + enginePtr, e.getMessage());
@@ -322,8 +337,7 @@ public final class PanamaStore implements Store, AutoCloseable {
   private void destroyNativeStoreInternal(final MemorySegment storePtr) {
     try {
       if (storePtr != null && !storePtr.equals(MemorySegment.NULL)) {
-        // For now, this is a placeholder - actual implementation would call
-        // wasmtime_store_delete() or similar through NativeFunctionBindings
+        nativeFunctions.storeDestroy(storePtr);
         LOGGER.fine("Destroyed native store with pointer: " + storePtr);
       }
     } catch (Exception e) {

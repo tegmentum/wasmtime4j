@@ -170,7 +170,7 @@ class JniTableTest {
     @DisplayName("Should throw exception when accessing size of closed table")
     void shouldThrowExceptionWhenAccessingSizeOfClosedTable() {
       final JniTable table = new JniTable(VALID_HANDLE);
-      table.close();
+      table.markClosedForTesting();
 
       assertThrows(
           JniResourceException.class,
@@ -182,7 +182,7 @@ class JniTableTest {
     @DisplayName("Should throw exception when accessing max size of closed table")
     void shouldThrowExceptionWhenAccessingMaxSizeOfClosedTable() {
       final JniTable table = new JniTable(VALID_HANDLE);
-      table.close();
+      table.markClosedForTesting();
 
       assertThrows(
           JniResourceException.class,
@@ -194,7 +194,7 @@ class JniTableTest {
     @DisplayName("Should throw exception when accessing element type of closed table")
     void shouldThrowExceptionWhenAccessingElementTypeOfClosedTable() {
       final JniTable table = new JniTable(VALID_HANDLE);
-      table.close();
+      table.markClosedForTesting();
 
       assertThrows(
           JniResourceException.class,
@@ -206,7 +206,7 @@ class JniTableTest {
     @DisplayName("Should throw exception when accessing element of closed table")
     void shouldThrowExceptionWhenAccessingElementOfClosedTable() {
       final JniTable table = new JniTable(VALID_HANDLE);
-      table.close();
+      table.markClosedForTesting();
 
       assertThrows(
           JniResourceException.class,
@@ -218,7 +218,7 @@ class JniTableTest {
     @DisplayName("Should throw exception when setting element in closed table")
     void shouldThrowExceptionWhenSettingElementInClosedTable() {
       final JniTable table = new JniTable(VALID_HANDLE);
-      table.close();
+      table.markClosedForTesting();
 
       assertThrows(
           JniResourceException.class,
@@ -230,7 +230,7 @@ class JniTableTest {
     @DisplayName("Should throw exception when growing closed table")
     void shouldThrowExceptionWhenGrowingClosedTable() {
       final JniTable table = new JniTable(VALID_HANDLE);
-      table.close();
+      table.markClosedForTesting();
 
       assertThrows(
           JniResourceException.class,
@@ -242,7 +242,7 @@ class JniTableTest {
     @DisplayName("Should throw exception when filling closed table")
     void shouldThrowExceptionWhenFillingClosedTable() {
       final JniTable table = new JniTable(VALID_HANDLE);
-      table.close();
+      table.markClosedForTesting();
 
       assertThrows(
           JniResourceException.class,

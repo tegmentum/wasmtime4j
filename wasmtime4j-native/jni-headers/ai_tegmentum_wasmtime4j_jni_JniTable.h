@@ -65,10 +65,10 @@ JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeFill
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniTable
- * Method:    nativeDestroyTable
+ * Method:    nativeDestroy
  * Signature: (J)V
  */
-JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeDestroyTable
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeDestroy
   (JNIEnv *, jclass, jlong);
 
 #ifdef __cplusplus

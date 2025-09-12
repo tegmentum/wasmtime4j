@@ -90,7 +90,13 @@ public final class NativeLibraryLoader {
       synchronized (INSTANCE_LOCK) {
         result = instance;
         if (result == null) {
-          instance = result = new NativeLibraryLoader();
+          try {
+            instance = result = new NativeLibraryLoader();
+          } catch (IllegalStateException e) {
+            LOGGER.severe("Failed to create NativeLibraryLoader singleton: " + e.getMessage());
+            // Don't store failed instance, allow retry
+            throw e;
+          }
         }
       }
     }
@@ -146,9 +152,21 @@ public final class NativeLibraryLoader {
     }
 
     try {
+      // Try to find the symbol, first with the original name, then with platform-specific prefixes
       Optional<MemorySegment> symbol = symbolLookup.find(functionName);
+      
+      // On macOS, C symbols are prefixed with underscore
+      if (symbol.isEmpty() && System.getProperty("os.name").toLowerCase().contains("mac")) {
+        symbol = symbolLookup.find("_" + functionName);
+        if (symbol.isPresent()) {
+          LOGGER.fine("Found symbol with macOS underscore prefix: _" + functionName);
+        }
+      }
+      
       if (symbol.isEmpty()) {
-        LOGGER.warning("Function symbol not found: " + functionName);
+        LOGGER.warning("Function symbol not found (tried: " + functionName
+                      + (System.getProperty("os.name").toLowerCase().contains("mac")
+                          ? ", _" + functionName : "") + ")");
         return Optional.empty();
       }
 

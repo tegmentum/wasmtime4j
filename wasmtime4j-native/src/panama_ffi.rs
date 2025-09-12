@@ -1630,4 +1630,27 @@ pub mod table {
             core::destroy_table(table_ptr);
         }
     }
+
+    /// Get the last error message as a C string
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_get_last_error_message() -> *mut c_char {
+        crate::error::ffi_utils::get_last_error_message()
+    }
+
+    /// Free an error message returned by wasmtime4j_get_last_error_message
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_free_error_message(message: *mut c_char) {
+        if !message.is_null() {
+            use std::ffi::CString;
+            unsafe {
+                let _ = CString::from_raw(message);
+            }
+        }
+    }
+
+    /// Clear any stored error state in the native library
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_clear_error_state() {
+        crate::error::ffi_utils::clear_last_error();
+    }
 }

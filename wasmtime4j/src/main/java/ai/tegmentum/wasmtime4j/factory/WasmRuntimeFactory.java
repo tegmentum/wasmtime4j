@@ -83,6 +83,22 @@ public final class WasmRuntimeFactory {
     logger.info(
         "Creating WebAssembly runtime with type: " + sanitizeForLog(runtimeType.toString()));
 
+    // Check if the requested runtime is available before attempting to create it
+    if (!isRuntimeAvailable(runtimeType)) {
+      // Try to provide a fallback
+      if (runtimeType == RuntimeType.JNI && isPanamaRuntimeAvailable()) {
+        logger.warning("JNI runtime not available, falling back to Panama runtime");
+        return createPanamaRuntime();
+      } else if (runtimeType == RuntimeType.PANAMA && isJniRuntimeAvailable()) {
+        logger.warning("Panama runtime not available, falling back to JNI runtime");
+        return createJniRuntime();
+      } else {
+        throw new WasmException(
+            "Requested runtime type " + runtimeType 
+                + " is not available and no suitable fallback found");
+      }
+    }
+
     switch (runtimeType) {
       case JNI:
         return createJniRuntime();

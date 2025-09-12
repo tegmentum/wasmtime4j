@@ -27,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.ExportType;
 import ai.tegmentum.wasmtime4j.ImportType;
+import ai.tegmentum.wasmtime4j.exception.CompilationException;
 import java.lang.foreign.MemorySegment;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -34,7 +35,9 @@ import java.nio.file.StandardOpenOption;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -48,8 +51,9 @@ import org.junit.jupiter.api.Timeout;
 // Panama FFI tests - requires Java 21+
 class PanamaModuleHighPerformanceTest {
 
+  private static ArenaResourceManager sharedResourceManager;
+  private static PanamaEngine sharedEngine;
   private ArenaResourceManager resourceManager;
-  private PanamaEngine engine;
   private Path tempWasmFile;
 
   // Simple WebAssembly module for testing (adds two numbers)
@@ -89,17 +93,30 @@ class PanamaModuleHighPerformanceTest {
   };
 
   // Larger WASM module for memory-mapped file testing
-  private static final byte[] LARGE_WASM = new byte[1024 * 1024]; // 1MB module
+  // Use the complete SIMPLE_WASM module instead of padding with zeros
+  private static final byte[] LARGE_WASM = SIMPLE_WASM;
 
-  static {
-    // Initialize large WASM with proper headers
-    System.arraycopy(SIMPLE_WASM, 0, LARGE_WASM, 0, SIMPLE_WASM.length);
+  @BeforeAll
+  static void setUpClass() throws Exception {
+    // Add a small delay to allow any previous native state to settle
+    Thread.sleep(50);
+    sharedResourceManager = new ArenaResourceManager();
+    sharedEngine = new PanamaEngine(sharedResourceManager);
+  }
+
+  @AfterAll
+  static void tearDownClass() throws Exception {
+    if (sharedEngine != null && !sharedEngine.isClosed()) {
+      sharedEngine.close();
+    }
+    if (sharedResourceManager != null && !sharedResourceManager.isClosed()) {
+      sharedResourceManager.close();
+    }
   }
 
   @BeforeEach
   void setUp() throws Exception {
     resourceManager = new ArenaResourceManager();
-    engine = new PanamaEngine(resourceManager);
 
     // Create temporary WASM file for memory-mapped testing
     tempWasmFile = Files.createTempFile("test-wasm", ".wasm");
@@ -108,9 +125,6 @@ class PanamaModuleHighPerformanceTest {
 
   @AfterEach
   void tearDown() throws Exception {
-    if (engine != null && !engine.isClosed()) {
-      engine.close();
-    }
     if (resourceManager != null && !resourceManager.isClosed()) {
       resourceManager.close();
     }
@@ -130,7 +144,7 @@ class PanamaModuleHighPerformanceTest {
     wasmData.copyFrom(MemorySegment.ofArray(SIMPLE_WASM));
 
     // Test zero-copy compilation
-    PanamaModule module = PanamaModule.compileZeroCopy(engine, wasmData, SIMPLE_WASM.length);
+    PanamaModule module = PanamaModule.compileZeroCopy(sharedEngine, wasmData, SIMPLE_WASM.length);
 
     assertNotNull(module, "Zero-copy compilation should succeed");
     assertFalse(module.isClosed(), "Module should not be closed after compilation");
@@ -152,7 +166,7 @@ class PanamaModuleHighPerformanceTest {
   @Timeout(value = 15, unit = TimeUnit.SECONDS)
   void testMemoryMappedFileCompilation() throws Exception {
     // Test memory-mapped file compilation
-    PanamaModule module = PanamaModule.compileFromMappedFile(engine, tempWasmFile);
+    PanamaModule module = PanamaModule.compileFromMappedFile(sharedEngine, tempWasmFile);
 
     assertNotNull(module, "Memory-mapped compilation should succeed");
     assertFalse(module.isClosed(), "Module should not be closed after compilation");
@@ -171,7 +185,7 @@ class PanamaModuleHighPerformanceTest {
   @Timeout(value = 5, unit = TimeUnit.SECONDS)
   void testZeroCopyValidation() throws Exception {
     // First compile a module for validation testing
-    PanamaModule module = (PanamaModule) engine.compileModule(SIMPLE_WASM);
+    PanamaModule module = (PanamaModule) sharedEngine.compileModule(SIMPLE_WASM);
 
     // Allocate MemorySegment for validation
     ArenaResourceManager.ManagedMemorySegment wasmMemory =
@@ -194,7 +208,7 @@ class PanamaModuleHighPerformanceTest {
   @Test
   @Timeout(value = 5, unit = TimeUnit.SECONDS)
   void testOptimizedMetadataExtraction() throws Exception {
-    PanamaModule module = (PanamaModule) engine.compileModule(SIMPLE_WASM);
+    PanamaModule module = (PanamaModule) sharedEngine.compileModule(SIMPLE_WASM);
 
     // First call should extract and cache metadata
     long startTime = System.nanoTime();
@@ -255,7 +269,7 @@ class PanamaModuleHighPerformanceTest {
 
     // Test bulk compilation
     final long startTime = System.nanoTime();
-    PanamaModule[] compiledModules = PanamaModule.compileBulk(engine, modules);
+    PanamaModule[] compiledModules = PanamaModule.compileBulk(sharedEngine, modules);
     final long bulkCompileTime = System.nanoTime() - startTime;
 
     assertEquals(modules.length, compiledModules.length, "Should compile all modules");
@@ -270,7 +284,7 @@ class PanamaModuleHighPerformanceTest {
 
     // Compare with individual compilation time
     long individualStartTime = System.nanoTime();
-    PanamaModule individualModule = (PanamaModule) engine.compileModule(SIMPLE_WASM);
+    PanamaModule individualModule = (PanamaModule) sharedEngine.compileModule(SIMPLE_WASM);
     long individualCompileTime = System.nanoTime() - individualStartTime;
 
     // Bulk operations should be more efficient per module
@@ -294,7 +308,7 @@ class PanamaModuleHighPerformanceTest {
   @Test
   @Timeout(value = 5, unit = TimeUnit.SECONDS)
   void testHighPerformanceModuleSerialization() throws Exception {
-    PanamaModule module = (PanamaModule) engine.compileModule(SIMPLE_WASM);
+    PanamaModule module = (PanamaModule) sharedEngine.compileModule(SIMPLE_WASM);
 
     // Test high-performance serialization
     byte[] serializedData = module.serializeWithMemorySegment();
@@ -322,26 +336,26 @@ class PanamaModuleHighPerformanceTest {
 
     assertThrows(
         IllegalArgumentException.class,
-        () -> PanamaModule.compileZeroCopy(engine, MemorySegment.NULL, 0));
+        () -> PanamaModule.compileZeroCopy(sharedEngine, MemorySegment.NULL, 0));
 
     assertThrows(
         NullPointerException.class, () -> PanamaModule.compileFromMappedFile(null, tempWasmFile));
 
     assertThrows(
-        NullPointerException.class, () -> PanamaModule.compileFromMappedFile(engine, null));
+        NullPointerException.class, () -> PanamaModule.compileFromMappedFile(sharedEngine, null));
 
     // Test invalid file
     Path invalidFile = Files.createTempFile("invalid", ".wasm");
     Files.write(invalidFile, new byte[0]); // Empty file
 
     assertThrows(
-        IllegalArgumentException.class,
-        () -> PanamaModule.compileFromMappedFile(engine, invalidFile));
+        CompilationException.class,
+        () -> PanamaModule.compileFromMappedFile(sharedEngine, invalidFile));
 
     Files.delete(invalidFile);
 
     // Test bulk operations with empty array
-    PanamaModule[] emptyResult = PanamaModule.compileBulk(engine);
+    PanamaModule[] emptyResult = PanamaModule.compileBulk(sharedEngine);
     assertEquals(0, emptyResult.length, "Bulk compile with no modules should return empty array");
 
     // Test caching with null parameters
@@ -354,7 +368,7 @@ class PanamaModuleHighPerformanceTest {
   @Test
   @Timeout(value = 10, unit = TimeUnit.SECONDS)
   void testConcurrentCacheAccess() throws Exception {
-    PanamaModule module = (PanamaModule) engine.compileModule(SIMPLE_WASM);
+    PanamaModule module = (PanamaModule) sharedEngine.compileModule(SIMPLE_WASM);
 
     // Test concurrent metadata access
     Runnable metadataAccess =
@@ -387,7 +401,7 @@ class PanamaModuleHighPerformanceTest {
   @Test
   @Timeout(value = 5, unit = TimeUnit.SECONDS)
   void testResourceLifecycleManagement() throws Exception {
-    PanamaModule module = (PanamaModule) engine.compileModule(SIMPLE_WASM);
+    PanamaModule module = (PanamaModule) sharedEngine.compileModule(SIMPLE_WASM);
 
     // Verify initial state
     assertFalse(module.isClosed(), "Module should not be closed initially");
@@ -421,7 +435,7 @@ class PanamaModuleHighPerformanceTest {
 
     // Warmup
     for (int i = 0; i < 10; i++) {
-      try (PanamaModule module = (PanamaModule) engine.compileModule(testModule)) {
+      try (PanamaModule module = (PanamaModule) sharedEngine.compileModule(testModule)) {
         module.getImports();
         module.getExports();
       }
@@ -430,7 +444,7 @@ class PanamaModuleHighPerformanceTest {
     // Benchmark standard operations
     final long startTime = System.nanoTime();
     for (int i = 0; i < iterations; i++) {
-      try (PanamaModule module = (PanamaModule) engine.compileModule(testModule)) {
+      try (PanamaModule module = (PanamaModule) sharedEngine.compileModule(testModule)) {
         module.getImports();
         module.getExports();
       }
@@ -438,7 +452,7 @@ class PanamaModuleHighPerformanceTest {
     final long standardTime = System.nanoTime() - startTime;
 
     // Benchmark optimized operations (with caching benefits)
-    PanamaModule cachedModule = (PanamaModule) engine.compileModule(testModule);
+    PanamaModule cachedModule = (PanamaModule) sharedEngine.compileModule(testModule);
 
     long optimizedStartTime = System.nanoTime();
     for (int i = 0; i < iterations; i++) {

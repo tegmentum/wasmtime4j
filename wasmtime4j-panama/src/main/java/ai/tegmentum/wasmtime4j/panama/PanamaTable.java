@@ -59,8 +59,7 @@ public final class PanamaTable implements WasmTable, AutoCloseable {
    *
    * @param tableHandle the native table handle from Wasmtime
    * @param arenaManager the arena resource manager for memory lifecycle
-   * @param nativeBindings the native function bindings for FFI calls
-   * @param errorHandler the error handler for exception mapping
+   * @param parentInstance the parent instance for context
    * @throws WasmException if table initialization fails
    * @throws IllegalArgumentException if any parameter is null
    */
@@ -69,10 +68,30 @@ public final class PanamaTable implements WasmTable, AutoCloseable {
       final ArenaResourceManager arenaManager,
       final PanamaInstance parentInstance)
       throws WasmException {
+    this(tableHandle, arenaManager, parentInstance, NativeFunctionBindings.getInstance());
+  }
+
+  /**
+   * Creates a new Panama table wrapper with the given native table handle and bindings.
+   * This constructor is primarily used for testing to allow dependency injection.
+   *
+   * @param tableHandle the native table handle from Wasmtime
+   * @param arenaManager the arena resource manager for memory lifecycle
+   * @param parentInstance the parent instance for context
+   * @param nativeBindings the native function bindings for FFI calls
+   * @throws WasmException if table initialization fails
+   * @throws IllegalArgumentException if any parameter is null
+   */
+  PanamaTable(
+      final MemorySegment tableHandle,
+      final ArenaResourceManager arenaManager,
+      final PanamaInstance parentInstance,
+      final NativeFunctionBindings nativeBindings)
+      throws WasmException {
     this.tableHandle = Objects.requireNonNull(tableHandle, "Table handle cannot be null");
     this.arenaManager = Objects.requireNonNull(arenaManager, "Arena manager cannot be null");
     this.parentInstance = Objects.requireNonNull(parentInstance, "Parent instance cannot be null");
-    this.nativeBindings = NativeFunctionBindings.getInstance();
+    this.nativeBindings = Objects.requireNonNull(nativeBindings, "Native bindings cannot be null");
 
     try {
       // Register this table for automatic resource cleanup

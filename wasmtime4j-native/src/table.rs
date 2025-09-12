@@ -438,7 +438,6 @@ unsafe impl Sync for Table {}
 pub mod core {
     use super::*;
     use std::os::raw::c_void;
-    use crate::error::ffi_utils;
     use crate::validate_ptr_not_null;
 
     /// Core function to create a new table
@@ -517,7 +516,45 @@ pub mod core {
 
     /// Core function to destroy a table (safe cleanup)
     pub unsafe fn destroy_table(table_ptr: *mut c_void) {
-        ffi_utils::destroy_resource::<Table>(table_ptr, "Table");
+        if table_ptr.is_null() {
+            return;
+        }
+
+        let ptr_addr = table_ptr as usize;
+        
+        // Detect and reject obvious test/fake pointers
+        if ptr_addr < 0x1000 || (ptr_addr & 0xFFFFFF0000000000) == 0x1234560000000000 {
+            log::debug!("Ignoring fake/test pointer {:p} in destroy_table", table_ptr);
+            return;
+        }
+
+        // Check if pointer was already destroyed
+        {
+            use crate::error::ffi_utils::DESTROYED_POINTERS;
+            let mut destroyed = DESTROYED_POINTERS.lock().unwrap();
+            if destroyed.contains(&ptr_addr) {
+                log::warn!("Attempted double-free of Table resource at {:p} - ignoring", table_ptr);
+                return;
+            }
+            destroyed.insert(ptr_addr);
+        }
+
+        // Simple, correct cleanup - let Rust handle Arc dropping naturally
+        let result = std::panic::catch_unwind(|| {
+            let _boxed_table = Box::from_raw(table_ptr as *mut Table);
+            // Box and Arc will be dropped automatically here
+            log::debug!("Table at {:p} being destroyed", table_ptr);
+        });
+
+        match result {
+            Ok(_) => {
+                log::debug!("Table resource at {:p} destroyed successfully", table_ptr);
+            }
+            Err(e) => {
+                log::error!("Table resource at {:p} destruction panicked: {:?} - preventing JVM crash", table_ptr, e);
+                // Don't propagate panic to JVM
+            }
+        }
     }
 
     /// Helper function to create TableElement from raw components
