@@ -21,7 +21,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -62,7 +61,7 @@ final class PathConventionTest {
   }
 
   @Test
-  @DisplayName("WASMTIME4J convention should generate correct paths for all platforms")
+
   void testWasmtime4jConvention() {
     final String libraryName = "wasmtime4j";
 
@@ -88,7 +87,7 @@ final class PathConventionTest {
   }
 
   @Test
-  @DisplayName("MAVEN_NATIVE convention should generate correct paths for all platforms")
+
   void testMavenNativeConvention() {
     final String libraryName = "testlib";
 
@@ -109,7 +108,7 @@ final class PathConventionTest {
   }
 
   @Test
-  @DisplayName("JNA convention should generate correct paths for all platforms")
+
   void testJnaConvention() {
     final String libraryName = "jnalib";
 
@@ -130,7 +129,7 @@ final class PathConventionTest {
   }
 
   @Test
-  @DisplayName("CUSTOM convention should throw exception when used directly")
+
   void testCustomConventionThrowsException() {
     assertThrows(
         IllegalStateException.class,
@@ -139,7 +138,7 @@ final class PathConventionTest {
   }
 
   @Test
-  @DisplayName("Custom path convention factory should work correctly")
+
   void testCustomPathConventionFactory() {
     final String customPattern = "/lib/{platform}/{name}{ext}";
     final PathConvention.CustomPathConvention custom = PathConvention.custom(customPattern);
@@ -154,7 +153,7 @@ final class PathConventionTest {
   }
 
   @Test
-  @DisplayName("Custom path convention should validate patterns")
+
   void testCustomPatternValidation() {
     assertThrows(
         NullPointerException.class,
@@ -173,7 +172,7 @@ final class PathConventionTest {
   }
 
   @Test
-  @DisplayName("Custom path convention should prevent path traversal")
+
   void testCustomPatternSecurityValidation() {
     assertThrows(
         SecurityException.class,
@@ -188,7 +187,7 @@ final class PathConventionTest {
 
   @ParameterizedTest
   @EnumSource(PathConvention.class)
-  @DisplayName("All standard conventions should handle null inputs gracefully")
+
   void testNullInputHandling(final PathConvention convention) {
     if (convention == PathConvention.CUSTOM) {
       return; // Skip CUSTOM as it has different behavior
@@ -207,7 +206,7 @@ final class PathConventionTest {
 
   @ParameterizedTest
   @EnumSource(PathConvention.class)
-  @DisplayName("All standard conventions should handle empty library names")
+
   void testEmptyLibraryNameHandling(final PathConvention convention) {
     if (convention == PathConvention.CUSTOM) {
       return; // Skip CUSTOM as it has different behavior
@@ -225,7 +224,7 @@ final class PathConventionTest {
   }
 
   @Test
-  @DisplayName("Pattern placeholders should be properly substituted")
+
   void testPlaceholderSubstitution() {
     final String pattern = "/{os}/{arch}/{platform}/{lib}{name}{ext}";
     final PathConvention.CustomPathConvention custom = PathConvention.custom(pattern);
@@ -239,7 +238,7 @@ final class PathConventionTest {
   }
 
   @Test
-  @DisplayName("Library name should be sanitized in custom patterns")
+
   void testLibraryNameSanitization() {
     final String pattern = "/lib/{name}{ext}";
     final PathConvention.CustomPathConvention custom = PathConvention.custom(pattern);
@@ -254,7 +253,7 @@ final class PathConventionTest {
   }
 
   @Test
-  @DisplayName("Convention toString methods should provide useful output")
+
   void testToStringMethods() {
     assertEquals(
         "PathConvention.WASMTIME4J(\"/native/{platform}/{lib}{name}{ext}\")",

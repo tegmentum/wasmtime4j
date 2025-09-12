@@ -24,7 +24,6 @@ import static org.mockito.Mockito.mockStatic;
 
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -39,7 +38,7 @@ import org.mockito.MockedStatic;
  * <p>This test class focuses on systematic testing of all platform detection scenarios including
  * the 6 supported platform combinations and error cases for unsupported platforms.
  */
-@DisplayName("PlatformDetector Parameterized Tests")
+
 @Disabled("System.class mocking causes infinite loops in newer Mockito versions")
 final class PlatformDetectorParameterizedTest {
 
@@ -165,7 +164,7 @@ final class PlatformDetectorParameterizedTest {
 
   @ParameterizedTest(name = "Platform {0}/{1} should detect as {2}/{3}")
   @MethodSource("provideSupportedPlatforms")
-  @DisplayName("Should correctly detect all supported platform combinations")
+
   void testSupportedPlatformDetection(
       final String osName,
       final String osArch,
@@ -225,7 +224,7 @@ final class PlatformDetectorParameterizedTest {
 
   @ParameterizedTest(name = "Unsupported OS: {0}")
   @MethodSource("provideUnsupportedOperatingSystems")
-  @DisplayName("Should throw RuntimeException for unsupported operating systems")
+
   void testUnsupportedOperatingSystemDetection(final String unsupportedOsName) {
     try (final MockedStatic<System> systemMock = mockStatic(System.class)) {
       systemMock.when(() -> System.getProperty("os.name")).thenReturn(unsupportedOsName);
@@ -250,7 +249,7 @@ final class PlatformDetectorParameterizedTest {
 
   @ParameterizedTest(name = "Unsupported Architecture: {0}")
   @MethodSource("provideUnsupportedArchitectures")
-  @DisplayName("Should throw RuntimeException for unsupported architectures")
+
   void testUnsupportedArchitectureDetection(final String unsupportedArchName) {
     try (final MockedStatic<System> systemMock = mockStatic(System.class)) {
       systemMock.when(() -> System.getProperty("os.name")).thenReturn("Linux");
@@ -279,7 +278,7 @@ final class PlatformDetectorParameterizedTest {
     "Windows, aarch64, windows-aarch64",
     "macOS, x86_64, macos-x86_64"
   })
-  @DisplayName("Platform ID format should be consistent")
+
   void testPlatformIdFormat(
       final String osName, final String osArch, final String expectedPlatformId) {
     try (final MockedStatic<System> systemMock = mockStatic(System.class)) {
@@ -304,7 +303,7 @@ final class PlatformDetectorParameterizedTest {
         "a",
         "very-long-library-name-with-dashes"
       })
-  @DisplayName("Library file name construction should work for various library names")
+
   void testLibraryFileNameConstruction(final String libraryName) {
     final PlatformDetector.PlatformInfo info = PlatformDetector.detect();
     final String fileName = info.getLibraryFileName(libraryName);
@@ -323,7 +322,7 @@ final class PlatformDetectorParameterizedTest {
   }
 
   @Test
-  @DisplayName("Platform detection should be cached and thread-safe")
+
   void testPlatformDetectionCaching() {
     // Clear cache first
     PlatformDetectorTestUtils.clearCache();
@@ -338,7 +337,7 @@ final class PlatformDetectorParameterizedTest {
   }
 
   @Test
-  @DisplayName("isPlatformSupported should return consistent results")
+
   void testIsPlatformSupportedConsistency() {
     final boolean isSupported = PlatformDetector.isPlatformSupported();
     final boolean secondCheck = PlatformDetector.isPlatformSupported();

@@ -16,7 +16,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -27,7 +26,6 @@ import org.junit.jupiter.api.Timeout;
  * <p>These tests verify batch processing functionality, thread safety, performance optimization,
  * error handling, and resource management.
  */
-@DisplayName("JniBatchProcessor Tests")
 @Timeout(30) // Global timeout for all tests
 class JniBatchProcessorTest {
 
@@ -46,12 +44,10 @@ class JniBatchProcessorTest {
   }
 
   @Nested
-  @DisplayName("Constructor Tests")
   class ConstructorTests {
 
     @Test
-    @DisplayName("Should create processor with default settings")
-    void shouldCreateProcessorWithDefaultSettings() {
+    void testCreateProcessorWithDefaultSettings() {
       try (final JniBatchProcessor processor = new JniBatchProcessor()) {
         assertEquals(JniBatchProcessor.DEFAULT_MAX_BATCH_SIZE, processor.getMaxBatchSize());
         assertEquals(JniBatchProcessor.DEFAULT_BATCH_TIMEOUT_MS, processor.getBatchTimeoutMs());
@@ -61,8 +57,7 @@ class JniBatchProcessorTest {
     }
 
     @Test
-    @DisplayName("Should create processor with custom settings")
-    void shouldCreateProcessorWithCustomSettings() {
+    void testCreateProcessorWithCustomSettings() {
       final int maxBatchSize = 50;
       final long timeoutMs = 100;
 
@@ -74,8 +69,7 @@ class JniBatchProcessorTest {
     }
 
     @Test
-    @DisplayName("Should reject invalid batch size")
-    void shouldRejectInvalidBatchSize() {
+    void testRejectInvalidBatchSize() {
       assertThrows(
           JniValidationException.class,
           () -> new JniBatchProcessor(0, 10),
@@ -88,8 +82,7 @@ class JniBatchProcessorTest {
     }
 
     @Test
-    @DisplayName("Should reject negative timeout")
-    void shouldRejectNegativeTimeout() {
+    void testRejectNegativeTimeout() {
       assertThrows(
           JniValidationException.class,
           () -> new JniBatchProcessor(10, -1),
@@ -97,8 +90,7 @@ class JniBatchProcessorTest {
     }
 
     @Test
-    @DisplayName("Should accept zero timeout")
-    void shouldAcceptZeroTimeout() {
+    void testAcceptZeroTimeout() {
       try (final JniBatchProcessor processor = new JniBatchProcessor(10, 0)) {
         assertEquals(0, processor.getBatchTimeoutMs());
       }
@@ -106,26 +98,22 @@ class JniBatchProcessorTest {
   }
 
   @Nested
-  @DisplayName("Basic Operation Tests")
   class BasicOperationTests {
 
     @Test
-    @DisplayName("Should execute single operation")
-    void shouldExecuteSingleOperation() {
+    void testExecuteSingleOperation() {
       final String result = batchProcessor.execute(() -> "test result");
       assertEquals("test result", result);
     }
 
     @Test
-    @DisplayName("Should execute operation returning null")
-    void shouldExecuteOperationReturningNull() {
+    void testExecuteOperationReturningNull() {
       final String result = batchProcessor.execute(() -> null);
       assertEquals(null, result);
     }
 
     @Test
-    @DisplayName("Should execute multiple operations")
-    void shouldExecuteMultipleOperations() {
+    void testExecuteMultipleOperations() {
       final String result1 = batchProcessor.execute(() -> "result1");
       final String result2 = batchProcessor.execute(() -> "result2");
       final String result3 = batchProcessor.execute(() -> "result3");
@@ -136,8 +124,7 @@ class JniBatchProcessorTest {
     }
 
     @Test
-    @DisplayName("Should handle operations with different types")
-    void shouldHandleOperationsWithDifferentTypes() {
+    void testHandleOperationsWithDifferentTypes() {
       final String stringResult = batchProcessor.execute(() -> "string");
       final Integer intResult = batchProcessor.execute(() -> 42);
       final Boolean boolResult = batchProcessor.execute(() -> true);
@@ -148,8 +135,7 @@ class JniBatchProcessorTest {
     }
 
     @Test
-    @DisplayName("Should reject null operation")
-    void shouldRejectNullOperation() {
+    void testRejectNullOperation() {
       assertThrows(
           JniValidationException.class,
           () -> batchProcessor.execute(null),
@@ -158,12 +144,10 @@ class JniBatchProcessorTest {
   }
 
   @Nested
-  @DisplayName("Batch Processing Tests")
   class BatchProcessingTests {
 
     @Test
-    @DisplayName("Should batch multiple operations")
-    void shouldBatchMultipleOperations() throws InterruptedException {
+    void testBatchMultipleOperations() throws InterruptedException {
       final int batchSize = 5;
       final AtomicInteger executionCount = new AtomicInteger(0);
       final CountDownLatch latch = new CountDownLatch(batchSize);
@@ -202,8 +186,7 @@ class JniBatchProcessorTest {
     }
 
     @Test
-    @DisplayName("Should handle timeout-based batching")
-    void shouldHandleTimeoutBasedBatching() throws InterruptedException {
+    void testHandleTimeoutBasedBatching() throws InterruptedException {
       final int shortTimeout = 100;
       final AtomicInteger executionCount = new AtomicInteger(0);
 
@@ -223,12 +206,10 @@ class JniBatchProcessorTest {
   }
 
   @Nested
-  @DisplayName("Error Handling Tests")
   class ErrorHandlingTests {
 
     @Test
-    @DisplayName("Should propagate operation exceptions")
-    void shouldPropagateOperationExceptions() {
+    void testPropagateOperationExceptions() {
       final RuntimeException expectedException = new RuntimeException("Test exception");
 
       final RuntimeException actualException =
@@ -244,8 +225,7 @@ class JniBatchProcessorTest {
     }
 
     @Test
-    @DisplayName("Should handle multiple operation exceptions")
-    void shouldHandleMultipleOperationExceptions() throws InterruptedException {
+    void testHandleMultipleOperationExceptions() throws InterruptedException {
       final ExecutorService executor = Executors.newFixedThreadPool(3);
       final List<CompletableFuture<Void>> futures = new ArrayList<>();
 
@@ -276,8 +256,7 @@ class JniBatchProcessorTest {
     }
 
     @Test
-    @DisplayName("Should handle checked exceptions")
-    void shouldHandleCheckedExceptions() {
+    void testHandleCheckedExceptions() {
       final RuntimeException exception =
           assertThrows(
               RuntimeException.class,
@@ -293,20 +272,17 @@ class JniBatchProcessorTest {
   }
 
   @Nested
-  @DisplayName("Resource Management Tests")
   class ResourceManagementTests {
 
     @Test
-    @DisplayName("Should close gracefully")
-    void shouldCloseGracefully() {
+    void testCloseGracefully() {
       assertFalse(batchProcessor.isClosed());
       batchProcessor.close();
       assertTrue(batchProcessor.isClosed());
     }
 
     @Test
-    @DisplayName("Should be idempotent on close")
-    void shouldBeIdempotentOnClose() {
+    void testIdempotentOnClose() {
       batchProcessor.close();
       assertTrue(batchProcessor.isClosed());
 
@@ -316,8 +292,7 @@ class JniBatchProcessorTest {
     }
 
     @Test
-    @DisplayName("Should reject operations after close")
-    void shouldRejectOperationsAfterClose() {
+    void testRejectOperationsAfterClose() {
       batchProcessor.close();
 
       assertThrows(
@@ -327,8 +302,7 @@ class JniBatchProcessorTest {
     }
 
     @Test
-    @DisplayName("Should process remaining operations on close")
-    void shouldProcessRemainingOperationsOnClose() throws InterruptedException {
+    void testProcessRemainingOperationsOnClose() throws InterruptedException {
       final AtomicInteger executionCount = new AtomicInteger(0);
       final CountDownLatch latch = new CountDownLatch(1);
 
@@ -365,8 +339,7 @@ class JniBatchProcessorTest {
     }
 
     @Test
-    @DisplayName("Should work with try-with-resources")
-    void shouldWorkWithTryWithResources() {
+    void testWorkWithTryWithResources() {
       final AtomicInteger executionCount = new AtomicInteger(0);
 
       try (final JniBatchProcessor processor = new JniBatchProcessor(10, 50)) {
@@ -384,13 +357,11 @@ class JniBatchProcessorTest {
   }
 
   @Nested
-  @DisplayName("Performance Tests")
   class PerformanceTests {
 
     @Test
-    @DisplayName("Should handle high throughput operations")
     @Timeout(10)
-    void shouldHandleHighThroughputOperations() throws InterruptedException {
+    void testHandleHighThroughputOperations() throws InterruptedException {
       final int operationCount = 1000;
       final AtomicInteger completedCount = new AtomicInteger(0);
       final ExecutorService executor = Executors.newFixedThreadPool(20);
@@ -421,8 +392,7 @@ class JniBatchProcessorTest {
     }
 
     @Test
-    @DisplayName("Should maintain queue size bounds")
-    void shouldMaintainQueueSizeBounds() {
+    void testMaintainQueueSizeBounds() {
       final int maxBatchSize = 10;
 
       try (final JniBatchProcessor processor = new JniBatchProcessor(maxBatchSize, 100)) {
@@ -461,12 +431,10 @@ class JniBatchProcessorTest {
   }
 
   @Nested
-  @DisplayName("Concurrency Tests")
   class ConcurrencyTests {
 
     @Test
-    @DisplayName("Should handle concurrent access safely")
-    void shouldHandleConcurrentAccessSafely() throws InterruptedException {
+    void testHandleConcurrentAccessSafely() throws InterruptedException {
       final int threadCount = 20;
       final int operationsPerThread = 10;
       final ExecutorService executor = Executors.newFixedThreadPool(threadCount);
@@ -506,8 +474,7 @@ class JniBatchProcessorTest {
     }
 
     @Test
-    @DisplayName("Should handle interruption gracefully")
-    void shouldHandleInterruptionGracefully() throws InterruptedException {
+    void testHandleInterruptionGracefully() throws InterruptedException {
       final CountDownLatch startLatch = new CountDownLatch(1);
       final CountDownLatch interruptLatch = new CountDownLatch(1);
 

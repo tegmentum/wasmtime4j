@@ -13,7 +13,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -24,7 +23,7 @@ import org.junit.jupiter.api.Timeout;
  * <p>These tests verify phantom reference tracking, automatic cleanup, singleton behavior, thread
  * safety, and resource management.
  */
-@DisplayName("JniPhantomReferenceManager Tests")
+
 @Timeout(30) // Global timeout for all tests
 class JniPhantomReferenceManagerTest {
 
@@ -43,12 +42,12 @@ class JniPhantomReferenceManagerTest {
   }
 
   @Nested
-  @DisplayName("Singleton Tests")
+
   class SingletonTests {
 
     @Test
-    @DisplayName("Should return same instance")
-    void shouldReturnSameInstance() {
+
+    void testReturnSameInstance() {
       final JniPhantomReferenceManager instance1 = JniPhantomReferenceManager.getInstance();
       final JniPhantomReferenceManager instance2 = JniPhantomReferenceManager.getInstance();
 
@@ -56,8 +55,8 @@ class JniPhantomReferenceManagerTest {
     }
 
     @Test
-    @DisplayName("Should create new instance after close")
-    void shouldCreateNewInstanceAfterClose() {
+
+    void testCreateNewInstanceAfterClose() {
       final JniPhantomReferenceManager firstInstance = JniPhantomReferenceManager.getInstance();
       firstInstance.close();
 
@@ -70,12 +69,12 @@ class JniPhantomReferenceManagerTest {
   }
 
   @Nested
-  @DisplayName("Registration Tests")
+
   class RegistrationTests {
 
     @Test
-    @DisplayName("Should register object successfully")
-    void shouldRegisterObjectSuccessfully() {
+
+    void testRegisterObjectSuccessfully() {
       final Object testObject = new Object();
       final long testHandle = 0x12345678L;
 
@@ -89,8 +88,8 @@ class JniPhantomReferenceManagerTest {
     }
 
     @Test
-    @DisplayName("Should reject null object")
-    void shouldRejectNullObject() {
+
+    void testRejectNullObject() {
       assertThrows(
           JniValidationException.class,
           () -> manager.register(null, 0x12345678L, "testCleanup"),
@@ -98,8 +97,8 @@ class JniPhantomReferenceManagerTest {
     }
 
     @Test
-    @DisplayName("Should reject invalid handle")
-    void shouldRejectInvalidHandle() {
+
+    void testRejectInvalidHandle() {
       final Object testObject = new Object();
 
       assertThrows(
@@ -109,8 +108,8 @@ class JniPhantomReferenceManagerTest {
     }
 
     @Test
-    @DisplayName("Should reject null cleanup method")
-    void shouldRejectNullCleanupMethod() {
+
+    void testRejectNullCleanupMethod() {
       final Object testObject = new Object();
 
       assertThrows(
@@ -120,8 +119,8 @@ class JniPhantomReferenceManagerTest {
     }
 
     @Test
-    @DisplayName("Should handle registration after close")
-    void shouldHandleRegistrationAfterClose() {
+
+    void testHandleRegistrationAfterClose() {
       manager.close();
 
       final Object testObject = new Object();
@@ -131,12 +130,12 @@ class JniPhantomReferenceManagerTest {
   }
 
   @Nested
-  @DisplayName("Unregistration Tests")
+
   class UnregistrationTests {
 
     @Test
-    @DisplayName("Should handle unregister call")
-    void shouldHandleUnregisterCall() {
+
+    void testHandleUnregisterCall() {
       final Object testObject = new Object();
 
       // Should not throw exception (even though phantom references can't be directly unregistered)
@@ -144,8 +143,8 @@ class JniPhantomReferenceManagerTest {
     }
 
     @Test
-    @DisplayName("Should reject null object in unregister")
-    void shouldRejectNullObjectInUnregister() {
+
+    void testRejectNullObjectInUnregister() {
       assertThrows(
           JniValidationException.class,
           () -> manager.unregister(null),
@@ -154,12 +153,12 @@ class JniPhantomReferenceManagerTest {
   }
 
   @Nested
-  @DisplayName("Statistics Tests")
+
   class StatisticsTests {
 
     @Test
-    @DisplayName("Should track registration count")
-    void shouldTrackRegistrationCount() {
+
+    void testTrackRegistrationCount() {
       final long initialTotal = manager.getTotalRegistered();
 
       final Object testObject1 = new Object();
@@ -172,8 +171,8 @@ class JniPhantomReferenceManagerTest {
     }
 
     @Test
-    @DisplayName("Should track cleanup statistics")
-    void shouldTrackCleanupStatistics() {
+
+    void testTrackCleanupStatistics() {
       final long initialCleanedUp = manager.getCleanedUpCount();
       final long initialFailed = manager.getFailedCleanupCount();
 
@@ -183,20 +182,20 @@ class JniPhantomReferenceManagerTest {
     }
 
     @Test
-    @DisplayName("Should provide current registered count")
-    void shouldProvideCurrentRegisteredCount() {
+
+    void testProvideCurrentRegisteredCount() {
       final int registeredCount = manager.getRegisteredCount();
       assertTrue(registeredCount >= 0);
     }
   }
 
   @Nested
-  @DisplayName("Garbage Collection Tests")
+
   class GarbageCollectionTests {
 
     @Test
-    @DisplayName("Should handle object collection")
-    void shouldHandleObjectCollection() throws InterruptedException {
+
+    void testHandleObjectCollection() throws InterruptedException {
       final long initialCleanedUp = manager.getCleanedUpCount();
 
       // Create objects that can be garbage collected
@@ -216,8 +215,8 @@ class JniPhantomReferenceManagerTest {
     }
 
     @Test
-    @DisplayName("Should process pending references on demand")
-    void shouldProcessPendingReferencesOnDemand() {
+
+    void testProcessPendingReferencesOnDemand() {
       // Register some objects
       final Object obj1 = new Object();
       final Object obj2 = new Object();
@@ -230,8 +229,8 @@ class JniPhantomReferenceManagerTest {
     }
 
     @Test
-    @DisplayName("Should handle multiple garbage collection cycles")
-    void shouldHandleMultipleGarbageCollectionCycles() throws InterruptedException {
+
+    void testHandleMultipleGarbageCollectionCycles() throws InterruptedException {
       final long initialCleanedUp = manager.getCleanedUpCount();
 
       // Multiple GC cycles
@@ -270,12 +269,12 @@ class JniPhantomReferenceManagerTest {
   }
 
   @Nested
-  @DisplayName("Concurrency Tests")
+
   class ConcurrencyTests {
 
     @Test
-    @DisplayName("Should handle concurrent registrations")
-    void shouldHandleConcurrentRegistrations() throws InterruptedException {
+
+    void testHandleConcurrentRegistrations() throws InterruptedException {
       final int threadCount = 10;
       final int objectsPerThread = 20;
       final CountDownLatch latch = new CountDownLatch(threadCount);
@@ -313,8 +312,8 @@ class JniPhantomReferenceManagerTest {
     }
 
     @Test
-    @DisplayName("Should handle concurrent processing")
-    void shouldHandleConcurrentProcessing() throws InterruptedException {
+
+    void testHandleConcurrentProcessing() throws InterruptedException {
       final int threadCount = 5;
       final CountDownLatch latch = new CountDownLatch(threadCount);
       final List<Thread> threads = new ArrayList<>();
@@ -355,12 +354,12 @@ class JniPhantomReferenceManagerTest {
   }
 
   @Nested
-  @DisplayName("Resource Management Tests")
+
   class ResourceManagementTests {
 
     @Test
-    @DisplayName("Should close gracefully")
-    void shouldCloseGracefully() {
+
+    void testCloseGracefully() {
       // Register some objects
       final Object obj1 = new Object();
       final Object obj2 = new Object();
@@ -375,8 +374,8 @@ class JniPhantomReferenceManagerTest {
     }
 
     @Test
-    @DisplayName("Should be idempotent on close")
-    void shouldBeIdempotentOnClose() {
+
+    void testBeIdempotentOnClose() {
       manager.close();
       assertTrue(manager.isClosed());
 
@@ -386,8 +385,8 @@ class JniPhantomReferenceManagerTest {
     }
 
     @Test
-    @DisplayName("Should process remaining references on close")
-    void shouldProcessRemainingReferencesOnClose() throws InterruptedException {
+
+    void testProcessRemainingReferencesOnClose() throws InterruptedException {
       final long initialCleanedUp = manager.getCleanedUpCount();
 
       // Register objects and immediately make them eligible for GC
@@ -406,8 +405,8 @@ class JniPhantomReferenceManagerTest {
     }
 
     @Test
-    @DisplayName("Should handle close with active cleanup thread")
-    void shouldHandleCloseWithActiveCleanupThread() throws InterruptedException {
+
+    void testHandleCloseWithActiveCleanupThread() throws InterruptedException {
       // Register objects to keep cleanup thread active
       for (int i = 0; i < 10; i++) {
         final Object obj = new Object();
@@ -437,12 +436,12 @@ class JniPhantomReferenceManagerTest {
   }
 
   @Nested
-  @DisplayName("Error Handling Tests")
+
   class ErrorHandlingTests {
 
     @Test
-    @DisplayName("Should handle cleanup exceptions gracefully")
-    void shouldHandleCleanupExceptionsGracefully() {
+
+    void testHandleCleanupExceptionsGracefully() {
       // Register objects and trigger processing
       final Object obj = new Object();
       manager.register(obj, 0x60000001L, "errorCleanup");
@@ -452,8 +451,8 @@ class JniPhantomReferenceManagerTest {
     }
 
     @Test
-    @DisplayName("Should track failed cleanup attempts")
-    void shouldTrackFailedCleanupAttempts() {
+
+    void testTrackFailedCleanupAttempts() {
       final long initialFailed = manager.getFailedCleanupCount();
 
       // Register and process - failures might occur in real cleanup
@@ -467,12 +466,12 @@ class JniPhantomReferenceManagerTest {
   }
 
   @Nested
-  @DisplayName("toString and Object Methods Tests")
+
   class ToStringAndObjectMethodsTests {
 
     @Test
-    @DisplayName("Should provide meaningful toString")
-    void shouldProvideMeaningfulToString() {
+
+    void testProvideMeaningfulToString() {
       // Register some objects to have meaningful statistics
       final Object obj1 = new Object();
       final Object obj2 = new Object();
@@ -490,8 +489,8 @@ class JniPhantomReferenceManagerTest {
     }
 
     @Test
-    @DisplayName("Should show current statistics in toString")
-    void shouldShowCurrentStatisticsInToString() {
+
+    void testShowCurrentStatisticsInToString() {
       final String toString = manager.toString();
 
       // Should contain numeric values for statistics

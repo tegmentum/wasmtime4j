@@ -23,7 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.reflect.InvocationTargetException;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -35,7 +34,7 @@ import org.junit.jupiter.api.Test;
 final class NativeLoaderTest {
 
   @Test
-  @DisplayName("Should load library with default configuration using static method")
+
   void testLoadLibraryWithDefaultConfiguration() {
     // Test loading a library that doesn't exist - should return info with error
     final NativeLibraryUtils.LibraryLoadInfo info =
@@ -48,7 +47,7 @@ final class NativeLoaderTest {
   }
 
   @Test
-  @DisplayName("Should reject null library name in static method")
+
   void testLoadLibraryWithNullName() {
     assertThrows(
         NullPointerException.class,
@@ -57,7 +56,7 @@ final class NativeLoaderTest {
   }
 
   @Test
-  @DisplayName("Should create builder instance")
+
   void testBuilderCreation() {
     final NativeLoaderBuilder builder = assertDoesNotThrow(NativeLoader::builder);
 
@@ -75,7 +74,7 @@ final class NativeLoaderTest {
   }
 
   @Test
-  @DisplayName("Should not allow instantiation of utility class")
+
   void testUtilityClassInstantiation() {
     // Use reflection to try to instantiate the utility class
     final var exception =
@@ -95,7 +94,7 @@ final class NativeLoaderTest {
   }
 
   @Test
-  @DisplayName("Should create multiple independent builder instances")
+
   void testMultipleBuilderInstances() {
     final NativeLoaderBuilder builder1 = NativeLoader.builder();
     final NativeLoaderBuilder builder2 = NativeLoader.builder();
@@ -114,7 +113,7 @@ final class NativeLoaderTest {
   }
 
   @Test
-  @DisplayName("Should handle empty library name appropriately")
+
   void testEmptyLibraryName() {
     // Empty string should be passed through to the builder and fail validation there
     assertThrows(
@@ -124,7 +123,7 @@ final class NativeLoaderTest {
   }
 
   @Test
-  @DisplayName("Should handle whitespace-only library name appropriately")
+
   void testWhitespaceOnlyLibraryName() {
     // Whitespace-only string should be passed through and fail validation
     assertThrows(
@@ -134,7 +133,7 @@ final class NativeLoaderTest {
   }
 
   @Test
-  @DisplayName("Should preserve library name through builder chain")
+
   void testLibraryNamePreservation() {
     final String testLibName = "test-library-name";
     final NativeLibraryUtils.LibraryLoadInfo info =
@@ -147,7 +146,7 @@ final class NativeLoaderTest {
   }
 
   @Test
-  @DisplayName("Should work with builder pattern equivalent")
+
   void testBuilderPatternEquivalence() {
     final String testLibName = "equivalent-test";
 

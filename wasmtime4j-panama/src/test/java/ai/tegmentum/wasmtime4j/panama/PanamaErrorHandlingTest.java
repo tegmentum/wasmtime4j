@@ -12,7 +12,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 import ai.tegmentum.wasmtime4j.exception.CompilationException;
 import ai.tegmentum.wasmtime4j.exception.ValidationException;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -23,11 +22,11 @@ import org.junit.jupiter.params.provider.CsvSource;
  * <p>These tests verify that Panama error codes are properly aligned with Rust, that error pointer
  * interpretation is defensive, and that proper exceptions are thrown for all error scenarios.
  */
-@DisplayName("Panama Error Handling Tests")
+
 class PanamaErrorHandlingTest {
 
   @Test
-  @DisplayName("All 18 error codes have proper descriptions")
+
   void testAllErrorCodeDescriptions() {
     // Test that all Rust error codes (-1 to -18) are properly handled
     for (int errorCode = -1; errorCode >= -18; errorCode--) {
@@ -62,7 +61,7 @@ class PanamaErrorHandlingTest {
     "-17, Interface Error",
     "-18, Internal Error"
   })
-  @DisplayName("Error code descriptions match expected values")
+
   void testErrorCodeDescriptions(int errorCode, String expectedDescription) {
     String actualDescription = PanamaErrorHandler.getErrorDescription(errorCode);
     assertEquals(
@@ -72,7 +71,7 @@ class PanamaErrorHandlingTest {
   }
 
   @Test
-  @DisplayName("Success error code handling")
+
   void testSuccessErrorCode() {
     // Success (0) should not throw
     assertDoesNotThrow(
@@ -84,7 +83,7 @@ class PanamaErrorHandlingTest {
   }
 
   @Test
-  @DisplayName("Error code exception throwing")
+
   void testErrorCodeExceptionThrowing() {
     // Compilation error should throw CompilationException
     assertThrows(
@@ -119,7 +118,7 @@ class PanamaErrorHandlingTest {
   }
 
   @Test
-  @DisplayName("Custom error messages")
+
   void testCustomErrorMessages() {
     try {
       PanamaErrorHandler.checkErrorCode(-1, "Custom operation failed");
@@ -141,7 +140,7 @@ class PanamaErrorHandlingTest {
   }
 
   @Test
-  @DisplayName("Null operation handling")
+
   void testNullOperationHandling() {
     try {
       PanamaErrorHandler.checkErrorCode(-1, (String) null);
@@ -166,7 +165,7 @@ class PanamaErrorHandlingTest {
   }
 
   @Test
-  @DisplayName("Error struct null pointer handling")
+
   void testErrorStructNullHandling() {
     // Null error struct should not throw (indicates no error)
     assertDoesNotThrow(
@@ -176,7 +175,7 @@ class PanamaErrorHandlingTest {
   }
 
   @Test
-  @DisplayName("Safe error checking")
+
   void testSafeErrorChecking() {
     // Valid error code should throw normally
     assertThrows(
@@ -193,7 +192,7 @@ class PanamaErrorHandlingTest {
   }
 
   @Test
-  @DisplayName("Recoverable error identification")
+
   void testRecoverableErrorIdentification() {
     // Memory errors should be recoverable
     assertTrue(PanamaErrorHandler.isRecoverableError(-7));
@@ -221,7 +220,7 @@ class PanamaErrorHandlingTest {
   }
 
   @Test
-  @DisplayName("Parameter validation methods")
+
   void testParameterValidation() {
     // Valid pointer (mock with non-null value)
     // Note: We can't easily test MemorySegment without native code,
@@ -309,7 +308,7 @@ class PanamaErrorHandlingTest {
   }
 
   @Test
-  @DisplayName("Result validation")
+
   void testResultValidation() {
     // Valid result
     String result = PanamaErrorHandler.requireSuccess("hello", "test operation");
@@ -330,7 +329,7 @@ class PanamaErrorHandlingTest {
   }
 
   @Test
-  @DisplayName("Detailed error message creation")
+
   void testDetailedErrorMessageCreation() {
     // Full context
     String message1 =
@@ -363,7 +362,7 @@ class PanamaErrorHandlingTest {
   }
 
   @Test
-  @DisplayName("Exception mapping functionality")
+
   void testExceptionMapping() {
     // Test mapping RuntimeException
     RuntimeException runtime = new RuntimeException("runtime error");
@@ -387,7 +386,7 @@ class PanamaErrorHandlingTest {
   }
 
   @Test
-  @DisplayName("Edge case error codes")
+
   void testEdgeCaseErrorCodes() {
     // Test unknown negative error code
     String desc1 = PanamaErrorHandler.getErrorDescription(-999);
@@ -412,7 +411,7 @@ class PanamaErrorHandlingTest {
   }
 
   @Test
-  @DisplayName("Thread safety of error handling")
+
   void testThreadSafety() throws InterruptedException {
     int numThreads = 10;
     Thread[] threads = new Thread[numThreads];
@@ -464,7 +463,7 @@ class PanamaErrorHandlingTest {
   }
 
   @Test
-  @DisplayName("Memory safety for large inputs")
+
   void testMemorySafetyLargeInputs() {
     // Test very large strings don't cause issues
     String longString = "x".repeat(100000);

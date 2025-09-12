@@ -7,7 +7,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
 import ai.tegmentum.wasmtime4j.jni.exception.JniValidationException;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -21,19 +20,16 @@ import org.junit.jupiter.api.Test;
  * <p>Note: Functional behavior with actual WebAssembly table operations is tested in integration
  * tests.
  */
-@DisplayName("JniTable Tests")
 class JniTableTest {
 
   private static final long VALID_HANDLE = 0x12345678L;
   private static final long INVALID_HANDLE = 0L;
 
   @Nested
-  @DisplayName("Constructor Tests")
   class ConstructorTests {
 
     @Test
-    @DisplayName("Should create table with valid handle")
-    void shouldCreateTableWithValidHandle() {
+    void testCreateTableWithValidHandle() {
       final JniTable newTable = new JniTable(VALID_HANDLE);
       assertNotNull(newTable);
       assertFalse(newTable.isClosed());
@@ -41,8 +37,7 @@ class JniTableTest {
     }
 
     @Test
-    @DisplayName("Should reject invalid handle")
-    void shouldRejectInvalidHandle() {
+    void testRejectInvalidHandle() {
       assertThrows(
           JniValidationException.class,
           () -> new JniTable(INVALID_HANDLE),
@@ -50,8 +45,7 @@ class JniTableTest {
     }
 
     @Test
-    @DisplayName("Should reject negative handle")  
-    void shouldRejectNegativeHandle() {
+    void testRejectNegativeHandle() {
       assertThrows(
           JniValidationException.class,
           () -> new JniTable(-1L),
@@ -60,20 +54,17 @@ class JniTableTest {
   }
 
   @Nested
-  @DisplayName("Resource Management Tests")
   class ResourceManagementTests {
 
     @Test
-    @DisplayName("Should provide resource type")
-    void shouldProvideResourceType() {
+    void testProvideResourceType() {
       final JniTable table = new JniTable(VALID_HANDLE);
       assertNotNull(table.getResourceType());
       // Note: Not calling close() in unit test since it requires native methods
     }
 
     @Test
-    @DisplayName("Should close gracefully")
-    void shouldCloseGracefully() {
+    void testCloseGracefully() {
       final JniTable table = new JniTable(VALID_HANDLE);
       assertFalse(table.isClosed(), "Should not be closed initially");
       
@@ -83,8 +74,7 @@ class JniTableTest {
     }
 
     @Test
-    @DisplayName("Should be idempotent on close")
-    void shouldBeIdempotentOnClose() {
+    void testIdempotentOnClose() {
       final JniTable table = new JniTable(VALID_HANDLE);
       assertFalse(table.isClosed(), "Should not be closed initially");
 
@@ -94,8 +84,7 @@ class JniTableTest {
     }
 
     @Test
-    @DisplayName("Should work with try-with-resources")
-    void shouldWorkWithTryWithResources() {
+    void testWorkWithTryWithResources() {
       final JniTable autoClosedTable = new JniTable(VALID_HANDLE);
       assertFalse(autoClosedTable.isClosed(), "Should not be closed inside try block");
       // Note: Not using try-with-resources in unit test since close() requires native methods
@@ -103,12 +92,10 @@ class JniTableTest {
   }
 
   @Nested
-  @DisplayName("Parameter Validation Tests")
   class ParameterValidationTests {
 
     @Test
-    @DisplayName("Should reject negative index in get")
-    void shouldRejectNegativeIndexInGet() {
+    void testRejectNegativeIndexInGet() {
       final JniTable table = new JniTable(VALID_HANDLE);
       assertThrows(
           JniValidationException.class,
@@ -118,8 +105,7 @@ class JniTableTest {
     }
 
     @Test
-    @DisplayName("Should reject negative index in set")
-    void shouldRejectNegativeIndexInSet() {
+    void testRejectNegativeIndexInSet() {
       final JniTable table = new JniTable(VALID_HANDLE);
       assertThrows(
           JniValidationException.class,
@@ -129,8 +115,7 @@ class JniTableTest {
     }
 
     @Test
-    @DisplayName("Should reject negative delta in grow")
-    void shouldRejectNegativeDeltaInGrow() {
+    void testRejectNegativeDeltaInGrow() {
       final JniTable table = new JniTable(VALID_HANDLE);
       assertThrows(
           JniValidationException.class,
@@ -140,8 +125,7 @@ class JniTableTest {
     }
 
     @Test
-    @DisplayName("Should reject negative start in fill")
-    void shouldRejectNegativeStartInFill() {
+    void testRejectNegativeStartInFill() {
       final JniTable table = new JniTable(VALID_HANDLE);
       assertThrows(
           JniValidationException.class,
@@ -151,8 +135,7 @@ class JniTableTest {
     }
 
     @Test
-    @DisplayName("Should reject negative count in fill")
-    void shouldRejectNegativeCountInFill() {
+    void testRejectNegativeCountInFill() {
       final JniTable table = new JniTable(VALID_HANDLE);
       assertThrows(
           JniValidationException.class,
@@ -163,12 +146,10 @@ class JniTableTest {
   }
 
   @Nested
-  @DisplayName("Closed Resource Tests")
   class ClosedResourceTests {
 
     @Test
-    @DisplayName("Should throw exception when accessing size of closed table")
-    void shouldThrowExceptionWhenAccessingSizeOfClosedTable() {
+    void testThrowExceptionWhenAccessingSizeOfClosedTable() {
       final JniTable table = new JniTable(VALID_HANDLE);
       table.markClosedForTesting();
 
@@ -179,8 +160,7 @@ class JniTableTest {
     }
 
     @Test
-    @DisplayName("Should throw exception when accessing max size of closed table")
-    void shouldThrowExceptionWhenAccessingMaxSizeOfClosedTable() {
+    void testThrowExceptionWhenAccessingMaxSizeOfClosedTable() {
       final JniTable table = new JniTable(VALID_HANDLE);
       table.markClosedForTesting();
 
@@ -191,8 +171,7 @@ class JniTableTest {
     }
 
     @Test
-    @DisplayName("Should throw exception when accessing element type of closed table")
-    void shouldThrowExceptionWhenAccessingElementTypeOfClosedTable() {
+    void testThrowExceptionWhenAccessingElementTypeOfClosedTable() {
       final JniTable table = new JniTable(VALID_HANDLE);
       table.markClosedForTesting();
 
@@ -203,8 +182,7 @@ class JniTableTest {
     }
 
     @Test
-    @DisplayName("Should throw exception when accessing element of closed table")
-    void shouldThrowExceptionWhenAccessingElementOfClosedTable() {
+    void testThrowExceptionWhenAccessingElementOfClosedTable() {
       final JniTable table = new JniTable(VALID_HANDLE);
       table.markClosedForTesting();
 
@@ -215,8 +193,7 @@ class JniTableTest {
     }
 
     @Test
-    @DisplayName("Should throw exception when setting element in closed table")
-    void shouldThrowExceptionWhenSettingElementInClosedTable() {
+    void testThrowExceptionWhenSettingElementInClosedTable() {
       final JniTable table = new JniTable(VALID_HANDLE);
       table.markClosedForTesting();
 
@@ -227,8 +204,7 @@ class JniTableTest {
     }
 
     @Test
-    @DisplayName("Should throw exception when growing closed table")
-    void shouldThrowExceptionWhenGrowingClosedTable() {
+    void testThrowExceptionWhenGrowingClosedTable() {
       final JniTable table = new JniTable(VALID_HANDLE);
       table.markClosedForTesting();
 
@@ -239,8 +215,7 @@ class JniTableTest {
     }
 
     @Test
-    @DisplayName("Should throw exception when filling closed table")
-    void shouldThrowExceptionWhenFillingClosedTable() {
+    void testThrowExceptionWhenFillingClosedTable() {
       final JniTable table = new JniTable(VALID_HANDLE);
       table.markClosedForTesting();
 
@@ -252,12 +227,10 @@ class JniTableTest {
   }
 
   @Nested
-  @DisplayName("toString and Object Methods Tests")
   class ToStringAndObjectMethodsTests {
 
     @Test
-    @DisplayName("Should provide meaningful toString")
-    void shouldProvideMeaningfulToString() {
+    void testProvideMeaningfulToString() {
       final JniTable table = new JniTable(VALID_HANDLE);
       final String toString = table.toString();
       assertNotNull(toString, "toString should not be null");
@@ -269,8 +242,7 @@ class JniTableTest {
     }
 
     @Test
-    @DisplayName("Should show open state in toString")
-    void shouldShowOpenStateInToString() {
+    void testShowOpenStateInToString() {
       final JniTable table = new JniTable(VALID_HANDLE);
       final String toString = table.toString();
       assertTrue(toString.contains("false"), "toString should show open state");

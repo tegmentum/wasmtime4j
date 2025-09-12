@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -14,11 +13,11 @@ import org.junit.jupiter.api.Test;
 class WasiComponentExceptionTest {
 
   @Nested
-  @DisplayName("Constructor Tests")
+
   class ConstructorTests {
 
     @Test
-    @DisplayName("Simple message constructor creates component exception correctly")
+
     void testSimpleMessageConstructor() {
       final String message = "Component operation failed";
       final WasiComponentException exception = new WasiComponentException(message);
@@ -36,7 +35,7 @@ class WasiComponentExceptionTest {
     }
 
     @Test
-    @DisplayName("Message with cause constructor creates exception correctly")
+
     void testMessageWithCauseConstructor() {
       final String message = "Component failed";
       final RuntimeException cause = new RuntimeException("Native error");
@@ -52,7 +51,7 @@ class WasiComponentExceptionTest {
     }
 
     @Test
-    @DisplayName("Component-specific constructor creates exception correctly")
+
     void testComponentSpecificConstructor() {
       final String message = "Component instantiation failed";
       final String componentId = "test-component";
@@ -72,7 +71,7 @@ class WasiComponentExceptionTest {
     }
 
     @Test
-    @DisplayName("Interface-specific constructor creates exception correctly")
+
     void testInterfaceSpecificConstructor() {
       final String message = "Interface binding failed";
       final String componentId = "test-component";
@@ -93,7 +92,7 @@ class WasiComponentExceptionTest {
     }
 
     @Test
-    @DisplayName("Full constructor with cause creates exception correctly")
+
     void testFullConstructorWithCause() {
       final String message = "Component linking failed";
       final String componentId = "test-component";
@@ -116,11 +115,11 @@ class WasiComponentExceptionTest {
   }
 
   @Nested
-  @DisplayName("Operation Type Tests")
+
   class OperationTypeTests {
 
     @Test
-    @DisplayName("isInstantiationError returns true for INSTANTIATION operation")
+
     void testIsInstantiationError() {
       final WasiComponentException exception =
           new WasiComponentException(
@@ -133,7 +132,7 @@ class WasiComponentExceptionTest {
     }
 
     @Test
-    @DisplayName("isInterfaceBindingError returns true for INTERFACE_BINDING operation")
+
     void testIsInterfaceBindingError() {
       final WasiComponentException exception =
           new WasiComponentException(
@@ -146,7 +145,7 @@ class WasiComponentExceptionTest {
     }
 
     @Test
-    @DisplayName("isResolutionError returns true for export and import resolution operations")
+
     void testIsResolutionError() {
       final WasiComponentException exportException =
           new WasiComponentException(
@@ -162,7 +161,7 @@ class WasiComponentExceptionTest {
     }
 
     @Test
-    @DisplayName("isLinkingError returns true for LINKING operation")
+
     void testIsLinkingError() {
       final WasiComponentException exception =
           new WasiComponentException(
@@ -175,7 +174,7 @@ class WasiComponentExceptionTest {
     }
 
     @Test
-    @DisplayName("isExecutionError returns true for EXECUTION operation")
+
     void testIsExecutionError() {
       final WasiComponentException exception =
           new WasiComponentException(
@@ -189,11 +188,11 @@ class WasiComponentExceptionTest {
   }
 
   @Nested
-  @DisplayName("Retry Logic Tests")
+
   class RetryLogicTests {
 
     @Test
-    @DisplayName("INSTANTIATION operations are retryable")
+
     void testInstantiationRetryable() {
       final WasiComponentException exception =
           new WasiComponentException(
@@ -202,7 +201,7 @@ class WasiComponentExceptionTest {
     }
 
     @Test
-    @DisplayName("EXECUTION operations are retryable")
+
     void testExecutionRetryable() {
       final WasiComponentException exception =
           new WasiComponentException(
@@ -211,7 +210,7 @@ class WasiComponentExceptionTest {
     }
 
     @Test
-    @DisplayName("Configuration operations are not retryable")
+
     void testConfigurationOperationsNotRetryable() {
       assertFalse(
           new WasiComponentException(
@@ -237,11 +236,11 @@ class WasiComponentExceptionTest {
   }
 
   @Nested
-  @DisplayName("Message Formatting Tests")
+
   class MessageFormattingTests {
 
     @Test
-    @DisplayName("Operation formatting works correctly for all operation types")
+
     void testOperationFormatting() {
       assertEquals(
           "component-instantiation",
@@ -281,7 +280,7 @@ class WasiComponentExceptionTest {
     }
 
     @Test
-    @DisplayName("Resource formatting works correctly with component ID only")
+
     void testResourceFormattingComponentOnly() {
       final WasiComponentException exception =
           new WasiComponentException(
@@ -290,7 +289,7 @@ class WasiComponentExceptionTest {
     }
 
     @Test
-    @DisplayName("Resource formatting works correctly with component and interface")
+
     void testResourceFormattingComponentAndInterface() {
       final WasiComponentException exception =
           new WasiComponentException(
@@ -302,7 +301,7 @@ class WasiComponentExceptionTest {
     }
 
     @Test
-    @DisplayName("Resource formatting works correctly with null component")
+
     void testResourceFormattingNullComponent() {
       final WasiComponentException exception =
           new WasiComponentException(
@@ -314,7 +313,7 @@ class WasiComponentExceptionTest {
     }
 
     @Test
-    @DisplayName("Resource formatting returns null for null inputs")
+
     void testResourceFormattingNullInputs() {
       final WasiComponentException exception =
           new WasiComponentException(
@@ -324,18 +323,18 @@ class WasiComponentExceptionTest {
   }
 
   @Nested
-  @DisplayName("Inheritance Tests")
+
   class InheritanceTests {
 
     @Test
-    @DisplayName("WasiComponentException extends WasiException")
+
     void testWasiComponentExceptionExtendsWasiException() {
       final WasiComponentException exception = new WasiComponentException("Test error");
       assertTrue(exception instanceof WasiException);
     }
 
     @Test
-    @DisplayName("WasiComponentException extends WasmException")
+
     void testWasiComponentExceptionExtendsWasmException() {
       final WasiComponentException exception = new WasiComponentException("Test error");
       assertTrue(exception instanceof WasmException);
@@ -343,11 +342,11 @@ class WasiComponentExceptionTest {
   }
 
   @Nested
-  @DisplayName("Component Operation Enum Tests")
+
   class ComponentOperationEnumTests {
 
     @Test
-    @DisplayName("All ComponentOperation values are properly defined")
+
     void testComponentOperationValues() {
       final WasiComponentException.ComponentOperation[] operations =
           WasiComponentException.ComponentOperation.values();
@@ -375,11 +374,11 @@ class WasiComponentExceptionTest {
   }
 
   @Nested
-  @DisplayName("Edge Case Tests")
+
   class EdgeCaseTests {
 
     @Test
-    @DisplayName("Null operation type handling")
+
     void testNullOperationTypeHandling() {
       // This tests internal method behavior - null operation types should be handled gracefully
       final WasiComponentException exception =
@@ -389,7 +388,7 @@ class WasiComponentExceptionTest {
     }
 
     @Test
-    @DisplayName("Empty component ID handling")
+
     void testEmptyComponentIdHandling() {
       final WasiComponentException exception =
           new WasiComponentException(
@@ -398,7 +397,7 @@ class WasiComponentExceptionTest {
     }
 
     @Test
-    @DisplayName("Empty interface name handling")
+
     void testEmptyInterfaceNameHandling() {
       final WasiComponentException exception =
           new WasiComponentException(

@@ -35,7 +35,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -55,7 +54,7 @@ import org.junit.jupiter.params.provider.ValueSource;
  *   <li>Memory consistency guarantees
  * </ul>
  */
-@DisplayName("Concurrency and Thread-Safety Tests")
+
 final class ConcurrencyTest {
 
   private ExecutorService executorService;
@@ -82,7 +81,7 @@ final class ConcurrencyTest {
   }
 
   @Test
-  @DisplayName("Should handle concurrent platform detection safely")
+
   @Timeout(10)
   void testConcurrentPlatformDetection() throws InterruptedException, ExecutionException {
     final int threadCount = 50;
@@ -114,7 +113,7 @@ final class ConcurrencyTest {
   }
 
   @Test
-  @DisplayName("Should handle concurrent access to PlatformInfo methods")
+
   @Timeout(10)
   void testConcurrentPlatformInfoAccess() throws InterruptedException, ExecutionException {
     final PlatformDetector.PlatformInfo platformInfo = PlatformDetector.detect();
@@ -160,7 +159,7 @@ final class ConcurrencyTest {
   }
 
   @Test
-  @DisplayName("Should prevent race conditions in cache initialization")
+
   @Timeout(15)
   void testCacheInitializationRaceConditions() throws InterruptedException {
     final int iterations = 10;
@@ -222,7 +221,7 @@ final class ConcurrencyTest {
 
   @ParameterizedTest
   @ValueSource(ints = {10, 25, 50, 100})
-  @DisplayName("Should handle varying levels of concurrent load")
+
   @Timeout(20)
   void testVaryingConcurrentLoad(final int threadCount)
       throws InterruptedException, ExecutionException {
@@ -261,7 +260,7 @@ final class ConcurrencyTest {
   }
 
   @RepeatedTest(value = 5, name = "Stress test iteration {currentRepetition} of {totalRepetitions}")
-  @DisplayName("Should handle repeated concurrent stress testing")
+
   @Timeout(10)
   void testRepeatedConcurrentStress() throws InterruptedException {
     final int batchSize = 15;
@@ -300,7 +299,7 @@ final class ConcurrencyTest {
   }
 
   @Test
-  @DisplayName("Should maintain memory consistency across threads")
+
   @Timeout(10)
   void testMemoryConsistency() throws InterruptedException, ExecutionException {
     final int threadCount = 25;
@@ -337,7 +336,7 @@ final class ConcurrencyTest {
   }
 
   @Test
-  @DisplayName("Should handle platform detection method variants concurrently")
+
   @Timeout(10)
   void testConcurrentMethodVariants() throws InterruptedException, ExecutionException {
     final int threadCount = 30;
@@ -410,7 +409,7 @@ final class ConcurrencyTest {
   }
 
   @Test
-  @DisplayName("Should handle interruption gracefully")
+
   @Timeout(10)
   void testInterruptionHandling() throws InterruptedException {
     final CountDownLatch startLatch = new CountDownLatch(1);

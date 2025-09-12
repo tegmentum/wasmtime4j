@@ -23,7 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import ai.tegmentum.wasmtime4j.nativeloader.NativeLoaderBuilder.SecurityLevel;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -35,7 +34,7 @@ import org.junit.jupiter.api.Test;
 final class NativeLoaderBuilderTest {
 
   @Test
-  @DisplayName("Should start with default configuration values")
+
   void testDefaultConfiguration() {
     final NativeLoaderBuilder builder = new NativeLoaderBuilder();
 
@@ -57,7 +56,7 @@ final class NativeLoaderBuilderTest {
   }
 
   @Test
-  @DisplayName("Should support fluent API for library name")
+
   void testLibraryNameFluentAPI() {
     final NativeLoaderBuilder builder = new NativeLoaderBuilder();
     final NativeLoaderBuilder result = builder.libraryName("testlib");
@@ -67,7 +66,7 @@ final class NativeLoaderBuilderTest {
   }
 
   @Test
-  @DisplayName("Should support fluent API for temp file prefix")
+
   void testTempFilePrefixFluentAPI() {
     final NativeLoaderBuilder builder = new NativeLoaderBuilder();
     final NativeLoaderBuilder result = builder.tempFilePrefix("test-prefix-");
@@ -77,7 +76,7 @@ final class NativeLoaderBuilderTest {
   }
 
   @Test
-  @DisplayName("Should support fluent API for temp dir suffix")
+
   void testTempDirSuffixFluentAPI() {
     final NativeLoaderBuilder builder = new NativeLoaderBuilder();
     final NativeLoaderBuilder result = builder.tempDirSuffix("-test-suffix");
@@ -87,7 +86,7 @@ final class NativeLoaderBuilderTest {
   }
 
   @Test
-  @DisplayName("Should support fluent API for security level")
+
   void testSecurityLevelFluentAPI() {
     final NativeLoaderBuilder builder = new NativeLoaderBuilder();
     final NativeLoaderBuilder result = builder.securityLevel(SecurityLevel.STRICT);
@@ -97,7 +96,7 @@ final class NativeLoaderBuilderTest {
   }
 
   @Test
-  @DisplayName("Should support fluent API for resource path convention")
+
   void testPathConventionFluentAPI() {
     final NativeLoaderBuilder builder = new NativeLoaderBuilder();
     final NativeLoaderBuilder result = builder.pathConvention(PathConvention.JNA);
@@ -108,7 +107,7 @@ final class NativeLoaderBuilderTest {
   }
 
   @Test
-  @DisplayName("Should reject null library name")
+
   void testNullLibraryName() {
     final NativeLoaderBuilder builder = new NativeLoaderBuilder();
 
@@ -119,7 +118,7 @@ final class NativeLoaderBuilderTest {
   }
 
   @Test
-  @DisplayName("Should reject null temp file prefix")
+
   void testNullTempFilePrefix() {
     final NativeLoaderBuilder builder = new NativeLoaderBuilder();
 
@@ -130,7 +129,7 @@ final class NativeLoaderBuilderTest {
   }
 
   @Test
-  @DisplayName("Should reject null temp dir suffix")
+
   void testNullTempDirSuffix() {
     final NativeLoaderBuilder builder = new NativeLoaderBuilder();
 
@@ -141,7 +140,7 @@ final class NativeLoaderBuilderTest {
   }
 
   @Test
-  @DisplayName("Should reject null security level")
+
   void testNullSecurityLevel() {
     final NativeLoaderBuilder builder = new NativeLoaderBuilder();
 
@@ -152,7 +151,7 @@ final class NativeLoaderBuilderTest {
   }
 
   @Test
-  @DisplayName("Should reject null resource path convention")
+
   void testNullPathConvention() {
     final NativeLoaderBuilder builder = new NativeLoaderBuilder();
 
@@ -163,7 +162,7 @@ final class NativeLoaderBuilderTest {
   }
 
   @Test
-  @DisplayName("Should support method chaining")
+
   void testMethodChaining() {
     final NativeLoaderBuilder builder = new NativeLoaderBuilder();
 
@@ -184,7 +183,7 @@ final class NativeLoaderBuilderTest {
   }
 
   @Test
-  @DisplayName("Should build configuration and load library")
+
   void testBuildAndLoad() {
     final NativeLoaderBuilder builder = new NativeLoaderBuilder().libraryName("test-build-load");
 
@@ -197,7 +196,7 @@ final class NativeLoaderBuilderTest {
   }
 
   @Test
-  @DisplayName("Should validate configuration during build")
+
   void testConfigurationValidationDuringBuild() {
     // Test with empty library name (should fail validation in NativeLibraryConfig)
     final NativeLoaderBuilder builder = new NativeLoaderBuilder().libraryName("");
@@ -209,7 +208,7 @@ final class NativeLoaderBuilderTest {
   }
 
   @Test
-  @DisplayName("Should be reusable for multiple builds")
+
   void testBuilderReusability() {
     final NativeLoaderBuilder builder = new NativeLoaderBuilder().libraryName("reusable-test");
 
@@ -224,7 +223,7 @@ final class NativeLoaderBuilderTest {
   }
 
   @Test
-  @DisplayName("Should maintain independent state between builder instances")
+
   void testBuilderIndependence() {
     final NativeLoaderBuilder builder1 = new NativeLoaderBuilder().libraryName("lib1");
     final NativeLoaderBuilder builder2 = new NativeLoaderBuilder().libraryName("lib2");
@@ -239,7 +238,7 @@ final class NativeLoaderBuilderTest {
   }
 
   @Test
-  @DisplayName("Should handle all security levels")
+
   void testAllSecurityLevels() {
     final NativeLoaderBuilder builder = new NativeLoaderBuilder().libraryName("security-test");
 
@@ -254,7 +253,7 @@ final class NativeLoaderBuilderTest {
   }
 
   @Test
-  @DisplayName("Should handle all resource path conventions")
+
   void testAllPathConventions() {
     final NativeLoaderBuilder builder = new NativeLoaderBuilder().libraryName("convention-test");
 
@@ -272,7 +271,7 @@ final class NativeLoaderBuilderTest {
   }
 
   @Test
-  @DisplayName("Should handle whitespace in string parameters appropriately")
+
   void testWhitespaceHandling() {
     final NativeLoaderBuilder builder = new NativeLoaderBuilder();
 

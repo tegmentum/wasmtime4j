@@ -12,7 +12,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
 import ai.tegmentum.wasmtime4j.jni.util.JniExceptionMapper;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -23,11 +22,11 @@ import org.junit.jupiter.params.provider.CsvSource;
  * <p>These tests verify that JNI error codes are properly aligned with Rust, that proper exceptions
  * are thrown instead of returning 0, and that all error scenarios are handled defensively.
  */
-@DisplayName("JNI Error Handling Tests")
+
 class JniErrorHandlingTest {
 
   @Test
-  @DisplayName("All 18 error codes map correctly")
+
   void testAllErrorCodesMapped() {
     // Test that all Rust error codes (-1 to -18) are properly handled
     for (int errorCode = -1; errorCode >= -18; errorCode--) {
@@ -62,7 +61,7 @@ class JniErrorHandlingTest {
     "-17, Interface error",
     "-18, Internal error"
   })
-  @DisplayName("Error code mappings match expected messages")
+
   void testErrorCodeMessageMapping(int errorCode, String expectedMessagePrefix) {
     JniException exception = JniExceptionMapper.mapNativeError(errorCode, "test");
     assertTrue(
@@ -76,7 +75,7 @@ class JniErrorHandlingTest {
   }
 
   @Test
-  @DisplayName("Memory and resource errors use JniResourceException")
+
   void testResourceExceptionTypes() {
     // Memory error (-7) should use JniResourceException
     JniException memoryException = JniExceptionMapper.mapNativeError(-7, "memory test");
@@ -101,7 +100,7 @@ class JniErrorHandlingTest {
   }
 
   @Test
-  @DisplayName("Error code descriptions are comprehensive")
+
   void testErrorCodeDescriptions() {
     for (int errorCode = -1; errorCode >= -18; errorCode--) {
       String description = JniExceptionMapper.getErrorCodeDescription(errorCode);
@@ -124,7 +123,7 @@ class JniErrorHandlingTest {
   }
 
   @Test
-  @DisplayName("Null and empty message handling")
+
   void testNullMessageHandling() {
     // Test null message
     JniException nullException = JniExceptionMapper.mapNativeError(-1, null);
@@ -144,7 +143,7 @@ class JniErrorHandlingTest {
   }
 
   @Test
-  @DisplayName("Native handle validation")
+
   void testNativeHandleValidation() {
     // Valid handle should not throw
     assertDoesNotThrow(
@@ -171,7 +170,7 @@ class JniErrorHandlingTest {
   }
 
   @Test
-  @DisplayName("Native result validation")
+
   void testNativeResultValidation() {
     // True result should not throw
     assertDoesNotThrow(
@@ -197,7 +196,7 @@ class JniErrorHandlingTest {
   }
 
   @Test
-  @DisplayName("Safe error message extraction")
+
   void testSafeErrorMessageExtraction() {
     // Valid message
     String result1 = JniExceptionMapper.getSafeErrorMessage("valid message", "default");
@@ -221,7 +220,7 @@ class JniErrorHandlingTest {
   }
 
   @Test
-  @DisplayName("Exception wrapping for native operations")
+
   void testNativeExceptionWrapping() {
     RuntimeException cause = new RuntimeException("Original error");
 
@@ -238,7 +237,7 @@ class JniErrorHandlingTest {
   }
 
   @Test
-  @DisplayName("Cleanup exception creation")
+
   void testCleanupExceptionCreation() {
     // Test with cause
     RuntimeException cause = new RuntimeException("cleanup failed");
@@ -261,7 +260,7 @@ class JniErrorHandlingTest {
   }
 
   @Test
-  @DisplayName("Invalid state exception creation")
+
   void testInvalidStateExceptionCreation() {
     JniException stateEx = JniExceptionMapper.createInvalidStateException("engine", "disposed");
 
@@ -277,7 +276,7 @@ class JniErrorHandlingTest {
   }
 
   @Test
-  @DisplayName("Thread safety of error mapping")
+
   void testThreadSafety() throws InterruptedException {
     int numThreads = 10;
     Thread[] threads = new Thread[numThreads];
@@ -314,7 +313,7 @@ class JniErrorHandlingTest {
   }
 
   @Test
-  @DisplayName("Large message handling")
+
   void testLargeMessageHandling() {
     // Test very long error message
     StringBuilder sb = new StringBuilder(10000);
@@ -336,7 +335,7 @@ class JniErrorHandlingTest {
   }
 
   @Test
-  @DisplayName("Edge case error codes")
+
   void testEdgeCaseErrorCodes() {
     // Test boundary values
     JniException exception1 = JniExceptionMapper.mapNativeError(1, "positive error code");

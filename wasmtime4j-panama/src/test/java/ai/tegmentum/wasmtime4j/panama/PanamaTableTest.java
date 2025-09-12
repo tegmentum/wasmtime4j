@@ -34,7 +34,6 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -48,7 +47,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
  * element access, bounds checking, resource management, and error handling patterns.
  */
 @ExtendWith(MockitoExtension.class)
-@DisplayName("PanamaTable Tests")
+
 class PanamaTableTest {
 
   @Mock private ArenaResourceManager mockArenaManager;
@@ -102,44 +101,44 @@ class PanamaTableTest {
   }
 
   @Nested
-  @DisplayName("Constructor Tests")
+
   class ConstructorTests {
 
     @Test
-    @DisplayName("Should create table with valid parameters")
-    void shouldCreateTableWithValidParameters() throws Throwable {
+
+    void testCreateTableWithValidParameters() throws Throwable {
       // Verify the table was registered with arena manager
       verify(mockArenaManager)
           .registerManagedNativeResource(eq(panamaTable), eq(mockTableHandle), any());
     }
 
     @Test
-    @DisplayName("Should throw exception when table handle is null")
-    void shouldThrowExceptionWhenTableHandleIsNull() {
+
+    void testThrowExceptionWhenTableHandleIsNull() {
       assertThrows(
           NullPointerException.class,
           () -> new PanamaTable(null, mockArenaManager, mockPanamaInstance, mockNativeBindings));
     }
 
     @Test
-    @DisplayName("Should throw exception when arena manager is null")
-    void shouldThrowExceptionWhenArenaManagerIsNull() {
+
+    void testThrowExceptionWhenArenaManagerIsNull() {
       assertThrows(
           NullPointerException.class,
           () -> new PanamaTable(mockTableHandle, null, mockPanamaInstance, mockNativeBindings));
     }
 
     @Test
-    @DisplayName("Should throw exception when native bindings is null")
-    void shouldThrowExceptionWhenNativeBindingsIsNull() {
+
+    void testThrowExceptionWhenNativeBindingsIsNull() {
       assertThrows(
           NullPointerException.class,
           () -> new PanamaTable(mockTableHandle, mockArenaManager, null, mockNativeBindings));
     }
 
     @Test
-    @DisplayName("Should throw exception when native bindings is null in 4-param constructor")
-    void shouldThrowExceptionWhenNativeBindingsIsNullIn4ParamConstructor() {
+
+    void testThrowExceptionWhenNativeBindingsIsNullIn4ParamConstructor() {
       assertThrows(
           NullPointerException.class,
           () -> new PanamaTable(mockTableHandle, mockArenaManager, mockPanamaInstance, null));
@@ -147,12 +146,12 @@ class PanamaTableTest {
   }
 
   @Nested
-  @DisplayName("Size Operation Tests")
+
   class SizeOperationTests {
 
     @Test
-    @DisplayName("Should return correct table size")
-    void shouldReturnCorrectTableSize() throws Throwable {
+
+    void testReturnCorrectTableSize() throws Throwable {
       // Arrange
       final long expectedSize = 42L;
       final MethodHandle sizeHandle = createSizeHandle(expectedSize);
@@ -167,8 +166,8 @@ class PanamaTableTest {
     }
 
     @Test
-    @DisplayName("Should handle size operation failure")
-    void shouldHandleSizeOperationFailure() throws Throwable {
+
+    void testHandleSizeOperationFailure() throws Throwable {
       // Arrange
       final RuntimeException cause = new RuntimeException("Native size failed");
       final MethodHandle throwingHandle = createThrowingHandle(cause);
@@ -186,12 +185,12 @@ class PanamaTableTest {
   }
 
   @Nested
-  @DisplayName("Get Element Tests")
+
   class GetElementTests {
 
     @Test
-    @DisplayName("Should get element at valid index")
-    void shouldGetElementAtValidIndex() throws Throwable {
+
+    void testGetElementAtValidIndex() throws Throwable {
       // Arrange
       final int index = 5;
       final long tableSize = 10L;
@@ -212,8 +211,8 @@ class PanamaTableTest {
     }
 
     @Test
-    @DisplayName("Should return null for null element handle")
-    void shouldReturnNullForNullElementHandle() throws Throwable {
+
+    void testReturnNullForNullElementHandle() throws Throwable {
       // Arrange
       final int index = 5;
       final long tableSize = 10L;
@@ -232,8 +231,8 @@ class PanamaTableTest {
     }
 
     @Test
-    @DisplayName("Should throw exception for negative index")
-    void shouldThrowExceptionForNegativeIndex() {
+
+    void testThrowExceptionForNegativeIndex() {
       // Arrange
       final int index = -1;
 
@@ -242,8 +241,8 @@ class PanamaTableTest {
     }
 
     @Test
-    @DisplayName("Should throw exception for index out of bounds")
-    void shouldThrowExceptionForIndexOutOfBounds() throws Throwable {
+
+    void testThrowExceptionForIndexOutOfBounds() throws Throwable {
       // Arrange
       final int index = 10;
       final long tableSize = 5L;
@@ -262,8 +261,8 @@ class PanamaTableTest {
     }
 
     @Test
-    @DisplayName("Should handle get operation failure")
-    void shouldHandleGetOperationFailure() throws Throwable {
+
+    void testHandleGetOperationFailure() throws Throwable {
       // Arrange
       final int index = 3;
       final long tableSize = 10L;
@@ -286,12 +285,12 @@ class PanamaTableTest {
   }
 
   @Nested
-  @DisplayName("Set Element Tests")
+
   class SetElementTests {
 
     @Test
-    @DisplayName("Should set element at valid index")
-    void shouldSetElementAtValidIndex() throws Throwable {
+
+    void testSetElementAtValidIndex() throws Throwable {
       // Arrange
       final int index = 3;
       final long tableSize = 10L;
@@ -313,8 +312,8 @@ class PanamaTableTest {
     }
 
     @Test
-    @DisplayName("Should set null element")
-    void shouldSetNullElement() throws Throwable {
+
+    void testSetNullElement() throws Throwable {
       // Arrange
       final int index = 3;
       final long tableSize = 10L;
@@ -333,8 +332,8 @@ class PanamaTableTest {
     }
 
     @Test
-    @DisplayName("Should throw exception for negative index")
-    void shouldThrowExceptionForNegativeIndexOnSet() {
+
+    void testThrowExceptionForNegativeIndexOnSet() {
       // Arrange
       final int index = -1;
 
@@ -343,8 +342,8 @@ class PanamaTableTest {
     }
 
     @Test
-    @DisplayName("Should throw exception for index out of bounds")
-    void shouldThrowExceptionForIndexOutOfBoundsOnSet() throws Throwable {
+
+    void testThrowExceptionForIndexOutOfBoundsOnSet() throws Throwable {
       // Arrange
       final int index = 15;
 
@@ -356,8 +355,8 @@ class PanamaTableTest {
     }
 
     @Test
-    @DisplayName("Should throw exception for non-Panama function")
-    void shouldThrowExceptionForNonPanamaFunction() throws Throwable {
+
+    void testThrowExceptionForNonPanamaFunction() throws Throwable {
       // Arrange
       final int index = 3;
       final Object invalidFunction = new Object();
@@ -370,8 +369,8 @@ class PanamaTableTest {
     }
 
     @Test
-    @DisplayName("Should handle set operation failure")
-    void shouldHandleSetOperationFailure() throws Throwable {
+
+    void testHandleSetOperationFailure() throws Throwable {
       // Arrange
       final int index = 3;
       final long tableSize = 10L;
@@ -391,12 +390,12 @@ class PanamaTableTest {
   }
 
   @Nested
-  @DisplayName("Grow Operation Tests")
+
   class GrowOperationTests {
 
     @Test
-    @DisplayName("Should grow table successfully")
-    void shouldGrowTableSuccessfully() throws Throwable {
+
+    void testGrowTableSuccessfully() throws Throwable {
       // Arrange
       final int delta = 5;
       final long previousSize = 10L;
@@ -416,8 +415,8 @@ class PanamaTableTest {
     }
 
     @Test
-    @DisplayName("Should grow table with initial value")
-    void shouldGrowTableWithInitialValue() throws Throwable {
+
+    void testGrowTableWithInitialValue() throws Throwable {
       // Arrange
       final int delta = 3;
       final long previousSize = 7L;
@@ -440,8 +439,8 @@ class PanamaTableTest {
     }
 
     @Test
-    @DisplayName("Should throw exception for negative delta")
-    void shouldThrowExceptionForNegativeDelta() {
+
+    void testThrowExceptionForNegativeDelta() {
       // Arrange
       final int delta = -5;
 
@@ -450,8 +449,8 @@ class PanamaTableTest {
     }
 
     @Test
-    @DisplayName("Should handle grow operation failure")
-    void shouldHandleGrowOperationFailure() throws Throwable {
+
+    void testHandleGrowOperationFailure() throws Throwable {
       // Arrange
       final int delta = 5;
       final long previousSize = 10L;
@@ -471,12 +470,12 @@ class PanamaTableTest {
   }
 
   @Nested
-  @DisplayName("Resource Management Tests")
+
   class ResourceManagementTests {
 
     @Test
-    @DisplayName("Should close table successfully")
-    void shouldCloseTableSuccessfully() throws Throwable {
+
+    void testCloseTableSuccessfully() throws Throwable {
       // Act
       panamaTable.close();
 
@@ -486,8 +485,8 @@ class PanamaTableTest {
     }
 
     @Test
-    @DisplayName("Should handle double close gracefully")
-    void shouldHandleDoubleCloseGracefully() throws Throwable {
+
+    void testHandleDoubleCloseGracefully() throws Throwable {
       // Act
       panamaTable.close();
       panamaTable.close(); // Second close should be safe
@@ -497,8 +496,8 @@ class PanamaTableTest {
     }
 
     @Test
-    @DisplayName("Should throw exception when accessing closed table")
-    void shouldThrowExceptionWhenAccessingClosedTable() throws Throwable {
+
+    void testThrowExceptionWhenAccessingClosedTable() throws Throwable {
       // Arrange
       panamaTable.close();
 
@@ -511,8 +510,8 @@ class PanamaTableTest {
     }
 
     @Test
-    @DisplayName("Should return correct table handle")
-    void shouldReturnCorrectTableHandle() {
+
+    void testReturnCorrectTableHandle() {
       // Act
       final MemorySegment handle = panamaTable.getTableHandle();
 
@@ -522,12 +521,12 @@ class PanamaTableTest {
   }
 
   @Nested
-  @DisplayName("Utility Method Tests")
+
   class UtilityMethodTests {
 
     @Test
-    @DisplayName("Should return correct max size")
-    void shouldReturnCorrectMaxSize() throws Throwable {
+
+    void testReturnCorrectMaxSize() throws Throwable {
       // Act
       final int maxSize = panamaTable.getMaxSize();
 
@@ -536,8 +535,8 @@ class PanamaTableTest {
     }
 
     @Test
-    @DisplayName("Should return correct element type")
-    void shouldReturnCorrectElementType() throws Throwable {
+
+    void testReturnCorrectElementType() throws Throwable {
       // Act
       final WasmValueType elementType = panamaTable.getElementType();
 
@@ -546,8 +545,8 @@ class PanamaTableTest {
     }
 
     @Test
-    @DisplayName("Should return correct string representation")
-    void shouldReturnCorrectStringRepresentation() throws Throwable {
+
+    void testReturnCorrectStringRepresentation() throws Throwable {
       // Arrange
       final MethodHandle sizeHandle = createSizeHandle(5L);
       when(mockNativeBindings.getTableSize()).thenReturn(sizeHandle);
@@ -562,8 +561,8 @@ class PanamaTableTest {
     }
 
     @Test
-    @DisplayName("Should return correct string representation when closed")
-    void shouldReturnCorrectStringRepresentationWhenClosed() throws Throwable {
+
+    void testReturnCorrectStringRepresentationWhenClosed() throws Throwable {
       // Arrange
       panamaTable.close();
 
@@ -577,12 +576,12 @@ class PanamaTableTest {
   }
 
   @Nested
-  @DisplayName("Thread Safety Tests")
+
   class ThreadSafetyTests {
 
     @Test
-    @DisplayName("Should handle concurrent access safely")
-    void shouldHandleConcurrentAccessSafely() throws Throwable {
+
+    void testHandleConcurrentAccessSafely() throws Throwable {
       // Arrange
       final MethodHandle sizeHandle = createSizeHandle(10L);
       final MethodHandle getHandle = createGetHandle(MemorySegment.NULL);
@@ -618,8 +617,8 @@ class PanamaTableTest {
     }
 
     @Test
-    @DisplayName("Should handle concurrent close safely")
-    void shouldHandleConcurrentCloseSafely() throws Throwable {
+
+    void testHandleConcurrentCloseSafely() throws Throwable {
       // Act
       final Runnable closeOperation =
           () -> {
