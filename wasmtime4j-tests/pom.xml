@@ -121,6 +121,11 @@
                     </includes>
                     <excludes>
                         <exclude>**/*IT.java</exclude>
+                        <exclude>**/*IntegrationTest.java</exclude>
+                        <exclude>**/module/**/*Test.java</exclude>
+                        <exclude>**/instance/**/*Test.java</exclude>
+                        <exclude>**/hostfunction/**/*Test.java</exclude>
+                        <exclude>**/examples/**/*Test.java</exclude>
                     </excludes>
                     <systemPropertyVariables>
                         <java.util.logging.config.file>src/test/resources/logging/test-logging.properties</java.util.logging.config.file>
