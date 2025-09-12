@@ -548,7 +548,7 @@ pub mod jni_store {
     use crate::store::core;
     use crate::error::jni_utils;
     
-    /// Create a new store
+    /// Create a new store with default configuration
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeCreateStore(
         env: JNIEnv,
@@ -559,6 +559,254 @@ pub mod jni_store {
             let engine = unsafe { crate::engine::core::get_engine_ref(engine_ptr as *const std::os::raw::c_void)? };
             core::create_store(engine)
         }) as jlong
+    }
+    
+    /// Create a new store with custom configuration
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeCreateStoreWithConfig(
+        env: JNIEnv,
+        _class: JClass,
+        engine_ptr: jlong,
+        fuel_limit: jlong,           // 0 = no limit
+        memory_limit_bytes: jlong,   // 0 = no limit
+        execution_timeout_secs: jlong, // 0 = no timeout
+        max_instances: jint,         // 0 = no limit
+        max_table_elements: jint,    // 0 = no limit
+        max_functions: jint,         // 0 = no limit
+    ) -> jlong {
+        jni_utils::jni_try_ptr(env, || {
+            let engine = unsafe { crate::engine::core::get_engine_ref(engine_ptr as *const std::os::raw::c_void)? };
+            
+            let fuel_limit_opt = if fuel_limit == 0 { None } else { Some(fuel_limit as u64) };
+            let memory_limit_opt = if memory_limit_bytes == 0 { None } else { Some(memory_limit_bytes as usize) };
+            let timeout_opt = if execution_timeout_secs == 0 { None } else { Some(execution_timeout_secs as u64) };
+            let max_instances_opt = if max_instances == 0 { None } else { Some(max_instances as usize) };
+            let max_table_elements_opt = if max_table_elements == 0 { None } else { Some(max_table_elements as u32) };
+            let max_functions_opt = if max_functions == 0 { None } else { Some(max_functions as usize) };
+            
+            core::create_store_with_config(
+                engine,
+                fuel_limit_opt,
+                memory_limit_opt,
+                timeout_opt,
+                max_instances_opt,
+                max_table_elements_opt,
+                max_functions_opt,
+            )
+        }) as jlong
+    }
+    
+    /// Add fuel to the store for execution limiting
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeAddFuel(
+        env: JNIEnv,
+        _class: JClass,
+        store_ptr: jlong,
+        fuel: jlong,
+    ) -> jboolean {
+        jni_utils::jni_try_bool(env, || {
+            let store = unsafe { core::get_store_ref(store_ptr as *const std::os::raw::c_void)? };
+            core::add_fuel(store, fuel as u64)?;
+            Ok(true)
+        }) as jboolean
+    }
+    
+    /// Get remaining fuel in the store
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeGetFuelRemaining(
+        env: JNIEnv,
+        _class: JClass,
+        store_ptr: jlong,
+    ) -> jlong {
+        jni_utils::jni_try_with_default(env, -1, || {
+            let store = unsafe { core::get_store_ref(store_ptr as *const std::os::raw::c_void)? };
+            let fuel = core::get_fuel_remaining(store)?;
+            Ok(fuel as jlong)
+        })
+    }
+    
+    /// Consume fuel from the store
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeConsumeFuel(
+        env: JNIEnv,
+        _class: JClass,
+        store_ptr: jlong,
+        fuel_to_consume: jlong,
+    ) -> jlong {
+        jni_utils::jni_try_with_default(env, -1, || {
+            let store = unsafe { core::get_store_ref(store_ptr as *const std::os::raw::c_void)? };
+            let actual_consumed = core::consume_fuel(store, fuel_to_consume as u64)?;
+            Ok(actual_consumed as jlong)
+        })
+    }
+    
+    /// Set epoch deadline for interruption
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeSetEpochDeadline(
+        env: JNIEnv,
+        _class: JClass,
+        store_ptr: jlong,
+        ticks: jlong,
+    ) {
+        let _ = jni_utils::jni_try_void(env, || {
+            let store = unsafe { core::get_store_ref(store_ptr as *const std::os::raw::c_void)? };
+            core::set_epoch_deadline(store, ticks as u64);
+            Ok(())
+        });
+    }
+    
+    /// Force garbage collection in the store
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeGarbageCollect(
+        env: JNIEnv,
+        _class: JClass,
+        store_ptr: jlong,
+    ) -> jboolean {
+        jni_utils::jni_try_bool(env, || {
+            let store = unsafe { core::get_store_ref(store_ptr as *const std::os::raw::c_void)? };
+            core::garbage_collect(store)?;
+            Ok(true)
+        }) as jboolean
+    }
+    
+    /// Validate store functionality
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeValidate(
+        env: JNIEnv,
+        _class: JClass,
+        store_ptr: jlong,
+    ) -> jboolean {
+        jni_utils::jni_try_bool(env, || {
+            let store = unsafe { core::get_store_ref(store_ptr as *const std::os::raw::c_void)? };
+            core::validate_store(store)?;
+            Ok(true)
+        }) as jboolean
+    }
+    
+    /// Get store execution count
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeGetExecutionCount(
+        env: JNIEnv,
+        _class: JClass,
+        store_ptr: jlong,
+    ) -> jlong {
+        jni_utils::jni_try_with_default(env, -1, || {
+            let store = unsafe { core::get_store_ref(store_ptr as *const std::os::raw::c_void)? };
+            let stats = core::get_execution_stats(store)?;
+            Ok(stats.execution_count as jlong)
+        })
+    }
+    
+    /// Get store total execution time in milliseconds
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeGetExecutionTime(
+        env: JNIEnv,
+        _class: JClass,
+        store_ptr: jlong,
+    ) -> jlong {
+        jni_utils::jni_try_with_default(env, -1, || {
+            let store = unsafe { core::get_store_ref(store_ptr as *const std::os::raw::c_void)? };
+            let stats = core::get_execution_stats(store)?;
+            Ok(stats.total_execution_time.as_millis() as jlong)
+        })
+    }
+    
+    /// Get store total fuel consumed
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeGetTotalFuelConsumed(
+        env: JNIEnv,
+        _class: JClass,
+        store_ptr: jlong,
+    ) -> jlong {
+        jni_utils::jni_try_with_default(env, -1, || {
+            let store = unsafe { core::get_store_ref(store_ptr as *const std::os::raw::c_void)? };
+            let stats = core::get_execution_stats(store)?;
+            Ok(stats.fuel_consumed as jlong)
+        })
+    }
+    
+    /// Get store total memory bytes  
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeGetTotalMemoryBytes(
+        env: JNIEnv,
+        _class: JClass,
+        store_ptr: jlong,
+    ) -> jlong {
+        jni_utils::jni_try_with_default(env, -1, || {
+            let store = unsafe { core::get_store_ref(store_ptr as *const std::os::raw::c_void)? };
+            let usage = core::get_memory_usage(store)?;
+            Ok(usage.total_bytes as jlong)
+        })
+    }
+    
+    /// Get store used memory bytes
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeGetUsedMemoryBytes(
+        env: JNIEnv,
+        _class: JClass,
+        store_ptr: jlong,
+    ) -> jlong {
+        jni_utils::jni_try_with_default(env, -1, || {
+            let store = unsafe { core::get_store_ref(store_ptr as *const std::os::raw::c_void)? };
+            let usage = core::get_memory_usage(store)?;
+            Ok(usage.used_bytes as jlong)
+        })
+    }
+    
+    /// Get store instance count
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeGetInstanceCount(
+        env: JNIEnv,
+        _class: JClass,
+        store_ptr: jlong,
+    ) -> jlong {
+        jni_utils::jni_try_with_default(env, -1, || {
+            let store = unsafe { core::get_store_ref(store_ptr as *const std::os::raw::c_void)? };
+            let usage = core::get_memory_usage(store)?;
+            Ok(usage.instance_count as jlong)
+        })
+    }
+    
+    /// Get store fuel limit (0 if no limit)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeGetFuelLimit(
+        env: JNIEnv,
+        _class: JClass,
+        store_ptr: jlong,
+    ) -> jlong {
+        jni_utils::jni_try_with_default(env, 0, || {
+            let store = unsafe { core::get_store_ref(store_ptr as *const std::os::raw::c_void)? };
+            let metadata = core::get_store_metadata(store);
+            Ok(metadata.fuel_limit.unwrap_or(0) as jlong)
+        })
+    }
+    
+    /// Get store memory limit in bytes (0 if no limit)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeGetMemoryLimit(
+        env: JNIEnv,
+        _class: JClass,
+        store_ptr: jlong,
+    ) -> jlong {
+        jni_utils::jni_try_with_default(env, 0, || {
+            let store = unsafe { core::get_store_ref(store_ptr as *const std::os::raw::c_void)? };
+            let metadata = core::get_store_metadata(store);
+            Ok(metadata.memory_limit_bytes.unwrap_or(0) as jlong)
+        })
+    }
+    
+    /// Get store execution timeout in seconds (0 if no timeout)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeGetExecutionTimeout(
+        env: JNIEnv,
+        _class: JClass,
+        store_ptr: jlong,
+    ) -> jlong {
+        jni_utils::jni_try_with_default(env, 0, || {
+            let store = unsafe { core::get_store_ref(store_ptr as *const std::os::raw::c_void)? };
+            let metadata = core::get_store_metadata(store);
+            Ok(metadata.execution_timeout.map(|d| d.as_secs()).unwrap_or(0) as jlong)
+        })
     }
     
     /// Destroy a store

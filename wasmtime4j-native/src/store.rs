@@ -669,4 +669,231 @@ mod tests {
         // GC should succeed without error
         assert!(store.gc().is_ok());
     }
+
+    #[test]
+    fn test_store_core_functions() {
+        use crate::store::core;
+        
+        let engine = Engine::new().expect("Failed to create engine");
+        
+        // Test core store creation
+        let store = core::create_store(&engine).expect("Failed to create store via core");
+        
+        // Test core store validation
+        let store_ref = unsafe { 
+            core::get_store_ref(store.as_ref() as *const Store as *const std::os::raw::c_void)
+                .expect("Failed to get store reference") 
+        };
+        assert!(core::validate_store(store_ref).is_ok());
+        
+        // Test core metadata access
+        let metadata = core::get_store_metadata(store_ref);
+        assert!(metadata.fuel_limit.is_none()); // Default store has no fuel limit
+        
+        // Test core garbage collection
+        assert!(core::garbage_collect(store_ref).is_ok());
+    }
+
+    #[test] 
+    fn test_store_with_config_core() {
+        use crate::store::core;
+        
+        let engine = Engine::new().expect("Failed to create engine");
+        
+        // Test core store creation with config
+        let store = core::create_store_with_config(
+            &engine,
+            Some(2000),     // fuel_limit
+            Some(2 * 1024 * 1024),  // memory_limit_bytes
+            Some(60),       // execution_timeout_secs
+            Some(20),       // max_instances
+            Some(5000),     // max_table_elements
+            Some(500),      // max_functions
+        ).expect("Failed to create store with config via core");
+        
+        let store_ref = unsafe { 
+            core::get_store_ref(store.as_ref() as *const Store as *const std::os::raw::c_void)
+                .expect("Failed to get store reference") 
+        };
+        
+        // Verify configuration was applied
+        let metadata = core::get_store_metadata(store_ref);
+        assert_eq!(metadata.fuel_limit, Some(2000));
+        assert_eq!(metadata.memory_limit_bytes, Some(2 * 1024 * 1024));
+        assert_eq!(metadata.execution_timeout, Some(Duration::from_secs(60)));
+    }
+
+    #[test]
+    fn test_fuel_management_core() {
+        use crate::store::core;
+        
+        let engine = Engine::new().expect("Failed to create engine");
+        let store = core::create_store_with_config(
+            &engine,
+            Some(1000),
+            None, None, None, None, None,
+        ).expect("Failed to create store with fuel");
+        
+        let store_ref = unsafe { 
+            core::get_store_ref(store.as_ref() as *const Store as *const std::os::raw::c_void)
+                .expect("Failed to get store reference") 
+        };
+        
+        // Test adding fuel through core
+        assert!(core::add_fuel(store_ref, 500).is_ok());
+        
+        // Test getting remaining fuel
+        let remaining = core::get_fuel_remaining(store_ref).expect("Failed to get fuel remaining");
+        assert!(remaining > 0);
+        
+        // Test consuming fuel
+        let consumed = core::consume_fuel(store_ref, 100).expect("Failed to consume fuel");
+        assert_eq!(consumed, 100);
+        
+        // Test setting epoch deadline
+        core::set_epoch_deadline(store_ref, 1000);
+    }
+
+    #[test]
+    fn test_execution_statistics_core() {
+        use crate::store::core;
+        
+        let engine = Engine::new().expect("Failed to create engine");
+        let store = core::create_store(&engine).expect("Failed to create store");
+        
+        let store_ref = unsafe { 
+            core::get_store_ref(store.as_ref() as *const Store as *const std::os::raw::c_void)
+                .expect("Failed to get store reference") 
+        };
+        
+        // Initially, execution count should be 0
+        let initial_stats = core::get_execution_stats(store_ref).expect("Failed to get stats");
+        let initial_count = initial_stats.execution_count;
+        
+        // Execute something with the store context
+        let result = core::with_store_context(store_ref, |_ctx| {
+            Ok(42i32)
+        });
+        assert_eq!(result.unwrap(), 42);
+        
+        // Execution count should have increased
+        let updated_stats = core::get_execution_stats(store_ref).expect("Failed to get updated stats");
+        assert!(updated_stats.execution_count > initial_count);
+        
+        // Test memory usage stats
+        let memory_usage = core::get_memory_usage(store_ref).expect("Failed to get memory usage");
+        assert_eq!(memory_usage.instance_count, updated_stats.execution_count as usize);
+    }
+
+    #[test]
+    fn test_defensive_pointer_validation() {
+        use crate::store::core;
+        
+        // Test null pointer handling
+        let result = unsafe { core::get_store_ref(std::ptr::null()) };
+        assert!(result.is_err());
+        
+        let result = unsafe { core::get_store_mut(std::ptr::null_mut()) };
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_store_destroy() {
+        use crate::store::core;
+        
+        let engine = Engine::new().expect("Failed to create engine");
+        let store = core::create_store(&engine).expect("Failed to create store");
+        let store_ptr = Box::into_raw(store) as *mut std::os::raw::c_void;
+        
+        // Test safe destruction
+        unsafe {
+            core::destroy_store(store_ptr);
+        }
+        
+        // Test destroying null pointer (should not crash)
+        unsafe {
+            core::destroy_store(std::ptr::null_mut());
+        }
+    }
+
+    #[test]
+    fn test_resource_limits() {
+        let engine = Engine::new().expect("Failed to create engine");
+        let store = Store::builder()
+            .fuel_limit(5000)
+            .memory_limit(4 * 1024 * 1024)
+            .max_instances(50)
+            .max_table_elements(8000)
+            .max_functions(1500)
+            .build(&engine)
+            .expect("Failed to build store with resource limits");
+
+        // Verify all limits are set correctly
+        let metadata = store.metadata();
+        assert_eq!(metadata.fuel_limit, Some(5000));
+        assert_eq!(metadata.memory_limit_bytes, Some(4 * 1024 * 1024));
+        
+        // Test store validation passes
+        assert!(store.validate().is_ok());
+    }
+
+    #[test]
+    fn test_epoch_deadline() {
+        let engine = Engine::new().expect("Failed to create engine");
+        let store = Store::new(&engine).expect("Failed to create store");
+
+        // Setting epoch deadline should not fail
+        store.set_epoch_deadline(5000);
+    }
+
+    #[test]
+    fn test_fuel_edge_cases() {
+        let engine = Engine::new().expect("Failed to create engine");
+        let store = Store::builder()
+            .fuel_limit(100)
+            .build(&engine)
+            .expect("Failed to build store with fuel");
+
+        // Test consuming more fuel than available
+        let consumed = store.consume_fuel(150).expect("Should handle over-consumption gracefully");
+        assert!(consumed <= 100); // Should consume what's available, not more
+
+        // Test fuel remaining after over-consumption
+        let remaining = store.fuel_remaining().expect("Failed to get fuel remaining");
+        assert_eq!(remaining, Some(0)); // Should be 0 after consuming all available fuel
+    }
+
+    #[test]  
+    fn test_thread_safety() {
+        use std::sync::Arc;
+        use std::thread;
+        
+        let engine = Arc::new(Engine::new().expect("Failed to create engine"));
+        let store = Arc::new(Store::builder()
+            .fuel_limit(10000)
+            .build(&engine)
+            .expect("Failed to build store"));
+
+        let handles: Vec<_> = (0..5).map(|i| {
+            let store_clone = Arc::clone(&store);
+            thread::spawn(move || {
+                // Each thread adds some fuel
+                store_clone.add_fuel(100 * (i + 1) as u64).expect("Failed to add fuel");
+                
+                // Each thread validates the store
+                store_clone.validate().expect("Store validation failed");
+                
+                // Each thread gets execution stats
+                let _stats = store_clone.execution_stats().expect("Failed to get stats");
+                
+                i * 10
+            })
+        }).collect();
+
+        // Wait for all threads to complete
+        for handle in handles {
+            let result = handle.join().expect("Thread panicked");
+            assert!(result < 50); // Basic sanity check
+        }
+    }
 }
