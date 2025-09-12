@@ -224,6 +224,125 @@ public final class NativeFunctionBindings {
     callNativeFunction("wasmtime4j_store_destroy", Void.class, storePtr);
   }
 
+  /**
+   * Sets fuel for a WebAssembly store.
+   *
+   * @param storePtr pointer to the store
+   * @param fuel the fuel amount to set
+   * @return 0 on success, negative error code on failure
+   */
+  public int storeSetFuel(final MemorySegment storePtr, final long fuel) {
+    validatePointer(storePtr, "storePtr");
+    return callNativeFunction("wasmtime4j_store_set_fuel", Integer.class, storePtr, fuel);
+  }
+
+  /**
+   * Gets remaining fuel from a WebAssembly store.
+   *
+   * @param storePtr pointer to the store
+   * @param fuelOutPtr pointer to store the remaining fuel
+   * @return 0 on success, negative error code on failure
+   */
+  public int storeGetFuel(final MemorySegment storePtr, final MemorySegment fuelOutPtr) {
+    validatePointer(storePtr, "storePtr");
+    validatePointer(fuelOutPtr, "fuelOutPtr");
+    return callNativeFunction("wasmtime4j_store_get_fuel", Integer.class, storePtr, fuelOutPtr);
+  }
+
+  /**
+   * Adds fuel to a WebAssembly store.
+   *
+   * @param storePtr pointer to the store
+   * @param fuel the fuel amount to add
+   * @return 0 on success, negative error code on failure
+   */
+  public int storeAddFuel(final MemorySegment storePtr, final long fuel) {
+    validatePointer(storePtr, "storePtr");
+    return callNativeFunction("wasmtime4j_store_add_fuel", Integer.class, storePtr, fuel);
+  }
+
+  /**
+   * Sets epoch deadline for a WebAssembly store.
+   *
+   * @param storePtr pointer to the store
+   * @param ticks the epoch deadline in ticks
+   * @return 0 on success, negative error code on failure
+   */
+  public int storeSetEpochDeadline(final MemorySegment storePtr, final long ticks) {
+    validatePointer(storePtr, "storePtr");
+    return callNativeFunction("wasmtime4j_store_set_epoch_deadline", Integer.class, storePtr, ticks);
+  }
+
+  /**
+   * Triggers garbage collection for a WebAssembly store.
+   *
+   * @param storePtr pointer to the store
+   * @return 0 on success, negative error code on failure
+   */
+  public int storeGc(final MemorySegment storePtr) {
+    validatePointer(storePtr, "storePtr");
+    return callNativeFunction("wasmtime4j_store_gc", Integer.class, storePtr);
+  }
+
+  /**
+   * Gets execution statistics for a WebAssembly store.
+   *
+   * @param storePtr pointer to the store
+   * @param executionCountPtr pointer to store execution count
+   * @param fuelConsumedPtr pointer to store fuel consumed
+   * @param totalExecutionTimeNsPtr pointer to store total execution time in nanoseconds
+   * @return 0 on success, negative error code on failure
+   */
+  public int storeGetExecutionStats(
+      final MemorySegment storePtr,
+      final MemorySegment executionCountPtr,
+      final MemorySegment fuelConsumedPtr,
+      final MemorySegment totalExecutionTimeNsPtr) {
+    validatePointer(storePtr, "storePtr");
+    return callNativeFunction(
+        "wasmtime4j_store_get_execution_stats",
+        Integer.class,
+        storePtr,
+        executionCountPtr,
+        fuelConsumedPtr,
+        totalExecutionTimeNsPtr);
+  }
+
+  /**
+   * Gets memory usage statistics for a WebAssembly store.
+   *
+   * @param storePtr pointer to the store
+   * @param totalBytesPtr pointer to store total bytes
+   * @param usedBytesPtr pointer to store used bytes
+   * @param instanceCountPtr pointer to store instance count
+   * @return 0 on success, negative error code on failure
+   */
+  public int storeGetMemoryUsage(
+      final MemorySegment storePtr,
+      final MemorySegment totalBytesPtr,
+      final MemorySegment usedBytesPtr,
+      final MemorySegment instanceCountPtr) {
+    validatePointer(storePtr, "storePtr");
+    return callNativeFunction(
+        "wasmtime4j_store_get_memory_usage",
+        Integer.class,
+        storePtr,
+        totalBytesPtr,
+        usedBytesPtr,
+        instanceCountPtr);
+  }
+
+  /**
+   * Validates store functionality.
+   *
+   * @param storePtr pointer to the store
+   * @return 0 on success, negative error code on failure
+   */
+  public int storeValidate(final MemorySegment storePtr) {
+    validatePointer(storePtr, "storePtr");
+    return callNativeFunction("wasmtime4j_store_validate", Integer.class, storePtr);
+  }
+
   // Instance Functions
 
   /**
@@ -582,6 +701,65 @@ public final class NativeFunctionBindings {
             ValueLayout.ADDRESS)); // store_ptr
 
     addFunctionBinding("wasmtime4j_store_destroy", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+
+    // Additional Store functions
+    addFunctionBinding(
+        "wasmtime4j_store_set_fuel",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.JAVA_LONG)); // fuel
+
+    addFunctionBinding(
+        "wasmtime4j_store_get_fuel",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.ADDRESS)); // fuel_out_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_store_add_fuel",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.JAVA_LONG)); // fuel
+
+    addFunctionBinding(
+        "wasmtime4j_store_set_epoch_deadline",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.JAVA_LONG)); // ticks
+
+    addFunctionBinding(
+        "wasmtime4j_store_gc",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS)); // store_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_store_get_execution_stats",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.ADDRESS, // execution_count_ptr
+            ValueLayout.ADDRESS, // fuel_consumed_ptr
+            ValueLayout.ADDRESS)); // total_execution_time_ns_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_store_get_memory_usage",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.ADDRESS, // total_bytes_ptr
+            ValueLayout.ADDRESS, // used_bytes_ptr
+            ValueLayout.ADDRESS)); // instance_count_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_store_validate",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS)); // store_ptr
 
     // Instance functions
     addFunctionBinding(

@@ -113,8 +113,12 @@ public final class PanamaStore implements Store, AutoCloseable {
 
     try {
       // Set fuel through native FFI call
-      // For now, this is a placeholder - would call native fuel setting function
-      LOGGER.fine("Setting fuel to: " + fuel + " (placeholder implementation)");
+      int result = nativeFunctions.storeSetFuel(storeResource.getNativePointer(), fuel);
+      
+      PanamaErrorHandler.safeCheckError(
+          result, "Store set fuel", "Failed to set fuel to " + fuel);
+
+      LOGGER.fine("Successfully set store fuel to: " + fuel);
 
     } catch (Exception e) {
       String detailedMessage =
@@ -130,9 +134,20 @@ public final class PanamaStore implements Store, AutoCloseable {
 
     try {
       // Get fuel through native FFI call
-      // For now, return -1 indicating fuel is disabled
-      LOGGER.fine("Getting fuel (placeholder implementation)");
-      return -1;
+      ArenaResourceManager.ManagedMemorySegment fuelOutPtr =
+          resourceManager.allocate(MemoryLayouts.C_SIZE_T);
+      
+      int result = nativeFunctions.storeGetFuel(
+          storeResource.getNativePointer(), fuelOutPtr.getSegment());
+      
+      PanamaErrorHandler.safeCheckError(
+          result, "Store get fuel", "Failed to get remaining fuel");
+
+      // Extract the fuel value
+      long fuel = (long) MemoryLayouts.C_SIZE_T.varHandle().get(fuelOutPtr.getSegment(), 0);
+      
+      LOGGER.fine("Successfully retrieved store fuel: " + fuel);
+      return fuel;
 
     } catch (Exception e) {
       String detailedMessage =
@@ -152,8 +167,12 @@ public final class PanamaStore implements Store, AutoCloseable {
 
     try {
       // Add fuel through native FFI call
-      // For now, this is a placeholder - would call native fuel addition function
-      LOGGER.fine("Adding fuel: " + fuel + " (placeholder implementation)");
+      int result = nativeFunctions.storeAddFuel(storeResource.getNativePointer(), fuel);
+      
+      PanamaErrorHandler.safeCheckError(
+          result, "Store add fuel", "Failed to add fuel " + fuel);
+
+      LOGGER.fine("Successfully added fuel to store: " + fuel);
 
     } catch (Exception e) {
       String detailedMessage =
@@ -173,8 +192,12 @@ public final class PanamaStore implements Store, AutoCloseable {
 
     try {
       // Set epoch deadline through native FFI call
-      // For now, this is a placeholder - would call native epoch setting function
-      LOGGER.fine("Setting epoch deadline: " + ticks + " (placeholder implementation)");
+      int result = nativeFunctions.storeSetEpochDeadline(storeResource.getNativePointer(), ticks);
+      
+      PanamaErrorHandler.safeCheckError(
+          result, "Store set epoch deadline", "Failed to set epoch deadline to " + ticks);
+
+      LOGGER.fine("Successfully set epoch deadline: " + ticks);
 
     } catch (Exception e) {
       String detailedMessage =
@@ -186,7 +209,19 @@ public final class PanamaStore implements Store, AutoCloseable {
 
   @Override
   public boolean isValid() {
-    return !isClosed();
+    if (isClosed()) {
+      return false;
+    }
+    
+    try {
+      // Validate store through native FFI call
+      int result = nativeFunctions.storeValidate(storeResource.getNativePointer());
+      return result == 0; // Success code
+      
+    } catch (Exception e) {
+      LOGGER.warning("Store validation failed: " + e.getMessage());
+      return false;
+    }
   }
 
   @Override
@@ -347,6 +382,118 @@ public final class PanamaStore implements Store, AutoCloseable {
   }
 
   /**
+   * Triggers garbage collection for the store.
+   *
+   * @throws WasmException if garbage collection fails
+   */
+  public void gc() throws WasmException {
+    ensureNotClosed();
+
+    try {
+      int result = nativeFunctions.storeGc(storeResource.getNativePointer());
+      
+      PanamaErrorHandler.safeCheckError(
+          result, "Store garbage collection", "Failed to trigger garbage collection");
+
+      LOGGER.fine("Successfully triggered garbage collection for store");
+
+    } catch (Exception e) {
+      String detailedMessage =
+          PanamaErrorHandler.createDetailedErrorMessage(
+              "Garbage collection", "store=" + storeResource.getNativePointer(), e.getMessage());
+      throw new WasmException(detailedMessage, e);
+    }
+  }
+
+  /**
+   * Gets execution statistics for the store.
+   *
+   * @return execution statistics object containing counts and timing information
+   * @throws WasmException if statistics retrieval fails
+   */
+  public ExecutionStats getExecutionStats() throws WasmException {
+    ensureNotClosed();
+
+    try {
+      // Allocate memory for output values
+      ArenaResourceManager.ManagedMemorySegment executionCountPtr =
+          resourceManager.allocate(MemoryLayouts.C_SIZE_T);
+      ArenaResourceManager.ManagedMemorySegment fuelConsumedPtr =
+          resourceManager.allocate(MemoryLayouts.C_SIZE_T);
+      ArenaResourceManager.ManagedMemorySegment totalExecutionTimeNsPtr =
+          resourceManager.allocate(MemoryLayouts.C_SIZE_T);
+
+      int result = nativeFunctions.storeGetExecutionStats(
+          storeResource.getNativePointer(),
+          executionCountPtr.getSegment(),
+          fuelConsumedPtr.getSegment(),
+          totalExecutionTimeNsPtr.getSegment());
+
+      PanamaErrorHandler.safeCheckError(
+          result, "Store execution stats", "Failed to get execution statistics");
+
+      // Extract values
+      long executionCount = (long) MemoryLayouts.C_SIZE_T.varHandle().get(executionCountPtr.getSegment(), 0);
+      long fuelConsumed = (long) MemoryLayouts.C_SIZE_T.varHandle().get(fuelConsumedPtr.getSegment(), 0);
+      long totalExecutionTimeNs =
+          (long) MemoryLayouts.C_SIZE_T.varHandle().get(totalExecutionTimeNsPtr.getSegment(), 0);
+
+      LOGGER.fine("Retrieved execution statistics: count=" + executionCount + ", fuel=" + fuelConsumed);
+      return new ExecutionStats(executionCount, fuelConsumed, totalExecutionTimeNs);
+
+    } catch (Exception e) {
+      String detailedMessage =
+          PanamaErrorHandler.createDetailedErrorMessage(
+              "Execution stats retrieval", "store=" + storeResource.getNativePointer(), e.getMessage());
+      throw new WasmException(detailedMessage, e);
+    }
+  }
+
+  /**
+   * Gets memory usage statistics for the store.
+   *
+   * @return memory usage statistics object
+   * @throws WasmException if statistics retrieval fails
+   */
+  public MemoryUsage getMemoryUsage() throws WasmException {
+    ensureNotClosed();
+
+    try {
+      // Allocate memory for output values
+      ArenaResourceManager.ManagedMemorySegment totalBytesPtr =
+          resourceManager.allocate(MemoryLayouts.C_SIZE_T);
+      ArenaResourceManager.ManagedMemorySegment usedBytesPtr =
+          resourceManager.allocate(MemoryLayouts.C_SIZE_T);
+      ArenaResourceManager.ManagedMemorySegment instanceCountPtr =
+          resourceManager.allocate(MemoryLayouts.C_SIZE_T);
+
+      int result = nativeFunctions.storeGetMemoryUsage(
+          storeResource.getNativePointer(),
+          totalBytesPtr.getSegment(),
+          usedBytesPtr.getSegment(),
+          instanceCountPtr.getSegment());
+
+      PanamaErrorHandler.safeCheckError(
+          result, "Store memory usage", "Failed to get memory usage statistics");
+
+      // Extract values
+      long totalBytes = (long) MemoryLayouts.C_SIZE_T.varHandle().get(totalBytesPtr.getSegment(), 0);
+      long usedBytes = (long) MemoryLayouts.C_SIZE_T.varHandle().get(usedBytesPtr.getSegment(), 0);
+      long instanceCount = (long) MemoryLayouts.C_SIZE_T.varHandle().get(instanceCountPtr.getSegment(), 0);
+
+      LOGGER.fine(
+          "Retrieved memory usage: total=" + totalBytes + ", used=" + usedBytes + ", instances=" + instanceCount);
+      return new MemoryUsage(totalBytes, usedBytes, instanceCount);
+
+    } catch (Exception e) {
+      String detailedMessage =
+          PanamaErrorHandler.createDetailedErrorMessage(
+              "Memory usage retrieval", "store=" + storeResource.getNativePointer(), e.getMessage());
+      throw new WasmException(detailedMessage, e);
+    }
+  }
+
+  /**
    * Ensures that this store instance is not closed.
    *
    * @throws IllegalStateException if the store is closed
@@ -354,6 +501,86 @@ public final class PanamaStore implements Store, AutoCloseable {
   private void ensureNotClosed() {
     if (isClosed()) {
       throw new IllegalStateException("Store has been closed");
+    }
+  }
+
+  /**
+   * Execution statistics data class.
+   */
+  public static class ExecutionStats {
+    private final long executionCount;
+    private final long fuelConsumed;
+    private final long totalExecutionTimeNs;
+
+    /**
+     * Creates execution statistics instance.
+     *
+     * @param executionCount total number of executions
+     * @param fuelConsumed total fuel consumed
+     * @param totalExecutionTimeNs total execution time in nanoseconds
+     */
+    public ExecutionStats(final long executionCount, final long fuelConsumed, final long totalExecutionTimeNs) {
+      this.executionCount = executionCount;
+      this.fuelConsumed = fuelConsumed;
+      this.totalExecutionTimeNs = totalExecutionTimeNs;
+    }
+
+    public long getExecutionCount() {
+      return executionCount;
+    }
+
+    public long getFuelConsumed() {
+      return fuelConsumed;
+    }
+
+    public long getTotalExecutionTimeNs() {
+      return totalExecutionTimeNs;
+    }
+
+    @Override
+    public String toString() {
+      return String.format("ExecutionStats{executions=%d, fuel=%d, time=%dns}", 
+          executionCount, fuelConsumed, totalExecutionTimeNs);
+    }
+  }
+
+  /**
+   * Memory usage statistics data class.
+   */
+  public static class MemoryUsage {
+    private final long totalBytes;
+    private final long usedBytes;
+    private final long instanceCount;
+
+    /**
+     * Creates memory usage statistics instance.
+     *
+     * @param totalBytes total bytes allocated
+     * @param usedBytes bytes currently used
+     * @param instanceCount number of active instances
+     */
+    public MemoryUsage(final long totalBytes, final long usedBytes, final long instanceCount) {
+      this.totalBytes = totalBytes;
+      this.usedBytes = usedBytes;
+      this.instanceCount = instanceCount;
+    }
+
+    public long getTotalBytes() {
+      return totalBytes;
+    }
+
+    public long getUsedBytes() {
+      return usedBytes;
+    }
+
+    public long getInstanceCount() {
+      return instanceCount;
+    }
+
+    @Override
+    public String toString() {
+      return String.format("MemoryUsage{total=%d bytes, used=%d bytes, instances=%d}", 
+          totalBytes, usedBytes, instanceCount);
     }
   }
 }
