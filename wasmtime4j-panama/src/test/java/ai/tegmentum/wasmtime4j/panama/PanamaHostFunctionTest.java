@@ -37,7 +37,6 @@ import ai.tegmentum.wasmtime4j.panama.PanamaHostFunction.HostFunctionCallback;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -51,7 +50,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
  * including callback handling, upcall stub creation, resource management, and thread safety.
  */
 @ExtendWith(MockitoExtension.class)
-@DisplayName("PanamaHostFunction Tests")
+
 class PanamaHostFunctionTest {
 
   @Mock private ArenaResourceManager mockArenaManager;
@@ -79,12 +78,12 @@ class PanamaHostFunctionTest {
   }
 
   @Nested
-  @DisplayName("Constructor Tests")
+
   class ConstructorTests {
 
     @Test
-    @DisplayName("Should create host function with valid parameters")
-    void shouldCreateHostFunctionWithValidParameters() throws Exception {
+
+    void testCreateHostFunctionWithValidParameters() throws Exception {
       // Act
       final PanamaHostFunction hostFunction =
           new PanamaHostFunction(
@@ -99,8 +98,8 @@ class PanamaHostFunctionTest {
     }
 
     @Test
-    @DisplayName("Should throw exception when function name is null")
-    void shouldThrowExceptionWhenFunctionNameIsNull() {
+
+    void testThrowExceptionWhenFunctionNameIsNull() {
       assertThrows(
           NullPointerException.class,
           () ->
@@ -109,8 +108,8 @@ class PanamaHostFunctionTest {
     }
 
     @Test
-    @DisplayName("Should throw exception when function type is null")
-    void shouldThrowExceptionWhenFunctionTypeIsNull() {
+
+    void testThrowExceptionWhenFunctionTypeIsNull() {
       assertThrows(
           NullPointerException.class,
           () ->
@@ -119,8 +118,8 @@ class PanamaHostFunctionTest {
     }
 
     @Test
-    @DisplayName("Should throw exception when callback is null")
-    void shouldThrowExceptionWhenCallbackIsNull() {
+
+    void testThrowExceptionWhenCallbackIsNull() {
       assertThrows(
           NullPointerException.class,
           () ->
@@ -129,8 +128,8 @@ class PanamaHostFunctionTest {
     }
 
     @Test
-    @DisplayName("Should throw exception when arena manager is null")
-    void shouldThrowExceptionWhenArenaManagerIsNull() {
+
+    void testThrowExceptionWhenArenaManagerIsNull() {
       assertThrows(
           NullPointerException.class,
           () ->
@@ -139,8 +138,8 @@ class PanamaHostFunctionTest {
     }
 
     @Test
-    @DisplayName("Should throw exception when error handler is null")
-    void shouldThrowExceptionWhenErrorHandlerIsNull() {
+
+    void testThrowExceptionWhenErrorHandlerIsNull() {
       assertThrows(
           NullPointerException.class,
           () ->
@@ -150,7 +149,7 @@ class PanamaHostFunctionTest {
   }
 
   @Nested
-  @DisplayName("Function Interface Tests")
+
   class FunctionInterfaceTests {
 
     private PanamaHostFunction hostFunction;
@@ -163,20 +162,20 @@ class PanamaHostFunctionTest {
     }
 
     @Test
-    @DisplayName("Should return correct function type")
-    void shouldReturnCorrectFunctionType() {
+
+    void testReturnCorrectFunctionType() {
       assertEquals(testFunctionType, hostFunction.getFunctionType());
     }
 
     @Test
-    @DisplayName("Should return correct function name")
-    void shouldReturnCorrectFunctionName() {
+
+    void testReturnCorrectFunctionName() {
       assertEquals("test_function", hostFunction.getName());
     }
 
     @Test
-    @DisplayName("Should throw exception when calling host function directly")
-    void shouldThrowExceptionWhenCallingHostFunctionDirectly() {
+
+    void testThrowExceptionWhenCallingHostFunctionDirectly() {
       assertThrows(
           UnsupportedOperationException.class,
           () -> hostFunction.call(WasmValue.i32(1), WasmValue.i64(2L)));
@@ -184,7 +183,7 @@ class PanamaHostFunctionTest {
   }
 
   @Nested
-  @DisplayName("Handle Access Tests")
+
   class HandleAccessTests {
 
     private PanamaHostFunction hostFunction;
@@ -197,41 +196,41 @@ class PanamaHostFunctionTest {
     }
 
     @Test
-    @DisplayName("Should return valid function handle")
-    void shouldReturnValidFunctionHandle() {
+
+    void testReturnValidFunctionHandle() {
       final MemorySegment handle = hostFunction.getFunctionHandle();
       assertNotNull(handle);
     }
 
     @Test
-    @DisplayName("Should return valid upcall stub")
-    void shouldReturnValidUpcallStub() {
+
+    void testReturnValidUpcallStub() {
       final MemorySegment stub = hostFunction.getUpcallStub();
       assertNotNull(stub);
     }
 
     @Test
-    @DisplayName("Should throw exception when accessing closed host function handle")
-    void shouldThrowExceptionWhenAccessingClosedHostFunctionHandle() throws Exception {
+
+    void testThrowExceptionWhenAccessingClosedHostFunctionHandle() throws Exception {
       hostFunction.close();
       assertThrows(IllegalStateException.class, hostFunction::getFunctionHandle);
     }
 
     @Test
-    @DisplayName("Should throw exception when accessing closed upcall stub")
-    void shouldThrowExceptionWhenAccessingClosedUpcallStub() throws Exception {
+
+    void testThrowExceptionWhenAccessingClosedUpcallStub() throws Exception {
       hostFunction.close();
       assertThrows(IllegalStateException.class, hostFunction::getUpcallStub);
     }
   }
 
   @Nested
-  @DisplayName("Callback Execution Tests")
+
   class CallbackExecutionTests {
 
     @Test
-    @DisplayName("Should execute callback with correct parameters")
-    void shouldExecuteCallbackWithCorrectParameters() throws Exception {
+
+    void testExecuteCallbackWithCorrectParameters() throws Exception {
       // Arrange
       final WasmValue[] expectedParams = {WasmValue.i32(10), WasmValue.i64(20L)};
       final WasmValue[] expectedResults = {WasmValue.f32(30.0f)};
@@ -249,8 +248,8 @@ class PanamaHostFunctionTest {
     }
 
     @Test
-    @DisplayName("Should handle callback execution with exceptions")
-    void shouldHandleCallbackExecutionWithExceptions() throws Exception {
+
+    void testHandleCallbackExecutionWithExceptions() throws Exception {
       // Arrange
       final HostFunctionCallback throwingCallback =
           params -> {
@@ -270,8 +269,8 @@ class PanamaHostFunctionTest {
     }
 
     @Test
-    @DisplayName("Should handle void return type callback")
-    void shouldHandleVoidReturnTypeCallback() throws Exception {
+
+    void testHandleVoidReturnTypeCallback() throws Exception {
       // Arrange
       final FunctionType voidType =
           new FunctionType(new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {});
@@ -289,8 +288,8 @@ class PanamaHostFunctionTest {
     }
 
     @Test
-    @DisplayName("Should handle multiple return values")
-    void shouldHandleMultipleReturnValues() throws Exception {
+
+    void testHandleMultipleReturnValues() throws Exception {
       // Arrange
       final FunctionType multiReturnType =
           new FunctionType(
@@ -316,7 +315,7 @@ class PanamaHostFunctionTest {
   }
 
   @Nested
-  @DisplayName("Resource Management Tests")
+
   class ResourceManagementTests {
 
     private PanamaHostFunction hostFunction;
@@ -329,8 +328,8 @@ class PanamaHostFunctionTest {
     }
 
     @Test
-    @DisplayName("Should close host function successfully")
-    void shouldCloseHostFunctionSuccessfully() throws Exception {
+
+    void testCloseHostFunctionSuccessfully() throws Exception {
       // Act
       hostFunction.close();
 
@@ -340,8 +339,8 @@ class PanamaHostFunctionTest {
     }
 
     @Test
-    @DisplayName("Should handle double close gracefully")
-    void shouldHandleDoubleCloseGracefully() throws Exception {
+
+    void testHandleDoubleCloseGracefully() throws Exception {
       // Act
       hostFunction.close();
       hostFunction.close(); // Second close should be safe
@@ -351,8 +350,8 @@ class PanamaHostFunctionTest {
     }
 
     @Test
-    @DisplayName("Should throw exception when accessing closed host function")
-    void shouldThrowExceptionWhenAccessingClosedHostFunction() throws Exception {
+
+    void testThrowExceptionWhenAccessingClosedHostFunction() throws Exception {
       // Arrange
       hostFunction.close();
 
@@ -364,12 +363,12 @@ class PanamaHostFunctionTest {
   }
 
   @Nested
-  @DisplayName("Type Safety Tests")
+
   class TypeSafetyTests {
 
     @Test
-    @DisplayName("Should handle all WebAssembly value types")
-    void shouldHandleAllWebAssemblyValueTypes() throws Exception {
+
+    void testHandleAllWebAssemblyValueTypes() throws Exception {
       // Arrange - function with all supported parameter types
       final FunctionType allTypesFunction =
           new FunctionType(
@@ -407,8 +406,8 @@ class PanamaHostFunctionTest {
     }
 
     @Test
-    @DisplayName("Should handle complex function signatures")
-    void shouldHandleComplexFunctionSignatures() throws Exception {
+
+    void testHandleComplexFunctionSignatures() throws Exception {
       // Arrange - complex function with many parameters and returns
       final FunctionType complexType =
           new FunctionType(
@@ -436,12 +435,12 @@ class PanamaHostFunctionTest {
   }
 
   @Nested
-  @DisplayName("String Representation Tests")
+
   class StringRepresentationTests {
 
     @Test
-    @DisplayName("Should return correct string representation")
-    void shouldReturnCorrectStringRepresentation() throws Exception {
+
+    void testReturnCorrectStringRepresentation() throws Exception {
       // Arrange
       final PanamaHostFunction hostFunction =
           new PanamaHostFunction(
@@ -457,8 +456,8 @@ class PanamaHostFunctionTest {
     }
 
     @Test
-    @DisplayName("Should return correct string representation when closed")
-    void shouldReturnCorrectStringRepresentationWhenClosed() throws Exception {
+
+    void testReturnCorrectStringRepresentationWhenClosed() throws Exception {
       // Arrange
       final PanamaHostFunction hostFunction =
           new PanamaHostFunction(
@@ -476,12 +475,12 @@ class PanamaHostFunctionTest {
   }
 
   @Nested
-  @DisplayName("Error Handling Tests")
+
   class ErrorHandlingTests {
 
     @Test
-    @DisplayName("Should handle upcall stub creation failure")
-    void shouldHandleUpcallStubCreationFailure() throws Exception {
+
+    void testHandleUpcallStubCreationFailure() throws Exception {
       // Arrange
       when(mockArenaManager.getArena()).thenThrow(new RuntimeException("Arena creation failed"));
 
@@ -498,8 +497,8 @@ class PanamaHostFunctionTest {
     }
 
     @Test
-    @DisplayName("Should handle close operation failure")
-    void shouldHandleCloseOperationFailure() throws Exception {
+
+    void testHandleCloseOperationFailure() throws Exception {
       // Arrange
       final PanamaHostFunction hostFunction =
           new PanamaHostFunction(
@@ -515,12 +514,12 @@ class PanamaHostFunctionTest {
   }
 
   @Nested
-  @DisplayName("Memory Safety Tests")
+
   class MemorySafetyTests {
 
     @Test
-    @DisplayName("Should register with arena manager for cleanup")
-    void shouldRegisterWithArenaManagerForCleanup() throws Exception {
+
+    void testRegisterWithArenaManagerForCleanup() throws Exception {
       // Act
       final PanamaHostFunction hostFunction =
           new PanamaHostFunction(
@@ -533,8 +532,8 @@ class PanamaHostFunctionTest {
     }
 
     @Test
-    @DisplayName("Should prevent access after close")
-    void shouldPreventAccessAfterClose() throws Exception {
+
+    void testPreventAccessAfterClose() throws Exception {
       // Arrange
       final PanamaHostFunction hostFunction =
           new PanamaHostFunction(

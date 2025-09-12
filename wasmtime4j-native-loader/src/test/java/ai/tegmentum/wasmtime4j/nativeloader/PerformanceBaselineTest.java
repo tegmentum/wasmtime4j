@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -48,7 +47,7 @@ import org.junit.jupiter.params.provider.ValueSource;
  * <p>These tests are designed to be deterministic and provide consistent baseline measurements
  * across different environments.
  */
-@DisplayName("Performance Baseline Tests")
+
 final class PerformanceBaselineTest {
 
   private static final int WARMUP_ITERATIONS = 1000;
@@ -70,7 +69,7 @@ final class PerformanceBaselineTest {
   }
 
   @Test
-  @DisplayName("Should establish baseline for initial platform detection")
+
   @Timeout(30)
   void testInitialDetectionPerformanceBaseline() {
     // Warmup JVM
@@ -107,7 +106,7 @@ final class PerformanceBaselineTest {
   }
 
   @Test
-  @DisplayName("Should establish baseline for cached platform detection")
+
   @Timeout(10)
   void testCachedDetectionPerformanceBaseline() {
     // Initialize cache
@@ -160,7 +159,7 @@ final class PerformanceBaselineTest {
   }
 
   @Test
-  @DisplayName("Should establish baseline for PlatformInfo method performance")
+
   @Timeout(10)
   void testPlatformInfoMethodPerformanceBaseline() {
     final PlatformDetector.PlatformInfo info = PlatformDetector.detect();
@@ -223,7 +222,7 @@ final class PerformanceBaselineTest {
 
   @ParameterizedTest
   @ValueSource(ints = {1, 10, 50, 100, 500})
-  @DisplayName("Should establish baseline for repeated detection calls")
+
   @Timeout(30)
   void testRepeatedDetectionBaseline(final int iterations) {
     // Clear cache
@@ -267,7 +266,7 @@ final class PerformanceBaselineTest {
   }
 
   @Test
-  @DisplayName("Should establish baseline for concurrent detection performance")
+
   @Timeout(15)
   void testConcurrentDetectionBaseline() {
     final int threadCount = Runtime.getRuntime().availableProcessors();
@@ -341,7 +340,7 @@ final class PerformanceBaselineTest {
   }
 
   @Test
-  @DisplayName("Should establish baseline for memory allocation patterns")
+
   @Timeout(10)
   void testMemoryAllocationBaseline() {
     // Force garbage collection before measurement
@@ -383,7 +382,7 @@ final class PerformanceBaselineTest {
   }
 
   @Test
-  @DisplayName("Should provide JMH benchmark preparation data")
+
   @Timeout(5)
   void testJmhBenchmarkPreparation() {
     // This test prepares scenarios and collects data for JMH benchmarks

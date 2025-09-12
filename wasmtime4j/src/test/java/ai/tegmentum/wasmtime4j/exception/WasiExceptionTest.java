@@ -7,7 +7,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -15,11 +14,11 @@ import org.junit.jupiter.api.Test;
 class WasiExceptionTest {
 
   @Nested
-  @DisplayName("Constructor Tests")
+
   class ConstructorTests {
 
     @Test
-    @DisplayName("Simple message constructor creates exception correctly")
+
     void testSimpleMessageConstructor() {
       final String message = "WASI operation failed";
       final WasiException exception = new WasiException(message);
@@ -33,7 +32,7 @@ class WasiExceptionTest {
     }
 
     @Test
-    @DisplayName("Message with cause constructor creates exception correctly")
+
     void testMessageWithCauseConstructor() {
       final String message = "WASI operation failed";
       final RuntimeException cause = new RuntimeException("Native error");
@@ -48,7 +47,7 @@ class WasiExceptionTest {
     }
 
     @Test
-    @DisplayName("Detailed constructor creates exception correctly")
+
     void testDetailedConstructor() {
       final String message = "File operation failed";
       final String operation = "file-read";
@@ -70,7 +69,7 @@ class WasiExceptionTest {
     }
 
     @Test
-    @DisplayName("Detailed constructor with cause creates exception correctly")
+
     void testDetailedConstructorWithCause() {
       final String message = "Network operation failed";
       final String operation = "socket-connect";
@@ -93,7 +92,7 @@ class WasiExceptionTest {
     }
 
     @Test
-    @DisplayName("Constructor with null message throws IllegalArgumentException")
+
     void testConstructorWithNullMessage() {
       assertThrows(
           IllegalArgumentException.class,
@@ -103,7 +102,7 @@ class WasiExceptionTest {
     }
 
     @Test
-    @DisplayName("Constructor with empty message throws IllegalArgumentException")
+
     void testConstructorWithEmptyMessage() {
       assertThrows(
           IllegalArgumentException.class,
@@ -114,11 +113,11 @@ class WasiExceptionTest {
   }
 
   @Nested
-  @DisplayName("Category Classification Tests")
+
   class CategoryClassificationTests {
 
     @Test
-    @DisplayName("isFileSystemError returns true for FILE_SYSTEM category")
+
     void testIsFileSystemError() {
       final WasiException exception =
           new WasiException("Error", "op", "res", false, WasiException.ErrorCategory.FILE_SYSTEM);
@@ -131,7 +130,7 @@ class WasiExceptionTest {
     }
 
     @Test
-    @DisplayName("isNetworkError returns true for NETWORK category")
+
     void testIsNetworkError() {
       final WasiException exception =
           new WasiException("Error", "op", "res", false, WasiException.ErrorCategory.NETWORK);
@@ -144,7 +143,7 @@ class WasiExceptionTest {
     }
 
     @Test
-    @DisplayName("isPermissionError returns true for PERMISSION category")
+
     void testIsPermissionError() {
       final WasiException exception =
           new WasiException("Error", "op", "res", false, WasiException.ErrorCategory.PERMISSION);
@@ -157,7 +156,7 @@ class WasiExceptionTest {
     }
 
     @Test
-    @DisplayName("isResourceLimitError returns true for RESOURCE_LIMIT category")
+
     void testIsResourceLimitError() {
       final WasiException exception =
           new WasiException(
@@ -171,7 +170,7 @@ class WasiExceptionTest {
     }
 
     @Test
-    @DisplayName("isComponentError returns true for COMPONENT category")
+
     void testIsComponentError() {
       final WasiException exception =
           new WasiException("Error", "op", "res", false, WasiException.ErrorCategory.COMPONENT);
@@ -184,7 +183,7 @@ class WasiExceptionTest {
     }
 
     @Test
-    @DisplayName("isConfigurationError returns true for CONFIGURATION category")
+
     void testIsConfigurationError() {
       final WasiException exception =
           new WasiException("Error", "op", "res", false, WasiException.ErrorCategory.CONFIGURATION);
@@ -198,11 +197,11 @@ class WasiExceptionTest {
   }
 
   @Nested
-  @DisplayName("Message Formatting Tests")
+
   class MessageFormattingTests {
 
     @Test
-    @DisplayName("formatMessage with operation and resource formats correctly")
+
     void testFormatMessageWithOperationAndResource() {
       final WasiException exception =
           new WasiException(
@@ -211,7 +210,7 @@ class WasiExceptionTest {
     }
 
     @Test
-    @DisplayName("formatMessage with operation only formats correctly")
+
     void testFormatMessageWithOperationOnly() {
       final WasiException exception =
           new WasiException("Error", "test-op", null, false, WasiException.ErrorCategory.SYSTEM);
@@ -219,7 +218,7 @@ class WasiExceptionTest {
     }
 
     @Test
-    @DisplayName("formatMessage with resource only formats correctly")
+
     void testFormatMessageWithResourceOnly() {
       final WasiException exception =
           new WasiException("Error", null, "test-res", false, WasiException.ErrorCategory.SYSTEM);
@@ -227,7 +226,7 @@ class WasiExceptionTest {
     }
 
     @Test
-    @DisplayName("formatMessage with neither operation nor resource formats correctly")
+
     void testFormatMessageWithNeitherOperationNorResource() {
       final WasiException exception =
           new WasiException("Error", null, null, false, WasiException.ErrorCategory.SYSTEM);
@@ -235,7 +234,7 @@ class WasiExceptionTest {
     }
 
     @Test
-    @DisplayName("formatMessage with empty operation and resource handles correctly")
+
     void testFormatMessageWithEmptyOperationAndResource() {
       final WasiException exception =
           new WasiException("Error", "", "", false, WasiException.ErrorCategory.SYSTEM);
@@ -244,25 +243,25 @@ class WasiExceptionTest {
   }
 
   @Nested
-  @DisplayName("Inheritance Tests")
+
   class InheritanceTests {
 
     @Test
-    @DisplayName("WasiException extends WasmException")
+
     void testWasiExceptionExtendsWasmException() {
       final WasiException exception = new WasiException("Test error");
       assertTrue(exception instanceof WasmException);
     }
 
     @Test
-    @DisplayName("WasiException extends Exception")
+
     void testWasiExceptionExtendsException() {
       final WasiException exception = new WasiException("Test error");
       assertTrue(exception instanceof Exception);
     }
 
     @Test
-    @DisplayName("WasiException extends Throwable")
+
     void testWasiExceptionExtendsThrowable() {
       final WasiException exception = new WasiException("Test error");
       assertTrue(exception instanceof Throwable);
@@ -270,11 +269,11 @@ class WasiExceptionTest {
   }
 
   @Nested
-  @DisplayName("Serialization Tests")
+
   class SerializationTests {
 
     @Test
-    @DisplayName("WasiException has correct serialVersionUID")
+
     void testSerialVersionUID() {
       // This is a compile-time check - if the serialVersionUID is not compatible,
       // the test will not compile
@@ -284,11 +283,11 @@ class WasiExceptionTest {
   }
 
   @Nested
-  @DisplayName("Error Category Enum Tests")
+
   class ErrorCategoryEnumTests {
 
     @Test
-    @DisplayName("All ErrorCategory values are properly defined")
+
     void testErrorCategoryValues() {
       final WasiException.ErrorCategory[] categories = WasiException.ErrorCategory.values();
       assertEquals(7, categories.length);

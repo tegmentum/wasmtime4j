@@ -35,7 +35,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -50,7 +49,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
  * asynchronous processing pipelines.
  */
 @ExtendWith(MockitoExtension.class)
-@DisplayName("PerformanceOptimizer Tests")
+
 class PerformanceOptimizerTest {
 
   @Mock private Executor mockExecutor;
@@ -78,20 +77,20 @@ class PerformanceOptimizerTest {
   }
 
   @Nested
-  @DisplayName("Constructor Tests")
+
   class ConstructorTests {
 
     @Test
-    @DisplayName("Should create optimizer with default settings")
-    void shouldCreateOptimizerWithDefaultSettings() {
+
+    void testCreateOptimizerWithDefaultSettings() {
       final PerformanceOptimizer defaultOptimizer = new PerformanceOptimizer();
       assertNotNull(defaultOptimizer);
       assertNotNull(defaultOptimizer.getStatistics());
     }
 
     @Test
-    @DisplayName("Should create optimizer with custom settings")
-    void shouldCreateOptimizerWithCustomSettings() {
+
+    void testCreateOptimizerWithCustomSettings() {
       final PerformanceOptimizer customOptimizer =
           new PerformanceOptimizer(mockExecutor, 8, 20, 32);
       assertNotNull(customOptimizer);
@@ -100,12 +99,12 @@ class PerformanceOptimizerTest {
   }
 
   @Nested
-  @DisplayName("Method Handle Optimization Tests")
+
   class MethodHandleOptimizationTests {
 
     @Test
-    @DisplayName("Should optimize method handle for high frequency usage")
-    void shouldOptimizeMethodHandleForHighFrequencyUsage() throws Throwable {
+
+    void testOptimizeMethodHandleForHighFrequencyUsage() throws Throwable {
       // Act
       final MethodHandle optimized =
           optimizer.optimizeMethodHandle(
@@ -120,8 +119,8 @@ class PerformanceOptimizerTest {
     }
 
     @Test
-    @DisplayName("Should optimize method handle for bulk operations")
-    void shouldOptimizeMethodHandleForBulkOperations() throws Throwable {
+
+    void testOptimizeMethodHandleForBulkOperations() throws Throwable {
       // Act
       final MethodHandle optimized =
           optimizer.optimizeMethodHandle(
@@ -135,8 +134,8 @@ class PerformanceOptimizerTest {
     }
 
     @Test
-    @DisplayName("Should optimize method handle for memory intensive operations")
-    void shouldOptimizeMethodHandleForMemoryIntensiveOperations() throws Throwable {
+
+    void testOptimizeMethodHandleForMemoryIntensiveOperations() throws Throwable {
       // Act
       final MethodHandle optimized =
           optimizer.optimizeMethodHandle(
@@ -148,8 +147,8 @@ class PerformanceOptimizerTest {
     }
 
     @Test
-    @DisplayName("Should handle optimization disabled")
-    void shouldHandleOptimizationDisabled() throws Throwable {
+
+    void testHandleOptimizationDisabled() throws Throwable {
       // Arrange
       optimizer.setOptimizationEnabled(false);
 
@@ -163,8 +162,8 @@ class PerformanceOptimizerTest {
     }
 
     @Test
-    @DisplayName("Should cache optimized method handles")
-    void shouldCacheOptimizedMethodHandles() throws Throwable {
+
+    void testCacheOptimizedMethodHandles() throws Throwable {
       // Act
       final MethodHandle first =
           optimizer.optimizeMethodHandle(
@@ -179,12 +178,12 @@ class PerformanceOptimizerTest {
   }
 
   @Nested
-  @DisplayName("Batched Execution Tests")
+
   class BatchedExecutionTests {
 
     @Test
-    @DisplayName("Should execute batched operation successfully")
-    void shouldExecuteBatchedOperationSuccessfully() throws Throwable {
+
+    void testExecuteBatchedOperationSuccessfully() throws Throwable {
       // Arrange
       doAnswer(
               invocation -> {
@@ -209,8 +208,8 @@ class PerformanceOptimizerTest {
     }
 
     @Test
-    @DisplayName("Should handle batched operation failure")
-    void shouldHandleBatchedOperationFailure() throws Throwable {
+
+    void testHandleBatchedOperationFailure() throws Throwable {
       // Arrange
       doAnswer(
               invocation -> {
@@ -237,8 +236,8 @@ class PerformanceOptimizerTest {
     }
 
     @Test
-    @DisplayName("Should reject operations after shutdown")
-    void shouldRejectOperationsAfterShutdown() {
+
+    void testRejectOperationsAfterShutdown() {
       // Arrange
       optimizer.shutdown();
 
@@ -254,12 +253,12 @@ class PerformanceOptimizerTest {
   }
 
   @Nested
-  @DisplayName("Memory Access Optimization Tests")
+
   class MemoryAccessOptimizationTests {
 
     @Test
-    @DisplayName("Should optimize memory access patterns")
-    void shouldOptimizeMemoryAccessPatterns() {
+
+    void testOptimizeMemoryAccessPatterns() {
       // Arrange
       final MemorySegment[] segments = {
         MemorySegment.ofAddress(0x3000L),
@@ -280,8 +279,8 @@ class PerformanceOptimizerTest {
     }
 
     @Test
-    @DisplayName("Should handle empty memory segment array")
-    void shouldHandleEmptyMemorySegmentArray() {
+
+    void testHandleEmptyMemorySegmentArray() {
       // Arrange
       final MemorySegment[] emptySegments = {};
       final Function<MemorySegment, String> accessor = seg -> "test";
@@ -294,8 +293,8 @@ class PerformanceOptimizerTest {
     }
 
     @Test
-    @DisplayName("Should work with optimization disabled")
-    void shouldWorkWithOptimizationDisabled() {
+
+    void testWorkWithOptimizationDisabled() {
       // Arrange
       optimizer.setOptimizationEnabled(false);
       final MemorySegment[] segments = {
@@ -312,12 +311,12 @@ class PerformanceOptimizerTest {
   }
 
   @Nested
-  @DisplayName("Pipeline Operations Tests")
+
   class PipelineOperationsTests {
 
     @Test
-    @DisplayName("Should create and execute processing pipeline")
-    void shouldCreateAndExecuteProcessingPipeline() throws Throwable {
+
+    void testCreateAndExecuteProcessingPipeline() throws Throwable {
       // Arrange
       final Function<Integer, String> processor = i -> "processed_" + i;
       final List<Integer> input = Arrays.asList(1, 2, 3, 4, 5);
@@ -344,8 +343,8 @@ class PerformanceOptimizerTest {
     }
 
     @Test
-    @DisplayName("Should handle empty pipeline input")
-    void shouldHandleEmptyPipelineInput() throws Throwable {
+
+    void testHandleEmptyPipelineInput() throws Throwable {
       // Arrange
       final Function<Integer, String> processor = i -> "processed_" + i;
       final List<Integer> emptyInput = List.of();
@@ -362,12 +361,12 @@ class PerformanceOptimizerTest {
   }
 
   @Nested
-  @DisplayName("Statistics and Monitoring Tests")
+
   class StatisticsAndMonitoringTests {
 
     @Test
-    @DisplayName("Should track performance statistics")
-    void shouldTrackPerformanceStatistics() throws Throwable {
+
+    void testTrackPerformanceStatistics() throws Throwable {
       // Arrange - no executor stubbing needed for basic operations
 
       // Act - perform some operations
@@ -386,8 +385,8 @@ class PerformanceOptimizerTest {
     }
 
     @Test
-    @DisplayName("Should calculate batching ratio correctly")
-    void shouldCalculateBatchingRatioCorrectly() {
+
+    void testCalculateBatchingRatioCorrectly() {
       // Arrange
       final PerformanceOptimizer.PerformanceStatistics stats =
           new PerformanceOptimizer.PerformanceStatistics(100, 25, 10, 2, 5, 3);
@@ -400,8 +399,8 @@ class PerformanceOptimizerTest {
     }
 
     @Test
-    @DisplayName("Should handle zero operations in statistics")
-    void shouldHandleZeroOperationsInStatistics() {
+
+    void testHandleZeroOperationsInStatistics() {
       // Arrange
       final PerformanceOptimizer.PerformanceStatistics stats =
           new PerformanceOptimizer.PerformanceStatistics(0, 0, 0, 0, 0, 0);
@@ -414,8 +413,8 @@ class PerformanceOptimizerTest {
     }
 
     @Test
-    @DisplayName("Should provide meaningful statistics string representation")
-    void shouldProvideMeaningfulStatisticsStringRepresentation() {
+
+    void testProvideMeaningfulStatisticsStringRepresentation() {
       // Arrange
       final PerformanceOptimizer.PerformanceStatistics stats =
           new PerformanceOptimizer.PerformanceStatistics(100, 25, 10, 2, 5, 3);
@@ -432,12 +431,12 @@ class PerformanceOptimizerTest {
   }
 
   @Nested
-  @DisplayName("Configuration and Control Tests")
+
   class ConfigurationAndControlTests {
 
     @Test
-    @DisplayName("Should enable and disable optimization")
-    void shouldEnableAndDisableOptimization() throws Throwable {
+
+    void testEnableAndDisableOptimization() throws Throwable {
       // Act & Assert - optimization enabled by default
       final MethodHandle optimized1 =
           optimizer.optimizeMethodHandle(
@@ -460,8 +459,8 @@ class PerformanceOptimizerTest {
     }
 
     @Test
-    @DisplayName("Should handle shutdown gracefully")
-    void shouldHandleShutdownGracefully() {
+
+    void testHandleShutdownGracefully() {
       // Act
       optimizer.shutdown();
 
@@ -471,8 +470,8 @@ class PerformanceOptimizerTest {
     }
 
     @Test
-    @DisplayName("Should handle concurrent shutdown safely")
-    void shouldHandleConcurrentShutdownSafely() throws InterruptedException {
+
+    void testHandleConcurrentShutdownSafely() throws InterruptedException {
       // Arrange
       final CountDownLatch latch = new CountDownLatch(2);
       final Runnable shutdownTask =
@@ -494,12 +493,12 @@ class PerformanceOptimizerTest {
   }
 
   @Nested
-  @DisplayName("Error Handling Tests")
+
   class ErrorHandlingTests {
 
     @Test
-    @DisplayName("Should handle method handle optimization failure gracefully")
-    void shouldHandleMethodHandleOptimizationFailureGracefully() throws Throwable {
+
+    void testHandleMethodHandleOptimizationFailureGracefully() throws Throwable {
       // Arrange - create a problematic method handle that might cause optimization to fail
       final MethodHandle problematicHandle = MethodHandles.empty(MethodType.methodType(void.class));
 
@@ -513,8 +512,8 @@ class PerformanceOptimizerTest {
     }
 
     @Test
-    @DisplayName("Should handle batch execution with queue overflow")
-    void shouldHandleBatchExecutionWithQueueOverflow() throws Throwable {
+
+    void testHandleBatchExecutionWithQueueOverflow() throws Throwable {
       // Arrange - create optimizer with very small queue
       final PerformanceOptimizer smallQueueOptimizer =
           new PerformanceOptimizer(mockExecutor, 2, 10, 1); // Queue size = 1
@@ -542,12 +541,12 @@ class PerformanceOptimizerTest {
   }
 
   @Nested
-  @DisplayName("Thread Safety Tests")
+
   class ThreadSafetyTests {
 
     @Test
-    @DisplayName("Should handle concurrent method handle optimization")
-    void shouldHandleConcurrentMethodHandleOptimization() throws InterruptedException {
+
+    void testHandleConcurrentMethodHandleOptimization() throws InterruptedException {
       // Arrange
       final CountDownLatch startLatch = new CountDownLatch(1);
       final CountDownLatch completeLatch = new CountDownLatch(3);
@@ -581,8 +580,8 @@ class PerformanceOptimizerTest {
     }
 
     @Test
-    @DisplayName("Should handle concurrent statistics access")
-    void shouldHandleConcurrentStatisticsAccess() throws InterruptedException {
+
+    void testHandleConcurrentStatisticsAccess() throws InterruptedException {
       // Arrange
       final CountDownLatch completeLatch = new CountDownLatch(5);
 

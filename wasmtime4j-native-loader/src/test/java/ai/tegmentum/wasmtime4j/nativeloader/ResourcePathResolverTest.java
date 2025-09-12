@@ -21,7 +21,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
@@ -54,7 +53,7 @@ final class ResourcePathResolverTest {
   }
 
   @Test
-  @DisplayName("Pattern validation should accept valid patterns")
+
   void testValidPatternAcceptance() {
     // These should not throw any exceptions
     ResourcePathResolver.validatePattern("/natives/{platform}/{lib}{name}{ext}");
@@ -64,7 +63,7 @@ final class ResourcePathResolverTest {
   }
 
   @Test
-  @DisplayName("Pattern validation should reject path traversal attempts")
+
   void testPathTraversalRejection() {
     assertThrows(
         SecurityException.class,
@@ -83,7 +82,7 @@ final class ResourcePathResolverTest {
   }
 
   @Test
-  @DisplayName("Pattern validation should reject null bytes")
+
   void testNullByteRejection() {
     assertThrows(
         SecurityException.class,
@@ -92,7 +91,7 @@ final class ResourcePathResolverTest {
   }
 
   @Test
-  @DisplayName("Pattern validation should reject control characters")
+
   void testControlCharacterRejection() {
     assertThrows(
         SecurityException.class,
@@ -101,7 +100,7 @@ final class ResourcePathResolverTest {
   }
 
   @Test
-  @DisplayName("Pattern validation should reject absolute paths")
+
   void testAbsolutePathRejection() {
     assertThrows(
         SecurityException.class,
@@ -110,7 +109,7 @@ final class ResourcePathResolverTest {
   }
 
   @Test
-  @DisplayName("Pattern validation should accept leading slashes for resources")
+
   void testLeadingSlashAcceptance() {
     // Leading slash should be acceptable for JAR resource paths
     ResourcePathResolver.validatePattern("/{platform}/{name}{ext}");
@@ -118,7 +117,7 @@ final class ResourcePathResolverTest {
   }
 
   @Test
-  @DisplayName("Pattern validation should reject malformed placeholders")
+
   void testMalformedPlaceholderRejection() {
     assertThrows(
         IllegalArgumentException.class,
@@ -132,7 +131,7 @@ final class ResourcePathResolverTest {
   }
 
   @Test
-  @DisplayName("Path resolution should substitute all standard placeholders")
+
   void testStandardPlaceholderSubstitution() {
     final String pattern = "/{platform}/{os}/{arch}/{lib}{name}{ext}";
     final String resolved = ResourcePathResolver.resolvePath(pattern, "testlib", linuxInfo);
@@ -144,7 +143,7 @@ final class ResourcePathResolverTest {
   }
 
   @Test
-  @DisplayName("Path resolution should work with different platforms")
+
   void testMultiPlatformResolution() {
     final String pattern = "/native/{platform}/{lib}{name}{ext}";
     final String libraryName = "mylib";
@@ -166,7 +165,7 @@ final class ResourcePathResolverTest {
   }
 
   @Test
-  @DisplayName("Library name sanitization should remove path separators")
+
   void testLibraryNameSanitization() {
     final String pattern = "/lib/{name}.so";
 
@@ -181,7 +180,7 @@ final class ResourcePathResolverTest {
   }
 
   @Test
-  @DisplayName("Library name sanitization should remove control characters")
+
   void testLibraryNameControlCharacterRemoval() {
     final String pattern = "/lib/{name}.so";
 
@@ -192,7 +191,7 @@ final class ResourcePathResolverTest {
   }
 
   @Test
-  @DisplayName("Resolved path validation should detect remaining placeholders")
+
   void testUnresolvedPlaceholderDetection() {
     // This would happen if we had an unknown placeholder
     final String invalidPattern = "/lib/{unknown}/{name}.so";
@@ -210,7 +209,7 @@ final class ResourcePathResolverTest {
   }
 
   @Test
-  @DisplayName("Path resolution should handle null inputs gracefully")
+
   void testNullInputHandling() {
     assertThrows(
         NullPointerException.class,
@@ -229,7 +228,7 @@ final class ResourcePathResolverTest {
   }
 
   @Test
-  @DisplayName("Path resolution should handle empty inputs")
+
   void testEmptyInputHandling() {
     assertThrows(
         IllegalArgumentException.class,
@@ -253,7 +252,7 @@ final class ResourcePathResolverTest {
   }
 
   @Test
-  @DisplayName("Pattern validation should handle edge cases")
+
   void testPatternValidationEdgeCases() {
     // Test minimal valid pattern
     ResourcePathResolver.validatePattern("{name}");

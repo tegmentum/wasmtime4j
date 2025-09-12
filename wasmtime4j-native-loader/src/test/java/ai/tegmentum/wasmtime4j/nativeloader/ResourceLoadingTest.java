@@ -37,7 +37,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -58,7 +57,7 @@ import org.junit.jupiter.params.provider.ValueSource;
  *   <li>Error handling for resource operations
  * </ul>
  */
-@DisplayName("Resource Loading Tests")
+
 final class ResourceLoadingTest {
 
   @TempDir private Path tempDir;
@@ -148,7 +147,7 @@ final class ResourceLoadingTest {
 
   @ParameterizedTest(name = "{0} on {1}-{2} -> {3}")
   @MethodSource("provideLibraryAndPlatformCombinations")
-  @DisplayName("Should generate correct resource paths for all platform combinations")
+
   void testResourcePathGeneration(
       final String libraryName,
       final PlatformDetector.OperatingSystem os,
@@ -175,7 +174,7 @@ final class ResourceLoadingTest {
   }
 
   @Test
-  @DisplayName("Should handle library file name construction consistently")
+
   void testLibraryFileNameConstruction() {
     // Test all OS/architecture combinations
     for (final PlatformDetector.OperatingSystem os : PlatformDetector.OperatingSystem.values()) {
@@ -205,7 +204,7 @@ final class ResourceLoadingTest {
   }
 
   @Test
-  @DisplayName("Should create mock resource for testing extraction")
+
   void testMockResourceCreation() throws IOException {
     // Create a mock native library file for testing
     final Path mockLibrary = tempDir.resolve("mock-library.so");
@@ -220,7 +219,7 @@ final class ResourceLoadingTest {
   }
 
   @Test
-  @DisplayName("Should handle temporary directory creation")
+
   void testTemporaryDirectoryCreation() throws IOException {
     final Path tempLibDir = Files.createTempDirectory(tempDir, "wasmtime4j-test-");
     createdPaths.add(tempLibDir);
@@ -232,7 +231,7 @@ final class ResourceLoadingTest {
   }
 
   @Test
-  @DisplayName("Should handle file permission setting simulation")
+
   void testFilePermissionHandling() throws IOException {
     final Path testFile = tempDir.resolve("test-permissions.so");
     Files.write(testFile, "test content".getBytes());
@@ -252,7 +251,7 @@ final class ResourceLoadingTest {
   }
 
   @Test
-  @DisplayName("Should handle resource stream operations")
+
   void testResourceStreamOperations() throws IOException {
     // Test with a mock input stream
     final byte[] testData = "Mock native library content for testing".getBytes();
@@ -272,7 +271,7 @@ final class ResourceLoadingTest {
 
   @ParameterizedTest
   @ValueSource(strings = {"lib1", "wasmtime4j", "test-lib", "native_module", "a", "very-long-name"})
-  @DisplayName("Should handle various library names in resource operations")
+
   void testVariousLibraryNamesInResourceOperations(final String libraryName) {
     final PlatformDetector.PlatformInfo info = PlatformDetector.detect();
 
@@ -289,7 +288,7 @@ final class ResourceLoadingTest {
   }
 
   @Test
-  @DisplayName("Should handle concurrent resource operations")
+
   void testConcurrentResourceOperations()
       throws InterruptedException, ExecutionException, TimeoutException {
     final int threadCount = 5;
@@ -332,7 +331,7 @@ final class ResourceLoadingTest {
   }
 
   @Test
-  @DisplayName("Should handle cleanup operations")
+
   void testCleanupOperations() throws IOException {
     // Create multiple files and directories
     final Path subDir = tempDir.resolve("cleanup-test");
@@ -357,7 +356,7 @@ final class ResourceLoadingTest {
   }
 
   @Test
-  @DisplayName("Should handle disk space simulation")
+
   void testDiskSpaceHandling() throws IOException {
     // Create a reasonably large file to test space handling
     final Path largeFile = tempDir.resolve("large-library.so");
@@ -377,7 +376,7 @@ final class ResourceLoadingTest {
   }
 
   @Test
-  @DisplayName("Should handle path validation")
+
   void testPathValidation() {
     final PlatformDetector.PlatformInfo info = PlatformDetector.detect();
     final String resourcePath = info.getLibraryResourcePath("testlib");
@@ -390,7 +389,7 @@ final class ResourceLoadingTest {
   }
 
   @Test
-  @DisplayName("Should handle error conditions in resource operations")
+
   void testResourceOperationErrorConditions() {
     // Test that resource path generation handles null/invalid input appropriately
     final PlatformDetector.PlatformInfo info = PlatformDetector.detect();

@@ -31,7 +31,6 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -52,7 +51,7 @@ import org.mockito.MockedStatic;
  *   <li>Malicious input handling
  * </ul>
  */
-@DisplayName("PlatformDetector Security Tests")
+
 final class PlatformDetectorSecurityTest {
 
   private TestLogHandler testLogHandler;
@@ -114,7 +113,7 @@ final class PlatformDetectorSecurityTest {
 
   @ParameterizedTest(name = "Should safely handle {0}: {1}")
   @MethodSource("provideMaliciousInputData")
-  @DisplayName("Should prevent log injection attacks")
+
   @Disabled("System.class mocking causes infinite loops in newer Mockito versions")
   void testLogInjectionPrevention(
       final String attackType, final String maliciousOsName, final String osArch) {
@@ -164,7 +163,7 @@ final class PlatformDetectorSecurityTest {
 
   @ParameterizedTest
   @MethodSource("providePathTraversalStrings")
-  @DisplayName("Should prevent path traversal in resource paths")
+
   void testPathTraversalPrevention(final String pathTraversalString) {
     // Create a platform info with known good values
     final PlatformDetector.PlatformInfo info =
@@ -202,7 +201,7 @@ final class PlatformDetectorSecurityTest {
         "library\r\n.so", // CRLF injection
         "very-very-very-very-very-very-very-very-long-library-name-that-exceeds-reasonable-limits"
       })
-  @DisplayName("Should handle malicious library names safely")
+
   void testMaliciousLibraryNames(final String maliciousLibraryName) {
     final PlatformDetector.PlatformInfo info = PlatformDetector.detect();
 
@@ -233,7 +232,7 @@ final class PlatformDetectorSecurityTest {
   }
 
   @Test
-  @DisplayName("Should sanitize platform description output")
+
   @Disabled("System.class mocking causes infinite loops in newer Mockito versions")
   void testPlatformDescriptionSanitization() {
     // Test with potentially malicious system properties
@@ -260,7 +259,7 @@ final class PlatformDetectorSecurityTest {
   }
 
   @Test
-  @DisplayName("Should handle concurrent access to platform detection safely")
+
   void testConcurrentAccessSafety() {
     PlatformDetectorTestUtils.clearCache();
 
@@ -301,7 +300,7 @@ final class PlatformDetectorSecurityTest {
   }
 
   @Test
-  @DisplayName("Should prevent instantiation of utility class")
+
   void testUtilityClassInstantiationPrevention() {
     assertDoesNotThrow(
         () -> {
