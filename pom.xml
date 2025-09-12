@@ -236,6 +236,11 @@
                         </includes>
                         <excludes>
                             <exclude>**/*IT.java</exclude>
+                            <exclude>**/*IntegrationTest.java</exclude>
+                            <exclude>**/module/**/*Test.java</exclude>
+                            <exclude>**/instance/**/*Test.java</exclude>
+                            <exclude>**/hostfunction/**/*Test.java</exclude>
+                            <exclude>**/examples/**/*Test.java</exclude>
                         </excludes>
                         <systemPropertyVariables>
                             <java.util.logging.config.file>src/test/resources/logging.properties</java.util.logging.config.file>
@@ -250,7 +255,13 @@
                     <configuration>
                         <includes>
                             <include>**/*IT.java</include>
+                            <include>**/*IntegrationTest.java</include>
+                            <include>**/module/**/*Test.java</include>
+                            <include>**/instance/**/*Test.java</include>
+                            <include>**/hostfunction/**/*Test.java</include>
+                            <include>**/examples/**/*Test.java</include>
                         </includes>
+                        <skipITs>true</skipITs>
                     </configuration>
                     <executions>
                         <execution>
@@ -894,6 +905,22 @@
             <properties>
                 <native.build.all>true</native.build.all>
             </properties>
+        </profile>
+
+        <!-- Profile for running integration tests -->
+        <profile>
+            <id>integration-tests</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-failsafe-plugin</artifactId>
+                        <configuration>
+                            <skipITs>false</skipITs>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
     </profiles>
 

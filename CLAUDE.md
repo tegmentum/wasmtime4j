@@ -133,16 +133,22 @@ wasmtime4j/
 
 **Test Execution:**
 ```bash
-# Run all tests
+# Run unit tests only (fast, integration tests disabled by default)
 ./mvnw test -q
+
+# Run integration tests (slow, requires -P integration-tests profile)
+./mvnw test -P integration-tests -q
+
+# Run both unit and integration tests
+./mvnw test -P integration-tests -q
 
 # Run tests for specific module
 ./mvnw test -pl wasmtime4j-native -q
 ./mvnw test -pl wasmtime4j-jni -q
 ./mvnw test -pl wasmtime4j-panama -q
 
-# Run integration tests only
-./mvnw test -Dtest="*IT" -q
+# Run integration tests for specific module
+./mvnw test -pl wasmtime4j-tests -P integration-tests -q
 
 # Run with specific Java version
 JAVA_HOME=/path/to/java ./mvnw test -q
