@@ -1093,7 +1093,7 @@ pub mod core {
             wasmtime::Val::I64(v) => WasmValue::I64(*v),
             wasmtime::Val::F32(v) => WasmValue::F32(f32::from_bits(*v)),
             wasmtime::Val::F64(v) => WasmValue::F64(f64::from_bits(*v)),
-            wasmtime::Val::V128(v) => WasmValue::V128(v.to_le_bytes()),
+            wasmtime::Val::V128(v) => WasmValue::V128(v.as_u128().to_le_bytes()),
             wasmtime::Val::FuncRef(_) => WasmValue::FuncRef,
             wasmtime::Val::ExternRef(_) => WasmValue::ExternRef,
             wasmtime::Val::AnyRef(_) => WasmValue::ExternRef,
