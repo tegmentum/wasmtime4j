@@ -480,6 +480,103 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
     };
   }
 
+  // Cross-module sharing functionality
+
+  /**
+   * Registers this global for cross-module sharing with the given name.
+   * This allows other modules to access this global by name.
+   *
+   * @param name the name to register this global under
+   * @param registry the global registry to use
+   * @throws WasmException if registration fails
+   */
+  public void registerForSharing(final String name, final GlobalRegistry registry) throws WasmException {
+    ensureNotClosed();
+    Objects.requireNonNull(name, "name cannot be null");
+    Objects.requireNonNull(registry, "registry cannot be null");
+
+    try {
+      ArenaResourceManager.ManagedMemorySegment nameSegment = 
+          resourceManager.allocateString(name);
+      
+      int result = nativeFunctions.globalRegisterShared(
+          globalResource.getNativePointer(),
+          nameSegment.getSegment(),
+          registry.getRegistryPointer());
+
+      PanamaErrorHandler.safeCheckError(
+          result, "Global registration", "Failed to register global for sharing: " + name);
+
+      LOGGER.fine("Successfully registered global for sharing with name: " + name);
+    } catch (Exception e) {
+      throw new WasmException("Failed to register global for cross-module sharing", e);
+    }
+  }
+
+  /**
+   * Unregisters this global from cross-module sharing.
+   * This removes the global from any registry it was registered with.
+   *
+   * @param name the name this global was registered under
+   * @param registry the global registry to unregister from
+   * @throws WasmException if unregistration fails
+   */
+  public void unregisterFromSharing(final String name, final GlobalRegistry registry) throws WasmException {
+    ensureNotClosed();
+    Objects.requireNonNull(name, "name cannot be null");
+    Objects.requireNonNull(registry, "registry cannot be null");
+
+    try {
+      registry.unregisterGlobal(name);
+      LOGGER.fine("Successfully unregistered global from sharing: " + name);
+    } catch (Exception e) {
+      throw new WasmException("Failed to unregister global from cross-module sharing", e);
+    }
+  }
+
+  /**
+   * Checks if this global is compatible for sharing with another global.
+   * Globals must have the same type and mutability to be shareable.
+   *
+   * @param other the other global to check compatibility with
+   * @return true if compatible for sharing
+   */
+  public boolean isCompatibleForSharing(final PanamaGlobal other) {
+    if (other == null || other.isClosed() || this.isClosed()) {
+      return false;
+    }
+
+    try {
+      return this.getValueType() == other.getValueType() 
+          && this.isMutable() == other.isMutable();
+    } catch (Exception e) {
+      LOGGER.warning("Failed to check global compatibility: " + e.getMessage());
+      return false;
+    }
+  }
+
+  /**
+   * Creates a shared reference to this global that can be passed between modules.
+   * The shared reference maintains the same value and mutability characteristics.
+   *
+   * @return a shared global reference
+   * @throws WasmException if shared reference creation fails
+   */
+  public SharedGlobalReference createSharedReference() throws WasmException {
+    ensureNotClosed();
+
+    try {
+      int type = getValueType();
+      boolean mutableFlag = isMutable();
+      WasmValue currentValue = get();
+      
+      return new SharedGlobalReference(
+          this, type, mutableFlag, currentValue, resourceManager);
+    } catch (Exception e) {
+      throw new WasmException("Failed to create shared global reference", e);
+    }
+  }
+
   @Override
   public void close() {
     if (closed) {
