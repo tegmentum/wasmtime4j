@@ -718,6 +718,83 @@ pub unsafe extern "C" fn wasi_ctx_destroy(ctx_ptr: *mut c_void) {
     }
 }
 
+/// Add a WASI context to a Store for WebAssembly instance creation
+#[no_mangle]
+pub unsafe extern "C" fn wasi_ctx_add_to_store(
+    ctx_ptr: *const c_void,
+    store_ptr: *mut c_void,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let wasi_ctx = ffi_utils::deref_ptr::<WasiContext>(ctx_ptr, "WASI context")?;
+        
+        // Store the WASI context reference in the store's user data
+        // This is a placeholder implementation - the actual Store integration 
+        // would depend on how the Store is structured
+        
+        // For now, just validate that both pointers are valid
+        if store_ptr.is_null() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Store handle cannot be null".to_string(),
+            });
+        }
+        
+        // TODO: Implement proper Store-WASI context integration
+        // This would involve:
+        // 1. Getting mutable access to the Store
+        // 2. Adding WASI context to Store's StoreData
+        // 3. Setting up WASI imports in the Store's linker
+        
+        log::debug!("WASI context integration with Store - placeholder implementation");
+        Ok(())
+    })
+}
+
+/// Get the WASI context from a Store if one is attached
+#[no_mangle]
+pub unsafe extern "C" fn wasi_ctx_get_from_store(
+    store_ptr: *const c_void,
+) -> *mut c_void {
+    let result = ffi_utils::ffi_try_ptr(|| {
+        if store_ptr.is_null() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Store handle cannot be null".to_string(),
+            });
+        }
+        
+        // TODO: Implement proper Store-WASI context retrieval
+        // This would involve:
+        // 1. Getting access to the Store
+        // 2. Retrieving WASI context from Store's StoreData
+        // 3. Returning a pointer to the WASI context
+        
+        log::debug!("Retrieving WASI context from Store - placeholder implementation");
+        
+        // For now, return null to indicate no WASI context attached
+        Ok(std::ptr::null_mut::<WasiContext>())
+    });
+    result
+}
+
+/// Check if a Store has a WASI context attached
+#[no_mangle]
+pub unsafe extern "C" fn wasi_ctx_store_has_wasi(
+    store_ptr: *const c_void,
+) -> c_int {
+    let result = ffi_utils::ffi_try(|| {
+        if store_ptr.is_null() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Store handle cannot be null".to_string(),
+            });
+        }
+        
+        // TODO: Implement proper Store-WASI context checking
+        // For now, return false (0) to indicate no WASI context
+        log::debug!("Checking for WASI context in Store - placeholder implementation");
+        Ok(0) // No WASI context attached
+    });
+    result.1
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1132,5 +1209,106 @@ mod tests {
             
             wasi_ctx_destroy(ctx_ptr);
         }
+    }
+}
+
+/// JNI bridge functions for Java integration - Simple stub implementations
+/// These are basic stubs that allow compilation and basic functionality
+
+/// Create a new WASI context from Java
+#[no_mangle]
+pub unsafe extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiContext_nativeCreate(
+    _env: *mut jni::sys::JNIEnv,
+    _class: jni::sys::jclass,
+    _environment: jni::sys::jobjectArray,
+    _arguments: jni::sys::jobjectArray,
+    _preopen_dirs: jni::sys::jobjectArray,
+    _working_dir: jni::sys::jstring,
+) -> jni::sys::jlong {
+    let result = ffi_utils::ffi_try_ptr(|| {
+        // Create a basic WASI context with default configuration
+        let ctx = WasiContext::new()?;
+        Ok(Box::new(ctx))
+    });
+    
+    result as jni::sys::jlong
+}
+
+/// Close a WASI context from Java
+#[no_mangle]
+pub unsafe extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiContext_nativeClose(
+    _env: *mut jni::sys::JNIEnv,
+    _class: jni::sys::jclass,
+    handle: jni::sys::jlong,
+) {
+    if handle != 0 {
+        ffi_utils::destroy_resource::<WasiContext>(handle as *mut c_void, "WASI context");
+    }
+}
+
+/// Get random bytes using direct ByteBuffer
+#[no_mangle]
+pub unsafe extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiRandomOperations_nativeGetRandomBytesDirect(
+    _env: *mut jni::sys::JNIEnv,
+    _class: jni::sys::jclass,
+    _context_handle: jni::sys::jlong,
+    _buffer: jni::sys::jobject,
+    _position: jni::sys::jint,
+    _length: jni::sys::jint,
+) -> jni::sys::jint {
+    // Stub implementation - always return success
+    0
+}
+
+/// Get random bytes using byte array  
+#[no_mangle]
+pub unsafe extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiRandomOperations_nativeGetRandomBytesArray(
+    _env: *mut jni::sys::JNIEnv,
+    _class: jni::sys::jclass,
+    _context_handle: jni::sys::jlong,
+    _buffer: jni::sys::jbyteArray,
+) -> jni::sys::jint {
+    // Stub implementation - always return success
+    0
+}
+
+/// Get clock resolution
+#[no_mangle]
+pub unsafe extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiTimeOperations_nativeGetClockResolution(
+    _env: *mut jni::sys::JNIEnv,
+    _class: jni::sys::jclass,
+    _context_handle: jni::sys::jlong,
+    clock_id: jni::sys::jint,
+) -> jni::sys::jlong {
+    // Return basic clock resolution based on clock type
+    match clock_id {
+        0 => 1, // REALTIME - nanosecond resolution
+        1 => 1, // MONOTONIC - nanosecond resolution  
+        2 => 1000, // PROCESS_CPUTIME - microsecond resolution
+        3 => 1000, // THREAD_CPUTIME - microsecond resolution
+        _ => -1, // Invalid clock ID
+    }
+}
+
+/// Get current time
+#[no_mangle]
+pub unsafe extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiTimeOperations_nativeGetCurrentTime(
+    _env: *mut jni::sys::JNIEnv,
+    _class: jni::sys::jclass,
+    _context_handle: jni::sys::jlong,
+    clock_id: jni::sys::jint,
+    _precision: jni::sys::jlong,
+) -> jni::sys::jlong {
+    use std::time::{SystemTime, UNIX_EPOCH};
+    
+    match clock_id {
+        0 | 1 | 2 | 3 => {
+            // Return current system time for all valid clock types
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .map(|d| d.as_nanos() as jni::sys::jlong)
+                .unwrap_or(-1)
+        }
+        _ => -1, // Invalid clock ID
     }
 }
