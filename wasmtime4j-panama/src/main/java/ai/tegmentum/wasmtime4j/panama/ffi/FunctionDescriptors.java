@@ -177,6 +177,44 @@ public final class FunctionDescriptors {
                 ));
   }
 
+  /**
+   * Function descriptor for wasmtime_instance_export_nth().
+   *
+   * <p>Signature: {@code bool wasmtime_instance_export_nth(wasmtime_instance_t* instance, size_t
+   * index, char** name_ptr, wasmtime_extern_t* out)}
+   *
+   * @return the function descriptor
+   */
+  public static FunctionDescriptor wasmtimeInstanceExportNth() {
+    return DESCRIPTOR_CACHE.computeIfAbsent(
+        "wasmtime_instance_export_nth",
+        key ->
+            FunctionDescriptor.of(
+                ValueLayout.JAVA_BOOLEAN, // return: found
+                ValueLayout.ADDRESS, // instance pointer
+                ValueLayout.JAVA_LONG, // index
+                ValueLayout.ADDRESS, // name output pointer
+                ValueLayout.ADDRESS // output extern pointer
+                ));
+  }
+
+  /**
+   * Function descriptor for wasmtime_instance_exports_len().
+   *
+   * <p>Signature: {@code size_t wasmtime_instance_exports_len(wasmtime_instance_t* instance)}
+   *
+   * @return the function descriptor
+   */
+  public static FunctionDescriptor wasmtimeInstanceExportsLen() {
+    return DESCRIPTOR_CACHE.computeIfAbsent(
+        "wasmtime_instance_exports_len",
+        key ->
+            FunctionDescriptor.of(
+                ValueLayout.JAVA_LONG, // return: export count
+                ValueLayout.ADDRESS // instance pointer
+                ));
+  }
+
   // Memory function descriptors
 
   /**

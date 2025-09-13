@@ -465,16 +465,79 @@ public final class PanamaInstance implements Instance, AutoCloseable {
 
   /** Gets the total number of exports. */
   private int getExportCount() throws Exception {
-    // This would require calling wasmtime_instance_export_nth or similar
-    // For now, return a placeholder - full implementation needed
-    return 0;
+    try {
+      // Use the native function to get export count
+      long count = nativeFunctions.instanceExportsLen(instanceResource.getNativePointer());
+      
+      // Validate the count is reasonable (between 0 and maximum safe int)
+      if (count < 0) {
+        LOGGER.warning("Negative export count returned: " + count);
+        return 0;
+      }
+      
+      if (count > Integer.MAX_VALUE) {
+        LOGGER.warning("Export count too large, clamping to Integer.MAX_VALUE: " + count);
+        return Integer.MAX_VALUE;
+      }
+      
+      return (int) count;
+      
+    } catch (Exception e) {
+      LOGGER.warning("Failed to get export count: " + e.getMessage());
+      throw new Exception("Export count query failed", e);
+    }
   }
 
   /** Gets the export name at the specified index. */
   private String getExportNameAt(final int index) throws Exception {
-    // This would require iterating through exports
-    // For now, return null - full implementation needed
-    return null;
+    if (index < 0) {
+      throw new IllegalArgumentException("Export index cannot be negative: " + index);
+    }
+    
+    try {
+      // Allocate memory for name output pointer
+      ArenaResourceManager.ManagedMemorySegment nameOutMemory = 
+          resourceManager.allocate(ValueLayout.ADDRESS.byteSize());
+      MemorySegment nameOutPtr = nameOutMemory.getSegment();
+      
+      // Allocate memory for export structure
+      ArenaResourceManager.ManagedMemorySegment exportMemory = 
+          resourceManager.allocate(MemoryLayouts.WASMTIME_EXPORT_LAYOUT);
+      MemorySegment exportPtr = exportMemory.getSegment();
+      
+      // Call the native function to get the nth export
+      boolean found = nativeFunctions.instanceExportNth(
+          instanceResource.getNativePointer(), 
+          index, 
+          nameOutPtr, 
+          exportPtr);
+      
+      if (!found) {
+        return null; // Export at this index doesn't exist
+      }
+      
+      // Get the name pointer from the output
+      MemorySegment namePtr = nameOutPtr.get(ValueLayout.ADDRESS, 0);
+      if (namePtr == null || namePtr.equals(MemorySegment.NULL)) {
+        LOGGER.warning("Export at index " + index + " has null name");
+        return null;
+      }
+      
+      // Read the null-terminated string
+      String exportName = namePtr.getString(0);
+      
+      // Validate the export name
+      if (exportName == null || exportName.isEmpty()) {
+        LOGGER.warning("Export at index " + index + " has empty name");
+        return null;
+      }
+      
+      return exportName;
+      
+    } catch (Exception e) {
+      LOGGER.warning("Failed to get export name at index " + index + ": " + e.getMessage());
+      throw new Exception("Export name query failed for index " + index, e);
+    }
   }
 
   /**
