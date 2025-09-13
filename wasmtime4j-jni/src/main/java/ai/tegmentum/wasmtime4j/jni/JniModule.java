@@ -257,7 +257,7 @@ public final class JniModule extends JniResource implements Module {
       }
 
       JniValidation.requireValidHandle(instanceHandle, "instanceHandle");
-      return new JniInstance(instanceHandle);
+      return new JniInstance(instanceHandle, this, store);
     } catch (final Exception e) {
       if (e instanceof JniException) {
         throw e;

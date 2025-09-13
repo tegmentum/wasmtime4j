@@ -275,17 +275,41 @@ impl Table {
     /// Validate that a TableElement matches the expected ValType
     fn validate_element_matches_type(element: &TableElement, expected_type: &ValType) -> WasmtimeResult<()> {
         let matches = match (element, expected_type) {
-            (TableElement::FuncRef(_), ValType::Ref(_)) => true, // TODO: Check if ref is funcref
-            (TableElement::ExternRef(_), ValType::Ref(_)) => true, // TODO: Check if ref is externref
-            (TableElement::AnyRef(_), ValType::Ref(_)) => true, // AnyRef should match any reference type
+            (TableElement::FuncRef(_), ValType::Ref(ref_type)) => {
+                // Check if the reference type is specifically funcref
+                matches!(ref_type.heap_type(), wasmtime::HeapType::Func)
+            },
+            (TableElement::ExternRef(_), ValType::Ref(ref_type)) => {
+                // Check if the reference type is specifically externref
+                matches!(ref_type.heap_type(), wasmtime::HeapType::Extern)
+            },
+            (TableElement::AnyRef(_), ValType::Ref(_)) => {
+                // AnyRef should match any reference type (used for generic operations)
+                true
+            },
             _ => false,
         };
 
         if !matches {
+            let element_type_name = match element {
+                TableElement::FuncRef(_) => "funcref",
+                TableElement::ExternRef(_) => "externref", 
+                TableElement::AnyRef(_) => "anyref",
+            };
+            
+            let expected_type_name = match expected_type {
+                ValType::Ref(ref_type) => match ref_type.heap_type() {
+                    wasmtime::HeapType::Func => "funcref",
+                    wasmtime::HeapType::Extern => "externref",
+                    _ => "unknown_ref",
+                },
+                _ => "non_ref",
+            };
+            
             return Err(WasmtimeError::Type {
                 message: format!(
-                    "Table element type {:?} does not match expected type {:?}",
-                    element, expected_type
+                    "Table element type {} does not match expected table element type {}",
+                    element_type_name, expected_type_name
                 ),
             });
         }
@@ -381,13 +405,35 @@ impl Table {
     /// Convert wasmtime::Val to TableElement
     fn wasmtime_val_to_table_element(val: Ref, element_type: &ValType) -> WasmtimeResult<TableElement> {
         let table_element = match element_type {
-            ValType::Ref(_ref_type) => {
-                // For now, handle all ref types as generic references
-                // TODO: Implement proper reference type discrimination
-                if val.is_null() {
-                    TableElement::AnyRef(None)
-                } else {
-                    TableElement::AnyRef(Some(0)) // TODO: Implement proper reference ID mapping
+            ValType::Ref(ref_type) => {
+                // Discriminate between different reference types based on heap type
+                match ref_type.heap_type() {
+                    wasmtime::HeapType::Func => {
+                        if val.is_null() {
+                            TableElement::FuncRef(None)
+                        } else {
+                            // TODO: Implement proper function reference ID extraction
+                            // For now, use a placeholder ID
+                            TableElement::FuncRef(Some(1))
+                        }
+                    },
+                    wasmtime::HeapType::Extern => {
+                        if val.is_null() {
+                            TableElement::ExternRef(None)
+                        } else {
+                            // TODO: Implement proper external reference ID extraction
+                            // For now, use a placeholder ID
+                            TableElement::ExternRef(Some(1))
+                        }
+                    },
+                    _ => {
+                        // For unknown reference types, use AnyRef
+                        if val.is_null() {
+                            TableElement::AnyRef(None)
+                        } else {
+                            TableElement::AnyRef(Some(1))
+                        }
+                    }
                 }
             },
             _ => return Err(WasmtimeError::Type {
@@ -591,6 +637,42 @@ pub mod core {
             TableElement::FuncRef(_) => ReferenceType::FuncRef,
             TableElement::ExternRef(_) => ReferenceType::ExternRef,
             TableElement::AnyRef(_) => ReferenceType::AnyRef,
+        }
+    }
+    
+    /// Validate if a ValType is compatible with table elements
+    pub fn validate_table_element_type(val_type: &ValType) -> WasmtimeResult<()> {
+        match val_type {
+            ValType::Ref(ref_type) => {
+                match ref_type.heap_type() {
+                    wasmtime::HeapType::Func | wasmtime::HeapType::Extern => Ok(()),
+                    _ => Err(WasmtimeError::Type {
+                        message: format!("Unsupported table element reference type: {:?}", ref_type),
+                    }),
+                }
+            },
+            _ => Err(WasmtimeError::Type {
+                message: format!("Table elements must be reference types, got: {:?}", val_type),
+            }),
+        }
+    }
+    
+    /// Create a TableElement from ValType and optional reference ID
+    pub fn create_typed_table_element(
+        val_type: &ValType, 
+        ref_id: Option<u64>
+    ) -> WasmtimeResult<TableElement> {
+        match val_type {
+            ValType::Ref(ref_type) => {
+                match ref_type.heap_type() {
+                    wasmtime::HeapType::Func => Ok(TableElement::FuncRef(ref_id)),
+                    wasmtime::HeapType::Extern => Ok(TableElement::ExternRef(ref_id)),
+                    _ => Ok(TableElement::AnyRef(ref_id)),
+                }
+            },
+            _ => Err(WasmtimeError::Type {
+                message: format!("Cannot create TableElement from non-reference type: {:?}", val_type),
+            }),
         }
     }
 }

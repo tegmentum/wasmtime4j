@@ -42,14 +42,27 @@ public final class JniInstance extends JniResource implements Instance {
   /** Flag to track if this instance has been closed. */
   private final AtomicBoolean closed = new AtomicBoolean(false);
 
+  /** Reference to the module used to create this instance. */
+  private final Module module;
+
+  /** Reference to the store this instance belongs to. */
+  private final Store store;
+
   /**
-   * Creates a new JNI instance with the given native handle.
+   * Creates a new JNI instance with the given native handle, module, and store.
    *
    * @param nativeHandle the native instance handle
+   * @param module the module used to create this instance
+   * @param store the store this instance belongs to
    * @throws IllegalArgumentException if nativeHandle is 0
+   * @throws ai.tegmentum.wasmtime4j.jni.exception.JniValidationException if module or store is null
    */
-  JniInstance(final long nativeHandle) {
+  JniInstance(final long nativeHandle, final Module module, final Store store) {
     super(nativeHandle);
+    JniValidation.requireNonNull(module, "module");
+    JniValidation.requireNonNull(store, "store");
+    this.module = module;
+    this.store = store;
     LOGGER.fine("Created JNI instance with handle: " + nativeHandle);
   }
 
@@ -149,7 +162,7 @@ public final class JniInstance extends JniResource implements Instance {
       if (globalHandle == 0) {
         return Optional.empty();
       }
-      return Optional.of(new JniGlobal(globalHandle));
+      return Optional.of(new JniGlobal(globalHandle, (JniStore) store));
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -216,16 +229,14 @@ public final class JniInstance extends JniResource implements Instance {
 
   @Override
   public Module getModule() {
-    // Note: This would require storing a reference to the module during construction
-    // For now, return null as a placeholder - this needs proper implementation
-    throw new UnsupportedOperationException("getModule() not yet implemented");
+    ensureNotClosed();
+    return module;
   }
 
   @Override
   public Store getStore() {
-    // Note: This would require storing a reference to the store during construction
-    // For now, return null as a placeholder - this needs proper implementation
-    throw new UnsupportedOperationException("getStore() not yet implemented");
+    ensureNotClosed();
+    return store;
   }
 
   @Override

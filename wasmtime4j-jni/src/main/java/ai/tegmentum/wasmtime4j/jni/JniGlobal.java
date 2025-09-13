@@ -22,6 +22,9 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
 
   private static final Logger LOGGER = Logger.getLogger(JniGlobal.class.getName());
 
+  /** Store context required for global operations */
+  private final JniStore store;
+
   // Load native library when this class is first loaded
   static {
     try {
@@ -33,13 +36,17 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
   }
 
   /**
-   * Creates a new JNI global with the given native handle.
+   * Creates a new JNI global with the given native handle and store context.
    *
    * @param nativeHandle the native global handle
+   * @param store the store context for this global
    * @throws JniResourceException if nativeHandle is invalid
+   * @throws IllegalArgumentException if store is null
    */
-  JniGlobal(final long nativeHandle) {
+  JniGlobal(final long nativeHandle, final JniStore store) {
     super(nativeHandle);
+    JniValidation.requireNonNull(store, "store");
+    this.store = store;
     LOGGER.fine("Created JNI global with handle: 0x" + Long.toHexString(nativeHandle));
   }
 
@@ -85,8 +92,9 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
    */
   public Object getValue() {
     ensureNotClosed();
+    store.ensureNotClosed(); // Ensure store is still valid
     try {
-      return nativeGetValue(getNativeHandle());
+      return nativeGetValue(getNativeHandle(), store.getNativeHandle());
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error getting global value", e);
     }
@@ -101,8 +109,9 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
    */
   public int getIntValue() {
     ensureNotClosed();
+    store.ensureNotClosed();
     try {
-      return nativeGetIntValue(getNativeHandle());
+      return nativeGetIntValue(getNativeHandle(), store.getNativeHandle());
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -119,8 +128,9 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
    */
   public long getLongValue() {
     ensureNotClosed();
+    store.ensureNotClosed();
     try {
-      return nativeGetLongValue(getNativeHandle());
+      return nativeGetLongValue(getNativeHandle(), store.getNativeHandle());
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -137,8 +147,9 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
    */
   public float getFloatValue() {
     ensureNotClosed();
+    store.ensureNotClosed();
     try {
-      return nativeGetFloatValue(getNativeHandle());
+      return nativeGetFloatValue(getNativeHandle(), store.getNativeHandle());
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -155,8 +166,9 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
    */
   public double getDoubleValue() {
     ensureNotClosed();
+    store.ensureNotClosed();
     try {
-      return nativeGetDoubleValue(getNativeHandle());
+      return nativeGetDoubleValue(getNativeHandle(), store.getNativeHandle());
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -174,10 +186,11 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
   public void setValue(final Object value) {
     JniValidation.requireNonNull(value, "value");
     ensureNotClosed();
+    store.ensureNotClosed();
     validateMutable();
 
     try {
-      final boolean success = nativeSetValue(getNativeHandle(), value);
+      final boolean success = nativeSetValue(getNativeHandle(), store.getNativeHandle(), value);
       if (!success) {
         throw new RuntimeException("Failed to set global value");
       }
@@ -197,10 +210,11 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
    */
   public void setIntValue(final int value) {
     ensureNotClosed();
+    store.ensureNotClosed();
     validateMutable();
 
     try {
-      final boolean success = nativeSetIntValue(getNativeHandle(), value);
+      final boolean success = nativeSetIntValue(getNativeHandle(), store.getNativeHandle(), value);
       if (!success) {
         throw new RuntimeException("Failed to set global int value");
       }
@@ -220,10 +234,11 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
    */
   public void setLongValue(final long value) {
     ensureNotClosed();
+    store.ensureNotClosed();
     validateMutable();
 
     try {
-      final boolean success = nativeSetLongValue(getNativeHandle(), value);
+      final boolean success = nativeSetLongValue(getNativeHandle(), store.getNativeHandle(), value);
       if (!success) {
         throw new RuntimeException("Failed to set global long value");
       }
@@ -243,10 +258,11 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
    */
   public void setFloatValue(final float value) {
     ensureNotClosed();
+    store.ensureNotClosed();
     validateMutable();
 
     try {
-      final boolean success = nativeSetFloatValue(getNativeHandle(), value);
+      final boolean success = nativeSetFloatValue(getNativeHandle(), store.getNativeHandle(), value);
       if (!success) {
         throw new RuntimeException("Failed to set global float value");
       }
@@ -266,10 +282,11 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
    */
   public void setDoubleValue(final double value) {
     ensureNotClosed();
+    store.ensureNotClosed();
     validateMutable();
 
     try {
-      final boolean success = nativeSetDoubleValue(getNativeHandle(), value);
+      final boolean success = nativeSetDoubleValue(getNativeHandle(), store.getNativeHandle(), value);
       if (!success) {
         throw new RuntimeException("Failed to set global double value");
       }
@@ -421,86 +438,96 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
    * Gets the value of a global as a generic Object.
    *
    * @param globalHandle the native global handle
+   * @param storeHandle the native store handle
    * @return the global value or null on error
    */
-  private static native Object nativeGetValue(long globalHandle);
+  private static native Object nativeGetValue(long globalHandle, long storeHandle);
 
   /**
    * Gets the value of a global as an integer.
    *
    * @param globalHandle the native global handle
+   * @param storeHandle the native store handle
    * @return the global value as an integer
    */
-  private static native int nativeGetIntValue(long globalHandle);
+  private static native int nativeGetIntValue(long globalHandle, long storeHandle);
 
   /**
    * Gets the value of a global as a long.
    *
    * @param globalHandle the native global handle
+   * @param storeHandle the native store handle
    * @return the global value as a long
    */
-  private static native long nativeGetLongValue(long globalHandle);
+  private static native long nativeGetLongValue(long globalHandle, long storeHandle);
 
   /**
    * Gets the value of a global as a float.
    *
    * @param globalHandle the native global handle
+   * @param storeHandle the native store handle
    * @return the global value as a float
    */
-  private static native float nativeGetFloatValue(long globalHandle);
+  private static native float nativeGetFloatValue(long globalHandle, long storeHandle);
 
   /**
    * Gets the value of a global as a double.
    *
    * @param globalHandle the native global handle
+   * @param storeHandle the native store handle
    * @return the global value as a double
    */
-  private static native double nativeGetDoubleValue(long globalHandle);
+  private static native double nativeGetDoubleValue(long globalHandle, long storeHandle);
 
   /**
    * Sets the value of a global with a generic Object.
    *
    * @param globalHandle the native global handle
+   * @param storeHandle the native store handle
    * @param value the new value
    * @return true on success, false on failure
    */
-  private static native boolean nativeSetValue(long globalHandle, Object value);
+  private static native boolean nativeSetValue(long globalHandle, long storeHandle, Object value);
 
   /**
    * Sets the value of a global to an integer.
    *
    * @param globalHandle the native global handle
+   * @param storeHandle the native store handle
    * @param value the new integer value
    * @return true on success, false on failure
    */
-  private static native boolean nativeSetIntValue(long globalHandle, int value);
+  private static native boolean nativeSetIntValue(long globalHandle, long storeHandle, int value);
 
   /**
    * Sets the value of a global to a long.
    *
    * @param globalHandle the native global handle
+   * @param storeHandle the native store handle
    * @param value the new long value
    * @return true on success, false on failure
    */
-  private static native boolean nativeSetLongValue(long globalHandle, long value);
+  private static native boolean nativeSetLongValue(long globalHandle, long storeHandle, long value);
 
   /**
    * Sets the value of a global to a float.
    *
    * @param globalHandle the native global handle
+   * @param storeHandle the native store handle
    * @param value the new float value
    * @return true on success, false on failure
    */
-  private static native boolean nativeSetFloatValue(long globalHandle, float value);
+  private static native boolean nativeSetFloatValue(long globalHandle, long storeHandle, float value);
 
   /**
    * Sets the value of a global to a double.
    *
    * @param globalHandle the native global handle
+   * @param storeHandle the native store handle
    * @param value the new double value
    * @return true on success, false on failure
    */
-  private static native boolean nativeSetDoubleValue(long globalHandle, double value);
+  private static native boolean nativeSetDoubleValue(long globalHandle, long storeHandle, double value);
 
   /**
    * Destroys a native global.
