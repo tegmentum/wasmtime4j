@@ -2402,13 +2402,15 @@ pub mod jni_global {
     /// Set the float value of a global variable (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeSetFloatValue(
-        env: JNIEnv,
+        mut env: JNIEnv,
         _class: JClass,
         global_ptr: jlong,
+        store_ptr: jlong,
         value: f32,
     ) -> jboolean {
         match (|| -> WasmtimeResult<()> {
             let global = unsafe { core::get_global_ref(global_ptr as *mut std::os::raw::c_void)? };
+            let store = unsafe { ffi_utils::deref_ptr::<Store>(store_ptr as *mut std::os::raw::c_void, "store")? };
             let metadata = core::get_global_metadata(global);
             
             // Validate that this global is mutable and correct type
@@ -2425,27 +2427,30 @@ pub mod jni_global {
                 });
             }
             
-            // TODO: Store context required for actual value setting
-            // Return error indicating limitation
-            Err(WasmtimeError::InvalidParameter {
-                message: "Store context required for global value setting - architectural limitation".to_string(),
-            })
+            let global_value = crate::global::GlobalValue::F32(value);
+            core::set_global_value(global, store, global_value)?;
+            Ok(())
         })() {
             Ok(_) => 1, // Return true on success
-            Err(_) => 0, // Return false on error/limitation
+            Err(e) => {
+                jni_utils::throw_jni_exception(&mut env, &e);
+                0 // Return false on error
+            }
         }
     }
     
     /// Set the double value of a global variable (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeSetDoubleValue(
-        env: JNIEnv,
+        mut env: JNIEnv,
         _class: JClass,
         global_ptr: jlong,
+        store_ptr: jlong,
         value: f64,
     ) -> jboolean {
         match (|| -> WasmtimeResult<()> {
             let global = unsafe { core::get_global_ref(global_ptr as *mut std::os::raw::c_void)? };
+            let store = unsafe { ffi_utils::deref_ptr::<Store>(store_ptr as *mut std::os::raw::c_void, "store")? };
             let metadata = core::get_global_metadata(global);
             
             // Validate that this global is mutable and correct type
@@ -2462,14 +2467,15 @@ pub mod jni_global {
                 });
             }
             
-            // TODO: Store context required for actual value setting
-            // Return error indicating limitation
-            Err(WasmtimeError::InvalidParameter {
-                message: "Store context required for global value setting - architectural limitation".to_string(),
-            })
+            let global_value = crate::global::GlobalValue::F64(value);
+            core::set_global_value(global, store, global_value)?;
+            Ok(())
         })() {
             Ok(_) => 1, // Return true on success
-            Err(_) => 0, // Return false on error/limitation
+            Err(e) => {
+                jni_utils::throw_jni_exception(&mut env, &e);
+                0 // Return false on error
+            }
         }
     }
     
@@ -2503,6 +2509,7 @@ pub mod jni_global {
 pub mod jni_table {
     use super::*;
     use crate::table::core;
+    use crate::table::core::{get_table_ref, get_table_metadata};
     use crate::store::Store;
     use crate::error::{jni_utils, ffi_utils, WasmtimeError, WasmtimeResult};
     use wasmtime::{ValType, RefType};
@@ -3740,8 +3747,8 @@ pub mod jni_memory {
             }
 
             // Get table reference and metadata to determine actual element type
-            let table = unsafe { core::get_table_ref(table_ptr as *const std::os::raw::c_void)? };
-            let metadata = core::get_table_metadata(table);
+            let table = unsafe { get_table_ref(table_ptr as *const std::os::raw::c_void)? };
+            let metadata = get_table_metadata(table);
             
             // Convert ValType to string representation
             let element_type_str = match &metadata.element_type {
@@ -3805,7 +3812,7 @@ pub mod jni_memory {
             // The table operations in Java API don't pass store context, but Wasmtime requires it
             // For now, we'll return null (which represents a null reference in table)
             // TODO: Redesign API to include store context or store reference within table
-            let table = unsafe { core::get_table_ref(table_ptr as *const std::os::raw::c_void)? };
+            let table = unsafe { get_table_ref(table_ptr as *const std::os::raw::c_void)? };
             log::debug!("JNI Table.nativeGet: table operations require store context - returning null for table 0x{:x} index {}", table_ptr, index);
             
             // Return null to represent an uninitialized table slot (this is valid for tables)
@@ -3850,7 +3857,7 @@ pub mod jni_memory {
             // The table operations in Java API don't pass store context, but Wasmtime requires it
             // For now, validate the table and return success (elements stored but not accessible without store)
             // TODO: Redesign API to include store context or store reference within table
-            let table = unsafe { core::get_table_ref(table_ptr as *const std::os::raw::c_void)? };
+            let table = unsafe { get_table_ref(table_ptr as *const std::os::raw::c_void)? };
             log::debug!("JNI Table.nativeSet: table operations require store context - accepting set for table 0x{:x} index {} (placeholder)", table_ptr, index);
             
             // Return success as if the element was set (this maintains API consistency)
