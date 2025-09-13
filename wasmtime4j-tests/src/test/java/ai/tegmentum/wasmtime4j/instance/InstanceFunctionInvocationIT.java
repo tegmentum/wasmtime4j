@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test;
  * management during invocation - Cross-runtime behavior consistency
  */
 @DisplayName("Instance Function Invocation Tests")
-public final class InstanceFunctionInvocationTest extends BaseIntegrationTest {
+public final class InstanceFunctionInvocationIT extends BaseIntegrationTest {
 
   /**
    * Placeholder test - actual function invocation tests will be implemented once the function

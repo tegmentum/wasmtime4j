@@ -32,7 +32,7 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
  * introspection, type information, custom sections, and metadata consistency.
  */
 @DisplayName("Module Metadata Comprehensive Tests")
-class ModuleMetadataTest extends BaseIntegrationTest {
+class ModuleMetadataIT extends BaseIntegrationTest {
 
   private static final Logger LOGGER = Logger.getLogger(ModuleMetadataTest.class.getName());
 

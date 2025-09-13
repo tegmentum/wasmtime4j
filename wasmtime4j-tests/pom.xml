@@ -19,7 +19,6 @@
 
     <properties>
         <!-- Test-specific properties -->
-        <skipITs>false</skipITs>
         <test.timeout>300</test.timeout>
         <test.memory>2g</test.memory>
         
@@ -122,10 +121,10 @@
                     <excludes>
                         <exclude>**/*IT.java</exclude>
                         <exclude>**/*IntegrationTest.java</exclude>
-                        <exclude>**/module/**/*Test.java</exclude>
-                        <exclude>**/instance/**/*Test.java</exclude>
-                        <exclude>**/hostfunction/**/*Test.java</exclude>
-                        <exclude>**/examples/**/*Test.java</exclude>
+                        <exclude>**/module/**/*IT.java</exclude>
+                        <exclude>**/instance/**/*IT.java</exclude>
+                        <exclude>**/hostfunction/**/*IT.java</exclude>
+                        <exclude>**/examples/**/*IT.java</exclude>
                     </excludes>
                     <systemPropertyVariables>
                         <java.util.logging.config.file>src/test/resources/logging/test-logging.properties</java.util.logging.config.file>
@@ -136,31 +135,7 @@
                 </configuration>
             </plugin>
 
-            <!-- Maven Failsafe Plugin for integration tests -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-failsafe-plugin</artifactId>
-                <configuration>
-                    <includes>
-                        <include>**/*IT.java</include>
-                    </includes>
-                    <systemPropertyVariables>
-                        <java.util.logging.config.file>src/test/resources/logging/test-logging.properties</java.util.logging.config.file>
-                        <wasmtime4j.test.timeout>${test.timeout}</wasmtime4j.test.timeout>
-                        <wasmtime4j.test.resources>${project.build.testOutputDirectory}</wasmtime4j.test.resources>
-                    </systemPropertyVariables>
-                    <argLine>-Xmx${test.memory} -XX:+HeapDumpOnOutOfMemoryError</argLine>
-                    <skipITs>${skipITs}</skipITs>
-                </configuration>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>integration-test</goal>
-                            <goal>verify</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
+            <!-- Maven Failsafe Plugin managed by parent POM -->
 
             <!-- Skip jar creation for test-only module -->
             <plugin>

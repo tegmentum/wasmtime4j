@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test;
  * resource behavior consistency
  */
 @DisplayName("Instance Lifecycle and Resource Tests")
-public final class InstanceLifecycleAndResourceTest extends BaseIntegrationTest {
+public final class InstanceLifecycleAndResourceIT extends BaseIntegrationTest {
 
   /**
    * Placeholder test - actual lifecycle and resource tests will be implemented once the instance

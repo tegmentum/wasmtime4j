@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test;
  * characteristics of export operations - Cross-runtime behavior consistency
  */
 @DisplayName("Instance Export Tests")
-public final class InstanceExportTest extends BaseIntegrationTest {
+public final class InstanceExportIT extends BaseIntegrationTest {
 
   /**
    * Placeholder test - actual instance export tests will be implemented once the export API is

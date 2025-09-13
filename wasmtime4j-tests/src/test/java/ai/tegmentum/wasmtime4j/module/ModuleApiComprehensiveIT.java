@@ -35,7 +35,7 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
  * compilation, validation, instantiation, metadata introspection, and cross-runtime compatibility.
  */
 @DisplayName("Module API Comprehensive Tests")
-class ModuleApiComprehensiveTest extends BaseIntegrationTest {
+class ModuleApiComprehensiveIT extends BaseIntegrationTest {
 
   private static final Logger LOGGER = Logger.getLogger(ModuleApiComprehensiveTest.class.getName());
 
