@@ -940,6 +940,185 @@ pub mod core {
             }),
         }
     }
+
+    // Function-specific operations for Panama FFI bindings
+
+    /// Get function export by name - returns wasmtime::Func
+    pub fn get_function_export(
+        instance: &Instance,
+        store: &mut Store,
+        name: &str,
+    ) -> WasmtimeResult<Option<wasmtime::Func>> {
+        instance.get_func(store, name)
+    }
+
+    /// Validate function pointer and get reference
+    pub unsafe fn get_function_ref(func_ptr: *const c_void) -> WasmtimeResult<&'static wasmtime::Func> {
+        validate_ptr_not_null!(func_ptr, "function");
+        Ok(&*(func_ptr as *const wasmtime::Func))
+    }
+
+    /// Get function parameter types as integer array
+    pub fn get_function_param_types(
+        func: &wasmtime::Func,
+        store: &Store,
+    ) -> WasmtimeResult<Vec<i32>> {
+        store.with_context(|ctx| {
+            let func_type = func.ty(ctx);
+            let param_types: Vec<i32> = func_type
+                .params()
+                .map(|param_type| wasmtime_val_type_to_int(param_type))
+                .collect();
+            Ok(param_types)
+        })
+    }
+
+    /// Get function result types as integer array
+    pub fn get_function_result_types(
+        func: &wasmtime::Func,
+        store: &Store,
+    ) -> WasmtimeResult<Vec<i32>> {
+        store.with_context(|ctx| {
+            let func_type = func.ty(ctx);
+            let result_types: Vec<i32> = func_type
+                .results()
+                .map(|result_type| wasmtime_val_type_to_int(result_type))
+                .collect();
+            Ok(result_types)
+        })
+    }
+
+    /// Get function type
+    pub fn get_function_type(
+        func: &wasmtime::Func,
+        store: &Store,
+    ) -> WasmtimeResult<wasmtime::FuncType> {
+        store.with_context(|ctx| {
+            Ok(func.ty(ctx))
+        })
+    }
+
+    /// Call function with parameters and return results
+    pub fn call_function(
+        func: &wasmtime::Func,
+        store: &mut Store,
+        params: &[WasmValue],
+    ) -> WasmtimeResult<Vec<WasmValue>> {
+        // Convert WasmValue parameters to wasmtime::Val
+        let wasmtime_params: Vec<wasmtime::Val> = params
+            .iter()
+            .map(|param| wasm_value_to_wasmtime_val(param))
+            .collect::<Result<Vec<_>, _>>()?;
+
+        // Prepare result vector
+        let results = store.with_context(|mut ctx| {
+            let func_type = func.ty(&ctx);
+            let mut results = vec![wasmtime::Val::I32(0); func_type.results().len()];
+            
+            func.call(&mut ctx, &wasmtime_params, &mut results)
+                .map_err(|e| WasmtimeError::Execution {
+                    message: format!("Function call failed: {}", e),
+                })?;
+            
+            Ok(results)
+        })?;
+
+        // Convert results back to WasmValue
+        results
+            .into_iter()
+            .map(|result| wasmtime_val_to_wasm_value(&result))
+            .collect::<Result<Vec<_>, _>>()
+    }
+
+    /// Convert parameters from FFI representation
+    pub unsafe fn convert_params_from_ffi(
+        params_ptr: *const c_void,
+        param_count: usize,
+    ) -> WasmtimeResult<Vec<WasmValue>> {
+        // For now, assume parameters are passed as an array of WasmValue structs
+        // This is a simplified implementation - real implementation would need
+        // proper memory layout handling
+        if params_ptr.is_null() {
+            return Ok(Vec::new());
+        }
+
+        let params_slice = std::slice::from_raw_parts(
+            params_ptr as *const WasmValue,
+            param_count,
+        );
+
+        Ok(params_slice.to_vec())
+    }
+
+    /// Convert results to FFI representation
+    pub unsafe fn convert_results_to_ffi(
+        results: &[WasmValue],
+        results_ptr: *mut c_void,
+        result_count: usize,
+    ) -> WasmtimeResult<()> {
+        if results_ptr.is_null() || results.is_empty() {
+            return Ok(());
+        }
+
+        let count = std::cmp::min(results.len(), result_count);
+        let results_slice = std::slice::from_raw_parts_mut(
+            results_ptr as *mut WasmValue,
+            count,
+        );
+
+        for (i, result) in results.iter().take(count).enumerate() {
+            results_slice[i] = result.clone();
+        }
+
+        Ok(())
+    }
+
+    /// Convert WasmValue to wasmtime::Val
+    fn wasm_value_to_wasmtime_val(value: &WasmValue) -> WasmtimeResult<wasmtime::Val> {
+        Ok(match value {
+            WasmValue::I32(v) => wasmtime::Val::I32(*v),
+            WasmValue::I64(v) => wasmtime::Val::I64(*v),
+            WasmValue::F32(v) => wasmtime::Val::F32((*v).to_bits()),
+            WasmValue::F64(v) => wasmtime::Val::F64((*v).to_bits()),
+            WasmValue::V128(bytes) => wasmtime::Val::V128(u128::from_le_bytes(*bytes)),
+            WasmValue::ExternRef => wasmtime::Val::externref_null(),
+            WasmValue::FuncRef => wasmtime::Val::funcref_null(),
+        })
+    }
+
+    /// Convert wasmtime::Val to WasmValue
+    fn wasmtime_val_to_wasm_value(val: &wasmtime::Val) -> WasmtimeResult<WasmValue> {
+        Ok(match val {
+            wasmtime::Val::I32(v) => WasmValue::I32(*v),
+            wasmtime::Val::I64(v) => WasmValue::I64(*v),
+            wasmtime::Val::F32(v) => WasmValue::F32(f32::from_bits(*v)),
+            wasmtime::Val::F64(v) => WasmValue::F64(f64::from_bits(*v)),
+            wasmtime::Val::V128(v) => WasmValue::V128(v.to_le_bytes()),
+            wasmtime::Val::FuncRef(_) => WasmValue::FuncRef,
+            wasmtime::Val::ExternRef(_) => WasmValue::ExternRef,
+            wasmtime::Val::AnyRef(_) => WasmValue::ExternRef,
+            wasmtime::Val::ExnRef(_) => WasmValue::ExternRef,
+        })
+    }
+
+    /// Convert wasmtime::ValType to integer representation
+    fn wasmtime_val_type_to_int(val_type: wasmtime::ValType) -> i32 {
+        match val_type {
+            wasmtime::ValType::I32 => 0,
+            wasmtime::ValType::I64 => 1,
+            wasmtime::ValType::F32 => 2,
+            wasmtime::ValType::F64 => 3,
+            wasmtime::ValType::V128 => 4,
+            wasmtime::ValType::Ref(_) => {
+                // For reference types, we need to check if it's funcref or externref
+                // This is a simplified approach - more detailed inspection would be needed
+                match format!("{:?}", val_type).as_str() {
+                    s if s.contains("funcref") => 5,
+                    _ => 6, // Default to externref
+                }
+            }
+        }
+    }
 }
 
 #[cfg(test)]

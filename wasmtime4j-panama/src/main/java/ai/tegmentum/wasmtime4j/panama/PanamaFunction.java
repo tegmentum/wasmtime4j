@@ -321,20 +321,92 @@ public final class PanamaFunction implements WasmFunction, AutoCloseable {
   /** Extracts parameter types from function type structure. */
   private List<Integer> extractParameterTypes(final MemorySegment functionTypePtr)
       throws Exception {
-    // Get parameter types vector from function type
-    MemorySegment paramsVec = functionTypePtr; // Simplified - would need proper offset
-
-    // For now, return empty list - full implementation would parse the type vector
-    return new ArrayList<>();
+    try (var resourceManager = new ArenaResourceManager()) {
+      // Allocate memory for output parameters
+      var typesPtr = resourceManager.allocate(ValueLayout.ADDRESS.byteSize()).getSegment();
+      var countPtr = resourceManager.allocate(ValueLayout.JAVA_LONG.byteSize()).getSegment();
+      
+      // Call native function to get parameter types
+      int result = nativeFunctions.callNativeFunction(
+          "wasmtime4j_func_get_param_types",
+          Integer.class,
+          functionResource.getNativePointer(),
+          MemorySegment.NULL, // Store context not available in this API design
+          typesPtr,
+          countPtr);
+      
+      if (result != 0) {
+        throw new WasmException("Failed to get function parameter types");
+      }
+      
+      // Read the count
+      long count = countPtr.get(ValueLayout.JAVA_LONG, 0);
+      if (count == 0) {
+        return new ArrayList<>();
+      }
+      
+      // Read the types array
+      MemorySegment typesArray = typesPtr.get(ValueLayout.ADDRESS, 0).reinterpret(count * ValueLayout.JAVA_INT.byteSize());
+      List<Integer> types = new ArrayList<>();
+      for (int i = 0; i < count; i++) {
+        int type = typesArray.get(ValueLayout.JAVA_INT, i * ValueLayout.JAVA_INT.byteSize());
+        types.add(type);
+      }
+      
+      // Free the native types array
+      nativeFunctions.callNativeFunction(
+          "wasmtime4j_func_free_types_array",
+          Void.class,
+          typesArray,
+          count);
+      
+      return types;
+    }
   }
 
   /** Extracts result types from function type structure. */
   private List<Integer> extractResultTypes(final MemorySegment functionTypePtr) throws Exception {
-    // Get result types vector from function type
-    MemorySegment resultsVec = functionTypePtr; // Simplified - would need proper offset
-
-    // For now, return empty list - full implementation would parse the type vector
-    return new ArrayList<>();
+    try (var resourceManager = new ArenaResourceManager()) {
+      // Allocate memory for output parameters
+      var typesPtr = resourceManager.allocate(ValueLayout.ADDRESS.byteSize()).getSegment();
+      var countPtr = resourceManager.allocate(ValueLayout.JAVA_LONG.byteSize()).getSegment();
+      
+      // Call native function to get result types
+      int result = nativeFunctions.callNativeFunction(
+          "wasmtime4j_func_get_result_types",
+          Integer.class,
+          functionResource.getNativePointer(),
+          MemorySegment.NULL, // Store context not available in this API design
+          typesPtr,
+          countPtr);
+      
+      if (result != 0) {
+        throw new WasmException("Failed to get function result types");
+      }
+      
+      // Read the count
+      long count = countPtr.get(ValueLayout.JAVA_LONG, 0);
+      if (count == 0) {
+        return new ArrayList<>();
+      }
+      
+      // Read the types array
+      MemorySegment typesArray = typesPtr.get(ValueLayout.ADDRESS, 0).reinterpret(count * ValueLayout.JAVA_INT.byteSize());
+      List<Integer> types = new ArrayList<>();
+      for (int i = 0; i < count; i++) {
+        int type = typesArray.get(ValueLayout.JAVA_INT, i * ValueLayout.JAVA_INT.byteSize());
+        types.add(type);
+      }
+      
+      // Free the native types array
+      nativeFunctions.callNativeFunction(
+          "wasmtime4j_func_free_types_array",
+          Void.class,
+          typesArray,
+          count);
+      
+      return types;
+    }
   }
 
   /** Invokes the native function through FFI. */
@@ -344,26 +416,18 @@ public final class PanamaFunction implements WasmFunction, AutoCloseable {
       final MemorySegment resultsArray,
       final int resultCount)
       throws Throwable {
-    // Call wasmtime_func_call through cached method handle
-    MethodHandle funcCall =
-        nativeFunctions.getFunction(
-            "wasmtime_func_call",
-            FunctionDescriptor.of(
-                ValueLayout.JAVA_BOOLEAN,
-                ValueLayout.ADDRESS, // function
-                ValueLayout.ADDRESS, // params
-                ValueLayout.JAVA_INT, // num_params
-                ValueLayout.ADDRESS, // results
-                ValueLayout.JAVA_INT // num_results
-                ));
+    // Call wasmtime4j_func_call through native bindings
+    int result = nativeFunctions.callNativeFunction(
+        "wasmtime4j_func_call",
+        Integer.class,
+        functionResource.getNativePointer(),
+        MemorySegment.NULL, // Store context not available in this API design
+        paramsArray != null ? paramsArray : MemorySegment.NULL,
+        (long) paramCount,
+        resultsArray != null ? resultsArray : MemorySegment.NULL,
+        (long) resultCount);
 
-    return (boolean)
-        funcCall.invoke(
-            functionResource.getNativePointer(),
-            paramsArray != null ? paramsArray : MemorySegment.NULL,
-            paramCount,
-            resultsArray != null ? resultsArray : MemorySegment.NULL,
-            resultCount);
+    return result == 0; // Success if result is 0
   }
 
   /** Marshals a WasmValue to native WebAssembly value format. */

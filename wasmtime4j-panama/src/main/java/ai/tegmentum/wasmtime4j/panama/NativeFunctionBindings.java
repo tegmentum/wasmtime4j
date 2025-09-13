@@ -744,6 +744,225 @@ public final class NativeFunctionBindings {
     callNativeFunction("wasmtime4j_clear_error_state", Void.class);
   }
 
+  // WASI Functions
+
+  /**
+   * Creates a new WASI context with default configuration.
+   *
+   * @return memory segment pointer to the WASI context, or null on failure
+   */
+  public MemorySegment wasiContextNew() {
+    try {
+      if (!isInitialized()) {
+        LOGGER.severe("NativeFunctionBindings not initialized, cannot create WASI context");
+        return null;
+      }
+
+      MemorySegment result = callNativeFunction("wasi_ctx_new", MemorySegment.class);
+      if (result == null || result.equals(MemorySegment.NULL)) {
+        LOGGER.warning("WASI context creation returned null");
+      } else {
+        LOGGER.fine("WASI context created successfully: " + result);
+      }
+      return result;
+    } catch (Exception e) {
+      LOGGER.severe("Exception during WASI context creation: " + e.getMessage());
+      return null;
+    }
+  }
+
+  /**
+   * Creates a new WASI context with custom configuration.
+   *
+   * @param allowNetwork whether to allow network access (1 = true, 0 = false)
+   * @param allowArbitraryFs whether to allow arbitrary filesystem access (1 = true, 0 = false)
+   * @param maxFileSize maximum file size for operations (0 = no limit)
+   * @param maxOpenFiles maximum number of open file descriptors (0 = no limit)
+   * @return memory segment pointer to the WASI context, or null on failure
+   */
+  public MemorySegment wasiContextNewWithConfig(
+      final int allowNetwork,
+      final int allowArbitraryFs,
+      final long maxFileSize,
+      final int maxOpenFiles) {
+    try {
+      if (!isInitialized()) {
+        LOGGER.severe("NativeFunctionBindings not initialized, cannot create WASI context with config");
+        return null;
+      }
+
+      MemorySegment result = callNativeFunction("wasi_ctx_new_with_config", MemorySegment.class,
+          allowNetwork, allowArbitraryFs, maxFileSize, maxOpenFiles);
+      if (result == null || result.equals(MemorySegment.NULL)) {
+        LOGGER.warning("WASI context with config creation returned null");
+      } else {
+        LOGGER.fine("WASI context with config created successfully: " + result);
+      }
+      return result;
+    } catch (Exception e) {
+      LOGGER.severe("Exception during WASI context with config creation: " + e.getMessage());
+      return null;
+    }
+  }
+
+  /**
+   * Adds a directory mapping to the WASI context.
+   *
+   * @param contextPtr pointer to the WASI context
+   * @param hostPath pointer to the host path string
+   * @param guestPath pointer to the guest path string
+   * @param canCreate directory can create permission (1 = true, 0 = false)
+   * @param canRead directory can read permission (1 = true, 0 = false)
+   * @param canRemove directory can remove permission (1 = true, 0 = false)
+   * @param fileRead file read permission (1 = true, 0 = false)
+   * @param fileWrite file write permission (1 = true, 0 = false)
+   * @param fileCreate file create permission (1 = true, 0 = false)
+   * @param fileTruncate file truncate permission (1 = true, 0 = false)
+   * @return 0 on success, negative error code on failure
+   */
+  public int wasiContextAddDirectory(
+      final MemorySegment contextPtr,
+      final MemorySegment hostPath,
+      final MemorySegment guestPath,
+      final int canCreate,
+      final int canRead,
+      final int canRemove,
+      final int fileRead,
+      final int fileWrite,
+      final int fileCreate,
+      final int fileTruncate) {
+    validatePointer(contextPtr, "contextPtr");
+    validatePointer(hostPath, "hostPath");
+    validatePointer(guestPath, "guestPath");
+
+    return callNativeFunction("wasi_ctx_add_dir", Integer.class, contextPtr, hostPath, guestPath,
+        canCreate, canRead, canRemove, fileRead, fileWrite, fileCreate, fileTruncate);
+  }
+
+  /**
+   * Sets an environment variable in the WASI context.
+   *
+   * @param contextPtr pointer to the WASI context
+   * @param key pointer to the environment variable key string
+   * @param value pointer to the environment variable value string
+   * @return 0 on success, negative error code on failure
+   */
+  public int wasiContextSetEnvironmentVariable(
+      final MemorySegment contextPtr,
+      final MemorySegment key,
+      final MemorySegment value) {
+    validatePointer(contextPtr, "contextPtr");
+    validatePointer(key, "key");
+    validatePointer(value, "value");
+
+    return callNativeFunction("wasi_ctx_set_env", Integer.class, contextPtr, key, value);
+  }
+
+  /**
+   * Sets command line arguments for the WASI context.
+   *
+   * @param contextPtr pointer to the WASI context
+   * @param args pointer to array of argument strings
+   * @param argsLen number of arguments
+   * @return 0 on success, negative error code on failure
+   */
+  public int wasiContextSetArguments(
+      final MemorySegment contextPtr,
+      final MemorySegment args,
+      final long argsLen) {
+    validatePointer(contextPtr, "contextPtr");
+    validatePointer(args, "args");
+    validateSize(argsLen, "argsLen");
+
+    return callNativeFunction("wasi_ctx_set_args", Integer.class, contextPtr, args, argsLen);
+  }
+
+  /**
+   * Configures standard I/O streams for the WASI context.
+   *
+   * @param contextPtr pointer to the WASI context
+   * @param stdinType stdin source type (0=inherit, 1=buffer, 2=file, other=null)
+   * @param stdinData pointer to stdin data (or null)
+   * @param stdoutType stdout sink type (0=inherit, 1=buffer, 2=file, other=null)
+   * @param stdoutData pointer to stdout data (or null)
+   * @param stderrType stderr sink type (0=inherit, 1=buffer, 2=file, other=null)
+   * @param stderrData pointer to stderr data (or null)
+   * @return 0 on success, negative error code on failure
+   */
+  public int wasiContextConfigureStdio(
+      final MemorySegment contextPtr,
+      final int stdinType,
+      final MemorySegment stdinData,
+      final int stdoutType,
+      final MemorySegment stdoutData,
+      final int stderrType,
+      final MemorySegment stderrData) {
+    validatePointer(contextPtr, "contextPtr");
+
+    return callNativeFunction("wasi_ctx_configure_stdio", Integer.class, contextPtr,
+        stdinType, stdinData, stdoutType, stdoutData, stderrType, stderrData);
+  }
+
+  /**
+   * Checks if a path is allowed based on WASI context configuration.
+   *
+   * @param contextPtr pointer to the WASI context
+   * @param path pointer to the path string
+   * @return 1 if allowed, 0 if not allowed, negative error code on failure
+   */
+  public int wasiContextIsPathAllowed(final MemorySegment contextPtr, final MemorySegment path) {
+    validatePointer(contextPtr, "contextPtr");
+    validatePointer(path, "path");
+
+    return callNativeFunction("wasi_ctx_is_path_allowed", Integer.class, contextPtr, path);
+  }
+
+  /**
+   * Gets the number of directory mappings in the WASI context.
+   *
+   * @param contextPtr pointer to the WASI context
+   * @return number of directory mappings, or 0 on error
+   */
+  public long wasiContextGetDirectoryCount(final MemorySegment contextPtr) {
+    validatePointer(contextPtr, "contextPtr");
+    
+    return callNativeFunction("wasi_ctx_get_dir_count", Long.class, contextPtr);
+  }
+
+  /**
+   * Gets the number of environment variables in the WASI context.
+   *
+   * @param contextPtr pointer to the WASI context
+   * @return number of environment variables, or 0 on error
+   */
+  public long wasiContextGetEnvironmentCount(final MemorySegment contextPtr) {
+    validatePointer(contextPtr, "contextPtr");
+    
+    return callNativeFunction("wasi_ctx_get_env_count", Long.class, contextPtr);
+  }
+
+  /**
+   * Gets the number of command line arguments in the WASI context.
+   *
+   * @param contextPtr pointer to the WASI context
+   * @return number of arguments, or 0 on error
+   */
+  public long wasiContextGetArgumentCount(final MemorySegment contextPtr) {
+    validatePointer(contextPtr, "contextPtr");
+    
+    return callNativeFunction("wasi_ctx_get_args_count", Long.class, contextPtr);
+  }
+
+  /**
+   * Destroys a WASI context and frees its resources.
+   *
+   * @param contextPtr pointer to the WASI context
+   */
+  public void wasiContextDestroy(final MemorySegment contextPtr) {
+    validatePointer(contextPtr, "contextPtr");
+    callNativeFunction("wasi_ctx_destroy", Void.class, contextPtr);
+  }
+
   /** Initializes all function bindings. */
   private void initializeFunctionBindings() {
     // Engine functions
@@ -1005,6 +1224,149 @@ public final class NativeFunctionBindings {
     addFunctionBinding(
         "wasmtime4j_clear_error_state",
         FunctionDescriptor.ofVoid()); // no parameters
+
+    // WASI function bindings
+    addFunctionBinding("wasi_ctx_new", FunctionDescriptor.of(ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasi_ctx_new_with_config",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, // return context_ptr
+            ValueLayout.JAVA_INT, // allow_network
+            ValueLayout.JAVA_INT, // allow_arbitrary_fs
+            ValueLayout.JAVA_LONG, // max_file_size
+            ValueLayout.JAVA_INT)); // max_open_files
+
+    addFunctionBinding(
+        "wasi_ctx_add_dir",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return error code
+            ValueLayout.ADDRESS, // context_ptr
+            ValueLayout.ADDRESS, // host_path
+            ValueLayout.ADDRESS, // guest_path
+            ValueLayout.JAVA_INT, // can_create
+            ValueLayout.JAVA_INT, // can_read
+            ValueLayout.JAVA_INT, // can_remove
+            ValueLayout.JAVA_INT, // file_read
+            ValueLayout.JAVA_INT, // file_write
+            ValueLayout.JAVA_INT, // file_create
+            ValueLayout.JAVA_INT)); // file_truncate
+
+    addFunctionBinding(
+        "wasi_ctx_set_env",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return error code
+            ValueLayout.ADDRESS, // context_ptr
+            ValueLayout.ADDRESS, // key
+            ValueLayout.ADDRESS)); // value
+
+    addFunctionBinding(
+        "wasi_ctx_set_args",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return error code
+            ValueLayout.ADDRESS, // context_ptr
+            ValueLayout.ADDRESS, // args array
+            ValueLayout.JAVA_LONG)); // args_len
+
+    addFunctionBinding(
+        "wasi_ctx_configure_stdio",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return error code
+            ValueLayout.ADDRESS, // context_ptr
+            ValueLayout.JAVA_INT, // stdin_type
+            ValueLayout.ADDRESS, // stdin_data
+            ValueLayout.JAVA_INT, // stdout_type
+            ValueLayout.ADDRESS, // stdout_data
+            ValueLayout.JAVA_INT, // stderr_type
+            ValueLayout.ADDRESS)); // stderr_data
+
+    addFunctionBinding(
+        "wasi_ctx_is_path_allowed",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return allowed flag
+            ValueLayout.ADDRESS, // context_ptr
+            ValueLayout.ADDRESS)); // path
+
+    addFunctionBinding(
+        "wasi_ctx_get_dir_count",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG, // return count
+            ValueLayout.ADDRESS)); // context_ptr
+
+    addFunctionBinding(
+        "wasi_ctx_get_env_count",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG, // return count
+            ValueLayout.ADDRESS)); // context_ptr
+
+    addFunctionBinding(
+        "wasi_ctx_get_args_count",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG, // return count
+            ValueLayout.ADDRESS)); // context_ptr
+
+    addFunctionBinding(
+        "wasi_ctx_destroy", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // context_ptr
+
+    // Function operation bindings
+    addFunctionBinding(
+        "wasmtime4j_func_get",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return error code
+            ValueLayout.ADDRESS, // instance_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.ADDRESS, // name
+            ValueLayout.ADDRESS)); // func_ptr (output)
+
+    addFunctionBinding(
+        "wasmtime4j_func_get_param_types",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return error code
+            ValueLayout.ADDRESS, // func_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.ADDRESS, // types_ptr (output)
+            ValueLayout.ADDRESS)); // count_ptr (output)
+
+    addFunctionBinding(
+        "wasmtime4j_func_get_result_types",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return error code
+            ValueLayout.ADDRESS, // func_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.ADDRESS, // types_ptr (output)
+            ValueLayout.ADDRESS)); // count_ptr (output)
+
+    addFunctionBinding(
+        "wasmtime4j_func_call",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return error code
+            ValueLayout.ADDRESS, // func_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.ADDRESS, // params_ptr
+            ValueLayout.JAVA_LONG, // param_count
+            ValueLayout.ADDRESS, // results_ptr
+            ValueLayout.JAVA_LONG)); // result_count
+
+    addFunctionBinding(
+        "wasmtime4j_func_type",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, // return func_type_ptr
+            ValueLayout.ADDRESS, // func_ptr
+            ValueLayout.ADDRESS)); // store_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_func_type_destroy",
+        FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // func_type_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_func_free_types_array",
+        FunctionDescriptor.ofVoid(
+            ValueLayout.ADDRESS, // types_ptr
+            ValueLayout.JAVA_LONG)); // count
+
+    addFunctionBinding(
+        "wasmtime4j_func_destroy",
+        FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // func_ptr
   }
 
   /**
