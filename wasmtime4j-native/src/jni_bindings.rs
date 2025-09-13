@@ -1777,6 +1777,7 @@ pub mod jni_global {
     use crate::error::{jni_utils, WasmtimeError, WasmtimeResult};
     use crate::error::ffi_utils;
     use jni::sys::jobject;
+    use jni::objects::{JValue, JObject};
     
     use wasmtime::{ValType, Mutability, RefType};
 
@@ -1863,7 +1864,7 @@ pub mod jni_global {
     /// Get global variable value (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetGlobal(
-        env: JNIEnv,
+        mut env: JNIEnv,
         _class: JClass,
         global_ptr: jlong,
         store_ptr: jlong,
@@ -1900,7 +1901,7 @@ pub mod jni_global {
     /// Set global variable value (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeSetGlobal(
-        env: JNIEnv,
+        mut env: JNIEnv,
         _class: JClass,
         global_ptr: jlong,
         store_ptr: jlong,
@@ -2109,7 +2110,7 @@ pub mod jni_global {
         })() {
             Ok(result) => result,
             Err(e) => {
-                jni_utils::throw_java_exception(env, &e);
+                jni_utils::throw_jni_exception(env, &e);
                 std::ptr::null_mut()
             }
         }
@@ -2118,7 +2119,7 @@ pub mod jni_global {
     /// Get the int value of a global variable (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetIntValue(
-        env: JNIEnv,
+        mut env: JNIEnv,
         _class: JClass,
         global_ptr: jlong,
         store_ptr: jlong,
@@ -2145,7 +2146,7 @@ pub mod jni_global {
         })() {
             Ok(result) => result,
             Err(e) => {
-                jni_utils::throw_java_exception(env, &e);
+                jni_utils::throw_jni_exception(env, &e);
                 0 // Return 0 on error
             }
         }
@@ -2154,7 +2155,7 @@ pub mod jni_global {
     /// Get the long value of a global variable (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetLongValue(
-        env: JNIEnv,
+        mut env: JNIEnv,
         _class: JClass,
         global_ptr: jlong,
         store_ptr: jlong,
@@ -2181,7 +2182,7 @@ pub mod jni_global {
         })() {
             Ok(result) => result,
             Err(e) => {
-                jni_utils::throw_java_exception(env, &e);
+                jni_utils::throw_jni_exception(env, &e);
                 0 // Return 0 on error
             }
         }
@@ -2190,7 +2191,7 @@ pub mod jni_global {
     /// Get the float value of a global variable (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetFloatValue(
-        env: JNIEnv,
+        mut env: JNIEnv,
         _class: JClass,
         global_ptr: jlong,
         store_ptr: jlong,
@@ -2217,7 +2218,7 @@ pub mod jni_global {
         })() {
             Ok(result) => result,
             Err(e) => {
-                jni_utils::throw_java_exception(env, &e);
+                jni_utils::throw_jni_exception(env, &e);
                 0.0 // Return 0.0 on error
             }
         }
@@ -2226,7 +2227,7 @@ pub mod jni_global {
     /// Get the double value of a global variable (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetDoubleValue(
-        env: JNIEnv,
+        mut env: JNIEnv,
         _class: JClass,
         global_ptr: jlong,
         store_ptr: jlong,
@@ -2253,7 +2254,7 @@ pub mod jni_global {
         })() {
             Ok(result) => result,
             Err(e) => {
-                jni_utils::throw_java_exception(env, &e);
+                jni_utils::throw_jni_exception(env, &e);
                 0.0 // Return 0.0 on error
             }
         }
@@ -2262,7 +2263,7 @@ pub mod jni_global {
     /// Set the value of a global variable from Object (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeSetValue(
-        env: JNIEnv,
+        mut env: JNIEnv,
         _class: JClass,
         global_ptr: jlong,
         store_ptr: jlong,
@@ -2282,21 +2283,22 @@ pub mod jni_global {
             }
             
             // Convert Java Object to GlobalValue based on global type
+            let java_object = JObject::from_raw(value);
             let global_value = match &metadata.value_type {
                 ValType::I32 => {
-                    let int_val = env.call_method(value, "intValue", "()I", &[])?.i()?;
+                    let int_val = env.call_method(&java_object, "intValue", "()I", &[])?.i()?;
                     crate::global::GlobalValue::I32(int_val)
                 },
                 ValType::I64 => {
-                    let long_val = env.call_method(value, "longValue", "()J", &[])?.j()?;
+                    let long_val = env.call_method(&java_object, "longValue", "()J", &[])?.j()?;
                     crate::global::GlobalValue::I64(long_val)
                 },
                 ValType::F32 => {
-                    let float_val = env.call_method(value, "floatValue", "()F", &[])?.f()?;
+                    let float_val = env.call_method(&java_object, "floatValue", "()F", &[])?.f()?;
                     crate::global::GlobalValue::F32(float_val)
                 },
                 ValType::F64 => {
-                    let double_val = env.call_method(value, "doubleValue", "()D", &[])?.d()?;
+                    let double_val = env.call_method(&java_object, "doubleValue", "()D", &[])?.d()?;
                     crate::global::GlobalValue::F64(double_val)
                 },
                 _ => {
@@ -2311,7 +2313,7 @@ pub mod jni_global {
         })() {
             Ok(_) => 1, // Return true on success
             Err(e) => {
-                jni_utils::throw_java_exception(env, &e);
+                jni_utils::throw_jni_exception(env, &e);
                 0 // Return false on error
             }
         }
@@ -2320,7 +2322,7 @@ pub mod jni_global {
     /// Set the int value of a global variable (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeSetIntValue(
-        env: JNIEnv,
+        mut env: JNIEnv,
         _class: JClass,
         global_ptr: jlong,
         store_ptr: jlong,
@@ -2351,7 +2353,7 @@ pub mod jni_global {
         })() {
             Ok(_) => 1, // Return true on success
             Err(e) => {
-                jni_utils::throw_java_exception(env, &e);
+                jni_utils::throw_jni_exception(env, &e);
                 0 // Return false on error
             }
         }
@@ -2360,7 +2362,7 @@ pub mod jni_global {
     /// Set the long value of a global variable (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeSetLongValue(
-        env: JNIEnv,
+        mut env: JNIEnv,
         _class: JClass,
         global_ptr: jlong,
         store_ptr: jlong,
@@ -2391,7 +2393,7 @@ pub mod jni_global {
         })() {
             Ok(_) => 1, // Return true on success
             Err(e) => {
-                jni_utils::throw_java_exception(env, &e);
+                jni_utils::throw_jni_exception(env, &e);
                 0 // Return false on error
             }
         }
