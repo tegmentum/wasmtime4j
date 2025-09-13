@@ -1,0 +1,315 @@
+package ai.tegmentum.wasmtime4j.jni.wasi;
+
+import ai.tegmentum.wasmtime4j.jni.exception.JniException;
+import ai.tegmentum.wasmtime4j.jni.util.JniResource;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+/**
+ * Integration tests for WASI JNI bindings and native method implementation.
+ * 
+ * <p>These tests verify that:
+ * <ul>
+ *   <li>WASI contexts can be created through JNI bindings
+ *   <li>Environment variables can be set and retrieved
+ *   <li>Directory mappings work correctly with security validation
+ *   <li>Command line arguments are properly handled
+ *   <li>Resource cleanup prevents leaks
+ *   <li>Error handling works correctly for invalid operations
+ * </ul>
+ */
+class WasiContextIntegrationTest {
+
+    private static final String TEST_ENV_KEY = "TEST_WASMTIME_VAR";
+    private static final String TEST_ENV_VALUE = "test_value_123";
+    
+    @TempDir
+    private Path tempDirectory;
+    
+    private WasiContextBuilder contextBuilder;
+    
+    @BeforeEach
+    void setUp() throws IOException {
+        // Create a test directory with some content
+        Files.createDirectories(tempDirectory.resolve("test_subdir"));
+        Files.write(tempDirectory.resolve("test_file.txt"), "Test content".getBytes());
+        
+        // Initialize context builder
+        contextBuilder = WasiContext.builder();
+    }
+    
+    @AfterEach
+    void tearDown() {
+        // Cleanup will be handled by JniResource's try-with-resources
+    }
+
+    /**
+     * Test basic WASI context creation and resource management.
+     */
+    @Test
+    void testWasiContextCreation() throws Exception {
+        try (WasiContext wasiContext = contextBuilder
+                .addEnvironmentVariable(TEST_ENV_KEY, TEST_ENV_VALUE)
+                .addArgument("test_program")
+                .addArgument("--test-flag")
+                .build()) {
+            
+            assertNotNull(wasiContext);
+            assertTrue(wasiContext.getNativeHandle() != 0);
+            
+            // Verify environment variable was set
+            assertEquals(TEST_ENV_VALUE, wasiContext.getEnvironmentVariable(TEST_ENV_KEY));
+            
+            // Verify arguments were set
+            String[] args = wasiContext.getArguments();
+            assertEquals(2, args.length);
+            assertEquals("test_program", args[0]);
+            assertEquals("--test-flag", args[1]);
+        }
+    }
+
+    /**
+     * Test WASI context creation with directory mappings.
+     */
+    @Test
+    void testWasiContextWithDirectoryMapping() throws Exception {
+        try (WasiContext wasiContext = contextBuilder
+                .addPreopenedDirectory(tempDirectory, "/sandbox")
+                .build()) {
+            
+            assertNotNull(wasiContext);
+            
+            // Verify directory mapping was added
+            Map<String, Path> directories = wasiContext.getPreopenedDirectories();
+            assertTrue(directories.containsKey("/sandbox"));
+            assertEquals(tempDirectory, directories.get("/sandbox"));
+            
+            // Test path validation
+            Path validPath = wasiContext.validatePath("/sandbox/test_file.txt");
+            assertNotNull(validPath);
+            assertTrue(validPath.isAbsolute());
+        }
+    }
+
+    /**
+     * Test WASI context creation with multiple environment variables.
+     */
+    @Test
+    void testMultipleEnvironmentVariables() throws Exception {
+        Map<String, String> testEnv = new HashMap<>();
+        testEnv.put("VAR1", "value1");
+        testEnv.put("VAR2", "value2");
+        testEnv.put("PATH", "/usr/bin:/bin");
+        
+        WasiContextBuilder builder = contextBuilder;
+        for (Map.Entry<String, String> entry : testEnv.entrySet()) {
+            builder.addEnvironmentVariable(entry.getKey(), entry.getValue());
+        }
+        
+        try (WasiContext wasiContext = builder.build()) {
+            Map<String, String> retrievedEnv = wasiContext.getEnvironment();
+            
+            for (Map.Entry<String, String> entry : testEnv.entrySet()) {
+                assertEquals(entry.getValue(), retrievedEnv.get(entry.getKey()));
+            }
+        }
+    }
+
+    /**
+     * Test WASI context creation with command line arguments.
+     */
+    @Test
+    void testCommandLineArguments() throws Exception {
+        List<String> testArgs = List.of(
+            "my_program",
+            "--verbose",
+            "--output=/tmp/output.txt",
+            "input_file.wasm"
+        );
+        
+        WasiContextBuilder builder = contextBuilder;
+        for (String arg : testArgs) {
+            builder.addArgument(arg);
+        }
+        
+        try (WasiContext wasiContext = builder.build()) {
+            String[] retrievedArgs = wasiContext.getArguments();
+            
+            assertEquals(testArgs.size(), retrievedArgs.length);
+            for (int i = 0; i < testArgs.size(); i++) {
+                assertEquals(testArgs.get(i), retrievedArgs[i]);
+            }
+        }
+    }
+
+    /**
+     * Test path validation with security restrictions.
+     */
+    @Test
+    void testPathValidationSecurity() throws Exception {
+        try (WasiContext wasiContext = contextBuilder
+                .addPreopenedDirectory(tempDirectory, "/sandbox")
+                .build()) {
+            
+            // Valid paths should work
+            assertDoesNotThrow(() -> wasiContext.validatePath("/sandbox/test_file.txt"));
+            
+            // Path traversal attempts should be blocked by security validator
+            // Note: The specific exception type depends on the security validator implementation
+            assertThrows(JniException.class, () -> 
+                wasiContext.validatePath("/sandbox/../../../etc/passwd"));
+        }
+    }
+
+    /**
+     * Test resource cleanup and handle management.
+     */
+    @Test
+    void testResourceCleanup() throws Exception {
+        WasiContext wasiContext;
+        long handle;
+        
+        // Create and capture handle
+        wasiContext = contextBuilder
+            .addEnvironmentVariable("TEST", "value")
+            .build();
+        handle = wasiContext.getNativeHandle();
+        assertTrue(handle != 0);
+        
+        // Close and verify handle is cleared
+        wasiContext.close();
+        
+        // Attempting to use closed context should throw exception
+        assertThrows(JniException.class, () -> 
+            wasiContext.getEnvironmentVariable("TEST"));
+    }
+
+    /**
+     * Test error handling for invalid operations.
+     */
+    @Test
+    void testErrorHandling() throws Exception {
+        // Test invalid directory mapping (non-existent path)
+        Path nonExistentPath = tempDirectory.resolve("does_not_exist");
+        
+        assertThrows(JniException.class, () -> 
+            contextBuilder
+                .addPreopenedDirectory(nonExistentPath, "/invalid")
+                .build());
+        
+        // Test invalid environment variable access
+        try (WasiContext wasiContext = contextBuilder.build()) {
+            // Non-existent environment variable should return null
+            assertNull(wasiContext.getEnvironmentVariable("NON_EXISTENT_VAR"));
+        }
+    }
+
+    /**
+     * Test WASI context builder validation.
+     */
+    @Test
+    void testBuilderValidation() {
+        // Test null values are rejected
+        assertThrows(IllegalArgumentException.class, () ->
+            contextBuilder.addEnvironmentVariable(null, "value"));
+        
+        assertThrows(IllegalArgumentException.class, () ->
+            contextBuilder.addEnvironmentVariable("key", null));
+            
+        assertThrows(IllegalArgumentException.class, () ->
+            contextBuilder.addArgument(null));
+            
+        assertThrows(IllegalArgumentException.class, () ->
+            contextBuilder.addPreopenedDirectory(null, "/path"));
+            
+        assertThrows(IllegalArgumentException.class, () ->
+            contextBuilder.addPreopenedDirectory(tempDirectory, null));
+    }
+
+    /**
+     * Test concurrent access to WASI context (thread safety).
+     */
+    @Test
+    void testConcurrentAccess() throws Exception {
+        try (WasiContext wasiContext = contextBuilder
+                .addEnvironmentVariable("CONCURRENT_TEST", "value")
+                .addPreopenedDirectory(tempDirectory, "/sandbox")
+                .build()) {
+            
+            // Multiple threads accessing context simultaneously
+            Thread[] threads = new Thread[5];
+            Exception[] exceptions = new Exception[threads.length];
+            
+            for (int i = 0; i < threads.length; i++) {
+                final int threadId = i;
+                threads[i] = new Thread(() -> {
+                    try {
+                        // Each thread performs multiple operations
+                        for (int j = 0; j < 10; j++) {
+                            String envValue = wasiContext.getEnvironmentVariable("CONCURRENT_TEST");
+                            assertEquals("value", envValue);
+                            
+                            String[] args = wasiContext.getArguments();
+                            assertNotNull(args);
+                            
+                            Map<String, Path> dirs = wasiContext.getPreopenedDirectories();
+                            assertTrue(dirs.containsKey("/sandbox"));
+                        }
+                    } catch (Exception e) {
+                        exceptions[threadId] = e;
+                    }
+                });
+            }
+            
+            // Start all threads
+            for (Thread thread : threads) {
+                thread.start();
+            }
+            
+            // Wait for all threads to complete
+            for (Thread thread : threads) {
+                thread.join(5000); // 5 second timeout
+            }
+            
+            // Check for exceptions
+            for (int i = 0; i < exceptions.length; i++) {
+                if (exceptions[i] != null) {
+                    fail("Thread " + i + " threw exception: " + exceptions[i].getMessage());
+                }
+            }
+        }
+    }
+
+    /**
+     * Test WASI context metadata and statistics.
+     */
+    @Test
+    void testContextMetadata() throws Exception {
+        try (WasiContext wasiContext = contextBuilder
+                .addEnvironmentVariable("VAR1", "value1")
+                .addEnvironmentVariable("VAR2", "value2")
+                .addArgument("program")
+                .addArgument("arg1")
+                .addArgument("arg2")
+                .addPreopenedDirectory(tempDirectory, "/sandbox")
+                .build()) {
+            
+            // Test native count methods if they exist
+            // These would be called through the native bindings we implemented
+            assertEquals(2, wasiContext.getEnvironment().size());
+            assertEquals(3, wasiContext.getArguments().length);
+            assertEquals(1, wasiContext.getPreopenedDirectories().size());
+        }
+    }
+}

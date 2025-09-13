@@ -180,7 +180,7 @@ pub mod jni_wasi {
         })() {
             Ok(ptr) => ptr as jlong,
             Err(error) => {
-                jni_utils::throw_wasmtime_exception(&env, &error);
+                jni_utils::throw_jni_exception(&env, &error);
                 0
             }
         }
