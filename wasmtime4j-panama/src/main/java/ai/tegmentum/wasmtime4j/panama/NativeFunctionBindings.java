@@ -376,6 +376,38 @@ public final class NativeFunctionBindings {
   }
 
   /**
+   * Gets the number of exports in an instance.
+   *
+   * @param instancePtr pointer to the instance
+   * @return the number of exports
+   */
+  public long instanceExportsLen(final MemorySegment instancePtr) {
+    validatePointer(instancePtr, "instancePtr");
+    return callNativeFunction("wasmtime4j_instance_exports_len", Long.class, instancePtr);
+  }
+
+  /**
+   * Gets the nth export from an instance.
+   *
+   * @param instancePtr pointer to the instance
+   * @param index the index of the export to retrieve
+   * @param nameOutPtr pointer to receive the export name
+   * @param exportOutPtr pointer to receive the export data
+   * @return true if the export exists, false otherwise
+   */
+  public boolean instanceExportNth(
+      final MemorySegment instancePtr,
+      final long index,
+      final MemorySegment nameOutPtr,
+      final MemorySegment exportOutPtr) {
+    validatePointer(instancePtr, "instancePtr");
+    validatePointer(nameOutPtr, "nameOutPtr");
+    validatePointer(exportOutPtr, "exportOutPtr");
+    return callNativeFunction(
+        "wasmtime4j_instance_export_nth", Boolean.class, instancePtr, index, nameOutPtr, exportOutPtr);
+  }
+
+  /**
    * Gets a cached method handle for a native function.
    *
    * @param functionName the name of the function
@@ -478,6 +510,15 @@ public final class NativeFunctionBindings {
    */
   public MethodHandle getTableDelete() {
     return getMethodHandle("wasmtime4j_table_destroy").orElse(null);
+  }
+
+  /**
+   * Gets the method handle for table metadata retrieval.
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle getTableMetadata() {
+    return getMethodHandle("wasmtime4j_table_metadata").orElse(null);
   }
 
   /**
@@ -636,6 +677,195 @@ public final class NativeFunctionBindings {
     callNativeFunction("wasmtime4j_component_instance_destroy", Void.class, instancePtr);
   }
 
+  // Global Functions
+
+  /**
+   * Gets the value of a WebAssembly global.
+   *
+   * @param globalPtr pointer to the global
+   * @param valueOutPtr pointer to store the global value
+   */
+  public void globalGet(final MemorySegment globalPtr, final MemorySegment valueOutPtr) {
+    validatePointer(globalPtr, "globalPtr");
+    validatePointer(valueOutPtr, "valueOutPtr");
+    callNativeFunction("wasmtime_global_get", Void.class, globalPtr, valueOutPtr);
+  }
+
+  /**
+   * Sets the value of a WebAssembly global.
+   *
+   * @param globalPtr pointer to the global
+   * @param valuePtr pointer to the new value
+   */
+  public void globalSet(final MemorySegment globalPtr, final MemorySegment valuePtr) {
+    validatePointer(globalPtr, "globalPtr");
+    validatePointer(valuePtr, "valuePtr");
+    callNativeFunction("wasmtime_global_set", Void.class, globalPtr, valuePtr);
+  }
+
+  /**
+   * Gets the type of a WebAssembly global.
+   *
+   * @param globalPtr pointer to the global
+   * @return pointer to the global type
+   */
+  public MemorySegment globalType(final MemorySegment globalPtr) {
+    validatePointer(globalPtr, "globalPtr");
+    return callNativeFunction("wasmtime_global_type", MemorySegment.class, globalPtr);
+  }
+
+  /**
+   * Creates a mutable WebAssembly global.
+   *
+   * @param storePtr pointer to the store
+   * @param valueType the WebAssembly value type
+   * @param initialValuePtr pointer to the initial value
+   * @param globalOutPtr pointer to store the created global
+   * @return 0 on success, negative error code on failure
+   */
+  public int globalCreateMutable(
+      final MemorySegment storePtr,
+      final int valueType,
+      final MemorySegment initialValuePtr,
+      final MemorySegment globalOutPtr) {
+    validatePointer(storePtr, "storePtr");
+    validatePointer(initialValuePtr, "initialValuePtr");
+    validatePointer(globalOutPtr, "globalOutPtr");
+    
+    return callNativeFunction(
+        "wasmtime4j_global_create_mutable", 
+        Integer.class, 
+        storePtr, 
+        valueType, 
+        initialValuePtr, 
+        globalOutPtr);
+  }
+
+  /**
+   * Creates an immutable WebAssembly global.
+   *
+   * @param storePtr pointer to the store
+   * @param valueType the WebAssembly value type
+   * @param initialValuePtr pointer to the initial value
+   * @param globalOutPtr pointer to store the created global
+   * @return 0 on success, negative error code on failure
+   */
+  public int globalCreateImmutable(
+      final MemorySegment storePtr,
+      final int valueType,
+      final MemorySegment initialValuePtr,
+      final MemorySegment globalOutPtr) {
+    validatePointer(storePtr, "storePtr");
+    validatePointer(initialValuePtr, "initialValuePtr");
+    validatePointer(globalOutPtr, "globalOutPtr");
+    
+    return callNativeFunction(
+        "wasmtime4j_global_create_immutable", 
+        Integer.class, 
+        storePtr, 
+        valueType, 
+        initialValuePtr, 
+        globalOutPtr);
+  }
+
+  /**
+   * Destroys a WebAssembly global.
+   *
+   * @param globalPtr pointer to the global to destroy
+   */
+  public void globalDestroy(final MemorySegment globalPtr) {
+    validatePointer(globalPtr, "globalPtr");
+    callNativeFunction("wasmtime4j_global_destroy", Void.class, globalPtr);
+  }
+
+  /**
+   * Gets type information for a WebAssembly global.
+   *
+   * @param globalPtr pointer to the global
+   * @param typeInfoOutPtr pointer to store the type information
+   * @param mutabilityOutPtr pointer to store the mutability flag
+   * @return 0 on success, negative error code on failure
+   */
+  public int globalGetTypeInfo(
+      final MemorySegment globalPtr,
+      final MemorySegment typeInfoOutPtr,
+      final MemorySegment mutabilityOutPtr) {
+    validatePointer(globalPtr, "globalPtr");
+    validatePointer(typeInfoOutPtr, "typeInfoOutPtr");
+    validatePointer(mutabilityOutPtr, "mutabilityOutPtr");
+    
+    return callNativeFunction(
+        "wasmtime4j_global_get_type_info", 
+        Integer.class, 
+        globalPtr, 
+        typeInfoOutPtr, 
+        mutabilityOutPtr);
+  }
+
+  /**
+   * Registers a global for cross-module sharing.
+   *
+   * @param globalPtr pointer to the global
+   * @param namePtr pointer to the global name string
+   * @param registryPtr pointer to the global registry
+   * @return 0 on success, negative error code on failure
+   */
+  public int globalRegisterShared(
+      final MemorySegment globalPtr,
+      final MemorySegment namePtr,
+      final MemorySegment registryPtr) {
+    validatePointer(globalPtr, "globalPtr");
+    validatePointer(namePtr, "namePtr");
+    validatePointer(registryPtr, "registryPtr");
+    
+    return callNativeFunction(
+        "wasmtime4j_global_register_shared", 
+        Integer.class, 
+        globalPtr, 
+        namePtr, 
+        registryPtr);
+  }
+
+  /**
+   * Looks up a shared global by name.
+   *
+   * @param namePtr pointer to the global name string
+   * @param registryPtr pointer to the global registry
+   * @return pointer to the global, or null if not found
+   */
+  public MemorySegment globalLookupShared(
+      final MemorySegment namePtr, final MemorySegment registryPtr) {
+    validatePointer(namePtr, "namePtr");
+    validatePointer(registryPtr, "registryPtr");
+    
+    return callNativeFunction(
+        "wasmtime4j_global_lookup_shared", MemorySegment.class, namePtr, registryPtr);
+  }
+
+  /**
+   * Gets direct access to a global's value for zero-copy operations.
+   *
+   * @param globalPtr pointer to the global
+   * @return pointer to direct value access, or null if not supported
+   */
+  public MemorySegment globalGetDirectAccess(final MemorySegment globalPtr) {
+    validatePointer(globalPtr, "globalPtr");
+    return callNativeFunction("wasmtime4j_global_get_direct_access", MemorySegment.class, globalPtr);
+  }
+
+  /**
+   * Releases direct access to a global's value.
+   *
+   * @param globalPtr pointer to the global
+   * @param directPtr pointer to the direct access handle
+   */
+  public void globalReleaseDirectAccess(
+      final MemorySegment globalPtr, final MemorySegment directPtr) {
+    validatePointer(globalPtr, "globalPtr");
+    validatePointer(directPtr, "directPtr");
+    callNativeFunction("wasmtime4j_global_release_direct_access", Void.class, globalPtr, directPtr);
+  }
+
   // Error Handling Functions
 
   /**
@@ -773,6 +1003,21 @@ public final class NativeFunctionBindings {
     addFunctionBinding(
         "wasmtime4j_instance_destroy", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
+    addFunctionBinding(
+        "wasmtime4j_instance_exports_len",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG, // return export count
+            ValueLayout.ADDRESS)); // instance_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_instance_export_nth",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_BOOLEAN, // return found
+            ValueLayout.ADDRESS, // instance_ptr
+            ValueLayout.JAVA_LONG, // index
+            ValueLayout.ADDRESS, // name_out_ptr
+            ValueLayout.ADDRESS)); // export_out_ptr
+
     // Table functions
     addFunctionBinding(
         "wasmtime4j_table_size",
@@ -783,28 +1028,48 @@ public final class NativeFunctionBindings {
     addFunctionBinding(
         "wasmtime4j_table_get",
         FunctionDescriptor.of(
-            ValueLayout.ADDRESS, // return element
+            ValueLayout.JAVA_INT, // return code
             ValueLayout.ADDRESS, // table_ptr
-            ValueLayout.JAVA_LONG)); // index
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.JAVA_INT, // index
+            ValueLayout.ADDRESS, // ref_id_present out param
+            ValueLayout.ADDRESS)); // ref_id out param
 
     addFunctionBinding(
         "wasmtime4j_table_set",
         FunctionDescriptor.of(
-            ValueLayout.JAVA_BOOLEAN, // return success
+            ValueLayout.JAVA_INT, // return code
             ValueLayout.ADDRESS, // table_ptr
-            ValueLayout.JAVA_LONG, // index
-            ValueLayout.ADDRESS)); // element_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.JAVA_INT, // index
+            ValueLayout.JAVA_INT, // element_type
+            ValueLayout.JAVA_INT, // ref_id_present
+            ValueLayout.JAVA_LONG)); // ref_id
 
     addFunctionBinding(
         "wasmtime4j_table_grow",
         FunctionDescriptor.of(
-            ValueLayout.JAVA_BOOLEAN, // return success
+            ValueLayout.JAVA_INT, // return code
             ValueLayout.ADDRESS, // table_ptr
-            ValueLayout.JAVA_LONG, // delta
-            ValueLayout.ADDRESS)); // initial_value
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.JAVA_INT, // elements
+            ValueLayout.JAVA_INT, // element_type
+            ValueLayout.JAVA_INT, // ref_id_present
+            ValueLayout.JAVA_LONG)); // ref_id
 
     addFunctionBinding(
         "wasmtime4j_table_destroy", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // table_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_table_metadata",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // table_ptr
+            ValueLayout.ADDRESS, // element_type out param
+            ValueLayout.ADDRESS, // initial_size out param
+            ValueLayout.ADDRESS, // has_maximum out param
+            ValueLayout.ADDRESS, // maximum_size out param
+            ValueLayout.ADDRESS)); // name_ptr out param
 
     // Host function bindings
     addFunctionBinding(
@@ -889,6 +1154,84 @@ public final class NativeFunctionBindings {
     addFunctionBinding(
         "wasmtime4j_component_instance_destroy",
         FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // instance_ptr
+
+    // Global functions
+    addFunctionBinding(
+        "wasmtime_global_get",
+        FunctionDescriptor.ofVoid(
+            ValueLayout.ADDRESS, // global
+            ValueLayout.ADDRESS)); // value (out)
+
+    addFunctionBinding(
+        "wasmtime_global_set",
+        FunctionDescriptor.ofVoid(
+            ValueLayout.ADDRESS, // global
+            ValueLayout.ADDRESS)); // value
+
+    addFunctionBinding(
+        "wasmtime_global_type",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, // return global type
+            ValueLayout.ADDRESS)); // global
+
+    addFunctionBinding(
+        "wasmtime4j_global_create_mutable",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return result code
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.JAVA_INT, // value_type
+            ValueLayout.ADDRESS, // initial_value
+            ValueLayout.ADDRESS)); // global_ptr (out)
+
+    addFunctionBinding(
+        "wasmtime4j_global_create_immutable",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return result code
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.JAVA_INT, // value_type
+            ValueLayout.ADDRESS, // initial_value
+            ValueLayout.ADDRESS)); // global_ptr (out)
+
+    addFunctionBinding(
+        "wasmtime4j_global_destroy",
+        FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // global_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_global_get_type_info",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return result code
+            ValueLayout.ADDRESS, // global
+            ValueLayout.ADDRESS, // type_info (out)
+            ValueLayout.ADDRESS)); // mutability (out)
+
+    // Cross-module global sharing functions
+    addFunctionBinding(
+        "wasmtime4j_global_register_shared",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return result code
+            ValueLayout.ADDRESS, // global
+            ValueLayout.ADDRESS, // name
+            ValueLayout.ADDRESS)); // registry
+
+    addFunctionBinding(
+        "wasmtime4j_global_lookup_shared",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, // return global or null
+            ValueLayout.ADDRESS, // name
+            ValueLayout.ADDRESS)); // registry
+
+    // Zero-copy global access functions
+    addFunctionBinding(
+        "wasmtime4j_global_get_direct_access",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, // return direct pointer or null
+            ValueLayout.ADDRESS)); // global
+
+    addFunctionBinding(
+        "wasmtime4j_global_release_direct_access",
+        FunctionDescriptor.ofVoid(
+            ValueLayout.ADDRESS, // global
+            ValueLayout.ADDRESS)); // direct_ptr
 
     // Error handling functions
     addFunctionBinding(
