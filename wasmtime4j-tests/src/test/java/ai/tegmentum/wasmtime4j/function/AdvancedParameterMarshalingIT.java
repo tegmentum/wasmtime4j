@@ -1,13 +1,18 @@
 package ai.tegmentum.wasmtime4j.function;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import ai.tegmentum.wasmtime4j.*;
-import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.Engine;
+import ai.tegmentum.wasmtime4j.Store;
+import ai.tegmentum.wasmtime4j.WasmValue;
+import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.utils.BaseIntegrationTest;
-import ai.tegmentum.wasmtime4j.webassembly.WasmTestModules;
 import java.util.Arrays;
-import java.util.Optional;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -67,18 +72,14 @@ public final class AdvancedParameterMarshalingIT extends BaseIntegrationTest {
             final byte[] retrievedData = v128Value.asV128();
             retrievedData[0] = (byte) 0xFF; // Modify retrieved data
             assertNotEquals(
-                (byte) 0xFF,
-                v128Value.asV128()[0],
-                "Original V128 data should not be modified");
+                (byte) 0xFF, v128Value.asV128()[0], "Original V128 data should not be modified");
 
             LOGGER.info("V128 vector parameter marshaling test completed for " + runtimeType);
           }
         });
   }
 
-  /**
-   * Tests V128 edge cases and boundary conditions.
-   */
+  /** Tests V128 edge cases and boundary conditions. */
   @Test
   @DisplayName("V128 edge cases and validation")
   void testV128EdgeCasesAndValidation() {
@@ -126,9 +127,7 @@ public final class AdvancedParameterMarshalingIT extends BaseIntegrationTest {
         });
   }
 
-  /**
-   * Tests function reference (funcref) parameter handling.
-   */
+  /** Tests function reference (funcref) parameter handling. */
   @Test
   @DisplayName("Function reference (funcref) parameter handling")
   void testFunctionReferenceParameterHandling() {
@@ -159,15 +158,12 @@ public final class AdvancedParameterMarshalingIT extends BaseIntegrationTest {
                 () -> nullFuncref.asExternref(),
                 "Should throw ClassCastException when accessing funcref as externref");
 
-            LOGGER.info(
-                "Function reference parameter handling test completed for " + runtimeType);
+            LOGGER.info("Function reference parameter handling test completed for " + runtimeType);
           }
         });
   }
 
-  /**
-   * Tests external reference (externref) parameter handling.
-   */
+  /** Tests external reference (externref) parameter handling. */
   @Test
   @DisplayName("External reference (externref) parameter handling")
   void testExternalReferenceParameterHandling() {
@@ -184,14 +180,16 @@ public final class AdvancedParameterMarshalingIT extends BaseIntegrationTest {
 
             // Test null externref
             final WasmValue nullExternref = WasmValue.externref(null);
-            assertEquals(WasmValueType.EXTERNREF, nullExternref.getType(), "Should be EXTERNREF type");
+            assertEquals(
+                WasmValueType.EXTERNREF, nullExternref.getType(), "Should be EXTERNREF type");
             assertNull(nullExternref.asExternref(), "Null externref should be null");
 
             // Test externref with Java object
             final String testObject = "Test External Reference";
             final WasmValue objectExternref = WasmValue.externref(testObject);
             assertEquals(WasmValueType.EXTERNREF, objectExternref.getType());
-            assertEquals(testObject, objectExternref.asExternref(), "Should return the same object");
+            assertEquals(
+                testObject, objectExternref.asExternref(), "Should return the same object");
 
             // Test externref with complex object
             final java.util.List<String> listObject = Arrays.asList("item1", "item2", "item3");
@@ -209,15 +207,12 @@ public final class AdvancedParameterMarshalingIT extends BaseIntegrationTest {
                 () -> nullExternref.asFuncref(),
                 "Should throw ClassCastException when accessing externref as funcref");
 
-            LOGGER.info(
-                "External reference parameter handling test completed for " + runtimeType);
+            LOGGER.info("External reference parameter handling test completed for " + runtimeType);
           }
         });
   }
 
-  /**
-   * Tests complex parameter combinations with multiple value types.
-   */
+  /** Tests complex parameter combinations with multiple value types. */
   @Test
   @DisplayName("Complex parameter type combinations")
   void testComplexParameterTypeCombinations() {
@@ -236,11 +231,13 @@ public final class AdvancedParameterMarshalingIT extends BaseIntegrationTest {
             final WasmValue i64Value = WasmValue.i64(1234567890L);
             final WasmValue f32Value = WasmValue.f32(3.14159f);
             final WasmValue f64Value = WasmValue.f64(2.718281828);
-            
-            final byte[] vectorData = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
-                                      0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10};
+
+            final byte[] vectorData = {
+              0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E,
+              0x0F, 0x10
+            };
             final WasmValue v128Value = WasmValue.v128(vectorData);
-            
+
             final WasmValue funcrefValue = WasmValue.funcref(null);
             final WasmValue externrefValue = WasmValue.externref("External Reference Test");
 
@@ -273,9 +270,7 @@ public final class AdvancedParameterMarshalingIT extends BaseIntegrationTest {
         });
   }
 
-  /**
-   * Tests type safety validation for all parameter types.
-   */
+  /** Tests type safety validation for all parameter types. */
   @Test
   @DisplayName("Parameter type safety validation")
   void testParameterTypeSafetyValidation() {
@@ -342,9 +337,7 @@ public final class AdvancedParameterMarshalingIT extends BaseIntegrationTest {
         });
   }
 
-  /**
-   * Tests parameter marshaling performance for complex types.
-   */
+  /** Tests parameter marshaling performance for complex types. */
   @Test
   @DisplayName("Complex parameter marshaling performance")
   void testComplexParameterMarshalingPerformance() {
@@ -363,10 +356,10 @@ public final class AdvancedParameterMarshalingIT extends BaseIntegrationTest {
                   for (int j = 0; j < 16; j++) {
                     testData[j] = (byte) ((i + j) % 256);
                   }
-                  
+
                   final WasmValue v128 = WasmValue.v128(testData);
                   final byte[] retrieved = v128.asV128();
-                  
+
                   // Verify data integrity
                   if (retrieved.length != 16) {
                     throw new RuntimeException("V128 size mismatch");
@@ -382,7 +375,7 @@ public final class AdvancedParameterMarshalingIT extends BaseIntegrationTest {
                   final String testObject = "Test Object " + i;
                   final WasmValue externref = WasmValue.externref(testObject);
                   final Object retrieved = externref.asExternref();
-                  
+
                   // Verify object integrity
                   if (!testObject.equals(retrieved)) {
                     throw new RuntimeException("Externref object mismatch");
@@ -390,8 +383,7 @@ public final class AdvancedParameterMarshalingIT extends BaseIntegrationTest {
                 }
               });
 
-          LOGGER.info(
-              "Complex parameter marshaling performance test completed for " + runtimeType);
+          LOGGER.info("Complex parameter marshaling performance test completed for " + runtimeType);
         });
   }
 
