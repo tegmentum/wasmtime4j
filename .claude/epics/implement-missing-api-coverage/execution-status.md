@@ -7,7 +7,14 @@ branch: epic/implement-missing-api-coverage
 # Execution Status
 
 ## Active Agents
-- (None currently running)
+- Agent-20: Issue #225 Stream A (JNI Native Implementation) - Starting now
+- Agent-21: Issue #225 Stream B (Panama FFI Enhancement) - Starting now
+- Agent-22: Issue #225 Stream C (Type System Integration) - Starting now
+- Agent-23: Issue #225 Stream D (Testing & Integration) - Starting now
+- Agent-24: Issue #229 Stream A (JNI WASI Runtime Integration) - Starting now
+- Agent-25: Issue #229 Stream B (Panama WASI Runtime Integration) - Starting now
+- Agent-26: Issue #229 Stream C (WASI System Call Implementation) - Starting now
+- Agent-27: Issue #229 Stream D (Resource Management & Security) - Starting now
 
 ## Recently Completed Streams
 - Agent-13: Issue #224 Stream A (JNI Instance Completion) - ✅ Complete

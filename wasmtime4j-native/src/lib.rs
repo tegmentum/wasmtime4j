@@ -44,6 +44,7 @@ pub mod ffi_common;
 
 // Interface modules - will be implemented in later streams
 pub mod jni_bindings;
+pub mod jni_wasi_bindings;
 pub mod panama_ffi;
 
 // Advanced modules - will be implemented in later tasks
