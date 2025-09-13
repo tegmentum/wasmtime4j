@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test;
  * multi-threaded scenarios - Cross-runtime consistency in concurrent environments
  */
 @DisplayName("Instance Concurrency Tests")
-public final class InstanceConcurrencyTest extends BaseIntegrationTest {
+public final class InstanceConcurrencyIT extends BaseIntegrationTest {
 
   /**
    * Placeholder test - actual concurrency tests will be implemented once the instance API is

@@ -30,7 +30,7 @@ import org.junit.jupiter.api.TestInfo;
  * <p>TEMPORARILY DISABLED FOR COMPILATION - Tests require TestRunner implementation.
  */
 @DisplayName("Host Function Marshaling Comprehensive Tests")
-final class HostFunctionMarshalingComprehensiveTest extends BaseIntegrationTest {
+final class HostFunctionMarshalingComprehensiveIT extends BaseIntegrationTest {
 
   private static final Logger LOGGER =
       Logger.getLogger(HostFunctionMarshalingComprehensiveTest.class.getName());

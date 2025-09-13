@@ -44,7 +44,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @DisplayName("Module Native Function Tests")
 @SuppressWarnings("try")
-public class ModuleNativeFunctionTest extends BaseNativeFunctionTest {
+public class ModuleNativeFunctionIT extends BaseNativeFunctionTest {
 
   @Test
   @Order(1)

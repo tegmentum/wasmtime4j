@@ -35,7 +35,7 @@ import org.junit.jupiter.params.provider.EnumSource;
  * WebAssembly specification using test suites.
  */
 @DisplayName("Module WebAssembly Specification Compliance Tests")
-class ModuleSpecificationComplianceTest extends BaseIntegrationTest {
+class ModuleSpecificationComplianceIT extends BaseIntegrationTest {
 
   private static final Logger LOGGER =
       Logger.getLogger(ModuleSpecificationComplianceTest.class.getName());

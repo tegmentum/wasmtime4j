@@ -37,7 +37,7 @@ import org.junit.jupiter.params.provider.ValueSource;
  * instantiation performance, metadata extraction, and serialization/deserialization benchmarks.
  */
 @DisplayName("Module Performance Benchmarks")
-class ModulePerformanceTest extends BaseIntegrationTest {
+class ModulePerformanceIT extends BaseIntegrationTest {
 
   private static final Logger LOGGER = Logger.getLogger(ModulePerformanceTest.class.getName());
 

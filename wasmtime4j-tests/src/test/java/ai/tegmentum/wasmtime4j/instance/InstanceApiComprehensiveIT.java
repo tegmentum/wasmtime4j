@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test;
  * Cross-runtime behavior consistency
  */
 @DisplayName("Instance API Comprehensive Tests")
-public final class InstanceApiComprehensiveTest extends BaseIntegrationTest {
+public final class InstanceApiComprehensiveIT extends BaseIntegrationTest {
 
   /**
    * Placeholder test - actual instance API tests will be implemented once the instance API is

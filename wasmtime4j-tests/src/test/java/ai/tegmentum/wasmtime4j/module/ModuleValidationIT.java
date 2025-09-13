@@ -29,7 +29,7 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
  * malformed modules, and WebAssembly specification compliance.
  */
 @DisplayName("Module Validation Comprehensive Tests")
-class ModuleValidationTest extends BaseIntegrationTest {
+class ModuleValidationIT extends BaseIntegrationTest {
 
   private static final Logger LOGGER = Logger.getLogger(ModuleValidationTest.class.getName());
 

@@ -256,21 +256,13 @@
                         <includes>
                             <include>**/*IT.java</include>
                             <include>**/*IntegrationTest.java</include>
-                            <include>**/module/**/*Test.java</include>
-                            <include>**/instance/**/*Test.java</include>
-                            <include>**/hostfunction/**/*Test.java</include>
-                            <include>**/examples/**/*Test.java</include>
+                            <include>**/module/**/*IT.java</include>
+                            <include>**/instance/**/*IT.java</include>
+                            <include>**/hostfunction/**/*IT.java</include>
+                            <include>**/examples/**/*IT.java</include>
                         </includes>
                         <skipITs>true</skipITs>
                     </configuration>
-                    <executions>
-                        <execution>
-                            <goals>
-                                <goal>integration-test</goal>
-                                <goal>verify</goal>
-                            </goals>
-                        </execution>
-                    </executions>
                 </plugin>
 
                 <plugin>

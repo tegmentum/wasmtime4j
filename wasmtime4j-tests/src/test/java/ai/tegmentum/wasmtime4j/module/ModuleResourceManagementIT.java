@@ -36,7 +36,7 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
  * cleanup of native resources, memory management, and resource lifecycle.
  */
 @DisplayName("Module Resource Management Tests")
-class ModuleResourceManagementTest extends BaseIntegrationTest {
+class ModuleResourceManagementIT extends BaseIntegrationTest {
 
   private static final Logger LOGGER =
       Logger.getLogger(ModuleResourceManagementTest.class.getName());

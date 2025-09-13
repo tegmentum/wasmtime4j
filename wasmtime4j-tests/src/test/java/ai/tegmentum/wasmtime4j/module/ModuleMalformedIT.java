@@ -35,7 +35,7 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
  * validation errors, and error handling scenarios.
  */
 @DisplayName("Module Malformed Scenarios Tests")
-class ModuleMalformedTest extends BaseIntegrationTest {
+class ModuleMalformedIT extends BaseIntegrationTest {
 
   private static final Logger LOGGER = Logger.getLogger(ModuleMalformedTest.class.getName());
 

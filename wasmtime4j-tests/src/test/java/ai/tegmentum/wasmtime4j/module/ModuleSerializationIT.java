@@ -38,7 +38,7 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
  * test coverage for when serialization capabilities are implemented.
  */
 @DisplayName("Module Serialization and Caching Tests")
-class ModuleSerializationTest extends BaseIntegrationTest {
+class ModuleSerializationIT extends BaseIntegrationTest {
 
   private static final Logger LOGGER = Logger.getLogger(ModuleSerializationTest.class.getName());
 

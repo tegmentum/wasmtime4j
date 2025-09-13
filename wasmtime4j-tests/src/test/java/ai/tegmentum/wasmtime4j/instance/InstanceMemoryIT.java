@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test;
  * operations - Cross-runtime memory behavior consistency
  */
 @DisplayName("Instance Memory Tests")
-public final class InstanceMemoryTest extends BaseIntegrationTest {
+public final class InstanceMemoryIT extends BaseIntegrationTest {
 
   /**
    * Placeholder test - actual memory tests will be implemented once the memory API is available.
