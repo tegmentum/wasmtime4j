@@ -760,27 +760,106 @@ pub mod jni_function {
     }
     
     /// Call a function with generic parameters (JNI version)
+    /// TODO: This implementation requires Store context integration
+    /// Current blocker: Wasmtime functions need Store context to be invoked,
+    /// but our FunctionHandle doesn't include it. Need architectural solution.
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCall(
-        env: JNIEnv,
+        mut env: JNIEnv,
         _class: JClass,
         function_ptr: jlong,
         params: jobjectArray,
     ) -> jobjectArray {
-        // For now, return null - this requires complex parameter conversion
-        std::ptr::null_mut()
+        // Defensive programming: validate function pointer
+        if function_ptr == 0 {
+            jni_utils::throw_jni_exception(&mut env, &WasmtimeError::invalid_parameter("function_ptr cannot be null"));
+            return std::ptr::null_mut();
+        }
+
+        match memory_utils::safe_deref(function_ptr as *const FunctionHandle, "function_ptr") {
+            Ok(func_handle) => {
+                // Convert Java parameters to Wasmtime values
+                let param_types = func_handle.func_type.params().collect::<Vec<_>>();
+                match convert_java_params_to_wasmtime_vals(&mut env, params, &param_types) {
+                    Ok(wasmtime_params) => {
+                        // TODO: CRITICAL - Need Store context to call function
+                        // Options:
+                        // 1. Modify FunctionHandle to include Store ID + registry lookup
+                        // 2. Pass Store context through JNI interface
+                        // 3. Use thread-local Store context
+                        //
+                        // For now, return error indicating missing implementation
+                        let error = WasmtimeError::Function { 
+                            message: "Function calls require Store context integration - not yet implemented".to_string() 
+                        };
+                        jni_utils::throw_jni_exception(&mut env, &error);
+                        std::ptr::null_mut()
+                        
+                        // Future implementation would be:
+                        // let mut store = get_store_by_id(func_handle.store_id)?;
+                        // let mut results = vec![Val::I32(0); func_handle.func_type.results().len()];
+                        // match func_handle.func.call(&mut store, &wasmtime_params, &mut results) {
+                        //     Ok(()) => convert_wasmtime_vals_to_java_objects(&mut env, &results)?,
+                        //     Err(trap) => handle_wasmtime_trap(&mut env, trap),
+                        // }
+                    },
+                    Err(error) => {
+                        jni_utils::throw_jni_exception(&mut env, &error);
+                        std::ptr::null_mut()
+                    }
+                }
+            },
+            Err(memory_error) => {
+                let wasmtime_error = memory_error.to_wasmtime_error();
+                jni_utils::throw_jni_exception(&mut env, &wasmtime_error);
+                std::ptr::null_mut()
+            }
+        }
     }
     
     /// Call a function with multiple return values (JNI version)
+    /// TODO: This implementation requires Store context integration (same as nativeCall)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallMultiValue(
-        env: JNIEnv,
+        mut env: JNIEnv,
         _class: JClass,
         function_ptr: jlong,
         params: jobjectArray,
     ) -> jobjectArray {
-        // For now, return null - this requires complex parameter conversion
-        std::ptr::null_mut()
+        // Defensive programming: validate function pointer
+        if function_ptr == 0 {
+            jni_utils::throw_jni_exception(&mut env, &WasmtimeError::invalid_parameter("function_ptr cannot be null"));
+            return std::ptr::null_mut();
+        }
+
+        match memory_utils::safe_deref(function_ptr as *const FunctionHandle, "function_ptr") {
+            Ok(func_handle) => {
+                // Convert Java parameters to Wasmtime values
+                let param_types = func_handle.func_type.params().collect::<Vec<_>>();
+                match convert_java_params_to_wasmtime_vals(&mut env, params, &param_types) {
+                    Ok(wasmtime_params) => {
+                        // TODO: CRITICAL - Need Store context to call function (same issue as nativeCall)
+                        let error = WasmtimeError::Function { 
+                            message: "Function calls require Store context integration - not yet implemented".to_string() 
+                        };
+                        jni_utils::throw_jni_exception(&mut env, &error);
+                        std::ptr::null_mut()
+                        
+                        // Future implementation would be identical to nativeCall
+                        // but this method explicitly supports multi-value returns
+                    },
+                    Err(error) => {
+                        jni_utils::throw_jni_exception(&mut env, &error);
+                        std::ptr::null_mut()
+                    }
+                }
+            },
+            Err(memory_error) => {
+                let wasmtime_error = memory_error.to_wasmtime_error();
+                jni_utils::throw_jni_exception(&mut env, &wasmtime_error);
+                std::ptr::null_mut()
+            }
+        }
     }
     
     /// Call a function with int parameters (JNI version) - PLACEHOLDER
