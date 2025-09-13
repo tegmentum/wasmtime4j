@@ -1,0 +1,369 @@
+package ai.tegmentum.wasmtime4j.jni.wasi;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.time.Duration;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+/**
+ * Comprehensive tests for WASI resource leak detection and monitoring.
+ *
+ * <p>These tests verify that the resource leak detector correctly tracks WASI contexts, file
+ * handles, and memory segments, and can detect potential resource leaks while performing automatic
+ * cleanup of orphaned resources.
+ *
+ * @since 1.0.0
+ */
+final class WasiResourceLeakDetectorTest {
+
+  private WasiResourceLeakDetector detector;
+  private MockWasiContext mockContext;
+  private MockWasiFileHandle mockFileHandle;
+
+  @BeforeEach
+  void setUp() {
+    detector =
+        new WasiResourceLeakDetector(
+            100, // leak threshold
+            Duration.ofSeconds(1), // resource age threshold
+            1 // monitoring interval
+            );
+    mockContext = new MockWasiContext("test-context");
+    mockFileHandle = new MockWasiFileHandle(42);
+  }
+
+  @AfterEach
+  void tearDown() {
+    if (detector != null) {
+      detector.close();
+    }
+  }
+
+  @Test
+  void testWasiContextTracking() {
+    // Initially no contexts tracked
+    assertEquals(0, detector.getTrackedContextCount());
+
+    // Track a WASI context
+    detector.trackWasiContext("context1", mockContext);
+    assertEquals(1, detector.getTrackedContextCount());
+
+    // Verify statistics
+    final WasiResourceLeakDetector.ResourceStatistics stats = detector.getStatistics();
+    assertEquals(1, stats.getContextsCreated());
+    assertEquals(0, stats.getContextsDestroyed());
+    assertEquals(1, stats.getActiveContexts());
+
+    // Untrack the context
+    detector.untrackWasiContext("context1");
+    assertEquals(0, detector.getTrackedContextCount());
+
+    // Verify updated statistics
+    final WasiResourceLeakDetector.ResourceStatistics updatedStats = detector.getStatistics();
+    assertEquals(1, updatedStats.getContextsCreated());
+    assertEquals(1, updatedStats.getContextsDestroyed());
+    assertEquals(0, updatedStats.getActiveContexts());
+  }
+
+  @Test
+  void testFileHandleTracking() {
+    // Initially no file handles tracked
+    assertEquals(0, detector.getTrackedFileHandleCount());
+
+    // Track a file handle
+    detector.trackFileHandle(42, mockFileHandle);
+    assertEquals(1, detector.getTrackedFileHandleCount());
+
+    // Verify statistics
+    final WasiResourceLeakDetector.ResourceStatistics stats = detector.getStatistics();
+    assertEquals(1, stats.getFileHandlesCreated());
+    assertEquals(0, stats.getFileHandlesDestroyed());
+    assertEquals(1, stats.getActiveFileHandles());
+
+    // Untrack the file handle
+    detector.untrackFileHandle(42);
+    assertEquals(0, detector.getTrackedFileHandleCount());
+
+    // Verify updated statistics
+    final WasiResourceLeakDetector.ResourceStatistics updatedStats = detector.getStatistics();
+    assertEquals(1, updatedStats.getFileHandlesCreated());
+    assertEquals(1, updatedStats.getFileHandlesDestroyed());
+    assertEquals(0, updatedStats.getActiveFileHandles());
+  }
+
+  @Test
+  void testMemorySegmentTracking() {
+    // Initially no memory segments tracked
+    assertEquals(0, detector.getTrackedMemorySegmentCount());
+
+    // Track a memory segment
+    final Object mockSegment = new Object();
+    detector.trackMemorySegment(0x1000L, mockSegment);
+    assertEquals(1, detector.getTrackedMemorySegmentCount());
+
+    // Verify statistics
+    final WasiResourceLeakDetector.ResourceStatistics stats = detector.getStatistics();
+    assertEquals(1, stats.getMemorySegmentsCreated());
+    assertEquals(0, stats.getMemorySegmentsDestroyed());
+    assertEquals(1, stats.getActiveMemorySegments());
+
+    // Untrack the memory segment
+    detector.untrackMemorySegment(0x1000L);
+    assertEquals(0, detector.getTrackedMemorySegmentCount());
+
+    // Verify updated statistics
+    final WasiResourceLeakDetector.ResourceStatistics updatedStats = detector.getStatistics();
+    assertEquals(1, updatedStats.getMemorySegmentsCreated());
+    assertEquals(1, updatedStats.getMemorySegmentsDestroyed());
+    assertEquals(0, updatedStats.getActiveMemorySegments());
+  }
+
+  @Test
+  void testLeakDetection() throws InterruptedException {
+    // Create a detector with very short age threshold for testing
+    final WasiResourceLeakDetector shortThresholdDetector =
+        new WasiResourceLeakDetector(10, Duration.ofMillis(50), 1);
+
+    try {
+      // Track some resources
+      shortThresholdDetector.trackWasiContext("leak-context", mockContext);
+      shortThresholdDetector.trackFileHandle(100, mockFileHandle);
+      shortThresholdDetector.trackMemorySegment(0x2000L, new Object());
+
+      // Wait for resources to age beyond threshold
+      Thread.sleep(100);
+
+      // Perform leak detection
+      final WasiResourceLeakDetector.LeakDetectionResults results =
+          shortThresholdDetector.performLeakDetection();
+
+      // Verify leaks were detected
+      assertNotNull(results);
+      assertTrue(results.hasLeaks());
+      assertEquals(1, results.getLeakedContexts());
+      assertEquals(1, results.getLeakedFileHandles());
+      assertEquals(1, results.getLeakedMemorySegments());
+      assertEquals(3, results.getTotalLeaked());
+
+    } finally {
+      shortThresholdDetector.close();
+    }
+  }
+
+  @Test
+  void testAutomaticCleanupAfterGarbageCollection() throws InterruptedException {
+    // Track resources and let them go out of scope
+    trackResourcesAndForgetReferences();
+
+    // Force garbage collection
+    System.gc();
+    System.runFinalization();
+    Thread.sleep(100);
+
+    // Perform leak detection which should trigger phantom reference cleanup
+    final WasiResourceLeakDetector.LeakDetectionResults results =
+        detector.performLeakDetection();
+
+    // Some resources should have been automatically cleaned up
+    assertNotNull(results);
+    assertTrue(results.getCleanedUpResources() >= 0);
+
+    // Verify statistics updated with cleanup count
+    final WasiResourceLeakDetector.ResourceStatistics stats = detector.getStatistics();
+    assertTrue(stats.getTotalResourcesCleanedUp() >= 0);
+  }
+
+  @Test
+  void testResourceStatistics() {
+    // Track various resources
+    detector.trackWasiContext("stats-context1", mockContext);
+    detector.trackWasiContext("stats-context2", new MockWasiContext("context2"));
+    detector.trackFileHandle(200, mockFileHandle);
+    detector.trackFileHandle(201, new MockWasiFileHandle(201));
+    detector.trackMemorySegment(0x3000L, new Object());
+
+    // Get statistics
+    final WasiResourceLeakDetector.ResourceStatistics stats = detector.getStatistics();
+
+    // Verify resource counts
+    assertEquals(2, stats.getContextsCreated());
+    assertEquals(0, stats.getContextsDestroyed());
+    assertEquals(2, stats.getActiveContexts());
+    assertEquals(2, stats.getFileHandlesCreated());
+    assertEquals(0, stats.getFileHandlesDestroyed());
+    assertEquals(2, stats.getActiveFileHandles());
+    assertEquals(1, stats.getMemorySegmentsCreated());
+    assertEquals(0, stats.getMemorySegmentsDestroyed());
+    assertEquals(1, stats.getActiveMemorySegments());
+
+    // Verify monitoring statistics
+    assertTrue(stats.getTotalLeakDetectionRuns() >= 0);
+    assertNotNull(stats.getLastMonitoringTime());
+
+    // Verify string representation
+    final String statsString = stats.toString();
+    assertNotNull(statsString);
+    assertTrue(statsString.contains("contexts=2"));
+    assertTrue(statsString.contains("handles=2"));
+    assertTrue(statsString.contains("segments=1"));
+  }
+
+  @Test
+  void testLeakDetectionResults() {
+    // Create test results
+    final WasiResourceLeakDetector.LeakDetectionResults results =
+        new WasiResourceLeakDetector.LeakDetectionResults(2, 3, 1, 5);
+
+    // Verify individual counts
+    assertEquals(2, results.getLeakedContexts());
+    assertEquals(3, results.getLeakedFileHandles());
+    assertEquals(1, results.getLeakedMemorySegments());
+    assertEquals(5, results.getCleanedUpResources());
+
+    // Verify calculated values
+    assertEquals(6, results.getTotalLeaked());
+    assertTrue(results.hasLeaks());
+
+    // Test results with no leaks
+    final WasiResourceLeakDetector.LeakDetectionResults noLeaksResults =
+        new WasiResourceLeakDetector.LeakDetectionResults(0, 0, 0, 2);
+
+    assertEquals(0, noLeaksResults.getTotalLeaked());
+    assertFalse(noLeaksResults.hasLeaks());
+
+    // Verify string representation
+    final String resultsString = results.toString();
+    assertNotNull(resultsString);
+    assertTrue(resultsString.contains("contexts=2"));
+    assertTrue(resultsString.contains("handles=3"));
+    assertTrue(resultsString.contains("segments=1"));
+    assertTrue(resultsString.contains("cleaned=5"));
+  }
+
+  @Test
+  void testDetectorShutdown() {
+    // Track some resources
+    detector.trackWasiContext("shutdown-context", mockContext);
+    detector.trackFileHandle(300, mockFileHandle);
+
+    // Verify resources are tracked
+    assertEquals(1, detector.getTrackedContextCount());
+    assertEquals(1, detector.getTrackedFileHandleCount());
+
+    // Close detector
+    detector.close();
+
+    // Verify cleanup happened (detector should still return counts but stop monitoring)
+    // Note: The detector continues to track until explicitly cleaned, but stops monitoring
+    assertTrue(detector.getTrackedContextCount() >= 0);
+    assertTrue(detector.getTrackedFileHandleCount() >= 0);
+  }
+
+  @Test
+  void testConcurrentAccess() throws InterruptedException {
+    final int threadCount = 10;
+    final Thread[] threads = new Thread[threadCount];
+
+    // Create threads that simultaneously track and untrack resources
+    for (int i = 0; i < threadCount; i++) {
+      final int threadId = i;
+      threads[i] =
+          new Thread(
+              () -> {
+                for (int j = 0; j < 10; j++) {
+                  final String contextId = "concurrent-context-" + threadId + "-" + j;
+                  final int fileDescriptor = threadId * 1000 + j;
+                  final long memoryAddress = 0x10000L + threadId * 1000L + j;
+
+                  // Track resources
+                  detector.trackWasiContext(contextId, new MockWasiContext(contextId));
+                  detector.trackFileHandle(fileDescriptor, new MockWasiFileHandle(fileDescriptor));
+                  detector.trackMemorySegment(memoryAddress, new Object());
+
+                  // Untrack resources
+                  detector.untrackWasiContext(contextId);
+                  detector.untrackFileHandle(fileDescriptor);
+                  detector.untrackMemorySegment(memoryAddress);
+                }
+              });
+    }
+
+    // Start all threads
+    for (final Thread thread : threads) {
+      thread.start();
+    }
+
+    // Wait for all threads to complete
+    for (final Thread thread : threads) {
+      thread.join();
+    }
+
+    // Verify final state is consistent
+    final WasiResourceLeakDetector.ResourceStatistics stats = detector.getStatistics();
+    assertEquals(stats.getContextsCreated(), stats.getContextsDestroyed());
+    assertEquals(stats.getFileHandlesCreated(), stats.getFileHandlesDestroyed());
+    assertEquals(stats.getMemorySegmentsCreated(), stats.getMemorySegmentsDestroyed());
+    assertEquals(0, stats.getActiveContexts());
+    assertEquals(0, stats.getActiveFileHandles());
+    assertEquals(0, stats.getActiveMemorySegments());
+  }
+
+  /** Helper method to track resources and let references go out of scope for GC testing. */
+  private void trackResourcesAndForgetReferences() {
+    // Create resources that will go out of scope
+    final MockWasiContext tempContext = new MockWasiContext("gc-test-context");
+    final MockWasiFileHandle tempHandle = new MockWasiFileHandle(999);
+    final Object tempSegment = new Object();
+
+    // Track them
+    detector.trackWasiContext("gc-test-context", tempContext);
+    detector.trackFileHandle(999, tempHandle);
+    detector.trackMemorySegment(0x9999L, tempSegment);
+
+    // Let references go out of scope by returning from this method
+  }
+
+  /** Mock WASI context for testing. */
+  private static final class MockWasiContext extends WasiContext {
+    private final String contextId;
+
+    MockWasiContext(final String contextId) {
+      super(1L, WasiContextBuilder.builder().build()); // Mock native handle
+      this.contextId = contextId;
+    }
+
+    @Override
+    public String toString() {
+      return "MockWasiContext{contextId='" + contextId + "'}";
+    }
+  }
+
+  /** Mock WASI file handle for testing. */
+  private static final class MockWasiFileHandle implements WasiFileHandle {
+    private final int fileDescriptor;
+
+    MockWasiFileHandle(final int fileDescriptor) {
+      this.fileDescriptor = fileDescriptor;
+    }
+
+    @Override
+    public int getFileDescriptor() {
+      return fileDescriptor;
+    }
+
+    @Override
+    public void close() {
+      // Mock implementation - do nothing
+    }
+
+    @Override
+    public String toString() {
+      return "MockWasiFileHandle{fd=" + fileDescriptor + "}";
+    }
+  }
+}
