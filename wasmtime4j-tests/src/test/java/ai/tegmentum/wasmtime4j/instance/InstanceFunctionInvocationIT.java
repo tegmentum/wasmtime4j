@@ -35,9 +35,7 @@ public final class InstanceFunctionInvocationIT extends BaseIntegrationTest {
   private static final Logger LOGGER =
       Logger.getLogger(InstanceFunctionInvocationIT.class.getName());
 
-  /**
-   * Tests basic function discovery and invocation within instances.
-   */
+  /** Tests basic function discovery and invocation within instances. */
   @Test
   @DisplayName("Basic function discovery and invocation")
   void testBasicFunctionDiscoveryAndInvocation() {
@@ -47,8 +45,7 @@ public final class InstanceFunctionInvocationIT extends BaseIntegrationTest {
 
           try (final Engine engine = runtime.createEngine();
               final Store store = runtime.createStore(engine);
-              final Module module =
-                  engine.compileModule(WasmTestModules.getModule("basic_add"))) {
+              final Module module = engine.compileModule(WasmTestModules.getModule("basic_add"))) {
 
             registerForCleanup(engine);
             registerForCleanup(store);
@@ -70,16 +67,15 @@ public final class InstanceFunctionInvocationIT extends BaseIntegrationTest {
 
             // Test non-existent function discovery
             final Optional<WasmFunction> nonExistentFunction = instance.getFunction("nonexistent");
-            assertFalse(nonExistentFunction.isPresent(), "Non-existent function should not be found");
+            assertFalse(
+                nonExistentFunction.isPresent(), "Non-existent function should not be found");
 
             LOGGER.info("Function discovery and invocation test completed for " + runtimeType);
           }
         });
   }
 
-  /**
-   * Tests function signature validation and parameter type checking.
-   */
+  /** Tests function signature validation and parameter type checking. */
   @Test
   @DisplayName("Function signature validation")
   void testFunctionSignatureValidation() {
@@ -101,7 +97,7 @@ public final class InstanceFunctionInvocationIT extends BaseIntegrationTest {
 
             // Test multiple function signatures
             final String[] functionNames = {"add", "sub", "mul"};
-            
+
             for (final String functionName : functionNames) {
               final Optional<WasmFunction> function = instance.getFunction(functionName);
               assertTrue(function.isPresent(), functionName + " function should be discoverable");
@@ -110,10 +106,14 @@ public final class InstanceFunctionInvocationIT extends BaseIntegrationTest {
               final FunctionType functionType = fn.getFunctionType();
 
               // Validate signature
-              assertEquals(2, functionType.getParamTypes().length, 
-                          functionName + " should have 2 parameters");
-              assertEquals(1, functionType.getReturnTypes().length, 
-                          functionName + " should have 1 return value");
+              assertEquals(
+                  2,
+                  functionType.getParamTypes().length,
+                  functionName + " should have 2 parameters");
+              assertEquals(
+                  1,
+                  functionType.getReturnTypes().length,
+                  functionName + " should have 1 return value");
               assertEquals(WasmValueType.I32, functionType.getParamTypes()[0]);
               assertEquals(WasmValueType.I32, functionType.getParamTypes()[1]);
               assertEquals(WasmValueType.I32, functionType.getReturnTypes()[0]);
@@ -127,9 +127,7 @@ public final class InstanceFunctionInvocationIT extends BaseIntegrationTest {
         });
   }
 
-  /**
-   * Tests various parameter types and marshaling scenarios.
-   */
+  /** Tests various parameter types and marshaling scenarios. */
   @Test
   @DisplayName("Parameter marshaling validation")
   void testParameterMarshalingValidation() {
@@ -154,7 +152,7 @@ public final class InstanceFunctionInvocationIT extends BaseIntegrationTest {
             assertTrue(faddFunction.isPresent(), "F32 add function should be discoverable");
 
             final WasmFunction fadd = faddFunction.get();
-            
+
             // Test various F32 values
             final WasmValue[] result1 = fadd.call(WasmValue.f32(1.5f), WasmValue.f32(2.5f));
             assertEquals(4.0f, result1[0].asF32(), 0.001f, "1.5 + 2.5 should equal 4.0");
@@ -171,9 +169,7 @@ public final class InstanceFunctionInvocationIT extends BaseIntegrationTest {
         });
   }
 
-  /**
-   * Tests function execution performance within instance context.
-   */
+  /** Tests function execution performance within instance context. */
   @Test
   @DisplayName("Function execution performance within instances")
   void testFunctionExecutionPerformanceWithinInstances() {
@@ -222,20 +218,18 @@ public final class InstanceFunctionInvocationIT extends BaseIntegrationTest {
         });
   }
 
-  /**
-   * Tests exception handling during function invocation within instances.
-   */
+  /** Tests exception handling during function invocation within instances. */
   @Test
   @DisplayName("Exception handling during function invocation")
   void testExceptionHandlingDuringFunctionInvocation() {
     runWithBothRuntimes(
         (runtime, runtimeType) -> {
-          LOGGER.info("Testing exception handling during invocation with " + runtimeType + " runtime");
+          LOGGER.info(
+              "Testing exception handling during invocation with " + runtimeType + " runtime");
 
           try (final Engine engine = runtime.createEngine();
               final Store store = runtime.createStore(engine);
-              final Module module =
-                  engine.compileModule(WasmTestModules.getModule("basic_add"))) {
+              final Module module = engine.compileModule(WasmTestModules.getModule("basic_add"))) {
 
             registerForCleanup(engine);
             registerForCleanup(store);
@@ -267,22 +261,22 @@ public final class InstanceFunctionInvocationIT extends BaseIntegrationTest {
 
             // Verify instance is still usable after exceptions
             final WasmValue[] recoveryResult = add.call(WasmValue.i32(5), WasmValue.i32(7));
-            assertEquals(12, recoveryResult[0].asI32(), "Instance should remain usable after exceptions");
+            assertEquals(
+                12, recoveryResult[0].asI32(), "Instance should remain usable after exceptions");
 
             LOGGER.info("Exception handling test completed for " + runtimeType);
           }
         });
   }
 
-  /**
-   * Tests memory management during intensive function invocations.
-   */
+  /** Tests memory management during intensive function invocations. */
   @Test
   @DisplayName("Memory management during function invocations")
   void testMemoryManagementDuringFunctionInvocations() {
     runWithBothRuntimes(
         (runtime, runtimeType) -> {
-          LOGGER.info("Testing memory management during invocations with " + runtimeType + " runtime");
+          LOGGER.info(
+              "Testing memory management during invocations with " + runtimeType + " runtime");
 
           try (final Engine engine = runtime.createEngine();
               final Store store = runtime.createStore(engine)) {
@@ -292,7 +286,8 @@ public final class InstanceFunctionInvocationIT extends BaseIntegrationTest {
 
             // Create and destroy multiple instances with function calls
             for (int iteration = 0; iteration < 10; iteration++) {
-              try (final Module module = engine.compileModule(WasmTestModules.getModule("basic_add"))) {
+              try (final Module module =
+                  engine.compileModule(WasmTestModules.getModule("basic_add"))) {
                 final Instance instance = store.createInstance(module);
 
                 final Optional<WasmFunction> addFunction = instance.getFunction("add");

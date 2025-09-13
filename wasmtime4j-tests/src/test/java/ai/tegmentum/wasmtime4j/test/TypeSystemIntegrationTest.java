@@ -53,15 +53,15 @@ public class TypeSystemIntegrationTest {
     void createV128WithValidArray() {
       final byte[] v128Data = new byte[16];
       Arrays.fill(v128Data, (byte) 0x42);
-      
+
       final WasmValue v128Value = WasmValue.v128(v128Data);
-      
+
       assertNotNull(v128Value);
       assertEquals(WasmValueType.V128, v128Value.getType());
       assertTrue(v128Value.isVector());
       assertFalse(v128Value.isNumeric());
       assertFalse(v128Value.isReference());
-      
+
       final byte[] retrievedData = v128Value.asV128();
       assertArrayEquals(v128Data, retrievedData);
     }
@@ -71,7 +71,7 @@ public class TypeSystemIntegrationTest {
     void v128ValidatesArraySize() {
       // Test null array
       assertThrows(IllegalArgumentException.class, () -> WasmValue.v128(null));
-      
+
       // Test wrong size arrays
       assertThrows(IllegalArgumentException.class, () -> WasmValue.v128(new byte[15]));
       assertThrows(IllegalArgumentException.class, () -> WasmValue.v128(new byte[17]));
@@ -83,21 +83,21 @@ public class TypeSystemIntegrationTest {
     void v128ReturnsDefensiveCopy() {
       final byte[] originalData = new byte[16];
       Arrays.fill(originalData, (byte) 0x42);
-      
+
       final WasmValue v128Value = WasmValue.v128(originalData);
-      
+
       // Modify original array
       Arrays.fill(originalData, (byte) 0x00);
-      
+
       // V128 value should not be affected
       final byte[] retrievedData = v128Value.asV128();
       for (byte b : retrievedData) {
         assertEquals((byte) 0x42, b);
       }
-      
+
       // Modify retrieved array
       Arrays.fill(retrievedData, (byte) 0xFF);
-      
+
       // V128 value should still not be affected
       final byte[] retrievedData2 = v128Value.asV128();
       for (byte b : retrievedData2) {
@@ -108,12 +108,14 @@ public class TypeSystemIntegrationTest {
     @Test
     @DisplayName("V128 toString formatting")
     void v128ToStringFormatting() {
-      final byte[] v128Data = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
-                               0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F};
-      
+      final byte[] v128Data = {
+        0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+        0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F
+      };
+
       final WasmValue v128Value = WasmValue.v128(v128Data);
       final String string = v128Value.toString();
-      
+
       assertTrue(string.contains("V128"));
       assertTrue(string.contains("0x00"));
       assertTrue(string.contains("0x0f"));
@@ -128,15 +130,15 @@ public class TypeSystemIntegrationTest {
     @DisplayName("Funcref validation and type checking")
     void funcrefValidation() {
       final WasmValue funcrefValue = WasmValue.funcref(null);
-      
+
       assertNotNull(funcrefValue);
       assertEquals(WasmValueType.FUNCREF, funcrefValue.getType());
       assertTrue(funcrefValue.isReference());
       assertFalse(funcrefValue.isNumeric());
       assertFalse(funcrefValue.isVector());
-      
+
       assertNull(funcrefValue.asFuncref());
-      
+
       // Test type validation
       assertThrows(ClassCastException.class, () -> funcrefValue.asI32());
       assertThrows(ClassCastException.class, () -> funcrefValue.asExternref());
@@ -146,15 +148,15 @@ public class TypeSystemIntegrationTest {
     @DisplayName("Externref validation and type checking")
     void externrefValidation() {
       final WasmValue externrefValue = WasmValue.externref(null);
-      
+
       assertNotNull(externrefValue);
       assertEquals(WasmValueType.EXTERNREF, externrefValue.getType());
       assertTrue(externrefValue.isReference());
       assertFalse(externrefValue.isNumeric());
       assertFalse(externrefValue.isVector());
-      
+
       assertNull(externrefValue.asExternref());
-      
+
       // Test type validation
       assertThrows(ClassCastException.class, () -> externrefValue.asI64());
       assertThrows(ClassCastException.class, () -> externrefValue.asFuncref());
@@ -164,13 +166,13 @@ public class TypeSystemIntegrationTest {
     @DisplayName("Reference type error messages include actual type")
     void referenceTypeErrorMessages() {
       final WasmValue i32Value = WasmValue.i32(42);
-      
-      final ClassCastException funcrefException = assertThrows(
-          ClassCastException.class, () -> i32Value.asFuncref());
+
+      final ClassCastException funcrefException =
+          assertThrows(ClassCastException.class, () -> i32Value.asFuncref());
       assertTrue(funcrefException.getMessage().contains("I32"));
-      
-      final ClassCastException externrefException = assertThrows(
-          ClassCastException.class, () -> i32Value.asExternref());
+
+      final ClassCastException externrefException =
+          assertThrows(ClassCastException.class, () -> i32Value.asExternref());
       assertTrue(externrefException.getMessage().contains("I32"));
     }
   }
@@ -183,34 +185,42 @@ public class TypeSystemIntegrationTest {
     @DisplayName("FunctionType constructor validates parameters")
     void constructorValidation() {
       // Test null parameter types
-      assertThrows(IllegalArgumentException.class, 
-          () -> new FunctionType(null, new WasmValueType[]{}));
-      
+      assertThrows(
+          IllegalArgumentException.class, () -> new FunctionType(null, new WasmValueType[] {}));
+
       // Test null return types
-      assertThrows(IllegalArgumentException.class, 
-          () -> new FunctionType(new WasmValueType[]{}, null));
-      
+      assertThrows(
+          IllegalArgumentException.class, () -> new FunctionType(new WasmValueType[] {}, null));
+
       // Test null elements in parameter types
-      assertThrows(IllegalArgumentException.class, 
-          () -> new FunctionType(new WasmValueType[]{WasmValueType.I32, null}, new WasmValueType[]{}));
-      
+      assertThrows(
+          IllegalArgumentException.class,
+          () ->
+              new FunctionType(
+                  new WasmValueType[] {WasmValueType.I32, null}, new WasmValueType[] {}));
+
       // Test null elements in return types
-      assertThrows(IllegalArgumentException.class, 
-          () -> new FunctionType(new WasmValueType[]{}, new WasmValueType[]{null, WasmValueType.I64}));
+      assertThrows(
+          IllegalArgumentException.class,
+          () ->
+              new FunctionType(
+                  new WasmValueType[] {}, new WasmValueType[] {null, WasmValueType.I64}));
     }
 
     @Test
     @DisplayName("Multi-value return support")
     void multiValueReturnSupport() {
       final WasmValueType[] paramTypes = {WasmValueType.I32, WasmValueType.F32};
-      final WasmValueType[] returnTypes = {WasmValueType.I64, WasmValueType.F64, WasmValueType.V128};
-      
+      final WasmValueType[] returnTypes = {
+        WasmValueType.I64, WasmValueType.F64, WasmValueType.V128
+      };
+
       final FunctionType functionType = new FunctionType(paramTypes, returnTypes);
-      
+
       assertEquals(2, functionType.getParamCount());
       assertEquals(3, functionType.getReturnCount());
       assertTrue(functionType.hasMultipleReturns());
-      
+
       assertArrayEquals(paramTypes, functionType.getParamTypes());
       assertArrayEquals(returnTypes, functionType.getReturnTypes());
     }
@@ -218,51 +228,56 @@ public class TypeSystemIntegrationTest {
     @Test
     @DisplayName("Parameter validation")
     void parameterValidation() {
-      final FunctionType functionType = new FunctionType(
-          new WasmValueType[]{WasmValueType.I32, WasmValueType.V128},
-          new WasmValueType[]{WasmValueType.F64});
-      
+      final FunctionType functionType =
+          new FunctionType(
+              new WasmValueType[] {WasmValueType.I32, WasmValueType.V128},
+              new WasmValueType[] {WasmValueType.F64});
+
       // Valid parameters
-      final WasmValue[] validParams = {
-          WasmValue.i32(42),
-          WasmValue.v128(new byte[16])
-      };
-      
+      final WasmValue[] validParams = {WasmValue.i32(42), WasmValue.v128(new byte[16])};
+
       // Should not throw
       functionType.validateParameters(validParams);
-      
+
       // Invalid parameter count
-      assertThrows(IllegalArgumentException.class, 
-          () -> functionType.validateParameters(new WasmValue[]{WasmValue.i32(42)}));
-      
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> functionType.validateParameters(new WasmValue[] {WasmValue.i32(42)}));
+
       // Invalid parameter type
-      assertThrows(IllegalArgumentException.class, 
-          () -> functionType.validateParameters(new WasmValue[]{WasmValue.i32(42), WasmValue.f32(3.14f)}));
-      
+      assertThrows(
+          IllegalArgumentException.class,
+          () ->
+              functionType.validateParameters(
+                  new WasmValue[] {WasmValue.i32(42), WasmValue.f32(3.14f)}));
+
       // Null parameter
-      assertThrows(IllegalArgumentException.class, 
-          () -> functionType.validateParameters(new WasmValue[]{WasmValue.i32(42), null}));
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> functionType.validateParameters(new WasmValue[] {WasmValue.i32(42), null}));
     }
 
     @Test
     @DisplayName("Function type compatibility")
     void functionTypeCompatibility() {
-      final FunctionType type1 = new FunctionType(
-          new WasmValueType[]{WasmValueType.I32, WasmValueType.F32},
-          new WasmValueType[]{WasmValueType.I64});
-      
-      final FunctionType type2 = new FunctionType(
-          new WasmValueType[]{WasmValueType.I32, WasmValueType.F32},
-          new WasmValueType[]{WasmValueType.I64});
-      
-      final FunctionType type3 = new FunctionType(
-          new WasmValueType[]{WasmValueType.I32},
-          new WasmValueType[]{WasmValueType.I64});
-      
+      final FunctionType type1 =
+          new FunctionType(
+              new WasmValueType[] {WasmValueType.I32, WasmValueType.F32},
+              new WasmValueType[] {WasmValueType.I64});
+
+      final FunctionType type2 =
+          new FunctionType(
+              new WasmValueType[] {WasmValueType.I32, WasmValueType.F32},
+              new WasmValueType[] {WasmValueType.I64});
+
+      final FunctionType type3 =
+          new FunctionType(
+              new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {WasmValueType.I64});
+
       assertTrue(type1.isCompatibleWith(type2));
       assertFalse(type1.isCompatibleWith(type3));
       assertFalse(type1.isCompatibleWith(null));
-      
+
       assertEquals(type1, type2);
       assertEquals(type1.hashCode(), type2.hashCode());
     }
@@ -275,17 +290,16 @@ public class TypeSystemIntegrationTest {
     @Test
     @DisplayName("Empty function signature")
     void emptyFunctionSignature() {
-      final FunctionType emptyFunction = new FunctionType(
-          new WasmValueType[]{},
-          new WasmValueType[]{});
-      
+      final FunctionType emptyFunction =
+          new FunctionType(new WasmValueType[] {}, new WasmValueType[] {});
+
       assertEquals(0, emptyFunction.getParamCount());
       assertEquals(0, emptyFunction.getReturnCount());
       assertFalse(emptyFunction.hasMultipleReturns());
-      
+
       // Should not throw for null or empty parameters
       emptyFunction.validateParameters(null);
-      emptyFunction.validateParameters(new WasmValue[]{});
+      emptyFunction.validateParameters(new WasmValue[] {});
     }
 
     @Test
@@ -293,22 +307,22 @@ public class TypeSystemIntegrationTest {
     void allTypesSupport() {
       final WasmValueType[] allTypes = WasmValueType.values();
       final FunctionType allTypesFunction = new FunctionType(allTypes, allTypes);
-      
+
       assertEquals(allTypes.length, allTypesFunction.getParamCount());
       assertEquals(allTypes.length, allTypesFunction.getReturnCount());
       assertTrue(allTypesFunction.hasMultipleReturns());
-      
+
       // Create values for all types
       final WasmValue[] testValues = {
-          WasmValue.i32(42),
-          WasmValue.i64(42L),
-          WasmValue.f32(3.14f),
-          WasmValue.f64(3.14159),
-          WasmValue.v128(new byte[16]),
-          WasmValue.funcref(null),
-          WasmValue.externref(null)
+        WasmValue.i32(42),
+        WasmValue.i64(42L),
+        WasmValue.f32(3.14f),
+        WasmValue.f64(3.14159),
+        WasmValue.v128(new byte[16]),
+        WasmValue.funcref(null),
+        WasmValue.externref(null)
       };
-      
+
       // Should validate successfully
       allTypesFunction.validateParameters(testValues);
     }
@@ -317,17 +331,16 @@ public class TypeSystemIntegrationTest {
     @DisplayName("Type validation error messages")
     void typeValidationErrorMessages() {
       final WasmValue i32Value = WasmValue.i32(42);
-      
-      final IllegalArgumentException exception = assertThrows(
-          IllegalArgumentException.class, 
-          () -> i32Value.validateType(WasmValueType.F64));
-      
+
+      final IllegalArgumentException exception =
+          assertThrows(
+              IllegalArgumentException.class, () -> i32Value.validateType(WasmValueType.F64));
+
       assertTrue(exception.getMessage().contains("I32"));
       assertTrue(exception.getMessage().contains("F64"));
-      
+
       // Test null expected type
-      assertThrows(IllegalArgumentException.class, 
-          () -> i32Value.validateType(null));
+      assertThrows(IllegalArgumentException.class, () -> i32Value.validateType(null));
     }
   }
 }

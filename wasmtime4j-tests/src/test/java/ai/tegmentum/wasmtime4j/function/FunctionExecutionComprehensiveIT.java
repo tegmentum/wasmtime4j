@@ -1,8 +1,22 @@
 package ai.tegmentum.wasmtime4j.function;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
-import ai.tegmentum.wasmtime4j.*;
+import ai.tegmentum.wasmtime4j.Engine;
+import ai.tegmentum.wasmtime4j.FunctionType;
+import ai.tegmentum.wasmtime4j.Instance;
+import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.RuntimeType;
+import ai.tegmentum.wasmtime4j.Store;
+import ai.tegmentum.wasmtime4j.WasmFunction;
+import ai.tegmentum.wasmtime4j.WasmRuntime;
+import ai.tegmentum.wasmtime4j.WasmValue;
+import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.utils.BaseIntegrationTest;
 import ai.tegmentum.wasmtime4j.webassembly.WasmTestModules;
@@ -13,8 +27,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 
 /**
- * Comprehensive integration tests for WebAssembly function execution across all parameter types
- * and runtime implementations.
+ * Comprehensive integration tests for WebAssembly function execution across all parameter types and
+ * runtime implementations.
  *
  * <p>This test class validates:
  *
@@ -48,8 +62,7 @@ public final class FunctionExecutionComprehensiveIT extends BaseIntegrationTest 
 
           try (final Engine engine = runtime.createEngine();
               final Store store = runtime.createStore(engine);
-              final Module module =
-                  engine.compileModule(WasmTestModules.getModule("basic_add"))) {
+              final Module module = engine.compileModule(WasmTestModules.getModule("basic_add"))) {
 
             registerForCleanup(engine);
             registerForCleanup(store);
@@ -95,9 +108,7 @@ public final class FunctionExecutionComprehensiveIT extends BaseIntegrationTest 
         });
   }
 
-  /**
-   * Tests I64 parameter marshaling and function execution.
-   */
+  /** Tests I64 parameter marshaling and function execution. */
   @Test
   @DisplayName("I64 parameter marshaling")
   void testI64ParameterMarshaling() {
@@ -124,8 +135,7 @@ public final class FunctionExecutionComprehensiveIT extends BaseIntegrationTest 
             final WasmFunction add = addFunction.get();
 
             // Test with large I32 values
-            final WasmValue[] result =
-                add.call(WasmValue.i32(1000000), WasmValue.i32(2000000));
+            final WasmValue[] result = add.call(WasmValue.i32(1000000), WasmValue.i32(2000000));
             assertEquals(3000000, result[0].asI32(), "Large I32 addition should work correctly");
 
             LOGGER.info("I64 parameter marshaling test completed for " + runtimeType);
@@ -133,9 +143,7 @@ public final class FunctionExecutionComprehensiveIT extends BaseIntegrationTest 
         });
   }
 
-  /**
-   * Tests F32 floating-point parameter marshaling and execution.
-   */
+  /** Tests F32 floating-point parameter marshaling and execution. */
   @Test
   @DisplayName("F32 floating-point execution")
   void testF32FloatingPointExecution() {
@@ -179,8 +187,7 @@ public final class FunctionExecutionComprehensiveIT extends BaseIntegrationTest 
             assertEquals(5.0f, zeroResult[0].asF32(), 0.001f, "5.0 + 0.0 should equal 5.0");
 
             // Test with negative values
-            final WasmValue[] negativeResult =
-                fadd.call(WasmValue.f32(-2.5f), WasmValue.f32(1.5f));
+            final WasmValue[] negativeResult = fadd.call(WasmValue.f32(-2.5f), WasmValue.f32(1.5f));
             assertEquals(-1.0f, negativeResult[0].asF32(), 0.001f, "-2.5 + 1.5 should equal -1.0");
 
             LOGGER.info("F32 floating-point execution test completed for " + runtimeType);
@@ -188,9 +195,7 @@ public final class FunctionExecutionComprehensiveIT extends BaseIntegrationTest 
         });
   }
 
-  /**
-   * Tests F64 double-precision floating-point execution.
-   */
+  /** Tests F64 double-precision floating-point execution. */
   @Test
   @DisplayName("F64 double-precision execution")
   void testF64DoublePrecisionExecution() {
@@ -217,8 +222,7 @@ public final class FunctionExecutionComprehensiveIT extends BaseIntegrationTest 
             final WasmFunction fadd = faddFunction.get();
 
             // Test precision handling
-            final WasmValue[] precisionResult =
-                fadd.call(WasmValue.f32(0.1f), WasmValue.f32(0.2f));
+            final WasmValue[] precisionResult = fadd.call(WasmValue.f32(0.1f), WasmValue.f32(0.2f));
             assertTrue(
                 Math.abs(0.3f - precisionResult[0].asF32()) < 0.001f,
                 "Floating-point precision should be handled correctly");
@@ -228,9 +232,7 @@ public final class FunctionExecutionComprehensiveIT extends BaseIntegrationTest 
         });
   }
 
-  /**
-   * Tests multi-value function returns.
-   */
+  /** Tests multi-value function returns. */
   @Test
   @DisplayName("Multi-value function returns")
   void testMultiValueFunctionReturns() {
@@ -265,20 +267,18 @@ public final class FunctionExecutionComprehensiveIT extends BaseIntegrationTest 
         });
   }
 
-  /**
-   * Tests error handling and trap propagation during function execution.
-   */
+  /** Tests error handling and trap propagation during function execution. */
   @Test
   @DisplayName("Error handling and trap propagation")
   void testErrorHandlingAndTrapPropagation() {
     runWithBothRuntimes(
         (runtime, runtimeType) -> {
-          LOGGER.info("Testing error handling and trap propagation with " + runtimeType + " runtime");
+          LOGGER.info(
+              "Testing error handling and trap propagation with " + runtimeType + " runtime");
 
           try (final Engine engine = runtime.createEngine();
               final Store store = runtime.createStore(engine);
-              final Module module =
-                  engine.compileModule(WasmTestModules.getModule("basic_add"))) {
+              final Module module = engine.compileModule(WasmTestModules.getModule("basic_add"))) {
 
             registerForCleanup(engine);
             registerForCleanup(store);
@@ -315,9 +315,7 @@ public final class FunctionExecutionComprehensiveIT extends BaseIntegrationTest 
         });
   }
 
-  /**
-   * Tests recursive function execution performance and stack management.
-   */
+  /** Tests recursive function execution performance and stack management. */
   @Test
   @DisplayName("Recursive function execution")
   void testRecursiveFunctionExecution() {
@@ -372,9 +370,7 @@ public final class FunctionExecutionComprehensiveIT extends BaseIntegrationTest 
         });
   }
 
-  /**
-   * Tests function execution performance characteristics.
-   */
+  /** Tests function execution performance characteristics. */
   @Test
   @DisplayName("Function execution performance")
   void testFunctionExecutionPerformance() {
@@ -384,8 +380,7 @@ public final class FunctionExecutionComprehensiveIT extends BaseIntegrationTest 
 
           try (final Engine engine = runtime.createEngine();
               final Store store = runtime.createStore(engine);
-              final Module module =
-                  engine.compileModule(WasmTestModules.getModule("basic_add"))) {
+              final Module module = engine.compileModule(WasmTestModules.getModule("basic_add"))) {
 
             registerForCleanup(engine);
             registerForCleanup(store);
@@ -423,9 +418,7 @@ public final class FunctionExecutionComprehensiveIT extends BaseIntegrationTest 
         });
   }
 
-  /**
-   * Tests resource cleanup and lifecycle management during function execution.
-   */
+  /** Tests resource cleanup and lifecycle management during function execution. */
   @Test
   @DisplayName("Resource lifecycle management")
   void testResourceLifecycleManagement() {
@@ -461,9 +454,7 @@ public final class FunctionExecutionComprehensiveIT extends BaseIntegrationTest 
         });
   }
 
-  /**
-   * Tests cross-runtime behavior consistency between JNI and Panama implementations.
-   */
+  /** Tests cross-runtime behavior consistency between JNI and Panama implementations. */
   @Test
   @DisplayName("Cross-runtime consistency validation")
   void testCrossRuntimeConsistency() {

@@ -1,10 +1,21 @@
 package ai.tegmentum.wasmtime4j.function;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
-import ai.tegmentum.wasmtime4j.*;
+import ai.tegmentum.wasmtime4j.Engine;
+import ai.tegmentum.wasmtime4j.Instance;
+import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.RuntimeType;
+import ai.tegmentum.wasmtime4j.Store;
+import ai.tegmentum.wasmtime4j.WasmFunction;
+import ai.tegmentum.wasmtime4j.WasmRuntime;
+import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.exception.WasmTrapException;
 import ai.tegmentum.wasmtime4j.utils.BaseIntegrationTest;
 import ai.tegmentum.wasmtime4j.webassembly.WasmTestModules;
 import java.util.Optional;
@@ -33,15 +44,14 @@ public final class FunctionTrapHandlingIT extends BaseIntegrationTest {
 
   private static final Logger LOGGER = Logger.getLogger(FunctionTrapHandlingIT.class.getName());
 
-  /**
-   * Tests trap handling for unreachable instruction execution.
-   */
+  /** Tests trap handling for unreachable instruction execution. */
   @Test
   @DisplayName("Unreachable instruction trap handling")
   void testUnreachableInstructionTrapHandling() {
     runWithBothRuntimes(
         (runtime, runtimeType) -> {
-          LOGGER.info("Testing unreachable instruction trap handling with " + runtimeType + " runtime");
+          LOGGER.info(
+              "Testing unreachable instruction trap handling with " + runtimeType + " runtime");
 
           try (final Engine engine = runtime.createEngine();
               final Store store = runtime.createStore(engine);
@@ -72,23 +82,21 @@ public final class FunctionTrapHandlingIT extends BaseIntegrationTest {
 
             // Verify the instance is still usable after the trap
             assertDoesNotThrow(
-                () -> unreachableFunction.isPresent(),
-                "Instance should remain usable after trap");
+                () -> unreachableFunction.isPresent(), "Instance should remain usable after trap");
 
             LOGGER.info("Unreachable instruction trap handling test completed for " + runtimeType);
           }
         });
   }
 
-  /**
-   * Tests memory bounds violation trap handling.
-   */
+  /** Tests memory bounds violation trap handling. */
   @Test
   @DisplayName("Memory bounds violation trap handling")
   void testMemoryBoundsViolationTrapHandling() {
     runWithBothRuntimes(
         (runtime, runtimeType) -> {
-          LOGGER.info("Testing memory bounds violation trap handling with " + runtimeType + " runtime");
+          LOGGER.info(
+              "Testing memory bounds violation trap handling with " + runtimeType + " runtime");
 
           try (final Engine engine = runtime.createEngine();
               final Store store = runtime.createStore(engine);
@@ -140,9 +148,7 @@ public final class FunctionTrapHandlingIT extends BaseIntegrationTest {
         });
   }
 
-  /**
-   * Tests stack overflow detection and handling during recursive function calls.
-   */
+  /** Tests stack overflow detection and handling during recursive function calls. */
   @Test
   @DisplayName("Stack overflow trap handling")
   void testStackOverflowTrapHandling() {
@@ -186,27 +192,26 @@ public final class FunctionTrapHandlingIT extends BaseIntegrationTest {
 
             // Verify the instance is still usable after stack overflow
             final WasmValue[] recoveryResult = stackTest.call(WasmValue.i32(3));
-            assertEquals(6, recoveryResult[0].asI32(), "3! should equal 6 after stack overflow recovery");
+            assertEquals(
+                6, recoveryResult[0].asI32(), "3! should equal 6 after stack overflow recovery");
 
             LOGGER.info("Stack overflow trap handling test completed for " + runtimeType);
           }
         });
   }
 
-  /**
-   * Tests parameter validation and type mismatch error handling.
-   */
+  /** Tests parameter validation and type mismatch error handling. */
   @Test
   @DisplayName("Parameter validation and type mismatch handling")
   void testParameterValidationAndTypeMismatch() {
     runWithBothRuntimes(
         (runtime, runtimeType) -> {
-          LOGGER.info("Testing parameter validation and type mismatch with " + runtimeType + " runtime");
+          LOGGER.info(
+              "Testing parameter validation and type mismatch with " + runtimeType + " runtime");
 
           try (final Engine engine = runtime.createEngine();
               final Store store = runtime.createStore(engine);
-              final Module module =
-                  engine.compileModule(WasmTestModules.getModule("basic_add"))) {
+              final Module module = engine.compileModule(WasmTestModules.getModule("basic_add"))) {
 
             registerForCleanup(engine);
             registerForCleanup(store);
@@ -256,15 +261,14 @@ public final class FunctionTrapHandlingIT extends BaseIntegrationTest {
         });
   }
 
-  /**
-   * Tests error recovery and cleanup after various trap scenarios.
-   */
+  /** Tests error recovery and cleanup after various trap scenarios. */
   @Test
   @DisplayName("Error recovery and cleanup after traps")
   void testErrorRecoveryAndCleanupAfterTraps() {
     runWithBothRuntimes(
         (runtime, runtimeType) -> {
-          LOGGER.info("Testing error recovery and cleanup after traps with " + runtimeType + " runtime");
+          LOGGER.info(
+              "Testing error recovery and cleanup after traps with " + runtimeType + " runtime");
 
           try (final Engine engine = runtime.createEngine();
               final Store store = runtime.createStore(engine)) {
@@ -304,9 +308,7 @@ public final class FunctionTrapHandlingIT extends BaseIntegrationTest {
         });
   }
 
-  /**
-   * Tests cross-runtime trap consistency between JNI and Panama implementations.
-   */
+  /** Tests cross-runtime trap consistency between JNI and Panama implementations. */
   @Test
   @DisplayName("Cross-runtime trap consistency")
   void testCrossRuntimeTrapConsistency() {
@@ -341,7 +343,8 @@ public final class FunctionTrapHandlingIT extends BaseIntegrationTest {
     try (final WasmRuntime panamaRuntime = createTestRuntime(RuntimeType.PANAMA);
         final Engine panamaEngine = panamaRuntime.createEngine();
         final Store panamaStore = panamaRuntime.createStore(panamaEngine);
-        final Module panamaModule = panamaEngine.compileModule(WasmTestModules.getModule("basic_add"))) {
+        final Module panamaModule =
+            panamaEngine.compileModule(WasmTestModules.getModule("basic_add"))) {
 
       final Instance panamaInstance = panamaStore.createInstance(panamaModule);
       final Optional<WasmFunction> panamaAddFunction = panamaInstance.getFunction("add");
@@ -373,9 +376,7 @@ public final class FunctionTrapHandlingIT extends BaseIntegrationTest {
     LOGGER.info("Cross-runtime trap consistency test completed");
   }
 
-  /**
-   * Tests trap handling with malformed WebAssembly modules.
-   */
+  /** Tests trap handling with malformed WebAssembly modules. */
   @Test
   @DisplayName("Malformed module trap handling")
   void testMalformedModuleTrapHandling() {
@@ -389,15 +390,13 @@ public final class FunctionTrapHandlingIT extends BaseIntegrationTest {
 
             // Test various malformed modules
             final String[] malformedModules = {
-              "malformed_magic",
-              "malformed_version", 
-              "malformed_truncated",
-              "malformed_section"
+              "malformed_magic", "malformed_version", "malformed_truncated", "malformed_section"
             };
 
             for (final String malformedModuleName : malformedModules) {
               if (WasmTestModules.hasModule(malformedModuleName)) {
-                LOGGER.info("Testing malformed module: " + malformedModuleName + " with " + runtimeType);
+                LOGGER.info(
+                    "Testing malformed module: " + malformedModuleName + " with " + runtimeType);
 
                 final WasmException malformedException =
                     assertThrows(
@@ -420,9 +419,7 @@ public final class FunctionTrapHandlingIT extends BaseIntegrationTest {
         });
   }
 
-  /**
-   * Tests trap performance characteristics and overhead.
-   */
+  /** Tests trap performance characteristics and overhead. */
   @Test
   @DisplayName("Trap performance characteristics")
   void testTrapPerformanceCharacteristics() {
@@ -432,8 +429,7 @@ public final class FunctionTrapHandlingIT extends BaseIntegrationTest {
 
           try (final Engine engine = runtime.createEngine();
               final Store store = runtime.createStore(engine);
-              final Module module =
-                  engine.compileModule(WasmTestModules.getModule("basic_add"))) {
+              final Module module = engine.compileModule(WasmTestModules.getModule("basic_add"))) {
 
             registerForCleanup(engine);
             registerForCleanup(store);

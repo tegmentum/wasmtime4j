@@ -1,8 +1,18 @@
 package ai.tegmentum.wasmtime4j.function;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.*;
+import ai.tegmentum.wasmtime4j.Engine;
+import ai.tegmentum.wasmtime4j.Instance;
+import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.RuntimeType;
+import ai.tegmentum.wasmtime4j.Store;
+import ai.tegmentum.wasmtime4j.WasmFunction;
+import ai.tegmentum.wasmtime4j.WasmRuntime;
+import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.utils.BaseIntegrationTest;
 import ai.tegmentum.wasmtime4j.webassembly.WasmTestModules;
@@ -59,8 +69,7 @@ public final class FunctionPerformanceValidationIT extends BaseIntegrationTest {
 
           try (final Engine engine = runtime.createEngine();
               final Store store = runtime.createStore(engine);
-              final Module module =
-                  engine.compileModule(WasmTestModules.getModule("basic_add"))) {
+              final Module module = engine.compileModule(WasmTestModules.getModule("basic_add"))) {
 
             registerForCleanup(engine);
             registerForCleanup(store);
@@ -97,9 +106,7 @@ public final class FunctionPerformanceValidationIT extends BaseIntegrationTest {
         });
   }
 
-  /**
-   * Tests batch function call performance to measure call overhead and throughput.
-   */
+  /** Tests batch function call performance to measure call overhead and throughput. */
   @Test
   @DisplayName("Batch function call performance")
   void testBatchFunctionCallPerformance() {
@@ -109,8 +116,7 @@ public final class FunctionPerformanceValidationIT extends BaseIntegrationTest {
 
           try (final Engine engine = runtime.createEngine();
               final Store store = runtime.createStore(engine);
-              final Module module =
-                  engine.compileModule(WasmTestModules.getModule("basic_add"))) {
+              final Module module = engine.compileModule(WasmTestModules.getModule("basic_add"))) {
 
             registerForCleanup(engine);
             registerForCleanup(store);
@@ -132,18 +138,20 @@ public final class FunctionPerformanceValidationIT extends BaseIntegrationTest {
             final int batchSize = 10000;
 
             // Test batch function call performance
-            final Duration batchDuration = timeOperation(
-                "Batch " + batchSize + " function calls with " + runtimeType,
-                () -> {
-                  try {
-                    for (int i = 0; i < batchSize; i++) {
-                      final WasmValue[] result = add.call(WasmValue.i32(i), WasmValue.i32(i + 1));
-                      assertEquals(i + i + 1, result[0].asI32());
-                    }
-                  } catch (final WasmException e) {
-                    throw new RuntimeException("Batch function calls failed", e);
-                  }
-                });
+            final Duration batchDuration =
+                timeOperation(
+                    "Batch " + batchSize + " function calls with " + runtimeType,
+                    () -> {
+                      try {
+                        for (int i = 0; i < batchSize; i++) {
+                          final WasmValue[] result =
+                              add.call(WasmValue.i32(i), WasmValue.i32(i + 1));
+                          assertEquals(i + i + 1, result[0].asI32());
+                        }
+                      } catch (final WasmException e) {
+                        throw new RuntimeException("Batch function calls failed", e);
+                      }
+                    });
 
             // Calculate throughput
             final double callsPerSecond = (double) batchSize / (batchDuration.toMillis() / 1000.0);
@@ -163,9 +171,7 @@ public final class FunctionPerformanceValidationIT extends BaseIntegrationTest {
         });
   }
 
-  /**
-   * Tests parameter marshaling performance for different value types.
-   */
+  /** Tests parameter marshaling performance for different value types. */
   @Test
   @DisplayName("Parameter marshaling performance")
   void testParameterMarshalingPerformance() {
@@ -241,15 +247,14 @@ public final class FunctionPerformanceValidationIT extends BaseIntegrationTest {
         });
   }
 
-  /**
-   * Tests recursive function call performance.
-   */
+  /** Tests recursive function call performance. */
   @Test
   @DisplayName("Recursive function call performance")
   void testRecursiveFunctionCallPerformance() {
     runWithBothRuntimes(
         (runtime, runtimeType) -> {
-          LOGGER.info("Testing recursive function call performance with " + runtimeType + " runtime");
+          LOGGER.info(
+              "Testing recursive function call performance with " + runtimeType + " runtime");
 
           try (final Engine engine = runtime.createEngine();
               final Store store = runtime.createStore(engine);
@@ -299,15 +304,14 @@ public final class FunctionPerformanceValidationIT extends BaseIntegrationTest {
         });
   }
 
-  /**
-   * Tests concurrent function execution performance and thread safety.
-   */
+  /** Tests concurrent function execution performance and thread safety. */
   @Test
   @DisplayName("Concurrent function execution performance")
   void testConcurrentFunctionExecutionPerformance() {
     runWithBothRuntimes(
         (runtime, runtimeType) -> {
-          LOGGER.info("Testing concurrent function execution performance with " + runtimeType + " runtime");
+          LOGGER.info(
+              "Testing concurrent function execution performance with " + runtimeType + " runtime");
 
           try (final Engine engine = runtime.createEngine()) {
 
@@ -324,46 +328,57 @@ public final class FunctionPerformanceValidationIT extends BaseIntegrationTest {
               // Create concurrent tasks
               for (int threadId = 0; threadId < threadCount; threadId++) {
                 final int finalThreadId = threadId;
-                final Future<Duration> future = executor.submit(() -> {
-                  try {
-                    // Wait for all threads to be ready
-                    startLatch.await();
+                final Future<Duration> future =
+                    executor.submit(
+                        () -> {
+                          try {
+                            // Wait for all threads to be ready
+                            startLatch.await();
 
-                    // Each thread gets its own store and instance
-                    try (final Store store = runtime.createStore(engine);
-                        final Module module = engine.compileModule(WasmTestModules.getModule("basic_add"))) {
+                            // Each thread gets its own store and instance
+                            try (final Store store = runtime.createStore(engine);
+                                final Module module =
+                                    engine.compileModule(WasmTestModules.getModule("basic_add"))) {
 
-                      final Instance instance = store.createInstance(module);
-                      final Optional<WasmFunction> addFunction = instance.getFunction("add");
-                      assertTrue(addFunction.isPresent(), "Add function should be exported");
+                              final Instance instance = store.createInstance(module);
+                              final Optional<WasmFunction> addFunction =
+                                  instance.getFunction("add");
+                              assertTrue(
+                                  addFunction.isPresent(), "Add function should be exported");
 
-                      final WasmFunction add = addFunction.get();
+                              final WasmFunction add = addFunction.get();
 
-                      final long startTime = System.nanoTime();
+                              final long startTime = System.nanoTime();
 
-                      // Execute function calls
-                      for (int i = 0; i < callsPerThread; i++) {
-                        final WasmValue[] result = add.call(
-                            WasmValue.i32(finalThreadId * 1000 + i),
-                            WasmValue.i32(i + 1));
-                        assertEquals(finalThreadId * 1000 + i + i + 1, result[0].asI32());
-                      }
+                              // Execute function calls
+                              for (int i = 0; i < callsPerThread; i++) {
+                                final WasmValue[] result =
+                                    add.call(
+                                        WasmValue.i32(finalThreadId * 1000 + i),
+                                        WasmValue.i32(i + 1));
+                                assertEquals(finalThreadId * 1000 + i + i + 1, result[0].asI32());
+                              }
 
-                      final long endTime = System.nanoTime();
-                      instance.close();
-                      return Duration.ofNanos(endTime - startTime);
-                    }
-                  } catch (final Exception e) {
-                    throw new RuntimeException("Concurrent execution failed", e);
-                  }
-                });
+                              final long endTime = System.nanoTime();
+                              instance.close();
+                              return Duration.ofNanos(endTime - startTime);
+                            }
+                          } catch (final Exception e) {
+                            throw new RuntimeException("Concurrent execution failed", e);
+                          }
+                        });
 
                 futures.add(future);
               }
 
               // Start all threads simultaneously
               measureExecutionTime(
-                  "Concurrent execution with " + threadCount + " threads, " + callsPerThread + " calls each, " + runtimeType,
+                  "Concurrent execution with "
+                      + threadCount
+                      + " threads, "
+                      + callsPerThread
+                      + " calls each, "
+                      + runtimeType,
                   () -> {
                     try {
                       startLatch.countDown();
@@ -376,12 +391,13 @@ public final class FunctionPerformanceValidationIT extends BaseIntegrationTest {
 
                       // Log individual thread performance
                       for (int i = 0; i < durations.size(); i++) {
-                        LOGGER.info(String.format(
-                            "Thread %d completed %d calls in %dms (%.2f calls/sec)",
-                            i,
-                            callsPerThread,
-                            durations.get(i).toMillis(),
-                            (double) callsPerThread / (durations.get(i).toMillis() / 1000.0)));
+                        LOGGER.info(
+                            String.format(
+                                "Thread %d completed %d calls in %dms (%.2f calls/sec)",
+                                i,
+                                callsPerThread,
+                                durations.get(i).toMillis(),
+                                (double) callsPerThread / (durations.get(i).toMillis() / 1000.0)));
                       }
                     } catch (final Exception e) {
                       throw new RuntimeException("Concurrent execution failed", e);
@@ -395,25 +411,26 @@ public final class FunctionPerformanceValidationIT extends BaseIntegrationTest {
               }
             }
 
-            LOGGER.info("Concurrent function execution performance test completed for " + runtimeType);
+            LOGGER.info(
+                "Concurrent function execution performance test completed for " + runtimeType);
           }
         });
   }
 
-  /**
-   * Tests memory pressure impact on function execution performance.
-   */
+  /** Tests memory pressure impact on function execution performance. */
   @Test
   @DisplayName("Memory pressure impact on function performance")
   void testMemoryPressureImpactOnFunctionPerformance() {
     runWithBothRuntimes(
         (runtime, runtimeType) -> {
-          LOGGER.info("Testing memory pressure impact on function performance with " + runtimeType + " runtime");
+          LOGGER.info(
+              "Testing memory pressure impact on function performance with "
+                  + runtimeType
+                  + " runtime");
 
           try (final Engine engine = runtime.createEngine();
               final Store store = runtime.createStore(engine);
-              final Module module =
-                  engine.compileModule(WasmTestModules.getModule("basic_add"))) {
+              final Module module = engine.compileModule(WasmTestModules.getModule("basic_add"))) {
 
             registerForCleanup(engine);
             registerForCleanup(store);
@@ -430,58 +447,68 @@ public final class FunctionPerformanceValidationIT extends BaseIntegrationTest {
             final int iterations = 1000;
 
             // Baseline performance without memory pressure
-            final Duration baselineDuration = timeOperation(
-                "Baseline function calls (" + iterations + " iterations) with " + runtimeType,
-                () -> {
-                  try {
-                    for (int i = 0; i < iterations; i++) {
-                      final WasmValue[] result = add.call(WasmValue.i32(i), WasmValue.i32(i + 1));
-                      assertEquals(i + i + 1, result[0].asI32());
-                    }
-                  } catch (final WasmException e) {
-                    throw new RuntimeException("Baseline function calls failed", e);
-                  }
-                });
+            final Duration baselineDuration =
+                timeOperation(
+                    "Baseline function calls (" + iterations + " iterations) with " + runtimeType,
+                    () -> {
+                      try {
+                        for (int i = 0; i < iterations; i++) {
+                          final WasmValue[] result =
+                              add.call(WasmValue.i32(i), WasmValue.i32(i + 1));
+                          assertEquals(i + i + 1, result[0].asI32());
+                        }
+                      } catch (final WasmException e) {
+                        throw new RuntimeException("Baseline function calls failed", e);
+                      }
+                    });
 
             // Performance under memory pressure
-            final Duration memoryPressureDuration = timeOperation(
-                "Function calls under memory pressure (" + iterations + " iterations) with " + runtimeType,
-                () -> {
-                  // Create memory pressure
-                  final List<byte[]> memoryPressure = new ArrayList<>();
-                  try {
-                    // Allocate memory chunks
-                    for (int i = 0; i < 1000; i++) {
-                      memoryPressure.add(new byte[1024]); // 1KB each
-                    }
+            final Duration memoryPressureDuration =
+                timeOperation(
+                    "Function calls under memory pressure ("
+                        + iterations
+                        + " iterations) with "
+                        + runtimeType,
+                    () -> {
+                      // Create memory pressure
+                      final List<byte[]> memoryPressure = new ArrayList<>();
+                      try {
+                        // Allocate memory chunks
+                        for (int i = 0; i < 1000; i++) {
+                          memoryPressure.add(new byte[1024]); // 1KB each
+                        }
 
-                    // Execute function calls under memory pressure
-                    for (int i = 0; i < iterations; i++) {
-                      final WasmValue[] result = add.call(WasmValue.i32(i), WasmValue.i32(i + 1));
-                      assertEquals(i + i + 1, result[0].asI32());
+                        // Execute function calls under memory pressure
+                        for (int i = 0; i < iterations; i++) {
+                          final WasmValue[] result =
+                              add.call(WasmValue.i32(i), WasmValue.i32(i + 1));
+                          assertEquals(i + i + 1, result[0].asI32());
 
-                      // Occasionally force GC by creating more objects
-                      if (i % 100 == 0) {
-                        memoryPressure.add(new byte[2048]);
+                          // Occasionally force GC by creating more objects
+                          if (i % 100 == 0) {
+                            memoryPressure.add(new byte[2048]);
+                          }
+                        }
+                      } catch (final WasmException e) {
+                        throw new RuntimeException("Memory pressure function calls failed", e);
+                      } finally {
+                        // Clear memory pressure
+                        memoryPressure.clear();
+                        System.gc(); // Suggest garbage collection
                       }
-                    }
-                  } catch (final WasmException e) {
-                    throw new RuntimeException("Memory pressure function calls failed", e);
-                  } finally {
-                    // Clear memory pressure
-                    memoryPressure.clear();
-                    System.gc(); // Suggest garbage collection
-                  }
-                });
+                    });
 
             // Analyze performance impact
-            final double impactRatio = (double) memoryPressureDuration.toMillis() / baselineDuration.toMillis();
-            LOGGER.info(String.format(
-                "Memory pressure impact for %s: %.2fx slower (baseline: %dms, under pressure: %dms)",
-                runtimeType,
-                impactRatio,
-                baselineDuration.toMillis(),
-                memoryPressureDuration.toMillis()));
+            final double impactRatio =
+                (double) memoryPressureDuration.toMillis() / baselineDuration.toMillis();
+            LOGGER.info(
+                String.format(
+                    "Memory pressure impact for %s: %.2fx slower (baseline: %dms, under pressure:"
+                        + " %dms)",
+                    runtimeType,
+                    impactRatio,
+                    baselineDuration.toMillis(),
+                    memoryPressureDuration.toMillis()));
 
             // Memory pressure shouldn't cause more than 5x slowdown
             assertTrue(
@@ -493,9 +520,7 @@ public final class FunctionPerformanceValidationIT extends BaseIntegrationTest {
         });
   }
 
-  /**
-   * Tests cross-runtime performance consistency between JNI and Panama.
-   */
+  /** Tests cross-runtime performance consistency between JNI and Panama. */
   @Test
   @DisplayName("Cross-runtime performance consistency")
   void testCrossRuntimePerformanceConsistency() {
@@ -524,18 +549,19 @@ public final class FunctionPerformanceValidationIT extends BaseIntegrationTest {
         jniAdd.call(WasmValue.i32(i), WasmValue.i32(i + 1));
       }
 
-      jniDuration = timeOperation(
-          "JNI function calls (" + iterations + " iterations)",
-          () -> {
-            try {
-              for (int i = 0; i < iterations; i++) {
-                final WasmValue[] result = jniAdd.call(WasmValue.i32(i), WasmValue.i32(i + 1));
-                assertEquals(i + i + 1, result[0].asI32());
-              }
-            } catch (final WasmException e) {
-              throw new RuntimeException("JNI function calls failed", e);
-            }
-          });
+      jniDuration =
+          timeOperation(
+              "JNI function calls (" + iterations + " iterations)",
+              () -> {
+                try {
+                  for (int i = 0; i < iterations; i++) {
+                    final WasmValue[] result = jniAdd.call(WasmValue.i32(i), WasmValue.i32(i + 1));
+                    assertEquals(i + i + 1, result[0].asI32());
+                  }
+                } catch (final WasmException e) {
+                  throw new RuntimeException("JNI function calls failed", e);
+                }
+              });
 
       jniInstance.close();
     }
@@ -544,7 +570,8 @@ public final class FunctionPerformanceValidationIT extends BaseIntegrationTest {
     try (final WasmRuntime panamaRuntime = createTestRuntime(RuntimeType.PANAMA);
         final Engine panamaEngine = panamaRuntime.createEngine();
         final Store panamaStore = panamaRuntime.createStore(panamaEngine);
-        final Module panamaModule = panamaEngine.compileModule(WasmTestModules.getModule("basic_add"))) {
+        final Module panamaModule =
+            panamaEngine.compileModule(WasmTestModules.getModule("basic_add"))) {
 
       final Instance panamaInstance = panamaStore.createInstance(panamaModule);
       final Optional<WasmFunction> panamaAddFunction = panamaInstance.getFunction("add");
@@ -557,18 +584,20 @@ public final class FunctionPerformanceValidationIT extends BaseIntegrationTest {
         panamaAdd.call(WasmValue.i32(i), WasmValue.i32(i + 1));
       }
 
-      panamaDuration = timeOperation(
-          "Panama function calls (" + iterations + " iterations)",
-          () -> {
-            try {
-              for (int i = 0; i < iterations; i++) {
-                final WasmValue[] result = panamaAdd.call(WasmValue.i32(i), WasmValue.i32(i + 1));
-                assertEquals(i + i + 1, result[0].asI32());
-              }
-            } catch (final WasmException e) {
-              throw new RuntimeException("Panama function calls failed", e);
-            }
-          });
+      panamaDuration =
+          timeOperation(
+              "Panama function calls (" + iterations + " iterations)",
+              () -> {
+                try {
+                  for (int i = 0; i < iterations; i++) {
+                    final WasmValue[] result =
+                        panamaAdd.call(WasmValue.i32(i), WasmValue.i32(i + 1));
+                    assertEquals(i + i + 1, result[0].asI32());
+                  }
+                } catch (final WasmException e) {
+                  throw new RuntimeException("Panama function calls failed", e);
+                }
+              });
 
       panamaInstance.close();
     }
@@ -580,13 +609,22 @@ public final class FunctionPerformanceValidationIT extends BaseIntegrationTest {
     final double jniCallsPerSecond = (double) iterations / (jniDuration.toMillis() / 1000.0);
     final double panamaCallsPerSecond = (double) iterations / (panamaDuration.toMillis() / 1000.0);
 
-    LOGGER.info(String.format("JNI performance: %.2f calls/second (%dms total)", jniCallsPerSecond, jniDuration.toMillis()));
-    LOGGER.info(String.format("Panama performance: %.2f calls/second (%dms total)", panamaCallsPerSecond, panamaDuration.toMillis()));
+    LOGGER.info(
+        String.format(
+            "JNI performance: %.2f calls/second (%dms total)",
+            jniCallsPerSecond, jniDuration.toMillis()));
+    LOGGER.info(
+        String.format(
+            "Panama performance: %.2f calls/second (%dms total)",
+            panamaCallsPerSecond, panamaDuration.toMillis()));
 
-    final double performanceRatio = Math.max(jniCallsPerSecond, panamaCallsPerSecond) /
-                                   Math.min(jniCallsPerSecond, panamaCallsPerSecond);
+    final double performanceRatio =
+        Math.max(jniCallsPerSecond, panamaCallsPerSecond)
+            / Math.min(jniCallsPerSecond, panamaCallsPerSecond);
 
-    LOGGER.info(String.format("Performance ratio: %.2f (closer to 1.0 means more consistent)", performanceRatio));
+    LOGGER.info(
+        String.format(
+            "Performance ratio: %.2f (closer to 1.0 means more consistent)", performanceRatio));
 
     // Performance should be reasonably consistent (within 10x of each other)
     assertTrue(

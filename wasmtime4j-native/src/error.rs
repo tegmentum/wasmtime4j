@@ -148,6 +148,20 @@ pub enum WasmtimeError {
         /// Error message describing the internal system error
         message: String 
     },
+
+    /// Function execution errors
+    #[error("Function execution failed: {message}")]
+    Execution { 
+        /// Error message describing the execution error
+        message: String 
+    },
+
+    /// Export not found errors
+    #[error("Export not found: {name}")]
+    ExportNotFound { 
+        /// Name of the export that was not found
+        name: String 
+    },
 }
 
 /// Result type for wasmtime4j operations
@@ -238,6 +252,8 @@ impl WasmtimeError {
             WasmtimeError::Component { .. } => ErrorCode::ComponentError,
             WasmtimeError::Interface { .. } => ErrorCode::InterfaceError,
             WasmtimeError::Internal { .. } => ErrorCode::InternalError,
+            WasmtimeError::Execution { .. } => ErrorCode::FunctionError,
+            WasmtimeError::ExportNotFound { .. } => ErrorCode::ImportExportError,
         }
     }
 
@@ -522,6 +538,14 @@ pub mod ffi_utils {
         }
     }
     
+    /// Execute operation with FFI error handling, returning Result<Box<T>> for pointer operations
+    pub fn ffi_try_ptr_result<F, T>(operation: F) -> WasmtimeResult<Box<T>>
+    where
+        F: FnOnce() -> WasmtimeResult<T>,
+    {
+        operation().map(Box::new)
+    }
+    
     /// Execute operation with FFI error handling, returning error code
     pub fn ffi_try_code<F>(operation: F) -> i32
     where
@@ -682,6 +706,8 @@ pub mod jni_utils {
             WasmtimeError::Concurrency { .. } => "ai/tegmentum/wasmtime4j/WasmConcurrencyException",
             WasmtimeError::Wasi { .. } => "ai/tegmentum/wasmtime4j/WasiException",
             WasmtimeError::Internal { .. } => "ai/tegmentum/wasmtime4j/WasmInternalException",
+            WasmtimeError::Execution { .. } => "ai/tegmentum/wasmtime4j/WasmExecutionException",
+            WasmtimeError::ExportNotFound { .. } => "ai/tegmentum/wasmtime4j/WasmExportNotFoundException",
             _ => "ai/tegmentum/wasmtime4j/WasmException",
         }
     }
