@@ -100,8 +100,9 @@ public final class MemoryLayouts {
   public static final int WASM_I64 = 1;
   public static final int WASM_F32 = 2;
   public static final int WASM_F64 = 3;
-  public static final int WASM_ANYREF = 4;
-  public static final int WASM_FUNCREF = 5;
+  public static final int WASM_V128 = 4;
+  public static final int WASM_ANYREF = 5;
+  public static final int WASM_FUNCREF = 6;
 
   /**
    * Layout for WebAssembly value.

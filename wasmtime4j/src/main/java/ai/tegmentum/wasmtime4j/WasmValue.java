@@ -95,7 +95,7 @@ public final class WasmValue {
    */
   public Object asFuncref() {
     if (type != WasmValueType.FUNCREF) {
-      throw new ClassCastException("Value is not a funcref");
+      throw new ClassCastException("Value is not a funcref, but " + type);
     }
     return value;
   }
@@ -108,7 +108,7 @@ public final class WasmValue {
    */
   public Object asExternref() {
     if (type != WasmValueType.EXTERNREF) {
-      throw new ClassCastException("Value is not an externref");
+      throw new ClassCastException("Value is not an externref, but " + type);
     }
     return value;
   }
@@ -265,6 +265,49 @@ public final class WasmValue {
    */
   public static WasmValue ofF64(final double value) {
     return f64(value);
+  }
+
+  /**
+   * Checks if this value is a reference type (funcref or externref).
+   *
+   * @return true if this is a reference type, false otherwise
+   */
+  public boolean isReference() {
+    return type == WasmValueType.FUNCREF || type == WasmValueType.EXTERNREF;
+  }
+
+  /**
+   * Checks if this value is a numeric type (i32, i64, f32, f64).
+   *
+   * @return true if this is a numeric type, false otherwise
+   */
+  public boolean isNumeric() {
+    return type == WasmValueType.I32 || type == WasmValueType.I64
+           || type == WasmValueType.F32 || type == WasmValueType.F64;
+  }
+
+  /**
+   * Checks if this value is a vector type (v128).
+   *
+   * @return true if this is a vector type, false otherwise
+   */
+  public boolean isVector() {
+    return type == WasmValueType.V128;
+  }
+
+  /**
+   * Validates that this value matches the expected type.
+   *
+   * @param expectedType the expected type
+   * @throws IllegalArgumentException if types don't match
+   */
+  public void validateType(final WasmValueType expectedType) {
+    if (expectedType == null) {
+      throw new IllegalArgumentException("Expected type cannot be null");
+    }
+    if (type != expectedType) {
+      throw new IllegalArgumentException("Type mismatch: expected " + expectedType + ", got " + type);
+    }
   }
 
   @Override

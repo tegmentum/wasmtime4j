@@ -5,6 +5,7 @@ import ai.tegmentum.wasmtime4j.panama.wasi.permission.WasiPermissionManager;
 import ai.tegmentum.wasmtime4j.panama.wasi.security.WasiSecurityValidator;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
+import java.lang.foreign.ValueLayout;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -429,14 +430,92 @@ public final class WasiContextBuilder {
       final String[] preopenDirs,
       final String workingDir) {
 
-    // TODO: Implement native WASI context creation when native library is ready
-    // This would call into the Panama FFI bindings to create a native WASI context
     LOGGER.fine(
         String.format(
             "Native WASI context creation called with %d env vars, %d args, %d preopen dirs",
             environment.length, arguments.length, preopenDirs.length / 2));
 
-    // For now, return a mock handle - this will be replaced with actual Panama FFI calls
-    return MemorySegment.ofAddress(0x1234L);
+    try {
+      // Get the native function bindings
+      ai.tegmentum.wasmtime4j.panama.NativeFunctionBindings bindings = 
+          ai.tegmentum.wasmtime4j.panama.NativeFunctionBindings.getInstance();
+      
+      if (!bindings.isInitialized()) {
+        throw new RuntimeException("Native function bindings not initialized");
+      }
+
+      // Create WASI context with default configuration
+      // TODO: Support custom configuration parameters (allow_network, allow_arbitrary_fs, etc.)
+      MemorySegment contextHandle = bindings.wasiContextNew();
+      
+      if (contextHandle == null || contextHandle.equals(MemorySegment.NULL)) {
+        throw new RuntimeException("Failed to create native WASI context");
+      }
+
+      LOGGER.fine("Created native WASI context with handle: " + contextHandle.address());
+
+      // Configure environment variables
+      if (environment.length > 0) {
+        try (Arena arena = Arena.ofConfined()) {
+          for (String envVar : environment) {
+            String[] parts = envVar.split("=", 2);
+            if (parts.length == 2) {
+              MemorySegment keySegment = arena.allocateUtf8String(parts[0]);
+              MemorySegment valueSegment = arena.allocateUtf8String(parts[1]);
+              
+              int result = bindings.wasiContextSetEnvironmentVariable(contextHandle, keySegment, valueSegment);
+              if (result != 0) {
+                LOGGER.warning("Failed to set environment variable: " + parts[0] + " (error code: " + result + ")");
+              }
+            }
+          }
+        }
+      }
+
+      // Configure command line arguments
+      if (arguments.length > 0) {
+        try (Arena arena = Arena.ofConfined()) {
+          // Create array of string pointers
+          MemorySegment argsArray = arena.allocateArray(ValueLayout.ADDRESS, arguments.length);
+          for (int i = 0; i < arguments.length; i++) {
+            MemorySegment argString = arena.allocateUtf8String(arguments[i]);
+            argsArray.setAtIndex(ValueLayout.ADDRESS, i, argString);
+          }
+          
+          int result = bindings.wasiContextSetArguments(contextHandle, argsArray, arguments.length);
+          if (result != 0) {
+            LOGGER.warning("Failed to set command line arguments (error code: " + result + ")");
+          }
+        }
+      }
+
+      // Configure pre-opened directories
+      if (preopenDirs.length > 0) {
+        try (Arena arena = Arena.ofConfined()) {
+          for (int i = 0; i < preopenDirs.length; i += 2) {
+            String guestPath = preopenDirs[i];
+            String hostPath = preopenDirs[i + 1];
+            
+            MemorySegment guestSegment = arena.allocateUtf8String(guestPath);
+            MemorySegment hostSegment = arena.allocateUtf8String(hostPath);
+            
+            // Default directory permissions: read only for both directories and files
+            int result = bindings.wasiContextAddDirectory(contextHandle, hostSegment, guestSegment,
+                0, 1, 0,  // dir permissions: no create, read, no remove
+                1, 0, 0, 0); // file permissions: read only, no write/create/truncate
+                
+            if (result != 0) {
+              LOGGER.warning("Failed to add directory mapping " + guestPath + " -> " + hostPath + " (error code: " + result + ")");
+            }
+          }
+        }
+      }
+
+      return contextHandle;
+
+    } catch (Exception e) {
+      LOGGER.severe("Exception during native WASI context creation: " + e.getMessage());
+      throw new RuntimeException("Failed to create native WASI context", e);
+    }
   }
 }

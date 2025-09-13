@@ -348,9 +348,28 @@ public final class WasiContext implements AutoCloseable {
    * @param handle the native handle for the WASI context
    */
   private static void nativeClose(final MemorySegment handle) {
-    // TODO: Implement native cleanup when native library is ready
-    // This would call into the Panama FFI bindings to clean up the native WASI context
-    LOGGER.fine("Native WASI context cleanup called for handle: " + handle.address());
+    try {
+      if (handle == null || handle.equals(MemorySegment.NULL)) {
+        LOGGER.warning("Attempted to close null WASI context handle");
+        return;
+      }
+
+      LOGGER.fine("Native WASI context cleanup called for handle: " + handle.address());
+      
+      // Get the native function bindings and destroy the WASI context
+      ai.tegmentum.wasmtime4j.panama.NativeFunctionBindings bindings = 
+          ai.tegmentum.wasmtime4j.panama.NativeFunctionBindings.getInstance();
+      
+      if (bindings.isInitialized()) {
+        bindings.wasiContextDestroy(handle);
+        LOGGER.fine("WASI context destroyed successfully");
+      } else {
+        LOGGER.warning("Native function bindings not initialized, cannot destroy WASI context");
+      }
+    } catch (Exception e) {
+      LOGGER.warning("Error during native WASI context cleanup: " + e.getMessage());
+      // Continue with cleanup despite error to prevent resource leaks
+    }
   }
 
   @Override
