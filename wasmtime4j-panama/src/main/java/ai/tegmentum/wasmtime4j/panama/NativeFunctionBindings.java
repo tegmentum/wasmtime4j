@@ -225,48 +225,35 @@ public final class NativeFunctionBindings {
   }
 
   /**
-   * Creates a WebAssembly store with custom configuration.
+   * Sets fuel for a WebAssembly store.
    *
-   * @param enginePtr pointer to the engine
-   * @param fuelLimit fuel limit (0 = no limit)
-   * @param memoryLimitBytes memory limit in bytes (0 = no limit)
-   * @param executionTimeoutSecs execution timeout in seconds (0 = no timeout)
-   * @param maxInstances maximum instances (0 = no limit)
-   * @param maxTableElements maximum table elements (0 = no limit)
-   * @param maxFunctions maximum functions (0 = no limit)
-   * @param storePtr pointer to store the created store
+   * @param storePtr pointer to the store
+   * @param fuel the fuel amount to set
    * @return 0 on success, negative error code on failure
    */
-  public int storeCreateWithConfig(
-      final MemorySegment enginePtr,
-      final long fuelLimit,
-      final long memoryLimitBytes,
-      final long executionTimeoutSecs,
-      final int maxInstances,
-      final int maxTableElements,
-      final int maxFunctions,
-      final MemorySegment storePtr) {
-    validatePointer(enginePtr, "enginePtr");
+  public int storeSetFuel(final MemorySegment storePtr, final long fuel) {
     validatePointer(storePtr, "storePtr");
+    return callNativeFunction("wasmtime4j_store_set_fuel", Integer.class, storePtr, fuel);
+  }
 
-    return callNativeFunction(
-        "wasmtime4j_store_create_with_config",
-        Integer.class,
-        enginePtr,
-        fuelLimit,
-        memoryLimitBytes,
-        executionTimeoutSecs,
-        maxInstances,
-        maxTableElements,
-        maxFunctions,
-        storePtr);
+  /**
+   * Gets remaining fuel from a WebAssembly store.
+   *
+   * @param storePtr pointer to the store
+   * @param fuelOutPtr pointer to store the remaining fuel
+   * @return 0 on success, negative error code on failure
+   */
+  public int storeGetFuel(final MemorySegment storePtr, final MemorySegment fuelOutPtr) {
+    validatePointer(storePtr, "storePtr");
+    validatePointer(fuelOutPtr, "fuelOutPtr");
+    return callNativeFunction("wasmtime4j_store_get_fuel", Integer.class, storePtr, fuelOutPtr);
   }
 
   /**
    * Adds fuel to a WebAssembly store.
    *
    * @param storePtr pointer to the store
-   * @param fuel amount of fuel to add
+   * @param fuel the fuel amount to add
    * @return 0 on success, negative error code on failure
    */
   public int storeAddFuel(final MemorySegment storePtr, final long fuel) {
@@ -275,39 +262,10 @@ public final class NativeFunctionBindings {
   }
 
   /**
-   * Gets remaining fuel in a WebAssembly store.
-   *
-   * @param storePtr pointer to the store
-   * @param fuelPtr pointer to store the fuel amount
-   * @return 0 on success, negative error code on failure
-   */
-  public int storeGetFuelRemaining(final MemorySegment storePtr, final MemorySegment fuelPtr) {
-    validatePointer(storePtr, "storePtr");
-    validatePointer(fuelPtr, "fuelPtr");
-    return callNativeFunction("wasmtime4j_store_get_fuel_remaining", Integer.class, storePtr, fuelPtr);
-  }
-
-  /**
-   * Consumes fuel from a WebAssembly store.
-   *
-   * @param storePtr pointer to the store
-   * @param fuelToConsume amount of fuel to consume
-   * @param fuelConsumedPtr pointer to store actual consumed fuel
-   * @return 0 on success, negative error code on failure
-   */
-  public int storeConsumeFuel(
-      final MemorySegment storePtr, final long fuelToConsume, final MemorySegment fuelConsumedPtr) {
-    validatePointer(storePtr, "storePtr");
-    validatePointer(fuelConsumedPtr, "fuelConsumedPtr");
-    return callNativeFunction(
-        "wasmtime4j_store_consume_fuel", Integer.class, storePtr, fuelToConsume, fuelConsumedPtr);
-  }
-
-  /**
    * Sets epoch deadline for a WebAssembly store.
    *
    * @param storePtr pointer to the store
-   * @param ticks number of epoch ticks
+   * @param ticks the epoch deadline in ticks
    * @return 0 on success, negative error code on failure
    */
   public int storeSetEpochDeadline(final MemorySegment storePtr, final long ticks) {
@@ -316,56 +274,42 @@ public final class NativeFunctionBindings {
   }
 
   /**
-   * Triggers garbage collection in a WebAssembly store.
+   * Triggers garbage collection for a WebAssembly store.
    *
    * @param storePtr pointer to the store
    * @return 0 on success, negative error code on failure
    */
-  public int storeGarbageCollect(final MemorySegment storePtr) {
+  public int storeGc(final MemorySegment storePtr) {
     validatePointer(storePtr, "storePtr");
-    return callNativeFunction("wasmtime4j_store_garbage_collect", Integer.class, storePtr);
+    return callNativeFunction("wasmtime4j_store_gc", Integer.class, storePtr);
   }
 
   /**
-   * Validates a WebAssembly store.
-   *
-   * @param storePtr pointer to the store
-   * @return 0 on success, negative error code on failure
-   */
-  public int storeValidate(final MemorySegment storePtr) {
-    validatePointer(storePtr, "storePtr");
-    return callNativeFunction("wasmtime4j_store_validate", Integer.class, storePtr);
-  }
-
-  /**
-   * Gets execution statistics from a WebAssembly store.
+   * Gets execution statistics for a WebAssembly store.
    *
    * @param storePtr pointer to the store
    * @param executionCountPtr pointer to store execution count
-   * @param totalExecutionTimeMsPtr pointer to store total execution time in milliseconds
    * @param fuelConsumedPtr pointer to store fuel consumed
+   * @param totalExecutionTimeNsPtr pointer to store total execution time in nanoseconds
    * @return 0 on success, negative error code on failure
    */
   public int storeGetExecutionStats(
       final MemorySegment storePtr,
       final MemorySegment executionCountPtr,
-      final MemorySegment totalExecutionTimeMsPtr,
-      final MemorySegment fuelConsumedPtr) {
+      final MemorySegment fuelConsumedPtr,
+      final MemorySegment totalExecutionTimeNsPtr) {
     validatePointer(storePtr, "storePtr");
-    validatePointer(executionCountPtr, "executionCountPtr");
-    validatePointer(totalExecutionTimeMsPtr, "totalExecutionTimeMsPtr");
-    validatePointer(fuelConsumedPtr, "fuelConsumedPtr");
     return callNativeFunction(
         "wasmtime4j_store_get_execution_stats",
         Integer.class,
         storePtr,
         executionCountPtr,
-        totalExecutionTimeMsPtr,
-        fuelConsumedPtr);
+        fuelConsumedPtr,
+        totalExecutionTimeNsPtr);
   }
 
   /**
-   * Gets memory usage statistics from a WebAssembly store.
+   * Gets memory usage statistics for a WebAssembly store.
    *
    * @param storePtr pointer to the store
    * @param totalBytesPtr pointer to store total bytes
@@ -379,9 +323,6 @@ public final class NativeFunctionBindings {
       final MemorySegment usedBytesPtr,
       final MemorySegment instanceCountPtr) {
     validatePointer(storePtr, "storePtr");
-    validatePointer(totalBytesPtr, "totalBytesPtr");
-    validatePointer(usedBytesPtr, "usedBytesPtr");
-    validatePointer(instanceCountPtr, "instanceCountPtr");
     return callNativeFunction(
         "wasmtime4j_store_get_memory_usage",
         Integer.class,
@@ -392,34 +333,14 @@ public final class NativeFunctionBindings {
   }
 
   /**
-   * Gets metadata from a WebAssembly store.
+   * Validates store functionality.
    *
    * @param storePtr pointer to the store
-   * @param fuelLimitPtr pointer to store fuel limit
-   * @param memoryLimitBytesPtr pointer to store memory limit in bytes
-   * @param executionTimeoutSecsPtr pointer to store execution timeout in seconds
-   * @param instanceCountPtr pointer to store instance count
    * @return 0 on success, negative error code on failure
    */
-  public int storeGetMetadata(
-      final MemorySegment storePtr,
-      final MemorySegment fuelLimitPtr,
-      final MemorySegment memoryLimitBytesPtr,
-      final MemorySegment executionTimeoutSecsPtr,
-      final MemorySegment instanceCountPtr) {
+  public int storeValidate(final MemorySegment storePtr) {
     validatePointer(storePtr, "storePtr");
-    validatePointer(fuelLimitPtr, "fuelLimitPtr");
-    validatePointer(memoryLimitBytesPtr, "memoryLimitBytesPtr");
-    validatePointer(executionTimeoutSecsPtr, "executionTimeoutSecsPtr");
-    validatePointer(instanceCountPtr, "instanceCountPtr");
-    return callNativeFunction(
-        "wasmtime4j_store_get_metadata",
-        Integer.class,
-        storePtr,
-        fuelLimitPtr,
-        memoryLimitBytesPtr,
-        executionTimeoutSecsPtr,
-        instanceCountPtr);
+    return callNativeFunction("wasmtime4j_store_validate", Integer.class, storePtr);
   }
 
   // Instance Functions
@@ -452,6 +373,38 @@ public final class NativeFunctionBindings {
   public void instanceDestroy(final MemorySegment instancePtr) {
     validatePointer(instancePtr, "instancePtr");
     callNativeFunction("wasmtime4j_instance_destroy", Void.class, instancePtr);
+  }
+
+  /**
+   * Gets the number of exports in an instance.
+   *
+   * @param instancePtr pointer to the instance
+   * @return the number of exports
+   */
+  public long instanceExportsLen(final MemorySegment instancePtr) {
+    validatePointer(instancePtr, "instancePtr");
+    return callNativeFunction("wasmtime4j_instance_exports_len", Long.class, instancePtr);
+  }
+
+  /**
+   * Gets the nth export from an instance.
+   *
+   * @param instancePtr pointer to the instance
+   * @param index the index of the export to retrieve
+   * @param nameOutPtr pointer to receive the export name
+   * @param exportOutPtr pointer to receive the export data
+   * @return true if the export exists, false otherwise
+   */
+  public boolean instanceExportNth(
+      final MemorySegment instancePtr,
+      final long index,
+      final MemorySegment nameOutPtr,
+      final MemorySegment exportOutPtr) {
+    validatePointer(instancePtr, "instancePtr");
+    validatePointer(nameOutPtr, "nameOutPtr");
+    validatePointer(exportOutPtr, "exportOutPtr");
+    return callNativeFunction(
+        "wasmtime4j_instance_export_nth", Boolean.class, instancePtr, index, nameOutPtr, exportOutPtr);
   }
 
   /**
@@ -557,6 +510,15 @@ public final class NativeFunctionBindings {
    */
   public MethodHandle getTableDelete() {
     return getMethodHandle("wasmtime4j_table_destroy").orElse(null);
+  }
+
+  /**
+   * Gets the method handle for table metadata retrieval.
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle getTableMetadata() {
+    return getMethodHandle("wasmtime4j_table_metadata").orElse(null);
   }
 
   /**
@@ -715,6 +677,195 @@ public final class NativeFunctionBindings {
     callNativeFunction("wasmtime4j_component_instance_destroy", Void.class, instancePtr);
   }
 
+  // Global Functions
+
+  /**
+   * Gets the value of a WebAssembly global.
+   *
+   * @param globalPtr pointer to the global
+   * @param valueOutPtr pointer to store the global value
+   */
+  public void globalGet(final MemorySegment globalPtr, final MemorySegment valueOutPtr) {
+    validatePointer(globalPtr, "globalPtr");
+    validatePointer(valueOutPtr, "valueOutPtr");
+    callNativeFunction("wasmtime_global_get", Void.class, globalPtr, valueOutPtr);
+  }
+
+  /**
+   * Sets the value of a WebAssembly global.
+   *
+   * @param globalPtr pointer to the global
+   * @param valuePtr pointer to the new value
+   */
+  public void globalSet(final MemorySegment globalPtr, final MemorySegment valuePtr) {
+    validatePointer(globalPtr, "globalPtr");
+    validatePointer(valuePtr, "valuePtr");
+    callNativeFunction("wasmtime_global_set", Void.class, globalPtr, valuePtr);
+  }
+
+  /**
+   * Gets the type of a WebAssembly global.
+   *
+   * @param globalPtr pointer to the global
+   * @return pointer to the global type
+   */
+  public MemorySegment globalType(final MemorySegment globalPtr) {
+    validatePointer(globalPtr, "globalPtr");
+    return callNativeFunction("wasmtime_global_type", MemorySegment.class, globalPtr);
+  }
+
+  /**
+   * Creates a mutable WebAssembly global.
+   *
+   * @param storePtr pointer to the store
+   * @param valueType the WebAssembly value type
+   * @param initialValuePtr pointer to the initial value
+   * @param globalOutPtr pointer to store the created global
+   * @return 0 on success, negative error code on failure
+   */
+  public int globalCreateMutable(
+      final MemorySegment storePtr,
+      final int valueType,
+      final MemorySegment initialValuePtr,
+      final MemorySegment globalOutPtr) {
+    validatePointer(storePtr, "storePtr");
+    validatePointer(initialValuePtr, "initialValuePtr");
+    validatePointer(globalOutPtr, "globalOutPtr");
+    
+    return callNativeFunction(
+        "wasmtime4j_global_create_mutable", 
+        Integer.class, 
+        storePtr, 
+        valueType, 
+        initialValuePtr, 
+        globalOutPtr);
+  }
+
+  /**
+   * Creates an immutable WebAssembly global.
+   *
+   * @param storePtr pointer to the store
+   * @param valueType the WebAssembly value type
+   * @param initialValuePtr pointer to the initial value
+   * @param globalOutPtr pointer to store the created global
+   * @return 0 on success, negative error code on failure
+   */
+  public int globalCreateImmutable(
+      final MemorySegment storePtr,
+      final int valueType,
+      final MemorySegment initialValuePtr,
+      final MemorySegment globalOutPtr) {
+    validatePointer(storePtr, "storePtr");
+    validatePointer(initialValuePtr, "initialValuePtr");
+    validatePointer(globalOutPtr, "globalOutPtr");
+    
+    return callNativeFunction(
+        "wasmtime4j_global_create_immutable", 
+        Integer.class, 
+        storePtr, 
+        valueType, 
+        initialValuePtr, 
+        globalOutPtr);
+  }
+
+  /**
+   * Destroys a WebAssembly global.
+   *
+   * @param globalPtr pointer to the global to destroy
+   */
+  public void globalDestroy(final MemorySegment globalPtr) {
+    validatePointer(globalPtr, "globalPtr");
+    callNativeFunction("wasmtime4j_global_destroy", Void.class, globalPtr);
+  }
+
+  /**
+   * Gets type information for a WebAssembly global.
+   *
+   * @param globalPtr pointer to the global
+   * @param typeInfoOutPtr pointer to store the type information
+   * @param mutabilityOutPtr pointer to store the mutability flag
+   * @return 0 on success, negative error code on failure
+   */
+  public int globalGetTypeInfo(
+      final MemorySegment globalPtr,
+      final MemorySegment typeInfoOutPtr,
+      final MemorySegment mutabilityOutPtr) {
+    validatePointer(globalPtr, "globalPtr");
+    validatePointer(typeInfoOutPtr, "typeInfoOutPtr");
+    validatePointer(mutabilityOutPtr, "mutabilityOutPtr");
+    
+    return callNativeFunction(
+        "wasmtime4j_global_get_type_info", 
+        Integer.class, 
+        globalPtr, 
+        typeInfoOutPtr, 
+        mutabilityOutPtr);
+  }
+
+  /**
+   * Registers a global for cross-module sharing.
+   *
+   * @param globalPtr pointer to the global
+   * @param namePtr pointer to the global name string
+   * @param registryPtr pointer to the global registry
+   * @return 0 on success, negative error code on failure
+   */
+  public int globalRegisterShared(
+      final MemorySegment globalPtr,
+      final MemorySegment namePtr,
+      final MemorySegment registryPtr) {
+    validatePointer(globalPtr, "globalPtr");
+    validatePointer(namePtr, "namePtr");
+    validatePointer(registryPtr, "registryPtr");
+    
+    return callNativeFunction(
+        "wasmtime4j_global_register_shared", 
+        Integer.class, 
+        globalPtr, 
+        namePtr, 
+        registryPtr);
+  }
+
+  /**
+   * Looks up a shared global by name.
+   *
+   * @param namePtr pointer to the global name string
+   * @param registryPtr pointer to the global registry
+   * @return pointer to the global, or null if not found
+   */
+  public MemorySegment globalLookupShared(
+      final MemorySegment namePtr, final MemorySegment registryPtr) {
+    validatePointer(namePtr, "namePtr");
+    validatePointer(registryPtr, "registryPtr");
+    
+    return callNativeFunction(
+        "wasmtime4j_global_lookup_shared", MemorySegment.class, namePtr, registryPtr);
+  }
+
+  /**
+   * Gets direct access to a global's value for zero-copy operations.
+   *
+   * @param globalPtr pointer to the global
+   * @return pointer to direct value access, or null if not supported
+   */
+  public MemorySegment globalGetDirectAccess(final MemorySegment globalPtr) {
+    validatePointer(globalPtr, "globalPtr");
+    return callNativeFunction("wasmtime4j_global_get_direct_access", MemorySegment.class, globalPtr);
+  }
+
+  /**
+   * Releases direct access to a global's value.
+   *
+   * @param globalPtr pointer to the global
+   * @param directPtr pointer to the direct access handle
+   */
+  public void globalReleaseDirectAccess(
+      final MemorySegment globalPtr, final MemorySegment directPtr) {
+    validatePointer(globalPtr, "globalPtr");
+    validatePointer(directPtr, "directPtr");
+    callNativeFunction("wasmtime4j_global_release_direct_access", Void.class, globalPtr, directPtr);
+  }
+
   // Error Handling Functions
 
   /**
@@ -742,225 +893,6 @@ public final class NativeFunctionBindings {
    */
   public void clearErrorState() {
     callNativeFunction("wasmtime4j_clear_error_state", Void.class);
-  }
-
-  // WASI Functions
-
-  /**
-   * Creates a new WASI context with default configuration.
-   *
-   * @return memory segment pointer to the WASI context, or null on failure
-   */
-  public MemorySegment wasiContextNew() {
-    try {
-      if (!isInitialized()) {
-        LOGGER.severe("NativeFunctionBindings not initialized, cannot create WASI context");
-        return null;
-      }
-
-      MemorySegment result = callNativeFunction("wasi_ctx_new", MemorySegment.class);
-      if (result == null || result.equals(MemorySegment.NULL)) {
-        LOGGER.warning("WASI context creation returned null");
-      } else {
-        LOGGER.fine("WASI context created successfully: " + result);
-      }
-      return result;
-    } catch (Exception e) {
-      LOGGER.severe("Exception during WASI context creation: " + e.getMessage());
-      return null;
-    }
-  }
-
-  /**
-   * Creates a new WASI context with custom configuration.
-   *
-   * @param allowNetwork whether to allow network access (1 = true, 0 = false)
-   * @param allowArbitraryFs whether to allow arbitrary filesystem access (1 = true, 0 = false)
-   * @param maxFileSize maximum file size for operations (0 = no limit)
-   * @param maxOpenFiles maximum number of open file descriptors (0 = no limit)
-   * @return memory segment pointer to the WASI context, or null on failure
-   */
-  public MemorySegment wasiContextNewWithConfig(
-      final int allowNetwork,
-      final int allowArbitraryFs,
-      final long maxFileSize,
-      final int maxOpenFiles) {
-    try {
-      if (!isInitialized()) {
-        LOGGER.severe("NativeFunctionBindings not initialized, cannot create WASI context with config");
-        return null;
-      }
-
-      MemorySegment result = callNativeFunction("wasi_ctx_new_with_config", MemorySegment.class,
-          allowNetwork, allowArbitraryFs, maxFileSize, maxOpenFiles);
-      if (result == null || result.equals(MemorySegment.NULL)) {
-        LOGGER.warning("WASI context with config creation returned null");
-      } else {
-        LOGGER.fine("WASI context with config created successfully: " + result);
-      }
-      return result;
-    } catch (Exception e) {
-      LOGGER.severe("Exception during WASI context with config creation: " + e.getMessage());
-      return null;
-    }
-  }
-
-  /**
-   * Adds a directory mapping to the WASI context.
-   *
-   * @param contextPtr pointer to the WASI context
-   * @param hostPath pointer to the host path string
-   * @param guestPath pointer to the guest path string
-   * @param canCreate directory can create permission (1 = true, 0 = false)
-   * @param canRead directory can read permission (1 = true, 0 = false)
-   * @param canRemove directory can remove permission (1 = true, 0 = false)
-   * @param fileRead file read permission (1 = true, 0 = false)
-   * @param fileWrite file write permission (1 = true, 0 = false)
-   * @param fileCreate file create permission (1 = true, 0 = false)
-   * @param fileTruncate file truncate permission (1 = true, 0 = false)
-   * @return 0 on success, negative error code on failure
-   */
-  public int wasiContextAddDirectory(
-      final MemorySegment contextPtr,
-      final MemorySegment hostPath,
-      final MemorySegment guestPath,
-      final int canCreate,
-      final int canRead,
-      final int canRemove,
-      final int fileRead,
-      final int fileWrite,
-      final int fileCreate,
-      final int fileTruncate) {
-    validatePointer(contextPtr, "contextPtr");
-    validatePointer(hostPath, "hostPath");
-    validatePointer(guestPath, "guestPath");
-
-    return callNativeFunction("wasi_ctx_add_dir", Integer.class, contextPtr, hostPath, guestPath,
-        canCreate, canRead, canRemove, fileRead, fileWrite, fileCreate, fileTruncate);
-  }
-
-  /**
-   * Sets an environment variable in the WASI context.
-   *
-   * @param contextPtr pointer to the WASI context
-   * @param key pointer to the environment variable key string
-   * @param value pointer to the environment variable value string
-   * @return 0 on success, negative error code on failure
-   */
-  public int wasiContextSetEnvironmentVariable(
-      final MemorySegment contextPtr,
-      final MemorySegment key,
-      final MemorySegment value) {
-    validatePointer(contextPtr, "contextPtr");
-    validatePointer(key, "key");
-    validatePointer(value, "value");
-
-    return callNativeFunction("wasi_ctx_set_env", Integer.class, contextPtr, key, value);
-  }
-
-  /**
-   * Sets command line arguments for the WASI context.
-   *
-   * @param contextPtr pointer to the WASI context
-   * @param args pointer to array of argument strings
-   * @param argsLen number of arguments
-   * @return 0 on success, negative error code on failure
-   */
-  public int wasiContextSetArguments(
-      final MemorySegment contextPtr,
-      final MemorySegment args,
-      final long argsLen) {
-    validatePointer(contextPtr, "contextPtr");
-    validatePointer(args, "args");
-    validateSize(argsLen, "argsLen");
-
-    return callNativeFunction("wasi_ctx_set_args", Integer.class, contextPtr, args, argsLen);
-  }
-
-  /**
-   * Configures standard I/O streams for the WASI context.
-   *
-   * @param contextPtr pointer to the WASI context
-   * @param stdinType stdin source type (0=inherit, 1=buffer, 2=file, other=null)
-   * @param stdinData pointer to stdin data (or null)
-   * @param stdoutType stdout sink type (0=inherit, 1=buffer, 2=file, other=null)
-   * @param stdoutData pointer to stdout data (or null)
-   * @param stderrType stderr sink type (0=inherit, 1=buffer, 2=file, other=null)
-   * @param stderrData pointer to stderr data (or null)
-   * @return 0 on success, negative error code on failure
-   */
-  public int wasiContextConfigureStdio(
-      final MemorySegment contextPtr,
-      final int stdinType,
-      final MemorySegment stdinData,
-      final int stdoutType,
-      final MemorySegment stdoutData,
-      final int stderrType,
-      final MemorySegment stderrData) {
-    validatePointer(contextPtr, "contextPtr");
-
-    return callNativeFunction("wasi_ctx_configure_stdio", Integer.class, contextPtr,
-        stdinType, stdinData, stdoutType, stdoutData, stderrType, stderrData);
-  }
-
-  /**
-   * Checks if a path is allowed based on WASI context configuration.
-   *
-   * @param contextPtr pointer to the WASI context
-   * @param path pointer to the path string
-   * @return 1 if allowed, 0 if not allowed, negative error code on failure
-   */
-  public int wasiContextIsPathAllowed(final MemorySegment contextPtr, final MemorySegment path) {
-    validatePointer(contextPtr, "contextPtr");
-    validatePointer(path, "path");
-
-    return callNativeFunction("wasi_ctx_is_path_allowed", Integer.class, contextPtr, path);
-  }
-
-  /**
-   * Gets the number of directory mappings in the WASI context.
-   *
-   * @param contextPtr pointer to the WASI context
-   * @return number of directory mappings, or 0 on error
-   */
-  public long wasiContextGetDirectoryCount(final MemorySegment contextPtr) {
-    validatePointer(contextPtr, "contextPtr");
-    
-    return callNativeFunction("wasi_ctx_get_dir_count", Long.class, contextPtr);
-  }
-
-  /**
-   * Gets the number of environment variables in the WASI context.
-   *
-   * @param contextPtr pointer to the WASI context
-   * @return number of environment variables, or 0 on error
-   */
-  public long wasiContextGetEnvironmentCount(final MemorySegment contextPtr) {
-    validatePointer(contextPtr, "contextPtr");
-    
-    return callNativeFunction("wasi_ctx_get_env_count", Long.class, contextPtr);
-  }
-
-  /**
-   * Gets the number of command line arguments in the WASI context.
-   *
-   * @param contextPtr pointer to the WASI context
-   * @return number of arguments, or 0 on error
-   */
-  public long wasiContextGetArgumentCount(final MemorySegment contextPtr) {
-    validatePointer(contextPtr, "contextPtr");
-    
-    return callNativeFunction("wasi_ctx_get_args_count", Long.class, contextPtr);
-  }
-
-  /**
-   * Destroys a WASI context and frees its resources.
-   *
-   * @param contextPtr pointer to the WASI context
-   */
-  public void wasiContextDestroy(final MemorySegment contextPtr) {
-    validatePointer(contextPtr, "contextPtr");
-    callNativeFunction("wasi_ctx_destroy", Void.class, contextPtr);
   }
 
   /** Initializes all function bindings. */
@@ -1002,17 +934,18 @@ public final class NativeFunctionBindings {
 
     // Additional Store functions
     addFunctionBinding(
-        "wasmtime4j_store_create_with_config",
+        "wasmtime4j_store_set_fuel",
         FunctionDescriptor.of(
             ValueLayout.JAVA_INT,
-            ValueLayout.ADDRESS, // engine_ptr
-            ValueLayout.JAVA_LONG, // fuel_limit
-            ValueLayout.JAVA_LONG, // memory_limit_bytes
-            ValueLayout.JAVA_LONG, // execution_timeout_secs
-            ValueLayout.JAVA_INT, // max_instances
-            ValueLayout.JAVA_INT, // max_table_elements
-            ValueLayout.JAVA_INT, // max_functions
-            ValueLayout.ADDRESS)); // store_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.JAVA_LONG)); // fuel
+
+    addFunctionBinding(
+        "wasmtime4j_store_get_fuel",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.ADDRESS)); // fuel_out_ptr
 
     addFunctionBinding(
         "wasmtime4j_store_add_fuel",
@@ -1022,21 +955,6 @@ public final class NativeFunctionBindings {
             ValueLayout.JAVA_LONG)); // fuel
 
     addFunctionBinding(
-        "wasmtime4j_store_get_fuel_remaining",
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_INT,
-            ValueLayout.ADDRESS, // store_ptr
-            ValueLayout.ADDRESS)); // fuel_ptr
-
-    addFunctionBinding(
-        "wasmtime4j_store_consume_fuel",
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_INT,
-            ValueLayout.ADDRESS, // store_ptr
-            ValueLayout.JAVA_LONG, // fuel_to_consume
-            ValueLayout.ADDRESS)); // fuel_consumed_ptr
-
-    addFunctionBinding(
         "wasmtime4j_store_set_epoch_deadline",
         FunctionDescriptor.of(
             ValueLayout.JAVA_INT,
@@ -1044,13 +962,7 @@ public final class NativeFunctionBindings {
             ValueLayout.JAVA_LONG)); // ticks
 
     addFunctionBinding(
-        "wasmtime4j_store_garbage_collect",
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_INT,
-            ValueLayout.ADDRESS)); // store_ptr
-
-    addFunctionBinding(
-        "wasmtime4j_store_validate",
+        "wasmtime4j_store_gc",
         FunctionDescriptor.of(
             ValueLayout.JAVA_INT,
             ValueLayout.ADDRESS)); // store_ptr
@@ -1061,8 +973,8 @@ public final class NativeFunctionBindings {
             ValueLayout.JAVA_INT,
             ValueLayout.ADDRESS, // store_ptr
             ValueLayout.ADDRESS, // execution_count_ptr
-            ValueLayout.ADDRESS, // total_execution_time_ms_ptr
-            ValueLayout.ADDRESS)); // fuel_consumed_ptr
+            ValueLayout.ADDRESS, // fuel_consumed_ptr
+            ValueLayout.ADDRESS)); // total_execution_time_ns_ptr
 
     addFunctionBinding(
         "wasmtime4j_store_get_memory_usage",
@@ -1074,14 +986,10 @@ public final class NativeFunctionBindings {
             ValueLayout.ADDRESS)); // instance_count_ptr
 
     addFunctionBinding(
-        "wasmtime4j_store_get_metadata",
+        "wasmtime4j_store_validate",
         FunctionDescriptor.of(
             ValueLayout.JAVA_INT,
-            ValueLayout.ADDRESS, // store_ptr
-            ValueLayout.ADDRESS, // fuel_limit_ptr
-            ValueLayout.ADDRESS, // memory_limit_bytes_ptr
-            ValueLayout.ADDRESS, // execution_timeout_secs_ptr
-            ValueLayout.ADDRESS)); // instance_count_ptr
+            ValueLayout.ADDRESS)); // store_ptr
 
     // Instance functions
     addFunctionBinding(
@@ -1095,6 +1003,21 @@ public final class NativeFunctionBindings {
     addFunctionBinding(
         "wasmtime4j_instance_destroy", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
+    addFunctionBinding(
+        "wasmtime4j_instance_exports_len",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG, // return export count
+            ValueLayout.ADDRESS)); // instance_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_instance_export_nth",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_BOOLEAN, // return found
+            ValueLayout.ADDRESS, // instance_ptr
+            ValueLayout.JAVA_LONG, // index
+            ValueLayout.ADDRESS, // name_out_ptr
+            ValueLayout.ADDRESS)); // export_out_ptr
+
     // Table functions
     addFunctionBinding(
         "wasmtime4j_table_size",
@@ -1105,28 +1028,48 @@ public final class NativeFunctionBindings {
     addFunctionBinding(
         "wasmtime4j_table_get",
         FunctionDescriptor.of(
-            ValueLayout.ADDRESS, // return element
+            ValueLayout.JAVA_INT, // return code
             ValueLayout.ADDRESS, // table_ptr
-            ValueLayout.JAVA_LONG)); // index
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.JAVA_INT, // index
+            ValueLayout.ADDRESS, // ref_id_present out param
+            ValueLayout.ADDRESS)); // ref_id out param
 
     addFunctionBinding(
         "wasmtime4j_table_set",
         FunctionDescriptor.of(
-            ValueLayout.JAVA_BOOLEAN, // return success
+            ValueLayout.JAVA_INT, // return code
             ValueLayout.ADDRESS, // table_ptr
-            ValueLayout.JAVA_LONG, // index
-            ValueLayout.ADDRESS)); // element_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.JAVA_INT, // index
+            ValueLayout.JAVA_INT, // element_type
+            ValueLayout.JAVA_INT, // ref_id_present
+            ValueLayout.JAVA_LONG)); // ref_id
 
     addFunctionBinding(
         "wasmtime4j_table_grow",
         FunctionDescriptor.of(
-            ValueLayout.JAVA_BOOLEAN, // return success
+            ValueLayout.JAVA_INT, // return code
             ValueLayout.ADDRESS, // table_ptr
-            ValueLayout.JAVA_LONG, // delta
-            ValueLayout.ADDRESS)); // initial_value
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.JAVA_INT, // elements
+            ValueLayout.JAVA_INT, // element_type
+            ValueLayout.JAVA_INT, // ref_id_present
+            ValueLayout.JAVA_LONG)); // ref_id
 
     addFunctionBinding(
         "wasmtime4j_table_destroy", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // table_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_table_metadata",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // table_ptr
+            ValueLayout.ADDRESS, // element_type out param
+            ValueLayout.ADDRESS, // initial_size out param
+            ValueLayout.ADDRESS, // has_maximum out param
+            ValueLayout.ADDRESS, // maximum_size out param
+            ValueLayout.ADDRESS)); // name_ptr out param
 
     // Host function bindings
     addFunctionBinding(
@@ -1212,6 +1155,84 @@ public final class NativeFunctionBindings {
         "wasmtime4j_component_instance_destroy",
         FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // instance_ptr
 
+    // Global functions
+    addFunctionBinding(
+        "wasmtime_global_get",
+        FunctionDescriptor.ofVoid(
+            ValueLayout.ADDRESS, // global
+            ValueLayout.ADDRESS)); // value (out)
+
+    addFunctionBinding(
+        "wasmtime_global_set",
+        FunctionDescriptor.ofVoid(
+            ValueLayout.ADDRESS, // global
+            ValueLayout.ADDRESS)); // value
+
+    addFunctionBinding(
+        "wasmtime_global_type",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, // return global type
+            ValueLayout.ADDRESS)); // global
+
+    addFunctionBinding(
+        "wasmtime4j_global_create_mutable",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return result code
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.JAVA_INT, // value_type
+            ValueLayout.ADDRESS, // initial_value
+            ValueLayout.ADDRESS)); // global_ptr (out)
+
+    addFunctionBinding(
+        "wasmtime4j_global_create_immutable",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return result code
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.JAVA_INT, // value_type
+            ValueLayout.ADDRESS, // initial_value
+            ValueLayout.ADDRESS)); // global_ptr (out)
+
+    addFunctionBinding(
+        "wasmtime4j_global_destroy",
+        FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // global_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_global_get_type_info",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return result code
+            ValueLayout.ADDRESS, // global
+            ValueLayout.ADDRESS, // type_info (out)
+            ValueLayout.ADDRESS)); // mutability (out)
+
+    // Cross-module global sharing functions
+    addFunctionBinding(
+        "wasmtime4j_global_register_shared",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return result code
+            ValueLayout.ADDRESS, // global
+            ValueLayout.ADDRESS, // name
+            ValueLayout.ADDRESS)); // registry
+
+    addFunctionBinding(
+        "wasmtime4j_global_lookup_shared",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, // return global or null
+            ValueLayout.ADDRESS, // name
+            ValueLayout.ADDRESS)); // registry
+
+    // Zero-copy global access functions
+    addFunctionBinding(
+        "wasmtime4j_global_get_direct_access",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, // return direct pointer or null
+            ValueLayout.ADDRESS)); // global
+
+    addFunctionBinding(
+        "wasmtime4j_global_release_direct_access",
+        FunctionDescriptor.ofVoid(
+            ValueLayout.ADDRESS, // global
+            ValueLayout.ADDRESS)); // direct_ptr
+
     // Error handling functions
     addFunctionBinding(
         "wasmtime4j_get_last_error_message",
@@ -1224,149 +1245,6 @@ public final class NativeFunctionBindings {
     addFunctionBinding(
         "wasmtime4j_clear_error_state",
         FunctionDescriptor.ofVoid()); // no parameters
-
-    // WASI function bindings
-    addFunctionBinding("wasi_ctx_new", FunctionDescriptor.of(ValueLayout.ADDRESS));
-
-    addFunctionBinding(
-        "wasi_ctx_new_with_config",
-        FunctionDescriptor.of(
-            ValueLayout.ADDRESS, // return context_ptr
-            ValueLayout.JAVA_INT, // allow_network
-            ValueLayout.JAVA_INT, // allow_arbitrary_fs
-            ValueLayout.JAVA_LONG, // max_file_size
-            ValueLayout.JAVA_INT)); // max_open_files
-
-    addFunctionBinding(
-        "wasi_ctx_add_dir",
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_INT, // return error code
-            ValueLayout.ADDRESS, // context_ptr
-            ValueLayout.ADDRESS, // host_path
-            ValueLayout.ADDRESS, // guest_path
-            ValueLayout.JAVA_INT, // can_create
-            ValueLayout.JAVA_INT, // can_read
-            ValueLayout.JAVA_INT, // can_remove
-            ValueLayout.JAVA_INT, // file_read
-            ValueLayout.JAVA_INT, // file_write
-            ValueLayout.JAVA_INT, // file_create
-            ValueLayout.JAVA_INT)); // file_truncate
-
-    addFunctionBinding(
-        "wasi_ctx_set_env",
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_INT, // return error code
-            ValueLayout.ADDRESS, // context_ptr
-            ValueLayout.ADDRESS, // key
-            ValueLayout.ADDRESS)); // value
-
-    addFunctionBinding(
-        "wasi_ctx_set_args",
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_INT, // return error code
-            ValueLayout.ADDRESS, // context_ptr
-            ValueLayout.ADDRESS, // args array
-            ValueLayout.JAVA_LONG)); // args_len
-
-    addFunctionBinding(
-        "wasi_ctx_configure_stdio",
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_INT, // return error code
-            ValueLayout.ADDRESS, // context_ptr
-            ValueLayout.JAVA_INT, // stdin_type
-            ValueLayout.ADDRESS, // stdin_data
-            ValueLayout.JAVA_INT, // stdout_type
-            ValueLayout.ADDRESS, // stdout_data
-            ValueLayout.JAVA_INT, // stderr_type
-            ValueLayout.ADDRESS)); // stderr_data
-
-    addFunctionBinding(
-        "wasi_ctx_is_path_allowed",
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_INT, // return allowed flag
-            ValueLayout.ADDRESS, // context_ptr
-            ValueLayout.ADDRESS)); // path
-
-    addFunctionBinding(
-        "wasi_ctx_get_dir_count",
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_LONG, // return count
-            ValueLayout.ADDRESS)); // context_ptr
-
-    addFunctionBinding(
-        "wasi_ctx_get_env_count",
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_LONG, // return count
-            ValueLayout.ADDRESS)); // context_ptr
-
-    addFunctionBinding(
-        "wasi_ctx_get_args_count",
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_LONG, // return count
-            ValueLayout.ADDRESS)); // context_ptr
-
-    addFunctionBinding(
-        "wasi_ctx_destroy", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // context_ptr
-
-    // Function operation bindings
-    addFunctionBinding(
-        "wasmtime4j_func_get",
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_INT, // return error code
-            ValueLayout.ADDRESS, // instance_ptr
-            ValueLayout.ADDRESS, // store_ptr
-            ValueLayout.ADDRESS, // name
-            ValueLayout.ADDRESS)); // func_ptr (output)
-
-    addFunctionBinding(
-        "wasmtime4j_func_get_param_types",
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_INT, // return error code
-            ValueLayout.ADDRESS, // func_ptr
-            ValueLayout.ADDRESS, // store_ptr
-            ValueLayout.ADDRESS, // types_ptr (output)
-            ValueLayout.ADDRESS)); // count_ptr (output)
-
-    addFunctionBinding(
-        "wasmtime4j_func_get_result_types",
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_INT, // return error code
-            ValueLayout.ADDRESS, // func_ptr
-            ValueLayout.ADDRESS, // store_ptr
-            ValueLayout.ADDRESS, // types_ptr (output)
-            ValueLayout.ADDRESS)); // count_ptr (output)
-
-    addFunctionBinding(
-        "wasmtime4j_func_call",
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_INT, // return error code
-            ValueLayout.ADDRESS, // func_ptr
-            ValueLayout.ADDRESS, // store_ptr
-            ValueLayout.ADDRESS, // params_ptr
-            ValueLayout.JAVA_LONG, // param_count
-            ValueLayout.ADDRESS, // results_ptr
-            ValueLayout.JAVA_LONG)); // result_count
-
-    addFunctionBinding(
-        "wasmtime4j_func_type",
-        FunctionDescriptor.of(
-            ValueLayout.ADDRESS, // return func_type_ptr
-            ValueLayout.ADDRESS, // func_ptr
-            ValueLayout.ADDRESS)); // store_ptr
-
-    addFunctionBinding(
-        "wasmtime4j_func_type_destroy",
-        FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // func_type_ptr
-
-    addFunctionBinding(
-        "wasmtime4j_func_free_types_array",
-        FunctionDescriptor.ofVoid(
-            ValueLayout.ADDRESS, // types_ptr
-            ValueLayout.JAVA_LONG)); // count
-
-    addFunctionBinding(
-        "wasmtime4j_func_destroy",
-        FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // func_ptr
   }
 
   /**

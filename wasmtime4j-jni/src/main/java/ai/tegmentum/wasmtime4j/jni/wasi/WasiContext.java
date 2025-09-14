@@ -256,4 +256,75 @@ public final class WasiContext extends JniResource {
   static native long nativeCreate(
       String[] environment, String[] arguments, String[] preopenDirs, String workingDir)
       throws JniException;
+
+  /**
+   * Native method to add a directory mapping to the WASI context.
+   *
+   * @param handle the native handle for the WASI context
+   * @param hostPath the host filesystem path
+   * @param guestPath the guest filesystem path
+   * @param canRead whether reading is allowed
+   * @param canWrite whether writing is allowed  
+   * @param canCreate whether file creation is allowed
+   * @return true if successful, false otherwise
+   * @throws JniException if the operation fails
+   */
+  static native boolean nativeAddDirectory(
+      long handle, String hostPath, String guestPath, 
+      boolean canRead, boolean canWrite, boolean canCreate)
+      throws JniException;
+
+  /**
+   * Native method to set an environment variable in the WASI context.
+   *
+   * @param handle the native handle for the WASI context
+   * @param key the environment variable key
+   * @param value the environment variable value
+   * @return true if successful, false otherwise
+   * @throws JniException if the operation fails
+   */
+  static native boolean nativeSetEnvironmentVariable(
+      long handle, String key, String value)
+      throws JniException;
+
+  /**
+   * Native method to check if a path is allowed by the WASI context.
+   *
+   * @param handle the native handle for the WASI context
+   * @param path the path to check
+   * @return true if allowed, false otherwise
+   * @throws JniException if the operation fails
+   */
+  static native boolean nativeIsPathAllowed(long handle, String path)
+      throws JniException;
+
+  /**
+   * Native method to get the number of environment variables.
+   *
+   * @param handle the native handle for the WASI context
+   * @return the number of environment variables
+   * @throws JniException if the operation fails
+   */
+  static native int nativeGetEnvironmentCount(long handle)
+      throws JniException;
+
+  /**
+   * Native method to get the number of command line arguments.
+   *
+   * @param handle the native handle for the WASI context
+   * @return the number of arguments
+   * @throws JniException if the operation fails
+   */
+  static native int nativeGetArgumentCount(long handle)
+      throws JniException;
+
+  /**
+   * Native method to get the number of directory mappings.
+   *
+   * @param handle the native handle for the WASI context
+   * @return the number of directory mappings
+   * @throws JniException if the operation fails
+   */
+  static native int nativeGetDirectoryCount(long handle)
+      throws JniException;
 }

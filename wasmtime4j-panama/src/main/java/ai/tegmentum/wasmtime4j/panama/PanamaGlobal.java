@@ -225,6 +225,358 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
     return MemoryLayouts.valkindToString(type);
   }
 
+  /**
+   * Gets comprehensive metadata about this global.
+   *
+   * @return global metadata object containing detailed information
+   * @throws WasmException if metadata cannot be retrieved
+   */
+  public GlobalMetadata getMetadata() throws WasmException {
+    ensureNotClosed();
+
+    try {
+      int type = getValueType();
+      boolean mutableFlag = isMutable();
+      String typeName = MemoryLayouts.valkindToString(type);
+      
+      // Get current value for metadata
+      WasmValue currentValue = get();
+      
+      return new GlobalMetadata(type, typeName, mutableFlag, currentValue);
+    } catch (Exception e) {
+      throw new WasmException("Failed to retrieve global metadata", e);
+    }
+  }
+
+  /**
+   * Checks if this global supports zero-copy direct access.
+   *
+   * @return true if zero-copy access is available, false otherwise
+   * @throws WasmException if direct access check fails
+   */
+  public boolean supportsDirectAccess() throws WasmException {
+    ensureNotClosed();
+
+    try {
+      MemorySegment directPtr = nativeFunctions.globalGetDirectAccess(globalResource.getNativePointer());
+      if (directPtr != null && !directPtr.equals(MemorySegment.NULL)) {
+        // Release the direct access immediately after checking
+        nativeFunctions.globalReleaseDirectAccess(globalResource.getNativePointer(), directPtr);
+        return true;
+      }
+      return false;
+    } catch (Exception e) {
+      LOGGER.warning("Direct access check failed: " + e.getMessage());
+      return false;
+    }
+  }
+
+  /**
+   * Gets detailed type information including size and alignment.
+   *
+   * @return type information object
+   * @throws WasmException if type information cannot be retrieved
+   */
+  public TypeInfo getDetailedTypeInfo() throws WasmException {
+    ensureNotClosed();
+
+    try {
+      int type = getValueType();
+      String typeName = MemoryLayouts.valkindToString(type);
+      
+      // Calculate size and alignment based on WebAssembly type
+      int size = getTypeSize(type);
+      int alignment = getTypeAlignment(type);
+      boolean isNumeric = isNumericType(type);
+      boolean isReference = isReferenceType(type);
+      
+      return new TypeInfo(type, typeName, size, alignment, isNumeric, isReference);
+    } catch (Exception e) {
+      throw new WasmException("Failed to retrieve detailed type information", e);
+    }
+  }
+
+  /**
+   * Gets the memory size requirements for this global's value type.
+   *
+   * @param wasmType the WebAssembly type constant
+   * @return size in bytes
+   */
+  private int getTypeSize(final int wasmType) {
+    return switch (wasmType) {
+      case MemoryLayouts.WASM_I32, MemoryLayouts.WASM_F32 -> 4;
+      case MemoryLayouts.WASM_I64, MemoryLayouts.WASM_F64 -> 8;
+      case MemoryLayouts.WASM_ANYREF, MemoryLayouts.WASM_FUNCREF -> 8; // Pointer size
+      default -> 4; // Default to 4 bytes
+    };
+  }
+
+  /**
+   * Gets the memory alignment requirements for this global's value type.
+   *
+   * @param wasmType the WebAssembly type constant
+   * @return alignment in bytes
+   */
+  private int getTypeAlignment(final int wasmType) {
+    return switch (wasmType) {
+      case MemoryLayouts.WASM_I32, MemoryLayouts.WASM_F32 -> 4;
+      case MemoryLayouts.WASM_I64, MemoryLayouts.WASM_F64 -> 8;
+      case MemoryLayouts.WASM_ANYREF, MemoryLayouts.WASM_FUNCREF -> 8; // Pointer alignment
+      default -> 4; // Default to 4-byte alignment
+    };
+  }
+
+  /**
+   * Checks if the given WebAssembly type is numeric.
+   *
+   * @param wasmType the WebAssembly type constant
+   * @return true if numeric type
+   */
+  private boolean isNumericType(final int wasmType) {
+    return wasmType == MemoryLayouts.WASM_I32 
+        || wasmType == MemoryLayouts.WASM_I64
+        || wasmType == MemoryLayouts.WASM_F32 
+        || wasmType == MemoryLayouts.WASM_F64;
+  }
+
+  /**
+   * Checks if the given WebAssembly type is a reference type.
+   *
+   * @param wasmType the WebAssembly type constant
+   * @return true if reference type
+   */
+  private boolean isReferenceType(final int wasmType) {
+    return wasmType == MemoryLayouts.WASM_ANYREF || wasmType == MemoryLayouts.WASM_FUNCREF;
+  }
+
+  // Zero-copy access methods for performance optimization
+
+  /**
+   * Gets a direct access handle to this global's value for zero-copy operations.
+   * This method provides high-performance access to global values by bypassing
+   * marshalling/unmarshalling overhead.
+   *
+   * @return direct access handle, or null if not supported
+   * @throws WasmException if direct access cannot be obtained
+   */
+  public DirectGlobalAccess getDirectAccess() throws WasmException {
+    ensureNotClosed();
+
+    try {
+      MemorySegment directPtr = nativeFunctions.globalGetDirectAccess(globalResource.getNativePointer());
+      if (directPtr == null || directPtr.equals(MemorySegment.NULL)) {
+        return null; // Direct access not supported for this global
+      }
+
+      int type = getValueType();
+      return new DirectGlobalAccess(this, directPtr, type, resourceManager);
+    } catch (Exception e) {
+      throw new WasmException("Failed to obtain direct access to global", e);
+    }
+  }
+
+  /**
+   * Performs a zero-copy get operation for numeric globals.
+   * This bypasses WasmValue creation for better performance.
+   *
+   * @return the raw numeric value, or null if not a numeric type
+   * @throws WasmException if zero-copy get fails
+   */
+  public Object getZeroCopy() throws WasmException {
+    ensureNotClosed();
+
+    try (DirectGlobalAccess directAccess = getDirectAccess()) {
+      if (directAccess == null) {
+        // Fall back to regular get if direct access not available
+        WasmValue value = get();
+        return extractRawValue(value);
+      }
+
+      return directAccess.readRawValue();
+    } catch (Exception e) {
+      throw new WasmException("Zero-copy get operation failed", e);
+    }
+  }
+
+  /**
+   * Performs a zero-copy set operation for numeric globals.
+   * This bypasses WasmValue marshalling for better performance.
+   *
+   * @param rawValue the raw numeric value to set
+   * @throws WasmException if zero-copy set fails
+   */
+  public void setZeroCopy(final Object rawValue) throws WasmException {
+    ensureNotClosed();
+
+    if (!isMutable()) {
+      throw new UnsupportedOperationException("Cannot set value of immutable global");
+    }
+
+    try (DirectGlobalAccess directAccess = getDirectAccess()) {
+      if (directAccess == null) {
+        // Fall back to regular set if direct access not available
+        WasmValue wasmValue = createWasmValueFromRaw(rawValue);
+        set(wasmValue);
+        return;
+      }
+
+      directAccess.writeRawValue(rawValue);
+    } catch (Exception e) {
+      throw new WasmException("Zero-copy set operation failed", e);
+    }
+  }
+
+  /**
+   * Extracts raw value from WasmValue for zero-copy operations.
+   *
+   * @param wasmValue the WasmValue to extract from
+   * @return the raw value
+   */
+  private Object extractRawValue(final WasmValue wasmValue) {
+    return switch (wasmValue.getType()) {
+      case I32 -> wasmValue.asI32();
+      case I64 -> wasmValue.asI64();
+      case F32 -> wasmValue.asF32();
+      case F64 -> wasmValue.asF64();
+      case EXTERNREF, FUNCREF -> null; // References not supported for zero-copy
+    };
+  }
+
+  /**
+   * Creates WasmValue from raw value for fallback operations.
+   *
+   * @param rawValue the raw value
+   * @return the WasmValue
+   */
+  private WasmValue createWasmValueFromRaw(final Object rawValue) throws WasmException {
+    int type = getValueType();
+    
+    return switch (type) {
+      case MemoryLayouts.WASM_I32 -> {
+        if (rawValue instanceof Integer) {
+          yield WasmValue.i32((Integer) rawValue);
+        }
+        throw new IllegalArgumentException("Expected Integer for i32 global, got " + rawValue.getClass());
+      }
+      case MemoryLayouts.WASM_I64 -> {
+        if (rawValue instanceof Long) {
+          yield WasmValue.i64((Long) rawValue);
+        }
+        throw new IllegalArgumentException("Expected Long for i64 global, got " + rawValue.getClass());
+      }
+      case MemoryLayouts.WASM_F32 -> {
+        if (rawValue instanceof Float) {
+          yield WasmValue.f32((Float) rawValue);
+        }
+        throw new IllegalArgumentException("Expected Float for f32 global, got " + rawValue.getClass());
+      }
+      case MemoryLayouts.WASM_F64 -> {
+        if (rawValue instanceof Double) {
+          yield WasmValue.f64((Double) rawValue);
+        }
+        throw new IllegalArgumentException("Expected Double for f64 global, got " + rawValue.getClass());
+      }
+      default -> throw new UnsupportedOperationException("Zero-copy not supported for type: " + type);
+    };
+  }
+
+  // Cross-module sharing functionality
+
+  /**
+   * Registers this global for cross-module sharing with the given name.
+   * This allows other modules to access this global by name.
+   *
+   * @param name the name to register this global under
+   * @param registry the global registry to use
+   * @throws WasmException if registration fails
+   */
+  public void registerForSharing(final String name, final GlobalRegistry registry) throws WasmException {
+    ensureNotClosed();
+    Objects.requireNonNull(name, "name cannot be null");
+    Objects.requireNonNull(registry, "registry cannot be null");
+
+    try {
+      ArenaResourceManager.ManagedMemorySegment nameSegment = 
+          resourceManager.allocateString(name);
+      
+      int result = nativeFunctions.globalRegisterShared(
+          globalResource.getNativePointer(),
+          nameSegment.getSegment(),
+          registry.getRegistryPointer());
+
+      PanamaErrorHandler.safeCheckError(
+          result, "Global registration", "Failed to register global for sharing: " + name);
+
+      LOGGER.fine("Successfully registered global for sharing with name: " + name);
+    } catch (Exception e) {
+      throw new WasmException("Failed to register global for cross-module sharing", e);
+    }
+  }
+
+  /**
+   * Unregisters this global from cross-module sharing.
+   * This removes the global from any registry it was registered with.
+   *
+   * @param name the name this global was registered under
+   * @param registry the global registry to unregister from
+   * @throws WasmException if unregistration fails
+   */
+  public void unregisterFromSharing(final String name, final GlobalRegistry registry) throws WasmException {
+    ensureNotClosed();
+    Objects.requireNonNull(name, "name cannot be null");
+    Objects.requireNonNull(registry, "registry cannot be null");
+
+    try {
+      registry.unregisterGlobal(name);
+      LOGGER.fine("Successfully unregistered global from sharing: " + name);
+    } catch (Exception e) {
+      throw new WasmException("Failed to unregister global from cross-module sharing", e);
+    }
+  }
+
+  /**
+   * Checks if this global is compatible for sharing with another global.
+   * Globals must have the same type and mutability to be shareable.
+   *
+   * @param other the other global to check compatibility with
+   * @return true if compatible for sharing
+   */
+  public boolean isCompatibleForSharing(final PanamaGlobal other) {
+    if (other == null || other.isClosed() || this.isClosed()) {
+      return false;
+    }
+
+    try {
+      return this.getValueType() == other.getValueType() 
+          && this.isMutable() == other.isMutable();
+    } catch (Exception e) {
+      LOGGER.warning("Failed to check global compatibility: " + e.getMessage());
+      return false;
+    }
+  }
+
+  /**
+   * Creates a shared reference to this global that can be passed between modules.
+   * The shared reference maintains the same value and mutability characteristics.
+   *
+   * @return a shared global reference
+   * @throws WasmException if shared reference creation fails
+   */
+  public SharedGlobalReference createSharedReference() throws WasmException {
+    ensureNotClosed();
+
+    try {
+      int type = getValueType();
+      boolean mutableFlag = isMutable();
+      WasmValue currentValue = get();
+      
+      return new SharedGlobalReference(
+          this, type, mutableFlag, currentValue, resourceManager);
+    } catch (Exception e) {
+      throw new WasmException("Failed to create shared global reference", e);
+    }
+  }
+
   @Override
   public void close() {
     if (closed) {
@@ -273,8 +625,44 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
 
   // Private helper methods for global operations
 
-  /** Initializes global type metadata by querying the native global. */
+  /** Initializes global type metadata by querying the native global using enhanced introspection. */
   private void initializeGlobalType() throws WasmException {
+    try {
+      // Use enhanced type introspection function for better performance
+      ArenaResourceManager.ManagedMemorySegment typeInfoPtr =
+          resourceManager.allocate(MemoryLayouts.C_INT);
+      ArenaResourceManager.ManagedMemorySegment mutabilityPtr =
+          resourceManager.allocate(MemoryLayouts.C_INT);
+
+      int result = nativeFunctions.globalGetTypeInfo(
+          globalResource.getNativePointer(),
+          typeInfoPtr.getSegment(),
+          mutabilityPtr.getSegment());
+
+      if (result == 0) {
+        // Extract type info and mutability from optimized introspection
+        this.valueType = (Integer) MemoryLayouts.C_INT.varHandle().get(typeInfoPtr.getSegment(), 0);
+        int mutabilityValue = (Integer) MemoryLayouts.C_INT.varHandle().get(mutabilityPtr.getSegment(), 0);
+        this.mutable = mutabilityValue != 0;
+
+        LOGGER.fine(
+            "Initialized global type via enhanced introspection: type="
+                + MemoryLayouts.valkindToString(valueType)
+                + ", mutable="
+                + mutable);
+      } else {
+        // Fall back to legacy type extraction method
+        LOGGER.fine("Enhanced introspection failed, falling back to legacy method");
+        initializeGlobalTypeLegacy();
+      }
+
+    } catch (Throwable e) {
+      throw new WasmException("Failed to initialize global type", e);
+    }
+  }
+
+  /** Legacy fallback method for global type initialization. */
+  private void initializeGlobalTypeLegacy() throws WasmException {
     try {
       // Get global type through FFI
       MemorySegment globalTypePtr = getGlobalType();
@@ -284,13 +672,13 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
       this.mutable = extractMutability(globalTypePtr);
 
       LOGGER.fine(
-          "Initialized global type: type="
+          "Initialized global type via legacy method: type="
               + MemoryLayouts.valkindToString(valueType)
               + ", mutable="
               + mutable);
 
     } catch (Throwable e) {
-      throw new WasmException("Failed to initialize global type", e);
+      throw new WasmException("Failed to initialize global type via legacy method", e);
     }
   }
 
@@ -510,6 +898,372 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
   private void ensureNotClosed() {
     if (closed) {
       throw new IllegalStateException("Global has been closed");
+    }
+  }
+
+  /**
+   * Global metadata information container.
+   */
+  public static final class GlobalMetadata {
+    private final int typeValue;
+    private final String typeName;
+    private final boolean mutable;
+    private final WasmValue currentValue;
+
+    /**
+     * Creates global metadata.
+     *
+     * @param typeValue the WebAssembly type constant
+     * @param typeName the human-readable type name
+     * @param mutable whether the global is mutable
+     * @param currentValue the current value of the global
+     */
+    public GlobalMetadata(final int typeValue, final String typeName, final boolean mutable, final WasmValue currentValue) {
+      this.typeValue = typeValue;
+      this.typeName = Objects.requireNonNull(typeName, "typeName cannot be null");
+      this.mutable = mutable;
+      this.currentValue = Objects.requireNonNull(currentValue, "currentValue cannot be null");
+    }
+
+    /**
+     * Gets the WebAssembly type constant.
+     *
+     * @return the type value
+     */
+    public int getTypeValue() {
+      return typeValue;
+    }
+
+    /**
+     * Gets the human-readable type name.
+     *
+     * @return the type name
+     */
+    public String getTypeName() {
+      return typeName;
+    }
+
+    /**
+     * Checks if the global is mutable.
+     *
+     * @return true if mutable
+     */
+    public boolean isMutable() {
+      return mutable;
+    }
+
+    /**
+     * Gets the current value of the global.
+     *
+     * @return the current value
+     */
+    public WasmValue getCurrentValue() {
+      return currentValue;
+    }
+
+    @Override
+    public String toString() {
+      return String.format("GlobalMetadata{type=%s(%d), mutable=%s, value=%s}", 
+          typeName, typeValue, mutable, currentValue);
+    }
+
+    @Override
+    public boolean equals(final Object obj) {
+      if (this == obj) return true;
+      if (obj == null || getClass() != obj.getClass()) return false;
+      GlobalMetadata that = (GlobalMetadata) obj;
+      return typeValue == that.typeValue 
+          && mutable == that.mutable 
+          && Objects.equals(typeName, that.typeName) 
+          && Objects.equals(currentValue, that.currentValue);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(typeValue, typeName, mutable, currentValue);
+    }
+  }
+
+  /**
+   * Detailed type information container.
+   */
+  public static final class TypeInfo {
+    private final int typeValue;
+    private final String typeName;
+    private final int size;
+    private final int alignment;
+    private final boolean numeric;
+    private final boolean reference;
+
+    /**
+     * Creates type information.
+     *
+     * @param typeValue the WebAssembly type constant
+     * @param typeName the human-readable type name
+     * @param size the size in bytes
+     * @param alignment the alignment requirement in bytes
+     * @param numeric whether it's a numeric type
+     * @param reference whether it's a reference type
+     */
+    public TypeInfo(final int typeValue, final String typeName, final int size, final int alignment, 
+                   final boolean numeric, final boolean reference) {
+      this.typeValue = typeValue;
+      this.typeName = Objects.requireNonNull(typeName, "typeName cannot be null");
+      this.size = size;
+      this.alignment = alignment;
+      this.numeric = numeric;
+      this.reference = reference;
+    }
+
+    /**
+     * Gets the WebAssembly type constant.
+     *
+     * @return the type value
+     */
+    public int getTypeValue() {
+      return typeValue;
+    }
+
+    /**
+     * Gets the human-readable type name.
+     *
+     * @return the type name
+     */
+    public String getTypeName() {
+      return typeName;
+    }
+
+    /**
+     * Gets the size in bytes.
+     *
+     * @return the size
+     */
+    public int getSize() {
+      return size;
+    }
+
+    /**
+     * Gets the alignment requirement in bytes.
+     *
+     * @return the alignment
+     */
+    public int getAlignment() {
+      return alignment;
+    }
+
+    /**
+     * Checks if this is a numeric type.
+     *
+     * @return true if numeric
+     */
+    public boolean isNumeric() {
+      return numeric;
+    }
+
+    /**
+     * Checks if this is a reference type.
+     *
+     * @return true if reference
+     */
+    public boolean isReference() {
+      return reference;
+    }
+
+    @Override
+    public String toString() {
+      return String.format("TypeInfo{type=%s(%d), size=%d, alignment=%d, numeric=%s, reference=%s}", 
+          typeName, typeValue, size, alignment, numeric, reference);
+    }
+
+    @Override
+    public boolean equals(final Object obj) {
+      if (this == obj) return true;
+      if (obj == null || getClass() != obj.getClass()) return false;
+      TypeInfo typeInfo = (TypeInfo) obj;
+      return typeValue == typeInfo.typeValue 
+          && size == typeInfo.size 
+          && alignment == typeInfo.alignment 
+          && numeric == typeInfo.numeric 
+          && reference == typeInfo.reference 
+          && Objects.equals(typeName, typeInfo.typeName);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(typeValue, typeName, size, alignment, numeric, reference);
+    }
+  }
+
+  /**
+   * Direct access handle for zero-copy global operations.
+   * This class provides high-performance access to global values by working
+   * directly with native memory without marshalling overhead.
+   */
+  public static final class DirectGlobalAccess implements AutoCloseable {
+    private final PanamaGlobal parentGlobal;
+    private final MemorySegment directPtr;
+    private final int wasmType;
+    private final ArenaResourceManager resourceManager;
+    private volatile boolean closed = false;
+
+    /**
+     * Creates a direct access handle.
+     *
+     * @param parentGlobal the parent global instance
+     * @param directPtr the direct access pointer from native code
+     * @param wasmType the WebAssembly type constant
+     * @param resourceManager the resource manager for memory operations
+     */
+    DirectGlobalAccess(final PanamaGlobal parentGlobal, final MemorySegment directPtr, 
+                      final int wasmType, final ArenaResourceManager resourceManager) {
+      this.parentGlobal = Objects.requireNonNull(parentGlobal, "parentGlobal cannot be null");
+      this.directPtr = Objects.requireNonNull(directPtr, "directPtr cannot be null");
+      this.wasmType = wasmType;
+      this.resourceManager = Objects.requireNonNull(resourceManager, "resourceManager cannot be null");
+    }
+
+    /**
+     * Reads the raw value directly from native memory.
+     *
+     * @return the raw value
+     * @throws IllegalStateException if access is closed
+     */
+    public Object readRawValue() {
+      ensureNotClosed();
+      
+      return switch (wasmType) {
+        case MemoryLayouts.WASM_I32 -> (Integer) ValueLayout.JAVA_INT.varHandle().get(directPtr, 0);
+        case MemoryLayouts.WASM_I64 -> (Long) ValueLayout.JAVA_LONG.varHandle().get(directPtr, 0);
+        case MemoryLayouts.WASM_F32 -> (Float) ValueLayout.JAVA_FLOAT.varHandle().get(directPtr, 0);
+        case MemoryLayouts.WASM_F64 -> (Double) ValueLayout.JAVA_DOUBLE.varHandle().get(directPtr, 0);
+        default -> throw new UnsupportedOperationException("Direct access not supported for type: " + wasmType);
+      };
+    }
+
+    /**
+     * Writes a raw value directly to native memory.
+     *
+     * @param rawValue the raw value to write
+     * @throws IllegalStateException if access is closed
+     * @throws UnsupportedOperationException if the global is immutable
+     */
+    public void writeRawValue(final Object rawValue) {
+      ensureNotClosed();
+      
+      if (!parentGlobal.isMutable()) {
+        throw new UnsupportedOperationException("Cannot write to immutable global");
+      }
+
+      switch (wasmType) {
+        case MemoryLayouts.WASM_I32:
+          if (!(rawValue instanceof Integer)) {
+            throw new IllegalArgumentException("Expected Integer for i32 global");
+          }
+          ValueLayout.JAVA_INT.varHandle().set(directPtr, 0, (Integer) rawValue);
+          break;
+        case MemoryLayouts.WASM_I64:
+          if (!(rawValue instanceof Long)) {
+            throw new IllegalArgumentException("Expected Long for i64 global");
+          }
+          ValueLayout.JAVA_LONG.varHandle().set(directPtr, 0, (Long) rawValue);
+          break;
+        case MemoryLayouts.WASM_F32:
+          if (!(rawValue instanceof Float)) {
+            throw new IllegalArgumentException("Expected Float for f32 global");
+          }
+          ValueLayout.JAVA_FLOAT.varHandle().set(directPtr, 0, (Float) rawValue);
+          break;
+        case MemoryLayouts.WASM_F64:
+          if (!(rawValue instanceof Double)) {
+            throw new IllegalArgumentException("Expected Double for f64 global");
+          }
+          ValueLayout.JAVA_DOUBLE.varHandle().set(directPtr, 0, (Double) rawValue);
+          break;
+        default:
+          throw new UnsupportedOperationException("Direct access not supported for type: " + wasmType);
+      }
+    }
+
+    /**
+     * Gets the WebAssembly type of this direct access handle.
+     *
+     * @return the WebAssembly type constant
+     */
+    public int getWasmType() {
+      return wasmType;
+    }
+
+    /**
+     * Checks if this direct access handle supports the given value type.
+     *
+     * @param valueClass the Java class to check
+     * @return true if supported
+     */
+    public boolean supports(final Class<?> valueClass) {
+      return switch (wasmType) {
+        case MemoryLayouts.WASM_I32 -> Integer.class.equals(valueClass);
+        case MemoryLayouts.WASM_I64 -> Long.class.equals(valueClass);
+        case MemoryLayouts.WASM_F32 -> Float.class.equals(valueClass);
+        case MemoryLayouts.WASM_F64 -> Double.class.equals(valueClass);
+        default -> false;
+      };
+    }
+
+    /**
+     * Closes this direct access handle and releases native resources.
+     */
+    @Override
+    public void close() {
+      if (closed) {
+        return;
+      }
+
+      synchronized (this) {
+        if (closed) {
+          return;
+        }
+
+        try {
+          // Release direct access through native function
+          NativeFunctionBindings nativeFunctions = NativeFunctionBindings.getInstance();
+          if (nativeFunctions.isInitialized()) {
+            nativeFunctions.globalReleaseDirectAccess(
+                parentGlobal.getGlobalHandle(), directPtr);
+          }
+        } catch (Exception e) {
+          // Log but don't throw during cleanup
+          Logger.getLogger(DirectGlobalAccess.class.getName())
+              .warning("Failed to release direct global access: " + e.getMessage());
+        } finally {
+          closed = true;
+        }
+      }
+    }
+
+    /**
+     * Checks if this direct access handle is closed.
+     *
+     * @return true if closed
+     */
+    public boolean isClosed() {
+      return closed || parentGlobal.closed;
+    }
+
+    /**
+     * Ensures this direct access handle is not closed.
+     *
+     * @throws IllegalStateException if closed
+     */
+    private void ensureNotClosed() {
+      if (isClosed()) {
+        throw new IllegalStateException("Direct global access has been closed");
+      }
+    }
+
+    @Override
+    public String toString() {
+      return String.format("DirectGlobalAccess{type=%s, closed=%s}", 
+          MemoryLayouts.valkindToString(wasmType), closed);
     }
   }
 }
