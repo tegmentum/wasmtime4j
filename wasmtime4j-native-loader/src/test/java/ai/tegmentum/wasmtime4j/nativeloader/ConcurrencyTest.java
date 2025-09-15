@@ -54,7 +54,6 @@ import org.junit.jupiter.params.provider.ValueSource;
  *   <li>Memory consistency guarantees
  * </ul>
  */
-
 final class ConcurrencyTest {
 
   private ExecutorService executorService;
@@ -81,7 +80,6 @@ final class ConcurrencyTest {
   }
 
   @Test
-
   @Timeout(10)
   void testConcurrentPlatformDetection() throws InterruptedException, ExecutionException {
     final int threadCount = 50;
@@ -113,7 +111,6 @@ final class ConcurrencyTest {
   }
 
   @Test
-
   @Timeout(10)
   void testConcurrentPlatformInfoAccess() throws InterruptedException, ExecutionException {
     final PlatformDetector.PlatformInfo platformInfo = PlatformDetector.detect();
@@ -159,7 +156,6 @@ final class ConcurrencyTest {
   }
 
   @Test
-
   @Timeout(15)
   void testCacheInitializationRaceConditions() throws InterruptedException {
     final int iterations = 10;
@@ -221,7 +217,6 @@ final class ConcurrencyTest {
 
   @ParameterizedTest
   @ValueSource(ints = {10, 25, 50, 100})
-
   @Timeout(20)
   void testVaryingConcurrentLoad(final int threadCount)
       throws InterruptedException, ExecutionException {
@@ -260,7 +255,6 @@ final class ConcurrencyTest {
   }
 
   @RepeatedTest(value = 5, name = "Stress test iteration {currentRepetition} of {totalRepetitions}")
-
   @Timeout(10)
   void testRepeatedConcurrentStress() throws InterruptedException {
     final int batchSize = 15;
@@ -299,7 +293,6 @@ final class ConcurrencyTest {
   }
 
   @Test
-
   @Timeout(10)
   void testMemoryConsistency() throws InterruptedException, ExecutionException {
     final int threadCount = 25;
@@ -336,7 +329,6 @@ final class ConcurrencyTest {
   }
 
   @Test
-
   @Timeout(10)
   void testConcurrentMethodVariants() throws InterruptedException, ExecutionException {
     final int threadCount = 30;
@@ -409,7 +401,6 @@ final class ConcurrencyTest {
   }
 
   @Test
-
   @Timeout(10)
   void testInterruptionHandling() throws InterruptedException {
     final CountDownLatch startLatch = new CountDownLatch(1);

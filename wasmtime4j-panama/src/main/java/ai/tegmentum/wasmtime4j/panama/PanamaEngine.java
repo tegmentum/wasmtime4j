@@ -263,30 +263,34 @@ public final class PanamaEngine implements Engine, AutoCloseable {
 
   private MemorySegment createNativeEngineWithRetry(int maxAttempts) throws WasmException {
     WasmException lastException = null;
-    
+
     for (int attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
-        LOGGER.fine("Attempting native engine creation (attempt " + attempt + "/" + maxAttempts + ")");
-        
+        LOGGER.fine(
+            "Attempting native engine creation (attempt " + attempt + "/" + maxAttempts + ")");
+
         // Clear any previous error state before attempting creation
         if (attempt > 1) {
           LOGGER.fine("Clearing native error state before retry");
           nativeFunctions.clearErrorState();
         }
-        
+
         MemorySegment enginePtr = nativeFunctions.engineCreate();
-        
+
         if (enginePtr == null || enginePtr.equals(MemorySegment.NULL)) {
           // Get detailed error message from native library
           String nativeError = getNativeErrorMessage();
-          String errorMessage = nativeError != null 
-              ? "Native engine creation failed: " + nativeError
-              : "Native engine creation returned null pointer";
-          
-          lastException = new WasmException(errorMessage + " (attempt " + attempt + "/" + maxAttempts + ")");
-          
+          String errorMessage =
+              nativeError != null
+                  ? "Native engine creation failed: " + nativeError
+                  : "Native engine creation returned null pointer";
+
+          lastException =
+              new WasmException(errorMessage + " (attempt " + attempt + "/" + maxAttempts + ")");
+
           if (attempt < maxAttempts) {
-            LOGGER.warning("Engine creation attempt " + attempt + " failed, retrying: " + errorMessage);
+            LOGGER.warning(
+                "Engine creation attempt " + attempt + " failed, retrying: " + errorMessage);
             // Add a small delay before retry to allow system state to settle
             try {
               Thread.sleep(10); // 10ms delay
@@ -299,28 +303,39 @@ public final class PanamaEngine implements Engine, AutoCloseable {
             throw lastException; // Final attempt failed
           }
         }
-        
-        LOGGER.fine("Successfully created native engine with pointer: " + enginePtr + " (attempt " + attempt + ")");
+
+        LOGGER.fine(
+            "Successfully created native engine with pointer: "
+                + enginePtr
+                + " (attempt "
+                + attempt
+                + ")");
         return enginePtr;
-        
+
       } catch (Exception e) {
         if (e instanceof WasmException) {
           lastException = (WasmException) e;
         } else {
-          String detailedMessage = PanamaErrorHandler.createDetailedErrorMessage(
-              "Native engine creation", "attempt " + attempt, e.getMessage());
+          String detailedMessage =
+              PanamaErrorHandler.createDetailedErrorMessage(
+                  "Native engine creation", "attempt " + attempt, e.getMessage());
           lastException = new WasmException(detailedMessage, e);
         }
-        
+
         if (attempt < maxAttempts) {
-          LOGGER.warning("Engine creation attempt " + attempt + " failed with exception, retrying: " + e.getMessage());
+          LOGGER.warning(
+              "Engine creation attempt "
+                  + attempt
+                  + " failed with exception, retrying: "
+                  + e.getMessage());
           continue;
         }
       }
     }
-    
+
     // If we get here, all attempts failed
-    throw lastException != null ? lastException 
+    throw lastException != null
+        ? lastException
         : new WasmException("Engine creation failed after " + maxAttempts + " attempts");
   }
 

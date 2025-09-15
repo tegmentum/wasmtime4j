@@ -31,7 +31,7 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
 @DisplayName("Module Validation Comprehensive Tests")
 class ModuleValidationIT extends BaseIntegrationTest {
 
-  private static final Logger LOGGER = Logger.getLogger(ModuleValidationTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(ModuleValidationIT.class.getName());
 
   private WasmTestDataManager testDataManager;
 

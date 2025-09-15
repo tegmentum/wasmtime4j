@@ -49,7 +49,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
    * @throws JniResourceException if this memory is closed
    * @throws RuntimeException if the size cannot be retrieved
    */
-  public long size() {
+  public long sizeInBytes() {
     ensureNotClosed();
     try {
       return nativeGetSize(getNativeHandle());
@@ -65,8 +65,19 @@ public final class JniMemory extends JniResource implements WasmMemory {
    * @throws IllegalStateException if this memory is closed
    * @throws RuntimeException if the size cannot be retrieved
    */
-  public long sizeInPages() {
-    return size() / 65536; // 64KB per page
+  public int size() {
+    return (int) (sizeInBytes() / 65536); // 64KB per page
+  }
+
+  /**
+   * Gets the current size of the memory in WebAssembly pages (64KB each).
+   *
+   * @return the memory size in pages
+   * @throws IllegalStateException if this memory is closed
+   * @throws RuntimeException if the size cannot be retrieved
+   */
+  public int sizeInPages() {
+    return size();
   }
 
   /**
@@ -291,7 +302,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
    * @throws IndexOutOfBoundsException if the range is invalid
    */
   private void validateOffset(final long offset, final long size) {
-    final long memorySize = size();
+    final long memorySize = sizeInBytes();
     if (offset + size > memorySize) {
       throw new IndexOutOfBoundsException(
           "Offset " + offset + " + size " + size + " exceeds memory size " + memorySize);

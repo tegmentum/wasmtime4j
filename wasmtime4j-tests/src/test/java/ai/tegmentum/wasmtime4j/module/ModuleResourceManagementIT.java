@@ -38,8 +38,7 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
 @DisplayName("Module Resource Management Tests")
 class ModuleResourceManagementIT extends BaseIntegrationTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(ModuleResourceManagementTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(ModuleResourceManagementIT.class.getName());
 
   private WasmTestDataManager testDataManager;
   private ExecutorService executorService;

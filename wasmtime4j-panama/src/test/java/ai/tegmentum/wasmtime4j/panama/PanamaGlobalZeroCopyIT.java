@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import ai.tegmentum.wasmtime4j.WasmValue;
-import ai.tegmentum.wasmtime4j.exception.WasmException;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -34,13 +34,14 @@ import org.junit.jupiter.api.condition.JRE;
 /**
  * Integration tests for Panama global zero-copy access functionality.
  *
- * <p>These tests verify that zero-copy global operations work correctly and provide
- * performance benefits when direct memory access is available.
+ * <p>These tests verify that zero-copy global operations work correctly and provide performance
+ * benefits when direct memory access is available.
  */
 @EnabledOnJre(JRE.JAVA_23)
 @DisplayName("Panama Global Zero-Copy Integration Tests")
 class PanamaGlobalZeroCopyIT {
 
+  private ArenaResourceManager resourceManager;
   private PanamaEngine engine;
   private PanamaStore store;
 
@@ -53,36 +54,52 @@ class PanamaGlobalZeroCopyIT {
 
   @BeforeEach
   void setUp() throws Exception {
-    engine = new PanamaEngine();
-    store = new PanamaStore(engine);
+    resourceManager = new ArenaResourceManager();
+    engine = new PanamaEngine(resourceManager);
+    store = (PanamaStore) engine.createStore();
+  }
+
+  @AfterEach
+  void tearDown() {
+    if (store != null) {
+      store.close();
+    }
+    if (engine != null) {
+      engine.close();
+    }
+    if (resourceManager != null) {
+      resourceManager.close();
+    }
   }
 
   @Test
   @DisplayName("Zero-copy get operation works for numeric globals")
   void testZeroCopyGet() throws Exception {
     byte[] wasmBytes = PanamaTestUtils.createModuleWithMutableI32Global(123);
-    
-    try (PanamaModule module = new PanamaModule(engine, wasmBytes);
-         PanamaInstance instance = store.instantiateModule(module)) {
+
+    try (PanamaModule module = (PanamaModule) engine.compileModule(wasmBytes);
+        PanamaInstance instance = store.instantiateModule(module)) {
 
       PanamaGlobal global = PanamaTestUtils.getGlobalFromInstance(instance, "test_global");
       assertNotNull(global, "Global should be exported from test module");
 
       // Test zero-copy get
-      assertDoesNotThrow(() -> {
-        Object rawValue = global.getZeroCopy();
-        
-        if (rawValue != null) {
-          // If zero-copy is supported, verify the value
-          assertThat(rawValue).isInstanceOf(Integer.class);
-          assertThat((Integer) rawValue).isEqualTo(123);
-        } else {
-          // If zero-copy is not supported, it falls back gracefully
-          // Verify fallback still works
-          WasmValue wasmValue = global.get();
-          assertThat(wasmValue.asI32()).isEqualTo(123);
-        }
-      }, "Zero-copy get should work or fallback gracefully");
+      assertDoesNotThrow(
+          () -> {
+            Object rawValue = global.getZeroCopy();
+
+            if (rawValue != null) {
+              // If zero-copy is supported, verify the value
+              assertThat(rawValue).isInstanceOf(Integer.class);
+              assertThat((Integer) rawValue).isEqualTo(123);
+            } else {
+              // If zero-copy is not supported, it falls back gracefully
+              // Verify fallback still works
+              WasmValue wasmValue = global.get();
+              assertThat(wasmValue.asI32()).isEqualTo(123);
+            }
+          },
+          "Zero-copy get should work or fallback gracefully");
     }
   }
 
@@ -90,22 +107,24 @@ class PanamaGlobalZeroCopyIT {
   @DisplayName("Zero-copy set operation works for mutable numeric globals")
   void testZeroCopySet() throws Exception {
     byte[] wasmBytes = PanamaTestUtils.createModuleWithMutableI32Global(456);
-    
-    try (PanamaModule module = new PanamaModule(engine, wasmBytes);
-         PanamaInstance instance = store.instantiateModule(module)) {
+
+    try (PanamaModule module = (PanamaModule) engine.compileModule(wasmBytes);
+        PanamaInstance instance = store.instantiateModule(module)) {
 
       PanamaGlobal global = PanamaTestUtils.getGlobalFromInstance(instance, "test_global");
       assertNotNull(global, "Global should be exported from test module");
       assertThat(global.isMutable()).isTrue();
 
       // Test zero-copy set
-      assertDoesNotThrow(() -> {
-        global.setZeroCopy(789);
-        
-        // Verify the value was set
-        WasmValue currentValue = global.get();
-        assertThat(currentValue.asI32()).isEqualTo(789);
-      }, "Zero-copy set should work or fallback gracefully");
+      assertDoesNotThrow(
+          () -> {
+            global.setZeroCopy(789);
+
+            // Verify the value was set
+            WasmValue currentValue = global.get();
+            assertThat(currentValue.asI32()).isEqualTo(789);
+          },
+          "Zero-copy set should work or fallback gracefully");
     }
   }
 
@@ -113,18 +132,21 @@ class PanamaGlobalZeroCopyIT {
   @DisplayName("Zero-copy operations fail gracefully for immutable globals")
   void testZeroCopySetOnImmutableGlobal() throws Exception {
     byte[] wasmBytes = PanamaTestUtils.createModuleWithImmutableI32Global(999);
-    
-    try (PanamaModule module = new PanamaModule(engine, wasmBytes);
-         PanamaInstance instance = store.instantiateModule(module)) {
+
+    try (PanamaModule module = (PanamaModule) engine.compileModule(wasmBytes);
+        PanamaInstance instance = store.instantiateModule(module)) {
 
       PanamaGlobal global = PanamaTestUtils.getGlobalFromInstance(instance, "test_global");
       assertNotNull(global, "Global should be exported from test module");
       assertThat(global.isMutable()).isFalse();
 
       // Zero-copy set should fail on immutable global
-      assertThrows(UnsupportedOperationException.class, () -> {
-        global.setZeroCopy(111);
-      }, "Zero-copy set should fail on immutable global");
+      assertThrows(
+          UnsupportedOperationException.class,
+          () -> {
+            global.setZeroCopy(111);
+          },
+          "Zero-copy set should fail on immutable global");
     }
   }
 
@@ -132,9 +154,9 @@ class PanamaGlobalZeroCopyIT {
   @DisplayName("Direct global access provides zero-copy operations")
   void testDirectGlobalAccess() throws Exception {
     byte[] wasmBytes = PanamaTestUtils.createModuleWithMutableI32Global(555);
-    
-    try (PanamaModule module = new PanamaModule(engine, wasmBytes);
-         PanamaInstance instance = store.instantiateModule(module)) {
+
+    try (PanamaModule module = (PanamaModule) engine.compileModule(wasmBytes);
+        PanamaInstance instance = store.instantiateModule(module)) {
 
       PanamaGlobal global = PanamaTestUtils.getGlobalFromInstance(instance, "test_global");
       assertNotNull(global, "Global should be exported from test module");
@@ -154,7 +176,7 @@ class PanamaGlobalZeroCopyIT {
 
           // Test direct write
           directAccess.writeRawValue(777);
-          
+
           // Verify write worked
           Object newValue = directAccess.readRawValue();
           assertThat((Integer) newValue).isEqualTo(777);
@@ -177,9 +199,9 @@ class PanamaGlobalZeroCopyIT {
   @DisplayName("Direct access handles type validation correctly")
   void testDirectAccessTypeValidation() throws Exception {
     byte[] wasmBytes = PanamaTestUtils.createModuleWithMutableI32Global(888);
-    
-    try (PanamaModule module = new PanamaModule(engine, wasmBytes);
-         PanamaInstance instance = store.instantiateModule(module)) {
+
+    try (PanamaModule module = (PanamaModule) engine.compileModule(wasmBytes);
+        PanamaInstance instance = store.instantiateModule(module)) {
 
       PanamaGlobal global = PanamaTestUtils.getGlobalFromInstance(instance, "test_global");
       assertNotNull(global, "Global should be exported from test module");
@@ -187,13 +209,19 @@ class PanamaGlobalZeroCopyIT {
       try (PanamaGlobal.DirectGlobalAccess directAccess = global.getDirectAccess()) {
         if (directAccess != null) {
           // Test type validation on write
-          assertThrows(IllegalArgumentException.class, () -> {
-            directAccess.writeRawValue("invalid_type");
-          }, "Direct access should validate types");
+          assertThrows(
+              IllegalArgumentException.class,
+              () -> {
+                directAccess.writeRawValue("invalid_type");
+              },
+              "Direct access should validate types");
 
-          assertThrows(IllegalArgumentException.class, () -> {
-            directAccess.writeRawValue(123L); // Long instead of Integer for i32
-          }, "Direct access should validate specific numeric types");
+          assertThrows(
+              IllegalArgumentException.class,
+              () -> {
+                directAccess.writeRawValue(123L); // Long instead of Integer for i32
+              },
+              "Direct access should validate specific numeric types");
         }
       }
     }
@@ -203,47 +231,55 @@ class PanamaGlobalZeroCopyIT {
   @DisplayName("Zero-copy operations work with different numeric types")
   void testZeroCopyWithDifferentTypes() throws Exception {
     byte[] wasmBytes = PanamaTestUtils.createModuleWithMultipleGlobals();
-    
-    try (PanamaModule module = new PanamaModule(engine, wasmBytes);
-         PanamaInstance instance = store.instantiateModule(module)) {
+
+    try (PanamaModule module = (PanamaModule) engine.compileModule(wasmBytes);
+        PanamaInstance instance = store.instantiateModule(module)) {
 
       // Test i64 global
       PanamaGlobal i64Global = PanamaTestUtils.getGlobalFromInstance(instance, "i64_global");
       if (i64Global != null && i64Global.isMutable()) {
-        assertDoesNotThrow(() -> {
-          i64Global.setZeroCopy(123456789L);
-          Object rawValue = i64Global.getZeroCopy();
-          if (rawValue != null) {
-            assertThat(rawValue).isInstanceOf(Long.class);
-            assertThat((Long) rawValue).isEqualTo(123456789L);
-          }
-        }, "Zero-copy should work with i64");
+        assertDoesNotThrow(
+            () -> {
+              i64Global.setZeroCopy(123456789L);
+              Object rawValue = i64Global.getZeroCopy();
+              if (rawValue != null) {
+                assertThat(rawValue).isInstanceOf(Long.class);
+                assertThat((Long) rawValue).isEqualTo(123456789L);
+              }
+            },
+            "Zero-copy should work with i64");
       }
 
       // Test f32 global
       PanamaGlobal f32Global = PanamaTestUtils.getGlobalFromInstance(instance, "f32_global");
       if (f32Global != null && f32Global.isMutable()) {
-        assertDoesNotThrow(() -> {
-          f32Global.setZeroCopy(3.14f);
-          Object rawValue = f32Global.getZeroCopy();
-          if (rawValue != null) {
-            assertThat(rawValue).isInstanceOf(Float.class);
-            assertThat((Float) rawValue).isCloseTo(3.14f, org.assertj.core.data.Offset.offset(0.001f));
-          }
-        }, "Zero-copy should work with f32");
+        assertDoesNotThrow(
+            () -> {
+              f32Global.setZeroCopy(3.14f);
+              Object rawValue = f32Global.getZeroCopy();
+              if (rawValue != null) {
+                assertThat(rawValue).isInstanceOf(Float.class);
+                assertThat((Float) rawValue)
+                    .isCloseTo(3.14f, org.assertj.core.data.Offset.offset(0.001f));
+              }
+            },
+            "Zero-copy should work with f32");
       }
 
       // Test f64 global
       PanamaGlobal f64Global = PanamaTestUtils.getGlobalFromInstance(instance, "f64_global");
       if (f64Global != null && f64Global.isMutable()) {
-        assertDoesNotThrow(() -> {
-          f64Global.setZeroCopy(2.71828);
-          Object rawValue = f64Global.getZeroCopy();
-          if (rawValue != null) {
-            assertThat(rawValue).isInstanceOf(Double.class);
-            assertThat((Double) rawValue).isCloseTo(2.71828, org.assertj.core.data.Offset.offset(0.00001));
-          }
-        }, "Zero-copy should work with f64");
+        assertDoesNotThrow(
+            () -> {
+              f64Global.setZeroCopy(2.71828);
+              Object rawValue = f64Global.getZeroCopy();
+              if (rawValue != null) {
+                assertThat(rawValue).isInstanceOf(Double.class);
+                assertThat((Double) rawValue)
+                    .isCloseTo(2.71828, org.assertj.core.data.Offset.offset(0.00001));
+              }
+            },
+            "Zero-copy should work with f64");
       }
     }
   }
@@ -252,9 +288,9 @@ class PanamaGlobalZeroCopyIT {
   @DisplayName("Zero-copy operations handle closed globals gracefully")
   void testZeroCopyWithClosedGlobals() throws Exception {
     byte[] wasmBytes = PanamaTestUtils.createModuleWithMutableI32Global(333);
-    
-    try (PanamaModule module = new PanamaModule(engine, wasmBytes);
-         PanamaInstance instance = store.instantiateModule(module)) {
+
+    try (PanamaModule module = (PanamaModule) engine.compileModule(wasmBytes);
+        PanamaInstance instance = store.instantiateModule(module)) {
 
       PanamaGlobal global = PanamaTestUtils.getGlobalFromInstance(instance, "test_global");
       assertNotNull(global, "Global should be exported from test module");
@@ -263,13 +299,19 @@ class PanamaGlobalZeroCopyIT {
       global.close();
 
       // Zero-copy operations should fail gracefully
-      assertThrows(IllegalStateException.class, () -> {
-        global.getZeroCopy();
-      }, "Zero-copy get should fail on closed global");
+      assertThrows(
+          IllegalStateException.class,
+          () -> {
+            global.getZeroCopy();
+          },
+          "Zero-copy get should fail on closed global");
 
-      assertThrows(IllegalStateException.class, () -> {
-        global.setZeroCopy(444);
-      }, "Zero-copy set should fail on closed global");
+      assertThrows(
+          IllegalStateException.class,
+          () -> {
+            global.setZeroCopy(444);
+          },
+          "Zero-copy set should fail on closed global");
     }
   }
 
@@ -277,15 +319,15 @@ class PanamaGlobalZeroCopyIT {
   @DisplayName("Direct access cleanup works correctly")
   void testDirectAccessCleanup() throws Exception {
     byte[] wasmBytes = PanamaTestUtils.createModuleWithMutableI32Global(666);
-    
-    try (PanamaModule module = new PanamaModule(engine, wasmBytes);
-         PanamaInstance instance = store.instantiateModule(module)) {
+
+    try (PanamaModule module = (PanamaModule) engine.compileModule(wasmBytes);
+        PanamaInstance instance = store.instantiateModule(module)) {
 
       PanamaGlobal global = PanamaTestUtils.getGlobalFromInstance(instance, "test_global");
       assertNotNull(global, "Global should be exported from test module");
 
       PanamaGlobal.DirectGlobalAccess directAccess = global.getDirectAccess();
-      
+
       if (directAccess != null) {
         // Use the direct access
         assertThat(directAccess.isClosed()).isFalse();
@@ -295,18 +337,24 @@ class PanamaGlobalZeroCopyIT {
         // Close should be idempotent
         directAccess.close();
         assertThat(directAccess.isClosed()).isTrue();
-        
+
         directAccess.close(); // Second close should not fail
         assertThat(directAccess.isClosed()).isTrue();
 
         // Operations should fail after close
-        assertThrows(IllegalStateException.class, () -> {
-          directAccess.readRawValue();
-        }, "Read should fail after close");
+        assertThrows(
+            IllegalStateException.class,
+            () -> {
+              directAccess.readRawValue();
+            },
+            "Read should fail after close");
 
-        assertThrows(IllegalStateException.class, () -> {
-          directAccess.writeRawValue(111);
-        }, "Write should fail after close");
+        assertThrows(
+            IllegalStateException.class,
+            () -> {
+              directAccess.writeRawValue(111);
+            },
+            "Write should fail after close");
       }
     }
   }

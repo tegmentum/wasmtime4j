@@ -23,7 +23,8 @@ final class WasiResourceLeakDetectorTest {
 
   private WasiResourceLeakDetector detector;
   private MockWasiContext mockContext;
-  private MockWasiFileHandle mockFileHandle;
+
+  // MockWasiFileHandle field removed - cannot inherit from final WasiFileHandle
 
   @BeforeEach
   void setUp() {
@@ -34,7 +35,7 @@ final class WasiResourceLeakDetectorTest {
             1 // monitoring interval
             );
     mockContext = new MockWasiContext("test-context");
-    mockFileHandle = new MockWasiFileHandle(42);
+    // mockFileHandle removed since it can't be used with final WasiFileHandle class
   }
 
   @AfterEach
@@ -76,7 +77,7 @@ final class WasiResourceLeakDetectorTest {
     assertEquals(0, detector.getTrackedFileHandleCount());
 
     // Track a file handle
-    detector.trackFileHandle(42, mockFileHandle);
+    detector.trackFileHandle(42, null);
     assertEquals(1, detector.getTrackedFileHandleCount());
 
     // Verify statistics
@@ -132,7 +133,7 @@ final class WasiResourceLeakDetectorTest {
     try {
       // Track some resources
       shortThresholdDetector.trackWasiContext("leak-context", mockContext);
-      shortThresholdDetector.trackFileHandle(100, mockFileHandle);
+      shortThresholdDetector.trackFileHandle(100, null);
       shortThresholdDetector.trackMemorySegment(0x2000L, new Object());
 
       // Wait for resources to age beyond threshold
@@ -166,8 +167,7 @@ final class WasiResourceLeakDetectorTest {
     Thread.sleep(100);
 
     // Perform leak detection which should trigger phantom reference cleanup
-    final WasiResourceLeakDetector.LeakDetectionResults results =
-        detector.performLeakDetection();
+    final WasiResourceLeakDetector.LeakDetectionResults results = detector.performLeakDetection();
 
     // Some resources should have been automatically cleaned up
     assertNotNull(results);
@@ -183,7 +183,7 @@ final class WasiResourceLeakDetectorTest {
     // Track various resources
     detector.trackWasiContext("stats-context1", mockContext);
     detector.trackWasiContext("stats-context2", new MockWasiContext("context2"));
-    detector.trackFileHandle(200, mockFileHandle);
+    detector.trackFileHandle(200, null);
     detector.trackFileHandle(201, new MockWasiFileHandle(201));
     detector.trackMemorySegment(0x3000L, new Object());
 
@@ -249,7 +249,7 @@ final class WasiResourceLeakDetectorTest {
   void testDetectorShutdown() {
     // Track some resources
     detector.trackWasiContext("shutdown-context", mockContext);
-    detector.trackFileHandle(300, mockFileHandle);
+    detector.trackFileHandle(300, null);
 
     // Verify resources are tracked
     assertEquals(1, detector.getTrackedContextCount());
@@ -333,37 +333,34 @@ final class WasiResourceLeakDetectorTest {
     private final String contextId;
 
     MockWasiContext(final String contextId) {
-      super(1L, WasiContextBuilder.builder().build()); // Mock native handle
+      super(1L); // Mock native handle
       this.contextId = contextId;
     }
 
-    @Override
     public String toString() {
       return "MockWasiContext{contextId='" + contextId + "'}";
     }
   }
 
   /** Mock WASI file handle for testing. */
-  private static final class MockWasiFileHandle implements WasiFileHandle {
+  private static final class MockWasiFileHandle {
     private final int fileDescriptor;
 
     MockWasiFileHandle(final int fileDescriptor) {
       this.fileDescriptor = fileDescriptor;
     }
 
-    @Override
     public int getFileDescriptor() {
       return fileDescriptor;
     }
 
-    @Override
     public void close() {
       // Mock implementation - do nothing
     }
 
-    @Override
     public String toString() {
       return "MockWasiFileHandle{fd=" + fileDescriptor + "}";
     }
   }
+
 }

@@ -19,6 +19,8 @@ package ai.tegmentum.wasmtime4j.panama;
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.FunctionType;
 import ai.tegmentum.wasmtime4j.HostFunction;
+import ai.tegmentum.wasmtime4j.Instance;
+import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
@@ -114,9 +116,8 @@ public final class PanamaStore implements Store, AutoCloseable {
     try {
       // Set fuel through native FFI call
       int result = nativeFunctions.storeSetFuel(storeResource.getNativePointer(), fuel);
-      
-      PanamaErrorHandler.safeCheckError(
-          result, "Store set fuel", "Failed to set fuel to " + fuel);
+
+      PanamaErrorHandler.safeCheckError(result, "Store set fuel", "Failed to set fuel to " + fuel);
 
       LOGGER.fine("Successfully set store fuel to: " + fuel);
 
@@ -136,16 +137,15 @@ public final class PanamaStore implements Store, AutoCloseable {
       // Allocate memory for the fuel value output
       ArenaResourceManager.ManagedMemorySegment fuelOutPtr =
           resourceManager.allocate(MemoryLayouts.C_SIZE_T);
-      
-      int result = nativeFunctions.storeGetFuel(
-          storeResource.getNativePointer(), fuelOutPtr.getSegment());
-      
-      PanamaErrorHandler.safeCheckError(
-          result, "Store get fuel", "Failed to get remaining fuel");
+
+      int result =
+          nativeFunctions.storeGetFuel(storeResource.getNativePointer(), fuelOutPtr.getSegment());
+
+      PanamaErrorHandler.safeCheckError(result, "Store get fuel", "Failed to get remaining fuel");
 
       // Extract the fuel value
       long fuel = (long) MemoryLayouts.C_SIZE_T.varHandle().get(fuelOutPtr.getSegment(), 0);
-      
+
       LOGGER.fine("Successfully retrieved store fuel: " + fuel);
       return fuel;
 
@@ -168,9 +168,8 @@ public final class PanamaStore implements Store, AutoCloseable {
     try {
       // Add fuel through native FFI call
       int result = nativeFunctions.storeAddFuel(storeResource.getNativePointer(), fuel);
-      
-      PanamaErrorHandler.safeCheckError(
-          result, "Store add fuel", "Failed to add fuel " + fuel);
+
+      PanamaErrorHandler.safeCheckError(result, "Store add fuel", "Failed to add fuel " + fuel);
 
       LOGGER.fine("Successfully added fuel to store: " + fuel);
 
@@ -193,7 +192,7 @@ public final class PanamaStore implements Store, AutoCloseable {
     try {
       // Set epoch deadline through native FFI call
       int result = nativeFunctions.storeSetEpochDeadline(storeResource.getNativePointer(), ticks);
-      
+
       PanamaErrorHandler.safeCheckError(
           result, "Store set epoch deadline", "Failed to set epoch deadline to " + ticks);
 
@@ -212,12 +211,12 @@ public final class PanamaStore implements Store, AutoCloseable {
     if (isClosed()) {
       return false;
     }
-    
+
     try {
       // Validate store through native FFI call
       int result = nativeFunctions.storeValidate(storeResource.getNativePointer());
       return result == 0; // Success code
-      
+
     } catch (Exception e) {
       LOGGER.warning("Store validation failed: " + e.getMessage());
       return false;
@@ -253,7 +252,7 @@ public final class PanamaStore implements Store, AutoCloseable {
       info.append("  Fuel Limit: ").append(getFuelLimit()).append("\n");
       info.append("  Memory Limit (bytes): ").append(getMemoryLimit()).append("\n");
       info.append("  Execution Timeout (secs): ").append(getExecutionTimeout());
-      
+
       return info.toString();
     } catch (final Exception e) {
       throw new WasmException("Failed to get store runtime information", e);
@@ -313,12 +312,13 @@ public final class PanamaStore implements Store, AutoCloseable {
       ArenaResourceManager.ManagedMemorySegment dummyPtr2 =
           resourceManager.allocate(MemoryLayouts.C_SIZE_T);
 
-      int result = nativeFunctions.storeGetExecutionStats(
-          storeResource.getNativePointer(),
-          executionCountPtr.getSegment(),
-          dummyPtr1.getSegment(),
-          dummyPtr2.getSegment());
-      
+      int result =
+          nativeFunctions.storeGetExecutionStats(
+              storeResource.getNativePointer(),
+              executionCountPtr.getSegment(),
+              dummyPtr1.getSegment(),
+              dummyPtr2.getSegment());
+
       PanamaErrorHandler.safeCheckError(
           result, "Execution count retrieval", "Failed to get execution count");
 
@@ -353,12 +353,13 @@ public final class PanamaStore implements Store, AutoCloseable {
       ArenaResourceManager.ManagedMemorySegment dummyPtr2 =
           resourceManager.allocate(MemoryLayouts.C_SIZE_T);
 
-      int result = nativeFunctions.storeGetExecutionStats(
-          storeResource.getNativePointer(),
-          dummyPtr1.getSegment(),
-          totalExecutionTimeMsPtr.getSegment(),
-          dummyPtr2.getSegment());
-      
+      int result =
+          nativeFunctions.storeGetExecutionStats(
+              storeResource.getNativePointer(),
+              dummyPtr1.getSegment(),
+              totalExecutionTimeMsPtr.getSegment(),
+              dummyPtr2.getSegment());
+
       PanamaErrorHandler.safeCheckError(
           result, "Execution time retrieval", "Failed to get execution time");
 
@@ -394,12 +395,13 @@ public final class PanamaStore implements Store, AutoCloseable {
       ArenaResourceManager.ManagedMemorySegment fuelConsumedPtr =
           resourceManager.allocate(MemoryLayouts.C_SIZE_T);
 
-      int result = nativeFunctions.storeGetExecutionStats(
-          storeResource.getNativePointer(),
-          dummyPtr1.getSegment(),
-          dummyPtr2.getSegment(),
-          fuelConsumedPtr.getSegment());
-      
+      int result =
+          nativeFunctions.storeGetExecutionStats(
+              storeResource.getNativePointer(),
+              dummyPtr1.getSegment(),
+              dummyPtr2.getSegment(),
+              fuelConsumedPtr.getSegment());
+
       PanamaErrorHandler.safeCheckError(
           result, "Fuel consumption retrieval", "Failed to get total fuel consumed");
 
@@ -434,12 +436,13 @@ public final class PanamaStore implements Store, AutoCloseable {
       ArenaResourceManager.ManagedMemorySegment dummyPtr2 =
           resourceManager.allocate(MemoryLayouts.C_SIZE_T);
 
-      int result = nativeFunctions.storeGetMemoryUsage(
-          storeResource.getNativePointer(),
-          totalBytesPtr.getSegment(),
-          dummyPtr1.getSegment(),
-          dummyPtr2.getSegment());
-      
+      int result =
+          nativeFunctions.storeGetMemoryUsage(
+              storeResource.getNativePointer(),
+              totalBytesPtr.getSegment(),
+              dummyPtr1.getSegment(),
+              dummyPtr2.getSegment());
+
       PanamaErrorHandler.safeCheckError(
           result, "Memory usage retrieval", "Failed to get total memory bytes");
 
@@ -456,8 +459,8 @@ public final class PanamaStore implements Store, AutoCloseable {
    * Gets the currently used memory by this store.
    *
    * <p>This method returns the amount of memory (in bytes) currently in use by active WebAssembly
-   * instances, linear memories, and other runtime structures within this store. This represents
-   * the subset of total allocated memory that is actively being used.
+   * instances, linear memories, and other runtime structures within this store. This represents the
+   * subset of total allocated memory that is actively being used.
    *
    * @return the used memory in bytes
    * @throws WasmException if the memory information cannot be retrieved
@@ -475,12 +478,13 @@ public final class PanamaStore implements Store, AutoCloseable {
       ArenaResourceManager.ManagedMemorySegment dummyPtr2 =
           resourceManager.allocate(MemoryLayouts.C_SIZE_T);
 
-      int result = nativeFunctions.storeGetMemoryUsage(
-          storeResource.getNativePointer(),
-          dummyPtr1.getSegment(),
-          usedBytesPtr.getSegment(),
-          dummyPtr2.getSegment());
-      
+      int result =
+          nativeFunctions.storeGetMemoryUsage(
+              storeResource.getNativePointer(),
+              dummyPtr1.getSegment(),
+              usedBytesPtr.getSegment(),
+              dummyPtr2.getSegment());
+
       PanamaErrorHandler.safeCheckError(
           result, "Memory usage retrieval", "Failed to get used memory bytes");
 
@@ -516,12 +520,13 @@ public final class PanamaStore implements Store, AutoCloseable {
       ArenaResourceManager.ManagedMemorySegment instanceCountPtr =
           resourceManager.allocate(MemoryLayouts.C_SIZE_T);
 
-      int result = nativeFunctions.storeGetMemoryUsage(
-          storeResource.getNativePointer(),
-          dummyPtr1.getSegment(),
-          dummyPtr2.getSegment(),
-          instanceCountPtr.getSegment());
-      
+      int result =
+          nativeFunctions.storeGetMemoryUsage(
+              storeResource.getNativePointer(),
+              dummyPtr1.getSegment(),
+              dummyPtr2.getSegment(),
+              instanceCountPtr.getSegment());
+
       PanamaErrorHandler.safeCheckError(
           result, "Instance count retrieval", "Failed to get instance count");
 
@@ -537,9 +542,8 @@ public final class PanamaStore implements Store, AutoCloseable {
   /**
    * Gets the fuel limit for this store.
    *
-   * <p>This method returns the maximum amount of fuel that can be consumed by WebAssembly
-   * execution within this store. If fuel tracking is disabled or no limit is set, this method
-   * returns -1.
+   * <p>This method returns the maximum amount of fuel that can be consumed by WebAssembly execution
+   * within this store. If fuel tracking is disabled or no limit is set, this method returns -1.
    *
    * @return the fuel limit, or -1 if no limit is set or fuel tracking is disabled
    * @throws WasmException if the fuel limit cannot be retrieved
@@ -559,15 +563,15 @@ public final class PanamaStore implements Store, AutoCloseable {
       ArenaResourceManager.ManagedMemorySegment dummyPtr3 =
           resourceManager.allocate(MemoryLayouts.C_SIZE_T);
 
-      int result = nativeFunctions.storeGetMetadata(
-          storeResource.getNativePointer(),
-          fuelLimitPtr.getSegment(),
-          dummyPtr1.getSegment(),
-          dummyPtr2.getSegment(),
-          dummyPtr3.getSegment());
-      
-      PanamaErrorHandler.safeCheckError(
-          result, "Fuel limit retrieval", "Failed to get fuel limit");
+      int result =
+          nativeFunctions.storeGetMetadata(
+              storeResource.getNativePointer(),
+              fuelLimitPtr.getSegment(),
+              dummyPtr1.getSegment(),
+              dummyPtr2.getSegment(),
+              dummyPtr3.getSegment());
+
+      PanamaErrorHandler.safeCheckError(result, "Fuel limit retrieval", "Failed to get fuel limit");
 
       long fuelLimit = (Long) MemoryLayouts.C_SIZE_T.varHandle().get(fuelLimitPtr.getSegment(), 0);
       return fuelLimit == 0 ? -1 : fuelLimit;
@@ -604,17 +608,19 @@ public final class PanamaStore implements Store, AutoCloseable {
       ArenaResourceManager.ManagedMemorySegment dummyPtr3 =
           resourceManager.allocate(MemoryLayouts.C_SIZE_T);
 
-      int result = nativeFunctions.storeGetMetadata(
-          storeResource.getNativePointer(),
-          dummyPtr1.getSegment(),
-          memoryLimitBytesPtr.getSegment(),
-          dummyPtr2.getSegment(),
-          dummyPtr3.getSegment());
-      
+      int result =
+          nativeFunctions.storeGetMetadata(
+              storeResource.getNativePointer(),
+              dummyPtr1.getSegment(),
+              memoryLimitBytesPtr.getSegment(),
+              dummyPtr2.getSegment(),
+              dummyPtr3.getSegment());
+
       PanamaErrorHandler.safeCheckError(
           result, "Memory limit retrieval", "Failed to get memory limit");
 
-      long memoryLimit = (Long) MemoryLayouts.C_SIZE_T.varHandle().get(memoryLimitBytesPtr.getSegment(), 0);
+      long memoryLimit =
+          (Long) MemoryLayouts.C_SIZE_T.varHandle().get(memoryLimitBytesPtr.getSegment(), 0);
       return memoryLimit == 0 ? -1 : memoryLimit;
     } catch (final Exception e) {
       if (e instanceof WasmException) {
@@ -648,17 +654,19 @@ public final class PanamaStore implements Store, AutoCloseable {
       ArenaResourceManager.ManagedMemorySegment dummyPtr3 =
           resourceManager.allocate(MemoryLayouts.C_SIZE_T);
 
-      int result = nativeFunctions.storeGetMetadata(
-          storeResource.getNativePointer(),
-          dummyPtr1.getSegment(),
-          dummyPtr2.getSegment(),
-          executionTimeoutSecsPtr.getSegment(),
-          dummyPtr3.getSegment());
-      
+      int result =
+          nativeFunctions.storeGetMetadata(
+              storeResource.getNativePointer(),
+              dummyPtr1.getSegment(),
+              dummyPtr2.getSegment(),
+              executionTimeoutSecsPtr.getSegment(),
+              dummyPtr3.getSegment());
+
       PanamaErrorHandler.safeCheckError(
           result, "Execution timeout retrieval", "Failed to get execution timeout");
 
-      long timeout = (Long) MemoryLayouts.C_SIZE_T.varHandle().get(executionTimeoutSecsPtr.getSegment(), 0);
+      long timeout =
+          (Long) MemoryLayouts.C_SIZE_T.varHandle().get(executionTimeoutSecsPtr.getSegment(), 0);
       return timeout == 0 ? -1 : timeout;
     } catch (final Exception e) {
       if (e instanceof WasmException) {
@@ -691,11 +699,13 @@ public final class PanamaStore implements Store, AutoCloseable {
       ArenaResourceManager.ManagedMemorySegment fuelConsumedPtr =
           resourceManager.allocate(MemoryLayouts.C_SIZE_T);
 
-      int result = nativeFunctions.storeConsumeFuel(
-          storeResource.getNativePointer(), fuelAmount, fuelConsumedPtr.getSegment());
-      
+      int result =
+          nativeFunctions.storeConsumeFuel(
+              storeResource.getNativePointer(), fuelAmount, fuelConsumedPtr.getSegment());
+
       if (result == 0) {
-        long actualConsumed = (Long) MemoryLayouts.C_SIZE_T.varHandle().get(fuelConsumedPtr.getSegment(), 0);
+        long actualConsumed =
+            (Long) MemoryLayouts.C_SIZE_T.varHandle().get(fuelConsumedPtr.getSegment(), 0);
         boolean success = actualConsumed == fuelAmount;
         if (success) {
           LOGGER.fine("Consumed " + fuelAmount + " fuel from store " + getStorePointer());
@@ -755,8 +765,8 @@ public final class PanamaStore implements Store, AutoCloseable {
   /**
    * Checks if the store is in a healthy state.
    *
-   * <p>This method performs a health check that combines validation with runtime state analysis.
-   * A store is considered healthy if it passes validation and all key metrics are within expected
+   * <p>This method performs a health check that combines validation with runtime state analysis. A
+   * store is considered healthy if it passes validation and all key metrics are within expected
    * ranges.
    *
    * @return true if the store is healthy, false otherwise
@@ -770,7 +780,7 @@ public final class PanamaStore implements Store, AutoCloseable {
       // Check if any critical resources are exhausted
       final long usedMemory = getUsedMemoryBytes();
       final long totalMemory = getTotalMemoryBytes();
-      
+
       // Memory usage should not exceed total memory (this would indicate corruption)
       if (usedMemory > totalMemory && totalMemory > 0) {
         LOGGER.warning("Store health check failed: used memory exceeds total memory");
@@ -780,7 +790,7 @@ public final class PanamaStore implements Store, AutoCloseable {
       // Check if fuel system is consistent
       final long fuelLimit = getFuelLimit();
       final long fuelRemaining = getFuel();
-      
+
       // If fuel is enabled, remaining fuel should not exceed limit
       if (fuelLimit >= 0 && fuelRemaining > fuelLimit) {
         LOGGER.warning("Store health check failed: remaining fuel exceeds limit");
@@ -878,6 +888,18 @@ public final class PanamaStore implements Store, AutoCloseable {
   }
 
   @Override
+  public Instance createInstance(final Module module) throws WasmException {
+    Objects.requireNonNull(module, "Module cannot be null");
+    ensureNotClosed();
+
+    if (!(module instanceof PanamaModule)) {
+      throw new IllegalArgumentException("Module must be a PanamaModule instance for Panama store");
+    }
+
+    return instantiateModule((PanamaModule) module);
+  }
+
+  @Override
   public WasmFunction createHostFunction(
       final String name, final FunctionType functionType, final HostFunction implementation)
       throws WasmException {
@@ -952,30 +974,6 @@ public final class PanamaStore implements Store, AutoCloseable {
   }
 
   /**
-   * Triggers garbage collection for the store.
-   *
-   * @throws WasmException if garbage collection fails
-   */
-  public void gc() throws WasmException {
-    ensureNotClosed();
-
-    try {
-      int result = nativeFunctions.storeGc(storeResource.getNativePointer());
-      
-      PanamaErrorHandler.safeCheckError(
-          result, "Store garbage collection", "Failed to trigger garbage collection");
-
-      LOGGER.fine("Successfully triggered garbage collection for store");
-
-    } catch (Exception e) {
-      String detailedMessage =
-          PanamaErrorHandler.createDetailedErrorMessage(
-              "Garbage collection", "store=" + storeResource.getNativePointer(), e.getMessage());
-      throw new WasmException(detailedMessage, e);
-    }
-  }
-
-  /**
    * Gets execution statistics for the store.
    *
    * @return execution statistics object containing counts and timing information
@@ -993,28 +991,34 @@ public final class PanamaStore implements Store, AutoCloseable {
       ArenaResourceManager.ManagedMemorySegment totalExecutionTimeNsPtr =
           resourceManager.allocate(MemoryLayouts.C_SIZE_T);
 
-      int result = nativeFunctions.storeGetExecutionStats(
-          storeResource.getNativePointer(),
-          executionCountPtr.getSegment(),
-          fuelConsumedPtr.getSegment(),
-          totalExecutionTimeNsPtr.getSegment());
+      int result =
+          nativeFunctions.storeGetExecutionStats(
+              storeResource.getNativePointer(),
+              executionCountPtr.getSegment(),
+              fuelConsumedPtr.getSegment(),
+              totalExecutionTimeNsPtr.getSegment());
 
       PanamaErrorHandler.safeCheckError(
           result, "Store execution stats", "Failed to get execution statistics");
 
       // Extract values
-      long executionCount = (long) MemoryLayouts.C_SIZE_T.varHandle().get(executionCountPtr.getSegment(), 0);
-      long fuelConsumed = (long) MemoryLayouts.C_SIZE_T.varHandle().get(fuelConsumedPtr.getSegment(), 0);
+      long executionCount =
+          (long) MemoryLayouts.C_SIZE_T.varHandle().get(executionCountPtr.getSegment(), 0);
+      long fuelConsumed =
+          (long) MemoryLayouts.C_SIZE_T.varHandle().get(fuelConsumedPtr.getSegment(), 0);
       long totalExecutionTimeNs =
           (long) MemoryLayouts.C_SIZE_T.varHandle().get(totalExecutionTimeNsPtr.getSegment(), 0);
 
-      LOGGER.fine("Retrieved execution statistics: count=" + executionCount + ", fuel=" + fuelConsumed);
+      LOGGER.fine(
+          "Retrieved execution statistics: count=" + executionCount + ", fuel=" + fuelConsumed);
       return new ExecutionStats(executionCount, fuelConsumed, totalExecutionTimeNs);
 
     } catch (Exception e) {
       String detailedMessage =
           PanamaErrorHandler.createDetailedErrorMessage(
-              "Execution stats retrieval", "store=" + storeResource.getNativePointer(), e.getMessage());
+              "Execution stats retrieval",
+              "store=" + storeResource.getNativePointer(),
+              e.getMessage());
       throw new WasmException(detailedMessage, e);
     }
   }
@@ -1037,28 +1041,38 @@ public final class PanamaStore implements Store, AutoCloseable {
       ArenaResourceManager.ManagedMemorySegment instanceCountPtr =
           resourceManager.allocate(MemoryLayouts.C_SIZE_T);
 
-      int result = nativeFunctions.storeGetMemoryUsage(
-          storeResource.getNativePointer(),
-          totalBytesPtr.getSegment(),
-          usedBytesPtr.getSegment(),
-          instanceCountPtr.getSegment());
+      int result =
+          nativeFunctions.storeGetMemoryUsage(
+              storeResource.getNativePointer(),
+              totalBytesPtr.getSegment(),
+              usedBytesPtr.getSegment(),
+              instanceCountPtr.getSegment());
 
       PanamaErrorHandler.safeCheckError(
           result, "Store memory usage", "Failed to get memory usage statistics");
 
       // Extract values
-      long totalBytes = (long) MemoryLayouts.C_SIZE_T.varHandle().get(totalBytesPtr.getSegment(), 0);
+      long totalBytes =
+          (long) MemoryLayouts.C_SIZE_T.varHandle().get(totalBytesPtr.getSegment(), 0);
       long usedBytes = (long) MemoryLayouts.C_SIZE_T.varHandle().get(usedBytesPtr.getSegment(), 0);
-      long instanceCount = (long) MemoryLayouts.C_SIZE_T.varHandle().get(instanceCountPtr.getSegment(), 0);
+      long instanceCount =
+          (long) MemoryLayouts.C_SIZE_T.varHandle().get(instanceCountPtr.getSegment(), 0);
 
       LOGGER.fine(
-          "Retrieved memory usage: total=" + totalBytes + ", used=" + usedBytes + ", instances=" + instanceCount);
+          "Retrieved memory usage: total="
+              + totalBytes
+              + ", used="
+              + usedBytes
+              + ", instances="
+              + instanceCount);
       return new MemoryUsage(totalBytes, usedBytes, instanceCount);
 
     } catch (Exception e) {
       String detailedMessage =
           PanamaErrorHandler.createDetailedErrorMessage(
-              "Memory usage retrieval", "store=" + storeResource.getNativePointer(), e.getMessage());
+              "Memory usage retrieval",
+              "store=" + storeResource.getNativePointer(),
+              e.getMessage());
       throw new WasmException(detailedMessage, e);
     }
   }
@@ -1074,9 +1088,7 @@ public final class PanamaStore implements Store, AutoCloseable {
     }
   }
 
-  /**
-   * Execution statistics data class.
-   */
+  /** Execution statistics data class. */
   public static class ExecutionStats {
     private final long executionCount;
     private final long fuelConsumed;
@@ -1089,7 +1101,8 @@ public final class PanamaStore implements Store, AutoCloseable {
      * @param fuelConsumed total fuel consumed
      * @param totalExecutionTimeNs total execution time in nanoseconds
      */
-    public ExecutionStats(final long executionCount, final long fuelConsumed, final long totalExecutionTimeNs) {
+    public ExecutionStats(
+        final long executionCount, final long fuelConsumed, final long totalExecutionTimeNs) {
       this.executionCount = executionCount;
       this.fuelConsumed = fuelConsumed;
       this.totalExecutionTimeNs = totalExecutionTimeNs;
@@ -1109,14 +1122,13 @@ public final class PanamaStore implements Store, AutoCloseable {
 
     @Override
     public String toString() {
-      return String.format("ExecutionStats{executions=%d, fuel=%d, time=%dns}", 
+      return String.format(
+          "ExecutionStats{executions=%d, fuel=%d, time=%dns}",
           executionCount, fuelConsumed, totalExecutionTimeNs);
     }
   }
 
-  /**
-   * Memory usage statistics data class.
-   */
+  /** Memory usage statistics data class. */
   public static class MemoryUsage {
     private final long totalBytes;
     private final long usedBytes;
@@ -1149,7 +1161,8 @@ public final class PanamaStore implements Store, AutoCloseable {
 
     @Override
     public String toString() {
-      return String.format("MemoryUsage{total=%d bytes, used=%d bytes, instances=%d}", 
+      return String.format(
+          "MemoryUsage{total=%d bytes, used=%d bytes, instances=%d}",
           totalBytes, usedBytes, instanceCount);
     }
   }

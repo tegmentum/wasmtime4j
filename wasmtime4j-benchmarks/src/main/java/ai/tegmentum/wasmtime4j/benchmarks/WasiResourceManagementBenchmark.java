@@ -91,9 +91,7 @@ public class WasiResourceManagementBenchmark {
     // Register context in components
     usageTracker.registerContext(contextId);
     isolationValidator.registerContext(
-        contextId,
-        mockContext,
-        WasiContextIsolationValidator.IsolationLevel.valueOf(isolationLevel));
+        contextId, null, WasiContextIsolationValidator.IsolationLevel.valueOf(isolationLevel));
   }
 
   @TearDown(Level.Trial)
@@ -117,7 +115,7 @@ public class WasiResourceManagementBenchmark {
   @Benchmark
   public void benchmarkLeakDetectorTracking() {
     // Benchmark resource tracking in leak detector
-    leakDetector.trackWasiContext(contextId + System.nanoTime(), mockContext);
+    leakDetector.trackWasiContext(contextId + System.nanoTime(), null);
     leakDetector.trackMemorySegment(System.nanoTime(), testMemorySegment);
   }
 
@@ -126,7 +124,7 @@ public class WasiResourceManagementBenchmark {
     // Pre-track resources
     final String dynamicContextId = contextId + System.nanoTime();
     final long dynamicAddress = System.nanoTime();
-    leakDetector.trackWasiContext(dynamicContextId, mockContext);
+    leakDetector.trackWasiContext(dynamicContextId, null);
     leakDetector.trackMemorySegment(dynamicAddress, testMemorySegment);
 
     // Benchmark untracking
@@ -250,7 +248,7 @@ public class WasiResourceManagementBenchmark {
     final String dynamicContextId = "cleanup-context-" + timestamp;
 
     // Setup resources
-    leakDetector.trackWasiContext(dynamicContextId, mockContext);
+    leakDetector.trackWasiContext(dynamicContextId, null);
     leakDetector.trackMemorySegment(timestamp, testMemorySegment);
 
     // Benchmark cleanup

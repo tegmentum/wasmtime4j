@@ -437,9 +437,9 @@ public final class WasiContextBuilder {
 
     try {
       // Get the native function bindings
-      ai.tegmentum.wasmtime4j.panama.NativeFunctionBindings bindings = 
+      ai.tegmentum.wasmtime4j.panama.NativeFunctionBindings bindings =
           ai.tegmentum.wasmtime4j.panama.NativeFunctionBindings.getInstance();
-      
+
       if (!bindings.isInitialized()) {
         throw new RuntimeException("Native function bindings not initialized");
       }
@@ -447,7 +447,7 @@ public final class WasiContextBuilder {
       // Create WASI context with default configuration
       // TODO: Support custom configuration parameters (allow_network, allow_arbitrary_fs, etc.)
       MemorySegment contextHandle = bindings.wasiContextNew();
-      
+
       if (contextHandle == null || contextHandle.equals(MemorySegment.NULL)) {
         throw new RuntimeException("Failed to create native WASI context");
       }
@@ -460,12 +460,19 @@ public final class WasiContextBuilder {
           for (String envVar : environment) {
             String[] parts = envVar.split("=", 2);
             if (parts.length == 2) {
-              MemorySegment keySegment = arena.allocateUtf8String(parts[0]);
-              MemorySegment valueSegment = arena.allocateUtf8String(parts[1]);
-              
-              int result = bindings.wasiContextSetEnvironmentVariable(contextHandle, keySegment, valueSegment);
+              MemorySegment keySegment = arena.allocateFrom(parts[0]);
+              MemorySegment valueSegment = arena.allocateFrom(parts[1]);
+
+              int result =
+                  bindings.wasiContextSetEnvironmentVariable(
+                      contextHandle, keySegment, valueSegment);
               if (result != 0) {
-                LOGGER.warning("Failed to set environment variable: " + parts[0] + " (error code: " + result + ")");
+                LOGGER.warning(
+                    "Failed to set environment variable: "
+                        + parts[0]
+                        + " (error code: "
+                        + result
+                        + ")");
               }
             }
           }
@@ -476,12 +483,12 @@ public final class WasiContextBuilder {
       if (arguments.length > 0) {
         try (Arena arena = Arena.ofConfined()) {
           // Create array of string pointers
-          MemorySegment argsArray = arena.allocateArray(ValueLayout.ADDRESS, arguments.length);
+          MemorySegment argsArray = arena.allocate(ValueLayout.ADDRESS, arguments.length);
           for (int i = 0; i < arguments.length; i++) {
-            MemorySegment argString = arena.allocateUtf8String(arguments[i]);
+            MemorySegment argString = arena.allocateFrom(arguments[i]);
             argsArray.setAtIndex(ValueLayout.ADDRESS, i, argString);
           }
-          
+
           int result = bindings.wasiContextSetArguments(contextHandle, argsArray, arguments.length);
           if (result != 0) {
             LOGGER.warning("Failed to set command line arguments (error code: " + result + ")");
@@ -495,17 +502,33 @@ public final class WasiContextBuilder {
           for (int i = 0; i < preopenDirs.length; i += 2) {
             String guestPath = preopenDirs[i];
             String hostPath = preopenDirs[i + 1];
-            
-            MemorySegment guestSegment = arena.allocateUtf8String(guestPath);
-            MemorySegment hostSegment = arena.allocateUtf8String(hostPath);
-            
+
+            MemorySegment guestSegment = arena.allocateFrom(guestPath);
+            MemorySegment hostSegment = arena.allocateFrom(hostPath);
+
             // Default directory permissions: read only for both directories and files
-            int result = bindings.wasiContextAddDirectory(contextHandle, hostSegment, guestSegment,
-                0, 1, 0,  // dir permissions: no create, read, no remove
-                1, 0, 0, 0); // file permissions: read only, no write/create/truncate
-                
+            int result =
+                bindings.wasiContextAddDirectory(
+                    contextHandle,
+                    hostSegment,
+                    guestSegment,
+                    0,
+                    1,
+                    0, // dir permissions: no create, read, no remove
+                    1,
+                    0,
+                    0,
+                    0); // file permissions: read only, no write/create/truncate
+
             if (result != 0) {
-              LOGGER.warning("Failed to add directory mapping " + guestPath + " -> " + hostPath + " (error code: " + result + ")");
+              LOGGER.warning(
+                  "Failed to add directory mapping "
+                      + guestPath
+                      + " -> "
+                      + hostPath
+                      + " (error code: "
+                      + result
+                      + ")");
             }
           }
         }

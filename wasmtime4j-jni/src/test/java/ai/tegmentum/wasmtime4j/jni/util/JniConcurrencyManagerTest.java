@@ -30,7 +30,6 @@ import org.junit.jupiter.api.Timeout;
  * <p>These tests verify thread-safe resource access, read-write locking, resource registration,
  * timeout handling, and performance under concurrent load.
  */
-
 @Timeout(30) // Global timeout for all tests
 class JniConcurrencyManagerTest {
 
@@ -52,11 +51,9 @@ class JniConcurrencyManagerTest {
   }
 
   @Nested
-
   class ConstructorTests {
 
     @Test
-
     void testCreateManagerWithDefaultSettings() {
       try (final JniConcurrencyManager manager = new JniConcurrencyManager()) {
         assertFalse(manager.isClosed());
@@ -66,7 +63,6 @@ class JniConcurrencyManagerTest {
     }
 
     @Test
-
     void testCreateManagerWithCustomSettings() {
       final int maxConcurrent = 5;
       final long timeout = 5000;
@@ -79,7 +75,6 @@ class JniConcurrencyManagerTest {
     }
 
     @Test
-
     void testRejectInvalidMaxConcurrentOperations() {
       assertThrows(
           JniValidationException.class,
@@ -93,7 +88,6 @@ class JniConcurrencyManagerTest {
     }
 
     @Test
-
     void testRejectNegativeTimeout() {
       assertThrows(
           JniValidationException.class,
@@ -102,7 +96,6 @@ class JniConcurrencyManagerTest {
     }
 
     @Test
-
     void testAcceptZeroTimeout() {
       try (final JniConcurrencyManager manager = new JniConcurrencyManager(10, 0)) {
         assertFalse(manager.isClosed());
@@ -111,11 +104,9 @@ class JniConcurrencyManagerTest {
   }
 
   @Nested
-
   class ResourceRegistrationTests {
 
     @Test
-
     void testRegisterResourceSuccessfully() {
       assertEquals(0, concurrencyManager.getResourceCount());
 
@@ -124,7 +115,6 @@ class JniConcurrencyManagerTest {
     }
 
     @Test
-
     void testRegisterMultipleResources() {
       concurrencyManager.registerResource(VALID_HANDLE);
       concurrencyManager.registerResource(ANOTHER_HANDLE);
@@ -133,7 +123,6 @@ class JniConcurrencyManagerTest {
     }
 
     @Test
-
     void testHandleDuplicateRegistration() {
       concurrencyManager.registerResource(VALID_HANDLE);
       concurrencyManager.registerResource(VALID_HANDLE); // Duplicate
@@ -142,7 +131,6 @@ class JniConcurrencyManagerTest {
     }
 
     @Test
-
     void testRejectInvalidHandle() {
       assertThrows(
           JniValidationException.class,
@@ -151,7 +139,6 @@ class JniConcurrencyManagerTest {
     }
 
     @Test
-
     void testUnregisterResource() {
       concurrencyManager.registerResource(VALID_HANDLE);
       assertEquals(1, concurrencyManager.getResourceCount());
@@ -161,7 +148,6 @@ class JniConcurrencyManagerTest {
     }
 
     @Test
-
     void testHandleUnregisteringNonExistentResource() {
       // Should not throw exception
       concurrencyManager.unregisterResource(VALID_HANDLE);
@@ -169,7 +155,6 @@ class JniConcurrencyManagerTest {
     }
 
     @Test
-
     void testRejectOperationsOnClosedManager() {
       concurrencyManager.close();
 
@@ -181,11 +166,9 @@ class JniConcurrencyManagerTest {
   }
 
   @Nested
-
   class ReadLockOperationsTests {
 
     @Test
-
     void testExecuteOperationWithReadLock() {
       concurrencyManager.registerResource(VALID_HANDLE);
 
@@ -197,7 +180,6 @@ class JniConcurrencyManagerTest {
     }
 
     @Test
-
     void testAutoRegisterResourceForReadOperations() {
       assertEquals(0, concurrencyManager.getResourceCount());
 
@@ -209,7 +191,6 @@ class JniConcurrencyManagerTest {
     }
 
     @Test
-
     void testHandleConcurrentReadOperations() throws InterruptedException {
       final int threadCount = 10;
       final AtomicInteger concurrentReads = new AtomicInteger(0);
@@ -260,7 +241,6 @@ class JniConcurrencyManagerTest {
     }
 
     @Test
-
     void testRejectNullOperation() {
       assertThrows(
           JniValidationException.class,
@@ -269,7 +249,6 @@ class JniConcurrencyManagerTest {
     }
 
     @Test
-
     void testRejectInvalidHandleInReadLock() {
       assertThrows(
           JniValidationException.class,
@@ -279,11 +258,9 @@ class JniConcurrencyManagerTest {
   }
 
   @Nested
-
   class WriteLockOperationsTests {
 
     @Test
-
     void testExecuteOperationWithWriteLock() {
       concurrencyManager.registerResource(VALID_HANDLE);
 
@@ -295,7 +272,6 @@ class JniConcurrencyManagerTest {
     }
 
     @Test
-
     void testAutoRegisterResourceForWriteOperations() {
       assertEquals(0, concurrencyManager.getResourceCount());
 
@@ -307,7 +283,6 @@ class JniConcurrencyManagerTest {
     }
 
     @Test
-
     void testSerializeWriteOperations() throws InterruptedException {
       final int threadCount = 5;
       final AtomicInteger concurrentWrites = new AtomicInteger(0);
@@ -365,7 +340,6 @@ class JniConcurrencyManagerTest {
     }
 
     @Test
-
     void testBlockReadsDuringWrite()
         throws InterruptedException, ExecutionException, TimeoutException {
       final CountDownLatch writeLatch = new CountDownLatch(1);
@@ -417,11 +391,9 @@ class JniConcurrencyManagerTest {
   }
 
   @Nested
-
   class ActiveOperationTrackingTests {
 
     @Test
-
     void testTrackActiveOperations() throws InterruptedException {
       final CountDownLatch operationLatch = new CountDownLatch(1);
       final CountDownLatch checkLatch = new CountDownLatch(1);
@@ -459,14 +431,12 @@ class JniConcurrencyManagerTest {
     }
 
     @Test
-
     void testReturnMinusOneForUnregisteredResource() {
       final int count = concurrencyManager.getActiveOperationCount(VALID_HANDLE);
       assertEquals(-1, count, "Should return -1 for unregistered resource");
     }
 
     @Test
-
     void testHandleActiveCountAfterUnregister() {
       concurrencyManager.registerResource(VALID_HANDLE);
       concurrencyManager.unregisterResource(VALID_HANDLE);
@@ -477,11 +447,9 @@ class JniConcurrencyManagerTest {
   }
 
   @Nested
-
   class ErrorHandlingTests {
 
     @Test
-
     void testPropagateOperationExceptions() {
       final RuntimeException expectedException = new RuntimeException("Test exception");
 
@@ -502,7 +470,6 @@ class JniConcurrencyManagerTest {
     }
 
     @Test
-
     void testHandleInterruptionGracefully() throws InterruptedException {
       final CountDownLatch interruptLatch = new CountDownLatch(1);
       final AtomicReference<Exception> caughtException = new AtomicReference<>();
@@ -544,7 +511,6 @@ class JniConcurrencyManagerTest {
     }
 
     @Test
-
     void testHandleTimeoutOperations() {
       // Create manager with short timeout
       try (final JniConcurrencyManager timeoutManager = new JniConcurrencyManager(2, 100)) {
@@ -560,11 +526,9 @@ class JniConcurrencyManagerTest {
   }
 
   @Nested
-
   class ResourceManagementTests {
 
     @Test
-
     void testCloseGracefully() {
       concurrencyManager.registerResource(VALID_HANDLE);
       concurrencyManager.registerResource(ANOTHER_HANDLE);
@@ -577,7 +541,6 @@ class JniConcurrencyManagerTest {
     }
 
     @Test
-
     void testBeIdempotentOnClose() {
       concurrencyManager.close();
       assertTrue(concurrencyManager.isClosed());
@@ -588,7 +551,6 @@ class JniConcurrencyManagerTest {
     }
 
     @Test
-
     void testRejectOperationsAfterClose() {
       concurrencyManager.close();
 
@@ -604,7 +566,6 @@ class JniConcurrencyManagerTest {
     }
 
     @Test
-
     void testWorkWithTryWithResources() {
       final AtomicInteger operationCount = new AtomicInteger(0);
 
@@ -623,7 +584,6 @@ class JniConcurrencyManagerTest {
     }
 
     @Test
-
     void testCloseWithActiveOperations() throws InterruptedException {
       final CountDownLatch operationLatch = new CountDownLatch(1);
       final CountDownLatch startLatch = new CountDownLatch(1);
@@ -664,11 +624,9 @@ class JniConcurrencyManagerTest {
   }
 
   @Nested
-
   class ToStringAndObjectMethodsTests {
 
     @Test
-
     void testProvideMeaningfulToString() {
       concurrencyManager.registerResource(VALID_HANDLE);
       concurrencyManager.registerResource(ANOTHER_HANDLE);
@@ -687,7 +645,6 @@ class JniConcurrencyManagerTest {
     }
 
     @Test
-
     void testShowAccurateStatisticsInToString() {
       concurrencyManager.registerResource(VALID_HANDLE);
       concurrencyManager.executeWithReadLock(VALID_HANDLE, () -> "stats test");

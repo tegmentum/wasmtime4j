@@ -67,7 +67,7 @@ class JniTableTest {
     void testCloseGracefully() {
       final JniTable table = new JniTable(VALID_HANDLE);
       assertFalse(table.isClosed(), "Should not be closed initially");
-      
+
       // Test that resource starts in open state
       assertFalse(table.isClosed(), "Should remain open");
       // Note: Actual close() testing requires native methods and is covered in integration tests
@@ -246,7 +246,7 @@ class JniTableTest {
       final JniTable table = new JniTable(VALID_HANDLE);
       final String toString = table.toString();
       assertTrue(toString.contains("false"), "toString should show open state");
-      
+
       // Note: Testing toString() after close() requires native methods
       // Integration tests will verify toString() behavior after close()
     }

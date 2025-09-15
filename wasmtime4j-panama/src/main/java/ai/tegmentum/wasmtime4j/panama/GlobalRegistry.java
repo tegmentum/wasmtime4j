@@ -27,11 +27,11 @@ import java.util.logging.Logger;
  * Registry for cross-module global sharing in Panama FFI implementation.
  *
  * <p>This registry allows WebAssembly globals to be shared between different module instances
- * within the same store context. It provides thread-safe registration, lookup, and management
- * of shared globals.
+ * within the same store context. It provides thread-safe registration, lookup, and management of
+ * shared globals.
  *
- * <p>The registry maintains both native-side references through FFI and Java-side references
- * for optimal performance and proper resource management.
+ * <p>The registry maintains both native-side references through FFI and Java-side references for
+ * optimal performance and proper resource management.
  *
  * @since 1.0.0
  */
@@ -45,7 +45,7 @@ public final class GlobalRegistry implements AutoCloseable {
 
   // Java-side registry for fast lookup
   private final ConcurrentHashMap<String, PanamaGlobal> globalMap = new ConcurrentHashMap<>();
-  
+
   // Registry state
   private volatile boolean closed = false;
 
@@ -57,7 +57,7 @@ public final class GlobalRegistry implements AutoCloseable {
    */
   public GlobalRegistry(final PanamaStore store) throws WasmException {
     Objects.requireNonNull(store, "store cannot be null");
-    
+
     this.resourceManager = store.getResourceManager();
     this.nativeFunctions = NativeFunctionBindings.getInstance();
 
@@ -70,10 +70,9 @@ public final class GlobalRegistry implements AutoCloseable {
       MemorySegment registryPtr = createNativeRegistry();
       PanamaErrorHandler.requireValidPointer(registryPtr, "registryPtr");
 
-      this.registryResource = resourceManager.manageNativeResource(
-          registryPtr, 
-          () -> destroyNativeRegistryInternal(registryPtr), 
-          "Global Registry");
+      this.registryResource =
+          resourceManager.manageNativeResource(
+              registryPtr, () -> destroyNativeRegistryInternal(registryPtr), "Global Registry");
 
       LOGGER.fine("Created global registry with native resource");
 
@@ -105,13 +104,13 @@ public final class GlobalRegistry implements AutoCloseable {
       }
 
       // Register through native FFI
-      ArenaResourceManager.ManagedMemorySegment nameSegment = 
-          resourceManager.allocateString(name);
+      ArenaResourceManager.ManagedMemorySegment nameSegment = resourceManager.allocateString(name);
 
-      int result = nativeFunctions.globalRegisterShared(
-          global.getGlobalHandle(),
-          nameSegment.getSegment(),
-          registryResource.getNativePointer());
+      int result =
+          nativeFunctions.globalRegisterShared(
+              global.getGlobalHandle(),
+              nameSegment.getSegment(),
+              registryResource.getNativePointer());
 
       PanamaErrorHandler.safeCheckError(
           result, "Global registration", "Failed to register global: " + name);
@@ -150,12 +149,11 @@ public final class GlobalRegistry implements AutoCloseable {
       }
 
       // Fallback to native lookup
-      ArenaResourceManager.ManagedMemorySegment nameSegment = 
-          resourceManager.allocateString(name);
+      ArenaResourceManager.ManagedMemorySegment nameSegment = resourceManager.allocateString(name);
 
-      MemorySegment globalPtr = nativeFunctions.globalLookupShared(
-          nameSegment.getSegment(),
-          registryResource.getNativePointer());
+      MemorySegment globalPtr =
+          nativeFunctions.globalLookupShared(
+              nameSegment.getSegment(), registryResource.getNativePointer());
 
       if (globalPtr == null || globalPtr.equals(MemorySegment.NULL)) {
         return Optional.empty();
@@ -163,7 +161,8 @@ public final class GlobalRegistry implements AutoCloseable {
 
       // Create Panama global wrapper for native global
       // Note: This requires the parent instance context, which would need to be tracked
-      LOGGER.warning("Native global lookup found global but cannot create wrapper without instance context");
+      LOGGER.warning(
+          "Native global lookup found global but cannot create wrapper without instance context");
       return Optional.empty();
 
     } catch (Exception e) {
@@ -184,12 +183,12 @@ public final class GlobalRegistry implements AutoCloseable {
     try {
       // Remove from Java-side registry
       PanamaGlobal removed = globalMap.remove(name);
-      
+
       if (removed != null) {
         LOGGER.fine("Unregistered global from sharing: " + name);
         return true;
       }
-      
+
       return false;
     } catch (Exception e) {
       LOGGER.warning("Failed to unregister global: " + name + " - " + e.getMessage());
@@ -221,16 +220,14 @@ public final class GlobalRegistry implements AutoCloseable {
 
     // Clean up stale entries
     globalMap.entrySet().removeIf(entry -> entry.getValue().isClosed());
-    
+
     return globalMap.size();
   }
 
-  /**
-   * Clears all registered globals.
-   */
+  /** Clears all registered globals. */
   public void clear() {
     ensureNotClosed();
-    
+
     globalMap.clear();
     LOGGER.fine("Cleared all registered globals from registry");
   }
@@ -291,12 +288,13 @@ public final class GlobalRegistry implements AutoCloseable {
   private MemorySegment createNativeRegistry() throws WasmException {
     try {
       // Allocate memory for registry pointer
-      ArenaResourceManager.ManagedMemorySegment registryOutPtr = 
+      ArenaResourceManager.ManagedMemorySegment registryOutPtr =
           resourceManager.allocate(MemoryLayouts.C_POINTER);
 
       // For now, we'll use a simple memory segment as the registry handle
       // In a real implementation, this would create a native registry structure
-      MemorySegment registryPtr = resourceManager.allocate(64).getSegment(); // 64-byte registry structure
+      MemorySegment registryPtr =
+          resourceManager.allocate(64).getSegment(); // 64-byte registry structure
 
       // Store the registry pointer in the output parameter
       MemoryLayouts.C_POINTER.varHandle().set(registryOutPtr.getSegment(), 0, registryPtr);
@@ -337,7 +335,7 @@ public final class GlobalRegistry implements AutoCloseable {
 
   @Override
   public String toString() {
-    return String.format("GlobalRegistry{registered=%d, closed=%s}", 
-        getRegisteredCount(), isClosed());
+    return String.format(
+        "GlobalRegistry{registered=%d, closed=%s}", getRegisteredCount(), isClosed());
   }
 }

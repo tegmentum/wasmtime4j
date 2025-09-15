@@ -33,7 +33,7 @@ import org.junit.jupiter.api.TestInfo;
 final class HostFunctionMarshalingComprehensiveIT extends BaseIntegrationTest {
 
   private static final Logger LOGGER =
-      Logger.getLogger(HostFunctionMarshalingComprehensiveTest.class.getName());
+      Logger.getLogger(HostFunctionMarshalingComprehensiveIT.class.getName());
 
   @Override
   protected void doSetUp(final TestInfo testInfo) {

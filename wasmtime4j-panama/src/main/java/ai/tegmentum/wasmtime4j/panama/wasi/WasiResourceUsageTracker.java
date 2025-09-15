@@ -130,9 +130,9 @@ public final class WasiResourceUsageTracker {
     final ContextResourceUsage usage = getContextUsage(contextId);
 
     // Check memory limits before allocation
-    final long newMemoryUsage = usage.memoryUsed.addAndGet(bytes);
-    if (resourceLimits.isMemoryLimited()
-        && newMemoryUsage > resourceLimits.getMaxMemoryBytes()) {
+    usage.memoryUsed.addAndGet(bytes);
+    final long newMemoryUsage = usage.memoryUsed.get();
+    if (resourceLimits.isMemoryLimited() && newMemoryUsage > resourceLimits.getMaxMemoryBytes()) {
       usage.memoryUsed.addAndGet(-bytes); // Rollback
       globalStats.memoryLimitViolations.increment();
       throw new IllegalStateException(
@@ -141,7 +141,7 @@ public final class WasiResourceUsageTracker {
               contextId, newMemoryUsage, resourceLimits.getMaxMemoryBytes()));
     }
 
-    usage.totalMemoryAllocated.addAndGet(bytes);
+    usage.totalMemoryAllocated.add(bytes);
     globalStats.totalMemoryAllocated.add(bytes);
 
     if (detailedTrackingEnabled) {
@@ -170,7 +170,7 @@ public final class WasiResourceUsageTracker {
     final ContextResourceUsage usage = getContextUsage(contextId);
 
     usage.memoryUsed.addAndGet(-bytes);
-    usage.totalMemoryDeallocated.addAndGet(bytes);
+    usage.totalMemoryDeallocated.add(bytes);
     globalStats.totalMemoryDeallocated.add(bytes);
 
     if (detailedTrackingEnabled) {
@@ -218,13 +218,13 @@ public final class WasiResourceUsageTracker {
     switch (operation) {
       case READ:
         usage.fileReadOperations.increment();
-        usage.totalBytesRead.addAndGet(bytes);
+        usage.totalBytesRead.add(bytes);
         globalStats.totalFileReadOperations.increment();
         globalStats.totalBytesRead.add(bytes);
         break;
       case WRITE:
         usage.fileWriteOperations.increment();
-        usage.totalBytesWritten.addAndGet(bytes);
+        usage.totalBytesWritten.add(bytes);
         globalStats.totalFileWriteOperations.increment();
         globalStats.totalBytesWritten.add(bytes);
         break;
@@ -243,7 +243,7 @@ public final class WasiResourceUsageTracker {
     }
 
     if (detailedTrackingEnabled) {
-      usage.totalFileSystemDuration.addAndGet(durationNanos);
+      usage.totalFileSystemDuration.add(durationNanos);
       globalStats.totalFileSystemDuration.add(durationNanos);
     }
 
@@ -270,7 +270,8 @@ public final class WasiResourceUsageTracker {
     final ContextResourceUsage usage = getContextUsage(contextId);
 
     // Check CPU time limits
-    final long newCpuTime = usage.totalCpuTime.addAndGet(cpuTimeNanos);
+    usage.totalCpuTime.add(cpuTimeNanos);
+    final long newCpuTime = usage.totalCpuTime.sum();
     if (resourceLimits.getMaxCpuTime() != null) {
       final long maxCpuTimeNanos = resourceLimits.getMaxCpuTime().toNanos();
       if (newCpuTime > maxCpuTimeNanos) {
@@ -303,12 +304,11 @@ public final class WasiResourceUsageTracker {
 
     final ContextResourceUsage usage = getContextUsage(contextId);
 
-    usage.totalExecutionTime.addAndGet(executionTimeNanos);
+    usage.totalExecutionTime.add(executionTimeNanos);
     globalStats.totalExecutionTime.add(executionTimeNanos);
 
     LOGGER.finest(
-        String.format(
-            "Recorded Panama execution time: %s, %d ns", contextId, executionTimeNanos));
+        String.format("Recorded Panama execution time: %s, %d ns", contextId, executionTimeNanos));
   }
 
   /**
@@ -317,7 +317,7 @@ public final class WasiResourceUsageTracker {
    * @param contextId the context identifier
    * @return the context resource usage statistics
    */
-  public ContextResourceUsageSnapshot getContextUsage(final String contextId) {
+  public ContextResourceUsageSnapshot getContextUsageSnapshot(final String contextId) {
     if (contextId == null || contextId.isEmpty()) {
       throw new IllegalArgumentException("Context ID cannot be null or empty");
     }
@@ -577,6 +577,11 @@ public final class WasiResourceUsageTracker {
       return otherFileOperations;
     }
 
+    /**
+     * Gets the total number of file operations.
+     *
+     * @return the total file operations count
+     */
     public long getTotalFileOperations() {
       return fileReadOperations
           + fileWriteOperations
@@ -696,6 +701,11 @@ public final class WasiResourceUsageTracker {
       return totalMemoryDeallocations;
     }
 
+    /**
+     * Gets the total number of file operations across all contexts.
+     *
+     * @return the total file operations count
+     */
     public long getTotalFileOperations() {
       return totalFileReadOperations
           + totalFileWriteOperations
@@ -760,6 +770,11 @@ public final class WasiResourceUsageTracker {
       return diskWriteLimitViolations;
     }
 
+    /**
+     * Gets the total number of limit violations.
+     *
+     * @return the total limit violations count
+     */
     public long getTotalLimitViolations() {
       return memoryLimitViolations
           + cpuLimitViolations

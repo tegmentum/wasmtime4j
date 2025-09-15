@@ -1,6 +1,7 @@
 package ai.tegmentum.wasmtime4j;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
 import java.io.Closeable;
 
 /**
@@ -72,4 +73,14 @@ public interface Engine extends Closeable {
    */
   @Override
   void close();
+
+  /**
+   * Creates a new Engine with default configuration.
+   *
+   * @return a new Engine instance
+   * @throws WasmException if the engine cannot be created
+   */
+  static Engine create() throws WasmException {
+    return WasmRuntimeFactory.create().createEngine();
+  }
 }

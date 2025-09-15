@@ -38,7 +38,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 class ModuleSpecificationComplianceIT extends BaseIntegrationTest {
 
   private static final Logger LOGGER =
-      Logger.getLogger(ModuleSpecificationComplianceTest.class.getName());
+      Logger.getLogger(ModuleSpecificationComplianceIT.class.getName());
 
   private WasmTestDataManager testDataManager;
 

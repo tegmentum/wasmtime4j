@@ -1,6 +1,7 @@
 package ai.tegmentum.wasmtime4j;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
 import java.io.Closeable;
 import java.util.List;
 
@@ -99,4 +100,17 @@ public interface Module extends Closeable {
    */
   @Override
   void close();
+
+  /**
+   * Compiles WebAssembly bytecode into a Module.
+   *
+   * @param engine the engine to use for compilation
+   * @param wasmBytes the WebAssembly bytecode
+   * @return a compiled Module
+   * @throws WasmException if compilation fails
+   * @throws IllegalArgumentException if engine or wasmBytes is null
+   */
+  static Module compile(final Engine engine, final byte[] wasmBytes) throws WasmException {
+    return WasmRuntimeFactory.create().compileModule(engine, wasmBytes);
+  }
 }

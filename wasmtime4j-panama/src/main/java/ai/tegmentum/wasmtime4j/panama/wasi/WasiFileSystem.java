@@ -3,8 +3,6 @@ package ai.tegmentum.wasmtime4j.panama.wasi;
 import ai.tegmentum.wasmtime4j.panama.exception.PanamaException;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
 import ai.tegmentum.wasmtime4j.panama.wasi.exception.WasiFileSystemException;
-import java.lang.foreign.MemorySegment;
-import java.lang.foreign.ValueLayout;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -232,6 +230,98 @@ public final class WasiFileSystem {
 
       LOGGER.fine(
           String.format("Wrote %d bytes to file descriptor: %d", bytesWritten, fileDescriptor));
+
+      return bytesWritten;
+
+    } catch (final IOException e) {
+      LOGGER.warning(String.format("Failed to write to file: %s", e.getMessage()));
+      throw new WasiFileSystemException(
+          "Failed to write file: " + e.getMessage(), mapIoExceptionToWasiError(e));
+    }
+  }
+
+  /**
+   * Reads data from a file using zero-copy operations directly into a memory segment.
+   *
+   * @param fileDescriptor the file descriptor
+   * @param buffer the memory segment to read data into
+   * @param offset the offset in the buffer to start reading into
+   * @param length the maximum number of bytes to read
+   * @return the number of bytes actually read
+   * @throws WasiFileSystemException if the read operation fails
+   */
+  public int readFileZeroCopy(
+      final int fileDescriptor, final java.lang.foreign.MemorySegment buffer, final int offset, final int length)
+      throws WasiFileSystemException {
+    PanamaValidation.requireNonNull(buffer, "buffer");
+    PanamaValidation.requireNonNegative(offset, "offset");
+    PanamaValidation.requirePositive(length, "length");
+
+    if (offset + length > buffer.byteSize()) {
+      throw new IllegalArgumentException("Buffer overflow: offset + length > buffer size");
+    }
+
+    LOGGER.fine(
+        String.format("Zero-copy reading from file descriptor: %d, length: %d", fileDescriptor, length));
+
+    final WasiFileHandle handle = getFileHandle(fileDescriptor);
+    if (!handle.getOperation().requiresReadAccess()) {
+      throw new WasiFileSystemException("File not open for reading", "EBADF");
+    }
+
+    try {
+      // Create a ByteBuffer from the memory segment slice
+      ByteBuffer byteBuffer = buffer.asSlice(offset, length).asByteBuffer();
+      final int bytesRead = handle.getChannel().read(byteBuffer);
+
+      LOGGER.fine(
+          String.format("Zero-copy read %d bytes from file descriptor: %d", bytesRead, fileDescriptor));
+
+      return bytesRead;
+
+    } catch (final IOException e) {
+      LOGGER.warning(String.format("Failed to read from file: %s", e.getMessage()));
+      throw new WasiFileSystemException(
+          "Failed to read file: " + e.getMessage(), mapIoExceptionToWasiError(e));
+    }
+  }
+
+  /**
+   * Writes data to a file using zero-copy operations directly from a memory segment.
+   *
+   * @param fileDescriptor the file descriptor
+   * @param buffer the memory segment containing data to write
+   * @param offset the offset in the buffer to start writing from
+   * @param length the number of bytes to write
+   * @return the number of bytes actually written
+   * @throws WasiFileSystemException if the write operation fails
+   */
+  public int writeFileZeroCopy(
+      final int fileDescriptor, final java.lang.foreign.MemorySegment buffer, final int offset, final int length)
+      throws WasiFileSystemException {
+    PanamaValidation.requireNonNull(buffer, "buffer");
+    PanamaValidation.requireNonNegative(offset, "offset");
+    PanamaValidation.requirePositive(length, "length");
+
+    if (offset + length > buffer.byteSize()) {
+      throw new IllegalArgumentException("Buffer overflow: offset + length > buffer size");
+    }
+
+    LOGGER.fine(
+        String.format("Zero-copy writing to file descriptor: %d, length: %d", fileDescriptor, length));
+
+    final WasiFileHandle handle = getFileHandle(fileDescriptor);
+    if (!handle.getOperation().requiresWriteAccess()) {
+      throw new WasiFileSystemException("File not open for writing", "EBADF");
+    }
+
+    try {
+      // Create a ByteBuffer from the memory segment slice
+      ByteBuffer byteBuffer = buffer.asSlice(offset, length).asByteBuffer();
+      final int bytesWritten = handle.getChannel().write(byteBuffer);
+
+      LOGGER.fine(
+          String.format("Zero-copy wrote %d bytes to file descriptor: %d", bytesWritten, fileDescriptor));
 
       return bytesWritten;
 

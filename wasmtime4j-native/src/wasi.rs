@@ -725,7 +725,7 @@ pub unsafe extern "C" fn wasi_ctx_add_to_store(
     store_ptr: *mut c_void,
 ) -> c_int {
     ffi_utils::ffi_try_code(|| {
-        let wasi_ctx = ffi_utils::deref_ptr::<WasiContext>(ctx_ptr, "WASI context")?;
+        let _wasi_ctx = ffi_utils::deref_ptr::<WasiContext>(ctx_ptr, "WASI context")?;
         
         // Store the WASI context reference in the store's user data
         // This is a placeholder implementation - the actual Store integration 
@@ -770,7 +770,7 @@ pub unsafe extern "C" fn wasi_ctx_get_from_store(
         log::debug!("Retrieving WASI context from Store - placeholder implementation");
         
         // For now, return null to indicate no WASI context attached
-        Ok(std::ptr::null_mut::<WasiContext>())
+        Ok(Box::new(std::ptr::null_mut::<WasiContext>()))
     });
     result
 }
@@ -1215,36 +1215,7 @@ mod tests {
 /// JNI bridge functions for Java integration - Simple stub implementations
 /// These are basic stubs that allow compilation and basic functionality
 
-/// Create a new WASI context from Java
-#[no_mangle]
-pub unsafe extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiContext_nativeCreate(
-    _env: *mut jni::sys::JNIEnv,
-    _class: jni::sys::jclass,
-    _environment: jni::sys::jobjectArray,
-    _arguments: jni::sys::jobjectArray,
-    _preopen_dirs: jni::sys::jobjectArray,
-    _working_dir: jni::sys::jstring,
-) -> jni::sys::jlong {
-    let result = ffi_utils::ffi_try_ptr(|| {
-        // Create a basic WASI context with default configuration
-        let ctx = WasiContext::new()?;
-        Ok(Box::new(ctx))
-    });
-    
-    result as jni::sys::jlong
-}
 
-/// Close a WASI context from Java
-#[no_mangle]
-pub unsafe extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiContext_nativeClose(
-    _env: *mut jni::sys::JNIEnv,
-    _class: jni::sys::jclass,
-    handle: jni::sys::jlong,
-) {
-    if handle != 0 {
-        ffi_utils::destroy_resource::<WasiContext>(handle as *mut c_void, "WASI context");
-    }
-}
 
 /// Get random bytes using direct ByteBuffer
 #[no_mangle]

@@ -43,15 +43,11 @@ public abstract class JniResource implements AutoCloseable {
    */
   private static final ReferenceQueue<JniResource> REFERENCE_QUEUE = new ReferenceQueue<>();
 
-  /**
-   * Map to track phantom references and their associated cleanup data.
-   */
+  /** Map to track phantom references and their associated cleanup data. */
   private static final ConcurrentHashMap<PhantomReference<JniResource>, ResourceCleanup>
       PHANTOM_REFS = new ConcurrentHashMap<>();
 
-  /**
-   * Cleanup thread that processes phantom references to free native resources.
-   */
+  /** Cleanup thread that processes phantom references to free native resources. */
   private static final Thread CLEANUP_THREAD;
 
   static {
@@ -69,25 +65,21 @@ public abstract class JniResource implements AutoCloseable {
   /** Phantom reference for safe automatic cleanup. */
   private final PhantomReference<JniResource> phantomRef;
 
-  /**
-   * Data holder for cleanup information associated with phantom references.
-   */
+  /** Data holder for cleanup information associated with phantom references. */
   private static final class ResourceCleanup {
     final long nativeHandle;
     final String resourceType;
     final JniResourceCleanup cleanup;
 
-    ResourceCleanup(final long nativeHandle, final String resourceType, 
-                   final JniResourceCleanup cleanup) {
+    ResourceCleanup(
+        final long nativeHandle, final String resourceType, final JniResourceCleanup cleanup) {
       this.nativeHandle = nativeHandle;
       this.resourceType = resourceType;
       this.cleanup = cleanup;
     }
   }
 
-  /**
-   * Interface for native resource cleanup operations.
-   */
+  /** Interface for native resource cleanup operations. */
   @FunctionalInterface
   private interface JniResourceCleanup {
     void cleanup(long nativeHandle) throws Exception;
@@ -102,16 +94,18 @@ public abstract class JniResource implements AutoCloseable {
   protected JniResource(final long nativeHandle) {
     JniValidation.requireValidHandle(nativeHandle, "nativeHandle");
     this.nativeHandle = nativeHandle;
-    
+
     // Set up phantom reference for automatic cleanup
-    final ResourceCleanup cleanupData = new ResourceCleanup(
-        nativeHandle, 
-        getClass().getSimpleName(), // Use class name instead of getResourceType() to avoid 'this' escape
-        this::doCleanupSafely
-    );
+    final ResourceCleanup cleanupData =
+        new ResourceCleanup(
+            nativeHandle,
+            getClass()
+                .getSimpleName(), // Use class name instead of getResourceType() to avoid 'this'
+            // escape
+            this::doCleanupSafely);
     this.phantomRef = new PhantomReference<>(this, REFERENCE_QUEUE);
     PHANTOM_REFS.put(this.phantomRef, cleanupData);
-    
+
     LOGGER.fine(String.format("Created JNI resource with handle: 0x%x", nativeHandle));
   }
 
@@ -136,9 +130,9 @@ public abstract class JniResource implements AutoCloseable {
   }
 
   /**
-   * Marks this resource as closed for testing purposes without calling native cleanup.
-   * This method is public and should only be used in unit tests to simulate
-   * closed resource behavior without requiring actual native resources.
+   * Marks this resource as closed for testing purposes without calling native cleanup. This method
+   * is public and should only be used in unit tests to simulate closed resource behavior without
+   * requiring actual native resources.
    */
   public void markClosedForTesting() {
     closed.set(true);
@@ -170,7 +164,7 @@ public abstract class JniResource implements AutoCloseable {
         // Clean up phantom reference tracking
         final ResourceCleanup cleanupData = PHANTOM_REFS.remove(phantomRef);
         phantomRef.clear();
-        
+
         // Perform actual resource cleanup
         doClose();
         LOGGER.fine(
@@ -186,23 +180,24 @@ public abstract class JniResource implements AutoCloseable {
   }
 
   /**
-   * Processes the cleanup queue for phantom references.
-   * This method runs in a background daemon thread.
+   * Processes the cleanup queue for phantom references. This method runs in a background daemon
+   * thread.
    */
   @SuppressWarnings("InfiniteLoopStatement")
   private static void processCleanupQueue() {
     while (true) {
       try {
         // Block until a phantom reference is available
-        final PhantomReference<JniResource> ref = 
+        final PhantomReference<JniResource> ref =
             (PhantomReference<JniResource>) REFERENCE_QUEUE.remove();
-        
+
         final ResourceCleanup cleanupData = PHANTOM_REFS.remove(ref);
         if (cleanupData != null) {
           try {
             LOGGER.warning(
                 String.format(
-                    "Cleaning up unclosed %s resource with handle: 0x%x - close() should be called explicitly",
+                    "Cleaning up unclosed %s resource with handle: 0x%x - close() should be called"
+                        + " explicitly",
                     cleanupData.resourceType, cleanupData.nativeHandle));
             cleanupData.cleanup.cleanup(cleanupData.nativeHandle);
           } catch (final Exception e) {
@@ -212,10 +207,10 @@ public abstract class JniResource implements AutoCloseable {
                     cleanupData.resourceType, cleanupData.nativeHandle, e.getMessage()));
           }
         }
-        
+
         // Clear the phantom reference
         ref.clear();
-        
+
       } catch (final InterruptedException e) {
         Thread.currentThread().interrupt();
         LOGGER.info("JNI resource cleanup thread interrupted");
@@ -227,8 +222,8 @@ public abstract class JniResource implements AutoCloseable {
   }
 
   /**
-   * Safely performs native resource cleanup with additional defensive checks.
-   * This method is used by phantom reference cleanup to prevent double-free errors.
+   * Safely performs native resource cleanup with additional defensive checks. This method is used
+   * by phantom reference cleanup to prevent double-free errors.
    */
   private void doCleanupSafely(final long nativeHandle) throws Exception {
     // Additional defensive check - only cleanup if not already closed

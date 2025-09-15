@@ -37,7 +37,7 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
 @DisplayName("Module Malformed Scenarios Tests")
 class ModuleMalformedIT extends BaseIntegrationTest {
 
-  private static final Logger LOGGER = Logger.getLogger(ModuleMalformedTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(ModuleMalformedIT.class.getName());
 
   private WasmTestDataManager testDataManager;
   private ExecutorService executorService;

@@ -23,6 +23,54 @@ JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiContext_nativeC
 JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiContext_nativeCreate
   (JNIEnv *, jclass, jobjectArray, jobjectArray, jobjectArray, jstring);
 
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_wasi_WasiContext
+ * Method:    nativeAddDirectory
+ * Signature: (JLjava/lang/String;Ljava/lang/String;ZZZ)Z
+ */
+JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiContext_nativeAddDirectory
+  (JNIEnv *, jclass, jlong, jstring, jstring, jboolean, jboolean, jboolean);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_wasi_WasiContext
+ * Method:    nativeSetEnvironmentVariable
+ * Signature: (JLjava/lang/String;Ljava/lang/String;)Z
+ */
+JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiContext_nativeSetEnvironmentVariable
+  (JNIEnv *, jclass, jlong, jstring, jstring);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_wasi_WasiContext
+ * Method:    nativeIsPathAllowed
+ * Signature: (JLjava/lang/String;)Z
+ */
+JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiContext_nativeIsPathAllowed
+  (JNIEnv *, jclass, jlong, jstring);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_wasi_WasiContext
+ * Method:    nativeGetEnvironmentCount
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiContext_nativeGetEnvironmentCount
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_wasi_WasiContext
+ * Method:    nativeGetArgumentCount
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiContext_nativeGetArgumentCount
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_wasi_WasiContext
+ * Method:    nativeGetDirectoryCount
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiContext_nativeGetDirectoryCount
+  (JNIEnv *, jclass, jlong);
+
 #ifdef __cplusplus
 }
 #endif

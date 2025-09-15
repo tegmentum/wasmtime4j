@@ -22,7 +22,7 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
 
   private static final Logger LOGGER = Logger.getLogger(JniGlobal.class.getName());
 
-  /** Store context required for global operations */
+  /** Store context required for global operations. */
   private final JniStore store;
 
   // Load native library when this class is first loaded
@@ -90,14 +90,8 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
    * @throws JniResourceException if this global is closed
    * @throws RuntimeException if the value cannot be retrieved
    */
-  public Object getValue() {
-    ensureNotClosed();
-    store.ensureNotClosed(); // Ensure store is still valid
-    try {
-      return nativeGetValue(getNativeHandle(), store.getNativeHandle());
-    } catch (final Exception e) {
-      throw new RuntimeException("Unexpected error getting global value", e);
-    }
+  public WasmValue getValue() {
+    return get();
   }
 
   /**
@@ -109,7 +103,9 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
    */
   public int getIntValue() {
     ensureNotClosed();
-    store.ensureNotClosed();
+    if (store.isClosed()) {
+      throw new JniResourceException("Store is closed");
+    }
     try {
       return nativeGetIntValue(getNativeHandle(), store.getNativeHandle());
     } catch (final RuntimeException e) {
@@ -128,7 +124,9 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
    */
   public long getLongValue() {
     ensureNotClosed();
-    store.ensureNotClosed();
+    if (store.isClosed()) {
+      throw new JniResourceException("Store is closed");
+    }
     try {
       return nativeGetLongValue(getNativeHandle(), store.getNativeHandle());
     } catch (final RuntimeException e) {
@@ -147,7 +145,9 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
    */
   public float getFloatValue() {
     ensureNotClosed();
-    store.ensureNotClosed();
+    if (store.isClosed()) {
+      throw new JniResourceException("Store is closed");
+    }
     try {
       return nativeGetFloatValue(getNativeHandle(), store.getNativeHandle());
     } catch (final RuntimeException e) {
@@ -166,7 +166,9 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
    */
   public double getDoubleValue() {
     ensureNotClosed();
-    store.ensureNotClosed();
+    if (store.isClosed()) {
+      throw new JniResourceException("Store is closed");
+    }
     try {
       return nativeGetDoubleValue(getNativeHandle(), store.getNativeHandle());
     } catch (final RuntimeException e) {
@@ -186,7 +188,9 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
   public void setValue(final Object value) {
     JniValidation.requireNonNull(value, "value");
     ensureNotClosed();
-    store.ensureNotClosed();
+    if (store.isClosed()) {
+      throw new JniResourceException("Store is closed");
+    }
     validateMutable();
 
     try {
@@ -210,7 +214,9 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
    */
   public void setIntValue(final int value) {
     ensureNotClosed();
-    store.ensureNotClosed();
+    if (store.isClosed()) {
+      throw new JniResourceException("Store is closed");
+    }
     validateMutable();
 
     try {
@@ -234,7 +240,9 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
    */
   public void setLongValue(final long value) {
     ensureNotClosed();
-    store.ensureNotClosed();
+    if (store.isClosed()) {
+      throw new JniResourceException("Store is closed");
+    }
     validateMutable();
 
     try {
@@ -258,11 +266,14 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
    */
   public void setFloatValue(final float value) {
     ensureNotClosed();
-    store.ensureNotClosed();
+    if (store.isClosed()) {
+      throw new JniResourceException("Store is closed");
+    }
     validateMutable();
 
     try {
-      final boolean success = nativeSetFloatValue(getNativeHandle(), store.getNativeHandle(), value);
+      final boolean success =
+          nativeSetFloatValue(getNativeHandle(), store.getNativeHandle(), value);
       if (!success) {
         throw new RuntimeException("Failed to set global float value");
       }
@@ -282,11 +293,14 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
    */
   public void setDoubleValue(final double value) {
     ensureNotClosed();
-    store.ensureNotClosed();
+    if (store.isClosed()) {
+      throw new JniResourceException("Store is closed");
+    }
     validateMutable();
 
     try {
-      final boolean success = nativeSetDoubleValue(getNativeHandle(), store.getNativeHandle(), value);
+      final boolean success =
+          nativeSetDoubleValue(getNativeHandle(), store.getNativeHandle(), value);
       if (!success) {
         throw new RuntimeException("Failed to set global double value");
       }
@@ -517,7 +531,8 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
    * @param value the new float value
    * @return true on success, false on failure
    */
-  private static native boolean nativeSetFloatValue(long globalHandle, long storeHandle, float value);
+  private static native boolean nativeSetFloatValue(
+      long globalHandle, long storeHandle, float value);
 
   /**
    * Sets the value of a global to a double.
@@ -527,7 +542,8 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
    * @param value the new double value
    * @return true on success, false on failure
    */
-  private static native boolean nativeSetDoubleValue(long globalHandle, long storeHandle, double value);
+  private static native boolean nativeSetDoubleValue(
+      long globalHandle, long storeHandle, double value);
 
   /**
    * Destroys a native global.

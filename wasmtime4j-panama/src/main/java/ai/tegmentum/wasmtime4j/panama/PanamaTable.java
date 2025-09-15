@@ -22,6 +22,7 @@ import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.RuntimeException;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.lang.foreign.MemorySegment;
+import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 import java.util.Objects;
 import java.util.logging.Level;
@@ -72,8 +73,8 @@ public final class PanamaTable implements WasmTable, AutoCloseable {
   }
 
   /**
-   * Creates a new Panama table wrapper with the given native table handle and bindings.
-   * This constructor is primarily used for testing to allow dependency injection.
+   * Creates a new Panama table wrapper with the given native table handle and bindings. This
+   * constructor is primarily used for testing to allow dependency injection.
    *
    * @param tableHandle the native table handle from Wasmtime
    * @param arenaManager the arena resource manager for memory lifecycle
@@ -101,7 +102,7 @@ public final class PanamaTable implements WasmTable, AutoCloseable {
         logger.fine("Created Panama table instance with handle: " + tableHandle);
       }
     } catch (Exception e) {
-      throw PanamaErrorHandler.mapToWasmException(e, "Failed to initialize table");
+      throw new WasmException("Failed to initialize table", e);
     }
   }
 
@@ -153,11 +154,12 @@ public final class PanamaTable implements WasmTable, AutoCloseable {
       final MemorySegment storePtr = store.getStorePointer();
 
       // Allocate memory segments for out parameters
-      final MemorySegment refIdPresentPtr = arenaManager.getCurrentArena().allocate(ValueLayout.JAVA_INT);
+      final MemorySegment refIdPresentPtr =
+          arenaManager.getCurrentArena().allocate(ValueLayout.JAVA_INT);
       final MemorySegment refIdPtr = arenaManager.getCurrentArena().allocate(ValueLayout.JAVA_LONG);
 
-      final int result = (int) getHandle.invokeExact(
-          tableHandle, storePtr, index, refIdPresentPtr, refIdPtr);
+      final int result =
+          (int) getHandle.invokeExact(tableHandle, storePtr, index, refIdPresentPtr, refIdPtr);
 
       if (result != 0) {
         throw new RuntimeException("Failed to get table element, error code: " + result);
@@ -174,10 +176,10 @@ public final class PanamaTable implements WasmTable, AutoCloseable {
 
       // Get the actual reference ID
       final long refId = refIdPtr.get(ValueLayout.JAVA_LONG, 0);
-      
+
       // Determine element type dynamically
       final WasmValueType elementType = getElementType();
-      
+
       // Convert native element handle to appropriate Java object based on type
       if (elementType == WasmValueType.FUNCREF) {
         // Create a function handle from the ref_id - this will need to be implemented
@@ -207,7 +209,7 @@ public final class PanamaTable implements WasmTable, AutoCloseable {
 
   /**
    * Creates a function object from a reference ID.
-   * 
+   *
    * @param refId the native function reference ID
    * @return a function object
    */
@@ -227,7 +229,7 @@ public final class PanamaTable implements WasmTable, AutoCloseable {
 
   /**
    * Creates an external reference object from a reference ID.
-   * 
+   *
    * @param refId the native external reference ID
    * @return an external reference object
    */
@@ -240,7 +242,8 @@ public final class PanamaTable implements WasmTable, AutoCloseable {
       logger.warning("External reference reconstruction from refId not yet implemented: " + refId);
       return null; // Return null until proper implementation
     } catch (Exception e) {
-      logger.warning("Failed to create external reference from refId " + refId + ": " + e.getMessage());
+      logger.warning(
+          "Failed to create external reference from refId " + refId + ": " + e.getMessage());
       return null;
     }
   }
@@ -308,11 +311,13 @@ public final class PanamaTable implements WasmTable, AutoCloseable {
         }
       }
 
-      final int result = (int) setHandle.invokeExact(
-          tableHandle, storePtr, index, elementType, refIdPresent, refId);
+      final int result =
+          (int)
+              setHandle.invokeExact(tableHandle, storePtr, index, elementType, refIdPresent, refId);
 
       if (result != 0) {
-        throw new RuntimeException("Failed to set table element at index " + index + ", error code: " + result);
+        throw new RuntimeException(
+            "Failed to set table element at index " + index + ", error code: " + result);
       }
 
       if (logger.isLoggable(Level.FINE)) {
@@ -321,7 +326,9 @@ public final class PanamaTable implements WasmTable, AutoCloseable {
                 + index
                 + " to "
                 + (value == null ? "null" : value.getClass().getSimpleName())
-                + " (type: " + tableElementType + ")");
+                + " (type: "
+                + tableElementType
+                + ")");
       }
     } catch (Throwable t) {
       if (t instanceof IndexOutOfBoundsException) {
@@ -333,7 +340,7 @@ public final class PanamaTable implements WasmTable, AutoCloseable {
 
   /**
    * Extracts a reference ID from a PanamaFunction.
-   * 
+   *
    * @param function the function to extract the reference ID from
    * @return the native function reference ID
    */
@@ -351,7 +358,7 @@ public final class PanamaTable implements WasmTable, AutoCloseable {
 
   /**
    * Extracts a reference ID from an external reference object.
-   * 
+   *
    * @param externalRef the external reference to extract the reference ID from
    * @return the native external reference ID
    */
@@ -433,8 +440,10 @@ public final class PanamaTable implements WasmTable, AutoCloseable {
         }
       }
 
-      final int result = (int) growHandle.invokeExact(
-          tableHandle, storePtr, elements, elementType, refIdPresent, refId);
+      final int result =
+          (int)
+              growHandle.invokeExact(
+                  tableHandle, storePtr, elements, elementType, refIdPresent, refId);
 
       if (result != 0) {
         logger.warning("Failed to grow table by " + elements + " elements, error code: " + result);
@@ -442,9 +451,16 @@ public final class PanamaTable implements WasmTable, AutoCloseable {
       }
 
       if (logger.isLoggable(Level.FINE)) {
-        logger.fine("Grew table from " + previousSize + " to " + getSize() + " elements with " +
-            (initValue == null ? "null" : initValue.getClass().getSimpleName()) + 
-            " (type: " + tableElementType + ")");
+        logger.fine(
+            "Grew table from "
+                + previousSize
+                + " to "
+                + getSize()
+                + " elements with "
+                + (initValue == null ? "null" : initValue.getClass().getSimpleName())
+                + " (type: "
+                + tableElementType
+                + ")");
       }
 
       return (int) previousSize;
@@ -507,21 +523,33 @@ public final class PanamaTable implements WasmTable, AutoCloseable {
     try {
       final MethodHandle metadataHandle = nativeBindings.getTableMetadata();
       if (metadataHandle == null) {
-        throw new RuntimeException("Table metadata function not available in native library");
+        throw new java.lang.RuntimeException(
+            "Table metadata function not available in native library");
       }
 
       // Allocate memory segments for out parameters
-      final MemorySegment elementTypePtr = arenaManager.getCurrentArena().allocate(ValueLayout.JAVA_INT);
-      final MemorySegment initialSizePtr = arenaManager.getCurrentArena().allocate(ValueLayout.JAVA_INT);
-      final MemorySegment hasMaximumPtr = arenaManager.getCurrentArena().allocate(ValueLayout.JAVA_INT);
-      final MemorySegment maximumSizePtr = arenaManager.getCurrentArena().allocate(ValueLayout.JAVA_INT);
+      final MemorySegment elementTypePtr =
+          arenaManager.getCurrentArena().allocate(ValueLayout.JAVA_INT);
+      final MemorySegment initialSizePtr =
+          arenaManager.getCurrentArena().allocate(ValueLayout.JAVA_INT);
+      final MemorySegment hasMaximumPtr =
+          arenaManager.getCurrentArena().allocate(ValueLayout.JAVA_INT);
+      final MemorySegment maximumSizePtr =
+          arenaManager.getCurrentArena().allocate(ValueLayout.JAVA_INT);
       final MemorySegment namePtr = arenaManager.getCurrentArena().allocate(ValueLayout.ADDRESS);
 
-      final int result = (int) metadataHandle.invokeExact(
-          tableHandle, elementTypePtr, initialSizePtr, hasMaximumPtr, maximumSizePtr, namePtr);
+      final int result =
+          (int)
+              metadataHandle.invokeExact(
+                  tableHandle,
+                  elementTypePtr,
+                  initialSizePtr,
+                  hasMaximumPtr,
+                  maximumSizePtr,
+                  namePtr);
 
       if (result != 0) {
-        throw new RuntimeException("Failed to get table metadata, error code: " + result);
+        throw new java.lang.RuntimeException("Failed to get table metadata, error code: " + result);
       }
 
       final int hasMaximum = hasMaximumPtr.get(ValueLayout.JAVA_INT, 0);
@@ -550,37 +578,55 @@ public final class PanamaTable implements WasmTable, AutoCloseable {
     try {
       final MethodHandle metadataHandle = nativeBindings.getTableMetadata();
       if (metadataHandle == null) {
-        throw new RuntimeException("Table metadata function not available in native library");
+        throw new java.lang.RuntimeException(
+            "Table metadata function not available in native library");
       }
 
       // Allocate memory segments for out parameters
-      final MemorySegment elementTypePtr = arenaManager.getCurrentArena().allocate(ValueLayout.JAVA_INT);
-      final MemorySegment initialSizePtr = arenaManager.getCurrentArena().allocate(ValueLayout.JAVA_INT);
-      final MemorySegment hasMaximumPtr = arenaManager.getCurrentArena().allocate(ValueLayout.JAVA_INT);
-      final MemorySegment maximumSizePtr = arenaManager.getCurrentArena().allocate(ValueLayout.JAVA_INT);
+      final MemorySegment elementTypePtr =
+          arenaManager.getCurrentArena().allocate(ValueLayout.JAVA_INT);
+      final MemorySegment initialSizePtr =
+          arenaManager.getCurrentArena().allocate(ValueLayout.JAVA_INT);
+      final MemorySegment hasMaximumPtr =
+          arenaManager.getCurrentArena().allocate(ValueLayout.JAVA_INT);
+      final MemorySegment maximumSizePtr =
+          arenaManager.getCurrentArena().allocate(ValueLayout.JAVA_INT);
       final MemorySegment namePtr = arenaManager.getCurrentArena().allocate(ValueLayout.ADDRESS);
 
-      final int result = (int) metadataHandle.invokeExact(
-          tableHandle, elementTypePtr, initialSizePtr, hasMaximumPtr, maximumSizePtr, namePtr);
+      final int result =
+          (int)
+              metadataHandle.invokeExact(
+                  tableHandle,
+                  elementTypePtr,
+                  initialSizePtr,
+                  hasMaximumPtr,
+                  maximumSizePtr,
+                  namePtr);
 
       if (result != 0) {
-        throw new RuntimeException("Failed to get table metadata, error code: " + result);
+        throw new java.lang.RuntimeException("Failed to get table metadata, error code: " + result);
       }
 
       final int elementTypeCode = elementTypePtr.get(ValueLayout.JAVA_INT, 0);
-      
+
       return switch (elementTypeCode) {
         case 5 -> WasmValueType.FUNCREF;
         case 6 -> WasmValueType.EXTERNREF;
         default -> {
-          logger.warning("Unknown table element type code: " + elementTypeCode + ", defaulting to FUNCREF");
+          logger.warning(
+              "Unknown table element type code: " + elementTypeCode + ", defaulting to FUNCREF");
           yield WasmValueType.FUNCREF;
         }
       };
     } catch (Throwable t) {
       logger.warning("Failed to get table element type: " + t.getMessage());
-      throw new RuntimeException("Failed to get table element type", t);
+      throw new java.lang.RuntimeException("Failed to get table element type", t);
     }
+  }
+
+  @Override
+  public WasmValueType getType() {
+    return getElementType();
   }
 
   /**

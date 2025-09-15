@@ -238,10 +238,10 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
       int type = getValueType();
       boolean mutableFlag = isMutable();
       String typeName = MemoryLayouts.valkindToString(type);
-      
+
       // Get current value for metadata
       WasmValue currentValue = get();
-      
+
       return new GlobalMetadata(type, typeName, mutableFlag, currentValue);
     } catch (Exception e) {
       throw new WasmException("Failed to retrieve global metadata", e);
@@ -258,7 +258,8 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
     ensureNotClosed();
 
     try {
-      MemorySegment directPtr = nativeFunctions.globalGetDirectAccess(globalResource.getNativePointer());
+      MemorySegment directPtr =
+          nativeFunctions.globalGetDirectAccess(globalResource.getNativePointer());
       if (directPtr != null && !directPtr.equals(MemorySegment.NULL)) {
         // Release the direct access immediately after checking
         nativeFunctions.globalReleaseDirectAccess(globalResource.getNativePointer(), directPtr);
@@ -283,13 +284,13 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
     try {
       int type = getValueType();
       String typeName = MemoryLayouts.valkindToString(type);
-      
+
       // Calculate size and alignment based on WebAssembly type
       int size = getTypeSize(type);
       int alignment = getTypeAlignment(type);
       boolean isNumeric = isNumericType(type);
       boolean isReference = isReferenceType(type);
-      
+
       return new TypeInfo(type, typeName, size, alignment, isNumeric, isReference);
     } catch (Exception e) {
       throw new WasmException("Failed to retrieve detailed type information", e);
@@ -333,9 +334,9 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
    * @return true if numeric type
    */
   private boolean isNumericType(final int wasmType) {
-    return wasmType == MemoryLayouts.WASM_I32 
+    return wasmType == MemoryLayouts.WASM_I32
         || wasmType == MemoryLayouts.WASM_I64
-        || wasmType == MemoryLayouts.WASM_F32 
+        || wasmType == MemoryLayouts.WASM_F32
         || wasmType == MemoryLayouts.WASM_F64;
   }
 
@@ -352,9 +353,9 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
   // Zero-copy access methods for performance optimization
 
   /**
-   * Gets a direct access handle to this global's value for zero-copy operations.
-   * This method provides high-performance access to global values by bypassing
-   * marshalling/unmarshalling overhead.
+   * Gets a direct access handle to this global's value for zero-copy operations. This method
+   * provides high-performance access to global values by bypassing marshalling/unmarshalling
+   * overhead.
    *
    * @return direct access handle, or null if not supported
    * @throws WasmException if direct access cannot be obtained
@@ -363,7 +364,8 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
     ensureNotClosed();
 
     try {
-      MemorySegment directPtr = nativeFunctions.globalGetDirectAccess(globalResource.getNativePointer());
+      MemorySegment directPtr =
+          nativeFunctions.globalGetDirectAccess(globalResource.getNativePointer());
       if (directPtr == null || directPtr.equals(MemorySegment.NULL)) {
         return null; // Direct access not supported for this global
       }
@@ -376,8 +378,8 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
   }
 
   /**
-   * Performs a zero-copy get operation for numeric globals.
-   * This bypasses WasmValue creation for better performance.
+   * Performs a zero-copy get operation for numeric globals. This bypasses WasmValue creation for
+   * better performance.
    *
    * @return the raw numeric value, or null if not a numeric type
    * @throws WasmException if zero-copy get fails
@@ -399,8 +401,8 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
   }
 
   /**
-   * Performs a zero-copy set operation for numeric globals.
-   * This bypasses WasmValue marshalling for better performance.
+   * Performs a zero-copy set operation for numeric globals. This bypasses WasmValue marshalling for
+   * better performance.
    *
    * @param rawValue the raw numeric value to set
    * @throws WasmException if zero-copy set fails
@@ -438,6 +440,7 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
       case I64 -> wasmValue.asI64();
       case F32 -> wasmValue.asF32();
       case F64 -> wasmValue.asF64();
+      case V128 -> wasmValue.asV128();
       case EXTERNREF, FUNCREF -> null; // References not supported for zero-copy
     };
   }
@@ -450,59 +453,65 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
    */
   private WasmValue createWasmValueFromRaw(final Object rawValue) throws WasmException {
     int type = getValueType();
-    
+
     return switch (type) {
       case MemoryLayouts.WASM_I32 -> {
         if (rawValue instanceof Integer) {
           yield WasmValue.i32((Integer) rawValue);
         }
-        throw new IllegalArgumentException("Expected Integer for i32 global, got " + rawValue.getClass());
+        throw new IllegalArgumentException(
+            "Expected Integer for i32 global, got " + rawValue.getClass());
       }
       case MemoryLayouts.WASM_I64 -> {
         if (rawValue instanceof Long) {
           yield WasmValue.i64((Long) rawValue);
         }
-        throw new IllegalArgumentException("Expected Long for i64 global, got " + rawValue.getClass());
+        throw new IllegalArgumentException(
+            "Expected Long for i64 global, got " + rawValue.getClass());
       }
       case MemoryLayouts.WASM_F32 -> {
         if (rawValue instanceof Float) {
           yield WasmValue.f32((Float) rawValue);
         }
-        throw new IllegalArgumentException("Expected Float for f32 global, got " + rawValue.getClass());
+        throw new IllegalArgumentException(
+            "Expected Float for f32 global, got " + rawValue.getClass());
       }
       case MemoryLayouts.WASM_F64 -> {
         if (rawValue instanceof Double) {
           yield WasmValue.f64((Double) rawValue);
         }
-        throw new IllegalArgumentException("Expected Double for f64 global, got " + rawValue.getClass());
+        throw new IllegalArgumentException(
+            "Expected Double for f64 global, got " + rawValue.getClass());
       }
-      default -> throw new UnsupportedOperationException("Zero-copy not supported for type: " + type);
+      default -> throw new UnsupportedOperationException(
+          "Zero-copy not supported for type: " + type);
     };
   }
 
   // Cross-module sharing functionality
 
   /**
-   * Registers this global for cross-module sharing with the given name.
-   * This allows other modules to access this global by name.
+   * Registers this global for cross-module sharing with the given name. This allows other modules
+   * to access this global by name.
    *
    * @param name the name to register this global under
    * @param registry the global registry to use
    * @throws WasmException if registration fails
    */
-  public void registerForSharing(final String name, final GlobalRegistry registry) throws WasmException {
+  public void registerForSharing(final String name, final GlobalRegistry registry)
+      throws WasmException {
     ensureNotClosed();
     Objects.requireNonNull(name, "name cannot be null");
     Objects.requireNonNull(registry, "registry cannot be null");
 
     try {
-      ArenaResourceManager.ManagedMemorySegment nameSegment = 
-          resourceManager.allocateString(name);
-      
-      int result = nativeFunctions.globalRegisterShared(
-          globalResource.getNativePointer(),
-          nameSegment.getSegment(),
-          registry.getRegistryPointer());
+      ArenaResourceManager.ManagedMemorySegment nameSegment = resourceManager.allocateString(name);
+
+      int result =
+          nativeFunctions.globalRegisterShared(
+              globalResource.getNativePointer(),
+              nameSegment.getSegment(),
+              registry.getRegistryPointer());
 
       PanamaErrorHandler.safeCheckError(
           result, "Global registration", "Failed to register global for sharing: " + name);
@@ -514,14 +523,15 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
   }
 
   /**
-   * Unregisters this global from cross-module sharing.
-   * This removes the global from any registry it was registered with.
+   * Unregisters this global from cross-module sharing. This removes the global from any registry it
+   * was registered with.
    *
    * @param name the name this global was registered under
    * @param registry the global registry to unregister from
    * @throws WasmException if unregistration fails
    */
-  public void unregisterFromSharing(final String name, final GlobalRegistry registry) throws WasmException {
+  public void unregisterFromSharing(final String name, final GlobalRegistry registry)
+      throws WasmException {
     ensureNotClosed();
     Objects.requireNonNull(name, "name cannot be null");
     Objects.requireNonNull(registry, "registry cannot be null");
@@ -535,8 +545,8 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
   }
 
   /**
-   * Checks if this global is compatible for sharing with another global.
-   * Globals must have the same type and mutability to be shareable.
+   * Checks if this global is compatible for sharing with another global. Globals must have the same
+   * type and mutability to be shareable.
    *
    * @param other the other global to check compatibility with
    * @return true if compatible for sharing
@@ -547,8 +557,7 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
     }
 
     try {
-      return this.getValueType() == other.getValueType() 
-          && this.isMutable() == other.isMutable();
+      return this.getValueType() == other.getValueType() && this.isMutable() == other.isMutable();
     } catch (Exception e) {
       LOGGER.warning("Failed to check global compatibility: " + e.getMessage());
       return false;
@@ -556,8 +565,8 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
   }
 
   /**
-   * Creates a shared reference to this global that can be passed between modules.
-   * The shared reference maintains the same value and mutability characteristics.
+   * Creates a shared reference to this global that can be passed between modules. The shared
+   * reference maintains the same value and mutability characteristics.
    *
    * @return a shared global reference
    * @throws WasmException if shared reference creation fails
@@ -569,9 +578,8 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
       int type = getValueType();
       boolean mutableFlag = isMutable();
       WasmValue currentValue = get();
-      
-      return new SharedGlobalReference(
-          this, type, mutableFlag, currentValue, resourceManager);
+
+      return new SharedGlobalReference(this, type, mutableFlag, currentValue, resourceManager);
     } catch (Exception e) {
       throw new WasmException("Failed to create shared global reference", e);
     }
@@ -603,6 +611,15 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
   }
 
   /**
+   * Checks if this global is closed.
+   *
+   * @return true if closed, false otherwise
+   */
+  public boolean isClosed() {
+    return closed;
+  }
+
+  /**
    * Gets the native global handle for this global.
    *
    * @return the native global handle
@@ -625,7 +642,9 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
 
   // Private helper methods for global operations
 
-  /** Initializes global type metadata by querying the native global using enhanced introspection. */
+  /**
+   * Initializes global type metadata by querying the native global using enhanced introspection.
+   */
   private void initializeGlobalType() throws WasmException {
     try {
       // Use enhanced type introspection function for better performance
@@ -634,15 +653,17 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
       ArenaResourceManager.ManagedMemorySegment mutabilityPtr =
           resourceManager.allocate(MemoryLayouts.C_INT);
 
-      int result = nativeFunctions.globalGetTypeInfo(
-          globalResource.getNativePointer(),
-          typeInfoPtr.getSegment(),
-          mutabilityPtr.getSegment());
+      int result =
+          nativeFunctions.globalGetTypeInfo(
+              globalResource.getNativePointer(),
+              typeInfoPtr.getSegment(),
+              mutabilityPtr.getSegment());
 
       if (result == 0) {
         // Extract type info and mutability from optimized introspection
         this.valueType = (Integer) MemoryLayouts.C_INT.varHandle().get(typeInfoPtr.getSegment(), 0);
-        int mutabilityValue = (Integer) MemoryLayouts.C_INT.varHandle().get(mutabilityPtr.getSegment(), 0);
+        int mutabilityValue =
+            (Integer) MemoryLayouts.C_INT.varHandle().get(mutabilityPtr.getSegment(), 0);
         this.mutable = mutabilityValue != 0;
 
         LOGGER.fine(
@@ -901,9 +922,7 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
     }
   }
 
-  /**
-   * Global metadata information container.
-   */
+  /** Global metadata information container. */
   public static final class GlobalMetadata {
     private final int typeValue;
     private final String typeName;
@@ -918,7 +937,11 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
      * @param mutable whether the global is mutable
      * @param currentValue the current value of the global
      */
-    public GlobalMetadata(final int typeValue, final String typeName, final boolean mutable, final WasmValue currentValue) {
+    public GlobalMetadata(
+        final int typeValue,
+        final String typeName,
+        final boolean mutable,
+        final WasmValue currentValue) {
       this.typeValue = typeValue;
       this.typeName = Objects.requireNonNull(typeName, "typeName cannot be null");
       this.mutable = mutable;
@@ -963,18 +986,23 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
 
     @Override
     public String toString() {
-      return String.format("GlobalMetadata{type=%s(%d), mutable=%s, value=%s}", 
+      return String.format(
+          "GlobalMetadata{type=%s(%d), mutable=%s, value=%s}",
           typeName, typeValue, mutable, currentValue);
     }
 
     @Override
     public boolean equals(final Object obj) {
-      if (this == obj) return true;
-      if (obj == null || getClass() != obj.getClass()) return false;
+      if (this == obj) {
+        return true;
+      }
+      if (obj == null || getClass() != obj.getClass()) {
+        return false;
+      }
       GlobalMetadata that = (GlobalMetadata) obj;
-      return typeValue == that.typeValue 
-          && mutable == that.mutable 
-          && Objects.equals(typeName, that.typeName) 
+      return typeValue == that.typeValue
+          && mutable == that.mutable
+          && Objects.equals(typeName, that.typeName)
           && Objects.equals(currentValue, that.currentValue);
     }
 
@@ -984,9 +1012,7 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
     }
   }
 
-  /**
-   * Detailed type information container.
-   */
+  /** Detailed type information container. */
   public static final class TypeInfo {
     private final int typeValue;
     private final String typeName;
@@ -1005,8 +1031,13 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
      * @param numeric whether it's a numeric type
      * @param reference whether it's a reference type
      */
-    public TypeInfo(final int typeValue, final String typeName, final int size, final int alignment, 
-                   final boolean numeric, final boolean reference) {
+    public TypeInfo(
+        final int typeValue,
+        final String typeName,
+        final int size,
+        final int alignment,
+        final boolean numeric,
+        final boolean reference) {
       this.typeValue = typeValue;
       this.typeName = Objects.requireNonNull(typeName, "typeName cannot be null");
       this.size = size;
@@ -1071,20 +1102,25 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
 
     @Override
     public String toString() {
-      return String.format("TypeInfo{type=%s(%d), size=%d, alignment=%d, numeric=%s, reference=%s}", 
+      return String.format(
+          "TypeInfo{type=%s(%d), size=%d, alignment=%d, numeric=%s, reference=%s}",
           typeName, typeValue, size, alignment, numeric, reference);
     }
 
     @Override
     public boolean equals(final Object obj) {
-      if (this == obj) return true;
-      if (obj == null || getClass() != obj.getClass()) return false;
+      if (this == obj) {
+        return true;
+      }
+      if (obj == null || getClass() != obj.getClass()) {
+        return false;
+      }
       TypeInfo typeInfo = (TypeInfo) obj;
-      return typeValue == typeInfo.typeValue 
-          && size == typeInfo.size 
-          && alignment == typeInfo.alignment 
-          && numeric == typeInfo.numeric 
-          && reference == typeInfo.reference 
+      return typeValue == typeInfo.typeValue
+          && size == typeInfo.size
+          && alignment == typeInfo.alignment
+          && numeric == typeInfo.numeric
+          && reference == typeInfo.reference
           && Objects.equals(typeName, typeInfo.typeName);
     }
 
@@ -1095,9 +1131,8 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
   }
 
   /**
-   * Direct access handle for zero-copy global operations.
-   * This class provides high-performance access to global values by working
-   * directly with native memory without marshalling overhead.
+   * Direct access handle for zero-copy global operations. This class provides high-performance
+   * access to global values by working directly with native memory without marshalling overhead.
    */
   public static final class DirectGlobalAccess implements AutoCloseable {
     private final PanamaGlobal parentGlobal;
@@ -1114,12 +1149,16 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
      * @param wasmType the WebAssembly type constant
      * @param resourceManager the resource manager for memory operations
      */
-    DirectGlobalAccess(final PanamaGlobal parentGlobal, final MemorySegment directPtr, 
-                      final int wasmType, final ArenaResourceManager resourceManager) {
+    DirectGlobalAccess(
+        final PanamaGlobal parentGlobal,
+        final MemorySegment directPtr,
+        final int wasmType,
+        final ArenaResourceManager resourceManager) {
       this.parentGlobal = Objects.requireNonNull(parentGlobal, "parentGlobal cannot be null");
       this.directPtr = Objects.requireNonNull(directPtr, "directPtr cannot be null");
       this.wasmType = wasmType;
-      this.resourceManager = Objects.requireNonNull(resourceManager, "resourceManager cannot be null");
+      this.resourceManager =
+          Objects.requireNonNull(resourceManager, "resourceManager cannot be null");
     }
 
     /**
@@ -1130,13 +1169,15 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
      */
     public Object readRawValue() {
       ensureNotClosed();
-      
+
       return switch (wasmType) {
         case MemoryLayouts.WASM_I32 -> (Integer) ValueLayout.JAVA_INT.varHandle().get(directPtr, 0);
         case MemoryLayouts.WASM_I64 -> (Long) ValueLayout.JAVA_LONG.varHandle().get(directPtr, 0);
         case MemoryLayouts.WASM_F32 -> (Float) ValueLayout.JAVA_FLOAT.varHandle().get(directPtr, 0);
-        case MemoryLayouts.WASM_F64 -> (Double) ValueLayout.JAVA_DOUBLE.varHandle().get(directPtr, 0);
-        default -> throw new UnsupportedOperationException("Direct access not supported for type: " + wasmType);
+        case MemoryLayouts.WASM_F64 -> (Double)
+            ValueLayout.JAVA_DOUBLE.varHandle().get(directPtr, 0);
+        default -> throw new UnsupportedOperationException(
+            "Direct access not supported for type: " + wasmType);
       };
     }
 
@@ -1149,7 +1190,7 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
      */
     public void writeRawValue(final Object rawValue) {
       ensureNotClosed();
-      
+
       if (!parentGlobal.isMutable()) {
         throw new UnsupportedOperationException("Cannot write to immutable global");
       }
@@ -1180,7 +1221,8 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
           ValueLayout.JAVA_DOUBLE.varHandle().set(directPtr, 0, (Double) rawValue);
           break;
         default:
-          throw new UnsupportedOperationException("Direct access not supported for type: " + wasmType);
+          throw new UnsupportedOperationException(
+              "Direct access not supported for type: " + wasmType);
       }
     }
 
@@ -1209,9 +1251,7 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
       };
     }
 
-    /**
-     * Closes this direct access handle and releases native resources.
-     */
+    /** Closes this direct access handle and releases native resources. */
     @Override
     public void close() {
       if (closed) {
@@ -1227,8 +1267,7 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
           // Release direct access through native function
           NativeFunctionBindings nativeFunctions = NativeFunctionBindings.getInstance();
           if (nativeFunctions.isInitialized()) {
-            nativeFunctions.globalReleaseDirectAccess(
-                parentGlobal.getGlobalHandle(), directPtr);
+            nativeFunctions.globalReleaseDirectAccess(parentGlobal.getGlobalHandle(), directPtr);
           }
         } catch (Exception e) {
           // Log but don't throw during cleanup
@@ -1262,7 +1301,8 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
 
     @Override
     public String toString() {
-      return String.format("DirectGlobalAccess{type=%s, closed=%s}", 
+      return String.format(
+          "DirectGlobalAccess{type=%s, closed=%s}",
           MemoryLayouts.valkindToString(wasmType), closed);
     }
   }

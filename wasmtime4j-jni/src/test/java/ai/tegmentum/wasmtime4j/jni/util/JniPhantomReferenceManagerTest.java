@@ -23,7 +23,6 @@ import org.junit.jupiter.api.Timeout;
  * <p>These tests verify phantom reference tracking, automatic cleanup, singleton behavior, thread
  * safety, and resource management.
  */
-
 @Timeout(30) // Global timeout for all tests
 class JniPhantomReferenceManagerTest {
 
@@ -42,11 +41,9 @@ class JniPhantomReferenceManagerTest {
   }
 
   @Nested
-
   class SingletonTests {
 
     @Test
-
     void testReturnSameInstance() {
       final JniPhantomReferenceManager instance1 = JniPhantomReferenceManager.getInstance();
       final JniPhantomReferenceManager instance2 = JniPhantomReferenceManager.getInstance();
@@ -55,7 +52,6 @@ class JniPhantomReferenceManagerTest {
     }
 
     @Test
-
     void testCreateNewInstanceAfterClose() {
       final JniPhantomReferenceManager firstInstance = JniPhantomReferenceManager.getInstance();
       firstInstance.close();
@@ -69,11 +65,9 @@ class JniPhantomReferenceManagerTest {
   }
 
   @Nested
-
   class RegistrationTests {
 
     @Test
-
     void testRegisterObjectSuccessfully() {
       final Object testObject = new Object();
       final long testHandle = 0x12345678L;
@@ -88,7 +82,6 @@ class JniPhantomReferenceManagerTest {
     }
 
     @Test
-
     void testRejectNullObject() {
       assertThrows(
           JniValidationException.class,
@@ -97,7 +90,6 @@ class JniPhantomReferenceManagerTest {
     }
 
     @Test
-
     void testRejectInvalidHandle() {
       final Object testObject = new Object();
 
@@ -108,7 +100,6 @@ class JniPhantomReferenceManagerTest {
     }
 
     @Test
-
     void testRejectNullCleanupMethod() {
       final Object testObject = new Object();
 
@@ -119,7 +110,6 @@ class JniPhantomReferenceManagerTest {
     }
 
     @Test
-
     void testHandleRegistrationAfterClose() {
       manager.close();
 
@@ -130,11 +120,9 @@ class JniPhantomReferenceManagerTest {
   }
 
   @Nested
-
   class UnregistrationTests {
 
     @Test
-
     void testHandleUnregisterCall() {
       final Object testObject = new Object();
 
@@ -143,7 +131,6 @@ class JniPhantomReferenceManagerTest {
     }
 
     @Test
-
     void testRejectNullObjectInUnregister() {
       assertThrows(
           JniValidationException.class,
@@ -153,11 +140,9 @@ class JniPhantomReferenceManagerTest {
   }
 
   @Nested
-
   class StatisticsTests {
 
     @Test
-
     void testTrackRegistrationCount() {
       final long initialTotal = manager.getTotalRegistered();
 
@@ -171,7 +156,6 @@ class JniPhantomReferenceManagerTest {
     }
 
     @Test
-
     void testTrackCleanupStatistics() {
       final long initialCleanedUp = manager.getCleanedUpCount();
       final long initialFailed = manager.getFailedCleanupCount();
@@ -182,7 +166,6 @@ class JniPhantomReferenceManagerTest {
     }
 
     @Test
-
     void testProvideCurrentRegisteredCount() {
       final int registeredCount = manager.getRegisteredCount();
       assertTrue(registeredCount >= 0);
@@ -190,11 +173,9 @@ class JniPhantomReferenceManagerTest {
   }
 
   @Nested
-
   class GarbageCollectionTests {
 
     @Test
-
     void testHandleObjectCollection() throws InterruptedException {
       final long initialCleanedUp = manager.getCleanedUpCount();
 
@@ -215,7 +196,6 @@ class JniPhantomReferenceManagerTest {
     }
 
     @Test
-
     void testProcessPendingReferencesOnDemand() {
       // Register some objects
       final Object obj1 = new Object();
@@ -229,7 +209,6 @@ class JniPhantomReferenceManagerTest {
     }
 
     @Test
-
     void testHandleMultipleGarbageCollectionCycles() throws InterruptedException {
       final long initialCleanedUp = manager.getCleanedUpCount();
 
@@ -269,11 +248,9 @@ class JniPhantomReferenceManagerTest {
   }
 
   @Nested
-
   class ConcurrencyTests {
 
     @Test
-
     void testHandleConcurrentRegistrations() throws InterruptedException {
       final int threadCount = 10;
       final int objectsPerThread = 20;
@@ -312,7 +289,6 @@ class JniPhantomReferenceManagerTest {
     }
 
     @Test
-
     void testHandleConcurrentProcessing() throws InterruptedException {
       final int threadCount = 5;
       final CountDownLatch latch = new CountDownLatch(threadCount);
@@ -354,11 +330,9 @@ class JniPhantomReferenceManagerTest {
   }
 
   @Nested
-
   class ResourceManagementTests {
 
     @Test
-
     void testCloseGracefully() {
       // Register some objects
       final Object obj1 = new Object();
@@ -374,7 +348,6 @@ class JniPhantomReferenceManagerTest {
     }
 
     @Test
-
     void testBeIdempotentOnClose() {
       manager.close();
       assertTrue(manager.isClosed());
@@ -385,7 +358,6 @@ class JniPhantomReferenceManagerTest {
     }
 
     @Test
-
     void testProcessRemainingReferencesOnClose() throws InterruptedException {
       final long initialCleanedUp = manager.getCleanedUpCount();
 
@@ -405,7 +377,6 @@ class JniPhantomReferenceManagerTest {
     }
 
     @Test
-
     void testHandleCloseWithActiveCleanupThread() throws InterruptedException {
       // Register objects to keep cleanup thread active
       for (int i = 0; i < 10; i++) {
@@ -436,11 +407,9 @@ class JniPhantomReferenceManagerTest {
   }
 
   @Nested
-
   class ErrorHandlingTests {
 
     @Test
-
     void testHandleCleanupExceptionsGracefully() {
       // Register objects and trigger processing
       final Object obj = new Object();
@@ -451,7 +420,6 @@ class JniPhantomReferenceManagerTest {
     }
 
     @Test
-
     void testTrackFailedCleanupAttempts() {
       final long initialFailed = manager.getFailedCleanupCount();
 
@@ -466,11 +434,9 @@ class JniPhantomReferenceManagerTest {
   }
 
   @Nested
-
   class ToStringAndObjectMethodsTests {
 
     @Test
-
     void testProvideMeaningfulToString() {
       // Register some objects to have meaningful statistics
       final Object obj1 = new Object();
@@ -489,7 +455,6 @@ class JniPhantomReferenceManagerTest {
     }
 
     @Test
-
     void testShowCurrentStatisticsInToString() {
       final String toString = manager.toString();
 

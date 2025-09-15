@@ -154,7 +154,7 @@ public final class NativeLibraryLoader {
     try {
       // Try to find the symbol, first with the original name, then with platform-specific prefixes
       Optional<MemorySegment> symbol = symbolLookup.find(functionName);
-      
+
       // On macOS, C symbols are prefixed with underscore
       if (symbol.isEmpty() && System.getProperty("os.name").toLowerCase().contains("mac")) {
         symbol = symbolLookup.find("_" + functionName);
@@ -162,11 +162,15 @@ public final class NativeLibraryLoader {
           LOGGER.fine("Found symbol with macOS underscore prefix: _" + functionName);
         }
       }
-      
+
       if (symbol.isEmpty()) {
-        LOGGER.warning("Function symbol not found (tried: " + functionName
-                      + (System.getProperty("os.name").toLowerCase().contains("mac")
-                          ? ", _" + functionName : "") + ")");
+        LOGGER.warning(
+            "Function symbol not found (tried: "
+                + functionName
+                + (System.getProperty("os.name").toLowerCase().contains("mac")
+                    ? ", _" + functionName
+                    : "")
+                + ")");
         return Optional.empty();
       }
 

@@ -3,6 +3,8 @@ package ai.tegmentum.wasmtime4j.jni;
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.FunctionType;
 import ai.tegmentum.wasmtime4j.HostFunction;
+import ai.tegmentum.wasmtime4j.Instance;
+import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
@@ -119,17 +121,34 @@ public final class JniStore extends JniResource implements Store {
       info.append("Store Runtime Information:\n");
       info.append("  Handle: 0x").append(Long.toHexString(getNativeHandle())).append("\n");
       info.append("  Valid: ").append(nativeValidate(getNativeHandle())).append("\n");
-      info.append("  Execution Count: ").append(nativeGetExecutionCount(getNativeHandle())).append("\n");
-      info.append("  Execution Time (μs): ").append(nativeGetExecutionTime(getNativeHandle())).append("\n");
-      info.append("  Fuel Remaining: ").append(nativeGetFuelRemaining(getNativeHandle())).append("\n");
-      info.append("  Fuel Consumed: ").append(nativeGetTotalFuelConsumed(getNativeHandle())).append("\n");
-      info.append("  Total Memory (bytes): ").append(nativeGetTotalMemoryBytes(getNativeHandle())).append("\n");
-      info.append("  Used Memory (bytes): ").append(nativeGetUsedMemoryBytes(getNativeHandle())).append("\n");
-      info.append("  Active Instances: ").append(nativeGetInstanceCount(getNativeHandle())).append("\n");
+      info.append("  Execution Count: ")
+          .append(nativeGetExecutionCount(getNativeHandle()))
+          .append("\n");
+      info.append("  Execution Time (μs): ")
+          .append(nativeGetExecutionTime(getNativeHandle()))
+          .append("\n");
+      info.append("  Fuel Remaining: ")
+          .append(nativeGetFuelRemaining(getNativeHandle()))
+          .append("\n");
+      info.append("  Fuel Consumed: ")
+          .append(nativeGetTotalFuelConsumed(getNativeHandle()))
+          .append("\n");
+      info.append("  Total Memory (bytes): ")
+          .append(nativeGetTotalMemoryBytes(getNativeHandle()))
+          .append("\n");
+      info.append("  Used Memory (bytes): ")
+          .append(nativeGetUsedMemoryBytes(getNativeHandle()))
+          .append("\n");
+      info.append("  Active Instances: ")
+          .append(nativeGetInstanceCount(getNativeHandle()))
+          .append("\n");
       info.append("  Fuel Limit: ").append(nativeGetFuelLimit(getNativeHandle())).append("\n");
-      info.append("  Memory Limit (bytes): ").append(nativeGetMemoryLimit(getNativeHandle())).append("\n");
-      info.append("  Execution Timeout (secs): ").append(nativeGetExecutionTimeout(getNativeHandle()));
-      
+      info.append("  Memory Limit (bytes): ")
+          .append(nativeGetMemoryLimit(getNativeHandle()))
+          .append("\n");
+      info.append("  Execution Timeout (secs): ")
+          .append(nativeGetExecutionTimeout(getNativeHandle()));
+
       return info.toString();
     } catch (final Exception e) {
       throw new JniException("Failed to get store runtime information", e);
@@ -188,8 +207,7 @@ public final class JniStore extends JniResource implements Store {
       if (!success) {
         throw new JniException("Failed to set fuel to " + fuel);
       }
-      LOGGER.fine(
-          "Set fuel to " + fuel + " for store 0x" + Long.toHexString(getNativeHandle()));
+      LOGGER.fine("Set fuel to " + fuel + " for store 0x" + Long.toHexString(getNativeHandle()));
     } catch (final Exception e) {
       if (e instanceof JniException) {
         throw e;
@@ -275,8 +293,7 @@ public final class JniStore extends JniResource implements Store {
       if (!success) {
         throw new WasmException("Failed to set fuel to " + fuel);
       }
-      LOGGER.fine(
-          "Set fuel to " + fuel + " for store 0x" + Long.toHexString(getNativeHandle()));
+      LOGGER.fine("Set fuel to " + fuel + " for store 0x" + Long.toHexString(getNativeHandle()));
     } catch (final Exception e) {
       if (e instanceof WasmException) {
         throw e;
@@ -334,6 +351,26 @@ public final class JniStore extends JniResource implements Store {
         throw e;
       }
       throw new WasmException("Failed to create host function: " + name, e);
+    }
+  }
+
+  @Override
+  public Instance createInstance(final Module module) throws WasmException {
+    Objects.requireNonNull(module, "Module cannot be null");
+    ensureNotClosed();
+
+    try {
+      if (!(module instanceof JniModule)) {
+        throw new IllegalArgumentException("Module must be a JniModule instance for JNI store");
+      }
+
+      JniModule jniModule = (JniModule) module;
+      return jniModule.instantiate(this);
+    } catch (final Exception e) {
+      if (e instanceof WasmException) {
+        throw e;
+      }
+      throw new WasmException("Failed to create instance from module", e);
     }
   }
 
@@ -452,8 +489,8 @@ public final class JniStore extends JniResource implements Store {
    * Gets the currently used memory by this store.
    *
    * <p>This method returns the amount of memory (in bytes) currently in use by active WebAssembly
-   * instances, linear memories, and other runtime structures within this store. This represents
-   * the subset of total allocated memory that is actively being used.
+   * instances, linear memories, and other runtime structures within this store. This represents the
+   * subset of total allocated memory that is actively being used.
    *
    * @return the used memory in bytes
    * @throws JniException if the memory information cannot be retrieved
@@ -495,9 +532,8 @@ public final class JniStore extends JniResource implements Store {
   /**
    * Gets the fuel limit for this store.
    *
-   * <p>This method returns the maximum amount of fuel that can be consumed by WebAssembly
-   * execution within this store. If fuel tracking is disabled or no limit is set, this method
-   * returns -1.
+   * <p>This method returns the maximum amount of fuel that can be consumed by WebAssembly execution
+   * within this store. If fuel tracking is disabled or no limit is set, this method returns -1.
    *
    * @return the fuel limit, or -1 if no limit is set or fuel tracking is disabled
    * @throws JniException if the fuel limit cannot be retrieved
@@ -628,8 +664,8 @@ public final class JniStore extends JniResource implements Store {
   /**
    * Checks if the store is in a healthy state.
    *
-   * <p>This method performs a health check that combines validation with runtime state analysis.
-   * A store is considered healthy if it passes validation and all key metrics are within expected
+   * <p>This method performs a health check that combines validation with runtime state analysis. A
+   * store is considered healthy if it passes validation and all key metrics are within expected
    * ranges.
    *
    * @return true if the store is healthy, false otherwise
@@ -643,7 +679,7 @@ public final class JniStore extends JniResource implements Store {
       // Check if any critical resources are exhausted
       final long usedMemory = getUsedMemoryBytes();
       final long totalMemory = getTotalMemoryBytes();
-      
+
       // Memory usage should not exceed total memory (this would indicate corruption)
       if (usedMemory > totalMemory && totalMemory > 0) {
         LOGGER.warning("Store health check failed: used memory exceeds total memory");
@@ -653,7 +689,7 @@ public final class JniStore extends JniResource implements Store {
       // Check if fuel system is consistent
       final long fuelLimit = getFuelLimit();
       final long fuelRemaining = getFuel();
-      
+
       // If fuel is enabled, remaining fuel should not exceed limit
       if (fuelLimit >= 0 && fuelRemaining > fuelLimit) {
         LOGGER.warning("Store health check failed: remaining fuel exceeds limit");

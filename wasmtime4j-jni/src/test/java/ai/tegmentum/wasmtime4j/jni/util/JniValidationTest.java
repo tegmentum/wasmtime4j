@@ -210,11 +210,12 @@ class JniValidationTest {
   void testRequireValidHandleWithValidHandle() {
     assertDoesNotThrow(() -> JniValidation.requireValidHandle(1L, "validHandle"));
     assertDoesNotThrow(() -> JniValidation.requireValidHandle(Long.MAX_VALUE, "maxHandle"));
-    
+
     // Negative handles should be rejected
-    final JniValidationException exception = assertThrows(
-        JniValidationException.class,
-        () -> JniValidation.requireValidHandle(-1L, "negativeHandle"));
+    final JniValidationException exception =
+        assertThrows(
+            JniValidationException.class,
+            () -> JniValidation.requireValidHandle(-1L, "negativeHandle"));
     assertThat(exception.getMessage()).contains("negative value");
   }
 

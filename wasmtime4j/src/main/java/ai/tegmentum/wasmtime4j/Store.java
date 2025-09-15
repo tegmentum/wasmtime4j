@@ -1,6 +1,7 @@
 package ai.tegmentum.wasmtime4j;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
 import java.io.Closeable;
 
 /**
@@ -91,6 +92,19 @@ public interface Store extends Closeable {
       throws WasmException;
 
   /**
+   * Creates an instance of a WebAssembly module in this store.
+   *
+   * <p>This method instantiates a compiled module within this store's execution context, making its
+   * exported functions, memory, and globals available for use.
+   *
+   * @param module the compiled module to instantiate
+   * @return a new Instance of the module
+   * @throws WasmException if instantiation fails
+   * @throws IllegalArgumentException if module is null
+   */
+  Instance createInstance(final Module module) throws WasmException;
+
+  /**
    * Checks if the store is still valid and usable.
    *
    * @return true if the store is valid, false otherwise
@@ -105,4 +119,16 @@ public interface Store extends Closeable {
    */
   @Override
   void close();
+
+  /**
+   * Creates a new Store for the given engine.
+   *
+   * @param engine the engine to create the store for
+   * @return a new Store instance
+   * @throws WasmException if store creation fails
+   * @throws IllegalArgumentException if engine is null
+   */
+  static Store create(final Engine engine) throws WasmException {
+    return WasmRuntimeFactory.create().createStore(engine);
+  }
 }

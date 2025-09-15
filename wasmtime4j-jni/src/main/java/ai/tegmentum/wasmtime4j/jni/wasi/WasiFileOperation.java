@@ -59,7 +59,13 @@ public enum WasiFileOperation {
   SEEK("seek", "Seeking within files"),
 
   /** Polling file descriptors for I/O readiness. */
-  POLL("poll", "Polling file descriptors for I/O readiness");
+  POLL("poll", "Polling file descriptors for I/O readiness"),
+
+  /** Opening files or directories. */
+  OPEN("open", "Opening files or directories"),
+
+  /** Closing files or directories. */
+  CLOSE("close", "Closing files or directories");
 
   /** The operation identifier used in native code. */
   private final String operationId;
@@ -143,6 +149,15 @@ public enum WasiFileOperation {
    */
   public boolean requiresExecuteAccess() {
     return this == EXECUTE;
+  }
+
+  /**
+   * Checks if this operation is a write operation.
+   *
+   * @return true if this is a write operation, false otherwise
+   */
+  public boolean isWriteOperation() {
+    return requiresWriteAccess();
   }
 
   /**

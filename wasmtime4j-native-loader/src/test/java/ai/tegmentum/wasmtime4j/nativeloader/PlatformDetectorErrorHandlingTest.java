@@ -48,7 +48,6 @@ import org.mockito.MockedStatic;
  *   <li>Edge cases and boundary conditions
  * </ul>
  */
-
 final class PlatformDetectorErrorHandlingTest {
 
   @AfterEach
@@ -92,7 +91,6 @@ final class PlatformDetectorErrorHandlingTest {
 
   @ParameterizedTest(name = "Should handle {0}")
   @MethodSource("provideInvalidSystemPropertyScenarios")
-
   @Disabled("System.class mocking causes infinite loops in newer Mockito versions")
   void testInvalidSystemPropertyHandling(
       final String scenario, final String osName, final String osArch) {
@@ -130,7 +128,6 @@ final class PlatformDetectorErrorHandlingTest {
   }
 
   @Test
-
   @Disabled("System.class mocking causes infinite loops in newer Mockito versions")
   void testSystemPropertyAccessFailures() {
     try (final MockedStatic<System> systemMock = mockStatic(System.class)) {
@@ -159,7 +156,6 @@ final class PlatformDetectorErrorHandlingTest {
 
   @ParameterizedTest(name = "Edge case: {0}")
   @MethodSource("provideEdgeCasePlatforms")
-
   @Disabled("System.class mocking causes infinite loops in newer Mockito versions")
   void testEdgeCasePlatforms(final String caseName, final String osName, final String osArch) {
     try (final MockedStatic<System> systemMock = mockStatic(System.class)) {
@@ -192,7 +188,6 @@ final class PlatformDetectorErrorHandlingTest {
   @ParameterizedTest
   @NullAndEmptySource
   @ValueSource(strings = {"  ", "\t", "\n", "\r\n", "\0"})
-
   void testPlatformInfoWithInvalidLibraryNames(final String libraryName) {
     final PlatformDetector.PlatformInfo info = PlatformDetector.detect();
 
@@ -221,7 +216,6 @@ final class PlatformDetectorErrorHandlingTest {
   }
 
   @Test
-
   void testPlatformInfoConstructionWithNulls() {
     // Test construction via reflection with null values
     assertThrows(
@@ -245,7 +239,6 @@ final class PlatformDetectorErrorHandlingTest {
   }
 
   @Test
-
   void testCacheCorruptionHandling() {
     // First, populate the cache
     final PlatformDetector.PlatformInfo first = PlatformDetector.detect();
@@ -259,7 +252,6 @@ final class PlatformDetectorErrorHandlingTest {
   }
 
   @Test
-
   @Disabled("System.class mocking causes infinite loops in newer Mockito versions")
   void testExtremelyLongInputStrings() {
     final String veryLongOsName = "Linux" + "A".repeat(100000);
@@ -281,7 +273,6 @@ final class PlatformDetectorErrorHandlingTest {
   }
 
   @Test
-
   @Disabled("System.class mocking causes infinite loops in newer Mockito versions")
   void testUnicodeCharacterHandling() {
     final String unicodeOsName = "Linux" + "中文αβγ";
@@ -309,7 +300,6 @@ final class PlatformDetectorErrorHandlingTest {
   }
 
   @Test
-
   @Disabled("System.class mocking causes infinite loops in newer Mockito versions")
   void testConsistentErrorMessages() {
     try (final MockedStatic<System> systemMock = mockStatic(System.class)) {
@@ -341,7 +331,6 @@ final class PlatformDetectorErrorHandlingTest {
   }
 
   @Test
-
   void testDetectionMethodDelegation() {
     // Clear cache to ensure fresh detection
     PlatformDetectorTestUtils.clearCache();

@@ -17,6 +17,7 @@
 package ai.tegmentum.wasmtime4j.panama;
 
 import java.lang.foreign.MemoryLayout;
+import java.lang.foreign.MemorySegment;
 import java.lang.foreign.StructLayout;
 import java.lang.foreign.UnionLayout;
 import java.lang.foreign.ValueLayout;
@@ -307,7 +308,9 @@ public final class MemoryLayouts {
   // VarHandles for WASM_TABLETYPE
   public static final VarHandle WASM_TABLETYPE_ELEMENT =
       WASM_TABLETYPE.varHandle(MemoryLayout.PathElement.groupElement("element"));
-  // Note: WASM_TABLETYPE limits field contains nested struct (WASM_LIMITS), access via MemorySegment slicing
+
+  // Note: WASM_TABLETYPE limits field contains nested struct (WASM_LIMITS), access via
+  // MemorySegment slicing
 
   /**
    * Layout for WebAssembly import type.
@@ -328,7 +331,8 @@ public final class MemoryLayouts {
           .withName("wasm_importtype_t");
 
   // VarHandles for WASM_IMPORTTYPE
-  // Note: module and name fields contain nested structs (WASM_BYTE_VEC), access via MemorySegment slicing
+  // Note: module and name fields contain nested structs (WASM_BYTE_VEC), access via MemorySegment
+  // slicing
   public static final VarHandle WASM_IMPORTTYPE_TYPE =
       WASM_IMPORTTYPE.varHandle(MemoryLayout.PathElement.groupElement("type"));
 
@@ -346,7 +350,7 @@ public final class MemoryLayouts {
       MemoryLayout.structLayout(WASM_BYTE_VEC.withName("name"), C_POINTER.withName("type"))
           .withName("wasm_exporttype_t");
 
-  // VarHandles for WASM_EXPORTTYPE  
+  // VarHandles for WASM_EXPORTTYPE
   // Note: name field contains nested struct (WASM_BYTE_VEC), access via MemorySegment slicing
   public static final VarHandle WASM_EXPORTTYPE_TYPE =
       WASM_EXPORTTYPE.varHandle(MemoryLayout.PathElement.groupElement("type"));
@@ -536,5 +540,24 @@ public final class MemoryLayouts {
 
   static {
     LOGGER.fine("Initialized Wasmtime memory layouts");
+  }
+
+  /**
+   * Extracts a V128 value from a memory segment.
+   *
+   * @param segment the memory segment containing the V128 value
+   * @return the V128 value as a memory segment
+   * @throws IllegalArgumentException if segment is null or too small
+   */
+  public static MemorySegment getV128Value(final MemorySegment segment) {
+    if (segment == null) {
+      throw new IllegalArgumentException("Memory segment cannot be null");
+    }
+    if (segment.byteSize() < 16) {
+      throw new IllegalArgumentException(
+          "Memory segment too small for V128 value: " + segment.byteSize());
+    }
+
+    return segment.asSlice(0, 16);
   }
 }

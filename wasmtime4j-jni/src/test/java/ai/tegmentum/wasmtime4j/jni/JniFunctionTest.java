@@ -4,10 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.WasmValue;
-import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
 import ai.tegmentum.wasmtime4j.jni.exception.JniValidationException;
 import org.junit.jupiter.api.Test;
 
@@ -128,7 +126,7 @@ class JniFunctionTest {
 
     final JniFunction function = new JniFunction(VALID_HANDLE, FUNCTION_NAME);
     assertFalse(function.isClosed());
-    
+
     // Test that operations work on open function (would call native methods in real implementation)
     // Integration tests will verify behavior on closed functions
   }

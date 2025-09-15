@@ -28,8 +28,8 @@
         <panama.java.version>23</panama.java.version>
 
         <!-- Dependency versions -->
-        <junit.version>5.10.0</junit.version>
-        <junit.platform.version>1.10.0</junit.platform.version>
+        <junit.version>5.10.4</junit.version>
+        <junit.platform.version>1.10.4</junit.platform.version>
         <jmh.version>1.37</jmh.version>
         <slf4j.version>2.0.9</slf4j.version>
         <logback.version>1.4.11</logback.version>
@@ -100,7 +100,9 @@
         <module>wasmtime4j</module>
         <module>wasmtime4j-native</module>
         <module>wasmtime4j-native-loader</module>
-        <module>wasmtime4j-benchmarks</module>
+        <module>wasmtime4j-jni</module>
+        <module>wasmtime4j-panama</module>
+        <!-- <module>wasmtime4j-benchmarks</module> -->
         <module>wasmtime4j-tests</module>
     </modules>
 

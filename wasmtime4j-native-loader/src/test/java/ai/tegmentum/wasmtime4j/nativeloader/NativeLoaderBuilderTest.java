@@ -34,7 +34,6 @@ import org.junit.jupiter.api.Test;
 final class NativeLoaderBuilderTest {
 
   @Test
-
   void testDefaultConfiguration() {
     final NativeLoaderBuilder builder = new NativeLoaderBuilder();
 
@@ -56,7 +55,6 @@ final class NativeLoaderBuilderTest {
   }
 
   @Test
-
   void testLibraryNameFluentAPI() {
     final NativeLoaderBuilder builder = new NativeLoaderBuilder();
     final NativeLoaderBuilder result = builder.libraryName("testlib");
@@ -66,7 +64,6 @@ final class NativeLoaderBuilderTest {
   }
 
   @Test
-
   void testTempFilePrefixFluentAPI() {
     final NativeLoaderBuilder builder = new NativeLoaderBuilder();
     final NativeLoaderBuilder result = builder.tempFilePrefix("test-prefix-");
@@ -76,7 +73,6 @@ final class NativeLoaderBuilderTest {
   }
 
   @Test
-
   void testTempDirSuffixFluentAPI() {
     final NativeLoaderBuilder builder = new NativeLoaderBuilder();
     final NativeLoaderBuilder result = builder.tempDirSuffix("-test-suffix");
@@ -86,7 +82,6 @@ final class NativeLoaderBuilderTest {
   }
 
   @Test
-
   void testSecurityLevelFluentAPI() {
     final NativeLoaderBuilder builder = new NativeLoaderBuilder();
     final NativeLoaderBuilder result = builder.securityLevel(SecurityLevel.STRICT);
@@ -96,7 +91,6 @@ final class NativeLoaderBuilderTest {
   }
 
   @Test
-
   void testPathConventionFluentAPI() {
     final NativeLoaderBuilder builder = new NativeLoaderBuilder();
     final NativeLoaderBuilder result = builder.pathConvention(PathConvention.JNA);
@@ -107,7 +101,6 @@ final class NativeLoaderBuilderTest {
   }
 
   @Test
-
   void testNullLibraryName() {
     final NativeLoaderBuilder builder = new NativeLoaderBuilder();
 
@@ -118,7 +111,6 @@ final class NativeLoaderBuilderTest {
   }
 
   @Test
-
   void testNullTempFilePrefix() {
     final NativeLoaderBuilder builder = new NativeLoaderBuilder();
 
@@ -129,7 +121,6 @@ final class NativeLoaderBuilderTest {
   }
 
   @Test
-
   void testNullTempDirSuffix() {
     final NativeLoaderBuilder builder = new NativeLoaderBuilder();
 
@@ -140,7 +131,6 @@ final class NativeLoaderBuilderTest {
   }
 
   @Test
-
   void testNullSecurityLevel() {
     final NativeLoaderBuilder builder = new NativeLoaderBuilder();
 
@@ -151,7 +141,6 @@ final class NativeLoaderBuilderTest {
   }
 
   @Test
-
   void testNullPathConvention() {
     final NativeLoaderBuilder builder = new NativeLoaderBuilder();
 
@@ -162,7 +151,6 @@ final class NativeLoaderBuilderTest {
   }
 
   @Test
-
   void testMethodChaining() {
     final NativeLoaderBuilder builder = new NativeLoaderBuilder();
 
@@ -183,7 +171,6 @@ final class NativeLoaderBuilderTest {
   }
 
   @Test
-
   void testBuildAndLoad() {
     final NativeLoaderBuilder builder = new NativeLoaderBuilder().libraryName("test-build-load");
 
@@ -196,7 +183,6 @@ final class NativeLoaderBuilderTest {
   }
 
   @Test
-
   void testConfigurationValidationDuringBuild() {
     // Test with empty library name (should fail validation in NativeLibraryConfig)
     final NativeLoaderBuilder builder = new NativeLoaderBuilder().libraryName("");
@@ -208,7 +194,6 @@ final class NativeLoaderBuilderTest {
   }
 
   @Test
-
   void testBuilderReusability() {
     final NativeLoaderBuilder builder = new NativeLoaderBuilder().libraryName("reusable-test");
 
@@ -223,7 +208,6 @@ final class NativeLoaderBuilderTest {
   }
 
   @Test
-
   void testBuilderIndependence() {
     final NativeLoaderBuilder builder1 = new NativeLoaderBuilder().libraryName("lib1");
     final NativeLoaderBuilder builder2 = new NativeLoaderBuilder().libraryName("lib2");
@@ -238,7 +222,6 @@ final class NativeLoaderBuilderTest {
   }
 
   @Test
-
   void testAllSecurityLevels() {
     final NativeLoaderBuilder builder = new NativeLoaderBuilder().libraryName("security-test");
 
@@ -253,7 +236,6 @@ final class NativeLoaderBuilderTest {
   }
 
   @Test
-
   void testAllPathConventions() {
     final NativeLoaderBuilder builder = new NativeLoaderBuilder().libraryName("convention-test");
 
@@ -271,7 +253,6 @@ final class NativeLoaderBuilderTest {
   }
 
   @Test
-
   void testWhitespaceHandling() {
     final NativeLoaderBuilder builder = new NativeLoaderBuilder();
 

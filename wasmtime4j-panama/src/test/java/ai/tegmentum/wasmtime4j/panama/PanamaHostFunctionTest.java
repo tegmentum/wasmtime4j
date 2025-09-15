@@ -50,7 +50,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
  * including callback handling, upcall stub creation, resource management, and thread safety.
  */
 @ExtendWith(MockitoExtension.class)
-
 class PanamaHostFunctionTest {
 
   @Mock private ArenaResourceManager mockArenaManager;
@@ -78,11 +77,9 @@ class PanamaHostFunctionTest {
   }
 
   @Nested
-
   class ConstructorTests {
 
     @Test
-
     void testCreateHostFunctionWithValidParameters() throws Exception {
       // Act
       final PanamaHostFunction hostFunction =
@@ -98,7 +95,6 @@ class PanamaHostFunctionTest {
     }
 
     @Test
-
     void testThrowExceptionWhenFunctionNameIsNull() {
       assertThrows(
           NullPointerException.class,
@@ -108,7 +104,6 @@ class PanamaHostFunctionTest {
     }
 
     @Test
-
     void testThrowExceptionWhenFunctionTypeIsNull() {
       assertThrows(
           NullPointerException.class,
@@ -118,7 +113,6 @@ class PanamaHostFunctionTest {
     }
 
     @Test
-
     void testThrowExceptionWhenCallbackIsNull() {
       assertThrows(
           NullPointerException.class,
@@ -128,7 +122,6 @@ class PanamaHostFunctionTest {
     }
 
     @Test
-
     void testThrowExceptionWhenArenaManagerIsNull() {
       assertThrows(
           NullPointerException.class,
@@ -138,7 +131,6 @@ class PanamaHostFunctionTest {
     }
 
     @Test
-
     void testThrowExceptionWhenErrorHandlerIsNull() {
       assertThrows(
           NullPointerException.class,
@@ -149,7 +141,6 @@ class PanamaHostFunctionTest {
   }
 
   @Nested
-
   class FunctionInterfaceTests {
 
     private PanamaHostFunction hostFunction;
@@ -162,19 +153,16 @@ class PanamaHostFunctionTest {
     }
 
     @Test
-
     void testReturnCorrectFunctionType() {
       assertEquals(testFunctionType, hostFunction.getFunctionType());
     }
 
     @Test
-
     void testReturnCorrectFunctionName() {
       assertEquals("test_function", hostFunction.getName());
     }
 
     @Test
-
     void testThrowExceptionWhenCallingHostFunctionDirectly() {
       assertThrows(
           UnsupportedOperationException.class,
@@ -183,7 +171,6 @@ class PanamaHostFunctionTest {
   }
 
   @Nested
-
   class HandleAccessTests {
 
     private PanamaHostFunction hostFunction;
@@ -196,28 +183,24 @@ class PanamaHostFunctionTest {
     }
 
     @Test
-
     void testReturnValidFunctionHandle() {
       final MemorySegment handle = hostFunction.getFunctionHandle();
       assertNotNull(handle);
     }
 
     @Test
-
     void testReturnValidUpcallStub() {
       final MemorySegment stub = hostFunction.getUpcallStub();
       assertNotNull(stub);
     }
 
     @Test
-
     void testThrowExceptionWhenAccessingClosedHostFunctionHandle() throws Exception {
       hostFunction.close();
       assertThrows(IllegalStateException.class, hostFunction::getFunctionHandle);
     }
 
     @Test
-
     void testThrowExceptionWhenAccessingClosedUpcallStub() throws Exception {
       hostFunction.close();
       assertThrows(IllegalStateException.class, hostFunction::getUpcallStub);
@@ -225,11 +208,9 @@ class PanamaHostFunctionTest {
   }
 
   @Nested
-
   class CallbackExecutionTests {
 
     @Test
-
     void testExecuteCallbackWithCorrectParameters() throws Exception {
       // Arrange
       final WasmValue[] expectedParams = {WasmValue.i32(10), WasmValue.i64(20L)};
@@ -248,7 +229,6 @@ class PanamaHostFunctionTest {
     }
 
     @Test
-
     void testHandleCallbackExecutionWithExceptions() throws Exception {
       // Arrange
       final HostFunctionCallback throwingCallback =
@@ -269,7 +249,6 @@ class PanamaHostFunctionTest {
     }
 
     @Test
-
     void testHandleVoidReturnTypeCallback() throws Exception {
       // Arrange
       final FunctionType voidType =
@@ -288,7 +267,6 @@ class PanamaHostFunctionTest {
     }
 
     @Test
-
     void testHandleMultipleReturnValues() throws Exception {
       // Arrange
       final FunctionType multiReturnType =
@@ -315,7 +293,6 @@ class PanamaHostFunctionTest {
   }
 
   @Nested
-
   class ResourceManagementTests {
 
     private PanamaHostFunction hostFunction;
@@ -328,7 +305,6 @@ class PanamaHostFunctionTest {
     }
 
     @Test
-
     void testCloseHostFunctionSuccessfully() throws Exception {
       // Act
       hostFunction.close();
@@ -339,7 +315,6 @@ class PanamaHostFunctionTest {
     }
 
     @Test
-
     void testHandleDoubleCloseGracefully() throws Exception {
       // Act
       hostFunction.close();
@@ -350,7 +325,6 @@ class PanamaHostFunctionTest {
     }
 
     @Test
-
     void testThrowExceptionWhenAccessingClosedHostFunction() throws Exception {
       // Arrange
       hostFunction.close();
@@ -363,11 +337,9 @@ class PanamaHostFunctionTest {
   }
 
   @Nested
-
   class TypeSafetyTests {
 
     @Test
-
     void testHandleAllWebAssemblyValueTypes() throws Exception {
       // Arrange - function with all supported parameter types
       final FunctionType allTypesFunction =
@@ -406,7 +378,6 @@ class PanamaHostFunctionTest {
     }
 
     @Test
-
     void testHandleComplexFunctionSignatures() throws Exception {
       // Arrange - complex function with many parameters and returns
       final FunctionType complexType =
@@ -435,11 +406,9 @@ class PanamaHostFunctionTest {
   }
 
   @Nested
-
   class StringRepresentationTests {
 
     @Test
-
     void testReturnCorrectStringRepresentation() throws Exception {
       // Arrange
       final PanamaHostFunction hostFunction =
@@ -456,7 +425,6 @@ class PanamaHostFunctionTest {
     }
 
     @Test
-
     void testReturnCorrectStringRepresentationWhenClosed() throws Exception {
       // Arrange
       final PanamaHostFunction hostFunction =
@@ -475,11 +443,9 @@ class PanamaHostFunctionTest {
   }
 
   @Nested
-
   class ErrorHandlingTests {
 
     @Test
-
     void testHandleUpcallStubCreationFailure() throws Exception {
       // Arrange
       when(mockArenaManager.getArena()).thenThrow(new RuntimeException("Arena creation failed"));
@@ -497,7 +463,6 @@ class PanamaHostFunctionTest {
     }
 
     @Test
-
     void testHandleCloseOperationFailure() throws Exception {
       // Arrange
       final PanamaHostFunction hostFunction =
@@ -514,11 +479,9 @@ class PanamaHostFunctionTest {
   }
 
   @Nested
-
   class MemorySafetyTests {
 
     @Test
-
     void testRegisterWithArenaManagerForCleanup() throws Exception {
       // Act
       final PanamaHostFunction hostFunction =
@@ -532,7 +495,6 @@ class PanamaHostFunctionTest {
     }
 
     @Test
-
     void testPreventAccessAfterClose() throws Exception {
       // Arrange
       final PanamaHostFunction hostFunction =

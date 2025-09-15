@@ -55,6 +55,24 @@ public final class CrossRuntimeTestResult {
   }
 
   /**
+   * Gets the JNI runtime execution result.
+   *
+   * @return the JNI execution result
+   */
+  public RuntimeTestExecution getJniResult() {
+    return jniResult;
+  }
+
+  /**
+   * Gets the Panama runtime execution result.
+   *
+   * @return the Panama execution result if available, null otherwise
+   */
+  public RuntimeTestExecution getPanamaResult() {
+    return panamaResult;
+  }
+
+  /**
    * Checks if both runtimes executed successfully.
    *
    * @return true if both runtimes succeeded

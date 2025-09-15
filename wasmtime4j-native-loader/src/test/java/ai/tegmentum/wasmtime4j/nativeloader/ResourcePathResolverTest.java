@@ -53,7 +53,6 @@ final class ResourcePathResolverTest {
   }
 
   @Test
-
   void testValidPatternAcceptance() {
     // These should not throw any exceptions
     ResourcePathResolver.validatePattern("/natives/{platform}/{lib}{name}{ext}");
@@ -63,7 +62,6 @@ final class ResourcePathResolverTest {
   }
 
   @Test
-
   void testPathTraversalRejection() {
     assertThrows(
         SecurityException.class,
@@ -82,7 +80,6 @@ final class ResourcePathResolverTest {
   }
 
   @Test
-
   void testNullByteRejection() {
     assertThrows(
         SecurityException.class,
@@ -91,7 +88,6 @@ final class ResourcePathResolverTest {
   }
 
   @Test
-
   void testControlCharacterRejection() {
     assertThrows(
         SecurityException.class,
@@ -100,7 +96,6 @@ final class ResourcePathResolverTest {
   }
 
   @Test
-
   void testAbsolutePathRejection() {
     assertThrows(
         SecurityException.class,
@@ -109,7 +104,6 @@ final class ResourcePathResolverTest {
   }
 
   @Test
-
   void testLeadingSlashAcceptance() {
     // Leading slash should be acceptable for JAR resource paths
     ResourcePathResolver.validatePattern("/{platform}/{name}{ext}");
@@ -117,7 +111,6 @@ final class ResourcePathResolverTest {
   }
 
   @Test
-
   void testMalformedPlaceholderRejection() {
     assertThrows(
         IllegalArgumentException.class,
@@ -131,7 +124,6 @@ final class ResourcePathResolverTest {
   }
 
   @Test
-
   void testStandardPlaceholderSubstitution() {
     final String pattern = "/{platform}/{os}/{arch}/{lib}{name}{ext}";
     final String resolved = ResourcePathResolver.resolvePath(pattern, "testlib", linuxInfo);
@@ -143,7 +135,6 @@ final class ResourcePathResolverTest {
   }
 
   @Test
-
   void testMultiPlatformResolution() {
     final String pattern = "/native/{platform}/{lib}{name}{ext}";
     final String libraryName = "mylib";
@@ -165,7 +156,6 @@ final class ResourcePathResolverTest {
   }
 
   @Test
-
   void testLibraryNameSanitization() {
     final String pattern = "/lib/{name}.so";
 
@@ -180,7 +170,6 @@ final class ResourcePathResolverTest {
   }
 
   @Test
-
   void testLibraryNameControlCharacterRemoval() {
     final String pattern = "/lib/{name}.so";
 
@@ -191,7 +180,6 @@ final class ResourcePathResolverTest {
   }
 
   @Test
-
   void testUnresolvedPlaceholderDetection() {
     // This would happen if we had an unknown placeholder
     final String invalidPattern = "/lib/{unknown}/{name}.so";
@@ -209,7 +197,6 @@ final class ResourcePathResolverTest {
   }
 
   @Test
-
   void testNullInputHandling() {
     assertThrows(
         NullPointerException.class,
@@ -228,7 +215,6 @@ final class ResourcePathResolverTest {
   }
 
   @Test
-
   void testEmptyInputHandling() {
     assertThrows(
         IllegalArgumentException.class,
@@ -252,7 +238,6 @@ final class ResourcePathResolverTest {
   }
 
   @Test
-
   void testPatternValidationEdgeCases() {
     // Test minimal valid pattern
     ResourcePathResolver.validatePattern("{name}");

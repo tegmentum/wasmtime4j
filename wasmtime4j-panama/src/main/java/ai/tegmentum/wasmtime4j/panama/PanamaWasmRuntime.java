@@ -23,6 +23,7 @@ import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.RuntimeInfo;
 import ai.tegmentum.wasmtime4j.RuntimeType;
+import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.exception.CompilationException;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
@@ -139,6 +140,27 @@ public final class PanamaWasmRuntime implements WasmRuntime {
       // TODO: Implement engine configuration support
       logger.warning("Engine configuration not yet supported, creating default engine");
       return new PanamaEngine(resourceManager);
+    } catch (Exception e) {
+      throw exceptionMapper.mapException(e);
+    }
+  }
+
+  @Override
+  public Store createStore(final Engine engine) throws WasmException {
+    ensureNotClosed();
+
+    if (engine == null) {
+      throw new IllegalArgumentException("Engine cannot be null");
+    }
+
+    try {
+      if (!(engine instanceof PanamaEngine)) {
+        throw new IllegalArgumentException(
+            "Engine must be a PanamaEngine instance for Panama runtime");
+      }
+
+      PanamaEngine panamaEngine = (PanamaEngine) engine;
+      return new PanamaStore(panamaEngine);
     } catch (Exception e) {
       throw exceptionMapper.mapException(e);
     }

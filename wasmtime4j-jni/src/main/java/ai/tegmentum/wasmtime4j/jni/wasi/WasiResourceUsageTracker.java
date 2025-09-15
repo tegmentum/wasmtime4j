@@ -116,12 +116,11 @@ public final class WasiResourceUsageTracker {
     JniValidation.requireNonEmpty(contextId, "contextId");
     JniValidation.requireNonNegative(bytes, "bytes");
 
-    final ContextResourceUsage usage = getContextUsage(contextId);
+    final ContextResourceUsage usage = getContextUsageInternal(contextId);
 
     // Check memory limits before allocation
     final long newMemoryUsage = usage.memoryUsed.addAndGet(bytes);
-    if (resourceLimits.isMemoryLimited()
-        && newMemoryUsage > resourceLimits.getMaxMemoryBytes()) {
+    if (resourceLimits.isMemoryLimited() && newMemoryUsage > resourceLimits.getMaxMemoryBytes()) {
       usage.memoryUsed.addAndGet(-bytes); // Rollback
       globalStats.memoryLimitViolations.increment();
       throw new IllegalStateException(
@@ -130,7 +129,7 @@ public final class WasiResourceUsageTracker {
               contextId, newMemoryUsage, resourceLimits.getMaxMemoryBytes()));
     }
 
-    usage.totalMemoryAllocated.addAndGet(bytes);
+    usage.totalMemoryAllocated.add(bytes);
     globalStats.totalMemoryAllocated.add(bytes);
 
     if (detailedTrackingEnabled) {
@@ -151,10 +150,10 @@ public final class WasiResourceUsageTracker {
     JniValidation.requireNonEmpty(contextId, "contextId");
     JniValidation.requireNonNegative(bytes, "bytes");
 
-    final ContextResourceUsage usage = getContextUsage(contextId);
+    final ContextResourceUsage usage = getContextUsageInternal(contextId);
 
     usage.memoryUsed.addAndGet(-bytes);
-    usage.totalMemoryDeallocated.addAndGet(bytes);
+    usage.totalMemoryDeallocated.add(bytes);
     globalStats.totalMemoryDeallocated.add(bytes);
 
     if (detailedTrackingEnabled) {
@@ -184,7 +183,7 @@ public final class WasiResourceUsageTracker {
     JniValidation.requireNonNegative(bytes, "bytes");
     JniValidation.requireNonNegative(durationNanos, "durationNanos");
 
-    final ContextResourceUsage usage = getContextUsage(contextId);
+    final ContextResourceUsage usage = getContextUsageInternal(contextId);
 
     // Check operation-specific limits
     checkFileSystemOperationLimits(usage, operation, bytes);
@@ -193,13 +192,13 @@ public final class WasiResourceUsageTracker {
     switch (operation) {
       case READ:
         usage.fileReadOperations.increment();
-        usage.totalBytesRead.addAndGet(bytes);
+        usage.totalBytesRead.add(bytes);
         globalStats.totalFileReadOperations.increment();
         globalStats.totalBytesRead.add(bytes);
         break;
       case WRITE:
         usage.fileWriteOperations.increment();
-        usage.totalBytesWritten.addAndGet(bytes);
+        usage.totalBytesWritten.add(bytes);
         globalStats.totalFileWriteOperations.increment();
         globalStats.totalBytesWritten.add(bytes);
         break;
@@ -218,7 +217,7 @@ public final class WasiResourceUsageTracker {
     }
 
     if (detailedTrackingEnabled) {
-      usage.totalFileSystemDuration.addAndGet(durationNanos);
+      usage.totalFileSystemDuration.add(durationNanos);
       globalStats.totalFileSystemDuration.add(durationNanos);
     }
 
@@ -238,10 +237,11 @@ public final class WasiResourceUsageTracker {
     JniValidation.requireNonEmpty(contextId, "contextId");
     JniValidation.requireNonNegative(cpuTimeNanos, "cpuTimeNanos");
 
-    final ContextResourceUsage usage = getContextUsage(contextId);
+    final ContextResourceUsage usage = getContextUsageInternal(contextId);
 
     // Check CPU time limits
-    final long newCpuTime = usage.totalCpuTime.addAndGet(cpuTimeNanos);
+    usage.totalCpuTime.add(cpuTimeNanos);
+    final long newCpuTime = usage.totalCpuTime.sum();
     if (resourceLimits.getMaxCpuTime() != null) {
       final long maxCpuTimeNanos = resourceLimits.getMaxCpuTime().toNanos();
       if (newCpuTime > maxCpuTimeNanos) {
@@ -268,9 +268,9 @@ public final class WasiResourceUsageTracker {
     JniValidation.requireNonEmpty(contextId, "contextId");
     JniValidation.requireNonNegative(executionTimeNanos, "executionTimeNanos");
 
-    final ContextResourceUsage usage = getContextUsage(contextId);
+    final ContextResourceUsage usage = getContextUsageInternal(contextId);
 
-    usage.totalExecutionTime.addAndGet(executionTimeNanos);
+    usage.totalExecutionTime.add(executionTimeNanos);
     globalStats.totalExecutionTime.add(executionTimeNanos);
 
     LOGGER.finest(
@@ -331,7 +331,7 @@ public final class WasiResourceUsageTracker {
   }
 
   /** Gets context usage, throwing if not found. */
-  private ContextResourceUsage getContextUsage(final String contextId) {
+  private ContextResourceUsage getContextUsageInternal(final String contextId) {
     final ContextResourceUsage usage = contextUsage.get(contextId);
     if (usage == null) {
       throw new IllegalArgumentException("Unknown context ID: " + contextId);
@@ -353,19 +353,19 @@ public final class WasiResourceUsageTracker {
       if (timeDiff < 1000) { // Within 1 second
         switch (operation) {
           case READ:
-            if (usage.recentReadOperations.incrementAndGet() > resourceLimits.getMaxDiskReadsPerSecond()) {
+            if (usage.recentReadOperations.incrementAndGet()
+                > resourceLimits.getMaxDiskReadsPerSecond()) {
               globalStats.diskReadLimitViolations.increment();
               throw new IllegalStateException(
-                  String.format(
-                      "Disk read rate limit exceeded for context %s", usage.contextId));
+                  String.format("Disk read rate limit exceeded for context %s", usage.contextId));
             }
             break;
           case WRITE:
-            if (usage.recentWriteOperations.incrementAndGet() > resourceLimits.getMaxDiskWritesPerSecond()) {
+            if (usage.recentWriteOperations.incrementAndGet()
+                > resourceLimits.getMaxDiskWritesPerSecond()) {
               globalStats.diskWriteLimitViolations.increment();
               throw new IllegalStateException(
-                  String.format(
-                      "Disk write rate limit exceeded for context %s", usage.contextId));
+                  String.format("Disk write rate limit exceeded for context %s", usage.contextId));
             }
             break;
           default:
@@ -539,8 +539,17 @@ public final class WasiResourceUsageTracker {
       return otherFileOperations;
     }
 
+    /**
+     * Returns the total number of file operations across all categories.
+     *
+     * @return the sum of all file operation counts
+     */
     public long getTotalFileOperations() {
-      return fileReadOperations + fileWriteOperations + fileOpenOperations + fileCloseOperations + otherFileOperations;
+      return fileReadOperations
+          + fileWriteOperations
+          + fileOpenOperations
+          + fileCloseOperations
+          + otherFileOperations;
     }
 
     public long getTotalBytesRead() {
@@ -650,13 +659,26 @@ public final class WasiResourceUsageTracker {
       return totalMemoryAllocations;
     }
 
+    /**
+     * Returns the total number of memory deallocation operations.
+     *
+     * @return the count of memory deallocations
+     */
     public long getTotalMemoryDeallocations() {
       return totalMemoryDeallocations;
     }
 
+    /**
+     * Returns the total number of file operations across all categories.
+     *
+     * @return the sum of all file operation counts
+     */
     public long getTotalFileOperations() {
-      return totalFileReadOperations + totalFileWriteOperations + totalFileOpenOperations 
-          + totalFileCloseOperations + totalOtherFileOperations;
+      return totalFileReadOperations
+          + totalFileWriteOperations
+          + totalFileOpenOperations
+          + totalFileCloseOperations
+          + totalOtherFileOperations;
     }
 
     public long getTotalFileReadOperations() {
@@ -703,6 +725,11 @@ public final class WasiResourceUsageTracker {
       return memoryLimitViolations;
     }
 
+    /**
+     * Returns the number of CPU limit violations.
+     *
+     * @return the count of CPU limit violations
+     */
     public long getCpuLimitViolations() {
       return cpuLimitViolations;
     }
@@ -711,12 +738,25 @@ public final class WasiResourceUsageTracker {
       return diskReadLimitViolations;
     }
 
+    /**
+     * Returns the number of disk write limit violations.
+     *
+     * @return the count of disk write limit violations
+     */
     public long getDiskWriteLimitViolations() {
       return diskWriteLimitViolations;
     }
 
+    /**
+     * Returns the total number of limit violations across all categories.
+     *
+     * @return the sum of all limit violation counts
+     */
     public long getTotalLimitViolations() {
-      return memoryLimitViolations + cpuLimitViolations + diskReadLimitViolations + diskWriteLimitViolations;
+      return memoryLimitViolations
+          + cpuLimitViolations
+          + diskReadLimitViolations
+          + diskWriteLimitViolations;
     }
 
     @Override

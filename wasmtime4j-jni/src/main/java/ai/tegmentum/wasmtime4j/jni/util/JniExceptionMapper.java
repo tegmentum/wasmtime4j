@@ -267,6 +267,46 @@ public final class JniExceptionMapper {
   }
 
   /**
+   * Maps a generic Java exception to an appropriate JniException.
+   *
+   * <p>This method provides a standardized way to convert generic exceptions that occur during JNI
+   * operations into appropriate JNI-specific exceptions.
+   *
+   * @param exception the exception to map
+   * @return a JniException wrapping or representing the original exception
+   */
+  public static JniException mapException(final Exception exception) {
+    if (exception == null) {
+      return new JniException("Unknown error occurred");
+    }
+    
+    // If it's already a JniException, return it as-is
+    if (exception instanceof JniException) {
+      return (JniException) exception;
+    }
+    
+    // Map common Java exceptions to appropriate JNI exceptions
+    if (exception instanceof IllegalArgumentException) {
+      return new JniException("Invalid parameter: " + exception.getMessage(), exception);
+    }
+    
+    if (exception instanceof IllegalStateException) {
+      return new JniResourceException("Resource in invalid state: " + exception.getMessage(), exception);
+    }
+    
+    if (exception instanceof IndexOutOfBoundsException) {
+      return new JniException("Index out of bounds: " + exception.getMessage(), exception);
+    }
+    
+    if (exception instanceof NullPointerException) {
+      return new JniException("Null pointer error: " + exception.getMessage(), exception);
+    }
+    
+    // Default mapping for all other exceptions
+    return new JniException("Operation failed: " + exception.getMessage(), exception);
+  }
+
+  /**
    * Gets a human-readable description of a native error code.
    *
    * @param errorCode the native error code

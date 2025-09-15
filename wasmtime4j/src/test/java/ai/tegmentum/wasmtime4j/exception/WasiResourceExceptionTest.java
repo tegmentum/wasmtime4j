@@ -12,11 +12,9 @@ import org.junit.jupiter.api.Test;
 class WasiResourceExceptionTest {
 
   @Nested
-
   class ConstructorTests {
 
     @Test
-
     void testSimpleMessageConstructor() {
       final String message = "Resource operation failed";
       final WasiResourceException exception = new WasiResourceException(message);
@@ -35,7 +33,6 @@ class WasiResourceExceptionTest {
     }
 
     @Test
-
     void testMessageWithCauseConstructor() {
       final String message = "Resource failed";
       final RuntimeException cause = new RuntimeException("Native error");
@@ -51,7 +48,6 @@ class WasiResourceExceptionTest {
     }
 
     @Test
-
     void testResourceSpecificConstructor() {
       final String message = "File allocation failed";
       final WasiResourceException.ResourceType resourceType =
@@ -74,7 +70,6 @@ class WasiResourceExceptionTest {
     }
 
     @Test
-
     void testFullConstructor() {
       final String message = "Socket access failed";
       final WasiResourceException.ResourceType resourceType =
@@ -98,7 +93,6 @@ class WasiResourceExceptionTest {
     }
 
     @Test
-
     void testFullConstructorWithCause() {
       final String message = "Memory cleanup failed";
       final WasiResourceException.ResourceType resourceType =
@@ -125,11 +119,9 @@ class WasiResourceExceptionTest {
   }
 
   @Nested
-
   class ResourceOperationTests {
 
     @Test
-
     void testIsAllocationError() {
       final WasiResourceException exception =
           new WasiResourceException(
@@ -142,7 +134,6 @@ class WasiResourceExceptionTest {
     }
 
     @Test
-
     void testIsAccessError() {
       final WasiResourceException exception =
           new WasiResourceException(
@@ -155,7 +146,6 @@ class WasiResourceExceptionTest {
     }
 
     @Test
-
     void testIsCleanupError() {
       final WasiResourceException exception =
           new WasiResourceException(
@@ -169,11 +159,9 @@ class WasiResourceExceptionTest {
   }
 
   @Nested
-
   class ResourceTypeTests {
 
     @Test
-
     void testIsFileResourceError() {
       final WasiResourceException fileException =
           new WasiResourceException(
@@ -195,7 +183,6 @@ class WasiResourceExceptionTest {
     }
 
     @Test
-
     void testIsNetworkResourceError() {
       final WasiResourceException exception =
           new WasiResourceException(
@@ -208,7 +195,6 @@ class WasiResourceExceptionTest {
     }
 
     @Test
-
     void testIsMemoryResourceError() {
       final WasiResourceException exception =
           new WasiResourceException(
@@ -222,11 +208,9 @@ class WasiResourceExceptionTest {
   }
 
   @Nested
-
   class CleanupLogicTests {
 
     @Test
-
     void testAllocationRequiresCleanup() {
       final WasiResourceException exception =
           new WasiResourceException(
@@ -237,7 +221,6 @@ class WasiResourceExceptionTest {
     }
 
     @Test
-
     void testLifetimeManagementRequiresCleanup() {
       final WasiResourceException exception =
           new WasiResourceException(
@@ -248,7 +231,6 @@ class WasiResourceExceptionTest {
     }
 
     @Test
-
     void testOtherOperationsDoNotRequireCleanup() {
       assertFalse(
           new WasiResourceException(
@@ -272,11 +254,9 @@ class WasiResourceExceptionTest {
   }
 
   @Nested
-
   class RetryLogicTests {
 
     @Test
-
     void testRetryableOperations() {
       assertTrue(
           new WasiResourceException(
@@ -293,7 +273,6 @@ class WasiResourceExceptionTest {
     }
 
     @Test
-
     void testNonRetryableOperations() {
       assertFalse(
           new WasiResourceException(
@@ -317,11 +296,9 @@ class WasiResourceExceptionTest {
   }
 
   @Nested
-
   class ErrorCategoryMappingTests {
 
     @Test
-
     void testFileResourcesCategory() {
       assertEquals(
           WasiException.ErrorCategory.FILE_SYSTEM,
@@ -340,7 +317,6 @@ class WasiResourceExceptionTest {
     }
 
     @Test
-
     void testSocketResourcesCategory() {
       assertEquals(
           WasiException.ErrorCategory.NETWORK,
@@ -352,7 +328,6 @@ class WasiResourceExceptionTest {
     }
 
     @Test
-
     void testOtherResourcesCategory() {
       assertEquals(
           WasiException.ErrorCategory.RESOURCE_LIMIT,
@@ -393,11 +368,9 @@ class WasiResourceExceptionTest {
   }
 
   @Nested
-
   class MessageFormattingTests {
 
     @Test
-
     void testOperationFormatting() {
       assertEquals(
           "file-allocation",
@@ -423,7 +396,6 @@ class WasiResourceExceptionTest {
     }
 
     @Test
-
     void testResourceFormattingTypeOnly() {
       final WasiResourceException exception =
           new WasiResourceException(
@@ -434,7 +406,6 @@ class WasiResourceExceptionTest {
     }
 
     @Test
-
     void testResourceFormattingTypeAndHandle() {
       final WasiResourceException exception =
           new WasiResourceException(
@@ -446,7 +417,6 @@ class WasiResourceExceptionTest {
     }
 
     @Test
-
     void testResourceFormattingHandleOnly() {
       // This would require creating an exception with null type and non-null handle, which isn't
       // exposed by constructors
@@ -461,7 +431,6 @@ class WasiResourceExceptionTest {
     }
 
     @Test
-
     void testResourceFormattingNullInputs() {
       final WasiResourceException exception =
           new WasiResourceException(
@@ -474,18 +443,15 @@ class WasiResourceExceptionTest {
   }
 
   @Nested
-
   class InheritanceTests {
 
     @Test
-
     void testWasiResourceExceptionExtendsWasiException() {
       final WasiResourceException exception = new WasiResourceException("Test error");
       assertTrue(exception instanceof WasiException);
     }
 
     @Test
-
     void testWasiResourceExceptionExtendsWasmException() {
       final WasiResourceException exception = new WasiResourceException("Test error");
       assertTrue(exception instanceof WasmException);
@@ -493,11 +459,9 @@ class WasiResourceExceptionTest {
   }
 
   @Nested
-
   class ResourceTypeEnumTests {
 
     @Test
-
     void testResourceTypeValues() {
       final WasiResourceException.ResourceType[] types =
           WasiResourceException.ResourceType.values();
@@ -526,11 +490,9 @@ class WasiResourceExceptionTest {
   }
 
   @Nested
-
   class ResourceOperationEnumTests {
 
     @Test
-
     void testResourceOperationValues() {
       final WasiResourceException.ResourceOperation[] operations =
           WasiResourceException.ResourceOperation.values();

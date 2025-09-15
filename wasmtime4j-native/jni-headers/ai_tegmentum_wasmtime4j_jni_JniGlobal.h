@@ -26,82 +26,82 @@ JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeIsMu
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniGlobal
  * Method:    nativeGetValue
- * Signature: (J)Ljava/lang/Object;
+ * Signature: (JJ)Ljava/lang/Object;
  */
 JNIEXPORT jobject JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetValue
-  (JNIEnv *, jclass, jlong);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniGlobal
- * Method:    nativeGetIntValue
- * Signature: (J)I
- */
-JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetIntValue
-  (JNIEnv *, jclass, jlong);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniGlobal
- * Method:    nativeGetLongValue
- * Signature: (J)J
- */
-JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetLongValue
-  (JNIEnv *, jclass, jlong);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniGlobal
- * Method:    nativeGetFloatValue
- * Signature: (J)F
- */
-JNIEXPORT jfloat JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetFloatValue
-  (JNIEnv *, jclass, jlong);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniGlobal
- * Method:    nativeGetDoubleValue
- * Signature: (J)D
- */
-JNIEXPORT jdouble JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetDoubleValue
-  (JNIEnv *, jclass, jlong);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniGlobal
- * Method:    nativeSetValue
- * Signature: (JLjava/lang/Object;)Z
- */
-JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeSetValue
-  (JNIEnv *, jclass, jlong, jobject);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniGlobal
- * Method:    nativeSetIntValue
- * Signature: (JI)Z
- */
-JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeSetIntValue
-  (JNIEnv *, jclass, jlong, jint);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniGlobal
- * Method:    nativeSetLongValue
- * Signature: (JJ)Z
- */
-JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeSetLongValue
   (JNIEnv *, jclass, jlong, jlong);
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniGlobal
+ * Method:    nativeGetIntValue
+ * Signature: (JJ)I
+ */
+JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetIntValue
+  (JNIEnv *, jclass, jlong, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniGlobal
+ * Method:    nativeGetLongValue
+ * Signature: (JJ)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetLongValue
+  (JNIEnv *, jclass, jlong, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniGlobal
+ * Method:    nativeGetFloatValue
+ * Signature: (JJ)F
+ */
+JNIEXPORT jfloat JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetFloatValue
+  (JNIEnv *, jclass, jlong, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniGlobal
+ * Method:    nativeGetDoubleValue
+ * Signature: (JJ)D
+ */
+JNIEXPORT jdouble JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetDoubleValue
+  (JNIEnv *, jclass, jlong, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniGlobal
+ * Method:    nativeSetValue
+ * Signature: (JJLjava/lang/Object;)Z
+ */
+JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeSetValue
+  (JNIEnv *, jclass, jlong, jlong, jobject);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniGlobal
+ * Method:    nativeSetIntValue
+ * Signature: (JJI)Z
+ */
+JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeSetIntValue
+  (JNIEnv *, jclass, jlong, jlong, jint);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniGlobal
+ * Method:    nativeSetLongValue
+ * Signature: (JJJ)Z
+ */
+JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeSetLongValue
+  (JNIEnv *, jclass, jlong, jlong, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniGlobal
  * Method:    nativeSetFloatValue
- * Signature: (JF)Z
+ * Signature: (JJF)Z
  */
 JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeSetFloatValue
-  (JNIEnv *, jclass, jlong, jfloat);
+  (JNIEnv *, jclass, jlong, jlong, jfloat);
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniGlobal
  * Method:    nativeSetDoubleValue
- * Signature: (JD)Z
+ * Signature: (JJD)Z
  */
 JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeSetDoubleValue
-  (JNIEnv *, jclass, jlong, jdouble);
+  (JNIEnv *, jclass, jlong, jlong, jdouble);
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniGlobal

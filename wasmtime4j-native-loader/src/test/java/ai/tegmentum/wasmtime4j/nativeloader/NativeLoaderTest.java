@@ -34,7 +34,6 @@ import org.junit.jupiter.api.Test;
 final class NativeLoaderTest {
 
   @Test
-
   void testLoadLibraryWithDefaultConfiguration() {
     // Test loading a library that doesn't exist - should return info with error
     final NativeLibraryUtils.LibraryLoadInfo info =
@@ -47,7 +46,6 @@ final class NativeLoaderTest {
   }
 
   @Test
-
   void testLoadLibraryWithNullName() {
     assertThrows(
         NullPointerException.class,
@@ -56,7 +54,6 @@ final class NativeLoaderTest {
   }
 
   @Test
-
   void testBuilderCreation() {
     final NativeLoaderBuilder builder = assertDoesNotThrow(NativeLoader::builder);
 
@@ -74,7 +71,6 @@ final class NativeLoaderTest {
   }
 
   @Test
-
   void testUtilityClassInstantiation() {
     // Use reflection to try to instantiate the utility class
     final var exception =
@@ -94,7 +90,6 @@ final class NativeLoaderTest {
   }
 
   @Test
-
   void testMultipleBuilderInstances() {
     final NativeLoaderBuilder builder1 = NativeLoader.builder();
     final NativeLoaderBuilder builder2 = NativeLoader.builder();
@@ -113,7 +108,6 @@ final class NativeLoaderTest {
   }
 
   @Test
-
   void testEmptyLibraryName() {
     // Empty string should be passed through to the builder and fail validation there
     assertThrows(
@@ -123,7 +117,6 @@ final class NativeLoaderTest {
   }
 
   @Test
-
   void testWhitespaceOnlyLibraryName() {
     // Whitespace-only string should be passed through and fail validation
     assertThrows(
@@ -133,7 +126,6 @@ final class NativeLoaderTest {
   }
 
   @Test
-
   void testLibraryNamePreservation() {
     final String testLibName = "test-library-name";
     final NativeLibraryUtils.LibraryLoadInfo info =
@@ -146,7 +138,6 @@ final class NativeLoaderTest {
   }
 
   @Test
-
   void testBuilderPatternEquivalence() {
     final String testLibName = "equivalent-test";
 

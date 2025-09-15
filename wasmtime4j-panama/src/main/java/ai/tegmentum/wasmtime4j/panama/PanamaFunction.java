@@ -325,41 +325,40 @@ public final class PanamaFunction implements WasmFunction, AutoCloseable {
       // Allocate memory for output parameters
       var typesPtr = resourceManager.allocate(ValueLayout.ADDRESS.byteSize()).getSegment();
       var countPtr = resourceManager.allocate(ValueLayout.JAVA_LONG.byteSize()).getSegment();
-      
+
       // Call native function to get parameter types
-      int result = nativeFunctions.callNativeFunction(
-          "wasmtime4j_func_get_param_types",
-          Integer.class,
-          functionResource.getNativePointer(),
-          MemorySegment.NULL, // Store context not available in this API design
-          typesPtr,
-          countPtr);
-      
+      int result =
+          nativeFunctions.callNativeFunction(
+              "wasmtime4j_func_get_param_types",
+              Integer.class,
+              functionResource.getNativePointer(),
+              MemorySegment.NULL, // Store context not available in this API design
+              typesPtr,
+              countPtr);
+
       if (result != 0) {
         throw new WasmException("Failed to get function parameter types");
       }
-      
+
       // Read the count
       long count = countPtr.get(ValueLayout.JAVA_LONG, 0);
       if (count == 0) {
         return new ArrayList<>();
       }
-      
+
       // Read the types array
-      MemorySegment typesArray = typesPtr.get(ValueLayout.ADDRESS, 0).reinterpret(count * ValueLayout.JAVA_INT.byteSize());
+      MemorySegment typesArray =
+          typesPtr.get(ValueLayout.ADDRESS, 0).reinterpret(count * ValueLayout.JAVA_INT.byteSize());
       List<Integer> types = new ArrayList<>();
       for (int i = 0; i < count; i++) {
         int type = typesArray.get(ValueLayout.JAVA_INT, i * ValueLayout.JAVA_INT.byteSize());
         types.add(type);
       }
-      
+
       // Free the native types array
       nativeFunctions.callNativeFunction(
-          "wasmtime4j_func_free_types_array",
-          Void.class,
-          typesArray,
-          count);
-      
+          "wasmtime4j_func_free_types_array", Void.class, typesArray, count);
+
       return types;
     }
   }
@@ -370,41 +369,40 @@ public final class PanamaFunction implements WasmFunction, AutoCloseable {
       // Allocate memory for output parameters
       var typesPtr = resourceManager.allocate(ValueLayout.ADDRESS.byteSize()).getSegment();
       var countPtr = resourceManager.allocate(ValueLayout.JAVA_LONG.byteSize()).getSegment();
-      
+
       // Call native function to get result types
-      int result = nativeFunctions.callNativeFunction(
-          "wasmtime4j_func_get_result_types",
-          Integer.class,
-          functionResource.getNativePointer(),
-          MemorySegment.NULL, // Store context not available in this API design
-          typesPtr,
-          countPtr);
-      
+      int result =
+          nativeFunctions.callNativeFunction(
+              "wasmtime4j_func_get_result_types",
+              Integer.class,
+              functionResource.getNativePointer(),
+              MemorySegment.NULL, // Store context not available in this API design
+              typesPtr,
+              countPtr);
+
       if (result != 0) {
         throw new WasmException("Failed to get function result types");
       }
-      
+
       // Read the count
       long count = countPtr.get(ValueLayout.JAVA_LONG, 0);
       if (count == 0) {
         return new ArrayList<>();
       }
-      
+
       // Read the types array
-      MemorySegment typesArray = typesPtr.get(ValueLayout.ADDRESS, 0).reinterpret(count * ValueLayout.JAVA_INT.byteSize());
+      MemorySegment typesArray =
+          typesPtr.get(ValueLayout.ADDRESS, 0).reinterpret(count * ValueLayout.JAVA_INT.byteSize());
       List<Integer> types = new ArrayList<>();
       for (int i = 0; i < count; i++) {
         int type = typesArray.get(ValueLayout.JAVA_INT, i * ValueLayout.JAVA_INT.byteSize());
         types.add(type);
       }
-      
+
       // Free the native types array
       nativeFunctions.callNativeFunction(
-          "wasmtime4j_func_free_types_array",
-          Void.class,
-          typesArray,
-          count);
-      
+          "wasmtime4j_func_free_types_array", Void.class, typesArray, count);
+
       return types;
     }
   }
@@ -417,15 +415,16 @@ public final class PanamaFunction implements WasmFunction, AutoCloseable {
       final int resultCount)
       throws Throwable {
     // Call wasmtime4j_func_call through native bindings
-    int result = nativeFunctions.callNativeFunction(
-        "wasmtime4j_func_call",
-        Integer.class,
-        functionResource.getNativePointer(),
-        MemorySegment.NULL, // Store context not available in this API design
-        paramsArray != null ? paramsArray : MemorySegment.NULL,
-        (long) paramCount,
-        resultsArray != null ? resultsArray : MemorySegment.NULL,
-        (long) resultCount);
+    int result =
+        nativeFunctions.callNativeFunction(
+            "wasmtime4j_func_call",
+            Integer.class,
+            functionResource.getNativePointer(),
+            MemorySegment.NULL, // Store context not available in this API design
+            paramsArray != null ? paramsArray : MemorySegment.NULL,
+            (long) paramCount,
+            resultsArray != null ? resultsArray : MemorySegment.NULL,
+            (long) resultCount);
 
     return result == 0; // Success if result is 0
   }

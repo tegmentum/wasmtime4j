@@ -257,8 +257,7 @@ final class WasiContextIsolationValidatorTest {
     // Resource isolation violations
     validator.validateResourceAccess("context1", "resource", "type");
     assertThrows(
-        JniException.class,
-        () -> validator.validateResourceAccess("context2", "resource", "type"));
+        JniException.class, () -> validator.validateResourceAccess("context2", "resource", "type"));
 
     // Cross-context communication violations
     assertThrows(
@@ -322,22 +321,16 @@ final class WasiContextIsolationValidatorTest {
     // Test null/invalid inputs for path validation
     assertThrows(
         IllegalArgumentException.class,
-        () ->
-            validator.validatePathAccess(
-                null, Paths.get("/tmp/test"), WasiFileOperation.READ));
+        () -> validator.validatePathAccess(null, Paths.get("/tmp/test"), WasiFileOperation.READ));
     assertThrows(
         IllegalArgumentException.class,
-        () ->
-            validator.validatePathAccess(
-                "", Paths.get("/tmp/test"), WasiFileOperation.READ));
+        () -> validator.validatePathAccess("", Paths.get("/tmp/test"), WasiFileOperation.READ));
     assertThrows(
         IllegalArgumentException.class,
         () -> validator.validatePathAccess("context1", null, WasiFileOperation.READ));
     assertThrows(
         IllegalArgumentException.class,
-        () ->
-            validator.validatePathAccess(
-                "context1", Paths.get("/tmp/test"), null));
+        () -> validator.validatePathAccess("context1", Paths.get("/tmp/test"), null));
 
     // Test null/invalid inputs for resource validation
     assertThrows(
@@ -361,11 +354,9 @@ final class WasiContextIsolationValidatorTest {
 
     // Test null/invalid inputs for memory validation
     assertThrows(
-        IllegalArgumentException.class,
-        () -> validator.validateMemoryAccess(null, 0x1000L, 1024));
+        IllegalArgumentException.class, () -> validator.validateMemoryAccess(null, 0x1000L, 1024));
     assertThrows(
-        IllegalArgumentException.class,
-        () -> validator.validateMemoryAccess("", 0x1000L, 1024));
+        IllegalArgumentException.class, () -> validator.validateMemoryAccess("", 0x1000L, 1024));
     assertThrows(
         IllegalArgumentException.class,
         () -> validator.validateMemoryAccess("context1", -1L, 1024));
@@ -408,8 +399,7 @@ final class WasiContextIsolationValidatorTest {
         () -> validator.validateResourceAccess("unknown-context", "resource", "type"));
 
     assertThrows(
-        JniException.class,
-        () -> validator.validateMemoryAccess("unknown-context", 0x1000L, 1024));
+        JniException.class, () -> validator.validateMemoryAccess("unknown-context", 0x1000L, 1024));
 
     // Register one context for cross-context communication test
     validator.registerContext(
@@ -437,8 +427,7 @@ final class WasiContextIsolationValidatorTest {
           new Thread(
               () -> {
                 final String contextId = "concurrent-context-" + threadId;
-                final MockWasiContext context =
-                    new MockWasiContext(contextId, "/tmp/" + contextId);
+                final MockWasiContext context = new MockWasiContext(contextId, "/tmp/" + contextId);
 
                 validator.registerContext(
                     contextId, context, WasiContextIsolationValidator.IsolationLevel.STANDARD);
@@ -448,8 +437,7 @@ final class WasiContextIsolationValidatorTest {
                   final Path path = Paths.get("/tmp/" + contextId + "/file" + j + ".txt");
                   try {
                     validator.validatePathAccess(contextId, path, WasiFileOperation.READ);
-                    validator.validateResourceAccess(
-                        contextId, "resource" + j, "type" + (j % 3));
+                    validator.validateResourceAccess(contextId, "resource" + j, "type" + (j % 3));
                     validator.validateMemoryAccess(contextId, 0x1000L + j, 1024);
                   } catch (final JniException e) {
                     // Expected for some operations due to isolation
@@ -486,20 +474,19 @@ final class WasiContextIsolationValidatorTest {
     private final Map<String, Path> preopenedDirectories;
 
     MockWasiContext(final String contextId, final String allowedDirectory) {
-      super(1L, WasiContextBuilder.builder().build()); // Mock native handle
+      super(1L); // Mock native handle
       this.contextId = contextId;
       this.preopenedDirectories = new ConcurrentHashMap<>();
       this.preopenedDirectories.put("root", Paths.get(allowedDirectory));
     }
 
-    @Override
     public Map<String, Path> getPreopenedDirectories() {
       return new ConcurrentHashMap<>(preopenedDirectories);
     }
 
-    @Override
     public String toString() {
       return "MockWasiContext{contextId='" + contextId + "'}";
     }
   }
+
 }
