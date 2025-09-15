@@ -4,7 +4,6 @@ import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import java.nio.file.Path;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Logger;
@@ -57,8 +56,7 @@ public final class WasiContextIsolationValidator {
 
     LOGGER.info(
         String.format(
-            "Created WASI context isolation validator with strict mode: %s",
-            strictIsolationMode));
+            "Created WASI context isolation validator with strict mode: %s", strictIsolationMode));
   }
 
   /** Creates a new context isolation validator with strict isolation enabled. */
@@ -215,8 +213,7 @@ public final class WasiContextIsolationValidator {
     // Check isolation level requirements
     if (contextInfo.isolationLevel == IsolationLevel.STRICT) {
       // In strict mode, allocate exclusive resource access
-      final String existingAllocation =
-          resourceAllocations.putIfAbsent(fullResourceId, contextId);
+      final String existingAllocation = resourceAllocations.putIfAbsent(fullResourceId, contextId);
       if (existingAllocation != null && !existingAllocation.equals(contextId)) {
         statistics.resourceIsolationViolations.incrementAndGet();
         throw new JniException(
@@ -260,7 +257,8 @@ public final class WasiContextIsolationValidator {
       final String otherContextId = entry.getKey();
       final IsolatedContextInfo otherContext = entry.getValue();
 
-      if (!otherContextId.equals(contextId) && otherContext.isolationLevel == IsolationLevel.STRICT) {
+      if (!otherContextId.equals(contextId)
+          && otherContext.isolationLevel == IsolationLevel.STRICT) {
         // In a real implementation, this would check actual memory ranges
         // For now, we perform basic address range validation
         if (isMemoryRangeConflict(contextInfo, otherContext, memoryAddress, size)) {
@@ -289,9 +287,7 @@ public final class WasiContextIsolationValidator {
    * @throws JniException if cross-context communication is not allowed
    */
   public void validateCrossContextCommunication(
-      final String sourceContextId,
-      final String targetContextId,
-      final String communicationType) {
+      final String sourceContextId, final String targetContextId, final String communicationType) {
 
     JniValidation.requireNonEmpty(sourceContextId, "sourceContextId");
     JniValidation.requireNonEmpty(targetContextId, "targetContextId");
@@ -478,6 +474,11 @@ public final class WasiContextIsolationValidator {
       return crossContextViolations.get();
     }
 
+    /**
+     * Returns the total number of security violations across all categories.
+     *
+     * @return the sum of all violation counts
+     */
     public long getTotalViolations() {
       return pathIsolationViolations.get()
           + resourceIsolationViolations.get()

@@ -14,7 +14,6 @@ import ai.tegmentum.wasmtime4j.utils.BaseIntegrationTest;
 import ai.tegmentum.wasmtime4j.utils.TestUtils;
 import ai.tegmentum.wasmtime4j.webassembly.CrossRuntimeTestRunner.RuntimeTestFunction;
 import java.io.IOException;
-import java.util.List;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -78,7 +77,7 @@ class WebAssemblySpecIT extends BaseIntegrationTest {
               final Store store = engine.createStore()) {
 
             final Module module = engine.compileModule(moduleBytes);
-            final Instance instance = runtime.instantiate(module);
+            final Instance instance = store.createInstance(module);
 
             // Get the add function
             final WasmFunction addFunction =
@@ -127,7 +126,7 @@ class WebAssemblySpecIT extends BaseIntegrationTest {
               final Store store = engine.createStore()) {
 
             final Module module = engine.compileModule(moduleBytes);
-            final Instance instance = runtime.instantiate(module);
+            final Instance instance = store.createInstance(module);
 
             final WasmFunction addFunction =
                 instance
@@ -189,7 +188,7 @@ class WebAssemblySpecIT extends BaseIntegrationTest {
         final Module module = engine.compileModule(testCase.getModuleBytes());
         assertThat(module).isNotNull();
 
-        final Instance instance = runtime.instantiate(module);
+        final Instance instance = store.createInstance(module);
         assertThat(instance).isNotNull();
 
         // For modules with exports, try to validate basic functionality
@@ -216,7 +215,7 @@ class WebAssemblySpecIT extends BaseIntegrationTest {
               final Store store = engine.createStore()) {
 
             final Module module = engine.compileModule(moduleBytes);
-            final Instance instance = runtime.instantiate(module);
+            final Instance instance = store.createInstance(module);
 
             return "success";
           }

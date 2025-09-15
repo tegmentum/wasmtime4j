@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
 import ai.tegmentum.wasmtime4j.jni.exception.JniValidationException;
 import org.junit.jupiter.api.Test;
 
@@ -203,7 +202,7 @@ class JniMemoryTest {
 
     final JniMemory memory = new JniMemory(VALID_HANDLE);
     assertFalse(memory.isClosed());
-    
+
     // Test that operations work on open memory (would call native methods in real implementation)
     // Integration tests will verify behavior on closed memory
   }

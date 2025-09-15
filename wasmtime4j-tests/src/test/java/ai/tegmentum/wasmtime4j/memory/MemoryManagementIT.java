@@ -64,7 +64,7 @@ class MemoryManagementIT extends BaseIntegrationTest {
 
     // Force garbage collection
     System.gc();
-    System.runFinalization();
+    // System.runFinalization() is deprecated in recent Java versions
     System.gc();
 
     // Then: Should not leak memory or resources
@@ -98,7 +98,7 @@ class MemoryManagementIT extends BaseIntegrationTest {
 
       for (int i = 0; i < instanceCount; i++) {
         try (final Store store = engine.createStore()) {
-          final Instance instance = runtime.instantiate(module);
+          final Instance instance = store.createInstance(module);
           assertThat(instance).isNotNull();
 
           // Use the instance to ensure it's properly initialized
@@ -111,6 +111,8 @@ class MemoryManagementIT extends BaseIntegrationTest {
 
       // Module should still be valid after instance cleanup
       assertThat(module).isNotNull();
+    } catch (final Exception e) {
+      throw new AssertionError("Failed to create and cleanup resources for " + runtimeType, e);
     }
 
     LOGGER.info(
@@ -134,6 +136,10 @@ class MemoryManagementIT extends BaseIntegrationTest {
 
             // Create memory for import - TEMPORARILY DISABLED (createMemory not implemented)
             // final WasmMemory memory = store.createMemory(1, 10); // 1 page minimum, 10 pages max
+            // The store will be used once createMemory is implemented
+
+            // Temporary usage to avoid unused variable warning
+            assertThat(store).isNotNull();
 
             // Create import map - TEMPORARILY DISABLED (ImportMap.builder not implemented)
             // final ImportMap importMap =
@@ -208,7 +214,7 @@ class MemoryManagementIT extends BaseIntegrationTest {
 
                     final byte[] moduleBytes = TestUtils.createSimpleWasmModule();
                     final Module module = engine.compileModule(moduleBytes);
-                    final Instance instance = runtime.instantiate(module);
+                    final Instance instance = store.createInstance(module);
 
                     // Perform a simple operation
                     final WasmFunction addFunc =
@@ -285,23 +291,27 @@ class MemoryManagementIT extends BaseIntegrationTest {
 
             final List<WasmMemory> memories = new ArrayList<>();
 
-            // Create multiple memory instances - TEMPORARILY DISABLED (createMemory not implemented)
+            // Temporary usage to avoid unused variable warning
+            assertThat(store).isNotNull();
+
+            // Create multiple memory instances - TEMPORARILY DISABLED (createMemory not
+            // implemented)
             for (int i = 0; i < memoryCount; i++) {
               // final WasmMemory memory = store.createMemory(1, 5); // 1 page min, 5 pages max
               // memories.add(memory);
               LOGGER.info("Skipping memory creation " + i + " (createMemory not implemented)");
               break; // Skip the whole test since it depends on createMemory
 
+              // Note: The following code would execute if createMemory was implemented:
               // Write to memory to ensure it's functional
-              final byte[] testData = ("test-data-" + i).getBytes();
-              // Note: In a real implementation, we would write to the memory
+              // final byte[] testData = ("test-data-" + i).getBytes();
               // memory.write(0, testData);
-
-              LOGGER.fine(
-                  "Created memory instance "
-                      + i
-                      + " for runtime "
-                      + runtime.getClass().getSimpleName());
+              //
+              // LOGGER.fine(
+              //     "Created memory instance "
+              //         + i
+              //         + " for runtime "
+              //         + runtime.getClass().getSimpleName());
             }
 
             assertThat(memories).hasSize(memoryCount);
@@ -384,7 +394,7 @@ class MemoryManagementIT extends BaseIntegrationTest {
 
     // Force garbage collection to help identify potential leaks
     System.gc();
-    System.runFinalization();
+    // System.runFinalization() is deprecated in recent Java versions
     System.gc();
 
     // Verify we can still create new resources after cleanup
@@ -409,6 +419,8 @@ class MemoryManagementIT extends BaseIntegrationTest {
     try {
       System.setProperty("wasmtime4j.runtime", runtimeType.name().toLowerCase());
       return ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory.create();
+    } catch (final Exception e) {
+      throw new RuntimeException("Failed to create runtime for type " + runtimeType, e);
     } finally {
       if (originalProperty != null) {
         System.setProperty("wasmtime4j.runtime", originalProperty);

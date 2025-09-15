@@ -7,7 +7,6 @@ import java.lang.ref.WeakReference;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -153,7 +152,8 @@ public final class WasiResourceLeakDetector implements AutoCloseable {
     trackedContexts.put(contextId, tracked);
 
     // Create phantom reference for automatic cleanup
-    final PhantomReference<WasiContext> phantomRef = new PhantomReference<>(context, referenceQueue);
+    final PhantomReference<WasiContext> phantomRef =
+        new PhantomReference<>(context, referenceQueue);
     phantomReferences.put(phantomRef, "WasiContext:" + contextId);
 
     statistics.contextsCreated.incrementAndGet();
@@ -475,7 +475,9 @@ public final class WasiResourceLeakDetector implements AutoCloseable {
     final Instant creationTime;
 
     TrackedWasiContext(
-        final String contextId, final WeakReference<WasiContext> reference, final Instant creationTime) {
+        final String contextId,
+        final WeakReference<WasiContext> reference,
+        final Instant creationTime) {
       this.contextId = contextId;
       this.reference = reference;
       this.creationTime = creationTime;

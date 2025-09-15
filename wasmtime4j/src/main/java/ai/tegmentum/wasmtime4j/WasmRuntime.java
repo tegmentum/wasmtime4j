@@ -63,6 +63,19 @@ public interface WasmRuntime extends Closeable {
   Module compileModule(final Engine engine, final byte[] wasmBytes) throws WasmException;
 
   /**
+   * Creates a new store for the given engine.
+   *
+   * <p>A store represents an execution context that holds the runtime state for WebAssembly
+   * instances. Each store maintains isolated linear memory, globals, and execution state.
+   *
+   * @param engine the engine to create the store for
+   * @return a new Store instance
+   * @throws WasmException if store creation fails
+   * @throws IllegalArgumentException if engine is null
+   */
+  Store createStore(final Engine engine) throws WasmException;
+
+  /**
    * Creates an instance of a WebAssembly module.
    *
    * <p>This method instantiates a compiled module, making its exported functions and memory

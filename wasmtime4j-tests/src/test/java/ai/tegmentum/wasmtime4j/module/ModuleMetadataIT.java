@@ -34,7 +34,7 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
 @DisplayName("Module Metadata Comprehensive Tests")
 class ModuleMetadataIT extends BaseIntegrationTest {
 
-  private static final Logger LOGGER = Logger.getLogger(ModuleMetadataTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(ModuleMetadataIT.class.getName());
 
   private WasmTestDataManager testDataManager;
 

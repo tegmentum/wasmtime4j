@@ -20,6 +20,16 @@ public interface WasmMemory {
   int getSize();
 
   /**
+   * Gets the current size of the memory in pages (64KB each). Alias for getSize() for
+   * compatibility.
+   *
+   * @return the current size in pages
+   */
+  default int size() {
+    return getSize();
+  }
+
+  /**
    * Grows the memory by the specified number of pages.
    *
    * @param pages the number of pages to grow by

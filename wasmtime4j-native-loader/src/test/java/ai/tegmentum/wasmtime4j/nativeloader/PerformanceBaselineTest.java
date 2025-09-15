@@ -47,7 +47,6 @@ import org.junit.jupiter.params.provider.ValueSource;
  * <p>These tests are designed to be deterministic and provide consistent baseline measurements
  * across different environments.
  */
-
 final class PerformanceBaselineTest {
 
   private static final int WARMUP_ITERATIONS = 1000;
@@ -69,7 +68,6 @@ final class PerformanceBaselineTest {
   }
 
   @Test
-
   @Timeout(30)
   void testInitialDetectionPerformanceBaseline() {
     // Warmup JVM
@@ -106,7 +104,6 @@ final class PerformanceBaselineTest {
   }
 
   @Test
-
   @Timeout(10)
   void testCachedDetectionPerformanceBaseline() {
     // Initialize cache
@@ -159,7 +156,6 @@ final class PerformanceBaselineTest {
   }
 
   @Test
-
   @Timeout(10)
   void testPlatformInfoMethodPerformanceBaseline() {
     final PlatformDetector.PlatformInfo info = PlatformDetector.detect();
@@ -222,7 +218,6 @@ final class PerformanceBaselineTest {
 
   @ParameterizedTest
   @ValueSource(ints = {1, 10, 50, 100, 500})
-
   @Timeout(30)
   void testRepeatedDetectionBaseline(final int iterations) {
     // Clear cache
@@ -266,7 +261,6 @@ final class PerformanceBaselineTest {
   }
 
   @Test
-
   @Timeout(15)
   void testConcurrentDetectionBaseline() {
     final int threadCount = Runtime.getRuntime().availableProcessors();
@@ -340,7 +334,6 @@ final class PerformanceBaselineTest {
   }
 
   @Test
-
   @Timeout(10)
   void testMemoryAllocationBaseline() {
     // Force garbage collection before measurement
@@ -382,7 +375,6 @@ final class PerformanceBaselineTest {
   }
 
   @Test
-
   @Timeout(5)
   void testJmhBenchmarkPreparation() {
     // This test prepares scenarios and collects data for JMH benchmarks

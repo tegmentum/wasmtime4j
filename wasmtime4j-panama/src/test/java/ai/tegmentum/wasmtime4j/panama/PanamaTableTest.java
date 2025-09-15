@@ -18,7 +18,6 @@ package ai.tegmentum.wasmtime4j.panama;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -32,7 +31,6 @@ import ai.tegmentum.wasmtime4j.WasmValueType;
 import java.lang.foreign.MemorySegment;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -47,7 +45,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
  * element access, bounds checking, resource management, and error handling patterns.
  */
 @ExtendWith(MockitoExtension.class)
-
 class PanamaTableTest {
 
   @Mock private ArenaResourceManager mockArenaManager;
@@ -67,29 +64,39 @@ class PanamaTableTest {
   private MethodHandle createGetHandle(final MemorySegment returnValue) throws Throwable {
     // Create a MethodHandle that takes (MemorySegment, int) and returns MemorySegment
     return MethodHandles.dropArguments(
-        MethodHandles.constant(MemorySegment.class, returnValue), 0, MemorySegment.class, int.class);
+        MethodHandles.constant(MemorySegment.class, returnValue),
+        0,
+        MemorySegment.class,
+        int.class);
   }
 
   private MethodHandle createSetHandle(final boolean returnValue) throws Throwable {
     // Create a MethodHandle that takes (MemorySegment, int, MemorySegment) and returns boolean
     return MethodHandles.dropArguments(
         MethodHandles.constant(boolean.class, returnValue),
-        0, MemorySegment.class, int.class, MemorySegment.class);
+        0,
+        MemorySegment.class,
+        int.class,
+        MemorySegment.class);
   }
 
   private MethodHandle createGrowHandle(final boolean returnValue) throws Throwable {
     // Create a MethodHandle that takes (MemorySegment, int, Object) and returns boolean
     return MethodHandles.dropArguments(
         MethodHandles.constant(boolean.class, returnValue),
-        0, MemorySegment.class, int.class, Object.class);
+        0,
+        MemorySegment.class,
+        int.class,
+        Object.class);
   }
 
   private MethodHandle createThrowingHandle(final Throwable exception) throws Throwable {
     // Create a MethodHandle that throws the given exception when invoked
     return MethodHandles.dropArguments(
-        MethodHandles.throwException(long.class, exception.getClass()
-            .asSubclass(Throwable.class)).bindTo(exception),
-        0, MemorySegment.class);
+        MethodHandles.throwException(long.class, exception.getClass().asSubclass(Throwable.class))
+            .bindTo(exception),
+        0,
+        MemorySegment.class);
   }
 
   @BeforeEach
@@ -97,15 +104,14 @@ class PanamaTableTest {
     mockTableHandle = MemorySegment.ofAddress(0x1000L);
 
     // Create the table instance with injectable native bindings
-    panamaTable = new PanamaTable(mockTableHandle, mockArenaManager, mockPanamaInstance, mockNativeBindings);
+    panamaTable =
+        new PanamaTable(mockTableHandle, mockArenaManager, mockPanamaInstance, mockNativeBindings);
   }
 
   @Nested
-
   class ConstructorTests {
 
     @Test
-
     void testCreateTableWithValidParameters() throws Throwable {
       // Verify the table was registered with arena manager
       verify(mockArenaManager)
@@ -113,7 +119,6 @@ class PanamaTableTest {
     }
 
     @Test
-
     void testThrowExceptionWhenTableHandleIsNull() {
       assertThrows(
           NullPointerException.class,
@@ -121,7 +126,6 @@ class PanamaTableTest {
     }
 
     @Test
-
     void testThrowExceptionWhenArenaManagerIsNull() {
       assertThrows(
           NullPointerException.class,
@@ -129,7 +133,6 @@ class PanamaTableTest {
     }
 
     @Test
-
     void testThrowExceptionWhenNativeBindingsIsNull() {
       assertThrows(
           NullPointerException.class,
@@ -137,7 +140,6 @@ class PanamaTableTest {
     }
 
     @Test
-
     void testThrowExceptionWhenNativeBindingsIsNullIn4ParamConstructor() {
       assertThrows(
           NullPointerException.class,
@@ -146,11 +148,9 @@ class PanamaTableTest {
   }
 
   @Nested
-
   class SizeOperationTests {
 
     @Test
-
     void testReturnCorrectTableSize() throws Throwable {
       // Arrange
       final long expectedSize = 42L;
@@ -166,7 +166,6 @@ class PanamaTableTest {
     }
 
     @Test
-
     void testHandleSizeOperationFailure() throws Throwable {
       // Arrange
       final RuntimeException cause = new RuntimeException("Native size failed");
@@ -185,11 +184,9 @@ class PanamaTableTest {
   }
 
   @Nested
-
   class GetElementTests {
 
     @Test
-
     void testGetElementAtValidIndex() throws Throwable {
       // Arrange
       final int index = 5;
@@ -198,7 +195,7 @@ class PanamaTableTest {
 
       final MethodHandle sizeHandle = createSizeHandle(tableSize);
       final MethodHandle getHandle = createGetHandle(mockElementHandle);
-      
+
       when(mockNativeBindings.getTableSize()).thenReturn(sizeHandle);
       when(mockNativeBindings.getTableGet()).thenReturn(getHandle);
 
@@ -211,7 +208,6 @@ class PanamaTableTest {
     }
 
     @Test
-
     void testReturnNullForNullElementHandle() throws Throwable {
       // Arrange
       final int index = 5;
@@ -219,7 +215,7 @@ class PanamaTableTest {
 
       final MethodHandle sizeHandle = createSizeHandle(tableSize);
       final MethodHandle getHandle = createGetHandle(MemorySegment.NULL);
-      
+
       when(mockNativeBindings.getTableSize()).thenReturn(sizeHandle);
       when(mockNativeBindings.getTableGet()).thenReturn(getHandle);
 
@@ -231,7 +227,6 @@ class PanamaTableTest {
     }
 
     @Test
-
     void testThrowExceptionForNegativeIndex() {
       // Arrange
       final int index = -1;
@@ -241,7 +236,6 @@ class PanamaTableTest {
     }
 
     @Test
-
     void testThrowExceptionForIndexOutOfBounds() throws Throwable {
       // Arrange
       final int index = 10;
@@ -249,19 +243,18 @@ class PanamaTableTest {
 
       final MethodHandle sizeHandle = createSizeHandle(tableSize);
       final MethodHandle getHandle = createGetHandle(MemorySegment.ofAddress(0x1000L));
-      
+
       when(mockNativeBindings.getTableSize()).thenReturn(sizeHandle);
       when(mockNativeBindings.getTableGet()).thenReturn(getHandle);
 
       // Act - bounds errors are caught and result in null return (just like set operations)
       final Object result = panamaTable.get(index);
-      
+
       // Assert - bounds check failure results in null return due to catch-all handler
       assertNull(result);
     }
 
     @Test
-
     void testHandleGetOperationFailure() throws Throwable {
       // Arrange
       final int index = 3;
@@ -269,10 +262,14 @@ class PanamaTableTest {
       final RuntimeException cause = new RuntimeException("Native get failed");
 
       final MethodHandle sizeHandle = createSizeHandle(tableSize);
-      final MethodHandle throwingGetHandle = MethodHandles.dropArguments(
-          MethodHandles.throwException(MemorySegment.class, RuntimeException.class).bindTo(cause),
-          0, MemorySegment.class, int.class);
-      
+      final MethodHandle throwingGetHandle =
+          MethodHandles.dropArguments(
+              MethodHandles.throwException(MemorySegment.class, RuntimeException.class)
+                  .bindTo(cause),
+              0,
+              MemorySegment.class,
+              int.class);
+
       when(mockNativeBindings.getTableSize()).thenReturn(sizeHandle);
       when(mockNativeBindings.getTableGet()).thenReturn(throwingGetHandle);
 
@@ -285,11 +282,9 @@ class PanamaTableTest {
   }
 
   @Nested
-
   class SetElementTests {
 
     @Test
-
     void testSetElementAtValidIndex() throws Throwable {
       // Arrange
       final int index = 3;
@@ -299,7 +294,7 @@ class PanamaTableTest {
 
       final MethodHandle sizeHandle = createSizeHandle(tableSize);
       final MethodHandle setHandle = createSetHandle(true);
-      
+
       when(mockNativeBindings.getTableSize()).thenReturn(sizeHandle);
       when(mockFunction.getFunctionHandle()).thenReturn(mockFunctionHandle);
       when(mockNativeBindings.getTableSet()).thenReturn(setHandle);
@@ -312,7 +307,6 @@ class PanamaTableTest {
     }
 
     @Test
-
     void testSetNullElement() throws Throwable {
       // Arrange
       final int index = 3;
@@ -320,7 +314,7 @@ class PanamaTableTest {
 
       final MethodHandle sizeHandle = createSizeHandle(tableSize);
       final MethodHandle setHandle = createSetHandle(true);
-      
+
       when(mockNativeBindings.getTableSize()).thenReturn(sizeHandle);
       when(mockNativeBindings.getTableSet()).thenReturn(setHandle);
 
@@ -332,7 +326,6 @@ class PanamaTableTest {
     }
 
     @Test
-
     void testThrowExceptionForNegativeIndexOnSet() {
       // Arrange
       final int index = -1;
@@ -342,20 +335,18 @@ class PanamaTableTest {
     }
 
     @Test
-
     void testThrowExceptionForIndexOutOfBoundsOnSet() throws Throwable {
       // Arrange
       final int index = 15;
 
       // Act - set operation should complete without throwing (bounds errors are logged)
       panamaTable.set(index, null);
-      
+
       // Assert - verify the set handle was requested (but size check failed before bounds check)
       verify(mockNativeBindings).getTableSet();
     }
 
     @Test
-
     void testThrowExceptionForNonPanamaFunction() throws Throwable {
       // Arrange
       final int index = 3;
@@ -363,13 +354,12 @@ class PanamaTableTest {
 
       // Act - set operation should complete without throwing (invalid types are logged)
       panamaTable.set(index, invalidFunction);
-      
+
       // Assert - verify the set handle was requested (size check happens after type validation)
       verify(mockNativeBindings).getTableSet();
     }
 
     @Test
-
     void testHandleSetOperationFailure() throws Throwable {
       // Arrange
       final int index = 3;
@@ -377,24 +367,22 @@ class PanamaTableTest {
 
       final MethodHandle sizeHandle = createSizeHandle(tableSize);
       final MethodHandle setHandle = createSetHandle(false);
-      
+
       when(mockNativeBindings.getTableSize()).thenReturn(sizeHandle);
       when(mockNativeBindings.getTableSet()).thenReturn(setHandle);
 
       // Act - set operation should complete without throwing (failures are logged)
       panamaTable.set(index, null);
-      
+
       // Assert - verify the native bindings were called
       verify(mockNativeBindings).getTableSet();
     }
   }
 
   @Nested
-
   class GrowOperationTests {
 
     @Test
-
     void testGrowTableSuccessfully() throws Throwable {
       // Arrange
       final int delta = 5;
@@ -402,7 +390,7 @@ class PanamaTableTest {
 
       final MethodHandle sizeHandle = createSizeHandle(previousSize);
       final MethodHandle growHandle = createGrowHandle(true);
-      
+
       when(mockNativeBindings.getTableSize()).thenReturn(sizeHandle);
       when(mockNativeBindings.getTableGrow()).thenReturn(growHandle);
 
@@ -415,7 +403,6 @@ class PanamaTableTest {
     }
 
     @Test
-
     void testGrowTableWithInitialValue() throws Throwable {
       // Arrange
       final int delta = 3;
@@ -425,7 +412,7 @@ class PanamaTableTest {
 
       final MethodHandle sizeHandle = createSizeHandle(previousSize);
       final MethodHandle growHandle = createGrowHandle(true);
-      
+
       when(mockNativeBindings.getTableSize()).thenReturn(sizeHandle);
       when(mockInitialFunction.getFunctionHandle()).thenReturn(mockInitialHandle);
       when(mockNativeBindings.getTableGrow()).thenReturn(growHandle);
@@ -439,7 +426,6 @@ class PanamaTableTest {
     }
 
     @Test
-
     void testThrowExceptionForNegativeDelta() {
       // Arrange
       final int delta = -5;
@@ -449,7 +435,6 @@ class PanamaTableTest {
     }
 
     @Test
-
     void testHandleGrowOperationFailure() throws Throwable {
       // Arrange
       final int delta = 5;
@@ -457,7 +442,7 @@ class PanamaTableTest {
 
       final MethodHandle sizeHandle = createSizeHandle(previousSize);
       final MethodHandle growHandle = createGrowHandle(false);
-      
+
       when(mockNativeBindings.getTableSize()).thenReturn(sizeHandle);
       when(mockNativeBindings.getTableGrow()).thenReturn(growHandle);
 
@@ -470,11 +455,9 @@ class PanamaTableTest {
   }
 
   @Nested
-
   class ResourceManagementTests {
 
     @Test
-
     void testCloseTableSuccessfully() throws Throwable {
       // Act
       panamaTable.close();
@@ -485,7 +468,6 @@ class PanamaTableTest {
     }
 
     @Test
-
     void testHandleDoubleCloseGracefully() throws Throwable {
       // Act
       panamaTable.close();
@@ -496,7 +478,6 @@ class PanamaTableTest {
     }
 
     @Test
-
     void testThrowExceptionWhenAccessingClosedTable() throws Throwable {
       // Arrange
       panamaTable.close();
@@ -510,7 +491,6 @@ class PanamaTableTest {
     }
 
     @Test
-
     void testReturnCorrectTableHandle() {
       // Act
       final MemorySegment handle = panamaTable.getTableHandle();
@@ -521,11 +501,9 @@ class PanamaTableTest {
   }
 
   @Nested
-
   class UtilityMethodTests {
 
     @Test
-
     void testReturnCorrectMaxSize() throws Throwable {
       // Act
       final int maxSize = panamaTable.getMaxSize();
@@ -535,7 +513,6 @@ class PanamaTableTest {
     }
 
     @Test
-
     void testReturnCorrectElementType() throws Throwable {
       // Act
       final WasmValueType elementType = panamaTable.getElementType();
@@ -545,7 +522,6 @@ class PanamaTableTest {
     }
 
     @Test
-
     void testReturnCorrectStringRepresentation() throws Throwable {
       // Arrange
       final MethodHandle sizeHandle = createSizeHandle(5L);
@@ -561,7 +537,6 @@ class PanamaTableTest {
     }
 
     @Test
-
     void testReturnCorrectStringRepresentationWhenClosed() throws Throwable {
       // Arrange
       panamaTable.close();
@@ -576,17 +551,15 @@ class PanamaTableTest {
   }
 
   @Nested
-
   class ThreadSafetyTests {
 
     @Test
-
     void testHandleConcurrentAccessSafely() throws Throwable {
       // Arrange
       final MethodHandle sizeHandle = createSizeHandle(10L);
       final MethodHandle getHandle = createGetHandle(MemorySegment.NULL);
       final MethodHandle setHandle = createSetHandle(true);
-      
+
       when(mockNativeBindings.getTableSize()).thenReturn(sizeHandle);
       when(mockNativeBindings.getTableGet()).thenReturn(getHandle);
       when(mockNativeBindings.getTableSet()).thenReturn(setHandle);
@@ -617,7 +590,6 @@ class PanamaTableTest {
     }
 
     @Test
-
     void testHandleConcurrentCloseSafely() throws Throwable {
       // Act
       final Runnable closeOperation =

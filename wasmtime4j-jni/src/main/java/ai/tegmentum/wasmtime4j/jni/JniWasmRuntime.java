@@ -7,10 +7,12 @@ import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.RuntimeInfo;
 import ai.tegmentum.wasmtime4j.RuntimeType;
+import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.nativelib.NativeLibraryLoader;
 import ai.tegmentum.wasmtime4j.jni.util.JniConcurrencyManager;
+import ai.tegmentum.wasmtime4j.jni.util.JniExceptionMapper;
 import ai.tegmentum.wasmtime4j.jni.util.JniPhantomReferenceManager;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import ai.tegmentum.wasmtime4j.jni.util.JniResourceCache;
@@ -169,6 +171,26 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
   }
 
   @Override
+  public Store createStore(final Engine engine) throws WasmException {
+    JniValidation.requireNonNull(engine, "engine");
+    if (!isValid()) {
+      throw new IllegalStateException("JNI runtime is not valid or has been closed");
+    }
+
+    try {
+      if (!(engine instanceof JniEngine)) {
+        throw new IllegalArgumentException(
+            "Engine must be a JniEngine instance for JNI runtime");
+      }
+
+      JniEngine jniEngine = (JniEngine) engine;
+      return jniEngine.createStore();
+    } catch (Exception e) {
+      throw JniExceptionMapper.mapException(e);
+    }
+  }
+
+  @Override
   public Module compileModule(final Engine engine, final byte[] wasmBytes) throws WasmException {
     JniValidation.requireNonNull(engine, "engine");
     JniValidation.requireNonNull(wasmBytes, "wasmBytes");
@@ -243,7 +265,7 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
                 throw new WasmException("Failed to instantiate WebAssembly module");
               }
 
-              final JniInstance instance = new JniInstance(instanceHandle);
+              final JniInstance instance = new JniInstance(instanceHandle, module, null);
 
               // Register instance for concurrency management and cleanup
               concurrencyManager.registerResource(instanceHandle);

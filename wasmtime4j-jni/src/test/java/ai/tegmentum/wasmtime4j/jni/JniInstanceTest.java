@@ -1,18 +1,17 @@
 package ai.tegmentum.wasmtime4j.jni;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
-import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
 import ai.tegmentum.wasmtime4j.jni.exception.JniValidationException;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
@@ -30,11 +29,9 @@ class JniInstanceTest {
 
   private static final long VALID_HANDLE = 0x12345678L;
 
-  @Mock
-  private Module mockModule;
+  @Mock private Module mockModule;
 
-  @Mock
-  private Store mockStore;
+  @Mock private Store mockStore;
 
   @BeforeEach
   void setUp() {
@@ -55,7 +52,8 @@ class JniInstanceTest {
   @Test
   void testConstructorWithInvalidHandle() {
     final JniValidationException exception =
-        assertThrows(JniValidationException.class, () -> new JniInstance(0L, mockModule, mockStore));
+        assertThrows(
+            JniValidationException.class, () -> new JniInstance(0L, mockModule, mockStore));
 
     assertThat(exception.getMessage()).contains("nativeHandle");
     assertThat(exception.getMessage()).contains("invalid native handle");
@@ -64,7 +62,8 @@ class JniInstanceTest {
   @Test
   void testConstructorWithNullModule() {
     final JniValidationException exception =
-        assertThrows(JniValidationException.class, () -> new JniInstance(VALID_HANDLE, null, mockStore));
+        assertThrows(
+            JniValidationException.class, () -> new JniInstance(VALID_HANDLE, null, mockStore));
 
     assertThat(exception.getMessage()).contains("module");
     assertThat(exception.getMessage()).contains("must not be null");
@@ -73,7 +72,8 @@ class JniInstanceTest {
   @Test
   void testConstructorWithNullStore() {
     final JniValidationException exception =
-        assertThrows(JniValidationException.class, () -> new JniInstance(VALID_HANDLE, mockModule, null));
+        assertThrows(
+            JniValidationException.class, () -> new JniInstance(VALID_HANDLE, mockModule, null));
 
     assertThat(exception.getMessage()).contains("store");
     assertThat(exception.getMessage()).contains("must not be null");
@@ -247,7 +247,7 @@ class JniInstanceTest {
 
     final JniInstance instance = new JniInstance(VALID_HANDLE, mockModule, mockStore);
     assertFalse(instance.isClosed());
-    
+
     // Test that operations work on open instance (would call native methods in real implementation)
     // Integration tests will verify behavior on closed instances
   }
@@ -268,9 +268,9 @@ class JniInstanceTest {
   @Test
   void testGetModuleReturnsCorrectReference() {
     final JniInstance instance = new JniInstance(VALID_HANDLE, mockModule, mockStore);
-    
+
     final Module retrievedModule = instance.getModule();
-    
+
     assertNotNull(retrievedModule);
     assertEquals(mockModule, retrievedModule);
   }
@@ -278,9 +278,9 @@ class JniInstanceTest {
   @Test
   void testGetStoreReturnsCorrectReference() {
     final JniInstance instance = new JniInstance(VALID_HANDLE, mockModule, mockStore);
-    
+
     final Store retrievedStore = instance.getStore();
-    
+
     assertNotNull(retrievedStore);
     assertEquals(mockStore, retrievedStore);
   }
@@ -288,7 +288,7 @@ class JniInstanceTest {
   @Test
   void testIsValidWithValidHandle() {
     final JniInstance instance = new JniInstance(VALID_HANDLE, mockModule, mockStore);
-    
+
     assertTrue(instance.isValid());
   }
 
@@ -298,15 +298,15 @@ class JniInstanceTest {
     // We can't test with a zero handle through constructor due to validation
     // but we can verify the logic would work correctly
     final JniInstance instance = new JniInstance(VALID_HANDLE, mockModule, mockStore);
-    
+
     // Valid instance should return true
     assertTrue(instance.isValid());
   }
 
-  @Test 
+  @Test
   void testGetExportNamesValidation() {
     final JniInstance instance = new JniInstance(VALID_HANDLE, mockModule, mockStore);
-    
+
     // This test validates the method exists and doesn't throw for basic validation
     // Actual export name retrieval is tested in integration tests
     // The method should be callable without throwing validation exceptions
@@ -316,7 +316,7 @@ class JniInstanceTest {
   @Test
   void testHasExportValidation() {
     final JniInstance instance = new JniInstance(VALID_HANDLE, mockModule, mockStore);
-    
+
     // Test validation for hasExport method calls
     assertThrows(JniValidationException.class, () -> instance.hasExport(null));
     assertThrows(JniValidationException.class, () -> instance.hasExport(""));
@@ -326,11 +326,11 @@ class JniInstanceTest {
   @Test
   void testCallFunctionValidation() {
     final JniInstance instance = new JniInstance(VALID_HANDLE, mockModule, mockStore);
-    
+
     // Test validation - null function name should be handled gracefully
     // This tests the defensive programming approach
     assertNotNull(instance);
-    
+
     // The actual callFunction behavior is tested in integration tests
     // since it requires native method calls
   }

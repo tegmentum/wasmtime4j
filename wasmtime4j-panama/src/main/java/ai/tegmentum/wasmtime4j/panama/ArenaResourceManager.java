@@ -62,6 +62,15 @@ public final class ArenaResourceManager implements AutoCloseable {
   }
 
   /**
+   * Creates a global arena resource manager with a shared arena and tracking enabled.
+   *
+   * @return new arena resource manager with global scope
+   */
+  public static ArenaResourceManager createGlobal() {
+    return new ArenaResourceManager(Arena.ofShared(), true);
+  }
+
+  /**
    * Creates a new arena resource manager with the specified arena.
    *
    * @param arena the arena to use for resource management
@@ -158,6 +167,29 @@ public final class ArenaResourceManager implements AutoCloseable {
   }
 
   /**
+   * Allocates memory for a null-terminated string and copies the Java string to it.
+   *
+   * @param value the string to allocate
+   * @return managed memory segment containing the null-terminated string
+   * @throws IllegalStateException if the manager is closed
+   * @throws IllegalArgumentException if value is null
+   */
+  public ManagedMemorySegment allocateString(final String value) {
+    if (value == null) {
+      throw new IllegalArgumentException("String value cannot be null");
+    }
+    checkNotClosed();
+
+    try {
+      MemorySegment segment = arena.allocateFrom(value);
+      return createManagedSegment(segment, "allocatedString(\"" + value + "\")");
+    } catch (Exception e) {
+      LOGGER.log(Level.WARNING, "Failed to allocate string: " + value, e);
+      throw e;
+    }
+  }
+
+  /**
    * Creates a managed wrapper around an existing native resource.
    *
    * @param nativePointer pointer to the native resource
@@ -233,6 +265,17 @@ public final class ArenaResourceManager implements AutoCloseable {
         });
 
     return sb.toString();
+  }
+
+  /**
+   * Gets the current arena instance.
+   *
+   * @return the arena instance
+   * @throws IllegalStateException if the manager is closed
+   */
+  public Arena getCurrentArena() {
+    checkNotClosed();
+    return arena;
   }
 
   /**

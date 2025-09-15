@@ -22,11 +22,9 @@ import org.junit.jupiter.params.provider.CsvSource;
  * <p>These tests verify that JNI error codes are properly aligned with Rust, that proper exceptions
  * are thrown instead of returning 0, and that all error scenarios are handled defensively.
  */
-
 class JniErrorHandlingTest {
 
   @Test
-
   void testAllErrorCodesMapped() {
     // Test that all Rust error codes (-1 to -18) are properly handled
     for (int errorCode = -1; errorCode >= -18; errorCode--) {
@@ -61,7 +59,6 @@ class JniErrorHandlingTest {
     "-17, Interface error",
     "-18, Internal error"
   })
-
   void testErrorCodeMessageMapping(int errorCode, String expectedMessagePrefix) {
     JniException exception = JniExceptionMapper.mapNativeError(errorCode, "test");
     assertTrue(
@@ -75,7 +72,6 @@ class JniErrorHandlingTest {
   }
 
   @Test
-
   void testResourceExceptionTypes() {
     // Memory error (-7) should use JniResourceException
     JniException memoryException = JniExceptionMapper.mapNativeError(-7, "memory test");
@@ -100,7 +96,6 @@ class JniErrorHandlingTest {
   }
 
   @Test
-
   void testErrorCodeDescriptions() {
     for (int errorCode = -1; errorCode >= -18; errorCode--) {
       String description = JniExceptionMapper.getErrorCodeDescription(errorCode);
@@ -123,7 +118,6 @@ class JniErrorHandlingTest {
   }
 
   @Test
-
   void testNullMessageHandling() {
     // Test null message
     JniException nullException = JniExceptionMapper.mapNativeError(-1, null);
@@ -143,7 +137,6 @@ class JniErrorHandlingTest {
   }
 
   @Test
-
   void testNativeHandleValidation() {
     // Valid handle should not throw
     assertDoesNotThrow(
@@ -170,7 +163,6 @@ class JniErrorHandlingTest {
   }
 
   @Test
-
   void testNativeResultValidation() {
     // True result should not throw
     assertDoesNotThrow(
@@ -196,7 +188,6 @@ class JniErrorHandlingTest {
   }
 
   @Test
-
   void testSafeErrorMessageExtraction() {
     // Valid message
     String result1 = JniExceptionMapper.getSafeErrorMessage("valid message", "default");
@@ -220,7 +211,6 @@ class JniErrorHandlingTest {
   }
 
   @Test
-
   void testNativeExceptionWrapping() {
     RuntimeException cause = new RuntimeException("Original error");
 
@@ -237,7 +227,6 @@ class JniErrorHandlingTest {
   }
 
   @Test
-
   void testCleanupExceptionCreation() {
     // Test with cause
     RuntimeException cause = new RuntimeException("cleanup failed");
@@ -260,7 +249,6 @@ class JniErrorHandlingTest {
   }
 
   @Test
-
   void testInvalidStateExceptionCreation() {
     JniException stateEx = JniExceptionMapper.createInvalidStateException("engine", "disposed");
 
@@ -276,7 +264,6 @@ class JniErrorHandlingTest {
   }
 
   @Test
-
   void testThreadSafety() throws InterruptedException {
     int numThreads = 10;
     Thread[] threads = new Thread[numThreads];
@@ -313,7 +300,6 @@ class JniErrorHandlingTest {
   }
 
   @Test
-
   void testLargeMessageHandling() {
     // Test very long error message
     StringBuilder sb = new StringBuilder(10000);
@@ -335,7 +321,6 @@ class JniErrorHandlingTest {
   }
 
   @Test
-
   void testEdgeCaseErrorCodes() {
     // Test boundary values
     JniException exception1 = JniExceptionMapper.mapNativeError(1, "positive error code");

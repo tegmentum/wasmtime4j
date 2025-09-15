@@ -254,12 +254,13 @@ class JniResourceTest {
       resource.close();
       assertTrue(resource.isClosed());
     }
-    
+
     // Test that invalid handles (negative and zero) are properly rejected
     final long[] invalidHandles = {0L, -1L, Long.MIN_VALUE};
-    
+
     for (long handle : invalidHandles) {
-      assertThrows(JniValidationException.class, 
+      assertThrows(
+          JniValidationException.class,
           () -> new TestResource(handle, "Test"),
           "Should reject invalid handle: " + handle);
     }

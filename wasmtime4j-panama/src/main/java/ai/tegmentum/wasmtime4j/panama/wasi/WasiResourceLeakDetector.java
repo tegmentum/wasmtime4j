@@ -162,7 +162,8 @@ public final class WasiResourceLeakDetector implements AutoCloseable {
     trackedContexts.put(contextId, tracked);
 
     // Create phantom reference for automatic cleanup
-    final PhantomReference<WasiContext> phantomRef = new PhantomReference<>(context, referenceQueue);
+    final PhantomReference<WasiContext> phantomRef =
+        new PhantomReference<>(context, referenceQueue);
     phantomReferences.put(phantomRef, "WasiContext:" + contextId);
 
     statistics.contextsCreated.incrementAndGet();
@@ -260,14 +261,14 @@ public final class WasiResourceLeakDetector implements AutoCloseable {
     trackedNativeHandles.put(address, tracked);
 
     // Create phantom reference for automatic cleanup
-    final PhantomReference<MemorySegment> phantomRef = new PhantomReference<>(handle, referenceQueue);
+    final PhantomReference<MemorySegment> phantomRef =
+        new PhantomReference<>(handle, referenceQueue);
     phantomReferences.put(phantomRef, "NativeHandle:" + address);
 
     statistics.nativeHandlesCreated.incrementAndGet();
 
     LOGGER.fine(
-        String.format(
-            "Started tracking Panama native handle: 0x%x (%s)", address, resourceType));
+        String.format("Started tracking Panama native handle: 0x%x (%s)", address, resourceType));
   }
 
   /**
@@ -389,9 +390,7 @@ public final class WasiResourceLeakDetector implements AutoCloseable {
         LOGGER.warning(
             String.format(
                 "Potential Panama native handle leak detected: 0x%x (%s) (age: %s)",
-                entry.getKey(),
-                tracked.resourceType,
-                Duration.between(tracked.creationTime, now)));
+                entry.getKey(), tracked.resourceType, Duration.between(tracked.creationTime, now)));
       }
     }
 
@@ -635,7 +634,8 @@ public final class WasiResourceLeakDetector implements AutoCloseable {
     @Override
     public String toString() {
       return String.format(
-          "PanamaResourceStatistics{contexts=%d/%d, segments=%d/%d, handles=%d/%d, runs=%d, cleaned=%d}",
+          "PanamaResourceStatistics{contexts=%d/%d, segments=%d/%d, handles=%d/%d, runs=%d,"
+              + " cleaned=%d}",
           getActiveContexts(),
           contextsCreated.get(),
           getActiveMemorySegments(),

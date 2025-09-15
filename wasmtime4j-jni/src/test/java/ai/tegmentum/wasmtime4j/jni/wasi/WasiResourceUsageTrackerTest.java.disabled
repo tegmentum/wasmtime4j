@@ -14,9 +14,9 @@ import org.junit.jupiter.api.Test;
 /**
  * Comprehensive tests for WASI resource usage tracking and statistics collection.
  *
- * <p>These tests verify that the resource usage tracker correctly monitors memory allocations,
- * file system operations, CPU usage, and enforces resource limits while providing detailed
- * statistics and metrics.
+ * <p>These tests verify that the resource usage tracker correctly monitors memory allocations, file
+ * system operations, CPU usage, and enforces resource limits while providing detailed statistics
+ * and metrics.
  *
  * @since 1.0.0
  */
@@ -174,12 +174,9 @@ final class WasiResourceUsageTrackerTest {
   void testCpuTimeLimitEnforcement() {
     // Create tracker with strict CPU limit
     final WasiResourceLimits strictLimits =
-        WasiResourceLimits.builder()
-            .withMaxCpuTime(Duration.ofSeconds(2))
-            .build();
+        WasiResourceLimits.builder().withMaxCpuTime(Duration.ofSeconds(2)).build();
 
-    final WasiResourceUsageTracker strictTracker =
-        new WasiResourceUsageTracker(strictLimits);
+    final WasiResourceUsageTracker strictTracker = new WasiResourceUsageTracker(strictLimits);
 
     strictTracker.registerContext("cpu-limit-context");
 
@@ -190,8 +187,7 @@ final class WasiResourceUsageTrackerTest {
     assertThrows(
         IllegalStateException.class,
         () ->
-            strictTracker.recordCpuTime(
-                "cpu-limit-context", 1500000000)); // Would exceed 2 seconds
+            strictTracker.recordCpuTime("cpu-limit-context", 1500000000)); // Would exceed 2 seconds
 
     // Verify global violation statistics
     final WasiResourceUsageTracker.GlobalResourceUsageSnapshot globalStats =
@@ -227,8 +223,7 @@ final class WasiResourceUsageTrackerTest {
             .withMaxDiskWritesPerSecond(3)
             .build();
 
-    final WasiResourceUsageTracker strictTracker =
-        new WasiResourceUsageTracker(strictLimits);
+    final WasiResourceUsageTracker strictTracker = new WasiResourceUsageTracker(strictLimits);
 
     strictTracker.registerContext("rate-limit-context");
 
@@ -270,10 +265,8 @@ final class WasiResourceUsageTrackerTest {
     // Record various operations
     tracker.recordMemoryAllocation("snapshot-context", 2048);
     tracker.recordMemoryDeallocation("snapshot-context", 512);
-    tracker.recordFileSystemOperation(
-        "snapshot-context", WasiFileOperation.READ, 1024, 1000000);
-    tracker.recordFileSystemOperation(
-        "snapshot-context", WasiFileOperation.WRITE, 256, 500000);
+    tracker.recordFileSystemOperation("snapshot-context", WasiFileOperation.READ, 1024, 1000000);
+    tracker.recordFileSystemOperation("snapshot-context", WasiFileOperation.WRITE, 256, 500000);
     tracker.recordCpuTime("snapshot-context", 2000000000);
     tracker.recordExecutionTime("snapshot-context", 3000000000L);
 
@@ -313,14 +306,12 @@ final class WasiResourceUsageTrackerTest {
 
     // Context 1 operations
     tracker.recordMemoryAllocation("global-context1", 1024);
-    tracker.recordFileSystemOperation(
-        "global-context1", WasiFileOperation.READ, 512, 1000000);
+    tracker.recordFileSystemOperation("global-context1", WasiFileOperation.READ, 512, 1000000);
     tracker.recordCpuTime("global-context1", 1000000000);
 
     // Context 2 operations
     tracker.recordMemoryAllocation("global-context2", 2048);
-    tracker.recordFileSystemOperation(
-        "global-context2", WasiFileOperation.WRITE, 256, 500000);
+    tracker.recordFileSystemOperation("global-context2", WasiFileOperation.WRITE, 256, 500000);
     tracker.recordCpuTime("global-context2", 2000000000);
 
     // Get global snapshot
@@ -365,11 +356,9 @@ final class WasiResourceUsageTrackerTest {
                 "unknown-context", WasiFileOperation.READ, 512, 1000000));
 
     assertThrows(
-        IllegalArgumentException.class,
-        () -> tracker.recordCpuTime("unknown-context", 1000000000));
+        IllegalArgumentException.class, () -> tracker.recordCpuTime("unknown-context", 1000000000));
 
-    assertThrows(
-        IllegalArgumentException.class, () -> tracker.getContextUsage("unknown-context"));
+    assertThrows(IllegalArgumentException.class, () -> tracker.getContextUsage("unknown-context"));
   }
 
   @Test
@@ -382,8 +371,7 @@ final class WasiResourceUsageTrackerTest {
 
     basicTracker.registerContext("basic-context");
     basicTracker.recordMemoryAllocation("basic-context", 1024);
-    basicTracker.recordFileSystemOperation(
-        "basic-context", WasiFileOperation.READ, 512, 1000000);
+    basicTracker.recordFileSystemOperation("basic-context", WasiFileOperation.READ, 512, 1000000);
 
     // Basic tracking should still work, but some detailed metrics might not be collected
     final WasiResourceUsageTracker.ContextResourceUsageSnapshot usage =
@@ -412,26 +400,18 @@ final class WasiResourceUsageTrackerTest {
     tracker.registerContext("validation-context");
 
     // Test null/invalid inputs
-    assertThrows(
-        IllegalArgumentException.class,
-        () -> tracker.recordMemoryAllocation(null, 1024));
-    assertThrows(
-        IllegalArgumentException.class,
-        () -> tracker.recordMemoryAllocation("", 1024));
+    assertThrows(IllegalArgumentException.class, () -> tracker.recordMemoryAllocation(null, 1024));
+    assertThrows(IllegalArgumentException.class, () -> tracker.recordMemoryAllocation("", 1024));
     assertThrows(
         IllegalArgumentException.class,
         () -> tracker.recordMemoryAllocation("validation-context", -1));
 
     assertThrows(
         IllegalArgumentException.class,
-        () ->
-            tracker.recordFileSystemOperation(
-                null, WasiFileOperation.READ, 512, 1000000));
+        () -> tracker.recordFileSystemOperation(null, WasiFileOperation.READ, 512, 1000000));
     assertThrows(
         IllegalArgumentException.class,
-        () ->
-            tracker.recordFileSystemOperation(
-                "validation-context", null, 512, 1000000));
+        () -> tracker.recordFileSystemOperation("validation-context", null, 512, 1000000));
     assertThrows(
         IllegalArgumentException.class,
         () ->
@@ -443,16 +423,12 @@ final class WasiResourceUsageTrackerTest {
             tracker.recordFileSystemOperation(
                 "validation-context", WasiFileOperation.READ, 512, -1));
 
+    assertThrows(IllegalArgumentException.class, () -> tracker.recordCpuTime(null, 1000000000));
     assertThrows(
-        IllegalArgumentException.class,
-        () -> tracker.recordCpuTime(null, 1000000000));
-    assertThrows(
-        IllegalArgumentException.class,
-        () -> tracker.recordCpuTime("validation-context", -1));
+        IllegalArgumentException.class, () -> tracker.recordCpuTime("validation-context", -1));
 
     assertThrows(
-        IllegalArgumentException.class,
-        () -> tracker.recordExecutionTime(null, 1000000000));
+        IllegalArgumentException.class, () -> tracker.recordExecutionTime(null, 1000000000));
     assertThrows(
         IllegalArgumentException.class,
         () -> tracker.recordExecutionTime("validation-context", -1));
@@ -475,8 +451,7 @@ final class WasiResourceUsageTrackerTest {
                 // Perform various operations
                 for (int j = 0; j < 100; j++) {
                   tracker.recordMemoryAllocation(contextId, 100);
-                  tracker.recordFileSystemOperation(
-                      contextId, WasiFileOperation.READ, 50, 100000);
+                  tracker.recordFileSystemOperation(contextId, WasiFileOperation.READ, 50, 100000);
                   tracker.recordCpuTime(contextId, 1000000);
                   tracker.recordExecutionTime(contextId, 2000000);
 

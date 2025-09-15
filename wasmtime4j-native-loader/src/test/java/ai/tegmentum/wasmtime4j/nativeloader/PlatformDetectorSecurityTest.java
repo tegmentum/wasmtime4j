@@ -51,7 +51,6 @@ import org.mockito.MockedStatic;
  *   <li>Malicious input handling
  * </ul>
  */
-
 final class PlatformDetectorSecurityTest {
 
   private TestLogHandler testLogHandler;
@@ -113,7 +112,6 @@ final class PlatformDetectorSecurityTest {
 
   @ParameterizedTest(name = "Should safely handle {0}: {1}")
   @MethodSource("provideMaliciousInputData")
-
   @Disabled("System.class mocking causes infinite loops in newer Mockito versions")
   void testLogInjectionPrevention(
       final String attackType, final String maliciousOsName, final String osArch) {
@@ -163,7 +161,6 @@ final class PlatformDetectorSecurityTest {
 
   @ParameterizedTest
   @MethodSource("providePathTraversalStrings")
-
   void testPathTraversalPrevention(final String pathTraversalString) {
     // Create a platform info with known good values
     final PlatformDetector.PlatformInfo info =
@@ -201,7 +198,6 @@ final class PlatformDetectorSecurityTest {
         "library\r\n.so", // CRLF injection
         "very-very-very-very-very-very-very-very-long-library-name-that-exceeds-reasonable-limits"
       })
-
   void testMaliciousLibraryNames(final String maliciousLibraryName) {
     final PlatformDetector.PlatformInfo info = PlatformDetector.detect();
 
@@ -232,7 +228,6 @@ final class PlatformDetectorSecurityTest {
   }
 
   @Test
-
   @Disabled("System.class mocking causes infinite loops in newer Mockito versions")
   void testPlatformDescriptionSanitization() {
     // Test with potentially malicious system properties
@@ -259,7 +254,6 @@ final class PlatformDetectorSecurityTest {
   }
 
   @Test
-
   void testConcurrentAccessSafety() {
     PlatformDetectorTestUtils.clearCache();
 
@@ -300,7 +294,6 @@ final class PlatformDetectorSecurityTest {
   }
 
   @Test
-
   void testUtilityClassInstantiationPrevention() {
     assertDoesNotThrow(
         () -> {

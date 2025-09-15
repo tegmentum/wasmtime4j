@@ -22,8 +22,8 @@ import java.util.logging.Logger;
  * </ul>
  *
  * <p>The validator maintains strict isolation boundaries between WASI contexts and enforces
- * security policies to prevent any cross-context contamination or unauthorized access in Panama-based
- * implementations.
+ * security policies to prevent any cross-context contamination or unauthorized access in
+ * Panama-based implementations.
  *
  * @since 1.0.0
  */
@@ -122,8 +122,7 @@ public final class WasiContextIsolationValidator {
 
       statistics.contextsUnregistered.incrementAndGet();
 
-      LOGGER.info(
-          String.format("Unregistered Panama WASI context from isolation: %s", contextId));
+      LOGGER.info(String.format("Unregistered Panama WASI context from isolation: %s", contextId));
     }
   }
 
@@ -240,8 +239,7 @@ public final class WasiContextIsolationValidator {
     // Check isolation level requirements
     if (contextInfo.isolationLevel == IsolationLevel.STRICT) {
       // In strict mode, allocate exclusive resource access
-      final String existingAllocation =
-          resourceAllocations.putIfAbsent(fullResourceId, contextId);
+      final String existingAllocation = resourceAllocations.putIfAbsent(fullResourceId, contextId);
       if (existingAllocation != null && !existingAllocation.equals(contextId)) {
         statistics.resourceIsolationViolations.incrementAndGet();
         throw new IllegalStateException(
@@ -295,8 +293,7 @@ public final class WasiContextIsolationValidator {
 
     // In strict mode, allocate exclusive memory access
     if (contextInfo.isolationLevel == IsolationLevel.STRICT) {
-      final String existingAllocation =
-          memoryAllocations.putIfAbsent(memoryAddress, contextId);
+      final String existingAllocation = memoryAllocations.putIfAbsent(memoryAddress, contextId);
       if (existingAllocation != null && !existingAllocation.equals(contextId)) {
         statistics.memoryIsolationViolations.incrementAndGet();
         throw new IllegalStateException(
@@ -322,9 +319,7 @@ public final class WasiContextIsolationValidator {
    * @throws IllegalStateException if cross-context communication is not allowed
    */
   public void validateCrossContextCommunication(
-      final String sourceContextId,
-      final String targetContextId,
-      final String communicationType) {
+      final String sourceContextId, final String targetContextId, final String communicationType) {
 
     if (sourceContextId == null || sourceContextId.isEmpty()) {
       throw new IllegalArgumentException("Source context ID cannot be null or empty");
@@ -404,7 +399,8 @@ public final class WasiContextIsolationValidator {
     if (allocatedContext != null && !allocatedContext.equals(contextId)) {
       LOGGER.warning(
           String.format(
-              "Memory deallocation mismatch: segment 0x%x was allocated to %s but deallocated by %s",
+              "Memory deallocation mismatch: segment 0x%x was allocated to %s but deallocated by"
+                  + " %s",
               memoryAddress, allocatedContext, contextId));
     }
 
@@ -477,8 +473,7 @@ public final class WasiContextIsolationValidator {
     // Remove memory allocations for this context
     memoryAllocations.entrySet().removeIf(entry -> entry.getValue().equals(contextId));
 
-    LOGGER.fine(
-        String.format("Cleaned up Panama resource allocations for context: %s", contextId));
+    LOGGER.fine(String.format("Cleaned up Panama resource allocations for context: %s", contextId));
   }
 
   /** Information about an isolated context. */
@@ -563,6 +558,11 @@ public final class WasiContextIsolationValidator {
       return crossContextViolations.get();
     }
 
+    /**
+     * Gets the total number of isolation violations across all categories.
+     *
+     * @return the total violation count
+     */
     public long getTotalViolations() {
       return pathIsolationViolations.get()
           + resourceIsolationViolations.get()

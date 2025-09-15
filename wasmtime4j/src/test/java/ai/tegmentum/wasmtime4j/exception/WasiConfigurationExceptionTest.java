@@ -14,11 +14,9 @@ import org.junit.jupiter.api.Test;
 class WasiConfigurationExceptionTest {
 
   @Nested
-
   class ConstructorTests {
 
     @Test
-
     void testSimpleMessageConstructor() {
       final String message = "Configuration failed";
       final WasiConfigurationException exception = new WasiConfigurationException(message);
@@ -36,7 +34,6 @@ class WasiConfigurationExceptionTest {
     }
 
     @Test
-
     void testMessageWithCauseConstructor() {
       final String message = "Configuration failed";
       final RuntimeException cause = new RuntimeException("Config error");
@@ -50,7 +47,6 @@ class WasiConfigurationExceptionTest {
     }
 
     @Test
-
     void testConfigurationAreaConstructor() {
       final String message = "Environment configuration failed";
       final WasiConfigurationException.ConfigurationArea configArea =
@@ -72,7 +68,6 @@ class WasiConfigurationExceptionTest {
     }
 
     @Test
-
     void testParameterSpecificConstructor() {
       final String message = "Invalid parameter value";
       final WasiConfigurationException.ConfigurationArea configArea =
@@ -98,7 +93,6 @@ class WasiConfigurationExceptionTest {
     }
 
     @Test
-
     void testFullConstructorWithCause() {
       final String message = "Network configuration error";
       final WasiConfigurationException.ConfigurationArea configArea =
@@ -123,7 +117,6 @@ class WasiConfigurationExceptionTest {
     }
 
     @Test
-
     void testConstructorWithNullMessage() {
       assertThrows(
           IllegalArgumentException.class,
@@ -137,7 +130,6 @@ class WasiConfigurationExceptionTest {
     }
 
     @Test
-
     void testConstructorWithEmptyMessage() {
       assertThrows(
           IllegalArgumentException.class,
@@ -152,11 +144,9 @@ class WasiConfigurationExceptionTest {
   }
 
   @Nested
-
   class ConfigurationAreaTests {
 
     @Test
-
     void testIsEnvironmentError() {
       final WasiConfigurationException exception =
           new WasiConfigurationException(
@@ -171,7 +161,6 @@ class WasiConfigurationExceptionTest {
     }
 
     @Test
-
     void testIsFileSystemPermissionsError() {
       final WasiConfigurationException exception =
           new WasiConfigurationException(
@@ -186,7 +175,6 @@ class WasiConfigurationExceptionTest {
     }
 
     @Test
-
     void testIsNetworkConfigurationError() {
       final WasiConfigurationException exception =
           new WasiConfigurationException(
@@ -201,7 +189,6 @@ class WasiConfigurationExceptionTest {
     }
 
     @Test
-
     void testIsComponentInstantiationError() {
       final WasiConfigurationException exception =
           new WasiConfigurationException(
@@ -216,7 +203,6 @@ class WasiConfigurationExceptionTest {
     }
 
     @Test
-
     void testIsResourceLimitsError() {
       final WasiConfigurationException exception =
           new WasiConfigurationException(
@@ -231,7 +217,6 @@ class WasiConfigurationExceptionTest {
     }
 
     @Test
-
     void testIsRuntimeEngineError() {
       final WasiConfigurationException exception =
           new WasiConfigurationException(
@@ -246,7 +231,6 @@ class WasiConfigurationExceptionTest {
     }
 
     @Test
-
     void testIsSecurityPolicyError() {
       final WasiConfigurationException exception =
           new WasiConfigurationException(
@@ -262,11 +246,9 @@ class WasiConfigurationExceptionTest {
   }
 
   @Nested
-
   class ConfigurationGuidanceTests {
 
     @Test
-
     void testGetConfigurationGuidanceWithParameter() {
       final WasiConfigurationException exception =
           new WasiConfigurationException(
@@ -282,7 +264,6 @@ class WasiConfigurationExceptionTest {
     }
 
     @Test
-
     void testGetConfigurationGuidanceWithoutParameter() {
       final WasiConfigurationException exception =
           new WasiConfigurationException(
@@ -294,7 +275,6 @@ class WasiConfigurationExceptionTest {
     }
 
     @Test
-
     void testGetConfigurationGuidanceForAllAreas() {
       // Test each configuration area has appropriate guidance
       final WasiConfigurationException.ConfigurationArea[] areas =
@@ -341,11 +321,9 @@ class WasiConfigurationExceptionTest {
   }
 
   @Nested
-
   class MessageFormattingTests {
 
     @Test
-
     void testOperationFormatting() {
       assertEquals(
           "environment-configuration",
@@ -390,7 +368,6 @@ class WasiConfigurationExceptionTest {
     }
 
     @Test
-
     void testResourceFormattingAreaOnly() {
       final WasiConfigurationException exception =
           new WasiConfigurationException(
@@ -399,7 +376,6 @@ class WasiConfigurationExceptionTest {
     }
 
     @Test
-
     void testResourceFormattingAreaAndParameter() {
       final WasiConfigurationException exception =
           new WasiConfigurationException(
@@ -412,7 +388,6 @@ class WasiConfigurationExceptionTest {
     }
 
     @Test
-
     void testDetailedMessageFormatting() {
       final WasiConfigurationException exception =
           new WasiConfigurationException(
@@ -430,7 +405,6 @@ class WasiConfigurationExceptionTest {
     }
 
     @Test
-
     void testDetailedMessageFormattingWithNulls() {
       final WasiConfigurationException exception =
           new WasiConfigurationException(
@@ -446,25 +420,21 @@ class WasiConfigurationExceptionTest {
   }
 
   @Nested
-
   class InheritanceTests {
 
     @Test
-
     void testWasiConfigurationExceptionExtendsWasiException() {
       final WasiConfigurationException exception = new WasiConfigurationException("Test error");
       assertTrue(exception instanceof WasiException);
     }
 
     @Test
-
     void testWasiConfigurationExceptionExtendsWasmException() {
       final WasiConfigurationException exception = new WasiConfigurationException("Test error");
       assertTrue(exception instanceof WasmException);
     }
 
     @Test
-
     void testConfigurationExceptionsNotRetryable() {
       final WasiConfigurationException exception = new WasiConfigurationException("Test error");
       assertFalse(exception.isRetryable());
@@ -480,11 +450,9 @@ class WasiConfigurationExceptionTest {
   }
 
   @Nested
-
   class ConfigurationAreaEnumTests {
 
     @Test
-
     void testConfigurationAreaValues() {
       final WasiConfigurationException.ConfigurationArea[] areas =
           WasiConfigurationException.ConfigurationArea.values();
@@ -516,11 +484,9 @@ class WasiConfigurationExceptionTest {
   }
 
   @Nested
-
   class EdgeCaseTests {
 
     @Test
-
     void testEmptyParameterNameHandling() {
       final WasiConfigurationException exception =
           new WasiConfigurationException(
@@ -533,7 +499,6 @@ class WasiConfigurationExceptionTest {
     }
 
     @Test
-
     void testEmptyProvidedValueHandling() {
       final WasiConfigurationException exception =
           new WasiConfigurationException(
@@ -546,7 +511,6 @@ class WasiConfigurationExceptionTest {
     }
 
     @Test
-
     void testEmptyExpectedValueHandling() {
       final WasiConfigurationException exception =
           new WasiConfigurationException(

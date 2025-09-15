@@ -18,7 +18,8 @@ public final class FunctionType implements WasmType {
    *
    * @param paramTypes the parameter types (must not be null)
    * @param returnTypes the return types (must not be null)
-   * @throws IllegalArgumentException if paramTypes or returnTypes is null, or contains null elements
+   * @throws IllegalArgumentException if paramTypes or returnTypes is null, or contains null
+   *     elements
    */
   public FunctionType(final WasmValueType[] paramTypes, final WasmValueType[] returnTypes) {
     if (paramTypes == null) {
@@ -27,21 +28,21 @@ public final class FunctionType implements WasmType {
     if (returnTypes == null) {
       throw new IllegalArgumentException("Return types cannot be null");
     }
-    
+
     // Validate parameter types
     for (int i = 0; i < paramTypes.length; i++) {
       if (paramTypes[i] == null) {
         throw new IllegalArgumentException("Parameter type at index " + i + " cannot be null");
       }
     }
-    
+
     // Validate return types
     for (int i = 0; i < returnTypes.length; i++) {
       if (returnTypes[i] == null) {
         throw new IllegalArgumentException("Return type at index " + i + " cannot be null");
       }
     }
-    
+
     this.paramTypes = paramTypes.clone();
     this.returnTypes = returnTypes.clone();
   }
@@ -100,16 +101,17 @@ public final class FunctionType implements WasmType {
   public void validateParameters(final WasmValue[] params) {
     if (params == null) {
       if (paramTypes.length > 0) {
-        throw new IllegalArgumentException("Expected " + paramTypes.length + " parameters, got null");
+        throw new IllegalArgumentException(
+            "Expected " + paramTypes.length + " parameters, got null");
       }
       return;
     }
-    
+
     if (params.length != paramTypes.length) {
       throw new IllegalArgumentException(
           "Parameter count mismatch: expected " + paramTypes.length + ", got " + params.length);
     }
-    
+
     for (int i = 0; i < params.length; i++) {
       if (params[i] == null) {
         throw new IllegalArgumentException("Parameter at index " + i + " is null");
@@ -119,8 +121,8 @@ public final class FunctionType implements WasmType {
   }
 
   /**
-   * Checks if this function type is compatible with another function type.
-   * Two function types are compatible if they have the same parameter and return types.
+   * Checks if this function type is compatible with another function type. Two function types are
+   * compatible if they have the same parameter and return types.
    *
    * @param other the other function type
    * @return true if compatible, false otherwise
@@ -129,24 +131,24 @@ public final class FunctionType implements WasmType {
     if (other == null) {
       return false;
     }
-    
+
     if (paramTypes.length != other.paramTypes.length
         || returnTypes.length != other.returnTypes.length) {
       return false;
     }
-    
+
     for (int i = 0; i < paramTypes.length; i++) {
       if (paramTypes[i] != other.paramTypes[i]) {
         return false;
       }
     }
-    
+
     for (int i = 0; i < returnTypes.length; i++) {
       if (returnTypes[i] != other.returnTypes[i]) {
         return false;
       }
     }
-    
+
     return true;
   }
 

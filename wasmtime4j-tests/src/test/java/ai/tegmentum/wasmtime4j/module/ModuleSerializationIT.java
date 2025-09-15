@@ -40,7 +40,7 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
 @DisplayName("Module Serialization and Caching Tests")
 class ModuleSerializationIT extends BaseIntegrationTest {
 
-  private static final Logger LOGGER = Logger.getLogger(ModuleSerializationTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(ModuleSerializationIT.class.getName());
 
   private WasmTestDataManager testDataManager;
   private ExecutorService executorService;

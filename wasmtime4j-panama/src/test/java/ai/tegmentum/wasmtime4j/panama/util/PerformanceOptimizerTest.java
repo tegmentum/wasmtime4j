@@ -49,7 +49,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
  * asynchronous processing pipelines.
  */
 @ExtendWith(MockitoExtension.class)
-
 class PerformanceOptimizerTest {
 
   @Mock private Executor mockExecutor;
@@ -77,11 +76,9 @@ class PerformanceOptimizerTest {
   }
 
   @Nested
-
   class ConstructorTests {
 
     @Test
-
     void testCreateOptimizerWithDefaultSettings() {
       final PerformanceOptimizer defaultOptimizer = new PerformanceOptimizer();
       assertNotNull(defaultOptimizer);
@@ -89,7 +86,6 @@ class PerformanceOptimizerTest {
     }
 
     @Test
-
     void testCreateOptimizerWithCustomSettings() {
       final PerformanceOptimizer customOptimizer =
           new PerformanceOptimizer(mockExecutor, 8, 20, 32);
@@ -99,11 +95,9 @@ class PerformanceOptimizerTest {
   }
 
   @Nested
-
   class MethodHandleOptimizationTests {
 
     @Test
-
     void testOptimizeMethodHandleForHighFrequencyUsage() throws Throwable {
       // Act
       final MethodHandle optimized =
@@ -119,7 +113,6 @@ class PerformanceOptimizerTest {
     }
 
     @Test
-
     void testOptimizeMethodHandleForBulkOperations() throws Throwable {
       // Act
       final MethodHandle optimized =
@@ -134,7 +127,6 @@ class PerformanceOptimizerTest {
     }
 
     @Test
-
     void testOptimizeMethodHandleForMemoryIntensiveOperations() throws Throwable {
       // Act
       final MethodHandle optimized =
@@ -147,7 +139,6 @@ class PerformanceOptimizerTest {
     }
 
     @Test
-
     void testHandleOptimizationDisabled() throws Throwable {
       // Arrange
       optimizer.setOptimizationEnabled(false);
@@ -162,7 +153,6 @@ class PerformanceOptimizerTest {
     }
 
     @Test
-
     void testCacheOptimizedMethodHandles() throws Throwable {
       // Act
       final MethodHandle first =
@@ -178,11 +168,9 @@ class PerformanceOptimizerTest {
   }
 
   @Nested
-
   class BatchedExecutionTests {
 
     @Test
-
     void testExecuteBatchedOperationSuccessfully() throws Throwable {
       // Arrange
       doAnswer(
@@ -208,7 +196,6 @@ class PerformanceOptimizerTest {
     }
 
     @Test
-
     void testHandleBatchedOperationFailure() throws Throwable {
       // Arrange
       doAnswer(
@@ -236,7 +223,6 @@ class PerformanceOptimizerTest {
     }
 
     @Test
-
     void testRejectOperationsAfterShutdown() {
       // Arrange
       optimizer.shutdown();
@@ -253,11 +239,9 @@ class PerformanceOptimizerTest {
   }
 
   @Nested
-
   class MemoryAccessOptimizationTests {
 
     @Test
-
     void testOptimizeMemoryAccessPatterns() {
       // Arrange
       final MemorySegment[] segments = {
@@ -279,7 +263,6 @@ class PerformanceOptimizerTest {
     }
 
     @Test
-
     void testHandleEmptyMemorySegmentArray() {
       // Arrange
       final MemorySegment[] emptySegments = {};
@@ -293,7 +276,6 @@ class PerformanceOptimizerTest {
     }
 
     @Test
-
     void testWorkWithOptimizationDisabled() {
       // Arrange
       optimizer.setOptimizationEnabled(false);
@@ -311,11 +293,9 @@ class PerformanceOptimizerTest {
   }
 
   @Nested
-
   class PipelineOperationsTests {
 
     @Test
-
     void testCreateAndExecuteProcessingPipeline() throws Throwable {
       // Arrange
       final Function<Integer, String> processor = i -> "processed_" + i;
@@ -343,7 +323,6 @@ class PerformanceOptimizerTest {
     }
 
     @Test
-
     void testHandleEmptyPipelineInput() throws Throwable {
       // Arrange
       final Function<Integer, String> processor = i -> "processed_" + i;
@@ -361,11 +340,9 @@ class PerformanceOptimizerTest {
   }
 
   @Nested
-
   class StatisticsAndMonitoringTests {
 
     @Test
-
     void testTrackPerformanceStatistics() throws Throwable {
       // Arrange - no executor stubbing needed for basic operations
 
@@ -385,7 +362,6 @@ class PerformanceOptimizerTest {
     }
 
     @Test
-
     void testCalculateBatchingRatioCorrectly() {
       // Arrange
       final PerformanceOptimizer.PerformanceStatistics stats =
@@ -399,7 +375,6 @@ class PerformanceOptimizerTest {
     }
 
     @Test
-
     void testHandleZeroOperationsInStatistics() {
       // Arrange
       final PerformanceOptimizer.PerformanceStatistics stats =
@@ -413,7 +388,6 @@ class PerformanceOptimizerTest {
     }
 
     @Test
-
     void testProvideMeaningfulStatisticsStringRepresentation() {
       // Arrange
       final PerformanceOptimizer.PerformanceStatistics stats =
@@ -431,11 +405,9 @@ class PerformanceOptimizerTest {
   }
 
   @Nested
-
   class ConfigurationAndControlTests {
 
     @Test
-
     void testEnableAndDisableOptimization() throws Throwable {
       // Act & Assert - optimization enabled by default
       final MethodHandle optimized1 =
@@ -459,7 +431,6 @@ class PerformanceOptimizerTest {
     }
 
     @Test
-
     void testHandleShutdownGracefully() {
       // Act
       optimizer.shutdown();
@@ -470,7 +441,6 @@ class PerformanceOptimizerTest {
     }
 
     @Test
-
     void testHandleConcurrentShutdownSafely() throws InterruptedException {
       // Arrange
       final CountDownLatch latch = new CountDownLatch(2);
@@ -493,11 +463,9 @@ class PerformanceOptimizerTest {
   }
 
   @Nested
-
   class ErrorHandlingTests {
 
     @Test
-
     void testHandleMethodHandleOptimizationFailureGracefully() throws Throwable {
       // Arrange - create a problematic method handle that might cause optimization to fail
       final MethodHandle problematicHandle = MethodHandles.empty(MethodType.methodType(void.class));
@@ -512,7 +480,6 @@ class PerformanceOptimizerTest {
     }
 
     @Test
-
     void testHandleBatchExecutionWithQueueOverflow() throws Throwable {
       // Arrange - create optimizer with very small queue
       final PerformanceOptimizer smallQueueOptimizer =
@@ -541,11 +508,9 @@ class PerformanceOptimizerTest {
   }
 
   @Nested
-
   class ThreadSafetyTests {
 
     @Test
-
     void testHandleConcurrentMethodHandleOptimization() throws InterruptedException {
       // Arrange
       final CountDownLatch startLatch = new CountDownLatch(1);
@@ -580,7 +545,6 @@ class PerformanceOptimizerTest {
     }
 
     @Test
-
     void testHandleConcurrentStatisticsAccess() throws InterruptedException {
       // Arrange
       final CountDownLatch completeLatch = new CountDownLatch(5);

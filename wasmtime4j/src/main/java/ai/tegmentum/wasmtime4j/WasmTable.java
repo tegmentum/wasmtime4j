@@ -19,6 +19,22 @@ public interface WasmTable {
   int getSize();
 
   /**
+   * Gets the current size of the table. Alias for getSize() for compatibility.
+   *
+   * @return the current number of elements in the table
+   */
+  default int size() {
+    return getSize();
+  }
+
+  /**
+   * Gets the type of this table.
+   *
+   * @return the table type
+   */
+  WasmValueType getType();
+
+  /**
    * Grows the table by the specified number of elements.
    *
    * @param elements the number of elements to add

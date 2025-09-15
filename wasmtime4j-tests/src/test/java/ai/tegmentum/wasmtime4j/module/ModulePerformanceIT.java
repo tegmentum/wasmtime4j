@@ -39,7 +39,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 @DisplayName("Module Performance Benchmarks")
 class ModulePerformanceIT extends BaseIntegrationTest {
 
-  private static final Logger LOGGER = Logger.getLogger(ModulePerformanceTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(ModulePerformanceIT.class.getName());
 
   private WasmTestDataManager testDataManager;
   private ExecutorService executorService;

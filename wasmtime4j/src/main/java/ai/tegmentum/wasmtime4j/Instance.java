@@ -116,4 +116,17 @@ public interface Instance extends Closeable {
    */
   @Override
   void close();
+
+  /**
+   * Creates an instance of a WebAssembly module in the given store.
+   *
+   * @param store the store to create the instance in
+   * @param module the compiled module to instantiate
+   * @return a new Instance of the module
+   * @throws WasmException if instantiation fails
+   * @throws IllegalArgumentException if store or module is null
+   */
+  static Instance create(final Store store, final Module module) throws WasmException {
+    return store.createInstance(module);
+  }
 }

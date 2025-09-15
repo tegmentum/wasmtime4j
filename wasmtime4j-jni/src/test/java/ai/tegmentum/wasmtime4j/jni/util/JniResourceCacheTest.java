@@ -30,7 +30,6 @@ import org.junit.jupiter.api.Timeout;
  * <p>These tests verify cache functionality, weak reference behavior, thread safety, performance,
  * and resource management.
  */
-
 @Timeout(30) // Global timeout for all tests
 class JniResourceCacheTest {
 
@@ -49,11 +48,9 @@ class JniResourceCacheTest {
   }
 
   @Nested
-
   class ConstructorTests {
 
     @Test
-
     void testCreateCacheWithDefaultSettings() {
       try (final JniResourceCache<String, String> testCache = new JniResourceCache<>()) {
         assertEquals(JniResourceCache.DEFAULT_MAX_SIZE, testCache.getMaxSize());
@@ -63,7 +60,6 @@ class JniResourceCacheTest {
     }
 
     @Test
-
     void testCreateCacheWithCustomMaxSize() {
       final int customSize = 500;
 
@@ -74,7 +70,6 @@ class JniResourceCacheTest {
     }
 
     @Test
-
     void testRejectInvalidMaxSize() {
       assertThrows(
           JniValidationException.class,
@@ -89,11 +84,9 @@ class JniResourceCacheTest {
   }
 
   @Nested
-
   class BasicCacheOperationsTests {
 
     @Test
-
     void testStoreAndRetrieveValue() {
       cache.put("key1", "value1");
 
@@ -102,14 +95,12 @@ class JniResourceCacheTest {
     }
 
     @Test
-
     void testCreateValueUsingFactoryWhenNotCached() {
       final String result = cache.get("newKey", key -> "factory-" + key);
       assertEquals("factory-newKey", result);
     }
 
     @Test
-
     void testReturnCachedValueInsteadOfUsingFactory() {
       cache.put("existingKey", "cachedValue");
 
@@ -118,14 +109,12 @@ class JniResourceCacheTest {
     }
 
     @Test
-
     void testHandleNullValuesFromFactory() {
       final String result = cache.get("nullKey", key -> null);
       assertNull(result);
     }
 
     @Test
-
     void testRemoveCachedValue() {
       cache.put("removeKey", "removeValue");
       assertEquals(1, cache.size());
@@ -136,14 +125,12 @@ class JniResourceCacheTest {
     }
 
     @Test
-
     void testReturnNullWhenRemovingNonExistentKey() {
       final String removed = cache.remove("nonExistentKey");
       assertNull(removed);
     }
 
     @Test
-
     void testClearAllEntries() {
       cache.put("key1", "value1");
       cache.put("key2", "value2");
@@ -155,7 +142,6 @@ class JniResourceCacheTest {
     }
 
     @Test
-
     void testRejectNullKey() {
       assertThrows(
           JniValidationException.class,
@@ -174,14 +160,12 @@ class JniResourceCacheTest {
     }
 
     @Test
-
     void testRejectNullFactory() {
       assertThrows(
           JniValidationException.class, () -> cache.get("key", null), "Should reject null factory");
     }
 
     @Test
-
     void testRejectNullResourceInPut() {
       assertThrows(
           JniValidationException.class,
@@ -191,11 +175,9 @@ class JniResourceCacheTest {
   }
 
   @Nested
-
   class CacheStatisticsTests {
 
     @Test
-
     void testTrackHitCount() {
       cache.put("hitKey", "hitValue");
 
@@ -208,7 +190,6 @@ class JniResourceCacheTest {
     }
 
     @Test
-
     void testTrackMissCount() {
       assertEquals(0, cache.getMissCount());
       cache.get("missKey", key -> "factory");
@@ -219,7 +200,6 @@ class JniResourceCacheTest {
     }
 
     @Test
-
     void testCalculateHitRateCorrectly() {
       assertEquals(0.0, cache.getHitRate(), 0.001);
 
@@ -231,13 +211,11 @@ class JniResourceCacheTest {
     }
 
     @Test
-
     void testHandleHitRateWithNoRequests() {
       assertEquals(0.0, cache.getHitRate(), 0.001);
     }
 
     @Test
-
     void testTrackEvictions() {
       final int smallCacheSize = 3;
 
@@ -261,11 +239,9 @@ class JniResourceCacheTest {
   }
 
   @Nested
-
   class WeakReferenceTests {
 
     @Test
-
     void testHandleGarbageCollectionOfCachedValues() {
       // Create some objects that can be garbage collected
       cache.put("gc1", new String("gcValue1"));
@@ -286,7 +262,6 @@ class JniResourceCacheTest {
     }
 
     @Test
-
     void testCleanupCollectedReferencesOnOperations() {
       // Fill cache with values that might be collected
       for (int i = 0; i < 10; i++) {
@@ -309,11 +284,9 @@ class JniResourceCacheTest {
   }
 
   @Nested
-
   class SizeManagementTests {
 
     @Test
-
     void testRespectMaximumSizeLimit() {
       final int maxSize = 5;
 
@@ -329,7 +302,6 @@ class JniResourceCacheTest {
     }
 
     @Test
-
     void testEvictEntriesWhenAtCapacity() {
       final int maxSize = 3;
 
@@ -352,11 +324,9 @@ class JniResourceCacheTest {
   }
 
   @Nested
-
   class ErrorHandlingTests {
 
     @Test
-
     void testHandleFactoryExceptions() {
       final RuntimeException expectedException = new RuntimeException("Factory error");
 
@@ -374,7 +344,6 @@ class JniResourceCacheTest {
     }
 
     @Test
-
     void testRejectOperationsOnClosedCache() {
       cache.close();
 
@@ -391,11 +360,9 @@ class JniResourceCacheTest {
   }
 
   @Nested
-
   class ResourceManagementTests {
 
     @Test
-
     void testCloseGracefully() {
       cache.put("closeKey", "closeValue");
       assertFalse(cache.isClosed());
@@ -406,7 +373,6 @@ class JniResourceCacheTest {
     }
 
     @Test
-
     void testBeIdempotentOnClose() {
       cache.close();
       assertTrue(cache.isClosed());
@@ -417,7 +383,6 @@ class JniResourceCacheTest {
     }
 
     @Test
-
     void testWorkWithTryWithResources() {
       final AtomicInteger factoryCalls = new AtomicInteger(0);
 
@@ -437,11 +402,9 @@ class JniResourceCacheTest {
   }
 
   @Nested
-
   class ConcurrencyTests {
 
     @Test
-
     void testHandleConcurrentAccessSafely() throws InterruptedException {
       final int threadCount = 20;
       final int operationsPerThread = 50;
@@ -479,7 +442,6 @@ class JniResourceCacheTest {
     }
 
     @Test
-
     void testHandleConcurrentPutAndGetOperations() throws InterruptedException {
       final int operationCount = 100;
       final ExecutorService executor = Executors.newFixedThreadPool(10);
@@ -530,7 +492,6 @@ class JniResourceCacheTest {
     }
 
     @Test
-
     void testHandleConcurrentEvictionSafely() throws InterruptedException {
       final int maxSize = 10;
       final int threadCount = 5;
@@ -568,11 +529,9 @@ class JniResourceCacheTest {
   }
 
   @Nested
-
   class ToStringAndObjectMethodsTests {
 
     @Test
-
     void testProvideMeaningfulToString() {
       cache.put("toStringKey", "toStringValue");
       cache.get("toStringKey", k -> "factory");
@@ -589,7 +548,6 @@ class JniResourceCacheTest {
     }
 
     @Test
-
     void testShowAccurateStatisticsInToString() {
       // Create specific statistics
       cache.put("statKey", "statValue");

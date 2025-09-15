@@ -5,7 +5,7 @@
 #[cfg(feature = "jni-bindings")]
 use jni::JNIEnv;
 #[cfg(feature = "jni-bindings")]
-use jni::objects::{JClass, JObjectArray, JString};
+use jni::objects::{JClass, JObject, JObjectArray, JString};
 #[cfg(feature = "jni-bindings")]
 use jni::sys::{jlong, jint, jboolean, jobjectArray};
 
@@ -15,15 +15,13 @@ pub mod jni_wasi {
     use super::*;
     use crate::wasi;
     use crate::error::jni_utils;
-    use jni::objects::{JObjectArray, JString};
-    use jni::sys::{jobjectArray, jlong, jint, jboolean};
     use std::ffi::CString;
     use std::os::raw::c_void;
 
     /// Create a new WASI context with specified configuration (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiContext_nativeCreate(
-        env: JNIEnv,
+        mut env: JNIEnv,
         _class: JClass,
         environment: jobjectArray,
         arguments: jobjectArray,
@@ -32,10 +30,10 @@ pub mod jni_wasi {
     ) -> jlong {
         match (|| -> crate::error::WasmtimeResult<*mut c_void> {
             // Convert working directory string
-            let working_dir_str = if working_dir.is_null() {
+            let _working_dir_str = if working_dir.is_null() {
                 None
             } else {
-                let wd_string: String = env.get_string(working_dir)?.into();
+                let wd_string: String = env.get_string(&working_dir)?.into();
                 Some(wd_string)
             };
 
@@ -49,13 +47,13 @@ pub mod jni_wasi {
 
             // Add environment variables if provided
             if !environment.is_null() {
-                let env_array = JObjectArray::from(environment);
-                let env_len = env.get_array_length(env_array)?;
+                let env_array = JObjectArray::from(unsafe { JObject::from_raw(environment) });
+                let env_len = env.get_array_length(&env_array)?;
                 
                 for i in 0..env_len {
-                    let env_entry = env.get_object_array_element(env_array, i)?;
+                    let env_entry = env.get_object_array_element(&env_array, i)?;
                     if !env_entry.is_null() {
-                        let env_str: String = env.get_string(JString::from(env_entry))?.into();
+                        let env_str: String = env.get_string(&JString::from(env_entry))?.into();
                         
                         // Parse "KEY=VALUE" format
                         if let Some(eq_pos) = env_str.find('=') {
@@ -94,16 +92,16 @@ pub mod jni_wasi {
 
             // Add command line arguments if provided
             if !arguments.is_null() {
-                let args_array = JObjectArray::from(arguments);
-                let args_len = env.get_array_length(args_array)?;
+                let args_array = JObjectArray::from(unsafe { JObject::from_raw(arguments) });
+                let args_len = env.get_array_length(&args_array)?;
                 
                 let mut arg_cstrs = Vec::new();
                 let mut arg_ptrs = Vec::new();
                 
                 for i in 0..args_len {
-                    let arg_entry = env.get_object_array_element(args_array, i)?;
+                    let arg_entry = env.get_object_array_element(&args_array, i)?;
                     if !arg_entry.is_null() {
-                        let arg_str: String = env.get_string(JString::from(arg_entry))?.into();
+                        let arg_str: String = env.get_string(&JString::from(arg_entry))?.into();
                         let arg_cstr = CString::new(arg_str).map_err(|_| {
                             crate::error::WasmtimeError::Wasi {
                                 message: "Invalid argument string".to_string(),
@@ -130,13 +128,13 @@ pub mod jni_wasi {
 
             // Add pre-opened directories if provided
             if !preopen_dirs.is_null() {
-                let dirs_array = JObjectArray::from(preopen_dirs);
-                let dirs_len = env.get_array_length(dirs_array)?;
+                let dirs_array = JObjectArray::from(unsafe { JObject::from_raw(preopen_dirs) });
+                let dirs_len = env.get_array_length(&dirs_array)?;
                 
                 for i in 0..dirs_len {
-                    let dir_entry = env.get_object_array_element(dirs_array, i)?;
+                    let dir_entry = env.get_object_array_element(&dirs_array, i)?;
                     if !dir_entry.is_null() {
-                        let dir_str: String = env.get_string(JString::from(dir_entry))?.into();
+                        let dir_str: String = env.get_string(&JString::from(dir_entry))?.into();
                         
                         // Parse "HOST_PATH:GUEST_PATH" format
                         if let Some(colon_pos) = dir_str.find(':') {
@@ -180,7 +178,7 @@ pub mod jni_wasi {
         })() {
             Ok(ptr) => ptr as jlong,
             Err(error) => {
-                jni_utils::throw_jni_exception(&env, &error);
+                jni_utils::throw_jni_exception(&mut env, &error);
                 0
             }
         }
@@ -203,7 +201,7 @@ pub mod jni_wasi {
     /// Add a directory mapping to an existing WASI context (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiContext_nativeAddDirectory(
-        env: JNIEnv,
+        mut env: JNIEnv,
         _class: JClass,
         handle: jlong,
         host_path: JString,
@@ -212,15 +210,19 @@ pub mod jni_wasi {
         can_write: jboolean,
         can_create: jboolean,
     ) -> jboolean {
-        jni_utils::jni_try_default(&env, 0, || {
+        // Extract strings outside the closure to avoid borrowing conflicts
+        let host_str_result = env.get_string(&host_path);
+        let guest_str_result = env.get_string(&guest_path);
+        
+        jni_utils::jni_try_default(&mut env, 0, || {
             if handle == 0 {
                 return Err(crate::error::WasmtimeError::InvalidParameter {
                     message: "WASI context handle cannot be null".to_string(),
                 });
             }
 
-            let host_str: String = env.get_string(host_path)?.into();
-            let guest_str: String = env.get_string(guest_path)?.into();
+            let host_str: String = host_str_result?.into();
+            let guest_str: String = guest_str_result?.into();
             
             let host_cstr = CString::new(host_str).map_err(|_| {
                 crate::error::WasmtimeError::Wasi {
@@ -256,21 +258,25 @@ pub mod jni_wasi {
     /// Set an environment variable in an existing WASI context (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiContext_nativeSetEnvironmentVariable(
-        env: JNIEnv,
+        mut env: JNIEnv,
         _class: JClass,
         handle: jlong,
         key: JString,
         value: JString,
     ) -> jboolean {
-        jni_utils::jni_try_default(&env, 0, || {
+        // Extract strings outside the closure to avoid borrowing conflicts
+        let key_str_result = env.get_string(&key);
+        let value_str_result = env.get_string(&value);
+        
+        jni_utils::jni_try_default(&mut env, 0, || {
             if handle == 0 {
                 return Err(crate::error::WasmtimeError::InvalidParameter {
                     message: "WASI context handle cannot be null".to_string(),
                 });
             }
 
-            let key_str: String = env.get_string(key)?.into();
-            let value_str: String = env.get_string(value)?.into();
+            let key_str: String = key_str_result?.into();
+            let value_str: String = value_str_result?.into();
             
             let key_cstr = CString::new(key_str).map_err(|_| {
                 crate::error::WasmtimeError::Wasi {
@@ -304,19 +310,22 @@ pub mod jni_wasi {
     /// Check if a path is allowed by the WASI context (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiContext_nativeIsPathAllowed(
-        env: JNIEnv,
+        mut env: JNIEnv,
         _class: JClass,
         handle: jlong,
         path: JString,
     ) -> jboolean {
-        jni_utils::jni_try_default(&env, 0, || {
+        // Extract string outside the closure to avoid borrowing conflicts
+        let path_str_result = env.get_string(&path);
+        
+        jni_utils::jni_try_default(&mut env, 0, || {
             if handle == 0 {
                 return Err(crate::error::WasmtimeError::InvalidParameter {
                     message: "WASI context handle cannot be null".to_string(),
                 });
             }
 
-            let path_str: String = env.get_string(path)?.into();
+            let path_str: String = path_str_result?.into();
             let path_cstr = CString::new(path_str).map_err(|_| {
                 crate::error::WasmtimeError::Wasi {
                     message: "Invalid path string".to_string(),
@@ -327,18 +336,18 @@ pub mod jni_wasi {
                 wasi::wasi_ctx_is_path_allowed(handle as *const c_void, path_cstr.as_ptr())
             };
 
-            Ok(result)
+            Ok(result.try_into().unwrap())
         })
     }
 
     /// Get the number of environment variables in the WASI context (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiContext_nativeGetEnvironmentCount(
-        env: JNIEnv,
+        mut env: JNIEnv,
         _class: JClass,
         handle: jlong,
     ) -> jint {
-        jni_utils::jni_try_default(&env, 0, || {
+        jni_utils::jni_try_default(&mut env, 0, || {
             if handle == 0 {
                 return Err(crate::error::WasmtimeError::InvalidParameter {
                     message: "WASI context handle cannot be null".to_string(),
@@ -356,11 +365,11 @@ pub mod jni_wasi {
     /// Get the number of command line arguments in the WASI context (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiContext_nativeGetArgumentCount(
-        env: JNIEnv,
+        mut env: JNIEnv,
         _class: JClass,
         handle: jlong,
     ) -> jint {
-        jni_utils::jni_try_default(&env, 0, || {
+        jni_utils::jni_try_default(&mut env, 0, || {
             if handle == 0 {
                 return Err(crate::error::WasmtimeError::InvalidParameter {
                     message: "WASI context handle cannot be null".to_string(),
@@ -378,11 +387,11 @@ pub mod jni_wasi {
     /// Get the number of directory mappings in the WASI context (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiContext_nativeGetDirectoryCount(
-        env: JNIEnv,
+        mut env: JNIEnv,
         _class: JClass,
         handle: jlong,
     ) -> jint {
-        jni_utils::jni_try_default(&env, 0, || {
+        jni_utils::jni_try_default(&mut env, 0, || {
             if handle == 0 {
                 return Err(crate::error::WasmtimeError::InvalidParameter {
                     message: "WASI context handle cannot be null".to_string(),
@@ -400,12 +409,12 @@ pub mod jni_wasi {
     /// Add a WASI context to a Store for WebAssembly instance creation (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiContext_nativeAddToStore(
-        env: JNIEnv,
+        mut env: JNIEnv,
         _class: JClass,
         wasi_handle: jlong,
         store_handle: jlong,
     ) -> jboolean {
-        jni_utils::jni_try_default(&env, 0, || {
+        jni_utils::jni_try_default(&mut env, 0, || {
             if wasi_handle == 0 {
                 return Err(crate::error::WasmtimeError::InvalidParameter {
                     message: "WASI context handle cannot be null".to_string(),
@@ -437,11 +446,11 @@ pub mod jni_wasi {
     /// Get the WASI context from a Store if one is attached (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiContext_nativeGetFromStore(
-        env: JNIEnv,
+        mut env: JNIEnv,
         _class: JClass,
         store_handle: jlong,
     ) -> jlong {
-        jni_utils::jni_try_default(&env, 0, || {
+        jni_utils::jni_try_default(&mut env, 0, || {
             if store_handle == 0 {
                 return Err(crate::error::WasmtimeError::InvalidParameter {
                     message: "Store handle cannot be null".to_string(),
@@ -459,11 +468,11 @@ pub mod jni_wasi {
     /// Check if a Store has a WASI context attached (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiContext_nativeStoreHasWasi(
-        env: JNIEnv,
+        mut env: JNIEnv,
         _class: JClass,
         store_handle: jlong,
     ) -> jboolean {
-        jni_utils::jni_try_default(&env, 0, || {
+        jni_utils::jni_try_default(&mut env, 0, || {
             if store_handle == 0 {
                 return Err(crate::error::WasmtimeError::InvalidParameter {
                     message: "Store handle cannot be null".to_string(),
@@ -474,7 +483,7 @@ pub mod jni_wasi {
                 wasi::wasi_ctx_store_has_wasi(store_handle as *const c_void)
             };
 
-            Ok(result)
+            Ok(result.try_into().unwrap())
         })
     }
 }

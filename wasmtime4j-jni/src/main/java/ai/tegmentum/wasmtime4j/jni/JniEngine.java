@@ -230,14 +230,15 @@ public final class JniEngine extends JniResource implements Engine {
     ensureNotClosed();
 
     try {
-      final long storeHandle = nativeCreateStoreWithConfig(
-          getNativeHandle(),
-          fuelLimit,
-          memoryLimitBytes,
-          executionTimeoutSecs,
-          maxInstances,
-          maxTableElements,
-          maxFunctions);
+      final long storeHandle =
+          nativeCreateStoreWithConfig(
+              getNativeHandle(),
+              fuelLimit,
+              memoryLimitBytes,
+              executionTimeoutSecs,
+              maxInstances,
+              maxTableElements,
+              maxFunctions);
       JniValidation.requireValidHandle(storeHandle, "storeHandle");
       return new JniStore(storeHandle, this);
     } catch (final Exception e) {

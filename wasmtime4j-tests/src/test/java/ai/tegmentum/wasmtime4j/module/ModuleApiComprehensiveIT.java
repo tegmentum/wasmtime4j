@@ -37,7 +37,7 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
 @DisplayName("Module API Comprehensive Tests")
 class ModuleApiComprehensiveIT extends BaseIntegrationTest {
 
-  private static final Logger LOGGER = Logger.getLogger(ModuleApiComprehensiveTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(ModuleApiComprehensiveIT.class.getName());
 
   private WasmTestDataManager testDataManager;
   private ExecutorService executorService;

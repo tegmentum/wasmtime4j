@@ -94,7 +94,8 @@ public final class WasmRuntimeFactory {
         return createJniRuntime();
       } else {
         throw new WasmException(
-            "Requested runtime type " + runtimeType 
+            "Requested runtime type "
+                + runtimeType
                 + " is not available and no suitable fallback found");
       }
     }

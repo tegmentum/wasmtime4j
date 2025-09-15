@@ -61,7 +61,6 @@ final class PathConventionTest {
   }
 
   @Test
-
   void testWasmtime4jConvention() {
     final String libraryName = "wasmtime4j";
 
@@ -87,7 +86,6 @@ final class PathConventionTest {
   }
 
   @Test
-
   void testMavenNativeConvention() {
     final String libraryName = "testlib";
 
@@ -108,7 +106,6 @@ final class PathConventionTest {
   }
 
   @Test
-
   void testJnaConvention() {
     final String libraryName = "jnalib";
 
@@ -129,7 +126,6 @@ final class PathConventionTest {
   }
 
   @Test
-
   void testCustomConventionThrowsException() {
     assertThrows(
         IllegalStateException.class,
@@ -138,7 +134,6 @@ final class PathConventionTest {
   }
 
   @Test
-
   void testCustomPathConventionFactory() {
     final String customPattern = "/lib/{platform}/{name}{ext}";
     final PathConvention.CustomPathConvention custom = PathConvention.custom(customPattern);
@@ -153,7 +148,6 @@ final class PathConventionTest {
   }
 
   @Test
-
   void testCustomPatternValidation() {
     assertThrows(
         NullPointerException.class,
@@ -172,7 +166,6 @@ final class PathConventionTest {
   }
 
   @Test
-
   void testCustomPatternSecurityValidation() {
     assertThrows(
         SecurityException.class,
@@ -187,7 +180,6 @@ final class PathConventionTest {
 
   @ParameterizedTest
   @EnumSource(PathConvention.class)
-
   void testNullInputHandling(final PathConvention convention) {
     if (convention == PathConvention.CUSTOM) {
       return; // Skip CUSTOM as it has different behavior
@@ -206,7 +198,6 @@ final class PathConventionTest {
 
   @ParameterizedTest
   @EnumSource(PathConvention.class)
-
   void testEmptyLibraryNameHandling(final PathConvention convention) {
     if (convention == PathConvention.CUSTOM) {
       return; // Skip CUSTOM as it has different behavior
@@ -224,7 +215,6 @@ final class PathConventionTest {
   }
 
   @Test
-
   void testPlaceholderSubstitution() {
     final String pattern = "/{os}/{arch}/{platform}/{lib}{name}{ext}";
     final PathConvention.CustomPathConvention custom = PathConvention.custom(pattern);
@@ -238,7 +228,6 @@ final class PathConventionTest {
   }
 
   @Test
-
   void testLibraryNameSanitization() {
     final String pattern = "/lib/{name}{ext}";
     final PathConvention.CustomPathConvention custom = PathConvention.custom(pattern);
@@ -253,7 +242,6 @@ final class PathConventionTest {
   }
 
   @Test
-
   void testToStringMethods() {
     assertEquals(
         "PathConvention.WASMTIME4J(\"/native/{platform}/{lib}{name}{ext}\")",

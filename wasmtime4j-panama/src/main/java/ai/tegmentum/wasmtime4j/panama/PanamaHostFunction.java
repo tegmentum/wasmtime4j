@@ -123,8 +123,7 @@ public final class PanamaHostFunction implements WasmFunction {
       }
     } catch (Exception e) {
       hostFunctionRegistry.remove(hostFunctionId);
-      throw PanamaErrorHandler.mapToWasmException(
-          e, "Failed to create host function: " + functionName);
+      throw new WasmException("Failed to create host function: " + functionName, e);
     }
   }
 
@@ -320,7 +319,8 @@ public final class PanamaHostFunction implements WasmFunction {
       case F32 -> float.class;
       case F64 -> double.class;
       case V128 -> MemorySegment.class;
-      case FUNCREF, EXTERNREF -> MemorySegment.class; // Use MemorySegment to match VALUE_LAYOUT.ADDRESS
+      case FUNCREF, EXTERNREF -> MemorySegment
+          .class; // Use MemorySegment to match VALUE_LAYOUT.ADDRESS
       default -> throw new IllegalArgumentException("Unsupported value type: " + valueType);
     };
   }
@@ -391,33 +391,34 @@ public final class PanamaHostFunction implements WasmFunction {
   }
 
   /**
-   * Generic adapter method that can handle any function signature by using method handle transformation.
-   * This method serves as a bridge between the specific native signature and the generic callback.
+   * Generic adapter method that can handle any function signature by using method handle
+   * transformation. This method serves as a bridge between the specific native signature and the
+   * generic callback.
    */
-  private static MethodHandle createGenericAdapter(final MethodType targetType, final long hostFunctionId) {
+  private static MethodHandle createGenericAdapter(
+      final MethodType targetType, final long hostFunctionId) {
     try {
       // Create wrapper method that bridges between specific native signature and generic callback
       // The targetType now matches the function descriptor exactly (no hostFunctionId parameter)
       return createTypedWrapper(targetType, hostFunctionId);
-      
+
     } catch (Exception e) {
       logger.log(Level.SEVERE, "Failed to create generic adapter for type: " + targetType, e);
       throw new RuntimeException("Failed to create method handle adapter", e);
     }
   }
-  
-  /**
-   * Creates a typed wrapper method that converts between native signature and generic callback.
-   */
-  private static MethodHandle createTypedWrapper(final MethodType targetType, final long hostFunctionId) 
+
+  /** Creates a typed wrapper method that converts between native signature and generic callback. */
+  private static MethodHandle createTypedWrapper(
+      final MethodType targetType, final long hostFunctionId)
       throws NoSuchMethodException, IllegalAccessException {
-    
+
     final MethodHandles.Lookup lookup = MethodHandles.lookup();
     final int paramCount = targetType.parameterCount(); // Now this is the exact parameter count
-    
+
     // Create a wrapper method that matches exactly the target signature pattern
     final String wrapperMethodName = getWrapperMethodName(targetType);
-    
+
     try {
       // Try to find a specific wrapper method for this signature
       // But we need to add the hostFunctionId parameter to the wrapper method signature
@@ -427,33 +428,36 @@ public final class PanamaHostFunction implements WasmFunction {
         wrapperParams[i + 1] = targetType.parameterType(i);
       }
       final MethodType wrapperType = MethodType.methodType(targetType.returnType(), wrapperParams);
-      
-      final MethodHandle specificWrapper = lookup.findStatic(PanamaHostFunction.class, wrapperMethodName, wrapperType);
+
+      final MethodHandle specificWrapper =
+          lookup.findStatic(PanamaHostFunction.class, wrapperMethodName, wrapperType);
       return MethodHandles.insertArguments(specificWrapper, 0, hostFunctionId);
     } catch (NoSuchMethodException e) {
       // If no specific wrapper exists, create a generic one using method handle combinators
       return createDynamicWrapper(targetType, hostFunctionId);
     }
   }
-  
-  /**
-   * Creates a dynamic wrapper using MethodHandle combinators.
-   */
-  private static MethodHandle createDynamicWrapper(final MethodType targetType, final long hostFunctionId) 
+
+  /** Creates a dynamic wrapper using MethodHandle combinators. */
+  private static MethodHandle createDynamicWrapper(
+      final MethodType targetType, final long hostFunctionId)
       throws NoSuchMethodException, IllegalAccessException {
-    
+
     final MethodHandles.Lookup lookup = MethodHandles.lookup();
-    
+
     // Get the base generic callback
-    final MethodHandle genericCallback = lookup.findStatic(PanamaHostFunction.class, "nativeCallback", 
-        MethodType.methodType(Object.class, long.class, Object[].class));
-    
+    final MethodHandle genericCallback =
+        lookup.findStatic(
+            PanamaHostFunction.class,
+            "nativeCallback",
+            MethodType.methodType(Object.class, long.class, Object[].class));
+
     // Create parameter gathering wrapper that matches target signature exactly
     final int paramCount = targetType.parameterCount(); // Now this is the exact parameter count
-    
+
     // Create a MethodHandle that gathers parameters into Object array, maintaining exact signature
     MethodHandle wrapper;
-    
+
     if (paramCount == 0) {
       // () -> ReturnType - no parameters
       wrapper = MethodHandles.insertArguments(genericCallback, 0, hostFunctionId, new Object[0]);
@@ -461,7 +465,7 @@ public final class PanamaHostFunction implements WasmFunction {
       // Multi-parameter case: create parameter-gathering logic
       wrapper = createParameterGatheringWrapper(targetType, genericCallback, hostFunctionId);
     }
-    
+
     // Handle return type conversion - ensure we convert to exact target return type
     final Class<?> returnType = targetType.returnType();
     if (returnType.isPrimitive() && returnType != void.class) {
@@ -469,58 +473,56 @@ public final class PanamaHostFunction implements WasmFunction {
       wrapper = MethodHandles.filterReturnValue(wrapper, converter);
     } else if (returnType == void.class) {
       // For void return, we need to drop the Object return value
-      wrapper = MethodHandles.filterReturnValue(wrapper, MethodHandles.empty(MethodType.methodType(void.class)));
+      wrapper =
+          MethodHandles.filterReturnValue(
+              wrapper, MethodHandles.empty(MethodType.methodType(void.class)));
     } else {
       // For non-primitive return types, ensure proper type conversion
       wrapper = wrapper.asType(targetType);
     }
-    
+
     return wrapper;
   }
-  
-  /**
-   * Creates a parameter-gathering wrapper for multi-parameter functions.
-   */
-  private static MethodHandle createParameterGatheringWrapper(final MethodType targetType,
-      final MethodHandle genericCallback, final long hostFunctionId)
+
+  /** Creates a parameter-gathering wrapper for multi-parameter functions. */
+  private static MethodHandle createParameterGatheringWrapper(
+      final MethodType targetType, final MethodHandle genericCallback, final long hostFunctionId)
       throws NoSuchMethodException, IllegalAccessException {
-    
+
     final int paramCount = targetType.parameterCount(); // Now this is the exact parameter count
-    
-    // Create a wrapper that has exact target signature but converts parameters to Object array internally
-    final MethodHandle boundCallback = MethodHandles.insertArguments(genericCallback, 0, hostFunctionId);
-    
+
+    // Create a wrapper that has exact target signature but converts parameters to Object array
+    // internally
+    final MethodHandle boundCallback =
+        MethodHandles.insertArguments(genericCallback, 0, hostFunctionId);
+
     // Create a collector that gathers all parameters into Object array
     MethodHandle collector = boundCallback.asCollector(Object[].class, paramCount);
-    
+
     // Convert the collector to match the exact target parameter types
     collector = collector.asType(targetType.changeReturnType(Object.class));
-    
+
     return collector;
   }
-  
-  /**
-   * Gets wrapper method name for a specific signature pattern.
-   */
+
+  /** Gets wrapper method name for a specific signature pattern. */
   private static String getWrapperMethodName(final MethodType targetType) {
     final StringBuilder sb = new StringBuilder("wrapperFor");
-    
+
     // Add parameter types (all parameters, since hostFunctionId is not in targetType anymore)
     for (int i = 0; i < targetType.parameterCount(); i++) {
       final Class<?> paramType = targetType.parameterType(i);
       sb.append(getTypeCode(paramType));
     }
-    
+
     // Add return type
     sb.append("To");
     sb.append(getTypeCode(targetType.returnType()));
-    
+
     return sb.toString();
   }
-  
-  /**
-   * Gets type code for wrapper method naming.
-   */
+
+  /** Gets type code for wrapper method naming. */
   private static String getTypeCode(final Class<?> type) {
     if (type == int.class) {
       return "I";
@@ -539,27 +541,31 @@ public final class PanamaHostFunction implements WasmFunction {
     }
     return "O"; // Object
   }
-  
-  /**
-   * Creates a method handle converter for primitive return types.
-   */
-  private static MethodHandle createReturnTypeConverter(final Class<?> returnType) 
+
+  /** Creates a method handle converter for primitive return types. */
+  private static MethodHandle createReturnTypeConverter(final Class<?> returnType)
       throws NoSuchMethodException, IllegalAccessException {
     final MethodHandles.Lookup lookup = MethodHandles.lookup();
-    
+
     return switch (returnType.getName()) {
-      case "float" -> lookup.findStatic(PanamaHostFunction.class, "convertToFloat", 
+      case "float" -> lookup.findStatic(
+          PanamaHostFunction.class,
+          "convertToFloat",
           MethodType.methodType(float.class, Object.class));
-      case "int" -> lookup.findStatic(PanamaHostFunction.class, "convertToInt", 
-          MethodType.methodType(int.class, Object.class));
-      case "double" -> lookup.findStatic(PanamaHostFunction.class, "convertToDouble", 
+      case "int" -> lookup.findStatic(
+          PanamaHostFunction.class, "convertToInt", MethodType.methodType(int.class, Object.class));
+      case "double" -> lookup.findStatic(
+          PanamaHostFunction.class,
+          "convertToDouble",
           MethodType.methodType(double.class, Object.class));
-      case "long" -> lookup.findStatic(PanamaHostFunction.class, "convertToLong", 
+      case "long" -> lookup.findStatic(
+          PanamaHostFunction.class,
+          "convertToLong",
           MethodType.methodType(long.class, Object.class));
       default -> throw new IllegalArgumentException("Unsupported return type: " + returnType);
     };
   }
-  
+
   // Helper methods for return type conversion
   private static float convertToFloat(final Object value) {
     if (value instanceof Number number) {
@@ -567,69 +573,70 @@ public final class PanamaHostFunction implements WasmFunction {
     }
     throw new ClassCastException("Cannot convert " + value + " to float");
   }
-  
+
   private static int convertToInt(final Object value) {
     if (value instanceof Number number) {
       return number.intValue();
     }
     throw new ClassCastException("Cannot convert " + value + " to int");
   }
-  
+
   private static double convertToDouble(final Object value) {
     if (value instanceof Number number) {
       return number.doubleValue();
     }
     throw new ClassCastException("Cannot convert " + value + " to double");
   }
-  
+
   private static long convertToLong(final Object value) {
     if (value instanceof Number number) {
       return number.longValue();
     }
     throw new ClassCastException("Cannot convert " + value + " to long");
   }
-  
+
   // Specific wrapper methods for common function signatures
-  
+
   // (long) -> void
   private static void wrapperForToV(final long hostFunctionId) {
     final Object result = nativeCallback(hostFunctionId, new Object[0]);
     // Void return, ignore result
   }
-  
-  // (long, int) -> void  
+
+  // (long, int) -> void
   private static void wrapperForIToV(final long hostFunctionId, final int param1) {
-    final Object result = nativeCallback(hostFunctionId, new Object[]{param1});
+    final Object result = nativeCallback(hostFunctionId, new Object[] {param1});
     // Void return, ignore result
   }
-  
+
   // (long, int, long) -> float
-  private static float wrapperForILToF(final long hostFunctionId, final int param1, final long param2) {
-    final Object result = nativeCallback(hostFunctionId, new Object[]{param1, param2});
+  private static float wrapperForILToF(
+      final long hostFunctionId, final int param1, final long param2) {
+    final Object result = nativeCallback(hostFunctionId, new Object[] {param1, param2});
     return convertToFloat(result);
   }
-  
+
   // (long, int) -> int
   private static int wrapperForIToI(final long hostFunctionId, final int param1) {
-    final Object result = nativeCallback(hostFunctionId, new Object[]{param1});
+    final Object result = nativeCallback(hostFunctionId, new Object[] {param1});
     return convertToInt(result);
   }
-  
+
   // (long, long) -> long
   private static long wrapperForLToL(final long hostFunctionId, final long param1) {
-    final Object result = nativeCallback(hostFunctionId, new Object[]{param1});
+    final Object result = nativeCallback(hostFunctionId, new Object[] {param1});
     return convertToLong(result);
   }
-  
+
   // (long, float) -> float
   private static float wrapperForFToF(final long hostFunctionId, final float param1) {
-    final Object result = nativeCallback(hostFunctionId, new Object[]{param1});
+    final Object result = nativeCallback(hostFunctionId, new Object[] {param1});
     return convertToFloat(result);
   }
-  
+
   // (long, double) -> double
   private static double wrapperForDToD(final long hostFunctionId, final double param1) {
-    final Object result = nativeCallback(hostFunctionId, new Object[]{param1});
+    final Object result = nativeCallback(hostFunctionId, new Object[] {param1});
     return convertToDouble(result);
   }
 

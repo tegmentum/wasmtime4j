@@ -105,6 +105,11 @@ public final class JniTable extends JniResource implements WasmTable {
     }
   }
 
+  @Override
+  public WasmValueType getType() {
+    return getElementType();
+  }
+
   /**
    * Gets an element from the table at the specified index.
    *

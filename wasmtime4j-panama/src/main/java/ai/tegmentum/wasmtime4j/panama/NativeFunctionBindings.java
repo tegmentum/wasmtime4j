@@ -120,7 +120,7 @@ public final class NativeFunctionBindings {
         LOGGER.severe("NativeFunctionBindings not initialized, cannot create engine");
         return null;
       }
-      
+
       MemorySegment result = callNativeFunction("wasmtime4j_engine_create", MemorySegment.class);
       if (result == null || result.equals(MemorySegment.NULL)) {
         LOGGER.warning("Engine creation returned null - this may indicate symbol lookup failure");
@@ -270,7 +270,8 @@ public final class NativeFunctionBindings {
    */
   public int storeSetEpochDeadline(final MemorySegment storePtr, final long ticks) {
     validatePointer(storePtr, "storePtr");
-    return callNativeFunction("wasmtime4j_store_set_epoch_deadline", Integer.class, storePtr, ticks);
+    return callNativeFunction(
+        "wasmtime4j_store_set_epoch_deadline", Integer.class, storePtr, ticks);
   }
 
   /**
@@ -343,6 +344,163 @@ public final class NativeFunctionBindings {
     return callNativeFunction("wasmtime4j_store_validate", Integer.class, storePtr);
   }
 
+  /**
+   * Triggers garbage collection in a WebAssembly store.
+   *
+   * @param storePtr pointer to the store
+   * @return 0 on success, negative error code on failure
+   */
+  public int storeGarbageCollect(final MemorySegment storePtr) {
+    validatePointer(storePtr, "storePtr");
+    return callNativeFunction("wasmtime4j_store_garbage_collect", Integer.class, storePtr);
+  }
+
+  /**
+   * Gets metadata information from a WebAssembly store.
+   *
+   * @param storePtr pointer to the store
+   * @param metadataPtr pointer to store metadata
+   * @param keyPtr pointer to metadata key
+   * @param valuePtr pointer to store metadata value
+   * @param sizePtr pointer to store size
+   * @return 0 on success, negative error code on failure
+   */
+  public int storeGetMetadata(
+      final MemorySegment storePtr,
+      final MemorySegment metadataPtr,
+      final MemorySegment keyPtr,
+      final MemorySegment valuePtr,
+      final MemorySegment sizePtr) {
+    validatePointer(storePtr, "storePtr");
+    validatePointer(metadataPtr, "metadataPtr");
+    validatePointer(keyPtr, "keyPtr");
+    validatePointer(valuePtr, "valuePtr");
+    validatePointer(sizePtr, "sizePtr");
+    return callNativeFunction(
+        "wasmtime4j_store_get_metadata",
+        Integer.class,
+        storePtr,
+        metadataPtr,
+        keyPtr,
+        valuePtr,
+        sizePtr);
+  }
+
+  /**
+   * Consumes fuel from a WebAssembly store.
+   *
+   * @param storePtr pointer to the store
+   * @param fuel amount of fuel to consume
+   * @param remainingPtr pointer to store remaining fuel
+   * @return 0 on success, negative error code on failure
+   */
+  public int storeConsumeFuel(
+      final MemorySegment storePtr, final long fuel, final MemorySegment remainingPtr) {
+    validatePointer(storePtr, "storePtr");
+    validatePointer(remainingPtr, "remainingPtr");
+    return callNativeFunction(
+        "wasmtime4j_store_consume_fuel", Integer.class, storePtr, fuel, remainingPtr);
+  }
+
+  // WASI Functions
+
+  /**
+   * Creates a new WASI context.
+   *
+   * @return pointer to the created WASI context, or null pointer on failure
+   */
+  public MemorySegment wasiContextNew() {
+    return callNativeFunction("wasmtime4j_wasi_context_new", MemorySegment.class);
+  }
+
+  /**
+   * Sets an environment variable in a WASI context.
+   *
+   * @param contextPtr pointer to the WASI context
+   * @param keyPtr pointer to the environment variable key string
+   * @param valuePtr pointer to the environment variable value string
+   * @return 0 on success, negative error code on failure
+   */
+  public int wasiContextSetEnvironmentVariable(
+      final MemorySegment contextPtr, final MemorySegment keyPtr, final MemorySegment valuePtr) {
+    validatePointer(contextPtr, "contextPtr");
+    validatePointer(keyPtr, "keyPtr");
+    validatePointer(valuePtr, "valuePtr");
+    return callNativeFunction(
+        "wasmtime4j_wasi_context_set_env", Integer.class, contextPtr, keyPtr, valuePtr);
+  }
+
+  /**
+   * Sets command line arguments in a WASI context.
+   *
+   * @param contextPtr pointer to the WASI context
+   * @param argsPtr pointer to the arguments array
+   * @param argsCount number of arguments
+   * @return 0 on success, negative error code on failure
+   */
+  public int wasiContextSetArguments(
+      final MemorySegment contextPtr, final MemorySegment argsPtr, final int argsCount) {
+    validatePointer(contextPtr, "contextPtr");
+    validatePointer(argsPtr, "argsPtr");
+    return callNativeFunction(
+        "wasmtime4j_wasi_context_set_args", Integer.class, contextPtr, argsPtr, argsCount);
+  }
+
+  /**
+   * Destroys a WASI context.
+   *
+   * @param wasiContextPtr pointer to the WASI context to destroy
+   * @return 0 on success, negative error code on failure
+   */
+  public int wasiContextDestroy(final MemorySegment wasiContextPtr) {
+    validatePointer(wasiContextPtr, "wasiContextPtr");
+    return callNativeFunction("wasmtime4j_wasi_context_destroy", Integer.class, wasiContextPtr);
+  }
+
+  /**
+   * Adds a directory mapping to a WASI context.
+   *
+   * @param contextPtr pointer to the WASI context
+   * @param hostPtr pointer to the host path string
+   * @param guestPtr pointer to the guest path string
+   * @param dirCreate whether directory creation is allowed
+   * @param dirRead whether directory reading is allowed
+   * @param dirRemove whether directory removal is allowed
+   * @param fileCreate whether file creation is allowed
+   * @param fileRead whether file reading is allowed
+   * @param fileWrite whether file writing is allowed
+   * @param fileTruncate whether file truncation is allowed
+   * @return 0 on success, negative error code on failure
+   */
+  public int wasiContextAddDirectory(
+      final MemorySegment contextPtr,
+      final MemorySegment hostPtr,
+      final MemorySegment guestPtr,
+      final int dirCreate,
+      final int dirRead,
+      final int dirRemove,
+      final int fileCreate,
+      final int fileRead,
+      final int fileWrite,
+      final int fileTruncate) {
+    validatePointer(contextPtr, "contextPtr");
+    validatePointer(hostPtr, "hostPtr");
+    validatePointer(guestPtr, "guestPtr");
+    return callNativeFunction(
+        "wasmtime4j_wasi_context_add_directory",
+        Integer.class,
+        contextPtr,
+        hostPtr,
+        guestPtr,
+        dirCreate,
+        dirRead,
+        dirRemove,
+        fileCreate,
+        fileRead,
+        fileWrite,
+        fileTruncate);
+  }
+
   // Instance Functions
 
   /**
@@ -404,7 +562,12 @@ public final class NativeFunctionBindings {
     validatePointer(nameOutPtr, "nameOutPtr");
     validatePointer(exportOutPtr, "exportOutPtr");
     return callNativeFunction(
-        "wasmtime4j_instance_export_nth", Boolean.class, instancePtr, index, nameOutPtr, exportOutPtr);
+        "wasmtime4j_instance_export_nth",
+        Boolean.class,
+        instancePtr,
+        index,
+        nameOutPtr,
+        exportOutPtr);
   }
 
   /**
@@ -731,13 +894,13 @@ public final class NativeFunctionBindings {
     validatePointer(storePtr, "storePtr");
     validatePointer(initialValuePtr, "initialValuePtr");
     validatePointer(globalOutPtr, "globalOutPtr");
-    
+
     return callNativeFunction(
-        "wasmtime4j_global_create_mutable", 
-        Integer.class, 
-        storePtr, 
-        valueType, 
-        initialValuePtr, 
+        "wasmtime4j_global_create_mutable",
+        Integer.class,
+        storePtr,
+        valueType,
+        initialValuePtr,
         globalOutPtr);
   }
 
@@ -758,13 +921,13 @@ public final class NativeFunctionBindings {
     validatePointer(storePtr, "storePtr");
     validatePointer(initialValuePtr, "initialValuePtr");
     validatePointer(globalOutPtr, "globalOutPtr");
-    
+
     return callNativeFunction(
-        "wasmtime4j_global_create_immutable", 
-        Integer.class, 
-        storePtr, 
-        valueType, 
-        initialValuePtr, 
+        "wasmtime4j_global_create_immutable",
+        Integer.class,
+        storePtr,
+        valueType,
+        initialValuePtr,
         globalOutPtr);
   }
 
@@ -793,12 +956,12 @@ public final class NativeFunctionBindings {
     validatePointer(globalPtr, "globalPtr");
     validatePointer(typeInfoOutPtr, "typeInfoOutPtr");
     validatePointer(mutabilityOutPtr, "mutabilityOutPtr");
-    
+
     return callNativeFunction(
-        "wasmtime4j_global_get_type_info", 
-        Integer.class, 
-        globalPtr, 
-        typeInfoOutPtr, 
+        "wasmtime4j_global_get_type_info",
+        Integer.class,
+        globalPtr,
+        typeInfoOutPtr,
         mutabilityOutPtr);
   }
 
@@ -811,19 +974,13 @@ public final class NativeFunctionBindings {
    * @return 0 on success, negative error code on failure
    */
   public int globalRegisterShared(
-      final MemorySegment globalPtr,
-      final MemorySegment namePtr,
-      final MemorySegment registryPtr) {
+      final MemorySegment globalPtr, final MemorySegment namePtr, final MemorySegment registryPtr) {
     validatePointer(globalPtr, "globalPtr");
     validatePointer(namePtr, "namePtr");
     validatePointer(registryPtr, "registryPtr");
-    
+
     return callNativeFunction(
-        "wasmtime4j_global_register_shared", 
-        Integer.class, 
-        globalPtr, 
-        namePtr, 
-        registryPtr);
+        "wasmtime4j_global_register_shared", Integer.class, globalPtr, namePtr, registryPtr);
   }
 
   /**
@@ -837,7 +994,7 @@ public final class NativeFunctionBindings {
       final MemorySegment namePtr, final MemorySegment registryPtr) {
     validatePointer(namePtr, "namePtr");
     validatePointer(registryPtr, "registryPtr");
-    
+
     return callNativeFunction(
         "wasmtime4j_global_lookup_shared", MemorySegment.class, namePtr, registryPtr);
   }
@@ -850,7 +1007,8 @@ public final class NativeFunctionBindings {
    */
   public MemorySegment globalGetDirectAccess(final MemorySegment globalPtr) {
     validatePointer(globalPtr, "globalPtr");
-    return callNativeFunction("wasmtime4j_global_get_direct_access", MemorySegment.class, globalPtr);
+    return callNativeFunction(
+        "wasmtime4j_global_get_direct_access", MemorySegment.class, globalPtr);
   }
 
   /**
@@ -888,9 +1046,7 @@ public final class NativeFunctionBindings {
     }
   }
 
-  /**
-   * Clears any stored error state in the native library.
-   */
+  /** Clears any stored error state in the native library. */
   public void clearErrorState() {
     callNativeFunction("wasmtime4j_clear_error_state", Void.class);
   }
@@ -963,9 +1119,7 @@ public final class NativeFunctionBindings {
 
     addFunctionBinding(
         "wasmtime4j_store_gc",
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_INT,
-            ValueLayout.ADDRESS)); // store_ptr
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS)); // store_ptr
 
     addFunctionBinding(
         "wasmtime4j_store_get_execution_stats",
@@ -987,9 +1141,7 @@ public final class NativeFunctionBindings {
 
     addFunctionBinding(
         "wasmtime4j_store_validate",
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_INT,
-            ValueLayout.ADDRESS)); // store_ptr
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS)); // store_ptr
 
     // Instance functions
     addFunctionBinding(
@@ -1193,8 +1345,7 @@ public final class NativeFunctionBindings {
             ValueLayout.ADDRESS)); // global_ptr (out)
 
     addFunctionBinding(
-        "wasmtime4j_global_destroy",
-        FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // global_ptr
+        "wasmtime4j_global_destroy", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // global_ptr
 
     addFunctionBinding(
         "wasmtime4j_global_get_type_info",
@@ -1243,8 +1394,7 @@ public final class NativeFunctionBindings {
         FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // message_ptr
 
     addFunctionBinding(
-        "wasmtime4j_clear_error_state",
-        FunctionDescriptor.ofVoid()); // no parameters
+        "wasmtime4j_clear_error_state", FunctionDescriptor.ofVoid()); // no parameters
   }
 
   /**
@@ -1269,7 +1419,7 @@ public final class NativeFunctionBindings {
    * @throws IllegalStateException if the function call fails
    */
   @SuppressWarnings("unchecked")
-  private <T> T callNativeFunction(
+  public <T> T callNativeFunction(
       final String functionName, final Class<T> returnType, final Object... args) {
     if (!isInitialized()) {
       throw new IllegalStateException("Native function bindings not initialized");

@@ -38,7 +38,6 @@ import org.mockito.MockedStatic;
  * <p>This test class focuses on systematic testing of all platform detection scenarios including
  * the 6 supported platform combinations and error cases for unsupported platforms.
  */
-
 @Disabled("System.class mocking causes infinite loops in newer Mockito versions")
 final class PlatformDetectorParameterizedTest {
 
@@ -164,7 +163,6 @@ final class PlatformDetectorParameterizedTest {
 
   @ParameterizedTest(name = "Platform {0}/{1} should detect as {2}/{3}")
   @MethodSource("provideSupportedPlatforms")
-
   void testSupportedPlatformDetection(
       final String osName,
       final String osArch,
@@ -224,7 +222,6 @@ final class PlatformDetectorParameterizedTest {
 
   @ParameterizedTest(name = "Unsupported OS: {0}")
   @MethodSource("provideUnsupportedOperatingSystems")
-
   void testUnsupportedOperatingSystemDetection(final String unsupportedOsName) {
     try (final MockedStatic<System> systemMock = mockStatic(System.class)) {
       systemMock.when(() -> System.getProperty("os.name")).thenReturn(unsupportedOsName);
@@ -249,7 +246,6 @@ final class PlatformDetectorParameterizedTest {
 
   @ParameterizedTest(name = "Unsupported Architecture: {0}")
   @MethodSource("provideUnsupportedArchitectures")
-
   void testUnsupportedArchitectureDetection(final String unsupportedArchName) {
     try (final MockedStatic<System> systemMock = mockStatic(System.class)) {
       systemMock.when(() -> System.getProperty("os.name")).thenReturn("Linux");
@@ -278,7 +274,6 @@ final class PlatformDetectorParameterizedTest {
     "Windows, aarch64, windows-aarch64",
     "macOS, x86_64, macos-x86_64"
   })
-
   void testPlatformIdFormat(
       final String osName, final String osArch, final String expectedPlatformId) {
     try (final MockedStatic<System> systemMock = mockStatic(System.class)) {
@@ -303,7 +298,6 @@ final class PlatformDetectorParameterizedTest {
         "a",
         "very-long-library-name-with-dashes"
       })
-
   void testLibraryFileNameConstruction(final String libraryName) {
     final PlatformDetector.PlatformInfo info = PlatformDetector.detect();
     final String fileName = info.getLibraryFileName(libraryName);
@@ -322,7 +316,6 @@ final class PlatformDetectorParameterizedTest {
   }
 
   @Test
-
   void testPlatformDetectionCaching() {
     // Clear cache first
     PlatformDetectorTestUtils.clearCache();
@@ -337,7 +330,6 @@ final class PlatformDetectorParameterizedTest {
   }
 
   @Test
-
   void testIsPlatformSupportedConsistency() {
     final boolean isSupported = PlatformDetector.isPlatformSupported();
     final boolean secondCheck = PlatformDetector.isPlatformSupported();

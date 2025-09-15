@@ -355,11 +355,11 @@ public final class WasiContext implements AutoCloseable {
       }
 
       LOGGER.fine("Native WASI context cleanup called for handle: " + handle.address());
-      
+
       // Get the native function bindings and destroy the WASI context
-      ai.tegmentum.wasmtime4j.panama.NativeFunctionBindings bindings = 
+      ai.tegmentum.wasmtime4j.panama.NativeFunctionBindings bindings =
           ai.tegmentum.wasmtime4j.panama.NativeFunctionBindings.getInstance();
-      
+
       if (bindings.isInitialized()) {
         bindings.wasiContextDestroy(handle);
         LOGGER.fine("WASI context destroyed successfully");

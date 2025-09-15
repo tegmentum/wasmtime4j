@@ -18,6 +18,15 @@ public interface WasmGlobal {
   WasmValue get();
 
   /**
+   * Gets the value of this global. Alias for get() for compatibility.
+   *
+   * @return the current value
+   */
+  default WasmValue getValue() {
+    return get();
+  }
+
+  /**
    * Sets the value of this global.
    *
    * @param value the new value

@@ -22,11 +22,9 @@ import org.junit.jupiter.params.provider.CsvSource;
  * <p>These tests verify that Panama error codes are properly aligned with Rust, that error pointer
  * interpretation is defensive, and that proper exceptions are thrown for all error scenarios.
  */
-
 class PanamaErrorHandlingTest {
 
   @Test
-
   void testAllErrorCodeDescriptions() {
     // Test that all Rust error codes (-1 to -18) are properly handled
     for (int errorCode = -1; errorCode >= -18; errorCode--) {
@@ -61,7 +59,6 @@ class PanamaErrorHandlingTest {
     "-17, Interface Error",
     "-18, Internal Error"
   })
-
   void testErrorCodeDescriptions(int errorCode, String expectedDescription) {
     String actualDescription = PanamaErrorHandler.getErrorDescription(errorCode);
     assertEquals(
@@ -71,7 +68,6 @@ class PanamaErrorHandlingTest {
   }
 
   @Test
-
   void testSuccessErrorCode() {
     // Success (0) should not throw
     assertDoesNotThrow(
@@ -83,7 +79,6 @@ class PanamaErrorHandlingTest {
   }
 
   @Test
-
   void testErrorCodeExceptionThrowing() {
     // Compilation error should throw CompilationException
     assertThrows(
@@ -118,7 +113,6 @@ class PanamaErrorHandlingTest {
   }
 
   @Test
-
   void testCustomErrorMessages() {
     try {
       PanamaErrorHandler.checkErrorCode(-1, "Custom operation failed");
@@ -140,7 +134,6 @@ class PanamaErrorHandlingTest {
   }
 
   @Test
-
   void testNullOperationHandling() {
     try {
       PanamaErrorHandler.checkErrorCode(-1, (String) null);
@@ -165,7 +158,6 @@ class PanamaErrorHandlingTest {
   }
 
   @Test
-
   void testErrorStructNullHandling() {
     // Null error struct should not throw (indicates no error)
     assertDoesNotThrow(
@@ -175,7 +167,6 @@ class PanamaErrorHandlingTest {
   }
 
   @Test
-
   void testSafeErrorChecking() {
     // Valid error code should throw normally
     assertThrows(
@@ -192,7 +183,6 @@ class PanamaErrorHandlingTest {
   }
 
   @Test
-
   void testRecoverableErrorIdentification() {
     // Memory errors should be recoverable
     assertTrue(PanamaErrorHandler.isRecoverableError(-7));
@@ -220,7 +210,6 @@ class PanamaErrorHandlingTest {
   }
 
   @Test
-
   void testParameterValidation() {
     // Valid pointer (mock with non-null value)
     // Note: We can't easily test MemorySegment without native code,
@@ -308,7 +297,6 @@ class PanamaErrorHandlingTest {
   }
 
   @Test
-
   void testResultValidation() {
     // Valid result
     String result = PanamaErrorHandler.requireSuccess("hello", "test operation");
@@ -329,7 +317,6 @@ class PanamaErrorHandlingTest {
   }
 
   @Test
-
   void testDetailedErrorMessageCreation() {
     // Full context
     String message1 =
@@ -362,7 +349,6 @@ class PanamaErrorHandlingTest {
   }
 
   @Test
-
   void testExceptionMapping() {
     // Test mapping RuntimeException
     RuntimeException runtime = new RuntimeException("runtime error");
@@ -386,7 +372,6 @@ class PanamaErrorHandlingTest {
   }
 
   @Test
-
   void testEdgeCaseErrorCodes() {
     // Test unknown negative error code
     String desc1 = PanamaErrorHandler.getErrorDescription(-999);
@@ -411,7 +396,6 @@ class PanamaErrorHandlingTest {
   }
 
   @Test
-
   void testThreadSafety() throws InterruptedException {
     int numThreads = 10;
     Thread[] threads = new Thread[numThreads];
@@ -463,7 +447,6 @@ class PanamaErrorHandlingTest {
   }
 
   @Test
-
   void testMemorySafetyLargeInputs() {
     // Test very large strings don't cause issues
     String longString = "x".repeat(100000);

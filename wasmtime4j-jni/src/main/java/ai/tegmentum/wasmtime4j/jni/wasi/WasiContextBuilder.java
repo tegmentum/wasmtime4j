@@ -377,4 +377,35 @@ public final class WasiContextBuilder {
 
     return preopenArray;
   }
+
+  /**
+   * Creates a new builder instance.
+   *
+   * @return a new WasiContextBuilder
+   */
+  public static WasiContextBuilder builder() {
+    return new WasiContextBuilder();
+  }
+
+  /**
+   * Adds a preopen directory (alias for withPreopenDirectory).
+   *
+   * @param hostPath the host directory path
+   * @param guestPath the guest directory path
+   * @return this builder for method chaining
+   */
+  public WasiContextBuilder addPreopenedDirectory(final Path hostPath, final String guestPath) {
+    return withPreopenDirectory(guestPath, hostPath != null ? hostPath.toString() : null);
+  }
+
+  /**
+   * Adds an environment variable (alias for withEnvironment).
+   *
+   * @param name the environment variable name
+   * @param value the environment variable value
+   * @return this builder for method chaining
+   */
+  public WasiContextBuilder addEnvironmentVariable(final String name, final String value) {
+    return withEnvironment(name, value);
+  }
 }

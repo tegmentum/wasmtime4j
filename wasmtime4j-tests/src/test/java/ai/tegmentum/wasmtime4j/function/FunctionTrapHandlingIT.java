@@ -311,7 +311,7 @@ public final class FunctionTrapHandlingIT extends BaseIntegrationTest {
   /** Tests cross-runtime trap consistency between JNI and Panama implementations. */
   @Test
   @DisplayName("Cross-runtime trap consistency")
-  void testCrossRuntimeTrapConsistency() {
+  void testCrossRuntimeTrapConsistency() throws WasmException {
     skipIfPanamaNotAvailable();
 
     LOGGER.info("Testing cross-runtime trap consistency");

@@ -282,8 +282,10 @@ public final class WasmValue {
    * @return true if this is a numeric type, false otherwise
    */
   public boolean isNumeric() {
-    return type == WasmValueType.I32 || type == WasmValueType.I64
-           || type == WasmValueType.F32 || type == WasmValueType.F64;
+    return type == WasmValueType.I32
+        || type == WasmValueType.I64
+        || type == WasmValueType.F32
+        || type == WasmValueType.F64;
   }
 
   /**
@@ -306,7 +308,8 @@ public final class WasmValue {
       throw new IllegalArgumentException("Expected type cannot be null");
     }
     if (type != expectedType) {
-      throw new IllegalArgumentException("Type mismatch: expected " + expectedType + ", got " + type);
+      throw new IllegalArgumentException(
+          "Type mismatch: expected " + expectedType + ", got " + type);
     }
   }
 

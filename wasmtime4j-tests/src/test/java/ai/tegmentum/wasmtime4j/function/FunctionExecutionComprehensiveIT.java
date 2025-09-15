@@ -455,7 +455,7 @@ public final class FunctionExecutionComprehensiveIT extends BaseIntegrationTest 
   /** Tests cross-runtime behavior consistency between JNI and Panama implementations. */
   @Test
   @DisplayName("Cross-runtime consistency validation")
-  void testCrossRuntimeConsistency() {
+  void testCrossRuntimeConsistency() throws WasmException {
     // This test will only run if Panama is available
     skipIfPanamaNotAvailable();
 

@@ -21,8 +21,8 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -33,13 +33,14 @@ import org.junit.jupiter.api.condition.JRE;
 /**
  * Integration tests for Panama global metadata and introspection functionality.
  *
- * <p>These tests verify that the enhanced global introspection and metadata query features
- * work correctly with actual WebAssembly modules and native FFI calls.
+ * <p>These tests verify that the enhanced global introspection and metadata query features work
+ * correctly with actual WebAssembly modules and native FFI calls.
  */
 @EnabledOnJre(JRE.JAVA_23)
 @DisplayName("Panama Global Metadata Integration Tests")
 class PanamaGlobalMetadataIT {
 
+  private ArenaResourceManager resourceManager;
   private PanamaEngine engine;
   private PanamaStore store;
 
@@ -52,8 +53,22 @@ class PanamaGlobalMetadataIT {
 
   @BeforeEach
   void setUp() throws Exception {
-    engine = new PanamaEngine();
-    store = new PanamaStore(engine);
+    resourceManager = new ArenaResourceManager();
+    engine = new PanamaEngine(resourceManager);
+    store = (PanamaStore) engine.createStore();
+  }
+
+  @AfterEach
+  void tearDown() {
+    if (store != null) {
+      store.close();
+    }
+    if (engine != null) {
+      engine.close();
+    }
+    if (resourceManager != null) {
+      resourceManager.close();
+    }
   }
 
   @Test
@@ -61,42 +76,44 @@ class PanamaGlobalMetadataIT {
   void testEnhancedGlobalIntrospection() throws Exception {
     // Create a simple module with a mutable i32 global
     byte[] wasmBytes = PanamaTestUtils.createModuleWithMutableI32Global(42);
-    
-    try (PanamaModule module = new PanamaModule(engine, wasmBytes);
-         PanamaInstance instance = store.instantiateModule(module)) {
+
+    try (PanamaModule module = (PanamaModule) engine.compileModule(wasmBytes);
+        PanamaInstance instance = store.instantiateModule(module)) {
 
       // Get the global from exports
       PanamaGlobal global = PanamaTestUtils.getGlobalFromInstance(instance, "test_global");
       assertNotNull(global, "Global should be exported from test module");
 
       // Test enhanced introspection
-      assertDoesNotThrow(() -> {
-        // Test basic type information
-        assertThat(global.getValueType()).isEqualTo(MemoryLayouts.WASM_I32);
-        assertThat(global.getTypeName()).isEqualTo("i32");
-        assertThat(global.getType()).isEqualTo(WasmValueType.I32);
-        assertThat(global.isMutable()).isTrue();
+      assertDoesNotThrow(
+          () -> {
+            // Test basic type information
+            assertThat(global.getValueType()).isEqualTo(MemoryLayouts.WASM_I32);
+            assertThat(global.getTypeName()).isEqualTo("i32");
+            assertThat(global.getType()).isEqualTo(WasmValueType.I32);
+            assertThat(global.isMutable()).isTrue();
 
-        // Test comprehensive metadata
-        PanamaGlobal.GlobalMetadata metadata = global.getMetadata();
-        assertThat(metadata).isNotNull();
-        assertThat(metadata.getTypeValue()).isEqualTo(MemoryLayouts.WASM_I32);
-        assertThat(metadata.getTypeName()).isEqualTo("i32");
-        assertThat(metadata.isMutable()).isTrue();
-        assertThat(metadata.getCurrentValue()).isNotNull();
-        assertThat(metadata.getCurrentValue().getType()).isEqualTo(WasmValueType.I32);
-        assertThat(metadata.getCurrentValue().asI32()).isEqualTo(42);
+            // Test comprehensive metadata
+            PanamaGlobal.GlobalMetadata metadata = global.getMetadata();
+            assertThat(metadata).isNotNull();
+            assertThat(metadata.getTypeValue()).isEqualTo(MemoryLayouts.WASM_I32);
+            assertThat(metadata.getTypeName()).isEqualTo("i32");
+            assertThat(metadata.isMutable()).isTrue();
+            assertThat(metadata.getCurrentValue()).isNotNull();
+            assertThat(metadata.getCurrentValue().getType()).isEqualTo(WasmValueType.I32);
+            assertThat(metadata.getCurrentValue().asI32()).isEqualTo(42);
 
-        // Test detailed type information
-        PanamaGlobal.TypeInfo typeInfo = global.getDetailedTypeInfo();
-        assertThat(typeInfo).isNotNull();
-        assertThat(typeInfo.getTypeValue()).isEqualTo(MemoryLayouts.WASM_I32);
-        assertThat(typeInfo.getTypeName()).isEqualTo("i32");
-        assertThat(typeInfo.getSize()).isEqualTo(4); // 32-bit = 4 bytes
-        assertThat(typeInfo.getAlignment()).isEqualTo(4); // 4-byte alignment
-        assertThat(typeInfo.isNumeric()).isTrue();
-        assertThat(typeInfo.isReference()).isFalse();
-      }, "Enhanced introspection should work without throwing exceptions");
+            // Test detailed type information
+            PanamaGlobal.TypeInfo typeInfo = global.getDetailedTypeInfo();
+            assertThat(typeInfo).isNotNull();
+            assertThat(typeInfo.getTypeValue()).isEqualTo(MemoryLayouts.WASM_I32);
+            assertThat(typeInfo.getTypeName()).isEqualTo("i32");
+            assertThat(typeInfo.getSize()).isEqualTo(4); // 32-bit = 4 bytes
+            assertThat(typeInfo.getAlignment()).isEqualTo(4); // 4-byte alignment
+            assertThat(typeInfo.isNumeric()).isTrue();
+            assertThat(typeInfo.isReference()).isFalse();
+          },
+          "Enhanced introspection should work without throwing exceptions");
     }
   }
 
@@ -105,9 +122,9 @@ class PanamaGlobalMetadataIT {
   void testGlobalMetadataForDifferentTypes() throws Exception {
     // Test with different global types
     byte[] wasmBytes = PanamaTestUtils.createModuleWithMultipleGlobals();
-    
-    try (PanamaModule module = new PanamaModule(engine, wasmBytes);
-         PanamaInstance instance = store.instantiateModule(module)) {
+
+    try (PanamaModule module = (PanamaModule) engine.compileModule(wasmBytes);
+        PanamaInstance instance = store.instantiateModule(module)) {
 
       // Test i32 global
       PanamaGlobal i32Global = PanamaTestUtils.getGlobalFromInstance(instance, "i32_global");
@@ -156,20 +173,22 @@ class PanamaGlobalMetadataIT {
   void testMetadataFallback() throws Exception {
     // This test ensures that if enhanced introspection fails, the system falls back gracefully
     byte[] wasmBytes = PanamaTestUtils.createModuleWithMutableI32Global(100);
-    
-    try (PanamaModule module = new PanamaModule(engine, wasmBytes);
-         PanamaInstance instance = store.instantiateModule(module)) {
+
+    try (PanamaModule module = (PanamaModule) engine.compileModule(wasmBytes);
+        PanamaInstance instance = store.instantiateModule(module)) {
 
       PanamaGlobal global = PanamaTestUtils.getGlobalFromInstance(instance, "test_global");
       assertNotNull(global, "Global should be exported from test module");
 
       // Even if enhanced introspection fails, basic metadata should still work
-      assertDoesNotThrow(() -> {
-        PanamaGlobal.GlobalMetadata metadata = global.getMetadata();
-        assertThat(metadata).isNotNull();
-        assertThat(metadata.getTypeName()).isNotEmpty();
-        assertThat(metadata.getCurrentValue()).isNotNull();
-      }, "Metadata retrieval should not fail even with fallback");
+      assertDoesNotThrow(
+          () -> {
+            PanamaGlobal.GlobalMetadata metadata = global.getMetadata();
+            assertThat(metadata).isNotNull();
+            assertThat(metadata.getTypeName()).isNotEmpty();
+            assertThat(metadata.getCurrentValue()).isNotNull();
+          },
+          "Metadata retrieval should not fail even with fallback");
     }
   }
 
@@ -177,30 +196,32 @@ class PanamaGlobalMetadataIT {
   @DisplayName("Global supports direct access detection")
   void testDirectAccessSupport() throws Exception {
     byte[] wasmBytes = PanamaTestUtils.createModuleWithMutableI32Global(200);
-    
-    try (PanamaModule module = new PanamaModule(engine, wasmBytes);
-         PanamaInstance instance = store.instantiateModule(module)) {
+
+    try (PanamaModule module = (PanamaModule) engine.compileModule(wasmBytes);
+        PanamaInstance instance = store.instantiateModule(module)) {
 
       PanamaGlobal global = PanamaTestUtils.getGlobalFromInstance(instance, "test_global");
       assertNotNull(global, "Global should be exported from test module");
 
       // Test direct access support detection
-      assertDoesNotThrow(() -> {
-        boolean supportsDirectAccess = global.supportsDirectAccess();
-        // Direct access support may vary by implementation
-        // Just verify the method doesn't throw
-        
-        if (supportsDirectAccess) {
-          // If direct access is supported, test that we can obtain it
-          try (PanamaGlobal.DirectGlobalAccess directAccess = global.getDirectAccess()) {
-            if (directAccess != null) {
-              assertThat(directAccess.getWasmType()).isEqualTo(MemoryLayouts.WASM_I32);
-              assertThat(directAccess.supports(Integer.class)).isTrue();
-              assertThat(directAccess.supports(String.class)).isFalse();
+      assertDoesNotThrow(
+          () -> {
+            boolean supportsDirectAccess = global.supportsDirectAccess();
+            // Direct access support may vary by implementation
+            // Just verify the method doesn't throw
+
+            if (supportsDirectAccess) {
+              // If direct access is supported, test that we can obtain it
+              try (PanamaGlobal.DirectGlobalAccess directAccess = global.getDirectAccess()) {
+                if (directAccess != null) {
+                  assertThat(directAccess.getWasmType()).isEqualTo(MemoryLayouts.WASM_I32);
+                  assertThat(directAccess.supports(Integer.class)).isTrue();
+                  assertThat(directAccess.supports(String.class)).isFalse();
+                }
+              }
             }
-          }
-        }
-      }, "Direct access support detection should work");
+          },
+          "Direct access support detection should work");
     }
   }
 
@@ -208,9 +229,9 @@ class PanamaGlobalMetadataIT {
   @DisplayName("Metadata equals and hashCode work correctly")
   void testMetadataEqualsAndHashCode() throws Exception {
     byte[] wasmBytes = PanamaTestUtils.createModuleWithMutableI32Global(300);
-    
-    try (PanamaModule module = new PanamaModule(engine, wasmBytes);
-         PanamaInstance instance = store.instantiateModule(module)) {
+
+    try (PanamaModule module = (PanamaModule) engine.compileModule(wasmBytes);
+        PanamaInstance instance = store.instantiateModule(module)) {
 
       PanamaGlobal global = PanamaTestUtils.getGlobalFromInstance(instance, "test_global");
       assertNotNull(global, "Global should be exported from test module");
@@ -235,16 +256,16 @@ class PanamaGlobalMetadataIT {
   @DisplayName("Metadata toString methods provide useful information")
   void testMetadataToString() throws Exception {
     byte[] wasmBytes = PanamaTestUtils.createModuleWithMutableI32Global(400);
-    
-    try (PanamaModule module = new PanamaModule(engine, wasmBytes);
-         PanamaInstance instance = store.instantiateModule(module)) {
+
+    try (PanamaModule module = (PanamaModule) engine.compileModule(wasmBytes);
+        PanamaInstance instance = store.instantiateModule(module)) {
 
       PanamaGlobal global = PanamaTestUtils.getGlobalFromInstance(instance, "test_global");
       assertNotNull(global, "Global should be exported from test module");
 
       PanamaGlobal.GlobalMetadata metadata = global.getMetadata();
       String metadataStr = metadata.toString();
-      
+
       assertThat(metadataStr).contains("GlobalMetadata");
       assertThat(metadataStr).contains("i32");
       assertThat(metadataStr).contains("mutable=true");
@@ -252,7 +273,7 @@ class PanamaGlobalMetadataIT {
 
       PanamaGlobal.TypeInfo typeInfo = global.getDetailedTypeInfo();
       String typeInfoStr = typeInfo.toString();
-      
+
       assertThat(typeInfoStr).contains("TypeInfo");
       assertThat(typeInfoStr).contains("i32");
       assertThat(typeInfoStr).contains("size=4");

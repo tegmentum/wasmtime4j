@@ -523,7 +523,7 @@ public final class FunctionPerformanceValidationIT extends BaseIntegrationTest {
   /** Tests cross-runtime performance consistency between JNI and Panama. */
   @Test
   @DisplayName("Cross-runtime performance consistency")
-  void testCrossRuntimePerformanceConsistency() {
+  void testCrossRuntimePerformanceConsistency() throws WasmException {
     skipIfPanamaNotAvailable();
 
     LOGGER.info("Testing cross-runtime performance consistency");

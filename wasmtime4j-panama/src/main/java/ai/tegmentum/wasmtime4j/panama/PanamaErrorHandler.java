@@ -1,590 +1,345 @@
-/*
- * Copyright 2024 Tegmentum AI
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package ai.tegmentum.wasmtime4j.panama;
 
-import ai.tegmentum.wasmtime4j.exception.CompilationException;
-import ai.tegmentum.wasmtime4j.exception.ValidationException;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.panama.util.PanamaExceptionMapper;
 import java.lang.foreign.MemorySegment;
-import java.lang.foreign.ValueLayout;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Error handling integration for Panama FFI implementation.
+ * Utility class for mapping native errors to appropriate Java exceptions in Panama implementation.
  *
- * <p>This class provides comprehensive error handling by mapping native error codes and messages to
- * appropriate Java exceptions. It ensures consistent error reporting across all Panama FFI
- * operations while providing detailed error information.
+ * <p>This class provides defensive programming by translating native error codes and messages into
+ * meaningful Java exceptions. It ensures that native errors don't propagate as generic runtime
+ * errors and provides proper exception hierarchy mapping.
  *
- * <p>The error handler supports both simple error code mapping and detailed error structure
- * processing for complete error information extraction.
+ * <p>The mapper supports various categories of WebAssembly-related exceptions including compilation
+ * errors, runtime errors, validation errors, and system errors.
  */
 public final class PanamaErrorHandler {
 
   private static final Logger LOGGER = Logger.getLogger(PanamaErrorHandler.class.getName());
 
-  // Native error codes (must match the Rust error.rs enum ErrorCode exactly)
-  private static final int WASMTIME_SUCCESS = 0;
-  private static final int WASMTIME_ERROR_COMPILATION = -1;
-  private static final int WASMTIME_ERROR_VALIDATION = -2;
-  private static final int WASMTIME_ERROR_RUNTIME = -3;
-  private static final int WASMTIME_ERROR_ENGINE_CONFIG = -4;
-  private static final int WASMTIME_ERROR_STORE = -5;
-  private static final int WASMTIME_ERROR_INSTANCE = -6;
-  private static final int WASMTIME_ERROR_MEMORY = -7;
-  private static final int WASMTIME_ERROR_FUNCTION = -8;
-  private static final int WASMTIME_ERROR_IMPORT_EXPORT = -9;
-  private static final int WASMTIME_ERROR_TYPE = -10;
-  private static final int WASMTIME_ERROR_RESOURCE = -11;
-  private static final int WASMTIME_ERROR_IO = -12;
-  private static final int WASMTIME_ERROR_INVALID_PARAMETER = -13;
-  private static final int WASMTIME_ERROR_CONCURRENCY = -14;
-  private static final int WASMTIME_ERROR_WASI = -15;
-  private static final int WASMTIME_ERROR_COMPONENT = -16;
-  private static final int WASMTIME_ERROR_INTERFACE = -17;
-  private static final int WASMTIME_ERROR_INTERNAL = -18;
+  // Native error code constants (must match the Rust error.rs enum ErrorCode exactly)
+  /** No error occurred. */
+  private static final int NATIVE_ERROR_NONE = 0;
 
-  // Default error messages
-  private static final String DEFAULT_GENERIC_ERROR = "Native operation failed";
-  private static final String DEFAULT_COMPILATION_ERROR = "WebAssembly compilation failed";
-  private static final String DEFAULT_VALIDATION_ERROR = "WebAssembly validation failed";
-  private static final String DEFAULT_RUNTIME_ERROR = "WebAssembly runtime error";
-  private static final String DEFAULT_ENGINE_CONFIG_ERROR = "Engine configuration error";
-  private static final String DEFAULT_STORE_ERROR = "Store creation or management error";
-  private static final String DEFAULT_INSTANCE_ERROR = "Instance creation or management error";
-  private static final String DEFAULT_MEMORY_ERROR = "Memory allocation or access error";
-  private static final String DEFAULT_FUNCTION_ERROR = "Function invocation error";
-  private static final String DEFAULT_IMPORT_EXPORT_ERROR = "Import or export resolution error";
-  private static final String DEFAULT_TYPE_ERROR = "Type conversion or validation error";
-  private static final String DEFAULT_RESOURCE_ERROR = "Resource management error";
-  private static final String DEFAULT_IO_ERROR = "I/O operation error";
-  private static final String DEFAULT_INVALID_PARAMETER_ERROR = "Invalid parameter provided";
-  private static final String DEFAULT_CONCURRENCY_ERROR = "Threading or concurrency error";
-  private static final String DEFAULT_WASI_ERROR = "WASI-related error";
-  private static final String DEFAULT_COMPONENT_ERROR = "Component model error";
-  private static final String DEFAULT_INTERFACE_ERROR = "Interface definition or binding error";
-  private static final String DEFAULT_INTERNAL_ERROR = "Internal system error";
+  /** WebAssembly compilation failed. */
+  private static final int NATIVE_ERROR_COMPILATION = -1;
 
-  // Private constructor to prevent instantiation
+  /** WebAssembly module validation failed. */
+  private static final int NATIVE_ERROR_VALIDATION = -2;
+
+  /** WebAssembly runtime error occurred. */
+  private static final int NATIVE_ERROR_RUNTIME = -3;
+
+  /** Engine configuration error. */
+  private static final int NATIVE_ERROR_ENGINE_CONFIG = -4;
+
+  /** Store creation or management error. */
+  private static final int NATIVE_ERROR_STORE = -5;
+
+  /** Instance creation or management error. */
+  private static final int NATIVE_ERROR_INSTANCE = -6;
+
+  /** Memory access or allocation error. */
+  private static final int NATIVE_ERROR_MEMORY = -7;
+
+  /** Function invocation error. */
+  private static final int NATIVE_ERROR_FUNCTION = -8;
+
+  /** Import or export resolution error. */
+  private static final int NATIVE_ERROR_IMPORT_EXPORT = -9;
+
+  /** Type conversion or validation error. */
+  private static final int NATIVE_ERROR_TYPE = -10;
+
+  /** Resource management error. */
+  private static final int NATIVE_ERROR_RESOURCE = -11;
+
+  /** I/O operation error. */
+  private static final int NATIVE_ERROR_IO = -12;
+
+  /** Invalid parameter provided. */
+  private static final int NATIVE_ERROR_INVALID_PARAMETER = -13;
+
+  /** Threading or concurrency error. */
+  private static final int NATIVE_ERROR_CONCURRENCY = -14;
+
+  /** WASI-related error. */
+  private static final int NATIVE_ERROR_WASI = -15;
+
+  /** Component model error. */
+  private static final int NATIVE_ERROR_COMPONENT = -16;
+
+  /** Interface definition or binding error. */
+  private static final int NATIVE_ERROR_INTERFACE = -17;
+
+  /** Internal system error. */
+  private static final int NATIVE_ERROR_INTERNAL = -18;
+
+  /** Private constructor to prevent instantiation of utility class. */
   private PanamaErrorHandler() {
     throw new AssertionError("Utility class should not be instantiated");
   }
 
   /**
-   * Checks a native error code and throws appropriate exception if error occurred.
-   *
-   * @param errorCode the native error code to check
-   * @param operation description of the operation that produced the error
-   * @throws WasmException if the error code indicates failure
-   */
-  public static void checkErrorCode(final int errorCode, final String operation)
-      throws WasmException {
-    if (errorCode == WASMTIME_SUCCESS) {
-      return; // No error
-    }
-
-    String message = getDefaultErrorMessage(errorCode);
-    if (operation != null && !operation.trim().isEmpty()) {
-      message = operation + ": " + message;
-    }
-
-    WasmException exception = createExceptionFromCode(errorCode, message);
-    LOGGER.log(Level.WARNING, "Native operation failed: " + message + " (code=" + errorCode + ")");
-    throw exception;
-  }
-
-  /**
-   * Checks a native error code and throws appropriate exception with custom message.
-   *
-   * @param errorCode the native error code to check
-   * @param customMessage custom error message to use
-   * @throws WasmException if the error code indicates failure
-   */
-  public static void checkErrorCode(
-      final int errorCode, final String customMessage, final Object... messageArgs)
-      throws WasmException {
-    if (errorCode == WASMTIME_SUCCESS) {
-      return; // No error
-    }
-
-    String formattedMessage = customMessage;
-    if (messageArgs.length > 0) {
-      formattedMessage = String.format(customMessage, messageArgs);
-    }
-
-    WasmException exception = createExceptionFromCode(errorCode, formattedMessage);
-    LOGGER.log(
-        Level.WARNING,
-        "Native operation failed: " + formattedMessage + " (code=" + errorCode + ")");
-    throw exception;
-  }
-
-  /**
-   * Processes a native error structure and throws appropriate exception.
-   *
-   * @param errorStructPtr pointer to the native error structure
-   * @param operation description of the operation that produced the error
-   * @param resourceManager resource manager for memory operations
-   * @throws WasmException if the error structure indicates failure
-   */
-  public static void checkErrorStruct(
-      final MemorySegment errorStructPtr,
-      final String operation,
-      final ArenaResourceManager resourceManager)
-      throws WasmException {
-    if (errorStructPtr == null || errorStructPtr.equals(MemorySegment.NULL)) {
-      return; // No error
-    }
-
-    try {
-      // Extract error information from the structure (using correct VarHandle names from
-      // MemoryLayouts)
-      int errorCode = (int) MemoryLayouts.WASMTIME_ERROR_CODE.get(errorStructPtr, 0);
-      MemorySegment messagePtr =
-          (MemorySegment) MemoryLayouts.WASMTIME_ERROR_MESSAGE.get(errorStructPtr, 0);
-      long messageLen = (long) MemoryLayouts.WASMTIME_ERROR_MESSAGE_LEN.get(errorStructPtr, 0);
-
-      String message = extractErrorMessage(messagePtr, messageLen, resourceManager, errorCode);
-
-      if (operation != null && !operation.trim().isEmpty()) {
-        message = operation + ": " + message;
-      }
-
-      WasmException exception = createExceptionFromCode(errorCode, message);
-      LOGGER.log(
-          Level.WARNING, "Native operation failed: " + message + " (code=" + errorCode + ")");
-      throw exception;
-
-    } catch (Exception e) {
-      if (e instanceof WasmException) {
-        throw e; // Re-throw WasmExceptions directly
-      } else {
-        // Error processing the error structure itself
-        String fallbackMessage =
-            operation != null ? operation + ": " + DEFAULT_GENERIC_ERROR : DEFAULT_GENERIC_ERROR;
-        LOGGER.log(Level.SEVERE, "Failed to process error structure", e);
-        throw new IllegalStateException(fallbackMessage, e);
-      }
-    }
-  }
-
-  /**
-   * Creates a safe error check wrapper for native operations.
-   *
-   * @param errorCode the error code to check
-   * @param operation description of the operation
-   * @param fallbackMessage fallback message if error processing fails
-   */
-  public static void safeCheckError(
-      final int errorCode, final String operation, final String fallbackMessage)
-      throws WasmException {
-    try {
-      checkErrorCode(errorCode, operation);
-    } catch (Exception e) {
-      if (e instanceof WasmException) {
-        throw e;
-      } else {
-        // Fallback for unexpected errors
-        LOGGER.log(Level.SEVERE, "Error during error checking", e);
-        throw new IllegalStateException(
-            fallbackMessage != null ? fallbackMessage : DEFAULT_GENERIC_ERROR, e);
-      }
-    }
-  }
-
-  /**
-   * Maps a native error code to an appropriate Java exception type.
+   * Gets a human-readable description of a native error code.
    *
    * @param errorCode the native error code
-   * @param message the error message
-   * @return appropriate exception instance
-   */
-  private static WasmException createExceptionFromCode(final int errorCode, final String message) {
-    return switch (errorCode) {
-      case WASMTIME_ERROR_COMPILATION -> new CompilationException(message);
-      case WASMTIME_ERROR_VALIDATION -> new ValidationException(message);
-      case WASMTIME_ERROR_RUNTIME -> new ai.tegmentum.wasmtime4j.exception.RuntimeException(
-          message);
-      case WASMTIME_ERROR_ENGINE_CONFIG -> new ai.tegmentum.wasmtime4j.exception.RuntimeException(
-          message);
-      case WASMTIME_ERROR_STORE -> new ai.tegmentum.wasmtime4j.exception.RuntimeException(message);
-      case WASMTIME_ERROR_INSTANCE -> new ai.tegmentum.wasmtime4j.exception.RuntimeException(
-          message);
-      case WASMTIME_ERROR_MEMORY -> new ai.tegmentum.wasmtime4j.exception.RuntimeException(message);
-      case WASMTIME_ERROR_FUNCTION -> new ai.tegmentum.wasmtime4j.exception.RuntimeException(
-          message);
-      case WASMTIME_ERROR_IMPORT_EXPORT -> new ai.tegmentum.wasmtime4j.exception.RuntimeException(
-          message);
-      case WASMTIME_ERROR_TYPE -> new ai.tegmentum.wasmtime4j.exception.RuntimeException(message);
-      case WASMTIME_ERROR_RESOURCE -> new ai.tegmentum.wasmtime4j.exception.RuntimeException(
-          message);
-      case WASMTIME_ERROR_IO -> new ai.tegmentum.wasmtime4j.exception.RuntimeException(message);
-      case WASMTIME_ERROR_INVALID_PARAMETER -> new ai.tegmentum.wasmtime4j.exception
-          .RuntimeException(message);
-      case WASMTIME_ERROR_CONCURRENCY -> new ai.tegmentum.wasmtime4j.exception.RuntimeException(
-          message);
-      case WASMTIME_ERROR_WASI -> new ai.tegmentum.wasmtime4j.exception.RuntimeException(message);
-      case WASMTIME_ERROR_COMPONENT -> new ai.tegmentum.wasmtime4j.exception.RuntimeException(
-          message);
-      case WASMTIME_ERROR_INTERFACE -> new ai.tegmentum.wasmtime4j.exception.RuntimeException(
-          message);
-      case WASMTIME_ERROR_INTERNAL -> new ai.tegmentum.wasmtime4j.exception.RuntimeException(
-          message);
-      default -> new ai.tegmentum.wasmtime4j.exception.RuntimeException(message);
-    };
-  }
-
-  /**
-   * Gets the default error message for an error code.
-   *
-   * @param errorCode the error code
-   * @return default error message
-   */
-  private static String getDefaultErrorMessage(final int errorCode) {
-    return switch (errorCode) {
-      case WASMTIME_ERROR_COMPILATION -> DEFAULT_COMPILATION_ERROR;
-      case WASMTIME_ERROR_VALIDATION -> DEFAULT_VALIDATION_ERROR;
-      case WASMTIME_ERROR_RUNTIME -> DEFAULT_RUNTIME_ERROR;
-      case WASMTIME_ERROR_ENGINE_CONFIG -> DEFAULT_ENGINE_CONFIG_ERROR;
-      case WASMTIME_ERROR_STORE -> DEFAULT_STORE_ERROR;
-      case WASMTIME_ERROR_INSTANCE -> DEFAULT_INSTANCE_ERROR;
-      case WASMTIME_ERROR_MEMORY -> DEFAULT_MEMORY_ERROR;
-      case WASMTIME_ERROR_FUNCTION -> DEFAULT_FUNCTION_ERROR;
-      case WASMTIME_ERROR_IMPORT_EXPORT -> DEFAULT_IMPORT_EXPORT_ERROR;
-      case WASMTIME_ERROR_TYPE -> DEFAULT_TYPE_ERROR;
-      case WASMTIME_ERROR_RESOURCE -> DEFAULT_RESOURCE_ERROR;
-      case WASMTIME_ERROR_IO -> DEFAULT_IO_ERROR;
-      case WASMTIME_ERROR_INVALID_PARAMETER -> DEFAULT_INVALID_PARAMETER_ERROR;
-      case WASMTIME_ERROR_CONCURRENCY -> DEFAULT_CONCURRENCY_ERROR;
-      case WASMTIME_ERROR_WASI -> DEFAULT_WASI_ERROR;
-      case WASMTIME_ERROR_COMPONENT -> DEFAULT_COMPONENT_ERROR;
-      case WASMTIME_ERROR_INTERFACE -> DEFAULT_INTERFACE_ERROR;
-      case WASMTIME_ERROR_INTERNAL -> DEFAULT_INTERNAL_ERROR;
-      default -> DEFAULT_GENERIC_ERROR;
-    };
-  }
-
-  /**
-   * Extracts error message from native memory.
-   *
-   * @param messagePtr pointer to the error message string
-   * @param messageLen length of the error message
-   * @param resourceManager resource manager for memory operations
-   * @param errorCode error code for fallback message
-   * @return extracted or fallback error message
-   */
-  private static String extractErrorMessage(
-      final MemorySegment messagePtr,
-      final long messageLen,
-      final ArenaResourceManager resourceManager,
-      final int errorCode) {
-    if (messagePtr == null || messagePtr.equals(MemorySegment.NULL) || messageLen <= 0) {
-      return getDefaultErrorMessage(errorCode);
-    }
-
-    try {
-      // Defensive check for reasonable message length (prevent excessive memory allocation)
-      if (messageLen > 65536) { // 64KB max message length
-        LOGGER.log(Level.WARNING, "Error message too long: " + messageLen + " bytes, truncating");
-        return getDefaultErrorMessage(errorCode) + " (message truncated)";
-      }
-
-      // Safely read the error message from native memory with bounds checking
-      MemorySegment messageSegment = messagePtr.reinterpret(messageLen);
-
-      // Verify the segment is readable before accessing
-      if (messageSegment.byteSize() != messageLen) {
-        LOGGER.log(Level.WARNING, "Error message segment size mismatch");
-        return getDefaultErrorMessage(errorCode);
-      }
-
-      byte[] messageBytes = messageSegment.toArray(ValueLayout.JAVA_BYTE);
-
-      // Additional null byte safety check
-      if (messageBytes.length == 0) {
-        return getDefaultErrorMessage(errorCode);
-      }
-
-      // Convert to string, handling potential encoding issues
-      String message = new String(messageBytes, java.nio.charset.StandardCharsets.UTF_8).trim();
-
-      // Remove any null terminators that might be present
-      int nullIndex = message.indexOf('\0');
-      if (nullIndex >= 0) {
-        message = message.substring(0, nullIndex);
-      }
-
-      if (message.isEmpty()) {
-        return getDefaultErrorMessage(errorCode);
-      }
-
-      return message;
-
-    } catch (IllegalArgumentException e) {
-      LOGGER.log(Level.WARNING, "Invalid memory segment for error message: " + e.getMessage());
-      return getDefaultErrorMessage(errorCode);
-    } catch (Exception e) {
-      LOGGER.log(Level.WARNING, "Failed to extract native error message", e);
-      return getDefaultErrorMessage(errorCode);
-    }
-  }
-
-  /**
-   * Validates that an operation result indicates success.
-   *
-   * @param result the operation result
-   * @param operation description of the operation
-   * @return the result if successful
-   * @throws RuntimeException if the result indicates failure
-   */
-  public static <T> T requireSuccess(final T result, final String operation) {
-    if (result == null) {
-      String message =
-          operation != null ? operation + ": Operation returned null" : "Operation returned null";
-      throw new IllegalArgumentException(message);
-    }
-    return result;
-  }
-
-  /**
-   * Validates that a pointer is not null.
-   *
-   * @param pointer the pointer to validate
-   * @param paramName the parameter name for error messages
-   * @return the pointer if valid
-   * @throws RuntimeException if the pointer is null
-   */
-  public static MemorySegment requireValidPointer(
-      final MemorySegment pointer, final String paramName) {
-    if (pointer == null || pointer.equals(MemorySegment.NULL)) {
-      throw new IllegalArgumentException(paramName + " cannot be null");
-    }
-    return pointer;
-  }
-
-  /**
-   * Validates that a size or index is within valid bounds.
-   *
-   * @param value the value to validate
-   * @param paramName the parameter name for error messages
-   * @return the value if valid
-   * @throws RuntimeException if the value is invalid
-   */
-  public static long requirePositive(final long value, final String paramName) {
-    if (value <= 0) {
-      throw new IllegalArgumentException(paramName + " must be positive: " + value);
-    }
-    return value;
-  }
-
-  /**
-   * Validates that an index is within bounds.
-   *
-   * @param index the index to validate
-   * @param size the size of the collection
-   * @param paramName the parameter name for error messages
-   * @return the index if valid
-   * @throws RuntimeException if the index is out of bounds
-   */
-  public static int requireValidIndex(final int index, final int size, final String paramName) {
-    if (index < 0 || index >= size) {
-      throw new IndexOutOfBoundsException(
-          paramName + " out of bounds: " + index + " (size=" + size + ")");
-    }
-    return index;
-  }
-
-  /**
-   * Creates a detailed error message with context.
-   *
-   * @param operation the operation that failed
-   * @param context additional context information
-   * @param cause the underlying cause
-   * @return formatted error message
-   */
-  public static String createDetailedErrorMessage(
-      final String operation, final String context, final String cause) {
-    StringBuilder sb = new StringBuilder();
-
-    if (operation != null && !operation.trim().isEmpty()) {
-      sb.append(operation);
-    }
-
-    if (context != null && !context.trim().isEmpty()) {
-      if (sb.length() > 0) {
-        sb.append(" (").append(context).append(")");
-      } else {
-        sb.append(context);
-      }
-    }
-
-    if (cause != null && !cause.trim().isEmpty()) {
-      if (sb.length() > 0) {
-        sb.append(": ").append(cause);
-      } else {
-        sb.append(cause);
-      }
-    }
-
-    return sb.length() > 0 ? sb.toString() : DEFAULT_GENERIC_ERROR;
-  }
-
-  /**
-   * Gets a user-friendly error description for an error code.
-   *
-   * @param errorCode the error code
-   * @return user-friendly description
+   * @return a description of the error code
    */
   public static String getErrorDescription(final int errorCode) {
-    return switch (errorCode) {
-      case WASMTIME_SUCCESS -> "Success";
-      case WASMTIME_ERROR_COMPILATION -> "Compilation Error";
-      case WASMTIME_ERROR_VALIDATION -> "Validation Error";
-      case WASMTIME_ERROR_RUNTIME -> "Runtime Error";
-      case WASMTIME_ERROR_ENGINE_CONFIG -> "Engine Configuration Error";
-      case WASMTIME_ERROR_STORE -> "Store Error";
-      case WASMTIME_ERROR_INSTANCE -> "Instance Error";
-      case WASMTIME_ERROR_MEMORY -> "Memory Error";
-      case WASMTIME_ERROR_FUNCTION -> "Function Error";
-      case WASMTIME_ERROR_IMPORT_EXPORT -> "Import/Export Error";
-      case WASMTIME_ERROR_TYPE -> "Type Error";
-      case WASMTIME_ERROR_RESOURCE -> "Resource Error";
-      case WASMTIME_ERROR_IO -> "I/O Error";
-      case WASMTIME_ERROR_INVALID_PARAMETER -> "Invalid Parameter";
-      case WASMTIME_ERROR_CONCURRENCY -> "Concurrency Error";
-      case WASMTIME_ERROR_WASI -> "WASI Error";
-      case WASMTIME_ERROR_COMPONENT -> "Component Error";
-      case WASMTIME_ERROR_INTERFACE -> "Interface Error";
-      case WASMTIME_ERROR_INTERNAL -> "Internal Error";
-      default -> "Unknown Error (" + errorCode + ")";
-    };
+    switch (errorCode) {
+      case NATIVE_ERROR_NONE:
+        return "No Error";
+      case NATIVE_ERROR_COMPILATION:
+        return "Compilation Error";
+      case NATIVE_ERROR_VALIDATION:
+        return "Validation Error";
+      case NATIVE_ERROR_RUNTIME:
+        return "Runtime Error";
+      case NATIVE_ERROR_ENGINE_CONFIG:
+        return "Engine Configuration Error";
+      case NATIVE_ERROR_STORE:
+        return "Store Error";
+      case NATIVE_ERROR_INSTANCE:
+        return "Instance Error";
+      case NATIVE_ERROR_MEMORY:
+        return "Memory Access Error";
+      case NATIVE_ERROR_FUNCTION:
+        return "Function Error";
+      case NATIVE_ERROR_IMPORT_EXPORT:
+        return "Import/Export Error";
+      case NATIVE_ERROR_TYPE:
+        return "Type Error";
+      case NATIVE_ERROR_RESOURCE:
+        return "Resource Error";
+      case NATIVE_ERROR_IO:
+        return "I/O Error";
+      case NATIVE_ERROR_INVALID_PARAMETER:
+        return "Invalid Parameter";
+      case NATIVE_ERROR_CONCURRENCY:
+        return "Concurrency Error";
+      case NATIVE_ERROR_WASI:
+        return "WASI Error";
+      case NATIVE_ERROR_COMPONENT:
+        return "Component Error";
+      case NATIVE_ERROR_INTERFACE:
+        return "Interface Error";
+      case NATIVE_ERROR_INTERNAL:
+        return "Internal Error";
+      default:
+        LOGGER.warning("Unknown native error code: " + errorCode);
+        return "Unknown Error (code " + errorCode + ")";
+    }
   }
 
   /**
    * Checks if an error code represents a recoverable error.
    *
-   * @param errorCode the error code to check
-   * @return true if the error might be recoverable, false otherwise
+   * @param errorCode the native error code
+   * @return true if the error is recoverable, false otherwise
    */
   public static boolean isRecoverableError(final int errorCode) {
-    return switch (errorCode) {
-      case WASMTIME_ERROR_MEMORY, WASMTIME_ERROR_INVALID_PARAMETER, WASMTIME_ERROR_RESOURCE -> true;
-      default -> false;
-    };
-  }
-
-  /**
-   * Maps a throwable to an appropriate WebAssembly exception with context.
-   *
-   * @param throwable the throwable to map
-   * @param context additional context information
-   * @return the mapped WebAssembly exception
-   */
-  public static WasmException mapToWasmException(final Throwable throwable, final String context) {
-    if (throwable instanceof WasmException) {
-      return (WasmException) throwable;
+    switch (errorCode) {
+      case NATIVE_ERROR_MEMORY:
+      case NATIVE_ERROR_RESOURCE:
+      case NATIVE_ERROR_INVALID_PARAMETER:
+      case NATIVE_ERROR_IO:
+        return true;
+      case NATIVE_ERROR_COMPILATION:
+      case NATIVE_ERROR_VALIDATION:
+      case NATIVE_ERROR_INTERNAL:
+        return false;
+      default:
+        return false;
     }
-
-    // Use PanamaExceptionMapper for consistent exception mapping
-    final PanamaExceptionMapper mapper = new PanamaExceptionMapper();
-    final WasmException mappedException = mapper.mapException(throwable);
-
-    // Add context if provided
-    if (context != null && !context.trim().isEmpty()) {
-      final String message = context + ": " + mappedException.getMessage();
-      return switch (mappedException) {
-        case CompilationException ce -> new CompilationException(message, mappedException);
-        case ValidationException ve -> new ValidationException(message, mappedException);
-        case ai.tegmentum.wasmtime4j.exception.RuntimeException re -> new ai.tegmentum.wasmtime4j
-            .exception.RuntimeException(message, mappedException);
-        default -> new WasmException(message, mappedException);
-      };
-    }
-
-    return mappedException;
   }
 
   /**
-   * Maps an exception to an appropriate WebAssembly exception.
+   * Checks an error code and throws an appropriate exception if it indicates an error.
    *
-   * @param exception the exception to map
-   * @param context additional context information
-   * @return the mapped WebAssembly exception
+   * @param errorCode the error code to check
+   * @param operation the operation description for error messages
+   * @throws WasmException if the error code indicates an error
    */
-  public static WasmException mapToWasmException(final Exception exception, final String context) {
-    return mapToWasmException((Throwable) exception, context);
+  public static void checkErrorCode(final int errorCode, final String operation) throws WasmException {
+    if (errorCode != NATIVE_ERROR_NONE) {
+      final String description = getErrorDescription(errorCode);
+      final String message = operation != null ? operation + ": " + description : description;
+      throw new WasmException(message);
+    }
   }
 
   /**
-   * Validates that a numeric value is non-negative.
+   * Checks an error struct and throws an appropriate exception if it indicates an error.
    *
-   * @param value the value to validate
-   * @param paramName the parameter name for error messages
-   * @return the value if valid
+   * @param errorStruct the error struct to check (may be null)
+   * @param operation the operation description for error messages
+   * @param defaultMessage the default message if error struct is null
+   * @throws WasmException if the error struct indicates an error
+   */
+  public static void checkErrorStruct(final Object errorStruct, final String operation,
+      final String defaultMessage) throws WasmException {
+    // For Panama implementation, this would typically check a native error struct
+    // For now, we assume null means no error
+    if (errorStruct != null) {
+      final String message = operation != null ? operation + ": " + defaultMessage : defaultMessage;
+      throw new WasmException(message != null ? message : "Unknown error");
+    }
+  }
+
+  /**
+   * Creates a detailed error message from components.
+   *
+   * @param operation the operation that failed (may be null)
+   * @param errorCode the error code (may be null)
+   * @param nativeMessage the native error message (may be null)
+   * @return a detailed error message
+   */
+  public static String createDetailedErrorMessage(final String operation, final Integer errorCode,
+      final String nativeMessage) {
+    final StringBuilder message = new StringBuilder();
+    
+    if (operation != null && !operation.trim().isEmpty()) {
+      message.append(operation).append(": ");
+    }
+    
+    if (errorCode != null) {
+      message.append(getErrorDescription(errorCode));
+      if (nativeMessage != null && !nativeMessage.trim().isEmpty()) {
+        message.append(" - ").append(nativeMessage);
+      }
+    } else if (nativeMessage != null && !nativeMessage.trim().isEmpty()) {
+      message.append(nativeMessage);
+    } else {
+      message.append("Unknown error");
+    }
+    
+    return message.toString();
+  }
+
+  /**
+   * Creates a detailed error message from string components.
+   *
+   * @param operation the operation that failed (may be null)
+   * @param context the operation context (may be null)
+   * @param nativeMessage the native error message (may be null)
+   * @return a detailed error message
+   */
+  public static String createDetailedErrorMessage(final String operation, final String context,
+      final String nativeMessage) {
+    final StringBuilder message = new StringBuilder();
+    
+    if (operation != null && !operation.trim().isEmpty()) {
+      message.append(operation);
+      if (context != null && !context.trim().isEmpty()) {
+        message.append(" (").append(context).append(")");
+      }
+      message.append(": ");
+    }
+    
+    if (nativeMessage != null && !nativeMessage.trim().isEmpty()) {
+      message.append(nativeMessage);
+    } else {
+      message.append("Unknown error");
+    }
+    
+    return message.toString();
+  }
+
+  /**
+   * Validates that a value is non-negative.
+   *
+   * @param value the value to check
+   * @param parameterName the parameter name for error messages
    * @throws IllegalArgumentException if the value is negative
    */
-  public static long requireNonNegative(final long value, final String paramName) {
+  public static void requireNonNegative(final long value, final String parameterName) {
     if (value < 0) {
-      throw new IllegalArgumentException(paramName + " must be non-negative: " + value);
+      throw new IllegalArgumentException(parameterName + " must be non-negative, got: " + value);
     }
-    return value;
-  }
-
-  /**
-   * Validates that a numeric value is non-negative.
-   *
-   * @param value the value to validate
-   * @param paramName the parameter name for error messages
-   * @return the value if valid
-   * @throws IllegalArgumentException if the value is negative
-   */
-  public static int requireNonNegative(final int value, final String paramName) {
-    if (value < 0) {
-      throw new IllegalArgumentException(paramName + " must be non-negative: " + value);
-    }
-    return value;
   }
 
   /**
    * Validates that a string is not null or empty.
    *
-   * @param value the string to validate
-   * @param paramName the parameter name for error messages
-   * @return the value if valid
+   * @param value the string to check
+   * @param parameterName the parameter name for error messages
    * @throws IllegalArgumentException if the string is null or empty
    */
-  public static String requireNotEmpty(final String value, final String paramName) {
-    if (value == null || value.trim().isEmpty()) {
-      throw new IllegalArgumentException(paramName + " cannot be null or empty");
+  public static void requireNotEmpty(final String value, final String parameterName) {
+    if (value == null) {
+      throw new IllegalArgumentException(parameterName + " cannot be null");
     }
-    return value;
+    if (value.trim().isEmpty()) {
+      throw new IllegalArgumentException(parameterName + " cannot be empty");
+    }
   }
 
   /**
    * Validates that a string is not null or empty (alias for requireNotEmpty).
    *
-   * @param value the string to validate
-   * @param paramName the parameter name for error messages
-   * @return the value if valid
+   * @param value the string to check
+   * @param parameterName the parameter name for error messages
    * @throws IllegalArgumentException if the string is null or empty
    */
-  public static String requireNonEmpty(final String value, final String paramName) {
-    return requireNotEmpty(value, paramName);
+  public static void requireNonEmpty(final String value, final String parameterName) {
+    requireNotEmpty(value, parameterName);
+  }
+
+  /**
+   * Validates that a memory segment is not null.
+   *
+   * @param segment the memory segment to check
+   * @param parameterName the parameter name for error messages
+   * @throws IllegalArgumentException if the segment is null
+   */
+  public static void requireValidPointer(final MemorySegment segment, final String parameterName) {
+    if (segment == null) {
+      throw new IllegalArgumentException(parameterName + " cannot be null");
+    }
+  }
+
+  /**
+   * Validates that a value is positive.
+   *
+   * @param value the value to check
+   * @param parameterName the parameter name for error messages
+   * @throws IllegalArgumentException if the value is not positive
+   */
+  public static void requirePositive(final long value, final String parameterName) {
+    if (value <= 0) {
+      throw new IllegalArgumentException(parameterName + " must be positive, got: " + value);
+    }
+  }
+
+  /**
+   * Safely checks an error code and throws appropriate exception.
+   *
+   * @param errorCode the error code to check
+   * @param operation the operation description
+   * @param context additional context information
+   * @throws WasmException if error code indicates an error
+   */
+  public static void safeCheckError(final int errorCode, final String operation,
+      final String context) throws WasmException {
+    if (errorCode != NATIVE_ERROR_NONE) {
+      final String description = getErrorDescription(errorCode);
+      final String message = createDetailedErrorMessage(operation, errorCode, context);
+      throw new WasmException(message);
+    }
+  }
+
+  /**
+   * Maps a native error to a WasmException.
+   *
+   * @param errorCode the native error code
+   * @param message the error message
+   * @return a WasmException with appropriate details
+   */
+  public static WasmException mapToWasmException(final int errorCode, final String message) {
+    final String description = getErrorDescription(errorCode);
+    final String detailedMessage = createDetailedErrorMessage(null, errorCode, message);
+    return new WasmException(detailedMessage);
   }
 }
