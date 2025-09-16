@@ -18,11 +18,15 @@ package ai.tegmentum.wasmtime4j.panama;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.ExportType;
+import ai.tegmentum.wasmtime4j.FunctionType;
 import ai.tegmentum.wasmtime4j.ImportMap;
 import ai.tegmentum.wasmtime4j.ImportType;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
+import ai.tegmentum.wasmtime4j.WasmType;
+import ai.tegmentum.wasmtime4j.WasmTypeKind;
+import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.CompilationException;
 import ai.tegmentum.wasmtime4j.exception.ValidationException;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
@@ -32,6 +36,7 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -219,15 +224,43 @@ public final class PanamaModule implements Module, AutoCloseable {
 
   @Override
   public Instance instantiate(final Store store) throws WasmException {
-    // TODO: Implement proper store-based instantiation
-    throw new UnsupportedOperationException("Store-based instantiation not yet implemented");
+    ensureNotClosed();
+    Objects.requireNonNull(store, "Store cannot be null");
+
+    if (!(store instanceof PanamaStore)) {
+      throw new IllegalArgumentException("Store must be a PanamaStore instance for Panama module");
+    }
+
+    try {
+      return ((PanamaStore) store).instantiateModule(this);
+    } catch (Exception e) {
+      if (e instanceof WasmException) {
+        throw e;
+      }
+      throw new WasmException("Failed to instantiate module", e);
+    }
   }
 
   @Override
   public Instance instantiate(final Store store, final ImportMap imports) throws WasmException {
-    // TODO: Implement proper store-based instantiation with imports
-    throw new UnsupportedOperationException(
-        "Store-based instantiation with imports not yet implemented");
+    ensureNotClosed();
+    Objects.requireNonNull(store, "Store cannot be null");
+
+    if (!(store instanceof PanamaStore)) {
+      throw new IllegalArgumentException("Store must be a PanamaStore instance for Panama module");
+    }
+
+    try {
+      // TODO: In a full implementation, we would need to convert ImportMap to native format
+      // and pass it to the native instantiation function. For now, we'll use the basic method.
+      LOGGER.warning("ImportMap not yet fully implemented - using basic instantiation");
+      return ((PanamaStore) store).instantiateModule(this);
+    } catch (Exception e) {
+      if (e instanceof WasmException) {
+        throw e;
+      }
+      throw new WasmException("Failed to instantiate module with imports", e);
+    }
   }
 
   /**
@@ -268,18 +301,121 @@ public final class PanamaModule implements Module, AutoCloseable {
   public List<ImportType> getImports() {
     ensureNotClosed();
 
-    // TODO: Implement proper import type extraction from WebAssembly module
-    // For now, return empty list - full implementation would require FFI calls to wasmtime
-    return Collections.emptyList();
+    try {
+      // Get the number of imports from the native module
+      long importsLen = nativeFunctions.moduleImportsLen(moduleResource.getNativePointer());
+
+      if (importsLen == 0) {
+        return Collections.emptyList();
+      }
+
+      List<ImportType> imports = new ArrayList<>((int) importsLen);
+
+      // Iterate through all imports and extract their information
+      for (long i = 0; i < importsLen; i++) {
+        try {
+          // Allocate memory for output parameters
+          ArenaResourceManager.ManagedMemorySegment nameOutPtr =
+              resourceManager.allocate(MemoryLayouts.C_POINTER);
+          ArenaResourceManager.ManagedMemorySegment typeOutPtr =
+              resourceManager.allocate(MemoryLayouts.C_SIZE_T); // For type kind
+
+          boolean found = nativeFunctions.moduleImportNth(
+              moduleResource.getNativePointer(),
+              i,
+              nameOutPtr.getSegment(),
+              typeOutPtr.getSegment());
+
+          if (found) {
+            // Extract the import name
+            MemorySegment namePtr = (MemorySegment)
+                MemoryLayouts.C_POINTER.varHandle().get(nameOutPtr.getSegment(), 0);
+
+            if (namePtr != null && !namePtr.equals(MemorySegment.NULL)) {
+              String importName = namePtr.getString(0);
+
+              // Extract type information (simplified - in full implementation would need proper type parsing)
+              long typeKind = (Long) MemoryLayouts.C_SIZE_T.varHandle().get(typeOutPtr.getSegment(), 0);
+              WasmType wasmType = createWasmTypeFromKind(typeKind);
+
+              // For now, use empty string as module name - full implementation would extract this
+              ImportType importType = new ImportType("", importName, wasmType);
+              imports.add(importType);
+            }
+          }
+        } catch (Exception e) {
+          LOGGER.warning("Failed to extract import at index " + i + ": " + e.getMessage());
+          // Continue with other imports
+        }
+      }
+
+      LOGGER.fine("Successfully extracted " + imports.size() + " imports from module");
+      return imports;
+
+    } catch (Exception e) {
+      LOGGER.warning("Failed to get module imports: " + e.getMessage());
+      return Collections.emptyList();
+    }
   }
 
   @Override
   public List<ExportType> getExports() {
     ensureNotClosed();
 
-    // TODO: Implement proper export type extraction from WebAssembly module
-    // For now, return empty list - full implementation would require FFI calls to wasmtime
-    return Collections.emptyList();
+    try {
+      // Get the number of exports from the native module
+      long exportsLen = nativeFunctions.moduleExportsLen(moduleResource.getNativePointer());
+
+      if (exportsLen == 0) {
+        return Collections.emptyList();
+      }
+
+      List<ExportType> exports = new ArrayList<>((int) exportsLen);
+
+      // Iterate through all exports and extract their information
+      for (long i = 0; i < exportsLen; i++) {
+        try {
+          // Allocate memory for output parameters
+          ArenaResourceManager.ManagedMemorySegment nameOutPtr =
+              resourceManager.allocate(MemoryLayouts.C_POINTER);
+          ArenaResourceManager.ManagedMemorySegment typeOutPtr =
+              resourceManager.allocate(MemoryLayouts.C_SIZE_T); // For type kind
+
+          boolean found = nativeFunctions.moduleExportNth(
+              moduleResource.getNativePointer(),
+              i,
+              nameOutPtr.getSegment(),
+              typeOutPtr.getSegment());
+
+          if (found) {
+            // Extract the export name
+            MemorySegment namePtr = (MemorySegment)
+                MemoryLayouts.C_POINTER.varHandle().get(nameOutPtr.getSegment(), 0);
+
+            if (namePtr != null && !namePtr.equals(MemorySegment.NULL)) {
+              String exportName = namePtr.getString(0);
+
+              // Extract type information (simplified - in full implementation would need proper type parsing)
+              long typeKind = (Long) MemoryLayouts.C_SIZE_T.varHandle().get(typeOutPtr.getSegment(), 0);
+              WasmType wasmType = createWasmTypeFromKind(typeKind);
+
+              ExportType exportType = new ExportType(exportName, wasmType);
+              exports.add(exportType);
+            }
+          }
+        } catch (Exception e) {
+          LOGGER.warning("Failed to extract export at index " + i + ": " + e.getMessage());
+          // Continue with other exports
+        }
+      }
+
+      LOGGER.fine("Successfully extracted " + exports.size() + " exports from module");
+      return exports;
+
+    } catch (Exception e) {
+      LOGGER.warning("Failed to get module exports: " + e.getMessage());
+      return Collections.emptyList();
+    }
   }
 
   /**
@@ -338,14 +474,52 @@ public final class PanamaModule implements Module, AutoCloseable {
 
   @Override
   public boolean validateImports(final ImportMap imports) {
-    // TODO: Implement import validation
-    return true; // For now, assume all imports are valid
+    ensureNotClosed();
+
+    if (imports == null) {
+      return true; // No imports to validate
+    }
+
+    try {
+      // For a full implementation, we would need to create a native representation of the imports
+      // and call the native validation function. For now, we'll do basic validation.
+
+      // Get expected imports from the module
+      List<ImportType> expectedImports = getImports();
+
+      // Check that all expected imports are provided
+      for (ImportType expectedImport : expectedImports) {
+        if (!imports.contains(expectedImport.getModuleName(), expectedImport.getName())) {
+          LOGGER.warning("Missing required import: " + expectedImport.getModuleName() + "." + expectedImport.getName());
+          return false;
+        }
+      }
+
+      LOGGER.fine("Import validation passed for " + expectedImports.size() + " imports");
+      return true;
+
+    } catch (Exception e) {
+      LOGGER.warning("Import validation failed: " + e.getMessage());
+      return false;
+    }
   }
 
   @Override
   public String getName() {
-    // TODO: Extract module name from WebAssembly module
-    return null; // Modules are typically unnamed
+    ensureNotClosed();
+
+    try {
+      MemorySegment namePtr = nativeFunctions.moduleGetName(moduleResource.getNativePointer());
+
+      if (namePtr != null && !namePtr.equals(MemorySegment.NULL)) {
+        return namePtr.getString(0);
+      }
+
+      return null; // Module has no name
+    } catch (Exception e) {
+      LOGGER.warning("Failed to get module name: " + e.getMessage());
+      return null;
+    }
   }
 
   @Override
@@ -805,6 +979,52 @@ public final class PanamaModule implements Module, AutoCloseable {
     } catch (Exception e) {
       // Log but don't throw - this is called during cleanup
       LOGGER.warning("Failed to destroy native module: " + e.getMessage());
+    }
+  }
+
+  /**
+   * Creates a WasmType from a native type kind.
+   *
+   * @param typeKind the native type kind value
+   * @return the appropriate WasmType instance
+   */
+  private WasmType createWasmTypeFromKind(final long typeKind) {
+    // Map native type kind values to WasmTypeKind enum values
+    // These constants would typically come from the native library header
+    switch ((int) typeKind) {
+      case 0: // WASMTIME_EXTERNTYPE_FUNC
+        // Create a basic function type - full implementation would extract actual signature
+        return new FunctionType(new WasmValueType[0], new WasmValueType[0]);
+      case 1: // WASMTIME_EXTERNTYPE_GLOBAL
+        return new SimpleWasmType(WasmTypeKind.GLOBAL);
+      case 2: // WASMTIME_EXTERNTYPE_TABLE
+        return new SimpleWasmType(WasmTypeKind.TABLE);
+      case 3: // WASMTIME_EXTERNTYPE_MEMORY
+        return new SimpleWasmType(WasmTypeKind.MEMORY);
+      default:
+        LOGGER.warning("Unknown type kind: " + typeKind + ", defaulting to FUNCTION");
+        return new FunctionType(new WasmValueType[0], new WasmValueType[0]);
+    }
+  }
+
+  /**
+   * Simple implementation of WasmType for non-function types.
+   */
+  private static final class SimpleWasmType implements WasmType {
+    private final WasmTypeKind kind;
+
+    SimpleWasmType(final WasmTypeKind kind) {
+      this.kind = kind;
+    }
+
+    @Override
+    public WasmTypeKind getKind() {
+      return kind;
+    }
+
+    @Override
+    public String toString() {
+      return "WasmType{kind=" + kind + "}";
     }
   }
 

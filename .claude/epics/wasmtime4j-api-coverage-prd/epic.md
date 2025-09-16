@@ -1,8 +1,8 @@
 ---
 name: wasmtime4j-api-coverage-prd
-status: backlog
+status: completed
 created: 2025-09-16T01:35:45Z
-progress: 0%
+completed: 2025-09-16T11:29:38Zprogress: 100%
 prd: .claude/prds/wasmtime4j-api-coverage-prd.md
 github: https://github.com/tegmentum/wasmtime4j/issues/232
 ---

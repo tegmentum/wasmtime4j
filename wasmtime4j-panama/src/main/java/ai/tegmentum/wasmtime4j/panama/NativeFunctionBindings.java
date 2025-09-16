@@ -163,6 +163,54 @@ public final class NativeFunctionBindings {
         "wasmtime4j_engine_configure", Integer.class, enginePtr, optionName, optionValue);
   }
 
+  /**
+   * Sets the optimization level for an engine.
+   *
+   * @param enginePtr pointer to the engine
+   * @param level the optimization level (0-2)
+   * @return 0 on success, negative error code on failure
+   */
+  public int engineSetOptimizationLevel(final MemorySegment enginePtr, final int level) {
+    validatePointer(enginePtr, "enginePtr");
+    return callNativeFunction(
+        "wasmtime4j_engine_set_optimization_level", Integer.class, enginePtr, level);
+  }
+
+  /**
+   * Gets the optimization level for an engine.
+   *
+   * @param enginePtr pointer to the engine
+   * @return the optimization level (0-2)
+   */
+  public int engineGetOptimizationLevel(final MemorySegment enginePtr) {
+    validatePointer(enginePtr, "enginePtr");
+    return callNativeFunction("wasmtime4j_engine_get_optimization_level", Integer.class, enginePtr);
+  }
+
+  /**
+   * Sets debug information generation for an engine.
+   *
+   * @param enginePtr pointer to the engine
+   * @param enabled true to enable debug information
+   * @return 0 on success, negative error code on failure
+   */
+  public int engineSetDebugInfo(final MemorySegment enginePtr, final boolean enabled) {
+    validatePointer(enginePtr, "enginePtr");
+    return callNativeFunction(
+        "wasmtime4j_engine_set_debug_info", Integer.class, enginePtr, enabled);
+  }
+
+  /**
+   * Checks if debug information generation is enabled.
+   *
+   * @param enginePtr pointer to the engine
+   * @return true if debug information is enabled
+   */
+  public boolean engineIsDebugInfo(final MemorySegment enginePtr) {
+    validatePointer(enginePtr, "enginePtr");
+    return callNativeFunction("wasmtime4j_engine_is_debug_info", Boolean.class, enginePtr);
+  }
+
   // Module Functions
 
   /**
@@ -198,6 +246,97 @@ public final class NativeFunctionBindings {
     callNativeFunction("wasmtime4j_module_destroy", Void.class, modulePtr);
   }
 
+  /**
+   * Gets the number of imports in a module.
+   *
+   * @param modulePtr pointer to the module
+   * @return the number of imports
+   */
+  public long moduleImportsLen(final MemorySegment modulePtr) {
+    validatePointer(modulePtr, "modulePtr");
+    return callNativeFunction("wasmtime4j_module_imports_len", Long.class, modulePtr);
+  }
+
+  /**
+   * Gets the nth import from a module.
+   *
+   * @param modulePtr pointer to the module
+   * @param index the index of the import to retrieve
+   * @param nameOutPtr pointer to receive the import name
+   * @param typeOutPtr pointer to receive the import type
+   * @return true if the import exists, false otherwise
+   */
+  public boolean moduleImportNth(
+      final MemorySegment modulePtr,
+      final long index,
+      final MemorySegment nameOutPtr,
+      final MemorySegment typeOutPtr) {
+    validatePointer(modulePtr, "modulePtr");
+    validatePointer(nameOutPtr, "nameOutPtr");
+    validatePointer(typeOutPtr, "typeOutPtr");
+    return callNativeFunction(
+        "wasmtime4j_module_import_nth", Boolean.class, modulePtr, index, nameOutPtr, typeOutPtr);
+  }
+
+  /**
+   * Gets the number of exports in a module.
+   *
+   * @param modulePtr pointer to the module
+   * @return the number of exports
+   */
+  public long moduleExportsLen(final MemorySegment modulePtr) {
+    validatePointer(modulePtr, "modulePtr");
+    return callNativeFunction("wasmtime4j_module_exports_len", Long.class, modulePtr);
+  }
+
+  /**
+   * Gets the nth export from a module.
+   *
+   * @param modulePtr pointer to the module
+   * @param index the index of the export to retrieve
+   * @param nameOutPtr pointer to receive the export name
+   * @param typeOutPtr pointer to receive the export type
+   * @return true if the export exists, false otherwise
+   */
+  public boolean moduleExportNth(
+      final MemorySegment modulePtr,
+      final long index,
+      final MemorySegment nameOutPtr,
+      final MemorySegment typeOutPtr) {
+    validatePointer(modulePtr, "modulePtr");
+    validatePointer(nameOutPtr, "nameOutPtr");
+    validatePointer(typeOutPtr, "typeOutPtr");
+    return callNativeFunction(
+        "wasmtime4j_module_export_nth", Boolean.class, modulePtr, index, nameOutPtr, typeOutPtr);
+  }
+
+  /**
+   * Gets the name of a module.
+   *
+   * @param modulePtr pointer to the module
+   * @return pointer to the module name string, or null if unnamed
+   */
+  public MemorySegment moduleGetName(final MemorySegment modulePtr) {
+    validatePointer(modulePtr, "modulePtr");
+    return callNativeFunction("wasmtime4j_module_get_name", MemorySegment.class, modulePtr);
+  }
+
+  /**
+   * Validates imports against a module.
+   *
+   * @param modulePtr pointer to the module
+   * @param importsPtr pointer to imports array
+   * @param importsCount number of imports
+   * @return 0 on success, negative error code on failure
+   */
+  public int moduleValidateImports(
+      final MemorySegment modulePtr, final MemorySegment importsPtr, final long importsCount) {
+    validatePointer(modulePtr, "modulePtr");
+    validatePointer(importsPtr, "importsPtr");
+    return callNativeFunction(
+        "wasmtime4j_module_validate_imports", Integer.class, modulePtr, importsPtr, importsCount);
+  }
+
   // Store Functions
 
   /**
@@ -222,6 +361,44 @@ public final class NativeFunctionBindings {
   public void storeDestroy(final MemorySegment storePtr) {
     validatePointer(storePtr, "storePtr");
     callNativeFunction("wasmtime4j_store_destroy", Void.class, storePtr);
+  }
+
+  /**
+   * Creates a WebAssembly store with custom configuration.
+   *
+   * @param enginePtr pointer to the engine
+   * @param storePtr pointer to store the created store
+   * @param fuelLimit the fuel limit (0 = no limit)
+   * @param memoryLimitBytes the memory limit in bytes (0 = no limit)
+   * @param executionTimeoutSecs the execution timeout in seconds (0 = no timeout)
+   * @param maxInstances the maximum number of instances (0 = no limit)
+   * @param maxTableElements the maximum table elements (0 = no limit)
+   * @param maxFunctions the maximum functions (0 = no limit)
+   * @return 0 on success, negative error code on failure
+   */
+  public int storeCreateWithConfig(
+      final MemorySegment enginePtr,
+      final MemorySegment storePtr,
+      final long fuelLimit,
+      final long memoryLimitBytes,
+      final long executionTimeoutSecs,
+      final int maxInstances,
+      final int maxTableElements,
+      final int maxFunctions) {
+    validatePointer(enginePtr, "enginePtr");
+    validatePointer(storePtr, "storePtr");
+
+    return callNativeFunction(
+        "wasmtime4j_store_create_with_config",
+        Integer.class,
+        enginePtr,
+        storePtr,
+        fuelLimit,
+        memoryLimitBytes,
+        executionTimeoutSecs,
+        maxInstances,
+        maxTableElements,
+        maxFunctions);
   }
 
   /**
@@ -1066,6 +1243,33 @@ public final class NativeFunctionBindings {
             ValueLayout.ADDRESS, // option_name
             ValueLayout.ADDRESS)); // option_value
 
+    // Engine configuration functions
+    addFunctionBinding(
+        "wasmtime4j_engine_set_optimization_level",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS, // engine_ptr
+            ValueLayout.JAVA_INT)); // level
+
+    addFunctionBinding(
+        "wasmtime4j_engine_get_optimization_level",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS)); // engine_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_engine_set_debug_info",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS, // engine_ptr
+            ValueLayout.JAVA_BOOLEAN)); // enabled
+
+    addFunctionBinding(
+        "wasmtime4j_engine_is_debug_info",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_BOOLEAN,
+            ValueLayout.ADDRESS)); // engine_ptr
+
     // Module functions
     addFunctionBinding(
         "wasmtime4j_module_compile",
@@ -1078,6 +1282,51 @@ public final class NativeFunctionBindings {
 
     addFunctionBinding("wasmtime4j_module_destroy", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
+    // Module introspection functions
+    addFunctionBinding(
+        "wasmtime4j_module_imports_len",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG, // return import count
+            ValueLayout.ADDRESS)); // module_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_module_import_nth",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_BOOLEAN, // return found
+            ValueLayout.ADDRESS, // module_ptr
+            ValueLayout.JAVA_LONG, // index
+            ValueLayout.ADDRESS, // name_out_ptr
+            ValueLayout.ADDRESS)); // type_out_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_module_exports_len",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG, // return export count
+            ValueLayout.ADDRESS)); // module_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_module_export_nth",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_BOOLEAN, // return found
+            ValueLayout.ADDRESS, // module_ptr
+            ValueLayout.JAVA_LONG, // index
+            ValueLayout.ADDRESS, // name_out_ptr
+            ValueLayout.ADDRESS)); // type_out_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_module_get_name",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, // return name string pointer
+            ValueLayout.ADDRESS)); // module_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_module_validate_imports",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return result code
+            ValueLayout.ADDRESS, // module_ptr
+            ValueLayout.ADDRESS, // imports_ptr
+            ValueLayout.JAVA_LONG)); // imports_count
+
     // Store functions
     addFunctionBinding(
         "wasmtime4j_store_create",
@@ -1087,6 +1336,19 @@ public final class NativeFunctionBindings {
             ValueLayout.ADDRESS)); // store_ptr
 
     addFunctionBinding("wasmtime4j_store_destroy", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_store_create_with_config",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS, // engine_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.JAVA_LONG, // fuel_limit
+            ValueLayout.JAVA_LONG, // memory_limit_bytes
+            ValueLayout.JAVA_LONG, // execution_timeout_secs
+            ValueLayout.JAVA_INT, // max_instances
+            ValueLayout.JAVA_INT, // max_table_elements
+            ValueLayout.JAVA_INT)); // max_functions
 
     // Additional Store functions
     addFunctionBinding(
