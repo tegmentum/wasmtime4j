@@ -13,8 +13,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * Comprehensive unit tests for ProgressReporter real-time progress tracking functionality.
- * Tests Observer pattern implementation, progress calculations, and console output formatting.
+ * Comprehensive unit tests for ProgressReporter real-time progress tracking functionality. Tests
+ * Observer pattern implementation, progress calculations, and console output formatting.
  */
 final class ProgressReporterTest {
 
@@ -173,7 +173,8 @@ final class ProgressReporterTest {
   @Test
   void testVerbosityLevels() {
     // Test with QUIET verbosity - should produce minimal output
-    final ProgressReporter quietReporter = new ProgressReporter(printStream, VerbosityLevel.QUIET, false);
+    final ProgressReporter quietReporter =
+        new ProgressReporter(printStream, VerbosityLevel.QUIET, false);
 
     outputStream.reset();
     quietReporter.onOperationStarted("Quiet Operation", 3);
@@ -184,7 +185,8 @@ final class ProgressReporterTest {
     assertTrue(quietOutput.isEmpty() || quietOutput.trim().isEmpty());
 
     // Test with NORMAL verbosity - should show operation start/completion
-    final ProgressReporter normalReporter = new ProgressReporter(printStream, VerbosityLevel.NORMAL, false);
+    final ProgressReporter normalReporter =
+        new ProgressReporter(printStream, VerbosityLevel.NORMAL, false);
 
     outputStream.reset();
     normalReporter.onOperationStarted("Normal Operation", 3);
@@ -196,7 +198,8 @@ final class ProgressReporterTest {
 
   @Test
   void testColorOutput() {
-    final ProgressReporter colorReporter = new ProgressReporter(printStream, VerbosityLevel.VERBOSE, true);
+    final ProgressReporter colorReporter =
+        new ProgressReporter(printStream, VerbosityLevel.VERBOSE, true);
 
     colorReporter.onOperationCompleted("Color Test", "Success");
 
@@ -208,7 +211,8 @@ final class ProgressReporterTest {
 
   @Test
   void testConsoleFactoryMethod() {
-    final ProgressReporter consoleReporter = ProgressReporter.forConsole(VerbosityLevel.NORMAL, false);
+    final ProgressReporter consoleReporter =
+        ProgressReporter.forConsole(VerbosityLevel.NORMAL, false);
     assertNotNull(consoleReporter);
 
     // Should be able to use the reporter without exceptions
@@ -247,7 +251,7 @@ final class ProgressReporterTest {
     assertEquals(3, stats2.getCount());
     assertEquals(2, stats2.getSuccessCount());
     assertEquals(1, stats2.getFailureCount());
-    assertEquals(2.0/3.0, stats2.getSuccessRate(), 0.01);
+    assertEquals(2.0 / 3.0, stats2.getSuccessRate(), 0.01);
 
     // Test timing information
     assertNotNull(stats1.getMinDuration());

@@ -4,24 +4,21 @@ import ai.tegmentum.wasmtime4j.comparison.analyzers.ActionableRecommendation;
 import ai.tegmentum.wasmtime4j.comparison.analyzers.BehavioralAnalysisResult;
 import ai.tegmentum.wasmtime4j.comparison.analyzers.BehavioralDiscrepancy;
 import ai.tegmentum.wasmtime4j.comparison.analyzers.CoverageAnalysisResult;
-import ai.tegmentum.wasmtime4j.comparison.analyzers.InsightAnalysisResult;
 import ai.tegmentum.wasmtime4j.comparison.analyzers.PerformanceAnalyzer;
 import ai.tegmentum.wasmtime4j.comparison.analyzers.RecommendationResult;
 import java.time.format.DateTimeFormatter;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 /**
- * Formats comparison analysis results into structured console output with tables,
- * summaries, and detailed breakdowns. Supports both colored and plain text output
- * with configurable verbosity levels.
+ * Formats comparison analysis results into structured console output with tables, summaries, and
+ * detailed breakdowns. Supports both colored and plain text output with configurable verbosity
+ * levels.
  *
  * @since 1.0.0
  */
 public final class SummaryFormatter {
-  private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+  private static final DateTimeFormatter TIME_FORMATTER =
+      DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
   private static final String TABLE_BORDER = "─";
   private static final String TABLE_CORNER = "├";
   private static final String TABLE_VERTICAL = "│";
@@ -96,7 +93,8 @@ public final class SummaryFormatter {
    * @param status current status
    * @return formatted status line
    */
-  public String formatProgressLine(final String currentTest, final String progress, final String status) {
+  public String formatProgressLine(
+      final String currentTest, final String progress, final String status) {
     if (verbosity == VerbosityLevel.QUIET) {
       return "";
     }
@@ -130,20 +128,17 @@ public final class SummaryFormatter {
       final String testName = entry.getKey();
       final BehavioralAnalysisResult result = entry.getValue();
 
-      final String status = result.isCompatible() ?
-          colorize("PASS", ConsoleColors.GREEN) :
-          colorize("FAIL", ConsoleColors.RED);
+      final String status =
+          result.isCompatible()
+              ? colorize("PASS", ConsoleColors.GREEN)
+              : colorize("FAIL", ConsoleColors.RED);
 
       final String score = String.format("%.2f", result.getConsistencyScore());
       final String issues = String.valueOf(result.getCriticalDiscrepancyCount());
       final String verdict = colorizeVerdict(result.getVerdict().toString());
 
       final String[] row = {
-          truncateString(testName, widths[0] - 2),
-          status,
-          score,
-          issues,
-          verdict
+        truncateString(testName, widths[0] - 2), status, score, issues, verdict
       };
 
       sb.append(formatTableRow(row, widths));
@@ -213,18 +208,24 @@ public final class SummaryFormatter {
 
     sb.append(String.format("Report ID: %s\n", report.getReportId()));
     sb.append(String.format("Duration: %s\n", formatDuration(report.getTotalDuration())));
-    sb.append(String.format("Tests: %d total, %d passed, %d failed\n",
-        summary.getTotalTests(), summary.getPassedTests(), summary.getFailedTests()));
+    sb.append(
+        String.format(
+            "Tests: %d total, %d passed, %d failed\n",
+            summary.getTotalTests(), summary.getPassedTests(), summary.getFailedTests()));
 
     final String verdict = colorizeVerdict(summary.getOverallVerdict().toString());
     sb.append(String.format("Overall Verdict: %s\n", verdict));
 
     if (summary.getHighPriorityIssueCount() > 0) {
-      sb.append(String.format("High Priority Issues: %s\n",
-          colorize(String.valueOf(summary.getHighPriorityIssueCount()), ConsoleColors.RED)));
+      sb.append(
+          String.format(
+              "High Priority Issues: %s\n",
+              colorize(String.valueOf(summary.getHighPriorityIssueCount()), ConsoleColors.RED)));
     }
 
-    sb.append(String.format("Average Compatibility Score: %.2f\n", summary.getAverageCompatibilityScore()));
+    sb.append(
+        String.format(
+            "Average Compatibility Score: %.2f\n", summary.getAverageCompatibilityScore()));
     sb.append(String.format("Completed: %s\n", report.getEndTime().format(TIME_FORMATTER)));
 
     return sb.toString();
@@ -252,8 +253,10 @@ public final class SummaryFormatter {
       avgTimingRatio /= timingComparisons;
     }
 
-    sb.append(String.format("Tests with performance differences: %d/%d\n",
-        significantDifferences, report.getPerformanceResults().size()));
+    sb.append(
+        String.format(
+            "Tests with performance differences: %d/%d\n",
+            significantDifferences, report.getPerformanceResults().size()));
     sb.append(String.format("Average timing ratio: %.2fx\n", avgTimingRatio));
 
     return sb.toString();
@@ -277,10 +280,13 @@ public final class SummaryFormatter {
       final double avgCoverage = totalCoverage / coverageCount;
       sb.append(String.format("Average API coverage: %.1f%%\n", avgCoverage));
 
-      final String coverageColor = avgCoverage >= 90 ? ConsoleColors.GREEN :
-          avgCoverage >= 70 ? ConsoleColors.YELLOW : ConsoleColors.RED;
-      sb.append(String.format("Coverage status: %s\n",
-          colorize(getCoverageStatus(avgCoverage), coverageColor)));
+      final String coverageColor =
+          avgCoverage >= 90
+              ? ConsoleColors.GREEN
+              : avgCoverage >= 70 ? ConsoleColors.YELLOW : ConsoleColors.RED;
+      sb.append(
+          String.format(
+              "Coverage status: %s\n", colorize(getCoverageStatus(avgCoverage), coverageColor)));
     }
 
     return sb.toString();
@@ -301,10 +307,12 @@ public final class SummaryFormatter {
       for (final BehavioralDiscrepancy discrepancy : result.getDiscrepancies()) {
         if (discrepancyCount >= 5) break;
 
-        sb.append(String.format("- %s: %s (%s)\n",
-            entry.getKey(),
-            discrepancy.getDescription(),
-            colorize(discrepancy.getSeverity().toString(), ConsoleColors.YELLOW)));
+        sb.append(
+            String.format(
+                "- %s: %s (%s)\n",
+                entry.getKey(),
+                discrepancy.getDescription(),
+                colorize(discrepancy.getSeverity().toString(), ConsoleColors.YELLOW)));
         discrepancyCount++;
       }
     }
@@ -320,9 +328,12 @@ public final class SummaryFormatter {
     final StringBuilder sb = new StringBuilder();
     sb.append(TABLE_BORDER.repeat(DEFAULT_TABLE_WIDTH));
     sb.append("\n");
-    sb.append(String.format("Generated by Wasmtime4j Comparison Tool at %s\n",
-        report.getEndTime().format(TIME_FORMATTER)));
-    sb.append(String.format("Total analysis time: %s\n", formatDuration(report.getTotalDuration())));
+    sb.append(
+        String.format(
+            "Generated by Wasmtime4j Comparison Tool at %s\n",
+            report.getEndTime().format(TIME_FORMATTER)));
+    sb.append(
+        String.format("Total analysis time: %s\n", formatDuration(report.getTotalDuration())));
     return sb.toString();
   }
 
@@ -412,7 +423,8 @@ public final class SummaryFormatter {
       case "PASSED", "CONSISTENT" -> ConsoleColors.success(verdict);
       case "PASSED_WITH_WARNINGS", "MOSTLY_CONSISTENT" -> ConsoleColors.warning(verdict);
       case "FAILED_WITH_ISSUES", "INCONSISTENT" -> ConsoleColors.error(verdict);
-      case "FAILED", "INCOMPATIBLE" -> ConsoleColors.colorize(verdict, ConsoleColors.BOLD + ConsoleColors.RED);
+      case "FAILED", "INCOMPATIBLE" -> ConsoleColors.colorize(
+          verdict, ConsoleColors.BOLD + ConsoleColors.RED);
       default -> verdict;
     };
   }

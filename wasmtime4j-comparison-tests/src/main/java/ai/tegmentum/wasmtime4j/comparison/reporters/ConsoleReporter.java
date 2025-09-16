@@ -9,17 +9,18 @@ import java.util.Objects;
 import java.util.logging.Logger;
 
 /**
- * Comprehensive console reporter that provides colored, formatted output for comparison
- * analysis results. Supports multiple verbosity levels, real-time progress reporting,
- * and CI/CD integration through appropriate exit codes.
+ * Comprehensive console reporter that provides colored, formatted output for comparison analysis
+ * results. Supports multiple verbosity levels, real-time progress reporting, and CI/CD integration
+ * through appropriate exit codes.
  *
  * <p>Features:
+ *
  * <ul>
- *   <li>ANSI color support with automatic fallback</li>
- *   <li>Table-formatted output for structured data</li>
- *   <li>Real-time progress indicators during long operations</li>
- *   <li>Configurable verbosity levels (quiet, normal, verbose, debug)</li>
- *   <li>CI/CD integration with appropriate exit codes</li>
+ *   <li>ANSI color support with automatic fallback
+ *   <li>Table-formatted output for structured data
+ *   <li>Real-time progress indicators during long operations
+ *   <li>Configurable verbosity levels (quiet, normal, verbose, debug)
+ *   <li>CI/CD integration with appropriate exit codes
  * </ul>
  *
  * @since 1.0.0
@@ -47,8 +48,11 @@ public final class ConsoleReporter {
    * @param verbosity the verbosity level for controlling output detail
    * @param useColors whether to use ANSI color codes
    */
-  public ConsoleReporter(final PrintStream output, final PrintStream errorOutput,
-                        final VerbosityLevel verbosity, final boolean useColors) {
+  public ConsoleReporter(
+      final PrintStream output,
+      final PrintStream errorOutput,
+      final VerbosityLevel verbosity,
+      final boolean useColors) {
     this.output = Objects.requireNonNull(output, "output cannot be null");
     this.errorOutput = Objects.requireNonNull(errorOutput, "errorOutput cannot be null");
     this.verbosity = Objects.requireNonNull(verbosity, "verbosity cannot be null");
@@ -64,7 +68,8 @@ public final class ConsoleReporter {
    * @param useColors whether to use colors
    * @return new ConsoleReporter instance
    */
-  public static ConsoleReporter forStandardOutput(final VerbosityLevel verbosity, final boolean useColors) {
+  public static ConsoleReporter forStandardOutput(
+      final VerbosityLevel verbosity, final boolean useColors) {
     return new ConsoleReporter(System.out, System.err, verbosity, useColors);
   }
 
@@ -76,12 +81,12 @@ public final class ConsoleReporter {
   public static ConsoleReporter forCiCd() {
     // CI/CD environments typically prefer no colors and normal verbosity
     final boolean useColors = System.getenv("FORCE_COLOR") != null;
-    final VerbosityLevel verbosity = VerbosityLevel.fromString(
-        System.getenv().getOrDefault("WASMTIME4J_VERBOSITY", "normal"));
+    final VerbosityLevel verbosity =
+        VerbosityLevel.fromString(System.getenv().getOrDefault("WASMTIME4J_VERBOSITY", "normal"));
 
     final ConsoleReporter reporter = forStandardOutput(verbosity, useColors);
     reporter.progressReporter.setProgressBarEnabled(false); // No progress bars in CI
-    reporter.progressReporter.setTimestampsEnabled(true);   // Timestamps useful for CI logs
+    reporter.progressReporter.setTimestampsEnabled(true); // Timestamps useful for CI logs
 
     return reporter;
   }
@@ -141,8 +146,8 @@ public final class ConsoleReporter {
   }
 
   /**
-   * Gets the exit code determined by the analysis results.
-   * This code is suitable for CI/CD pipeline integration.
+   * Gets the exit code determined by the analysis results. This code is suitable for CI/CD pipeline
+   * integration.
    *
    * @return exit code (0 = success, 1 = warnings/issues, 2 = failures/errors)
    */
@@ -244,8 +249,7 @@ public final class ConsoleReporter {
     hasHighPriorityIssues = summary.getHighPriorityIssueCount() > 0;
 
     // Check for comparison failures
-    hasComparisonFailures = summary.getFailedTests() > 0 ||
-        !report.isSuccessful();
+    hasComparisonFailures = summary.getFailedTests() > 0 || !report.isSuccessful();
 
     // Determine exit code based on findings
     if (hasComparisonFailures) {
@@ -293,10 +297,8 @@ public final class ConsoleReporter {
 
   private void showRecommendation(final ActionableRecommendation recommendation) {
     final String priority = colorizeRecommendationPriority(recommendation.getSeverity().toString());
-    output.printf("  %s [%s] %s%n",
-        colorize("•", ConsoleColors.BLUE),
-        priority,
-        recommendation.getTitle());
+    output.printf(
+        "  %s [%s] %s%n", colorize("•", ConsoleColors.BLUE), priority, recommendation.getTitle());
 
     if (verbosity.includes(VerbosityLevel.DEBUG)) {
       output.printf("    %s%n", recommendation.getDescription());
@@ -323,7 +325,8 @@ public final class ConsoleReporter {
       }
     }
 
-    output.printf("Tests with performance differences: %d/%d%n",
+    output.printf(
+        "Tests with performance differences: %d/%d%n",
         significantDifferences, report.getPerformanceResults().size());
 
     if (significantDifferences > 0) {
@@ -339,8 +342,11 @@ public final class ConsoleReporter {
     // Show configuration
     output.printf("Configuration:%n");
     output.printf("  Verbosity: %s%n", report.getConfiguration().getVerbosity());
-    output.printf("  Colors: %s%n", report.getConfiguration().isColorOutput() ? "enabled" : "disabled");
-    output.printf("  Progress: %s%n", report.getConfiguration().isProgressReporting() ? "enabled" : "disabled");
+    output.printf(
+        "  Colors: %s%n", report.getConfiguration().isColorOutput() ? "enabled" : "disabled");
+    output.printf(
+        "  Progress: %s%n",
+        report.getConfiguration().isProgressReporting() ? "enabled" : "disabled");
     output.println();
 
     // Show test breakdown
@@ -377,8 +383,10 @@ public final class ConsoleReporter {
       final ProgressReporter.OperationStats stat = entry.getValue();
 
       output.printf("  %s:%n", operation);
-      output.printf("    Count: %d (%.1f%% success)%n", stat.getCount(), stat.getSuccessRate() * 100);
-      output.printf("    Timing: avg=%s, min=%s, max=%s%n",
+      output.printf(
+          "    Count: %d (%.1f%% success)%n", stat.getCount(), stat.getSuccessRate() * 100);
+      output.printf(
+          "    Timing: avg=%s, min=%s, max=%s%n",
           formatDuration(stat.getAverageDuration()),
           formatDuration(stat.getMinDuration()),
           formatDuration(stat.getMaxDuration()));
@@ -389,28 +397,32 @@ public final class ConsoleReporter {
     output.println();
     output.println("─".repeat(80));
 
-    final String exitCodeColor = switch (exitCode) {
-      case 0 -> ConsoleColors.GREEN;
-      case 1 -> ConsoleColors.YELLOW;
-      default -> ConsoleColors.RED;
-    };
+    final String exitCodeColor =
+        switch (exitCode) {
+          case 0 -> ConsoleColors.GREEN;
+          case 1 -> ConsoleColors.YELLOW;
+          default -> ConsoleColors.RED;
+        };
 
-    final String exitCodeMessage = switch (exitCode) {
-      case 0 -> "All tests passed successfully";
-      case 1 -> "Tests completed with warnings";
-      case 2 -> "Tests failed or encountered errors";
-      default -> "Unknown status";
-    };
+    final String exitCodeMessage =
+        switch (exitCode) {
+          case 0 -> "All tests passed successfully";
+          case 1 -> "Tests completed with warnings";
+          case 2 -> "Tests failed or encountered errors";
+          default -> "Unknown status";
+        };
 
     if (useColors) {
-      output.printf("Exit Code: %s (%s)%n",
+      output.printf(
+          "Exit Code: %s (%s)%n",
           colorize(String.valueOf(exitCode), exitCodeColor),
           colorize(exitCodeMessage, exitCodeColor));
     } else {
       output.printf("Exit Code: %d (%s)%n", exitCode, exitCodeMessage);
     }
 
-    final java.time.Duration reportDuration = java.time.Duration.between(reportStart, Instant.now());
+    final java.time.Duration reportDuration =
+        java.time.Duration.between(reportStart, Instant.now());
     output.printf("Report generated in %s%n", formatDuration(reportDuration));
     output.printf("Analysis completed at %s%n", Instant.now());
   }

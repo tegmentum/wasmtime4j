@@ -111,13 +111,13 @@ public final class ReportTemplate {
     if (templateType == TemplateType.CSV && !configuration.getOutputConfig().isGenerateCsv()) {
       return false;
     }
-    if (templateType == TemplateType.CONSOLE && !configuration.getOutputConfig().isGenerateConsole()) {
+    if (templateType == TemplateType.CONSOLE
+        && !configuration.getOutputConfig().isGenerateConsole()) {
       return false;
     }
 
     // Check if all required components are enabled in configuration
-    return components.stream().allMatch(component ->
-        component.isCompatibleWith(configuration));
+    return components.stream().allMatch(component -> component.isCompatibleWith(configuration));
   }
 
   /**
@@ -128,16 +128,16 @@ public final class ReportTemplate {
   public static ReportTemplate defaultHtmlTemplate() {
     return new Builder("default-html", "Default HTML Report Template")
         .templateType(TemplateType.HTML)
-        .components(List.of(
-            TemplateComponent.createHeader("header", "Report Header"),
-            TemplateComponent.createSummary("summary", "Executive Summary"),
-            TemplateComponent.createMetadata("metadata", "Report Metadata"),
-            TemplateComponent.createBehavioralSection("behavioral", "Behavioral Analysis"),
-            TemplateComponent.createPerformanceSection("performance", "Performance Analysis"),
-            TemplateComponent.createCoverageSection("coverage", "Coverage Analysis"),
-            TemplateComponent.createRecommendations("recommendations", "Recommendations"),
-            TemplateComponent.createFooter("footer", "Report Footer")
-        ))
+        .components(
+            List.of(
+                TemplateComponent.createHeader("header", "Report Header"),
+                TemplateComponent.createSummary("summary", "Executive Summary"),
+                TemplateComponent.createMetadata("metadata", "Report Metadata"),
+                TemplateComponent.createBehavioralSection("behavioral", "Behavioral Analysis"),
+                TemplateComponent.createPerformanceSection("performance", "Performance Analysis"),
+                TemplateComponent.createCoverageSection("coverage", "Coverage Analysis"),
+                TemplateComponent.createRecommendations("recommendations", "Recommendations"),
+                TemplateComponent.createFooter("footer", "Report Footer")))
         .metadata(TemplateMetadata.defaultMetadata())
         .build();
   }
@@ -150,10 +150,10 @@ public final class ReportTemplate {
   public static ReportTemplate minimalTemplate() {
     return new Builder("minimal", "Minimal Report Template")
         .templateType(TemplateType.HTML)
-        .components(List.of(
-            TemplateComponent.createSummary("summary", "Summary"),
-            TemplateComponent.createRecommendations("recommendations", "Key Recommendations")
-        ))
+        .components(
+            List.of(
+                TemplateComponent.createSummary("summary", "Summary"),
+                TemplateComponent.createRecommendations("recommendations", "Key Recommendations")))
         .metadata(TemplateMetadata.defaultMetadata())
         .build();
   }
@@ -166,21 +166,21 @@ public final class ReportTemplate {
   public static ReportTemplate comprehensiveTemplate() {
     return new Builder("comprehensive", "Comprehensive Report Template")
         .templateType(TemplateType.HTML)
-        .components(List.of(
-            TemplateComponent.createHeader("header", "Report Header"),
-            TemplateComponent.createTitlePage("title", "Title Page"),
-            TemplateComponent.createTableOfContents("toc", "Table of Contents"),
-            TemplateComponent.createExecutiveSummary("executive", "Executive Summary"),
-            TemplateComponent.createSummary("summary", "Summary"),
-            TemplateComponent.createMetadata("metadata", "Report Metadata"),
-            TemplateComponent.createBehavioralSection("behavioral", "Behavioral Analysis"),
-            TemplateComponent.createPerformanceSection("performance", "Performance Analysis"),
-            TemplateComponent.createCoverageSection("coverage", "Coverage Analysis"),
-            TemplateComponent.createInsights("insights", "Key Insights"),
-            TemplateComponent.createRecommendations("recommendations", "Recommendations"),
-            TemplateComponent.createAppendix("appendix", "Appendix"),
-            TemplateComponent.createFooter("footer", "Report Footer")
-        ))
+        .components(
+            List.of(
+                TemplateComponent.createHeader("header", "Report Header"),
+                TemplateComponent.createTitlePage("title", "Title Page"),
+                TemplateComponent.createTableOfContents("toc", "Table of Contents"),
+                TemplateComponent.createExecutiveSummary("executive", "Executive Summary"),
+                TemplateComponent.createSummary("summary", "Summary"),
+                TemplateComponent.createMetadata("metadata", "Report Metadata"),
+                TemplateComponent.createBehavioralSection("behavioral", "Behavioral Analysis"),
+                TemplateComponent.createPerformanceSection("performance", "Performance Analysis"),
+                TemplateComponent.createCoverageSection("coverage", "Coverage Analysis"),
+                TemplateComponent.createInsights("insights", "Key Insights"),
+                TemplateComponent.createRecommendations("recommendations", "Recommendations"),
+                TemplateComponent.createAppendix("appendix", "Appendix"),
+                TemplateComponent.createFooter("footer", "Report Footer")))
         .metadata(TemplateMetadata.defaultMetadata())
         .build();
   }
@@ -195,29 +195,35 @@ public final class ReportTemplate {
     }
 
     final ReportTemplate that = (ReportTemplate) obj;
-    return Objects.equals(templateId, that.templateId) &&
-           Objects.equals(templateName, that.templateName) &&
-           templateType == that.templateType &&
-           Objects.equals(components, that.components) &&
-           Objects.equals(templateData, that.templateData) &&
-           Objects.equals(metadata, that.metadata) &&
-           Objects.equals(parentTemplate, that.parentTemplate);
+    return Objects.equals(templateId, that.templateId)
+        && Objects.equals(templateName, that.templateName)
+        && templateType == that.templateType
+        && Objects.equals(components, that.components)
+        && Objects.equals(templateData, that.templateData)
+        && Objects.equals(metadata, that.metadata)
+        && Objects.equals(parentTemplate, that.parentTemplate);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(templateId, templateName, templateType, components,
-                       templateData, metadata, parentTemplate);
+    return Objects.hash(
+        templateId, templateName, templateType, components, templateData, metadata, parentTemplate);
   }
 
   @Override
   public String toString() {
-    return "ReportTemplate{" +
-           "id='" + templateId + '\'' +
-           ", name='" + templateName + '\'' +
-           ", type=" + templateType +
-           ", components=" + components.size() +
-           '}';
+    return "ReportTemplate{"
+        + "id='"
+        + templateId
+        + '\''
+        + ", name='"
+        + templateName
+        + '\''
+        + ", type="
+        + templateType
+        + ", components="
+        + components.size()
+        + '}';
   }
 
   /** Builder for ReportTemplate. */
@@ -279,11 +285,15 @@ final class TemplateComponent {
 
   private TemplateComponent(final Builder builder) {
     this.componentId = Objects.requireNonNull(builder.componentId, "componentId cannot be null");
-    this.componentName = Objects.requireNonNull(builder.componentName, "componentName cannot be null");
-    this.componentType = Objects.requireNonNull(builder.componentType, "componentType cannot be null");
-    this.templateContent = Objects.requireNonNull(builder.templateContent, "templateContent cannot be null");
+    this.componentName =
+        Objects.requireNonNull(builder.componentName, "componentName cannot be null");
+    this.componentType =
+        Objects.requireNonNull(builder.componentType, "componentType cannot be null");
+    this.templateContent =
+        Objects.requireNonNull(builder.templateContent, "templateContent cannot be null");
     this.componentData = Map.copyOf(builder.componentData);
-    this.configuration = Objects.requireNonNull(builder.configuration, "configuration cannot be null");
+    this.configuration =
+        Objects.requireNonNull(builder.configuration, "configuration cannot be null");
     this.childComponents = List.copyOf(builder.childComponents);
     this.required = builder.required;
   }
@@ -336,15 +346,22 @@ final class TemplateComponent {
       case PERFORMANCE -> contentConfig.isIncludePerformanceAnalysis();
       case COVERAGE -> contentConfig.isIncludeCoverageAnalysis();
       case RECOMMENDATIONS -> contentConfig.isIncludeRecommendations();
-      case HEADER, FOOTER, TITLE_PAGE, TABLE_OF_CONTENTS, EXECUTIVE_SUMMARY,
-           INSIGHTS, APPENDIX, CUSTOM -> true; // Always compatible
+      case HEADER,
+          FOOTER,
+          TITLE_PAGE,
+          TABLE_OF_CONTENTS,
+          EXECUTIVE_SUMMARY,
+          INSIGHTS,
+          APPENDIX,
+          CUSTOM -> true; // Always compatible
     };
   }
 
   /** Creates a header component. */
   public static TemplateComponent createHeader(final String id, final String name) {
     return new Builder(id, name, ComponentType.HEADER)
-        .templateContent("""
+        .templateContent(
+            """
             <header class="report-header">
               <h1>${reportTitle}</h1>
               <div class="report-info">
@@ -361,7 +378,8 @@ final class TemplateComponent {
   /** Creates a summary component. */
   public static TemplateComponent createSummary(final String id, final String name) {
     return new Builder(id, name, ComponentType.SUMMARY)
-        .templateContent("""
+        .templateContent(
+            """
             <section class="summary">
               <h2>Summary</h2>
               <div class="summary-stats">
@@ -392,7 +410,8 @@ final class TemplateComponent {
   /** Creates a metadata component. */
   public static TemplateComponent createMetadata(final String id, final String name) {
     return new Builder(id, name, ComponentType.METADATA)
-        .templateContent("""
+        .templateContent(
+            """
             <section class="metadata">
               <h2>Report Metadata</h2>
               <table class="metadata-table">
@@ -412,7 +431,8 @@ final class TemplateComponent {
   /** Creates a behavioral analysis component. */
   public static TemplateComponent createBehavioralSection(final String id, final String name) {
     return new Builder(id, name, ComponentType.BEHAVIORAL)
-        .templateContent("""
+        .templateContent(
+            """
             <section class="behavioral-analysis">
               <h2>Behavioral Analysis</h2>
               <#if testsWithBehavioralIssues?has_content>
@@ -458,7 +478,8 @@ final class TemplateComponent {
   /** Creates a performance analysis component. */
   public static TemplateComponent createPerformanceSection(final String id, final String name) {
     return new Builder(id, name, ComponentType.PERFORMANCE)
-        .templateContent("""
+        .templateContent(
+            """
             <section class="performance-analysis">
               <h2>Performance Analysis</h2>
               <#if testsWithPerformanceIssues?has_content>
@@ -495,7 +516,8 @@ final class TemplateComponent {
   /** Creates a coverage analysis component. */
   public static TemplateComponent createCoverageSection(final String id, final String name) {
     return new Builder(id, name, ComponentType.COVERAGE)
-        .templateContent("""
+        .templateContent(
+            """
             <section class="coverage-analysis">
               <h2>Coverage Analysis</h2>
               <#if testsWithCoverageGaps?has_content>
@@ -529,7 +551,8 @@ final class TemplateComponent {
   /** Creates a recommendations component. */
   public static TemplateComponent createRecommendations(final String id, final String name) {
     return new Builder(id, name, ComponentType.RECOMMENDATIONS)
-        .templateContent("""
+        .templateContent(
+            """
             <section class="recommendations">
               <h2>Recommendations</h2>
               <#if globalRecommendations.present>
@@ -579,7 +602,8 @@ final class TemplateComponent {
   /** Creates a footer component. */
   public static TemplateComponent createFooter(final String id, final String name) {
     return new Builder(id, name, ComponentType.FOOTER)
-        .templateContent("""
+        .templateContent(
+            """
             <footer class="report-footer">
               <div class="footer-content">
                 <div class="generated-info">
@@ -599,7 +623,8 @@ final class TemplateComponent {
   /** Creates additional template components for comprehensive reports. */
   public static TemplateComponent createTitlePage(final String id, final String name) {
     return new Builder(id, name, ComponentType.TITLE_PAGE)
-        .templateContent("""
+        .templateContent(
+            """
             <div class="title-page">
               <h1 class="report-title">${reportTitle}</h1>
               <h2 class="report-subtitle">${testSuiteName} Comparison Analysis</h2>
@@ -617,7 +642,8 @@ final class TemplateComponent {
 
   public static TemplateComponent createTableOfContents(final String id, final String name) {
     return new Builder(id, name, ComponentType.TABLE_OF_CONTENTS)
-        .templateContent("""
+        .templateContent(
+            """
             <div class="table-of-contents">
               <h2>Table of Contents</h2>
               <ul class="toc-list">
@@ -637,7 +663,8 @@ final class TemplateComponent {
 
   public static TemplateComponent createExecutiveSummary(final String id, final String name) {
     return new Builder(id, name, ComponentType.EXECUTIVE_SUMMARY)
-        .templateContent("""
+        .templateContent(
+            """
             <section class="executive-summary">
               <h2>Executive Summary</h2>
               <div class="executive-content">
@@ -678,7 +705,8 @@ final class TemplateComponent {
 
   public static TemplateComponent createInsights(final String id, final String name) {
     return new Builder(id, name, ComponentType.INSIGHTS)
-        .templateContent("""
+        .templateContent(
+            """
             <section class="insights">
               <h2>Key Insights</h2>
               <div class="insights-content">
@@ -694,7 +722,8 @@ final class TemplateComponent {
 
   public static TemplateComponent createAppendix(final String id, final String name) {
     return new Builder(id, name, ComponentType.APPENDIX)
-        .templateContent("""
+        .templateContent(
+            """
             <section class="appendix">
               <h2>Appendix</h2>
               <div class="appendix-content">
@@ -718,30 +747,43 @@ final class TemplateComponent {
     }
 
     final TemplateComponent that = (TemplateComponent) obj;
-    return required == that.required &&
-           Objects.equals(componentId, that.componentId) &&
-           Objects.equals(componentName, that.componentName) &&
-           componentType == that.componentType &&
-           Objects.equals(templateContent, that.templateContent) &&
-           Objects.equals(componentData, that.componentData) &&
-           Objects.equals(configuration, that.configuration) &&
-           Objects.equals(childComponents, that.childComponents);
+    return required == that.required
+        && Objects.equals(componentId, that.componentId)
+        && Objects.equals(componentName, that.componentName)
+        && componentType == that.componentType
+        && Objects.equals(templateContent, that.templateContent)
+        && Objects.equals(componentData, that.componentData)
+        && Objects.equals(configuration, that.configuration)
+        && Objects.equals(childComponents, that.childComponents);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(componentId, componentName, componentType, templateContent,
-                       componentData, configuration, childComponents, required);
+    return Objects.hash(
+        componentId,
+        componentName,
+        componentType,
+        templateContent,
+        componentData,
+        configuration,
+        childComponents,
+        required);
   }
 
   @Override
   public String toString() {
-    return "TemplateComponent{" +
-           "id='" + componentId + '\'' +
-           ", name='" + componentName + '\'' +
-           ", type=" + componentType +
-           ", required=" + required +
-           '}';
+    return "TemplateComponent{"
+        + "id='"
+        + componentId
+        + '\''
+        + ", name='"
+        + componentName
+        + '\''
+        + ", type="
+        + componentType
+        + ", required="
+        + required
+        + '}';
   }
 
   /** Builder for TemplateComponent. */
@@ -755,14 +797,16 @@ final class TemplateComponent {
     private List<TemplateComponent> childComponents = Collections.emptyList();
     private boolean required = false;
 
-    public Builder(final String componentId, final String componentName, final ComponentType componentType) {
+    public Builder(
+        final String componentId, final String componentName, final ComponentType componentType) {
       this.componentId = Objects.requireNonNull(componentId, "componentId cannot be null");
       this.componentName = Objects.requireNonNull(componentName, "componentName cannot be null");
       this.componentType = Objects.requireNonNull(componentType, "componentType cannot be null");
     }
 
     public Builder templateContent(final String templateContent) {
-      this.templateContent = Objects.requireNonNull(templateContent, "templateContent cannot be null");
+      this.templateContent =
+          Objects.requireNonNull(templateContent, "templateContent cannot be null");
       return this;
     }
 
@@ -777,7 +821,8 @@ final class TemplateComponent {
     }
 
     public Builder childComponents(final List<TemplateComponent> childComponents) {
-      this.childComponents = Objects.requireNonNull(childComponents, "childComponents cannot be null");
+      this.childComponents =
+          Objects.requireNonNull(childComponents, "childComponents cannot be null");
       return this;
     }
 
@@ -893,10 +938,7 @@ final class ComponentConfiguration {
 
   /** Creates default component configuration. */
   public static ComponentConfiguration defaultConfig() {
-    return new Builder()
-        .conditional(false)
-        .order(0)
-        .build();
+    return new Builder().conditional(false).order(0).build();
   }
 
   @Override
@@ -909,11 +951,11 @@ final class ComponentConfiguration {
     }
 
     final ComponentConfiguration that = (ComponentConfiguration) obj;
-    return conditional == that.conditional &&
-           order == that.order &&
-           Objects.equals(condition, that.condition) &&
-           Objects.equals(requiredData, that.requiredData) &&
-           Objects.equals(defaultData, that.defaultData);
+    return conditional == that.conditional
+        && order == that.order
+        && Objects.equals(condition, that.condition)
+        && Objects.equals(requiredData, that.requiredData)
+        && Objects.equals(defaultData, that.defaultData);
   }
 
   @Override
@@ -923,10 +965,7 @@ final class ComponentConfiguration {
 
   @Override
   public String toString() {
-    return "ComponentConfiguration{" +
-           "conditional=" + conditional +
-           ", order=" + order +
-           '}';
+    return "ComponentConfiguration{" + "conditional=" + conditional + ", order=" + order + '}';
   }
 
   /** Builder for ComponentConfiguration. */
@@ -1024,11 +1063,11 @@ final class TemplateMetadata {
     }
 
     final TemplateMetadata that = (TemplateMetadata) obj;
-    return Objects.equals(version, that.version) &&
-           Objects.equals(author, that.author) &&
-           Objects.equals(description, that.description) &&
-           Objects.equals(supportedFormats, that.supportedFormats) &&
-           Objects.equals(customMetadata, that.customMetadata);
+    return Objects.equals(version, that.version)
+        && Objects.equals(author, that.author)
+        && Objects.equals(description, that.description)
+        && Objects.equals(supportedFormats, that.supportedFormats)
+        && Objects.equals(customMetadata, that.customMetadata);
   }
 
   @Override
@@ -1038,11 +1077,16 @@ final class TemplateMetadata {
 
   @Override
   public String toString() {
-    return "TemplateMetadata{" +
-           "version='" + version + '\'' +
-           ", author='" + author + '\'' +
-           ", formats=" + supportedFormats +
-           '}';
+    return "TemplateMetadata{"
+        + "version='"
+        + version
+        + '\''
+        + ", author='"
+        + author
+        + '\''
+        + ", formats="
+        + supportedFormats
+        + '}';
   }
 
   /** Builder for TemplateMetadata. */
@@ -1069,7 +1113,8 @@ final class TemplateMetadata {
     }
 
     public Builder supportedFormats(final List<String> supportedFormats) {
-      this.supportedFormats = Objects.requireNonNull(supportedFormats, "supportedFormats cannot be null");
+      this.supportedFormats =
+          Objects.requireNonNull(supportedFormats, "supportedFormats cannot be null");
       return this;
     }
 
@@ -1090,7 +1135,8 @@ final class TemplateValidationResult {
   private final List<String> errors;
   private final List<String> warnings;
 
-  public TemplateValidationResult(final boolean valid, final List<String> errors, final List<String> warnings) {
+  public TemplateValidationResult(
+      final boolean valid, final List<String> errors, final List<String> warnings) {
     this.valid = valid;
     this.errors = List.copyOf(errors);
     this.warnings = List.copyOf(warnings);
@@ -1114,11 +1160,14 @@ final class TemplateValidationResult {
 
   @Override
   public String toString() {
-    return "TemplateValidationResult{" +
-           "valid=" + valid +
-           ", errors=" + errors.size() +
-           ", warnings=" + warnings.size() +
-           '}';
+    return "TemplateValidationResult{"
+        + "valid="
+        + valid
+        + ", errors="
+        + errors.size()
+        + ", warnings="
+        + warnings.size()
+        + '}';
   }
 }
 
@@ -1142,8 +1191,9 @@ final class TemplateValidator {
     }
 
     // Validate required components
-    final boolean hasSummary = template.getComponents().stream()
-        .anyMatch(component -> component.getComponentType() == ComponentType.SUMMARY);
+    final boolean hasSummary =
+        template.getComponents().stream()
+            .anyMatch(component -> component.getComponentType() == ComponentType.SUMMARY);
     if (!hasSummary) {
       warnings.add("Template should include a summary component");
     }

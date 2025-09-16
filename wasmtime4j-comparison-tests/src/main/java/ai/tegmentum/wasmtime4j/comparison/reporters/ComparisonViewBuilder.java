@@ -7,13 +7,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
  * Builder for creating interactive side-by-side comparison views with diff highlighting,
- * runtime-specific output analysis, and behavioral discrepancy visualization. Supports
- * both text-based and structured data comparisons with detailed change tracking.
+ * runtime-specific output analysis, and behavioral discrepancy visualization. Supports both
+ * text-based and structured data comparisons with detailed change tracking.
  *
  * @since 1.0.0
  */
@@ -44,7 +43,8 @@ public final class ComparisonViewBuilder {
     comparisonView.put("diffAnalysis", diffAnalysis);
 
     // Behavioral discrepancies
-    final List<Map<String, Object>> discrepancies = createDiscrepancyViews(testResult.getDiscrepancies());
+    final List<Map<String, Object>> discrepancies =
+        createDiscrepancyViews(testResult.getDiscrepancies());
     comparisonView.put("discrepancies", discrepancies);
 
     // Performance comparison
@@ -63,7 +63,8 @@ public final class ComparisonViewBuilder {
   private List<Map<String, Object>> createRuntimePanels(final TestComparisonResult testResult) {
     final List<Map<String, Object>> panels = new ArrayList<>();
 
-    for (final Map.Entry<RuntimeType, TestExecutionResult> entry : testResult.getRuntimeResults().entrySet()) {
+    for (final Map.Entry<RuntimeType, TestExecutionResult> entry :
+        testResult.getRuntimeResults().entrySet()) {
       final RuntimeType runtime = entry.getKey();
       final TestExecutionResult result = entry.getValue();
 
@@ -102,7 +103,8 @@ public final class ComparisonViewBuilder {
   private Map<String, Object> createDiffAnalysis(final TestComparisonResult testResult) {
     final Map<String, Object> diffAnalysis = new HashMap<>();
 
-    final List<TestExecutionResult> results = new ArrayList<>(testResult.getRuntimeResults().values());
+    final List<TestExecutionResult> results =
+        new ArrayList<>(testResult.getRuntimeResults().values());
     if (results.size() < 2) {
       diffAnalysis.put("hasDifferences", false);
       diffAnalysis.put("message", "Need at least 2 runtimes to compare");
@@ -122,8 +124,9 @@ public final class ComparisonViewBuilder {
     }
 
     diffAnalysis.put("comparisons", comparisons);
-    diffAnalysis.put("hasDifferences", comparisons.stream()
-        .anyMatch(comp -> (Boolean) comp.get("hasDifferences")));
+    diffAnalysis.put(
+        "hasDifferences",
+        comparisons.stream().anyMatch(comp -> (Boolean) comp.get("hasDifferences")));
 
     // Overall diff summary
     final Map<String, Object> summary = createDiffSummary(comparisons);
@@ -140,8 +143,7 @@ public final class ComparisonViewBuilder {
    * @return pairwise comparison data
    */
   private Map<String, Object> createPairwiseComparison(
-      final TestExecutionResult result1,
-      final TestExecutionResult result2) {
+      final TestExecutionResult result1, final TestExecutionResult result2) {
 
     final Map<String, Object> comparison = new HashMap<>();
 
@@ -153,23 +155,30 @@ public final class ComparisonViewBuilder {
     comparison.put("outputDiff", outputDiff.toMap());
 
     // Error message comparison
-    final DiffResult errorDiff = computeTextDiff(result1.getErrorMessage(), result2.getErrorMessage());
+    final DiffResult errorDiff =
+        computeTextDiff(result1.getErrorMessage(), result2.getErrorMessage());
     comparison.put("errorDiff", errorDiff.toMap());
 
     // Execution time comparison
-    final long timeDiff = result2.getExecutionTime().toMillis() - result1.getExecutionTime().toMillis();
+    final long timeDiff =
+        result2.getExecutionTime().toMillis() - result1.getExecutionTime().toMillis();
     comparison.put("executionTimeDiff", timeDiff);
-    comparison.put("executionTimeRatio",
-        result1.getExecutionTime().toMillis() > 0 ?
-        (double) result2.getExecutionTime().toMillis() / result1.getExecutionTime().toMillis() : 0.0);
+    comparison.put(
+        "executionTimeRatio",
+        result1.getExecutionTime().toMillis() > 0
+            ? (double) result2.getExecutionTime().toMillis() / result1.getExecutionTime().toMillis()
+            : 0.0);
 
     // Success status comparison
     comparison.put("successDiff", result1.isSuccessful() != result2.isSuccessful());
 
     // Overall differences
-    comparison.put("hasDifferences",
-        outputDiff.hasDifferences() || errorDiff.hasDifferences() ||
-        timeDiff != 0 || result1.isSuccessful() != result2.isSuccessful());
+    comparison.put(
+        "hasDifferences",
+        outputDiff.hasDifferences()
+            || errorDiff.hasDifferences()
+            || timeDiff != 0
+            || result1.isSuccessful() != result2.isSuccessful());
 
     return comparison;
   }
@@ -203,8 +212,8 @@ public final class ComparisonViewBuilder {
       }
     }
 
-    final boolean hasDifferences = diffLines.stream()
-        .anyMatch(line -> line.getType() != DiffType.UNCHANGED);
+    final boolean hasDifferences =
+        diffLines.stream().anyMatch(line -> line.getType() != DiffType.UNCHANGED);
 
     return new DiffResult(diffLines, hasDifferences);
   }
@@ -219,14 +228,16 @@ public final class ComparisonViewBuilder {
     final Map<String, Object> summary = new HashMap<>();
 
     final long totalComparisons = comparisons.size();
-    final long comparisonsWithDifferences = comparisons.stream()
-        .mapToLong(comp -> (Boolean) comp.get("hasDifferences") ? 1 : 0)
-        .sum();
+    final long comparisonsWithDifferences =
+        comparisons.stream().mapToLong(comp -> (Boolean) comp.get("hasDifferences") ? 1 : 0).sum();
 
     summary.put("totalComparisons", totalComparisons);
     summary.put("comparisonsWithDifferences", comparisonsWithDifferences);
-    summary.put("differencePercentage",
-        totalComparisons > 0 ? (double) comparisonsWithDifferences / totalComparisons * 100.0 : 0.0);
+    summary.put(
+        "differencePercentage",
+        totalComparisons > 0
+            ? (double) comparisonsWithDifferences / totalComparisons * 100.0
+            : 0.0);
 
     // Categorize differences
     final Map<String, Integer> differenceTypes = new HashMap<>();
@@ -266,10 +277,9 @@ public final class ComparisonViewBuilder {
    * @param discrepancies the list of behavioral discrepancies
    * @return list of discrepancy view configurations
    */
-  private List<Map<String, Object>> createDiscrepancyViews(final List<BehavioralDiscrepancy> discrepancies) {
-    return discrepancies.stream()
-        .map(this::createDiscrepancyView)
-        .toList();
+  private List<Map<String, Object>> createDiscrepancyViews(
+      final List<BehavioralDiscrepancy> discrepancies) {
+    return discrepancies.stream().map(this::createDiscrepancyView).toList();
   }
 
   /**
@@ -307,16 +317,22 @@ public final class ComparisonViewBuilder {
 
     // Extract execution times
     final Map<String, Long> executionTimes = new HashMap<>();
-    testResult.getRuntimeResults().forEach((runtime, result) ->
-        executionTimes.put(runtime.toString(), result.getExecutionTime().toMillis()));
+    testResult
+        .getRuntimeResults()
+        .forEach(
+            (runtime, result) ->
+                executionTimes.put(runtime.toString(), result.getExecutionTime().toMillis()));
 
     comparison.put("executionTimes", executionTimes);
 
     // Calculate performance metrics
     if (!executionTimes.isEmpty()) {
-      final long minTime = executionTimes.values().stream().mapToLong(Long::longValue).min().orElse(0);
-      final long maxTime = executionTimes.values().stream().mapToLong(Long::longValue).max().orElse(0);
-      final double avgTime = executionTimes.values().stream().mapToLong(Long::longValue).average().orElse(0.0);
+      final long minTime =
+          executionTimes.values().stream().mapToLong(Long::longValue).min().orElse(0);
+      final long maxTime =
+          executionTimes.values().stream().mapToLong(Long::longValue).max().orElse(0);
+      final double avgTime =
+          executionTimes.values().stream().mapToLong(Long::longValue).average().orElse(0.0);
 
       comparison.put("minExecutionTime", minTime);
       comparison.put("maxExecutionTime", maxTime);
@@ -325,8 +341,9 @@ public final class ComparisonViewBuilder {
 
       // Performance ratios relative to fastest
       final Map<String, Double> performanceRatios = new HashMap<>();
-      executionTimes.forEach((runtime, time) ->
-          performanceRatios.put(runtime, minTime > 0 ? (double) time / minTime : 1.0));
+      executionTimes.forEach(
+          (runtime, time) ->
+              performanceRatios.put(runtime, minTime > 0 ? (double) time / minTime : 1.0));
       comparison.put("performanceRatios", performanceRatios);
     }
 
@@ -421,13 +438,14 @@ public final class ComparisonViewBuilder {
    */
   private List<Map<String, Object>> formatMetricsForDisplay(final Map<String, Object> metrics) {
     return metrics.entrySet().stream()
-        .map(entry -> {
-          final Map<String, Object> metric = new HashMap<>();
-          metric.put("name", entry.getKey());
-          metric.put("value", entry.getValue());
-          metric.put("type", entry.getValue().getClass().getSimpleName());
-          return metric;
-        })
+        .map(
+            entry -> {
+              final Map<String, Object> metric = new HashMap<>();
+              metric.put("name", entry.getKey());
+              metric.put("value", entry.getValue());
+              metric.put("type", entry.getValue().getClass().getSimpleName());
+              return metric;
+            })
         .toList();
   }
 
@@ -513,7 +531,8 @@ final class DiffLine {
   private final String rightText;
   private final DiffType type;
 
-  public DiffLine(final int lineNumber, final String leftText, final String rightText, final DiffType type) {
+  public DiffLine(
+      final int lineNumber, final String leftText, final String rightText, final DiffType type) {
     this.lineNumber = lineNumber;
     this.leftText = leftText;
     this.rightText = rightText;
@@ -556,10 +575,10 @@ final class DiffLine {
     }
 
     final DiffLine diffLine = (DiffLine) obj;
-    return lineNumber == diffLine.lineNumber &&
-           Objects.equals(leftText, diffLine.leftText) &&
-           Objects.equals(rightText, diffLine.rightText) &&
-           type == diffLine.type;
+    return lineNumber == diffLine.lineNumber
+        && Objects.equals(leftText, diffLine.leftText)
+        && Objects.equals(rightText, diffLine.rightText)
+        && type == diffLine.type;
   }
 
   @Override
@@ -569,10 +588,7 @@ final class DiffLine {
 
   @Override
   public String toString() {
-    return "DiffLine{" +
-           "lineNumber=" + lineNumber +
-           ", type=" + type +
-           '}';
+    return "DiffLine{" + "lineNumber=" + lineNumber + ", type=" + type + '}';
   }
 }
 
@@ -623,10 +639,18 @@ final class DiffResult {
     final Map<String, Object> map = new HashMap<>();
     map.put("lines", diffLines.stream().map(DiffLine::toMap).toList());
     map.put("hasDifferences", hasDifferences);
-    map.put("addedLines", diffLines.stream().mapToLong(line -> line.getType() == DiffType.ADDED ? 1 : 0).sum());
-    map.put("removedLines", diffLines.stream().mapToLong(line -> line.getType() == DiffType.REMOVED ? 1 : 0).sum());
-    map.put("modifiedLines", diffLines.stream().mapToLong(line -> line.getType() == DiffType.MODIFIED ? 1 : 0).sum());
-    map.put("unchangedLines", diffLines.stream().mapToLong(line -> line.getType() == DiffType.UNCHANGED ? 1 : 0).sum());
+    map.put(
+        "addedLines",
+        diffLines.stream().mapToLong(line -> line.getType() == DiffType.ADDED ? 1 : 0).sum());
+    map.put(
+        "removedLines",
+        diffLines.stream().mapToLong(line -> line.getType() == DiffType.REMOVED ? 1 : 0).sum());
+    map.put(
+        "modifiedLines",
+        diffLines.stream().mapToLong(line -> line.getType() == DiffType.MODIFIED ? 1 : 0).sum());
+    map.put(
+        "unchangedLines",
+        diffLines.stream().mapToLong(line -> line.getType() == DiffType.UNCHANGED ? 1 : 0).sum());
     return map;
   }
 
@@ -640,8 +664,7 @@ final class DiffResult {
     }
 
     final DiffResult that = (DiffResult) obj;
-    return hasDifferences == that.hasDifferences &&
-           Objects.equals(diffLines, that.diffLines);
+    return hasDifferences == that.hasDifferences && Objects.equals(diffLines, that.diffLines);
   }
 
   @Override
@@ -651,9 +674,6 @@ final class DiffResult {
 
   @Override
   public String toString() {
-    return "DiffResult{" +
-           "lines=" + diffLines.size() +
-           ", hasDifferences=" + hasDifferences +
-           '}';
+    return "DiffResult{" + "lines=" + diffLines.size() + ", hasDifferences=" + hasDifferences + '}';
   }
 }

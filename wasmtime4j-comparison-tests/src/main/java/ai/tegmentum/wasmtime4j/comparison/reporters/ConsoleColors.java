@@ -1,9 +1,8 @@
 package ai.tegmentum.wasmtime4j.comparison.reporters;
 
 /**
- * ANSI color codes and formatting utilities for enhanced console output.
- * Provides cross-platform color support with automatic fallback for terminals
- * that don't support colors.
+ * ANSI color codes and formatting utilities for enhanced console output. Provides cross-platform
+ * color support with automatic fallback for terminals that don't support colors.
  *
  * @since 1.0.0
  */
@@ -79,8 +78,11 @@ public final class ConsoleColors {
 
     // Check terminal type
     if (term != null) {
-      return term.contains("color") || term.contains("256") || term.equals("xterm")
-          || term.equals("screen") || term.equals("tmux");
+      return term.contains("color")
+          || term.contains("256")
+          || term.equals("xterm")
+          || term.equals("screen")
+          || term.equals("tmux");
     }
 
     if (colorTerm != null) {

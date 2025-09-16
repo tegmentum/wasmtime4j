@@ -11,8 +11,8 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 /**
- * Comprehensive unit tests for VerbosityLevel enum functionality.
- * Tests parsing, level comparison, and inclusion logic.
+ * Comprehensive unit tests for VerbosityLevel enum functionality. Tests parsing, level comparison,
+ * and inclusion logic.
  */
 final class VerbosityLevelTest {
 
@@ -58,18 +58,18 @@ final class VerbosityLevelTest {
 
   @ParameterizedTest
   @CsvSource({
-      "quiet, QUIET",
-      "q, QUIET",
-      "0, QUIET",
-      "normal, NORMAL",
-      "n, NORMAL",
-      "1, NORMAL",
-      "verbose, VERBOSE",
-      "v, VERBOSE",
-      "2, VERBOSE",
-      "debug, DEBUG",
-      "d, DEBUG",
-      "3, DEBUG"
+    "quiet, QUIET",
+    "q, QUIET",
+    "0, QUIET",
+    "normal, NORMAL",
+    "n, NORMAL",
+    "1, NORMAL",
+    "verbose, VERBOSE",
+    "v, VERBOSE",
+    "2, VERBOSE",
+    "debug, DEBUG",
+    "d, DEBUG",
+    "3, DEBUG"
   })
   void testValidParsing(final String input, final VerbosityLevel expected) {
     assertEquals(expected, VerbosityLevel.fromString(input));
@@ -77,12 +77,12 @@ final class VerbosityLevelTest {
 
   @ParameterizedTest
   @CsvSource({
-      "QUIET, QUIET",
-      "Normal, NORMAL",
-      "VERBOSE, VERBOSE",
-      "Debug, DEBUG",
-      "  quiet  , QUIET",
-      "  NORMAL  , NORMAL"
+    "QUIET, QUIET",
+    "Normal, NORMAL",
+    "VERBOSE, VERBOSE",
+    "Debug, DEBUG",
+    "  quiet  , QUIET",
+    "  NORMAL  , NORMAL"
   })
   void testCaseInsensitiveAndTrimmedParsing(final String input, final VerbosityLevel expected) {
     assertEquals(expected, VerbosityLevel.fromString(input));
@@ -103,9 +103,8 @@ final class VerbosityLevelTest {
 
   @Test
   void testParsingErrorMessage() {
-    final IllegalArgumentException exception = assertThrows(
-        IllegalArgumentException.class,
-        () -> VerbosityLevel.fromString("invalid"));
+    final IllegalArgumentException exception =
+        assertThrows(IllegalArgumentException.class, () -> VerbosityLevel.fromString("invalid"));
     assertEquals("Unknown verbosity level: invalid", exception.getMessage());
   }
 }

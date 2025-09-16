@@ -1,8 +1,8 @@
 package ai.tegmentum.wasmtime4j.comparison.reporters;
 
 /**
- * Verbosity levels for controlling the amount of output in console reporting.
- * Each level includes all output from lower levels plus additional details.
+ * Verbosity levels for controlling the amount of output in console reporting. Each level includes
+ * all output from lower levels plus additional details.
  *
  * @since 1.0.0
  */

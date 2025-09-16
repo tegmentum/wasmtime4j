@@ -5,10 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.comparison.analyzers.BehavioralAnalysisResult;
 import ai.tegmentum.wasmtime4j.comparison.analyzers.BehavioralVerdict;
-import ai.tegmentum.wasmtime4j.comparison.analyzers.CoverageAnalysisResult;
 import ai.tegmentum.wasmtime4j.comparison.analyzers.ExecutionPattern;
-import ai.tegmentum.wasmtime4j.comparison.analyzers.InsightAnalysisResult;
-import ai.tegmentum.wasmtime4j.comparison.analyzers.PerformanceAnalyzer;
 import ai.tegmentum.wasmtime4j.comparison.analyzers.RecommendationResult;
 import ai.tegmentum.wasmtime4j.comparison.analyzers.RecommendationSummary;
 import java.time.Duration;
@@ -19,8 +16,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * Comprehensive unit tests for SummaryFormatter console output formatting functionality.
- * Tests table generation, color formatting, verbosity control, and summary creation.
+ * Comprehensive unit tests for SummaryFormatter console output formatting functionality. Tests
+ * table generation, color formatting, verbosity control, and summary creation.
  */
 final class SummaryFormatterTest {
 
@@ -86,8 +83,8 @@ final class SummaryFormatterTest {
 
   @Test
   void testProgressLineFormatting() {
-    final String progressLine = formatterWithColors.formatProgressLine(
-        "test-execution", "5/10", "running");
+    final String progressLine =
+        formatterWithColors.formatProgressLine("test-execution", "5/10", "running");
 
     assertNotNull(progressLine);
     assertTrue(progressLine.contains("test-execution"));
@@ -97,8 +94,8 @@ final class SummaryFormatterTest {
 
   @Test
   void testProgressLineQuietMode() {
-    final String progressLine = quietFormatter.formatProgressLine(
-        "test-execution", "5/10", "running");
+    final String progressLine =
+        quietFormatter.formatProgressLine("test-execution", "5/10", "running");
 
     // Quiet mode should return empty string for progress
     assertTrue(progressLine.isEmpty());
@@ -106,8 +103,8 @@ final class SummaryFormatterTest {
 
   @Test
   void testProgressLineWithNullValues() {
-    final String progressLine = formatterWithColors.formatProgressLine(
-        "test-execution", null, "running");
+    final String progressLine =
+        formatterWithColors.formatProgressLine("test-execution", null, "running");
 
     assertNotNull(progressLine);
     assertTrue(progressLine.contains("test-execution"));
@@ -116,9 +113,10 @@ final class SummaryFormatterTest {
 
   @Test
   void testProgressLineWithLongTestName() {
-    final String longTestName = "very-long-test-name-that-exceeds-normal-limits-for-display-purposes";
-    final String progressLine = formatterWithColors.formatProgressLine(
-        longTestName, "1/1", "completed");
+    final String longTestName =
+        "very-long-test-name-that-exceeds-normal-limits-for-display-purposes";
+    final String progressLine =
+        formatterWithColors.formatProgressLine(longTestName, "1/1", "completed");
 
     assertNotNull(progressLine);
     // Should be truncated appropriately
@@ -153,20 +151,23 @@ final class SummaryFormatterTest {
 
   @Test
   void testHighPriorityRecommendations() {
-    final String recommendations = formatterWithColors.formatHighPriorityRecommendations(testReport);
+    final String recommendations =
+        formatterWithColors.formatHighPriorityRecommendations(testReport);
 
     assertNotNull(recommendations);
     assertTrue(recommendations.contains("High Priority Recommendations"));
     // With our test data having no high priority recommendations
-    assertTrue(recommendations.contains("No high priority recommendations found") ||
-              recommendations.contains("1."));
+    assertTrue(
+        recommendations.contains("No high priority recommendations found")
+            || recommendations.contains("1."));
   }
 
   @Test
   void testHighPriorityRecommendationsEmpty() {
     // Create a report with no recommendations
     final ComparisonReport emptyReport = createEmptyTestReport();
-    final String recommendations = formatterWithColors.formatHighPriorityRecommendations(emptyReport);
+    final String recommendations =
+        formatterWithColors.formatHighPriorityRecommendations(emptyReport);
 
     assertNotNull(recommendations);
     assertTrue(recommendations.contains("No high priority recommendations found"));
@@ -206,13 +207,13 @@ final class SummaryFormatterTest {
   @Test
   void testDurationFormatting() {
     // Test various duration formats through a complete summary
-    final ComparisonReport quickReport = new ComparisonReport.Builder("quick-test", Instant.now())
-        .endTime(Instant.now().plusMillis(500))
-        .summary(new ComparisonSummary(
-            ComparisonVerdict.PASSED, 1, 1, 0, 0, 0, 0, 0, 1.0))
-        .configuration(new ComparisonConfiguration(
-            VerbosityLevel.NORMAL, false, false, "console"))
-        .build();
+    final ComparisonReport quickReport =
+        new ComparisonReport.Builder("quick-test", Instant.now())
+            .endTime(Instant.now().plusMillis(500))
+            .summary(new ComparisonSummary(ComparisonVerdict.PASSED, 1, 1, 0, 0, 0, 0, 0, 1.0))
+            .configuration(
+                new ComparisonConfiguration(VerbosityLevel.NORMAL, false, false, "console"))
+            .build();
 
     final String summary = formatterWithColors.formatCompleteSummary(quickReport);
     assertNotNull(summary);
@@ -235,8 +236,8 @@ final class SummaryFormatterTest {
   void testVerbosityLevelFiltering() {
     // Test that different verbosity levels show different amounts of content
     final String quietSummary = quietFormatter.formatCompleteSummary(testReport);
-    final String normalSummary = new SummaryFormatter(VerbosityLevel.NORMAL, false)
-        .formatCompleteSummary(testReport);
+    final String normalSummary =
+        new SummaryFormatter(VerbosityLevel.NORMAL, false).formatCompleteSummary(testReport);
     final String verboseSummary = formatterWithoutColors.formatCompleteSummary(testReport);
     final String debugSummary = debugFormatter.formatCompleteSummary(testReport);
 
@@ -251,24 +252,24 @@ final class SummaryFormatterTest {
     final Instant endTime = Instant.now();
 
     // Create minimal test data
-    final BehavioralAnalysisResult behavioralResult = new BehavioralAnalysisResult.Builder("test-case")
-        .executionPattern(new ExecutionPattern(1, 0, 0, 1, 0, 0.1))
-        .consistencyScore(0.95)
-        .verdict(BehavioralVerdict.CONSISTENT)
-        .build();
+    final BehavioralAnalysisResult behavioralResult =
+        new BehavioralAnalysisResult.Builder("test-case")
+            .executionPattern(new ExecutionPattern(1, 0, 0, 1, 0, 0.1))
+            .consistencyScore(0.95)
+            .verdict(BehavioralVerdict.CONSISTENT)
+            .build();
 
-    final RecommendationResult recommendationResult = new RecommendationResult.Builder("test-case")
-        .summary(new RecommendationSummary(0, 0, 0, 0, Collections.emptyMap()))
-        .build();
+    final RecommendationResult recommendationResult =
+        new RecommendationResult.Builder("test-case")
+            .summary(new RecommendationSummary(0, 0, 0, 0, Collections.emptyMap()))
+            .build();
 
     return new ComparisonReport.Builder("test-report-001", startTime)
         .endTime(endTime)
         .behavioralResults(Map.of("test-case", behavioralResult))
         .recommendationResults(Map.of("test-case", recommendationResult))
-        .summary(new ComparisonSummary(
-            ComparisonVerdict.PASSED, 1, 1, 0, 0, 0, 0, 0, 0.95))
-        .configuration(new ComparisonConfiguration(
-            VerbosityLevel.VERBOSE, true, true, "console"))
+        .summary(new ComparisonSummary(ComparisonVerdict.PASSED, 1, 1, 0, 0, 0, 0, 0, 0.95))
+        .configuration(new ComparisonConfiguration(VerbosityLevel.VERBOSE, true, true, "console"))
         .build();
   }
 
@@ -278,10 +279,8 @@ final class SummaryFormatterTest {
 
     return new ComparisonReport.Builder("empty-report", startTime)
         .endTime(endTime)
-        .summary(new ComparisonSummary(
-            ComparisonVerdict.PASSED, 0, 0, 0, 0, 0, 0, 0, 0.0))
-        .configuration(new ComparisonConfiguration(
-            VerbosityLevel.NORMAL, false, false, "console"))
+        .summary(new ComparisonSummary(ComparisonVerdict.PASSED, 0, 0, 0, 0, 0, 0, 0, 0.0))
+        .configuration(new ComparisonConfiguration(VerbosityLevel.NORMAL, false, false, "console"))
         .build();
   }
 }

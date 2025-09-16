@@ -9,8 +9,8 @@ import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 
 /**
- * Comprehensive unit tests for ConsoleColors ANSI color formatting utilities.
- * Tests color code application, terminal detection, and formatting helpers.
+ * Comprehensive unit tests for ConsoleColors ANSI color formatting utilities. Tests color code
+ * application, terminal detection, and formatting helpers.
  */
 final class ConsoleColorsTest {
 

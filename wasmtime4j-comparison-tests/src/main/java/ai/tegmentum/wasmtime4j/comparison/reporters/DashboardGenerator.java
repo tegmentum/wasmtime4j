@@ -20,9 +20,9 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 
 /**
- * Interactive dashboard generator that creates a web-based interface for exploring
- * comparison results. Uses an embedded Jetty server to serve the dashboard with
- * REST API endpoints for dynamic data loading, filtering, and real-time updates.
+ * Interactive dashboard generator that creates a web-based interface for exploring comparison
+ * results. Uses an embedded Jetty server to serve the dashboard with REST API endpoints for dynamic
+ * data loading, filtering, and real-time updates.
  *
  * @since 1.0.0
  */
@@ -60,8 +60,9 @@ public final class DashboardGenerator {
       startServer();
     }
 
-    final String dashboardUrl = String.format("http://localhost:%d/dashboard/%s",
-        configuration.getPort(), report.getReportId());
+    final String dashboardUrl =
+        String.format(
+            "http://localhost:%d/dashboard/%s", configuration.getPort(), report.getReportId());
     LOGGER.info("Dashboard started: " + dashboardUrl);
 
     return URI.create(dashboardUrl);
@@ -74,13 +75,14 @@ public final class DashboardGenerator {
    * @return CompletableFuture that completes with the dashboard URI
    */
   public CompletableFuture<URI> startDashboardAsync(final ComparisonReport report) {
-    return CompletableFuture.supplyAsync(() -> {
-      try {
-        return startDashboard(report);
-      } catch (final IOException e) {
-        throw new RuntimeException("Failed to start dashboard", e);
-      }
-    });
+    return CompletableFuture.supplyAsync(
+        () -> {
+          try {
+            return startDashboard(report);
+          } catch (final IOException e) {
+            throw new RuntimeException("Failed to start dashboard", e);
+          }
+        });
   }
 
   /**
@@ -110,7 +112,8 @@ public final class DashboardGenerator {
     try {
       jettyServer = new Server(configuration.getPort());
 
-      final ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
+      final ServletContextHandler context =
+          new ServletContextHandler(ServletContextHandler.SESSIONS);
       context.setContextPath("/");
 
       // Dashboard servlet for serving HTML reports
@@ -197,7 +200,8 @@ public final class DashboardGenerator {
         htmlReporter.generateReport(report, response.getOutputStream());
       } catch (final IOException e) {
         LOGGER.log(Level.SEVERE, "Failed to generate dashboard HTML", e);
-        response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to generate dashboard");
+        response.sendError(
+            HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to generate dashboard");
       }
     }
   }
@@ -226,7 +230,8 @@ public final class DashboardGenerator {
       }
     }
 
-    private String handleApiRequest(final String endpoint, final HttpServletRequest request) throws IOException {
+    private String handleApiRequest(final String endpoint, final HttpServletRequest request)
+        throws IOException {
       final String reportId = request.getParameter("reportId");
       if (reportId == null) {
         throw new IllegalArgumentException("reportId parameter required");
@@ -242,7 +247,8 @@ public final class DashboardGenerator {
         case "/performance" -> OBJECT_MAPPER.writeValueAsString(createPerformanceData(report));
         case "/coverage" -> OBJECT_MAPPER.writeValueAsString(createCoverageData(report));
         case "/discrepancies" -> OBJECT_MAPPER.writeValueAsString(createDiscrepanciesData(report));
-        case "/recommendations" -> OBJECT_MAPPER.writeValueAsString(createRecommendationsData(report));
+        case "/recommendations" -> OBJECT_MAPPER.writeValueAsString(
+            createRecommendationsData(report));
         default -> throw new IllegalArgumentException("Unknown API endpoint: " + endpoint);
       };
     }
@@ -276,9 +282,11 @@ public final class DashboardGenerator {
       final Map<String, Object> data = new HashMap<>();
       data.put("recommendations", report.getRecommendations());
       data.put("totalRecommendations", report.getRecommendations().size());
-      data.put("highPriorityCount", report.getRecommendations().stream()
-          .mapToLong(r -> r.getHighPriorityRecommendations().size())
-          .sum());
+      data.put(
+          "highPriorityCount",
+          report.getRecommendations().stream()
+              .mapToLong(r -> r.getHighPriorityRecommendations().size())
+              .sum());
       return data;
     }
   }
@@ -311,7 +319,8 @@ public final class DashboardGenerator {
       response.setStatus(HttpServletResponse.SC_OK);
 
       try {
-        final Map<String, Object> data = createPaginatedData(report, page, pageSize, filter, sortBy);
+        final Map<String, Object> data =
+            createPaginatedData(report, page, pageSize, filter, sortBy);
         final String jsonResponse = OBJECT_MAPPER.writeValueAsString(data);
         response.getWriter().write(jsonResponse);
       } catch (final Exception e) {
@@ -320,7 +329,8 @@ public final class DashboardGenerator {
       }
     }
 
-    private int parseIntParameter(final HttpServletRequest request, final String paramName, final int defaultValue) {
+    private int parseIntParameter(
+        final HttpServletRequest request, final String paramName, final int defaultValue) {
       final String paramValue = request.getParameter(paramName);
       if (paramValue == null) {
         return defaultValue;
@@ -343,22 +353,32 @@ public final class DashboardGenerator {
 
       // Apply filtering
       if (filter != null && !filter.trim().isEmpty()) {
-        testResults = testResults.stream()
-            .filter(test -> test.getTestName().toLowerCase().contains(filter.toLowerCase()) ||
-                           test.getOverallStatus().toString().toLowerCase().contains(filter.toLowerCase()))
-            .toList();
+        testResults =
+            testResults.stream()
+                .filter(
+                    test ->
+                        test.getTestName().toLowerCase().contains(filter.toLowerCase())
+                            || test.getOverallStatus()
+                                .toString()
+                                .toLowerCase()
+                                .contains(filter.toLowerCase()))
+                .toList();
       }
 
       // Apply sorting
       if (sortBy != null) {
-        testResults = testResults.stream()
-            .sorted((a, b) -> switch (sortBy) {
-              case "name" -> a.getTestName().compareTo(b.getTestName());
-              case "status" -> a.getOverallStatus().compareTo(b.getOverallStatus());
-              case "critical" -> Boolean.compare(b.hasCriticalIssues(), a.hasCriticalIssues());
-              default -> 0;
-            })
-            .toList();
+        testResults =
+            testResults.stream()
+                .sorted(
+                    (a, b) ->
+                        switch (sortBy) {
+                          case "name" -> a.getTestName().compareTo(b.getTestName());
+                          case "status" -> a.getOverallStatus().compareTo(b.getOverallStatus());
+                          case "critical" -> Boolean.compare(
+                              b.hasCriticalIssues(), a.hasCriticalIssues());
+                          default -> 0;
+                        })
+                .toList();
       }
 
       // Apply pagination
@@ -387,8 +407,8 @@ public final class DashboardGenerator {
 
       try {
         // Parse filter criteria from request body
-        final Map<String, Object> filterCriteria = OBJECT_MAPPER.readValue(
-            request.getInputStream(), Map.class);
+        final Map<String, Object> filterCriteria =
+            OBJECT_MAPPER.readValue(request.getInputStream(), Map.class);
 
         final String reportId = (String) filterCriteria.get("reportId");
         if (reportId == null) {
@@ -412,7 +432,8 @@ public final class DashboardGenerator {
       }
     }
 
-    private Map<String, Object> applyFilters(final ComparisonReport report, final Map<String, Object> criteria) {
+    private Map<String, Object> applyFilters(
+        final ComparisonReport report, final Map<String, Object> criteria) {
       final Map<String, Object> result = new HashMap<>();
 
       // Apply various filter criteria
@@ -422,9 +443,10 @@ public final class DashboardGenerator {
       if (criteria.containsKey("status")) {
         final String status = (String) criteria.get("status");
         if (!"ALL".equals(status)) {
-          filteredTests = filteredTests.stream()
-              .filter(test -> test.getOverallStatus().toString().equals(status))
-              .toList();
+          filteredTests =
+              filteredTests.stream()
+                  .filter(test -> test.getOverallStatus().toString().equals(status))
+                  .toList();
         }
       }
 
@@ -432,18 +454,21 @@ public final class DashboardGenerator {
       if (criteria.containsKey("runtime")) {
         final String runtime = (String) criteria.get("runtime");
         if (!"ALL".equals(runtime)) {
-          filteredTests = filteredTests.stream()
-              .filter(test -> test.getRuntimeResults().keySet().stream()
-                  .anyMatch(rt -> rt.toString().equals(runtime)))
-              .toList();
+          filteredTests =
+              filteredTests.stream()
+                  .filter(
+                      test ->
+                          test.getRuntimeResults().keySet().stream()
+                              .anyMatch(rt -> rt.toString().equals(runtime)))
+                  .toList();
         }
       }
 
       // Filter by critical issues
-      if (criteria.containsKey("onlyCritical") && Boolean.TRUE.equals(criteria.get("onlyCritical"))) {
-        filteredTests = filteredTests.stream()
-            .filter(TestComparisonResult::hasCriticalIssues)
-            .toList();
+      if (criteria.containsKey("onlyCritical")
+          && Boolean.TRUE.equals(criteria.get("onlyCritical"))) {
+        filteredTests =
+            filteredTests.stream().filter(TestComparisonResult::hasCriticalIssues).toList();
       }
 
       result.put("filteredTests", filteredTests);
@@ -470,7 +495,8 @@ public final class DashboardGenerator {
 
       try (final var inputStream = getClass().getClassLoader().getResourceAsStream(resourcePath)) {
         if (inputStream == null) {
-          response.sendError(HttpServletResponse.SC_NOT_FOUND, "Resource not found: " + resourcePath);
+          response.sendError(
+              HttpServletResponse.SC_NOT_FOUND, "Resource not found: " + resourcePath);
           return;
         }
 
@@ -484,7 +510,8 @@ public final class DashboardGenerator {
 
       } catch (final IOException e) {
         LOGGER.log(Level.SEVERE, "Failed to serve static resource: " + resourcePath, e);
-        response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to serve resource");
+        response.sendError(
+            HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to serve resource");
       }
     }
 
@@ -601,11 +628,11 @@ final class DashboardConfiguration {
     }
 
     final DashboardConfiguration that = (DashboardConfiguration) obj;
-    return port == that.port &&
-           enableRealTimeUpdates == that.enableRealTimeUpdates &&
-           maxCachedReports == that.maxCachedReports &&
-           Objects.equals(title, that.title) &&
-           Objects.equals(theme, that.theme);
+    return port == that.port
+        && enableRealTimeUpdates == that.enableRealTimeUpdates
+        && maxCachedReports == that.maxCachedReports
+        && Objects.equals(title, that.title)
+        && Objects.equals(theme, that.theme);
   }
 
   @Override
@@ -615,11 +642,17 @@ final class DashboardConfiguration {
 
   @Override
   public String toString() {
-    return "DashboardConfiguration{" +
-           "port=" + port +
-           ", title='" + title + '\'' +
-           ", theme='" + theme + '\'' +
-           ", realTimeUpdates=" + enableRealTimeUpdates +
-           '}';
+    return "DashboardConfiguration{"
+        + "port="
+        + port
+        + ", title='"
+        + title
+        + '\''
+        + ", theme='"
+        + theme
+        + '\''
+        + ", realTimeUpdates="
+        + enableRealTimeUpdates
+        + '}';
   }
 }

@@ -9,8 +9,8 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * Comprehensive result of recommendation analysis containing actionable insights
- * categorized by type and prioritized by impact and urgency.
+ * Comprehensive result of recommendation analysis containing actionable insights categorized by
+ * type and prioritized by impact and urgency.
  *
  * @since 1.0.0
  */
@@ -97,18 +97,18 @@ public final class RecommendationResult {
    */
   public String getExecutiveSummary() {
     return String.format(
-        "Recommendation Summary for %s%n" +
-        "================================%n" +
-        "Total Recommendations: %d%n" +
-        "High Priority: %d%n" +
-        "Medium Priority: %d%n" +
-        "Low Priority: %d%n%n" +
-        "By Category:%n" +
-        "  Behavioral: %d%n" +
-        "  Performance: %d%n" +
-        "  Coverage: %d%n" +
-        "  Integration: %d%n%n" +
-        "Analysis Time: %s",
+        "Recommendation Summary for %s%n"
+            + "================================%n"
+            + "Total Recommendations: %d%n"
+            + "High Priority: %d%n"
+            + "Medium Priority: %d%n"
+            + "Low Priority: %d%n%n"
+            + "By Category:%n"
+            + "  Behavioral: %d%n"
+            + "  Performance: %d%n"
+            + "  Coverage: %d%n"
+            + "  Integration: %d%n%n"
+            + "Analysis Time: %s",
         testName,
         summary.getTotalRecommendations(),
         summary.getHighPriorityCount(),
@@ -118,8 +118,7 @@ public final class RecommendationResult {
         performanceRecommendations.size(),
         coverageRecommendations.size(),
         integrationRecommendations.size(),
-        analysisTime
-    );
+        analysisTime);
   }
 
   @Override
@@ -132,29 +131,38 @@ public final class RecommendationResult {
     }
 
     final RecommendationResult that = (RecommendationResult) obj;
-    return Objects.equals(testName, that.testName) &&
-           Objects.equals(behavioralRecommendations, that.behavioralRecommendations) &&
-           Objects.equals(performanceRecommendations, that.performanceRecommendations) &&
-           Objects.equals(coverageRecommendations, that.coverageRecommendations) &&
-           Objects.equals(integrationRecommendations, that.integrationRecommendations) &&
-           Objects.equals(prioritizedRecommendations, that.prioritizedRecommendations) &&
-           Objects.equals(summary, that.summary);
+    return Objects.equals(testName, that.testName)
+        && Objects.equals(behavioralRecommendations, that.behavioralRecommendations)
+        && Objects.equals(performanceRecommendations, that.performanceRecommendations)
+        && Objects.equals(coverageRecommendations, that.coverageRecommendations)
+        && Objects.equals(integrationRecommendations, that.integrationRecommendations)
+        && Objects.equals(prioritizedRecommendations, that.prioritizedRecommendations)
+        && Objects.equals(summary, that.summary);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(testName, behavioralRecommendations, performanceRecommendations,
-                       coverageRecommendations, integrationRecommendations,
-                       prioritizedRecommendations, summary);
+    return Objects.hash(
+        testName,
+        behavioralRecommendations,
+        performanceRecommendations,
+        coverageRecommendations,
+        integrationRecommendations,
+        prioritizedRecommendations,
+        summary);
   }
 
   @Override
   public String toString() {
-    return "RecommendationResult{" +
-           "testName='" + testName + '\'' +
-           ", total=" + summary.getTotalRecommendations() +
-           ", highPriority=" + summary.getHighPriorityCount() +
-           '}';
+    return "RecommendationResult{"
+        + "testName='"
+        + testName
+        + '\''
+        + ", total="
+        + summary.getTotalRecommendations()
+        + ", highPriority="
+        + summary.getHighPriorityCount()
+        + '}';
   }
 
   /** Builder for RecommendationResult. */
@@ -172,27 +180,35 @@ public final class RecommendationResult {
     }
 
     public Builder behavioralRecommendations(final List<ActionableRecommendation> recommendations) {
-      this.behavioralRecommendations = Objects.requireNonNull(recommendations, "recommendations cannot be null");
+      this.behavioralRecommendations =
+          Objects.requireNonNull(recommendations, "recommendations cannot be null");
       return this;
     }
 
-    public Builder performanceRecommendations(final List<ActionableRecommendation> recommendations) {
-      this.performanceRecommendations = Objects.requireNonNull(recommendations, "recommendations cannot be null");
+    public Builder performanceRecommendations(
+        final List<ActionableRecommendation> recommendations) {
+      this.performanceRecommendations =
+          Objects.requireNonNull(recommendations, "recommendations cannot be null");
       return this;
     }
 
     public Builder coverageRecommendations(final List<ActionableRecommendation> recommendations) {
-      this.coverageRecommendations = Objects.requireNonNull(recommendations, "recommendations cannot be null");
+      this.coverageRecommendations =
+          Objects.requireNonNull(recommendations, "recommendations cannot be null");
       return this;
     }
 
-    public Builder integrationRecommendations(final List<ActionableRecommendation> recommendations) {
-      this.integrationRecommendations = Objects.requireNonNull(recommendations, "recommendations cannot be null");
+    public Builder integrationRecommendations(
+        final List<ActionableRecommendation> recommendations) {
+      this.integrationRecommendations =
+          Objects.requireNonNull(recommendations, "recommendations cannot be null");
       return this;
     }
 
-    public Builder prioritizedRecommendations(final List<ActionableRecommendation> recommendations) {
-      this.prioritizedRecommendations = Objects.requireNonNull(recommendations, "recommendations cannot be null");
+    public Builder prioritizedRecommendations(
+        final List<ActionableRecommendation> recommendations) {
+      this.prioritizedRecommendations =
+          Objects.requireNonNull(recommendations, "recommendations cannot be null");
       return this;
     }
 
@@ -301,30 +317,42 @@ final class ActionableRecommendation {
     }
 
     final ActionableRecommendation that = (ActionableRecommendation) obj;
-    return Double.compare(that.priorityScore, priorityScore) == 0 &&
-           Objects.equals(title, that.title) &&
-           Objects.equals(description, that.description) &&
-           Objects.equals(implementationSteps, that.implementationSteps) &&
-           category == that.category &&
-           severity == that.severity &&
-           Objects.equals(affectedRuntimes, that.affectedRuntimes) &&
-           Objects.equals(issuePattern, that.issuePattern);
+    return Double.compare(that.priorityScore, priorityScore) == 0
+        && Objects.equals(title, that.title)
+        && Objects.equals(description, that.description)
+        && Objects.equals(implementationSteps, that.implementationSteps)
+        && category == that.category
+        && severity == that.severity
+        && Objects.equals(affectedRuntimes, that.affectedRuntimes)
+        && Objects.equals(issuePattern, that.issuePattern);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(title, description, implementationSteps, category,
-                       severity, priorityScore, affectedRuntimes, issuePattern);
+    return Objects.hash(
+        title,
+        description,
+        implementationSteps,
+        category,
+        severity,
+        priorityScore,
+        affectedRuntimes,
+        issuePattern);
   }
 
   @Override
   public String toString() {
-    return "ActionableRecommendation{" +
-           "title='" + title + '\'' +
-           ", category=" + category +
-           ", severity=" + severity +
-           ", score=" + String.format("%.2f", priorityScore) +
-           '}';
+    return "ActionableRecommendation{"
+        + "title='"
+        + title
+        + '\''
+        + ", category="
+        + category
+        + ", severity="
+        + severity
+        + ", score="
+        + String.format("%.2f", priorityScore)
+        + '}';
   }
 }
 
@@ -379,27 +407,35 @@ final class RecommendationSummary {
     }
 
     final RecommendationSummary that = (RecommendationSummary) obj;
-    return totalRecommendations == that.totalRecommendations &&
-           highPriorityCount == that.highPriorityCount &&
-           mediumPriorityCount == that.mediumPriorityCount &&
-           lowPriorityCount == that.lowPriorityCount &&
-           Objects.equals(categoryBreakdown, that.categoryBreakdown);
+    return totalRecommendations == that.totalRecommendations
+        && highPriorityCount == that.highPriorityCount
+        && mediumPriorityCount == that.mediumPriorityCount
+        && lowPriorityCount == that.lowPriorityCount
+        && Objects.equals(categoryBreakdown, that.categoryBreakdown);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(totalRecommendations, highPriorityCount, mediumPriorityCount,
-                       lowPriorityCount, categoryBreakdown);
+    return Objects.hash(
+        totalRecommendations,
+        highPriorityCount,
+        mediumPriorityCount,
+        lowPriorityCount,
+        categoryBreakdown);
   }
 
   @Override
   public String toString() {
-    return "RecommendationSummary{" +
-           "total=" + totalRecommendations +
-           ", high=" + highPriorityCount +
-           ", medium=" + mediumPriorityCount +
-           ", low=" + lowPriorityCount +
-           '}';
+    return "RecommendationSummary{"
+        + "total="
+        + totalRecommendations
+        + ", high="
+        + highPriorityCount
+        + ", medium="
+        + mediumPriorityCount
+        + ", low="
+        + lowPriorityCount
+        + '}';
   }
 }
 
@@ -481,25 +517,29 @@ final class BatchRecommendationResult {
     }
 
     final BatchRecommendationResult that = (BatchRecommendationResult) obj;
-    return Objects.equals(testRecommendations, that.testRecommendations) &&
-           Objects.equals(commonIssues, that.commonIssues) &&
-           Objects.equals(issueCategoryCounts, that.issueCategoryCounts) &&
-           Objects.equals(summary, that.summary) &&
-           Objects.equals(analysisTime, that.analysisTime);
+    return Objects.equals(testRecommendations, that.testRecommendations)
+        && Objects.equals(commonIssues, that.commonIssues)
+        && Objects.equals(issueCategoryCounts, that.issueCategoryCounts)
+        && Objects.equals(summary, that.summary)
+        && Objects.equals(analysisTime, that.analysisTime);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(testRecommendations, commonIssues, issueCategoryCounts, summary, analysisTime);
+    return Objects.hash(
+        testRecommendations, commonIssues, issueCategoryCounts, summary, analysisTime);
   }
 
   @Override
   public String toString() {
-    return "BatchRecommendationResult{" +
-           "tests=" + testRecommendations.size() +
-           ", commonIssues=" + commonIssues.size() +
-           ", totalRecommendations=" + summary.getTotalRecommendations() +
-           '}';
+    return "BatchRecommendationResult{"
+        + "tests="
+        + testRecommendations.size()
+        + ", commonIssues="
+        + commonIssues.size()
+        + ", totalRecommendations="
+        + summary.getTotalRecommendations()
+        + '}';
   }
 }
 
@@ -540,9 +580,9 @@ final class BatchRecommendationSummary {
     }
 
     final BatchRecommendationSummary that = (BatchRecommendationSummary) obj;
-    return totalRecommendations == that.totalRecommendations &&
-           totalHighPriority == that.totalHighPriority &&
-           Objects.equals(categoryTotals, that.categoryTotals);
+    return totalRecommendations == that.totalRecommendations
+        && totalHighPriority == that.totalHighPriority
+        && Objects.equals(categoryTotals, that.categoryTotals);
   }
 
   @Override
@@ -552,10 +592,12 @@ final class BatchRecommendationSummary {
 
   @Override
   public String toString() {
-    return "BatchRecommendationSummary{" +
-           "total=" + totalRecommendations +
-           ", highPriority=" + totalHighPriority +
-           '}';
+    return "BatchRecommendationSummary{"
+        + "total="
+        + totalRecommendations
+        + ", highPriority="
+        + totalHighPriority
+        + '}';
   }
 }
 
@@ -569,9 +611,12 @@ final class TestAnalysisResults {
       final BehavioralAnalysisResult behavioralResults,
       final PerformanceAnalyzer.PerformanceComparisonResult performanceResults,
       final CoverageAnalysisResult coverageResults) {
-    this.behavioralResults = Objects.requireNonNull(behavioralResults, "behavioralResults cannot be null");
-    this.performanceResults = Objects.requireNonNull(performanceResults, "performanceResults cannot be null");
-    this.coverageResults = Objects.requireNonNull(coverageResults, "coverageResults cannot be null");
+    this.behavioralResults =
+        Objects.requireNonNull(behavioralResults, "behavioralResults cannot be null");
+    this.performanceResults =
+        Objects.requireNonNull(performanceResults, "performanceResults cannot be null");
+    this.coverageResults =
+        Objects.requireNonNull(coverageResults, "coverageResults cannot be null");
   }
 
   public BehavioralAnalysisResult getBehavioralResults() {
@@ -596,9 +641,9 @@ final class TestAnalysisResults {
     }
 
     final TestAnalysisResults that = (TestAnalysisResults) obj;
-    return Objects.equals(behavioralResults, that.behavioralResults) &&
-           Objects.equals(performanceResults, that.performanceResults) &&
-           Objects.equals(coverageResults, that.coverageResults);
+    return Objects.equals(behavioralResults, that.behavioralResults)
+        && Objects.equals(performanceResults, that.performanceResults)
+        && Objects.equals(coverageResults, that.coverageResults);
   }
 
   @Override
@@ -608,10 +653,13 @@ final class TestAnalysisResults {
 
   @Override
   public String toString() {
-    return "TestAnalysisResults{" +
-           "behavioral=" + behavioralResults +
-           ", performance=" + performanceResults +
-           ", coverage=" + coverageResults +
-           '}';
+    return "TestAnalysisResults{"
+        + "behavioral="
+        + behavioralResults
+        + ", performance="
+        + performanceResults
+        + ", coverage="
+        + coverageResults
+        + '}';
   }
 }

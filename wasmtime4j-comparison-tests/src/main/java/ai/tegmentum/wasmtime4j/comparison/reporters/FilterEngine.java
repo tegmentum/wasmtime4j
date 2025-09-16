@@ -1,23 +1,19 @@
 package ai.tegmentum.wasmtime4j.comparison.reporters;
 
 import ai.tegmentum.wasmtime4j.RuntimeType;
-import ai.tegmentum.wasmtime4j.comparison.analyzers.BehavioralDiscrepancy;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
-import java.util.regex.Pattern;
-import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
 
 /**
- * Advanced filtering and search engine for comparison results with support for complex
- * queries, full-text search, faceted filtering, and real-time result updates. Optimized
- * for handling large result sets with efficient indexing and caching mechanisms.
+ * Advanced filtering and search engine for comparison results with support for complex queries,
+ * full-text search, faceted filtering, and real-time result updates. Optimized for handling large
+ * result sets with efficient indexing and caching mechanisms.
  *
  * @since 1.0.0
  */
@@ -38,17 +34,20 @@ public final class FilterEngine {
    * @param filterCriteria the filtering criteria to apply
    * @return filtered results with metadata
    */
-  public FilterResult filterReport(final ComparisonReport report, final FilterCriteria filterCriteria) {
+  public FilterResult filterReport(
+      final ComparisonReport report, final FilterCriteria filterCriteria) {
     Objects.requireNonNull(report, "report cannot be null");
     Objects.requireNonNull(filterCriteria, "filterCriteria cannot be null");
 
     final long startTime = System.currentTimeMillis();
 
     // Apply filters to test results
-    List<TestComparisonResult> filteredTests = filterTestResults(report.getTestResults(), filterCriteria);
+    List<TestComparisonResult> filteredTests =
+        filterTestResults(report.getTestResults(), filterCriteria);
 
     // Apply search query if provided
-    if (filterCriteria.getSearchQuery() != null && !filterCriteria.getSearchQuery().trim().isEmpty()) {
+    if (filterCriteria.getSearchQuery() != null
+        && !filterCriteria.getSearchQuery().trim().isEmpty()) {
       filteredTests = searchTestResults(filteredTests, filterCriteria.getSearchQuery());
     }
 
@@ -56,7 +55,8 @@ public final class FilterEngine {
     filteredTests = sortTestResults(filteredTests, filterCriteria.getSortCriteria());
 
     // Apply pagination
-    final PaginationResult paginationResult = paginateResults(filteredTests, filterCriteria.getPagination());
+    final PaginationResult paginationResult =
+        paginateResults(filteredTests, filterCriteria.getPagination());
 
     final long filterTime = System.currentTimeMillis() - startTime;
 
@@ -67,8 +67,7 @@ public final class FilterEngine {
         paginationResult.getPageCount(),
         filterCriteria,
         filterTime,
-        createFilterMetadata(report, filteredTests, filterCriteria)
-    );
+        createFilterMetadata(report, filteredTests, filterCriteria));
   }
 
   /**
@@ -79,8 +78,7 @@ public final class FilterEngine {
    * @return filtered test results
    */
   private List<TestComparisonResult> filterTestResults(
-      final List<TestComparisonResult> testResults,
-      final FilterCriteria criteria) {
+      final List<TestComparisonResult> testResults, final FilterCriteria criteria) {
 
     return testResults.stream()
         .filter(createStatusFilter(criteria.getStatusFilter()))
@@ -133,14 +131,19 @@ public final class FilterEngine {
    * @param severityFilter the severity filter configuration
    * @return predicate for filtering by discrepancy severity
    */
-  private Predicate<TestComparisonResult> createSeverityFilter(final SeverityFilter severityFilter) {
+  private Predicate<TestComparisonResult> createSeverityFilter(
+      final SeverityFilter severityFilter) {
     if (severityFilter == null || severityFilter.getIncludedSeverities().isEmpty()) {
       return test -> true; // No filter
     }
 
-    return test -> test.getDiscrepancies().stream()
-        .anyMatch(discrepancy -> severityFilter.getIncludedSeverities()
-            .contains(discrepancy.getSeverity().toString()));
+    return test ->
+        test.getDiscrepancies().stream()
+            .anyMatch(
+                discrepancy ->
+                    severityFilter
+                        .getIncludedSeverities()
+                        .contains(discrepancy.getSeverity().toString()));
   }
 
   /**
@@ -149,7 +152,8 @@ public final class FilterEngine {
    * @param timeRangeFilter the time range filter configuration
    * @return predicate for filtering by time range
    */
-  private Predicate<TestComparisonResult> createTimeRangeFilter(final TimeRangeFilter timeRangeFilter) {
+  private Predicate<TestComparisonResult> createTimeRangeFilter(
+      final TimeRangeFilter timeRangeFilter) {
     if (timeRangeFilter == null) {
       return test -> true; // No filter
     }
@@ -158,11 +162,14 @@ public final class FilterEngine {
       // For this example, we'll filter based on discrepancy detection time
       // In a real implementation, this would be based on test execution time
       return test.getDiscrepancies().stream()
-          .anyMatch(discrepancy -> {
-            final Instant detectedAt = discrepancy.getDetectedAt();
-            return (timeRangeFilter.getStartTime() == null || !detectedAt.isBefore(timeRangeFilter.getStartTime())) &&
-                   (timeRangeFilter.getEndTime() == null || !detectedAt.isAfter(timeRangeFilter.getEndTime()));
-          });
+          .anyMatch(
+              discrepancy -> {
+                final Instant detectedAt = discrepancy.getDetectedAt();
+                return (timeRangeFilter.getStartTime() == null
+                        || !detectedAt.isBefore(timeRangeFilter.getStartTime()))
+                    && (timeRangeFilter.getEndTime() == null
+                        || !detectedAt.isAfter(timeRangeFilter.getEndTime()));
+              });
     };
   }
 
@@ -172,7 +179,8 @@ public final class FilterEngine {
    * @param onlyCriticalIssues whether to show only tests with critical issues
    * @return predicate for filtering by critical issues
    */
-  private Predicate<TestComparisonResult> createCriticalIssuesFilter(final boolean onlyCriticalIssues) {
+  private Predicate<TestComparisonResult> createCriticalIssuesFilter(
+      final boolean onlyCriticalIssues) {
     if (!onlyCriticalIssues) {
       return test -> true; // No filter
     }
@@ -186,7 +194,8 @@ public final class FilterEngine {
    * @param customFilters the custom filter criteria
    * @return predicate for custom filtering
    */
-  private Predicate<TestComparisonResult> createCustomFilter(final Map<String, Object> customFilters) {
+  private Predicate<TestComparisonResult> createCustomFilter(
+      final Map<String, Object> customFilters) {
     if (customFilters == null || customFilters.isEmpty()) {
       return test -> true; // No filter
     }
@@ -195,8 +204,9 @@ public final class FilterEngine {
       // Example custom filters
       if (customFilters.containsKey("minExecutionTime")) {
         final long minTime = ((Number) customFilters.get("minExecutionTime")).longValue();
-        final boolean hasMinTime = test.getRuntimeResults().values().stream()
-            .anyMatch(result -> result.getExecutionTime().toMillis() >= minTime);
+        final boolean hasMinTime =
+            test.getRuntimeResults().values().stream()
+                .anyMatch(result -> result.getExecutionTime().toMillis() >= minTime);
         if (!hasMinTime) {
           return false;
         }
@@ -204,8 +214,9 @@ public final class FilterEngine {
 
       if (customFilters.containsKey("hasOutput")) {
         final boolean requiresOutput = (Boolean) customFilters.get("hasOutput");
-        final boolean hasOutput = test.getRuntimeResults().values().stream()
-            .anyMatch(result -> !result.getOutput().trim().isEmpty());
+        final boolean hasOutput =
+            test.getRuntimeResults().values().stream()
+                .anyMatch(result -> !result.getOutput().trim().isEmpty());
         if (requiresOutput && !hasOutput) {
           return false;
         }
@@ -223,8 +234,7 @@ public final class FilterEngine {
    * @return filtered test results matching the search query
    */
   private List<TestComparisonResult> searchTestResults(
-      final List<TestComparisonResult> testResults,
-      final String searchQuery) {
+      final List<TestComparisonResult> testResults, final String searchQuery) {
 
     final SearchQueryParser parser = new SearchQueryParser(searchQuery, configuration);
     final List<SearchTerm> searchTerms = parser.parseQuery();
@@ -241,7 +251,8 @@ public final class FilterEngine {
    * @param searchTerms the parsed search terms
    * @return true if the test matches the search criteria
    */
-  private boolean matchesSearchTerms(final TestComparisonResult test, final List<SearchTerm> searchTerms) {
+  private boolean matchesSearchTerms(
+      final TestComparisonResult test, final List<SearchTerm> searchTerms) {
     for (final SearchTerm term : searchTerms) {
       if (!matchesSearchTerm(test, term)) {
         return false;
@@ -268,8 +279,10 @@ public final class FilterEngine {
       case "error" -> test.getRuntimeResults().values().stream()
           .anyMatch(result -> result.getErrorMessage().toLowerCase().contains(searchText));
       case "discrepancy" -> test.getDiscrepancies().stream()
-          .anyMatch(disc -> disc.getDescription().toLowerCase().contains(searchText) ||
-                           disc.getDetails().toLowerCase().contains(searchText));
+          .anyMatch(
+              disc ->
+                  disc.getDescription().toLowerCase().contains(searchText)
+                      || disc.getDetails().toLowerCase().contains(searchText));
       case "all", "*" -> matchesAnyField(test, searchText);
       default -> false;
     };
@@ -295,15 +308,19 @@ public final class FilterEngine {
 
     // Search in runtime outputs
     if (test.getRuntimeResults().values().stream()
-        .anyMatch(result -> result.getOutput().toLowerCase().contains(searchText) ||
-                           result.getErrorMessage().toLowerCase().contains(searchText))) {
+        .anyMatch(
+            result ->
+                result.getOutput().toLowerCase().contains(searchText)
+                    || result.getErrorMessage().toLowerCase().contains(searchText))) {
       return true;
     }
 
     // Search in discrepancies
     return test.getDiscrepancies().stream()
-        .anyMatch(disc -> disc.getDescription().toLowerCase().contains(searchText) ||
-                         disc.getDetails().toLowerCase().contains(searchText));
+        .anyMatch(
+            disc ->
+                disc.getDescription().toLowerCase().contains(searchText)
+                    || disc.getDetails().toLowerCase().contains(searchText));
   }
 
   /**
@@ -314,32 +331,43 @@ public final class FilterEngine {
    * @return sorted test results
    */
   private List<TestComparisonResult> sortTestResults(
-      final List<TestComparisonResult> testResults,
-      final SortCriteria sortCriteria) {
+      final List<TestComparisonResult> testResults, final SortCriteria sortCriteria) {
 
     if (sortCriteria == null) {
       return testResults;
     }
 
     return testResults.stream()
-        .sorted((a, b) -> {
-          int result = switch (sortCriteria.getSortField()) {
-            case "name" -> a.getTestName().compareTo(b.getTestName());
-            case "status" -> a.getOverallStatus().compareTo(b.getOverallStatus());
-            case "critical" -> Boolean.compare(b.hasCriticalIssues(), a.hasCriticalIssues());
-            case "discrepancies" -> Integer.compare(b.getDiscrepancies().size(), a.getDiscrepancies().size());
-            case "executionTime" -> {
-              final long avgTimeA = (long) a.getRuntimeResults().values().stream()
-                  .mapToLong(r -> r.getExecutionTime().toMillis()).average().orElse(0.0);
-              final long avgTimeB = (long) b.getRuntimeResults().values().stream()
-                  .mapToLong(r -> r.getExecutionTime().toMillis()).average().orElse(0.0);
-              yield Long.compare(avgTimeA, avgTimeB);
-            }
-            default -> 0;
-          };
+        .sorted(
+            (a, b) -> {
+              int result =
+                  switch (sortCriteria.getSortField()) {
+                    case "name" -> a.getTestName().compareTo(b.getTestName());
+                    case "status" -> a.getOverallStatus().compareTo(b.getOverallStatus());
+                    case "critical" -> Boolean.compare(
+                        b.hasCriticalIssues(), a.hasCriticalIssues());
+                    case "discrepancies" -> Integer.compare(
+                        b.getDiscrepancies().size(), a.getDiscrepancies().size());
+                    case "executionTime" -> {
+                      final long avgTimeA =
+                          (long)
+                              a.getRuntimeResults().values().stream()
+                                  .mapToLong(r -> r.getExecutionTime().toMillis())
+                                  .average()
+                                  .orElse(0.0);
+                      final long avgTimeB =
+                          (long)
+                              b.getRuntimeResults().values().stream()
+                                  .mapToLong(r -> r.getExecutionTime().toMillis())
+                                  .average()
+                                  .orElse(0.0);
+                      yield Long.compare(avgTimeA, avgTimeB);
+                    }
+                    default -> 0;
+                  };
 
-          return sortCriteria.getSortDirection() == SortDirection.DESCENDING ? -result : result;
-        })
+              return sortCriteria.getSortDirection() == SortDirection.DESCENDING ? -result : result;
+            })
         .collect(Collectors.toList());
   }
 
@@ -351,8 +379,7 @@ public final class FilterEngine {
    * @return paginated results with metadata
    */
   private PaginationResult paginateResults(
-      final List<TestComparisonResult> testResults,
-      final PaginationConfig pagination) {
+      final List<TestComparisonResult> testResults, final PaginationConfig pagination) {
 
     if (pagination == null) {
       return new PaginationResult(testResults, testResults.size(), 1);
@@ -366,8 +393,8 @@ public final class FilterEngine {
     final int startIndex = pageNumber * pageSize;
     final int endIndex = Math.min(startIndex + pageSize, totalCount);
 
-    final List<TestComparisonResult> pageResults = startIndex < totalCount ?
-        testResults.subList(startIndex, endIndex) : List.of();
+    final List<TestComparisonResult> pageResults =
+        startIndex < totalCount ? testResults.subList(startIndex, endIndex) : List.of();
 
     return new PaginationResult(pageResults, totalCount, totalPages);
   }
@@ -392,24 +419,23 @@ public final class FilterEngine {
     metadata.put("filterReduction", originalReport.getTestResults().size() - filteredTests.size());
 
     // Status distribution in filtered results
-    final Map<String, Long> statusDistribution = filteredTests.stream()
-        .collect(Collectors.groupingBy(
-            test -> test.getOverallStatus().toString(),
-            Collectors.counting()));
+    final Map<String, Long> statusDistribution =
+        filteredTests.stream()
+            .collect(
+                Collectors.groupingBy(
+                    test -> test.getOverallStatus().toString(), Collectors.counting()));
     metadata.put("statusDistribution", statusDistribution);
 
     // Runtime distribution in filtered results
-    final Map<String, Long> runtimeDistribution = filteredTests.stream()
-        .flatMap(test -> test.getRuntimeResults().keySet().stream())
-        .collect(Collectors.groupingBy(
-            RuntimeType::toString,
-            Collectors.counting()));
+    final Map<String, Long> runtimeDistribution =
+        filteredTests.stream()
+            .flatMap(test -> test.getRuntimeResults().keySet().stream())
+            .collect(Collectors.groupingBy(RuntimeType::toString, Collectors.counting()));
     metadata.put("runtimeDistribution", runtimeDistribution);
 
     // Critical issues count
-    final long criticalIssuesCount = filteredTests.stream()
-        .mapToLong(test -> test.hasCriticalIssues() ? 1 : 0)
-        .sum();
+    final long criticalIssuesCount =
+        filteredTests.stream().mapToLong(test -> test.hasCriticalIssues() ? 1 : 0).sum();
     metadata.put("criticalIssuesCount", criticalIssuesCount);
 
     // Applied filters summary
@@ -427,23 +453,27 @@ public final class FilterEngine {
   private Map<String, Object> createAppliedFiltersSummary(final FilterCriteria criteria) {
     final Map<String, Object> summary = new HashMap<>();
 
-    if (criteria.getStatusFilter() != null && !criteria.getStatusFilter().getIncludedStatuses().isEmpty()) {
+    if (criteria.getStatusFilter() != null
+        && !criteria.getStatusFilter().getIncludedStatuses().isEmpty()) {
       summary.put("statusFilter", criteria.getStatusFilter().getIncludedStatuses());
     }
 
-    if (criteria.getRuntimeFilter() != null && !criteria.getRuntimeFilter().getIncludedRuntimes().isEmpty()) {
+    if (criteria.getRuntimeFilter() != null
+        && !criteria.getRuntimeFilter().getIncludedRuntimes().isEmpty()) {
       summary.put("runtimeFilter", criteria.getRuntimeFilter().getIncludedRuntimes());
     }
 
-    if (criteria.getSeverityFilter() != null && !criteria.getSeverityFilter().getIncludedSeverities().isEmpty()) {
+    if (criteria.getSeverityFilter() != null
+        && !criteria.getSeverityFilter().getIncludedSeverities().isEmpty()) {
       summary.put("severityFilter", criteria.getSeverityFilter().getIncludedSeverities());
     }
 
     if (criteria.getTimeRangeFilter() != null) {
-      summary.put("timeRangeFilter", Map.of(
-          "start", criteria.getTimeRangeFilter().getStartTime(),
-          "end", criteria.getTimeRangeFilter().getEndTime()
-      ));
+      summary.put(
+          "timeRangeFilter",
+          Map.of(
+              "start", criteria.getTimeRangeFilter().getStartTime(),
+              "end", criteria.getTimeRangeFilter().getEndTime()));
     }
 
     if (criteria.isOnlyCriticalIssues()) {
@@ -520,10 +550,10 @@ final class SearchConfiguration {
     }
 
     final SearchConfiguration that = (SearchConfiguration) obj;
-    return enableFuzzySearch == that.enableFuzzySearch &&
-           enableRegexSearch == that.enableRegexSearch &&
-           caseSensitive == that.caseSensitive &&
-           maxSearchResults == that.maxSearchResults;
+    return enableFuzzySearch == that.enableFuzzySearch
+        && enableRegexSearch == that.enableRegexSearch
+        && caseSensitive == that.caseSensitive
+        && maxSearchResults == that.maxSearchResults;
   }
 
   @Override
@@ -533,11 +563,15 @@ final class SearchConfiguration {
 
   @Override
   public String toString() {
-    return "SearchConfiguration{" +
-           "fuzzy=" + enableFuzzySearch +
-           ", regex=" + enableRegexSearch +
-           ", caseSensitive=" + caseSensitive +
-           ", maxResults=" + maxSearchResults +
-           '}';
+    return "SearchConfiguration{"
+        + "fuzzy="
+        + enableFuzzySearch
+        + ", regex="
+        + enableRegexSearch
+        + ", caseSensitive="
+        + caseSensitive
+        + ", maxResults="
+        + maxSearchResults
+        + '}';
   }
 }

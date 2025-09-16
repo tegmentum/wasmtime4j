@@ -7,8 +7,8 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Comprehensive batch insight result containing global patterns, runtime health scores,
- * and executive insights across multiple test analyses.
+ * Comprehensive batch insight result containing global patterns, runtime health scores, and
+ * executive insights across multiple test analyses.
  *
  * @since 1.0.0
  */
@@ -77,8 +77,10 @@ public final class BatchInsightResult {
    */
   public RuntimeType getBestPerformingRuntime() {
     return runtimeHealthScores.entrySet().stream()
-        .max(Map.Entry.comparingByValue((score1, score2) ->
-            Double.compare(score1.getOverallScore(), score2.getOverallScore())))
+        .max(
+            Map.Entry.comparingByValue(
+                (score1, score2) ->
+                    Double.compare(score1.getOverallScore(), score2.getOverallScore())))
         .map(Map.Entry::getKey)
         .orElse(null);
   }
@@ -90,24 +92,23 @@ public final class BatchInsightResult {
    */
   public String getExecutiveDashboard() {
     final RuntimeType bestRuntime = getBestPerformingRuntime();
-    final long criticalPatterns = globalPatterns.stream()
-        .filter(pattern -> pattern.getFrequency() >= 0.5)
-        .count();
+    final long criticalPatterns =
+        globalPatterns.stream().filter(pattern -> pattern.getFrequency() >= 0.5).count();
 
     return String.format(
-        "Executive Dashboard - Batch Analysis%n" +
-        "====================================%n" +
-        "Analysis Time: %s%n" +
-        "Tests Analyzed: %d%n" +
-        "Overall Confidence: %.1f%%%n%n" +
-        "Global Insights:%n" +
-        "  Patterns Identified: %d%n" +
-        "  Critical Patterns: %d%n" +
-        "  Executive Insights: %d%n%n" +
-        "Runtime Health:%n" +
-        "  Best Performing: %s%n" +
-        "%s%n" +
-        "Total Insights Generated: %d",
+        "Executive Dashboard - Batch Analysis%n"
+            + "====================================%n"
+            + "Analysis Time: %s%n"
+            + "Tests Analyzed: %d%n"
+            + "Overall Confidence: %.1f%%%n%n"
+            + "Global Insights:%n"
+            + "  Patterns Identified: %d%n"
+            + "  Critical Patterns: %d%n"
+            + "  Executive Insights: %d%n%n"
+            + "Runtime Health:%n"
+            + "  Best Performing: %s%n"
+            + "%s%n"
+            + "Total Insights Generated: %d",
         analysisTime,
         testInsights.size(),
         batchConfidenceScore * 100,
@@ -116,17 +117,18 @@ public final class BatchInsightResult {
         executiveInsights.size(),
         bestRuntime != null ? bestRuntime.name() : "UNKNOWN",
         formatRuntimeHealthScores(),
-        getTotalInsightCount()
-    );
+        getTotalInsightCount());
   }
 
   private String formatRuntimeHealthScores() {
     final StringBuilder sb = new StringBuilder();
     for (final Map.Entry<RuntimeType, RuntimeHealthScore> entry : runtimeHealthScores.entrySet()) {
-      sb.append(String.format("  %s: %.1f%% (%s)%n",
-          entry.getKey(),
-          entry.getValue().getOverallScore() * 100,
-          entry.getValue().getHealthStatus()));
+      sb.append(
+          String.format(
+              "  %s: %.1f%% (%s)%n",
+              entry.getKey(),
+              entry.getValue().getOverallScore() * 100,
+              entry.getValue().getHealthStatus()));
     }
     return sb.toString();
   }
@@ -136,27 +138,35 @@ public final class BatchInsightResult {
     if (this == obj) return true;
     if (obj == null || getClass() != obj.getClass()) return false;
     final BatchInsightResult that = (BatchInsightResult) obj;
-    return Double.compare(that.batchConfidenceScore, batchConfidenceScore) == 0 &&
-           Objects.equals(testInsights, that.testInsights) &&
-           Objects.equals(globalPatterns, that.globalPatterns) &&
-           Objects.equals(runtimeHealthScores, that.runtimeHealthScores) &&
-           Objects.equals(executiveInsights, that.executiveInsights) &&
-           Objects.equals(analysisTime, that.analysisTime);
+    return Double.compare(that.batchConfidenceScore, batchConfidenceScore) == 0
+        && Objects.equals(testInsights, that.testInsights)
+        && Objects.equals(globalPatterns, that.globalPatterns)
+        && Objects.equals(runtimeHealthScores, that.runtimeHealthScores)
+        && Objects.equals(executiveInsights, that.executiveInsights)
+        && Objects.equals(analysisTime, that.analysisTime);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(testInsights, globalPatterns, runtimeHealthScores,
-                       executiveInsights, batchConfidenceScore, analysisTime);
+    return Objects.hash(
+        testInsights,
+        globalPatterns,
+        runtimeHealthScores,
+        executiveInsights,
+        batchConfidenceScore,
+        analysisTime);
   }
 
   @Override
   public String toString() {
-    return "BatchInsightResult{" +
-           "tests=" + testInsights.size() +
-           ", patterns=" + globalPatterns.size() +
-           ", confidence=" + String.format("%.1f%%", batchConfidenceScore * 100) +
-           '}';
+    return "BatchInsightResult{"
+        + "tests="
+        + testInsights.size()
+        + ", patterns="
+        + globalPatterns.size()
+        + ", confidence="
+        + String.format("%.1f%%", batchConfidenceScore * 100)
+        + '}';
   }
 }
 
@@ -206,11 +216,11 @@ final class GlobalPattern {
     if (this == obj) return true;
     if (obj == null || getClass() != obj.getClass()) return false;
     final GlobalPattern that = (GlobalPattern) obj;
-    return occurrenceCount == that.occurrenceCount &&
-           Double.compare(that.frequency, frequency) == 0 &&
-           type == that.type &&
-           Objects.equals(patternId, that.patternId) &&
-           Objects.equals(description, that.description);
+    return occurrenceCount == that.occurrenceCount
+        && Double.compare(that.frequency, frequency) == 0
+        && type == that.type
+        && Objects.equals(patternId, that.patternId)
+        && Objects.equals(description, that.description);
   }
 
   @Override
@@ -220,11 +230,15 @@ final class GlobalPattern {
 
   @Override
   public String toString() {
-    return "GlobalPattern{" +
-           "type=" + type +
-           ", id='" + patternId + '\'' +
-           ", frequency=" + String.format("%.1f%%", frequency * 100) +
-           '}';
+    return "GlobalPattern{"
+        + "type="
+        + type
+        + ", id='"
+        + patternId
+        + '\''
+        + ", frequency="
+        + String.format("%.1f%%", frequency * 100)
+        + '}';
   }
 }
 
@@ -281,26 +295,30 @@ final class RuntimeHealthScore {
     if (this == obj) return true;
     if (obj == null || getClass() != obj.getClass()) return false;
     final RuntimeHealthScore that = (RuntimeHealthScore) obj;
-    return Double.compare(that.overallScore, overallScore) == 0 &&
-           Double.compare(that.performanceScore, performanceScore) == 0 &&
-           Double.compare(that.behavioralScore, behavioralScore) == 0 &&
-           Double.compare(that.coverageScore, coverageScore) == 0 &&
-           runtime == that.runtime &&
-           healthStatus == that.healthStatus;
+    return Double.compare(that.overallScore, overallScore) == 0
+        && Double.compare(that.performanceScore, performanceScore) == 0
+        && Double.compare(that.behavioralScore, behavioralScore) == 0
+        && Double.compare(that.coverageScore, coverageScore) == 0
+        && runtime == that.runtime
+        && healthStatus == that.healthStatus;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(runtime, overallScore, performanceScore, behavioralScore, coverageScore, healthStatus);
+    return Objects.hash(
+        runtime, overallScore, performanceScore, behavioralScore, coverageScore, healthStatus);
   }
 
   @Override
   public String toString() {
-    return "RuntimeHealthScore{" +
-           "runtime=" + runtime +
-           ", overall=" + String.format("%.1f%%", overallScore * 100) +
-           ", status=" + healthStatus +
-           '}';
+    return "RuntimeHealthScore{"
+        + "runtime="
+        + runtime
+        + ", overall="
+        + String.format("%.1f%%", overallScore * 100)
+        + ", status="
+        + healthStatus
+        + '}';
   }
 }
 
@@ -343,10 +361,10 @@ final class ExecutiveInsight {
     if (this == obj) return true;
     if (obj == null || getClass() != obj.getClass()) return false;
     final ExecutiveInsight that = (ExecutiveInsight) obj;
-    return type == that.type &&
-           Objects.equals(description, that.description) &&
-           status == that.status &&
-           Objects.equals(keyPoints, that.keyPoints);
+    return type == that.type
+        && Objects.equals(description, that.description)
+        && status == that.status
+        && Objects.equals(keyPoints, that.keyPoints);
   }
 
   @Override
@@ -356,10 +374,7 @@ final class ExecutiveInsight {
 
   @Override
   public String toString() {
-    return "ExecutiveInsight{" +
-           "type=" + type +
-           ", status=" + status +
-           '}';
+    return "ExecutiveInsight{" + "type=" + type + ", status=" + status + '}';
   }
 }
 
@@ -409,11 +424,11 @@ final class OptimizationRecommendation {
     if (this == obj) return true;
     if (obj == null || getClass() != obj.getClass()) return false;
     final OptimizationRecommendation that = (OptimizationRecommendation) obj;
-    return Double.compare(that.confidenceScore, confidenceScore) == 0 &&
-           patternType == that.patternType &&
-           Objects.equals(description, that.description) &&
-           Objects.equals(actionItems, that.actionItems) &&
-           priority == that.priority;
+    return Double.compare(that.confidenceScore, confidenceScore) == 0
+        && patternType == that.patternType
+        && Objects.equals(description, that.description)
+        && Objects.equals(actionItems, that.actionItems)
+        && priority == that.priority;
   }
 
   @Override
@@ -423,11 +438,14 @@ final class OptimizationRecommendation {
 
   @Override
   public String toString() {
-    return "OptimizationRecommendation{" +
-           "type=" + patternType +
-           ", priority=" + priority +
-           ", confidence=" + String.format("%.2f", confidenceScore) +
-           '}';
+    return "OptimizationRecommendation{"
+        + "type="
+        + patternType
+        + ", priority="
+        + priority
+        + ", confidence="
+        + String.format("%.2f", confidenceScore)
+        + '}';
   }
 }
 
@@ -479,10 +497,10 @@ final class TrendData {
     if (this == obj) return true;
     if (obj == null || getClass() != obj.getClass()) return false;
     final TrendData that = (TrendData) obj;
-    return Double.compare(that.trendStrength, trendStrength) == 0 &&
-           trendDirection == that.trendDirection &&
-           Objects.equals(description, that.description) &&
-           Objects.equals(recommendations, that.recommendations);
+    return Double.compare(that.trendStrength, trendStrength) == 0
+        && trendDirection == that.trendDirection
+        && Objects.equals(description, that.description)
+        && Objects.equals(recommendations, that.recommendations);
   }
 
   @Override
@@ -492,10 +510,12 @@ final class TrendData {
 
   @Override
   public String toString() {
-    return "TrendData{" +
-           "direction=" + trendDirection +
-           ", strength=" + String.format("%.2f", trendStrength) +
-           '}';
+    return "TrendData{"
+        + "direction="
+        + trendDirection
+        + ", strength="
+        + String.format("%.2f", trendStrength)
+        + '}';
   }
 }
 
