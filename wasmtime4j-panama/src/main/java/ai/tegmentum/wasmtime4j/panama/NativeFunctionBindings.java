@@ -246,6 +246,97 @@ public final class NativeFunctionBindings {
     callNativeFunction("wasmtime4j_module_destroy", Void.class, modulePtr);
   }
 
+  /**
+   * Gets the number of imports in a module.
+   *
+   * @param modulePtr pointer to the module
+   * @return the number of imports
+   */
+  public long moduleImportsLen(final MemorySegment modulePtr) {
+    validatePointer(modulePtr, "modulePtr");
+    return callNativeFunction("wasmtime4j_module_imports_len", Long.class, modulePtr);
+  }
+
+  /**
+   * Gets the nth import from a module.
+   *
+   * @param modulePtr pointer to the module
+   * @param index the index of the import to retrieve
+   * @param nameOutPtr pointer to receive the import name
+   * @param typeOutPtr pointer to receive the import type
+   * @return true if the import exists, false otherwise
+   */
+  public boolean moduleImportNth(
+      final MemorySegment modulePtr,
+      final long index,
+      final MemorySegment nameOutPtr,
+      final MemorySegment typeOutPtr) {
+    validatePointer(modulePtr, "modulePtr");
+    validatePointer(nameOutPtr, "nameOutPtr");
+    validatePointer(typeOutPtr, "typeOutPtr");
+    return callNativeFunction(
+        "wasmtime4j_module_import_nth", Boolean.class, modulePtr, index, nameOutPtr, typeOutPtr);
+  }
+
+  /**
+   * Gets the number of exports in a module.
+   *
+   * @param modulePtr pointer to the module
+   * @return the number of exports
+   */
+  public long moduleExportsLen(final MemorySegment modulePtr) {
+    validatePointer(modulePtr, "modulePtr");
+    return callNativeFunction("wasmtime4j_module_exports_len", Long.class, modulePtr);
+  }
+
+  /**
+   * Gets the nth export from a module.
+   *
+   * @param modulePtr pointer to the module
+   * @param index the index of the export to retrieve
+   * @param nameOutPtr pointer to receive the export name
+   * @param typeOutPtr pointer to receive the export type
+   * @return true if the export exists, false otherwise
+   */
+  public boolean moduleExportNth(
+      final MemorySegment modulePtr,
+      final long index,
+      final MemorySegment nameOutPtr,
+      final MemorySegment typeOutPtr) {
+    validatePointer(modulePtr, "modulePtr");
+    validatePointer(nameOutPtr, "nameOutPtr");
+    validatePointer(typeOutPtr, "typeOutPtr");
+    return callNativeFunction(
+        "wasmtime4j_module_export_nth", Boolean.class, modulePtr, index, nameOutPtr, typeOutPtr);
+  }
+
+  /**
+   * Gets the name of a module.
+   *
+   * @param modulePtr pointer to the module
+   * @return pointer to the module name string, or null if unnamed
+   */
+  public MemorySegment moduleGetName(final MemorySegment modulePtr) {
+    validatePointer(modulePtr, "modulePtr");
+    return callNativeFunction("wasmtime4j_module_get_name", MemorySegment.class, modulePtr);
+  }
+
+  /**
+   * Validates imports against a module.
+   *
+   * @param modulePtr pointer to the module
+   * @param importsPtr pointer to imports array
+   * @param importsCount number of imports
+   * @return 0 on success, negative error code on failure
+   */
+  public int moduleValidateImports(
+      final MemorySegment modulePtr, final MemorySegment importsPtr, final long importsCount) {
+    validatePointer(modulePtr, "modulePtr");
+    validatePointer(importsPtr, "importsPtr");
+    return callNativeFunction(
+        "wasmtime4j_module_validate_imports", Integer.class, modulePtr, importsPtr, importsCount);
+  }
+
   // Store Functions
 
   /**
@@ -1190,6 +1281,51 @@ public final class NativeFunctionBindings {
             ValueLayout.ADDRESS)); // module_ptr
 
     addFunctionBinding("wasmtime4j_module_destroy", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+
+    // Module introspection functions
+    addFunctionBinding(
+        "wasmtime4j_module_imports_len",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG, // return import count
+            ValueLayout.ADDRESS)); // module_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_module_import_nth",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_BOOLEAN, // return found
+            ValueLayout.ADDRESS, // module_ptr
+            ValueLayout.JAVA_LONG, // index
+            ValueLayout.ADDRESS, // name_out_ptr
+            ValueLayout.ADDRESS)); // type_out_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_module_exports_len",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG, // return export count
+            ValueLayout.ADDRESS)); // module_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_module_export_nth",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_BOOLEAN, // return found
+            ValueLayout.ADDRESS, // module_ptr
+            ValueLayout.JAVA_LONG, // index
+            ValueLayout.ADDRESS, // name_out_ptr
+            ValueLayout.ADDRESS)); // type_out_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_module_get_name",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, // return name string pointer
+            ValueLayout.ADDRESS)); // module_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_module_validate_imports",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return result code
+            ValueLayout.ADDRESS, // module_ptr
+            ValueLayout.ADDRESS, // imports_ptr
+            ValueLayout.JAVA_LONG)); // imports_count
 
     // Store functions
     addFunctionBinding(
