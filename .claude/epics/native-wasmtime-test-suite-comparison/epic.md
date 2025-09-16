@@ -1,8 +1,9 @@
 ---
 name: native-wasmtime-test-suite-comparison
-status: backlog
+status: completed
 created: 2025-09-12T11:38:45Z
-progress: 0%
+completed: 2025-09-16T11:22:37Z
+progress: 100%
 prd: .claude/prds/native-wasmtime-test-suite-comparison.md
 github: https://github.com/tegmentum/wasmtime4j/issues/210
 ---
