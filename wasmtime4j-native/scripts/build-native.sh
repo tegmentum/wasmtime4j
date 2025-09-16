@@ -204,7 +204,7 @@ source_build_env() {
     
     # Set build reproducibility variables
     export SOURCE_DATE_EPOCH="${SOURCE_DATE_EPOCH:-$(date +%s)}"
-    export RUSTFLAGS="${RUSTFLAGS} -C embed-bitcode=no"
+    # Note: Removed -C embed-bitcode=no flag as it conflicts with LTO in Cargo.toml
     export CARGO_NET_RETRY="${CARGO_NET_RETRY:-10}"
     export CARGO_HTTP_TIMEOUT="${CARGO_HTTP_TIMEOUT:-300}"
 }
