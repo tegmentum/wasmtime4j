@@ -9,7 +9,8 @@ export CARGO_HTTP_MULTIPLEXING=false
 
 # Build reproducibility settings
 export SOURCE_DATE_EPOCH="${SOURCE_DATE_EPOCH:-$(date +%s)}"
-export RUSTFLAGS="${RUSTFLAGS} -C embed-bitcode=no -C debuginfo=2"
+# Note: Removed -C embed-bitcode=no flag as it conflicts with LTO in Cargo.toml
+export RUSTFLAGS="${RUSTFLAGS} -C debuginfo=2"
 
 # Target-specific environment variables
 setup_target_env() {
