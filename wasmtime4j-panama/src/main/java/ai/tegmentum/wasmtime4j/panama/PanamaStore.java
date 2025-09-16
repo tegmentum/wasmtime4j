@@ -85,6 +85,58 @@ public final class PanamaStore implements Store, AutoCloseable {
     }
   }
 
+  /**
+   * Creates a new Panama store with custom configuration.
+   *
+   * @param engine the engine instance that creates this store
+   * @param fuelLimit the fuel limit (0 = no limit)
+   * @param memoryLimitBytes the memory limit in bytes (0 = no limit)
+   * @param executionTimeoutSecs the execution timeout in seconds (0 = no timeout)
+   * @param maxInstances the maximum number of instances (0 = no limit)
+   * @param maxTableElements the maximum table elements (0 = no limit)
+   * @param maxFunctions the maximum functions (0 = no limit)
+   * @throws WasmException if the store cannot be created
+   */
+  public PanamaStore(
+      final PanamaEngine engine,
+      final long fuelLimit,
+      final long memoryLimitBytes,
+      final long executionTimeoutSecs,
+      final int maxInstances,
+      final int maxTableElements,
+      final int maxFunctions) throws WasmException {
+    this.engine = Objects.requireNonNull(engine, "Engine cannot be null");
+    this.resourceManager = engine.getResourceManager();
+    this.nativeFunctions = NativeFunctionBindings.getInstance();
+
+    if (!nativeFunctions.isInitialized()) {
+      throw new WasmException("Native function bindings not initialized");
+    }
+
+    try {
+      // Create the native store with configuration through FFI
+      MemorySegment storePtr = createNativeStoreWithConfig(
+          engine.getEnginePointer(),
+          fuelLimit,
+          memoryLimitBytes,
+          executionTimeoutSecs,
+          maxInstances,
+          maxTableElements,
+          maxFunctions);
+      PanamaErrorHandler.requireValidPointer(storePtr, "storePtr");
+
+      // Create managed resource with cleanup
+      this.storeResource =
+          resourceManager.manageNativeResource(
+              storePtr, () -> destroyNativeStoreInternal(storePtr), "Wasmtime Store");
+
+      LOGGER.fine("Created Panama store instance with custom configuration");
+
+    } catch (Exception e) {
+      throw new WasmException("Failed to create store with configuration", e);
+    }
+  }
+
   @Override
   public Engine getEngine() {
     ensureNotClosed();
@@ -952,6 +1004,71 @@ public final class PanamaStore implements Store, AutoCloseable {
       String detailedMessage =
           PanamaErrorHandler.createDetailedErrorMessage(
               "Native store creation", "engine=" + enginePtr, e.getMessage());
+      throw new WasmException(detailedMessage, e);
+    }
+  }
+
+  /**
+   * Creates a new native store with custom configuration through optimized FFI calls.
+   *
+   * @param enginePtr the engine pointer for the store context
+   * @param fuelLimit the fuel limit (0 = no limit)
+   * @param memoryLimitBytes the memory limit in bytes (0 = no limit)
+   * @param executionTimeoutSecs the execution timeout in seconds (0 = no timeout)
+   * @param maxInstances the maximum number of instances (0 = no limit)
+   * @param maxTableElements the maximum table elements (0 = no limit)
+   * @param maxFunctions the maximum functions (0 = no limit)
+   * @return the native store handle
+   * @throws WasmException if the store cannot be created
+   */
+  private MemorySegment createNativeStoreWithConfig(
+      final MemorySegment enginePtr,
+      final long fuelLimit,
+      final long memoryLimitBytes,
+      final long executionTimeoutSecs,
+      final int maxInstances,
+      final int maxTableElements,
+      final int maxFunctions) throws WasmException {
+    PanamaErrorHandler.requireValidPointer(enginePtr, "enginePtr");
+
+    try {
+      // Allocate memory for store pointer output
+      ArenaResourceManager.ManagedMemorySegment storeOutPtr =
+          resourceManager.allocate(MemoryLayouts.C_POINTER);
+
+      // Call native store creation function with configuration
+      int result = nativeFunctions.storeCreateWithConfig(
+          enginePtr,
+          storeOutPtr.getSegment(),
+          fuelLimit,
+          memoryLimitBytes,
+          executionTimeoutSecs,
+          maxInstances,
+          maxTableElements,
+          maxFunctions);
+
+      // Check for creation errors
+      PanamaErrorHandler.safeCheckError(
+          result, "Store creation with config", "WebAssembly store creation with configuration failed");
+
+      // Extract the created store pointer
+      MemorySegment storePtr =
+          (MemorySegment) MemoryLayouts.C_POINTER.varHandle().get(storeOutPtr.getSegment(), 0);
+
+      PanamaErrorHandler.requireValidPointer(storePtr, "created configured store pointer");
+
+      LOGGER.fine("Successfully created native store with configuration: " + storePtr);
+      return storePtr;
+
+    } catch (Exception e) {
+      if (e instanceof WasmException) {
+        throw e;
+      }
+      String detailedMessage =
+          PanamaErrorHandler.createDetailedErrorMessage(
+              "Native configured store creation",
+              "engine=" + enginePtr + ", fuel=" + fuelLimit + ", memory=" + memoryLimitBytes,
+              e.getMessage());
       throw new WasmException(detailedMessage, e);
     }
   }
