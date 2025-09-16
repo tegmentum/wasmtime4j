@@ -163,6 +163,54 @@ public final class NativeFunctionBindings {
         "wasmtime4j_engine_configure", Integer.class, enginePtr, optionName, optionValue);
   }
 
+  /**
+   * Sets the optimization level for an engine.
+   *
+   * @param enginePtr pointer to the engine
+   * @param level the optimization level (0-2)
+   * @return 0 on success, negative error code on failure
+   */
+  public int engineSetOptimizationLevel(final MemorySegment enginePtr, final int level) {
+    validatePointer(enginePtr, "enginePtr");
+    return callNativeFunction(
+        "wasmtime4j_engine_set_optimization_level", Integer.class, enginePtr, level);
+  }
+
+  /**
+   * Gets the optimization level for an engine.
+   *
+   * @param enginePtr pointer to the engine
+   * @return the optimization level (0-2)
+   */
+  public int engineGetOptimizationLevel(final MemorySegment enginePtr) {
+    validatePointer(enginePtr, "enginePtr");
+    return callNativeFunction("wasmtime4j_engine_get_optimization_level", Integer.class, enginePtr);
+  }
+
+  /**
+   * Sets debug information generation for an engine.
+   *
+   * @param enginePtr pointer to the engine
+   * @param enabled true to enable debug information
+   * @return 0 on success, negative error code on failure
+   */
+  public int engineSetDebugInfo(final MemorySegment enginePtr, final boolean enabled) {
+    validatePointer(enginePtr, "enginePtr");
+    return callNativeFunction(
+        "wasmtime4j_engine_set_debug_info", Integer.class, enginePtr, enabled);
+  }
+
+  /**
+   * Checks if debug information generation is enabled.
+   *
+   * @param enginePtr pointer to the engine
+   * @return true if debug information is enabled
+   */
+  public boolean engineIsDebugInfo(final MemorySegment enginePtr) {
+    validatePointer(enginePtr, "enginePtr");
+    return callNativeFunction("wasmtime4j_engine_is_debug_info", Boolean.class, enginePtr);
+  }
+
   // Module Functions
 
   /**
@@ -222,6 +270,44 @@ public final class NativeFunctionBindings {
   public void storeDestroy(final MemorySegment storePtr) {
     validatePointer(storePtr, "storePtr");
     callNativeFunction("wasmtime4j_store_destroy", Void.class, storePtr);
+  }
+
+  /**
+   * Creates a WebAssembly store with custom configuration.
+   *
+   * @param enginePtr pointer to the engine
+   * @param storePtr pointer to store the created store
+   * @param fuelLimit the fuel limit (0 = no limit)
+   * @param memoryLimitBytes the memory limit in bytes (0 = no limit)
+   * @param executionTimeoutSecs the execution timeout in seconds (0 = no timeout)
+   * @param maxInstances the maximum number of instances (0 = no limit)
+   * @param maxTableElements the maximum table elements (0 = no limit)
+   * @param maxFunctions the maximum functions (0 = no limit)
+   * @return 0 on success, negative error code on failure
+   */
+  public int storeCreateWithConfig(
+      final MemorySegment enginePtr,
+      final MemorySegment storePtr,
+      final long fuelLimit,
+      final long memoryLimitBytes,
+      final long executionTimeoutSecs,
+      final int maxInstances,
+      final int maxTableElements,
+      final int maxFunctions) {
+    validatePointer(enginePtr, "enginePtr");
+    validatePointer(storePtr, "storePtr");
+
+    return callNativeFunction(
+        "wasmtime4j_store_create_with_config",
+        Integer.class,
+        enginePtr,
+        storePtr,
+        fuelLimit,
+        memoryLimitBytes,
+        executionTimeoutSecs,
+        maxInstances,
+        maxTableElements,
+        maxFunctions);
   }
 
   /**
@@ -1066,6 +1152,33 @@ public final class NativeFunctionBindings {
             ValueLayout.ADDRESS, // option_name
             ValueLayout.ADDRESS)); // option_value
 
+    // Engine configuration functions
+    addFunctionBinding(
+        "wasmtime4j_engine_set_optimization_level",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS, // engine_ptr
+            ValueLayout.JAVA_INT)); // level
+
+    addFunctionBinding(
+        "wasmtime4j_engine_get_optimization_level",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS)); // engine_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_engine_set_debug_info",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS, // engine_ptr
+            ValueLayout.JAVA_BOOLEAN)); // enabled
+
+    addFunctionBinding(
+        "wasmtime4j_engine_is_debug_info",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_BOOLEAN,
+            ValueLayout.ADDRESS)); // engine_ptr
+
     // Module functions
     addFunctionBinding(
         "wasmtime4j_module_compile",
@@ -1087,6 +1200,19 @@ public final class NativeFunctionBindings {
             ValueLayout.ADDRESS)); // store_ptr
 
     addFunctionBinding("wasmtime4j_store_destroy", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_store_create_with_config",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS, // engine_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.JAVA_LONG, // fuel_limit
+            ValueLayout.JAVA_LONG, // memory_limit_bytes
+            ValueLayout.JAVA_LONG, // execution_timeout_secs
+            ValueLayout.JAVA_INT, // max_instances
+            ValueLayout.JAVA_INT, // max_table_elements
+            ValueLayout.JAVA_INT)); // max_functions
 
     // Additional Store functions
     addFunctionBinding(

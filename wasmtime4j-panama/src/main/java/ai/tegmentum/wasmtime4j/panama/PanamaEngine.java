@@ -196,6 +196,105 @@ public final class PanamaEngine implements Engine, AutoCloseable {
     throw new UnsupportedOperationException("Config retrieval not yet implemented");
   }
 
+  /**
+   * Sets the optimization level for this engine.
+   *
+   * <p>This method controls how aggressively the Wasmtime engine optimizes compiled WebAssembly
+   * code. Higher optimization levels produce faster code but may increase compilation time.
+   *
+   * @param level the optimization level:
+   *     <ul>
+   *       <li>0 = No optimization (fastest compilation)
+   *       <li>1 = Optimize for speed
+   *       <li>2 = Optimize for both speed and size
+   *     </ul>
+   * @throws WasmException if the configuration cannot be changed
+   * @throws IllegalStateException if this engine has been closed
+   * @throws IllegalArgumentException if level is not in range 0-2
+   */
+  public void setOptimizationLevel(final int level) throws WasmException {
+    ensureNotClosed();
+
+    if (level < 0 || level > 2) {
+      throw new IllegalArgumentException("Optimization level must be 0-2, got: " + level);
+    }
+
+    try {
+      int result = nativeFunctions.engineSetOptimizationLevel(engineResource.getNativePointer(), level);
+      PanamaErrorHandler.safeCheckError(
+          result, "Set optimization level", "Failed to set optimization level to " + level);
+
+      LOGGER.fine("Set optimization level to " + level + " for Panama engine");
+    } catch (Exception e) {
+      if (e instanceof WasmException) {
+        throw e;
+      }
+      throw new WasmException("Unexpected error setting optimization level", e);
+    }
+  }
+
+  /**
+   * Gets the current optimization level for this engine.
+   *
+   * @return the optimization level (0-2)
+   * @throws WasmException if the configuration cannot be retrieved
+   * @throws IllegalStateException if this engine has been closed
+   */
+  public int getOptimizationLevel() throws WasmException {
+    ensureNotClosed();
+
+    try {
+      return nativeFunctions.engineGetOptimizationLevel(engineResource.getNativePointer());
+    } catch (Exception e) {
+      throw new WasmException("Failed to get optimization level", e);
+    }
+  }
+
+  /**
+   * Enables or disables debug information generation.
+   *
+   * <p>When enabled, the engine will generate additional debug information during compilation which
+   * can be useful for debugging WebAssembly modules but may increase compilation time and memory
+   * usage.
+   *
+   * @param enabled true to enable debug information, false to disable
+   * @throws WasmException if the configuration cannot be changed
+   * @throws IllegalStateException if this engine has been closed
+   */
+  public void setDebugInfo(final boolean enabled) throws WasmException {
+    ensureNotClosed();
+
+    try {
+      int result = nativeFunctions.engineSetDebugInfo(engineResource.getNativePointer(), enabled);
+      PanamaErrorHandler.safeCheckError(
+          result, "Set debug info", "Failed to " + (enabled ? "enable" : "disable") + " debug information");
+
+      LOGGER.fine((enabled ? "Enabled" : "Disabled") + " debug info for Panama engine");
+    } catch (Exception e) {
+      if (e instanceof WasmException) {
+        throw e;
+      }
+      throw new WasmException("Unexpected error setting debug info", e);
+    }
+  }
+
+  /**
+   * Checks if debug information generation is enabled.
+   *
+   * @return true if debug information is enabled, false otherwise
+   * @throws WasmException if the configuration cannot be retrieved
+   * @throws IllegalStateException if this engine has been closed
+   */
+  public boolean isDebugInfo() throws WasmException {
+    ensureNotClosed();
+
+    try {
+      return nativeFunctions.engineIsDebugInfo(engineResource.getNativePointer());
+    } catch (Exception e) {
+      throw new WasmException("Failed to get debug info configuration", e);
+    }
+  }
+
   @Override
   public void close() {
     if (closed) {
