@@ -156,6 +156,7 @@ public final class MetricsCollector {
       return new Builder(testName, runtimeType);
     }
 
+    /** Builder for PerformanceDataPoint. */
     public static final class Builder {
       private final String testName;
       private final String runtimeType;

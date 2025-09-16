@@ -273,6 +273,12 @@ public final class PerformanceAnalyzer {
     private final long peakMemoryUsage;
     private final double successRate;
 
+    /**
+     * Creates performance metrics from test execution results.
+     *
+     * @param runtimeType the runtime type
+     * @param results the test execution results
+     */
     public PerformanceMetrics(final String runtimeType, final List<TestExecutionResult> results) {
       this.runtimeType = runtimeType;
 
@@ -406,6 +412,11 @@ public final class PerformanceAnalyzer {
     private final String baselineRuntime;
     private final boolean hasSignificantOverhead;
 
+    /**
+     * Creates overhead analysis from performance metrics.
+     *
+     * @param metricsByRuntime the performance metrics by runtime type
+     */
     public OverheadAnalysis(final Map<String, PerformanceMetrics> metricsByRuntime) {
       this.runtimeOverheads = new HashMap<>();
 
@@ -462,6 +473,13 @@ public final class PerformanceAnalyzer {
     private final long baselineMemoryUsage;
     private final Instant establishedAt;
 
+    /**
+     * Creates a performance baseline from metrics.
+     *
+     * @param testName the test name
+     * @param runtimeType the runtime type
+     * @param metrics the performance metrics
+     */
     public PerformanceBaseline(
         final String testName, final String runtimeType, final PerformanceMetrics metrics) {
       this.testName = testName;
