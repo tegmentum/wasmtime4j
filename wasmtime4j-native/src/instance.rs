@@ -674,7 +674,16 @@ pub mod core {
     pub fn create_instance(store: &mut Store, module: &Module) -> WasmtimeResult<Box<Instance>> {
         Instance::new_without_imports(store, module).map(Box::new)
     }
-    
+
+    /// Core function to instantiate a WebAssembly module with no imports (alias for create_instance)
+    pub fn instantiate_module(mut store: &mut Store, module: &Module, imports: &[wasmtime::Extern]) -> WasmtimeResult<Box<Instance>> {
+        if imports.is_empty() {
+            Instance::new_without_imports(&mut store, module).map(Box::new)
+        } else {
+            Instance::new(&mut store, module, imports).map(Box::new)
+        }
+    }
+
     /// Core function to call exported function with type checking and parameter conversion
     pub fn call_exported_function(
         instance: &Instance,
