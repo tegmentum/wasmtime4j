@@ -7,6 +7,10 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+#undef ai_tegmentum_wasmtime4j_jni_JniMemory_BUFFER_CACHE_VALIDITY_MS
+#define ai_tegmentum_wasmtime4j_jni_JniMemory_BUFFER_CACHE_VALIDITY_MS 100LL
+#undef ai_tegmentum_wasmtime4j_jni_JniMemory_BULK_OPERATION_THRESHOLD
+#define ai_tegmentum_wasmtime4j_jni_JniMemory_BULK_OPERATION_THRESHOLD 1024L
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniMemory
  * Method:    nativeGetSize

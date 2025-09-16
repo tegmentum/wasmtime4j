@@ -9,6 +9,8 @@ extern "C" {
 #endif
 #undef ai_tegmentum_wasmtime4j_jni_JniFunction_MAX_CACHE_SIZE
 #define ai_tegmentum_wasmtime4j_jni_JniFunction_MAX_CACHE_SIZE 100L
+#undef ai_tegmentum_wasmtime4j_jni_JniFunction_OPTIMIZATION_CHECK_INTERVAL
+#define ai_tegmentum_wasmtime4j_jni_JniFunction_OPTIMIZATION_CHECK_INTERVAL 1000LL
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniFunction
  * Method:    nativeGetParameterTypes

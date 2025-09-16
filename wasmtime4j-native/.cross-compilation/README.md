@@ -6,10 +6,10 @@ This directory contains the cross-compilation configuration for building Wasmtim
 
 | Target Triple | Platform Name | Architecture | Notes |
 |---------------|---------------|--------------|-------|
-| `x86_64-unknown-linux-gnu` | linux-x64 | unknown-linux | |
+| `x86_64-unknown-linux-gnu` | linux-x86_64 | unknown-linux | |
 | `aarch64-unknown-linux-gnu` | linux-aarch64 | unknown-linux | |
-| `x86_64-pc-windows-gnu` | windows-x64 | pc-windows | |
-| `x86_64-apple-darwin` | macos-x64 | apple | |
+| `x86_64-pc-windows-msvc` | windows-x86_64 | pc-windows | |
+| `x86_64-apple-darwin` | macos-x86_64 | apple | |
 | `aarch64-apple-darwin` | macos-aarch64 | apple | |
 
 ## Environment Setup
@@ -37,7 +37,7 @@ To ensure reproducible builds across different environments:
 
 Some targets may require additional system dependencies:
 
-### linux-x64 (`x86_64-unknown-linux-gnu`)
+### linux-x86_64 (`x86_64-unknown-linux-gnu`)
 
 Required dependencies: `gcc-multilib libc6-dev`
 
@@ -45,11 +45,11 @@ Required dependencies: `gcc-multilib libc6-dev`
 
 Required dependencies: `gcc-aarch64-linux-gnu`
 
-### windows-x64 (`x86_64-pc-windows-gnu`)
+### windows-x86_64 (`x86_64-pc-windows-msvc`)
 
-Required dependencies: `mingw-w64`
+Required dependencies: `msvc-tools`
 
-### macos-x64 (`x86_64-apple-darwin`)
+### macos-x86_64 (`x86_64-apple-darwin`)
 
 Required dependencies: `osxcross`
 
@@ -107,6 +107,6 @@ Cache can be cleaned with: `./scripts/build-native.sh --clean-cache`
 
 ## Last Updated
 
-Generated on: 2025-08-27 22:38:29 UTC
+Generated on: 2025-09-16 11:00:17 UTC
 Rust Version: rustc 1.89.0 (29483883e 2025-08-04)
 Host Platform: macos-aarch64

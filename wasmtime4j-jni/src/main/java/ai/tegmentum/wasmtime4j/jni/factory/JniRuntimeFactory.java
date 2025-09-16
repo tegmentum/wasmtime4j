@@ -1,6 +1,6 @@
 package ai.tegmentum.wasmtime4j.jni.factory;
 
-// import ai.tegmentum.wasmtime4j.jni.JniWasmRuntime;
+import ai.tegmentum.wasmtime4j.jni.JniWasmRuntime;
 // import ai.tegmentum.wasmtime4j.jni.nativelib.NativeMethodBindings;
 import java.util.logging.Logger;
 
@@ -38,15 +38,15 @@ public final class JniRuntimeFactory {
    * @throws RuntimeException if the runtime cannot be created
    * @throws IllegalStateException if the native library cannot be loaded
    */
-  public static Object createRuntime() {
+  public static JniWasmRuntime createRuntime() {
     try {
       // Ensure native methods are initialized
       // NativeMethodBindings.ensureInitialized();
 
       // Create and return the JNI runtime
-      // final JniWasmRuntime runtime = new JniWasmRuntime();
+      final JniWasmRuntime runtime = new JniWasmRuntime();
       LOGGER.fine("Created JNI WebAssembly runtime");
-      return null; // runtime;
+      return runtime;
 
     } catch (final Exception e) {
       LOGGER.severe("Failed to create JNI WebAssembly runtime: " + e.getMessage());

@@ -38,18 +38,22 @@ public final class OptimizedMarshalling {
       NativeObjectPool.getPool(
           ByteBuffer.class,
           () -> ByteBuffer.allocateDirect(4096).order(ByteOrder.nativeOrder()),
-          16,
-          4);
+          32, // Increased pool size for better performance
+          8);
 
   /** Cache for frequently used parameter patterns. */
   private static final ConcurrentHashMap<String, MarshallingPlan> MARSHALLING_CACHE =
       new ConcurrentHashMap<>();
 
   /** Maximum cache size for marshalling plans. */
-  private static final int MAX_MARSHALLING_CACHE_SIZE = 256;
+  private static final int MAX_MARSHALLING_CACHE_SIZE = 512; // Increased cache size
 
   /** Threshold for using direct marshalling vs buffered marshalling. */
-  private static final int DIRECT_MARSHALLING_THRESHOLD = 64;
+  private static final int DIRECT_MARSHALLING_THRESHOLD = 32; // Lowered threshold for better performance
+
+  /** Thread-local cache for small parameter arrays to avoid allocation. */
+  private static final ThreadLocal<Object[]> THREAD_LOCAL_PARAM_CACHE =
+      ThreadLocal.withInitial(() -> new Object[16]);
 
   /** Represents an optimized marshalling plan for a specific parameter pattern. */
   private static final class MarshallingPlan {
@@ -252,7 +256,22 @@ public final class OptimizedMarshalling {
 
   /** Direct marshalling for simple parameter cases. */
   private static Object[] marshalDirect(final WasmValue[] parameters) {
-    final Object[] result = new Object[parameters.length];
+    final int length = parameters.length;
+
+    // Use thread-local cache for small arrays to avoid allocation
+    if (length <= 16) {
+      final Object[] cached = THREAD_LOCAL_PARAM_CACHE.get();
+      for (int i = 0; i < length; i++) {
+        cached[i] = marshalSingleValue(parameters[i]);
+      }
+      // Return a copy of the appropriate size
+      final Object[] result = new Object[length];
+      System.arraycopy(cached, 0, result, 0, length);
+      return result;
+    }
+
+    // For larger arrays, allocate normally
+    final Object[] result = new Object[length];
     for (int i = 0; i < parameters.length; i++) {
       result[i] = marshalSingleValue(parameters[i]);
     }

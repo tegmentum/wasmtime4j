@@ -470,35 +470,139 @@ pub mod ffi_utils {
         Ok(())
     }
 
-    /// Set last error for FFI retrieval
+    /// Set last error for FFI retrieval with defensive error handling
     pub fn set_last_error(error: WasmtimeError) {
-        LAST_ERROR.with(|e| {
-            *e.borrow_mut() = Some(error);
-        });
+        // Use panic-safe error setting to prevent issues in multi-threaded contexts
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            LAST_ERROR.with(|e| {
+                match e.try_borrow_mut() {
+                    Ok(mut error_ref) => {
+                        *error_ref = Some(error);
+                    }
+                    Err(_) => {
+                        // If borrow_mut fails (should be rare), log the error
+                        // but don't propagate panic to prevent JVM crashes
+                        log::warn!("Failed to set last error due to borrow check failure");
+                    }
+                }
+            });
+        }));
+
+        if result.is_err() {
+            log::error!("Panic occurred while setting last error - prevented JVM crash");
+        }
     }
 
-    /// Get last error message as C string
-    /// Returns null if no error
+    /// Get last error message as C string with defensive error handling
+    /// Returns null if no error or if error retrieval fails
     pub fn get_last_error_message() -> *mut c_char {
-        LAST_ERROR.with(|e| {
-            match e.borrow().as_ref() {
-                Some(error) => error.to_c_string().into_raw(),
-                None => std::ptr::null_mut(),
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            LAST_ERROR.with(|e| {
+                match e.try_borrow() {
+                    Ok(error_ref) => {
+                        match error_ref.as_ref() {
+                            Some(error) => error.to_c_string().into_raw(),
+                            None => std::ptr::null_mut(),
+                        }
+                    }
+                    Err(_) => {
+                        log::warn!("Failed to get last error due to borrow check failure");
+                        std::ptr::null_mut()
+                    }
+                }
+            })
+        }));
+
+        match result {
+            Ok(ptr) => ptr,
+            Err(_) => {
+                log::error!("Panic occurred while getting last error - prevented JVM crash");
+                std::ptr::null_mut()
             }
-        })
+        }
     }
 
-    /// Clear last error
+    /// Clear last error with defensive error handling
     pub fn clear_last_error() {
-        LAST_ERROR.with(|e| {
-            *e.borrow_mut() = None;
-        });
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            LAST_ERROR.with(|e| {
+                match e.try_borrow_mut() {
+                    Ok(mut error_ref) => {
+                        *error_ref = None;
+                    }
+                    Err(_) => {
+                        log::warn!("Failed to clear last error due to borrow check failure");
+                    }
+                }
+            });
+        }));
+
+        if result.is_err() {
+            log::error!("Panic occurred while clearing last error - prevented JVM crash");
+        }
     }
 
-    /// Free error message C string
+    /// Free error message C string with defensive error handling
     pub unsafe fn free_error_message(message: *mut c_char) {
-        if !message.is_null() {
+        if message.is_null() {
+            return;
+        }
+
+        // Use panic-safe memory deallocation to prevent JVM crashes
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             drop(CString::from_raw(message));
+        }));
+
+        if result.is_err() {
+            log::error!("Panic occurred while freeing error message at {:p} - potential memory leak", message);
+        }
+    }
+
+    /// Check if there are any pending errors in thread-local storage
+    /// This is useful for debugging thread safety issues
+    pub fn has_pending_error() -> bool {
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            LAST_ERROR.with(|e| {
+                match e.try_borrow() {
+                    Ok(error_ref) => error_ref.is_some(),
+                    Err(_) => {
+                        log::warn!("Failed to check pending error due to borrow check failure");
+                        false
+                    }
+                }
+            })
+        }));
+
+        match result {
+            Ok(has_error) => has_error,
+            Err(_) => {
+                log::error!("Panic occurred while checking pending error - prevented JVM crash");
+                false
+            }
+        }
+    }
+
+    /// Get error statistics for debugging thread safety issues
+    pub fn get_error_stats() -> (bool, String) {
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            LAST_ERROR.with(|e| {
+                match e.try_borrow() {
+                    Ok(error_ref) => {
+                        match error_ref.as_ref() {
+                            Some(error) => (true, format!("Error: {} (Code: {:?})", error, error.to_error_code())),
+                            None => (false, "No error".to_string()),
+                        }
+                    }
+                    Err(_) => {
+                        (false, "Borrow check failed - potential threading issue".to_string())
+                    }
+                }
+            })
+        }));
+
+        match result {
+            Ok((has_error, message)) => (has_error, message),
+            Err(_) => (false, "Panic occurred during error stats check".to_string()),
         }
     }
 
@@ -510,7 +614,7 @@ pub mod ffi_utils {
     {
         match operation() {
             Ok(result) => {
-                jni_utils::clear_last_error();
+                clear_last_error();
                 (ErrorCode::Success, result)
             }
             Err(error) => {
@@ -528,7 +632,7 @@ pub mod ffi_utils {
     {
         match operation() {
             Ok(result) => {
-                jni_utils::clear_last_error();
+                clear_last_error();
                 Box::into_raw(result) as *mut c_void
             }
             Err(error) => {
@@ -553,7 +657,7 @@ pub mod ffi_utils {
     {
         match operation() {
             Ok(()) => {
-                jni_utils::clear_last_error();
+                clear_last_error();
                 ErrorCode::Success as i32
             }
             Err(error) => {
@@ -627,9 +731,9 @@ pub mod ffi_utils {
         }
 
         // Use panic-safe destruction to prevent JVM crashes
-        let result = std::panic::catch_unwind(|| {
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             let _ = Box::from_raw(ptr as *mut T);
-        });
+        }));
 
         match result {
             Ok(_) => {
@@ -735,7 +839,7 @@ pub mod jni_utils {
     {
         match operation() {
             Ok(result) => {
-                jni_utils::clear_last_error();
+                clear_last_error();
                 Box::into_raw(result) as *mut c_void
             }
             Err(error) => {
@@ -753,7 +857,7 @@ pub mod jni_utils {
     {
         match operation() {
             Ok(()) => {
-                jni_utils::clear_last_error();
+                clear_last_error();
                 ErrorCode::Success as i32
             }
             Err(error) => {
@@ -772,7 +876,7 @@ pub mod jni_utils {
     {
         match operation() {
             Ok(result) => {
-                jni_utils::clear_last_error();
+                clear_last_error();
                 (ErrorCode::Success, result)
             }
             Err(error) => {
@@ -790,7 +894,7 @@ pub mod jni_utils {
     {
         match operation() {
             Ok(result) => {
-                jni_utils::clear_last_error();
+                clear_last_error();
                 result
             }
             Err(error) => {
@@ -810,7 +914,7 @@ pub mod jni_utils {
     {
         match operation() {
             Ok(result) => {
-                jni_utils::clear_last_error();
+                clear_last_error();
                 result
             }
             Err(error) => {
@@ -828,7 +932,7 @@ pub mod jni_utils {
     {
         match operation() {
             Ok(result) => {
-                jni_utils::clear_last_error();
+                clear_last_error();
                 result
             }
             Err(error) => {
@@ -846,7 +950,7 @@ pub mod jni_utils {
     {
         match operation() {
             Ok(()) => {
-                jni_utils::clear_last_error();
+                clear_last_error();
             }
             Err(error) => {
                 throw_jni_exception(&mut env, &error);
@@ -862,7 +966,7 @@ pub mod jni_utils {
     {
         match operation() {
             Ok(result) => {
-                jni_utils::clear_last_error();
+                clear_last_error();
                 result.as_raw()
             }
             Err(error) => {
@@ -898,20 +1002,188 @@ mod tests {
     #[test]
     fn test_ffi_error_handling() {
         use ffi_utils::*;
-        
+
         let result: (ErrorCode, ()) = ffi_try(|| {
-            Err(WasmtimeError::InvalidParameter { 
-                message: "test".to_string() 
+            Err(WasmtimeError::InvalidParameter {
+                message: "test".to_string()
             })
         });
-        
+
         assert!(matches!(result.0, ErrorCode::InvalidParameterError));
-        
+
         let message = get_last_error_message();
         assert!(!message.is_null());
-        
+
         unsafe {
             free_error_message(message);
+        }
+    }
+
+    #[test]
+    fn test_thread_safety_error_handling() {
+        use ffi_utils::*;
+        use std::thread;
+        use std::sync::Arc;
+        use std::sync::atomic::{AtomicUsize, Ordering};
+
+        // Test concurrent error setting and retrieval across multiple threads
+        let error_count = Arc::new(AtomicUsize::new(0));
+        let success_count = Arc::new(AtomicUsize::new(0));
+
+        let handles: Vec<_> = (0..10).map(|i| {
+            let error_count = Arc::clone(&error_count);
+            let success_count = Arc::clone(&success_count);
+
+            thread::spawn(move || {
+                // Each thread performs multiple error operations
+                for j in 0..100 {
+                    // Set an error
+                    let result: (ErrorCode, ()) = ffi_try(|| {
+                        if (i + j) % 3 == 0 {
+                            Err(WasmtimeError::InvalidParameter {
+                                message: format!("Thread {} iteration {}", i, j)
+                            })
+                        } else {
+                            Ok(())
+                        }
+                    });
+
+                    match result.0 {
+                        ErrorCode::Success => {
+                            success_count.fetch_add(1, Ordering::SeqCst);
+                            // Verify no error is pending
+                            assert!(!has_pending_error());
+                        }
+                        ErrorCode::InvalidParameterError => {
+                            error_count.fetch_add(1, Ordering::SeqCst);
+                            // Verify error is pending
+                            assert!(has_pending_error());
+
+                            // Get error stats
+                            let (has_error, stats) = get_error_stats();
+                            assert!(has_error);
+                            assert!(stats.contains("Thread"));
+
+                            // Clear error
+                            clear_last_error();
+                            assert!(!has_pending_error());
+                        }
+                        _ => panic!("Unexpected error code: {:?}", result.0),
+                    }
+                }
+            })
+        }).collect();
+
+        // Wait for all threads to complete
+        for handle in handles {
+            handle.join().unwrap();
+        }
+
+        let total_errors = error_count.load(Ordering::SeqCst);
+        let total_success = success_count.load(Ordering::SeqCst);
+
+        // Verify that we processed all operations correctly
+        assert_eq!(total_errors + total_success, 1000);
+
+        // Each thread runs 100 iterations, every 3rd should be an error
+        // So we expect approximately 333 errors
+        assert!(total_errors >= 300 && total_errors <= 350);
+    }
+
+    #[test]
+    fn test_panic_safety_error_handling() {
+        use ffi_utils::*;
+
+        // Test that error handling doesn't panic under stress
+        for _ in 0..1000 {
+            let result: (ErrorCode, ()) = ffi_try(|| {
+                Err(WasmtimeError::Internal {
+                    message: "Stress test error".to_string(),
+                })
+            });
+
+            assert!(matches!(result.0, ErrorCode::InternalError));
+
+            let message = get_last_error_message();
+            assert!(!message.is_null());
+
+            unsafe {
+                free_error_message(message);
+            }
+
+            clear_last_error();
+            assert!(!has_pending_error());
+        }
+    }
+
+    #[test]
+    fn test_concurrent_resource_management() {
+        use ffi_utils::*;
+        use std::thread;
+        use std::sync::Arc;
+
+        let handles: Vec<_> = (0..5).map(|i| {
+            thread::spawn(move || {
+                // Test resource registration and cleanup
+                for j in 0..20 {
+                    let test_data = format!("Thread {} Data {}", i, j);
+
+                    match register_resource(test_data.clone()) {
+                        Ok(handle) => {
+                            // Verify resource can be retrieved
+                            match get_resource::<String>(handle) {
+                                Ok(arc_mutex) => {
+                                    let data = arc_mutex.lock().unwrap();
+                                    assert_eq!(*data, test_data);
+                                }
+                                Err(e) => panic!("Failed to get resource: {:?}", e),
+                            }
+
+                            // Clean up resource
+                            match unregister_resource(handle) {
+                                Ok(_) => {}
+                                Err(e) => panic!("Failed to unregister resource: {:?}", e),
+                            }
+                        }
+                        Err(e) => panic!("Failed to register resource: {:?}", e),
+                    }
+                }
+            })
+        }).collect();
+
+        for handle in handles {
+            handle.join().unwrap();
+        }
+    }
+
+    #[test]
+    fn test_defensive_error_handling() {
+        use ffi_utils::*;
+
+        // Test that error handling functions are defensive against invalid inputs
+        unsafe {
+            free_error_message(std::ptr::null_mut()); // Should not crash
+        }
+
+        // Test stats functions don't panic
+        let (has_error, stats) = get_error_stats();
+        assert!(!has_error);
+        assert!(stats.contains("No error"));
+
+        assert!(!has_pending_error());
+
+        // Set and clear error multiple times
+        for _ in 0..10 {
+            let result: (ErrorCode, ()) = ffi_try(|| {
+                Err(WasmtimeError::Validation {
+                    message: "Test validation error".to_string(),
+                })
+            });
+            assert!(matches!(result.0, ErrorCode::ValidationError));
+            assert!(has_pending_error());
+
+            clear_last_error();
+            assert!(!has_pending_error());
         }
     }
 }

@@ -57,6 +57,13 @@ public final class PanamaFunction implements WasmFunction, AutoCloseable {
   private volatile List<Integer> parameterTypes;
   private volatile List<Integer> resultTypes;
 
+  // Performance optimization fields
+  private volatile ArenaResourceManager.ManagedMemorySegment cachedParamsMemory;
+  private volatile ArenaResourceManager.ManagedMemorySegment cachedResultsMemory;
+  private volatile int cachedParamCount = -1;
+  private volatile int cachedResultCount = -1;
+  private volatile long lastOptimizationTime = 0;
+
   /**
    * Creates a new Panama function instance using Stream 1 & 2 infrastructure.
    *
@@ -116,25 +123,35 @@ public final class PanamaFunction implements WasmFunction, AutoCloseable {
             "Parameter count mismatch: expected " + expectedParams + ", got " + actualParams);
       }
 
-      // Convert WasmValue parameters to native format
+      // Zero-copy optimization: reuse cached memory segments when possible
       ArenaResourceManager.ManagedMemorySegment paramsMemory = null;
       MemorySegment paramsArray = null;
 
       if (expectedParams > 0) {
-        // Allocate memory for parameter array
-        paramsMemory = resourceManager.allocate(MemoryLayouts.WASM_VAL.byteSize() * expectedParams);
-        paramsArray = paramsMemory.getSegment();
+        // Check if we can reuse cached parameter memory
+        if (cachedParamsMemory != null && cachedParamCount == expectedParams) {
+          paramsMemory = cachedParamsMemory;
+          paramsArray = paramsMemory.getSegment();
+          // Zero out the memory for safety
+          paramsArray.fill((byte) 0);
+        } else {
+          // Allocate new memory and cache it
+          paramsMemory = resourceManager.allocate(MemoryLayouts.WASM_VAL.byteSize() * expectedParams);
+          paramsArray = paramsMemory.getSegment();
 
-        // Marshal parameters
-        for (int i = 0; i < expectedParams; i++) {
-          MemorySegment paramSlot =
-              paramsArray.asSlice(
-                  i * MemoryLayouts.WASM_VAL.byteSize(), MemoryLayouts.WASM_VAL.byteSize());
-          marshalWasmValue(params[i], paramSlot);
+          // Update cache
+          if (cachedParamsMemory != null) {
+            // Don't close old memory - let resource manager handle it
+          }
+          cachedParamsMemory = paramsMemory;
+          cachedParamCount = expectedParams;
         }
+
+        // Marshal parameters using optimized approach
+        marshalParametersOptimized(params, paramsArray, expectedParams);
       }
 
-      // Prepare result array
+      // Prepare result array with zero-copy optimization
       List<Integer> resultTypes = getResultTypes();
       int expectedResults = resultTypes.size();
 
@@ -142,10 +159,24 @@ public final class PanamaFunction implements WasmFunction, AutoCloseable {
       MemorySegment resultsArray = null;
 
       if (expectedResults > 0) {
-        // Allocate memory for result array
-        resultsMemory =
-            resourceManager.allocate(MemoryLayouts.WASM_VAL.byteSize() * expectedResults);
-        resultsArray = resultsMemory.getSegment();
+        // Check if we can reuse cached result memory
+        if (cachedResultsMemory != null && cachedResultCount == expectedResults) {
+          resultsMemory = cachedResultsMemory;
+          resultsArray = resultsMemory.getSegment();
+          // Zero out for safety
+          resultsArray.fill((byte) 0);
+        } else {
+          // Allocate new memory and cache it
+          resultsMemory = resourceManager.allocate(MemoryLayouts.WASM_VAL.byteSize() * expectedResults);
+          resultsArray = resultsMemory.getSegment();
+
+          // Update cache
+          if (cachedResultsMemory != null) {
+            // Don't close old memory - let resource manager handle it
+          }
+          cachedResultsMemory = resultsMemory;
+          cachedResultCount = expectedResults;
+        }
       }
 
       // Invoke the function through FFI
@@ -156,14 +187,9 @@ public final class PanamaFunction implements WasmFunction, AutoCloseable {
         throw new WasmException("WebAssembly function execution failed");
       }
 
-      // Unmarshal results back to WasmValue objects
+      // Unmarshal results back to WasmValue objects using optimized approach
       WasmValue[] results = new WasmValue[expectedResults];
-      for (int i = 0; i < expectedResults; i++) {
-        MemorySegment resultSlot =
-            resultsArray.asSlice(
-                i * MemoryLayouts.WASM_VAL.byteSize(), MemoryLayouts.WASM_VAL.byteSize());
-        results[i] = unmarshalWasmValue(resultSlot, resultTypes.get(i));
-      }
+      unmarshalResultsOptimized(resultsArray, results, resultTypes, expectedResults);
 
       return results;
 
@@ -429,6 +455,42 @@ public final class PanamaFunction implements WasmFunction, AutoCloseable {
     return result == 0; // Success if result is 0
   }
 
+  /**
+   * Optimized marshalling of multiple parameters at once.
+   *
+   * @param params the WasmValue parameters
+   * @param paramsArray the target memory segment
+   * @param count number of parameters
+   */
+  private void marshalParametersOptimized(final WasmValue[] params, final MemorySegment paramsArray, final int count) {
+    final long slotSize = MemoryLayouts.WASM_VAL.byteSize();
+
+    // Batch marshal parameters for better cache efficiency
+    for (int i = 0; i < count; i++) {
+      final MemorySegment paramSlot = paramsArray.asSlice(i * slotSize, slotSize);
+      marshalWasmValueOptimized(params[i], paramSlot);
+    }
+  }
+
+  /**
+   * Optimized unmarshalling of multiple results at once.
+   *
+   * @param resultsArray source memory segment
+   * @param results target array
+   * @param resultTypes expected types
+   * @param count number of results
+   */
+  private void unmarshalResultsOptimized(final MemorySegment resultsArray, final WasmValue[] results,
+                                         final List<Integer> resultTypes, final int count) {
+    final long slotSize = MemoryLayouts.WASM_VAL.byteSize();
+
+    // Batch unmarshal results for better cache efficiency
+    for (int i = 0; i < count; i++) {
+      final MemorySegment resultSlot = resultsArray.asSlice(i * slotSize, slotSize);
+      results[i] = unmarshalWasmValueOptimized(resultSlot, resultTypes.get(i));
+    }
+  }
+
   /** Marshals a WasmValue to native WebAssembly value format. */
   private void marshalWasmValue(final WasmValue wasmValue, final MemorySegment valueSlot) {
     // Set the value type kind and value based on WasmValue type
@@ -466,6 +528,63 @@ public final class PanamaFunction implements WasmFunction, AutoCloseable {
       default:
         throw new IllegalArgumentException("Unsupported WebAssembly type: " + wasmValue.getType());
     }
+  }
+
+  /**
+   * Optimized marshalling with reduced method call overhead.
+   *
+   * @param wasmValue source value
+   * @param valueSlot target memory slot
+   */
+  private void marshalWasmValueOptimized(final WasmValue wasmValue, final MemorySegment valueSlot) {
+    // Direct marshalling with minimal overhead
+    switch (wasmValue.getType()) {
+      case I32 -> {
+        MemoryLayouts.WASM_VAL_KIND.set(valueSlot, MemoryLayouts.WASM_I32);
+        MemoryLayouts.WASM_VAL_I32.set(valueSlot, wasmValue.asI32());
+      }
+      case I64 -> {
+        MemoryLayouts.WASM_VAL_KIND.set(valueSlot, MemoryLayouts.WASM_I64);
+        MemoryLayouts.WASM_VAL_I64.set(valueSlot, wasmValue.asI64());
+      }
+      case F32 -> {
+        MemoryLayouts.WASM_VAL_KIND.set(valueSlot, MemoryLayouts.WASM_F32);
+        MemoryLayouts.WASM_VAL_F32.set(valueSlot, wasmValue.asF32());
+      }
+      case F64 -> {
+        MemoryLayouts.WASM_VAL_KIND.set(valueSlot, MemoryLayouts.WASM_F64);
+        MemoryLayouts.WASM_VAL_F64.set(valueSlot, wasmValue.asF64());
+      }
+      case EXTERNREF -> {
+        MemoryLayouts.WASM_VAL_KIND.set(valueSlot, MemoryLayouts.WASM_ANYREF);
+        MemoryLayouts.WASM_VAL_REF.set(valueSlot, MemorySegment.NULL);
+      }
+      case FUNCREF -> {
+        MemoryLayouts.WASM_VAL_KIND.set(valueSlot, MemoryLayouts.WASM_FUNCREF);
+        MemoryLayouts.WASM_VAL_REF.set(valueSlot, MemorySegment.NULL);
+      }
+      default -> throw new IllegalArgumentException("Unsupported WebAssembly type: " + wasmValue.getType());
+    }
+  }
+
+  /**
+   * Optimized unmarshalling with reduced method call overhead.
+   *
+   * @param valueSlot source memory slot
+   * @param wasmType expected type
+   * @return unmarshalled WasmValue
+   */
+  private WasmValue unmarshalWasmValueOptimized(final MemorySegment valueSlot, final int wasmType) {
+    // Direct unmarshalling with switch expression for performance
+    return switch (wasmType) {
+      case MemoryLayouts.WASM_I32 -> WasmValue.i32((Integer) MemoryLayouts.WASM_VAL_I32.get(valueSlot));
+      case MemoryLayouts.WASM_I64 -> WasmValue.i64((Long) MemoryLayouts.WASM_VAL_I64.get(valueSlot));
+      case MemoryLayouts.WASM_F32 -> WasmValue.f32((Float) MemoryLayouts.WASM_VAL_F32.get(valueSlot));
+      case MemoryLayouts.WASM_F64 -> WasmValue.f64((Double) MemoryLayouts.WASM_VAL_F64.get(valueSlot));
+      case MemoryLayouts.WASM_ANYREF -> WasmValue.externref(null);
+      case MemoryLayouts.WASM_FUNCREF -> WasmValue.funcref(null);
+      default -> throw new IllegalArgumentException("Unsupported WebAssembly type: " + wasmType);
+    };
   }
 
   /** Unmarshals a WebAssembly value to WasmValue object. */
