@@ -1,7 +1,9 @@
 package ai.tegmentum.wasmtime4j.comparison.reporters;
 
 import ai.tegmentum.wasmtime4j.RuntimeType;
+import ai.tegmentum.wasmtime4j.comparison.analyzers.BehavioralAnalysisResult;
 import ai.tegmentum.wasmtime4j.comparison.analyzers.BehavioralDiscrepancy;
+import ai.tegmentum.wasmtime4j.comparison.analyzers.BehavioralVerdict;
 import ai.tegmentum.wasmtime4j.comparison.analyzers.ComprehensiveCoverageReport;
 import ai.tegmentum.wasmtime4j.comparison.analyzers.CoverageAnalysisResult;
 import ai.tegmentum.wasmtime4j.comparison.analyzers.PerformanceAnalyzer;
@@ -11,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Comprehensive comparison report containing all analysis results, performance data, behavioral
@@ -30,6 +33,13 @@ public final class ComparisonReport {
   private final List<BehavioralDiscrepancy> behavioralDiscrepancies;
   private final List<RecommendationResult> recommendations;
   private final ReportStatistics statistics;
+
+  // Cached computed values
+  private volatile ComparisonSummary cachedSummary;
+  private volatile Map<String, BehavioralAnalysisResult> cachedBehavioralResults;
+  private volatile Map<String, RecommendationResult> cachedRecommendationResults;
+  private volatile Map<String, PerformanceAnalyzer.PerformanceComparisonResult> cachedPerformanceResults;
+  private volatile Map<String, CoverageAnalysisResult> cachedCoverageResults;
 
   private ComparisonReport(final Builder builder) {
     this.reportId = Objects.requireNonNull(builder.reportId, "reportId cannot be null");
@@ -85,6 +95,138 @@ public final class ComparisonReport {
 
   public ReportStatistics getStatistics() {
     return statistics;
+  }
+
+  /**
+   * Gets the comparison summary with key metrics and overall verdict.
+   *
+   * @return comparison summary
+   */
+  public ComparisonSummary getSummary() {
+    if (cachedSummary == null) {
+      synchronized (this) {
+        if (cachedSummary == null) {
+          cachedSummary = ComparisonSummary.fromBehavioralResults(
+              getBehavioralResults(), executionSummary.getTotalDuration());
+        }
+      }
+    }
+    return cachedSummary;
+  }
+
+  /**
+   * Gets behavioral analysis results mapped by test name.
+   *
+   * @return map of behavioral results
+   */
+  public Map<String, BehavioralAnalysisResult> getBehavioralResults() {
+    if (cachedBehavioralResults == null) {
+      synchronized (this) {
+        if (cachedBehavioralResults == null) {
+          cachedBehavioralResults = testResults.stream()
+              .collect(Collectors.toMap(
+                  TestComparisonResult::getTestName,
+                  result -> createBehavioralAnalysisResult(result)));
+        }
+      }
+    }
+    return cachedBehavioralResults;
+  }
+
+  /**
+   * Gets recommendation results mapped by test name.
+   *
+   * @return map of recommendation results
+   */
+  public Map<String, RecommendationResult> getRecommendationResults() {
+    if (cachedRecommendationResults == null) {
+      synchronized (this) {
+        if (cachedRecommendationResults == null) {
+          cachedRecommendationResults = recommendations.stream()
+              .collect(Collectors.toMap(
+                  result -> result.getTestName() != null ? result.getTestName() : "unknown",
+                  result -> result));
+        }
+      }
+    }
+    return cachedRecommendationResults;
+  }
+
+  /**
+   * Gets performance analysis results mapped by test name.
+   *
+   * @return map of performance results
+   */
+  public Map<String, PerformanceAnalyzer.PerformanceComparisonResult> getPerformanceResults() {
+    if (cachedPerformanceResults == null) {
+      synchronized (this) {
+        if (cachedPerformanceResults == null) {
+          cachedPerformanceResults = testResults.stream()
+              .collect(Collectors.toMap(
+                  TestComparisonResult::getTestName,
+                  TestComparisonResult::getPerformanceComparison));
+        }
+      }
+    }
+    return cachedPerformanceResults;
+  }
+
+  /**
+   * Gets coverage analysis results mapped by test name.
+   *
+   * @return map of coverage results
+   */
+  public Map<String, CoverageAnalysisResult> getCoverageResults() {
+    if (cachedCoverageResults == null) {
+      synchronized (this) {
+        if (cachedCoverageResults == null) {
+          cachedCoverageResults = testResults.stream()
+              .collect(Collectors.toMap(
+                  TestComparisonResult::getTestName,
+                  TestComparisonResult::getCoverageAnalysis));
+        }
+      }
+    }
+    return cachedCoverageResults;
+  }
+
+  /**
+   * Checks if the overall comparison was successful.
+   *
+   * @return true if successful
+   */
+  public boolean isSuccessful() {
+    final ComparisonSummary summary = getSummary();
+    return summary.getOverallVerdict() == OverallVerdict.PASSED
+        || summary.getOverallVerdict() == OverallVerdict.PASSED_WITH_WARNINGS;
+  }
+
+  /**
+   * Gets the end time of the comparison analysis.
+   *
+   * @return end time
+   */
+  public Instant getEndTime() {
+    return executionSummary.getEndTime();
+  }
+
+  /**
+   * Gets the total duration of the comparison analysis.
+   *
+   * @return total duration
+   */
+  public java.time.Duration getTotalDuration() {
+    return executionSummary.getTotalDuration();
+  }
+
+  /**
+   * Gets the configuration used for this comparison report.
+   *
+   * @return report configuration
+   */
+  public ReportConfiguration getConfiguration() {
+    // Return a default configuration for now - this would normally be passed in
+    return ReportConfiguration.defaultConfiguration();
   }
 
   /**
@@ -284,6 +426,34 @@ public final class ComparisonReport {
       }
       return new ComparisonReport(this);
     }
+  }
+
+  private BehavioralAnalysisResult createBehavioralAnalysisResult(
+      final TestComparisonResult testResult) {
+    // Create a simple behavioral analysis result from test comparison result
+    final boolean isCompatible = testResult.getOverallStatus() == TestResultStatus.SUCCESS
+        || testResult.getOverallStatus() == TestResultStatus.WARNING;
+
+    // Calculate consistency score based on status
+    final double consistencyScore = switch (testResult.getOverallStatus()) {
+      case SUCCESS -> 1.0;
+      case WARNING -> 0.75;
+      case FAILURE -> 0.25;
+      case CRITICAL -> 0.0;
+    };
+
+    // Determine verdict based on compatibility and score
+    final BehavioralVerdict verdict = isCompatible
+        ? (consistencyScore >= 0.9 ? BehavioralVerdict.CONSISTENT : BehavioralVerdict.MOSTLY_CONSISTENT)
+        : (consistencyScore > 0.0 ? BehavioralVerdict.INCONSISTENT : BehavioralVerdict.INCOMPATIBLE);
+
+    return new BehavioralAnalysisResult(
+        testResult.getTestName(),
+        isCompatible,
+        consistencyScore,
+        testResult.getDiscrepancies(),
+        verdict
+    );
   }
 }
 

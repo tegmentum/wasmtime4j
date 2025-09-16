@@ -357,7 +357,7 @@ final class ExecutionPattern {
 }
 
 /** Overall behavioral verdict for runtime compatibility. */
-enum BehavioralVerdict {
+public enum BehavioralVerdict {
   /** Runtimes behave consistently across all comparisons. */
   CONSISTENT("Consistent behavior"),
 
