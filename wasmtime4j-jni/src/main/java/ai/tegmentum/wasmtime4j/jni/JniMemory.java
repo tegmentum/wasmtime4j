@@ -5,6 +5,7 @@ import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.logging.Logger;
 
 /**
@@ -20,6 +21,12 @@ import java.util.logging.Logger;
 public final class JniMemory extends JniResource implements WasmMemory {
 
   private static final Logger LOGGER = Logger.getLogger(JniMemory.class.getName());
+
+  // Performance optimization fields
+  private volatile ByteBuffer cachedBuffer;
+  private volatile long lastBufferCheck = 0;
+  private static final long BUFFER_CACHE_VALIDITY_MS = 100; // Cache buffer for 100ms
+  private static final int BULK_OPERATION_THRESHOLD = 1024; // Use bulk operations for >= 1KB
 
   // Load native library when this class is first loaded
   static {
@@ -200,10 +207,19 @@ public final class JniMemory extends JniResource implements WasmMemory {
       throw new IndexOutOfBoundsException("destOffset + length exceeds dest array length");
     }
 
-    // Create a temporary buffer for the native call
-    final byte[] tempBuffer = new byte[length];
-    final int bytesRead = nativeReadBytes(getNativeHandle(), offset, tempBuffer);
-    System.arraycopy(tempBuffer, 0, dest, destOffset, Math.min(bytesRead, length));
+    // Optimization: For large operations or when destOffset is 0, avoid temporary buffer
+    if (destOffset == 0 && length == dest.length) {
+      // Direct read into destination array
+      nativeReadBytes(getNativeHandle(), offset, dest);
+    } else if (length >= BULK_OPERATION_THRESHOLD) {
+      // Use optimized bulk read for large operations
+      readBytesOptimized(offset, dest, destOffset, length);
+    } else {
+      // Original implementation for small operations
+      final byte[] tempBuffer = new byte[length];
+      final int bytesRead = nativeReadBytes(getNativeHandle(), offset, tempBuffer);
+      System.arraycopy(tempBuffer, 0, dest, destOffset, Math.min(bytesRead, length));
+    }
   }
 
   /**
@@ -244,14 +260,23 @@ public final class JniMemory extends JniResource implements WasmMemory {
       throw new IndexOutOfBoundsException("srcOffset + length exceeds src array length");
     }
 
-    // Create a temporary buffer for the native call
-    final byte[] tempBuffer = new byte[length];
-    System.arraycopy(src, srcOffset, tempBuffer, 0, length);
-    nativeWriteBytes(getNativeHandle(), offset, tempBuffer);
+    // Optimization: For large operations or when srcOffset is 0, avoid temporary buffer
+    if (srcOffset == 0 && length == src.length) {
+      // Direct write from source array
+      nativeWriteBytes(getNativeHandle(), offset, src);
+    } else if (length >= BULK_OPERATION_THRESHOLD) {
+      // Use optimized bulk write for large operations
+      writeBytesOptimized(offset, src, srcOffset, length);
+    } else {
+      // Original implementation for small operations
+      final byte[] tempBuffer = new byte[length];
+      System.arraycopy(src, srcOffset, tempBuffer, 0, length);
+      nativeWriteBytes(getNativeHandle(), offset, tempBuffer);
+    }
   }
 
   /**
-   * Gets a direct ByteBuffer view of the memory.
+   * Gets a direct ByteBuffer view of the memory with caching for performance.
    *
    * <p>The returned buffer provides direct access to the WebAssembly memory. Changes to the buffer
    * are immediately visible to WebAssembly code and vice versa.
@@ -264,10 +289,136 @@ public final class JniMemory extends JniResource implements WasmMemory {
    */
   public ByteBuffer getBuffer() {
     ensureNotClosed();
+
+    // Use cached buffer if still valid (optimization for frequent access)
+    final long currentTime = System.currentTimeMillis();
+    if (cachedBuffer != null && (currentTime - lastBufferCheck) < BUFFER_CACHE_VALIDITY_MS) {
+      return cachedBuffer.duplicate(); // Return a duplicate to prevent sharing position/limit
+    }
+
     try {
-      return nativeGetBuffer(getNativeHandle());
+      cachedBuffer = nativeGetBuffer(getNativeHandle());
+      if (cachedBuffer != null) {
+        cachedBuffer.order(ByteOrder.LITTLE_ENDIAN); // WebAssembly is little-endian
+      }
+      lastBufferCheck = currentTime;
+      return cachedBuffer != null ? cachedBuffer.duplicate() : null;
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error getting buffer", e);
+    }
+  }
+
+  /**
+   * Optimized bulk read operation using ByteBuffer for large data transfers.
+   *
+   * @param offset starting offset in memory
+   * @param dest destination array
+   * @param destOffset offset in destination array
+   * @param length number of bytes to read
+   */
+  private void readBytesOptimized(final int offset, final byte[] dest, final int destOffset, final int length) {
+    try {
+      final ByteBuffer buffer = getBuffer();
+      if (buffer != null && buffer.capacity() >= offset + length) {
+        // Use direct memory access for performance
+        buffer.position(offset);
+        buffer.get(dest, destOffset, length);
+      } else {
+        // Fallback to regular read if buffer is not available or too small
+        final byte[] tempBuffer = new byte[length];
+        nativeReadBytes(getNativeHandle(), offset, tempBuffer);
+        System.arraycopy(tempBuffer, 0, dest, destOffset, length);
+      }
+    } catch (final Exception e) {
+      // Fallback to regular read on any error
+      final byte[] tempBuffer = new byte[length];
+      nativeReadBytes(getNativeHandle(), offset, tempBuffer);
+      System.arraycopy(tempBuffer, 0, dest, destOffset, length);
+    }
+  }
+
+  /**
+   * Optimized bulk write operation using ByteBuffer for large data transfers.
+   *
+   * @param offset starting offset in memory
+   * @param src source array
+   * @param srcOffset offset in source array
+   * @param length number of bytes to write
+   */
+  private void writeBytesOptimized(final int offset, final byte[] src, final int srcOffset, final int length) {
+    try {
+      final ByteBuffer buffer = getBuffer();
+      if (buffer != null && buffer.capacity() >= offset + length) {
+        // Use direct memory access for performance
+        buffer.position(offset);
+        buffer.put(src, srcOffset, length);
+      } else {
+        // Fallback to regular write if buffer is not available or too small
+        final byte[] tempBuffer = new byte[length];
+        System.arraycopy(src, srcOffset, tempBuffer, 0, length);
+        nativeWriteBytes(getNativeHandle(), offset, tempBuffer);
+      }
+    } catch (final Exception e) {
+      // Fallback to regular write on any error
+      final byte[] tempBuffer = new byte[length];
+      System.arraycopy(src, srcOffset, tempBuffer, 0, length);
+      nativeWriteBytes(getNativeHandle(), offset, tempBuffer);
+    }
+  }
+
+  /**
+   * High-performance integer read using direct ByteBuffer access.
+   *
+   * @param offset the byte offset
+   * @return the integer value
+   * @throws IndexOutOfBoundsException if offset is invalid
+   */
+  public int readInt(final int offset) {
+    ensureNotClosed();
+    validateOffset(offset, 4);
+
+    try {
+      final ByteBuffer buffer = getBuffer();
+      if (buffer != null && buffer.capacity() >= offset + 4) {
+        return buffer.getInt(offset);
+      } else {
+        // Fallback to byte-by-byte read
+        final byte[] bytes = new byte[4];
+        nativeReadBytes(getNativeHandle(), offset, bytes);
+        return ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).getInt();
+      }
+    } catch (final Exception e) {
+      // Fallback to byte-by-byte read
+      final byte[] bytes = new byte[4];
+      nativeReadBytes(getNativeHandle(), offset, bytes);
+      return ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).getInt();
+    }
+  }
+
+  /**
+   * High-performance integer write using direct ByteBuffer access.
+   *
+   * @param offset the byte offset
+   * @param value the integer value to write
+   * @throws IndexOutOfBoundsException if offset is invalid
+   */
+  public void writeInt(final int offset, final int value) {
+    ensureNotClosed();
+    validateOffset(offset, 4);
+
+    try {
+      final ByteBuffer buffer = getBuffer();
+      if (buffer != null && buffer.capacity() >= offset + 4) {
+        buffer.putInt(offset, value);
+      } else {
+        // Fallback to byte-by-byte write
+        final byte[] bytes = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(value).array();
+        nativeWriteBytes(getNativeHandle(), offset, bytes);
+      }
+    } catch (final Exception e) {
+      // Fallback to byte-by-byte write
+      final byte[] bytes = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(value).array();
+      nativeWriteBytes(getNativeHandle(), offset, bytes);
     }
   }
 
