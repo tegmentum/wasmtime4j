@@ -489,8 +489,8 @@ public final class PanamaModule implements Module, AutoCloseable {
 
       // Check that all expected imports are provided
       for (ImportType expectedImport : expectedImports) {
-        if (!imports.containsKey(expectedImport.getName())) {
-          LOGGER.warning("Missing required import: " + expectedImport.getName());
+        if (!imports.contains(expectedImport.getModuleName(), expectedImport.getName())) {
+          LOGGER.warning("Missing required import: " + expectedImport.getModuleName() + "." + expectedImport.getName());
           return false;
         }
       }
