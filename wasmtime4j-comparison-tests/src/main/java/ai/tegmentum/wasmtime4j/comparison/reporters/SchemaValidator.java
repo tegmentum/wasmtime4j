@@ -1,7 +1,5 @@
 package ai.tegmentum.wasmtime4j.comparison.reporters;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -289,13 +287,21 @@ public final class SchemaValidator {
   private SchemaDefinition createXmlSchema(final String version) {
     final String schemaContent = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><!-- Placeholder -->";
     return new SchemaDefinition(
-        ExportFormat.XML, version, "XML schema for Wasmtime4j comparison reports", schemaContent, Map.of());
+        ExportFormat.XML,
+        version,
+        "XML schema for Wasmtime4j comparison reports",
+        schemaContent,
+        Map.of());
   }
 
   private SchemaDefinition createHtmlSchema(final String version) {
     final String schemaContent = "<!DOCTYPE html><!-- Placeholder -->";
     return new SchemaDefinition(
-        ExportFormat.HTML, version, "HTML schema for Wasmtime4j comparison reports", schemaContent, Map.of());
+        ExportFormat.HTML,
+        version,
+        "HTML schema for Wasmtime4j comparison reports",
+        schemaContent,
+        Map.of());
   }
 
   /** Validates JSON-specific report requirements. */
@@ -363,7 +369,9 @@ public final class SchemaValidator {
 
   /** Checks if string contains XML-invalid characters. */
   private boolean containsXmlInvalidCharacters(final String str) {
-    return str.chars().anyMatch(c -> (c < 32 && c != '\t' && c != '\n' && c != '\r') || c == 0xFFFE || c == 0xFFFF);
+    return str.chars()
+        .anyMatch(
+            c -> (c < 32 && c != '\t' && c != '\n' && c != '\r') || c == 0xFFFE || c == 0xFFFF);
   }
 
   /** Compares semantic version strings. */
@@ -402,8 +410,7 @@ final class JsonFormatValidator implements FormatValidator {
 
     // Basic JSON structure check
     if (!JSON_STRUCTURE_PATTERN.matcher(content).matches()) {
-      errors.add(
-          new ValidationError("Invalid JSON structure", ValidationErrorType.INVALID_FORMAT));
+      errors.add(new ValidationError("Invalid JSON structure", ValidationErrorType.INVALID_FORMAT));
       return ValidationResult.failure(errors, warnings);
     }
 
@@ -471,7 +478,12 @@ final class CsvFormatValidator implements FormatValidator {
         if (columnCount != expectedColumnCount) {
           warnings.add(
               new ValidationWarning(
-                  "Line " + (i + 1) + " has " + columnCount + " columns, expected " + expectedColumnCount,
+                  "Line "
+                      + (i + 1)
+                      + " has "
+                      + columnCount
+                      + " columns, expected "
+                      + expectedColumnCount,
                   "structure"));
         }
       }

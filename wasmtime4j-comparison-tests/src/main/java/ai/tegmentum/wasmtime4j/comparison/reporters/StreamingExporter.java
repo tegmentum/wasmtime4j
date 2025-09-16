@@ -170,11 +170,25 @@ public final class StreamingExporter implements AutoCloseable {
       // For demonstration, we'll process the report in chunks
       // In a real implementation, this would depend on the specific exporter
       if (exporter instanceof JsonReporter) {
-        exportJsonStreaming(report, (JsonReporter) exporter, (JsonConfiguration) exportConfig,
-            streamingOutput, progressCallback, itemsProcessed, totalItems, startTime);
+        exportJsonStreaming(
+            report,
+            (JsonReporter) exporter,
+            (JsonConfiguration) exportConfig,
+            streamingOutput,
+            progressCallback,
+            itemsProcessed,
+            totalItems,
+            startTime);
       } else if (exporter instanceof CsvReporter) {
-        exportCsvStreaming(report, (CsvReporter) exporter, (CsvConfiguration) exportConfig,
-            streamingOutput, progressCallback, itemsProcessed, totalItems, startTime);
+        exportCsvStreaming(
+            report,
+            (CsvReporter) exporter,
+            (CsvConfiguration) exportConfig,
+            streamingOutput,
+            progressCallback,
+            itemsProcessed,
+            totalItems,
+            startTime);
       } else {
         // Fallback to regular export
         exporter.export(report, exportConfig, streamingOutput);
@@ -184,7 +198,8 @@ public final class StreamingExporter implements AutoCloseable {
       streamingOutput.flush();
 
       if (cancelled) {
-        return new ExportResult(false, "Export cancelled", itemsProcessed.get(), bytesWritten.get());
+        return new ExportResult(
+            false, "Export cancelled", itemsProcessed.get(), bytesWritten.get());
       }
 
       final long duration = System.currentTimeMillis() - startTime;
@@ -285,8 +300,7 @@ public final class StreamingExporter implements AutoCloseable {
       final long currentTime = System.currentTimeMillis();
       final long elapsedMs = currentTime - startTime;
       progressCallback.accept(
-          new ProgressUpdate(
-              totalItems, totalItems, 1.0, elapsedMs, 0, output.getBytesWritten()));
+          new ProgressUpdate(totalItems, totalItems, 1.0, elapsedMs, 0, output.getBytesWritten()));
     }
   }
 
@@ -301,28 +315,33 @@ public final class StreamingExporter implements AutoCloseable {
         .behavioralResults(
             report.getBehavioralResults().entrySet().stream()
                 .filter(entry -> testNames.contains(entry.getKey()))
-                .collect(java.util.stream.Collectors.toMap(
-                    java.util.Map.Entry::getKey, java.util.Map.Entry::getValue)))
+                .collect(
+                    java.util.stream.Collectors.toMap(
+                        java.util.Map.Entry::getKey, java.util.Map.Entry::getValue)))
         .performanceResults(
             report.getPerformanceResults().entrySet().stream()
                 .filter(entry -> testNames.contains(entry.getKey()))
-                .collect(java.util.stream.Collectors.toMap(
-                    java.util.Map.Entry::getKey, java.util.Map.Entry::getValue)))
+                .collect(
+                    java.util.stream.Collectors.toMap(
+                        java.util.Map.Entry::getKey, java.util.Map.Entry::getValue)))
         .coverageResults(
             report.getCoverageResults().entrySet().stream()
                 .filter(entry -> testNames.contains(entry.getKey()))
-                .collect(java.util.stream.Collectors.toMap(
-                    java.util.Map.Entry::getKey, java.util.Map.Entry::getValue)))
+                .collect(
+                    java.util.stream.Collectors.toMap(
+                        java.util.Map.Entry::getKey, java.util.Map.Entry::getValue)))
         .recommendations(
             report.getRecommendations().entrySet().stream()
                 .filter(entry -> testNames.contains(entry.getKey()))
-                .collect(java.util.stream.Collectors.toMap(
-                    java.util.Map.Entry::getKey, java.util.Map.Entry::getValue)))
+                .collect(
+                    java.util.stream.Collectors.toMap(
+                        java.util.Map.Entry::getKey, java.util.Map.Entry::getValue)))
         .insights(
             report.getInsights().entrySet().stream()
                 .filter(entry -> testNames.contains(entry.getKey()))
-                .collect(java.util.stream.Collectors.toMap(
-                    java.util.Map.Entry::getKey, java.util.Map.Entry::getValue)))
+                .collect(
+                    java.util.stream.Collectors.toMap(
+                        java.util.Map.Entry::getKey, java.util.Map.Entry::getValue)))
         .build();
   }
 }

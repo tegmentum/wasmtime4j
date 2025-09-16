@@ -244,8 +244,8 @@ public final class JsonReporter implements DataExporter<JsonConfiguration> {
     writer.write(json.toString());
   }
 
-  private void writeSchemaSection(final BufferedWriter writer, final JsonConfiguration configuration)
-      throws IOException {
+  private void writeSchemaSection(
+      final BufferedWriter writer, final JsonConfiguration configuration) throws IOException {
     if (configuration.isIncludeMetadata()) {
       writer.write(buildSchemaSection(configuration));
     } else {
@@ -397,7 +397,8 @@ public final class JsonReporter implements DataExporter<JsonConfiguration> {
       if (hasContent) {
         sb.append(",\n");
       }
-      sb.append(buildBehavioralAnalysis(report.getBehavioralResults().get(testName), configuration));
+      sb.append(
+          buildBehavioralAnalysis(report.getBehavioralResults().get(testName), configuration));
       hasContent = true;
     }
 
@@ -406,7 +407,8 @@ public final class JsonReporter implements DataExporter<JsonConfiguration> {
       if (hasContent) {
         sb.append(",\n");
       }
-      sb.append(buildPerformanceAnalysis(report.getPerformanceResults().get(testName), configuration));
+      sb.append(
+          buildPerformanceAnalysis(report.getPerformanceResults().get(testName), configuration));
       hasContent = true;
     }
 
@@ -444,9 +446,13 @@ public final class JsonReporter implements DataExporter<JsonConfiguration> {
       final BehavioralAnalysisResult result, final JsonConfiguration configuration) {
     final StringBuilder sb = new StringBuilder();
     sb.append("      \"behavioral\": {\n");
-    sb.append("        \"verdict\": \"").append(escapeJson(result.getVerdict().name())).append("\",\n");
+    sb.append("        \"verdict\": \"")
+        .append(escapeJson(result.getVerdict().name()))
+        .append("\",\n");
     sb.append("        \"consistencyScore\": ").append(result.getConsistencyScore()).append(",\n");
-    sb.append("        \"discrepancyCount\": ").append(result.getDiscrepancies().size()).append(",\n");
+    sb.append("        \"discrepancyCount\": ")
+        .append(result.getDiscrepancies().size())
+        .append(",\n");
     sb.append("        \"criticalDiscrepancies\": ").append(result.getCriticalDiscrepancyCount());
 
     if (configuration.getDetailLevel() == JsonDetailLevel.DETAILED) {
@@ -455,9 +461,15 @@ public final class JsonReporter implements DataExporter<JsonConfiguration> {
       for (int i = 0; i < comparisons.size(); i++) {
         final RuntimeComparison comp = comparisons.get(i);
         sb.append("          {\n");
-        sb.append("            \"runtime1\": \"").append(escapeJson(comp.getRuntime1().name())).append("\",\n");
-        sb.append("            \"runtime2\": \"").append(escapeJson(comp.getRuntime2().name())).append("\",\n");
-        sb.append("            \"score\": ").append(comp.getComparisonResult().getOverallScore()).append("\n");
+        sb.append("            \"runtime1\": \"")
+            .append(escapeJson(comp.getRuntime1().name()))
+            .append("\",\n");
+        sb.append("            \"runtime2\": \"")
+            .append(escapeJson(comp.getRuntime2().name()))
+            .append("\",\n");
+        sb.append("            \"score\": ")
+            .append(comp.getComparisonResult().getOverallScore())
+            .append("\n");
         sb.append("          }");
         if (i < comparisons.size() - 1) {
           sb.append(",");
@@ -472,9 +484,15 @@ public final class JsonReporter implements DataExporter<JsonConfiguration> {
         for (int i = 0; i < discrepancies.size(); i++) {
           final BehavioralDiscrepancy disc = discrepancies.get(i);
           sb.append("          {\n");
-          sb.append("            \"type\": \"").append(escapeJson(disc.getType().name())).append("\",\n");
-          sb.append("            \"severity\": \"").append(escapeJson(disc.getSeverity().name())).append("\",\n");
-          sb.append("            \"description\": \"").append(escapeJson(disc.getDescription())).append("\"\n");
+          sb.append("            \"type\": \"")
+              .append(escapeJson(disc.getType().name()))
+              .append("\",\n");
+          sb.append("            \"severity\": \"")
+              .append(escapeJson(disc.getSeverity().name()))
+              .append("\",\n");
+          sb.append("            \"description\": \"")
+              .append(escapeJson(disc.getDescription()))
+              .append("\"\n");
           sb.append("          }");
           if (i < discrepancies.size() - 1) {
             sb.append(",");
@@ -490,17 +508,22 @@ public final class JsonReporter implements DataExporter<JsonConfiguration> {
   }
 
   private String buildPerformanceAnalysis(
-      final PerformanceAnalyzer.PerformanceComparisonResult result, final JsonConfiguration configuration) {
+      final PerformanceAnalyzer.PerformanceComparisonResult result,
+      final JsonConfiguration configuration) {
     final StringBuilder sb = new StringBuilder();
     sb.append("      \"performance\": {\n");
-    sb.append("        \"executionTimeMs\": ").append(result.getExecutionDuration().toMillis()).append(",\n");
+    sb.append("        \"executionTimeMs\": ")
+        .append(result.getExecutionDuration().toMillis())
+        .append(",\n");
     sb.append("        \"memoryUsedBytes\": ").append(result.getMemoryUsed()).append(",\n");
     sb.append("        \"successful\": ").append(result.isSuccessful());
 
     if (configuration.getDetailLevel() == JsonDetailLevel.DETAILED) {
       sb.append(",\n        \"peakMemoryUsage\": ").append(result.getPeakMemoryUsage());
       if (result.getErrorMessage() != null) {
-        sb.append(",\n        \"errorMessage\": \"").append(escapeJson(result.getErrorMessage())).append("\"");
+        sb.append(",\n        \"errorMessage\": \"")
+            .append(escapeJson(result.getErrorMessage()))
+            .append("\"");
       }
     }
 
@@ -513,7 +536,9 @@ public final class JsonReporter implements DataExporter<JsonConfiguration> {
     final StringBuilder sb = new StringBuilder();
     sb.append("      \"coverage\": {\n");
     sb.append("        \"coverageScore\": ").append(result.getCoverageScore()).append(",\n");
-    sb.append("        \"featuresImplemented\": ").append(result.getFeaturesImplemented()).append(",\n");
+    sb.append("        \"featuresImplemented\": ")
+        .append(result.getFeaturesImplemented())
+        .append(",\n");
     sb.append("        \"totalFeatures\": ").append(result.getTotalFeatures());
 
     if (configuration.getDetailLevel() == JsonDetailLevel.DETAILED) {
@@ -536,7 +561,9 @@ public final class JsonReporter implements DataExporter<JsonConfiguration> {
       final RecommendationResult result, final JsonConfiguration configuration) {
     final StringBuilder sb = new StringBuilder();
     sb.append("      \"recommendations\": {\n");
-    sb.append("        \"totalRecommendations\": ").append(result.getSummary().getTotalRecommendations()).append(",\n");
+    sb.append("        \"totalRecommendations\": ")
+        .append(result.getSummary().getTotalRecommendations())
+        .append(",\n");
     sb.append("        \"highPriorityCount\": ").append(result.getSummary().getHighPriorityCount());
 
     if (configuration.getDetailLevel() == JsonDetailLevel.DETAILED) {
@@ -546,8 +573,12 @@ public final class JsonReporter implements DataExporter<JsonConfiguration> {
         final ActionableRecommendation rec = recommendations.get(i);
         sb.append("          {\n");
         sb.append("            \"title\": \"").append(escapeJson(rec.getTitle())).append("\",\n");
-        sb.append("            \"category\": \"").append(escapeJson(rec.getCategory().name())).append("\",\n");
-        sb.append("            \"severity\": \"").append(escapeJson(rec.getSeverity().name())).append("\",\n");
+        sb.append("            \"category\": \"")
+            .append(escapeJson(rec.getCategory().name()))
+            .append("\",\n");
+        sb.append("            \"severity\": \"")
+            .append(escapeJson(rec.getSeverity().name()))
+            .append("\",\n");
         sb.append("            \"priorityScore\": ").append(rec.getPriorityScore()).append("\n");
         sb.append("          }");
         if (i < recommendations.size() - 1) {
@@ -577,7 +608,8 @@ public final class JsonReporter implements DataExporter<JsonConfiguration> {
     if (input == null) {
       return "";
     }
-    return input.replace("\\", "\\\\")
+    return input
+        .replace("\\", "\\\\")
         .replace("\"", "\\\"")
         .replace("\n", "\\n")
         .replace("\r", "\\r")

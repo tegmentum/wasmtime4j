@@ -244,10 +244,7 @@ final class ExportException extends Exception {
   }
 
   public ExportException(
-      final String message,
-      final Throwable cause,
-      final ExportFormat format,
-      final String phase) {
+      final String message, final Throwable cause, final ExportFormat format, final String phase) {
     super(message, cause);
     this.format = format;
     this.phase = phase;

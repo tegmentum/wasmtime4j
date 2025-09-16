@@ -21,12 +21,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 /**
- * Comprehensive tests for JsonReporter functionality including schema validation,
- * streaming export, and error handling.
+ * Comprehensive tests for JsonReporter functionality including schema validation, streaming export,
+ * and error handling.
  */
 class JsonReporterTest {
 
@@ -45,11 +45,12 @@ class JsonReporterTest {
   @DisplayName("Should export summary-level JSON successfully")
   void shouldExportSummaryJsonSuccessfully() throws IOException, ExportException {
     // Given
-    final JsonConfiguration config = new JsonConfiguration.Builder()
-        .detailLevel(JsonDetailLevel.SUMMARY)
-        .streamingMode(false)
-        .includeMetadata(true)
-        .build();
+    final JsonConfiguration config =
+        new JsonConfiguration.Builder()
+            .detailLevel(JsonDetailLevel.SUMMARY)
+            .streamingMode(false)
+            .includeMetadata(true)
+            .build();
 
     // When
     jsonReporter.export(testReport, config, outputStream);
@@ -77,11 +78,12 @@ class JsonReporterTest {
   @DisplayName("Should export detailed JSON with all analysis results")
   void shouldExportDetailedJsonWithAllResults() throws IOException, ExportException {
     // Given
-    final JsonConfiguration config = new JsonConfiguration.Builder()
-        .detailLevel(JsonDetailLevel.DETAILED)
-        .streamingMode(false)
-        .includeMetadata(true)
-        .build();
+    final JsonConfiguration config =
+        new JsonConfiguration.Builder()
+            .detailLevel(JsonDetailLevel.DETAILED)
+            .streamingMode(false)
+            .includeMetadata(true)
+            .build();
 
     // When
     jsonReporter.export(testReport, config, outputStream);
@@ -108,11 +110,12 @@ class JsonReporterTest {
   void shouldSupportStreamingModeForLargeDatasets() throws IOException, ExportException {
     // Given
     final ComparisonReport largeReport = createLargeTestReport(1000);
-    final JsonConfiguration config = new JsonConfiguration.Builder()
-        .detailLevel(JsonDetailLevel.SUMMARY)
-        .streamingMode(true)
-        .bufferSize(4096)
-        .build();
+    final JsonConfiguration config =
+        new JsonConfiguration.Builder()
+            .detailLevel(JsonDetailLevel.SUMMARY)
+            .streamingMode(true)
+            .bufferSize(4096)
+            .build();
 
     // When
     jsonReporter.export(largeReport, config, outputStream);
@@ -132,10 +135,11 @@ class JsonReporterTest {
   @DisplayName("Should handle compression when enabled")
   void shouldHandleCompressionWhenEnabled() throws IOException, ExportException {
     // Given
-    final JsonConfiguration config = new JsonConfiguration.Builder()
-        .detailLevel(JsonDetailLevel.SUMMARY)
-        .compressOutput(true)
-        .build();
+    final JsonConfiguration config =
+        new JsonConfiguration.Builder()
+            .detailLevel(JsonDetailLevel.SUMMARY)
+            .compressOutput(true)
+            .build();
 
     // When
     jsonReporter.export(testReport, config, outputStream);
@@ -158,17 +162,17 @@ class JsonReporterTest {
     final CsvConfiguration wrongConfig = new CsvConfiguration.Builder().build();
 
     // When & Then
-    assertThrows(IllegalArgumentException.class, () ->
-        jsonReporter.export(testReport, wrongConfig, outputStream));
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> jsonReporter.export(testReport, wrongConfig, outputStream));
   }
 
   @Test
   @DisplayName("Should estimate output size accurately")
   void shouldEstimateOutputSizeAccurately() {
     // Given
-    final JsonConfiguration config = new JsonConfiguration.Builder()
-        .detailLevel(JsonDetailLevel.SUMMARY)
-        .build();
+    final JsonConfiguration config =
+        new JsonConfiguration.Builder().detailLevel(JsonDetailLevel.SUMMARY).build();
 
     // When
     final long estimatedSize = jsonReporter.estimateOutputSize(testReport, config);
@@ -215,9 +219,8 @@ class JsonReporterTest {
   void shouldEscapeSpecialCharactersInJsonOutput() throws IOException, ExportException {
     // Given
     final ComparisonReport reportWithSpecialChars = createReportWithSpecialCharacters();
-    final JsonConfiguration config = new JsonConfiguration.Builder()
-        .detailLevel(JsonDetailLevel.DETAILED)
-        .build();
+    final JsonConfiguration config =
+        new JsonConfiguration.Builder().detailLevel(JsonDetailLevel.DETAILED).build();
 
     // When
     jsonReporter.export(reportWithSpecialChars, config, outputStream);
@@ -237,9 +240,8 @@ class JsonReporterTest {
   void shouldHandleEmptyReportGracefully() throws IOException, ExportException {
     // Given
     final ComparisonReport emptyReport = createEmptyReport();
-    final JsonConfiguration config = new JsonConfiguration.Builder()
-        .detailLevel(JsonDetailLevel.SUMMARY)
-        .build();
+    final JsonConfiguration config =
+        new JsonConfiguration.Builder().detailLevel(JsonDetailLevel.SUMMARY).build();
 
     // When
     jsonReporter.export(emptyReport, config, outputStream);
@@ -262,49 +264,45 @@ class JsonReporterTest {
     final JsonConfiguration config = new JsonConfiguration.Builder().build();
 
     // When & Then
-    assertThrows(NullPointerException.class, () ->
-        jsonReporter.export(null, config, outputStream));
+    assertThrows(NullPointerException.class, () -> jsonReporter.export(null, config, outputStream));
 
-    assertThrows(NullPointerException.class, () ->
-        jsonReporter.export(testReport, null, outputStream));
+    assertThrows(
+        NullPointerException.class, () -> jsonReporter.export(testReport, null, outputStream));
 
-    assertThrows(NullPointerException.class, () ->
-        jsonReporter.export(testReport, config, null));
+    assertThrows(NullPointerException.class, () -> jsonReporter.export(testReport, config, null));
   }
 
   // Helper methods for creating test data
 
   private ComparisonReport createTestReport() {
-    final ReportMetadata metadata = new ReportMetadata(
-        "Test Suite",
-        "1.0.0",
-        Instant.now(),
-        Duration.ofMinutes(5),
-        List.of("JNI", "PANAMA"),
-        Map.of("timeout", "30s", "iterations", "3"),
-        "wasmtime4j-1.0.0"
-    );
+    final ReportMetadata metadata =
+        new ReportMetadata(
+            "Test Suite",
+            "1.0.0",
+            Instant.now(),
+            Duration.ofMinutes(5),
+            List.of("JNI", "PANAMA"),
+            Map.of("timeout", "30s", "iterations", "3"),
+            "wasmtime4j-1.0.0");
 
-    final ReportSummary summary = new ReportSummary(
-        2, 2, 2, 2, 1, 1, 0.95,
-        Map.of("CONSISTENT", 1, "MOSTLY_CONSISTENT", 1)
-    );
+    final ReportSummary summary =
+        new ReportSummary(2, 2, 2, 2, 1, 1, 0.95, Map.of("CONSISTENT", 1, "MOSTLY_CONSISTENT", 1));
 
     // Create behavioral analysis for test1
-    final BehavioralAnalysisResult behavioral1 = new BehavioralAnalysisResult.Builder("test1")
-        .verdict(BehavioralVerdict.CONSISTENT)
-        .consistencyScore(0.98)
-        .discrepancies(List.of(
-            new BehavioralDiscrepancy(
-                DiscrepancyType.VALUE_MISMATCH,
-                DiscrepancySeverity.LOW,
-                "Minor floating point difference",
-                RuntimeType.JNI,
-                RuntimeType.PANAMA
-            )
-        ))
-        .executionPattern(new ExecutionPattern(2, 0, 0, 1, 0, 0.1))
-        .build();
+    final BehavioralAnalysisResult behavioral1 =
+        new BehavioralAnalysisResult.Builder("test1")
+            .verdict(BehavioralVerdict.CONSISTENT)
+            .consistencyScore(0.98)
+            .discrepancies(
+                List.of(
+                    new BehavioralDiscrepancy(
+                        DiscrepancyType.VALUE_MISMATCH,
+                        DiscrepancySeverity.LOW,
+                        "Minor floating point difference",
+                        RuntimeType.JNI,
+                        RuntimeType.PANAMA)))
+            .executionPattern(new ExecutionPattern(2, 0, 0, 1, 0, 0.1))
+            .build();
 
     // Create performance analysis for test1
     final PerformanceAnalyzer.PerformanceComparisonResult performance1 =
@@ -316,17 +314,19 @@ class JsonReporterTest {
             .build();
 
     // Create coverage analysis for test1
-    final CoverageAnalysisResult coverage1 = new CoverageAnalysisResult.Builder("test1")
-        .coverageScore(0.85)
-        .featuresImplemented(17)
-        .totalFeatures(20)
-        .missingFeatures(List.of("feature1", "feature2", "feature3"))
-        .build();
+    final CoverageAnalysisResult coverage1 =
+        new CoverageAnalysisResult.Builder("test1")
+            .coverageScore(0.85)
+            .featuresImplemented(17)
+            .totalFeatures(20)
+            .missingFeatures(List.of("feature1", "feature2", "feature3"))
+            .build();
 
     // Create recommendations for test1
-    final RecommendationResult recommendations1 = new RecommendationResult.Builder("test1")
-        .summary(new RecommendationSummary(1, 1, 0, 0, Map.of()))
-        .build();
+    final RecommendationResult recommendations1 =
+        new RecommendationResult.Builder("test1")
+            .summary(new RecommendationSummary(1, 1, 0, 0, Map.of()))
+            .build();
 
     return new ComparisonReport.Builder()
         .metadata(metadata)
@@ -340,20 +340,26 @@ class JsonReporterTest {
   }
 
   private ComparisonReport createLargeTestReport(final int testCount) {
-    final ReportMetadata metadata = new ReportMetadata(
-        "Large Test Suite",
-        "1.0.0",
-        Instant.now(),
-        Duration.ofHours(1),
-        List.of("JNI", "PANAMA"),
-        Map.of("tests", String.valueOf(testCount)),
-        "wasmtime4j-1.0.0"
-    );
+    final ReportMetadata metadata =
+        new ReportMetadata(
+            "Large Test Suite",
+            "1.0.0",
+            Instant.now(),
+            Duration.ofHours(1),
+            List.of("JNI", "PANAMA"),
+            Map.of("tests", String.valueOf(testCount)),
+            "wasmtime4j-1.0.0");
 
-    final ReportSummary summary = new ReportSummary(
-        testCount, testCount, testCount, testCount, testCount / 2, testCount / 10, 0.92,
-        Map.of("CONSISTENT", testCount / 2, "MOSTLY_CONSISTENT", testCount / 2)
-    );
+    final ReportSummary summary =
+        new ReportSummary(
+            testCount,
+            testCount,
+            testCount,
+            testCount,
+            testCount / 2,
+            testCount / 10,
+            0.92,
+            Map.of("CONSISTENT", testCount / 2, "MOSTLY_CONSISTENT", testCount / 2));
 
     final List<String> testNames = new java.util.ArrayList<>();
     for (int i = 0; i < testCount; i++) {
@@ -372,19 +378,17 @@ class JsonReporterTest {
   }
 
   private ComparisonReport createReportWithSpecialCharacters() {
-    final ReportMetadata metadata = new ReportMetadata(
-        "Test \"quoted\" suite\nwith newlines\tand tabs\\and backslashes",
-        "1.0.0",
-        Instant.now(),
-        Duration.ofMinutes(1),
-        List.of("JNI"),
-        Map.of("special", "value\"with\\chars\n"),
-        "wasmtime4j-1.0.0"
-    );
+    final ReportMetadata metadata =
+        new ReportMetadata(
+            "Test \"quoted\" suite\nwith newlines\tand tabs\\and backslashes",
+            "1.0.0",
+            Instant.now(),
+            Duration.ofMinutes(1),
+            List.of("JNI"),
+            Map.of("special", "value\"with\\chars\n"),
+            "wasmtime4j-1.0.0");
 
-    final ReportSummary summary = new ReportSummary(
-        1, 1, 1, 1, 0, 0, 1.0, Map.of("CONSISTENT", 1)
-    );
+    final ReportSummary summary = new ReportSummary(1, 1, 1, 1, 0, 0, 1.0, Map.of("CONSISTENT", 1));
 
     return new ComparisonReport.Builder()
         .metadata(metadata)
@@ -394,19 +398,17 @@ class JsonReporterTest {
   }
 
   private ComparisonReport createEmptyReport() {
-    final ReportMetadata metadata = new ReportMetadata(
-        "Empty Suite",
-        "1.0.0",
-        Instant.now(),
-        Duration.ZERO,
-        List.of("JNI"),
-        Map.of(),
-        "wasmtime4j-1.0.0"
-    );
+    final ReportMetadata metadata =
+        new ReportMetadata(
+            "Empty Suite",
+            "1.0.0",
+            Instant.now(),
+            Duration.ZERO,
+            List.of("JNI"),
+            Map.of(),
+            "wasmtime4j-1.0.0");
 
-    final ReportSummary summary = new ReportSummary(
-        0, 0, 0, 0, 0, 0, 0.0, Map.of()
-    );
+    final ReportSummary summary = new ReportSummary(0, 0, 0, 0, 0, 0, 0.0, Map.of());
 
     return new ComparisonReport.Builder()
         .metadata(metadata)

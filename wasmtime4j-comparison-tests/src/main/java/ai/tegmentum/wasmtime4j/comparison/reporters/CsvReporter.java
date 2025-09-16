@@ -4,7 +4,6 @@ import ai.tegmentum.wasmtime4j.comparison.analyzers.ActionableRecommendation;
 import ai.tegmentum.wasmtime4j.comparison.analyzers.BehavioralAnalysisResult;
 import ai.tegmentum.wasmtime4j.comparison.analyzers.BehavioralDiscrepancy;
 import ai.tegmentum.wasmtime4j.comparison.analyzers.CoverageAnalysisResult;
-import ai.tegmentum.wasmtime4j.comparison.analyzers.InsightAnalysisResult;
 import ai.tegmentum.wasmtime4j.comparison.analyzers.PerformanceAnalyzer;
 import ai.tegmentum.wasmtime4j.comparison.analyzers.RecommendationResult;
 import ai.tegmentum.wasmtime4j.comparison.analyzers.RuntimeComparison;
@@ -13,10 +12,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
@@ -147,26 +144,26 @@ public final class CsvReporter implements DataExporter<CsvConfiguration> {
     return switch (configuration.getLayout()) {
       case SUMMARY -> baseSize + (testCount * 200); // ~200 bytes per test summary
       case DETAILED -> baseSize + (testCount * 1000); // ~1KB per test detailed
-      case RECOMMENDATIONS ->
-          baseSize
-              + report.getRecommendations().values().stream()
+      case RECOMMENDATIONS -> baseSize
+          + report.getRecommendations().values().stream()
                   .mapToInt(r -> r.getPrioritizedRecommendations().size())
                   .sum()
-                  * 300; // ~300 bytes per recommendation
+              * 300; // ~300 bytes per recommendation
       case PERFORMANCE -> baseSize + (testCount * 150); // ~150 bytes per performance record
-      case DISCREPANCIES ->
-          baseSize
-              + report.getBehavioralResults().values().stream()
+      case DISCREPANCIES -> baseSize
+          + report.getBehavioralResults().values().stream()
                   .mapToInt(r -> r.getDiscrepancies().size())
                   .sum()
-                  * 250; // ~250 bytes per discrepancy
+              * 250; // ~250 bytes per discrepancy
       case CUSTOM -> baseSize + (testCount * 500); // Conservative estimate
     };
   }
 
   /** Exports summary layout with key metrics per test. */
   private void exportSummaryLayout(
-      final ComparisonReport report, final CsvConfiguration configuration, final BufferedWriter writer)
+      final ComparisonReport report,
+      final CsvConfiguration configuration,
+      final BufferedWriter writer)
       throws IOException {
 
     // Write header
@@ -232,7 +229,9 @@ public final class CsvReporter implements DataExporter<CsvConfiguration> {
 
   /** Exports detailed layout with normalized key-value structure. */
   private void exportDetailedLayout(
-      final ComparisonReport report, final CsvConfiguration configuration, final BufferedWriter writer)
+      final ComparisonReport report,
+      final CsvConfiguration configuration,
+      final BufferedWriter writer)
       throws IOException {
 
     // Write header
@@ -248,7 +247,9 @@ public final class CsvReporter implements DataExporter<CsvConfiguration> {
 
   /** Exports recommendations layout focusing on actionable recommendations. */
   private void exportRecommendationsLayout(
-      final ComparisonReport report, final CsvConfiguration configuration, final BufferedWriter writer)
+      final ComparisonReport report,
+      final CsvConfiguration configuration,
+      final BufferedWriter writer)
       throws IOException {
 
     // Write header
@@ -288,7 +289,9 @@ public final class CsvReporter implements DataExporter<CsvConfiguration> {
 
   /** Exports performance layout with runtime-specific metrics. */
   private void exportPerformanceLayout(
-      final ComparisonReport report, final CsvConfiguration configuration, final BufferedWriter writer)
+      final ComparisonReport report,
+      final CsvConfiguration configuration,
+      final BufferedWriter writer)
       throws IOException {
 
     // Write header
@@ -324,12 +327,15 @@ public final class CsvReporter implements DataExporter<CsvConfiguration> {
 
   /** Exports discrepancies layout focusing on behavioral differences. */
   private void exportDiscrepanciesLayout(
-      final ComparisonReport report, final CsvConfiguration configuration, final BufferedWriter writer)
+      final ComparisonReport report,
+      final CsvConfiguration configuration,
+      final BufferedWriter writer)
       throws IOException {
 
     // Write header
     final List<String> headers =
-        Arrays.asList("testName", "type", "severity", "description", "runtime1", "runtime2", "score");
+        Arrays.asList(
+            "testName", "type", "severity", "description", "runtime1", "runtime2", "score");
     writeCsvRow(writer, headers, configuration);
 
     // Write discrepancy rows
@@ -369,7 +375,9 @@ public final class CsvReporter implements DataExporter<CsvConfiguration> {
 
   /** Exports custom layout based on user-specified columns. */
   private void exportCustomLayout(
-      final ComparisonReport report, final CsvConfiguration configuration, final BufferedWriter writer)
+      final ComparisonReport report,
+      final CsvConfiguration configuration,
+      final BufferedWriter writer)
       throws IOException {
 
     final List<String> customColumns = configuration.getCustomColumns();
@@ -561,7 +569,10 @@ public final class CsvReporter implements DataExporter<CsvConfiguration> {
       if (needsQuoting(value, configuration)) {
         sb.append(configuration.getQuoteChar());
         // Escape quote characters within the value
-        sb.append(value.replace(configuration.getQuoteChar(), configuration.getQuoteChar() + configuration.getQuoteChar()));
+        sb.append(
+            value.replace(
+                configuration.getQuoteChar(),
+                configuration.getQuoteChar() + configuration.getQuoteChar()));
         sb.append(configuration.getQuoteChar());
       } else {
         sb.append(value);
