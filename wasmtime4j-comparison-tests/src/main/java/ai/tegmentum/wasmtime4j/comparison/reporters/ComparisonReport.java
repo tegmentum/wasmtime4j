@@ -13,9 +13,9 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * Comprehensive comparison report containing all analysis results, performance data,
- * behavioral discrepancies, coverage analysis, and recommendations for presentation
- * in various reporting formats including interactive HTML dashboards.
+ * Comprehensive comparison report containing all analysis results, performance data, behavioral
+ * discrepancies, coverage analysis, and recommendations for presentation in various reporting
+ * formats including interactive HTML dashboards.
  *
  * @since 1.0.0
  */
@@ -35,10 +35,13 @@ public final class ComparisonReport {
     this.reportId = Objects.requireNonNull(builder.reportId, "reportId cannot be null");
     this.generatedAt = Instant.now();
     this.metadata = Objects.requireNonNull(builder.metadata, "metadata cannot be null");
-    this.executionSummary = Objects.requireNonNull(builder.executionSummary, "executionSummary cannot be null");
+    this.executionSummary =
+        Objects.requireNonNull(builder.executionSummary, "executionSummary cannot be null");
     this.testResults = List.copyOf(builder.testResults);
-    this.coverageReport = Objects.requireNonNull(builder.coverageReport, "coverageReport cannot be null");
-    this.performanceSummary = Objects.requireNonNull(builder.performanceSummary, "performanceSummary cannot be null");
+    this.coverageReport =
+        Objects.requireNonNull(builder.coverageReport, "coverageReport cannot be null");
+    this.performanceSummary =
+        Objects.requireNonNull(builder.performanceSummary, "performanceSummary cannot be null");
     this.behavioralDiscrepancies = List.copyOf(builder.behavioralDiscrepancies);
     this.recommendations = List.copyOf(builder.recommendations);
     this.statistics = Objects.requireNonNull(builder.statistics, "statistics cannot be null");
@@ -90,9 +93,7 @@ public final class ComparisonReport {
    * @return list of test results with critical issues
    */
   public List<TestComparisonResult> getCriticalTestResults() {
-    return testResults.stream()
-        .filter(TestComparisonResult::hasCriticalIssues)
-        .toList();
+    return testResults.stream().filter(TestComparisonResult::hasCriticalIssues).toList();
   }
 
   /**
@@ -102,8 +103,9 @@ public final class ComparisonReport {
    */
   public Map<String, List<BehavioralDiscrepancy>> getDiscrepanciesBySeverity() {
     return behavioralDiscrepancies.stream()
-        .collect(java.util.stream.Collectors.groupingBy(
-            discrepancy -> discrepancy.getSeverity().toString()));
+        .collect(
+            java.util.stream.Collectors.groupingBy(
+                discrepancy -> discrepancy.getSeverity().toString()));
   }
 
   /**
@@ -113,27 +115,27 @@ public final class ComparisonReport {
    */
   public String getExecutiveSummary() {
     return String.format(
-        "Comparison Report Executive Summary%n" +
-        "===================================%n" +
-        "Report ID: %s%n" +
-        "Generated: %s%n" +
-        "Test Suite: %s%n" +
-        "Runtimes Compared: %s%n%n" +
-        "Execution Summary:%n" +
-        "  Total Tests: %d%n" +
-        "  Successful: %d%n" +
-        "  Failed: %d%n" +
-        "  Duration: %s%n%n" +
-        "Critical Issues:%n" +
-        "  Behavioral Discrepancies: %d%n" +
-        "  Critical Test Failures: %d%n" +
-        "  High-Priority Recommendations: %d%n%n" +
-        "Coverage Analysis:%n" +
-        "  Overall Coverage: %.1f%%%n" +
-        "  Uncovered Features: %d%n%n" +
-        "Performance Summary:%n" +
-        "  Performance Variance: %.2fx%n" +
-        "  Outlier Tests: %d",
+        "Comparison Report Executive Summary%n"
+            + "===================================%n"
+            + "Report ID: %s%n"
+            + "Generated: %s%n"
+            + "Test Suite: %s%n"
+            + "Runtimes Compared: %s%n%n"
+            + "Execution Summary:%n"
+            + "  Total Tests: %d%n"
+            + "  Successful: %d%n"
+            + "  Failed: %d%n"
+            + "  Duration: %s%n%n"
+            + "Critical Issues:%n"
+            + "  Behavioral Discrepancies: %d%n"
+            + "  Critical Test Failures: %d%n"
+            + "  High-Priority Recommendations: %d%n%n"
+            + "Coverage Analysis:%n"
+            + "  Overall Coverage: %.1f%%%n"
+            + "  Uncovered Features: %d%n%n"
+            + "Performance Summary:%n"
+            + "  Performance Variance: %.2fx%n"
+            + "  Outlier Tests: %d",
         reportId,
         generatedAt,
         metadata.getTestSuiteName(),
@@ -148,8 +150,7 @@ public final class ComparisonReport {
         coverageReport.getOverallCoverageScore(),
         coverageReport.getUncoveredFeatures().size(),
         performanceSummary.getMaxPerformanceVariance(),
-        performanceSummary.getOutlierTests().size()
-    );
+        performanceSummary.getOutlierTests().size());
   }
 
   @Override
@@ -162,33 +163,46 @@ public final class ComparisonReport {
     }
 
     final ComparisonReport that = (ComparisonReport) obj;
-    return Objects.equals(reportId, that.reportId) &&
-           Objects.equals(metadata, that.metadata) &&
-           Objects.equals(executionSummary, that.executionSummary) &&
-           Objects.equals(testResults, that.testResults) &&
-           Objects.equals(coverageReport, that.coverageReport) &&
-           Objects.equals(performanceSummary, that.performanceSummary) &&
-           Objects.equals(behavioralDiscrepancies, that.behavioralDiscrepancies) &&
-           Objects.equals(recommendations, that.recommendations) &&
-           Objects.equals(statistics, that.statistics);
+    return Objects.equals(reportId, that.reportId)
+        && Objects.equals(metadata, that.metadata)
+        && Objects.equals(executionSummary, that.executionSummary)
+        && Objects.equals(testResults, that.testResults)
+        && Objects.equals(coverageReport, that.coverageReport)
+        && Objects.equals(performanceSummary, that.performanceSummary)
+        && Objects.equals(behavioralDiscrepancies, that.behavioralDiscrepancies)
+        && Objects.equals(recommendations, that.recommendations)
+        && Objects.equals(statistics, that.statistics);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(reportId, metadata, executionSummary, testResults,
-                       coverageReport, performanceSummary, behavioralDiscrepancies,
-                       recommendations, statistics);
+    return Objects.hash(
+        reportId,
+        metadata,
+        executionSummary,
+        testResults,
+        coverageReport,
+        performanceSummary,
+        behavioralDiscrepancies,
+        recommendations,
+        statistics);
   }
 
   @Override
   public String toString() {
-    return "ComparisonReport{" +
-           "reportId='" + reportId + '\'' +
-           ", tests=" + testResults.size() +
-           ", discrepancies=" + behavioralDiscrepancies.size() +
-           ", recommendations=" + recommendations.size() +
-           ", generatedAt=" + generatedAt +
-           '}';
+    return "ComparisonReport{"
+        + "reportId='"
+        + reportId
+        + '\''
+        + ", tests="
+        + testResults.size()
+        + ", discrepancies="
+        + behavioralDiscrepancies.size()
+        + ", recommendations="
+        + recommendations.size()
+        + ", generatedAt="
+        + generatedAt
+        + '}';
   }
 
   /** Builder for ComparisonReport. */
@@ -213,7 +227,8 @@ public final class ComparisonReport {
     }
 
     public Builder executionSummary(final ExecutionSummary executionSummary) {
-      this.executionSummary = Objects.requireNonNull(executionSummary, "executionSummary cannot be null");
+      this.executionSummary =
+          Objects.requireNonNull(executionSummary, "executionSummary cannot be null");
       return this;
     }
 
@@ -228,17 +243,21 @@ public final class ComparisonReport {
     }
 
     public Builder performanceSummary(final PerformanceAnalysisSummary performanceSummary) {
-      this.performanceSummary = Objects.requireNonNull(performanceSummary, "performanceSummary cannot be null");
+      this.performanceSummary =
+          Objects.requireNonNull(performanceSummary, "performanceSummary cannot be null");
       return this;
     }
 
-    public Builder behavioralDiscrepancies(final List<BehavioralDiscrepancy> behavioralDiscrepancies) {
-      this.behavioralDiscrepancies = Objects.requireNonNull(behavioralDiscrepancies, "behavioralDiscrepancies cannot be null");
+    public Builder behavioralDiscrepancies(
+        final List<BehavioralDiscrepancy> behavioralDiscrepancies) {
+      this.behavioralDiscrepancies =
+          Objects.requireNonNull(behavioralDiscrepancies, "behavioralDiscrepancies cannot be null");
       return this;
     }
 
     public Builder recommendations(final List<RecommendationResult> recommendations) {
-      this.recommendations = Objects.requireNonNull(recommendations, "recommendations cannot be null");
+      this.recommendations =
+          Objects.requireNonNull(recommendations, "recommendations cannot be null");
       return this;
     }
 
@@ -283,10 +302,12 @@ final class ComparisonMetadata {
       final Map<String, String> environmentInfo,
       final String wasmtime4jVersion) {
     this.testSuiteName = Objects.requireNonNull(testSuiteName, "testSuiteName cannot be null");
-    this.testSuiteVersion = Objects.requireNonNull(testSuiteVersion, "testSuiteVersion cannot be null");
+    this.testSuiteVersion =
+        Objects.requireNonNull(testSuiteVersion, "testSuiteVersion cannot be null");
     this.runtimeTypes = Set.copyOf(runtimeTypes);
     this.environmentInfo = Map.copyOf(environmentInfo);
-    this.wasmtime4jVersion = Objects.requireNonNull(wasmtime4jVersion, "wasmtime4jVersion cannot be null");
+    this.wasmtime4jVersion =
+        Objects.requireNonNull(wasmtime4jVersion, "wasmtime4jVersion cannot be null");
   }
 
   public String getTestSuiteName() {
@@ -319,25 +340,31 @@ final class ComparisonMetadata {
     }
 
     final ComparisonMetadata that = (ComparisonMetadata) obj;
-    return Objects.equals(testSuiteName, that.testSuiteName) &&
-           Objects.equals(testSuiteVersion, that.testSuiteVersion) &&
-           Objects.equals(runtimeTypes, that.runtimeTypes) &&
-           Objects.equals(environmentInfo, that.environmentInfo) &&
-           Objects.equals(wasmtime4jVersion, that.wasmtime4jVersion);
+    return Objects.equals(testSuiteName, that.testSuiteName)
+        && Objects.equals(testSuiteVersion, that.testSuiteVersion)
+        && Objects.equals(runtimeTypes, that.runtimeTypes)
+        && Objects.equals(environmentInfo, that.environmentInfo)
+        && Objects.equals(wasmtime4jVersion, that.wasmtime4jVersion);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(testSuiteName, testSuiteVersion, runtimeTypes, environmentInfo, wasmtime4jVersion);
+    return Objects.hash(
+        testSuiteName, testSuiteVersion, runtimeTypes, environmentInfo, wasmtime4jVersion);
   }
 
   @Override
   public String toString() {
-    return "ComparisonMetadata{" +
-           "testSuite='" + testSuiteName + '\'' +
-           ", version='" + testSuiteVersion + '\'' +
-           ", runtimes=" + runtimeTypes +
-           '}';
+    return "ComparisonMetadata{"
+        + "testSuite='"
+        + testSuiteName
+        + '\''
+        + ", version='"
+        + testSuiteVersion
+        + '\''
+        + ", runtimes="
+        + runtimeTypes
+        + '}';
   }
 }
 
@@ -415,29 +442,33 @@ final class ExecutionSummary {
     }
 
     final ExecutionSummary that = (ExecutionSummary) obj;
-    return totalTests == that.totalTests &&
-           successfulTests == that.successfulTests &&
-           failedTests == that.failedTests &&
-           skippedTests == that.skippedTests &&
-           Objects.equals(totalDuration, that.totalDuration) &&
-           Objects.equals(startTime, that.startTime) &&
-           Objects.equals(endTime, that.endTime);
+    return totalTests == that.totalTests
+        && successfulTests == that.successfulTests
+        && failedTests == that.failedTests
+        && skippedTests == that.skippedTests
+        && Objects.equals(totalDuration, that.totalDuration)
+        && Objects.equals(startTime, that.startTime)
+        && Objects.equals(endTime, that.endTime);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(totalTests, successfulTests, failedTests, skippedTests,
-                       totalDuration, startTime, endTime);
+    return Objects.hash(
+        totalTests, successfulTests, failedTests, skippedTests, totalDuration, startTime, endTime);
   }
 
   @Override
   public String toString() {
-    return "ExecutionSummary{" +
-           "total=" + totalTests +
-           ", successful=" + successfulTests +
-           ", failed=" + failedTests +
-           ", duration=" + totalDuration +
-           '}';
+    return "ExecutionSummary{"
+        + "total="
+        + totalTests
+        + ", successful="
+        + successfulTests
+        + ", failed="
+        + failedTests
+        + ", duration="
+        + totalDuration
+        + '}';
   }
 }
 
@@ -459,8 +490,10 @@ final class TestComparisonResult {
       final TestResultStatus overallStatus) {
     this.testName = Objects.requireNonNull(testName, "testName cannot be null");
     this.runtimeResults = Map.copyOf(runtimeResults);
-    this.coverageAnalysis = Objects.requireNonNull(coverageAnalysis, "coverageAnalysis cannot be null");
-    this.performanceComparison = Objects.requireNonNull(performanceComparison, "performanceComparison cannot be null");
+    this.coverageAnalysis =
+        Objects.requireNonNull(coverageAnalysis, "coverageAnalysis cannot be null");
+    this.performanceComparison =
+        Objects.requireNonNull(performanceComparison, "performanceComparison cannot be null");
     this.discrepancies = List.copyOf(discrepancies);
     this.overallStatus = Objects.requireNonNull(overallStatus, "overallStatus cannot be null");
   }
@@ -495,8 +528,8 @@ final class TestComparisonResult {
    * @return true if the test has critical issues
    */
   public boolean hasCriticalIssues() {
-    return overallStatus == TestResultStatus.CRITICAL ||
-           discrepancies.stream().anyMatch(BehavioralDiscrepancy::isCritical);
+    return overallStatus == TestResultStatus.CRITICAL
+        || discrepancies.stream().anyMatch(BehavioralDiscrepancy::isCritical);
   }
 
   @Override
@@ -509,27 +542,36 @@ final class TestComparisonResult {
     }
 
     final TestComparisonResult that = (TestComparisonResult) obj;
-    return Objects.equals(testName, that.testName) &&
-           Objects.equals(runtimeResults, that.runtimeResults) &&
-           Objects.equals(coverageAnalysis, that.coverageAnalysis) &&
-           Objects.equals(performanceComparison, that.performanceComparison) &&
-           Objects.equals(discrepancies, that.discrepancies) &&
-           overallStatus == that.overallStatus;
+    return Objects.equals(testName, that.testName)
+        && Objects.equals(runtimeResults, that.runtimeResults)
+        && Objects.equals(coverageAnalysis, that.coverageAnalysis)
+        && Objects.equals(performanceComparison, that.performanceComparison)
+        && Objects.equals(discrepancies, that.discrepancies)
+        && overallStatus == that.overallStatus;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(testName, runtimeResults, coverageAnalysis,
-                       performanceComparison, discrepancies, overallStatus);
+    return Objects.hash(
+        testName,
+        runtimeResults,
+        coverageAnalysis,
+        performanceComparison,
+        discrepancies,
+        overallStatus);
   }
 
   @Override
   public String toString() {
-    return "TestComparisonResult{" +
-           "testName='" + testName + '\'' +
-           ", status=" + overallStatus +
-           ", discrepancies=" + discrepancies.size() +
-           '}';
+    return "TestComparisonResult{"
+        + "testName='"
+        + testName
+        + '\''
+        + ", status="
+        + overallStatus
+        + ", discrepancies="
+        + discrepancies.size()
+        + '}';
   }
 }
 
@@ -591,12 +633,12 @@ final class TestExecutionResult {
     }
 
     final TestExecutionResult that = (TestExecutionResult) obj;
-    return successful == that.successful &&
-           runtime == that.runtime &&
-           Objects.equals(output, that.output) &&
-           Objects.equals(errorMessage, that.errorMessage) &&
-           Objects.equals(executionTime, that.executionTime) &&
-           Objects.equals(metrics, that.metrics);
+    return successful == that.successful
+        && runtime == that.runtime
+        && Objects.equals(output, that.output)
+        && Objects.equals(errorMessage, that.errorMessage)
+        && Objects.equals(executionTime, that.executionTime)
+        && Objects.equals(metrics, that.metrics);
   }
 
   @Override
@@ -606,11 +648,14 @@ final class TestExecutionResult {
 
   @Override
   public String toString() {
-    return "TestExecutionResult{" +
-           "runtime=" + runtime +
-           ", successful=" + successful +
-           ", executionTime=" + executionTime +
-           '}';
+    return "TestExecutionResult{"
+        + "runtime="
+        + runtime
+        + ", successful="
+        + successful
+        + ", executionTime="
+        + executionTime
+        + '}';
   }
 }
 
@@ -680,26 +725,33 @@ final class PerformanceAnalysisSummary {
     }
 
     final PerformanceAnalysisSummary that = (PerformanceAnalysisSummary) obj;
-    return Double.compare(that.averagePerformanceVariance, averagePerformanceVariance) == 0 &&
-           Double.compare(that.maxPerformanceVariance, maxPerformanceVariance) == 0 &&
-           Objects.equals(runtimePerformanceScores, that.runtimePerformanceScores) &&
-           Objects.equals(outlierTests, that.outlierTests) &&
-           Objects.equals(performanceTrends, that.performanceTrends);
+    return Double.compare(that.averagePerformanceVariance, averagePerformanceVariance) == 0
+        && Double.compare(that.maxPerformanceVariance, maxPerformanceVariance) == 0
+        && Objects.equals(runtimePerformanceScores, that.runtimePerformanceScores)
+        && Objects.equals(outlierTests, that.outlierTests)
+        && Objects.equals(performanceTrends, that.performanceTrends);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(averagePerformanceVariance, maxPerformanceVariance,
-                       runtimePerformanceScores, outlierTests, performanceTrends);
+    return Objects.hash(
+        averagePerformanceVariance,
+        maxPerformanceVariance,
+        runtimePerformanceScores,
+        outlierTests,
+        performanceTrends);
   }
 
   @Override
   public String toString() {
-    return "PerformanceAnalysisSummary{" +
-           "avgVariance=" + String.format("%.2f", averagePerformanceVariance) +
-           ", maxVariance=" + String.format("%.2f", maxPerformanceVariance) +
-           ", outliers=" + outlierTests.size() +
-           '}';
+    return "PerformanceAnalysisSummary{"
+        + "avgVariance="
+        + String.format("%.2f", averagePerformanceVariance)
+        + ", maxVariance="
+        + String.format("%.2f", maxPerformanceVariance)
+        + ", outliers="
+        + outlierTests.size()
+        + '}';
   }
 }
 
@@ -747,10 +799,10 @@ final class ReportStatistics {
     }
 
     final ReportStatistics that = (ReportStatistics) obj;
-    return totalDataPoints == that.totalDataPoints &&
-           reportSizeBytes == that.reportSizeBytes &&
-           Double.compare(that.dataQualityScore, dataQualityScore) == 0 &&
-           Objects.equals(categoryBreakdown, that.categoryBreakdown);
+    return totalDataPoints == that.totalDataPoints
+        && reportSizeBytes == that.reportSizeBytes
+        && Double.compare(that.dataQualityScore, dataQualityScore) == 0
+        && Objects.equals(categoryBreakdown, that.categoryBreakdown);
   }
 
   @Override
@@ -760,10 +812,13 @@ final class ReportStatistics {
 
   @Override
   public String toString() {
-    return "ReportStatistics{" +
-           "dataPoints=" + totalDataPoints +
-           ", sizeBytes=" + reportSizeBytes +
-           ", qualityScore=" + String.format("%.2f", dataQualityScore) +
-           '}';
+    return "ReportStatistics{"
+        + "dataPoints="
+        + totalDataPoints
+        + ", sizeBytes="
+        + reportSizeBytes
+        + ", qualityScore="
+        + String.format("%.2f", dataQualityScore)
+        + '}';
   }
 }
