@@ -108,7 +108,9 @@ public final class WasmtimeBindings {
     return methodHandleCache.computeIfAbsent(
         functionName,
         name -> {
-          final Optional<MemorySegment> symbol = symbolLookup.find(name);
+          // Try multiple symbol name variations for platform compatibility
+          Optional<MemorySegment> symbol = findSymbolWithVariations(name);
+
           if (symbol.isEmpty()) {
             logger.warning("Native function not found: " + name);
             return null;
@@ -121,6 +123,44 @@ public final class WasmtimeBindings {
             return null;
           }
         });
+  }
+
+  /**
+   * Finds a symbol by trying multiple name variations for platform compatibility.
+   *
+   * <p>This method attempts to find native function symbols using different naming conventions:
+   *
+   * <ul>
+   *   <li>Original name (e.g., "wasmtime_engine_new")
+   *   <li>Underscore prefix for macOS/Darwin (e.g., "_wasmtime_engine_new")
+   *   <li>Windows-style decorated names (future enhancement)
+   * </ul>
+   *
+   * @param functionName the base function name
+   * @return the symbol if found, empty otherwise
+   */
+  private Optional<MemorySegment> findSymbolWithVariations(final String functionName) {
+    // Try original name first
+    Optional<MemorySegment> symbol = symbolLookup.find(functionName);
+    if (symbol.isPresent()) {
+      logger.fine("Found symbol: " + functionName);
+      return symbol;
+    }
+
+    // On macOS/Darwin, C symbols are typically prefixed with underscore
+    final String osName = System.getProperty("os.name", "").toLowerCase();
+    if (osName.contains("mac") || osName.contains("darwin")) {
+      final String underscoreName = "_" + functionName;
+      symbol = symbolLookup.find(underscoreName);
+      if (symbol.isPresent()) {
+        logger.fine("Found symbol with underscore prefix: " + underscoreName);
+        return symbol;
+      }
+    }
+
+    // Could add Windows-style decorated names here in the future
+    // For now, return empty if no variations work
+    return Optional.empty();
   }
 
   /**
