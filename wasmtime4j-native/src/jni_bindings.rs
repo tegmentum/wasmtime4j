@@ -4222,5 +4222,164 @@ pub mod jni_memory {
         })
     }
 
+}
 
+/// JNI bindings for JniWasmRuntime operations
+#[cfg(feature = "jni-bindings")]
+pub mod jni_runtime {
+    use super::*;
+    use crate::error::jni_utils;
+    use std::ptr;
+
+    /// Create a new WebAssembly runtime (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeCreateRuntime(
+        env: JNIEnv,
+        _class: JClass,
+    ) -> jlong {
+        jni_utils::jni_try_ptr(env, || {
+            log::debug!("Creating new JNI WebAssembly runtime");
+
+            // For now, return a placeholder handle since we don't need a specific runtime object
+            // The actual work is done by the engines and modules
+            let runtime_placeholder = Box::new(0u64);
+
+            log::debug!("Created JNI WebAssembly runtime");
+            Ok(runtime_placeholder)
+        }) as jlong
+    }
+
+    /// Create a new Wasmtime engine for the runtime (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeCreateEngine(
+        env: JNIEnv,
+        _class: JClass,
+        runtime_handle: jlong,
+    ) -> jlong {
+        jni_utils::jni_try_ptr(env, || {
+            if runtime_handle == 0 {
+                log::error!("JNI Runtime.nativeCreateEngine: null runtime handle provided");
+                return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: "Runtime handle cannot be null".to_string(),
+                });
+            }
+
+            log::debug!("Creating new engine for runtime handle: 0x{:x}", runtime_handle);
+
+            // Create a new engine with default configuration
+            crate::engine::core::create_engine()
+        }) as jlong
+    }
+
+    /// Compile a WebAssembly module (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeCompileModule(
+        env: JNIEnv,
+        _class: JClass,
+        runtime_handle: jlong,
+        wasm_bytes: jbyteArray,
+    ) -> jlong {
+        // Extract data before moving env into jni_try_ptr
+        let wasm_data_result = env.convert_byte_array(unsafe { jni::objects::JByteArray::from_raw(wasm_bytes) })
+            .map_err(|e| crate::error::WasmtimeError::InvalidParameter {
+                message: format!("Failed to convert Java byte array: {}", e),
+            });
+
+        let data = match wasm_data_result {
+            Ok(data) => data,
+            Err(_) => return 0 as jlong, // Return null on error
+        };
+
+        jni_utils::jni_try_ptr(env, || {
+            if runtime_handle == 0 {
+                log::error!("JNI Runtime.nativeCompileModule: null runtime handle provided");
+                return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: "Runtime handle cannot be null".to_string(),
+                });
+            }
+
+            log::debug!("Compiling module for runtime handle: 0x{:x}, bytes length: {}", runtime_handle, data.len());
+
+            // Create a default engine for compilation
+            let engine = crate::engine::core::create_engine()?;
+
+            // Compile the module
+            crate::module::core::compile_module(&engine, &data)
+        }) as jlong
+    }
+
+    /// Instantiate a WebAssembly module (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeInstantiateModule(
+        env: JNIEnv,
+        _class: JClass,
+        runtime_handle: jlong,
+        module_handle: jlong,
+    ) -> jlong {
+        jni_utils::jni_try_ptr(env, || {
+            if runtime_handle == 0 {
+                log::error!("JNI Runtime.nativeInstantiateModule: null runtime handle provided");
+                return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: "Runtime handle cannot be null".to_string(),
+                });
+            }
+
+            if module_handle == 0 {
+                log::error!("JNI Runtime.nativeInstantiateModule: null module handle provided");
+                return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: "Module handle cannot be null".to_string(),
+                });
+            }
+
+            log::debug!("Instantiating module 0x{:x} for runtime 0x{:x}", module_handle, runtime_handle);
+
+            // Get the module reference
+            let module = unsafe { crate::module::core::get_module_ref(module_handle as *const std::os::raw::c_void)? };
+
+            // Create a default engine and store for instantiation
+            let engine = crate::engine::core::create_engine()?;
+            let mut store = crate::store::core::create_store(&engine)?;
+
+            // Instantiate the module
+            crate::instance::core::instantiate_module(&mut store, &module, &[])
+        }) as jlong
+    }
+
+    /// Get the Wasmtime version string (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeGetWasmtimeVersion(
+        env: JNIEnv,
+        _class: JClass,
+    ) -> jstring {
+        match env.new_string(crate::WASMTIME_VERSION) {
+            Ok(version_str) => version_str.into_raw(),
+            Err(e) => {
+                log::error!("Failed to create Java string for Wasmtime version: {}", e);
+                ptr::null_mut()
+            }
+        }
+    }
+
+    /// Destroy a WebAssembly runtime (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeDestroyRuntime(
+        env: JNIEnv,
+        _class: JClass,
+        runtime_handle: jlong,
+    ) {
+        if runtime_handle == 0 {
+            log::warn!("JNI Runtime.nativeDestroyRuntime: attempt to destroy null runtime handle");
+            return;
+        }
+
+        log::debug!("Destroying runtime handle: 0x{:x}", runtime_handle);
+
+        // Clean up the runtime handle
+        unsafe {
+            let _runtime = Box::from_raw(runtime_handle as *mut u64);
+            // The runtime object is automatically dropped here
+        }
+
+        log::debug!("Successfully destroyed runtime handle: 0x{:x}", runtime_handle);
+    }
 }
