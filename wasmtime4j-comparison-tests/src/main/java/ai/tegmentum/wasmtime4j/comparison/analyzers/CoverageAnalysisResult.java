@@ -27,9 +27,12 @@ public final class CoverageAnalysisResult {
     this.testName = Objects.requireNonNull(builder.testName, "testName cannot be null");
     this.detectedFeatures = Set.copyOf(builder.detectedFeatures);
     this.runtimeFeatureCoverage = Map.copyOf(builder.runtimeFeatureCoverage);
-    this.coverageMetrics = Objects.requireNonNull(builder.coverageMetrics, "coverageMetrics cannot be null");
+    this.coverageMetrics =
+        Objects.requireNonNull(builder.coverageMetrics, "coverageMetrics cannot be null");
     this.coverageGaps = List.copyOf(builder.coverageGaps);
-    this.featureInteractionAnalysis = Objects.requireNonNull(builder.featureInteractionAnalysis, "featureInteractionAnalysis cannot be null");
+    this.featureInteractionAnalysis =
+        Objects.requireNonNull(
+            builder.featureInteractionAnalysis, "featureInteractionAnalysis cannot be null");
     this.analysisTime = Instant.now();
   }
 
@@ -67,8 +70,8 @@ public final class CoverageAnalysisResult {
    * @return true if coverage is comprehensive
    */
   public boolean hasComprehensiveCoverage() {
-    return coverageMetrics.getOverallCoveragePercentage() >= 90.0 &&
-           coverageGaps.stream().noneMatch(gap -> gap.getSeverity() == GapSeverity.HIGH);
+    return coverageMetrics.getOverallCoveragePercentage() >= 90.0
+        && coverageGaps.stream().noneMatch(gap -> gap.getSeverity() == GapSeverity.HIGH);
   }
 
   /**
@@ -87,22 +90,23 @@ public final class CoverageAnalysisResult {
    */
   public String getCoverageSummary() {
     return String.format(
-        "Coverage Analysis for %s:%n" +
-        "Features Detected: %d%n" +
-        "Overall Coverage: %.1f%%%n" +
-        "Coverage Gaps: %d (High: %d, Medium: %d, Low: %d)%n" +
-        "Feature Interactions: %d combinations analyzed%n" +
-        "Analysis Time: %s",
+        "Coverage Analysis for %s:%n"
+            + "Features Detected: %d%n"
+            + "Overall Coverage: %.1f%%%n"
+            + "Coverage Gaps: %d (High: %d, Medium: %d, Low: %d)%n"
+            + "Feature Interactions: %d combinations analyzed%n"
+            + "Analysis Time: %s",
         testName,
         detectedFeatures.size(),
         coverageMetrics.getOverallCoveragePercentage(),
         coverageGaps.size(),
         getHighSeverityGapCount(),
-        coverageGaps.stream().mapToLong(gap -> gap.getSeverity() == GapSeverity.MEDIUM ? 1 : 0).sum(),
+        coverageGaps.stream()
+            .mapToLong(gap -> gap.getSeverity() == GapSeverity.MEDIUM ? 1 : 0)
+            .sum(),
         coverageGaps.stream().mapToLong(gap -> gap.getSeverity() == GapSeverity.LOW ? 1 : 0).sum(),
         featureInteractionAnalysis.getFeatureCombinations().size(),
-        analysisTime
-    );
+        analysisTime);
   }
 
   @Override
@@ -115,28 +119,38 @@ public final class CoverageAnalysisResult {
     }
 
     final CoverageAnalysisResult that = (CoverageAnalysisResult) obj;
-    return Objects.equals(testName, that.testName) &&
-           Objects.equals(detectedFeatures, that.detectedFeatures) &&
-           Objects.equals(runtimeFeatureCoverage, that.runtimeFeatureCoverage) &&
-           Objects.equals(coverageMetrics, that.coverageMetrics) &&
-           Objects.equals(coverageGaps, that.coverageGaps) &&
-           Objects.equals(featureInteractionAnalysis, that.featureInteractionAnalysis);
+    return Objects.equals(testName, that.testName)
+        && Objects.equals(detectedFeatures, that.detectedFeatures)
+        && Objects.equals(runtimeFeatureCoverage, that.runtimeFeatureCoverage)
+        && Objects.equals(coverageMetrics, that.coverageMetrics)
+        && Objects.equals(coverageGaps, that.coverageGaps)
+        && Objects.equals(featureInteractionAnalysis, that.featureInteractionAnalysis);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(testName, detectedFeatures, runtimeFeatureCoverage,
-                       coverageMetrics, coverageGaps, featureInteractionAnalysis);
+    return Objects.hash(
+        testName,
+        detectedFeatures,
+        runtimeFeatureCoverage,
+        coverageMetrics,
+        coverageGaps,
+        featureInteractionAnalysis);
   }
 
   @Override
   public String toString() {
-    return "CoverageAnalysisResult{" +
-           "testName='" + testName + '\'' +
-           ", features=" + detectedFeatures.size() +
-           ", coverage=" + String.format("%.1f%%", coverageMetrics.getOverallCoveragePercentage()) +
-           ", gaps=" + coverageGaps.size() +
-           '}';
+    return "CoverageAnalysisResult{"
+        + "testName='"
+        + testName
+        + '\''
+        + ", features="
+        + detectedFeatures.size()
+        + ", coverage="
+        + String.format("%.1f%%", coverageMetrics.getOverallCoveragePercentage())
+        + ", gaps="
+        + coverageGaps.size()
+        + '}';
   }
 
   /** Builder for CoverageAnalysisResult. */
@@ -153,17 +167,21 @@ public final class CoverageAnalysisResult {
     }
 
     public Builder detectedFeatures(final Set<String> detectedFeatures) {
-      this.detectedFeatures = Objects.requireNonNull(detectedFeatures, "detectedFeatures cannot be null");
+      this.detectedFeatures =
+          Objects.requireNonNull(detectedFeatures, "detectedFeatures cannot be null");
       return this;
     }
 
-    public Builder runtimeFeatureCoverage(final Map<RuntimeType, Set<String>> runtimeFeatureCoverage) {
-      this.runtimeFeatureCoverage = Objects.requireNonNull(runtimeFeatureCoverage, "runtimeFeatureCoverage cannot be null");
+    public Builder runtimeFeatureCoverage(
+        final Map<RuntimeType, Set<String>> runtimeFeatureCoverage) {
+      this.runtimeFeatureCoverage =
+          Objects.requireNonNull(runtimeFeatureCoverage, "runtimeFeatureCoverage cannot be null");
       return this;
     }
 
     public Builder coverageMetrics(final CoverageMetrics coverageMetrics) {
-      this.coverageMetrics = Objects.requireNonNull(coverageMetrics, "coverageMetrics cannot be null");
+      this.coverageMetrics =
+          Objects.requireNonNull(coverageMetrics, "coverageMetrics cannot be null");
       return this;
     }
 
@@ -172,8 +190,11 @@ public final class CoverageAnalysisResult {
       return this;
     }
 
-    public Builder featureInteractionAnalysis(final FeatureInteractionAnalysis featureInteractionAnalysis) {
-      this.featureInteractionAnalysis = Objects.requireNonNull(featureInteractionAnalysis, "featureInteractionAnalysis cannot be null");
+    public Builder featureInteractionAnalysis(
+        final FeatureInteractionAnalysis featureInteractionAnalysis) {
+      this.featureInteractionAnalysis =
+          Objects.requireNonNull(
+              featureInteractionAnalysis, "featureInteractionAnalysis cannot be null");
       return this;
     }
 
@@ -240,27 +261,35 @@ final class CoverageMetrics {
     }
 
     final CoverageMetrics that = (CoverageMetrics) obj;
-    return totalDetectedFeatures == that.totalDetectedFeatures &&
-           coveredFeatures == that.coveredFeatures &&
-           Double.compare(that.overallCoveragePercentage, overallCoveragePercentage) == 0 &&
-           Double.compare(that.successRate, successRate) == 0 &&
-           Objects.equals(runtimeCoveragePercentages, that.runtimeCoveragePercentages);
+    return totalDetectedFeatures == that.totalDetectedFeatures
+        && coveredFeatures == that.coveredFeatures
+        && Double.compare(that.overallCoveragePercentage, overallCoveragePercentage) == 0
+        && Double.compare(that.successRate, successRate) == 0
+        && Objects.equals(runtimeCoveragePercentages, that.runtimeCoveragePercentages);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(totalDetectedFeatures, coveredFeatures, overallCoveragePercentage,
-                       runtimeCoveragePercentages, successRate);
+    return Objects.hash(
+        totalDetectedFeatures,
+        coveredFeatures,
+        overallCoveragePercentage,
+        runtimeCoveragePercentages,
+        successRate);
   }
 
   @Override
   public String toString() {
-    return "CoverageMetrics{" +
-           "total=" + totalDetectedFeatures +
-           ", covered=" + coveredFeatures +
-           ", overall=" + String.format("%.1f%%", overallCoveragePercentage) +
-           ", success=" + String.format("%.1f%%", successRate) +
-           '}';
+    return "CoverageMetrics{"
+        + "total="
+        + totalDetectedFeatures
+        + ", covered="
+        + coveredFeatures
+        + ", overall="
+        + String.format("%.1f%%", overallCoveragePercentage)
+        + ", success="
+        + String.format("%.1f%%", successRate)
+        + '}';
   }
 }
 
@@ -315,11 +344,11 @@ final class CoverageGap {
     }
 
     final CoverageGap that = (CoverageGap) obj;
-    return type == that.type &&
-           Objects.equals(description, that.description) &&
-           Objects.equals(affectedFeatures, that.affectedFeatures) &&
-           Objects.equals(affectedRuntimes, that.affectedRuntimes) &&
-           severity == that.severity;
+    return type == that.type
+        && Objects.equals(description, that.description)
+        && Objects.equals(affectedFeatures, that.affectedFeatures)
+        && Objects.equals(affectedRuntimes, that.affectedRuntimes)
+        && severity == that.severity;
   }
 
   @Override
@@ -329,12 +358,16 @@ final class CoverageGap {
 
   @Override
   public String toString() {
-    return "CoverageGap{" +
-           "type=" + type +
-           ", severity=" + severity +
-           ", features=" + affectedFeatures.size() +
-           ", runtimes=" + affectedRuntimes.size() +
-           '}';
+    return "CoverageGap{"
+        + "type="
+        + type
+        + ", severity="
+        + severity
+        + ", features="
+        + affectedFeatures.size()
+        + ", runtimes="
+        + affectedRuntimes.size()
+        + '}';
   }
 }
 
@@ -402,9 +435,9 @@ final class FeatureInteractionAnalysis {
     }
 
     final FeatureInteractionAnalysis that = (FeatureInteractionAnalysis) obj;
-    return Double.compare(that.interactionComplexity, interactionComplexity) == 0 &&
-           Objects.equals(featureCombinations, that.featureCombinations) &&
-           Objects.equals(problematicInteractions, that.problematicInteractions);
+    return Double.compare(that.interactionComplexity, interactionComplexity) == 0
+        && Objects.equals(featureCombinations, that.featureCombinations)
+        && Objects.equals(problematicInteractions, that.problematicInteractions);
   }
 
   @Override
@@ -414,10 +447,13 @@ final class FeatureInteractionAnalysis {
 
   @Override
   public String toString() {
-    return "FeatureInteractionAnalysis{" +
-           "combinations=" + featureCombinations.size() +
-           ", problematic=" + problematicInteractions.size() +
-           ", complexity=" + String.format("%.2f", interactionComplexity) +
-           '}';
+    return "FeatureInteractionAnalysis{"
+        + "combinations="
+        + featureCombinations.size()
+        + ", problematic="
+        + problematicInteractions.size()
+        + ", complexity="
+        + String.format("%.2f", interactionComplexity)
+        + '}';
   }
 }

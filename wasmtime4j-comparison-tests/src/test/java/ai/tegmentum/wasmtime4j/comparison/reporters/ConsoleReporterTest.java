@@ -20,8 +20,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * Comprehensive unit tests for ConsoleReporter main reporting functionality.
- * Tests exit codes, CI/CD integration, output formatting, and error handling.
+ * Comprehensive unit tests for ConsoleReporter main reporting functionality. Tests exit codes,
+ * CI/CD integration, output formatting, and error handling.
  */
 final class ConsoleReporterTest {
 
@@ -205,7 +205,8 @@ final class ConsoleReporterTest {
 
   @Test
   void testStandardOutputFactoryMethod() {
-    final ConsoleReporter stdReporter = ConsoleReporter.forStandardOutput(VerbosityLevel.NORMAL, true);
+    final ConsoleReporter stdReporter =
+        ConsoleReporter.forStandardOutput(VerbosityLevel.NORMAL, true);
     assertNotNull(stdReporter);
 
     // Should be able to use the reporter
@@ -241,12 +242,12 @@ final class ConsoleReporterTest {
     final ComparisonReport report = createSuccessfulReport();
 
     // Generate reports with different verbosity levels
-    final ConsoleReporter normalReporter = new ConsoleReporter(
-        outputPrint, errorPrint, VerbosityLevel.NORMAL, false);
-    final ConsoleReporter verboseReporter = new ConsoleReporter(
-        outputPrint, errorPrint, VerbosityLevel.VERBOSE, false);
-    final ConsoleReporter debugReporter = new ConsoleReporter(
-        outputPrint, errorPrint, VerbosityLevel.DEBUG, false);
+    final ConsoleReporter normalReporter =
+        new ConsoleReporter(outputPrint, errorPrint, VerbosityLevel.NORMAL, false);
+    final ConsoleReporter verboseReporter =
+        new ConsoleReporter(outputPrint, errorPrint, VerbosityLevel.VERBOSE, false);
+    final ConsoleReporter debugReporter =
+        new ConsoleReporter(outputPrint, errorPrint, VerbosityLevel.DEBUG, false);
 
     // Reset stream for each test
     outputStream.reset();
@@ -269,8 +270,8 @@ final class ConsoleReporterTest {
 
   @Test
   void testColorOutputHandling() {
-    final ConsoleReporter colorReporter = new ConsoleReporter(
-        outputPrint, errorPrint, VerbosityLevel.NORMAL, true);
+    final ConsoleReporter colorReporter =
+        new ConsoleReporter(outputPrint, errorPrint, VerbosityLevel.NORMAL, true);
 
     colorReporter.showError("Colored error", null);
     colorReporter.showWarning("Colored warning");
@@ -302,24 +303,24 @@ final class ConsoleReporterTest {
     final Instant startTime = Instant.now().minus(Duration.ofMinutes(2));
     final Instant endTime = Instant.now();
 
-    final BehavioralAnalysisResult behavioralResult = new BehavioralAnalysisResult.Builder("successful-test")
-        .executionPattern(new ExecutionPattern(1, 0, 0, 1, 0, 0.05))
-        .consistencyScore(0.98)
-        .verdict(BehavioralVerdict.CONSISTENT)
-        .build();
+    final BehavioralAnalysisResult behavioralResult =
+        new BehavioralAnalysisResult.Builder("successful-test")
+            .executionPattern(new ExecutionPattern(1, 0, 0, 1, 0, 0.05))
+            .consistencyScore(0.98)
+            .verdict(BehavioralVerdict.CONSISTENT)
+            .build();
 
-    final RecommendationResult recommendationResult = new RecommendationResult.Builder("successful-test")
-        .summary(new RecommendationSummary(0, 0, 0, 0, Collections.emptyMap()))
-        .build();
+    final RecommendationResult recommendationResult =
+        new RecommendationResult.Builder("successful-test")
+            .summary(new RecommendationSummary(0, 0, 0, 0, Collections.emptyMap()))
+            .build();
 
     return new ComparisonReport.Builder("success-report-001", startTime)
         .endTime(endTime)
         .behavioralResults(Map.of("successful-test", behavioralResult))
         .recommendationResults(Map.of("successful-test", recommendationResult))
-        .summary(new ComparisonSummary(
-            ComparisonVerdict.PASSED, 1, 1, 0, 0, 0, 0, 0, 0.98))
-        .configuration(new ComparisonConfiguration(
-            VerbosityLevel.VERBOSE, false, true, "console"))
+        .summary(new ComparisonSummary(ComparisonVerdict.PASSED, 1, 1, 0, 0, 0, 0, 0, 0.98))
+        .configuration(new ComparisonConfiguration(VerbosityLevel.VERBOSE, false, true, "console"))
         .build();
   }
 
@@ -327,24 +328,26 @@ final class ConsoleReporterTest {
     final Instant startTime = Instant.now().minus(Duration.ofMinutes(3));
     final Instant endTime = Instant.now();
 
-    final BehavioralAnalysisResult behavioralResult = new BehavioralAnalysisResult.Builder("warning-test")
-        .executionPattern(new ExecutionPattern(1, 0, 0, 2, 1, 0.15))
-        .consistencyScore(0.85)
-        .verdict(BehavioralVerdict.MOSTLY_CONSISTENT)
-        .build();
+    final BehavioralAnalysisResult behavioralResult =
+        new BehavioralAnalysisResult.Builder("warning-test")
+            .executionPattern(new ExecutionPattern(1, 0, 0, 2, 1, 0.15))
+            .consistencyScore(0.85)
+            .verdict(BehavioralVerdict.MOSTLY_CONSISTENT)
+            .build();
 
-    final RecommendationResult recommendationResult = new RecommendationResult.Builder("warning-test")
-        .summary(new RecommendationSummary(2, 0, 2, 0, Collections.emptyMap()))
-        .build();
+    final RecommendationResult recommendationResult =
+        new RecommendationResult.Builder("warning-test")
+            .summary(new RecommendationSummary(2, 0, 2, 0, Collections.emptyMap()))
+            .build();
 
     return new ComparisonReport.Builder("warning-report-001", startTime)
         .endTime(endTime)
         .behavioralResults(Map.of("warning-test", behavioralResult))
         .recommendationResults(Map.of("warning-test", recommendationResult))
-        .summary(new ComparisonSummary(
-            ComparisonVerdict.PASSED_WITH_WARNINGS, 1, 1, 0, 0, 0, 2, 0, 0.85))
-        .configuration(new ComparisonConfiguration(
-            VerbosityLevel.VERBOSE, false, true, "console"))
+        .summary(
+            new ComparisonSummary(
+                ComparisonVerdict.PASSED_WITH_WARNINGS, 1, 1, 0, 0, 0, 2, 0, 0.85))
+        .configuration(new ComparisonConfiguration(VerbosityLevel.VERBOSE, false, true, "console"))
         .build();
   }
 
@@ -352,24 +355,25 @@ final class ConsoleReporterTest {
     final Instant startTime = Instant.now().minus(Duration.ofMinutes(5));
     final Instant endTime = Instant.now();
 
-    final BehavioralAnalysisResult behavioralResult = new BehavioralAnalysisResult.Builder("failing-test")
-        .executionPattern(new ExecutionPattern(0, 1, 0, 3, 2, 0.8))
-        .consistencyScore(0.45)
-        .verdict(BehavioralVerdict.INCOMPATIBLE)
-        .build();
+    final BehavioralAnalysisResult behavioralResult =
+        new BehavioralAnalysisResult.Builder("failing-test")
+            .executionPattern(new ExecutionPattern(0, 1, 0, 3, 2, 0.8))
+            .consistencyScore(0.45)
+            .verdict(BehavioralVerdict.INCOMPATIBLE)
+            .build();
 
-    final RecommendationResult recommendationResult = new RecommendationResult.Builder("failing-test")
-        .summary(new RecommendationSummary(5, 3, 2, 0, Collections.emptyMap()))
-        .build();
+    final RecommendationResult recommendationResult =
+        new RecommendationResult.Builder("failing-test")
+            .summary(new RecommendationSummary(5, 3, 2, 0, Collections.emptyMap()))
+            .build();
 
     return new ComparisonReport.Builder("failure-report-001", startTime)
         .endTime(endTime)
         .behavioralResults(Map.of("failing-test", behavioralResult))
         .recommendationResults(Map.of("failing-test", recommendationResult))
-        .summary(new ComparisonSummary(
-            ComparisonVerdict.FAILED_WITH_ISSUES, 1, 0, 1, 0, 3, 2, 0, 0.45))
-        .configuration(new ComparisonConfiguration(
-            VerbosityLevel.VERBOSE, false, true, "console"))
+        .summary(
+            new ComparisonSummary(ComparisonVerdict.FAILED_WITH_ISSUES, 1, 0, 1, 0, 3, 2, 0, 0.45))
+        .configuration(new ComparisonConfiguration(VerbosityLevel.VERBOSE, false, true, "console"))
         .build();
   }
 }

@@ -1,8 +1,8 @@
 package ai.tegmentum.wasmtime4j.comparison.reporters;
 
 /**
- * Interface for receiving progress updates during long-running comparison operations.
- * Implements the Observer pattern to provide real-time feedback to users.
+ * Interface for receiving progress updates during long-running comparison operations. Implements
+ * the Observer pattern to provide real-time feedback to users.
  *
  * @since 1.0.0
  */

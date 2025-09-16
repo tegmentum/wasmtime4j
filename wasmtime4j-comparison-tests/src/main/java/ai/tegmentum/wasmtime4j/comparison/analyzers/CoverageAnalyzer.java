@@ -3,7 +3,6 @@ package ai.tegmentum.wasmtime4j.comparison.analyzers;
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -17,9 +16,11 @@ import java.util.stream.Collectors;
 
 /**
  * Comprehensive coverage analyzer that maps WebAssembly feature usage against test execution
- * results to identify coverage gaps and ensure comprehensive validation across runtime implementations.
+ * results to identify coverage gaps and ensure comprehensive validation across runtime
+ * implementations.
  *
  * <p>Key functionality includes:
+ *
  * <ul>
  *   <li>WebAssembly feature coverage mapping against test results
  *   <li>Coverage gap analysis for incomplete test scenarios
@@ -28,8 +29,8 @@ import java.util.stream.Collectors;
  *   <li>Integration with behavioral and performance analysis results
  * </ul>
  *
- * <p>This analyzer works with results from {@link BehavioralAnalyzer} and {@link PerformanceAnalyzer}
- * to provide comprehensive insights into test coverage and feature validation.
+ * <p>This analyzer works with results from {@link BehavioralAnalyzer} and {@link
+ * PerformanceAnalyzer} to provide comprehensive insights into test coverage and feature validation.
  *
  * @since 1.0.0
  */
@@ -43,52 +44,106 @@ public final class CoverageAnalyzer {
     final Map<String, Set<String>> categories = new HashMap<>();
 
     // Core WebAssembly features
-    categories.put("CORE", Set.of(
-        "memory_operations", "control_flow", "function_calls", "local_variables",
-        "global_variables", "constants", "arithmetic_operations", "comparison_operations",
-        "logical_operations", "conversion_operations", "reinterpret_operations"
-    ));
+    categories.put(
+        "CORE",
+        Set.of(
+            "memory_operations",
+            "control_flow",
+            "function_calls",
+            "local_variables",
+            "global_variables",
+            "constants",
+            "arithmetic_operations",
+            "comparison_operations",
+            "logical_operations",
+            "conversion_operations",
+            "reinterpret_operations"));
 
     // Memory management features
-    categories.put("MEMORY", Set.of(
-        "linear_memory", "memory_grow", "memory_size", "memory_copy", "memory_fill",
-        "data_segments", "bulk_memory_operations", "memory_init", "data_drop"
-    ));
+    categories.put(
+        "MEMORY",
+        Set.of(
+            "linear_memory",
+            "memory_grow",
+            "memory_size",
+            "memory_copy",
+            "memory_fill",
+            "data_segments",
+            "bulk_memory_operations",
+            "memory_init",
+            "data_drop"));
 
     // Table and reference type features
-    categories.put("TABLES", Set.of(
-        "table_operations", "table_grow", "table_size", "table_get", "table_set",
-        "table_copy", "table_fill", "table_init", "elem_drop", "reference_types"
-    ));
+    categories.put(
+        "TABLES",
+        Set.of(
+            "table_operations",
+            "table_grow",
+            "table_size",
+            "table_get",
+            "table_set",
+            "table_copy",
+            "table_fill",
+            "table_init",
+            "elem_drop",
+            "reference_types"));
 
     // Import/Export features
-    categories.put("IMPORTS_EXPORTS", Set.of(
-        "function_imports", "memory_imports", "table_imports", "global_imports",
-        "function_exports", "memory_exports", "table_exports", "global_exports"
-    ));
+    categories.put(
+        "IMPORTS_EXPORTS",
+        Set.of(
+            "function_imports",
+            "memory_imports",
+            "table_imports",
+            "global_imports",
+            "function_exports",
+            "memory_exports",
+            "table_exports",
+            "global_exports"));
 
     // Exception handling (proposal)
-    categories.put("EXCEPTIONS", Set.of(
-        "try_catch", "throw", "rethrow", "exception_handling", "exception_types"
-    ));
+    categories.put(
+        "EXCEPTIONS",
+        Set.of("try_catch", "throw", "rethrow", "exception_handling", "exception_types"));
 
     // SIMD operations (proposal)
-    categories.put("SIMD", Set.of(
-        "v128_operations", "load_splat", "load_extend", "load_zero", "shuffle",
-        "swizzle", "arithmetic_simd", "comparison_simd", "conversion_simd"
-    ));
+    categories.put(
+        "SIMD",
+        Set.of(
+            "v128_operations",
+            "load_splat",
+            "load_extend",
+            "load_zero",
+            "shuffle",
+            "swizzle",
+            "arithmetic_simd",
+            "comparison_simd",
+            "conversion_simd"));
 
     // Threading and atomics (proposal)
-    categories.put("THREADING", Set.of(
-        "atomic_load", "atomic_store", "atomic_rmw", "atomic_cmpxchg",
-        "atomic_wait", "atomic_notify", "shared_memory"
-    ));
+    categories.put(
+        "THREADING",
+        Set.of(
+            "atomic_load",
+            "atomic_store",
+            "atomic_rmw",
+            "atomic_cmpxchg",
+            "atomic_wait",
+            "atomic_notify",
+            "shared_memory"));
 
     // WASI features
-    categories.put("WASI", Set.of(
-        "file_operations", "environment_access", "command_line_args", "random_generation",
-        "time_operations", "process_exit", "stdio_operations", "network_operations"
-    ));
+    categories.put(
+        "WASI",
+        Set.of(
+            "file_operations",
+            "environment_access",
+            "command_line_args",
+            "random_generation",
+            "time_operations",
+            "process_exit",
+            "stdio_operations",
+            "network_operations"));
 
     WASM_FEATURE_CATEGORIES = Map.copyOf(categories);
   }
@@ -104,7 +159,8 @@ public final class CoverageAnalyzer {
   }
 
   /**
-   * Analyzes test coverage for WebAssembly features based on execution results and behavioral analysis.
+   * Analyzes test coverage for WebAssembly features based on execution results and behavioral
+   * analysis.
    *
    * @param testName the name of the test being analyzed
    * @param executionResults the execution results for all runtimes
@@ -138,13 +194,13 @@ public final class CoverageAnalyzer {
     resultBuilder.runtimeFeatureCoverage(runtimeFeatureCoverage);
 
     // Calculate coverage metrics
-    final CoverageMetrics coverageMetrics = calculateCoverageMetrics(
-        detectedFeatures, runtimeFeatureCoverage, executionResults);
+    final CoverageMetrics coverageMetrics =
+        calculateCoverageMetrics(detectedFeatures, runtimeFeatureCoverage, executionResults);
     resultBuilder.coverageMetrics(coverageMetrics);
 
     // Identify coverage gaps
-    final List<CoverageGap> coverageGaps = identifyCoverageGaps(
-        detectedFeatures, runtimeFeatureCoverage, behavioralResults);
+    final List<CoverageGap> coverageGaps =
+        identifyCoverageGaps(detectedFeatures, runtimeFeatureCoverage, behavioralResults);
     resultBuilder.coverageGaps(coverageGaps);
 
     // Analyze feature interaction patterns
@@ -158,8 +214,10 @@ public final class CoverageAnalyzer {
     final CoverageAnalysisResult result = resultBuilder.build();
     analyzedTests.add(testName);
 
-    LOGGER.info(String.format("Coverage analysis completed for %s: %d features detected, %.2f%% overall coverage",
-        testName, detectedFeatures.size(), coverageMetrics.getOverallCoveragePercentage()));
+    LOGGER.info(
+        String.format(
+            "Coverage analysis completed for %s: %d features detected, %.2f%% overall coverage",
+            testName, detectedFeatures.size(), coverageMetrics.getOverallCoveragePercentage()));
 
     return result;
   }
@@ -185,8 +243,7 @@ public final class CoverageAnalyzer {
         recommendations,
         coverageTrend,
         analyzedTests.size(),
-        Instant.now()
-    );
+        Instant.now());
   }
 
   /**
@@ -195,24 +252,22 @@ public final class CoverageAnalyzer {
    * @return global coverage statistics
    */
   public GlobalCoverageStatistics getGlobalCoverageStatistics() {
-    final int totalFeatures = WASM_FEATURE_CATEGORIES.values().stream()
-        .mapToInt(Set::size)
-        .sum();
+    final int totalFeatures = WASM_FEATURE_CATEGORIES.values().stream().mapToInt(Set::size).sum();
 
-    final long coveredFeatures = coverageTrackers.values().stream()
-        .mapToLong(tracker -> tracker.getCoveredFeatures().size())
-        .sum();
+    final long coveredFeatures =
+        coverageTrackers.values().stream()
+            .mapToLong(tracker -> tracker.getCoveredFeatures().size())
+            .sum();
 
-    final double overallPercentage = totalFeatures > 0 ?
-        (double) coveredFeatures / totalFeatures * 100.0 : 0.0;
+    final double overallPercentage =
+        totalFeatures > 0 ? (double) coveredFeatures / totalFeatures * 100.0 : 0.0;
 
     return new GlobalCoverageStatistics(
         totalFeatures,
         (int) coveredFeatures,
         overallPercentage,
         analyzedTests.size(),
-        coverageTrackers.size()
-    );
+        coverageTrackers.size());
   }
 
   /** Clears all coverage tracking data. */
@@ -239,7 +294,9 @@ public final class CoverageAnalyzer {
     final String testNameLower = testName.toLowerCase();
 
     // Core features detection
-    if (testNameLower.contains("memory") || testNameLower.contains("load") || testNameLower.contains("store")) {
+    if (testNameLower.contains("memory")
+        || testNameLower.contains("load")
+        || testNameLower.contains("store")) {
       detectedFeatures.addAll(WASM_FEATURE_CATEGORIES.get("MEMORY"));
     }
     if (testNameLower.contains("table") || testNameLower.contains("elem")) {
@@ -248,7 +305,9 @@ public final class CoverageAnalyzer {
     if (testNameLower.contains("import") || testNameLower.contains("export")) {
       detectedFeatures.addAll(WASM_FEATURE_CATEGORIES.get("IMPORTS_EXPORTS"));
     }
-    if (testNameLower.contains("exception") || testNameLower.contains("try") || testNameLower.contains("catch")) {
+    if (testNameLower.contains("exception")
+        || testNameLower.contains("try")
+        || testNameLower.contains("catch")) {
       detectedFeatures.addAll(WASM_FEATURE_CATEGORIES.get("EXCEPTIONS"));
     }
     if (testNameLower.contains("simd") || testNameLower.contains("v128")) {
@@ -257,14 +316,15 @@ public final class CoverageAnalyzer {
     if (testNameLower.contains("atomic") || testNameLower.contains("thread")) {
       detectedFeatures.addAll(WASM_FEATURE_CATEGORIES.get("THREADING"));
     }
-    if (testNameLower.contains("wasi") || testNameLower.contains("file") || testNameLower.contains("env")) {
+    if (testNameLower.contains("wasi")
+        || testNameLower.contains("file")
+        || testNameLower.contains("env")) {
       detectedFeatures.addAll(WASM_FEATURE_CATEGORIES.get("WASI"));
     }
 
     // Always include core features for any test
-    detectedFeatures.addAll(Set.of(
-        "function_calls", "control_flow", "arithmetic_operations", "comparison_operations"
-    ));
+    detectedFeatures.addAll(
+        Set.of("function_calls", "control_flow", "arithmetic_operations", "comparison_operations"));
 
     // Feature detection based on execution results and exceptions
     for (final BehavioralAnalyzer.TestExecutionResult result : executionResults.values()) {
@@ -285,8 +345,10 @@ public final class CoverageAnalyzer {
       }
     }
 
-    LOGGER.fine(String.format("Detected %d features for test %s: %s",
-        detectedFeatures.size(), testName, detectedFeatures));
+    LOGGER.fine(
+        String.format(
+            "Detected %d features for test %s: %s",
+            detectedFeatures.size(), testName, detectedFeatures));
 
     return detectedFeatures;
   }
@@ -298,7 +360,7 @@ public final class CoverageAnalyzer {
     final Map<RuntimeType, Set<String>> runtimeCoverage = new EnumMap<>(RuntimeType.class);
 
     for (final Map.Entry<RuntimeType, BehavioralAnalyzer.TestExecutionResult> entry :
-         executionResults.entrySet()) {
+        executionResults.entrySet()) {
       final RuntimeType runtime = entry.getKey();
       final BehavioralAnalyzer.TestExecutionResult result = entry.getValue();
 
@@ -315,9 +377,10 @@ public final class CoverageAnalyzer {
           final String exceptionClass = exception.getClass().getSimpleName().toLowerCase();
           if (exceptionClass.contains("compilation") || exceptionClass.contains("validation")) {
             // Compilation/validation errors mean features were at least parsed
-            runtimeFeatures.addAll(detectedFeatures.stream()
-                .filter(feature -> WASM_FEATURE_CATEGORIES.get("CORE").contains(feature))
-                .collect(Collectors.toSet()));
+            runtimeFeatures.addAll(
+                detectedFeatures.stream()
+                    .filter(feature -> WASM_FEATURE_CATEGORIES.get("CORE").contains(feature))
+                    .collect(Collectors.toSet()));
           } else if (exceptionClass.contains("runtime") || exceptionClass.contains("trap")) {
             // Runtime errors mean compilation succeeded, so more features are covered
             runtimeFeatures.addAll(detectedFeatures);
@@ -341,8 +404,10 @@ public final class CoverageAnalyzer {
     // Calculate per-runtime coverage
     final Map<RuntimeType, Double> runtimeCoveragePercentages = new EnumMap<>(RuntimeType.class);
     for (final Map.Entry<RuntimeType, Set<String>> entry : runtimeFeatureCoverage.entrySet()) {
-      final double percentage = totalDetectedFeatures > 0 ?
-          (double) entry.getValue().size() / totalDetectedFeatures * 100.0 : 100.0;
+      final double percentage =
+          totalDetectedFeatures > 0
+              ? (double) entry.getValue().size() / totalDetectedFeatures * 100.0
+              : 100.0;
       runtimeCoveragePercentages.put(entry.getKey(), percentage);
     }
 
@@ -352,23 +417,25 @@ public final class CoverageAnalyzer {
       commonFeatures.retainAll(runtimeFeatures);
     }
 
-    final double overallCoveragePercentage = totalDetectedFeatures > 0 ?
-        (double) commonFeatures.size() / totalDetectedFeatures * 100.0 : 100.0;
+    final double overallCoveragePercentage =
+        totalDetectedFeatures > 0
+            ? (double) commonFeatures.size() / totalDetectedFeatures * 100.0
+            : 100.0;
 
     // Calculate success rate
-    final long successfulRuntimes = executionResults.values().stream()
-        .mapToLong(result -> result.isSuccessful() ? 1 : 0)
-        .sum();
-    final double successRate = executionResults.size() > 0 ?
-        (double) successfulRuntimes / executionResults.size() * 100.0 : 0.0;
+    final long successfulRuntimes =
+        executionResults.values().stream().mapToLong(result -> result.isSuccessful() ? 1 : 0).sum();
+    final double successRate =
+        executionResults.size() > 0
+            ? (double) successfulRuntimes / executionResults.size() * 100.0
+            : 0.0;
 
     return new CoverageMetrics(
         totalDetectedFeatures,
         commonFeatures.size(),
         overallCoveragePercentage,
         runtimeCoveragePercentages,
-        successRate
-    );
+        successRate);
   }
 
   private List<CoverageGap> identifyCoverageGaps(
@@ -381,13 +448,13 @@ public final class CoverageAnalyzer {
     // Identify features missing from specific runtimes
     for (final RuntimeType runtime : RuntimeType.values()) {
       if (!runtimeFeatureCoverage.containsKey(runtime)) {
-        gaps.add(new CoverageGap(
-            CoverageGapType.RUNTIME_MISSING,
-            String.format("Runtime %s not tested", runtime),
-            detectedFeatures,
-            Set.of(runtime),
-            GapSeverity.HIGH
-        ));
+        gaps.add(
+            new CoverageGap(
+                CoverageGapType.RUNTIME_MISSING,
+                String.format("Runtime %s not tested", runtime),
+                detectedFeatures,
+                Set.of(runtime),
+                GapSeverity.HIGH));
         continue;
       }
 
@@ -397,13 +464,13 @@ public final class CoverageAnalyzer {
 
       if (!missingFeatures.isEmpty()) {
         final GapSeverity severity = determineSeverity(missingFeatures, behavioralResults);
-        gaps.add(new CoverageGap(
-            CoverageGapType.FEATURE_INCOMPLETE,
-            String.format("Runtime %s missing %d features", runtime, missingFeatures.size()),
-            missingFeatures,
-            Set.of(runtime),
-            severity
-        ));
+        gaps.add(
+            new CoverageGap(
+                CoverageGapType.FEATURE_INCOMPLETE,
+                String.format("Runtime %s missing %d features", runtime, missingFeatures.size()),
+                missingFeatures,
+                Set.of(runtime),
+                severity));
       }
     }
 
@@ -415,13 +482,13 @@ public final class CoverageAnalyzer {
       detectedCategoryFeatures.retainAll(categoryFeatures);
 
       if (detectedCategoryFeatures.isEmpty()) {
-        gaps.add(new CoverageGap(
-            CoverageGapType.CATEGORY_UNTESTED,
-            String.format("Category %s not tested", category),
-            categoryFeatures,
-            Set.of(RuntimeType.values()),
-            GapSeverity.MEDIUM
-        ));
+        gaps.add(
+            new CoverageGap(
+                CoverageGapType.CATEGORY_UNTESTED,
+                String.format("Category %s not tested", category),
+                categoryFeatures,
+                Set.of(RuntimeType.values()),
+                GapSeverity.MEDIUM));
       }
     }
 
@@ -456,8 +523,7 @@ public final class CoverageAnalyzer {
     return new FeatureInteractionAnalysis(
         featureCombinations,
         problematicInteractions,
-        calculateInteractionComplexity(detectedFeatures)
-    );
+        calculateInteractionComplexity(detectedFeatures));
   }
 
   private void updateCoverageTracking(
@@ -474,7 +540,8 @@ public final class CoverageAnalyzer {
         if (detectedFeatures.contains(feature)) {
           tracker.addCoveredFeature(feature, testName);
 
-          for (final Map.Entry<RuntimeType, Set<String>> runtimeEntry : runtimeFeatureCoverage.entrySet()) {
+          for (final Map.Entry<RuntimeType, Set<String>> runtimeEntry :
+              runtimeFeatureCoverage.entrySet()) {
             if (runtimeEntry.getValue().contains(feature)) {
               tracker.addRuntimeCoverage(feature, runtimeEntry.getKey());
             }
@@ -492,8 +559,10 @@ public final class CoverageAnalyzer {
       final Set<String> categoryFeatures = categoryEntry.getValue();
       final CoverageTracker tracker = coverageTrackers.get(category);
 
-      final double percentage = categoryFeatures.isEmpty() ? 100.0 :
-          (double) tracker.getCoveredFeatures().size() / categoryFeatures.size() * 100.0;
+      final double percentage =
+          categoryFeatures.isEmpty()
+              ? 100.0
+              : (double) tracker.getCoveredFeatures().size() / categoryFeatures.size() * 100.0;
 
       completeness.put(category, percentage);
     }
@@ -542,24 +611,29 @@ public final class CoverageAnalyzer {
     final List<CoverageRecommendation> recommendations = new ArrayList<>();
 
     // Recommend testing for uncovered categories
-    for (final Map.Entry<String, Double> categoryEntry : calculateCategoryCompleteness().entrySet()) {
+    for (final Map.Entry<String, Double> categoryEntry :
+        calculateCategoryCompleteness().entrySet()) {
       final String category = categoryEntry.getKey();
       final double completeness = categoryEntry.getValue();
 
       if (completeness < 50.0) {
-        recommendations.add(new CoverageRecommendation(
-            RecommendationType.INCREASE_CATEGORY_COVERAGE,
-            String.format("Increase test coverage for %s category (currently %.1f%%)", category, completeness),
-            RecommendationPriority.HIGH,
-            Set.of(category)
-        ));
+        recommendations.add(
+            new CoverageRecommendation(
+                RecommendationType.INCREASE_CATEGORY_COVERAGE,
+                String.format(
+                    "Increase test coverage for %s category (currently %.1f%%)",
+                    category, completeness),
+                RecommendationPriority.HIGH,
+                Set.of(category)));
       } else if (completeness < 80.0) {
-        recommendations.add(new CoverageRecommendation(
-            RecommendationType.IMPROVE_CATEGORY_COVERAGE,
-            String.format("Improve test coverage for %s category (currently %.1f%%)", category, completeness),
-            RecommendationPriority.MEDIUM,
-            Set.of(category)
-        ));
+        recommendations.add(
+            new CoverageRecommendation(
+                RecommendationType.IMPROVE_CATEGORY_COVERAGE,
+                String.format(
+                    "Improve test coverage for %s category (currently %.1f%%)",
+                    category, completeness),
+                RecommendationPriority.MEDIUM,
+                Set.of(category)));
       }
     }
 
@@ -570,12 +644,13 @@ public final class CoverageAnalyzer {
       final double score = runtimeEntry.getValue();
 
       if (score < 70.0) {
-        recommendations.add(new CoverageRecommendation(
-            RecommendationType.IMPROVE_RUNTIME_COVERAGE,
-            String.format("Improve test coverage for %s runtime (currently %.1f%%)", runtime, score),
-            RecommendationPriority.HIGH,
-            Set.of(runtime.name())
-        ));
+        recommendations.add(
+            new CoverageRecommendation(
+                RecommendationType.IMPROVE_RUNTIME_COVERAGE,
+                String.format(
+                    "Improve test coverage for %s runtime (currently %.1f%%)", runtime, score),
+                RecommendationPriority.HIGH,
+                Set.of(runtime.name())));
       }
     }
 
@@ -590,13 +665,11 @@ public final class CoverageAnalyzer {
         current.getOverallCoveragePercentage(),
         0.0, // Previous coverage (would be tracked historically)
         current.getOverallCoveragePercentage(), // Change (simplified)
-        TrendDirection.STABLE
-    );
+        TrendDirection.STABLE);
   }
 
   private GapSeverity determineSeverity(
-      final Set<String> missingFeatures,
-      final BehavioralAnalysisResult behavioralResults) {
+      final Set<String> missingFeatures, final BehavioralAnalysisResult behavioralResults) {
 
     // High severity if core features are missing
     final Set<String> coreFeatures = WASM_FEATURE_CATEGORIES.get("CORE");
@@ -664,12 +737,14 @@ public final class CoverageAnalyzer {
         return 100.0;
       }
 
-      final long runtimeCoveredCount = categoryFeatures.stream()
-          .mapToLong(feature -> {
-            final Set<RuntimeType> runtimes = featureToRuntimes.get(feature);
-            return runtimes != null && runtimes.contains(runtime) ? 1 : 0;
-          })
-          .sum();
+      final long runtimeCoveredCount =
+          categoryFeatures.stream()
+              .mapToLong(
+                  feature -> {
+                    final Set<RuntimeType> runtimes = featureToRuntimes.get(feature);
+                    return runtimes != null && runtimes.contains(runtime) ? 1 : 0;
+                  })
+              .sum();
 
       return (double) runtimeCoveredCount / categoryFeatures.size() * 100.0;
     }

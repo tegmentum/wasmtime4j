@@ -3,9 +3,7 @@ package ai.tegmentum.wasmtime4j.comparison.analyzers;
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -20,16 +18,17 @@ import java.util.stream.Collectors;
  * and optimization opportunities.
  *
  * <p>Key functionality includes:
+ *
  * <ul>
- *   <li>Rule-based analysis for common compatibility issue patterns</li>
- *   <li>Priority scoring based on impact assessment and frequency analysis</li>
- *   <li>Actionable recommendation generation with specific implementation guidance</li>
- *   <li>Issue categorization and severity assessment</li>
- *   <li>Integration with behavioral, performance, and coverage analysis results</li>
+ *   <li>Rule-based analysis for common compatibility issue patterns
+ *   <li>Priority scoring based on impact assessment and frequency analysis
+ *   <li>Actionable recommendation generation with specific implementation guidance
+ *   <li>Issue categorization and severity assessment
+ *   <li>Integration with behavioral, performance, and coverage analysis results
  * </ul>
  *
- * <p>The engine uses a sophisticated rule-based system combined with historical analysis
- * to provide targeted recommendations for improving runtime compatibility and performance.
+ * <p>The engine uses a sophisticated rule-based system combined with historical analysis to provide
+ * targeted recommendations for improving runtime compatibility and performance.
  *
  * @since 1.0.0
  */
@@ -123,9 +122,14 @@ public final class RecommendationEngine {
 
     final RecommendationResult result = resultBuilder.build();
 
-    LOGGER.info(String.format("Generated %d recommendations for %s (High: %d, Medium: %d, Low: %d)",
-        prioritizedRecommendations.size(), testName,
-        summary.getHighPriorityCount(), summary.getMediumPriorityCount(), summary.getLowPriorityCount()));
+    LOGGER.info(
+        String.format(
+            "Generated %d recommendations for %s (High: %d, Medium: %d, Low: %d)",
+            prioritizedRecommendations.size(),
+            testName,
+            summary.getHighPriorityCount(),
+            summary.getMediumPriorityCount(),
+            summary.getLowPriorityCount()));
 
     return result;
   }
@@ -152,17 +156,18 @@ public final class RecommendationEngine {
       final String testName = entry.getKey();
       final TestAnalysisResults results = entry.getValue();
 
-      final RecommendationResult testRecommendation = generateRecommendations(
-          testName,
-          results.getBehavioralResults(),
-          results.getPerformanceResults(),
-          results.getCoverageResults()
-      );
+      final RecommendationResult testRecommendation =
+          generateRecommendations(
+              testName,
+              results.getBehavioralResults(),
+              results.getPerformanceResults(),
+              results.getCoverageResults());
 
       testRecommendations.put(testName, testRecommendation);
 
       // Track issue categories
-      for (final ActionableRecommendation recommendation : testRecommendation.getPrioritizedRecommendations()) {
+      for (final ActionableRecommendation recommendation :
+          testRecommendation.getPrioritizedRecommendations()) {
         issueCategoryCounts.merge(recommendation.getCategory(), 1, Integer::sum);
       }
     }
@@ -178,11 +183,13 @@ public final class RecommendationEngine {
 
     // Create common issue recommendations for frequently occurring patterns
     for (final Map.Entry<String, Integer> entry : patternFrequency.entrySet()) {
-      if (entry.getValue() >= Math.max(2, testResults.size() / 3)) { // Appears in at least 1/3 of tests
+      if (entry.getValue()
+          >= Math.max(2, testResults.size() / 3)) { // Appears in at least 1/3 of tests
         final String pattern = entry.getKey();
         final IssuePattern knownPattern = knownPatterns.get(pattern);
         if (knownPattern != null) {
-          commonIssues.add(createCommonIssueRecommendation(pattern, entry.getValue(), knownPattern));
+          commonIssues.add(
+              createCommonIssueRecommendation(pattern, entry.getValue(), knownPattern));
         }
       }
     }
@@ -192,8 +199,7 @@ public final class RecommendationEngine {
         commonIssues,
         issueCategoryCounts,
         generateBatchSummary(testRecommendations.values()),
-        Instant.now()
-    );
+        Instant.now());
   }
 
   /**
@@ -202,19 +208,21 @@ public final class RecommendationEngine {
    * @param category the issue category
    * @return list of relevant recommendations
    */
-  public List<ActionableRecommendation> getRecommendationsForCategory(final IssueCategory category) {
+  public List<ActionableRecommendation> getRecommendationsForCategory(
+      final IssueCategory category) {
     return recommendationTemplates.values().stream()
         .filter(template -> template.getCategory() == category)
-        .map(template -> new ActionableRecommendation(
-            template.getTitle(),
-            template.getDescription(),
-            template.getImplementationSteps(),
-            template.getCategory(),
-            IssueSeverity.MEDIUM, // Default severity
-            0.5, // Default priority score
-            template.getAffectedRuntimes(),
-            "general_guidance"
-        ))
+        .map(
+            template ->
+                new ActionableRecommendation(
+                    template.getTitle(),
+                    template.getDescription(),
+                    template.getImplementationSteps(),
+                    template.getCategory(),
+                    IssueSeverity.MEDIUM, // Default severity
+                    0.5, // Default priority score
+                    template.getAffectedRuntimes(),
+                    "general_guidance"))
         .collect(Collectors.toList());
   }
 
@@ -226,146 +234,154 @@ public final class RecommendationEngine {
 
   private void initializeKnownPatterns() {
     // Behavioral patterns
-    knownPatterns.put("inconsistent_exception_handling", new IssuePattern(
+    knownPatterns.put(
         "inconsistent_exception_handling",
-        "Different exception types or messages across runtimes",
-        IssueCategory.BEHAVIORAL,
-        Set.of("exception_mapping", "error_handling", "runtime_compatibility")
-    ));
+        new IssuePattern(
+            "inconsistent_exception_handling",
+            "Different exception types or messages across runtimes",
+            IssueCategory.BEHAVIORAL,
+            Set.of("exception_mapping", "error_handling", "runtime_compatibility")));
 
-    knownPatterns.put("floating_point_precision_differences", new IssuePattern(
+    knownPatterns.put(
         "floating_point_precision_differences",
-        "Floating-point calculation results differ between runtimes",
-        IssueCategory.BEHAVIORAL,
-        Set.of("floating_point", "precision", "mathematical_operations")
-    ));
+        new IssuePattern(
+            "floating_point_precision_differences",
+            "Floating-point calculation results differ between runtimes",
+            IssueCategory.BEHAVIORAL,
+            Set.of("floating_point", "precision", "mathematical_operations")));
 
-    knownPatterns.put("memory_layout_inconsistencies", new IssuePattern(
+    knownPatterns.put(
         "memory_layout_inconsistencies",
-        "Memory allocation or layout differs across implementations",
-        IssueCategory.BEHAVIORAL,
-        Set.of("memory_management", "allocation", "layout")
-    ));
+        new IssuePattern(
+            "memory_layout_inconsistencies",
+            "Memory allocation or layout differs across implementations",
+            IssueCategory.BEHAVIORAL,
+            Set.of("memory_management", "allocation", "layout")));
 
     // Performance patterns
-    knownPatterns.put("jni_overhead_significant", new IssuePattern(
+    knownPatterns.put(
         "jni_overhead_significant",
-        "JNI implementation shows significant performance overhead",
-        IssueCategory.PERFORMANCE,
-        Set.of("jni", "overhead", "performance")
-    ));
+        new IssuePattern(
+            "jni_overhead_significant",
+            "JNI implementation shows significant performance overhead",
+            IssueCategory.PERFORMANCE,
+            Set.of("jni", "overhead", "performance")));
 
-    knownPatterns.put("panama_optimization_opportunity", new IssuePattern(
+    knownPatterns.put(
         "panama_optimization_opportunity",
-        "Panama implementation could benefit from optimization",
-        IssueCategory.PERFORMANCE,
-        Set.of("panama", "optimization", "performance")
-    ));
+        new IssuePattern(
+            "panama_optimization_opportunity",
+            "Panama implementation could benefit from optimization",
+            IssueCategory.PERFORMANCE,
+            Set.of("panama", "optimization", "performance")));
 
-    knownPatterns.put("memory_usage_excessive", new IssuePattern(
+    knownPatterns.put(
         "memory_usage_excessive",
-        "Memory usage is higher than expected for the operation",
-        IssueCategory.PERFORMANCE,
-        Set.of("memory", "usage", "optimization")
-    ));
+        new IssuePattern(
+            "memory_usage_excessive",
+            "Memory usage is higher than expected for the operation",
+            IssueCategory.PERFORMANCE,
+            Set.of("memory", "usage", "optimization")));
 
     // Coverage patterns
-    knownPatterns.put("feature_not_implemented", new IssuePattern(
+    knownPatterns.put(
         "feature_not_implemented",
-        "WebAssembly feature is not implemented in one or more runtimes",
-        IssueCategory.COVERAGE,
-        Set.of("feature", "implementation", "coverage")
-    ));
+        new IssuePattern(
+            "feature_not_implemented",
+            "WebAssembly feature is not implemented in one or more runtimes",
+            IssueCategory.COVERAGE,
+            Set.of("feature", "implementation", "coverage")));
 
-    knownPatterns.put("incomplete_wasi_support", new IssuePattern(
+    knownPatterns.put(
         "incomplete_wasi_support",
-        "WASI feature support is incomplete",
-        IssueCategory.COVERAGE,
-        Set.of("wasi", "features", "implementation")
-    ));
+        new IssuePattern(
+            "incomplete_wasi_support",
+            "WASI feature support is incomplete",
+            IssueCategory.COVERAGE,
+            Set.of("wasi", "features", "implementation")));
   }
 
   private void initializeRecommendationTemplates() {
     // Behavioral recommendation templates
-    recommendationTemplates.put("fix_exception_mapping", new RecommendationTemplate(
-        "Fix Exception Mapping",
-        "Standardize exception types and messages across runtime implementations",
-        List.of(
-            "Review exception handling in native implementations",
-            "Create unified exception mapping layer",
-            "Implement consistent error message formatting",
-            "Add exception type validation tests"
-        ),
-        IssueCategory.BEHAVIORAL,
-        Set.of(RuntimeType.JNI, RuntimeType.PANAMA)
-    ));
+    recommendationTemplates.put(
+        "fix_exception_mapping",
+        new RecommendationTemplate(
+            "Fix Exception Mapping",
+            "Standardize exception types and messages across runtime implementations",
+            List.of(
+                "Review exception handling in native implementations",
+                "Create unified exception mapping layer",
+                "Implement consistent error message formatting",
+                "Add exception type validation tests"),
+            IssueCategory.BEHAVIORAL,
+            Set.of(RuntimeType.JNI, RuntimeType.PANAMA)));
 
-    recommendationTemplates.put("improve_floating_point_precision", new RecommendationTemplate(
-        "Improve Floating-Point Precision",
-        "Address floating-point precision differences between runtimes",
-        List.of(
-            "Review floating-point implementation in native code",
-            "Ensure consistent rounding modes across runtimes",
-            "Add tolerance-based comparison for floating-point results",
-            "Document expected precision differences"
-        ),
-        IssueCategory.BEHAVIORAL,
-        Set.of(RuntimeType.JNI, RuntimeType.PANAMA)
-    ));
+    recommendationTemplates.put(
+        "improve_floating_point_precision",
+        new RecommendationTemplate(
+            "Improve Floating-Point Precision",
+            "Address floating-point precision differences between runtimes",
+            List.of(
+                "Review floating-point implementation in native code",
+                "Ensure consistent rounding modes across runtimes",
+                "Add tolerance-based comparison for floating-point results",
+                "Document expected precision differences"),
+            IssueCategory.BEHAVIORAL,
+            Set.of(RuntimeType.JNI, RuntimeType.PANAMA)));
 
     // Performance recommendation templates
-    recommendationTemplates.put("optimize_jni_calls", new RecommendationTemplate(
-        "Optimize JNI Call Overhead",
-        "Reduce JNI call overhead through batching and optimization",
-        List.of(
-            "Implement JNI call batching where possible",
-            "Cache frequently used JNI references",
-            "Minimize data marshalling overhead",
-            "Profile and optimize critical JNI paths"
-        ),
-        IssueCategory.PERFORMANCE,
-        Set.of(RuntimeType.JNI)
-    ));
+    recommendationTemplates.put(
+        "optimize_jni_calls",
+        new RecommendationTemplate(
+            "Optimize JNI Call Overhead",
+            "Reduce JNI call overhead through batching and optimization",
+            List.of(
+                "Implement JNI call batching where possible",
+                "Cache frequently used JNI references",
+                "Minimize data marshalling overhead",
+                "Profile and optimize critical JNI paths"),
+            IssueCategory.PERFORMANCE,
+            Set.of(RuntimeType.JNI)));
 
-    recommendationTemplates.put("optimize_panama_performance", new RecommendationTemplate(
-        "Optimize Panama Performance",
-        "Improve Panama Foreign Function API performance",
-        List.of(
-            "Use arena-based memory management",
-            "Optimize memory layout for Panama FFI",
-            "Implement efficient data transfer mechanisms",
-            "Profile Panama-specific performance bottlenecks"
-        ),
-        IssueCategory.PERFORMANCE,
-        Set.of(RuntimeType.PANAMA)
-    ));
+    recommendationTemplates.put(
+        "optimize_panama_performance",
+        new RecommendationTemplate(
+            "Optimize Panama Performance",
+            "Improve Panama Foreign Function API performance",
+            List.of(
+                "Use arena-based memory management",
+                "Optimize memory layout for Panama FFI",
+                "Implement efficient data transfer mechanisms",
+                "Profile Panama-specific performance bottlenecks"),
+            IssueCategory.PERFORMANCE,
+            Set.of(RuntimeType.PANAMA)));
 
     // Coverage recommendation templates
-    recommendationTemplates.put("implement_missing_features", new RecommendationTemplate(
-        "Implement Missing Features",
-        "Add support for missing WebAssembly features",
-        List.of(
-            "Identify specific missing features from test results",
-            "Prioritize features based on usage and importance",
-            "Implement features in native runtime",
-            "Add comprehensive tests for new features"
-        ),
-        IssueCategory.COVERAGE,
-        Set.of(RuntimeType.JNI, RuntimeType.PANAMA)
-    ));
+    recommendationTemplates.put(
+        "implement_missing_features",
+        new RecommendationTemplate(
+            "Implement Missing Features",
+            "Add support for missing WebAssembly features",
+            List.of(
+                "Identify specific missing features from test results",
+                "Prioritize features based on usage and importance",
+                "Implement features in native runtime",
+                "Add comprehensive tests for new features"),
+            IssueCategory.COVERAGE,
+            Set.of(RuntimeType.JNI, RuntimeType.PANAMA)));
 
-    recommendationTemplates.put("improve_wasi_support", new RecommendationTemplate(
-        "Improve WASI Support",
-        "Enhance WASI feature implementation and compatibility",
-        List.of(
-            "Audit current WASI feature implementation",
-            "Implement missing WASI functions",
-            "Ensure WASI compatibility across runtimes",
-            "Add WASI-specific integration tests"
-        ),
-        IssueCategory.COVERAGE,
-        Set.of(RuntimeType.JNI, RuntimeType.PANAMA)
-    ));
+    recommendationTemplates.put(
+        "improve_wasi_support",
+        new RecommendationTemplate(
+            "Improve WASI Support",
+            "Enhance WASI feature implementation and compatibility",
+            List.of(
+                "Audit current WASI feature implementation",
+                "Implement missing WASI functions",
+                "Ensure WASI compatibility across runtimes",
+                "Add WASI-specific integration tests"),
+            IssueCategory.COVERAGE,
+            Set.of(RuntimeType.JNI, RuntimeType.PANAMA)));
   }
 
   private List<ActionableRecommendation> analyzeBehavioralIssues(
@@ -377,9 +393,9 @@ public final class RecommendationEngine {
     for (final BehavioralDiscrepancy discrepancy : behavioralResults.getDiscrepancies()) {
       final String patternKey = identifyDiscrepancyPattern(discrepancy);
       if (patternKey != null) {
-        final ActionableRecommendation recommendation = createRecommendationFromPattern(
-            patternKey, discrepancy.getSeverity(), discrepancy.getAffectedRuntimes()
-        );
+        final ActionableRecommendation recommendation =
+            createRecommendationFromPattern(
+                patternKey, discrepancy.getSeverity(), discrepancy.getAffectedRuntimes());
         if (recommendation != null) {
           recommendations.add(recommendation);
         }
@@ -388,22 +404,22 @@ public final class RecommendationEngine {
 
     // Analyze consistency score
     if (behavioralResults.getConsistencyScore() < 0.8) {
-      recommendations.add(new ActionableRecommendation(
-          "Improve Runtime Consistency",
-          String.format("Overall consistency score is low (%.2f). Investigate runtime differences.",
-              behavioralResults.getConsistencyScore()),
-          List.of(
-              "Review all behavioral discrepancies",
-              "Identify common patterns in inconsistencies",
-              "Implement runtime-specific fixes",
-              "Add regression tests for consistency"
-          ),
-          IssueCategory.BEHAVIORAL,
-          IssueSeverity.HIGH,
-          calculatePriorityScore(behavioralResults.getConsistencyScore(), 1.0),
-          Set.of(RuntimeType.values()),
-          "consistency_improvement"
-      ));
+      recommendations.add(
+          new ActionableRecommendation(
+              "Improve Runtime Consistency",
+              String.format(
+                  "Overall consistency score is low (%.2f). Investigate runtime differences.",
+                  behavioralResults.getConsistencyScore()),
+              List.of(
+                  "Review all behavioral discrepancies",
+                  "Identify common patterns in inconsistencies",
+                  "Implement runtime-specific fixes",
+                  "Add regression tests for consistency"),
+              IssueCategory.BEHAVIORAL,
+              IssueSeverity.HIGH,
+              calculatePriorityScore(behavioralResults.getConsistencyScore(), 1.0),
+              Set.of(RuntimeType.values()),
+              "consistency_improvement"));
     }
 
     return recommendations;
@@ -416,63 +432,63 @@ public final class RecommendationEngine {
 
     // Analyze significant performance differences
     for (final String difference : performanceResults.getSignificantDifferences()) {
-      recommendations.add(new ActionableRecommendation(
-          "Address Performance Difference",
-          String.format("Significant performance difference detected: %s", difference),
-          List.of(
-              "Profile the slower runtime implementation",
-              "Identify performance bottlenecks",
-              "Implement targeted optimizations",
-              "Validate performance improvements"
-          ),
-          IssueCategory.PERFORMANCE,
-          IssueSeverity.MEDIUM,
-          0.7,
-          Set.of(RuntimeType.values()),
-          "performance_difference"
-      ));
+      recommendations.add(
+          new ActionableRecommendation(
+              "Address Performance Difference",
+              String.format("Significant performance difference detected: %s", difference),
+              List.of(
+                  "Profile the slower runtime implementation",
+                  "Identify performance bottlenecks",
+                  "Implement targeted optimizations",
+                  "Validate performance improvements"),
+              IssueCategory.PERFORMANCE,
+              IssueSeverity.MEDIUM,
+              0.7,
+              Set.of(RuntimeType.values()),
+              "performance_difference"));
     }
 
     // Analyze regression warnings
     for (final String regression : performanceResults.getRegressionWarnings()) {
-      recommendations.add(new ActionableRecommendation(
-          "Fix Performance Regression",
-          String.format("Performance regression detected: %s", regression),
-          List.of(
-              "Identify the cause of performance regression",
-              "Revert problematic changes if possible",
-              "Implement performance fixes",
-              "Add performance monitoring to prevent future regressions"
-          ),
-          IssueCategory.PERFORMANCE,
-          IssueSeverity.HIGH,
-          0.9,
-          Set.of(RuntimeType.values()),
-          "performance_regression"
-      ));
+      recommendations.add(
+          new ActionableRecommendation(
+              "Fix Performance Regression",
+              String.format("Performance regression detected: %s", regression),
+              List.of(
+                  "Identify the cause of performance regression",
+                  "Revert problematic changes if possible",
+                  "Implement performance fixes",
+                  "Add performance monitoring to prevent future regressions"),
+              IssueCategory.PERFORMANCE,
+              IssueSeverity.HIGH,
+              0.9,
+              Set.of(RuntimeType.values()),
+              "performance_regression"));
     }
 
     // Analyze overhead
-    final PerformanceAnalyzer.OverheadAnalysis overheadAnalysis = performanceResults.getOverheadAnalysis();
+    final PerformanceAnalyzer.OverheadAnalysis overheadAnalysis =
+        performanceResults.getOverheadAnalysis();
     if (overheadAnalysis.hasSignificantOverhead()) {
-      for (final Map.Entry<String, Double> entry : overheadAnalysis.getRuntimeOverheads().entrySet()) {
+      for (final Map.Entry<String, Double> entry :
+          overheadAnalysis.getRuntimeOverheads().entrySet()) {
         if (entry.getValue() > 0.2) { // 20% overhead threshold
-          recommendations.add(new ActionableRecommendation(
-              "Reduce Runtime Overhead",
-              String.format("Runtime %s has %.1f%% overhead compared to baseline",
-                  entry.getKey(), entry.getValue() * 100),
-              List.of(
-                  "Profile runtime-specific overhead sources",
-                  "Optimize critical performance paths",
-                  "Reduce data marshalling costs",
-                  "Implement runtime-specific optimizations"
-              ),
-              IssueCategory.PERFORMANCE,
-              IssueSeverity.MEDIUM,
-              calculatePriorityScore(entry.getValue(), 0.8),
-              Set.of(RuntimeType.valueOf(entry.getKey().toUpperCase())),
-              "runtime_overhead"
-          ));
+          recommendations.add(
+              new ActionableRecommendation(
+                  "Reduce Runtime Overhead",
+                  String.format(
+                      "Runtime %s has %.1f%% overhead compared to baseline",
+                      entry.getKey(), entry.getValue() * 100),
+                  List.of(
+                      "Profile runtime-specific overhead sources",
+                      "Optimize critical performance paths",
+                      "Reduce data marshalling costs",
+                      "Implement runtime-specific optimizations"),
+                  IssueCategory.PERFORMANCE,
+                  IssueSeverity.MEDIUM,
+                  calculatePriorityScore(entry.getValue(), 0.8),
+                  Set.of(RuntimeType.valueOf(entry.getKey().toUpperCase())),
+                  "runtime_overhead"));
         }
       }
     }
@@ -480,7 +496,8 @@ public final class RecommendationEngine {
     return recommendations;
   }
 
-  private List<ActionableRecommendation> analyzeCoverageGaps(final CoverageAnalysisResult coverageResults) {
+  private List<ActionableRecommendation> analyzeCoverageGaps(
+      final CoverageAnalysisResult coverageResults) {
     final List<ActionableRecommendation> recommendations = new ArrayList<>();
 
     // Analyze coverage gaps
@@ -488,41 +505,40 @@ public final class RecommendationEngine {
       final IssueSeverity severity = mapGapSeverityToIssueSeverity(gap.getSeverity());
       final double priorityScore = calculateGapPriorityScore(gap);
 
-      recommendations.add(new ActionableRecommendation(
-          "Address Coverage Gap",
-          String.format("Coverage gap detected: %s", gap.getDescription()),
-          List.of(
-              "Identify missing test scenarios",
-              "Implement tests for uncovered features",
-              "Ensure runtime compatibility for missing features",
-              "Validate coverage improvements"
-          ),
-          IssueCategory.COVERAGE,
-          severity,
-          priorityScore,
-          gap.getAffectedRuntimes(),
-          "coverage_gap"
-      ));
+      recommendations.add(
+          new ActionableRecommendation(
+              "Address Coverage Gap",
+              String.format("Coverage gap detected: %s", gap.getDescription()),
+              List.of(
+                  "Identify missing test scenarios",
+                  "Implement tests for uncovered features",
+                  "Ensure runtime compatibility for missing features",
+                  "Validate coverage improvements"),
+              IssueCategory.COVERAGE,
+              severity,
+              priorityScore,
+              gap.getAffectedRuntimes(),
+              "coverage_gap"));
     }
 
     // Analyze overall coverage
     if (coverageResults.getCoverageMetrics().getOverallCoveragePercentage() < 80.0) {
-      recommendations.add(new ActionableRecommendation(
-          "Improve Overall Test Coverage",
-          String.format("Overall coverage is low (%.1f%%). Increase test coverage across all features.",
-              coverageResults.getCoverageMetrics().getOverallCoveragePercentage()),
-          List.of(
-              "Audit current test coverage",
-              "Identify untested WebAssembly features",
-              "Implement comprehensive feature tests",
-              "Ensure cross-runtime compatibility testing"
-          ),
-          IssueCategory.COVERAGE,
-          IssueSeverity.HIGH,
-          0.8,
-          Set.of(RuntimeType.values()),
-          "low_overall_coverage"
-      ));
+      recommendations.add(
+          new ActionableRecommendation(
+              "Improve Overall Test Coverage",
+              String.format(
+                  "Overall coverage is low (%.1f%%). Increase test coverage across all features.",
+                  coverageResults.getCoverageMetrics().getOverallCoveragePercentage()),
+              List.of(
+                  "Audit current test coverage",
+                  "Identify untested WebAssembly features",
+                  "Implement comprehensive feature tests",
+                  "Ensure cross-runtime compatibility testing"),
+              IssueCategory.COVERAGE,
+              IssueSeverity.HIGH,
+              0.8,
+              Set.of(RuntimeType.values()),
+              "low_overall_coverage"));
     }
 
     return recommendations;
@@ -537,66 +553,67 @@ public final class RecommendationEngine {
 
     // Analyze correlation between behavioral issues and performance problems
     if (behavioralResults.getConsistencyScore() < 0.7 && performanceResults.hasRegressions()) {
-      recommendations.add(new ActionableRecommendation(
-          "Investigate Behavioral-Performance Correlation",
-          "Both behavioral inconsistencies and performance regressions detected, which may be related",
-          List.of(
-              "Investigate if performance optimizations caused behavioral changes",
-              "Review recent implementation changes",
-              "Ensure behavioral consistency is maintained during optimization",
-              "Add integrated behavioral-performance tests"
-          ),
-          IssueCategory.INTEGRATION,
-          IssueSeverity.HIGH,
-          0.9,
-          Set.of(RuntimeType.values()),
-          "behavioral_performance_correlation"
-      ));
+      recommendations.add(
+          new ActionableRecommendation(
+              "Investigate Behavioral-Performance Correlation",
+              "Both behavioral inconsistencies and performance regressions detected, which may be"
+                  + " related",
+              List.of(
+                  "Investigate if performance optimizations caused behavioral changes",
+                  "Review recent implementation changes",
+                  "Ensure behavioral consistency is maintained during optimization",
+                  "Add integrated behavioral-performance tests"),
+              IssueCategory.INTEGRATION,
+              IssueSeverity.HIGH,
+              0.9,
+              Set.of(RuntimeType.values()),
+              "behavioral_performance_correlation"));
     }
 
     // Analyze coverage gaps with behavioral issues
     final long highSeverityGaps = coverageResults.getHighSeverityGapCount();
     if (highSeverityGaps > 0 && !behavioralResults.isCompatible()) {
-      recommendations.add(new ActionableRecommendation(
-          "Address Coverage and Compatibility Issues",
-          "High-severity coverage gaps combined with behavioral incompatibilities require immediate attention",
-          List.of(
-              "Prioritize implementing missing critical features",
-              "Ensure behavioral consistency for newly implemented features",
-              "Add comprehensive integration tests",
-              "Validate runtime compatibility after implementation"
-          ),
-          IssueCategory.INTEGRATION,
-          IssueSeverity.HIGH,
-          0.95,
-          Set.of(RuntimeType.values()),
-          "coverage_compatibility_issues"
-      ));
+      recommendations.add(
+          new ActionableRecommendation(
+              "Address Coverage and Compatibility Issues",
+              "High-severity coverage gaps combined with behavioral incompatibilities require"
+                  + " immediate attention",
+              List.of(
+                  "Prioritize implementing missing critical features",
+                  "Ensure behavioral consistency for newly implemented features",
+                  "Add comprehensive integration tests",
+                  "Validate runtime compatibility after implementation"),
+              IssueCategory.INTEGRATION,
+              IssueSeverity.HIGH,
+              0.95,
+              Set.of(RuntimeType.values()),
+              "coverage_compatibility_issues"));
     }
 
     return recommendations;
   }
 
   private List<ActionableRecommendation> prioritizeRecommendations(
-      final List<ActionableRecommendation> recommendations,
-      final String testName) {
+      final List<ActionableRecommendation> recommendations, final String testName) {
 
     // Calculate priority scores considering frequency
     final List<ActionableRecommendation> prioritized = new ArrayList<>();
     for (final ActionableRecommendation recommendation : recommendations) {
-      final double frequencyBoost = frequencyTracker.getFrequencyBoost(recommendation.getIssuePattern());
-      final double adjustedScore = Math.min(1.0, recommendation.getPriorityScore() + frequencyBoost);
+      final double frequencyBoost =
+          frequencyTracker.getFrequencyBoost(recommendation.getIssuePattern());
+      final double adjustedScore =
+          Math.min(1.0, recommendation.getPriorityScore() + frequencyBoost);
 
-      prioritized.add(new ActionableRecommendation(
-          recommendation.getTitle(),
-          recommendation.getDescription(),
-          recommendation.getImplementationSteps(),
-          recommendation.getCategory(),
-          recommendation.getSeverity(),
-          adjustedScore,
-          recommendation.getAffectedRuntimes(),
-          recommendation.getIssuePattern()
-      ));
+      prioritized.add(
+          new ActionableRecommendation(
+              recommendation.getTitle(),
+              recommendation.getDescription(),
+              recommendation.getImplementationSteps(),
+              recommendation.getCategory(),
+              recommendation.getSeverity(),
+              adjustedScore,
+              recommendation.getAffectedRuntimes(),
+              recommendation.getIssuePattern()));
     }
 
     // Sort by priority score (descending)
@@ -605,7 +622,8 @@ public final class RecommendationEngine {
     return prioritized;
   }
 
-  private RecommendationSummary generateSummary(final List<ActionableRecommendation> recommendations) {
+  private RecommendationSummary generateSummary(
+      final List<ActionableRecommendation> recommendations) {
     int highPriority = 0;
     int mediumPriority = 0;
     int lowPriority = 0;
@@ -631,12 +649,7 @@ public final class RecommendationEngine {
     }
 
     return new RecommendationSummary(
-        recommendations.size(),
-        highPriority,
-        mediumPriority,
-        lowPriority,
-        categoryCount
-    );
+        recommendations.size(), highPriority, mediumPriority, lowPriority, categoryCount);
   }
 
   private void updateFrequencyTracking(final List<ActionableRecommendation> recommendations) {
@@ -687,8 +700,7 @@ public final class RecommendationEngine {
         severity,
         priorityScore,
         affectedRuntimes,
-        patternKey
-    );
+        patternKey);
   }
 
   private RecommendationTemplate findTemplateForPattern(final IssuePattern pattern) {
@@ -705,26 +717,23 @@ public final class RecommendationEngine {
   }
 
   private ActionableRecommendation createCommonIssueRecommendation(
-      final String pattern,
-      final int frequency,
-      final IssuePattern knownPattern) {
+      final String pattern, final int frequency, final IssuePattern knownPattern) {
 
     return new ActionableRecommendation(
         "Address Common Issue Pattern",
-        String.format("Pattern '%s' appears in %d tests and should be addressed systematically",
+        String.format(
+            "Pattern '%s' appears in %d tests and should be addressed systematically",
             pattern, frequency),
         List.of(
             "Analyze all occurrences of this pattern",
             "Implement a systematic fix",
             "Add preventive measures",
-            "Update testing to catch similar issues"
-        ),
+            "Update testing to catch similar issues"),
         knownPattern.getCategory(),
         IssueSeverity.HIGH,
         0.9 + Math.min(0.1, frequency * 0.01), // Boost score based on frequency
         Set.of(RuntimeType.values()),
-        pattern
-    );
+        pattern);
   }
 
   private BatchRecommendationSummary generateBatchSummary(
@@ -738,7 +747,8 @@ public final class RecommendationEngine {
       totalRecommendations += summary.getTotalRecommendations();
       totalHighPriority += summary.getHighPriorityCount();
 
-      for (final Map.Entry<IssueCategory, Integer> entry : summary.getCategoryBreakdown().entrySet()) {
+      for (final Map.Entry<IssueCategory, Integer> entry :
+          summary.getCategoryBreakdown().entrySet()) {
         categoryTotals.merge(entry.getKey(), entry.getValue(), Integer::sum);
       }
     }
@@ -750,7 +760,8 @@ public final class RecommendationEngine {
     return Math.min(1.0, value * weight);
   }
 
-  private double calculatePriorityScore(final IssueSeverity severity, final IssueCategory category) {
+  private double calculatePriorityScore(
+      final IssueSeverity severity, final IssueCategory category) {
     double baseScore = 0.5;
 
     switch (severity) {
@@ -804,7 +815,8 @@ public final class RecommendationEngine {
     return Math.min(1.0, score);
   }
 
-  private IssueSeverity mapDiscrepancySeverityToIssueSeverity(final DiscrepancySeverity discrepancySeverity) {
+  private IssueSeverity mapDiscrepancySeverityToIssueSeverity(
+      final DiscrepancySeverity discrepancySeverity) {
     switch (discrepancySeverity) {
       case CRITICAL:
         return IssueSeverity.HIGH;

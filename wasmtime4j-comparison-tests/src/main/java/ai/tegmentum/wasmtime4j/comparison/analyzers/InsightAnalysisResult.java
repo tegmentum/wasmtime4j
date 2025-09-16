@@ -6,7 +6,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 /**
  * Comprehensive result of insight analysis containing performance optimization insights,
@@ -33,7 +32,8 @@ public final class InsightAnalysisResult {
     this.strategicInsights = List.copyOf(builder.strategicInsights);
     this.patternInsights = List.copyOf(builder.patternInsights);
     this.trendInsights = List.copyOf(builder.trendInsights);
-    this.confidenceMetrics = Objects.requireNonNull(builder.confidenceMetrics, "confidenceMetrics cannot be null");
+    this.confidenceMetrics =
+        Objects.requireNonNull(builder.confidenceMetrics, "confidenceMetrics cannot be null");
     this.analysisTime = Instant.now();
   }
 
@@ -79,8 +79,12 @@ public final class InsightAnalysisResult {
    * @return total insight count
    */
   public int getTotalInsightCount() {
-    return performanceInsights.size() + runtimeInsights.size() + crossCuttingInsights.size() +
-           strategicInsights.size() + patternInsights.size() + trendInsights.size();
+    return performanceInsights.size()
+        + runtimeInsights.size()
+        + crossCuttingInsights.size()
+        + strategicInsights.size()
+        + patternInsights.size()
+        + trendInsights.size();
   }
 
   /**
@@ -117,19 +121,19 @@ public final class InsightAnalysisResult {
    */
   public String getExecutiveSummary() {
     return String.format(
-        "Insight Analysis Summary for %s%n" +
-        "===================================%n" +
-        "Analysis Time: %s%n" +
-        "Overall Confidence: %.1f%%%n%n" +
-        "Insights Generated:%n" +
-        "  Performance: %d%n" +
-        "  Runtime-Specific: %d%n" +
-        "  Cross-Cutting: %d%n" +
-        "  Strategic: %d%n" +
-        "  Pattern: %d%n" +
-        "  Trend: %d%n%n" +
-        "High-Priority Items: %d%n" +
-        "Total Insights: %d",
+        "Insight Analysis Summary for %s%n"
+            + "===================================%n"
+            + "Analysis Time: %s%n"
+            + "Overall Confidence: %.1f%%%n%n"
+            + "Insights Generated:%n"
+            + "  Performance: %d%n"
+            + "  Runtime-Specific: %d%n"
+            + "  Cross-Cutting: %d%n"
+            + "  Strategic: %d%n"
+            + "  Pattern: %d%n"
+            + "  Trend: %d%n%n"
+            + "High-Priority Items: %d%n"
+            + "Total Insights: %d",
         testName,
         analysisTime,
         confidenceMetrics.getOverallConfidence() * 100,
@@ -140,8 +144,7 @@ public final class InsightAnalysisResult {
         patternInsights.size(),
         trendInsights.size(),
         getHighSeverityInsights().size(),
-        getTotalInsightCount()
-    );
+        getTotalInsightCount());
   }
 
   @Override
@@ -154,29 +157,40 @@ public final class InsightAnalysisResult {
     }
 
     final InsightAnalysisResult that = (InsightAnalysisResult) obj;
-    return Objects.equals(testName, that.testName) &&
-           Objects.equals(performanceInsights, that.performanceInsights) &&
-           Objects.equals(runtimeInsights, that.runtimeInsights) &&
-           Objects.equals(crossCuttingInsights, that.crossCuttingInsights) &&
-           Objects.equals(strategicInsights, that.strategicInsights) &&
-           Objects.equals(patternInsights, that.patternInsights) &&
-           Objects.equals(trendInsights, that.trendInsights) &&
-           Objects.equals(confidenceMetrics, that.confidenceMetrics);
+    return Objects.equals(testName, that.testName)
+        && Objects.equals(performanceInsights, that.performanceInsights)
+        && Objects.equals(runtimeInsights, that.runtimeInsights)
+        && Objects.equals(crossCuttingInsights, that.crossCuttingInsights)
+        && Objects.equals(strategicInsights, that.strategicInsights)
+        && Objects.equals(patternInsights, that.patternInsights)
+        && Objects.equals(trendInsights, that.trendInsights)
+        && Objects.equals(confidenceMetrics, that.confidenceMetrics);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(testName, performanceInsights, runtimeInsights, crossCuttingInsights,
-                       strategicInsights, patternInsights, trendInsights, confidenceMetrics);
+    return Objects.hash(
+        testName,
+        performanceInsights,
+        runtimeInsights,
+        crossCuttingInsights,
+        strategicInsights,
+        patternInsights,
+        trendInsights,
+        confidenceMetrics);
   }
 
   @Override
   public String toString() {
-    return "InsightAnalysisResult{" +
-           "testName='" + testName + '\'' +
-           ", totalInsights=" + getTotalInsightCount() +
-           ", confidence=" + String.format("%.1f%%", confidenceMetrics.getOverallConfidence() * 100) +
-           '}';
+    return "InsightAnalysisResult{"
+        + "testName='"
+        + testName
+        + '\''
+        + ", totalInsights="
+        + getTotalInsightCount()
+        + ", confidence="
+        + String.format("%.1f%%", confidenceMetrics.getOverallConfidence() * 100)
+        + '}';
   }
 
   /** Builder for InsightAnalysisResult. */
@@ -291,12 +305,12 @@ final class PerformanceInsight {
     if (this == obj) return true;
     if (obj == null || getClass() != obj.getClass()) return false;
     final PerformanceInsight that = (PerformanceInsight) obj;
-    return Double.compare(that.confidenceScore, confidenceScore) == 0 &&
-           type == that.type &&
-           Objects.equals(description, that.description) &&
-           Objects.equals(runtime, that.runtime) &&
-           Objects.equals(recommendations, that.recommendations) &&
-           severity == that.severity;
+    return Double.compare(that.confidenceScore, confidenceScore) == 0
+        && type == that.type
+        && Objects.equals(description, that.description)
+        && Objects.equals(runtime, that.runtime)
+        && Objects.equals(recommendations, that.recommendations)
+        && severity == that.severity;
   }
 
   @Override
@@ -306,11 +320,15 @@ final class PerformanceInsight {
 
   @Override
   public String toString() {
-    return "PerformanceInsight{" +
-           "type=" + type +
-           ", runtime='" + runtime + '\'' +
-           ", severity=" + severity +
-           '}';
+    return "PerformanceInsight{"
+        + "type="
+        + type
+        + ", runtime='"
+        + runtime
+        + '\''
+        + ", severity="
+        + severity
+        + '}';
   }
 }
 
@@ -367,12 +385,12 @@ final class RuntimeInsight {
     if (this == obj) return true;
     if (obj == null || getClass() != obj.getClass()) return false;
     final RuntimeInsight that = (RuntimeInsight) obj;
-    return Double.compare(that.confidenceScore, confidenceScore) == 0 &&
-           runtime == that.runtime &&
-           type == that.type &&
-           Objects.equals(observations, that.observations) &&
-           Objects.equals(recommendations, that.recommendations) &&
-           severity == that.severity;
+    return Double.compare(that.confidenceScore, confidenceScore) == 0
+        && runtime == that.runtime
+        && type == that.type
+        && Objects.equals(observations, that.observations)
+        && Objects.equals(recommendations, that.recommendations)
+        && severity == that.severity;
   }
 
   @Override
@@ -382,11 +400,14 @@ final class RuntimeInsight {
 
   @Override
   public String toString() {
-    return "RuntimeInsight{" +
-           "runtime=" + runtime +
-           ", type=" + type +
-           ", severity=" + severity +
-           '}';
+    return "RuntimeInsight{"
+        + "runtime="
+        + runtime
+        + ", type="
+        + type
+        + ", severity="
+        + severity
+        + '}';
   }
 }
 
@@ -443,25 +464,23 @@ final class CrossCuttingInsight {
     if (this == obj) return true;
     if (obj == null || getClass() != obj.getClass()) return false;
     final CrossCuttingInsight that = (CrossCuttingInsight) obj;
-    return Double.compare(that.confidenceScore, confidenceScore) == 0 &&
-           type == that.type &&
-           Objects.equals(description, that.description) &&
-           Objects.equals(observations, that.observations) &&
-           Objects.equals(recommendations, that.recommendations) &&
-           severity == that.severity;
+    return Double.compare(that.confidenceScore, confidenceScore) == 0
+        && type == that.type
+        && Objects.equals(description, that.description)
+        && Objects.equals(observations, that.observations)
+        && Objects.equals(recommendations, that.recommendations)
+        && severity == that.severity;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(type, description, observations, recommendations, severity, confidenceScore);
+    return Objects.hash(
+        type, description, observations, recommendations, severity, confidenceScore);
   }
 
   @Override
   public String toString() {
-    return "CrossCuttingInsight{" +
-           "type=" + type +
-           ", severity=" + severity +
-           '}';
+    return "CrossCuttingInsight{" + "type=" + type + ", severity=" + severity + '}';
   }
 }
 
@@ -518,25 +537,23 @@ final class StrategicInsight {
     if (this == obj) return true;
     if (obj == null || getClass() != obj.getClass()) return false;
     final StrategicInsight that = (StrategicInsight) obj;
-    return Double.compare(that.confidenceScore, confidenceScore) == 0 &&
-           type == that.type &&
-           Objects.equals(description, that.description) &&
-           Objects.equals(observations, that.observations) &&
-           Objects.equals(recommendations, that.recommendations) &&
-           importance == that.importance;
+    return Double.compare(that.confidenceScore, confidenceScore) == 0
+        && type == that.type
+        && Objects.equals(description, that.description)
+        && Objects.equals(observations, that.observations)
+        && Objects.equals(recommendations, that.recommendations)
+        && importance == that.importance;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(type, description, observations, recommendations, importance, confidenceScore);
+    return Objects.hash(
+        type, description, observations, recommendations, importance, confidenceScore);
   }
 
   @Override
   public String toString() {
-    return "StrategicInsight{" +
-           "type=" + type +
-           ", importance=" + importance +
-           '}';
+    return "StrategicInsight{" + "type=" + type + ", importance=" + importance + '}';
   }
 }
 
@@ -586,25 +603,29 @@ final class PatternInsight {
     if (this == obj) return true;
     if (obj == null || getClass() != obj.getClass()) return false;
     final PatternInsight that = (PatternInsight) obj;
-    return occurrenceCount == that.occurrenceCount &&
-           Double.compare(that.confidenceScore, confidenceScore) == 0 &&
-           patternType == that.patternType &&
-           Objects.equals(description, that.description) &&
-           Objects.equals(recommendations, that.recommendations);
+    return occurrenceCount == that.occurrenceCount
+        && Double.compare(that.confidenceScore, confidenceScore) == 0
+        && patternType == that.patternType
+        && Objects.equals(description, that.description)
+        && Objects.equals(recommendations, that.recommendations);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(patternType, description, occurrenceCount, confidenceScore, recommendations);
+    return Objects.hash(
+        patternType, description, occurrenceCount, confidenceScore, recommendations);
   }
 
   @Override
   public String toString() {
-    return "PatternInsight{" +
-           "type=" + patternType +
-           ", occurrences=" + occurrenceCount +
-           ", confidence=" + String.format("%.2f", confidenceScore) +
-           '}';
+    return "PatternInsight{"
+        + "type="
+        + patternType
+        + ", occurrences="
+        + occurrenceCount
+        + ", confidence="
+        + String.format("%.2f", confidenceScore)
+        + '}';
   }
 }
 
@@ -654,11 +675,11 @@ final class TrendInsight {
     if (this == obj) return true;
     if (obj == null || getClass() != obj.getClass()) return false;
     final TrendInsight that = (TrendInsight) obj;
-    return Double.compare(that.strength, strength) == 0 &&
-           Objects.equals(metric, that.metric) &&
-           direction == that.direction &&
-           Objects.equals(description, that.description) &&
-           Objects.equals(recommendations, that.recommendations);
+    return Double.compare(that.strength, strength) == 0
+        && Objects.equals(metric, that.metric)
+        && direction == that.direction
+        && Objects.equals(description, that.description)
+        && Objects.equals(recommendations, that.recommendations);
   }
 
   @Override
@@ -668,11 +689,15 @@ final class TrendInsight {
 
   @Override
   public String toString() {
-    return "TrendInsight{" +
-           "metric='" + metric + '\'' +
-           ", direction=" + direction +
-           ", strength=" + String.format("%.2f", strength) +
-           '}';
+    return "TrendInsight{"
+        + "metric='"
+        + metric
+        + '\''
+        + ", direction="
+        + direction
+        + ", strength="
+        + String.format("%.2f", strength)
+        + '}';
   }
 }
 
@@ -722,28 +747,37 @@ final class InsightConfidenceMetrics {
     if (this == obj) return true;
     if (obj == null || getClass() != obj.getClass()) return false;
     final InsightConfidenceMetrics that = (InsightConfidenceMetrics) obj;
-    return Double.compare(that.overallConfidence, overallConfidence) == 0 &&
-           Double.compare(that.performanceConfidence, performanceConfidence) == 0 &&
-           Double.compare(that.runtimeConfidence, runtimeConfidence) == 0 &&
-           Double.compare(that.crossCuttingConfidence, crossCuttingConfidence) == 0 &&
-           Double.compare(that.strategicConfidence, strategicConfidence) == 0;
+    return Double.compare(that.overallConfidence, overallConfidence) == 0
+        && Double.compare(that.performanceConfidence, performanceConfidence) == 0
+        && Double.compare(that.runtimeConfidence, runtimeConfidence) == 0
+        && Double.compare(that.crossCuttingConfidence, crossCuttingConfidence) == 0
+        && Double.compare(that.strategicConfidence, strategicConfidence) == 0;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(overallConfidence, performanceConfidence, runtimeConfidence,
-                       crossCuttingConfidence, strategicConfidence);
+    return Objects.hash(
+        overallConfidence,
+        performanceConfidence,
+        runtimeConfidence,
+        crossCuttingConfidence,
+        strategicConfidence);
   }
 
   @Override
   public String toString() {
-    return "InsightConfidenceMetrics{" +
-           "overall=" + String.format("%.2f", overallConfidence) +
-           ", performance=" + String.format("%.2f", performanceConfidence) +
-           ", runtime=" + String.format("%.2f", runtimeConfidence) +
-           ", crossCutting=" + String.format("%.2f", crossCuttingConfidence) +
-           ", strategic=" + String.format("%.2f", strategicConfidence) +
-           '}';
+    return "InsightConfidenceMetrics{"
+        + "overall="
+        + String.format("%.2f", overallConfidence)
+        + ", performance="
+        + String.format("%.2f", performanceConfidence)
+        + ", runtime="
+        + String.format("%.2f", runtimeConfidence)
+        + ", crossCutting="
+        + String.format("%.2f", crossCuttingConfidence)
+        + ", strategic="
+        + String.format("%.2f", strategicConfidence)
+        + '}';
   }
 }
 
@@ -820,10 +854,14 @@ final class CompleteTestAnalysis {
       final PerformanceAnalyzer.PerformanceComparisonResult performanceResults,
       final CoverageAnalysisResult coverageResults,
       final RecommendationResult recommendationResults) {
-    this.behavioralResults = Objects.requireNonNull(behavioralResults, "behavioralResults cannot be null");
-    this.performanceResults = Objects.requireNonNull(performanceResults, "performanceResults cannot be null");
-    this.coverageResults = Objects.requireNonNull(coverageResults, "coverageResults cannot be null");
-    this.recommendationResults = Objects.requireNonNull(recommendationResults, "recommendationResults cannot be null");
+    this.behavioralResults =
+        Objects.requireNonNull(behavioralResults, "behavioralResults cannot be null");
+    this.performanceResults =
+        Objects.requireNonNull(performanceResults, "performanceResults cannot be null");
+    this.coverageResults =
+        Objects.requireNonNull(coverageResults, "coverageResults cannot be null");
+    this.recommendationResults =
+        Objects.requireNonNull(recommendationResults, "recommendationResults cannot be null");
   }
 
   public BehavioralAnalysisResult getBehavioralResults() {
@@ -847,24 +885,29 @@ final class CompleteTestAnalysis {
     if (this == obj) return true;
     if (obj == null || getClass() != obj.getClass()) return false;
     final CompleteTestAnalysis that = (CompleteTestAnalysis) obj;
-    return Objects.equals(behavioralResults, that.behavioralResults) &&
-           Objects.equals(performanceResults, that.performanceResults) &&
-           Objects.equals(coverageResults, that.coverageResults) &&
-           Objects.equals(recommendationResults, that.recommendationResults);
+    return Objects.equals(behavioralResults, that.behavioralResults)
+        && Objects.equals(performanceResults, that.performanceResults)
+        && Objects.equals(coverageResults, that.coverageResults)
+        && Objects.equals(recommendationResults, that.recommendationResults);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(behavioralResults, performanceResults, coverageResults, recommendationResults);
+    return Objects.hash(
+        behavioralResults, performanceResults, coverageResults, recommendationResults);
   }
 
   @Override
   public String toString() {
-    return "CompleteTestAnalysis{" +
-           "behavioral=" + behavioralResults +
-           ", performance=" + performanceResults +
-           ", coverage=" + coverageResults +
-           ", recommendations=" + recommendationResults +
-           '}';
+    return "CompleteTestAnalysis{"
+        + "behavioral="
+        + behavioralResults
+        + ", performance="
+        + performanceResults
+        + ", coverage="
+        + coverageResults
+        + ", recommendations="
+        + recommendationResults
+        + '}';
   }
 }

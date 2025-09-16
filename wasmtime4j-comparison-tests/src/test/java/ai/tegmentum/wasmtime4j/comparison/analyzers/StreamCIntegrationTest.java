@@ -1,23 +1,21 @@
 package ai.tegmentum.wasmtime4j.comparison.analyzers;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import java.time.Duration;
-import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 /**
  * Integration test demonstrating the complete Stream C analysis pipeline including
- * CoverageAnalyzer, RecommendationEngine, and InsightGenerator working together
- * with existing behavioral and performance analyzers.
+ * CoverageAnalyzer, RecommendationEngine, and InsightGenerator working together with existing
+ * behavioral and performance analyzers.
  */
 @DisplayName("Stream C Integration")
 class StreamCIntegrationTest {
@@ -45,8 +43,8 @@ class StreamCIntegrationTest {
         createSampleExecutionResults();
 
     // 2. Perform behavioral analysis (Stream A)
-    final BehavioralAnalysisResult behavioralResults = behavioralAnalyzer.analyze(
-        "memory_simd_integration_test", executionResults);
+    final BehavioralAnalysisResult behavioralResults =
+        behavioralAnalyzer.analyze("memory_simd_integration_test", executionResults);
 
     assertNotNull(behavioralResults);
     assertTrue(behavioralResults.getConsistencyScore() > 0.0);
@@ -61,8 +59,12 @@ class StreamCIntegrationTest {
     assertEquals("memory_simd_integration_test", performanceResults.getTestName());
 
     // 4. Perform coverage analysis (Stream C)
-    final CoverageAnalysisResult coverageResults = coverageAnalyzer.analyzeCoverage(
-        "memory_simd_integration_test", executionResults, behavioralResults, performanceResults);
+    final CoverageAnalysisResult coverageResults =
+        coverageAnalyzer.analyzeCoverage(
+            "memory_simd_integration_test",
+            executionResults,
+            behavioralResults,
+            performanceResults);
 
     assertNotNull(coverageResults);
     assertFalse(coverageResults.getDetectedFeatures().isEmpty());
@@ -70,23 +72,32 @@ class StreamCIntegrationTest {
     assertTrue(coverageResults.getDetectedFeatures().contains("v128_operations"));
 
     // 5. Generate recommendations (Stream C)
-    final RecommendationResult recommendationResults = recommendationEngine.generateRecommendations(
-        "memory_simd_integration_test", behavioralResults, performanceResults, coverageResults);
+    final RecommendationResult recommendationResults =
+        recommendationEngine.generateRecommendations(
+            "memory_simd_integration_test", behavioralResults, performanceResults, coverageResults);
 
     assertNotNull(recommendationResults);
     assertNotNull(recommendationResults.getSummary());
 
     // 6. Generate insights (Stream C)
-    final InsightAnalysisResult insightResults = insightGenerator.generateInsights(
-        "memory_simd_integration_test", behavioralResults, performanceResults,
-        coverageResults, recommendationResults);
+    final InsightAnalysisResult insightResults =
+        insightGenerator.generateInsights(
+            "memory_simd_integration_test",
+            behavioralResults,
+            performanceResults,
+            coverageResults,
+            recommendationResults);
 
     assertNotNull(insightResults);
     assertTrue(insightResults.getTotalInsightCount() > 0);
 
     // 7. Verify integration and data flow
-    verifyIntegrationConsistency(behavioralResults, performanceResults, coverageResults,
-                                recommendationResults, insightResults);
+    verifyIntegrationConsistency(
+        behavioralResults,
+        performanceResults,
+        coverageResults,
+        recommendationResults,
+        insightResults);
   }
 
   @Test
@@ -100,30 +111,36 @@ class StreamCIntegrationTest {
 
     // Analyze each test scenario
     for (final Map.Entry<String, Map<RuntimeType, BehavioralAnalyzer.TestExecutionResult>> entry :
-         multipleTests.entrySet()) {
+        multipleTests.entrySet()) {
       final String testName = entry.getKey();
       final Map<RuntimeType, BehavioralAnalyzer.TestExecutionResult> execResults = entry.getValue();
 
       // Run complete analysis pipeline for each test
-      final BehavioralAnalysisResult behavioralResult = behavioralAnalyzer.analyze(testName, execResults);
+      final BehavioralAnalysisResult behavioralResult =
+          behavioralAnalyzer.analyze(testName, execResults);
 
       final List<PerformanceAnalyzer.TestExecutionResult> perfResults =
           convertToPerformanceResults(execResults);
       final PerformanceAnalyzer.PerformanceComparisonResult performanceResult =
           performanceAnalyzer.analyze(perfResults);
 
-      final CoverageAnalysisResult coverageResult = coverageAnalyzer.analyzeCoverage(
-          testName, execResults, behavioralResult, performanceResult);
+      final CoverageAnalysisResult coverageResult =
+          coverageAnalyzer.analyzeCoverage(
+              testName, execResults, behavioralResult, performanceResult);
 
-      final RecommendationResult recommendationResult = recommendationEngine.generateRecommendations(
-          testName, behavioralResult, performanceResult, coverageResult);
+      final RecommendationResult recommendationResult =
+          recommendationEngine.generateRecommendations(
+              testName, behavioralResult, performanceResult, coverageResult);
 
-      completeAnalyses.put(testName, new CompleteTestAnalysis(
-          behavioralResult, performanceResult, coverageResult, recommendationResult));
+      completeAnalyses.put(
+          testName,
+          new CompleteTestAnalysis(
+              behavioralResult, performanceResult, coverageResult, recommendationResult));
     }
 
     // Generate batch insights
-    final BatchInsightResult batchInsights = insightGenerator.generateBatchInsights(completeAnalyses);
+    final BatchInsightResult batchInsights =
+        insightGenerator.generateBatchInsights(completeAnalyses);
     assertNotNull(batchInsights);
     assertEquals(multipleTests.size(), batchInsights.getTestInsights().size());
 
@@ -131,11 +148,12 @@ class StreamCIntegrationTest {
     final Map<String, TestAnalysisResults> testAnalysisResults = new HashMap<>();
     for (final Map.Entry<String, CompleteTestAnalysis> entry : completeAnalyses.entrySet()) {
       final CompleteTestAnalysis analysis = entry.getValue();
-      testAnalysisResults.put(entry.getKey(), new TestAnalysisResults(
-          analysis.getBehavioralResults(),
-          analysis.getPerformanceResults(),
-          analysis.getCoverageResults()
-      ));
+      testAnalysisResults.put(
+          entry.getKey(),
+          new TestAnalysisResults(
+              analysis.getBehavioralResults(),
+              analysis.getPerformanceResults(),
+              analysis.getCoverageResults()));
     }
 
     final BatchRecommendationResult batchRecommendations =
@@ -143,7 +161,8 @@ class StreamCIntegrationTest {
     assertNotNull(batchRecommendations);
 
     // Generate comprehensive coverage report
-    final ComprehensiveCoverageReport coverageReport = coverageAnalyzer.generateComprehensiveReport();
+    final ComprehensiveCoverageReport coverageReport =
+        coverageAnalyzer.generateComprehensiveReport();
     assertNotNull(coverageReport);
     assertTrue(coverageReport.getTotalTestsAnalyzed() > 0);
 
@@ -155,33 +174,51 @@ class StreamCIntegrationTest {
   @DisplayName("Should demonstrate error handling and resilience")
   void shouldDemonstrateErrorHandlingAndResilience() {
     // Create mixed success/failure scenario
-    final Map<RuntimeType, BehavioralAnalyzer.TestExecutionResult> mixedResults = new EnumMap<>(RuntimeType.class);
-    mixedResults.put(RuntimeType.JNI, new BehavioralAnalyzer.TestExecutionResult(
-        true, false, "success", null, Duration.ofMillis(100),
-        new BehavioralAnalyzer.MemoryUsage(1024L, 512L)
-    ));
-    mixedResults.put(RuntimeType.PANAMA, new BehavioralAnalyzer.TestExecutionResult(
-        false, false, null, new RuntimeException("SIMD not implemented"), Duration.ofMillis(50), null
-    ));
+    final Map<RuntimeType, BehavioralAnalyzer.TestExecutionResult> mixedResults =
+        new EnumMap<>(RuntimeType.class);
+    mixedResults.put(
+        RuntimeType.JNI,
+        new BehavioralAnalyzer.TestExecutionResult(
+            true,
+            false,
+            "success",
+            null,
+            Duration.ofMillis(100),
+            new BehavioralAnalyzer.MemoryUsage(1024L, 512L)));
+    mixedResults.put(
+        RuntimeType.PANAMA,
+        new BehavioralAnalyzer.TestExecutionResult(
+            false,
+            false,
+            null,
+            new RuntimeException("SIMD not implemented"),
+            Duration.ofMillis(50),
+            null));
 
     // Run analysis pipeline with error conditions
-    final BehavioralAnalysisResult behavioralResults = behavioralAnalyzer.analyze(
-        "error_handling_test", mixedResults);
+    final BehavioralAnalysisResult behavioralResults =
+        behavioralAnalyzer.analyze("error_handling_test", mixedResults);
 
     final List<PerformanceAnalyzer.TestExecutionResult> performanceResultsList =
         convertToPerformanceResults(mixedResults);
     final PerformanceAnalyzer.PerformanceComparisonResult performanceResults =
         performanceAnalyzer.analyze(performanceResultsList);
 
-    final CoverageAnalysisResult coverageResults = coverageAnalyzer.analyzeCoverage(
-        "error_handling_test", mixedResults, behavioralResults, performanceResults);
+    final CoverageAnalysisResult coverageResults =
+        coverageAnalyzer.analyzeCoverage(
+            "error_handling_test", mixedResults, behavioralResults, performanceResults);
 
-    final RecommendationResult recommendationResults = recommendationEngine.generateRecommendations(
-        "error_handling_test", behavioralResults, performanceResults, coverageResults);
+    final RecommendationResult recommendationResults =
+        recommendationEngine.generateRecommendations(
+            "error_handling_test", behavioralResults, performanceResults, coverageResults);
 
-    final InsightAnalysisResult insightResults = insightGenerator.generateInsights(
-        "error_handling_test", behavioralResults, performanceResults,
-        coverageResults, recommendationResults);
+    final InsightAnalysisResult insightResults =
+        insightGenerator.generateInsights(
+            "error_handling_test",
+            behavioralResults,
+            performanceResults,
+            coverageResults,
+            recommendationResults);
 
     // Verify that analysis pipeline handles errors gracefully
     assertNotNull(behavioralResults);
@@ -213,8 +250,9 @@ class StreamCIntegrationTest {
         performanceAnalyzer.analyze(initialPerformance);
 
     // Step 2: Coverage analysis with feature detection
-    final CoverageAnalysisResult initialCoverage = coverageAnalyzer.analyzeCoverage(
-        "real_world_wasm_test", realWorldResults, initialBehavioral, initialPerfResults);
+    final CoverageAnalysisResult initialCoverage =
+        coverageAnalyzer.analyzeCoverage(
+            "real_world_wasm_test", realWorldResults, initialBehavioral, initialPerfResults);
 
     // Verify real-world feature detection
     assertTrue(initialCoverage.getDetectedFeatures().contains("memory_operations"));
@@ -222,15 +260,21 @@ class StreamCIntegrationTest {
     assertTrue(initialCoverage.getDetectedFeatures().contains("arithmetic_operations"));
 
     // Step 3: Generate actionable recommendations
-    final RecommendationResult recommendations = recommendationEngine.generateRecommendations(
-        "real_world_wasm_test", initialBehavioral, initialPerfResults, initialCoverage);
+    final RecommendationResult recommendations =
+        recommendationEngine.generateRecommendations(
+            "real_world_wasm_test", initialBehavioral, initialPerfResults, initialCoverage);
 
     // Should have practical recommendations
     assertFalse(recommendations.getPrioritizedRecommendations().isEmpty());
 
     // Step 4: Generate insights for development planning
-    final InsightAnalysisResult insights = insightGenerator.generateInsights(
-        "real_world_wasm_test", initialBehavioral, initialPerfResults, initialCoverage, recommendations);
+    final InsightAnalysisResult insights =
+        insightGenerator.generateInsights(
+            "real_world_wasm_test",
+            initialBehavioral,
+            initialPerfResults,
+            initialCoverage,
+            recommendations);
 
     // Should provide strategic insights
     assertTrue(insights.getConfidenceMetrics().getOverallConfidence() > 0.0);
@@ -250,41 +294,65 @@ class StreamCIntegrationTest {
   }
 
   private Map<RuntimeType, BehavioralAnalyzer.TestExecutionResult> createSampleExecutionResults() {
-    final Map<RuntimeType, BehavioralAnalyzer.TestExecutionResult> results = new EnumMap<>(RuntimeType.class);
+    final Map<RuntimeType, BehavioralAnalyzer.TestExecutionResult> results =
+        new EnumMap<>(RuntimeType.class);
 
-    results.put(RuntimeType.JNI, new BehavioralAnalyzer.TestExecutionResult(
-        true, false, "success", null, Duration.ofMillis(120),
-        new BehavioralAnalyzer.MemoryUsage(2048L, 1024L)
-    ));
+    results.put(
+        RuntimeType.JNI,
+        new BehavioralAnalyzer.TestExecutionResult(
+            true,
+            false,
+            "success",
+            null,
+            Duration.ofMillis(120),
+            new BehavioralAnalyzer.MemoryUsage(2048L, 1024L)));
 
-    results.put(RuntimeType.PANAMA, new BehavioralAnalyzer.TestExecutionResult(
-        true, false, "success", null, Duration.ofMillis(95),
-        new BehavioralAnalyzer.MemoryUsage(1536L, 768L)
-    ));
+    results.put(
+        RuntimeType.PANAMA,
+        new BehavioralAnalyzer.TestExecutionResult(
+            true,
+            false,
+            "success",
+            null,
+            Duration.ofMillis(95),
+            new BehavioralAnalyzer.MemoryUsage(1536L, 768L)));
 
     return results;
   }
 
   private Map<RuntimeType, BehavioralAnalyzer.TestExecutionResult> createRealWorldScenario() {
-    final Map<RuntimeType, BehavioralAnalyzer.TestExecutionResult> results = new EnumMap<>(RuntimeType.class);
+    final Map<RuntimeType, BehavioralAnalyzer.TestExecutionResult> results =
+        new EnumMap<>(RuntimeType.class);
 
     // JNI with slightly higher latency but stable
-    results.put(RuntimeType.JNI, new BehavioralAnalyzer.TestExecutionResult(
-        true, false, 42, null, Duration.ofMillis(85),
-        new BehavioralAnalyzer.MemoryUsage(1024L, 512L)
-    ));
+    results.put(
+        RuntimeType.JNI,
+        new BehavioralAnalyzer.TestExecutionResult(
+            true,
+            false,
+            42,
+            null,
+            Duration.ofMillis(85),
+            new BehavioralAnalyzer.MemoryUsage(1024L, 512L)));
 
     // Panama with better performance but using more memory
-    results.put(RuntimeType.PANAMA, new BehavioralAnalyzer.TestExecutionResult(
-        true, false, 42, null, Duration.ofMillis(65),
-        new BehavioralAnalyzer.MemoryUsage(1536L, 768L)
-    ));
+    results.put(
+        RuntimeType.PANAMA,
+        new BehavioralAnalyzer.TestExecutionResult(
+            true,
+            false,
+            42,
+            null,
+            Duration.ofMillis(65),
+            new BehavioralAnalyzer.MemoryUsage(1536L, 768L)));
 
     return results;
   }
 
-  private Map<String, Map<RuntimeType, BehavioralAnalyzer.TestExecutionResult>> createMultipleTestScenarios() {
-    final Map<String, Map<RuntimeType, BehavioralAnalyzer.TestExecutionResult>> scenarios = new HashMap<>();
+  private Map<String, Map<RuntimeType, BehavioralAnalyzer.TestExecutionResult>>
+      createMultipleTestScenarios() {
+    final Map<String, Map<RuntimeType, BehavioralAnalyzer.TestExecutionResult>> scenarios =
+        new HashMap<>();
 
     // Memory-focused test
     scenarios.put("memory_operations_test", createMemoryTestResults());
@@ -299,49 +367,82 @@ class StreamCIntegrationTest {
   }
 
   private Map<RuntimeType, BehavioralAnalyzer.TestExecutionResult> createMemoryTestResults() {
-    final Map<RuntimeType, BehavioralAnalyzer.TestExecutionResult> results = new EnumMap<>(RuntimeType.class);
+    final Map<RuntimeType, BehavioralAnalyzer.TestExecutionResult> results =
+        new EnumMap<>(RuntimeType.class);
 
-    results.put(RuntimeType.JNI, new BehavioralAnalyzer.TestExecutionResult(
-        true, false, "memory_success", null, Duration.ofMillis(75),
-        new BehavioralAnalyzer.MemoryUsage(4096L, 2048L)
-    ));
+    results.put(
+        RuntimeType.JNI,
+        new BehavioralAnalyzer.TestExecutionResult(
+            true,
+            false,
+            "memory_success",
+            null,
+            Duration.ofMillis(75),
+            new BehavioralAnalyzer.MemoryUsage(4096L, 2048L)));
 
-    results.put(RuntimeType.PANAMA, new BehavioralAnalyzer.TestExecutionResult(
-        true, false, "memory_success", null, Duration.ofMillis(60),
-        new BehavioralAnalyzer.MemoryUsage(3072L, 1536L)
-    ));
+    results.put(
+        RuntimeType.PANAMA,
+        new BehavioralAnalyzer.TestExecutionResult(
+            true,
+            false,
+            "memory_success",
+            null,
+            Duration.ofMillis(60),
+            new BehavioralAnalyzer.MemoryUsage(3072L, 1536L)));
 
     return results;
   }
 
   private Map<RuntimeType, BehavioralAnalyzer.TestExecutionResult> createSimdTestResults() {
-    final Map<RuntimeType, BehavioralAnalyzer.TestExecutionResult> results = new EnumMap<>(RuntimeType.class);
+    final Map<RuntimeType, BehavioralAnalyzer.TestExecutionResult> results =
+        new EnumMap<>(RuntimeType.class);
 
-    results.put(RuntimeType.JNI, new BehavioralAnalyzer.TestExecutionResult(
-        false, false, null, new RuntimeException("SIMD not fully implemented"),
-        Duration.ofMillis(25), null
-    ));
+    results.put(
+        RuntimeType.JNI,
+        new BehavioralAnalyzer.TestExecutionResult(
+            false,
+            false,
+            null,
+            new RuntimeException("SIMD not fully implemented"),
+            Duration.ofMillis(25),
+            null));
 
-    results.put(RuntimeType.PANAMA, new BehavioralAnalyzer.TestExecutionResult(
-        true, false, "simd_result", null, Duration.ofMillis(45),
-        new BehavioralAnalyzer.MemoryUsage(1024L, 512L)
-    ));
+    results.put(
+        RuntimeType.PANAMA,
+        new BehavioralAnalyzer.TestExecutionResult(
+            true,
+            false,
+            "simd_result",
+            null,
+            Duration.ofMillis(45),
+            new BehavioralAnalyzer.MemoryUsage(1024L, 512L)));
 
     return results;
   }
 
   private Map<RuntimeType, BehavioralAnalyzer.TestExecutionResult> createTableTestResults() {
-    final Map<RuntimeType, BehavioralAnalyzer.TestExecutionResult> results = new EnumMap<>(RuntimeType.class);
+    final Map<RuntimeType, BehavioralAnalyzer.TestExecutionResult> results =
+        new EnumMap<>(RuntimeType.class);
 
-    results.put(RuntimeType.JNI, new BehavioralAnalyzer.TestExecutionResult(
-        true, false, "table_result", null, Duration.ofMillis(110),
-        new BehavioralAnalyzer.MemoryUsage(2048L, 1024L)
-    ));
+    results.put(
+        RuntimeType.JNI,
+        new BehavioralAnalyzer.TestExecutionResult(
+            true,
+            false,
+            "table_result",
+            null,
+            Duration.ofMillis(110),
+            new BehavioralAnalyzer.MemoryUsage(2048L, 1024L)));
 
-    results.put(RuntimeType.PANAMA, new BehavioralAnalyzer.TestExecutionResult(
-        true, false, "table_result", null, Duration.ofMillis(90),
-        new BehavioralAnalyzer.MemoryUsage(1536L, 768L)
-    ));
+    results.put(
+        RuntimeType.PANAMA,
+        new BehavioralAnalyzer.TestExecutionResult(
+            true,
+            false,
+            "table_result",
+            null,
+            Duration.ofMillis(90),
+            new BehavioralAnalyzer.MemoryUsage(1536L, 768L)));
 
     return results;
   }
@@ -351,7 +452,8 @@ class StreamCIntegrationTest {
 
     final List<PerformanceAnalyzer.TestExecutionResult> results = new java.util.ArrayList<>();
 
-    for (final Map.Entry<RuntimeType, BehavioralAnalyzer.TestExecutionResult> entry : executionResults.entrySet()) {
+    for (final Map.Entry<RuntimeType, BehavioralAnalyzer.TestExecutionResult> entry :
+        executionResults.entrySet()) {
       final RuntimeType runtime = entry.getKey();
       final BehavioralAnalyzer.TestExecutionResult execResult = entry.getValue();
 
@@ -361,7 +463,8 @@ class StreamCIntegrationTest {
               .memoryUsed(execResult.getMemoryUsage().map(m -> m.getHeapUsed()).orElse(0L))
               .peakMemoryUsage(execResult.getMemoryUsage().map(m -> m.getNonHeapUsed()).orElse(0L))
               .successful(execResult.isSuccessful())
-              .errorMessage(execResult.getException() != null ? execResult.getException().getMessage() : null)
+              .errorMessage(
+                  execResult.getException() != null ? execResult.getException().getMessage() : null)
               .build();
 
       results.add(perfResult);
@@ -385,8 +488,9 @@ class StreamCIntegrationTest {
 
     // Verify data flow consistency - recommendations should reference analysis results
     if (behavioralResults.getConsistencyScore() < 0.8) {
-      assertTrue(recommendationResults.getBehavioralRecommendations().size() > 0 ||
-                 recommendationResults.getIntegrationRecommendations().size() > 0);
+      assertTrue(
+          recommendationResults.getBehavioralRecommendations().size() > 0
+              || recommendationResults.getIntegrationRecommendations().size() > 0);
     }
 
     if (performanceResults.hasRegressions()) {
@@ -412,7 +516,9 @@ class StreamCIntegrationTest {
       final ComprehensiveCoverageReport coverageReport) {
 
     // Verify batch processing consistency
-    assertEquals(batchInsights.getTestInsights().size(), batchRecommendations.getTestRecommendations().size());
+    assertEquals(
+        batchInsights.getTestInsights().size(),
+        batchRecommendations.getTestRecommendations().size());
 
     // Coverage report should reflect analyzed tests
     assertTrue(coverageReport.getTotalTestsAnalyzed() > 0);

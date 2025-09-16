@@ -1,15 +1,14 @@
 package ai.tegmentum.wasmtime4j.comparison.reporters;
 
 import java.util.Collections;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
 /**
- * Comprehensive configuration for report generation controlling content inclusion,
- * formatting, themes, and localization settings.
+ * Comprehensive configuration for report generation controlling content inclusion, formatting,
+ * themes, and localization settings.
  *
  * @since 1.0.0
  */
@@ -23,11 +22,15 @@ public final class ReportConfiguration {
   private final Map<String, Object> customProperties;
 
   private ReportConfiguration(final Builder builder) {
-    this.configurationName = Objects.requireNonNull(builder.configurationName, "configurationName cannot be null");
-    this.contentConfig = Objects.requireNonNull(builder.contentConfig, "contentConfig cannot be null");
-    this.formattingConfig = Objects.requireNonNull(builder.formattingConfig, "formattingConfig cannot be null");
+    this.configurationName =
+        Objects.requireNonNull(builder.configurationName, "configurationName cannot be null");
+    this.contentConfig =
+        Objects.requireNonNull(builder.contentConfig, "contentConfig cannot be null");
+    this.formattingConfig =
+        Objects.requireNonNull(builder.formattingConfig, "formattingConfig cannot be null");
     this.themeConfig = Objects.requireNonNull(builder.themeConfig, "themeConfig cannot be null");
-    this.localizationConfig = Objects.requireNonNull(builder.localizationConfig, "localizationConfig cannot be null");
+    this.localizationConfig =
+        Objects.requireNonNull(builder.localizationConfig, "localizationConfig cannot be null");
     this.outputConfig = Objects.requireNonNull(builder.outputConfig, "outputConfig cannot be null");
     this.customProperties = Map.copyOf(builder.customProperties);
   }
@@ -132,43 +135,57 @@ public final class ReportConfiguration {
     }
 
     final ReportConfiguration that = (ReportConfiguration) obj;
-    return Objects.equals(configurationName, that.configurationName) &&
-           Objects.equals(contentConfig, that.contentConfig) &&
-           Objects.equals(formattingConfig, that.formattingConfig) &&
-           Objects.equals(themeConfig, that.themeConfig) &&
-           Objects.equals(localizationConfig, that.localizationConfig) &&
-           Objects.equals(outputConfig, that.outputConfig) &&
-           Objects.equals(customProperties, that.customProperties);
+    return Objects.equals(configurationName, that.configurationName)
+        && Objects.equals(contentConfig, that.contentConfig)
+        && Objects.equals(formattingConfig, that.formattingConfig)
+        && Objects.equals(themeConfig, that.themeConfig)
+        && Objects.equals(localizationConfig, that.localizationConfig)
+        && Objects.equals(outputConfig, that.outputConfig)
+        && Objects.equals(customProperties, that.customProperties);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(configurationName, contentConfig, formattingConfig,
-                       themeConfig, localizationConfig, outputConfig, customProperties);
+    return Objects.hash(
+        configurationName,
+        contentConfig,
+        formattingConfig,
+        themeConfig,
+        localizationConfig,
+        outputConfig,
+        customProperties);
   }
 
   @Override
   public String toString() {
-    return "ReportConfiguration{" +
-           "name='" + configurationName + '\'' +
-           ", content=" + contentConfig +
-           ", theme=" + themeConfig.getThemeName() +
-           ", locale=" + localizationConfig.getLocale() +
-           '}';
+    return "ReportConfiguration{"
+        + "name='"
+        + configurationName
+        + '\''
+        + ", content="
+        + contentConfig
+        + ", theme="
+        + themeConfig.getThemeName()
+        + ", locale="
+        + localizationConfig.getLocale()
+        + '}';
   }
 
   /** Builder for ReportConfiguration. */
   public static final class Builder {
     private final String configurationName;
     private ContentConfiguration contentConfig = ContentConfiguration.defaultContentConfig();
-    private FormattingConfiguration formattingConfig = FormattingConfiguration.defaultFormattingConfig();
+    private FormattingConfiguration formattingConfig =
+        FormattingConfiguration.defaultFormattingConfig();
     private ThemeConfiguration themeConfig = ThemeConfiguration.defaultTheme();
-    private LocalizationConfiguration localizationConfig = LocalizationConfiguration.defaultLocalization();
+    private LocalizationConfiguration localizationConfig =
+        LocalizationConfiguration.defaultLocalization();
     private OutputConfiguration outputConfig = OutputConfiguration.defaultOutputConfig();
     private Map<String, Object> customProperties = Collections.emptyMap();
 
     public Builder(final String configurationName) {
-      this.configurationName = Objects.requireNonNull(configurationName, "configurationName cannot be null");
+      this.configurationName =
+          Objects.requireNonNull(configurationName, "configurationName cannot be null");
     }
 
     public Builder contentConfig(final ContentConfiguration contentConfig) {
@@ -177,7 +194,8 @@ public final class ReportConfiguration {
     }
 
     public Builder formattingConfig(final FormattingConfiguration formattingConfig) {
-      this.formattingConfig = Objects.requireNonNull(formattingConfig, "formattingConfig cannot be null");
+      this.formattingConfig =
+          Objects.requireNonNull(formattingConfig, "formattingConfig cannot be null");
       return this;
     }
 
@@ -187,7 +205,8 @@ public final class ReportConfiguration {
     }
 
     public Builder localizationConfig(final LocalizationConfiguration localizationConfig) {
-      this.localizationConfig = Objects.requireNonNull(localizationConfig, "localizationConfig cannot be null");
+      this.localizationConfig =
+          Objects.requireNonNull(localizationConfig, "localizationConfig cannot be null");
       return this;
     }
 
@@ -197,7 +216,8 @@ public final class ReportConfiguration {
     }
 
     public Builder customProperties(final Map<String, Object> customProperties) {
-      this.customProperties = Objects.requireNonNull(customProperties, "customProperties cannot be null");
+      this.customProperties =
+          Objects.requireNonNull(customProperties, "customProperties cannot be null");
       return this;
     }
 
@@ -363,38 +383,53 @@ final class ContentConfiguration {
     }
 
     final ContentConfiguration that = (ContentConfiguration) obj;
-    return includeSummary == that.includeSummary &&
-           includeMetadata == that.includeMetadata &&
-           includeBehavioralAnalysis == that.includeBehavioralAnalysis &&
-           includePerformanceAnalysis == that.includePerformanceAnalysis &&
-           includeCoverageAnalysis == that.includeCoverageAnalysis &&
-           includeRecommendations == that.includeRecommendations &&
-           includeDetailedResults == that.includeDetailedResults &&
-           includeRawData == that.includeRawData &&
-           maxTestResults == that.maxTestResults &&
-           Objects.equals(excludedTests, that.excludedTests) &&
-           Objects.equals(includedSections, that.includedSections) &&
-           recommendationLevel == that.recommendationLevel;
+    return includeSummary == that.includeSummary
+        && includeMetadata == that.includeMetadata
+        && includeBehavioralAnalysis == that.includeBehavioralAnalysis
+        && includePerformanceAnalysis == that.includePerformanceAnalysis
+        && includeCoverageAnalysis == that.includeCoverageAnalysis
+        && includeRecommendations == that.includeRecommendations
+        && includeDetailedResults == that.includeDetailedResults
+        && includeRawData == that.includeRawData
+        && maxTestResults == that.maxTestResults
+        && Objects.equals(excludedTests, that.excludedTests)
+        && Objects.equals(includedSections, that.includedSections)
+        && recommendationLevel == that.recommendationLevel;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(includeSummary, includeMetadata, includeBehavioralAnalysis,
-                       includePerformanceAnalysis, includeCoverageAnalysis, includeRecommendations,
-                       includeDetailedResults, includeRawData, excludedTests, includedSections,
-                       maxTestResults, recommendationLevel);
+    return Objects.hash(
+        includeSummary,
+        includeMetadata,
+        includeBehavioralAnalysis,
+        includePerformanceAnalysis,
+        includeCoverageAnalysis,
+        includeRecommendations,
+        includeDetailedResults,
+        includeRawData,
+        excludedTests,
+        includedSections,
+        maxTestResults,
+        recommendationLevel);
   }
 
   @Override
   public String toString() {
-    return "ContentConfiguration{" +
-           "summary=" + includeSummary +
-           ", behavioral=" + includeBehavioralAnalysis +
-           ", performance=" + includePerformanceAnalysis +
-           ", coverage=" + includeCoverageAnalysis +
-           ", recommendations=" + includeRecommendations +
-           ", maxResults=" + maxTestResults +
-           '}';
+    return "ContentConfiguration{"
+        + "summary="
+        + includeSummary
+        + ", behavioral="
+        + includeBehavioralAnalysis
+        + ", performance="
+        + includePerformanceAnalysis
+        + ", coverage="
+        + includeCoverageAnalysis
+        + ", recommendations="
+        + includeRecommendations
+        + ", maxResults="
+        + maxTestResults
+        + '}';
   }
 
   /** Builder for ContentConfiguration. */
@@ -458,7 +493,8 @@ final class ContentConfiguration {
     }
 
     public Builder includedSections(final Set<String> includedSections) {
-      this.includedSections = Objects.requireNonNull(includedSections, "includedSections cannot be null");
+      this.includedSections =
+          Objects.requireNonNull(includedSections, "includedSections cannot be null");
       return this;
     }
 
@@ -471,7 +507,8 @@ final class ContentConfiguration {
     }
 
     public Builder recommendationLevel(final RecommendationLevel recommendationLevel) {
-      this.recommendationLevel = Objects.requireNonNull(recommendationLevel, "recommendationLevel cannot be null");
+      this.recommendationLevel =
+          Objects.requireNonNull(recommendationLevel, "recommendationLevel cannot be null");
       return this;
     }
 
@@ -587,30 +624,41 @@ final class FormattingConfiguration {
     }
 
     final FormattingConfiguration that = (FormattingConfiguration) obj;
-    return useColorOutput == that.useColorOutput &&
-           includeTimestamps == that.includeTimestamps &&
-           includeLineNumbers == that.includeLineNumbers &&
-           maxLineLength == that.maxLineLength &&
-           compactOutput == that.compactOutput &&
-           includeStackTraces == that.includeStackTraces &&
-           dateTimeFormat == that.dateTimeFormat &&
-           numberFormat == that.numberFormat;
+    return useColorOutput == that.useColorOutput
+        && includeTimestamps == that.includeTimestamps
+        && includeLineNumbers == that.includeLineNumbers
+        && maxLineLength == that.maxLineLength
+        && compactOutput == that.compactOutput
+        && includeStackTraces == that.includeStackTraces
+        && dateTimeFormat == that.dateTimeFormat
+        && numberFormat == that.numberFormat;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(useColorOutput, includeTimestamps, includeLineNumbers,
-                       dateTimeFormat, numberFormat, maxLineLength, compactOutput, includeStackTraces);
+    return Objects.hash(
+        useColorOutput,
+        includeTimestamps,
+        includeLineNumbers,
+        dateTimeFormat,
+        numberFormat,
+        maxLineLength,
+        compactOutput,
+        includeStackTraces);
   }
 
   @Override
   public String toString() {
-    return "FormattingConfiguration{" +
-           "colors=" + useColorOutput +
-           ", compact=" + compactOutput +
-           ", maxLength=" + maxLineLength +
-           ", dateFormat=" + dateTimeFormat +
-           '}';
+    return "FormattingConfiguration{"
+        + "colors="
+        + useColorOutput
+        + ", compact="
+        + compactOutput
+        + ", maxLength="
+        + maxLineLength
+        + ", dateFormat="
+        + dateTimeFormat
+        + '}';
   }
 
   /** Builder for FormattingConfiguration. */
@@ -724,19 +772,19 @@ final class ThemeConfiguration {
   /** Creates default theme configuration. */
   public static ThemeConfiguration defaultTheme() {
     return new Builder("default")
-        .colors(Map.of(
-            "primary", "#007bff",
-            "success", "#28a745",
-            "warning", "#ffc107",
-            "danger", "#dc3545",
-            "background", "#ffffff",
-            "text", "#333333"
-        ))
-        .fonts(Map.of(
-            "heading", "system-ui, sans-serif",
-            "body", "system-ui, sans-serif",
-            "monospace", "Consolas, Monaco, monospace"
-        ))
+        .colors(
+            Map.of(
+                "primary", "#007bff",
+                "success", "#28a745",
+                "warning", "#ffc107",
+                "danger", "#dc3545",
+                "background", "#ffffff",
+                "text", "#333333"))
+        .fonts(
+            Map.of(
+                "heading", "system-ui, sans-serif",
+                "body", "system-ui, sans-serif",
+                "monospace", "Consolas, Monaco, monospace"))
         .darkMode(false)
         .build();
   }
@@ -744,15 +792,15 @@ final class ThemeConfiguration {
   /** Creates minimal theme configuration. */
   public static ThemeConfiguration minimalTheme() {
     return new Builder("minimal")
-        .colors(Map.of(
-            "primary", "#000000",
-            "background", "#ffffff",
-            "text", "#333333"
-        ))
-        .fonts(Map.of(
-            "body", "system-ui, sans-serif",
-            "monospace", "monospace"
-        ))
+        .colors(
+            Map.of(
+                "primary", "#000000",
+                "background", "#ffffff",
+                "text", "#333333"))
+        .fonts(
+            Map.of(
+                "body", "system-ui, sans-serif",
+                "monospace", "monospace"))
         .darkMode(false)
         .build();
   }
@@ -760,19 +808,19 @@ final class ThemeConfiguration {
   /** Creates dark theme configuration. */
   public static ThemeConfiguration darkTheme() {
     return new Builder("dark")
-        .colors(Map.of(
-            "primary", "#17a2b8",
-            "success", "#28a745",
-            "warning", "#ffc107",
-            "danger", "#dc3545",
-            "background", "#1a1a1a",
-            "text", "#ffffff"
-        ))
-        .fonts(Map.of(
-            "heading", "system-ui, sans-serif",
-            "body", "system-ui, sans-serif",
-            "monospace", "Consolas, Monaco, monospace"
-        ))
+        .colors(
+            Map.of(
+                "primary", "#17a2b8",
+                "success", "#28a745",
+                "warning", "#ffc107",
+                "danger", "#dc3545",
+                "background", "#1a1a1a",
+                "text", "#ffffff"))
+        .fonts(
+            Map.of(
+                "heading", "system-ui, sans-serif",
+                "body", "system-ui, sans-serif",
+                "monospace", "Consolas, Monaco, monospace"))
         .darkMode(true)
         .build();
   }
@@ -787,28 +835,34 @@ final class ThemeConfiguration {
     }
 
     final ThemeConfiguration that = (ThemeConfiguration) obj;
-    return darkMode == that.darkMode &&
-           Objects.equals(themeName, that.themeName) &&
-           Objects.equals(colors, that.colors) &&
-           Objects.equals(fonts, that.fonts) &&
-           Objects.equals(customCss, that.customCss) &&
-           Objects.equals(brandingLogo, that.brandingLogo) &&
-           Objects.equals(brandingFooter, that.brandingFooter);
+    return darkMode == that.darkMode
+        && Objects.equals(themeName, that.themeName)
+        && Objects.equals(colors, that.colors)
+        && Objects.equals(fonts, that.fonts)
+        && Objects.equals(customCss, that.customCss)
+        && Objects.equals(brandingLogo, that.brandingLogo)
+        && Objects.equals(brandingFooter, that.brandingFooter);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(themeName, colors, fonts, customCss, darkMode, brandingLogo, brandingFooter);
+    return Objects.hash(
+        themeName, colors, fonts, customCss, darkMode, brandingLogo, brandingFooter);
   }
 
   @Override
   public String toString() {
-    return "ThemeConfiguration{" +
-           "name='" + themeName + '\'' +
-           ", darkMode=" + darkMode +
-           ", colors=" + colors.size() +
-           ", fonts=" + fonts.size() +
-           '}';
+    return "ThemeConfiguration{"
+        + "name='"
+        + themeName
+        + '\''
+        + ", darkMode="
+        + darkMode
+        + ", colors="
+        + colors.size()
+        + ", fonts="
+        + fonts.size()
+        + '}';
   }
 
   /** Builder for ThemeConfiguration. */
@@ -917,10 +971,10 @@ final class LocalizationConfiguration {
     }
 
     final LocalizationConfiguration that = (LocalizationConfiguration) obj;
-    return Objects.equals(locale, that.locale) &&
-           Objects.equals(timeZone, that.timeZone) &&
-           Objects.equals(customMessages, that.customMessages) &&
-           Objects.equals(resourceBundleName, that.resourceBundleName);
+    return Objects.equals(locale, that.locale)
+        && Objects.equals(timeZone, that.timeZone)
+        && Objects.equals(customMessages, that.customMessages)
+        && Objects.equals(resourceBundleName, that.resourceBundleName);
   }
 
   @Override
@@ -930,11 +984,16 @@ final class LocalizationConfiguration {
 
   @Override
   public String toString() {
-    return "LocalizationConfiguration{" +
-           "locale=" + locale +
-           ", timeZone='" + timeZone + '\'' +
-           ", resourceBundle='" + resourceBundleName + '\'' +
-           '}';
+    return "LocalizationConfiguration{"
+        + "locale="
+        + locale
+        + ", timeZone='"
+        + timeZone
+        + '\''
+        + ", resourceBundle='"
+        + resourceBundleName
+        + '\''
+        + '}';
   }
 
   /** Builder for LocalizationConfiguration. */
@@ -1082,32 +1141,45 @@ final class OutputConfiguration {
     }
 
     final OutputConfiguration that = (OutputConfiguration) obj;
-    return generateHtml == that.generateHtml &&
-           generateJson == that.generateJson &&
-           generateCsv == that.generateCsv &&
-           generateConsole == that.generateConsole &&
-           enableCaching == that.enableCaching &&
-           maxCacheSize == that.maxCacheSize &&
-           cacheExpirationMinutes == that.cacheExpirationMinutes &&
-           streamOutput == that.streamOutput &&
-           outputBufferSize == that.outputBufferSize;
+    return generateHtml == that.generateHtml
+        && generateJson == that.generateJson
+        && generateCsv == that.generateCsv
+        && generateConsole == that.generateConsole
+        && enableCaching == that.enableCaching
+        && maxCacheSize == that.maxCacheSize
+        && cacheExpirationMinutes == that.cacheExpirationMinutes
+        && streamOutput == that.streamOutput
+        && outputBufferSize == that.outputBufferSize;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(generateHtml, generateJson, generateCsv, generateConsole,
-                       enableCaching, maxCacheSize, cacheExpirationMinutes, streamOutput, outputBufferSize);
+    return Objects.hash(
+        generateHtml,
+        generateJson,
+        generateCsv,
+        generateConsole,
+        enableCaching,
+        maxCacheSize,
+        cacheExpirationMinutes,
+        streamOutput,
+        outputBufferSize);
   }
 
   @Override
   public String toString() {
-    return "OutputConfiguration{" +
-           "html=" + generateHtml +
-           ", json=" + generateJson +
-           ", csv=" + generateCsv +
-           ", console=" + generateConsole +
-           ", caching=" + enableCaching +
-           '}';
+    return "OutputConfiguration{"
+        + "html="
+        + generateHtml
+        + ", json="
+        + generateJson
+        + ", csv="
+        + generateCsv
+        + ", console="
+        + generateConsole
+        + ", caching="
+        + enableCaching
+        + '}';
   }
 
   /** Builder for OutputConfiguration. */

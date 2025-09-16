@@ -16,14 +16,15 @@ import java.util.logging.Logger;
 
 /**
  * HTML reporter that generates comprehensive interactive reports with embedded JavaScript
- * visualizations, responsive design, and detailed comparison analysis views. Supports
- * both static HTML files and embedded web server deployment.
+ * visualizations, responsive design, and detailed comparison analysis views. Supports both static
+ * HTML files and embedded web server deployment.
  *
  * @since 1.0.0
  */
 public final class HtmlReporter {
   private static final Logger LOGGER = Logger.getLogger(HtmlReporter.class.getName());
-  private static final DateTimeFormatter TIMESTAMP_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+  private static final DateTimeFormatter TIMESTAMP_FORMATTER =
+      DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 
   private final HtmlReporterConfiguration configuration;
   private final TemplateEngine templateEngine;
@@ -42,7 +43,8 @@ public final class HtmlReporter {
    * @param outputPath the path where the HTML report should be written
    * @throws IOException if the report cannot be written
    */
-  public void generateReport(final ComparisonReport report, final Path outputPath) throws IOException {
+  public void generateReport(final ComparisonReport report, final Path outputPath)
+      throws IOException {
     Objects.requireNonNull(report, "report cannot be null");
     Objects.requireNonNull(outputPath, "outputPath cannot be null");
 
@@ -84,7 +86,8 @@ public final class HtmlReporter {
    * @param outputStream the output stream to write the HTML content to
    * @throws IOException if the content cannot be written
    */
-  public void generateReport(final ComparisonReport report, final OutputStream outputStream) throws IOException {
+  public void generateReport(final ComparisonReport report, final OutputStream outputStream)
+      throws IOException {
     Objects.requireNonNull(report, "report cannot be null");
     Objects.requireNonNull(outputStream, "outputStream cannot be null");
 
@@ -184,7 +187,8 @@ public final class HtmlReporter {
    * @param targetPath the target file path
    * @throws IOException if the resource cannot be copied
    */
-  private void copyResourceFile(final String resourcePath, final Path targetPath) throws IOException {
+  private void copyResourceFile(final String resourcePath, final Path targetPath)
+      throws IOException {
     try (final var inputStream = getClass().getClassLoader().getResourceAsStream(resourcePath)) {
       if (inputStream != null) {
         Files.copy(inputStream, targetPath);
@@ -221,7 +225,8 @@ final class HtmlReporterConfiguration {
     this.enableInteractiveFeatures = builder.enableInteractiveFeatures;
     this.enablePerformanceCharts = builder.enablePerformanceCharts;
     this.enableCoverageAnalysis = builder.enableCoverageAnalysis;
-    this.verbosityLevel = Objects.requireNonNull(builder.verbosityLevel, "verbosityLevel cannot be null");
+    this.verbosityLevel =
+        Objects.requireNonNull(builder.verbosityLevel, "verbosityLevel cannot be null");
   }
 
   public String getReportTitle() {
@@ -317,29 +322,41 @@ final class HtmlReporterConfiguration {
     }
 
     final HtmlReporterConfiguration that = (HtmlReporterConfiguration) obj;
-    return includeStaticResources == that.includeStaticResources &&
-           enableInteractiveFeatures == that.enableInteractiveFeatures &&
-           enablePerformanceCharts == that.enablePerformanceCharts &&
-           enableCoverageAnalysis == that.enableCoverageAnalysis &&
-           Objects.equals(reportTitle, that.reportTitle) &&
-           Objects.equals(theme, that.theme) &&
-           verbosityLevel == that.verbosityLevel;
+    return includeStaticResources == that.includeStaticResources
+        && enableInteractiveFeatures == that.enableInteractiveFeatures
+        && enablePerformanceCharts == that.enablePerformanceCharts
+        && enableCoverageAnalysis == that.enableCoverageAnalysis
+        && Objects.equals(reportTitle, that.reportTitle)
+        && Objects.equals(theme, that.theme)
+        && verbosityLevel == that.verbosityLevel;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(reportTitle, theme, includeStaticResources, enableInteractiveFeatures,
-                       enablePerformanceCharts, enableCoverageAnalysis, verbosityLevel);
+    return Objects.hash(
+        reportTitle,
+        theme,
+        includeStaticResources,
+        enableInteractiveFeatures,
+        enablePerformanceCharts,
+        enableCoverageAnalysis,
+        verbosityLevel);
   }
 
   @Override
   public String toString() {
-    return "HtmlReporterConfiguration{" +
-           "reportTitle='" + reportTitle + '\'' +
-           ", theme='" + theme + '\'' +
-           ", interactive=" + enableInteractiveFeatures +
-           ", verbosity=" + verbosityLevel +
-           '}';
+    return "HtmlReporterConfiguration{"
+        + "reportTitle='"
+        + reportTitle
+        + '\''
+        + ", theme='"
+        + theme
+        + '\''
+        + ", interactive="
+        + enableInteractiveFeatures
+        + ", verbosity="
+        + verbosityLevel
+        + '}';
   }
 }
 
@@ -437,13 +454,11 @@ final class TemplateEngine {
    */
   private String generateErrorTemplate(final String templateName, final Exception error) {
     return String.format(
-        "<!DOCTYPE html>" +
-        "<html><head><title>Template Error</title></head>" +
-        "<body><h1>Template Rendering Error</h1>" +
-        "<p>Failed to render template: %s</p>" +
-        "<p>Error: %s</p></body></html>",
-        escapeHtml(templateName),
-        escapeHtml(error.getMessage())
-    );
+        "<!DOCTYPE html>"
+            + "<html><head><title>Template Error</title></head>"
+            + "<body><h1>Template Rendering Error</h1>"
+            + "<p>Failed to render template: %s</p>"
+            + "<p>Error: %s</p></body></html>",
+        escapeHtml(templateName), escapeHtml(error.getMessage()));
   }
 }

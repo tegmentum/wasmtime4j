@@ -7,7 +7,6 @@ import freemarker.template.TemplateExceptionHandler;
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
-import java.io.Writer;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -18,8 +17,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Template engine for processing report templates with FreeMarker integration.
- * Provides template compilation, caching, validation, and internationalization support.
+ * Template engine for processing report templates with FreeMarker integration. Provides template
+ * compilation, caching, validation, and internationalization support.
  *
  * @since 1.0.0
  */
@@ -50,7 +49,8 @@ public final class TemplateEngine {
   public String processTemplate(
       final ReportTemplate reportTemplate,
       final ComparisonReport dataModel,
-      final ReportConfiguration reportConfig) throws TemplateProcessingException {
+      final ReportConfiguration reportConfig)
+      throws TemplateProcessingException {
 
     Objects.requireNonNull(reportTemplate, "reportTemplate cannot be null");
     Objects.requireNonNull(dataModel, "dataModel cannot be null");
@@ -59,12 +59,14 @@ public final class TemplateEngine {
     // Validate template before processing
     final TemplateValidationResult validation = reportTemplate.validate();
     if (!validation.isValid()) {
-      throw new TemplateProcessingException("Template validation failed: " + validation.getErrors());
+      throw new TemplateProcessingException(
+          "Template validation failed: " + validation.getErrors());
     }
 
     // Check compatibility between template and configuration
     if (!reportTemplate.isCompatibleWith(reportConfig)) {
-      throw new TemplateProcessingException("Template is not compatible with the provided configuration");
+      throw new TemplateProcessingException(
+          "Template is not compatible with the provided configuration");
     }
 
     try {
@@ -86,7 +88,8 @@ public final class TemplateEngine {
   public String processComponent(
       final TemplateComponent component,
       final ComparisonReport dataModel,
-      final ReportConfiguration reportConfig) throws TemplateProcessingException {
+      final ReportConfiguration reportConfig)
+      throws TemplateProcessingException {
 
     Objects.requireNonNull(component, "component cannot be null");
     Objects.requireNonNull(dataModel, "dataModel cannot be null");
@@ -116,9 +119,7 @@ public final class TemplateEngine {
     return templateValidator.validate(reportTemplate);
   }
 
-  /**
-   * Clears the template cache.
-   */
+  /** Clears the template cache. */
   public void clearCache() {
     templateCache.clear();
   }
@@ -135,7 +136,8 @@ public final class TemplateEngine {
   private String processTemplateInternal(
       final ReportTemplate reportTemplate,
       final ComparisonReport dataModel,
-      final ReportConfiguration reportConfig) throws IOException, TemplateException {
+      final ReportConfiguration reportConfig)
+      throws IOException, TemplateException {
 
     final StringBuilder output = new StringBuilder();
     final Map<String, Object> templateDataModel = createTemplateDataModel(dataModel, reportConfig);
@@ -147,7 +149,8 @@ public final class TemplateEngine {
         final String componentOutput = processComponentInternal(component, dataModel, reportConfig);
         output.append(componentOutput);
       } else {
-        LOGGER.log(Level.FINE, "Skipping component {0} due to configuration", component.getComponentId());
+        LOGGER.log(
+            Level.FINE, "Skipping component {0} due to configuration", component.getComponentId());
       }
     }
 
@@ -157,7 +160,8 @@ public final class TemplateEngine {
   private String processComponentInternal(
       final TemplateComponent component,
       final ComparisonReport dataModel,
-      final ReportConfiguration reportConfig) throws IOException, TemplateException {
+      final ReportConfiguration reportConfig)
+      throws IOException, TemplateException {
 
     final String cacheKey = createCacheKey(component, reportConfig);
     Template template = templateCache.get(cacheKey);
@@ -181,8 +185,7 @@ public final class TemplateEngine {
   }
 
   private Map<String, Object> createTemplateDataModel(
-      final ComparisonReport dataModel,
-      final ReportConfiguration reportConfig) {
+      final ComparisonReport dataModel, final ReportConfiguration reportConfig) {
 
     final Map<String, Object> templateData = new HashMap<>();
 
@@ -227,9 +230,13 @@ public final class TemplateEngine {
     return new Template(templateName, new StringReader(templateContent), freemarkerConfig);
   }
 
-  private String createCacheKey(final TemplateComponent component, final ReportConfiguration reportConfig) {
-    return component.getComponentId() + ":" + reportConfig.getConfigurationName() + ":" +
-           reportConfig.getThemeConfig().getThemeName();
+  private String createCacheKey(
+      final TemplateComponent component, final ReportConfiguration reportConfig) {
+    return component.getComponentId()
+        + ":"
+        + reportConfig.getConfigurationName()
+        + ":"
+        + reportConfig.getThemeConfig().getThemeName();
   }
 
   private Configuration createFreemarkerConfiguration(final Locale locale) {
@@ -276,7 +283,8 @@ public final class TemplateEngine {
     }
 
     public Builder resourceBundleName(final String resourceBundleName) {
-      this.resourceBundleName = Objects.requireNonNull(resourceBundleName, "resourceBundleName cannot be null");
+      this.resourceBundleName =
+          Objects.requireNonNull(resourceBundleName, "resourceBundleName cannot be null");
       return this;
     }
 
@@ -364,7 +372,8 @@ final class TemplateCache {
 
     // If still too large, remove some entries
     if (cache.size() >= maxSize) {
-      final java.util.Iterator<Map.Entry<String, CacheEntry>> iterator = cache.entrySet().iterator();
+      final java.util.Iterator<Map.Entry<String, CacheEntry>> iterator =
+          cache.entrySet().iterator();
       for (int i = 0; i < maxSize / 4 && iterator.hasNext(); i++) {
         iterator.next();
         iterator.remove();
@@ -418,12 +427,16 @@ final class CacheStatistics {
 
   @Override
   public String toString() {
-    return "CacheStatistics{" +
-           "size=" + size +
-           ", hits=" + hits +
-           ", misses=" + misses +
-           ", hitRatio=" + String.format("%.2f%%", getHitRatio() * 100) +
-           '}';
+    return "CacheStatistics{"
+        + "size="
+        + size
+        + ", hits="
+        + hits
+        + ", misses="
+        + misses
+        + ", hitRatio="
+        + String.format("%.2f%%", getHitRatio() * 100)
+        + '}';
   }
 }
 

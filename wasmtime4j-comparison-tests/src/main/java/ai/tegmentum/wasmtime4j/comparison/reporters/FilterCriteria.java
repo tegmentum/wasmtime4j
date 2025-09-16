@@ -8,9 +8,9 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * Comprehensive filtering criteria for comparison results with support for multiple
- * filter types, search queries, sorting, and pagination. Provides a fluent builder
- * API for constructing complex filter combinations.
+ * Comprehensive filtering criteria for comparison results with support for multiple filter types,
+ * search queries, sorting, and pagination. Provides a fluent builder API for constructing complex
+ * filter combinations.
  *
  * @since 1.0.0
  */
@@ -34,7 +34,8 @@ public final class FilterCriteria {
     this.searchQuery = builder.searchQuery;
     this.sortCriteria = builder.sortCriteria;
     this.pagination = builder.pagination;
-    this.customFilters = builder.customFilters != null ? Map.copyOf(builder.customFilters) : Map.of();
+    this.customFilters =
+        builder.customFilters != null ? Map.copyOf(builder.customFilters) : Map.of();
   }
 
   public StatusFilter getStatusFilter() {
@@ -79,13 +80,13 @@ public final class FilterCriteria {
    * @return true if any filters are active
    */
   public boolean hasActiveFilters() {
-    return statusFilter != null ||
-           runtimeFilter != null ||
-           severityFilter != null ||
-           timeRangeFilter != null ||
-           onlyCriticalIssues ||
-           (searchQuery != null && !searchQuery.trim().isEmpty()) ||
-           !customFilters.isEmpty();
+    return statusFilter != null
+        || runtimeFilter != null
+        || severityFilter != null
+        || timeRangeFilter != null
+        || onlyCriticalIssues
+        || (searchQuery != null && !searchQuery.trim().isEmpty())
+        || !customFilters.isEmpty();
   }
 
   /** Creates a new builder for filter criteria. */
@@ -120,7 +121,8 @@ public final class FilterCriteria {
       return this;
     }
 
-    public Builder includeRuntimes(final Set<RuntimeType> runtimes, final RuntimeMatchMode matchMode) {
+    public Builder includeRuntimes(
+        final Set<RuntimeType> runtimes, final RuntimeMatchMode matchMode) {
       this.runtimeFilter = new RuntimeFilter(runtimes, matchMode);
       return this;
     }
@@ -195,30 +197,42 @@ public final class FilterCriteria {
     }
 
     final FilterCriteria that = (FilterCriteria) obj;
-    return onlyCriticalIssues == that.onlyCriticalIssues &&
-           Objects.equals(statusFilter, that.statusFilter) &&
-           Objects.equals(runtimeFilter, that.runtimeFilter) &&
-           Objects.equals(severityFilter, that.severityFilter) &&
-           Objects.equals(timeRangeFilter, that.timeRangeFilter) &&
-           Objects.equals(searchQuery, that.searchQuery) &&
-           Objects.equals(sortCriteria, that.sortCriteria) &&
-           Objects.equals(pagination, that.pagination) &&
-           Objects.equals(customFilters, that.customFilters);
+    return onlyCriticalIssues == that.onlyCriticalIssues
+        && Objects.equals(statusFilter, that.statusFilter)
+        && Objects.equals(runtimeFilter, that.runtimeFilter)
+        && Objects.equals(severityFilter, that.severityFilter)
+        && Objects.equals(timeRangeFilter, that.timeRangeFilter)
+        && Objects.equals(searchQuery, that.searchQuery)
+        && Objects.equals(sortCriteria, that.sortCriteria)
+        && Objects.equals(pagination, that.pagination)
+        && Objects.equals(customFilters, that.customFilters);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(statusFilter, runtimeFilter, severityFilter, timeRangeFilter,
-                       onlyCriticalIssues, searchQuery, sortCriteria, pagination, customFilters);
+    return Objects.hash(
+        statusFilter,
+        runtimeFilter,
+        severityFilter,
+        timeRangeFilter,
+        onlyCriticalIssues,
+        searchQuery,
+        sortCriteria,
+        pagination,
+        customFilters);
   }
 
   @Override
   public String toString() {
-    return "FilterCriteria{" +
-           "hasFilters=" + hasActiveFilters() +
-           ", search='" + searchQuery + '\'' +
-           ", onlyCritical=" + onlyCriticalIssues +
-           '}';
+    return "FilterCriteria{"
+        + "hasFilters="
+        + hasActiveFilters()
+        + ", search='"
+        + searchQuery
+        + '\''
+        + ", onlyCritical="
+        + onlyCriticalIssues
+        + '}';
   }
 }
 
@@ -286,8 +300,7 @@ final class RuntimeFilter {
     }
 
     final RuntimeFilter that = (RuntimeFilter) obj;
-    return Objects.equals(includedRuntimes, that.includedRuntimes) &&
-           matchMode == that.matchMode;
+    return Objects.equals(includedRuntimes, that.includedRuntimes) && matchMode == that.matchMode;
   }
 
   @Override
@@ -297,10 +310,7 @@ final class RuntimeFilter {
 
   @Override
   public String toString() {
-    return "RuntimeFilter{" +
-           "runtimes=" + includedRuntimes +
-           ", mode=" + matchMode +
-           '}';
+    return "RuntimeFilter{" + "runtimes=" + includedRuntimes + ", mode=" + matchMode + '}';
   }
 }
 
@@ -384,8 +394,7 @@ final class TimeRangeFilter {
     }
 
     final TimeRangeFilter that = (TimeRangeFilter) obj;
-    return Objects.equals(startTime, that.startTime) &&
-           Objects.equals(endTime, that.endTime);
+    return Objects.equals(startTime, that.startTime) && Objects.equals(endTime, that.endTime);
   }
 
   @Override
@@ -395,10 +404,7 @@ final class TimeRangeFilter {
 
   @Override
   public String toString() {
-    return "TimeRangeFilter{" +
-           "start=" + startTime +
-           ", end=" + endTime +
-           '}';
+    return "TimeRangeFilter{" + "start=" + startTime + ", end=" + endTime + '}';
   }
 }
 
@@ -430,8 +436,7 @@ final class SortCriteria {
     }
 
     final SortCriteria that = (SortCriteria) obj;
-    return Objects.equals(sortField, that.sortField) &&
-           sortDirection == that.sortDirection;
+    return Objects.equals(sortField, that.sortField) && sortDirection == that.sortDirection;
   }
 
   @Override
@@ -441,10 +446,7 @@ final class SortCriteria {
 
   @Override
   public String toString() {
-    return "SortCriteria{" +
-           "field='" + sortField + '\'' +
-           ", direction=" + sortDirection +
-           '}';
+    return "SortCriteria{" + "field='" + sortField + '\'' + ", direction=" + sortDirection + '}';
   }
 }
 
@@ -492,8 +494,7 @@ final class PaginationConfig {
     }
 
     final PaginationConfig that = (PaginationConfig) obj;
-    return pageNumber == that.pageNumber &&
-           pageSize == that.pageSize;
+    return pageNumber == that.pageNumber && pageSize == that.pageSize;
   }
 
   @Override
@@ -503,10 +504,7 @@ final class PaginationConfig {
 
   @Override
   public String toString() {
-    return "PaginationConfig{" +
-           "page=" + pageNumber +
-           ", size=" + pageSize +
-           '}';
+    return "PaginationConfig{" + "page=" + pageNumber + ", size=" + pageSize + '}';
   }
 }
 
@@ -529,7 +527,8 @@ final class FilterResult {
     this.filteredResults = List.copyOf(filteredResults);
     this.totalCount = totalCount;
     this.pageCount = pageCount;
-    this.appliedCriteria = Objects.requireNonNull(appliedCriteria, "appliedCriteria cannot be null");
+    this.appliedCriteria =
+        Objects.requireNonNull(appliedCriteria, "appliedCriteria cannot be null");
     this.filterTimeMs = filterTimeMs;
     this.metadata = Map.copyOf(metadata);
   }
@@ -568,27 +567,33 @@ final class FilterResult {
     }
 
     final FilterResult that = (FilterResult) obj;
-    return totalCount == that.totalCount &&
-           pageCount == that.pageCount &&
-           filterTimeMs == that.filterTimeMs &&
-           Objects.equals(filteredResults, that.filteredResults) &&
-           Objects.equals(appliedCriteria, that.appliedCriteria) &&
-           Objects.equals(metadata, that.metadata);
+    return totalCount == that.totalCount
+        && pageCount == that.pageCount
+        && filterTimeMs == that.filterTimeMs
+        && Objects.equals(filteredResults, that.filteredResults)
+        && Objects.equals(appliedCriteria, that.appliedCriteria)
+        && Objects.equals(metadata, that.metadata);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(filteredResults, totalCount, pageCount, appliedCriteria, filterTimeMs, metadata);
+    return Objects.hash(
+        filteredResults, totalCount, pageCount, appliedCriteria, filterTimeMs, metadata);
   }
 
   @Override
   public String toString() {
-    return "FilterResult{" +
-           "results=" + filteredResults.size() +
-           ", total=" + totalCount +
-           ", pages=" + pageCount +
-           ", time=" + filterTimeMs + "ms" +
-           '}';
+    return "FilterResult{"
+        + "results="
+        + filteredResults.size()
+        + ", total="
+        + totalCount
+        + ", pages="
+        + pageCount
+        + ", time="
+        + filterTimeMs
+        + "ms"
+        + '}';
   }
 }
 
@@ -598,7 +603,8 @@ final class PaginationResult {
   private final int totalCount;
   private final int pageCount;
 
-  public PaginationResult(final List<TestComparisonResult> results, final int totalCount, final int pageCount) {
+  public PaginationResult(
+      final List<TestComparisonResult> results, final int totalCount, final int pageCount) {
     this.results = List.copyOf(results);
     this.totalCount = totalCount;
     this.pageCount = pageCount;
@@ -626,9 +632,9 @@ final class PaginationResult {
     }
 
     final PaginationResult that = (PaginationResult) obj;
-    return totalCount == that.totalCount &&
-           pageCount == that.pageCount &&
-           Objects.equals(results, that.results);
+    return totalCount == that.totalCount
+        && pageCount == that.pageCount
+        && Objects.equals(results, that.results);
   }
 
   @Override
@@ -638,11 +644,14 @@ final class PaginationResult {
 
   @Override
   public String toString() {
-    return "PaginationResult{" +
-           "results=" + results.size() +
-           ", total=" + totalCount +
-           ", pages=" + pageCount +
-           '}';
+    return "PaginationResult{"
+        + "results="
+        + results.size()
+        + ", total="
+        + totalCount
+        + ", pages="
+        + pageCount
+        + '}';
   }
 }
 
@@ -653,7 +662,8 @@ final class SearchTerm {
   private final boolean isRegex;
   private final boolean isNegated;
 
-  public SearchTerm(final String field, final String text, final boolean isRegex, final boolean isNegated) {
+  public SearchTerm(
+      final String field, final String text, final boolean isRegex, final boolean isNegated) {
     this.field = Objects.requireNonNull(field, "field cannot be null");
     this.text = Objects.requireNonNull(text, "text cannot be null");
     this.isRegex = isRegex;
@@ -686,10 +696,10 @@ final class SearchTerm {
     }
 
     final SearchTerm that = (SearchTerm) obj;
-    return isRegex == that.isRegex &&
-           isNegated == that.isNegated &&
-           Objects.equals(field, that.field) &&
-           Objects.equals(text, that.text);
+    return isRegex == that.isRegex
+        && isNegated == that.isNegated
+        && Objects.equals(field, that.field)
+        && Objects.equals(text, that.text);
   }
 
   @Override
@@ -699,12 +709,18 @@ final class SearchTerm {
 
   @Override
   public String toString() {
-    return "SearchTerm{" +
-           "field='" + field + '\'' +
-           ", text='" + text + '\'' +
-           ", regex=" + isRegex +
-           ", negated=" + isNegated +
-           '}';
+    return "SearchTerm{"
+        + "field='"
+        + field
+        + '\''
+        + ", text='"
+        + text
+        + '\''
+        + ", regex="
+        + isRegex
+        + ", negated="
+        + isNegated
+        + '}';
   }
 }
 

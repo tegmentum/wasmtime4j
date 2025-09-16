@@ -10,9 +10,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * Real-time progress reporter that implements the Observer pattern to provide
- * live updates during long-running comparison operations. Supports both
- * console output and programmatic progress tracking.
+ * Real-time progress reporter that implements the Observer pattern to provide live updates during
+ * long-running comparison operations. Supports both console output and programmatic progress
+ * tracking.
  *
  * @since 1.0.0
  */
@@ -30,7 +30,8 @@ public final class ProgressReporter implements ProgressListener {
 
   // Operation history for debugging
   private final ConcurrentLinkedQueue<OperationEvent> eventHistory = new ConcurrentLinkedQueue<>();
-  private final ConcurrentHashMap<String, OperationStats> operationStats = new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<String, OperationStats> operationStats =
+      new ConcurrentHashMap<>();
 
   // Output control
   private volatile boolean progressBarEnabled = true;
@@ -44,7 +45,8 @@ public final class ProgressReporter implements ProgressListener {
    * @param verbosity the verbosity level for controlling output detail
    * @param useColors whether to use ANSI color codes
    */
-  public ProgressReporter(final PrintStream output, final VerbosityLevel verbosity, final boolean useColors) {
+  public ProgressReporter(
+      final PrintStream output, final VerbosityLevel verbosity, final boolean useColors) {
     this.output = Objects.requireNonNull(output, "output cannot be null");
     this.verbosity = Objects.requireNonNull(verbosity, "verbosity cannot be null");
     this.useColors = useColors && ConsoleColors.isColorSupported();
@@ -58,7 +60,8 @@ public final class ProgressReporter implements ProgressListener {
    * @param useColors whether to use colors
    * @return new ProgressReporter instance
    */
-  public static ProgressReporter forConsole(final VerbosityLevel verbosity, final boolean useColors) {
+  public static ProgressReporter forConsole(
+      final VerbosityLevel verbosity, final boolean useColors) {
     return new ProgressReporter(System.out, verbosity, useColors);
   }
 
@@ -129,7 +132,8 @@ public final class ProgressReporter implements ProgressListener {
   public void onOperationCompleted(final String operationName, final String message) {
     final Instant endTime = Instant.now();
     final Instant startTime = operationStart.get();
-    final Duration duration = startTime != null ? Duration.between(startTime, endTime) : Duration.ZERO;
+    final Duration duration =
+        startTime != null ? Duration.between(startTime, endTime) : Duration.ZERO;
 
     recordEvent(OperationEventType.COMPLETED, operationName, null, message);
     updateOperationStats(operationName, duration, true);
@@ -145,10 +149,9 @@ public final class ProgressReporter implements ProgressListener {
         final String durationText = formatDuration(duration);
 
         if (useColors) {
-          output.printf("%s %s (%s)%n",
-              ConsoleColors.success("✓"),
-              operationName,
-              ConsoleColors.dim(durationText));
+          output.printf(
+              "%s %s (%s)%n",
+              ConsoleColors.success("✓"), operationName, ConsoleColors.dim(durationText));
         } else {
           output.printf("✓ %s (%s)%n", operationName, durationText);
         }
@@ -170,7 +173,8 @@ public final class ProgressReporter implements ProgressListener {
   public void onOperationFailed(final String operationName, final Throwable error) {
     final Instant endTime = Instant.now();
     final Instant startTime = operationStart.get();
-    final Duration duration = startTime != null ? Duration.between(startTime, endTime) : Duration.ZERO;
+    final Duration duration =
+        startTime != null ? Duration.between(startTime, endTime) : Duration.ZERO;
 
     recordEvent(OperationEventType.FAILED, operationName, null, error.getMessage());
     updateOperationStats(operationName, duration, false);
@@ -183,10 +187,9 @@ public final class ProgressReporter implements ProgressListener {
         }
 
         if (useColors) {
-          output.printf("%s %s: %s%n",
-              ConsoleColors.error("✗"),
-              operationName,
-              ConsoleColors.error(error.getMessage()));
+          output.printf(
+              "%s %s: %s%n",
+              ConsoleColors.error("✗"), operationName, ConsoleColors.error(error.getMessage()));
         } else {
           output.printf("✗ %s: %s%n", operationName, error.getMessage());
         }
@@ -211,8 +214,10 @@ public final class ProgressReporter implements ProgressListener {
 
     if (verbosity.includes(VerbosityLevel.VERBOSE)) {
       synchronized (outputLock) {
-        final String timestamp = timestampsEnabled ?
-            String.format("[%s] ", Instant.now().toString().substring(11, 19)) : "";
+        final String timestamp =
+            timestampsEnabled
+                ? String.format("[%s] ", Instant.now().toString().substring(11, 19))
+                : "";
 
         output.printf("%s%s%n", timestamp, colorizeMessage(message));
 
@@ -297,8 +302,11 @@ public final class ProgressReporter implements ProgressListener {
     return new ConcurrentHashMap<>(operationStats);
   }
 
-  private void recordEvent(final OperationEventType type, final String operation,
-                          final Integer step, final String details) {
+  private void recordEvent(
+      final OperationEventType type,
+      final String operation,
+      final Integer step,
+      final String details) {
     eventHistory.offer(new OperationEvent(type, operation, step, details, Instant.now()));
 
     // Keep only last 1000 events to prevent memory leaks
@@ -307,20 +315,29 @@ public final class ProgressReporter implements ProgressListener {
     }
   }
 
-  private void updateOperationStats(final String operationName, final Duration duration, final boolean success) {
-    operationStats.compute(operationName, (name, existing) -> {
-      if (existing == null) {
-        return new OperationStats(1, success ? 1 : 0, duration, duration, duration);
-      } else {
-        final int newCount = existing.getCount() + 1;
-        final int newSuccessCount = existing.getSuccessCount() + (success ? 1 : 0);
-        final Duration newMin = duration.compareTo(existing.getMinDuration()) < 0 ? duration : existing.getMinDuration();
-        final Duration newMax = duration.compareTo(existing.getMaxDuration()) > 0 ? duration : existing.getMaxDuration();
-        final Duration newTotal = existing.getTotalDuration().plus(duration);
+  private void updateOperationStats(
+      final String operationName, final Duration duration, final boolean success) {
+    operationStats.compute(
+        operationName,
+        (name, existing) -> {
+          if (existing == null) {
+            return new OperationStats(1, success ? 1 : 0, duration, duration, duration);
+          } else {
+            final int newCount = existing.getCount() + 1;
+            final int newSuccessCount = existing.getSuccessCount() + (success ? 1 : 0);
+            final Duration newMin =
+                duration.compareTo(existing.getMinDuration()) < 0
+                    ? duration
+                    : existing.getMinDuration();
+            final Duration newMax =
+                duration.compareTo(existing.getMaxDuration()) > 0
+                    ? duration
+                    : existing.getMaxDuration();
+            final Duration newTotal = existing.getTotalDuration().plus(duration);
 
-        return new OperationStats(newCount, newSuccessCount, newMin, newMax, newTotal);
-      }
-    });
+            return new OperationStats(newCount, newSuccessCount, newMin, newMax, newTotal);
+          }
+        });
   }
 
   private String createProgressBar(final int current, final int total) {
@@ -376,7 +393,11 @@ public final class ProgressReporter implements ProgressListener {
 
   /** Event types for operation tracking. */
   private enum OperationEventType {
-    STARTED, PROGRESS, COMPLETED, FAILED, STATUS
+    STARTED,
+    PROGRESS,
+    COMPLETED,
+    FAILED,
+    STATUS
   }
 
   /** Single operation event for history tracking. */
@@ -387,8 +408,12 @@ public final class ProgressReporter implements ProgressListener {
     private final String details;
     private final Instant timestamp;
 
-    OperationEvent(final OperationEventType type, final String operation,
-                   final Integer step, final String details, final Instant timestamp) {
+    OperationEvent(
+        final OperationEventType type,
+        final String operation,
+        final Integer step,
+        final String details,
+        final Instant timestamp) {
       this.type = type;
       this.operation = operation;
       this.step = step;
@@ -425,8 +450,12 @@ public final class ProgressReporter implements ProgressListener {
     private final Duration maxDuration;
     private final Duration totalDuration;
 
-    OperationStats(final int count, final int successCount, final Duration minDuration,
-                   final Duration maxDuration, final Duration totalDuration) {
+    OperationStats(
+        final int count,
+        final int successCount,
+        final Duration minDuration,
+        final Duration maxDuration,
+        final Duration totalDuration) {
       this.count = count;
       this.successCount = successCount;
       this.minDuration = minDuration;
@@ -468,7 +497,8 @@ public final class ProgressReporter implements ProgressListener {
 
     @Override
     public String toString() {
-      return String.format("OperationStats{count=%d, success=%.1f%%, avg=%s}",
+      return String.format(
+          "OperationStats{count=%d, success=%.1f%%, avg=%s}",
           count, getSuccessRate() * 100, getAverageDuration());
     }
   }

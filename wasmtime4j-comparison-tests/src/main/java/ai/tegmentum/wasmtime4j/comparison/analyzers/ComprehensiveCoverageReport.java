@@ -8,8 +8,8 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * Comprehensive coverage report providing a global view of test coverage across
- * all analyzed tests, feature categories, and runtime implementations.
+ * Comprehensive coverage report providing a global view of test coverage across all analyzed tests,
+ * feature categories, and runtime implementations.
  *
  * @since 1.0.0
  */
@@ -36,7 +36,8 @@ public final class ComprehensiveCoverageReport {
     this.recommendations = List.copyOf(recommendations);
     this.coverageTrend = Objects.requireNonNull(coverageTrend, "coverageTrend cannot be null");
     this.totalTestsAnalyzed = totalTestsAnalyzed;
-    this.reportGeneratedAt = Objects.requireNonNull(reportGeneratedAt, "reportGeneratedAt cannot be null");
+    this.reportGeneratedAt =
+        Objects.requireNonNull(reportGeneratedAt, "reportGeneratedAt cannot be null");
   }
 
   public Map<String, Double> getCategoryCompleteness() {
@@ -97,16 +98,16 @@ public final class ComprehensiveCoverageReport {
    */
   public String getExecutiveSummary() {
     return String.format(
-        "Coverage Report Executive Summary%n" +
-        "================================%n" +
-        "Report Generated: %s%n" +
-        "Tests Analyzed: %d%n" +
-        "Overall Coverage: %.1f%%%n" +
-        "Uncovered Features: %d%n" +
-        "High-Priority Recommendations: %d%n" +
-        "Coverage Trend: %s (%.1f%% change)%n%n" +
-        "Runtime Coverage Scores:%n%s%n%n" +
-        "Category Completeness:%n%s",
+        "Coverage Report Executive Summary%n"
+            + "================================%n"
+            + "Report Generated: %s%n"
+            + "Tests Analyzed: %d%n"
+            + "Overall Coverage: %.1f%%%n"
+            + "Uncovered Features: %d%n"
+            + "High-Priority Recommendations: %d%n"
+            + "Coverage Trend: %s (%.1f%% change)%n%n"
+            + "Runtime Coverage Scores:%n%s%n%n"
+            + "Category Completeness:%n%s",
         reportGeneratedAt,
         totalTestsAnalyzed,
         getOverallCoverageScore(),
@@ -115,8 +116,7 @@ public final class ComprehensiveCoverageReport {
         coverageTrend.getDirection(),
         coverageTrend.getChange(),
         formatRuntimeScores(),
-        formatCategoryCompleteness()
-    );
+        formatCategoryCompleteness());
   }
 
   private String formatRuntimeScores() {
@@ -145,29 +145,39 @@ public final class ComprehensiveCoverageReport {
     }
 
     final ComprehensiveCoverageReport that = (ComprehensiveCoverageReport) obj;
-    return totalTestsAnalyzed == that.totalTestsAnalyzed &&
-           Objects.equals(categoryCompleteness, that.categoryCompleteness) &&
-           Objects.equals(uncoveredFeatures, that.uncoveredFeatures) &&
-           Objects.equals(runtimeCoverageScores, that.runtimeCoverageScores) &&
-           Objects.equals(recommendations, that.recommendations) &&
-           Objects.equals(coverageTrend, that.coverageTrend) &&
-           Objects.equals(reportGeneratedAt, that.reportGeneratedAt);
+    return totalTestsAnalyzed == that.totalTestsAnalyzed
+        && Objects.equals(categoryCompleteness, that.categoryCompleteness)
+        && Objects.equals(uncoveredFeatures, that.uncoveredFeatures)
+        && Objects.equals(runtimeCoverageScores, that.runtimeCoverageScores)
+        && Objects.equals(recommendations, that.recommendations)
+        && Objects.equals(coverageTrend, that.coverageTrend)
+        && Objects.equals(reportGeneratedAt, that.reportGeneratedAt);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(categoryCompleteness, uncoveredFeatures, runtimeCoverageScores,
-                       recommendations, coverageTrend, totalTestsAnalyzed, reportGeneratedAt);
+    return Objects.hash(
+        categoryCompleteness,
+        uncoveredFeatures,
+        runtimeCoverageScores,
+        recommendations,
+        coverageTrend,
+        totalTestsAnalyzed,
+        reportGeneratedAt);
   }
 
   @Override
   public String toString() {
-    return "ComprehensiveCoverageReport{" +
-           "tests=" + totalTestsAnalyzed +
-           ", coverage=" + String.format("%.1f%%", getOverallCoverageScore()) +
-           ", uncovered=" + uncoveredFeatures.size() +
-           ", recommendations=" + recommendations.size() +
-           '}';
+    return "ComprehensiveCoverageReport{"
+        + "tests="
+        + totalTestsAnalyzed
+        + ", coverage="
+        + String.format("%.1f%%", getOverallCoverageScore())
+        + ", uncovered="
+        + uncoveredFeatures.size()
+        + ", recommendations="
+        + recommendations.size()
+        + '}';
   }
 }
 
@@ -222,26 +232,35 @@ final class GlobalCoverageStatistics {
     }
 
     final GlobalCoverageStatistics that = (GlobalCoverageStatistics) obj;
-    return totalFeatures == that.totalFeatures &&
-           coveredFeatures == that.coveredFeatures &&
-           Double.compare(that.overallCoveragePercentage, overallCoveragePercentage) == 0 &&
-           totalTestsAnalyzed == that.totalTestsAnalyzed &&
-           totalCategories == that.totalCategories;
+    return totalFeatures == that.totalFeatures
+        && coveredFeatures == that.coveredFeatures
+        && Double.compare(that.overallCoveragePercentage, overallCoveragePercentage) == 0
+        && totalTestsAnalyzed == that.totalTestsAnalyzed
+        && totalCategories == that.totalCategories;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(totalFeatures, coveredFeatures, overallCoveragePercentage,
-                       totalTestsAnalyzed, totalCategories);
+    return Objects.hash(
+        totalFeatures,
+        coveredFeatures,
+        overallCoveragePercentage,
+        totalTestsAnalyzed,
+        totalCategories);
   }
 
   @Override
   public String toString() {
-    return "GlobalCoverageStatistics{" +
-           "features=" + coveredFeatures + "/" + totalFeatures +
-           ", coverage=" + String.format("%.1f%%", overallCoveragePercentage) +
-           ", tests=" + totalTestsAnalyzed +
-           '}';
+    return "GlobalCoverageStatistics{"
+        + "features="
+        + coveredFeatures
+        + "/"
+        + totalFeatures
+        + ", coverage="
+        + String.format("%.1f%%", overallCoveragePercentage)
+        + ", tests="
+        + totalTestsAnalyzed
+        + '}';
   }
 }
 
@@ -289,10 +308,10 @@ final class CoverageRecommendation {
     }
 
     final CoverageRecommendation that = (CoverageRecommendation) obj;
-    return type == that.type &&
-           Objects.equals(description, that.description) &&
-           priority == that.priority &&
-           Objects.equals(affectedAreas, that.affectedAreas);
+    return type == that.type
+        && Objects.equals(description, that.description)
+        && priority == that.priority
+        && Objects.equals(affectedAreas, that.affectedAreas);
   }
 
   @Override
@@ -302,11 +321,14 @@ final class CoverageRecommendation {
 
   @Override
   public String toString() {
-    return "CoverageRecommendation{" +
-           "type=" + type +
-           ", priority=" + priority +
-           ", areas=" + affectedAreas.size() +
-           '}';
+    return "CoverageRecommendation{"
+        + "type="
+        + type
+        + ", priority="
+        + priority
+        + ", areas="
+        + affectedAreas.size()
+        + '}';
   }
 }
 
@@ -384,10 +406,10 @@ final class CoverageTrend {
     }
 
     final CoverageTrend that = (CoverageTrend) obj;
-    return Double.compare(that.currentCoverage, currentCoverage) == 0 &&
-           Double.compare(that.previousCoverage, previousCoverage) == 0 &&
-           Double.compare(that.change, change) == 0 &&
-           direction == that.direction;
+    return Double.compare(that.currentCoverage, currentCoverage) == 0
+        && Double.compare(that.previousCoverage, previousCoverage) == 0
+        && Double.compare(that.change, change) == 0
+        && direction == that.direction;
   }
 
   @Override
@@ -397,11 +419,14 @@ final class CoverageTrend {
 
   @Override
   public String toString() {
-    return "CoverageTrend{" +
-           "current=" + String.format("%.1f%%", currentCoverage) +
-           ", change=" + String.format("%.1f%%", change) +
-           ", direction=" + direction +
-           '}';
+    return "CoverageTrend{"
+        + "current="
+        + String.format("%.1f%%", currentCoverage)
+        + ", change="
+        + String.format("%.1f%%", change)
+        + ", direction="
+        + direction
+        + '}';
   }
 }
 
