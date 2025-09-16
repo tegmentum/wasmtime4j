@@ -66,6 +66,12 @@ public final class JniFunction extends JniResource implements WasmFunction {
   /** Maximum cache size per function. */
   private static final int MAX_CACHE_SIZE = 100;
 
+  /** Hot path optimization - cache the most frequently called function signature. */
+  private volatile Object[] cachedNativeParams;
+  private volatile String cachedParamSignature;
+  private volatile long lastOptimizationCheck = 0;
+  private static final long OPTIMIZATION_CHECK_INTERVAL = 1000; // Check every 1000 calls
+
   /** Cache entry for function results. */
   private static final class CachedResult {
     final WasmValue[] result;
@@ -195,9 +201,21 @@ public final class JniFunction extends JniResource implements WasmFunction {
       // Increment call count for performance monitoring
       final long currentCall = callCount.incrementAndGet();
 
+      // Hot path optimization for frequently called functions
+      if (currentCall % OPTIMIZATION_CHECK_INTERVAL == 0) {
+        optimizeHotPath(params);
+      }
+
       final FunctionType functionType = getFunctionType();
 
-      // Validate parameter types
+      // Fast path validation for cached parameter pattern
+      final String paramSignature = getParameterSignature(params);
+      if (paramSignature.equals(cachedParamSignature)) {
+        // Use pre-validated hot path
+        return callOptimizedPath(params, functionType);
+      }
+
+      // Standard path with full validation
       JniTypeConverter.validateParameterTypes(params, functionType.getParamTypes());
 
       // Check cache for frequently called functions with consistent parameters
@@ -500,6 +518,110 @@ public final class JniFunction extends JniResource implements WasmFunction {
   public void clearCache() {
     resultCache.clear();
     LOGGER.fine("Cleared result cache for function '" + name + "'");
+  }
+
+  /**
+   * Optimizes hot path for frequently called parameter patterns.
+   *
+   * @param params current parameters
+   */
+  private void optimizeHotPath(final WasmValue[] params) {
+    final String paramSignature = getParameterSignature(params);
+    if (!paramSignature.equals(cachedParamSignature)) {
+      // Pre-compute and cache marshalling for this parameter pattern
+      try {
+        cachedNativeParams = JniTypeConverter.wasmValuesToNativeParams(params);
+        cachedParamSignature = paramSignature;
+        lastOptimizationCheck = System.currentTimeMillis();
+        LOGGER.fine("Optimized hot path for function '" + name + "' with signature: " + paramSignature);
+      } catch (final Exception e) {
+        LOGGER.warning("Failed to optimize hot path for function '" + name + "': " + e.getMessage());
+      }
+    }
+  }
+
+  /**
+   * Gets a signature for the parameter pattern to identify repeated calls.
+   *
+   * @param params function parameters
+   * @return signature string
+   */
+  private String getParameterSignature(final WasmValue[] params) {
+    if (params.length == 0) {
+      return "()";
+    }
+
+    final StringBuilder sig = new StringBuilder();
+    sig.append("(");
+    for (int i = 0; i < params.length; i++) {
+      if (i > 0) {
+        sig.append(",");
+      }
+      sig.append(params[i].getType().name());
+    }
+    sig.append(")");
+    return sig.toString();
+  }
+
+  /**
+   * Executes optimized call path for pre-validated parameters.
+   *
+   * @param params function parameters
+   * @param functionType function type info
+   * @return function results
+   * @throws WasmException if call fails
+   */
+  private WasmValue[] callOptimizedPath(final WasmValue[] params, final FunctionType functionType)
+      throws WasmException {
+    try {
+      // Use fast marshalling for known parameter types
+      Object[] nativeParams;
+      if (params.length <= 4) {
+        // For small parameter sets, use direct conversion
+        nativeParams = new Object[params.length];
+        for (int i = 0; i < params.length; i++) {
+          nativeParams[i] = convertValueDirect(params[i]);
+        }
+      } else {
+        // Use optimized marshalling for larger sets
+        nativeParams = ai.tegmentum.wasmtime4j.jni.performance.OptimizedMarshalling.marshalParameters(params);
+      }
+
+      // Direct native call without additional overhead
+      final Object[] nativeResults = nativeCallMultiValue(getNativeHandle(), nativeParams);
+      if (nativeResults == null) {
+        throw new WasmException("Native function call returned null for '" + name + "'");
+      }
+
+      // Fast result conversion
+      return ai.tegmentum.wasmtime4j.jni.performance.OptimizedMarshalling.unmarshalResults(
+          nativeResults, functionType.getReturnTypes());
+
+    } catch (final Exception e) {
+      throw new WasmException("Optimized function call failed for '" + name + "'", e);
+    }
+  }
+
+  /**
+   * Direct value conversion for hot path optimization.
+   *
+   * @param value WasmValue to convert
+   * @return native representation
+   */
+  private Object convertValueDirect(final WasmValue value) {
+    switch (value.getType()) {
+      case I32:
+        return value.asI32();
+      case I64:
+        return value.asI64();
+      case F32:
+        return value.asF32();
+      case F64:
+        return value.asF64();
+      default:
+        // Fallback to general conversion
+        return JniTypeConverter.wasmValueToNativeParam(value);
+    }
   }
 
   /**

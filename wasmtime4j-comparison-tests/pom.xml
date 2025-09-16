@@ -1,0 +1,299 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 
+         http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>ai.tegmentum</groupId>
+        <artifactId>wasmtime4j-parent</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>wasmtime4j-comparison-tests</artifactId>
+    <packaging>jar</packaging>
+
+    <name>Wasmtime4j Comparison Tests</name>
+    <description>Automated comparison testing framework for wasmtime4j implementations</description>
+
+    <properties>
+        <!-- Test execution properties -->
+        <comparison.tests.parallel>true</comparison.tests.parallel>
+        <comparison.tests.threads>4</comparison.tests.threads>
+        <comparison.tests.timeout>1800</comparison.tests.timeout>
+        <comparison.reports.dir>${project.build.directory}/comparison-reports</comparison.reports.dir>
+        
+        <!-- Test suite selection -->
+        <comparison.suite>smoke</comparison.suite> <!-- smoke, full, custom -->
+        <comparison.targets>native,jni,panama</comparison.targets>
+    </properties>
+
+    <dependencies>
+        <!-- Core wasmtime4j API -->
+        <dependency>
+            <groupId>ai.tegmentum</groupId>
+            <artifactId>wasmtime4j</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <!-- Test-scoped implementation dependencies -->
+        <dependency>
+            <groupId>ai.tegmentum</groupId>
+            <artifactId>wasmtime4j-jni</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>ai.tegmentum</groupId>
+            <artifactId>wasmtime4j-panama</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Test framework dependencies -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-params</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- JSON processing for reports -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>2.17.2</version>
+        </dependency>
+
+        <!-- CSV processing for reports -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-csv</artifactId>
+            <version>1.10.0</version>
+        </dependency>
+
+        <!-- Template processing for HTML reports -->
+        <dependency>
+            <groupId>org.freemarker</groupId>
+            <artifactId>freemarker</artifactId>
+            <version>2.3.32</version>
+        </dependency>
+
+        <!-- Logging -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>${slf4j.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>${logback.version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!-- Compiler plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+            </plugin>
+
+            <!-- Resources plugin with filtering -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <configuration>
+                    <resources>
+                        <resource>
+                            <directory>src/main/resources</directory>
+                            <filtering>true</filtering>
+                            <includes>
+                                <include>**/*.properties</include>
+                                <include>**/*.xml</include>
+                            </includes>
+                        </resource>
+                        <resource>
+                            <directory>src/main/resources</directory>
+                            <filtering>false</filtering>
+                            <excludes>
+                                <exclude>**/*.properties</exclude>
+                                <exclude>**/*.xml</exclude>
+                            </excludes>
+                        </resource>
+                    </resources>
+                </configuration>
+            </plugin>
+
+            <!-- Surefire for unit tests -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <excludes>
+                        <exclude>**/comparison/**</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+
+            <!-- Failsafe for comparison tests -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <configuration>
+                    <includes>
+                        <include>**/comparison/**/*IT.java</include>
+                        <include>**/comparison/**/*Test.java</include>
+                    </includes>
+                    <systemPropertyVariables>
+                        <comparison.suite>${comparison.suite}</comparison.suite>
+                        <comparison.targets>${comparison.targets}</comparison.targets>
+                        <comparison.reports.dir>${comparison.reports.dir}</comparison.reports.dir>
+                        <comparison.tests.timeout>${comparison.tests.timeout}</comparison.tests.timeout>
+                    </systemPropertyVariables>
+                    <parallel>classes</parallel>
+                    <threadCount>${comparison.tests.threads}</threadCount>
+                    <perCoreThreadCount>false</perCoreThreadCount>
+                    <reportsDirectory>${comparison.reports.dir}/failsafe-reports</reportsDirectory>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>integration-test</goal>
+                            <goal>verify</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
+        <!-- Platform-specific profiles for native binary selection -->
+        <profile>
+            <id>linux-x86_64</id>
+            <activation>
+                <os>
+                    <family>unix</family>
+                    <arch>amd64</arch>
+                </os>
+            </activation>
+            <properties>
+                <native.platform>linux-x86_64</native.platform>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>linux-aarch64</id>
+            <activation>
+                <os>
+                    <family>unix</family>
+                    <arch>aarch64</arch>
+                </os>
+            </activation>
+            <properties>
+                <native.platform>linux-aarch64</native.platform>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>macos-x86_64</id>
+            <activation>
+                <os>
+                    <family>mac</family>
+                    <arch>x86_64</arch>
+                </os>
+            </activation>
+            <properties>
+                <native.platform>macos-x86_64</native.platform>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>macos-aarch64</id>
+            <activation>
+                <os>
+                    <family>mac</family>
+                    <arch>aarch64</arch>
+                </os>
+            </activation>
+            <properties>
+                <native.platform>macos-aarch64</native.platform>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>windows-x86_64</id>
+            <activation>
+                <os>
+                    <family>windows</family>
+                    <arch>amd64</arch>
+                </os>
+            </activation>
+            <properties>
+                <native.platform>windows-x86_64</native.platform>
+            </properties>
+        </profile>
+
+        <!-- Test suite profiles -->
+        <profile>
+            <id>smoke-tests</id>
+            <properties>
+                <comparison.suite>smoke</comparison.suite>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>full-tests</id>
+            <properties>
+                <comparison.suite>full</comparison.suite>
+                <comparison.tests.timeout>3600</comparison.tests.timeout>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>custom-tests</id>
+            <properties>
+                <comparison.suite>custom</comparison.suite>
+            </properties>
+        </profile>
+
+        <!-- Target runtime profiles -->
+        <profile>
+            <id>native-only</id>
+            <properties>
+                <comparison.targets>native</comparison.targets>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>jni-only</id>
+            <properties>
+                <comparison.targets>jni</comparison.targets>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>panama-only</id>
+            <properties>
+                <comparison.targets>panama</comparison.targets>
+            </properties>
+        </profile>
+    </profiles>
+</project>

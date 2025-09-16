@@ -351,10 +351,20 @@ public final class PanamaWasmRuntime implements WasmRuntime {
    */
   private SymbolLookup loadNativeLibrary() throws WasmException {
     try {
-      // TODO: Implement proper native library loading with platform detection
-      // For now, create a placeholder that will be replaced with actual implementation
-      logger.warning("Native library loading not yet implemented - using placeholder");
-      return SymbolLookup.loaderLookup();
+      // Use the dedicated Panama native library loader
+      NativeLibraryLoader loader = NativeLibraryLoader.getInstance();
+
+      if (!loader.isLoaded()) {
+        String error = loader.getLoadingError().orElse("Unknown error");
+        throw new WasmException("Native library loading failed: " + error);
+      }
+
+      // Use the symbol lookup from the library via SymbolLookup.loaderLookup()
+      // The native library should already be loaded by the NativeLibraryLoader
+      SymbolLookup lookup = SymbolLookup.loaderLookup();
+
+      logger.info("Successfully loaded native library for Panama FFI");
+      return lookup;
     } catch (Exception e) {
       throw new WasmException("Failed to load native Wasmtime library", e);
     }
@@ -367,8 +377,15 @@ public final class PanamaWasmRuntime implements WasmRuntime {
    */
   private void initializeWasmtime() throws WasmException {
     try {
-      // TODO: Implement Wasmtime initialization through FFI calls
-      logger.info("Wasmtime initialization placeholder - will be implemented with native bindings");
+      // Wasmtime doesn't require explicit initialization in most cases
+      // The library is initialized when functions are first called
+      // We can verify the library is working by attempting to get a basic function handle
+      if (bindings.wasmtimeEngineNew() == null) {
+        logger.warning("Failed to get wasmtime_engine_new function handle");
+        throw new WasmException("Unable to access basic Wasmtime functions");
+      }
+
+      logger.info("Wasmtime library initialized successfully via Panama FFI");
     } catch (Exception e) {
       throw new WasmException("Failed to initialize Wasmtime library", e);
     }
