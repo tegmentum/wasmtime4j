@@ -190,6 +190,48 @@ public final class PanamaEngine implements Engine, AutoCloseable {
     return store;
   }
 
+  /**
+   * Creates a new store with custom configuration.
+   *
+   * <p>This method allows fine-grained control over store behavior including resource limits,
+   * execution timeouts, and other advanced settings.
+   *
+   * @param fuelLimit the fuel limit (0 = no limit)
+   * @param memoryLimitBytes the memory limit in bytes (0 = no limit)
+   * @param executionTimeoutSecs the execution timeout in seconds (0 = no timeout)
+   * @param maxInstances the maximum number of instances (0 = no limit)
+   * @param maxTableElements the maximum table elements (0 = no limit)
+   * @param maxFunctions the maximum functions (0 = no limit)
+   * @return a new configured store instance
+   * @throws WasmException if store creation fails
+   * @throws IllegalStateException if this engine has been closed
+   */
+  public Store createStoreWithConfig(
+      final long fuelLimit,
+      final long memoryLimitBytes,
+      final long executionTimeoutSecs,
+      final int maxInstances,
+      final int maxTableElements,
+      final int maxFunctions) throws WasmException {
+    ensureNotClosed();
+
+    try {
+      return new PanamaStore(
+          this,
+          fuelLimit,
+          memoryLimitBytes,
+          executionTimeoutSecs,
+          maxInstances,
+          maxTableElements,
+          maxFunctions);
+    } catch (Exception e) {
+      if (e instanceof WasmException) {
+        throw e;
+      }
+      throw new WasmException("Failed to create store with configuration", e);
+    }
+  }
+
   @Override
   public EngineConfig getConfig() {
     // TODO: Implement config retrieval
