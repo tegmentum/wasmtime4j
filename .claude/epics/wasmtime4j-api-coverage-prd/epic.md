@@ -4,7 +4,7 @@ status: backlog
 created: 2025-09-16T01:35:45Z
 progress: 0%
 prd: .claude/prds/wasmtime4j-api-coverage-prd.md
-github: [Will be updated when synced to GitHub]
+github: https://github.com/tegmentum/wasmtime4j/issues/232
 ---
 
 # Epic: wasmtime4j API Coverage & Implementation Gap Resolution
@@ -183,16 +183,16 @@ High-level task categories that will be created:
 This epic leverages the excellent existing architecture to achieve production readiness through systematic completion of implementation gaps rather than wholesale rebuilding, minimizing risk while maximizing the value of existing work.
 
 ## Tasks Created
-- [ ] 001.md - Factory Pattern Fix (parallel: false, blocks all progress)
-- [ ] 002.md - Interface Implementation (parallel: true, depends on 001)
-- [ ] 003.md - Core Native Method Completion (parallel: true, depends on 001)
-- [ ] 004.md - Panama Native Loading Implementation (parallel: true, depends on 001)
-- [ ] 005.md - Thread Safety Resolution (parallel: false, depends on 003)
-- [ ] 006.md - Panama API Coverage Completion (parallel: true, depends on 004)
-- [ ] 007.md - Resource Management Validation (parallel: true, depends on 002, 003)
-- [ ] 008.md - Cross-Platform Integration (parallel: false, depends on 006, 007)
-- [ ] 009.md - Performance Optimization (parallel: true, depends on 008)
-- [ ] 010.md - Production Validation & Release (parallel: false, depends on 009)
+- [ ] #233 - Factory Pattern Fix (parallel: false)
+- [ ] #235 - Interface Implementation (parallel: true)
+- [ ] #238 - Core Native Method Completion (parallel: true)
+- [ ] #239 - Panama Native Loading Implementation (parallel: true)
+- [ ] #240 - Thread Safety Resolution (parallel: false)
+- [ ] #241 - Panama API Coverage Completion (parallel: true)
+- [ ] #242 - Resource Management Validation (parallel: true)
+- [ ] #243 - Cross-Platform Integration (parallel: false)
+- [ ] #244 - Performance Optimization (parallel: true)
+- [ ] #245 - Production Validation & Release (parallel: false)
 
 Total tasks: 10
 Parallel tasks: 6
