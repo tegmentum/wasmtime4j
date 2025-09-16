@@ -160,7 +160,7 @@ export CARGO_HTTP_MULTIPLEXING=false
 export CARGO_INCREMENTAL=0
 
 # Build flags for reproducibility
-export RUSTFLAGS="\${RUSTFLAGS} -C debuginfo=2 -C strip=none"
+export RUSTFLAGS="\${RUSTFLAGS} -C embed-bitcode=no -C debuginfo=2 -C strip=none"
 
 # Version information
 export WASMTIME_VERSION=$WASMTIME_VERSION
