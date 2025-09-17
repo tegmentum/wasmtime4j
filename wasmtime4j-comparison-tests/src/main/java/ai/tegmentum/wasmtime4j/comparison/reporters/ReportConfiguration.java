@@ -1059,6 +1059,11 @@ public final class ReportConfiguration {
         this.locale = Objects.requireNonNull(locale, "locale cannot be null");
       }
 
+      /** Sets the time zone for localization.
+       *
+       * @param timeZone the time zone to set
+       * @return this builder instance
+       */
       public Builder timeZone(final String timeZone) {
         this.timeZone = Objects.requireNonNull(timeZone, "timeZone cannot be null");
         return this;
