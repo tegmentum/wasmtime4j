@@ -715,11 +715,19 @@ public final class ReportConfiguration {
         return this;
       }
 
+      /** Sets whether to include line numbers in the report.
+       * @param includeLineNumbers true to include line numbers
+       * @return this builder instance
+       */
       public Builder includeLineNumbers(final boolean includeLineNumbers) {
         this.includeLineNumbers = includeLineNumbers;
         return this;
       }
 
+      /** Sets the date time format for the report.
+       * @param dateTimeFormat the date time format to set
+       * @return this builder instance
+       */
       public Builder dateTimeFormat(final DateTimeFormat dateTimeFormat) {
         this.dateTimeFormat =
             Objects.requireNonNull(dateTimeFormat, "dateTimeFormat cannot be null");
