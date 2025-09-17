@@ -206,7 +206,7 @@ public final class TemplateEngine {
     templateData.put("config", reportConfig);
 
     // Add theme data
-    final ReportConfiguration.ThemeConfiguration theme = reportConfig.getThemeConfig();
+    final ThemeConfiguration theme = reportConfig.getThemeConfig();
     templateData.put("theme", theme);
     templateData.put("colors", theme.getColors());
     templateData.put("fonts", theme.getFonts());
