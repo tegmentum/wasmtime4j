@@ -75,8 +75,11 @@ class CrossPlatformIT extends BaseIntegrationTest {
       assertThat(expectedLibraryExtension).isEqualTo(".so");
       assertThat(libraryPrefix).isEqualTo("lib");
 
-      LOGGER.info("Linux library conventions validated: prefix=" + libraryPrefix
-          + ", extension=" + expectedLibraryExtension);
+      LOGGER.info(
+          "Linux library conventions validated: prefix="
+              + libraryPrefix
+              + ", extension="
+              + expectedLibraryExtension);
 
       // Test that we can determine the correct platform string
       final String expectedPlatformString = TestUtils.isX86_64() ? "linux-x86_64" : "linux-aarch64";
@@ -124,8 +127,11 @@ class CrossPlatformIT extends BaseIntegrationTest {
       assertThat(expectedLibraryExtension).isEqualTo(".dylib");
       assertThat(libraryPrefix).isEqualTo("lib");
 
-      LOGGER.info("macOS library conventions validated: prefix=" + libraryPrefix
-          + ", extension=" + expectedLibraryExtension);
+      LOGGER.info(
+          "macOS library conventions validated: prefix="
+              + libraryPrefix
+              + ", extension="
+              + expectedLibraryExtension);
 
       // Test that we can determine the correct platform string for both architectures
       final String expectedPlatformString = TestUtils.isX86_64() ? "macos-x86_64" : "macos-aarch64";
@@ -133,7 +139,8 @@ class CrossPlatformIT extends BaseIntegrationTest {
 
       // Verify architecture-specific functionality
       if (TestUtils.isArm64()) {
-        LOGGER.info("Running on Apple Silicon (ARM64) - testing Apple Silicon specific functionality");
+        LOGGER.info(
+            "Running on Apple Silicon (ARM64) - testing Apple Silicon specific functionality");
         assertThat(arch).containsIgnoringCase("aarch64");
       } else if (TestUtils.isX86_64()) {
         LOGGER.info("Running on Intel macOS (x86_64) - testing Intel specific functionality");
@@ -181,12 +188,15 @@ class CrossPlatformIT extends BaseIntegrationTest {
     // When - attempt to load native library through JNI loader
     try {
       // Test JNI library loading
-      final Class<?> jniLoaderClass = Class.forName("ai.tegmentum.wasmtime4j.jni.nativelib.NativeLibraryLoader");
-      final java.lang.reflect.Method loadLibraryMethod = jniLoaderClass.getDeclaredMethod("loadLibrary");
+      final Class<?> jniLoaderClass =
+          Class.forName("ai.tegmentum.wasmtime4j.jni.nativelib.NativeLibraryLoader");
+      final java.lang.reflect.Method loadLibraryMethod =
+          jniLoaderClass.getDeclaredMethod("loadLibrary");
       loadLibraryMethod.invoke(null);
 
       // Verify the library was loaded
-      final java.lang.reflect.Method isLoadedMethod = jniLoaderClass.getDeclaredMethod("isLibraryLoaded");
+      final java.lang.reflect.Method isLoadedMethod =
+          jniLoaderClass.getDeclaredMethod("isLibraryLoaded");
       final boolean isLoaded = (boolean) isLoadedMethod.invoke(null);
 
       // Then - verify loading succeeded
@@ -195,7 +205,8 @@ class CrossPlatformIT extends BaseIntegrationTest {
           .isTrue();
 
       // Verify correct library extension for platform
-      final java.lang.reflect.Method getResourcePathMethod = jniLoaderClass.getDeclaredMethod("getLibraryResourcePath");
+      final java.lang.reflect.Method getResourcePathMethod =
+          jniLoaderClass.getDeclaredMethod("getLibraryResourcePath");
       final String resourcePath = (String) getResourcePathMethod.invoke(null);
 
       if (TestUtils.isLinux()) {

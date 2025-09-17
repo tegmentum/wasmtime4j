@@ -104,7 +104,8 @@ public final class PanamaStore implements Store, AutoCloseable {
       final long executionTimeoutSecs,
       final int maxInstances,
       final int maxTableElements,
-      final int maxFunctions) throws WasmException {
+      final int maxFunctions)
+      throws WasmException {
     this.engine = Objects.requireNonNull(engine, "Engine cannot be null");
     this.resourceManager = engine.getResourceManager();
     this.nativeFunctions = NativeFunctionBindings.getInstance();
@@ -115,14 +116,15 @@ public final class PanamaStore implements Store, AutoCloseable {
 
     try {
       // Create the native store with configuration through FFI
-      MemorySegment storePtr = createNativeStoreWithConfig(
-          engine.getEnginePointer(),
-          fuelLimit,
-          memoryLimitBytes,
-          executionTimeoutSecs,
-          maxInstances,
-          maxTableElements,
-          maxFunctions);
+      MemorySegment storePtr =
+          createNativeStoreWithConfig(
+              engine.getEnginePointer(),
+              fuelLimit,
+              memoryLimitBytes,
+              executionTimeoutSecs,
+              maxInstances,
+              maxTableElements,
+              maxFunctions);
       PanamaErrorHandler.requireValidPointer(storePtr, "storePtr");
 
       // Create managed resource with cleanup
@@ -1028,7 +1030,8 @@ public final class PanamaStore implements Store, AutoCloseable {
       final long executionTimeoutSecs,
       final int maxInstances,
       final int maxTableElements,
-      final int maxFunctions) throws WasmException {
+      final int maxFunctions)
+      throws WasmException {
     PanamaErrorHandler.requireValidPointer(enginePtr, "enginePtr");
 
     try {
@@ -1037,19 +1040,22 @@ public final class PanamaStore implements Store, AutoCloseable {
           resourceManager.allocate(MemoryLayouts.C_POINTER);
 
       // Call native store creation function with configuration
-      int result = nativeFunctions.storeCreateWithConfig(
-          enginePtr,
-          storeOutPtr.getSegment(),
-          fuelLimit,
-          memoryLimitBytes,
-          executionTimeoutSecs,
-          maxInstances,
-          maxTableElements,
-          maxFunctions);
+      int result =
+          nativeFunctions.storeCreateWithConfig(
+              enginePtr,
+              storeOutPtr.getSegment(),
+              fuelLimit,
+              memoryLimitBytes,
+              executionTimeoutSecs,
+              maxInstances,
+              maxTableElements,
+              maxFunctions);
 
       // Check for creation errors
       PanamaErrorHandler.safeCheckError(
-          result, "Store creation with config", "WebAssembly store creation with configuration failed");
+          result,
+          "Store creation with config",
+          "WebAssembly store creation with configuration failed");
 
       // Extract the created store pointer
       MemorySegment storePtr =

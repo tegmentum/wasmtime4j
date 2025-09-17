@@ -49,7 +49,8 @@ public final class OptimizedMarshalling {
   private static final int MAX_MARSHALLING_CACHE_SIZE = 512; // Increased cache size
 
   /** Threshold for using direct marshalling vs buffered marshalling. */
-  private static final int DIRECT_MARSHALLING_THRESHOLD = 32; // Lowered threshold for better performance
+  private static final int DIRECT_MARSHALLING_THRESHOLD =
+      32; // Lowered threshold for better performance
 
   /** Thread-local cache for small parameter arrays to avoid allocation. */
   private static final ThreadLocal<Object[]> THREAD_LOCAL_PARAM_CACHE =

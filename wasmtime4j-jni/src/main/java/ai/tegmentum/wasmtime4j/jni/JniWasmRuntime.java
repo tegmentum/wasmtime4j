@@ -179,8 +179,7 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
 
     try {
       if (!(engine instanceof JniEngine)) {
-        throw new IllegalArgumentException(
-            "Engine must be a JniEngine instance for JNI runtime");
+        throw new IllegalArgumentException("Engine must be a JniEngine instance for JNI runtime");
       }
 
       JniEngine jniEngine = (JniEngine) engine;

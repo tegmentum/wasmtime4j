@@ -251,7 +251,10 @@ public final class WasiFileSystem {
    * @throws WasiFileSystemException if the read operation fails
    */
   public int readFileZeroCopy(
-      final int fileDescriptor, final java.lang.foreign.MemorySegment buffer, final int offset, final int length)
+      final int fileDescriptor,
+      final java.lang.foreign.MemorySegment buffer,
+      final int offset,
+      final int length)
       throws WasiFileSystemException {
     PanamaValidation.requireNonNull(buffer, "buffer");
     PanamaValidation.requireNonNegative(offset, "offset");
@@ -262,7 +265,8 @@ public final class WasiFileSystem {
     }
 
     LOGGER.fine(
-        String.format("Zero-copy reading from file descriptor: %d, length: %d", fileDescriptor, length));
+        String.format(
+            "Zero-copy reading from file descriptor: %d, length: %d", fileDescriptor, length));
 
     final WasiFileHandle handle = getFileHandle(fileDescriptor);
     if (!handle.getOperation().requiresReadAccess()) {
@@ -275,7 +279,8 @@ public final class WasiFileSystem {
       final int bytesRead = handle.getChannel().read(byteBuffer);
 
       LOGGER.fine(
-          String.format("Zero-copy read %d bytes from file descriptor: %d", bytesRead, fileDescriptor));
+          String.format(
+              "Zero-copy read %d bytes from file descriptor: %d", bytesRead, fileDescriptor));
 
       return bytesRead;
 
@@ -297,7 +302,10 @@ public final class WasiFileSystem {
    * @throws WasiFileSystemException if the write operation fails
    */
   public int writeFileZeroCopy(
-      final int fileDescriptor, final java.lang.foreign.MemorySegment buffer, final int offset, final int length)
+      final int fileDescriptor,
+      final java.lang.foreign.MemorySegment buffer,
+      final int offset,
+      final int length)
       throws WasiFileSystemException {
     PanamaValidation.requireNonNull(buffer, "buffer");
     PanamaValidation.requireNonNegative(offset, "offset");
@@ -308,7 +316,8 @@ public final class WasiFileSystem {
     }
 
     LOGGER.fine(
-        String.format("Zero-copy writing to file descriptor: %d, length: %d", fileDescriptor, length));
+        String.format(
+            "Zero-copy writing to file descriptor: %d, length: %d", fileDescriptor, length));
 
     final WasiFileHandle handle = getFileHandle(fileDescriptor);
     if (!handle.getOperation().requiresWriteAccess()) {
@@ -321,7 +330,8 @@ public final class WasiFileSystem {
       final int bytesWritten = handle.getChannel().write(byteBuffer);
 
       LOGGER.fine(
-          String.format("Zero-copy wrote %d bytes to file descriptor: %d", bytesWritten, fileDescriptor));
+          String.format(
+              "Zero-copy wrote %d bytes to file descriptor: %d", bytesWritten, fileDescriptor));
 
       return bytesWritten;
 

@@ -320,22 +320,25 @@ public final class PanamaModule implements Module, AutoCloseable {
           ArenaResourceManager.ManagedMemorySegment typeOutPtr =
               resourceManager.allocate(MemoryLayouts.C_SIZE_T); // For type kind
 
-          boolean found = nativeFunctions.moduleImportNth(
-              moduleResource.getNativePointer(),
-              i,
-              nameOutPtr.getSegment(),
-              typeOutPtr.getSegment());
+          boolean found =
+              nativeFunctions.moduleImportNth(
+                  moduleResource.getNativePointer(),
+                  i,
+                  nameOutPtr.getSegment(),
+                  typeOutPtr.getSegment());
 
           if (found) {
             // Extract the import name
-            MemorySegment namePtr = (MemorySegment)
-                MemoryLayouts.C_POINTER.varHandle().get(nameOutPtr.getSegment(), 0);
+            MemorySegment namePtr =
+                (MemorySegment) MemoryLayouts.C_POINTER.varHandle().get(nameOutPtr.getSegment(), 0);
 
             if (namePtr != null && !namePtr.equals(MemorySegment.NULL)) {
               String importName = namePtr.getString(0);
 
-              // Extract type information (simplified - in full implementation would need proper type parsing)
-              long typeKind = (Long) MemoryLayouts.C_SIZE_T.varHandle().get(typeOutPtr.getSegment(), 0);
+              // Extract type information (simplified - in full implementation would need proper
+              // type parsing)
+              long typeKind =
+                  (Long) MemoryLayouts.C_SIZE_T.varHandle().get(typeOutPtr.getSegment(), 0);
               WasmType wasmType = createWasmTypeFromKind(typeKind);
 
               // For now, use empty string as module name - full implementation would extract this
@@ -381,22 +384,25 @@ public final class PanamaModule implements Module, AutoCloseable {
           ArenaResourceManager.ManagedMemorySegment typeOutPtr =
               resourceManager.allocate(MemoryLayouts.C_SIZE_T); // For type kind
 
-          boolean found = nativeFunctions.moduleExportNth(
-              moduleResource.getNativePointer(),
-              i,
-              nameOutPtr.getSegment(),
-              typeOutPtr.getSegment());
+          boolean found =
+              nativeFunctions.moduleExportNth(
+                  moduleResource.getNativePointer(),
+                  i,
+                  nameOutPtr.getSegment(),
+                  typeOutPtr.getSegment());
 
           if (found) {
             // Extract the export name
-            MemorySegment namePtr = (MemorySegment)
-                MemoryLayouts.C_POINTER.varHandle().get(nameOutPtr.getSegment(), 0);
+            MemorySegment namePtr =
+                (MemorySegment) MemoryLayouts.C_POINTER.varHandle().get(nameOutPtr.getSegment(), 0);
 
             if (namePtr != null && !namePtr.equals(MemorySegment.NULL)) {
               String exportName = namePtr.getString(0);
 
-              // Extract type information (simplified - in full implementation would need proper type parsing)
-              long typeKind = (Long) MemoryLayouts.C_SIZE_T.varHandle().get(typeOutPtr.getSegment(), 0);
+              // Extract type information (simplified - in full implementation would need proper
+              // type parsing)
+              long typeKind =
+                  (Long) MemoryLayouts.C_SIZE_T.varHandle().get(typeOutPtr.getSegment(), 0);
               WasmType wasmType = createWasmTypeFromKind(typeKind);
 
               ExportType exportType = new ExportType(exportName, wasmType);
@@ -490,7 +496,11 @@ public final class PanamaModule implements Module, AutoCloseable {
       // Check that all expected imports are provided
       for (ImportType expectedImport : expectedImports) {
         if (!imports.contains(expectedImport.getModuleName(), expectedImport.getName())) {
-          LOGGER.warning("Missing required import: " + expectedImport.getModuleName() + "." + expectedImport.getName());
+          LOGGER.warning(
+              "Missing required import: "
+                  + expectedImport.getModuleName()
+                  + "."
+                  + expectedImport.getName());
           return false;
         }
       }
@@ -1007,9 +1017,7 @@ public final class PanamaModule implements Module, AutoCloseable {
     }
   }
 
-  /**
-   * Simple implementation of WasmType for non-function types.
-   */
+  /** Simple implementation of WasmType for non-function types. */
   private static final class SimpleWasmType implements WasmType {
     private final WasmTypeKind kind;
 

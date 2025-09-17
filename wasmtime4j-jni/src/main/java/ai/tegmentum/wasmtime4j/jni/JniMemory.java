@@ -316,7 +316,8 @@ public final class JniMemory extends JniResource implements WasmMemory {
    * @param destOffset offset in destination array
    * @param length number of bytes to read
    */
-  private void readBytesOptimized(final int offset, final byte[] dest, final int destOffset, final int length) {
+  private void readBytesOptimized(
+      final int offset, final byte[] dest, final int destOffset, final int length) {
     try {
       final ByteBuffer buffer = getBuffer();
       if (buffer != null && buffer.capacity() >= offset + length) {
@@ -345,7 +346,8 @@ public final class JniMemory extends JniResource implements WasmMemory {
    * @param srcOffset offset in source array
    * @param length number of bytes to write
    */
-  private void writeBytesOptimized(final int offset, final byte[] src, final int srcOffset, final int length) {
+  private void writeBytesOptimized(
+      final int offset, final byte[] src, final int srcOffset, final int length) {
     try {
       final ByteBuffer buffer = getBuffer();
       if (buffer != null && buffer.capacity() >= offset + length) {
@@ -412,12 +414,14 @@ public final class JniMemory extends JniResource implements WasmMemory {
         buffer.putInt(offset, value);
       } else {
         // Fallback to byte-by-byte write
-        final byte[] bytes = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(value).array();
+        final byte[] bytes =
+            ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(value).array();
         nativeWriteBytes(getNativeHandle(), offset, bytes);
       }
     } catch (final Exception e) {
       // Fallback to byte-by-byte write
-      final byte[] bytes = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(value).array();
+      final byte[] bytes =
+          ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(value).array();
       nativeWriteBytes(getNativeHandle(), offset, bytes);
     }
   }
