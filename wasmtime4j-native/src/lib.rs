@@ -35,6 +35,7 @@ pub mod hostfunc;
 pub mod memory;
 pub mod global;
 pub mod table;
+pub mod linker;
 
 // Shared FFI architecture with trait-based conversions
 pub mod shared_ffi;
@@ -50,6 +51,9 @@ pub mod panama_ffi;
 // Advanced modules - will be implemented in later tasks
 pub mod wasi;
 
+// Type introspection system
+pub mod type_introspection;
+
 // Component model support for WASI Preview 2
 pub mod component;
 
@@ -63,6 +67,7 @@ pub use hostfunc::{HostFunction, HostFunctionBuilder, HostFunctionCallback, Mars
 pub use memory::{Memory, MemoryBuilder, MemoryConfig, MemoryMetadata, MemoryUsage as MemUsage, MemoryDataType, MemoryRegistry, MemoryError};
 pub use global::{Global, GlobalValue, GlobalMetadata, ReferenceType as GlobalReferenceType};
 pub use table::{Table, TableElement, TableMetadata};
+pub use linker::{Linker, LinkerMetadata, LinkerConfig, LinkerInstantiationResult, HostFunctionDefinition, ImportDefinition, ImportType};
 
 // Re-export component model types for WASI Preview 2 support
 pub use component::{
@@ -77,6 +82,13 @@ pub use wasi::{
     WasiContext, WasiConfig, EnvironmentPolicy, DirectoryMapping,
     WasiDirPermissions, WasiFilePermissions, StdioConfig, StdioSource, StdioSink,
     WasiExecutionResult
+};
+
+// Re-export type introspection types
+pub use type_introspection::{
+    ValueType, MemoryTypeInfo, TableTypeInfo, GlobalTypeInfo, FuncTypeInfo,
+    TypeKind, ImportDescriptorInfo, ExportDescriptorInfo,
+    ModuleTypeIntrospector, InstanceTypeIntrospector
 };
 
 // Re-export shared FFI utilities for interface implementations
