@@ -266,6 +266,9 @@ public final class ConsoleReporter {
       case FAILED_WITH_ISSUES -> exitCode = 2;
       case PASSED_WITH_WARNINGS -> exitCode = Math.max(exitCode, 1);
       case PASSED -> exitCode = Math.min(exitCode, 0);
+      default -> {
+        // No action needed for other verdicts
+      }
     }
   }
 
@@ -405,10 +408,10 @@ public final class ConsoleReporter {
 
     final String exitCodeMessage =
         switch (exitCode) {
-        case 0 -> "All tests passed successfully";
-        case 1 -> "Tests completed with warnings";
-        case 2 -> "Tests failed or encountered errors";
-        default -> "Unknown status";
+          case 0 -> "All tests passed successfully";
+          case 1 -> "Tests completed with warnings";
+          case 2 -> "Tests failed or encountered errors";
+          default -> "Unknown status";
         };
 
     if (useColors) {

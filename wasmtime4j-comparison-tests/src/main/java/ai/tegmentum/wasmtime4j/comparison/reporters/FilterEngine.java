@@ -342,28 +342,28 @@ public final class FilterEngine {
             (a, b) -> {
               int result =
                   switch (sortCriteria.getSortField()) {
-                  case "name" -> a.getTestName().compareTo(b.getTestName());
-                  case "status" -> a.getOverallStatus().compareTo(b.getOverallStatus());
-                  case "critical" -> Boolean.compare(
-                      b.hasCriticalIssues(), a.hasCriticalIssues());
-                  case "discrepancies" -> Integer.compare(
-                      b.getDiscrepancies().size(), a.getDiscrepancies().size());
-                  case "executionTime" -> {
-                    final long avgTimeA =
-                        (long)
-                            a.getRuntimeResults().values().stream()
-                                .mapToLong(r -> r.getExecutionTime().toMillis())
-                                .average()
-                                .orElse(0.0);
-                    final long avgTimeB =
-                        (long)
-                            b.getRuntimeResults().values().stream()
-                                .mapToLong(r -> r.getExecutionTime().toMillis())
-                                .average()
-                                .orElse(0.0);
-                    yield Long.compare(avgTimeA, avgTimeB);
-                  }
-                  default -> 0;
+                    case "name" -> a.getTestName().compareTo(b.getTestName());
+                    case "status" -> a.getOverallStatus().compareTo(b.getOverallStatus());
+                    case "critical" -> Boolean.compare(
+                        b.hasCriticalIssues(), a.hasCriticalIssues());
+                    case "discrepancies" -> Integer.compare(
+                        b.getDiscrepancies().size(), a.getDiscrepancies().size());
+                    case "executionTime" -> {
+                      final long avgTimeA =
+                          (long)
+                              a.getRuntimeResults().values().stream()
+                                  .mapToLong(r -> r.getExecutionTime().toMillis())
+                                  .average()
+                                  .orElse(0.0);
+                      final long avgTimeB =
+                          (long)
+                              b.getRuntimeResults().values().stream()
+                                  .mapToLong(r -> r.getExecutionTime().toMillis())
+                                  .average()
+                                  .orElse(0.0);
+                      yield Long.compare(avgTimeA, avgTimeB);
+                    }
+                    default -> 0;
                   };
 
               return sortCriteria.getSortDirection() == SortDirection.DESCENDING ? -result : result;
