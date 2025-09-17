@@ -1,7 +1,6 @@
 package ai.tegmentum.wasmtime4j.comparison.reporters;
 
 import freemarker.template.Template;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -32,11 +31,13 @@ final class TemplateCache {
 
     this.expirationTimeMs = expirationMinutes * 60 * 1000;
     this.cache = new ConcurrentHashMap<>(maxSize);
-    this.cleanupExecutor = Executors.newSingleThreadScheduledExecutor(r -> {
-      final Thread t = new Thread(r, "TemplateCache-Cleanup");
-      t.setDaemon(true);
-      return t;
-    });
+    this.cleanupExecutor =
+        Executors.newSingleThreadScheduledExecutor(
+            r -> {
+              final Thread t = new Thread(r, "TemplateCache-Cleanup");
+              t.setDaemon(true);
+              return t;
+            });
 
     // Schedule cleanup every minute
     this.cleanupExecutor.scheduleAtFixedRate(this::cleanupExpiredEntries, 1, 1, TimeUnit.MINUTES);
@@ -91,8 +92,9 @@ final class TemplateCache {
     }
 
     final long currentTime = System.currentTimeMillis();
-    cache.entrySet().removeIf(entry ->
-        (currentTime - entry.getValue().timestamp) > expirationTimeMs);
+    cache
+        .entrySet()
+        .removeIf(entry -> (currentTime - entry.getValue().timestamp) > expirationTimeMs);
   }
 
   private static final class CacheEntry {

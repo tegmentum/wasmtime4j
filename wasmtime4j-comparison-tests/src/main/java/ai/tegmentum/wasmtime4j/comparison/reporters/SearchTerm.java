@@ -13,6 +13,14 @@ public final class SearchTerm {
   private final boolean isRegex;
   private final boolean isNegated;
 
+  /**
+   * Creates a new search term.
+   *
+   * @param field the field to search in
+   * @param text the search text
+   * @param isRegex whether the text is a regex pattern
+   * @param isNegated whether this is a negated search
+   */
   public SearchTerm(
       final String field, final String text, final boolean isRegex, final boolean isNegated) {
     this.field = Objects.requireNonNull(field, "field cannot be null");

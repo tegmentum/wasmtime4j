@@ -509,12 +509,24 @@ public final class ReportConfiguration {
         return this;
       }
 
+      /**
+       * Sets the included sections.
+       *
+       * @param includedSections the sections to include
+       * @return this builder
+       */
       public Builder includedSections(final Set<String> includedSections) {
         this.includedSections =
             Objects.requireNonNull(includedSections, "includedSections cannot be null");
         return this;
       }
 
+      /**
+       * Sets the maximum number of test results.
+       *
+       * @param maxTestResults the maximum test results
+       * @return this builder
+       */
       public Builder maxTestResults(final int maxTestResults) {
         if (maxTestResults <= 0) {
           throw new IllegalArgumentException("maxTestResults must be positive");
@@ -705,7 +717,8 @@ public final class ReportConfiguration {
       }
 
       public Builder dateTimeFormat(final DateTimeFormat dateTimeFormat) {
-        this.dateTimeFormat = Objects.requireNonNull(dateTimeFormat, "dateTimeFormat cannot be null");
+        this.dateTimeFormat =
+            Objects.requireNonNull(dateTimeFormat, "dateTimeFormat cannot be null");
         return this;
       }
 
@@ -1030,7 +1043,8 @@ public final class ReportConfiguration {
       }
 
       public Builder customMessages(final Map<String, String> customMessages) {
-        this.customMessages = Objects.requireNonNull(customMessages, "customMessages cannot be null");
+        this.customMessages =
+            Objects.requireNonNull(customMessages, "customMessages cannot be null");
         return this;
       }
 

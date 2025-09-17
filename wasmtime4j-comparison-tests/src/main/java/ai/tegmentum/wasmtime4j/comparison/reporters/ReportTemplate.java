@@ -337,7 +337,7 @@ final class TemplateComponent {
    * @return true if compatible
    */
   public boolean isCompatibleWith(final ReportConfiguration reportConfig) {
-    final ContentConfiguration contentConfig = reportConfig.getContentConfig();
+    final ReportConfiguration.ContentConfiguration contentConfig = reportConfig.getContentConfig();
 
     return switch (componentType) {
       case SUMMARY -> contentConfig.isIncludeSummary();

@@ -10,6 +10,13 @@ public final class CacheStatistics {
   private final long hits;
   private final long misses;
 
+  /**
+   * Creates new cache statistics.
+   *
+   * @param size the current cache size
+   * @param hits the number of cache hits
+   * @param misses the number of cache misses
+   */
   public CacheStatistics(final int size, final long hits, final long misses) {
     this.size = size;
     this.hits = hits;

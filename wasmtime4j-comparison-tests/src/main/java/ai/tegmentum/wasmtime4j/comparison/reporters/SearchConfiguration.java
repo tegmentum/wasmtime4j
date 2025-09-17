@@ -15,6 +15,15 @@ public final class SearchConfiguration {
   private final int maxResults;
   private final boolean highlightMatches;
 
+  /**
+   * Creates a new search configuration.
+   *
+   * @param caseSensitive whether search should be case sensitive
+   * @param useRegex whether to use regex patterns
+   * @param searchFields the fields to search in
+   * @param maxResults the maximum number of results to return
+   * @param highlightMatches whether to highlight matching text
+   */
   public SearchConfiguration(
       final boolean caseSensitive,
       final boolean useRegex,
@@ -23,7 +32,8 @@ public final class SearchConfiguration {
       final boolean highlightMatches) {
     this.caseSensitive = caseSensitive;
     this.useRegex = useRegex;
-    this.searchFields = Set.copyOf(Objects.requireNonNull(searchFields, "searchFields cannot be null"));
+    this.searchFields =
+        Set.copyOf(Objects.requireNonNull(searchFields, "searchFields cannot be null"));
     this.maxResults = maxResults;
     this.highlightMatches = highlightMatches;
   }
@@ -56,7 +66,7 @@ public final class SearchConfiguration {
         Set.of("testName", "description", "error"), // search fields
         100, // max results
         true // highlight matches
-    );
+        );
   }
 
   @Override

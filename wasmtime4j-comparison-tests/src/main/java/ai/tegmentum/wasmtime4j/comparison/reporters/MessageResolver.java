@@ -21,7 +21,8 @@ final class MessageResolver {
   private final ResourceBundle resourceBundle;
 
   public MessageResolver(final String resourceBundleName, final Locale locale) {
-    this.resourceBundleName = Objects.requireNonNull(resourceBundleName, "resourceBundleName cannot be null");
+    this.resourceBundleName =
+        Objects.requireNonNull(resourceBundleName, "resourceBundleName cannot be null");
     this.locale = Objects.requireNonNull(locale, "locale cannot be null");
     this.resourceBundle = loadResourceBundle();
   }
@@ -96,8 +97,10 @@ final class MessageResolver {
     try {
       return ResourceBundle.getBundle(resourceBundleName, locale);
     } catch (final MissingResourceException e) {
-      LOGGER.log(Level.WARNING, "Could not load resource bundle: {0} for locale: {1}",
-          new Object[]{resourceBundleName, locale});
+      LOGGER.log(
+          Level.WARNING,
+          "Could not load resource bundle: {0} for locale: {1}",
+          new Object[] {resourceBundleName, locale});
       return null;
     }
   }

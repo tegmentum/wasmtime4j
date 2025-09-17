@@ -36,6 +36,11 @@ public final class DashboardGenerator {
   private Server jettyServer;
   private boolean isRunning;
 
+  /**
+   * Creates a new dashboard generator.
+   *
+   * @param configuration the dashboard configuration
+   */
   public DashboardGenerator(final DashboardConfiguration configuration) {
     this.configuration = Objects.requireNonNull(configuration, "configuration cannot be null");
     this.htmlReporter = new HtmlReporter(createHtmlReporterConfiguration());
