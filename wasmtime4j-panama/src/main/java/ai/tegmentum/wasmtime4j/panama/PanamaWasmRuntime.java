@@ -20,6 +20,7 @@ import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.EngineConfig;
 import ai.tegmentum.wasmtime4j.ImportMap;
 import ai.tegmentum.wasmtime4j.Instance;
+import ai.tegmentum.wasmtime4j.Linker;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.RuntimeInfo;
 import ai.tegmentum.wasmtime4j.RuntimeType;
@@ -161,6 +162,26 @@ public final class PanamaWasmRuntime implements WasmRuntime {
 
       PanamaEngine panamaEngine = (PanamaEngine) engine;
       return new PanamaStore(panamaEngine);
+    } catch (Exception e) {
+      throw exceptionMapper.mapException(e);
+    }
+  }
+
+  @Override
+  public Linker createLinker(final Engine engine) throws WasmException {
+    ensureNotClosed();
+
+    if (engine == null) {
+      throw new IllegalArgumentException("Engine cannot be null");
+    }
+
+    try {
+      if (!(engine instanceof PanamaEngine)) {
+        throw new IllegalArgumentException(
+            "Engine must be a PanamaEngine instance for Panama runtime");
+      }
+
+      return PanamaLinker.create(engine);
     } catch (Exception e) {
       throw exceptionMapper.mapException(e);
     }
