@@ -536,6 +536,7 @@ public final class ReportConfiguration {
       }
 
       /** Sets the recommendation level for the report configuration.
+       *
        * @param recommendationLevel the recommendation level to set
        * @return this builder instance
        */
@@ -734,6 +735,11 @@ public final class ReportConfiguration {
         return this;
       }
 
+      /** Sets the number format for the report.
+       *
+       * @param numberFormat the number format to set
+       * @return this builder instance
+       */
       public Builder numberFormat(final NumberFormat numberFormat) {
         this.numberFormat = Objects.requireNonNull(numberFormat, "numberFormat cannot be null");
         return this;
@@ -1045,6 +1051,10 @@ public final class ReportConfiguration {
       private Map<String, String> customMessages = Collections.emptyMap();
       private String resourceBundleName = "comparison-messages";
 
+      /** Creates a new builder for LocalizationConfiguration.
+       *
+       * @param locale the locale to use
+       */
       public Builder(final Locale locale) {
         this.locale = Objects.requireNonNull(locale, "locale cannot be null");
       }
