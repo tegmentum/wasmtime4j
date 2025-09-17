@@ -110,7 +110,7 @@ pub struct FunctionDefinition {
     /// Function parameters
     pub parameters: Vec<Parameter>,
     /// Function return types
-    pub results: Vec<ValueType>,
+    pub results: Vec<ComponentValueType>,
 }
 
 /// Parameter definition for WIT functions
@@ -119,7 +119,7 @@ pub struct Parameter {
     /// Parameter name
     pub name: String,
     /// Parameter type
-    pub value_type: ValueType,
+    pub value_type: ComponentValueType,
 }
 
 /// Type definition within a WIT interface
@@ -128,7 +128,7 @@ pub struct TypeDefinition {
     /// Type name
     pub name: String,
     /// Type kind (record, variant, enum, etc.)
-    pub kind: TypeKind,
+    pub kind: ComponentTypeKind,
 }
 
 /// Resource definition within a WIT interface
@@ -144,7 +144,7 @@ pub struct ResourceDefinition {
 
 /// WebAssembly Component Model value types
 #[derive(Debug, Clone)]
-pub enum ValueType {
+pub enum ComponentValueType {
     /// Boolean type
     Bool,
     /// 8-bit signed integer
@@ -170,15 +170,15 @@ pub enum ValueType {
     /// Unicode string
     String,
     /// List of values
-    List(Box<ValueType>),
+    List(Box<ComponentValueType>),
     /// Optional value
-    Option(Box<ValueType>),
+    Option(Box<ComponentValueType>),
     /// Result type with success and error cases
     Result { 
         /// Success value type
-        ok: Option<Box<ValueType>>, 
+        ok: Option<Box<ComponentValueType>>, 
         /// Error value type
-        err: Option<Box<ValueType>> 
+        err: Option<Box<ComponentValueType>> 
     },
     /// Record type with named fields
     Record(Vec<FieldType>),
@@ -194,7 +194,7 @@ pub enum ValueType {
 
 /// Type kind for WIT type definitions
 #[derive(Debug, Clone)]
-pub enum TypeKind {
+pub enum ComponentTypeKind {
     /// Record type with named fields
     Record(Vec<FieldType>),
     /// Variant type with multiple cases
@@ -202,7 +202,7 @@ pub enum TypeKind {
     /// Enum type with named values
     Enum(Vec<String>),
     /// Type alias
-    Alias(ValueType),
+    Alias(ComponentValueType),
 }
 
 /// Field type for record types
@@ -211,7 +211,7 @@ pub struct FieldType {
     /// Field name
     pub name: String,
     /// Field type
-    pub value_type: ValueType,
+    pub value_type: ComponentValueType,
 }
 
 /// Case type for variant types
@@ -220,7 +220,7 @@ pub struct CaseType {
     /// Case name
     pub name: String,
     /// Optional case payload type
-    pub payload: Option<ValueType>,
+    pub payload: Option<ComponentValueType>,
 }
 
 /// Resource manager for automatic component cleanup
@@ -914,21 +914,21 @@ mod tests {
     #[test]
     fn test_value_type_variants() {
         let types = vec![
-            ValueType::Bool,
-            ValueType::S8,
-            ValueType::U8,
-            ValueType::S16,
-            ValueType::U16,
-            ValueType::S32,
-            ValueType::U32,
-            ValueType::S64,
-            ValueType::U64,
-            ValueType::Float32,
-            ValueType::Float64,
-            ValueType::String,
-            ValueType::List(Box::new(ValueType::String)),
-            ValueType::Option(Box::new(ValueType::Bool)),
-            ValueType::Result { ok: Some(Box::new(ValueType::S32)), err: Some(Box::new(ValueType::String)) },
+            ComponentValueType::Bool,
+            ComponentValueType::S8,
+            ComponentValueType::U8,
+            ComponentValueType::S16,
+            ComponentValueType::U16,
+            ComponentValueType::S32,
+            ComponentValueType::U32,
+            ComponentValueType::S64,
+            ComponentValueType::U64,
+            ComponentValueType::Float32,
+            ComponentValueType::Float64,
+            ComponentValueType::String,
+            ComponentValueType::List(Box::new(ComponentValueType::String)),
+            ComponentValueType::Option(Box::new(ComponentValueType::Bool)),
+            ComponentValueType::Result { ok: Some(Box::new(ComponentValueType::S32)), err: Some(Box::new(ComponentValueType::String)) },
         ];
 
         // Test that all value types can be created and cloned
@@ -936,10 +936,10 @@ mod tests {
             let cloned = value_type.clone();
             // Basic test - ensure types can be constructed and cloned
             match cloned {
-                ValueType::Bool => assert!(true),
-                ValueType::List(_) => assert!(true),
-                ValueType::Option(_) => assert!(true),
-                ValueType::Result { .. } => assert!(true),
+                ComponentValueType::Bool => assert!(true),
+                ComponentValueType::List(_) => assert!(true),
+                ComponentValueType::Option(_) => assert!(true),
+                ComponentValueType::Result { .. } => assert!(true),
                 _ => assert!(true),
             }
         }
