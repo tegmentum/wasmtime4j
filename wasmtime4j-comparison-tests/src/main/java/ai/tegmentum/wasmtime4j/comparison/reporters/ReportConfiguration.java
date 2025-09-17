@@ -717,6 +717,7 @@ public final class ReportConfiguration {
       }
 
       /** Sets whether to include line numbers in the report.
+       *
        * @param includeLineNumbers true to include line numbers
        * @return this builder instance
        */
@@ -726,6 +727,7 @@ public final class ReportConfiguration {
       }
 
       /** Sets the date time format for the report.
+       *
        * @param dateTimeFormat the date time format to set
        * @return this builder instance
        */
@@ -745,6 +747,11 @@ public final class ReportConfiguration {
         return this;
       }
 
+      /** Sets the maximum line length for the report.
+       *
+       * @param maxLineLength the maximum line length to set
+       * @return this builder instance
+       */
       public Builder maxLineLength(final int maxLineLength) {
         if (maxLineLength <= 0) {
           throw new IllegalArgumentException("maxLineLength must be positive");
@@ -1069,6 +1076,11 @@ public final class ReportConfiguration {
         return this;
       }
 
+      /** Sets custom messages for localization.
+       *
+       * @param customMessages the custom messages map to set
+       * @return this builder instance
+       */
       public Builder customMessages(final Map<String, String> customMessages) {
         this.customMessages =
             Objects.requireNonNull(customMessages, "customMessages cannot be null");
@@ -1252,21 +1264,41 @@ public final class ReportConfiguration {
       private boolean streamOutput = false;
       private int outputBufferSize = 8192;
 
+      /** Sets whether to generate HTML output.
+       *
+       * @param generateHtml true to generate HTML output
+       * @return this builder instance
+       */
       public Builder generateHtml(final boolean generateHtml) {
         this.generateHtml = generateHtml;
         return this;
       }
 
+      /** Sets whether to generate JSON output.
+       *
+       * @param generateJson true to generate JSON output
+       * @return this builder instance
+       */
       public Builder generateJson(final boolean generateJson) {
         this.generateJson = generateJson;
         return this;
       }
 
+      /** Sets whether to generate CSV output.
+       *
+       * @param generateCsv true to generate CSV output
+       * @return this builder instance
+       */
       public Builder generateCsv(final boolean generateCsv) {
         this.generateCsv = generateCsv;
         return this;
       }
 
+      /** Sets whether to generate console output.
+       *
+       * @param generateConsole true to generate console output
+       * @return this builder instance
+       */
       public Builder generateConsole(final boolean generateConsole) {
         this.generateConsole = generateConsole;
         return this;
@@ -1277,6 +1309,11 @@ public final class ReportConfiguration {
         return this;
       }
 
+      /** Sets the maximum cache size.
+       *
+       * @param maxCacheSize the maximum cache size to set
+       * @return this builder instance
+       */
       public Builder maxCacheSize(final int maxCacheSize) {
         if (maxCacheSize < 0) {
           throw new IllegalArgumentException("maxCacheSize cannot be negative");
@@ -1285,6 +1322,11 @@ public final class ReportConfiguration {
         return this;
       }
 
+      /** Sets the cache expiration time in minutes.
+       *
+       * @param cacheExpirationMinutes the cache expiration time to set
+       * @return this builder instance
+       */
       public Builder cacheExpirationMinutes(final long cacheExpirationMinutes) {
         if (cacheExpirationMinutes < 0) {
           throw new IllegalArgumentException("cacheExpirationMinutes cannot be negative");
@@ -1293,11 +1335,21 @@ public final class ReportConfiguration {
         return this;
       }
 
+      /** Sets whether to use streaming output.
+       *
+       * @param streamOutput true to enable streaming output
+       * @return this builder instance
+       */
       public Builder streamOutput(final boolean streamOutput) {
         this.streamOutput = streamOutput;
         return this;
       }
 
+      /** Sets the output buffer size.
+       *
+       * @param outputBufferSize the output buffer size to set
+       * @return this builder instance
+       */
       public Builder outputBufferSize(final int outputBufferSize) {
         if (outputBufferSize <= 0) {
           throw new IllegalArgumentException("outputBufferSize must be positive");
