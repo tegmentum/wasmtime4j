@@ -672,9 +672,12 @@ public final class PanamaHostFunction implements WasmFunction {
     } else if (returnTypes.length == 1) {
       return extractNativeValue(wasmResults[0]);
     } else {
-      // Multiple return values - pack into memory segment
-      // This would require more complex marshaling
-      throw new UnsupportedOperationException("Multiple return values not yet implemented");
+      // Multiple return values - return as an array
+      final Object[] results = new Object[wasmResults.length];
+      for (int i = 0; i < wasmResults.length; i++) {
+        results[i] = extractNativeValue(wasmResults[i]);
+      }
+      return results;
     }
   }
 

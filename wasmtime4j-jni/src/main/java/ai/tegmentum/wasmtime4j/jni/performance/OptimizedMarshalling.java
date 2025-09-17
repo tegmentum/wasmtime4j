@@ -463,11 +463,9 @@ public final class OptimizedMarshalling {
         }
         break;
       case EXTERNREF:
-        // Note: externRef() method may not be available yet
-        throw new UnsupportedOperationException("EXTERNREF unmarshalling not yet implemented");
+        return WasmValue.externref(nativeResult);
       case FUNCREF:
-        // Note: funcRef() method may not be available yet
-        throw new UnsupportedOperationException("FUNCREF unmarshalling not yet implemented");
+        return WasmValue.funcref(nativeResult);
       default:
         throw new IllegalArgumentException("Unsupported result type: " + expectedType);
     }
