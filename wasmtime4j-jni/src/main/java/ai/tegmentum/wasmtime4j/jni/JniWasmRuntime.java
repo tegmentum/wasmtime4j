@@ -4,6 +4,7 @@ import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.EngineConfig;
 import ai.tegmentum.wasmtime4j.ImportMap;
 import ai.tegmentum.wasmtime4j.Instance;
+import ai.tegmentum.wasmtime4j.Linker;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.RuntimeInfo;
 import ai.tegmentum.wasmtime4j.RuntimeType;
@@ -184,6 +185,24 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
 
       JniEngine jniEngine = (JniEngine) engine;
       return jniEngine.createStore();
+    } catch (Exception e) {
+      throw JniExceptionMapper.mapException(e);
+    }
+  }
+
+  @Override
+  public Linker createLinker(final Engine engine) throws WasmException {
+    JniValidation.requireNonNull(engine, "engine");
+    if (!isValid()) {
+      throw new IllegalStateException("JNI runtime is not valid or has been closed");
+    }
+
+    try {
+      if (!(engine instanceof JniEngine)) {
+        throw new IllegalArgumentException("Engine must be a JniEngine instance for JNI runtime");
+      }
+
+      return JniLinker.create(engine);
     } catch (Exception e) {
       throw JniExceptionMapper.mapException(e);
     }

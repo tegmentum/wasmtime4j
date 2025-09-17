@@ -76,6 +76,20 @@ public interface WasmRuntime extends Closeable {
   Store createStore(final Engine engine) throws WasmException;
 
   /**
+   * Creates a new linker for the given engine.
+   *
+   * <p>A linker provides the mechanism to define host functions and bind imports before
+   * instantiating WebAssembly modules. It serves as a pre-instantiation environment where
+   * you can register functions, memories, tables, and globals that modules can import.
+   *
+   * @param engine the engine to create the linker for
+   * @return a new Linker instance
+   * @throws WasmException if linker creation fails
+   * @throws IllegalArgumentException if engine is null
+   */
+  Linker createLinker(final Engine engine) throws WasmException;
+
+  /**
    * Creates an instance of a WebAssembly module.
    *
    * <p>This method instantiates a compiled module, making its exported functions and memory
