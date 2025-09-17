@@ -537,4 +537,3 @@ public final class DashboardGenerator {
     }
   }
 }
-

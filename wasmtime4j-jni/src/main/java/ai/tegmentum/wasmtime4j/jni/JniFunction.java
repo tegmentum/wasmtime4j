@@ -68,6 +68,7 @@ public final class JniFunction extends JniResource implements WasmFunction {
 
   /** Hot path optimization - cache the most frequently called function signature. */
   private volatile Object[] cachedNativeParams;
+
   private volatile String cachedParamSignature;
   private volatile long lastOptimizationCheck = 0;
   private static final long OPTIMIZATION_CHECK_INTERVAL = 1000; // Check every 1000 calls
@@ -533,9 +534,11 @@ public final class JniFunction extends JniResource implements WasmFunction {
         cachedNativeParams = JniTypeConverter.wasmValuesToNativeParams(params);
         cachedParamSignature = paramSignature;
         lastOptimizationCheck = System.currentTimeMillis();
-        LOGGER.fine("Optimized hot path for function '" + name + "' with signature: " + paramSignature);
+        LOGGER.fine(
+            "Optimized hot path for function '" + name + "' with signature: " + paramSignature);
       } catch (final Exception e) {
-        LOGGER.warning("Failed to optimize hot path for function '" + name + "': " + e.getMessage());
+        LOGGER.warning(
+            "Failed to optimize hot path for function '" + name + "': " + e.getMessage());
       }
     }
   }
@@ -584,7 +587,8 @@ public final class JniFunction extends JniResource implements WasmFunction {
         }
       } else {
         // Use optimized marshalling for larger sets
-        nativeParams = ai.tegmentum.wasmtime4j.jni.performance.OptimizedMarshalling.marshalParameters(params);
+        nativeParams =
+            ai.tegmentum.wasmtime4j.jni.performance.OptimizedMarshalling.marshalParameters(params);
       }
 
       // Direct native call without additional overhead

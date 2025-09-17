@@ -16,14 +16,13 @@
 
 package ai.tegmentum.wasmtime4j.panama;
 
-import ai.tegmentum.wasmtime4j.WasmValueType;
 import java.util.logging.Logger;
 
 /**
  * Test utilities for Panama-specific WebAssembly operations.
  *
- * <p>This utility class provides helper methods for creating test WebAssembly modules
- * and performing Panama-specific operations in tests.
+ * <p>This utility class provides helper methods for creating test WebAssembly modules and
+ * performing Panama-specific operations in tests.
  */
 public final class PanamaTestUtils {
 
@@ -62,11 +61,40 @@ public final class PanamaTestUtils {
     //   (export "test_global" (global $test_global))
     // )
     return new byte[] {
-        0x00, 0x61, 0x73, 0x6d, // WASM magic number
-        0x01, 0x00, 0x00, 0x00, // Version 1
-        0x06, 0x07, 0x01, 0x7f, 0x01, 0x41, (byte) initialValue, 0x0b, // Global section
-        0x07, 0x10, 0x01, 0x0b, 0x74, 0x65, 0x73, 0x74, 0x5f, 0x67, 0x6c, 0x6f, 0x62, 0x61, 0x6c, 0x03, 0x00
-        // Export section
+      0x00,
+      0x61,
+      0x73,
+      0x6d, // WASM magic number
+      0x01,
+      0x00,
+      0x00,
+      0x00, // Version 1
+      0x06,
+      0x07,
+      0x01,
+      0x7f,
+      0x01,
+      0x41,
+      (byte) initialValue,
+      0x0b, // Global section
+      0x07,
+      0x10,
+      0x01,
+      0x0b,
+      0x74,
+      0x65,
+      0x73,
+      0x74,
+      0x5f,
+      0x67,
+      0x6c,
+      0x6f,
+      0x62,
+      0x61,
+      0x6c,
+      0x03,
+      0x00
+      // Export section
     };
   }
 
@@ -83,11 +111,40 @@ public final class PanamaTestUtils {
     //   (export "test_global" (global $test_global))
     // )
     return new byte[] {
-        0x00, 0x61, 0x73, 0x6d, // WASM magic number
-        0x01, 0x00, 0x00, 0x00, // Version 1
-        0x06, 0x07, 0x01, 0x7f, 0x00, 0x41, (byte) value, 0x0b, // Global section (immutable)
-        0x07, 0x10, 0x01, 0x0b, 0x74, 0x65, 0x73, 0x74, 0x5f, 0x67, 0x6c, 0x6f, 0x62, 0x61, 0x6c, 0x03, 0x00
-        // Export section
+      0x00,
+      0x61,
+      0x73,
+      0x6d, // WASM magic number
+      0x01,
+      0x00,
+      0x00,
+      0x00, // Version 1
+      0x06,
+      0x07,
+      0x01,
+      0x7f,
+      0x00,
+      0x41,
+      (byte) value,
+      0x0b, // Global section (immutable)
+      0x07,
+      0x10,
+      0x01,
+      0x0b,
+      0x74,
+      0x65,
+      0x73,
+      0x74,
+      0x5f,
+      0x67,
+      0x6c,
+      0x6f,
+      0x62,
+      0x61,
+      0x6c,
+      0x03,
+      0x00
+      // Export section
     };
   }
 
@@ -107,16 +164,65 @@ public final class PanamaTestUtils {
     //   (export "global3" (global $global3))
     // )
     return new byte[] {
-        0x00, 0x61, 0x73, 0x6d, // WASM magic number
-        0x01, 0x00, 0x00, 0x00, // Version 1
-        0x06, 0x15, 0x03, // Global section with 3 globals
-        0x7f, 0x01, 0x41, 0x01, 0x0b, // Global 1: mutable i32, value 1
-        0x7f, 0x01, 0x41, 0x02, 0x0b, // Global 2: mutable i32, value 2
-        0x7f, 0x00, 0x41, 0x03, 0x0b, // Global 3: immutable i32, value 3
-        0x07, 0x20, 0x03, // Export section with 3 exports
-        0x07, 0x67, 0x6c, 0x6f, 0x62, 0x61, 0x6c, 0x31, 0x03, 0x00, // Export "global1" -> global 0
-        0x07, 0x67, 0x6c, 0x6f, 0x62, 0x61, 0x6c, 0x32, 0x03, 0x01, // Export "global2" -> global 1
-        0x07, 0x67, 0x6c, 0x6f, 0x62, 0x61, 0x6c, 0x33, 0x03, 0x02  // Export "global3" -> global 2
+      0x00,
+      0x61,
+      0x73,
+      0x6d, // WASM magic number
+      0x01,
+      0x00,
+      0x00,
+      0x00, // Version 1
+      0x06,
+      0x15,
+      0x03, // Global section with 3 globals
+      0x7f,
+      0x01,
+      0x41,
+      0x01,
+      0x0b, // Global 1: mutable i32, value 1
+      0x7f,
+      0x01,
+      0x41,
+      0x02,
+      0x0b, // Global 2: mutable i32, value 2
+      0x7f,
+      0x00,
+      0x41,
+      0x03,
+      0x0b, // Global 3: immutable i32, value 3
+      0x07,
+      0x20,
+      0x03, // Export section with 3 exports
+      0x07,
+      0x67,
+      0x6c,
+      0x6f,
+      0x62,
+      0x61,
+      0x6c,
+      0x31,
+      0x03,
+      0x00, // Export "global1" -> global 0
+      0x07,
+      0x67,
+      0x6c,
+      0x6f,
+      0x62,
+      0x61,
+      0x6c,
+      0x32,
+      0x03,
+      0x01, // Export "global2" -> global 1
+      0x07,
+      0x67,
+      0x6c,
+      0x6f,
+      0x62,
+      0x61,
+      0x6c,
+      0x33,
+      0x03,
+      0x02 // Export "global3" -> global 2
     };
   }
 
@@ -131,10 +237,14 @@ public final class PanamaTestUtils {
   public static PanamaGlobal getGlobalFromInstance(PanamaInstance instance, String globalName) {
     try {
       // Get the global export from the instance
-      return (PanamaGlobal) instance.getGlobal(globalName)
-          .orElseThrow(() -> new IllegalArgumentException("Global '" + globalName + "' not found"));
+      return (PanamaGlobal)
+          instance
+              .getGlobal(globalName)
+              .orElseThrow(
+                  () -> new IllegalArgumentException("Global '" + globalName + "' not found"));
     } catch (Exception e) {
-      throw new IllegalArgumentException("Failed to get global '" + globalName + "': " + e.getMessage(), e);
+      throw new IllegalArgumentException(
+          "Failed to get global '" + globalName + "': " + e.getMessage(), e);
     }
   }
 }

@@ -535,7 +535,8 @@ public final class ReportConfiguration {
         return this;
       }
 
-      /** Sets the recommendation level for the report configuration.
+      /**
+       * Sets the recommendation level for the report configuration.
        *
        * @param recommendationLevel the recommendation level to set
        * @return this builder instance
@@ -716,7 +717,8 @@ public final class ReportConfiguration {
         return this;
       }
 
-      /** Sets whether to include line numbers in the report.
+      /**
+       * Sets whether to include line numbers in the report.
        *
        * @param includeLineNumbers true to include line numbers
        * @return this builder instance
@@ -726,7 +728,8 @@ public final class ReportConfiguration {
         return this;
       }
 
-      /** Sets the date time format for the report.
+      /**
+       * Sets the date time format for the report.
        *
        * @param dateTimeFormat the date time format to set
        * @return this builder instance
@@ -737,7 +740,8 @@ public final class ReportConfiguration {
         return this;
       }
 
-      /** Sets the number format for the report.
+      /**
+       * Sets the number format for the report.
        *
        * @param numberFormat the number format to set
        * @return this builder instance
@@ -747,7 +751,8 @@ public final class ReportConfiguration {
         return this;
       }
 
-      /** Sets the maximum line length for the report.
+      /**
+       * Sets the maximum line length for the report.
        *
        * @param maxLineLength the maximum line length to set
        * @return this builder instance
@@ -1058,7 +1063,8 @@ public final class ReportConfiguration {
       private Map<String, String> customMessages = Collections.emptyMap();
       private String resourceBundleName = "comparison-messages";
 
-      /** Creates a new builder for LocalizationConfiguration.
+      /**
+       * Creates a new builder for LocalizationConfiguration.
        *
        * @param locale the locale to use
        */
@@ -1066,7 +1072,8 @@ public final class ReportConfiguration {
         this.locale = Objects.requireNonNull(locale, "locale cannot be null");
       }
 
-      /** Sets the time zone for localization.
+      /**
+       * Sets the time zone for localization.
        *
        * @param timeZone the time zone to set
        * @return this builder instance
@@ -1076,7 +1083,8 @@ public final class ReportConfiguration {
         return this;
       }
 
-      /** Sets custom messages for localization.
+      /**
+       * Sets custom messages for localization.
        *
        * @param customMessages the custom messages map to set
        * @return this builder instance
@@ -1264,7 +1272,8 @@ public final class ReportConfiguration {
       private boolean streamOutput = false;
       private int outputBufferSize = 8192;
 
-      /** Sets whether to generate HTML output.
+      /**
+       * Sets whether to generate HTML output.
        *
        * @param generateHtml true to generate HTML output
        * @return this builder instance
@@ -1274,7 +1283,8 @@ public final class ReportConfiguration {
         return this;
       }
 
-      /** Sets whether to generate JSON output.
+      /**
+       * Sets whether to generate JSON output.
        *
        * @param generateJson true to generate JSON output
        * @return this builder instance
@@ -1284,7 +1294,8 @@ public final class ReportConfiguration {
         return this;
       }
 
-      /** Sets whether to generate CSV output.
+      /**
+       * Sets whether to generate CSV output.
        *
        * @param generateCsv true to generate CSV output
        * @return this builder instance
@@ -1294,7 +1305,8 @@ public final class ReportConfiguration {
         return this;
       }
 
-      /** Sets whether to generate console output.
+      /**
+       * Sets whether to generate console output.
        *
        * @param generateConsole true to generate console output
        * @return this builder instance
@@ -1309,7 +1321,8 @@ public final class ReportConfiguration {
         return this;
       }
 
-      /** Sets the maximum cache size.
+      /**
+       * Sets the maximum cache size.
        *
        * @param maxCacheSize the maximum cache size to set
        * @return this builder instance
@@ -1322,7 +1335,8 @@ public final class ReportConfiguration {
         return this;
       }
 
-      /** Sets the cache expiration time in minutes.
+      /**
+       * Sets the cache expiration time in minutes.
        *
        * @param cacheExpirationMinutes the cache expiration time to set
        * @return this builder instance
@@ -1335,7 +1349,8 @@ public final class ReportConfiguration {
         return this;
       }
 
-      /** Sets whether to use streaming output.
+      /**
+       * Sets whether to use streaming output.
        *
        * @param streamOutput true to enable streaming output
        * @return this builder instance
@@ -1345,7 +1360,8 @@ public final class ReportConfiguration {
         return this;
       }
 
-      /** Sets the output buffer size.
+      /**
+       * Sets the output buffer size.
        *
        * @param outputBufferSize the output buffer size to set
        * @return this builder instance

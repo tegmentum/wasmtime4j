@@ -165,7 +165,8 @@ public final class PanamaErrorHandler {
    * @param operation the operation description for error messages
    * @throws WasmException if the error code indicates an error
    */
-  public static void checkErrorCode(final int errorCode, final String operation) throws WasmException {
+  public static void checkErrorCode(final int errorCode, final String operation)
+      throws WasmException {
     if (errorCode != NATIVE_ERROR_NONE) {
       final String description = getErrorDescription(errorCode);
       final String message = operation != null ? operation + ": " + description : description;
@@ -181,8 +182,8 @@ public final class PanamaErrorHandler {
    * @param args the format arguments
    * @throws WasmException if the error code indicates an error
    */
-  public static void checkErrorCode(final int errorCode, final String format,
-      final Object... args) throws WasmException {
+  public static void checkErrorCode(final int errorCode, final String format, final Object... args)
+      throws WasmException {
     if (errorCode != NATIVE_ERROR_NONE) {
       final String operation = format != null ? String.format(format, args) : null;
       final String description = getErrorDescription(errorCode);
@@ -199,8 +200,9 @@ public final class PanamaErrorHandler {
    * @param defaultMessage the default message if error struct is null
    * @throws WasmException if the error struct indicates an error
    */
-  public static void checkErrorStruct(final Object errorStruct, final String operation,
-      final String defaultMessage) throws WasmException {
+  public static void checkErrorStruct(
+      final Object errorStruct, final String operation, final String defaultMessage)
+      throws WasmException {
     // For Panama implementation, this would typically check a native error struct
     // For now, we assume null means no error
     if (errorStruct != null) {
@@ -217,14 +219,14 @@ public final class PanamaErrorHandler {
    * @param nativeMessage the native error message (may be null)
    * @return a detailed error message
    */
-  public static String createDetailedErrorMessage(final String operation, final Integer errorCode,
-      final String nativeMessage) {
+  public static String createDetailedErrorMessage(
+      final String operation, final Integer errorCode, final String nativeMessage) {
     final StringBuilder message = new StringBuilder();
-    
+
     if (operation != null && !operation.trim().isEmpty()) {
       message.append(operation).append(": ");
     }
-    
+
     if (errorCode != null) {
       message.append(getErrorDescription(errorCode));
       if (nativeMessage != null && !nativeMessage.trim().isEmpty()) {
@@ -235,7 +237,7 @@ public final class PanamaErrorHandler {
     } else {
       message.append("Unknown error");
     }
-    
+
     return message.toString();
   }
 
@@ -247,8 +249,8 @@ public final class PanamaErrorHandler {
    * @param nativeMessage the native error message (may be null)
    * @return a detailed error message
    */
-  public static String createDetailedErrorMessage(final String operation, final String context,
-      final String nativeMessage) {
+  public static String createDetailedErrorMessage(
+      final String operation, final String context, final String nativeMessage) {
     final StringBuilder message = new StringBuilder();
 
     if (operation != null && !operation.trim().isEmpty()) {
@@ -377,7 +379,6 @@ public final class PanamaErrorHandler {
     return value;
   }
 
-
   /**
    * Safely checks an error code and throws appropriate exception.
    *
@@ -386,8 +387,8 @@ public final class PanamaErrorHandler {
    * @param context additional context information
    * @throws WasmException if error code indicates an error
    */
-  public static void safeCheckError(final int errorCode, final String operation,
-      final String context) throws WasmException {
+  public static void safeCheckError(
+      final int errorCode, final String operation, final String context) throws WasmException {
     if (errorCode != NATIVE_ERROR_NONE) {
       final String description = getErrorDescription(errorCode);
       final String message = createDetailedErrorMessage(operation, errorCode, context);
@@ -420,9 +421,8 @@ public final class PanamaErrorHandler {
       return (WasmException) throwable;
     }
 
-    final String message = context != null
-        ? context + ": " + throwable.getMessage()
-        : throwable.getMessage();
+    final String message =
+        context != null ? context + ": " + throwable.getMessage() : throwable.getMessage();
     return new WasmException(message != null ? message : "Unknown error", throwable);
   }
 
@@ -433,7 +433,8 @@ public final class PanamaErrorHandler {
    * @param message the error message
    * @throws WasmException appropriate exception type based on error code
    */
-  private static void throwAppropriateException(final int errorCode, final String message) throws WasmException {
+  private static void throwAppropriateException(final int errorCode, final String message)
+      throws WasmException {
     switch (errorCode) {
       case NATIVE_ERROR_COMPILATION:
         throw new CompilationException(message);
@@ -472,11 +473,11 @@ public final class PanamaErrorHandler {
    */
   public static int requireValidIndex(final int index, final int size, final String parameterName) {
     if (index < 0 || index >= size) {
-      throw new IndexOutOfBoundsException(parameterName + " index " + index + " is out of bounds for size " + size);
+      throw new IndexOutOfBoundsException(
+          parameterName + " index " + index + " is out of bounds for size " + size);
     }
     return index;
   }
-
 
   /**
    * Validates that an operation succeeded.
@@ -489,8 +490,8 @@ public final class PanamaErrorHandler {
    */
   public static <T> T requireSuccess(final T result, final String operation) {
     if (result == null) {
-      final String message = (operation != null ? operation + ": " : "")
-          + "Operation failed (null result)";
+      final String message =
+          (operation != null ? operation + ": " : "") + "Operation failed (null result)";
       throw new IllegalArgumentException(message);
     }
     return result;

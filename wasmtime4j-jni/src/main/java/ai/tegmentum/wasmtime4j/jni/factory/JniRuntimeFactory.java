@@ -1,7 +1,6 @@
 package ai.tegmentum.wasmtime4j.jni.factory;
 
 import ai.tegmentum.wasmtime4j.jni.JniWasmRuntime;
-// import ai.tegmentum.wasmtime4j.jni.nativelib.NativeMethodBindings;
 import java.util.logging.Logger;
 
 /**

@@ -324,7 +324,8 @@ class PanamaErrorHandlingTest {
     assertEquals("operation (context): cause", message1);
 
     // No context
-    String message2 = PanamaErrorHandler.createDetailedErrorMessage("operation", (String) null, "cause");
+    String message2 =
+        PanamaErrorHandler.createDetailedErrorMessage("operation", (String) null, "cause");
     assertEquals("operation: cause", message2);
 
     // No operation

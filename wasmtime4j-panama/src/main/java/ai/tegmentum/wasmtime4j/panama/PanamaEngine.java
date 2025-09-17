@@ -212,7 +212,8 @@ public final class PanamaEngine implements Engine, AutoCloseable {
       final long executionTimeoutSecs,
       final int maxInstances,
       final int maxTableElements,
-      final int maxFunctions) throws WasmException {
+      final int maxFunctions)
+      throws WasmException {
     ensureNotClosed();
 
     try {
@@ -250,6 +251,7 @@ public final class PanamaEngine implements Engine, AutoCloseable {
    *       <li>1 = Optimize for speed
    *       <li>2 = Optimize for both speed and size
    *     </ul>
+   *
    * @throws WasmException if the configuration cannot be changed
    * @throws IllegalStateException if this engine has been closed
    * @throws IllegalArgumentException if level is not in range 0-2
@@ -262,7 +264,8 @@ public final class PanamaEngine implements Engine, AutoCloseable {
     }
 
     try {
-      int result = nativeFunctions.engineSetOptimizationLevel(engineResource.getNativePointer(), level);
+      int result =
+          nativeFunctions.engineSetOptimizationLevel(engineResource.getNativePointer(), level);
       PanamaErrorHandler.safeCheckError(
           result, "Set optimization level", "Failed to set optimization level to " + level);
 
@@ -309,7 +312,9 @@ public final class PanamaEngine implements Engine, AutoCloseable {
     try {
       int result = nativeFunctions.engineSetDebugInfo(engineResource.getNativePointer(), enabled);
       PanamaErrorHandler.safeCheckError(
-          result, "Set debug info", "Failed to " + (enabled ? "enable" : "disable") + " debug information");
+          result,
+          "Set debug info",
+          "Failed to " + (enabled ? "enable" : "disable") + " debug information");
 
       LOGGER.fine((enabled ? "Enabled" : "Disabled") + " debug info for Panama engine");
     } catch (Exception e) {

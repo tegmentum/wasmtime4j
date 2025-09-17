@@ -1253,9 +1253,7 @@ public final class NativeFunctionBindings {
 
     addFunctionBinding(
         "wasmtime4j_engine_get_optimization_level",
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_INT,
-            ValueLayout.ADDRESS)); // engine_ptr
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS)); // engine_ptr
 
     addFunctionBinding(
         "wasmtime4j_engine_set_debug_info",
@@ -1266,9 +1264,7 @@ public final class NativeFunctionBindings {
 
     addFunctionBinding(
         "wasmtime4j_engine_is_debug_info",
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_BOOLEAN,
-            ValueLayout.ADDRESS)); // engine_ptr
+        FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN, ValueLayout.ADDRESS)); // engine_ptr
 
     // Module functions
     addFunctionBinding(

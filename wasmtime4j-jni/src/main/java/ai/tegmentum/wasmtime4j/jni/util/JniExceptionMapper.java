@@ -279,29 +279,30 @@ public final class JniExceptionMapper {
     if (exception == null) {
       return new JniException("Unknown error occurred");
     }
-    
+
     // If it's already a JniException, return it as-is
     if (exception instanceof JniException) {
       return (JniException) exception;
     }
-    
+
     // Map common Java exceptions to appropriate JNI exceptions
     if (exception instanceof IllegalArgumentException) {
       return new JniException("Invalid parameter: " + exception.getMessage(), exception);
     }
-    
+
     if (exception instanceof IllegalStateException) {
-      return new JniResourceException("Resource in invalid state: " + exception.getMessage(), exception);
+      return new JniResourceException(
+          "Resource in invalid state: " + exception.getMessage(), exception);
     }
-    
+
     if (exception instanceof IndexOutOfBoundsException) {
       return new JniException("Index out of bounds: " + exception.getMessage(), exception);
     }
-    
+
     if (exception instanceof NullPointerException) {
       return new JniException("Null pointer error: " + exception.getMessage(), exception);
     }
-    
+
     // Default mapping for all other exceptions
     return new JniException("Operation failed: " + exception.getMessage(), exception);
   }

@@ -136,7 +136,8 @@ public final class PanamaFunction implements WasmFunction, AutoCloseable {
           paramsArray.fill((byte) 0);
         } else {
           // Allocate new memory and cache it
-          paramsMemory = resourceManager.allocate(MemoryLayouts.WASM_VAL.byteSize() * expectedParams);
+          paramsMemory =
+              resourceManager.allocate(MemoryLayouts.WASM_VAL.byteSize() * expectedParams);
           paramsArray = paramsMemory.getSegment();
 
           // Update cache
@@ -167,7 +168,8 @@ public final class PanamaFunction implements WasmFunction, AutoCloseable {
           resultsArray.fill((byte) 0);
         } else {
           // Allocate new memory and cache it
-          resultsMemory = resourceManager.allocate(MemoryLayouts.WASM_VAL.byteSize() * expectedResults);
+          resultsMemory =
+              resourceManager.allocate(MemoryLayouts.WASM_VAL.byteSize() * expectedResults);
           resultsArray = resultsMemory.getSegment();
 
           // Update cache
@@ -462,7 +464,8 @@ public final class PanamaFunction implements WasmFunction, AutoCloseable {
    * @param paramsArray the target memory segment
    * @param count number of parameters
    */
-  private void marshalParametersOptimized(final WasmValue[] params, final MemorySegment paramsArray, final int count) {
+  private void marshalParametersOptimized(
+      final WasmValue[] params, final MemorySegment paramsArray, final int count) {
     final long slotSize = MemoryLayouts.WASM_VAL.byteSize();
 
     // Batch marshal parameters for better cache efficiency
@@ -480,8 +483,11 @@ public final class PanamaFunction implements WasmFunction, AutoCloseable {
    * @param resultTypes expected types
    * @param count number of results
    */
-  private void unmarshalResultsOptimized(final MemorySegment resultsArray, final WasmValue[] results,
-                                         final List<Integer> resultTypes, final int count) {
+  private void unmarshalResultsOptimized(
+      final MemorySegment resultsArray,
+      final WasmValue[] results,
+      final List<Integer> resultTypes,
+      final int count) {
     final long slotSize = MemoryLayouts.WASM_VAL.byteSize();
 
     // Batch unmarshal results for better cache efficiency
@@ -563,7 +569,8 @@ public final class PanamaFunction implements WasmFunction, AutoCloseable {
         MemoryLayouts.WASM_VAL_KIND.set(valueSlot, MemoryLayouts.WASM_FUNCREF);
         MemoryLayouts.WASM_VAL_REF.set(valueSlot, MemorySegment.NULL);
       }
-      default -> throw new IllegalArgumentException("Unsupported WebAssembly type: " + wasmValue.getType());
+      default -> throw new IllegalArgumentException(
+          "Unsupported WebAssembly type: " + wasmValue.getType());
     }
   }
 
@@ -577,10 +584,14 @@ public final class PanamaFunction implements WasmFunction, AutoCloseable {
   private WasmValue unmarshalWasmValueOptimized(final MemorySegment valueSlot, final int wasmType) {
     // Direct unmarshalling with switch expression for performance
     return switch (wasmType) {
-      case MemoryLayouts.WASM_I32 -> WasmValue.i32((Integer) MemoryLayouts.WASM_VAL_I32.get(valueSlot));
-      case MemoryLayouts.WASM_I64 -> WasmValue.i64((Long) MemoryLayouts.WASM_VAL_I64.get(valueSlot));
-      case MemoryLayouts.WASM_F32 -> WasmValue.f32((Float) MemoryLayouts.WASM_VAL_F32.get(valueSlot));
-      case MemoryLayouts.WASM_F64 -> WasmValue.f64((Double) MemoryLayouts.WASM_VAL_F64.get(valueSlot));
+      case MemoryLayouts.WASM_I32 -> WasmValue.i32(
+          (Integer) MemoryLayouts.WASM_VAL_I32.get(valueSlot));
+      case MemoryLayouts.WASM_I64 -> WasmValue.i64(
+          (Long) MemoryLayouts.WASM_VAL_I64.get(valueSlot));
+      case MemoryLayouts.WASM_F32 -> WasmValue.f32(
+          (Float) MemoryLayouts.WASM_VAL_F32.get(valueSlot));
+      case MemoryLayouts.WASM_F64 -> WasmValue.f64(
+          (Double) MemoryLayouts.WASM_VAL_F64.get(valueSlot));
       case MemoryLayouts.WASM_ANYREF -> WasmValue.externref(null);
       case MemoryLayouts.WASM_FUNCREF -> WasmValue.funcref(null);
       default -> throw new IllegalArgumentException("Unsupported WebAssembly type: " + wasmType);
