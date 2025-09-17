@@ -3,6 +3,7 @@ package ai.tegmentum.wasmtime4j.jni;
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.EngineConfig;
 import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.OptimizationLevel;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.exception.JniException;
@@ -373,9 +374,42 @@ public final class JniEngine extends JniResource implements Engine {
 
   @Override
   public EngineConfig getConfig() {
-    // TODO: This should return the actual configuration used to create this engine
-    // For now, return null as a placeholder - this needs proper implementation
-    throw new UnsupportedOperationException("getConfig() not yet implemented");
+    ensureNotClosed();
+
+    try {
+      // Create config using existing methods to get actual configuration
+      final EngineConfig config = new EngineConfig();
+
+      // Set debug info using existing method
+      config.debugInfo(isDebugInfo());
+
+      // Set optimization level using existing method
+      final int optLevel = getOptimizationLevel();
+      final OptimizationLevel optimizationLevel;
+      switch (optLevel) {
+        case 0:
+          optimizationLevel = OptimizationLevel.NONE;
+          break;
+        case 1:
+          optimizationLevel = OptimizationLevel.SPEED;
+          break;
+        case 2:
+          optimizationLevel = OptimizationLevel.SPEED_AND_SIZE;
+          break;
+        default:
+          // Default to SPEED for unknown values
+          optimizationLevel = OptimizationLevel.SPEED;
+          break;
+      }
+      config.optimizationLevel(optimizationLevel);
+
+      return config;
+    } catch (final Exception e) {
+      if (e instanceof JniException) {
+        throw e;
+      }
+      throw new JniException("Failed to retrieve engine configuration", e);
+    }
   }
 
   // Native method declarations
