@@ -12,6 +12,12 @@ public final class TimeRangeFilter {
   private final Instant startTime;
   private final Instant endTime;
 
+  /**
+   * Creates a new time range filter.
+   *
+   * @param startTime the start time (inclusive, can be null)
+   * @param endTime the end time (exclusive, can be null)
+   */
   public TimeRangeFilter(final Instant startTime, final Instant endTime) {
     this.startTime = startTime;
     this.endTime = endTime;

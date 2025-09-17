@@ -21,6 +21,16 @@ public final class TestComparisonResult {
   private final List<BehavioralDiscrepancy> discrepancies;
   private final TestResultStatus overallStatus;
 
+  /**
+   * Creates a new test comparison result.
+   *
+   * @param testName the name of the test
+   * @param runtimeResults the execution results by runtime type
+   * @param coverageAnalysis the coverage analysis results
+   * @param performanceComparison the performance comparison results
+   * @param discrepancies the behavioral discrepancies found
+   * @param overallStatus the overall test status
+   */
   public TestComparisonResult(
       final String testName,
       final Map<RuntimeType, TestExecutionResult> runtimeResults,

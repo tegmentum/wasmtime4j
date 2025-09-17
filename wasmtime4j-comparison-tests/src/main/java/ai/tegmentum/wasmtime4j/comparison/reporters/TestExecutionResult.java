@@ -17,6 +17,16 @@ public final class TestExecutionResult {
   private final java.time.Duration executionTime;
   private final Map<String, Object> metrics;
 
+  /**
+   * Creates a new test execution result.
+   *
+   * @param runtime the runtime that executed the test
+   * @param successful whether the test was successful
+   * @param output the test output
+   * @param errorMessage the error message if failed
+   * @param executionTime the execution time
+   * @param metrics additional metrics collected
+   */
   public TestExecutionResult(
       final RuntimeType runtime,
       final boolean successful,

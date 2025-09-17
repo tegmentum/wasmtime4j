@@ -302,17 +302,3 @@ public final class ComparisonSummary {
   }
 }
 
-/** Overall verdict levels for comparison analysis results. */
-enum OverallVerdict {
-  /** All tests passed without any significant issues. */
-  PASSED,
-
-  /** Tests passed but with warnings or minor issues that should be addressed. */
-  PASSED_WITH_WARNINGS,
-
-  /** Some tests failed but the overall system is still functional with known issues. */
-  FAILED_WITH_ISSUES,
-
-  /** Critical failures or incompatibilities that prevent proper operation. */
-  FAILED
-}

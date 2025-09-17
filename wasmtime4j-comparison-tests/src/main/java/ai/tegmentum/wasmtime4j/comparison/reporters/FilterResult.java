@@ -17,6 +17,16 @@ public final class FilterResult {
   private final long filterTimeMs;
   private final Map<String, Object> metadata;
 
+  /**
+   * Creates a new filter result.
+   *
+   * @param filteredResults the filtered results
+   * @param totalCount the total count of filtered items
+   * @param pageCount the number of pages
+   * @param appliedCriteria the filter criteria that was applied
+   * @param filterTimeMs the time taken to filter in milliseconds
+   * @param metadata additional metadata about the filtering operation
+   */
   public FilterResult(
       final List<TestComparisonResult> filteredResults,
       final int totalCount,

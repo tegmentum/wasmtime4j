@@ -13,6 +13,13 @@ public final class PaginationResult {
   private final int totalCount;
   private final int pageCount;
 
+  /**
+   * Creates a new pagination result.
+   *
+   * @param results the results for this page
+   * @param totalCount the total number of results across all pages
+   * @param pageCount the total number of pages
+   */
   public PaginationResult(
       final List<TestComparisonResult> results, final int totalCount, final int pageCount) {
     this.results = List.copyOf(results);

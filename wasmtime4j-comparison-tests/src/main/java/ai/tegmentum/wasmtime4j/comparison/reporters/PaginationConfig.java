@@ -11,6 +11,12 @@ public final class PaginationConfig {
   private final int pageNumber;
   private final int pageSize;
 
+  /**
+   * Creates a new pagination configuration.
+   *
+   * @param pageNumber the page number (zero-based)
+   * @param pageSize the size of each page
+   */
   public PaginationConfig(final int pageNumber, final int pageSize) {
     if (pageNumber < 0) {
       throw new IllegalArgumentException("Page number cannot be negative");

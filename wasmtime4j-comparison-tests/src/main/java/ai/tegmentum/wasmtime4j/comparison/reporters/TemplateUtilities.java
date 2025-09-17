@@ -8,7 +8,6 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
 import java.util.Collection;
 import java.util.Locale;
-import java.util.Objects;
 
 /**
  * Utility functions available in templates for formatting and data manipulation.
@@ -59,16 +58,12 @@ public final class TemplateUtilities {
     final long minutes = seconds / 60;
     final long remainingSeconds = seconds % 60;
     if (minutes < 60) {
-      return remainingSeconds == 0 ?
-          minutes + "m" :
-          minutes + "m " + remainingSeconds + "s";
+      return remainingSeconds == 0 ? minutes + "m" : minutes + "m " + remainingSeconds + "s";
     }
 
     final long hours = minutes / 60;
     final long remainingMinutes = minutes % 60;
-    return remainingMinutes == 0 ?
-        hours + "h" :
-        hours + "h " + remainingMinutes + "m";
+    return remainingMinutes == 0 ? hours + "h" : hours + "h " + remainingMinutes + "m";
   }
 
   /**
@@ -83,9 +78,9 @@ public final class TemplateUtilities {
       return "";
     }
 
-    final DateTimeFormatter formatter = DateTimeFormatter
-        .ofLocalizedDateTime(FormatStyle.MEDIUM)
-        .withLocale(locale != null ? locale : Locale.getDefault());
+    final DateTimeFormatter formatter =
+        DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM)
+            .withLocale(locale != null ? locale : Locale.getDefault());
 
     return formatter.format(instant.atZone(java.time.ZoneId.systemDefault()));
   }
@@ -181,8 +176,7 @@ public final class TemplateUtilities {
       return "";
     }
 
-    return text
-        .replace("&", "&amp;")
+    return text.replace("&", "&amp;")
         .replace("<", "&lt;")
         .replace(">", "&gt;")
         .replace("\"", "&quot;")
@@ -200,8 +194,7 @@ public final class TemplateUtilities {
       return "";
     }
 
-    return text
-        .toLowerCase()
+    return text.toLowerCase()
         .replaceAll("[^a-z0-9-_]", "-")
         .replaceAll("-+", "-")
         .replaceAll("^-|-$", "");
