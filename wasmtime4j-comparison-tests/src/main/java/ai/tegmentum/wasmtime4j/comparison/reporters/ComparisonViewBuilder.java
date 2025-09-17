@@ -247,11 +247,13 @@ public final class ComparisonViewBuilder {
     differenceTypes.put("successDifferences", 0);
 
     for (final Map<String, Object> comparison : comparisons) {
+      @SuppressWarnings("unchecked")
       final Map<String, Object> outputDiff = (Map<String, Object>) comparison.get("outputDiff");
       if ((Boolean) outputDiff.get("hasDifferences")) {
         differenceTypes.put("outputDifferences", differenceTypes.get("outputDifferences") + 1);
       }
 
+      @SuppressWarnings("unchecked")
       final Map<String, Object> errorDiff = (Map<String, Object>) comparison.get("errorDiff");
       if ((Boolean) errorDiff.get("hasDifferences")) {
         differenceTypes.put("errorDifferences", differenceTypes.get("errorDifferences") + 1);

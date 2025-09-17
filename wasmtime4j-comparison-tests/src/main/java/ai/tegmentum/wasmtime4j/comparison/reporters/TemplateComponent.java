@@ -11,6 +11,25 @@ import java.util.Objects;
  * @since 1.0.0
  */
 public final class TemplateComponent {
+
+  /**
+   * Loads a template from the classpath resources.
+   *
+   * @param templatePath the path to the template file
+   * @return the template content as a string
+   * @throws RuntimeException if the template cannot be loaded
+   */
+  private static String loadTemplate(final String templatePath) {
+    try (final var inputStream = TemplateComponent.class.getResourceAsStream(templatePath)) {
+      if (inputStream == null) {
+        throw new RuntimeException("Template not found: " + templatePath);
+      }
+      return new String(inputStream.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+    } catch (final java.io.IOException e) {
+      throw new RuntimeException("Failed to load template: " + templatePath, e);
+    }
+  }
+
   private final String componentId;
   private final String componentName;
   private final ComponentType componentType;
@@ -168,46 +187,7 @@ public final class TemplateComponent {
   /** Creates a behavioral analysis component. */
   public static TemplateComponent createBehavioralSection(final String id, final String name) {
     return new Builder(id, name, ComponentType.BEHAVIORAL)
-        .templateContent(
-            """
-            <section class="behavioral-analysis">
-              <h2>Behavioral Analysis</h2>
-              <#if testsWithBehavioralIssues?has_content>
-                <div class="behavioral-issues">
-                  <h3>Tests with Behavioral Issues</h3>
-                  <#list testsWithBehavioralIssues as testName, testResult>
-                    <div class="test-issue">
-                      <h4>${testName}</h4>
-                      <#if testResult.behavioralResults.present>
-                        <div class="behavioral-verdict verdict-\
-${testResult.behavioralResults.get().verdict?lower_case}">
-                          ${testResult.behavioralResults.get().verdict.description}
-                        </div>
-                        <div class="consistency-score">
-                          Consistency Score: ${testResult.behavioralResults.get().consistencyScore?string("0.00")}
-                        </div>
-                        <#if testResult.behavioralResults.get().discrepancies?has_content>
-                          <div class="discrepancies">
-                            <h5>Discrepancies</h5>
-                            <#list testResult.behavioralResults.get().discrepancies as discrepancy>
-                              <div class="discrepancy severity-${discrepancy.severity?lower_case}">
-                                <span class="discrepancy-type">${discrepancy.discrepancyType}</span>
-                                <span class="discrepancy-description">${discrepancy.description}</span>
-                              </div>
-                            </#list>
-                          </div>
-                        </#if>
-                      </#if>
-                    </div>
-                  </#list>
-                </div>
-              <#else>
-                <div class="no-issues">
-                  <p>No behavioral issues detected in any tests.</p>
-                </div>
-              </#if>
-            </section>
-            """)
+        .templateContent(loadTemplate("/templates/behavioral-analysis.ftl"))
         .configuration(ComponentConfiguration.defaultConfig())
         .required(false)
         .build();
@@ -403,42 +383,7 @@ ${testResult.behavioralResults.get().verdict?lower_case}">
   /** Creates an executive summary component. */
   public static TemplateComponent createExecutiveSummary(final String id, final String name) {
     return new Builder(id, name, ComponentType.EXECUTIVE_SUMMARY)
-        .templateContent(
-            """
-            <section class="executive-summary">
-              <h2>Executive Summary</h2>
-              <div class="executive-content">
-                <p>This report presents the results of comprehensive compatibility testing between
-                WebAssembly runtime implementations. The analysis covers ${summary.totalTests} tests
-                with an overall compatibility score of ${summary.compatibilityScore?string("0.00")}.</p>
-
-                <#if summary.testsWithIssues gt 0>
-                  <div class="executive-concerns">
-                    <h3>Key Concerns</h3>
-                    <ul>
-                      <#if summary.testsWithBehavioralIssues gt 0>
-                        <li>${summary.testsWithBehavioralIssues} tests showed behavioral compatibility issues</li>
-                      </#if>
-                      <#if summary.testsWithPerformanceIssues gt 0>
-                        <li>${summary.testsWithPerformanceIssues} tests showed significant performance differences</li>
-                      </#if>
-                      <#if summary.testsWithCoverageGaps gt 0>
-                        <li>${summary.testsWithCoverageGaps} tests revealed coverage gaps</li>
-                      </#if>
-                    </ul>
-                  </div>
-                </#if>
-
-                <#if summary.highPriorityRecommendations gt 0>
-                  <div class="executive-actions">
-                    <h3>Immediate Actions Required</h3>
-                    <p>${summary.highPriorityRecommendations} high-priority recommendations \
-require immediate attention.</p>
-                  </div>
-                </#if>
-              </div>
-            </section>
-            """)
+        .templateContent(loadTemplate("/templates/executive-summary.ftl"))
         .configuration(ComponentConfiguration.defaultConfig())
         .required(false)
         .build();

@@ -6,6 +6,8 @@ package ai.tegmentum.wasmtime4j.comparison.reporters;
  * @since 1.0.0
  */
 public final class ExportException extends Exception {
+  private static final long serialVersionUID = 1L;
+
   private final ExportFormat format;
   private final String phase;
 

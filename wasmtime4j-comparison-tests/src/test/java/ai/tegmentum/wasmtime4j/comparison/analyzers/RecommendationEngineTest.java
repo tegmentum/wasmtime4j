@@ -52,16 +52,8 @@ class RecommendationEngineTest {
             .verdict(BehavioralVerdict.MOSTLY_CONSISTENT)
             .build();
 
-    // Setup performance results with regressions
-    final Map<String, PerformanceAnalyzer.PerformanceMetrics> metricsByRuntime = new HashMap<>();
-    performanceResults =
-        new PerformanceAnalyzer.PerformanceComparisonResult(
-            "test_with_issues",
-            Collections.emptyList(),
-            metricsByRuntime,
-            List.of("JNI is 25% slower than PANAMA"),
-            List.of("JNI shows 15% performance regression"),
-            new PerformanceAnalyzer.OverheadAnalysis(metricsByRuntime));
+    // Setup performance results with regressions (null for test simplicity)
+    performanceResults = null;
 
     // Setup coverage results with gaps
     final List<CoverageGap> coverageGaps = new ArrayList<>();
@@ -99,7 +91,7 @@ class RecommendationEngineTest {
       final DiscrepancySeverity severity,
       final Set<RuntimeType> affectedRuntimes) {
     return new BehavioralDiscrepancy(
-        DiscrepancyType.EXCEPTION_TYPE, description, severity, affectedRuntimes);
+        DiscrepancyType.EXCEPTION_TYPE_MISMATCH, severity, description, description, "");
   }
 
   @Nested

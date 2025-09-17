@@ -1,6 +1,7 @@
 package ai.tegmentum.wasmtime4j.comparison.analyzers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import java.time.Duration;

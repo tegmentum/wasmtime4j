@@ -56,7 +56,7 @@ public final class ExportManager {
    */
   public void exportReport(
       final ComparisonReport report, final ExportFormat format, final Path outputPath)
-      throws IOException {
+      throws IOException, ExportException {
     Objects.requireNonNull(report, "report cannot be null");
     Objects.requireNonNull(format, "format cannot be null");
     Objects.requireNonNull(outputPath, "outputPath cannot be null");
@@ -111,7 +111,7 @@ public final class ExportManager {
         () -> {
           try {
             exportReport(report, format, outputPath);
-          } catch (final IOException e) {
+          } catch (final IOException | ExportException e) {
             throw new RuntimeException("Async export failed", e);
           }
         });
@@ -127,7 +127,7 @@ public final class ExportManager {
    */
   public void exportTestResult(
       final TestComparisonResult testResult, final ExportFormat format, final Path outputPath)
-      throws IOException {
+      throws IOException, ExportException {
     Objects.requireNonNull(testResult, "testResult cannot be null");
     Objects.requireNonNull(format, "format cannot be null");
     Objects.requireNonNull(outputPath, "outputPath cannot be null");
@@ -154,7 +154,7 @@ public final class ExportManager {
       final FilterResult filterResult,
       final ExportFormat format,
       final Path outputPath)
-      throws IOException {
+      throws IOException, ExportException {
     Objects.requireNonNull(report, "report cannot be null");
     Objects.requireNonNull(filterResult, "filterResult cannot be null");
     Objects.requireNonNull(format, "format cannot be null");
@@ -197,7 +197,7 @@ public final class ExportManager {
    * @throws IOException if the export fails
    */
   private void exportBundle(final ComparisonReport report, final Path outputPath)
-      throws IOException {
+      throws IOException, ExportException {
     try (final ZipOutputStream zipOut = new ZipOutputStream(Files.newOutputStream(outputPath))) {
 
       // Export HTML report
@@ -236,7 +236,7 @@ public final class ExportManager {
    * @throws IOException if the export fails
    */
   private void exportIndividualTests(final ComparisonReport report, final ZipOutputStream zipOut)
-      throws IOException {
+      throws IOException, ExportException {
 
     final String testsDir = "tests/";
 

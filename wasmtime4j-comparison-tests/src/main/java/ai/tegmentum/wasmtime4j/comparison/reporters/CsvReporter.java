@@ -367,7 +367,7 @@ public final class CsvReporter implements DataExporter<CsvConfiguration> {
       final ComparisonReport report,
       final CsvConfiguration configuration,
       final BufferedWriter writer)
-      throws IOException {
+      throws IOException, ExportException {
 
     final List<String> customColumns = configuration.getCustomColumns();
     if (customColumns.isEmpty()) {
