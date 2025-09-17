@@ -111,7 +111,7 @@ class JniInstanceTest {
         assertThrows(JniValidationException.class, () -> instance.getFunction("   "));
 
     assertThat(exception.getMessage()).contains("name");
-    assertThat(exception.getMessage()).contains("must not be empty");
+    assertThat(exception.getMessage()).contains("must not be empty or whitespace-only");
     // Note: Not calling close() in unit test since it requires native methods
   }
 

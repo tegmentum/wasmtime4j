@@ -183,7 +183,17 @@ public final class PerformanceAnalyzer {
     private final OverheadAnalysis overheadAnalysis;
     private final Instant analysisTime;
 
-    private PerformanceComparisonResult(
+    /**
+     * Creates a new performance comparison result.
+     *
+     * @param testName the name of the test
+     * @param results the test execution results
+     * @param metricsByRuntime the performance metrics by runtime
+     * @param significantDifferences the significant differences found
+     * @param regressionWarnings the regression warnings
+     * @param overheadAnalysis the overhead analysis
+     */
+    public PerformanceComparisonResult(
         final String testName,
         final List<TestExecutionResult> results,
         final Map<String, PerformanceMetrics> metricsByRuntime,
