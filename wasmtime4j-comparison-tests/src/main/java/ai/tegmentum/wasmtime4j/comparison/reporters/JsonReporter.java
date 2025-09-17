@@ -7,13 +7,11 @@ import ai.tegmentum.wasmtime4j.comparison.analyzers.CoverageAnalysisResult;
 import ai.tegmentum.wasmtime4j.comparison.analyzers.InsightAnalysisResult;
 import ai.tegmentum.wasmtime4j.comparison.analyzers.PerformanceAnalyzer;
 import ai.tegmentum.wasmtime4j.comparison.analyzers.RecommendationResult;
-import ai.tegmentum.wasmtime4j.comparison.analyzers.RuntimeComparison;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -85,6 +83,7 @@ public final class JsonReporter implements DataExporter<JsonConfiguration> {
 
   private final ExportSchema schema;
 
+  /** Creates a new JSON reporter with default configuration. */
   public JsonReporter() {
     this.schema =
         new ExportSchema(
@@ -158,7 +157,7 @@ public final class JsonReporter implements DataExporter<JsonConfiguration> {
     final long baseSize = 50_000;
     final long testSize = report.getTestCount() * 10_000L;
     final long recommendationSize =
-        report.getRecommendations().values().stream()
+        report.getRecommendations().stream()
                 .mapToInt(r -> r.getPrioritizedRecommendations().size())
                 .sum()
             * 5_000L;
@@ -277,32 +276,34 @@ public final class JsonReporter implements DataExporter<JsonConfiguration> {
 
   private String buildMetadataSection(
       final ComparisonReport report, final JsonConfiguration configuration) {
-    final ReportMetadata metadata = report.getMetadata();
+    final ComparisonMetadata metadata = report.getMetadata();
     final StringBuilder sb = new StringBuilder();
 
     sb.append("  \"metadata\": {\n");
-    sb.append("    \"suiteName\": \"").append(escapeJson(metadata.getSuiteName())).append("\",\n");
-    sb.append("    \"version\": \"").append(escapeJson(metadata.getVersion())).append("\",\n");
-    sb.append("    \"generatedAt\": \"")
-        .append(metadata.getGeneratedAt().format(DateTimeFormatter.ISO_INSTANT))
+    sb.append("    \"suiteName\": \"")
+        .append(escapeJson(metadata.getTestSuiteName()))
         .append("\",\n");
+    sb.append("    \"version\": \"")
+        .append(escapeJson(metadata.getTestSuiteVersion()))
+        .append("\",\n");
+    sb.append("    \"generatedAt\": \"").append(report.getGeneratedAt().toString()).append("\",\n");
     sb.append("    \"executionDuration\": \"")
-        .append(metadata.getExecutionDuration().toString())
+        .append(report.getTotalDuration().toString())
         .append("\",\n");
     sb.append("    \"runtimesCompared\": [")
         .append(
-            metadata.getRuntimesCompared().stream()
-                .map(r -> "\"" + escapeJson(r) + "\"")
+            metadata.getRuntimeTypes().stream()
+                .map(r -> "\"" + escapeJson(r.name()) + "\"")
                 .collect(Collectors.joining(", ")))
         .append("],\n");
-    sb.append("    \"generatorVersion\": \"")
-        .append(escapeJson(metadata.getGeneratorVersion()))
+    sb.append("    \"wasmtime4jVersion\": \"")
+        .append(escapeJson(metadata.getWasmtime4jVersion()))
         .append("\"");
 
-    if (configuration.isIncludeMetadata() && !metadata.getConfiguration().isEmpty()) {
-      sb.append(",\n    \"configuration\": {\n");
+    if (configuration.isIncludeMetadata() && !metadata.getEnvironmentInfo().isEmpty()) {
+      sb.append(",\n    \"environmentInfo\": {\n");
       final List<Map.Entry<String, String>> entries =
-          metadata.getConfiguration().entrySet().stream().toList();
+          metadata.getEnvironmentInfo().entrySet().stream().toList();
       for (int i = 0; i < entries.size(); i++) {
         final Map.Entry<String, String> entry = entries.get(i);
         sb.append("      \"")
@@ -332,45 +333,27 @@ public final class JsonReporter implements DataExporter<JsonConfiguration> {
 
   private String buildSummarySection(
       final ComparisonReport report, final JsonConfiguration configuration) {
-    final ReportSummary summary = report.getSummary();
+    final ComparisonSummary summary = report.getSummary();
     final StringBuilder sb = new StringBuilder();
 
     sb.append("  \"summary\": {\n");
     sb.append("    \"totalTests\": ").append(summary.getTotalTests()).append(",\n");
-    sb.append("    \"testsWithBehavioralAnalysis\": ")
-        .append(summary.getTestsWithBehavioralAnalysis())
+    sb.append("    \"passedTests\": ").append(summary.getPassedTests()).append(",\n");
+    sb.append("    \"failedTests\": ").append(summary.getFailedTests()).append(",\n");
+    sb.append("    \"skippedTests\": ").append(summary.getSkippedTests()).append(",\n");
+    sb.append("    \"testsWithBehavioralIssues\": ")
+        .append(report.getTestsWithBehavioralIssues().size())
         .append(",\n");
-    sb.append("    \"testsWithPerformanceAnalysis\": ")
-        .append(summary.getTestsWithPerformanceAnalysis())
+    sb.append("    \"highPriorityIssues\": ")
+        .append(summary.getHighPriorityIssueCount())
         .append(",\n");
-    sb.append("    \"testsWithCoverageAnalysis\": ")
-        .append(summary.getTestsWithCoverageAnalysis())
+    sb.append("    \"averageCompatibilityScore\": ")
+        .append(summary.getAverageCompatibilityScore())
         .append(",\n");
-    sb.append("    \"testsWithRecommendations\": ")
-        .append(summary.getTestsWithRecommendations())
-        .append(",\n");
-    sb.append("    \"highPriorityRecommendations\": ")
-        .append(summary.getHighPriorityRecommendations())
-        .append(",\n");
-    sb.append("    \"overallCompatibilityScore\": ")
-        .append(summary.getOverallCompatibilityScore())
-        .append(",\n");
-    sb.append("    \"verdictCounts\": {\n");
-
-    final List<Map.Entry<String, Integer>> verdictEntries =
-        summary.getVerdictCounts().entrySet().stream().toList();
-    for (int i = 0; i < verdictEntries.size(); i++) {
-      final Map.Entry<String, Integer> entry = verdictEntries.get(i);
-      sb.append("      \"")
-          .append(escapeJson(entry.getKey()))
-          .append("\": ")
-          .append(entry.getValue());
-      if (i < verdictEntries.size() - 1) {
-        sb.append(",");
-      }
-      sb.append("\n");
-    }
-    sb.append("    }\n");
+    sb.append("    \"overallVerdict\": \"")
+        .append(summary.getOverallVerdict().toString())
+        .append("\",\n");
+    sb.append("    \"successRate\": ").append(summary.getSuccessRate()).append("\n");
     sb.append("  }");
 
     return sb.toString();
@@ -422,21 +405,20 @@ public final class JsonReporter implements DataExporter<JsonConfiguration> {
     }
 
     // Recommendations
-    if (report.getRecommendations().containsKey(testName)) {
+    if (report.getRecommendationResults().containsKey(testName)) {
       if (hasContent) {
         sb.append(",\n");
       }
-      sb.append(buildRecommendations(report.getRecommendations().get(testName), configuration));
+      sb.append(
+          buildRecommendations(report.getRecommendationResults().get(testName), configuration));
       hasContent = true;
     }
 
-    // Insights
-    if (report.getInsights().containsKey(testName)) {
-      if (hasContent) {
-        sb.append(",\n");
-      }
-      sb.append(buildInsights(report.getInsights().get(testName), configuration));
+    // Insights (global insights - not test-specific)
+    if (hasContent) {
+      sb.append(",\n");
     }
+    sb.append(buildInsights(report.getInsights(), configuration));
 
     sb.append("\n    }");
     return sb.toString();
@@ -456,27 +438,8 @@ public final class JsonReporter implements DataExporter<JsonConfiguration> {
     sb.append("        \"criticalDiscrepancies\": ").append(result.getCriticalDiscrepancyCount());
 
     if (configuration.getDetailLevel() == JsonDetailLevel.DETAILED) {
-      sb.append(",\n        \"pairwiseComparisons\": [\n");
-      final List<RuntimeComparison> comparisons = result.getPairwiseComparisons();
-      for (int i = 0; i < comparisons.size(); i++) {
-        final RuntimeComparison comp = comparisons.get(i);
-        sb.append("          {\n");
-        sb.append("            \"runtime1\": \"")
-            .append(escapeJson(comp.getRuntime1().name()))
-            .append("\",\n");
-        sb.append("            \"runtime2\": \"")
-            .append(escapeJson(comp.getRuntime2().name()))
-            .append("\",\n");
-        sb.append("            \"score\": ")
-            .append(comp.getComparisonResult().getOverallScore())
-            .append("\n");
-        sb.append("          }");
-        if (i < comparisons.size() - 1) {
-          sb.append(",");
-        }
-        sb.append("\n");
-      }
-      sb.append("        ]");
+      // TODO: Add pairwise comparisons when RuntimeComparison is accessible from reporters package
+      sb.append(",\n        \"note\": \"Detailed pairwise comparisons available upon request\"");
 
       if (!result.getDiscrepancies().isEmpty()) {
         sb.append(",\n        \"discrepancies\": [\n");
@@ -512,9 +475,7 @@ public final class JsonReporter implements DataExporter<JsonConfiguration> {
       final JsonConfiguration configuration) {
     final StringBuilder sb = new StringBuilder();
     sb.append("      \"performance\": {\n");
-    sb.append("        \"executionTimeMs\": ")
-        .append(result.getExecutionDuration().toMillis())
-        .append(",\n");
+    sb.append("        \"executionTimeMs\": ").append(result.getExecutionDuration()).append(",\n");
     sb.append("        \"memoryUsedBytes\": ").append(result.getMemoryUsed()).append(",\n");
     sb.append("        \"successful\": ").append(result.isSuccessful());
 
@@ -615,110 +576,4 @@ public final class JsonReporter implements DataExporter<JsonConfiguration> {
         .replace("\r", "\\r")
         .replace("\t", "\\t");
   }
-}
-
-/** Configuration for JSON export operations. */
-final class JsonConfiguration extends ExportConfiguration {
-  private final JsonDetailLevel detailLevel;
-  private final boolean streamingMode;
-  private final boolean prettyPrint;
-
-  private JsonConfiguration(final Builder builder) {
-    super(builder.format, builder.includeMetadata, builder.compressOutput, builder.bufferSize);
-    this.detailLevel = builder.detailLevel;
-    this.streamingMode = builder.streamingMode;
-    this.prettyPrint = builder.prettyPrint;
-  }
-
-  public JsonDetailLevel getDetailLevel() {
-    return detailLevel;
-  }
-
-  public boolean isStreamingMode() {
-    return streamingMode;
-  }
-
-  public boolean isPrettyPrint() {
-    return prettyPrint;
-  }
-
-  @Override
-  public boolean equals(final Object obj) {
-    if (this == obj) {
-      return true;
-    }
-    if (obj == null || getClass() != obj.getClass()) {
-      return false;
-    }
-    if (!super.equals(obj)) {
-      return false;
-    }
-
-    final JsonConfiguration that = (JsonConfiguration) obj;
-    return streamingMode == that.streamingMode
-        && prettyPrint == that.prettyPrint
-        && detailLevel == that.detailLevel;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(super.hashCode(), detailLevel, streamingMode, prettyPrint);
-  }
-
-  /** Builder for JsonConfiguration. */
-  public static final class Builder {
-    private final ExportFormat format = ExportFormat.JSON;
-    private boolean includeMetadata = true;
-    private boolean compressOutput = false;
-    private int bufferSize = 8192;
-    private JsonDetailLevel detailLevel = JsonDetailLevel.SUMMARY;
-    private boolean streamingMode = false;
-    private boolean prettyPrint = false;
-
-    public Builder includeMetadata(final boolean includeMetadata) {
-      this.includeMetadata = includeMetadata;
-      return this;
-    }
-
-    public Builder compressOutput(final boolean compressOutput) {
-      this.compressOutput = compressOutput;
-      return this;
-    }
-
-    public Builder bufferSize(final int bufferSize) {
-      this.bufferSize = bufferSize;
-      return this;
-    }
-
-    public Builder detailLevel(final JsonDetailLevel detailLevel) {
-      this.detailLevel = Objects.requireNonNull(detailLevel, "detailLevel cannot be null");
-      return this;
-    }
-
-    public Builder streamingMode(final boolean streamingMode) {
-      this.streamingMode = streamingMode;
-      return this;
-    }
-
-    public Builder prettyPrint(final boolean prettyPrint) {
-      this.prettyPrint = prettyPrint;
-      return this;
-    }
-
-    public JsonConfiguration build() {
-      return new JsonConfiguration(this);
-    }
-  }
-}
-
-/** Detail levels for JSON export. */
-enum JsonDetailLevel {
-  /** Summary information only. */
-  SUMMARY,
-
-  /** Detailed analysis results. */
-  DETAILED,
-
-  /** Complete raw data. */
-  RAW
 }

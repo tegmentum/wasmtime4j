@@ -1,5 +1,8 @@
 package ai.tegmentum.wasmtime4j.panama;
 
+import ai.tegmentum.wasmtime4j.exception.CompilationException;
+import ai.tegmentum.wasmtime4j.exception.RuntimeException;
+import ai.tegmentum.wasmtime4j.exception.ValidationException;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.lang.foreign.MemorySegment;
 import java.util.logging.Logger;
@@ -104,7 +107,7 @@ public final class PanamaErrorHandler {
       case NATIVE_ERROR_INSTANCE:
         return "Instance Error";
       case NATIVE_ERROR_MEMORY:
-        return "Memory Access Error";
+        return "Memory Error";
       case NATIVE_ERROR_FUNCTION:
         return "Function Error";
       case NATIVE_ERROR_IMPORT_EXPORT:
@@ -166,7 +169,25 @@ public final class PanamaErrorHandler {
     if (errorCode != NATIVE_ERROR_NONE) {
       final String description = getErrorDescription(errorCode);
       final String message = operation != null ? operation + ": " + description : description;
-      throw new WasmException(message);
+      throwAppropriateException(errorCode, message);
+    }
+  }
+
+  /**
+   * Checks an error code and throws an appropriate exception if it indicates an error.
+   *
+   * @param errorCode the error code to check
+   * @param format the operation description format string
+   * @param args the format arguments
+   * @throws WasmException if the error code indicates an error
+   */
+  public static void checkErrorCode(final int errorCode, final String format,
+      final Object... args) throws WasmException {
+    if (errorCode != NATIVE_ERROR_NONE) {
+      final String operation = format != null ? String.format(format, args) : null;
+      final String description = getErrorDescription(errorCode);
+      final String message = operation != null ? operation + ": " + description : description;
+      throwAppropriateException(errorCode, message);
     }
   }
 
@@ -229,21 +250,27 @@ public final class PanamaErrorHandler {
   public static String createDetailedErrorMessage(final String operation, final String context,
       final String nativeMessage) {
     final StringBuilder message = new StringBuilder();
-    
+
     if (operation != null && !operation.trim().isEmpty()) {
       message.append(operation);
       if (context != null && !context.trim().isEmpty()) {
         message.append(" (").append(context).append(")");
       }
       message.append(": ");
+    } else if (context != null && !context.trim().isEmpty()) {
+      message.append(context).append(": ");
     }
-    
+
     if (nativeMessage != null && !nativeMessage.trim().isEmpty()) {
       message.append(nativeMessage);
     } else {
-      message.append("Unknown error");
+      if (message.length() == 0) {
+        message.append("Native operation failed");
+      } else {
+        message.append("Unknown error");
+      }
     }
-    
+
     return message.toString();
   }
 
@@ -252,12 +279,29 @@ public final class PanamaErrorHandler {
    *
    * @param value the value to check
    * @param parameterName the parameter name for error messages
+   * @return the validated value
    * @throws IllegalArgumentException if the value is negative
    */
-  public static void requireNonNegative(final long value, final String parameterName) {
+  public static long requireNonNegative(final long value, final String parameterName) {
     if (value < 0) {
       throw new IllegalArgumentException(parameterName + " must be non-negative, got: " + value);
     }
+    return value;
+  }
+
+  /**
+   * Validates that a value is non-negative (int version).
+   *
+   * @param value the value to check
+   * @param parameterName the parameter name for error messages
+   * @return the validated value
+   * @throws IllegalArgumentException if the value is negative
+   */
+  public static int requireNonNegative(final int value, final String parameterName) {
+    if (value < 0) {
+      throw new IllegalArgumentException(parameterName + " must be non-negative, got: " + value);
+    }
+    return value;
   }
 
   /**
@@ -265,15 +309,17 @@ public final class PanamaErrorHandler {
    *
    * @param value the string to check
    * @param parameterName the parameter name for error messages
+   * @return the validated string
    * @throws IllegalArgumentException if the string is null or empty
    */
-  public static void requireNotEmpty(final String value, final String parameterName) {
+  public static String requireNotEmpty(final String value, final String parameterName) {
     if (value == null) {
       throw new IllegalArgumentException(parameterName + " cannot be null");
     }
     if (value.trim().isEmpty()) {
       throw new IllegalArgumentException(parameterName + " cannot be empty");
     }
+    return value;
   }
 
   /**
@@ -281,10 +327,11 @@ public final class PanamaErrorHandler {
    *
    * @param value the string to check
    * @param parameterName the parameter name for error messages
+   * @return the validated string
    * @throws IllegalArgumentException if the string is null or empty
    */
-  public static void requireNonEmpty(final String value, final String parameterName) {
-    requireNotEmpty(value, parameterName);
+  public static String requireNonEmpty(final String value, final String parameterName) {
+    return requireNotEmpty(value, parameterName);
   }
 
   /**
@@ -305,13 +352,31 @@ public final class PanamaErrorHandler {
    *
    * @param value the value to check
    * @param parameterName the parameter name for error messages
+   * @return the validated value
    * @throws IllegalArgumentException if the value is not positive
    */
-  public static void requirePositive(final long value, final String parameterName) {
+  public static long requirePositive(final long value, final String parameterName) {
     if (value <= 0) {
       throw new IllegalArgumentException(parameterName + " must be positive, got: " + value);
     }
+    return value;
   }
+
+  /**
+   * Validates that a value is positive (int version).
+   *
+   * @param value the value to check
+   * @param parameterName the parameter name for error messages
+   * @return the validated value
+   * @throws IllegalArgumentException if the value is not positive
+   */
+  public static int requirePositive(final int value, final String parameterName) {
+    if (value <= 0) {
+      throw new IllegalArgumentException(parameterName + " must be positive, got: " + value);
+    }
+    return value;
+  }
+
 
   /**
    * Safely checks an error code and throws appropriate exception.
@@ -341,5 +406,93 @@ public final class PanamaErrorHandler {
     final String description = getErrorDescription(errorCode);
     final String detailedMessage = createDetailedErrorMessage(null, errorCode, message);
     return new WasmException(detailedMessage);
+  }
+
+  /**
+   * Maps a throwable to a WasmException.
+   *
+   * @param throwable the throwable to map
+   * @param context the operation context
+   * @return a WasmException with appropriate details
+   */
+  public static WasmException mapToWasmException(final Throwable throwable, final String context) {
+    if (throwable instanceof WasmException) {
+      return (WasmException) throwable;
+    }
+
+    final String message = context != null
+        ? context + ": " + throwable.getMessage()
+        : throwable.getMessage();
+    return new WasmException(message != null ? message : "Unknown error", throwable);
+  }
+
+  /**
+   * Throws the appropriate exception type based on error code.
+   *
+   * @param errorCode the error code
+   * @param message the error message
+   * @throws WasmException appropriate exception type based on error code
+   */
+  private static void throwAppropriateException(final int errorCode, final String message) throws WasmException {
+    switch (errorCode) {
+      case NATIVE_ERROR_COMPILATION:
+        throw new CompilationException(message);
+      case NATIVE_ERROR_VALIDATION:
+        throw new ValidationException(message);
+      case NATIVE_ERROR_RUNTIME:
+      case NATIVE_ERROR_ENGINE_CONFIG:
+      case NATIVE_ERROR_STORE:
+      case NATIVE_ERROR_INSTANCE:
+      case NATIVE_ERROR_MEMORY:
+      case NATIVE_ERROR_FUNCTION:
+      case NATIVE_ERROR_IMPORT_EXPORT:
+      case NATIVE_ERROR_TYPE:
+      case NATIVE_ERROR_RESOURCE:
+      case NATIVE_ERROR_IO:
+      case NATIVE_ERROR_INVALID_PARAMETER:
+      case NATIVE_ERROR_CONCURRENCY:
+      case NATIVE_ERROR_WASI:
+      case NATIVE_ERROR_COMPONENT:
+      case NATIVE_ERROR_INTERFACE:
+      case NATIVE_ERROR_INTERNAL:
+        throw new RuntimeException(message);
+      default:
+        throw new WasmException(message);
+    }
+  }
+
+  /**
+   * Validates that an index is within bounds.
+   *
+   * @param index the index to check
+   * @param size the size of the collection
+   * @param parameterName the parameter name for error messages
+   * @return the validated index
+   * @throws IndexOutOfBoundsException if the index is out of bounds
+   */
+  public static int requireValidIndex(final int index, final int size, final String parameterName) {
+    if (index < 0 || index >= size) {
+      throw new IndexOutOfBoundsException(parameterName + " index " + index + " is out of bounds for size " + size);
+    }
+    return index;
+  }
+
+
+  /**
+   * Validates that an operation succeeded.
+   *
+   * @param <T> the type of the result
+   * @param result the result to check
+   * @param operation the operation description
+   * @return the validated result
+   * @throws IllegalArgumentException if the result is null
+   */
+  public static <T> T requireSuccess(final T result, final String operation) {
+    if (result == null) {
+      final String message = (operation != null ? operation + ": " : "")
+          + "Operation failed (null result)";
+      throw new IllegalArgumentException(message);
+    }
+    return result;
   }
 }

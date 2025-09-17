@@ -257,6 +257,97 @@ public final class PerformanceAnalyzer {
           .map(Map.Entry::getKey)
           .orElse("UNKNOWN");
     }
+
+    /**
+     * Checks if the performance comparison was successful.
+     *
+     * @return true if analysis completed successfully
+     */
+    public boolean isSuccessful() {
+      return !results.isEmpty() && !metricsByRuntime.isEmpty();
+    }
+
+    /**
+     * Gets the peak memory usage across all runtimes.
+     *
+     * @return peak memory usage in bytes
+     */
+    public long getPeakMemoryUsage() {
+      return metricsByRuntime.values().stream()
+          .mapToLong(PerformanceMetrics::getPeakMemoryUsage)
+          .max()
+          .orElse(0L);
+    }
+
+    /**
+     * Gets any error message from the analysis.
+     *
+     * @return error message or null if successful
+     */
+    public String getErrorMessage() {
+      if (isSuccessful()) {
+        return null;
+      }
+      if (results.isEmpty()) {
+        return "No test results available for analysis";
+      }
+      if (metricsByRuntime.isEmpty()) {
+        return "No performance metrics could be calculated";
+      }
+      return "Analysis completed with warnings";
+    }
+
+    /**
+     * Gets the average timing ratio between fastest and slowest runtime.
+     *
+     * @return timing ratio or 1.0 if cannot be calculated
+     */
+    public double getAverageTimingRatio() {
+      if (metricsByRuntime.size() < 2) {
+        return 1.0;
+      }
+
+      DoubleSummaryStatistics stats =
+          metricsByRuntime.values().stream()
+              .mapToDouble(PerformanceMetrics::getMeanExecutionTimeMs)
+              .summaryStatistics();
+
+      return stats.getMax() / Math.max(stats.getMin(), 1.0);
+    }
+
+    /**
+     * Gets the execution duration (mean execution time) in milliseconds.
+     *
+     * @return execution duration in milliseconds
+     */
+    public double getExecutionDuration() {
+      return metricsByRuntime.values().stream()
+          .mapToDouble(PerformanceMetrics::getMeanExecutionTimeMs)
+          .average()
+          .orElse(0.0);
+    }
+
+    /**
+     * Gets the memory used (mean memory usage) in bytes.
+     *
+     * @return memory used in bytes
+     */
+    public long getMemoryUsed() {
+      return (long)
+          metricsByRuntime.values().stream()
+              .mapToLong(PerformanceMetrics::getMeanMemoryUsage)
+              .average()
+              .orElse(0.0);
+    }
+
+    /**
+     * Gets the runtime type (fastest runtime).
+     *
+     * @return runtime type
+     */
+    public String getRuntimeType() {
+      return getFastestRuntime();
+    }
   }
 
   /** Performance metrics for a specific runtime and test combination. */

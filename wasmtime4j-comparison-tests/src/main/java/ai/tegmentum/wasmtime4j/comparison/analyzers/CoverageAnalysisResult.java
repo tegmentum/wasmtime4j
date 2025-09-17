@@ -153,6 +153,54 @@ public final class CoverageAnalysisResult {
         + '}';
   }
 
+  /**
+   * Gets the overall coverage score as a percentage.
+   *
+   * @return coverage score (0.0 to 100.0)
+   */
+  public double getCoverageScore() {
+    return coverageMetrics.getOverallCoveragePercentage();
+  }
+
+  /**
+   * Gets the number of features implemented.
+   *
+   * @return number of implemented features
+   */
+  public int getFeaturesImplemented() {
+    return detectedFeatures.size();
+  }
+
+  /**
+   * Gets the total number of features available.
+   *
+   * @return total feature count
+   */
+  public int getTotalFeatures() {
+    return getFeaturesImplemented() + coverageGaps.size();
+  }
+
+  /**
+   * Gets the list of missing features.
+   *
+   * @return list of missing feature names
+   */
+  public List<String> getMissingFeatures() {
+    return coverageGaps.stream()
+        .flatMap(gap -> gap.getAffectedFeatures().stream())
+        .distinct()
+        .toList();
+  }
+
+  /**
+   * Gets the overall coverage percentage.
+   *
+   * @return coverage percentage (0.0 to 100.0)
+   */
+  public double getOverallCoveragePercentage() {
+    return coverageMetrics.getOverallCoveragePercentage();
+  }
+
   /** Builder for CoverageAnalysisResult. */
   public static final class Builder {
     private final String testName;
@@ -166,12 +214,24 @@ public final class CoverageAnalysisResult {
       this.testName = Objects.requireNonNull(testName, "testName cannot be null");
     }
 
+    /**
+     * Sets the detected features for this coverage analysis.
+     *
+     * @param detectedFeatures set of detected features
+     * @return this builder
+     */
     public Builder detectedFeatures(final Set<String> detectedFeatures) {
       this.detectedFeatures =
           Objects.requireNonNull(detectedFeatures, "detectedFeatures cannot be null");
       return this;
     }
 
+    /**
+     * Sets the runtime feature coverage mapping.
+     *
+     * @param runtimeFeatureCoverage mapping of runtime types to their covered features
+     * @return this builder
+     */
     public Builder runtimeFeatureCoverage(
         final Map<RuntimeType, Set<String>> runtimeFeatureCoverage) {
       this.runtimeFeatureCoverage =
@@ -179,6 +239,12 @@ public final class CoverageAnalysisResult {
       return this;
     }
 
+    /**
+     * Sets the coverage metrics for this analysis result.
+     *
+     * @param coverageMetrics coverage metrics
+     * @return this builder
+     */
     public Builder coverageMetrics(final CoverageMetrics coverageMetrics) {
       this.coverageMetrics =
           Objects.requireNonNull(coverageMetrics, "coverageMetrics cannot be null");
@@ -190,6 +256,12 @@ public final class CoverageAnalysisResult {
       return this;
     }
 
+    /**
+     * Sets the feature interaction analysis.
+     *
+     * @param featureInteractionAnalysis feature interaction analysis
+     * @return this builder
+     */
     public Builder featureInteractionAnalysis(
         final FeatureInteractionAnalysis featureInteractionAnalysis) {
       this.featureInteractionAnalysis =
@@ -198,6 +270,12 @@ public final class CoverageAnalysisResult {
       return this;
     }
 
+    /**
+     * Builds the coverage analysis result.
+     *
+     * @return coverage analysis result
+     * @throws IllegalStateException if required fields are not set
+     */
     public CoverageAnalysisResult build() {
       if (coverageMetrics == null) {
         throw new IllegalStateException("coverageMetrics must be set");
@@ -207,253 +285,5 @@ public final class CoverageAnalysisResult {
       }
       return new CoverageAnalysisResult(this);
     }
-  }
-}
-
-/** Metrics related to feature coverage analysis. */
-final class CoverageMetrics {
-  private final int totalDetectedFeatures;
-  private final int coveredFeatures;
-  private final double overallCoveragePercentage;
-  private final Map<RuntimeType, Double> runtimeCoveragePercentages;
-  private final double successRate;
-
-  public CoverageMetrics(
-      final int totalDetectedFeatures,
-      final int coveredFeatures,
-      final double overallCoveragePercentage,
-      final Map<RuntimeType, Double> runtimeCoveragePercentages,
-      final double successRate) {
-    this.totalDetectedFeatures = totalDetectedFeatures;
-    this.coveredFeatures = coveredFeatures;
-    this.overallCoveragePercentage = overallCoveragePercentage;
-    this.runtimeCoveragePercentages = Map.copyOf(runtimeCoveragePercentages);
-    this.successRate = successRate;
-  }
-
-  public int getTotalDetectedFeatures() {
-    return totalDetectedFeatures;
-  }
-
-  public int getCoveredFeatures() {
-    return coveredFeatures;
-  }
-
-  public double getOverallCoveragePercentage() {
-    return overallCoveragePercentage;
-  }
-
-  public Map<RuntimeType, Double> getRuntimeCoveragePercentages() {
-    return runtimeCoveragePercentages;
-  }
-
-  public double getSuccessRate() {
-    return successRate;
-  }
-
-  @Override
-  public boolean equals(final Object obj) {
-    if (this == obj) {
-      return true;
-    }
-    if (obj == null || getClass() != obj.getClass()) {
-      return false;
-    }
-
-    final CoverageMetrics that = (CoverageMetrics) obj;
-    return totalDetectedFeatures == that.totalDetectedFeatures
-        && coveredFeatures == that.coveredFeatures
-        && Double.compare(that.overallCoveragePercentage, overallCoveragePercentage) == 0
-        && Double.compare(that.successRate, successRate) == 0
-        && Objects.equals(runtimeCoveragePercentages, that.runtimeCoveragePercentages);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(
-        totalDetectedFeatures,
-        coveredFeatures,
-        overallCoveragePercentage,
-        runtimeCoveragePercentages,
-        successRate);
-  }
-
-  @Override
-  public String toString() {
-    return "CoverageMetrics{"
-        + "total="
-        + totalDetectedFeatures
-        + ", covered="
-        + coveredFeatures
-        + ", overall="
-        + String.format("%.1f%%", overallCoveragePercentage)
-        + ", success="
-        + String.format("%.1f%%", successRate)
-        + '}';
-  }
-}
-
-/** Represents a gap in feature coverage. */
-final class CoverageGap {
-  private final CoverageGapType type;
-  private final String description;
-  private final Set<String> affectedFeatures;
-  private final Set<RuntimeType> affectedRuntimes;
-  private final GapSeverity severity;
-
-  public CoverageGap(
-      final CoverageGapType type,
-      final String description,
-      final Set<String> affectedFeatures,
-      final Set<RuntimeType> affectedRuntimes,
-      final GapSeverity severity) {
-    this.type = Objects.requireNonNull(type, "type cannot be null");
-    this.description = Objects.requireNonNull(description, "description cannot be null");
-    this.affectedFeatures = Set.copyOf(affectedFeatures);
-    this.affectedRuntimes = Set.copyOf(affectedRuntimes);
-    this.severity = Objects.requireNonNull(severity, "severity cannot be null");
-  }
-
-  public CoverageGapType getType() {
-    return type;
-  }
-
-  public String getDescription() {
-    return description;
-  }
-
-  public Set<String> getAffectedFeatures() {
-    return affectedFeatures;
-  }
-
-  public Set<RuntimeType> getAffectedRuntimes() {
-    return affectedRuntimes;
-  }
-
-  public GapSeverity getSeverity() {
-    return severity;
-  }
-
-  @Override
-  public boolean equals(final Object obj) {
-    if (this == obj) {
-      return true;
-    }
-    if (obj == null || getClass() != obj.getClass()) {
-      return false;
-    }
-
-    final CoverageGap that = (CoverageGap) obj;
-    return type == that.type
-        && Objects.equals(description, that.description)
-        && Objects.equals(affectedFeatures, that.affectedFeatures)
-        && Objects.equals(affectedRuntimes, that.affectedRuntimes)
-        && severity == that.severity;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(type, description, affectedFeatures, affectedRuntimes, severity);
-  }
-
-  @Override
-  public String toString() {
-    return "CoverageGap{"
-        + "type="
-        + type
-        + ", severity="
-        + severity
-        + ", features="
-        + affectedFeatures.size()
-        + ", runtimes="
-        + affectedRuntimes.size()
-        + '}';
-  }
-}
-
-/** Types of coverage gaps. */
-enum CoverageGapType {
-  /** A runtime is missing from testing. */
-  RUNTIME_MISSING,
-
-  /** Feature coverage is incomplete for a runtime. */
-  FEATURE_INCOMPLETE,
-
-  /** An entire category of features is untested. */
-  CATEGORY_UNTESTED,
-
-  /** Feature interaction testing is insufficient. */
-  INTERACTION_INCOMPLETE
-}
-
-/** Severity levels for coverage gaps. */
-enum GapSeverity {
-  /** Low severity gap that should be addressed eventually. */
-  LOW,
-
-  /** Medium severity gap that should be addressed soon. */
-  MEDIUM,
-
-  /** High severity gap that requires immediate attention. */
-  HIGH
-}
-
-/** Analysis of feature interactions and combinations. */
-final class FeatureInteractionAnalysis {
-  private final Map<String, Set<String>> featureCombinations;
-  private final List<String> problematicInteractions;
-  private final double interactionComplexity;
-
-  public FeatureInteractionAnalysis(
-      final Map<String, Set<String>> featureCombinations,
-      final List<String> problematicInteractions,
-      final double interactionComplexity) {
-    this.featureCombinations = Map.copyOf(featureCombinations);
-    this.problematicInteractions = List.copyOf(problematicInteractions);
-    this.interactionComplexity = interactionComplexity;
-  }
-
-  public Map<String, Set<String>> getFeatureCombinations() {
-    return featureCombinations;
-  }
-
-  public List<String> getProblematicInteractions() {
-    return problematicInteractions;
-  }
-
-  public double getInteractionComplexity() {
-    return interactionComplexity;
-  }
-
-  @Override
-  public boolean equals(final Object obj) {
-    if (this == obj) {
-      return true;
-    }
-    if (obj == null || getClass() != obj.getClass()) {
-      return false;
-    }
-
-    final FeatureInteractionAnalysis that = (FeatureInteractionAnalysis) obj;
-    return Double.compare(that.interactionComplexity, interactionComplexity) == 0
-        && Objects.equals(featureCombinations, that.featureCombinations)
-        && Objects.equals(problematicInteractions, that.problematicInteractions);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(featureCombinations, problematicInteractions, interactionComplexity);
-  }
-
-  @Override
-  public String toString() {
-    return "FeatureInteractionAnalysis{"
-        + "combinations="
-        + featureCombinations.size()
-        + ", problematic="
-        + problematicInteractions.size()
-        + ", complexity="
-        + String.format("%.2f", interactionComplexity)
-        + '}';
   }
 }

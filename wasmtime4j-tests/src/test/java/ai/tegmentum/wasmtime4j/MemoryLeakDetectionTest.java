@@ -544,7 +544,6 @@ class MemoryLeakDetectionTest extends BaseIntegrationTest {
   private void performCompleteGarbageCollection() {
     for (int i = 0; i < 5; i++) {
       System.gc();
-      System.runFinalization();
       try {
         Thread.sleep(200);
       } catch (final InterruptedException e) {

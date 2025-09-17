@@ -12,7 +12,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.ResourceBundle;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -207,7 +206,7 @@ public final class TemplateEngine {
     templateData.put("config", reportConfig);
 
     // Add theme data
-    final ThemeConfiguration theme = reportConfig.getThemeConfig();
+    final ReportConfiguration.ThemeConfiguration theme = reportConfig.getThemeConfig();
     templateData.put("theme", theme);
     templateData.put("colors", theme.getColors());
     templateData.put("fonts", theme.getFonts());
@@ -282,12 +281,24 @@ public final class TemplateEngine {
       return this;
     }
 
+    /**
+     * Sets the resource bundle name for internationalization.
+     *
+     * @param resourceBundleName the resource bundle name
+     * @return this builder
+     */
     public Builder resourceBundleName(final String resourceBundleName) {
       this.resourceBundleName =
           Objects.requireNonNull(resourceBundleName, "resourceBundleName cannot be null");
       return this;
     }
 
+    /**
+     * Sets the cache size for template caching.
+     *
+     * @param cacheSize the cache size
+     * @return this builder
+     */
     public Builder cacheSize(final int cacheSize) {
       if (cacheSize < 0) {
         throw new IllegalArgumentException("cacheSize cannot be negative");
@@ -296,6 +307,12 @@ public final class TemplateEngine {
       return this;
     }
 
+    /**
+     * Sets the cache expiration time in minutes.
+     *
+     * @param cacheExpirationMinutes the cache expiration time in minutes
+     * @return this builder
+     */
     public Builder cacheExpirationMinutes(final long cacheExpirationMinutes) {
       if (cacheExpirationMinutes < 0) {
         throw new IllegalArgumentException("cacheExpirationMinutes cannot be negative");
@@ -307,282 +324,5 @@ public final class TemplateEngine {
     public TemplateEngine build() {
       return new TemplateEngine(this);
     }
-  }
-}
-
-/** Exception thrown when template processing fails. */
-final class TemplateProcessingException extends Exception {
-  public TemplateProcessingException(final String message) {
-    super(message);
-  }
-
-  public TemplateProcessingException(final String message, final Throwable cause) {
-    super(message, cause);
-  }
-}
-
-/** Simple template cache with expiration support. */
-final class TemplateCache {
-  private final Map<String, CacheEntry> cache;
-  private final int maxSize;
-  private final long expirationMillis;
-  private long hits = 0;
-  private long misses = 0;
-
-  public TemplateCache(final int maxSize, final long expirationMinutes) {
-    this.cache = new java.util.concurrent.ConcurrentHashMap<>();
-    this.maxSize = maxSize;
-    this.expirationMillis = expirationMinutes * 60 * 1000;
-  }
-
-  public Template get(final String key) {
-    final CacheEntry entry = cache.get(key);
-    if (entry != null && !entry.isExpired()) {
-      hits++;
-      return entry.template;
-    }
-
-    if (entry != null) {
-      cache.remove(key);
-    }
-
-    misses++;
-    return null;
-  }
-
-  public void put(final String key, final Template template) {
-    if (cache.size() >= maxSize) {
-      evictOldest();
-    }
-
-    cache.put(key, new CacheEntry(template, System.currentTimeMillis() + expirationMillis));
-  }
-
-  public void clear() {
-    cache.clear();
-  }
-
-  public CacheStatistics getStatistics() {
-    return new CacheStatistics(cache.size(), hits, misses);
-  }
-
-  private void evictOldest() {
-    // Simple LRU-like eviction - remove expired entries first
-    cache.entrySet().removeIf(entry -> entry.getValue().isExpired());
-
-    // If still too large, remove some entries
-    if (cache.size() >= maxSize) {
-      final java.util.Iterator<Map.Entry<String, CacheEntry>> iterator =
-          cache.entrySet().iterator();
-      for (int i = 0; i < maxSize / 4 && iterator.hasNext(); i++) {
-        iterator.next();
-        iterator.remove();
-      }
-    }
-  }
-
-  private static final class CacheEntry {
-    final Template template;
-    final long expirationTime;
-
-    CacheEntry(final Template template, final long expirationTime) {
-      this.template = template;
-      this.expirationTime = expirationTime;
-    }
-
-    boolean isExpired() {
-      return System.currentTimeMillis() > expirationTime;
-    }
-  }
-}
-
-/** Cache statistics. */
-final class CacheStatistics {
-  private final int size;
-  private final long hits;
-  private final long misses;
-
-  public CacheStatistics(final int size, final long hits, final long misses) {
-    this.size = size;
-    this.hits = hits;
-    this.misses = misses;
-  }
-
-  public int getSize() {
-    return size;
-  }
-
-  public long getHits() {
-    return hits;
-  }
-
-  public long getMisses() {
-    return misses;
-  }
-
-  public double getHitRatio() {
-    final long total = hits + misses;
-    return total == 0 ? 0.0 : (double) hits / total;
-  }
-
-  @Override
-  public String toString() {
-    return "CacheStatistics{"
-        + "size="
-        + size
-        + ", hits="
-        + hits
-        + ", misses="
-        + misses
-        + ", hitRatio="
-        + String.format("%.2f%%", getHitRatio() * 100)
-        + '}';
-  }
-}
-
-/** Message resolver for internationalization support. */
-final class MessageResolver {
-  private final ResourceBundle resourceBundle;
-  private final Locale locale;
-
-  public MessageResolver(final String bundleName, final Locale locale) {
-    this.locale = locale;
-    try {
-      this.resourceBundle = ResourceBundle.getBundle(bundleName, locale);
-    } catch (final java.util.MissingResourceException e) {
-      throw new IllegalArgumentException("Resource bundle not found: " + bundleName, e);
-    }
-  }
-
-  /**
-   * Gets a localized message.
-   *
-   * @param key the message key
-   * @return the localized message
-   */
-  public String getMessage(final String key) {
-    try {
-      return resourceBundle.getString(key);
-    } catch (final java.util.MissingResourceException e) {
-      return "!" + key + "!"; // Return key with markers if not found
-    }
-  }
-
-  /**
-   * Gets a localized message with parameters.
-   *
-   * @param key the message key
-   * @param params the parameters
-   * @return the formatted localized message
-   */
-  public String getMessage(final String key, final Object... params) {
-    final String pattern = getMessage(key);
-    return java.text.MessageFormat.format(pattern, params);
-  }
-
-  public Locale getLocale() {
-    return locale;
-  }
-}
-
-/** Utility functions available in templates. */
-final class TemplateUtilities {
-
-  /**
-   * Formats a number as a percentage.
-   *
-   * @param value the value to format
-   * @return formatted percentage string
-   */
-  public String formatPercentage(final double value) {
-    return String.format("%.1f%%", value * 100);
-  }
-
-  /**
-   * Formats a duration in milliseconds to human-readable format.
-   *
-   * @param millis the duration in milliseconds
-   * @return formatted duration string
-   */
-  public String formatDuration(final long millis) {
-    if (millis < 1000) {
-      return millis + " ms";
-    } else if (millis < 60000) {
-      return String.format("%.1f sec", millis / 1000.0);
-    } else if (millis < 3600000) {
-      return String.format("%.1f min", millis / 60000.0);
-    } else {
-      return String.format("%.1f hr", millis / 3600000.0);
-    }
-  }
-
-  /**
-   * Truncates a string to the specified length.
-   *
-   * @param value the string to truncate
-   * @param maxLength the maximum length
-   * @return truncated string
-   */
-  public String truncate(final String value, final int maxLength) {
-    if (value == null || value.length() <= maxLength) {
-      return value;
-    }
-    return value.substring(0, maxLength - 3) + "...";
-  }
-
-  /**
-   * Escapes HTML special characters.
-   *
-   * @param value the string to escape
-   * @return escaped string
-   */
-  public String escapeHtml(final String value) {
-    if (value == null) {
-      return "";
-    }
-    return value
-        .replace("&", "&amp;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;")
-        .replace("\"", "&quot;")
-        .replace("'", "&#39;");
-  }
-
-  /**
-   * Capitalizes the first letter of a string.
-   *
-   * @param value the string to capitalize
-   * @return capitalized string
-   */
-  public String capitalize(final String value) {
-    if (value == null || value.isEmpty()) {
-      return value;
-    }
-    return Character.toUpperCase(value.charAt(0)) + value.substring(1).toLowerCase();
-  }
-
-  /**
-   * Converts a value to CSS color format.
-   *
-   * @param value the color value (hex, rgb, or name)
-   * @return CSS color string
-   */
-  public String toCssColor(final String value) {
-    if (value == null || value.isEmpty()) {
-      return "#000000";
-    }
-
-    // If it's already a valid CSS color, return as-is
-    if (value.startsWith("#") || value.startsWith("rgb") || value.startsWith("hsl")) {
-      return value;
-    }
-
-    // If it's a hex color without #, add it
-    if (value.matches("[0-9a-fA-F]{6}")) {
-      return "#" + value;
-    }
-
-    // Otherwise return as-is (might be a named color)
-    return value;
   }
 }

@@ -748,7 +748,6 @@ class ConcurrentResourceTest extends BaseIntegrationTest {
   private void forceGarbageCollectionCycle() {
     for (int i = 0; i < 3; i++) {
       System.gc();
-      System.runFinalization();
       try {
         Thread.sleep(100);
       } catch (final InterruptedException e) {

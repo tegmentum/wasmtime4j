@@ -33,6 +33,7 @@ public final class SchemaValidator {
   private final Map<String, SchemaDefinition> registeredSchemas;
   private final Map<ExportFormat, FormatValidator> formatValidators;
 
+  /** Creates a new schema validator with default configuration. */
   public SchemaValidator() {
     this.registeredSchemas = new ConcurrentHashMap<>();
     this.formatValidators = createFormatValidators();
@@ -116,6 +117,10 @@ public final class SchemaValidator {
       case CSV -> validateForCsvExport(report, errors, warnings);
       case XML -> validateForXmlExport(report, errors, warnings);
       case HTML -> validateForHtmlExport(report, errors, warnings);
+      default -> {
+        // Unknown format - add general validation warning
+        warnings.add(new ValidationWarning("Unknown export format: " + format, "format"));
+      }
     }
 
     // Schema version compatibility
@@ -436,8 +441,8 @@ final class JsonFormatValidator implements FormatValidator {
               "Missing required field: results", ValidationErrorType.MISSING_REQUIRED_FIELD));
     }
 
-    // Check for valid UTF-8 encoding
-    if (content.contains("\uFFFD")) {
+    // Check for valid UTF-8 encoding - looking for replacement character (Unicode FFFD)
+    if (content.contains("�")) {
       warnings.add(new ValidationWarning("Potential encoding issues detected", "encoding"));
     }
 

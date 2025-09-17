@@ -341,12 +341,11 @@ public final class ConsoleReporter {
 
     // Show configuration
     output.printf("Configuration:%n");
-    output.printf("  Verbosity: %s%n", report.getConfiguration().getVerbosity());
+    output.printf("  Name: %s%n", report.getConfiguration().getConfigurationName());
     output.printf(
-        "  Colors: %s%n", report.getConfiguration().isColorOutput() ? "enabled" : "disabled");
-    output.printf(
-        "  Progress: %s%n",
-        report.getConfiguration().isProgressReporting() ? "enabled" : "disabled");
+        "  Content: Summary=%s, Metadata=%s%n",
+        report.getConfiguration().getContentConfig().isIncludeSummary(),
+        report.getConfiguration().getContentConfig().isIncludeMetadata());
     output.println();
 
     // Show test breakdown

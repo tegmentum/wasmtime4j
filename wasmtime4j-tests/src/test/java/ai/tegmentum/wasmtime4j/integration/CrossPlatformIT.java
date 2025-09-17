@@ -75,7 +75,8 @@ class CrossPlatformIT extends BaseIntegrationTest {
       assertThat(expectedLibraryExtension).isEqualTo(".so");
       assertThat(libraryPrefix).isEqualTo("lib");
 
-      LOGGER.info("Linux library conventions validated: prefix=" + libraryPrefix + ", extension=" + expectedLibraryExtension);
+      LOGGER.info("Linux library conventions validated: prefix=" + libraryPrefix
+          + ", extension=" + expectedLibraryExtension);
 
       // Test that we can determine the correct platform string
       final String expectedPlatformString = TestUtils.isX86_64() ? "linux-x86_64" : "linux-aarch64";
@@ -123,7 +124,8 @@ class CrossPlatformIT extends BaseIntegrationTest {
       assertThat(expectedLibraryExtension).isEqualTo(".dylib");
       assertThat(libraryPrefix).isEqualTo("lib");
 
-      LOGGER.info("macOS library conventions validated: prefix=" + libraryPrefix + ", extension=" + expectedLibraryExtension);
+      LOGGER.info("macOS library conventions validated: prefix=" + libraryPrefix
+          + ", extension=" + expectedLibraryExtension);
 
       // Test that we can determine the correct platform string for both architectures
       final String expectedPlatformString = TestUtils.isX86_64() ? "macos-x86_64" : "macos-aarch64";

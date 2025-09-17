@@ -642,6 +642,9 @@ public final class RecommendationEngine {
         case LOW:
           lowPriority++;
           break;
+        default:
+          // Handle unexpected severity
+          break;
       }
 
       // Count by category
@@ -774,6 +777,9 @@ public final class RecommendationEngine {
       case LOW:
         baseScore = 0.3;
         break;
+      default:
+        // Keep default base score
+        break;
     }
 
     // Adjust based on category
@@ -786,6 +792,9 @@ public final class RecommendationEngine {
         break;
       case COVERAGE:
         baseScore *= COVERAGE_GAP_WEIGHT;
+        break;
+      default:
+        // Keep base score unchanged for unknown categories
         break;
     }
 
@@ -804,6 +813,9 @@ public final class RecommendationEngine {
         break;
       case LOW:
         score = 0.4;
+        break;
+      default:
+        // Keep default score
         break;
     }
 

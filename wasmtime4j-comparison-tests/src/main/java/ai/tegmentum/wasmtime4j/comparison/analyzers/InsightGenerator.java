@@ -439,6 +439,10 @@ public final class InsightGenerator {
             recommendations.add("Optimize native method signatures");
           }
           break;
+
+        default:
+          // Unknown runtime type - no specific recommendations
+          break;
       }
 
       if (!observations.isEmpty()) {
@@ -1107,7 +1111,10 @@ public final class InsightGenerator {
     private TrendData analyzeTrend(final String metric, final List<Double> values) {
       // Simple linear trend analysis
       final int n = values.size();
-      double sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+      double sumX = 0;
+      double sumY = 0;
+      double sumXY = 0;
+      double sumX2 = 0;
 
       for (int i = 0; i < n; i++) {
         final double x = i;
@@ -1175,6 +1182,11 @@ public final class InsightGenerator {
           optimizationOpportunities.add("Arena-based memory management");
           optimizationOpportunities.add("Native method signature optimization");
           wellTested = false; // Panama is newer
+          break;
+
+        default:
+          // Unknown runtime type
+          wellTested = false;
           break;
       }
     }
@@ -1245,6 +1257,11 @@ public final class InsightGenerator {
         case RUNTIME_SPECIFIC:
           recommendations.add("Analyze runtime-specific optimization opportunities");
           recommendations.add("Implement targeted runtime optimizations");
+          break;
+
+        default:
+          // Unknown pattern type
+          recommendations.add("Review performance patterns and optimize accordingly");
           break;
       }
 

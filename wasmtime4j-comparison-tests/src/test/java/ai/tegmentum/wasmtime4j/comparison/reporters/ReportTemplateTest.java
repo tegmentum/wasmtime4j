@@ -3,17 +3,16 @@ package ai.tegmentum.wasmtime4j.comparison.reporters;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 
 /**
- * Comprehensive tests for the ReportTemplate system.
- * Tests template creation, validation, component management, and configuration compatibility.
+ * Comprehensive tests for the ReportTemplate system. Tests template creation, validation, component
+ * management, and configuration compatibility.
  */
 class ReportTemplateTest {
 
@@ -79,17 +78,19 @@ class ReportTemplateTest {
     @Test
     @DisplayName("Should create custom template with builder")
     void shouldCreateCustomTemplateWithBuilder() {
-      final TemplateComponent customComponent = new TemplateComponent.Builder("custom", "Custom Component", ComponentType.CUSTOM)
-          .templateContent("<div>Custom content</div>")
-          .required(true)
-          .build();
+      final TemplateComponent customComponent =
+          new TemplateComponent.Builder("custom", "Custom Component", ComponentType.CUSTOM)
+              .templateContent("<div>Custom content</div>")
+              .required(true)
+              .build();
 
-      final ReportTemplate template = new ReportTemplate.Builder("custom-template", "Custom Template")
-          .templateType(TemplateType.JSON)
-          .components(List.of(customComponent))
-          .templateData(Map.of("customData", "value"))
-          .metadata(TemplateMetadata.defaultMetadata())
-          .build();
+      final ReportTemplate template =
+          new ReportTemplate.Builder("custom-template", "Custom Template")
+              .templateType(TemplateType.JSON)
+              .components(List.of(customComponent))
+              .templateData(Map.of("customData", "value"))
+              .metadata(TemplateMetadata.defaultMetadata())
+              .build();
 
       assertThat(template.getTemplateId()).isEqualTo("custom-template");
       assertThat(template.getTemplateName()).isEqualTo("Custom Template");
@@ -101,11 +102,9 @@ class ReportTemplateTest {
     @Test
     @DisplayName("Should fail to build template without required metadata")
     void shouldFailToBuildTemplateWithoutMetadata() {
-      assertThatThrownBy(() ->
-          new ReportTemplate.Builder("test", "Test Template")
-              .build()
-      ).isInstanceOf(IllegalStateException.class)
-       .hasMessageContaining("metadata must be set");
+      assertThatThrownBy(() -> new ReportTemplate.Builder("test", "Test Template").build())
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessageContaining("metadata must be set");
     }
   }
 
@@ -127,18 +126,21 @@ class ReportTemplateTest {
     @Test
     @DisplayName("Should detect duplicate component IDs as error")
     void shouldDetectDuplicateComponentIds() {
-      final TemplateComponent component1 = new TemplateComponent.Builder("duplicate", "Component 1", ComponentType.SUMMARY)
-          .templateContent("<div>Content 1</div>")
-          .build();
+      final TemplateComponent component1 =
+          new TemplateComponent.Builder("duplicate", "Component 1", ComponentType.SUMMARY)
+              .templateContent("<div>Content 1</div>")
+              .build();
 
-      final TemplateComponent component2 = new TemplateComponent.Builder("duplicate", "Component 2", ComponentType.METADATA)
-          .templateContent("<div>Content 2</div>")
-          .build();
+      final TemplateComponent component2 =
+          new TemplateComponent.Builder("duplicate", "Component 2", ComponentType.METADATA)
+              .templateContent("<div>Content 2</div>")
+              .build();
 
-      final ReportTemplate template = new ReportTemplate.Builder("test", "Test Template")
-          .components(List.of(component1, component2))
-          .metadata(TemplateMetadata.defaultMetadata())
-          .build();
+      final ReportTemplate template =
+          new ReportTemplate.Builder("test", "Test Template")
+              .components(List.of(component1, component2))
+              .metadata(TemplateMetadata.defaultMetadata())
+              .build();
 
       final TemplateValidationResult result = template.validate();
 
@@ -150,28 +152,32 @@ class ReportTemplateTest {
     @Test
     @DisplayName("Should detect malformed template syntax as error")
     void shouldDetectMalformedTemplateSyntax() {
-      final TemplateComponent component = new TemplateComponent.Builder("malformed", "Malformed Component", ComponentType.SUMMARY)
-          .templateContent("<div>${unclosedVariable</div>")
-          .build();
+      final TemplateComponent component =
+          new TemplateComponent.Builder("malformed", "Malformed Component", ComponentType.SUMMARY)
+              .templateContent("<div>${unclosedVariable</div>")
+              .build();
 
-      final ReportTemplate template = new ReportTemplate.Builder("test", "Test Template")
-          .components(List.of(component))
-          .metadata(TemplateMetadata.defaultMetadata())
-          .build();
+      final ReportTemplate template =
+          new ReportTemplate.Builder("test", "Test Template")
+              .components(List.of(component))
+              .metadata(TemplateMetadata.defaultMetadata())
+              .build();
 
       final TemplateValidationResult result = template.validate();
 
       assertThat(result.isValid()).isFalse();
       assertThat(result.getErrors()).hasSize(1);
-      assertThat(result.getErrors().get(0)).contains("Malformed template syntax in component: malformed");
+      assertThat(result.getErrors().get(0))
+          .contains("Malformed template syntax in component: malformed");
     }
 
     @Test
     @DisplayName("Should warn when template has no components")
     void shouldWarnWhenTemplateHasNoComponents() {
-      final ReportTemplate template = new ReportTemplate.Builder("empty", "Empty Template")
-          .metadata(TemplateMetadata.defaultMetadata())
-          .build();
+      final ReportTemplate template =
+          new ReportTemplate.Builder("empty", "Empty Template")
+              .metadata(TemplateMetadata.defaultMetadata())
+              .build();
 
       final TemplateValidationResult result = template.validate();
 
@@ -184,20 +190,23 @@ class ReportTemplateTest {
     @Test
     @DisplayName("Should warn when template has no summary component")
     void shouldWarnWhenTemplateHasNoSummaryComponent() {
-      final TemplateComponent component = new TemplateComponent.Builder("header", "Header", ComponentType.HEADER)
-          .templateContent("<header>Test</header>")
-          .build();
+      final TemplateComponent component =
+          new TemplateComponent.Builder("header", "Header", ComponentType.HEADER)
+              .templateContent("<header>Test</header>")
+              .build();
 
-      final ReportTemplate template = new ReportTemplate.Builder("no-summary", "No Summary Template")
-          .components(List.of(component))
-          .metadata(TemplateMetadata.defaultMetadata())
-          .build();
+      final ReportTemplate template =
+          new ReportTemplate.Builder("no-summary", "No Summary Template")
+              .components(List.of(component))
+              .metadata(TemplateMetadata.defaultMetadata())
+              .build();
 
       final TemplateValidationResult result = template.validate();
 
       assertThat(result.isValid()).isTrue();
       assertThat(result.getWarnings()).hasSize(1);
-      assertThat(result.getWarnings().get(0)).contains("Template should include a summary component");
+      assertThat(result.getWarnings().get(0))
+          .contains("Template should include a summary component");
     }
   }
 
@@ -232,7 +241,8 @@ class ReportTemplateTest {
     void shouldRetrieveComponentsByType() {
       final ReportTemplate template = ReportTemplate.comprehensiveTemplate();
 
-      final List<TemplateComponent> summaryComponents = template.getComponentsByType(ComponentType.SUMMARY);
+      final List<TemplateComponent> summaryComponents =
+          template.getComponentsByType(ComponentType.SUMMARY);
 
       assertThat(summaryComponents).hasSize(1);
       assertThat(summaryComponents.get(0).getComponentId()).isEqualTo("summary");
@@ -243,7 +253,8 @@ class ReportTemplateTest {
     void shouldReturnEmptyListWhenNoComponentsOfTypeFound() {
       final ReportTemplate template = ReportTemplate.minimalTemplate();
 
-      final List<TemplateComponent> metadataComponents = template.getComponentsByType(ComponentType.METADATA);
+      final List<TemplateComponent> metadataComponents =
+          template.getComponentsByType(ComponentType.METADATA);
 
       assertThat(metadataComponents).isEmpty();
     }
@@ -275,18 +286,20 @@ class ReportTemplateTest {
     @DisplayName("Should be incompatible when output format not supported")
     void shouldBeIncompatibleWhenOutputFormatNotSupported() {
       final ReportTemplate htmlTemplate = ReportTemplate.defaultHtmlTemplate();
-      final ReportConfiguration jsonOnlyConfig = new ReportConfiguration.Builder("json-only")
-          .outputConfig(new OutputConfiguration.Builder()
-              .generateHtml(false)
-              .generateJson(true)
-              .generateCsv(false)
-              .generateConsole(false)
-              .build())
-          .contentConfig(ContentConfiguration.defaultContentConfig())
-          .formattingConfig(FormattingConfiguration.defaultFormattingConfig())
-          .themeConfig(ThemeConfiguration.defaultTheme())
-          .localizationConfig(LocalizationConfiguration.defaultLocalization())
-          .build();
+      final ReportConfiguration jsonOnlyConfig =
+          new ReportConfiguration.Builder("json-only")
+              .outputConfig(
+                  new OutputConfiguration.Builder()
+                      .generateHtml(false)
+                      .generateJson(true)
+                      .generateCsv(false)
+                      .generateConsole(false)
+                      .build())
+              .contentConfig(ContentConfiguration.defaultContentConfig())
+              .formattingConfig(FormattingConfiguration.defaultFormattingConfig())
+              .themeConfig(ThemeConfiguration.defaultTheme())
+              .localizationConfig(LocalizationConfiguration.defaultLocalization())
+              .build();
 
       assertThat(htmlTemplate.isCompatibleWith(jsonOnlyConfig)).isFalse();
     }
@@ -308,16 +321,17 @@ class ReportTemplateTest {
     @Test
     @DisplayName("Should store and retrieve template data")
     void shouldStoreAndRetrieveTemplateData() {
-      final Map<String, Object> data = Map.of(
-          "title", "Custom Report",
-          "version", "1.0.0",
-          "debug", true
-      );
+      final Map<String, Object> data =
+          Map.of(
+              "title", "Custom Report",
+              "version", "1.0.0",
+              "debug", true);
 
-      final ReportTemplate template = new ReportTemplate.Builder("custom", "Custom Template")
-          .templateData(data)
-          .metadata(TemplateMetadata.defaultMetadata())
-          .build();
+      final ReportTemplate template =
+          new ReportTemplate.Builder("custom", "Custom Template")
+              .templateData(data)
+              .metadata(TemplateMetadata.defaultMetadata())
+              .build();
 
       assertThat(template.getTemplateData()).containsAllEntriesOf(data);
     }
@@ -325,9 +339,10 @@ class ReportTemplateTest {
     @Test
     @DisplayName("Should handle empty template data")
     void shouldHandleEmptyTemplateData() {
-      final ReportTemplate template = new ReportTemplate.Builder("empty-data", "Empty Data Template")
-          .metadata(TemplateMetadata.defaultMetadata())
-          .build();
+      final ReportTemplate template =
+          new ReportTemplate.Builder("empty-data", "Empty Data Template")
+              .metadata(TemplateMetadata.defaultMetadata())
+              .build();
 
       assertThat(template.getTemplateData()).isEmpty();
     }
@@ -340,17 +355,17 @@ class ReportTemplateTest {
     @Test
     @DisplayName("Should store template metadata correctly")
     void shouldStoreTemplateMetadata() {
-      final TemplateMetadata metadata = new TemplateMetadata.Builder()
-          .version("2.0.0")
-          .author("Test Author")
-          .description("Test template for validation")
-          .supportedFormats(List.of("HTML", "JSON"))
-          .customMetadata(Map.of("customKey", "customValue"))
-          .build();
+      final TemplateMetadata metadata =
+          new TemplateMetadata.Builder()
+              .version("2.0.0")
+              .author("Test Author")
+              .description("Test template for validation")
+              .supportedFormats(List.of("HTML", "JSON"))
+              .customMetadata(Map.of("customKey", "customValue"))
+              .build();
 
-      final ReportTemplate template = new ReportTemplate.Builder("test", "Test Template")
-          .metadata(metadata)
-          .build();
+      final ReportTemplate template =
+          new ReportTemplate.Builder("test", "Test Template").metadata(metadata).build();
 
       assertThat(template.getMetadata()).isEqualTo(metadata);
       assertThat(template.getMetadata().getVersion()).isEqualTo("2.0.0");
@@ -365,8 +380,10 @@ class ReportTemplateTest {
 
       assertThat(defaultMetadata.getVersion()).isEqualTo("1.0.0");
       assertThat(defaultMetadata.getAuthor()).isEqualTo("Wasmtime4j Comparison Suite");
-      assertThat(defaultMetadata.getDescription()).isEqualTo("Default template for comparison reports");
-      assertThat(defaultMetadata.getSupportedFormats()).containsExactly("HTML", "JSON", "CSV", "CONSOLE");
+      assertThat(defaultMetadata.getDescription())
+          .isEqualTo("Default template for comparison reports");
+      assertThat(defaultMetadata.getSupportedFormats())
+          .containsExactly("HTML", "JSON", "CSV", "CONSOLE");
     }
   }
 
@@ -379,10 +396,11 @@ class ReportTemplateTest {
     void shouldSupportParentTemplateHierarchy() {
       final ReportTemplate baseTemplate = ReportTemplate.defaultHtmlTemplate();
 
-      final ReportTemplate childTemplate = new ReportTemplate.Builder("child", "Child Template")
-          .parentTemplate(baseTemplate)
-          .metadata(TemplateMetadata.defaultMetadata())
-          .build();
+      final ReportTemplate childTemplate =
+          new ReportTemplate.Builder("child", "Child Template")
+              .parentTemplate(baseTemplate)
+              .metadata(TemplateMetadata.defaultMetadata())
+              .build();
 
       assertThat(childTemplate.getParentTemplate()).isPresent();
       assertThat(childTemplate.getParentTemplate().get()).isEqualTo(baseTemplate);

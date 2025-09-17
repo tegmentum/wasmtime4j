@@ -3,17 +3,16 @@ package ai.tegmentum.wasmtime4j.comparison.reporters;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 
 /**
- * Comprehensive tests for the ReportConfiguration system.
- * Tests configuration creation, content filtering, theme settings, and localization.
+ * Comprehensive tests for the ReportConfiguration system. Tests configuration creation, content
+ * filtering, theme settings, and localization.
  */
 class ReportConfigurationTest {
 
@@ -107,21 +106,20 @@ class ReportConfigurationTest {
     @Test
     @DisplayName("Should create custom configuration with builder")
     void shouldCreateCustomConfigurationWithBuilder() {
-      final Map<String, Object> customProps = Map.of(
-          "debug", true,
-          "maxMemory", 1024L,
-          "outputDir", "/tmp/reports"
-      );
+      final Map<String, Object> customProps =
+          Map.of("debug", true, "maxMemory", 1024L, "outputDir", "/tmp/reports");
 
-      final ReportConfiguration config = new ReportConfiguration.Builder("custom")
-          .contentConfig(new ContentConfiguration.Builder()
-              .includeSummary(true)
-              .includeMetadata(false)
-              .maxTestResults(500)
-              .build())
-          .themeConfig(ThemeConfiguration.darkTheme())
-          .customProperties(customProps)
-          .build();
+      final ReportConfiguration config =
+          new ReportConfiguration.Builder("custom")
+              .contentConfig(
+                  new ContentConfiguration.Builder()
+                      .includeSummary(true)
+                      .includeMetadata(false)
+                      .maxTestResults(500)
+                      .build())
+              .themeConfig(ThemeConfiguration.darkTheme())
+              .customProperties(customProps)
+              .build();
 
       assertThat(config.getConfigurationName()).isEqualTo("custom");
       assertThat(config.getContentConfig().isIncludeSummary()).isTrue();
@@ -138,9 +136,8 @@ class ReportConfigurationTest {
     @Test
     @DisplayName("Should filter tests based on excluded list")
     void shouldFilterTestsBasedOnExcludedList() {
-      final ContentConfiguration config = new ContentConfiguration.Builder()
-          .excludedTests(Set.of("test1", "test2"))
-          .build();
+      final ContentConfiguration config =
+          new ContentConfiguration.Builder().excludedTests(Set.of("test1", "test2")).build();
 
       assertThat(config.shouldIncludeTest("test1")).isFalse();
       assertThat(config.shouldIncludeTest("test2")).isFalse();
@@ -158,9 +155,10 @@ class ReportConfigurationTest {
     @Test
     @DisplayName("Should filter sections based on included list")
     void shouldFilterSectionsBasedOnIncludedList() {
-      final ContentConfiguration config = new ContentConfiguration.Builder()
-          .includedSections(Set.of("summary", "recommendations"))
-          .build();
+      final ContentConfiguration config =
+          new ContentConfiguration.Builder()
+              .includedSections(Set.of("summary", "recommendations"))
+              .build();
 
       assertThat(config.shouldIncludeSection("summary")).isTrue();
       assertThat(config.shouldIncludeSection("recommendations")).isTrue();
@@ -178,19 +176,13 @@ class ReportConfigurationTest {
     @Test
     @DisplayName("Should validate max test results is positive")
     void shouldValidateMaxTestResultsIsPositive() {
-      assertThatThrownBy(() ->
-          new ContentConfiguration.Builder()
-              .maxTestResults(0)
-              .build()
-      ).isInstanceOf(IllegalArgumentException.class)
-       .hasMessageContaining("maxTestResults must be positive");
+      assertThatThrownBy(() -> new ContentConfiguration.Builder().maxTestResults(0).build())
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("maxTestResults must be positive");
 
-      assertThatThrownBy(() ->
-          new ContentConfiguration.Builder()
-              .maxTestResults(-1)
-              .build()
-      ).isInstanceOf(IllegalArgumentException.class)
-       .hasMessageContaining("maxTestResults must be positive");
+      assertThatThrownBy(() -> new ContentConfiguration.Builder().maxTestResults(-1).build())
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("maxTestResults must be positive");
     }
   }
 
@@ -241,12 +233,9 @@ class ReportConfigurationTest {
     @Test
     @DisplayName("Should validate max line length is positive")
     void shouldValidateMaxLineLengthIsPositive() {
-      assertThatThrownBy(() ->
-          new FormattingConfiguration.Builder()
-              .maxLineLength(0)
-              .build()
-      ).isInstanceOf(IllegalArgumentException.class)
-       .hasMessageContaining("maxLineLength must be positive");
+      assertThatThrownBy(() -> new FormattingConfiguration.Builder().maxLineLength(0).build())
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("maxLineLength must be positive");
     }
   }
 
@@ -291,22 +280,23 @@ class ReportConfigurationTest {
     @Test
     @DisplayName("Should support custom colors and fonts")
     void shouldSupportCustomColorsAndFonts() {
-      final Map<String, String> customColors = Map.of(
-          "brand", "#ff5722",
-          "accent", "#03a9f4"
-      );
+      final Map<String, String> customColors =
+          Map.of(
+              "brand", "#ff5722",
+              "accent", "#03a9f4");
 
-      final Map<String, String> customFonts = Map.of(
-          "heading", "Georgia, serif",
-          "body", "Arial, sans-serif"
-      );
+      final Map<String, String> customFonts =
+          Map.of(
+              "heading", "Georgia, serif",
+              "body", "Arial, sans-serif");
 
-      final ThemeConfiguration theme = new ThemeConfiguration.Builder("custom")
-          .colors(customColors)
-          .fonts(customFonts)
-          .brandingLogo("logo.png")
-          .brandingFooter("© 2023 Custom Company")
-          .build();
+      final ThemeConfiguration theme =
+          new ThemeConfiguration.Builder("custom")
+              .colors(customColors)
+              .fonts(customFonts)
+              .brandingLogo("logo.png")
+              .brandingFooter("© 2023 Custom Company")
+              .build();
 
       assertThat(theme.getColors()).containsAllEntriesOf(customColors);
       assertThat(theme.getFonts()).containsAllEntriesOf(customFonts);
@@ -342,16 +332,17 @@ class ReportConfigurationTest {
     @Test
     @DisplayName("Should support custom locale and timezone")
     void shouldSupportCustomLocaleAndTimezone() {
-      final Map<String, String> customMessages = Map.of(
-          "welcome", "Willkommen",
-          "goodbye", "Auf Wiedersehen"
-      );
+      final Map<String, String> customMessages =
+          Map.of(
+              "welcome", "Willkommen",
+              "goodbye", "Auf Wiedersehen");
 
-      final LocalizationConfiguration config = new LocalizationConfiguration.Builder(Locale.GERMAN)
-          .timeZone("Europe/Berlin")
-          .customMessages(customMessages)
-          .resourceBundleName("custom-messages")
-          .build();
+      final LocalizationConfiguration config =
+          new LocalizationConfiguration.Builder(Locale.GERMAN)
+              .timeZone("Europe/Berlin")
+              .customMessages(customMessages)
+              .resourceBundleName("custom-messages")
+              .build();
 
       assertThat(config.getLocale()).isEqualTo(Locale.GERMAN);
       assertThat(config.getTimeZone()).isEqualTo("Europe/Berlin");
@@ -409,23 +400,17 @@ class ReportConfigurationTest {
     @Test
     @DisplayName("Should validate cache size is not negative")
     void shouldValidateCacheSizeIsNotNegative() {
-      assertThatThrownBy(() ->
-          new OutputConfiguration.Builder()
-              .maxCacheSize(-1)
-              .build()
-      ).isInstanceOf(IllegalArgumentException.class)
-       .hasMessageContaining("maxCacheSize cannot be negative");
+      assertThatThrownBy(() -> new OutputConfiguration.Builder().maxCacheSize(-1).build())
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("maxCacheSize cannot be negative");
     }
 
     @Test
     @DisplayName("Should validate output buffer size is positive")
     void shouldValidateOutputBufferSizeIsPositive() {
-      assertThatThrownBy(() ->
-          new OutputConfiguration.Builder()
-              .outputBufferSize(0)
-              .build()
-      ).isInstanceOf(IllegalArgumentException.class)
-       .hasMessageContaining("outputBufferSize must be positive");
+      assertThatThrownBy(() -> new OutputConfiguration.Builder().outputBufferSize(0).build())
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("outputBufferSize must be positive");
     }
   }
 
@@ -436,16 +421,11 @@ class ReportConfigurationTest {
     @Test
     @DisplayName("Should store and retrieve custom properties")
     void shouldStoreAndRetrieveCustomProperties() {
-      final Map<String, Object> customProps = Map.of(
-          "stringProp", "value",
-          "intProp", 42,
-          "boolProp", true,
-          "doubleProp", 3.14
-      );
+      final Map<String, Object> customProps =
+          Map.of("stringProp", "value", "intProp", 42, "boolProp", true, "doubleProp", 3.14);
 
-      final ReportConfiguration config = new ReportConfiguration.Builder("custom")
-          .customProperties(customProps)
-          .build();
+      final ReportConfiguration config =
+          new ReportConfiguration.Builder("custom").customProperties(customProps).build();
 
       assertThat(config.getCustomProperties()).containsAllEntriesOf(customProps);
       assertThat(config.getCustomProperty("stringProp", String.class)).hasValue("value");
@@ -467,9 +447,8 @@ class ReportConfigurationTest {
     void shouldReturnEmptyForWrongTypeProperties() {
       final Map<String, Object> customProps = Map.of("stringProp", "value");
 
-      final ReportConfiguration config = new ReportConfiguration.Builder("custom")
-          .customProperties(customProps)
-          .build();
+      final ReportConfiguration config =
+          new ReportConfiguration.Builder("custom").customProperties(customProps).build();
 
       assertThat(config.getCustomProperty("stringProp", Integer.class)).isEmpty();
     }

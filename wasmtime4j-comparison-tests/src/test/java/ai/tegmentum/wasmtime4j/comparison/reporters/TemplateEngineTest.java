@@ -3,26 +3,19 @@ package ai.tegmentum.wasmtime4j.comparison.reporters;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import ai.tegmentum.wasmtime4j.comparison.analyzers.BehavioralAnalysisResult;
-import ai.tegmentum.wasmtime4j.comparison.analyzers.CoverageAnalysisResult;
-import ai.tegmentum.wasmtime4j.comparison.analyzers.InsightAnalysisResult;
-import ai.tegmentum.wasmtime4j.comparison.analyzers.PerformanceAnalyzer;
-import ai.tegmentum.wasmtime4j.comparison.analyzers.RecommendationResult;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-
 import java.time.Instant;
-import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 
 /**
- * Comprehensive tests for the TemplateEngine system.
- * Tests template processing, caching, validation, and internationalization.
+ * Comprehensive tests for the TemplateEngine system. Tests template processing, caching,
+ * validation, and internationalization.
  */
 class TemplateEngineTest {
 
@@ -53,12 +46,13 @@ class TemplateEngineTest {
     @Test
     @DisplayName("Should create template engine with custom settings")
     void shouldCreateTemplateEngineWithCustomSettings() {
-      final TemplateEngine engine = TemplateEngine.builder()
-          .locale(Locale.FRENCH)
-          .resourceBundleName("custom-messages")
-          .cacheSize(50)
-          .cacheExpirationMinutes(30)
-          .build();
+      final TemplateEngine engine =
+          TemplateEngine.builder()
+              .locale(Locale.FRENCH)
+              .resourceBundleName("custom-messages")
+              .cacheSize(50)
+              .cacheExpirationMinutes(30)
+              .build();
 
       assertThat(engine).isNotNull();
       assertThat(engine.getCacheStatistics().getSize()).isZero();
@@ -67,23 +61,17 @@ class TemplateEngineTest {
     @Test
     @DisplayName("Should validate cache size is not negative")
     void shouldValidateCacheSizeIsNotNegative() {
-      assertThatThrownBy(() ->
-          TemplateEngine.builder()
-              .cacheSize(-1)
-              .build()
-      ).isInstanceOf(IllegalArgumentException.class)
-       .hasMessageContaining("cacheSize cannot be negative");
+      assertThatThrownBy(() -> TemplateEngine.builder().cacheSize(-1).build())
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("cacheSize cannot be negative");
     }
 
     @Test
     @DisplayName("Should validate cache expiration is not negative")
     void shouldValidateCacheExpirationIsNotNegative() {
-      assertThatThrownBy(() ->
-          TemplateEngine.builder()
-              .cacheExpirationMinutes(-1)
-              .build()
-      ).isInstanceOf(IllegalArgumentException.class)
-       .hasMessageContaining("cacheExpirationMinutes cannot be negative");
+      assertThatThrownBy(() -> TemplateEngine.builder().cacheExpirationMinutes(-1).build())
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("cacheExpirationMinutes cannot be negative");
     }
   }
 
@@ -122,9 +110,11 @@ class TemplateEngineTest {
     @Test
     @DisplayName("Should process individual component successfully")
     void shouldProcessIndividualComponentSuccessfully() throws TemplateProcessingException {
-      final TemplateComponent summaryComponent = TemplateComponent.createSummary("summary", "Summary");
+      final TemplateComponent summaryComponent =
+          TemplateComponent.createSummary("summary", "Summary");
 
-      final String result = templateEngine.processComponent(summaryComponent, sampleReport, defaultConfig);
+      final String result =
+          templateEngine.processComponent(summaryComponent, sampleReport, defaultConfig);
 
       assertThat(result).isNotEmpty();
       assertThat(result).contains("summary");
@@ -135,19 +125,20 @@ class TemplateEngineTest {
     @Test
     @DisplayName("Should skip incompatible components")
     void shouldSkipIncompatibleComponents() throws TemplateProcessingException {
-      final ReportConfiguration configWithoutMetadata = new ReportConfiguration.Builder("no-metadata")
-          .contentConfig(new ContentConfiguration.Builder()
-              .includeMetadata(false)
-              .build())
-          .formattingConfig(FormattingConfiguration.defaultFormattingConfig())
-          .themeConfig(ThemeConfiguration.defaultTheme())
-          .localizationConfig(LocalizationConfiguration.defaultLocalization())
-          .outputConfig(OutputConfiguration.defaultOutputConfig())
-          .build();
+      final ReportConfiguration configWithoutMetadata =
+          new ReportConfiguration.Builder("no-metadata")
+              .contentConfig(new ContentConfiguration.Builder().includeMetadata(false).build())
+              .formattingConfig(FormattingConfiguration.defaultFormattingConfig())
+              .themeConfig(ThemeConfiguration.defaultTheme())
+              .localizationConfig(LocalizationConfiguration.defaultLocalization())
+              .outputConfig(OutputConfiguration.defaultOutputConfig())
+              .build();
 
-      final TemplateComponent metadataComponent = TemplateComponent.createMetadata("metadata", "Metadata");
+      final TemplateComponent metadataComponent =
+          TemplateComponent.createMetadata("metadata", "Metadata");
 
-      final String result = templateEngine.processComponent(metadataComponent, sampleReport, configWithoutMetadata);
+      final String result =
+          templateEngine.processComponent(metadataComponent, sampleReport, configWithoutMetadata);
 
       assertThat(result).isEmpty(); // Should be skipped
     }
@@ -157,38 +148,34 @@ class TemplateEngineTest {
     void shouldThrowExceptionForNullParameters() {
       final ReportTemplate template = ReportTemplate.defaultHtmlTemplate();
 
-      assertThatThrownBy(() ->
-          templateEngine.processTemplate(null, sampleReport, defaultConfig)
-      ).isInstanceOf(NullPointerException.class);
+      assertThatThrownBy(() -> templateEngine.processTemplate(null, sampleReport, defaultConfig))
+          .isInstanceOf(NullPointerException.class);
 
-      assertThatThrownBy(() ->
-          templateEngine.processTemplate(template, null, defaultConfig)
-      ).isInstanceOf(NullPointerException.class);
+      assertThatThrownBy(() -> templateEngine.processTemplate(template, null, defaultConfig))
+          .isInstanceOf(NullPointerException.class);
 
-      assertThatThrownBy(() ->
-          templateEngine.processTemplate(template, sampleReport, null)
-      ).isInstanceOf(NullPointerException.class);
+      assertThatThrownBy(() -> templateEngine.processTemplate(template, sampleReport, null))
+          .isInstanceOf(NullPointerException.class);
     }
 
     @Test
     @DisplayName("Should throw exception for incompatible template")
     void shouldThrowExceptionForIncompatibleTemplate() {
       final ReportTemplate htmlTemplate = ReportTemplate.defaultHtmlTemplate();
-      final ReportConfiguration jsonOnlyConfig = new ReportConfiguration.Builder("json-only")
-          .outputConfig(new OutputConfiguration.Builder()
-              .generateHtml(false)
-              .generateJson(true)
-              .build())
-          .contentConfig(ContentConfiguration.defaultContentConfig())
-          .formattingConfig(FormattingConfiguration.defaultFormattingConfig())
-          .themeConfig(ThemeConfiguration.defaultTheme())
-          .localizationConfig(LocalizationConfiguration.defaultLocalization())
-          .build();
+      final ReportConfiguration jsonOnlyConfig =
+          new ReportConfiguration.Builder("json-only")
+              .outputConfig(
+                  new OutputConfiguration.Builder().generateHtml(false).generateJson(true).build())
+              .contentConfig(ContentConfiguration.defaultContentConfig())
+              .formattingConfig(FormattingConfiguration.defaultFormattingConfig())
+              .themeConfig(ThemeConfiguration.defaultTheme())
+              .localizationConfig(LocalizationConfiguration.defaultLocalization())
+              .build();
 
-      assertThatThrownBy(() ->
-          templateEngine.processTemplate(htmlTemplate, sampleReport, jsonOnlyConfig)
-      ).isInstanceOf(TemplateProcessingException.class)
-       .hasMessageContaining("Template is not compatible with the provided configuration");
+      assertThatThrownBy(
+              () -> templateEngine.processTemplate(htmlTemplate, sampleReport, jsonOnlyConfig))
+          .isInstanceOf(TemplateProcessingException.class)
+          .hasMessageContaining("Template is not compatible with the provided configuration");
     }
   }
 
@@ -210,14 +197,16 @@ class TemplateEngineTest {
     @Test
     @DisplayName("Should validate template with errors as invalid")
     void shouldValidateTemplateWithErrorsAsInvalid() {
-      final TemplateComponent brokenComponent = new TemplateComponent.Builder("broken", "Broken", ComponentType.SUMMARY)
-          .templateContent("<div>${unclosedVariable</div>")
-          .build();
+      final TemplateComponent brokenComponent =
+          new TemplateComponent.Builder("broken", "Broken", ComponentType.SUMMARY)
+              .templateContent("<div>${unclosedVariable</div>")
+              .build();
 
-      final ReportTemplate template = new ReportTemplate.Builder("broken", "Broken Template")
-          .components(List.of(brokenComponent))
-          .metadata(TemplateMetadata.defaultMetadata())
-          .build();
+      final ReportTemplate template =
+          new ReportTemplate.Builder("broken", "Broken Template")
+              .components(List.of(brokenComponent))
+              .metadata(TemplateMetadata.defaultMetadata())
+              .build();
 
       final TemplateValidationResult result = templateEngine.validateTemplate(template);
 
@@ -229,19 +218,21 @@ class TemplateEngineTest {
     @Test
     @DisplayName("Should throw exception when processing invalid template")
     void shouldThrowExceptionWhenProcessingInvalidTemplate() {
-      final TemplateComponent brokenComponent = new TemplateComponent.Builder("broken", "Broken", ComponentType.SUMMARY)
-          .templateContent("<div>${unclosedVariable</div>")
-          .build();
+      final TemplateComponent brokenComponent =
+          new TemplateComponent.Builder("broken", "Broken", ComponentType.SUMMARY)
+              .templateContent("<div>${unclosedVariable</div>")
+              .build();
 
-      final ReportTemplate template = new ReportTemplate.Builder("broken", "Broken Template")
-          .components(List.of(brokenComponent))
-          .metadata(TemplateMetadata.defaultMetadata())
-          .build();
+      final ReportTemplate template =
+          new ReportTemplate.Builder("broken", "Broken Template")
+              .components(List.of(brokenComponent))
+              .metadata(TemplateMetadata.defaultMetadata())
+              .build();
 
-      assertThatThrownBy(() ->
-          templateEngine.processTemplate(template, sampleReport, defaultConfig)
-      ).isInstanceOf(TemplateProcessingException.class)
-       .hasMessageContaining("Template validation failed");
+      assertThatThrownBy(
+              () -> templateEngine.processTemplate(template, sampleReport, defaultConfig))
+          .isInstanceOf(TemplateProcessingException.class)
+          .hasMessageContaining("Template validation failed");
     }
   }
 
@@ -306,14 +297,18 @@ class TemplateEngineTest {
     @Test
     @DisplayName("Should include theme data in template processing")
     void shouldIncludeThemeDataInTemplateProcessing() throws TemplateProcessingException {
-      final TemplateComponent customComponent = new TemplateComponent.Builder("themed", "Themed Component", ComponentType.CUSTOM)
-          .templateContent("<div style=\"color: ${colors.primary}; background: ${colors.background}\">${theme.themeName}</div>")
-          .build();
+      final TemplateComponent customComponent =
+          new TemplateComponent.Builder("themed", "Themed Component", ComponentType.CUSTOM)
+              .templateContent(
+                  "<div style=\"color: ${colors.primary}; background:"
+                      + " ${colors.background}\">${theme.themeName}</div>")
+              .build();
 
-      final ReportTemplate template = new ReportTemplate.Builder("themed", "Themed Template")
-          .components(List.of(customComponent))
-          .metadata(TemplateMetadata.defaultMetadata())
-          .build();
+      final ReportTemplate template =
+          new ReportTemplate.Builder("themed", "Themed Template")
+              .components(List.of(customComponent))
+              .metadata(TemplateMetadata.defaultMetadata())
+              .build();
 
       final String result = templateEngine.processTemplate(template, sampleReport, defaultConfig);
 
@@ -325,22 +320,28 @@ class TemplateEngineTest {
     @Test
     @DisplayName("Should process dark theme correctly")
     void shouldProcessDarkThemeCorrectly() throws TemplateProcessingException {
-      final ReportConfiguration darkConfig = new ReportConfiguration.Builder("dark")
-          .themeConfig(ThemeConfiguration.darkTheme())
-          .contentConfig(ContentConfiguration.defaultContentConfig())
-          .formattingConfig(FormattingConfiguration.defaultFormattingConfig())
-          .localizationConfig(LocalizationConfiguration.defaultLocalization())
-          .outputConfig(OutputConfiguration.defaultOutputConfig())
-          .build();
+      final ReportConfiguration darkConfig =
+          new ReportConfiguration.Builder("dark")
+              .themeConfig(ThemeConfiguration.darkTheme())
+              .contentConfig(ContentConfiguration.defaultContentConfig())
+              .formattingConfig(FormattingConfiguration.defaultFormattingConfig())
+              .localizationConfig(LocalizationConfiguration.defaultLocalization())
+              .outputConfig(OutputConfiguration.defaultOutputConfig())
+              .build();
 
-      final TemplateComponent customComponent = new TemplateComponent.Builder("dark-themed", "Dark Themed Component", ComponentType.CUSTOM)
-          .templateContent("<div class=\"${darkMode?then('dark-mode', 'light-mode')}\">Theme: ${theme.themeName}</div>")
-          .build();
+      final TemplateComponent customComponent =
+          new TemplateComponent.Builder(
+                  "dark-themed", "Dark Themed Component", ComponentType.CUSTOM)
+              .templateContent(
+                  "<div class=\"${darkMode?then('dark-mode', 'light-mode')}\">Theme:"
+                      + " ${theme.themeName}</div>")
+              .build();
 
-      final ReportTemplate template = new ReportTemplate.Builder("dark", "Dark Template")
-          .components(List.of(customComponent))
-          .metadata(TemplateMetadata.defaultMetadata())
-          .build();
+      final ReportTemplate template =
+          new ReportTemplate.Builder("dark", "Dark Template")
+              .components(List.of(customComponent))
+              .metadata(TemplateMetadata.defaultMetadata())
+              .build();
 
       final String result = templateEngine.processTemplate(template, sampleReport, darkConfig);
 
@@ -356,8 +357,10 @@ class TemplateEngineTest {
     @Test
     @DisplayName("Should provide utility functions in templates")
     void shouldProvideUtilityFunctionsInTemplates() throws TemplateProcessingException {
-      final TemplateComponent utilComponent = new TemplateComponent.Builder("util", "Utility Component", ComponentType.CUSTOM)
-          .templateContent("""
+      final TemplateComponent utilComponent =
+          new TemplateComponent.Builder("util", "Utility Component", ComponentType.CUSTOM)
+              .templateContent(
+                  """
               <div>
                 <span>Percentage: ${util.formatPercentage(0.95)}</span>
                 <span>Duration: ${util.formatDuration(5000)}</span>
@@ -365,12 +368,13 @@ class TemplateEngineTest {
                 <span>Capitalized: ${util.capitalize("hello world")}</span>
               </div>
               """)
-          .build();
+              .build();
 
-      final ReportTemplate template = new ReportTemplate.Builder("util", "Utility Template")
-          .components(List.of(utilComponent))
-          .metadata(TemplateMetadata.defaultMetadata())
-          .build();
+      final ReportTemplate template =
+          new ReportTemplate.Builder("util", "Utility Template")
+              .components(List.of(utilComponent))
+              .metadata(TemplateMetadata.defaultMetadata())
+              .build();
 
       final String result = templateEngine.processTemplate(template, sampleReport, defaultConfig);
 
@@ -388,63 +392,67 @@ class TemplateEngineTest {
     @Test
     @DisplayName("Should handle template processing errors gracefully")
     void shouldHandleTemplateProcessingErrorsGracefully() {
-      final TemplateComponent errorComponent = new TemplateComponent.Builder("error", "Error Component", ComponentType.CUSTOM)
-          .templateContent("<div>${nonExistentMethod()}</div>")
-          .build();
+      final TemplateComponent errorComponent =
+          new TemplateComponent.Builder("error", "Error Component", ComponentType.CUSTOM)
+              .templateContent("<div>${nonExistentMethod()}</div>")
+              .build();
 
-      final ReportTemplate template = new ReportTemplate.Builder("error", "Error Template")
-          .components(List.of(errorComponent))
-          .metadata(TemplateMetadata.defaultMetadata())
-          .build();
+      final ReportTemplate template =
+          new ReportTemplate.Builder("error", "Error Template")
+              .components(List.of(errorComponent))
+              .metadata(TemplateMetadata.defaultMetadata())
+              .build();
 
-      assertThatThrownBy(() ->
-          templateEngine.processTemplate(template, sampleReport, defaultConfig)
-      ).isInstanceOf(TemplateProcessingException.class)
-       .hasMessageContaining("Failed to process template");
+      assertThatThrownBy(
+              () -> templateEngine.processTemplate(template, sampleReport, defaultConfig))
+          .isInstanceOf(TemplateProcessingException.class)
+          .hasMessageContaining("Failed to process template");
     }
 
     @Test
     @DisplayName("Should handle component processing errors gracefully")
     void shouldHandleComponentProcessingErrorsGracefully() {
-      final TemplateComponent errorComponent = new TemplateComponent.Builder("error", "Error Component", ComponentType.CUSTOM)
-          .templateContent("<div>${badExpression</div>")
-          .build();
+      final TemplateComponent errorComponent =
+          new TemplateComponent.Builder("error", "Error Component", ComponentType.CUSTOM)
+              .templateContent("<div>${badExpression</div>")
+              .build();
 
-      assertThatThrownBy(() ->
-          templateEngine.processComponent(errorComponent, sampleReport, defaultConfig)
-      ).isInstanceOf(TemplateProcessingException.class)
-       .hasMessageContaining("Failed to process component error");
+      assertThatThrownBy(
+              () -> templateEngine.processComponent(errorComponent, sampleReport, defaultConfig))
+          .isInstanceOf(TemplateProcessingException.class)
+          .hasMessageContaining("Failed to process component error");
     }
   }
 
   private ComparisonReport createSampleReport() {
-    final ReportMetadata metadata = new ReportMetadata(
-        "1.0.0",
-        Instant.now().minusSeconds(3600),
-        Instant.now(),
-        Map.of("java.version", "23", "os.name", "Linux"),
-        Map.of("suite", "smoke", "timeout", "1800"),
-        List.of("jni", "panama")
-    );
+    final ReportMetadata metadata =
+        new ReportMetadata(
+            "1.0.0",
+            Instant.now().minusSeconds(3600),
+            Instant.now(),
+            Map.of("java.version", "23", "os.name", "Linux"),
+            Map.of("suite", "smoke", "timeout", "1800"),
+            List.of("jni", "panama"));
 
-    final ReportSummary summary = new ReportSummary(
-        100, // total tests
-        5,   // behavioral issues
-        3,   // performance issues
-        2,   // coverage gaps
-        4,   // high priority recommendations
-        0.85, // compatibility score
-        ReportStatus.SUCCESS
-    );
+    final ReportSummary summary =
+        new ReportSummary(
+            100, // total tests
+            5, // behavioral issues
+            3, // performance issues
+            2, // coverage gaps
+            4, // high priority recommendations
+            0.85, // compatibility score
+            ReportStatus.SUCCESS);
 
-    final TestResults sampleTestResult = new TestResults(
-        "sample-test",
-        Optional.empty(), // No behavioral results for this test
-        Optional.empty(), // No performance results for this test
-        Optional.empty(), // No coverage results for this test
-        Optional.empty(), // No insight results for this test
-        Optional.empty()  // No recommendation results for this test
-    );
+    final TestResults sampleTestResult =
+        new TestResults(
+            "sample-test",
+            Optional.empty(), // No behavioral results for this test
+            Optional.empty(), // No performance results for this test
+            Optional.empty(), // No coverage results for this test
+            Optional.empty(), // No insight results for this test
+            Optional.empty() // No recommendation results for this test
+            );
 
     return new ComparisonReport.Builder("test-report-001", "Test Report")
         .testResults(Map.of("sample-test", sampleTestResult))

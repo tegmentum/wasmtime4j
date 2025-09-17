@@ -441,6 +441,17 @@ public final class ResourceStatisticsCollector {
     public final long nonHeapCommitted;
     public final long nonHeapMax;
 
+    /**
+     * Constructs a memory snapshot.
+     *
+     * @param timestamp snapshot timestamp
+     * @param heapUsed heap memory used
+     * @param heapCommitted heap memory committed
+     * @param heapMax heap memory maximum
+     * @param nonHeapUsed non-heap memory used
+     * @param nonHeapCommitted non-heap memory committed
+     * @param nonHeapMax non-heap memory maximum
+     */
     public MemorySnapshot(
         final long timestamp,
         final long heapUsed,
@@ -465,6 +476,13 @@ public final class ResourceStatisticsCollector {
     public final long totalCollections;
     public final long totalCollectionTime;
 
+    /**
+     * Constructs a garbage collection snapshot.
+     *
+     * @param timestamp snapshot timestamp
+     * @param totalCollections total number of collections
+     * @param totalCollectionTime total collection time
+     */
     public GcSnapshot(
         final long timestamp, final long totalCollections, final long totalCollectionTime) {
       this.timestamp = timestamp;
@@ -536,6 +554,16 @@ public final class ResourceStatisticsCollector {
     public final long nonHeapCommitted;
     public final long nonHeapMax;
 
+    /**
+     * Constructs memory usage statistics.
+     *
+     * @param heapUsed heap memory used
+     * @param heapCommitted heap memory committed
+     * @param heapMax heap memory maximum
+     * @param nonHeapUsed non-heap memory used
+     * @param nonHeapCommitted non-heap memory committed
+     * @param nonHeapMax non-heap memory maximum
+     */
     public MemoryUsageStatistics(
         final long heapUsed,
         final long heapCommitted,
@@ -568,6 +596,15 @@ public final class ResourceStatisticsCollector {
     public final long totalLeaks;
     public final double leakRate;
 
+    /**
+     * Constructs resource leak statistics.
+     *
+     * @param resourceType type of resource
+     * @param totalCreated total resources created
+     * @param totalCleaned total resources cleaned
+     * @param totalLeaks total resource leaks
+     * @param leakRate leak rate percentage
+     */
     public ResourceLeakStatistics(
         final String resourceType,
         final long totalCreated,
@@ -594,6 +631,18 @@ public final class ResourceStatisticsCollector {
     public final int snapshotCount;
     public final String errorMessage;
 
+    /**
+     * Constructs memory pattern analysis.
+     *
+     * @param durationMs analysis duration in milliseconds
+     * @param heapGrowth heap memory growth
+     * @param nonHeapGrowth non-heap memory growth
+     * @param heapGrowthRate heap growth rate
+     * @param nonHeapGrowthRate non-heap growth rate
+     * @param pattern memory usage pattern
+     * @param memoryEfficiency memory efficiency metric
+     * @param snapshotCount number of snapshots analyzed
+     */
     public MemoryPatternAnalysis(
         final long durationMs,
         final long heapGrowth,
@@ -614,6 +663,11 @@ public final class ResourceStatisticsCollector {
       this.errorMessage = null;
     }
 
+    /**
+     * Constructs memory pattern analysis with error.
+     *
+     * @param errorMessage error message
+     */
     public MemoryPatternAnalysis(final String errorMessage) {
       this.durationMs = 0;
       this.heapGrowth = 0;
@@ -644,6 +698,15 @@ public final class ResourceStatisticsCollector {
     public final double avgCollectionTime;
     public final String errorMessage;
 
+    /**
+     * Constructs garbage collection analysis.
+     *
+     * @param totalCollections total number of collections
+     * @param totalCollectionTime total collection time
+     * @param collectionFrequency collection frequency
+     * @param collectionOverhead collection overhead percentage
+     * @param avgCollectionTime average collection time
+     */
     public GarbageCollectionAnalysis(
         final long totalCollections,
         final long totalCollectionTime,
@@ -658,6 +721,11 @@ public final class ResourceStatisticsCollector {
       this.errorMessage = null;
     }
 
+    /**
+     * Constructs garbage collection analysis with error.
+     *
+     * @param errorMessage error message
+     */
     public GarbageCollectionAnalysis(final String errorMessage) {
       this.totalCollections = 0;
       this.totalCollectionTime = 0;
@@ -686,6 +754,17 @@ public final class ResourceStatisticsCollector {
     public final List<GcSnapshot> gcSnapshots;
     public final ConcurrentMap<String, ResourceTypeStatistics> resourceStats;
 
+    /**
+     * Constructs resource statistics report.
+     *
+     * @param collectionDuration collection duration
+     * @param totalResourcesTracked total resources tracked
+     * @param totalResourcesCleaned total resources cleaned
+     * @param totalResourceLeaks total resource leaks
+     * @param memorySnapshots memory snapshots
+     * @param gcSnapshots garbage collection snapshots
+     * @param resourceStats resource type statistics
+     */
     public ResourceStatisticsReport(
         final Duration collectionDuration,
         final long totalResourcesTracked,
@@ -703,18 +782,33 @@ public final class ResourceStatisticsCollector {
       this.resourceStats = resourceStats;
     }
 
+    /**
+     * Gets overall leak rate percentage.
+     *
+     * @return leak rate percentage
+     */
     public double getOverallLeakRate() {
       return totalResourcesTracked > 0
           ? (double) totalResourceLeaks / totalResourcesTracked * 100.0
           : 0.0;
     }
 
+    /**
+     * Gets cleanup effectiveness percentage.
+     *
+     * @return cleanup effectiveness percentage
+     */
     public double getCleanupEffectiveness() {
       return totalResourcesTracked > 0
           ? (double) totalResourcesCleaned / totalResourcesTracked * 100.0
           : 0.0;
     }
 
+    /**
+     * Generates summary report.
+     *
+     * @return summary string
+     */
     public String generateSummary() {
       return String.format(
           "Resource Statistics Summary:\n"

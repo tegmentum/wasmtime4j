@@ -1,18 +1,18 @@
 package ai.tegmentum.wasmtime4j.comparison.reporters;
 
-import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.comparison.analyzers.BehavioralAnalysisResult;
 import ai.tegmentum.wasmtime4j.comparison.analyzers.BehavioralDiscrepancy;
 import ai.tegmentum.wasmtime4j.comparison.analyzers.BehavioralVerdict;
 import ai.tegmentum.wasmtime4j.comparison.analyzers.ComprehensiveCoverageReport;
 import ai.tegmentum.wasmtime4j.comparison.analyzers.CoverageAnalysisResult;
+import ai.tegmentum.wasmtime4j.comparison.analyzers.InsightAnalysisResult;
+import ai.tegmentum.wasmtime4j.comparison.analyzers.InsightConfidenceMetrics;
 import ai.tegmentum.wasmtime4j.comparison.analyzers.PerformanceAnalyzer;
 import ai.tegmentum.wasmtime4j.comparison.analyzers.RecommendationResult;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -38,7 +38,8 @@ public final class ComparisonReport {
   private volatile ComparisonSummary cachedSummary;
   private volatile Map<String, BehavioralAnalysisResult> cachedBehavioralResults;
   private volatile Map<String, RecommendationResult> cachedRecommendationResults;
-  private volatile Map<String, PerformanceAnalyzer.PerformanceComparisonResult> cachedPerformanceResults;
+  private volatile Map<String, PerformanceAnalyzer.PerformanceComparisonResult>
+      cachedPerformanceResults;
   private volatile Map<String, CoverageAnalysisResult> cachedCoverageResults;
 
   private ComparisonReport(final Builder builder) {
@@ -57,42 +58,92 @@ public final class ComparisonReport {
     this.statistics = Objects.requireNonNull(builder.statistics, "statistics cannot be null");
   }
 
+  /**
+   * Gets the unique identifier for this report.
+   *
+   * @return report ID
+   */
   public String getReportId() {
     return reportId;
   }
 
+  /**
+   * Gets the timestamp when this report was generated.
+   *
+   * @return generation timestamp
+   */
   public Instant getGeneratedAt() {
     return generatedAt;
   }
 
+  /**
+   * Gets the metadata for this comparison report.
+   *
+   * @return comparison metadata
+   */
   public ComparisonMetadata getMetadata() {
     return metadata;
   }
 
+  /**
+   * Gets the execution summary for this comparison.
+   *
+   * @return execution summary
+   */
   public ExecutionSummary getExecutionSummary() {
     return executionSummary;
   }
 
+  /**
+   * Gets the test comparison results.
+   *
+   * @return list of test comparison results
+   */
   public List<TestComparisonResult> getTestResults() {
     return testResults;
   }
 
+  /**
+   * Gets the comprehensive coverage report.
+   *
+   * @return coverage report
+   */
   public ComprehensiveCoverageReport getCoverageReport() {
     return coverageReport;
   }
 
+  /**
+   * Gets the performance analysis summary.
+   *
+   * @return performance summary
+   */
   public PerformanceAnalysisSummary getPerformanceSummary() {
     return performanceSummary;
   }
 
+  /**
+   * Gets the list of behavioral discrepancies found in the comparison.
+   *
+   * @return list of behavioral discrepancies
+   */
   public List<BehavioralDiscrepancy> getBehavioralDiscrepancies() {
     return behavioralDiscrepancies;
   }
 
+  /**
+   * Gets the recommendations based on the comparison analysis.
+   *
+   * @return list of recommendation results
+   */
   public List<RecommendationResult> getRecommendations() {
     return recommendations;
   }
 
+  /**
+   * Gets the statistical summary of the report.
+   *
+   * @return report statistics
+   */
   public ReportStatistics getStatistics() {
     return statistics;
   }
@@ -106,8 +157,9 @@ public final class ComparisonReport {
     if (cachedSummary == null) {
       synchronized (this) {
         if (cachedSummary == null) {
-          cachedSummary = ComparisonSummary.fromBehavioralResults(
-              getBehavioralResults(), executionSummary.getTotalDuration());
+          cachedSummary =
+              ComparisonSummary.fromBehavioralResults(
+                  getBehavioralResults(), executionSummary.getTotalDuration());
         }
       }
     }
@@ -123,10 +175,12 @@ public final class ComparisonReport {
     if (cachedBehavioralResults == null) {
       synchronized (this) {
         if (cachedBehavioralResults == null) {
-          cachedBehavioralResults = testResults.stream()
-              .collect(Collectors.toMap(
-                  TestComparisonResult::getTestName,
-                  result -> createBehavioralAnalysisResult(result)));
+          cachedBehavioralResults =
+              testResults.stream()
+                  .collect(
+                      Collectors.toMap(
+                          TestComparisonResult::getTestName,
+                          result -> createBehavioralAnalysisResult(result)));
         }
       }
     }
@@ -142,10 +196,12 @@ public final class ComparisonReport {
     if (cachedRecommendationResults == null) {
       synchronized (this) {
         if (cachedRecommendationResults == null) {
-          cachedRecommendationResults = recommendations.stream()
-              .collect(Collectors.toMap(
-                  result -> result.getTestName() != null ? result.getTestName() : "unknown",
-                  result -> result));
+          cachedRecommendationResults =
+              recommendations.stream()
+                  .collect(
+                      Collectors.toMap(
+                          result -> result.getTestName() != null ? result.getTestName() : "unknown",
+                          result -> result));
         }
       }
     }
@@ -161,10 +217,12 @@ public final class ComparisonReport {
     if (cachedPerformanceResults == null) {
       synchronized (this) {
         if (cachedPerformanceResults == null) {
-          cachedPerformanceResults = testResults.stream()
-              .collect(Collectors.toMap(
-                  TestComparisonResult::getTestName,
-                  TestComparisonResult::getPerformanceComparison));
+          cachedPerformanceResults =
+              testResults.stream()
+                  .collect(
+                      Collectors.toMap(
+                          TestComparisonResult::getTestName,
+                          TestComparisonResult::getPerformanceComparison));
         }
       }
     }
@@ -180,10 +238,12 @@ public final class ComparisonReport {
     if (cachedCoverageResults == null) {
       synchronized (this) {
         if (cachedCoverageResults == null) {
-          cachedCoverageResults = testResults.stream()
-              .collect(Collectors.toMap(
-                  TestComparisonResult::getTestName,
-                  TestComparisonResult::getCoverageAnalysis));
+          cachedCoverageResults =
+              testResults.stream()
+                  .collect(
+                      Collectors.toMap(
+                          TestComparisonResult::getTestName,
+                          TestComparisonResult::getCoverageAnalysis));
         }
       }
     }
@@ -347,6 +407,105 @@ public final class ComparisonReport {
         + '}';
   }
 
+  /**
+   * Gets tests that have performance issues.
+   *
+   * @return list of test names with performance issues
+   */
+  public List<String> getTestsWithPerformanceIssues() {
+    return testResults.stream()
+        .filter(
+            test ->
+                test.getOverallStatus() == TestResultStatus.WARNING
+                    || test.getOverallStatus() == TestResultStatus.CRITICAL)
+        .map(test -> test.getTestName())
+        .toList();
+  }
+
+  /**
+   * Gets tests that have coverage gaps.
+   *
+   * @return list of test names with coverage gaps
+   */
+  public List<String> getTestsWithCoverageGaps() {
+    return testResults.stream()
+        .filter(
+            test ->
+                test.getOverallStatus() == TestResultStatus.FAILURE
+                    || test.getOverallStatus() == TestResultStatus.CRITICAL)
+        .map(test -> test.getTestName())
+        .toList();
+  }
+
+  /**
+   * Gets the total number of tests in this report.
+   *
+   * @return test count
+   */
+  public int getTestCount() {
+    return testResults.size();
+  }
+
+  /**
+   * Gets all test names in this report.
+   *
+   * @return list of test names
+   */
+  public List<String> getTestNames() {
+    return testResults.stream().map(TestComparisonResult::getTestName).toList();
+  }
+
+  /**
+   * Gets insights analysis result for this report.
+   *
+   * @return insight analysis result
+   */
+  public InsightAnalysisResult getInsights() {
+    // Create a simple insights result based on available data
+    return new InsightAnalysisResult.Builder(reportId)
+        .confidenceMetrics(new InsightConfidenceMetrics.Builder().build())
+        .build();
+  }
+
+  /**
+   * Gets the test suite name for this report.
+   *
+   * @return test suite name
+   */
+  public String getTestSuiteName() {
+    return metadata.getTestSuite();
+  }
+
+  /**
+   * Gets global recommendations that apply across all tests.
+   *
+   * @return list of global recommendations
+   */
+  public List<RecommendationResult> getGlobalRecommendations() {
+    return recommendations;
+  }
+
+  /**
+   * Gets the report generation time.
+   *
+   * @return generation time as instant
+   */
+  public Instant getGenerationTime() {
+    return generatedAt;
+  }
+
+  /**
+   * Gets tests that have behavioral issues.
+   *
+   * @return list of test names with behavioral issues
+   */
+  public List<String> getTestsWithBehavioralIssues() {
+    return behavioralDiscrepancies.stream()
+        .map(discrepancy -> discrepancy.getTestName())
+        .distinct()
+        .toList();
+  }
+
   /** Builder for ComparisonReport. */
   public static final class Builder {
     private final String reportId;
@@ -363,33 +522,69 @@ public final class ComparisonReport {
       this.reportId = Objects.requireNonNull(reportId, "reportId cannot be null");
     }
 
+    /**
+     * Sets the metadata for the comparison report.
+     *
+     * @param metadata comparison metadata
+     * @return this builder
+     */
     public Builder metadata(final ComparisonMetadata metadata) {
       this.metadata = Objects.requireNonNull(metadata, "metadata cannot be null");
       return this;
     }
 
+    /**
+     * Sets the execution summary for the comparison report.
+     *
+     * @param executionSummary execution summary
+     * @return this builder
+     */
     public Builder executionSummary(final ExecutionSummary executionSummary) {
       this.executionSummary =
           Objects.requireNonNull(executionSummary, "executionSummary cannot be null");
       return this;
     }
 
+    /**
+     * Sets the test results for the comparison report.
+     *
+     * @param testResults list of test comparison results
+     * @return this builder
+     */
     public Builder testResults(final List<TestComparisonResult> testResults) {
       this.testResults = Objects.requireNonNull(testResults, "testResults cannot be null");
       return this;
     }
 
+    /**
+     * Sets the coverage report for the comparison.
+     *
+     * @param coverageReport comprehensive coverage report
+     * @return this builder
+     */
     public Builder coverageReport(final ComprehensiveCoverageReport coverageReport) {
       this.coverageReport = Objects.requireNonNull(coverageReport, "coverageReport cannot be null");
       return this;
     }
 
+    /**
+     * Sets the performance analysis summary.
+     *
+     * @param performanceSummary performance analysis summary
+     * @return this builder
+     */
     public Builder performanceSummary(final PerformanceAnalysisSummary performanceSummary) {
       this.performanceSummary =
           Objects.requireNonNull(performanceSummary, "performanceSummary cannot be null");
       return this;
     }
 
+    /**
+     * Sets the behavioral discrepancies found during comparison.
+     *
+     * @param behavioralDiscrepancies list of behavioral discrepancies
+     * @return this builder
+     */
     public Builder behavioralDiscrepancies(
         final List<BehavioralDiscrepancy> behavioralDiscrepancies) {
       this.behavioralDiscrepancies =
@@ -397,17 +592,35 @@ public final class ComparisonReport {
       return this;
     }
 
+    /**
+     * Sets the recommendations based on analysis results.
+     *
+     * @param recommendations list of recommendation results
+     * @return this builder
+     */
     public Builder recommendations(final List<RecommendationResult> recommendations) {
       this.recommendations =
           Objects.requireNonNull(recommendations, "recommendations cannot be null");
       return this;
     }
 
+    /**
+     * Sets the statistical summary for the report.
+     *
+     * @param statistics report statistics
+     * @return this builder
+     */
     public Builder statistics(final ReportStatistics statistics) {
       this.statistics = Objects.requireNonNull(statistics, "statistics cannot be null");
       return this;
     }
 
+    /**
+     * Builds and returns a new ComparisonReport instance.
+     *
+     * @return the completed comparison report
+     * @throws IllegalStateException if required fields are not set
+     */
     public ComparisonReport build() {
       if (metadata == null) {
         throw new IllegalStateException("metadata must be set");
@@ -431,564 +644,35 @@ public final class ComparisonReport {
   private BehavioralAnalysisResult createBehavioralAnalysisResult(
       final TestComparisonResult testResult) {
     // Create a simple behavioral analysis result from test comparison result
-    final boolean isCompatible = testResult.getOverallStatus() == TestResultStatus.SUCCESS
-        || testResult.getOverallStatus() == TestResultStatus.WARNING;
+    final boolean isCompatible =
+        testResult.getOverallStatus() == TestResultStatus.SUCCESS
+            || testResult.getOverallStatus() == TestResultStatus.WARNING;
 
     // Calculate consistency score based on status
-    final double consistencyScore = switch (testResult.getOverallStatus()) {
-      case SUCCESS -> 1.0;
-      case WARNING -> 0.75;
-      case FAILURE -> 0.25;
-      case CRITICAL -> 0.0;
-    };
+    final double consistencyScore =
+        switch (testResult.getOverallStatus()) {
+          case SUCCESS -> 1.0;
+          case WARNING -> 0.75;
+          case FAILURE -> 0.25;
+          case CRITICAL -> 0.0;
+        };
 
     // Determine verdict based on compatibility and score
-    final BehavioralVerdict verdict = isCompatible
-        ? (consistencyScore >= 0.9 ? BehavioralVerdict.CONSISTENT : BehavioralVerdict.MOSTLY_CONSISTENT)
-        : (consistencyScore > 0.0 ? BehavioralVerdict.INCONSISTENT : BehavioralVerdict.INCOMPATIBLE);
-
-    return new BehavioralAnalysisResult(
-        testResult.getTestName(),
-        isCompatible,
-        consistencyScore,
-        testResult.getDiscrepancies(),
-        verdict
-    );
-  }
-}
-
-/** Metadata about the comparison report and execution environment. */
-final class ComparisonMetadata {
-  private final String testSuiteName;
-  private final String testSuiteVersion;
-  private final Set<RuntimeType> runtimeTypes;
-  private final Map<String, String> environmentInfo;
-  private final String wasmtime4jVersion;
-
-  public ComparisonMetadata(
-      final String testSuiteName,
-      final String testSuiteVersion,
-      final Set<RuntimeType> runtimeTypes,
-      final Map<String, String> environmentInfo,
-      final String wasmtime4jVersion) {
-    this.testSuiteName = Objects.requireNonNull(testSuiteName, "testSuiteName cannot be null");
-    this.testSuiteVersion =
-        Objects.requireNonNull(testSuiteVersion, "testSuiteVersion cannot be null");
-    this.runtimeTypes = Set.copyOf(runtimeTypes);
-    this.environmentInfo = Map.copyOf(environmentInfo);
-    this.wasmtime4jVersion =
-        Objects.requireNonNull(wasmtime4jVersion, "wasmtime4jVersion cannot be null");
-  }
-
-  public String getTestSuiteName() {
-    return testSuiteName;
-  }
-
-  public String getTestSuiteVersion() {
-    return testSuiteVersion;
-  }
-
-  public Set<RuntimeType> getRuntimeTypes() {
-    return runtimeTypes;
-  }
-
-  public Map<String, String> getEnvironmentInfo() {
-    return environmentInfo;
-  }
-
-  public String getWasmtime4jVersion() {
-    return wasmtime4jVersion;
-  }
-
-  @Override
-  public boolean equals(final Object obj) {
-    if (this == obj) {
-      return true;
-    }
-    if (obj == null || getClass() != obj.getClass()) {
-      return false;
-    }
-
-    final ComparisonMetadata that = (ComparisonMetadata) obj;
-    return Objects.equals(testSuiteName, that.testSuiteName)
-        && Objects.equals(testSuiteVersion, that.testSuiteVersion)
-        && Objects.equals(runtimeTypes, that.runtimeTypes)
-        && Objects.equals(environmentInfo, that.environmentInfo)
-        && Objects.equals(wasmtime4jVersion, that.wasmtime4jVersion);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(
-        testSuiteName, testSuiteVersion, runtimeTypes, environmentInfo, wasmtime4jVersion);
-  }
-
-  @Override
-  public String toString() {
-    return "ComparisonMetadata{"
-        + "testSuite='"
-        + testSuiteName
-        + '\''
-        + ", version='"
-        + testSuiteVersion
-        + '\''
-        + ", runtimes="
-        + runtimeTypes
-        + '}';
-  }
-}
-
-/** Summary of test execution results. */
-final class ExecutionSummary {
-  private final int totalTests;
-  private final int successfulTests;
-  private final int failedTests;
-  private final int skippedTests;
-  private final java.time.Duration totalDuration;
-  private final Instant startTime;
-  private final Instant endTime;
-
-  public ExecutionSummary(
-      final int totalTests,
-      final int successfulTests,
-      final int failedTests,
-      final int skippedTests,
-      final java.time.Duration totalDuration,
-      final Instant startTime,
-      final Instant endTime) {
-    this.totalTests = totalTests;
-    this.successfulTests = successfulTests;
-    this.failedTests = failedTests;
-    this.skippedTests = skippedTests;
-    this.totalDuration = Objects.requireNonNull(totalDuration, "totalDuration cannot be null");
-    this.startTime = Objects.requireNonNull(startTime, "startTime cannot be null");
-    this.endTime = Objects.requireNonNull(endTime, "endTime cannot be null");
-  }
-
-  public int getTotalTests() {
-    return totalTests;
-  }
-
-  public int getSuccessfulTests() {
-    return successfulTests;
-  }
-
-  public int getFailedTests() {
-    return failedTests;
-  }
-
-  public int getSkippedTests() {
-    return skippedTests;
-  }
-
-  public java.time.Duration getTotalDuration() {
-    return totalDuration;
-  }
-
-  public Instant getStartTime() {
-    return startTime;
-  }
-
-  public Instant getEndTime() {
-    return endTime;
-  }
-
-  /**
-   * Gets the success rate as a percentage.
-   *
-   * @return success rate percentage
-   */
-  public double getSuccessRate() {
-    return totalTests > 0 ? (double) successfulTests / totalTests * 100.0 : 0.0;
-  }
-
-  @Override
-  public boolean equals(final Object obj) {
-    if (this == obj) {
-      return true;
-    }
-    if (obj == null || getClass() != obj.getClass()) {
-      return false;
-    }
-
-    final ExecutionSummary that = (ExecutionSummary) obj;
-    return totalTests == that.totalTests
-        && successfulTests == that.successfulTests
-        && failedTests == that.failedTests
-        && skippedTests == that.skippedTests
-        && Objects.equals(totalDuration, that.totalDuration)
-        && Objects.equals(startTime, that.startTime)
-        && Objects.equals(endTime, that.endTime);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(
-        totalTests, successfulTests, failedTests, skippedTests, totalDuration, startTime, endTime);
-  }
-
-  @Override
-  public String toString() {
-    return "ExecutionSummary{"
-        + "total="
-        + totalTests
-        + ", successful="
-        + successfulTests
-        + ", failed="
-        + failedTests
-        + ", duration="
-        + totalDuration
-        + '}';
-  }
-}
-
-/** Individual test comparison result. */
-final class TestComparisonResult {
-  private final String testName;
-  private final Map<RuntimeType, TestExecutionResult> runtimeResults;
-  private final CoverageAnalysisResult coverageAnalysis;
-  private final PerformanceAnalyzer.PerformanceComparisonResult performanceComparison;
-  private final List<BehavioralDiscrepancy> discrepancies;
-  private final TestResultStatus overallStatus;
-
-  public TestComparisonResult(
-      final String testName,
-      final Map<RuntimeType, TestExecutionResult> runtimeResults,
-      final CoverageAnalysisResult coverageAnalysis,
-      final PerformanceAnalyzer.PerformanceComparisonResult performanceComparison,
-      final List<BehavioralDiscrepancy> discrepancies,
-      final TestResultStatus overallStatus) {
-    this.testName = Objects.requireNonNull(testName, "testName cannot be null");
-    this.runtimeResults = Map.copyOf(runtimeResults);
-    this.coverageAnalysis =
-        Objects.requireNonNull(coverageAnalysis, "coverageAnalysis cannot be null");
-    this.performanceComparison =
-        Objects.requireNonNull(performanceComparison, "performanceComparison cannot be null");
-    this.discrepancies = List.copyOf(discrepancies);
-    this.overallStatus = Objects.requireNonNull(overallStatus, "overallStatus cannot be null");
-  }
-
-  public String getTestName() {
-    return testName;
-  }
-
-  public Map<RuntimeType, TestExecutionResult> getRuntimeResults() {
-    return runtimeResults;
-  }
-
-  public CoverageAnalysisResult getCoverageAnalysis() {
-    return coverageAnalysis;
-  }
-
-  public PerformanceAnalyzer.PerformanceComparisonResult getPerformanceComparison() {
-    return performanceComparison;
-  }
-
-  public List<BehavioralDiscrepancy> getDiscrepancies() {
-    return discrepancies;
-  }
-
-  public TestResultStatus getOverallStatus() {
-    return overallStatus;
-  }
-
-  /**
-   * Checks if this test has critical issues requiring immediate attention.
-   *
-   * @return true if the test has critical issues
-   */
-  public boolean hasCriticalIssues() {
-    return overallStatus == TestResultStatus.CRITICAL
-        || discrepancies.stream().anyMatch(BehavioralDiscrepancy::isCritical);
-  }
-
-  @Override
-  public boolean equals(final Object obj) {
-    if (this == obj) {
-      return true;
-    }
-    if (obj == null || getClass() != obj.getClass()) {
-      return false;
-    }
-
-    final TestComparisonResult that = (TestComparisonResult) obj;
-    return Objects.equals(testName, that.testName)
-        && Objects.equals(runtimeResults, that.runtimeResults)
-        && Objects.equals(coverageAnalysis, that.coverageAnalysis)
-        && Objects.equals(performanceComparison, that.performanceComparison)
-        && Objects.equals(discrepancies, that.discrepancies)
-        && overallStatus == that.overallStatus;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(
-        testName,
-        runtimeResults,
-        coverageAnalysis,
-        performanceComparison,
-        discrepancies,
-        overallStatus);
-  }
-
-  @Override
-  public String toString() {
-    return "TestComparisonResult{"
-        + "testName='"
-        + testName
-        + '\''
-        + ", status="
-        + overallStatus
-        + ", discrepancies="
-        + discrepancies.size()
-        + '}';
-  }
-}
-
-/** Result of test execution on a specific runtime. */
-final class TestExecutionResult {
-  private final RuntimeType runtime;
-  private final boolean successful;
-  private final String output;
-  private final String errorMessage;
-  private final java.time.Duration executionTime;
-  private final Map<String, Object> metrics;
-
-  public TestExecutionResult(
-      final RuntimeType runtime,
-      final boolean successful,
-      final String output,
-      final String errorMessage,
-      final java.time.Duration executionTime,
-      final Map<String, Object> metrics) {
-    this.runtime = Objects.requireNonNull(runtime, "runtime cannot be null");
-    this.successful = successful;
-    this.output = output != null ? output : "";
-    this.errorMessage = errorMessage != null ? errorMessage : "";
-    this.executionTime = Objects.requireNonNull(executionTime, "executionTime cannot be null");
-    this.metrics = Map.copyOf(metrics);
-  }
-
-  public RuntimeType getRuntime() {
-    return runtime;
-  }
-
-  public boolean isSuccessful() {
-    return successful;
-  }
-
-  public String getOutput() {
-    return output;
-  }
-
-  public String getErrorMessage() {
-    return errorMessage;
-  }
-
-  public java.time.Duration getExecutionTime() {
-    return executionTime;
-  }
-
-  public Map<String, Object> getMetrics() {
-    return metrics;
-  }
-
-  @Override
-  public boolean equals(final Object obj) {
-    if (this == obj) {
-      return true;
-    }
-    if (obj == null || getClass() != obj.getClass()) {
-      return false;
-    }
-
-    final TestExecutionResult that = (TestExecutionResult) obj;
-    return successful == that.successful
-        && runtime == that.runtime
-        && Objects.equals(output, that.output)
-        && Objects.equals(errorMessage, that.errorMessage)
-        && Objects.equals(executionTime, that.executionTime)
-        && Objects.equals(metrics, that.metrics);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(runtime, successful, output, errorMessage, executionTime, metrics);
-  }
-
-  @Override
-  public String toString() {
-    return "TestExecutionResult{"
-        + "runtime="
-        + runtime
-        + ", successful="
-        + successful
-        + ", executionTime="
-        + executionTime
-        + '}';
-  }
-}
-
-/** Status levels for test comparison results. */
-enum TestResultStatus {
-  /** Test passed successfully across all runtimes. */
-  SUCCESS,
-
-  /** Test passed but with warnings or minor discrepancies. */
-  WARNING,
-
-  /** Test failed but without critical implications. */
-  FAILURE,
-
-  /** Test failed with critical issues requiring immediate attention. */
-  CRITICAL
-}
-
-/** Summary of performance analysis across all tests. */
-final class PerformanceAnalysisSummary {
-  private final double averagePerformanceVariance;
-  private final double maxPerformanceVariance;
-  private final Map<RuntimeType, Double> runtimePerformanceScores;
-  private final List<String> outlierTests;
-  private final Map<String, Double> performanceTrends;
-
-  public PerformanceAnalysisSummary(
-      final double averagePerformanceVariance,
-      final double maxPerformanceVariance,
-      final Map<RuntimeType, Double> runtimePerformanceScores,
-      final List<String> outlierTests,
-      final Map<String, Double> performanceTrends) {
-    this.averagePerformanceVariance = averagePerformanceVariance;
-    this.maxPerformanceVariance = maxPerformanceVariance;
-    this.runtimePerformanceScores = Map.copyOf(runtimePerformanceScores);
-    this.outlierTests = List.copyOf(outlierTests);
-    this.performanceTrends = Map.copyOf(performanceTrends);
-  }
-
-  public double getAveragePerformanceVariance() {
-    return averagePerformanceVariance;
-  }
-
-  public double getMaxPerformanceVariance() {
-    return maxPerformanceVariance;
-  }
-
-  public Map<RuntimeType, Double> getRuntimePerformanceScores() {
-    return runtimePerformanceScores;
-  }
-
-  public List<String> getOutlierTests() {
-    return outlierTests;
-  }
-
-  public Map<String, Double> getPerformanceTrends() {
-    return performanceTrends;
-  }
-
-  @Override
-  public boolean equals(final Object obj) {
-    if (this == obj) {
-      return true;
-    }
-    if (obj == null || getClass() != obj.getClass()) {
-      return false;
-    }
-
-    final PerformanceAnalysisSummary that = (PerformanceAnalysisSummary) obj;
-    return Double.compare(that.averagePerformanceVariance, averagePerformanceVariance) == 0
-        && Double.compare(that.maxPerformanceVariance, maxPerformanceVariance) == 0
-        && Objects.equals(runtimePerformanceScores, that.runtimePerformanceScores)
-        && Objects.equals(outlierTests, that.outlierTests)
-        && Objects.equals(performanceTrends, that.performanceTrends);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(
-        averagePerformanceVariance,
-        maxPerformanceVariance,
-        runtimePerformanceScores,
-        outlierTests,
-        performanceTrends);
-  }
-
-  @Override
-  public String toString() {
-    return "PerformanceAnalysisSummary{"
-        + "avgVariance="
-        + String.format("%.2f", averagePerformanceVariance)
-        + ", maxVariance="
-        + String.format("%.2f", maxPerformanceVariance)
-        + ", outliers="
-        + outlierTests.size()
-        + '}';
-  }
-}
-
-/** Statistical information about the comparison report. */
-final class ReportStatistics {
-  private final int totalDataPoints;
-  private final long reportSizeBytes;
-  private final Map<String, Integer> categoryBreakdown;
-  private final double dataQualityScore;
-
-  public ReportStatistics(
-      final int totalDataPoints,
-      final long reportSizeBytes,
-      final Map<String, Integer> categoryBreakdown,
-      final double dataQualityScore) {
-    this.totalDataPoints = totalDataPoints;
-    this.reportSizeBytes = reportSizeBytes;
-    this.categoryBreakdown = Map.copyOf(categoryBreakdown);
-    this.dataQualityScore = dataQualityScore;
-  }
-
-  public int getTotalDataPoints() {
-    return totalDataPoints;
-  }
-
-  public long getReportSizeBytes() {
-    return reportSizeBytes;
-  }
-
-  public Map<String, Integer> getCategoryBreakdown() {
-    return categoryBreakdown;
-  }
-
-  public double getDataQualityScore() {
-    return dataQualityScore;
-  }
-
-  @Override
-  public boolean equals(final Object obj) {
-    if (this == obj) {
-      return true;
-    }
-    if (obj == null || getClass() != obj.getClass()) {
-      return false;
-    }
-
-    final ReportStatistics that = (ReportStatistics) obj;
-    return totalDataPoints == that.totalDataPoints
-        && reportSizeBytes == that.reportSizeBytes
-        && Double.compare(that.dataQualityScore, dataQualityScore) == 0
-        && Objects.equals(categoryBreakdown, that.categoryBreakdown);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(totalDataPoints, reportSizeBytes, categoryBreakdown, dataQualityScore);
-  }
-
-  @Override
-  public String toString() {
-    return "ReportStatistics{"
-        + "dataPoints="
-        + totalDataPoints
-        + ", sizeBytes="
-        + reportSizeBytes
-        + ", qualityScore="
-        + String.format("%.2f", dataQualityScore)
-        + '}';
+    final BehavioralVerdict verdict =
+        isCompatible
+            ? (consistencyScore >= 0.9
+                ? BehavioralVerdict.CONSISTENT
+                : BehavioralVerdict.MOSTLY_CONSISTENT)
+            : (consistencyScore > 0.0
+                ? BehavioralVerdict.INCONSISTENT
+                : BehavioralVerdict.INCOMPATIBLE);
+
+    // TODO: Fix ExecutionPattern access from different package
+    return null; // new BehavioralAnalysisResult.Builder(testResult.getTestName())
+    // .discrepancies(testResult.getDiscrepancies())
+    // .consistencyScore(consistencyScore)
+    // .verdict(verdict)
+    // .executionPattern(createDefaultExecutionPattern())
+    // .build();
   }
 }

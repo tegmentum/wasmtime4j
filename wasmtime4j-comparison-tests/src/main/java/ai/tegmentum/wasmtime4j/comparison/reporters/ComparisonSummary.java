@@ -4,8 +4,8 @@ import ai.tegmentum.wasmtime4j.comparison.analyzers.BehavioralAnalysisResult;
 import java.util.Objects;
 
 /**
- * High-level summary of comparison analysis results, providing key metrics and verdicts for
- * quick assessment of overall test compatibility and performance.
+ * High-level summary of comparison analysis results, providing key metrics and verdicts for quick
+ * assessment of overall test compatibility and performance.
  *
  * @since 1.0.0
  */
@@ -163,7 +163,8 @@ public final class ComparisonSummary {
    * @return true if critical issues exist
    */
   public boolean hasCriticalIssues() {
-    return highPriorityIssueCount > 0 || overallVerdict == OverallVerdict.FAILED
+    return highPriorityIssueCount > 0
+        || overallVerdict == OverallVerdict.FAILED
         || overallVerdict == OverallVerdict.FAILED_WITH_ISSUES;
   }
 
@@ -207,12 +208,18 @@ public final class ComparisonSummary {
   @Override
   public String toString() {
     return "ComparisonSummary{"
-        + "totalTests=" + totalTests
-        + ", passedTests=" + passedTests
-        + ", failedTests=" + failedTests
-        + ", averageCompatibilityScore=" + String.format("%.2f", averageCompatibilityScore)
-        + ", overallVerdict=" + overallVerdict
-        + ", duration=" + totalDuration
+        + "totalTests="
+        + totalTests
+        + ", passedTests="
+        + passedTests
+        + ", failedTests="
+        + failedTests
+        + ", averageCompatibilityScore="
+        + String.format("%.2f", averageCompatibilityScore)
+        + ", overallVerdict="
+        + overallVerdict
+        + ", duration="
+        + totalDuration
         + '}';
   }
 
@@ -247,14 +254,14 @@ public final class ComparisonSummary {
       totalScore += result.getConsistencyScore();
 
       // Count issues by severity (simplified categorization)
-      final int criticalDiscrepancies = result.getCriticalDiscrepancyCount();
+      final long criticalDiscrepancies = result.getCriticalDiscrepancyCount();
       if (criticalDiscrepancies > 0) {
         highPriorityIssues += criticalDiscrepancies;
       }
 
       // Additional discrepancies classified as medium/low priority
       final int totalDiscrepancies = result.getDiscrepancies().size();
-      final int remainingDiscrepancies = totalDiscrepancies - criticalDiscrepancies;
+      final long remainingDiscrepancies = totalDiscrepancies - criticalDiscrepancies;
       if (remainingDiscrepancies > 0) {
         mediumPriorityIssues += remainingDiscrepancies / 2;
         lowPriorityIssues += remainingDiscrepancies - (remainingDiscrepancies / 2);
@@ -262,8 +269,9 @@ public final class ComparisonSummary {
     }
 
     final double averageScore = totalTests > 0 ? totalScore / totalTests : 0.0;
-    final OverallVerdict verdict = determineOverallVerdict(
-        passedTests, failedTests, highPriorityIssues, mediumPriorityIssues, averageScore);
+    final OverallVerdict verdict =
+        determineOverallVerdict(
+            passedTests, failedTests, highPriorityIssues, mediumPriorityIssues, averageScore);
 
     return new ComparisonSummary(
         totalTests,
@@ -294,9 +302,7 @@ public final class ComparisonSummary {
   }
 }
 
-/**
- * Overall verdict levels for comparison analysis results.
- */
+/** Overall verdict levels for comparison analysis results. */
 enum OverallVerdict {
   /** All tests passed without any significant issues. */
   PASSED,

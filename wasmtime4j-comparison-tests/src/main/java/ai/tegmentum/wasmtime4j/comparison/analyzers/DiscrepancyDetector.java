@@ -497,6 +497,14 @@ public final class DiscrepancyDetector {
     private final String description;
     private final int frequency;
 
+    /**
+     * Creates a new discrepancy pattern with the specified details.
+     *
+     * @param patternId unique identifier for this pattern
+     * @param type the type of discrepancy this pattern represents
+     * @param description human-readable description of the pattern
+     * @param frequency how frequently this pattern has been observed
+     */
     public DiscrepancyPattern(
         final String patternId,
         final DiscrepancyType type,
