@@ -19,6 +19,7 @@ package ai.tegmentum.wasmtime4j.panama;
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.EngineConfig;
 import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.OptimizationLevel;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.exception.CompilationException;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
@@ -235,8 +236,42 @@ public final class PanamaEngine implements Engine, AutoCloseable {
 
   @Override
   public EngineConfig getConfig() {
-    // TODO: Implement config retrieval
-    throw new UnsupportedOperationException("Config retrieval not yet implemented");
+    ensureNotClosed();
+
+    try {
+      // Create config using existing methods to get actual configuration
+      final EngineConfig config = new EngineConfig();
+
+      // Set debug info using existing method
+      config.debugInfo(isDebugInfo());
+
+      // Set optimization level using existing method
+      final int optLevel = getOptimizationLevel();
+      final OptimizationLevel optimizationLevel;
+      switch (optLevel) {
+        case 0:
+          optimizationLevel = OptimizationLevel.NONE;
+          break;
+        case 1:
+          optimizationLevel = OptimizationLevel.SPEED;
+          break;
+        case 2:
+          optimizationLevel = OptimizationLevel.SPEED_AND_SIZE;
+          break;
+        default:
+          // Default to SPEED for unknown values
+          optimizationLevel = OptimizationLevel.SPEED;
+          break;
+      }
+      config.optimizationLevel(optimizationLevel);
+
+      return config;
+    } catch (final Exception e) {
+      if (e instanceof RuntimeException) {
+        throw (RuntimeException) e;
+      }
+      throw new RuntimeException("Failed to retrieve engine configuration", e);
+    }
   }
 
   /**
