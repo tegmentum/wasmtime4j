@@ -222,6 +222,13 @@ public final class WasmRuntimeFactory {
       Class.forName("ai.tegmentum.wasmtime4j.jni.JniWasmRuntime");
       return true;
     } catch (final ClassNotFoundException e) {
+      logger.fine("JNI runtime class not found: " + sanitizeForLog(e.getMessage()));
+      return false;
+    } catch (final ExceptionInInitializerError e) {
+      logger.warning("JNI runtime initialization failed: " + sanitizeForLog(e.getMessage()));
+      return false;
+    } catch (final Exception e) {
+      logger.warning("Unexpected error checking JNI runtime availability: " + sanitizeForLog(e.getMessage()));
       return false;
     }
   }
@@ -231,6 +238,13 @@ public final class WasmRuntimeFactory {
       Class.forName("ai.tegmentum.wasmtime4j.panama.PanamaWasmRuntime");
       return true;
     } catch (final ClassNotFoundException e) {
+      logger.fine("Panama runtime class not found: " + sanitizeForLog(e.getMessage()));
+      return false;
+    } catch (final ExceptionInInitializerError e) {
+      logger.warning("Panama runtime initialization failed: " + sanitizeForLog(e.getMessage()));
+      return false;
+    } catch (final Exception e) {
+      logger.warning("Unexpected error checking Panama runtime availability: " + sanitizeForLog(e.getMessage()));
       return false;
     }
   }
