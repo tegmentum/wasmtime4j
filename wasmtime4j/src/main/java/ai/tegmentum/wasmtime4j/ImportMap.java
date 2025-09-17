@@ -84,7 +84,25 @@ public interface ImportMap {
    * @return a new empty ImportMap
    */
   static ImportMap empty() {
-    // Implementation will be provided by runtime
-    throw new UnsupportedOperationException("Implementation provided by runtime");
+    // Use the same runtime selection pattern as WasmRuntimeFactory
+    try {
+      // First try Panama implementation
+      final Class<?> panamaClass = Class.forName("ai.tegmentum.wasmtime4j.panama.PanamaImportMap");
+      return (ImportMap) panamaClass.getDeclaredConstructor().newInstance();
+    } catch (final ClassNotFoundException e) {
+      // Panama not available, try JNI implementation
+      try {
+        final Class<?> jniClass = Class.forName("ai.tegmentum.wasmtime4j.jni.JniImportMap");
+        return (ImportMap) jniClass.getDeclaredConstructor().newInstance();
+      } catch (final ClassNotFoundException e2) {
+        // No specific implementation found, use Panama as fallback since it's more universal
+        throw new UnsupportedOperationException(
+            "No ImportMap implementation available. Ensure wasmtime4j-panama or wasmtime4j-jni is on the classpath.");
+      } catch (final Exception e2) {
+        throw new RuntimeException("Failed to create JNI ImportMap instance", e2);
+      }
+    } catch (final Exception e) {
+      throw new RuntimeException("Failed to create Panama ImportMap instance", e);
+    }
   }
 }

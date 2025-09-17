@@ -962,10 +962,13 @@ public final class PanamaStore implements Store, AutoCloseable {
     Objects.requireNonNull(implementation, "implementation cannot be null");
     ensureNotClosed();
 
-    // TODO: Implement PanamaHostFunction when host function support is added
-    throw new UnsupportedOperationException(
-        "Host function creation is not yet implemented in Panama backend. "
-            + "Use JNI backend for host function support.");
+    // Create a HostFunctionCallback adapter from the HostFunction
+    final PanamaHostFunction.HostFunctionCallback callback = implementation::execute;
+
+    // Create and return the PanamaHostFunction
+    // Note: PanamaErrorHandler is a utility class and cannot be instantiated
+    // Passing null since errorHandler parameter appears unused in current implementation
+    return new PanamaHostFunction(name, functionType, callback, resourceManager, null);
   }
 
   /**
