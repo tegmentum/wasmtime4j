@@ -64,6 +64,89 @@ public interface Module extends Closeable {
   List<ImportType> getImports();
 
   /**
+   * Gets detailed export descriptors with comprehensive type information.
+   *
+   * <p>This method provides more detailed type introspection than {@link #getExports()},
+   * including specific type information for functions, globals, memories, and tables.
+   *
+   * @return an immutable list of detailed export descriptors
+   * @since 1.0.0
+   */
+  List<ExportDescriptor> getExportDescriptors();
+
+  /**
+   * Gets detailed import descriptors with comprehensive type information.
+   *
+   * <p>This method provides more detailed type introspection than {@link #getImports()},
+   * including specific type information for functions, globals, memories, and tables.
+   *
+   * @return an immutable list of detailed import descriptors
+   * @since 1.0.0
+   */
+  List<ImportDescriptor> getImportDescriptors();
+
+  /**
+   * Gets the function type for a specific exported function.
+   *
+   * @param functionName the name of the exported function
+   * @return the function type, or empty if the function doesn't exist or isn't a function
+   * @throws IllegalArgumentException if functionName is null
+   * @since 1.0.0
+   */
+  java.util.Optional<FuncType> getFunctionType(final String functionName);
+
+  /**
+   * Gets the global type for a specific exported global.
+   *
+   * @param globalName the name of the exported global
+   * @return the global type, or empty if the global doesn't exist or isn't a global
+   * @throws IllegalArgumentException if globalName is null
+   * @since 1.0.0
+   */
+  java.util.Optional<GlobalType> getGlobalType(final String globalName);
+
+  /**
+   * Gets the memory type for a specific exported memory.
+   *
+   * @param memoryName the name of the exported memory
+   * @return the memory type, or empty if the memory doesn't exist or isn't a memory
+   * @throws IllegalArgumentException if memoryName is null
+   * @since 1.0.0
+   */
+  java.util.Optional<MemoryType> getMemoryType(final String memoryName);
+
+  /**
+   * Gets the table type for a specific exported table.
+   *
+   * @param tableName the name of the exported table
+   * @return the table type, or empty if the table doesn't exist or isn't a table
+   * @throws IllegalArgumentException if tableName is null
+   * @since 1.0.0
+   */
+  java.util.Optional<TableType> getTableType(final String tableName);
+
+  /**
+   * Checks if this module exports a specific item.
+   *
+   * @param name the name of the export to check
+   * @return true if the module exports an item with this name
+   * @throws IllegalArgumentException if name is null
+   * @since 1.0.0
+   */
+  boolean hasExport(final String name);
+
+  /**
+   * Checks if this module requires a specific import.
+   *
+   * @param moduleName the module name of the import
+   * @param fieldName the field name of the import
+   * @return true if the module requires this import
+   * @throws IllegalArgumentException if moduleName or fieldName is null
+   * @since 1.0.0
+   */
+  boolean hasImport(final String moduleName, final String fieldName);
+
+  /**
    * Gets the engine that was used to compile this module.
    *
    * @return the Engine used for compilation

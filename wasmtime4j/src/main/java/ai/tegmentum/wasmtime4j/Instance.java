@@ -75,6 +75,77 @@ public interface Instance extends Closeable {
   String[] getExportNames();
 
   /**
+   * Gets runtime type information for all exports.
+   *
+   * <p>This method provides comprehensive type introspection for all exported items,
+   * including their specific type information at runtime.
+   *
+   * @return an immutable list of export descriptors with runtime type information
+   * @since 1.0.0
+   */
+  java.util.List<ExportDescriptor> getExportDescriptors();
+
+  /**
+   * Gets runtime type information for a specific export.
+   *
+   * @param name the name of the export
+   * @return the export descriptor with type information, or empty if not found
+   * @throws IllegalArgumentException if name is null
+   * @since 1.0.0
+   */
+  java.util.Optional<ExportDescriptor> getExportDescriptor(final String name);
+
+  /**
+   * Gets the runtime function type for a specific exported function.
+   *
+   * @param functionName the name of the exported function
+   * @return the function type, or empty if the function doesn't exist or isn't a function
+   * @throws IllegalArgumentException if functionName is null
+   * @since 1.0.0
+   */
+  java.util.Optional<FuncType> getFunctionType(final String functionName);
+
+  /**
+   * Gets the runtime global type for a specific exported global.
+   *
+   * @param globalName the name of the exported global
+   * @return the global type, or empty if the global doesn't exist or isn't a global
+   * @throws IllegalArgumentException if globalName is null
+   * @since 1.0.0
+   */
+  java.util.Optional<GlobalType> getGlobalType(final String globalName);
+
+  /**
+   * Gets the runtime memory type for a specific exported memory.
+   *
+   * @param memoryName the name of the exported memory
+   * @return the memory type, or empty if the memory doesn't exist or isn't a memory
+   * @throws IllegalArgumentException if memoryName is null
+   * @since 1.0.0
+   */
+  java.util.Optional<MemoryType> getMemoryType(final String memoryName);
+
+  /**
+   * Gets the runtime table type for a specific exported table.
+   *
+   * @param tableName the name of the exported table
+   * @return the table type, or empty if the table doesn't exist or isn't a table
+   * @throws IllegalArgumentException if tableName is null
+   * @since 1.0.0
+   */
+  java.util.Optional<TableType> getTableType(final String tableName);
+
+  /**
+   * Checks if this instance exports a specific item at runtime.
+   *
+   * @param name the name of the export to check
+   * @return true if the instance exports an item with this name
+   * @throws IllegalArgumentException if name is null
+   * @since 1.0.0
+   */
+  boolean hasExport(final String name);
+
+  /**
    * Gets the module that this instance was created from.
    *
    * @return the Module used to create this instance
