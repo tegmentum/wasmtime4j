@@ -2,6 +2,7 @@ package ai.tegmentum.wasmtime4j;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.utils.BaseIntegrationTest;
 import ai.tegmentum.wasmtime4j.utils.TestUtils;
 import ai.tegmentum.wasmtime4j.webassembly.CrossRuntimeTestRunner;
@@ -524,7 +525,6 @@ class PhantomReferenceCleanupTest extends BaseIntegrationTest {
   private void forceExtensiveGarbageCollection() {
     for (int i = 0; i < 10; i++) {
       System.gc();
-      System.runFinalization();
       try {
         Thread.sleep(100);
       } catch (final InterruptedException e) {
@@ -731,7 +731,7 @@ class PhantomReferenceCleanupTest extends BaseIntegrationTest {
       return result;
     }
 
-    private void simulateSuddenResourceClosure(final Engine engine, final byte[] wasmBytes) {
+    private void simulateSuddenResourceClosure(final Engine engine, final byte[] wasmBytes) throws WasmException {
       final Module module = engine.compileModule(wasmBytes);
       final Store store = engine.createStore();
 
@@ -740,7 +740,7 @@ class PhantomReferenceCleanupTest extends BaseIntegrationTest {
       module.close();
     }
 
-    private void simulateExceptionDuringUsage(final Engine engine, final byte[] wasmBytes) {
+    private void simulateExceptionDuringUsage(final Engine engine, final byte[] wasmBytes) throws WasmException {
       final Module module = engine.compileModule(wasmBytes);
       final Store store = engine.createStore();
       final Instance instance = module.instantiate(store);
@@ -756,7 +756,7 @@ class PhantomReferenceCleanupTest extends BaseIntegrationTest {
       }
     }
 
-    private void simulateThreadInterruption(final Engine engine, final byte[] wasmBytes) {
+    private void simulateThreadInterruption(final Engine engine, final byte[] wasmBytes) throws WasmException {
       Thread.currentThread().interrupt();
 
       try {
@@ -767,7 +767,7 @@ class PhantomReferenceCleanupTest extends BaseIntegrationTest {
       }
     }
 
-    private void simulateForcedResourceCleanup(final Engine engine, final byte[] wasmBytes) {
+    private void simulateForcedResourceCleanup(final Engine engine, final byte[] wasmBytes) throws WasmException {
       final List<AutoCloseable> resources = new ArrayList<>();
 
       // Create resources
@@ -786,7 +786,7 @@ class PhantomReferenceCleanupTest extends BaseIntegrationTest {
       }
     }
 
-    private void simulatePartialOperationFailure(final Engine engine, final byte[] wasmBytes) {
+    private void simulatePartialOperationFailure(final Engine engine, final byte[] wasmBytes) throws WasmException {
       final Module module = engine.compileModule(wasmBytes);
       final Store store = engine.createStore();
 
@@ -1171,7 +1171,7 @@ class PhantomReferenceCleanupTest extends BaseIntegrationTest {
         }
 
         // Wait for completion or timeout
-        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture<?>[0]))
             .get(10, TimeUnit.SECONDS);
 
         tempExecutor.shutdown();
@@ -1235,7 +1235,6 @@ class PhantomReferenceCleanupTest extends BaseIntegrationTest {
 
         // Force garbage collection (simulate forced cleanup)
         System.gc();
-        System.runFinalization();
 
         result.phantomReferencesProcessed = monitor.processPhantomReferences();
         result.successful = true;
@@ -1360,7 +1359,7 @@ class PhantomReferenceCleanupTest extends BaseIntegrationTest {
         final Engine engine,
         final byte[] wasmBytes,
         final PhantomReferenceMonitor monitor,
-        final OomScenarioResult result) {
+        final OomScenarioResult result) throws WasmException {
       // Create many objects to exhaust heap
       final List<byte[]> heapPressure = new ArrayList<>();
       try {
@@ -1383,7 +1382,7 @@ class PhantomReferenceCleanupTest extends BaseIntegrationTest {
         final Engine engine,
         final byte[] wasmBytes,
         final PhantomReferenceMonitor monitor,
-        final OomScenarioResult result) {
+        final OomScenarioResult result) throws WasmException {
       // Create many native resources
       final List<Module> nativeResources = new ArrayList<>();
       try {
@@ -1426,7 +1425,7 @@ class PhantomReferenceCleanupTest extends BaseIntegrationTest {
         final Engine engine,
         final byte[] wasmBytes,
         final PhantomReferenceMonitor monitor,
-        final OomScenarioResult result) {
+        final OomScenarioResult result) throws WasmException {
       // Create resources that might use direct memory
       final List<AutoCloseable> resources = new ArrayList<>();
       try {
@@ -1455,7 +1454,7 @@ class PhantomReferenceCleanupTest extends BaseIntegrationTest {
         final Engine engine,
         final byte[] wasmBytes,
         final PhantomReferenceMonitor monitor,
-        final OomScenarioResult result) {
+        final OomScenarioResult result) throws WasmException {
       // Rapid allocation without cleanup
       try {
         for (int i = 0; i < 50000; i++) {

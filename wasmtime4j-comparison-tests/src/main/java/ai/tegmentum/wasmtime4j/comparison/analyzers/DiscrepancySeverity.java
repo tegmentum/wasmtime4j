@@ -16,7 +16,10 @@ public enum DiscrepancySeverity {
   MODERATE("Moderate", 2),
 
   /** Minor discrepancy that may be acceptable. */
-  MINOR("Minor", 1);
+  MINOR("Minor", 1),
+
+  /** Informational discrepancy for reference. */
+  INFO("Info", 0);
 
   private final String displayName;
   private final int priority;

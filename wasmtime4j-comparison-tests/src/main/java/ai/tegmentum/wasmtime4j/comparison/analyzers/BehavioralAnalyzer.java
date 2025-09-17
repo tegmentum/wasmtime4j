@@ -448,6 +448,7 @@ public final class BehavioralAnalyzer {
   }
 
   // Placeholder for TestExecutionResult - will be defined based on Task 002 requirements
+  /** Represents the result of executing a single test across WebAssembly runtimes. */
   public static final class TestExecutionResult {
     private final boolean successful;
     private final boolean skipped;
@@ -456,6 +457,16 @@ public final class BehavioralAnalyzer {
     private final Duration executionTime;
     private final Optional<MemoryUsage> memoryUsage;
 
+    /**
+     * Creates a new test execution result with the specified execution details.
+     *
+     * @param successful whether the test execution was successful
+     * @param skipped whether the test was skipped
+     * @param returnValue the return value from test execution (null if failed/skipped)
+     * @param exception the exception thrown during execution (null if successful)
+     * @param executionTime the time taken to execute the test
+     * @param memoryUsage optional memory usage statistics during execution
+     */
     public TestExecutionResult(
         final boolean successful,
         final boolean skipped,
@@ -501,7 +512,7 @@ public final class BehavioralAnalyzer {
     }
   }
 
-  // Memory usage tracking
+  /** Represents memory usage statistics for monitoring resource consumption. */
   public static final class MemoryUsage {
     private final long heapUsed;
     private final long nonHeapUsed;

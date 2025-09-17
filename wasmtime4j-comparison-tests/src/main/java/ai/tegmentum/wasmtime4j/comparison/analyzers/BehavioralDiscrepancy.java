@@ -1,7 +1,10 @@
 package ai.tegmentum.wasmtime4j.comparison.analyzers;
 
+import ai.tegmentum.wasmtime4j.RuntimeType;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Represents a behavioral discrepancy detected during comparison of test execution results across
@@ -17,9 +20,42 @@ public final class BehavioralDiscrepancy {
   private final String details;
   private final String recommendation;
   private final Instant detectedAt;
+  private final String testName;
+  private final Set<RuntimeType> affectedRuntimes;
 
   /**
    * Creates a new behavioral discrepancy.
+   *
+   * @param type the type of discrepancy
+   * @param severity the severity level
+   * @param description brief description of the discrepancy
+   * @param details detailed information about the discrepancy
+   * @param recommendation suggested action to address the discrepancy
+   * @param testName name of the test where the discrepancy was detected
+   * @param affectedRuntimes set of runtime types affected by this discrepancy
+   */
+  public BehavioralDiscrepancy(
+      final DiscrepancyType type,
+      final DiscrepancySeverity severity,
+      final String description,
+      final String details,
+      final String recommendation,
+      final String testName,
+      final Set<RuntimeType> affectedRuntimes) {
+    this.type = Objects.requireNonNull(type, "type cannot be null");
+    this.severity = Objects.requireNonNull(severity, "severity cannot be null");
+    this.description = Objects.requireNonNull(description, "description cannot be null");
+    this.details = Objects.requireNonNull(details, "details cannot be null");
+    this.recommendation = Objects.requireNonNull(recommendation, "recommendation cannot be null");
+    this.testName = Objects.requireNonNull(testName, "testName cannot be null");
+    this.affectedRuntimes =
+        affectedRuntimes != null ? Set.copyOf(affectedRuntimes) : Collections.emptySet();
+    this.detectedAt = Instant.now();
+  }
+
+  /**
+   * Creates a new behavioral discrepancy with default values for testName and affectedRuntimes.
+   * Provided for backward compatibility.
    *
    * @param type the type of discrepancy
    * @param severity the severity level
@@ -33,12 +69,7 @@ public final class BehavioralDiscrepancy {
       final String description,
       final String details,
       final String recommendation) {
-    this.type = Objects.requireNonNull(type, "type cannot be null");
-    this.severity = Objects.requireNonNull(severity, "severity cannot be null");
-    this.description = Objects.requireNonNull(description, "description cannot be null");
-    this.details = Objects.requireNonNull(details, "details cannot be null");
-    this.recommendation = Objects.requireNonNull(recommendation, "recommendation cannot be null");
-    this.detectedAt = Instant.now();
+    this(type, severity, description, details, recommendation, "unknown", Collections.emptySet());
   }
 
   public DiscrepancyType getType() {
@@ -63,6 +94,24 @@ public final class BehavioralDiscrepancy {
 
   public Instant getDetectedAt() {
     return detectedAt;
+  }
+
+  /**
+   * Gets the name of the test where this discrepancy was detected.
+   *
+   * @return test name
+   */
+  public String getTestName() {
+    return testName;
+  }
+
+  /**
+   * Gets the set of runtime types affected by this discrepancy.
+   *
+   * @return set of affected runtime types
+   */
+  public Set<RuntimeType> getAffectedRuntimes() {
+    return affectedRuntimes;
   }
 
   /**

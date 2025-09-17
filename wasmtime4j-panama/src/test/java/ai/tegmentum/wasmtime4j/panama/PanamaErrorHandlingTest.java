@@ -75,7 +75,7 @@ class PanamaErrorHandlingTest {
           PanamaErrorHandler.checkErrorCode(0, "test operation");
         });
 
-    assertEquals("Success", PanamaErrorHandler.getErrorDescription(0));
+    assertEquals("No Error", PanamaErrorHandler.getErrorDescription(0));
   }
 
   @Test
@@ -324,7 +324,7 @@ class PanamaErrorHandlingTest {
     assertEquals("operation (context): cause", message1);
 
     // No context
-    String message2 = PanamaErrorHandler.createDetailedErrorMessage("operation", null, "cause");
+    String message2 = PanamaErrorHandler.createDetailedErrorMessage("operation", (String) null, "cause");
     assertEquals("operation: cause", message2);
 
     // No operation
@@ -332,11 +332,11 @@ class PanamaErrorHandlingTest {
     assertEquals("context: cause", message3);
 
     // Only cause
-    String message4 = PanamaErrorHandler.createDetailedErrorMessage(null, null, "cause");
+    String message4 = PanamaErrorHandler.createDetailedErrorMessage(null, (String) null, "cause");
     assertEquals("cause", message4);
 
     // All null
-    String message5 = PanamaErrorHandler.createDetailedErrorMessage(null, null, null);
+    String message5 = PanamaErrorHandler.createDetailedErrorMessage(null, (String) null, null);
     assertEquals("Native operation failed", message5);
 
     // Empty strings

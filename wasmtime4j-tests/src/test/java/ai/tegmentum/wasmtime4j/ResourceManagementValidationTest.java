@@ -463,7 +463,6 @@ class ResourceManagementValidationTest extends BaseIntegrationTest {
   private void forceGarbageCollectionCycle() {
     for (int i = 0; i < 5; i++) {
       System.gc();
-      System.runFinalization();
       try {
         Thread.sleep(50); // Give GC time to run
       } catch (final InterruptedException e) {

@@ -30,9 +30,14 @@ public final class HtmlReporter {
   private final TemplateEngine templateEngine;
   private final VisualizationBuilder visualizationBuilder;
 
+  /**
+   * Creates a new HTML reporter with the specified configuration.
+   *
+   * @param configuration the configuration for the HTML reporter
+   */
   public HtmlReporter(final HtmlReporterConfiguration configuration) {
     this.configuration = Objects.requireNonNull(configuration, "configuration cannot be null");
-    this.templateEngine = new TemplateEngine();
+    this.templateEngine = TemplateEngine.createDefault();
     this.visualizationBuilder = new VisualizationBuilder();
   }
 
@@ -105,7 +110,8 @@ public final class HtmlReporter {
    */
   private String generateHtmlContent(final ComparisonReport report) {
     final Map<String, Object> templateContext = createTemplateContext(report);
-    return templateEngine.renderTemplate("dashboard.html", templateContext);
+    return templateEngine.processTemplate(
+        ReportTemplate.defaultHtmlTemplate(), report, ReportConfiguration.defaultConfiguration());
   }
 
   /**
@@ -119,7 +125,10 @@ public final class HtmlReporter {
 
     // Report metadata
     context.put("reportId", report.getReportId());
-    context.put("generatedAt", report.getGeneratedAt().format(TIMESTAMP_FORMATTER));
+    context.put(
+        "generatedAt",
+        java.time.LocalDateTime.ofInstant(report.getGeneratedAt(), java.time.ZoneId.systemDefault())
+            .format(TIMESTAMP_FORMATTER));
     context.put("metadata", report.getMetadata());
     context.put("executionSummary", report.getExecutionSummary());
 
@@ -205,260 +214,5 @@ public final class HtmlReporter {
    */
   public HtmlReporterConfiguration getConfiguration() {
     return configuration;
-  }
-}
-
-/** Configuration for HTML report generation. */
-final class HtmlReporterConfiguration {
-  private final String reportTitle;
-  private final String theme;
-  private final boolean includeStaticResources;
-  private final boolean enableInteractiveFeatures;
-  private final boolean enablePerformanceCharts;
-  private final boolean enableCoverageAnalysis;
-  private final VerbosityLevel verbosityLevel;
-
-  private HtmlReporterConfiguration(final Builder builder) {
-    this.reportTitle = Objects.requireNonNull(builder.reportTitle, "reportTitle cannot be null");
-    this.theme = Objects.requireNonNull(builder.theme, "theme cannot be null");
-    this.includeStaticResources = builder.includeStaticResources;
-    this.enableInteractiveFeatures = builder.enableInteractiveFeatures;
-    this.enablePerformanceCharts = builder.enablePerformanceCharts;
-    this.enableCoverageAnalysis = builder.enableCoverageAnalysis;
-    this.verbosityLevel =
-        Objects.requireNonNull(builder.verbosityLevel, "verbosityLevel cannot be null");
-  }
-
-  public String getReportTitle() {
-    return reportTitle;
-  }
-
-  public String getTheme() {
-    return theme;
-  }
-
-  public boolean includeStaticResources() {
-    return includeStaticResources;
-  }
-
-  public boolean isInteractiveFeaturesEnabled() {
-    return enableInteractiveFeatures;
-  }
-
-  public boolean isPerformanceChartsEnabled() {
-    return enablePerformanceCharts;
-  }
-
-  public boolean isCoverageAnalysisEnabled() {
-    return enableCoverageAnalysis;
-  }
-
-  public VerbosityLevel getVerbosityLevel() {
-    return verbosityLevel;
-  }
-
-  /** Creates a new builder with default configuration. */
-  public static Builder builder() {
-    return new Builder();
-  }
-
-  /** Builder for HtmlReporterConfiguration. */
-  public static final class Builder {
-    private String reportTitle = "Wasmtime4j Comparison Report";
-    private String theme = "default";
-    private boolean includeStaticResources = true;
-    private boolean enableInteractiveFeatures = true;
-    private boolean enablePerformanceCharts = true;
-    private boolean enableCoverageAnalysis = true;
-    private VerbosityLevel verbosityLevel = VerbosityLevel.NORMAL;
-
-    public Builder reportTitle(final String reportTitle) {
-      this.reportTitle = Objects.requireNonNull(reportTitle, "reportTitle cannot be null");
-      return this;
-    }
-
-    public Builder theme(final String theme) {
-      this.theme = Objects.requireNonNull(theme, "theme cannot be null");
-      return this;
-    }
-
-    public Builder includeStaticResources(final boolean includeStaticResources) {
-      this.includeStaticResources = includeStaticResources;
-      return this;
-    }
-
-    public Builder enableInteractiveFeatures(final boolean enableInteractiveFeatures) {
-      this.enableInteractiveFeatures = enableInteractiveFeatures;
-      return this;
-    }
-
-    public Builder enablePerformanceCharts(final boolean enablePerformanceCharts) {
-      this.enablePerformanceCharts = enablePerformanceCharts;
-      return this;
-    }
-
-    public Builder enableCoverageAnalysis(final boolean enableCoverageAnalysis) {
-      this.enableCoverageAnalysis = enableCoverageAnalysis;
-      return this;
-    }
-
-    public Builder verbosityLevel(final VerbosityLevel verbosityLevel) {
-      this.verbosityLevel = Objects.requireNonNull(verbosityLevel, "verbosityLevel cannot be null");
-      return this;
-    }
-
-    public HtmlReporterConfiguration build() {
-      return new HtmlReporterConfiguration(this);
-    }
-  }
-
-  @Override
-  public boolean equals(final Object obj) {
-    if (this == obj) {
-      return true;
-    }
-    if (obj == null || getClass() != obj.getClass()) {
-      return false;
-    }
-
-    final HtmlReporterConfiguration that = (HtmlReporterConfiguration) obj;
-    return includeStaticResources == that.includeStaticResources
-        && enableInteractiveFeatures == that.enableInteractiveFeatures
-        && enablePerformanceCharts == that.enablePerformanceCharts
-        && enableCoverageAnalysis == that.enableCoverageAnalysis
-        && Objects.equals(reportTitle, that.reportTitle)
-        && Objects.equals(theme, that.theme)
-        && verbosityLevel == that.verbosityLevel;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(
-        reportTitle,
-        theme,
-        includeStaticResources,
-        enableInteractiveFeatures,
-        enablePerformanceCharts,
-        enableCoverageAnalysis,
-        verbosityLevel);
-  }
-
-  @Override
-  public String toString() {
-    return "HtmlReporterConfiguration{"
-        + "reportTitle='"
-        + reportTitle
-        + '\''
-        + ", theme='"
-        + theme
-        + '\''
-        + ", interactive="
-        + enableInteractiveFeatures
-        + ", verbosity="
-        + verbosityLevel
-        + '}';
-  }
-}
-
-/** Simple template engine for HTML generation. */
-final class TemplateEngine {
-  private static final Logger LOGGER = Logger.getLogger(TemplateEngine.class.getName());
-
-  /**
-   * Renders a template with the given context.
-   *
-   * @param templateName the template file name
-   * @param context the template context variables
-   * @return rendered HTML content
-   */
-  public String renderTemplate(final String templateName, final Map<String, Object> context) {
-    Objects.requireNonNull(templateName, "templateName cannot be null");
-    Objects.requireNonNull(context, "context cannot be null");
-
-    try {
-      // Load template from resources
-      final String templateContent = loadTemplate(templateName);
-
-      // Simple template variable replacement
-      return processTemplate(templateContent, context);
-    } catch (final Exception e) {
-      LOGGER.log(Level.SEVERE, "Failed to render template: " + templateName, e);
-      return generateErrorTemplate(templateName, e);
-    }
-  }
-
-  /**
-   * Loads a template from the classpath resources.
-   *
-   * @param templateName the template file name
-   * @return template content as string
-   * @throws IOException if template cannot be loaded
-   */
-  private String loadTemplate(final String templateName) throws IOException {
-    final String templatePath = "templates/" + templateName;
-    try (final var inputStream = getClass().getClassLoader().getResourceAsStream(templatePath)) {
-      if (inputStream == null) {
-        throw new IOException("Template not found: " + templatePath);
-      }
-      return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
-    }
-  }
-
-  /**
-   * Processes template content by replacing variables and control structures.
-   *
-   * @param templateContent the raw template content
-   * @param context the template context variables
-   * @return processed template content
-   */
-  private String processTemplate(final String templateContent, final Map<String, Object> context) {
-    String result = templateContent;
-
-    // Replace simple variables: {{variableName}}
-    for (final Map.Entry<String, Object> entry : context.entrySet()) {
-      final String placeholder = "{{" + entry.getKey() + "}}";
-      final String value = entry.getValue() != null ? entry.getValue().toString() : "";
-      result = result.replace(placeholder, escapeHtml(value));
-    }
-
-    // Process conditionals and loops would go here for a full template engine
-    // For now, we'll use a simple replacement approach
-
-    return result;
-  }
-
-  /**
-   * Escapes HTML special characters in a string.
-   *
-   * @param input the input string
-   * @return HTML-escaped string
-   */
-  private String escapeHtml(final String input) {
-    if (input == null) {
-      return "";
-    }
-    return input
-        .replace("&", "&amp;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;")
-        .replace("\"", "&quot;")
-        .replace("'", "&#x27;");
-  }
-
-  /**
-   * Generates an error template when template rendering fails.
-   *
-   * @param templateName the template that failed to render
-   * @param error the error that occurred
-   * @return basic error HTML content
-   */
-  private String generateErrorTemplate(final String templateName, final Exception error) {
-    return String.format(
-        "<!DOCTYPE html>"
-            + "<html><head><title>Template Error</title></head>"
-            + "<body><h1>Template Rendering Error</h1>"
-            + "<p>Failed to render template: %s</p>"
-            + "<p>Error: %s</p></body></html>",
-        escapeHtml(templateName), escapeHtml(error.getMessage()));
   }
 }

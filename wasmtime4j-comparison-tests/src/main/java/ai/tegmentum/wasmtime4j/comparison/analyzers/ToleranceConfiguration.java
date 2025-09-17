@@ -142,6 +142,13 @@ public final class ToleranceConfiguration {
     private Duration timingTolerance = DEFAULT_TIMING_TOLERANCE;
     private long memoryToleranceBytes = DEFAULT_MEMORY_TOLERANCE_BYTES;
 
+    /**
+     * Sets the tolerance for double value comparisons.
+     *
+     * @param doubleTolerance double tolerance value
+     * @return this builder
+     * @throws IllegalArgumentException if tolerance is negative
+     */
     public Builder doubleTolerance(final double doubleTolerance) {
       if (doubleTolerance < 0) {
         throw new IllegalArgumentException("doubleTolerance must be non-negative");
@@ -150,6 +157,13 @@ public final class ToleranceConfiguration {
       return this;
     }
 
+    /**
+     * Sets the tolerance for float value comparisons.
+     *
+     * @param floatTolerance float tolerance value
+     * @return this builder
+     * @throws IllegalArgumentException if tolerance is negative
+     */
     public Builder floatTolerance(final float floatTolerance) {
       if (floatTolerance < 0) {
         throw new IllegalArgumentException("floatTolerance must be non-negative");
@@ -158,6 +172,13 @@ public final class ToleranceConfiguration {
       return this;
     }
 
+    /**
+     * Sets the tolerance for BigDecimal value comparisons.
+     *
+     * @param bigDecimalTolerance BigDecimal tolerance value
+     * @return this builder
+     * @throws IllegalArgumentException if tolerance is negative
+     */
     public Builder bigDecimalTolerance(final BigDecimal bigDecimalTolerance) {
       Objects.requireNonNull(bigDecimalTolerance, "bigDecimalTolerance cannot be null");
       if (bigDecimalTolerance.compareTo(BigDecimal.ZERO) < 0) {
@@ -167,6 +188,13 @@ public final class ToleranceConfiguration {
       return this;
     }
 
+    /**
+     * Sets the tolerance for timing comparisons.
+     *
+     * @param timingTolerance timing tolerance duration
+     * @return this builder
+     * @throws IllegalArgumentException if tolerance is negative
+     */
     public Builder timingTolerance(final Duration timingTolerance) {
       Objects.requireNonNull(timingTolerance, "timingTolerance cannot be null");
       if (timingTolerance.isNegative()) {
@@ -176,6 +204,13 @@ public final class ToleranceConfiguration {
       return this;
     }
 
+    /**
+     * Sets the memory tolerance in bytes for comparison operations.
+     *
+     * @param memoryToleranceBytes the acceptable memory usage difference in bytes
+     * @return this builder instance for method chaining
+     * @throws IllegalArgumentException if memoryToleranceBytes is negative
+     */
     public Builder memoryToleranceBytes(final long memoryToleranceBytes) {
       if (memoryToleranceBytes < 0) {
         throw new IllegalArgumentException("memoryToleranceBytes must be non-negative");

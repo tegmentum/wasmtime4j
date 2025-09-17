@@ -435,6 +435,15 @@ public final class AdvancedMemoryMonitor {
     public final ConcurrentMap<String, MemoryPoolState> poolStates;
     public final long trackedObjectCount;
 
+    /**
+     * Constructs a detailed memory snapshot.
+     *
+     * @param timestamp snapshot timestamp
+     * @param heapUsage heap memory usage
+     * @param nonHeapUsage non-heap memory usage
+     * @param poolStates memory pool states
+     * @param trackedObjectCount number of tracked objects
+     */
     public DetailedMemorySnapshot(
         final long timestamp,
         final MemoryUsage heapUsage,
@@ -456,6 +465,14 @@ public final class AdvancedMemoryMonitor {
     public final long committed;
     public final long max;
 
+    /**
+     * Constructs a memory pool state.
+     *
+     * @param name pool name
+     * @param used used memory
+     * @param committed committed memory
+     * @param max maximum memory
+     */
     public MemoryPoolState(
         final String name, final long used, final long committed, final long max) {
       this.name = name;
@@ -483,6 +500,13 @@ public final class AdvancedMemoryMonitor {
     public final double heapUtilization;
     public final double maxUtilization;
 
+    /**
+     * Constructs memory pressure information.
+     *
+     * @param level pressure level
+     * @param heapUtilization heap utilization percentage
+     * @param maxUtilization maximum utilization percentage
+     */
     public MemoryPressureInfo(
         final MemoryPressureLevel level,
         final double heapUtilization,
@@ -506,6 +530,19 @@ public final class AdvancedMemoryMonitor {
     public final int snapshotCount;
     public final String errorMessage;
 
+    /**
+     * Constructs a memory trend analysis.
+     *
+     * @param durationMs analysis duration in milliseconds
+     * @param heapGrowth heap memory growth
+     * @param nonHeapGrowth non-heap memory growth
+     * @param heapGrowthRate heap growth rate
+     * @param nonHeapGrowthRate non-heap growth rate
+     * @param potentialHeapLeak whether heap leak is suspected
+     * @param potentialNonHeapLeak whether non-heap leak is suspected
+     * @param heapStability heap stability metric
+     * @param snapshotCount number of snapshots analyzed
+     */
     public MemoryTrendAnalysis(
         final long durationMs,
         final long heapGrowth,
@@ -528,6 +565,11 @@ public final class AdvancedMemoryMonitor {
       this.errorMessage = null;
     }
 
+    /**
+     * Constructs a memory trend analysis with error.
+     *
+     * @param errorMessage error message
+     */
     public MemoryTrendAnalysis(final String errorMessage) {
       this.durationMs = 0;
       this.heapGrowth = 0;
@@ -622,6 +664,18 @@ public final class AdvancedMemoryMonitor {
     public final boolean highUtilization;
     public final String errorMessage;
 
+    /**
+     * Constructs a memory pool analysis.
+     *
+     * @param poolName memory pool name
+     * @param currentUsed current used memory
+     * @param currentCommitted current committed memory
+     * @param currentMax current maximum memory
+     * @param peakUsage peak memory usage
+     * @param utilizationPercent current utilization percentage
+     * @param maxUtilizationPercent maximum utilization percentage
+     * @param highUtilization whether utilization is high
+     */
     public MemoryPoolAnalysis(
         final String poolName,
         final long currentUsed,
@@ -642,6 +696,12 @@ public final class AdvancedMemoryMonitor {
       this.errorMessage = null;
     }
 
+    /**
+     * Constructs a memory pool analysis with error.
+     *
+     * @param poolName memory pool name
+     * @param errorMessage error message
+     */
     public MemoryPoolAnalysis(final String poolName, final String errorMessage) {
       this.poolName = poolName;
       this.currentUsed = 0;
@@ -672,6 +732,20 @@ public final class AdvancedMemoryMonitor {
     public final MemoryPressureInfo finalPressure;
     public final List<MemoryPoolAnalysis> poolAnalyses;
 
+    /**
+     * Constructs a memory monitoring report.
+     *
+     * @param testName test name
+     * @param monitoringDuration monitoring duration
+     * @param baselineHeapUsage baseline heap usage
+     * @param peakHeapUsage peak heap usage
+     * @param finalHeapUsage final heap usage
+     * @param suspectedLeaks number of suspected leaks
+     * @param snapshotCount number of snapshots
+     * @param trendAnalysis trend analysis results
+     * @param finalPressure final memory pressure
+     * @param poolAnalyses pool analysis results
+     */
     public MemoryMonitoringReport(
         final String testName,
         final Duration monitoringDuration,
@@ -699,6 +773,11 @@ public final class AdvancedMemoryMonitor {
       return suspectedLeaks > 0 || (trendAnalysis != null && trendAnalysis.indicatesMemoryLeak());
     }
 
+    /**
+     * Checks if memory pressure is detected.
+     *
+     * @return true if high or critical memory pressure is detected
+     */
     public boolean hasMemoryPressure() {
       return finalPressure != null
           && (finalPressure.level == MemoryPressureLevel.HIGH
@@ -709,10 +788,20 @@ public final class AdvancedMemoryMonitor {
       return finalHeapUsage - baselineHeapUsage;
     }
 
+    /**
+     * Gets heap growth in megabytes.
+     *
+     * @return heap growth in MB
+     */
     public double getHeapGrowthMB() {
       return getHeapGrowth() / (1024.0 * 1024.0);
     }
 
+    /**
+     * Gets a summary of the memory monitoring report.
+     *
+     * @return summary string
+     */
     public String getSummary() {
       return String.format(
           "Memory Report [%s]: %.1fMB growth, %dMB peak, %d suspected leaks, %s pressure",

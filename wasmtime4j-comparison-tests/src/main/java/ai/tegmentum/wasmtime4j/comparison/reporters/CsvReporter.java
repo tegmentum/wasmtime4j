@@ -6,7 +6,6 @@ import ai.tegmentum.wasmtime4j.comparison.analyzers.BehavioralDiscrepancy;
 import ai.tegmentum.wasmtime4j.comparison.analyzers.CoverageAnalysisResult;
 import ai.tegmentum.wasmtime4j.comparison.analyzers.PerformanceAnalyzer;
 import ai.tegmentum.wasmtime4j.comparison.analyzers.RecommendationResult;
-import ai.tegmentum.wasmtime4j.comparison.analyzers.RuntimeComparison;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -14,10 +13,8 @@ import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPOutputStream;
@@ -48,7 +45,8 @@ public final class CsvReporter implements DataExporter<CsvConfiguration> {
       CSV Schema for Wasmtime4j Comparison Report:
 
       SUMMARY Format:
-      - testName,verdict,consistencyScore,executionTimeMs,memoryUsedBytes,coverageScore,recommendationCount,highPriorityCount
+      - testName,verdict,consistencyScore,executionTimeMs,memoryUsedBytes,coverageScore,
+        recommendationCount,highPriorityCount
 
       DETAILED Format:
       - testName,category,field,value,unit,description
@@ -65,6 +63,7 @@ public final class CsvReporter implements DataExporter<CsvConfiguration> {
 
   private final ExportSchema schema;
 
+  /** Creates a new CSV reporter with default configuration. */
   public CsvReporter() {
     this.schema =
         new ExportSchema(
@@ -100,6 +99,8 @@ public final class CsvReporter implements DataExporter<CsvConfiguration> {
           case PERFORMANCE -> exportPerformanceLayout(report, configuration, writer);
           case DISCREPANCIES -> exportDiscrepanciesLayout(report, configuration, writer);
           case CUSTOM -> exportCustomLayout(report, configuration, writer);
+          default -> throw new IllegalArgumentException(
+              "Unsupported CSV layout: " + configuration.getLayout());
         }
 
         writer.flush();
@@ -145,7 +146,7 @@ public final class CsvReporter implements DataExporter<CsvConfiguration> {
       case SUMMARY -> baseSize + (testCount * 200); // ~200 bytes per test summary
       case DETAILED -> baseSize + (testCount * 1000); // ~1KB per test detailed
       case RECOMMENDATIONS -> baseSize
-          + report.getRecommendations().values().stream()
+          + report.getRecommendations().stream()
                   .mapToInt(r -> r.getPrioritizedRecommendations().size())
                   .sum()
               * 300; // ~300 bytes per recommendation
@@ -198,7 +199,7 @@ public final class CsvReporter implements DataExporter<CsvConfiguration> {
       final PerformanceAnalyzer.PerformanceComparisonResult performance =
           report.getPerformanceResults().get(testName);
       if (performance != null) {
-        row.add(String.valueOf(performance.getExecutionDuration().toMillis()));
+        row.add(String.valueOf(performance.getExecutionDuration()));
         row.add(String.valueOf(performance.getMemoryUsed()));
       } else {
         row.add("");
@@ -214,7 +215,7 @@ public final class CsvReporter implements DataExporter<CsvConfiguration> {
       }
 
       // Recommendations
-      final RecommendationResult recommendations = report.getRecommendations().get(testName);
+      final RecommendationResult recommendations = report.getRecommendationResults().get(testName);
       if (recommendations != null) {
         row.add(String.valueOf(recommendations.getSummary().getTotalRecommendations()));
         row.add(String.valueOf(recommendations.getSummary().getHighPriorityCount()));
@@ -266,7 +267,7 @@ public final class CsvReporter implements DataExporter<CsvConfiguration> {
 
     // Write recommendation rows
     for (final String testName : report.getTestNames()) {
-      final RecommendationResult recommendations = report.getRecommendations().get(testName);
+      final RecommendationResult recommendations = report.getRecommendationResults().get(testName);
       if (recommendations != null) {
         for (final ActionableRecommendation rec : recommendations.getPrioritizedRecommendations()) {
           final List<String> row = new ArrayList<>();
@@ -314,7 +315,7 @@ public final class CsvReporter implements DataExporter<CsvConfiguration> {
         final List<String> row = new ArrayList<>();
         row.add(testName);
         row.add(performance.getRuntimeType());
-        row.add(String.valueOf(performance.getExecutionDuration().toMillis()));
+        row.add(String.valueOf(performance.getExecutionDuration()));
         row.add(String.valueOf(performance.getMemoryUsed()));
         row.add(String.valueOf(performance.getPeakMemoryUsage()));
         row.add(String.valueOf(performance.isSuccessful()));
@@ -356,19 +357,7 @@ public final class CsvReporter implements DataExporter<CsvConfiguration> {
           writeCsvRow(writer, row, configuration);
         }
 
-        // Runtime comparisons
-        for (final RuntimeComparison comp : behavioral.getPairwiseComparisons()) {
-          final List<String> row = new ArrayList<>();
-          row.add(testName);
-          row.add("COMPARISON");
-          row.add(comp.getComparisonResult().isEquivalent() ? "LOW" : "HIGH");
-          row.add("Runtime comparison result");
-          row.add(comp.getRuntime1().name());
-          row.add(comp.getRuntime2().name());
-          row.add(String.format("%.3f", comp.getComparisonResult().getOverallScore()));
-
-          writeCsvRow(writer, row, configuration);
-        }
+        // TODO: Add runtime comparisons when RuntimeComparison is accessible from reporters package
       }
     }
   }
@@ -450,7 +439,7 @@ public final class CsvReporter implements DataExporter<CsvConfiguration> {
           testName,
           "performance",
           "executionTime",
-          String.valueOf(performance.getExecutionDuration().toMillis()),
+          String.valueOf(performance.getExecutionDuration()),
           "ms",
           "Test execution duration",
           configuration);
@@ -531,9 +520,7 @@ public final class CsvReporter implements DataExporter<CsvConfiguration> {
       case "executiontimems" -> {
         final PerformanceAnalyzer.PerformanceComparisonResult performance =
             report.getPerformanceResults().get(testName);
-        yield performance != null
-            ? String.valueOf(performance.getExecutionDuration().toMillis())
-            : "";
+        yield performance != null ? String.valueOf(performance.getExecutionDuration()) : "";
       }
       case "memoryusedbytes" -> {
         final PerformanceAnalyzer.PerformanceComparisonResult performance =
@@ -545,7 +532,8 @@ public final class CsvReporter implements DataExporter<CsvConfiguration> {
         yield coverage != null ? String.format("%.3f", coverage.getCoverageScore()) : "";
       }
       case "recommendationcount" -> {
-        final RecommendationResult recommendations = report.getRecommendations().get(testName);
+        final RecommendationResult recommendations =
+            report.getRecommendationResults().get(testName);
         yield recommendations != null
             ? String.valueOf(recommendations.getSummary().getTotalRecommendations())
             : "0";
@@ -594,164 +582,4 @@ public final class CsvReporter implements DataExporter<CsvConfiguration> {
         || value.contains("\n")
         || value.contains("\r");
   }
-}
-
-/** Configuration for CSV export operations. */
-final class CsvConfiguration extends ExportConfiguration {
-  private final CsvLayout layout;
-  private final String delimiter;
-  private final String quoteChar;
-  private final String lineEnding;
-  private final List<String> customColumns;
-  private final boolean includeHeaders;
-
-  private CsvConfiguration(final Builder builder) {
-    super(builder.format, builder.includeMetadata, builder.compressOutput, builder.bufferSize);
-    this.layout = builder.layout;
-    this.delimiter = builder.delimiter;
-    this.quoteChar = builder.quoteChar;
-    this.lineEnding = builder.lineEnding;
-    this.customColumns = List.copyOf(builder.customColumns);
-    this.includeHeaders = builder.includeHeaders;
-  }
-
-  public CsvLayout getLayout() {
-    return layout;
-  }
-
-  public String getDelimiter() {
-    return delimiter;
-  }
-
-  public String getQuoteChar() {
-    return quoteChar;
-  }
-
-  public String getLineEnding() {
-    return lineEnding;
-  }
-
-  public List<String> getCustomColumns() {
-    return customColumns;
-  }
-
-  public boolean isIncludeHeaders() {
-    return includeHeaders;
-  }
-
-  @Override
-  public boolean equals(final Object obj) {
-    if (this == obj) {
-      return true;
-    }
-    if (obj == null || getClass() != obj.getClass()) {
-      return false;
-    }
-    if (!super.equals(obj)) {
-      return false;
-    }
-
-    final CsvConfiguration that = (CsvConfiguration) obj;
-    return includeHeaders == that.includeHeaders
-        && layout == that.layout
-        && Objects.equals(delimiter, that.delimiter)
-        && Objects.equals(quoteChar, that.quoteChar)
-        && Objects.equals(lineEnding, that.lineEnding)
-        && Objects.equals(customColumns, that.customColumns);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(
-        super.hashCode(), layout, delimiter, quoteChar, lineEnding, customColumns, includeHeaders);
-  }
-
-  /** Builder for CsvConfiguration. */
-  public static final class Builder {
-    private final ExportFormat format = ExportFormat.CSV;
-    private boolean includeMetadata = true;
-    private boolean compressOutput = false;
-    private int bufferSize = 8192;
-    private CsvLayout layout = CsvLayout.SUMMARY;
-    private String delimiter = ",";
-    private String quoteChar = "\"";
-    private String lineEnding = "\n";
-    private Set<String> customColumns = new LinkedHashSet<>();
-    private boolean includeHeaders = true;
-
-    public Builder includeMetadata(final boolean includeMetadata) {
-      this.includeMetadata = includeMetadata;
-      return this;
-    }
-
-    public Builder compressOutput(final boolean compressOutput) {
-      this.compressOutput = compressOutput;
-      return this;
-    }
-
-    public Builder bufferSize(final int bufferSize) {
-      this.bufferSize = bufferSize;
-      return this;
-    }
-
-    public Builder layout(final CsvLayout layout) {
-      this.layout = Objects.requireNonNull(layout, "layout cannot be null");
-      return this;
-    }
-
-    public Builder delimiter(final String delimiter) {
-      this.delimiter = Objects.requireNonNull(delimiter, "delimiter cannot be null");
-      return this;
-    }
-
-    public Builder quoteChar(final String quoteChar) {
-      this.quoteChar = Objects.requireNonNull(quoteChar, "quoteChar cannot be null");
-      return this;
-    }
-
-    public Builder lineEnding(final String lineEnding) {
-      this.lineEnding = Objects.requireNonNull(lineEnding, "lineEnding cannot be null");
-      return this;
-    }
-
-    public Builder customColumns(final List<String> customColumns) {
-      this.customColumns = new LinkedHashSet<>(customColumns);
-      return this;
-    }
-
-    public Builder addCustomColumn(final String column) {
-      this.customColumns.add(Objects.requireNonNull(column, "column cannot be null"));
-      return this;
-    }
-
-    public Builder includeHeaders(final boolean includeHeaders) {
-      this.includeHeaders = includeHeaders;
-      return this;
-    }
-
-    public CsvConfiguration build() {
-      return new CsvConfiguration(this);
-    }
-  }
-}
-
-/** CSV layout options for different analysis needs. */
-enum CsvLayout {
-  /** Summary view with key metrics per test. */
-  SUMMARY,
-
-  /** Detailed view with normalized key-value structure. */
-  DETAILED,
-
-  /** Recommendations-focused view. */
-  RECOMMENDATIONS,
-
-  /** Performance-focused view. */
-  PERFORMANCE,
-
-  /** Discrepancies-focused view. */
-  DISCREPANCIES,
-
-  /** Custom view with user-specified columns. */
-  CUSTOM
 }

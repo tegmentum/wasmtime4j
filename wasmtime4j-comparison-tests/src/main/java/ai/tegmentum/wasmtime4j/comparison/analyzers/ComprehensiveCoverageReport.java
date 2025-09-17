@@ -5,7 +5,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 /**
  * Comprehensive coverage report providing a global view of test coverage across all analyzed tests,
@@ -22,6 +21,17 @@ public final class ComprehensiveCoverageReport {
   private final int totalTestsAnalyzed;
   private final Instant reportGeneratedAt;
 
+  /**
+   * Creates a new comprehensive coverage report with the specified metrics and analysis results.
+   *
+   * @param categoryCompleteness completion percentages by feature category
+   * @param uncoveredFeatures list of features that lack test coverage
+   * @param runtimeCoverageScores coverage scores per WebAssembly runtime
+   * @param recommendations list of coverage improvement recommendations
+   * @param coverageTrend overall coverage trend analysis
+   * @param totalTestsAnalyzed total number of tests included in the analysis
+   * @param reportGeneratedAt timestamp when this report was generated
+   */
   public ComprehensiveCoverageReport(
       final Map<String, Double> categoryCompleteness,
       final List<String> uncoveredFeatures,
@@ -179,265 +189,4 @@ public final class ComprehensiveCoverageReport {
         + recommendations.size()
         + '}';
   }
-}
-
-/** Global coverage statistics across all tests and runtimes. */
-final class GlobalCoverageStatistics {
-  private final int totalFeatures;
-  private final int coveredFeatures;
-  private final double overallCoveragePercentage;
-  private final int totalTestsAnalyzed;
-  private final int totalCategories;
-
-  public GlobalCoverageStatistics(
-      final int totalFeatures,
-      final int coveredFeatures,
-      final double overallCoveragePercentage,
-      final int totalTestsAnalyzed,
-      final int totalCategories) {
-    this.totalFeatures = totalFeatures;
-    this.coveredFeatures = coveredFeatures;
-    this.overallCoveragePercentage = overallCoveragePercentage;
-    this.totalTestsAnalyzed = totalTestsAnalyzed;
-    this.totalCategories = totalCategories;
-  }
-
-  public int getTotalFeatures() {
-    return totalFeatures;
-  }
-
-  public int getCoveredFeatures() {
-    return coveredFeatures;
-  }
-
-  public double getOverallCoveragePercentage() {
-    return overallCoveragePercentage;
-  }
-
-  public int getTotalTestsAnalyzed() {
-    return totalTestsAnalyzed;
-  }
-
-  public int getTotalCategories() {
-    return totalCategories;
-  }
-
-  @Override
-  public boolean equals(final Object obj) {
-    if (this == obj) {
-      return true;
-    }
-    if (obj == null || getClass() != obj.getClass()) {
-      return false;
-    }
-
-    final GlobalCoverageStatistics that = (GlobalCoverageStatistics) obj;
-    return totalFeatures == that.totalFeatures
-        && coveredFeatures == that.coveredFeatures
-        && Double.compare(that.overallCoveragePercentage, overallCoveragePercentage) == 0
-        && totalTestsAnalyzed == that.totalTestsAnalyzed
-        && totalCategories == that.totalCategories;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(
-        totalFeatures,
-        coveredFeatures,
-        overallCoveragePercentage,
-        totalTestsAnalyzed,
-        totalCategories);
-  }
-
-  @Override
-  public String toString() {
-    return "GlobalCoverageStatistics{"
-        + "features="
-        + coveredFeatures
-        + "/"
-        + totalFeatures
-        + ", coverage="
-        + String.format("%.1f%%", overallCoveragePercentage)
-        + ", tests="
-        + totalTestsAnalyzed
-        + '}';
-  }
-}
-
-/** Actionable recommendation for improving test coverage. */
-final class CoverageRecommendation {
-  private final RecommendationType type;
-  private final String description;
-  private final RecommendationPriority priority;
-  private final Set<String> affectedAreas;
-
-  public CoverageRecommendation(
-      final RecommendationType type,
-      final String description,
-      final RecommendationPriority priority,
-      final Set<String> affectedAreas) {
-    this.type = Objects.requireNonNull(type, "type cannot be null");
-    this.description = Objects.requireNonNull(description, "description cannot be null");
-    this.priority = Objects.requireNonNull(priority, "priority cannot be null");
-    this.affectedAreas = Set.copyOf(affectedAreas);
-  }
-
-  public RecommendationType getType() {
-    return type;
-  }
-
-  public String getDescription() {
-    return description;
-  }
-
-  public RecommendationPriority getPriority() {
-    return priority;
-  }
-
-  public Set<String> getAffectedAreas() {
-    return affectedAreas;
-  }
-
-  @Override
-  public boolean equals(final Object obj) {
-    if (this == obj) {
-      return true;
-    }
-    if (obj == null || getClass() != obj.getClass()) {
-      return false;
-    }
-
-    final CoverageRecommendation that = (CoverageRecommendation) obj;
-    return type == that.type
-        && Objects.equals(description, that.description)
-        && priority == that.priority
-        && Objects.equals(affectedAreas, that.affectedAreas);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(type, description, priority, affectedAreas);
-  }
-
-  @Override
-  public String toString() {
-    return "CoverageRecommendation{"
-        + "type="
-        + type
-        + ", priority="
-        + priority
-        + ", areas="
-        + affectedAreas.size()
-        + '}';
-  }
-}
-
-/** Types of coverage recommendations. */
-enum RecommendationType {
-  /** Increase coverage for a specific category. */
-  INCREASE_CATEGORY_COVERAGE,
-
-  /** Improve existing coverage for a category. */
-  IMPROVE_CATEGORY_COVERAGE,
-
-  /** Improve coverage for a specific runtime. */
-  IMPROVE_RUNTIME_COVERAGE,
-
-  /** Add tests for feature interactions. */
-  ADD_INTERACTION_TESTS,
-
-  /** Address high-severity coverage gaps. */
-  ADDRESS_CRITICAL_GAPS
-}
-
-/** Priority levels for recommendations. */
-enum RecommendationPriority {
-  /** Low priority recommendation. */
-  LOW,
-
-  /** Medium priority recommendation. */
-  MEDIUM,
-
-  /** High priority recommendation requiring immediate attention. */
-  HIGH
-}
-
-/** Coverage trend analysis over time. */
-final class CoverageTrend {
-  private final double currentCoverage;
-  private final double previousCoverage;
-  private final double change;
-  private final TrendDirection direction;
-
-  public CoverageTrend(
-      final double currentCoverage,
-      final double previousCoverage,
-      final double change,
-      final TrendDirection direction) {
-    this.currentCoverage = currentCoverage;
-    this.previousCoverage = previousCoverage;
-    this.change = change;
-    this.direction = Objects.requireNonNull(direction, "direction cannot be null");
-  }
-
-  public double getCurrentCoverage() {
-    return currentCoverage;
-  }
-
-  public double getPreviousCoverage() {
-    return previousCoverage;
-  }
-
-  public double getChange() {
-    return change;
-  }
-
-  public TrendDirection getDirection() {
-    return direction;
-  }
-
-  @Override
-  public boolean equals(final Object obj) {
-    if (this == obj) {
-      return true;
-    }
-    if (obj == null || getClass() != obj.getClass()) {
-      return false;
-    }
-
-    final CoverageTrend that = (CoverageTrend) obj;
-    return Double.compare(that.currentCoverage, currentCoverage) == 0
-        && Double.compare(that.previousCoverage, previousCoverage) == 0
-        && Double.compare(that.change, change) == 0
-        && direction == that.direction;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(currentCoverage, previousCoverage, change, direction);
-  }
-
-  @Override
-  public String toString() {
-    return "CoverageTrend{"
-        + "current="
-        + String.format("%.1f%%", currentCoverage)
-        + ", change="
-        + String.format("%.1f%%", change)
-        + ", direction="
-        + direction
-        + '}';
-  }
-}
-
-/** Direction of coverage trend. */
-enum TrendDirection {
-  /** Coverage is improving. */
-  IMPROVING,
-
-  /** Coverage is declining. */
-  DECLINING,
-
-  /** Coverage is stable. */
-  STABLE
 }

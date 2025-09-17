@@ -132,6 +132,12 @@ public final class ValueComparisonResult {
       return this;
     }
 
+    /**
+     * Sets the confidence score for this comparison result.
+     *
+     * @param confidenceScore confidence score between 0.0 and 1.0
+     * @return this builder
+     */
     public Builder confidenceScore(final double confidenceScore) {
       if (confidenceScore < 0.0 || confidenceScore > 1.0) {
         throw new IllegalArgumentException("confidenceScore must be between 0.0 and 1.0");
