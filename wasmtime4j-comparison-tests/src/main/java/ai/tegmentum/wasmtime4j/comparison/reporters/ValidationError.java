@@ -2,9 +2,7 @@ package ai.tegmentum.wasmtime4j.comparison.reporters;
 
 import java.util.Objects;
 
-/**
- * Validation error information.
- */
+/** Validation error information. */
 public final class ValidationError {
   private final String message;
   private final ValidationErrorType type;

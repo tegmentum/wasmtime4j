@@ -2,9 +2,7 @@ package ai.tegmentum.wasmtime4j.comparison.reporters;
 
 import java.util.Objects;
 
-/**
- * Validation warning information.
- */
+/** Validation warning information. */
 public final class ValidationWarning {
   private final String message;
   private final String category;

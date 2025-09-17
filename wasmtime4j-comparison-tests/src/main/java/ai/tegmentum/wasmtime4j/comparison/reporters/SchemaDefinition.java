@@ -3,9 +3,7 @@ package ai.tegmentum.wasmtime4j.comparison.reporters;
 import java.util.Map;
 import java.util.Objects;
 
-/**
- * Schema definition with metadata.
- */
+/** Schema definition with metadata. */
 public final class SchemaDefinition {
   private final ExportFormat format;
   private final String version;

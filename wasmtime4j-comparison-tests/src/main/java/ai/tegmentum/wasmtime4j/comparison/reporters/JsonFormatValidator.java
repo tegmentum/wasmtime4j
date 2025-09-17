@@ -4,9 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
-/**
- * JSON format validator.
- */
+/** JSON format validator. */
 final class JsonFormatValidator implements FormatValidator {
   private static final Pattern JSON_STRUCTURE_PATTERN =
       Pattern.compile("^\\s*\\{.*\\}\\s*$", Pattern.DOTALL);

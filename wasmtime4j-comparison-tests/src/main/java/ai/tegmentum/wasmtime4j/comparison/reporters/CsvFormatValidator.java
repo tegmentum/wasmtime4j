@@ -3,9 +3,7 @@ package ai.tegmentum.wasmtime4j.comparison.reporters;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * CSV format validator.
- */
+/** CSV format validator. */
 final class CsvFormatValidator implements FormatValidator {
   @Override
   public ValidationResult validate(final byte[] data, final SchemaDefinition schema) {
