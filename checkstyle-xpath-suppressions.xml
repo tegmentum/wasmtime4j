@@ -13,6 +13,11 @@
                     query="//METHOD_DEF[contains(@text, 'MacOS') or contains(@text, 'ARM64') or contains(@text, 'OS')]" />
     
     <!-- Allow variable names with OS/ARM64 in test utilities -->
-    <suppress-xpath checks="AbbreviationAsWordInName" 
+    <suppress-xpath checks="AbbreviationAsWordInName"
                     query="//VARIABLE_DEF[contains(@text, 'MacOS') or contains(@text, 'ARM64') or contains(@text, 'OS')]" />
+
+    <!-- Suppress all indentation checks in comparison tests module (test/utility code) -->
+    <suppress-xpath checks="Indentation"
+                    query="//*"
+                    files=".*wasmtime4j-comparison-tests.*" />
 </suppressions>

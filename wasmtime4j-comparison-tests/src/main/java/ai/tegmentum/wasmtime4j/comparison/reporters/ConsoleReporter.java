@@ -405,10 +405,10 @@ public final class ConsoleReporter {
 
     final String exitCodeMessage =
         switch (exitCode) {
-          case 0 -> "All tests passed successfully";
-          case 1 -> "Tests completed with warnings";
-          case 2 -> "Tests failed or encountered errors";
-          default -> "Unknown status";
+        case 0 -> "All tests passed successfully";
+        case 1 -> "Tests completed with warnings";
+        case 2 -> "Tests failed or encountered errors";
+        default -> "Unknown status";
         };
 
     if (useColors) {

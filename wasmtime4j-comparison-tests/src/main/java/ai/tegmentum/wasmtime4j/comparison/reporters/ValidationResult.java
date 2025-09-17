@@ -3,9 +3,7 @@ package ai.tegmentum.wasmtime4j.comparison.reporters;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Result of schema validation.
- */
+/** Result of schema validation. */
 public final class ValidationResult {
   private final boolean valid;
   private final List<ValidationError> errors;

@@ -3,9 +3,7 @@ package ai.tegmentum.wasmtime4j.comparison.reporters;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * HTML format validator.
- */
+/** HTML format validator. */
 final class HtmlFormatValidator implements FormatValidator {
   @Override
   public ValidationResult validate(final byte[] data, final SchemaDefinition schema) {

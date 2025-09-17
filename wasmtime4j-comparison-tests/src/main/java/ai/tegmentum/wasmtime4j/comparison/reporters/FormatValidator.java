@@ -1,8 +1,6 @@
 package ai.tegmentum.wasmtime4j.comparison.reporters;
 
-/**
- * Format-specific validator interface.
- */
+/** Format-specific validator interface. */
 interface FormatValidator {
   /**
    * Validates data against a schema definition.

@@ -1,8 +1,6 @@
 package ai.tegmentum.wasmtime4j.comparison.reporters;
 
-/**
- * Types of validation errors.
- */
+/** Types of validation errors. */
 public enum ValidationErrorType {
   /** Schema was not found. */
   SCHEMA_NOT_FOUND,

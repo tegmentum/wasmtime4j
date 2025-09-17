@@ -1,14 +1,12 @@
 package ai.tegmentum.wasmtime4j.comparison.reporters;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
-import java.util.regex.Pattern;
 
 /**
  * Schema validation utility for exported data formats with versioning support.
@@ -396,4 +394,3 @@ public final class SchemaValidator {
     return 0;
   }
 }
-

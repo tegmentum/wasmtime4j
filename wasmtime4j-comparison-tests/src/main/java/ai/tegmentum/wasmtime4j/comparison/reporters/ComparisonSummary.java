@@ -301,4 +301,3 @@ public final class ComparisonSummary {
     }
   }
 }
-

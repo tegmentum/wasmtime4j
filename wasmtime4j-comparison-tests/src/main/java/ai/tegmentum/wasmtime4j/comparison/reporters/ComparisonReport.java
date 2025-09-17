@@ -651,10 +651,10 @@ public final class ComparisonReport {
     // Calculate consistency score based on status
     final double consistencyScore =
         switch (testResult.getOverallStatus()) {
-          case SUCCESS -> 1.0;
-          case WARNING -> 0.75;
-          case FAILURE -> 0.25;
-          case CRITICAL -> 0.0;
+        case SUCCESS -> 1.0;
+        case WARNING -> 0.75;
+        case FAILURE -> 0.25;
+        case CRITICAL -> 0.0;
         };
 
     // Determine verdict based on compatibility and score
