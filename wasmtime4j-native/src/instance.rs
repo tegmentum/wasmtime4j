@@ -19,7 +19,7 @@ use wasmtime::{
     ExternType,
 };
 use crate::store::{Store, StoreData};
-use crate::module::{Module, ValueType, FunctionSignature, ImportKind, ExportKind};
+use crate::module::{Module, ModuleValueType, FunctionSignature, ImportKind, ExportKind};
 use crate::error::{WasmtimeError, WasmtimeResult};
 
 /// Thread-safe wrapper around Wasmtime instance with comprehensive lifecycle management
@@ -273,6 +273,12 @@ impl Instance {
                 // Table compatibility validation could be more sophisticated
                 Ok(())
             }
+            (_, Extern::SharedMemory(_)) => Err(WasmtimeError::ImportExport {
+                message: "SharedMemory imports not supported".to_string(),
+            }),
+            (_, Extern::Tag(_)) => Err(WasmtimeError::ImportExport {
+                message: "Tag imports not supported".to_string(),
+            }),
             _ => Err(WasmtimeError::ImportExport {
                 message: "Import type mismatch".to_string(),
             }),
@@ -565,39 +571,39 @@ impl Instance {
         Ok(FunctionSignature { params, returns })
     }
     
-    /// Convert wasmtime ValType to our ValueType
-    fn convert_val_type(val_type: WasmtimeValType) -> WasmtimeResult<ValueType> {
+    /// Convert wasmtime ValType to our ModuleValueType
+    fn convert_val_type(val_type: WasmtimeValType) -> WasmtimeResult<ModuleValueType> {
         match val_type {
-            WasmtimeValType::I32 => Ok(ValueType::I32),
-            WasmtimeValType::I64 => Ok(ValueType::I64),
-            WasmtimeValType::F32 => Ok(ValueType::F32),
-            WasmtimeValType::F64 => Ok(ValueType::F64),
-            WasmtimeValType::V128 => Ok(ValueType::V128),
+            WasmtimeValType::I32 => Ok(ModuleValueType::I32),
+            WasmtimeValType::I64 => Ok(ModuleValueType::I64),
+            WasmtimeValType::F32 => Ok(ModuleValueType::F32),
+            WasmtimeValType::F64 => Ok(ModuleValueType::F64),
+            WasmtimeValType::V128 => Ok(ModuleValueType::V128),
             WasmtimeValType::Ref(ref_type) => Self::convert_ref_type(&ref_type),
         }
     }
     
-    /// Convert RefType to ValueType
-    fn convert_ref_type(ref_type: &wasmtime::RefType) -> WasmtimeResult<ValueType> {
+    /// Convert RefType to ModuleValueType
+    fn convert_ref_type(ref_type: &wasmtime::RefType) -> WasmtimeResult<ModuleValueType> {
         match ref_type.heap_type() {
-            wasmtime::HeapType::Extern => Ok(ValueType::ExternRef),
-            wasmtime::HeapType::Func => Ok(ValueType::FuncRef),
+            wasmtime::HeapType::Extern => Ok(ModuleValueType::ExternRef),
+            wasmtime::HeapType::Func => Ok(ModuleValueType::FuncRef),
             _ => Err(WasmtimeError::Type {
                 message: format!("Unsupported reference type: {:?}", ref_type),
             }),
         }
     }
     
-    /// Check if WasmValue matches expected ValueType
-    fn value_type_matches(value: &WasmValue, expected: &ValueType) -> bool {
+    /// Check if WasmValue matches expected ModuleValueType
+    fn value_type_matches(value: &WasmValue, expected: &ModuleValueType) -> bool {
         match (value, expected) {
-            (WasmValue::I32(_), ValueType::I32) => true,
-            (WasmValue::I64(_), ValueType::I64) => true,
-            (WasmValue::F32(_), ValueType::F32) => true,
-            (WasmValue::F64(_), ValueType::F64) => true,
-            (WasmValue::V128(_), ValueType::V128) => true,
-            (WasmValue::ExternRef, ValueType::ExternRef) => true,
-            (WasmValue::FuncRef, ValueType::FuncRef) => true,
+            (WasmValue::I32(_), ModuleValueType::I32) => true,
+            (WasmValue::I64(_), ModuleValueType::I64) => true,
+            (WasmValue::F32(_), ModuleValueType::F32) => true,
+            (WasmValue::F64(_), ModuleValueType::F64) => true,
+            (WasmValue::V128(_), ModuleValueType::V128) => true,
+            (WasmValue::ExternRef, ModuleValueType::ExternRef) => true,
+            (WasmValue::FuncRef, ModuleValueType::FuncRef) => true,
             _ => false,
         }
     }

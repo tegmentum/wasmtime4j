@@ -60,7 +60,7 @@ pub mod component;
 // Re-export core types for convenience
 pub use engine::{Engine, EngineBuilder, WasmFeature};
 pub use error::{WasmtimeError, WasmtimeResult, ErrorCode};
-pub use module::{Module, ModuleMetadata, ValueType, ImportKind, ExportKind, FunctionSignature};
+pub use module::{Module, ModuleMetadata, ModuleValueType, ImportKind, ExportKind, FunctionSignature};
 pub use store::{Store, StoreBuilder, StoreData, StoreMetadata, ResourceLimits, ExecutionState, MemoryUsage};
 pub use instance::{Instance, InstanceMetadata, ImportBinding, ExportBinding, WasmValue, ExecutionResult};
 pub use hostfunc::{HostFunction, HostFunctionBuilder, HostFunctionCallback, MarshallingResult};
@@ -73,7 +73,7 @@ pub use linker::{Linker, LinkerMetadata, LinkerConfig, LinkerInstantiationResult
 pub use component::{
     ComponentEngine, Component, ComponentMetadata, ComponentStoreData,
     InterfaceDefinition, FunctionDefinition, Parameter, TypeDefinition, ResourceDefinition,
-    ValueType as ComponentValueType, TypeKind, FieldType, CaseType,
+    ComponentValueType, ComponentTypeKind, FieldType, CaseType,
     ResourceManager, HostInterface, InstanceInfo
 };
 
@@ -86,7 +86,7 @@ pub use wasi::{
 
 // Re-export type introspection types
 pub use type_introspection::{
-    ValueType, MemoryTypeInfo, TableTypeInfo, GlobalTypeInfo, FuncTypeInfo,
+    IntrospectionValueType, MemoryTypeInfo, TableTypeInfo, GlobalTypeInfo, FuncTypeInfo,
     TypeKind, ImportDescriptorInfo, ExportDescriptorInfo,
     ModuleTypeIntrospector, InstanceTypeIntrospector
 };

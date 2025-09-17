@@ -80,9 +80,9 @@ pub struct FunctionInfo {
 #[derive(Debug, Clone)]
 pub struct FunctionSignature {
     /// Parameter types for this function
-    pub params: Vec<ValueType>,
+    pub params: Vec<ModuleValueType>,
     /// Return types for this function
-    pub returns: Vec<ValueType>,
+    pub returns: Vec<ModuleValueType>,
 }
 
 /// Global variable information
@@ -93,7 +93,7 @@ pub struct GlobalInfo {
     /// Optional global name from debug info or custom sections
     pub name: Option<String>,
     /// WebAssembly value type of this global
-    pub value_type: ValueType,
+    pub value_type: ModuleValueType,
     /// Whether this global can be modified after initialization
     pub mutable: bool,
 }
@@ -123,7 +123,7 @@ pub struct TableInfo {
     /// Optional table name from debug info or custom sections
     pub name: Option<String>,
     /// WebAssembly type of elements stored in this table
-    pub element_type: ValueType,
+    pub element_type: ModuleValueType,
     /// Initial number of elements in the table
     pub initial_elements: u32,
     /// Optional maximum number of elements the table can grow to
@@ -132,7 +132,7 @@ pub struct TableInfo {
 
 /// WebAssembly value types with defensive validation
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ValueType {
+pub enum ModuleValueType {
     /// 32-bit integer
     I32,
     /// 64-bit integer
@@ -155,11 +155,11 @@ pub enum ImportKind {
     /// Function import with signature
     Function(FunctionSignature),
     /// Global variable import with type and mutability
-    Global(ValueType, bool), // (type, mutable)
+    Global(ModuleValueType, bool), // (type, mutable)
     /// Memory import with initial size, optional max size, and sharing
     Memory(u64, Option<u64>, bool), // (initial, max, shared)
     /// Table import with element type, initial size, and optional max size
-    Table(ValueType, u32, Option<u32>), // (element_type, initial, max)
+    Table(ModuleValueType, u32, Option<u32>), // (element_type, initial, max)
 }
 
 /// Export kinds with type information
@@ -168,11 +168,11 @@ pub enum ExportKind {
     /// Function export with signature
     Function(FunctionSignature),
     /// Global variable export with type and mutability
-    Global(ValueType, bool),
+    Global(ModuleValueType, bool),
     /// Memory export with initial size, optional max size, and sharing
     Memory(u64, Option<u64>, bool),
     /// Table export with element type, initial size, and optional max size
-    Table(ValueType, u32, Option<u32>),
+    Table(ModuleValueType, u32, Option<u32>),
 }
 
 impl Module {
@@ -527,23 +527,23 @@ fn convert_func_type(func_type: &FuncType) -> WasmtimeResult<FunctionSignature> 
     Ok(FunctionSignature { params, returns })
 }
 
-fn convert_val_type(val_type: ValType) -> WasmtimeResult<ValueType> {
+fn convert_val_type(val_type: ValType) -> WasmtimeResult<ModuleValueType> {
     match val_type {
-        ValType::I32 => Ok(ValueType::I32),
-        ValType::I64 => Ok(ValueType::I64),
-        ValType::F32 => Ok(ValueType::F32),
-        ValType::F64 => Ok(ValueType::F64),
-        ValType::V128 => Ok(ValueType::V128),
+        ValType::I32 => Ok(ModuleValueType::I32),
+        ValType::I64 => Ok(ModuleValueType::I64),
+        ValType::F32 => Ok(ModuleValueType::F32),
+        ValType::F64 => Ok(ModuleValueType::F64),
+        ValType::V128 => Ok(ModuleValueType::V128),
         ValType::Ref(ref_type) => convert_ref_type(ref_type),
     }
 }
 
-fn convert_ref_type(ref_type: wasmtime::RefType) -> WasmtimeResult<ValueType> {
+fn convert_ref_type(ref_type: wasmtime::RefType) -> WasmtimeResult<ModuleValueType> {
     // In wasmtime 36.0.2, RefType doesn't have is_extern_ref/is_func_ref methods
     // We need to match on the heap type instead
     match ref_type.heap_type() {
-        wasmtime::HeapType::Extern => Ok(ValueType::ExternRef),
-        wasmtime::HeapType::Func => Ok(ValueType::FuncRef),
+        wasmtime::HeapType::Extern => Ok(ModuleValueType::ExternRef),
+        wasmtime::HeapType::Func => Ok(ModuleValueType::FuncRef),
         _ => Err(WasmtimeError::Module {
             message: format!("Unsupported reference type: {:?}", ref_type),
         })

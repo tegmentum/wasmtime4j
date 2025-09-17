@@ -28,7 +28,7 @@ use std::collections::HashMap;
 /// Represents WebAssembly value types with conversion capabilities
 #[repr(C)]
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub enum ValueType {
+pub enum IntrospectionValueType {
     I32 = 0,
     I64 = 1,
     F32 = 2,
@@ -38,30 +38,30 @@ pub enum ValueType {
     ExternRef = 6,
 }
 
-impl From<ValType> for ValueType {
+impl From<ValType> for IntrospectionValueType {
     fn from(val_type: ValType) -> Self {
         match val_type {
-            ValType::I32 => ValueType::I32,
-            ValType::I64 => ValueType::I64,
-            ValType::F32 => ValueType::F32,
-            ValType::F64 => ValueType::F64,
-            ValType::V128 => ValueType::V128,
-            ValType::FuncRef => ValueType::FuncRef,
-            ValType::ExternRef => ValueType::ExternRef,
+            ValType::I32 => IntrospectionValueType::I32,
+            ValType::I64 => IntrospectionValueType::I64,
+            ValType::F32 => IntrospectionValueType::F32,
+            ValType::F64 => IntrospectionValueType::F64,
+            ValType::V128 => IntrospectionValueType::V128,
+            ValType::FuncRef => IntrospectionValueType::FuncRef,
+            ValType::ExternRef => IntrospectionValueType::ExternRef,
         }
     }
 }
 
-impl From<ValueType> for ValType {
-    fn from(value_type: ValueType) -> Self {
+impl From<IntrospectionValueType> for ValType {
+    fn from(value_type: IntrospectionValueType) -> Self {
         match value_type {
-            ValueType::I32 => ValType::I32,
-            ValueType::I64 => ValType::I64,
-            ValueType::F32 => ValType::F32,
-            ValueType::F64 => ValType::F64,
-            ValueType::V128 => ValType::V128,
-            ValueType::FuncRef => ValType::FuncRef,
-            ValueType::ExternRef => ValType::ExternRef,
+            IntrospectionValueType::I32 => ValType::I32,
+            IntrospectionValueType::I64 => ValType::I64,
+            IntrospectionValueType::F32 => ValType::F32,
+            IntrospectionValueType::F64 => ValType::F64,
+            IntrospectionValueType::V128 => ValType::V128,
+            IntrospectionValueType::FuncRef => ValType::FuncRef,
+            IntrospectionValueType::ExternRef => ValType::ExternRef,
         }
     }
 }
@@ -91,7 +91,7 @@ impl From<WasmtimeMemoryType> for MemoryTypeInfo {
 #[repr(C)]
 #[derive(Debug, Clone)]
 pub struct TableTypeInfo {
-    pub element_type: ValueType,
+    pub element_type: IntrospectionValueType,
     pub minimum: u32,
     pub maximum: Option<u32>,
 }
@@ -110,7 +110,7 @@ impl From<WasmtimeTableType> for TableTypeInfo {
 #[repr(C)]
 #[derive(Debug, Clone)]
 pub struct GlobalTypeInfo {
-    pub value_type: ValueType,
+    pub value_type: IntrospectionValueType,
     pub is_mutable: bool,
 }
 
@@ -127,8 +127,8 @@ impl From<WasmtimeGlobalType> for GlobalTypeInfo {
 #[repr(C)]
 #[derive(Debug, Clone)]
 pub struct FuncTypeInfo {
-    pub params: Vec<ValueType>,
-    pub results: Vec<ValueType>,
+    pub params: Vec<IntrospectionValueType>,
+    pub results: Vec<IntrospectionValueType>,
 }
 
 impl From<WasmtimeFuncType> for FuncTypeInfo {
@@ -192,6 +192,11 @@ impl From<WasmtimeImportType<'_>> for ImportDescriptorInfo {
                 descriptor.type_kind = TypeKind::Global;
                 descriptor.global_type = Some(global_type.into());
             }
+            ExternType::Tag(_) => {
+                return Err(WasmtimeError::Validation {
+                    message: "Tag imports not supported".to_string(),
+                });
+            }
         }
 
         descriptor
@@ -237,6 +242,11 @@ impl From<WasmtimeExportType<'_>> for ExportDescriptorInfo {
             ExternType::Global(global_type) => {
                 descriptor.type_kind = TypeKind::Global;
                 descriptor.global_type = Some(global_type.into());
+            }
+            ExternType::Tag(_) => {
+                return Err(WasmtimeError::Validation {
+                    message: "Tag exports not supported".to_string(),
+                });
             }
         }
 
@@ -303,10 +313,10 @@ impl InstanceTypeIntrospector {
         store: &mut Store<()>,
         name: &str,
     ) -> WasmtimeResult<Option<ExportDescriptorInfo>> {
-        if let Some(export) = instance.get_export(store, name) {
+        if let Some(export) = instance.get_export(&mut *store, name) {
             let descriptor = match export {
                 wasmtime::Extern::Func(func) => {
-                    let func_type = func.ty(store);
+                    let func_type = func.ty(&*store);
                     ExportDescriptorInfo {
                         field_name: name.to_string(),
                         type_kind: TypeKind::Function,
@@ -317,7 +327,7 @@ impl InstanceTypeIntrospector {
                     }
                 }
                 wasmtime::Extern::Table(table) => {
-                    let table_type = table.ty(store);
+                    let table_type = table.ty(&*store);
                     ExportDescriptorInfo {
                         field_name: name.to_string(),
                         type_kind: TypeKind::Table,
@@ -328,7 +338,7 @@ impl InstanceTypeIntrospector {
                     }
                 }
                 wasmtime::Extern::Memory(memory) => {
-                    let memory_type = memory.ty(store);
+                    let memory_type = memory.ty(&*store);
                     ExportDescriptorInfo {
                         field_name: name.to_string(),
                         type_kind: TypeKind::Memory,
@@ -339,7 +349,7 @@ impl InstanceTypeIntrospector {
                     }
                 }
                 wasmtime::Extern::Global(global) => {
-                    let global_type = global.ty(store);
+                    let global_type = global.ty(&*store);
                     ExportDescriptorInfo {
                         field_name: name.to_string(),
                         type_kind: TypeKind::Global,
@@ -348,6 +358,16 @@ impl InstanceTypeIntrospector {
                         memory_type: None,
                         global_type: Some(global_type.into()),
                     }
+                }
+                wasmtime::Extern::SharedMemory(_) => {
+                    return Err(WasmtimeError::Validation {
+                        message: "SharedMemory exports not supported".to_string(),
+                    });
+                }
+                wasmtime::Extern::Tag(_) => {
+                    return Err(WasmtimeError::Validation {
+                        message: "Tag exports not supported".to_string(),
+                    });
                 }
             };
             Ok(Some(descriptor))
@@ -381,13 +401,13 @@ mod tests {
 
     #[test]
     fn test_value_type_conversion() {
-        assert_eq!(ValueType::from(ValType::I32), ValueType::I32);
-        assert_eq!(ValueType::from(ValType::F64), ValueType::F64);
-        assert_eq!(ValueType::from(ValType::FuncRef), ValueType::FuncRef);
+        assert_eq!(IntrospectionValueType::from(ValType::I32), IntrospectionValueType::I32);
+        assert_eq!(IntrospectionValueType::from(ValType::F64), IntrospectionValueType::F64);
+        assert_eq!(IntrospectionValueType::from(ValType::FuncRef), IntrospectionValueType::FuncRef);
 
-        assert_eq!(ValType::from(ValueType::I64), ValType::I64);
-        assert_eq!(ValType::from(ValueType::F32), ValType::F32);
-        assert_eq!(ValType::from(ValueType::ExternRef), ValType::ExternRef);
+        assert_eq!(ValType::from(IntrospectionValueType::I64), ValType::I64);
+        assert_eq!(ValType::from(IntrospectionValueType::F32), ValType::F32);
+        assert_eq!(ValType::from(IntrospectionValueType::ExternRef), ValType::ExternRef);
     }
 
     #[test]
