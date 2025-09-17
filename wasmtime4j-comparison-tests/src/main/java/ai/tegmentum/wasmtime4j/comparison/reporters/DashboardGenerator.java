@@ -180,6 +180,8 @@ public final class DashboardGenerator {
 
   /** Servlet for serving the main dashboard HTML. */
   private final class DashboardServlet extends HttpServlet {
+    private static final long serialVersionUID = 1L;
+
     @Override
     protected void doGet(final HttpServletRequest request, final HttpServletResponse response)
         throws ServletException, IOException {
@@ -213,6 +215,8 @@ public final class DashboardGenerator {
 
   /** REST API servlet for dashboard data operations. */
   private final class ApiServlet extends HttpServlet {
+    private static final long serialVersionUID = 1L;
+
     @Override
     protected void doGet(final HttpServletRequest request, final HttpServletResponse response)
         throws ServletException, IOException {
@@ -298,6 +302,8 @@ public final class DashboardGenerator {
 
   /** Servlet for serving filtered and paginated data. */
   private final class DataServlet extends HttpServlet {
+    private static final long serialVersionUID = 1L;
+
     @Override
     protected void doGet(final HttpServletRequest request, final HttpServletResponse response)
         throws ServletException, IOException {
@@ -404,6 +410,8 @@ public final class DashboardGenerator {
 
   /** Servlet for handling filter operations. */
   private final class FilterServlet extends HttpServlet {
+    private static final long serialVersionUID = 1L;
+
     @Override
     protected void doPost(final HttpServletRequest request, final HttpServletResponse response)
         throws ServletException, IOException {
@@ -412,8 +420,9 @@ public final class DashboardGenerator {
 
       try {
         // Parse filter criteria from request body
+        @SuppressWarnings("unchecked")
         final Map<String, Object> filterCriteria =
-            OBJECT_MAPPER.readValue(request.getInputStream(), Map.class);
+            (Map<String, Object>) OBJECT_MAPPER.readValue(request.getInputStream(), Map.class);
 
         final String reportId = (String) filterCriteria.get("reportId");
         if (reportId == null) {
@@ -486,6 +495,8 @@ public final class DashboardGenerator {
 
   /** Servlet for serving static resources (CSS, JS, images). */
   private final class StaticResourceServlet extends HttpServlet {
+    private static final long serialVersionUID = 1L;
+
     @Override
     protected void doGet(final HttpServletRequest request, final HttpServletResponse response)
         throws ServletException, IOException {

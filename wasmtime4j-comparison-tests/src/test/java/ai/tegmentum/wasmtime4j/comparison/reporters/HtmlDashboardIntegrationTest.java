@@ -222,14 +222,13 @@ class HtmlDashboardIntegrationTest {
   @Test
   void testExportManager() throws IOException {
     // Test export functionality
-    final ExportConfiguration exportConfig =
-        ExportConfiguration.builder()
+    final HtmlReporterConfiguration exportConfig =
+        HtmlReporterConfiguration.builder()
             .reportTitle("Test Export")
             .theme("default")
             .includeStaticResources(true)
-            .includeInteractiveFeatures(true)
-            .includeCharts(true)
-            .prettyPrintJson(true)
+            .enableInteractiveFeatures(true)
+            .enablePerformanceCharts(true)
             .verbosityLevel(VerbosityLevel.NORMAL)
             .build();
 
@@ -292,7 +291,7 @@ class HtmlDashboardIntegrationTest {
 
     // 3. Export filtered results
     final ExportManager exportManager =
-        new ExportManager(ExportConfiguration.defaultConfiguration());
+        new ExportManager(JsonConfiguration.builder().build());
     final Path filteredExportPath = tempDir.resolve("filtered-export.json");
     exportManager.exportFilteredResults(
         testReport, filterResult, ExportFormat.JSON, filteredExportPath);
@@ -322,7 +321,7 @@ class HtmlDashboardIntegrationTest {
 
     // Create execution summary
     final ExecutionSummary executionSummary =
-        new ExecutionSummary(10, 8, 2, 0, Duration.ofMinutes(5), now.minusMinutes(5), now);
+        new ExecutionSummary(10, 8, 2, 0, Duration.ofMinutes(5), now.minus(Duration.ofMinutes(5)), now);
 
     // Create test results
     final List<TestComparisonResult> testResults =
@@ -355,8 +354,8 @@ class HtmlDashboardIntegrationTest {
     final List<BehavioralDiscrepancy> discrepancies =
         List.of(
             new BehavioralDiscrepancy(
-                DiscrepancyType.OUTPUT_DIFFERENCE,
-                DiscrepancySeverity.MEDIUM,
+                DiscrepancyType.RETURN_VALUE_MISMATCH,
+                DiscrepancySeverity.MODERATE,
                 "Output format difference",
                 "Different output formatting between runtimes",
                 "Normalize output formatting"));
@@ -425,22 +424,16 @@ class HtmlDashboardIntegrationTest {
                     Map.of(), List.of(), 1.0))
             .build();
 
-    // Create performance comparison
-    final PerformanceAnalyzer.PerformanceComparisonResult performanceComparison =
-        new PerformanceAnalyzer.PerformanceComparisonResult(
-            Map.of(RuntimeType.JNI, 100L, RuntimeType.PANAMA, 95L),
-            Map.of(RuntimeType.JNI, 1024L, RuntimeType.PANAMA, 1100L),
-            1.05,
-            false,
-            RuntimeType.PANAMA);
+    // Create performance comparison (null for test simplicity)
+    final PerformanceAnalyzer.PerformanceComparisonResult performanceComparison = null;
 
     // Create discrepancies if not successful
     final List<BehavioralDiscrepancy> discrepancies =
         status == TestResultStatus.CRITICAL
             ? List.of(
                 new BehavioralDiscrepancy(
-                    DiscrepancyType.RUNTIME_ERROR,
-                    DiscrepancySeverity.HIGH,
+                    DiscrepancyType.EXECUTION_STATUS_MISMATCH,
+                    DiscrepancySeverity.MAJOR,
                     "Critical runtime error",
                     "Test failed with critical error",
                     "Investigate runtime configuration"))

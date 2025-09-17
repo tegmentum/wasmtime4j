@@ -256,15 +256,15 @@ public final class ComparisonSummary {
       // Count issues by severity (simplified categorization)
       final long criticalDiscrepancies = result.getCriticalDiscrepancyCount();
       if (criticalDiscrepancies > 0) {
-        highPriorityIssues += criticalDiscrepancies;
+        highPriorityIssues += (int) criticalDiscrepancies;
       }
 
       // Additional discrepancies classified as medium/low priority
       final int totalDiscrepancies = result.getDiscrepancies().size();
       final long remainingDiscrepancies = totalDiscrepancies - criticalDiscrepancies;
       if (remainingDiscrepancies > 0) {
-        mediumPriorityIssues += remainingDiscrepancies / 2;
-        lowPriorityIssues += remainingDiscrepancies - (remainingDiscrepancies / 2);
+        mediumPriorityIssues += (int) (remainingDiscrepancies / 2);
+        lowPriorityIssues += (int) (remainingDiscrepancies - (remainingDiscrepancies / 2));
       }
     }
 

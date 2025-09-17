@@ -110,8 +110,12 @@ public final class HtmlReporter {
    */
   private String generateHtmlContent(final ComparisonReport report) {
     final Map<String, Object> templateContext = createTemplateContext(report);
-    return templateEngine.processTemplate(
-        ReportTemplate.defaultHtmlTemplate(), report, ReportConfiguration.defaultConfiguration());
+    try {
+      return templateEngine.processTemplate(
+          ReportTemplate.defaultHtmlTemplate(), report, ReportConfiguration.defaultConfiguration());
+    } catch (final TemplateProcessingException e) {
+      throw new RuntimeException("Failed to generate HTML content", e);
+    }
   }
 
   /**
