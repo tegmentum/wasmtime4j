@@ -535,6 +535,10 @@ public final class ReportConfiguration {
         return this;
       }
 
+      /** Sets the recommendation level for the report configuration.
+       * @param recommendationLevel the recommendation level to set
+       * @return this builder instance
+       */
       public Builder recommendationLevel(final RecommendationLevel recommendationLevel) {
         this.recommendationLevel =
             Objects.requireNonNull(recommendationLevel, "recommendationLevel cannot be null");
