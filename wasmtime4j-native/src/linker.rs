@@ -216,14 +216,13 @@ impl Linker {
                 backtrace: None
             })?;
 
-        // Simple implementation - define a basic function
+        // Simple implementation - define a basic function with minimal signature
         // This is a simplified version that would need to be expanded with proper host function wrapping
         linker.func_wrap(
             module_name,
             function_name,
-            || -> Result<(), wasmtime::Trap> {
-                // Simplified - just return OK for now
-                Ok(())
+            move || {
+                // Simplified - just return nothing for a () -> () function
             }
         ).map_err(|e| WasmtimeError::Runtime {
                 message: format!("Failed to define host function: {}", e),
@@ -289,7 +288,7 @@ impl Linker {
         let wasmtime_memory = memory.inner();
 
         store.with_context(|ctx| {
-            linker.define(ctx, module_name, memory_name, wasmtime_memory)
+            linker.define(ctx, module_name, memory_name, wasmtime::Extern::Memory(*wasmtime_memory))
                 .map_err(|e| WasmtimeError::Runtime {
                     message: format!("Failed to define memory: {}", e),
                     backtrace: None
