@@ -107,6 +107,6 @@ Cache can be cleaned with: `./scripts/build-native.sh --clean-cache`
 
 ## Last Updated
 
-Generated on: 2025-09-16 11:00:17 UTC
+Generated on: 2025-09-18 01:09:59 UTC
 Rust Version: rustc 1.89.0 (29483883e 2025-08-04)
 Host Platform: macos-aarch64
