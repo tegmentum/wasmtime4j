@@ -71,6 +71,35 @@ impl From<IntrospectionValueType> for ValType {
     }
 }
 
+impl From<&ValType> for IntrospectionValueType {
+    fn from(val_type: &ValType) -> Self {
+        match val_type {
+            ValType::I32 => IntrospectionValueType::I32,
+            ValType::I64 => IntrospectionValueType::I64,
+            ValType::F32 => IntrospectionValueType::F32,
+            ValType::F64 => IntrospectionValueType::F64,
+            ValType::V128 => IntrospectionValueType::V128,
+            ValType::Ref(ref_type) => {
+                match ref_type.heap_type() {
+                    wasmtime::HeapType::Func => IntrospectionValueType::FuncRef,
+                    wasmtime::HeapType::Extern => IntrospectionValueType::ExternRef,
+                    _ => IntrospectionValueType::ExternRef, // Default fallback
+                }
+            }
+        }
+    }
+}
+
+impl From<&wasmtime::RefType> for IntrospectionValueType {
+    fn from(ref_type: &wasmtime::RefType) -> Self {
+        match ref_type.heap_type() {
+            wasmtime::HeapType::Func => IntrospectionValueType::FuncRef,
+            wasmtime::HeapType::Extern => IntrospectionValueType::ExternRef,
+            _ => IntrospectionValueType::ExternRef, // Default fallback
+        }
+    }
+}
+
 /// Memory type information
 #[repr(C)]
 #[derive(Debug, Clone)]
@@ -105,8 +134,8 @@ impl From<WasmtimeTableType> for TableTypeInfo {
     fn from(table_type: WasmtimeTableType) -> Self {
         Self {
             element_type: table_type.element().into(),
-            minimum: table_type.minimum(),
-            maximum: table_type.maximum(),
+            minimum: table_type.minimum() as u32,
+            maximum: table_type.maximum().map(|max| max as u32),
         }
     }
 }
@@ -198,9 +227,9 @@ impl From<WasmtimeImportType<'_>> for ImportDescriptorInfo {
                 descriptor.global_type = Some(global_type.into());
             }
             ExternType::Tag(_) => {
-                return Err(WasmtimeError::Validation {
-                    message: "Tag imports not supported".to_string(),
-                });
+                // Tag imports not supported - set as unknown type
+                descriptor.type_kind = TypeKind::Function; // Fallback type
+                // Leave all type fields as None
             }
         }
 
@@ -249,9 +278,9 @@ impl From<WasmtimeExportType<'_>> for ExportDescriptorInfo {
                 descriptor.global_type = Some(global_type.into());
             }
             ExternType::Tag(_) => {
-                return Err(WasmtimeError::Validation {
-                    message: "Tag exports not supported".to_string(),
-                });
+                // Tag exports not supported - set as unknown type
+                descriptor.type_kind = TypeKind::Function; // Fallback type
+                // Leave all type fields as None
             }
         }
 
@@ -388,8 +417,11 @@ impl InstanceTypeIntrospector {
     ) -> WasmtimeResult<HashMap<String, ExportDescriptorInfo>> {
         let mut exports = HashMap::new();
 
-        for export in instance.exports(store) {
-            let name = export.0.to_string();
+        let export_names: Vec<String> = instance.exports(&mut *store)
+            .map(|export| export.name().to_string())
+            .collect();
+
+        for name in export_names {
             if let Some(descriptor) = Self::get_export_type(instance, store, &name)? {
                 exports.insert(name, descriptor);
             }
