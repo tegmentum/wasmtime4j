@@ -4,6 +4,7 @@ import ai.tegmentum.wasmtime4j.FuncType;
 import ai.tegmentum.wasmtime4j.WasmTypeKind;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -46,8 +47,8 @@ public final class JniFuncType implements FuncType {
       }
     }
 
-    this.params = Collections.unmodifiableList(List.copyOf(params));
-    this.results = Collections.unmodifiableList(List.copyOf(results));
+    this.params = Collections.unmodifiableList(new ArrayList<>(params));
+    this.results = Collections.unmodifiableList(new ArrayList<>(results));
 
     LOGGER.fine(String.format("Created JniFuncType: params=%s, results=%s", params, results));
   }
