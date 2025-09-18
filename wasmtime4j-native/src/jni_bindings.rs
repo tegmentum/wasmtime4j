@@ -4383,3 +4383,413 @@ pub mod jni_runtime {
         log::debug!("Successfully destroyed runtime handle: 0x{:x}", runtime_handle);
     }
 }
+
+/// JNI bindings for Linker operations
+#[cfg(feature = "jni-bindings")]
+pub mod jni_linker {
+    use super::*;
+    use crate::linker::Linker;
+    use crate::engine::core;
+    use crate::store::core as store_core;
+    use crate::module::core as module_core;
+    use crate::instance::core as instance_core;
+    use crate::error::jni_utils;
+    use std::os::raw::c_void;
+
+    /// Creates a new native linker
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeCreate(
+        env: JNIEnv,
+        _class: JClass,
+        engine_handle: jlong,
+    ) -> jlong {
+        if engine_handle == 0 {
+            log::error!("JNI Linker.nativeCreate: null engine handle provided");
+            return 0;
+        }
+
+        jni_utils::jni_try_ptr(env, || {
+            let engine = unsafe { core::get_engine_ref(engine_handle as *const c_void)? };
+            let linker = Linker::new(engine)?;
+            let linker_ptr = Box::into_raw(Box::new(linker)) as *mut c_void;
+
+            log::debug!("Created JNI linker with handle: 0x{:x}", linker_ptr as u64);
+            Ok(linker_ptr as u64)
+        }) as jlong
+    }
+
+    /// Defines a host function in the native linker
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeDefineHostFunction(
+        env: JNIEnv,
+        _class: JClass,
+        linker_handle: jlong,
+        module: JString,
+        name: JString,
+        parameter_types: jint,
+        return_types: jint,
+        host_function_handle: jlong,
+    ) -> jboolean {
+        if linker_handle == 0 || host_function_handle == 0 {
+            log::error!("JNI Linker.nativeDefineHostFunction: null handle provided");
+            return 0;
+        }
+
+        let module_string = match env.get_string(module) {
+            Ok(s) => s,
+            Err(e) => {
+                log::error!("Failed to get module string: {}", e);
+                return 0;
+            }
+        };
+
+        let name_string = match env.get_string(name) {
+            Ok(s) => s,
+            Err(e) => {
+                log::error!("Failed to get name string: {}", e);
+                return 0;
+            }
+        };
+
+        match jni_utils::jni_try(env, || {
+            let linker = unsafe { &mut *(linker_handle as *mut Linker) };
+            let module_str: String = module_string.into();
+            let name_str: String = name_string.into();
+
+            // Get host function reference
+            let host_function = unsafe { &*(host_function_handle as *const crate::hostfunc::HostFunction) };
+
+            // For now, create a simple function type - this should be properly implemented
+            let func_type = wasmtime::FuncType::new(
+                wasmtime::Engine::default(),
+                Vec::new(),
+                Vec::new()
+            );
+
+            linker.define_host_function(&module_str, &name_str, func_type, host_function.clone())?;
+            log::debug!("Defined host function {}::{} in linker", module_str, name_str);
+            Ok(())
+        }) {
+            Ok(_) => 1,
+            Err(_) => 0,
+        }
+    }
+
+    /// Defines a memory in the native linker
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeDefineMemory(
+        env: JNIEnv,
+        _class: JClass,
+        linker_handle: jlong,
+        module: JString,
+        name: JString,
+        memory_handle: jlong,
+    ) -> jboolean {
+        if linker_handle == 0 || memory_handle == 0 {
+            log::error!("JNI Linker.nativeDefineMemory: null handle provided");
+            return 0;
+        }
+
+        let module_string = match env.get_string(module) {
+            Ok(s) => s,
+            Err(e) => {
+                log::error!("Failed to get module string: {}", e);
+                return 0;
+            }
+        };
+
+        let name_string = match env.get_string(name) {
+            Ok(s) => s,
+            Err(e) => {
+                log::error!("Failed to get name string: {}", e);
+                return 0;
+            }
+        };
+
+        match jni_utils::jni_try(env, || {
+            let linker = unsafe { &mut *(linker_handle as *mut Linker) };
+            let module_str: String = module_string.into();
+            let name_str: String = name_string.into();
+
+            // Get memory reference
+            let memory = unsafe { &*(memory_handle as *const crate::memory::Memory) };
+
+            linker.define_memory(&module_str, &name_str, memory)?;
+            log::debug!("Defined memory {}::{} in linker", module_str, name_str);
+            Ok(())
+        }) {
+            Ok(_) => 1,
+            Err(_) => 0,
+        }
+    }
+
+    /// Defines a table in the native linker
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeDefineTable(
+        env: JNIEnv,
+        _class: JClass,
+        linker_handle: jlong,
+        module: JString,
+        name: JString,
+        table_handle: jlong,
+    ) -> jboolean {
+        if linker_handle == 0 || table_handle == 0 {
+            log::error!("JNI Linker.nativeDefineTable: null handle provided");
+            return 0;
+        }
+
+        let module_string = match env.get_string(module) {
+            Ok(s) => s,
+            Err(e) => {
+                log::error!("Failed to get module string: {}", e);
+                return 0;
+            }
+        };
+
+        let name_string = match env.get_string(name) {
+            Ok(s) => s,
+            Err(e) => {
+                log::error!("Failed to get name string: {}", e);
+                return 0;
+            }
+        };
+
+        match jni_utils::jni_try(env, || {
+            let linker = unsafe { &mut *(linker_handle as *mut Linker) };
+            let module_str: String = module_string.into();
+            let name_str: String = name_string.into();
+
+            // Get table reference
+            let table = unsafe { &*(table_handle as *const crate::table::Table) };
+
+            linker.define_table(&module_str, &name_str, table)?;
+            log::debug!("Defined table {}::{} in linker", module_str, name_str);
+            Ok(())
+        }) {
+            Ok(_) => 1,
+            Err(_) => 0,
+        }
+    }
+
+    /// Defines a global in the native linker
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeDefineGlobal(
+        env: JNIEnv,
+        _class: JClass,
+        linker_handle: jlong,
+        module: JString,
+        name: JString,
+        global_handle: jlong,
+    ) -> jboolean {
+        if linker_handle == 0 || global_handle == 0 {
+            log::error!("JNI Linker.nativeDefineGlobal: null handle provided");
+            return 0;
+        }
+
+        let module_string = match env.get_string(module) {
+            Ok(s) => s,
+            Err(e) => {
+                log::error!("Failed to get module string: {}", e);
+                return 0;
+            }
+        };
+
+        let name_string = match env.get_string(name) {
+            Ok(s) => s,
+            Err(e) => {
+                log::error!("Failed to get name string: {}", e);
+                return 0;
+            }
+        };
+
+        match jni_utils::jni_try(env, || {
+            let linker = unsafe { &mut *(linker_handle as *mut Linker) };
+            let module_str: String = module_string.into();
+            let name_str: String = name_string.into();
+
+            // Get global reference
+            let global = unsafe { &*(global_handle as *const crate::global::Global) };
+
+            linker.define_global(&module_str, &name_str, global)?;
+            log::debug!("Defined global {}::{} in linker", module_str, name_str);
+            Ok(())
+        }) {
+            Ok(_) => 1,
+            Err(_) => 0,
+        }
+    }
+
+    /// Defines an instance in the native linker
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeDefineInstance(
+        env: JNIEnv,
+        _class: JClass,
+        linker_handle: jlong,
+        module: JString,
+        instance_handle: jlong,
+    ) -> jboolean {
+        if linker_handle == 0 || instance_handle == 0 {
+            log::error!("JNI Linker.nativeDefineInstance: null handle provided");
+            return 0;
+        }
+
+        let module_string = match env.get_string(module) {
+            Ok(s) => s,
+            Err(e) => {
+                log::error!("Failed to get module string: {}", e);
+                return 0;
+            }
+        };
+
+        match jni_utils::jni_try(env, || {
+            let linker = unsafe { &mut *(linker_handle as *mut Linker) };
+            let module_str: String = module_string.into();
+
+            // Get instance reference
+            let instance = unsafe { &*(instance_handle as *const crate::instance::Instance) };
+
+            linker.define_instance(&module_str, instance)?;
+            log::debug!("Defined instance for module {} in linker", module_str);
+            Ok(())
+        }) {
+            Ok(_) => 1,
+            Err(_) => 0,
+        }
+    }
+
+    /// Creates an alias in the native linker
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeAlias(
+        env: JNIEnv,
+        _class: JClass,
+        linker_handle: jlong,
+        source_module: JString,
+        source_name: JString,
+        target_module: JString,
+        target_name: JString,
+    ) -> jboolean {
+        if linker_handle == 0 {
+            log::error!("JNI Linker.nativeAlias: null linker handle provided");
+            return 0;
+        }
+
+        let source_module_string = match env.get_string(source_module) {
+            Ok(s) => s,
+            Err(e) => {
+                log::error!("Failed to get source module string: {}", e);
+                return 0;
+            }
+        };
+
+        let source_name_string = match env.get_string(source_name) {
+            Ok(s) => s,
+            Err(e) => {
+                log::error!("Failed to get source name string: {}", e);
+                return 0;
+            }
+        };
+
+        let target_module_string = match env.get_string(target_module) {
+            Ok(s) => s,
+            Err(e) => {
+                log::error!("Failed to get target module string: {}", e);
+                return 0;
+            }
+        };
+
+        let target_name_string = match env.get_string(target_name) {
+            Ok(s) => s,
+            Err(e) => {
+                log::error!("Failed to get target name string: {}", e);
+                return 0;
+            }
+        };
+
+        match jni_utils::jni_try(env, || {
+            let linker = unsafe { &mut *(linker_handle as *mut Linker) };
+            let source_module_str: String = source_module_string.into();
+            let source_name_str: String = source_name_string.into();
+            let target_module_str: String = target_module_string.into();
+            let target_name_str: String = target_name_string.into();
+
+            linker.alias(&source_module_str, &source_name_str, &target_module_str, &target_name_str)?;
+            log::debug!("Created alias from {}::{} to {}::{}", source_module_str, source_name_str, target_module_str, target_name_str);
+            Ok(())
+        }) {
+            Ok(_) => 1,
+            Err(_) => 0,
+        }
+    }
+
+    /// Instantiates a module using the native linker
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeInstantiate(
+        env: JNIEnv,
+        _class: JClass,
+        linker_handle: jlong,
+        store_handle: jlong,
+        module_handle: jlong,
+    ) -> jlong {
+        if linker_handle == 0 || store_handle == 0 || module_handle == 0 {
+            log::error!("JNI Linker.nativeInstantiate: null handle provided");
+            return 0;
+        }
+
+        jni_utils::jni_try_ptr(env, || {
+            let linker = unsafe { &*(linker_handle as *const Linker) };
+            let store = unsafe { store_core::get_store_ref(store_handle as *const c_void)? };
+            let module = unsafe { module_core::get_module_ref(module_handle as *const c_void)? };
+
+            let instance = linker.instantiate(store, module)?;
+            let instance_ptr = Box::into_raw(Box::new(instance)) as *mut c_void;
+
+            log::debug!("Instantiated module using linker, instance handle: 0x{:x}", instance_ptr as u64);
+            Ok(instance_ptr as u64)
+        }) as jlong
+    }
+
+    /// Enables WASI support in the native linker
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeEnableWasi(
+        env: JNIEnv,
+        _class: JClass,
+        linker_handle: jlong,
+    ) -> jboolean {
+        if linker_handle == 0 {
+            log::error!("JNI Linker.nativeEnableWasi: null linker handle provided");
+            return 0;
+        }
+
+        match jni_utils::jni_try(env, || {
+            let linker = unsafe { &mut *(linker_handle as *mut Linker) };
+            linker.enable_wasi()?;
+            log::debug!("Enabled WASI support in linker");
+            Ok(())
+        }) {
+            Ok(_) => 1,
+            Err(_) => 0,
+        }
+    }
+
+    /// Destroys the native linker
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeDestroy(
+        env: JNIEnv,
+        _class: JClass,
+        linker_handle: jlong,
+    ) {
+        if linker_handle == 0 {
+            log::warn!("JNI Linker.nativeDestroy: attempt to destroy null linker handle");
+            return;
+        }
+
+        log::debug!("Destroying linker handle: 0x{:x}", linker_handle);
+
+        unsafe {
+            let _linker = Box::from_raw(linker_handle as *mut Linker);
+            // The linker object is automatically dropped here
+        }
+
+        log::debug!("Successfully destroyed linker handle: 0x{:x}", linker_handle);
+    }
+}

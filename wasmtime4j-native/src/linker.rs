@@ -349,6 +349,185 @@ impl Linker {
         Ok(())
     }
 
+    /// Defines a table in the linker
+    pub fn define_table(
+        &mut self,
+        module_name: &str,
+        table_name: &str,
+        table: &WasmTable,
+    ) -> WasmtimeResult<()> {
+        if self.metadata.disposed {
+            return Err(WasmtimeError::Runtime {
+                message: "Linker has been disposed".to_string(),
+                backtrace: None
+            });
+        }
+
+        let mut linker = self.inner.lock()
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Failed to lock linker: {}", e),
+                backtrace: None
+            })?;
+
+        let wasmtime_table = table.inner()
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Table not available: {}", e),
+                backtrace: None
+            })?;
+
+        linker.define(module_name, table_name, wasmtime_table)
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Failed to define table: {}", e),
+                backtrace: None
+            })?;
+
+        self.metadata.import_count += 1;
+        log::debug!("Defined table {}::{}", module_name, table_name);
+        Ok(())
+    }
+
+    /// Defines a global in the linker
+    pub fn define_global(
+        &mut self,
+        module_name: &str,
+        global_name: &str,
+        global: &WasmGlobal,
+    ) -> WasmtimeResult<()> {
+        if self.metadata.disposed {
+            return Err(WasmtimeError::Runtime {
+                message: "Linker has been disposed".to_string(),
+                backtrace: None
+            });
+        }
+
+        let mut linker = self.inner.lock()
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Failed to lock linker: {}", e),
+                backtrace: None
+            })?;
+
+        let wasmtime_global = global.inner()
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Failed to define global: {}", e),
+                backtrace: None
+            })?;
+
+        linker.define(module_name, global_name, wasmtime_global)
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Failed to define global: {}", e),
+                backtrace: None
+            })?;
+
+        self.metadata.import_count += 1;
+        log::debug!("Defined global {}::{}", module_name, global_name);
+        Ok(())
+    }
+
+    /// Defines an instance in the linker
+    pub fn define_instance(
+        &mut self,
+        module_name: &str,
+        instance: &Instance,
+    ) -> WasmtimeResult<()> {
+        if self.metadata.disposed {
+            return Err(WasmtimeError::Runtime {
+                message: "Linker has been disposed".to_string(),
+                backtrace: None
+            });
+        }
+
+        let mut linker = self.inner.lock()
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Failed to lock linker: {}", e),
+                backtrace: None
+            })?;
+
+        let wasmtime_instance = instance.inner()
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Instance not available: {}", e),
+                backtrace: None
+            })?;
+
+        linker.instance(module_name, &wasmtime_instance)
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Failed to define instance: {}", e),
+                backtrace: None
+            })?;
+
+        self.metadata.import_count += 1;
+        log::debug!("Defined instance for module {}", module_name);
+        Ok(())
+    }
+
+    /// Creates an alias in the linker
+    pub fn alias(
+        &mut self,
+        source_module: &str,
+        source_name: &str,
+        target_module: &str,
+        target_name: &str,
+    ) -> WasmtimeResult<()> {
+        if self.metadata.disposed {
+            return Err(WasmtimeError::Runtime {
+                message: "Linker has been disposed".to_string(),
+                backtrace: None
+            });
+        }
+
+        let mut linker = self.inner.lock()
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Failed to lock linker: {}", e),
+                backtrace: None
+            })?;
+
+        linker.alias(source_module, source_name, target_module, target_name)
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Failed to create alias: {}", e),
+                backtrace: None
+            })?;
+
+        log::debug!("Created alias from {}::{} to {}::{}", source_module, source_name, target_module, target_name);
+        Ok(())
+    }
+
+    /// Instantiates a module using this linker
+    pub fn instantiate(
+        &self,
+        store: &mut crate::store::Store,
+        module: &crate::module::Module,
+    ) -> WasmtimeResult<Instance> {
+        if self.metadata.disposed {
+            return Err(WasmtimeError::Runtime {
+                message: "Linker has been disposed".to_string(),
+                backtrace: None
+            });
+        }
+
+        let linker = self.inner.lock()
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Failed to lock linker: {}", e),
+                backtrace: None
+            })?;
+
+        let wasmtime_module = module.inner()
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Module not available: {}", e),
+                backtrace: None
+            })?;
+
+        let mut store_guard = store.with_context_mut(|mut ctx| {
+            linker.instantiate(&mut ctx, &wasmtime_module)
+                .map_err(|e| WasmtimeError::Runtime {
+                    message: format!("Failed to instantiate module: {}", e),
+                    backtrace: None
+                })
+        })?;
+
+        let instance = Instance::new(store_guard)?;
+        log::debug!("Instantiated module using linker");
+        Ok(instance)
+    }
+
     /// Gets the metadata for this linker
     pub fn metadata(&self) -> &LinkerMetadata {
         &self.metadata
