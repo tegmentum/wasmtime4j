@@ -61,6 +61,20 @@ public final class PanamaValidation {
   }
 
   /**
+   * Validates that a string is not null, empty, or blank (whitespace only).
+   *
+   * @param str the string to validate
+   * @param parameterName the parameter name for error messages
+   * @throws IllegalArgumentException if the string is null, empty, or blank
+   */
+  public static void requireNonBlank(final String str, final String parameterName) {
+    requireNonNull(str, parameterName);
+    if (str.trim().isEmpty()) {
+      throw new IllegalArgumentException("Parameter '" + parameterName + "' must not be blank");
+    }
+  }
+
+  /**
    * Validates that an integer value is within the specified range.
    *
    * @param value the value to validate
@@ -119,6 +133,21 @@ public final class PanamaValidation {
    */
   public static void requireValidHandle(final long handle, final String handleName) {
     if (handle == 0) {
+      throw new IllegalArgumentException(
+          "Native handle '" + handleName + "' is invalid (null pointer)");
+    }
+  }
+
+  /**
+   * Validates that a native memory segment handle is valid (not NULL).
+   *
+   * @param handle the memory segment handle to validate
+   * @param handleName the handle name for error messages
+   * @throws IllegalArgumentException if the handle is invalid
+   */
+  public static void requireValidHandle(final java.lang.foreign.MemorySegment handle, final String handleName) {
+    requireNonNull(handle, handleName);
+    if (handle.equals(java.lang.foreign.MemorySegment.NULL)) {
       throw new IllegalArgumentException(
           "Native handle '" + handleName + "' is invalid (null pointer)");
     }

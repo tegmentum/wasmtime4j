@@ -101,6 +101,40 @@ public final class PanamaInstance implements Instance, AutoCloseable {
     }
   }
 
+  /**
+   * Creates a PanamaInstance from a native handle.
+   *
+   * <p>This static factory method creates a new PanamaInstance from a native Wasmtime instance
+   * handle. This is typically used internally by the Panama FFI implementation when instantiating
+   * modules through linkers or other native operations.
+   *
+   * @param instanceHandle the native instance handle
+   * @param module the parent module instance
+   * @param store the store in which the instance was created
+   * @param arena the arena for resource management
+   * @return a new PanamaInstance wrapping the native handle
+   * @throws WasmException if the instance cannot be created
+   * @throws IllegalArgumentException if any parameter is null
+   */
+  public static PanamaInstance fromHandle(
+      final MemorySegment instanceHandle,
+      final Module module,
+      final Store store,
+      final Arena arena)
+      throws WasmException {
+    if (instanceHandle == null || instanceHandle.equals(MemorySegment.NULL)) {
+      throw new IllegalArgumentException("Instance handle cannot be null");
+    }
+    if (!(module instanceof PanamaModule)) {
+      throw new IllegalArgumentException("Module must be a Panama module instance");
+    }
+
+    // Create resource manager for this instance
+    final ArenaResourceManager resourceManager = new ArenaResourceManager(arena);
+
+    return new PanamaInstance(instanceHandle, resourceManager, (PanamaModule) module);
+  }
+
   @Override
   public Optional<WasmFunction> getFunction(final String name) {
     ensureNotClosed();

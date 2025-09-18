@@ -858,6 +858,20 @@ public final class PanamaStore implements Store, AutoCloseable {
     }
   }
 
+  /**
+   * Gets the native handle for this store.
+   *
+   * <p>This method returns the native memory segment that represents the underlying Wasmtime store
+   * handle. This is used internally by the Panama FFI implementation for direct native calls.
+   *
+   * @return the native handle as a MemorySegment
+   * @throws IllegalStateException if this store has been closed
+   */
+  public MemorySegment getHandle() {
+    ensureNotClosed();
+    return storeResource.getNativePointer();
+  }
+
   @Override
   public void close() {
     if (closed) {
