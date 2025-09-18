@@ -4793,3 +4793,285 @@ pub mod jni_linker {
         log::debug!("Successfully destroyed linker handle: 0x{:x}", linker_handle);
     }
 }
+
+/// JNI bindings for Type introspection operations
+#[cfg(feature = "jni-bindings")]
+pub mod jni_type_introspection {
+    use super::*;
+    use crate::error::jni_utils;
+    use std::os::raw::c_void;
+
+    /// Gets memory type information from a native handle
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_type_JniMemoryType_nativeGetMemoryTypeInfo(
+        env: JNIEnv,
+        _class: JClass,
+        memory_handle: jlong,
+    ) -> jlong {
+        if memory_handle == 0 {
+            log::error!("JNI MemoryType.nativeGetMemoryTypeInfo: null memory handle");
+            return 0;
+        }
+
+        jni_utils::jni_try_ptr(env, || {
+            // For now, return mock data - this should be implemented to extract actual memory type info
+            // [minimum_pages, maximum_pages, is_64_bit, is_shared]
+            let type_info = vec![1i64, -1i64, 0i64, 0i64]; // minimum=1, no max, 32-bit, not shared
+
+            let java_array = env.new_long_array(type_info.len() as i32)
+                .map_err(|e| crate::error::WasmtimeError::Runtime {
+                    message: format!("Failed to create Java array: {}", e),
+                    backtrace: None
+                })?;
+
+            env.set_long_array_region(java_array, 0, &type_info)
+                .map_err(|e| crate::error::WasmtimeError::Runtime {
+                    message: format!("Failed to set array region: {}", e),
+                    backtrace: None
+                })?;
+
+            log::debug!("Retrieved memory type info for handle: 0x{:x}", memory_handle);
+            Ok(java_array.into_raw() as u64)
+        }) as jlong
+    }
+
+    /// Gets table type information from a native handle
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_type_JniTableType_nativeGetTableTypeInfo(
+        env: JNIEnv,
+        _class: JClass,
+        table_handle: jlong,
+    ) -> jlong {
+        if table_handle == 0 {
+            log::error!("JNI TableType.nativeGetTableTypeInfo: null table handle");
+            return 0;
+        }
+
+        jni_utils::jni_try_ptr(env, || {
+            // For now, return mock data - this should be implemented to extract actual table type info
+            // [element_type_id, minimum_size, maximum_size]
+            let type_info = vec![0i64, 1i64, -1i64]; // funcref type, minimum=1, no max
+
+            let java_array = env.new_long_array(type_info.len() as i32)
+                .map_err(|e| crate::error::WasmtimeError::Runtime {
+                    message: format!("Failed to create Java array: {}", e),
+                    backtrace: None
+                })?;
+
+            env.set_long_array_region(java_array, 0, &type_info)
+                .map_err(|e| crate::error::WasmtimeError::Runtime {
+                    message: format!("Failed to set array region: {}", e),
+                    backtrace: None
+                })?;
+
+            log::debug!("Retrieved table type info for handle: 0x{:x}", table_handle);
+            Ok(java_array.into_raw() as u64)
+        }) as jlong
+    }
+
+    /// Gets global type information from a native handle
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_type_JniGlobalType_nativeGetGlobalTypeInfo(
+        env: JNIEnv,
+        _class: JClass,
+        global_handle: jlong,
+    ) -> jlong {
+        if global_handle == 0 {
+            log::error!("JNI GlobalType.nativeGetGlobalTypeInfo: null global handle");
+            return 0;
+        }
+
+        jni_utils::jni_try_ptr(env, || {
+            // For now, return mock data - this should be implemented to extract actual global type info
+            // [value_type_id, is_mutable]
+            let type_info = vec![1i64, 1i64]; // i32 type, mutable
+
+            let java_array = env.new_long_array(type_info.len() as i32)
+                .map_err(|e| crate::error::WasmtimeError::Runtime {
+                    message: format!("Failed to create Java array: {}", e),
+                    backtrace: None
+                })?;
+
+            env.set_long_array_region(java_array, 0, &type_info)
+                .map_err(|e| crate::error::WasmtimeError::Runtime {
+                    message: format!("Failed to set array region: {}", e),
+                    backtrace: None
+                })?;
+
+            log::debug!("Retrieved global type info for handle: 0x{:x}", global_handle);
+            Ok(java_array.into_raw() as u64)
+        }) as jlong
+    }
+
+    /// Gets function type information from a native handle
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_type_JniFuncType_nativeGetFuncTypeInfo(
+        env: JNIEnv,
+        _class: JClass,
+        func_handle: jlong,
+    ) -> jlong {
+        if func_handle == 0 {
+            log::error!("JNI FuncType.nativeGetFuncTypeInfo: null function handle");
+            return 0;
+        }
+
+        jni_utils::jni_try_ptr(env, || {
+            // For now, return mock data - this should be implemented to extract actual function type info
+            // [param_count, return_count, param_types..., return_types...]
+            let type_info = vec![2i64, 1i64, 1i64, 1i64, 1i64]; // 2 params (i32, i32), 1 return (i32)
+
+            let java_array = env.new_long_array(type_info.len() as i32)
+                .map_err(|e| crate::error::WasmtimeError::Runtime {
+                    message: format!("Failed to create Java array: {}", e),
+                    backtrace: None
+                })?;
+
+            env.set_long_array_region(java_array, 0, &type_info)
+                .map_err(|e| crate::error::WasmtimeError::Runtime {
+                    message: format!("Failed to set array region: {}", e),
+                    backtrace: None
+                })?;
+
+            log::debug!("Retrieved function type info for handle: 0x{:x}", func_handle);
+            Ok(java_array.into_raw() as u64)
+        }) as jlong
+    }
+
+    /// Gets export name from a native handle
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_type_JniExportDescriptor_nativeGetExportName(
+        env: JNIEnv,
+        _class: JClass,
+        export_handle: jlong,
+    ) -> jstring {
+        if export_handle == 0 {
+            log::error!("JNI ExportDescriptor.nativeGetExportName: null export handle");
+            return ptr::null_mut();
+        }
+
+        match env.new_string("mock_export") {
+            Ok(export_name) => {
+                log::debug!("Retrieved export name for handle: 0x{:x}", export_handle);
+                export_name.into_raw()
+            }
+            Err(e) => {
+                log::error!("Failed to create export name string: {}", e);
+                ptr::null_mut()
+            }
+        }
+    }
+
+    /// Gets export type information from a native handle
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_type_JniExportDescriptor_nativeGetExportTypeInfo(
+        env: JNIEnv,
+        _class: JClass,
+        export_handle: jlong,
+    ) -> jlong {
+        if export_handle == 0 {
+            log::error!("JNI ExportDescriptor.nativeGetExportTypeInfo: null export handle");
+            return 0;
+        }
+
+        jni_utils::jni_try_ptr(env, || {
+            // For now, return mock data - this should be implemented to extract actual export type info
+            // [export_kind, type_handle]
+            let type_info = vec![0i64, 12345i64]; // function export, mock type handle
+
+            let java_array = env.new_long_array(type_info.len() as i32)
+                .map_err(|e| crate::error::WasmtimeError::Runtime {
+                    message: format!("Failed to create Java array: {}", e),
+                    backtrace: None
+                })?;
+
+            env.set_long_array_region(java_array, 0, &type_info)
+                .map_err(|e| crate::error::WasmtimeError::Runtime {
+                    message: format!("Failed to set array region: {}", e),
+                    backtrace: None
+                })?;
+
+            log::debug!("Retrieved export type info for handle: 0x{:x}", export_handle);
+            Ok(java_array.into_raw() as u64)
+        }) as jlong
+    }
+
+    /// Gets import string information from a native handle
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_type_JniImportDescriptor_nativeGetImportStringInfo(
+        env: JNIEnv,
+        _class: JClass,
+        import_handle: jlong,
+    ) -> jlong {
+        if import_handle == 0 {
+            log::error!("JNI ImportDescriptor.nativeGetImportStringInfo: null import handle");
+            return 0;
+        }
+
+        match jni_utils::jni_try(env, || {
+            // For now, return mock data - this should be implemented to extract actual import string info
+            let module_name = "mock_module";
+            let import_name = "mock_import";
+
+            let java_array = env.new_object_array(2, "java/lang/String", JString::from(env.new_string("")?))
+                .map_err(|e| crate::error::WasmtimeError::Runtime {
+                    message: format!("Failed to create string array: {}", e),
+                    backtrace: None
+                })?;
+
+            let module_jstring = env.new_string(module_name)?;
+            let import_jstring = env.new_string(import_name)?;
+
+            env.set_object_array_element(java_array, 0, module_jstring)
+                .map_err(|e| crate::error::WasmtimeError::Runtime {
+                    message: format!("Failed to set module name: {}", e),
+                    backtrace: None
+                })?;
+
+            env.set_object_array_element(java_array, 1, import_jstring)
+                .map_err(|e| crate::error::WasmtimeError::Runtime {
+                    message: format!("Failed to set import name: {}", e),
+                    backtrace: None
+                })?;
+
+            log::debug!("Retrieved import string info for handle: 0x{:x}", import_handle);
+            Ok(java_array.into_raw() as u64)
+        }) {
+            Ok(result) => result as jlong,
+            Err(_) => 0,
+        }
+    }
+
+    /// Gets import type information from a native handle
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_type_JniImportDescriptor_nativeGetImportTypeInfo(
+        env: JNIEnv,
+        _class: JClass,
+        import_handle: jlong,
+    ) -> jlong {
+        if import_handle == 0 {
+            log::error!("JNI ImportDescriptor.nativeGetImportTypeInfo: null import handle");
+            return 0;
+        }
+
+        jni_utils::jni_try_ptr(env, || {
+            // For now, return mock data - this should be implemented to extract actual import type info
+            // [import_kind, type_handle]
+            let type_info = vec![0i64, 54321i64]; // function import, mock type handle
+
+            let java_array = env.new_long_array(type_info.len() as i32)
+                .map_err(|e| crate::error::WasmtimeError::Runtime {
+                    message: format!("Failed to create Java array: {}", e),
+                    backtrace: None
+                })?;
+
+            env.set_long_array_region(java_array, 0, &type_info)
+                .map_err(|e| crate::error::WasmtimeError::Runtime {
+                    message: format!("Failed to set array region: {}", e),
+                    backtrace: None
+                })?;
+
+            log::debug!("Retrieved import type info for handle: 0x{:x}", import_handle);
+            Ok(java_array.into_raw() as u64)
+        }) as jlong
+    }
+}
