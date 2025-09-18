@@ -1,11 +1,17 @@
 package ai.tegmentum.wasmtime4j.jni;
 
+import ai.tegmentum.wasmtime4j.ExportDescriptor;
 import ai.tegmentum.wasmtime4j.ExportType;
+import ai.tegmentum.wasmtime4j.FuncType;
+import ai.tegmentum.wasmtime4j.GlobalType;
+import ai.tegmentum.wasmtime4j.ImportDescriptor;
 import ai.tegmentum.wasmtime4j.ImportMap;
 import ai.tegmentum.wasmtime4j.ImportType;
 import ai.tegmentum.wasmtime4j.Instance;
+import ai.tegmentum.wasmtime4j.MemoryType;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
+import ai.tegmentum.wasmtime4j.TableType;
 import ai.tegmentum.wasmtime4j.WasmType;
 import ai.tegmentum.wasmtime4j.WasmTypeKind;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
@@ -23,6 +29,7 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.logging.Logger;
 
@@ -445,13 +452,164 @@ public final class JniModule extends JniResource implements Module {
     try {
       final List<ImportType> imports = getImports();
       for (final ImportType importType : imports) {
-        if (moduleName.equals(importType.getModuleName()) && fieldName.equals(importType.getFieldName())) {
+        if (moduleName.equals(importType.getModuleName()) && fieldName.equals(importType.getName())) {
           return true;
         }
       }
       return false;
     } catch (final Exception e) {
       throw new JniException("Failed to check import existence", e);
+    }
+  }
+
+  @Override
+  public boolean hasExport(final String name) {
+    JniValidation.requireNonBlank(name, "name");
+    ensureNotClosed();
+
+    try {
+      // Check if any of the exported functions, memories, tables, or globals match the name
+      final String[] functions = getExportedFunctions();
+      for (final String function : functions) {
+        if (name.equals(function)) {
+          return true;
+        }
+      }
+
+      final String[] memories = getExportedMemories();
+      for (final String memory : memories) {
+        if (name.equals(memory)) {
+          return true;
+        }
+      }
+
+      final String[] tables = getExportedTables();
+      for (final String table : tables) {
+        if (name.equals(table)) {
+          return true;
+        }
+      }
+
+      final String[] globals = getExportedGlobals();
+      for (final String global : globals) {
+        if (name.equals(global)) {
+          return true;
+        }
+      }
+
+      return false;
+    } catch (final Exception e) {
+      throw new JniException("Failed to check export existence", e);
+    }
+  }
+
+  @Override
+  public Optional<TableType> getTableType(final String tableName) {
+    JniValidation.requireNonBlank(tableName, "tableName");
+    ensureNotClosed();
+
+    try {
+      // Check if the table exists in exports
+      final String[] tables = getExportedTables();
+      for (final String table : tables) {
+        if (tableName.equals(table)) {
+          // TODO: Implement native getTableType to get actual table type information
+          // For now, return empty as this would need native implementation
+          return Optional.empty();
+        }
+      }
+      return Optional.empty();
+    } catch (final Exception e) {
+      throw new JniException("Failed to get table type", e);
+    }
+  }
+
+  @Override
+  public Optional<MemoryType> getMemoryType(final String memoryName) {
+    JniValidation.requireNonBlank(memoryName, "memoryName");
+    ensureNotClosed();
+
+    try {
+      // Check if the memory exists in exports
+      final String[] memories = getExportedMemories();
+      for (final String memory : memories) {
+        if (memoryName.equals(memory)) {
+          // TODO: Implement native getMemoryType to get actual memory type information
+          // For now, return empty as this would need native implementation
+          return Optional.empty();
+        }
+      }
+      return Optional.empty();
+    } catch (final Exception e) {
+      throw new JniException("Failed to get memory type", e);
+    }
+  }
+
+  @Override
+  public Optional<GlobalType> getGlobalType(final String globalName) {
+    JniValidation.requireNonBlank(globalName, "globalName");
+    ensureNotClosed();
+
+    try {
+      // Check if the global exists in exports
+      final String[] globals = getExportedGlobals();
+      for (final String global : globals) {
+        if (globalName.equals(global)) {
+          // TODO: Implement native getGlobalType to get actual global type information
+          // For now, return empty as this would need native implementation
+          return Optional.empty();
+        }
+      }
+      return Optional.empty();
+    } catch (final Exception e) {
+      throw new JniException("Failed to get global type", e);
+    }
+  }
+
+  @Override
+  public Optional<FuncType> getFunctionType(final String functionName) {
+    JniValidation.requireNonBlank(functionName, "functionName");
+    ensureNotClosed();
+
+    try {
+      // Check if the function exists in exports
+      final String[] functions = getExportedFunctions();
+      for (final String function : functions) {
+        if (functionName.equals(function)) {
+          // TODO: Implement native getFunctionType to get actual function type information
+          // For now, return empty as this would need native implementation
+          return Optional.empty();
+        }
+      }
+      return Optional.empty();
+    } catch (final Exception e) {
+      throw new JniException("Failed to get function type", e);
+    }
+  }
+
+  @Override
+  public List<ImportDescriptor> getImportDescriptors() {
+    ensureNotClosed();
+
+    try {
+      // TODO: Implement native getImportDescriptors to get actual import descriptor information
+      // For now, return empty list as this would need native implementation
+      return Collections.emptyList();
+    } catch (final Exception e) {
+      throw new JniException("Failed to get import descriptors", e);
+    }
+  }
+
+  @Override
+  public List<ExportDescriptor> getExportDescriptors() {
+    ensureNotClosed();
+
+    try {
+      // TODO: Implement native getExportDescriptors to get actual export descriptor information
+      // For now, return empty list as this would need native implementation
+      return Collections.emptyList();
+    } catch (final Exception e) {
+      throw new JniException("Failed to get export descriptors", e);
     }
   }
 
