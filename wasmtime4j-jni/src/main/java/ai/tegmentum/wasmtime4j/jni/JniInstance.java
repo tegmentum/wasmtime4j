@@ -1,6 +1,10 @@
 package ai.tegmentum.wasmtime4j.jni;
 
+import ai.tegmentum.wasmtime4j.ExportDescriptor;
+import ai.tegmentum.wasmtime4j.FuncType;
+import ai.tegmentum.wasmtime4j.GlobalType;
 import ai.tegmentum.wasmtime4j.Instance;
+import ai.tegmentum.wasmtime4j.MemoryType;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.TableType;
@@ -12,6 +16,8 @@ import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
@@ -162,6 +168,97 @@ public final class JniInstance extends JniResource implements Instance {
       throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error getting table type: " + tableName, e);
+    }
+  }
+
+  @Override
+  public Optional<MemoryType> getMemoryType(final String memoryName) {
+    JniValidation.requireNonBlank(memoryName, "memoryName");
+    ensureNotClosed();
+
+    try {
+      final Optional<WasmMemory> memory = getMemory(memoryName);
+      if (!memory.isPresent()) {
+        return Optional.empty();
+      }
+      // Get memory type information from the native memory
+      // For now, return empty - this would need native implementation
+      return Optional.empty(); // TODO: Implement native getMemoryType
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error getting memory type: " + memoryName, e);
+    }
+  }
+
+  @Override
+  public Optional<GlobalType> getGlobalType(final String globalName) {
+    JniValidation.requireNonBlank(globalName, "globalName");
+    ensureNotClosed();
+
+    try {
+      final Optional<WasmGlobal> global = getGlobal(globalName);
+      if (!global.isPresent()) {
+        return Optional.empty();
+      }
+      // Get global type information from the native global
+      // For now, return empty - this would need native implementation
+      return Optional.empty(); // TODO: Implement native getGlobalType
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error getting global type: " + globalName, e);
+    }
+  }
+
+  @Override
+  public Optional<FuncType> getFunctionType(final String functionName) {
+    JniValidation.requireNonBlank(functionName, "functionName");
+    ensureNotClosed();
+
+    try {
+      final Optional<WasmFunction> function = getFunction(functionName);
+      if (!function.isPresent()) {
+        return Optional.empty();
+      }
+      // Get function type information from the native function
+      // For now, return empty - this would need native implementation
+      return Optional.empty(); // TODO: Implement native getFunctionType
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error getting function type: " + functionName, e);
+    }
+  }
+
+  @Override
+  public Optional<ExportDescriptor> getExportDescriptor(final String name) {
+    JniValidation.requireNonBlank(name, "name");
+    ensureNotClosed();
+
+    try {
+      // TODO: Implement native getExportDescriptor to get actual export descriptor information
+      // For now, return empty as this would need native implementation
+      return Optional.empty();
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error getting export descriptor: " + name, e);
+    }
+  }
+
+  @Override
+  public List<ExportDescriptor> getExportDescriptors() {
+    ensureNotClosed();
+
+    try {
+      // TODO: Implement native getExportDescriptors to get actual export descriptor information
+      // For now, return empty list as this would need native implementation
+      return Collections.emptyList();
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error getting export descriptors", e);
     }
   }
 
