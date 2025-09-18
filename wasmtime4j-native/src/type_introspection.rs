@@ -46,8 +46,13 @@ impl From<ValType> for IntrospectionValueType {
             ValType::F32 => IntrospectionValueType::F32,
             ValType::F64 => IntrospectionValueType::F64,
             ValType::V128 => IntrospectionValueType::V128,
-            ValType::FuncRef => IntrospectionValueType::FuncRef,
-            ValType::ExternRef => IntrospectionValueType::ExternRef,
+            ValType::Ref(ref_type) => {
+                match ref_type.heap_type() {
+                    wasmtime::HeapType::Func => IntrospectionValueType::FuncRef,
+                    wasmtime::HeapType::Extern => IntrospectionValueType::ExternRef,
+                    _ => IntrospectionValueType::ExternRef, // Default fallback
+                }
+            }
         }
     }
 }
@@ -60,8 +65,8 @@ impl From<IntrospectionValueType> for ValType {
             IntrospectionValueType::F32 => ValType::F32,
             IntrospectionValueType::F64 => ValType::F64,
             IntrospectionValueType::V128 => ValType::V128,
-            IntrospectionValueType::FuncRef => ValType::FuncRef,
-            IntrospectionValueType::ExternRef => ValType::ExternRef,
+            IntrospectionValueType::FuncRef => ValType::FUNCREF,
+            IntrospectionValueType::ExternRef => ValType::EXTERNREF,
         }
     }
 }

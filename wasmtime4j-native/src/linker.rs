@@ -158,8 +158,7 @@ impl Linker {
     /// # Errors
     /// Returns WasmtimeError if linker creation fails
     pub fn with_config(engine: &Engine, config: LinkerConfig) -> WasmtimeResult<Self> {
-        let engine_inner = engine.inner()
-            .map_err(|e| WasmtimeError::Runtime { message: format!("Engine not available: {}", e), backtrace: None })?;
+        let engine_inner = engine.inner();
 
         let linker = WasmtimeLinker::new(&engine_inner);
 
@@ -222,7 +221,7 @@ impl Linker {
         linker.func_wrap(
             module_name,
             function_name,
-            |_caller: Caller<'_, StoreData>| -> Result<(), wasmtime::Trap> {
+            || -> Result<(), wasmtime::Trap> {
                 // Simplified - just return OK for now
                 Ok(())
             }
@@ -269,6 +268,7 @@ impl Linker {
     /// Returns WasmtimeError if the memory cannot be defined
     pub fn define_memory(
         &mut self,
+        store: &Store,
         module_name: &str,
         memory_name: &str,
         memory: &WasmMemory,
@@ -286,17 +286,15 @@ impl Linker {
                 backtrace: None
             })?;
 
-        let wasmtime_memory = memory.inner()
-            .map_err(|e| WasmtimeError::Runtime {
-                message: format!("Memory not available: {}", e),
-                backtrace: None
-            })?;
+        let wasmtime_memory = memory.inner();
 
-        linker.define(module_name, memory_name, wasmtime_memory)
-            .map_err(|e| WasmtimeError::Runtime {
-                message: format!("Failed to define memory: {}", e),
-                backtrace: None
-            })?;
+        store.with_context(|ctx| {
+            linker.define(ctx, module_name, memory_name, wasmtime_memory)
+                .map_err(|e| WasmtimeError::Runtime {
+                    message: format!("Failed to define memory: {}", e),
+                    backtrace: None
+                })
+        })?;
 
         // Record in imports registry
         let key = format!("{}::{}", module_name, memory_name);
