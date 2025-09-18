@@ -77,8 +77,8 @@ public interface Instance extends Closeable {
   /**
    * Gets runtime type information for all exports.
    *
-   * <p>This method provides comprehensive type introspection for all exported items,
-   * including their specific type information at runtime.
+   * <p>This method provides comprehensive type introspection for all exported items, including
+   * their specific type information at runtime.
    *
    * @return an immutable list of export descriptors with runtime type information
    * @since 1.0.0

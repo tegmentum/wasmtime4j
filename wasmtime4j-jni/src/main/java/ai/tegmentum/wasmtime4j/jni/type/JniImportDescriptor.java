@@ -9,8 +9,8 @@ import java.util.logging.Logger;
 /**
  * JNI implementation of ImportDescriptor interface.
  *
- * <p>This class provides detailed import type information using JNI bindings to the native
- * Wasmtime library.
+ * <p>This class provides detailed import type information using JNI bindings to the native Wasmtime
+ * library.
  *
  * @since 1.0.0
  */
@@ -40,8 +40,7 @@ public final class JniImportDescriptor implements ImportDescriptor {
 
     LOGGER.fine(
         String.format(
-            "Created JniImportDescriptor: module=%s, name=%s, type=%s",
-            moduleName, name, type));
+            "Created JniImportDescriptor: module=%s, name=%s, type=%s", moduleName, name, type));
   }
 
   /**

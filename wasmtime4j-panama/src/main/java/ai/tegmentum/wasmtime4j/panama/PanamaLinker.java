@@ -36,7 +36,6 @@ import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
-import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
 
@@ -88,43 +87,86 @@ public final class PanamaLinker implements Linker, AutoCloseable {
     // Initialize method handles - these would be loaded from the native library
     // For now, we'll use placeholder implementations
     try {
-      CREATE_LINKER = PanamaNativeLibrary.findFunction("wasmtime4j_linker_create",
-          FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-      DEFINE_HOST_FUNCTION = PanamaNativeLibrary.findFunction("wasmtime4j_linker_define_host_function",
-          FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN,
-              ValueLayout.ADDRESS, // linker
-              ValueLayout.ADDRESS, // module_name
-              ValueLayout.ADDRESS, // function_name
-              ValueLayout.ADDRESS, // param_types
-              ValueLayout.JAVA_INT, // param_count
-              ValueLayout.ADDRESS, // return_types
-              ValueLayout.JAVA_INT, // return_count
-              ValueLayout.ADDRESS)); // host_function
-      DEFINE_MEMORY = PanamaNativeLibrary.findFunction("wasmtime4j_linker_define_memory",
-          FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN,
-              ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-      DEFINE_TABLE = PanamaNativeLibrary.findFunction("wasmtime4j_linker_define_table",
-          FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN,
-              ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-      DEFINE_GLOBAL = PanamaNativeLibrary.findFunction("wasmtime4j_linker_define_global",
-          FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN,
-              ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-      DEFINE_INSTANCE = PanamaNativeLibrary.findFunction("wasmtime4j_linker_define_instance",
-          FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN,
-              ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-      CREATE_ALIAS = PanamaNativeLibrary.findFunction("wasmtime4j_linker_alias",
-          FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN,
-              ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS,
-              ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-      INSTANTIATE = PanamaNativeLibrary.findFunction("wasmtime4j_linker_instantiate",
-          FunctionDescriptor.of(ValueLayout.ADDRESS,
-              ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-      ENABLE_WASI = PanamaNativeLibrary.findFunction("wasmtime4j_linker_enable_wasi",
-          FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN, ValueLayout.ADDRESS));
-      DESTROY_LINKER = PanamaNativeLibrary.findFunction("wasmtime4j_linker_destroy",
-          FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+      CREATE_LINKER =
+          PanamaNativeLibrary.findFunction(
+              "wasmtime4j_linker_create",
+              FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+      DEFINE_HOST_FUNCTION =
+          PanamaNativeLibrary.findFunction(
+              "wasmtime4j_linker_define_host_function",
+              FunctionDescriptor.of(
+                  ValueLayout.JAVA_BOOLEAN,
+                  ValueLayout.ADDRESS, // linker
+                  ValueLayout.ADDRESS, // module_name
+                  ValueLayout.ADDRESS, // function_name
+                  ValueLayout.ADDRESS, // param_types
+                  ValueLayout.JAVA_INT, // param_count
+                  ValueLayout.ADDRESS, // return_types
+                  ValueLayout.JAVA_INT, // return_count
+                  ValueLayout.ADDRESS)); // host_function
+      DEFINE_MEMORY =
+          PanamaNativeLibrary.findFunction(
+              "wasmtime4j_linker_define_memory",
+              FunctionDescriptor.of(
+                  ValueLayout.JAVA_BOOLEAN,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS));
+      DEFINE_TABLE =
+          PanamaNativeLibrary.findFunction(
+              "wasmtime4j_linker_define_table",
+              FunctionDescriptor.of(
+                  ValueLayout.JAVA_BOOLEAN,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS));
+      DEFINE_GLOBAL =
+          PanamaNativeLibrary.findFunction(
+              "wasmtime4j_linker_define_global",
+              FunctionDescriptor.of(
+                  ValueLayout.JAVA_BOOLEAN,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS));
+      DEFINE_INSTANCE =
+          PanamaNativeLibrary.findFunction(
+              "wasmtime4j_linker_define_instance",
+              FunctionDescriptor.of(
+                  ValueLayout.JAVA_BOOLEAN,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS));
+      CREATE_ALIAS =
+          PanamaNativeLibrary.findFunction(
+              "wasmtime4j_linker_alias",
+              FunctionDescriptor.of(
+                  ValueLayout.JAVA_BOOLEAN,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS));
+      INSTANTIATE =
+          PanamaNativeLibrary.findFunction(
+              "wasmtime4j_linker_instantiate",
+              FunctionDescriptor.of(
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS));
+      ENABLE_WASI =
+          PanamaNativeLibrary.findFunction(
+              "wasmtime4j_linker_enable_wasi",
+              FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN, ValueLayout.ADDRESS));
+      DESTROY_LINKER =
+          PanamaNativeLibrary.findFunction(
+              "wasmtime4j_linker_destroy", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
     } catch (final Exception e) {
-      throw new ExceptionInInitializerError("Failed to initialize Panama linker: " + e.getMessage());
+      throw new ExceptionInInitializerError(
+          "Failed to initialize Panama linker: " + e.getMessage());
     }
   }
 
@@ -218,16 +260,17 @@ public final class PanamaLinker implements Linker, AutoCloseable {
       // Create host function wrapper
       final MemorySegment hostFunctionHandle = createHostFunction(implementation, functionType);
 
-      final boolean success = (boolean) DEFINE_HOST_FUNCTION.invokeExact(
-          linkerHandle,
-          moduleNameSegment,
-          functionNameSegment,
-          paramTypesSegment,
-          paramTypes.length,
-          returnTypesSegment,
-          returnTypes.length,
-          hostFunctionHandle
-      );
+      final boolean success =
+          (boolean)
+              DEFINE_HOST_FUNCTION.invokeExact(
+                  linkerHandle,
+                  moduleNameSegment,
+                  functionNameSegment,
+                  paramTypesSegment,
+                  paramTypes.length,
+                  returnTypesSegment,
+                  returnTypes.length,
+                  hostFunctionHandle);
 
       if (!success) {
         throw new WasmException("Failed to define host function: " + moduleName + "::" + name);
@@ -259,12 +302,10 @@ public final class PanamaLinker implements Linker, AutoCloseable {
       final MemorySegment memoryNameSegment = memoryManager.allocateString(name);
       final MemorySegment memoryHandle = panamaMemory.getHandle();
 
-      final boolean success = (boolean) DEFINE_MEMORY.invokeExact(
-          linkerHandle,
-          moduleNameSegment,
-          memoryNameSegment,
-          memoryHandle
-      );
+      final boolean success =
+          (boolean)
+              DEFINE_MEMORY.invokeExact(
+                  linkerHandle, moduleNameSegment, memoryNameSegment, memoryHandle);
 
       if (!success) {
         throw new WasmException("Failed to define memory: " + moduleName + "::" + name);
@@ -296,12 +337,10 @@ public final class PanamaLinker implements Linker, AutoCloseable {
       final MemorySegment tableNameSegment = memoryManager.allocateString(name);
       final MemorySegment tableHandle = panamaTable.getHandle();
 
-      final boolean success = (boolean) DEFINE_TABLE.invokeExact(
-          linkerHandle,
-          moduleNameSegment,
-          tableNameSegment,
-          tableHandle
-      );
+      final boolean success =
+          (boolean)
+              DEFINE_TABLE.invokeExact(
+                  linkerHandle, moduleNameSegment, tableNameSegment, tableHandle);
 
       if (!success) {
         throw new WasmException("Failed to define table: " + moduleName + "::" + name);
@@ -333,12 +372,10 @@ public final class PanamaLinker implements Linker, AutoCloseable {
       final MemorySegment globalNameSegment = memoryManager.allocateString(name);
       final MemorySegment globalHandle = panamaGlobal.getHandle();
 
-      final boolean success = (boolean) DEFINE_GLOBAL.invokeExact(
-          linkerHandle,
-          moduleNameSegment,
-          globalNameSegment,
-          globalHandle
-      );
+      final boolean success =
+          (boolean)
+              DEFINE_GLOBAL.invokeExact(
+                  linkerHandle, moduleNameSegment, globalNameSegment, globalHandle);
 
       if (!success) {
         throw new WasmException("Failed to define global: " + moduleName + "::" + name);
@@ -368,11 +405,8 @@ public final class PanamaLinker implements Linker, AutoCloseable {
       final MemorySegment moduleNameSegment = memoryManager.allocateString(moduleName);
       final MemorySegment instanceHandle = panamaInstance.getHandle();
 
-      final boolean success = (boolean) DEFINE_INSTANCE.invokeExact(
-          linkerHandle,
-          moduleNameSegment,
-          instanceHandle
-      );
+      final boolean success =
+          (boolean) DEFINE_INSTANCE.invokeExact(linkerHandle, moduleNameSegment, instanceHandle);
 
       if (!success) {
         throw new WasmException("Failed to define instance: " + moduleName);
@@ -387,7 +421,8 @@ public final class PanamaLinker implements Linker, AutoCloseable {
   }
 
   @Override
-  public void alias(final String fromModule, final String fromName, final String toModule, final String toName)
+  public void alias(
+      final String fromModule, final String fromName, final String toModule, final String toName)
       throws WasmException {
     PanamaValidation.requireNonBlank(fromModule, "fromModule");
     PanamaValidation.requireNonBlank(fromName, "fromName");
@@ -401,19 +436,25 @@ public final class PanamaLinker implements Linker, AutoCloseable {
       final MemorySegment toModuleSegment = memoryManager.allocateString(toModule);
       final MemorySegment toNameSegment = memoryManager.allocateString(toName);
 
-      final boolean success = (boolean) CREATE_ALIAS.invokeExact(
-          linkerHandle,
-          fromModuleSegment,
-          fromNameSegment,
-          toModuleSegment,
-          toNameSegment
-      );
+      final boolean success =
+          (boolean)
+              CREATE_ALIAS.invokeExact(
+                  linkerHandle, fromModuleSegment, fromNameSegment, toModuleSegment, toNameSegment);
 
       if (!success) {
-        throw new WasmException("Failed to create alias: " + fromModule + "::" + fromName + " -> " + toModule + "::" + toName);
+        throw new WasmException(
+            "Failed to create alias: "
+                + fromModule
+                + "::"
+                + fromName
+                + " -> "
+                + toModule
+                + "::"
+                + toName);
       }
 
-      LOGGER.fine("Created alias " + fromModule + "::" + fromName + " -> " + toModule + "::" + toName);
+      LOGGER.fine(
+          "Created alias " + fromModule + "::" + fromName + " -> " + toModule + "::" + toName);
     } catch (final WasmException e) {
       throw e;
     } catch (final Throwable e) {
@@ -438,17 +479,17 @@ public final class PanamaLinker implements Linker, AutoCloseable {
       final PanamaStore panamaStore = (PanamaStore) store;
       final PanamaModule panamaModule = (PanamaModule) module;
 
-      final MemorySegment instanceHandle = (MemorySegment) INSTANTIATE.invokeExact(
-          linkerHandle,
-          panamaStore.getHandle(),
-          panamaModule.getHandle()
-      );
+      final MemorySegment instanceHandle =
+          (MemorySegment)
+              INSTANTIATE.invokeExact(
+                  linkerHandle, panamaStore.getHandle(), panamaModule.getHandle());
 
       if (instanceHandle.equals(MemorySegment.NULL)) {
         throw new WasmException("Failed to instantiate module");
       }
 
-      final PanamaInstance instance = PanamaInstance.fromHandle(instanceHandle, module, store, arena);
+      final PanamaInstance instance =
+          PanamaInstance.fromHandle(instanceHandle, module, store, arena);
       LOGGER.fine("Successfully instantiated module");
       return instance;
     } catch (final WasmException e) {
@@ -582,7 +623,8 @@ public final class PanamaLinker implements Linker, AutoCloseable {
    * @param functionType the function type
    * @return memory segment representing the native host function
    */
-  private MemorySegment createHostFunction(final HostFunction implementation, final FunctionType functionType) {
+  private MemorySegment createHostFunction(
+      final HostFunction implementation, final FunctionType functionType) {
     // This would create a callback that can be called from native code
     // For now, return a placeholder
     return MemorySegment.NULL;

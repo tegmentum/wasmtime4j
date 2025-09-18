@@ -124,8 +124,7 @@ public final class LocalizationConfiguration {
      * @return this builder instance
      */
     public Builder customMessages(final Map<String, String> customMessages) {
-      this.customMessages =
-          Objects.requireNonNull(customMessages, "customMessages cannot be null");
+      this.customMessages = Objects.requireNonNull(customMessages, "customMessages cannot be null");
       return this;
     }
 

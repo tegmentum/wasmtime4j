@@ -30,8 +30,7 @@ public final class JniTableType implements TableType {
    * @param minimum the minimum number of elements
    * @param maximum the maximum number of elements (null if unlimited)
    */
-  public JniTableType(
-      final WasmValueType elementType, final long minimum, final Long maximum) {
+  public JniTableType(final WasmValueType elementType, final long minimum, final Long maximum) {
     JniValidation.requireNonNull(elementType, "elementType");
     if (minimum < 0) {
       throw new IllegalArgumentException("Minimum element count cannot be negative: " + minimum);
@@ -51,8 +50,7 @@ public final class JniTableType implements TableType {
 
     LOGGER.fine(
         String.format(
-            "Created JniTableType: element=%s, min=%d, max=%s",
-            elementType, minimum, maximum));
+            "Created JniTableType: element=%s, min=%d, max=%s", elementType, minimum, maximum));
   }
 
   /**

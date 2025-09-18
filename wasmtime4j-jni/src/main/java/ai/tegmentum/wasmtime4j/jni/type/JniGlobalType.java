@@ -34,8 +34,7 @@ public final class JniGlobalType implements GlobalType {
     this.isMutable = isMutable;
 
     LOGGER.fine(
-        String.format(
-            "Created JniGlobalType: valueType=%s, mutable=%b", valueType, isMutable));
+        String.format("Created JniGlobalType: valueType=%s, mutable=%b", valueType, isMutable));
   }
 
   /**
@@ -94,8 +93,7 @@ public final class JniGlobalType implements GlobalType {
 
   @Override
   public String toString() {
-    return String.format(
-        "GlobalType{valueType=%s, mutable=%b}", valueType, isMutable);
+    return String.format("GlobalType{valueType=%s, mutable=%b}", valueType, isMutable);
   }
 
   /**

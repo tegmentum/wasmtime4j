@@ -79,8 +79,8 @@ public interface WasmRuntime extends Closeable {
    * Creates a new linker for the given engine.
    *
    * <p>A linker provides the mechanism to define host functions and bind imports before
-   * instantiating WebAssembly modules. It serves as a pre-instantiation environment where
-   * you can register functions, memories, tables, and globals that modules can import.
+   * instantiating WebAssembly modules. It serves as a pre-instantiation environment where you can
+   * register functions, memories, tables, and globals that modules can import.
    *
    * @param engine the engine to create the linker for
    * @return a new Linker instance

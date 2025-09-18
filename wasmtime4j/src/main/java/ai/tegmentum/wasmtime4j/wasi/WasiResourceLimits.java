@@ -37,19 +37,19 @@ public interface WasiResourceLimits {
     // Use runtime selection pattern to find appropriate implementation
     try {
       // Try Panama implementation first
-      final Class<?> builderClass = Class.forName(
-          "ai.tegmentum.wasmtime4j.panama.wasi.permission.WasiResourceLimitsBuilder");
+      final Class<?> builderClass =
+          Class.forName("ai.tegmentum.wasmtime4j.panama.wasi.permission.WasiResourceLimitsBuilder");
       return (WasiResourceLimitsBuilder) builderClass.getDeclaredConstructor().newInstance();
     } catch (final ClassNotFoundException e) {
       // Panama not available, try JNI implementation
       try {
-        final Class<?> builderClass = Class.forName(
-            "ai.tegmentum.wasmtime4j.jni.wasi.JniWasiResourceLimitsBuilder");
+        final Class<?> builderClass =
+            Class.forName("ai.tegmentum.wasmtime4j.jni.wasi.JniWasiResourceLimitsBuilder");
         return (WasiResourceLimitsBuilder) builderClass.getDeclaredConstructor().newInstance();
       } catch (final ClassNotFoundException e2) {
         throw new UnsupportedOperationException(
             "No WasiResourceLimitsBuilder implementation available. "
-            + "Ensure wasmtime4j-panama or wasmtime4j-jni is on the classpath.");
+                + "Ensure wasmtime4j-panama or wasmtime4j-jni is on the classpath.");
       } catch (final Exception e2) {
         throw new RuntimeException("Failed to create WASI resource limits builder", e2);
       }

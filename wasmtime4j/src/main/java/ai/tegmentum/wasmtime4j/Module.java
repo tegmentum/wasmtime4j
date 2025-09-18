@@ -66,8 +66,8 @@ public interface Module extends Closeable {
   /**
    * Gets detailed export descriptors with comprehensive type information.
    *
-   * <p>This method provides more detailed type introspection than {@link #getExports()},
-   * including specific type information for functions, globals, memories, and tables.
+   * <p>This method provides more detailed type introspection than {@link #getExports()}, including
+   * specific type information for functions, globals, memories, and tables.
    *
    * @return an immutable list of detailed export descriptors
    * @since 1.0.0
@@ -77,8 +77,8 @@ public interface Module extends Closeable {
   /**
    * Gets detailed import descriptors with comprehensive type information.
    *
-   * <p>This method provides more detailed type introspection than {@link #getImports()},
-   * including specific type information for functions, globals, memories, and tables.
+   * <p>This method provides more detailed type introspection than {@link #getImports()}, including
+   * specific type information for functions, globals, memories, and tables.
    *
    * @return an immutable list of detailed import descriptors
    * @since 1.0.0
