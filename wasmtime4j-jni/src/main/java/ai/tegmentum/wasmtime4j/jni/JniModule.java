@@ -436,6 +436,25 @@ public final class JniModule extends JniResource implements Module {
     }
   }
 
+  @Override
+  public boolean hasImport(final String moduleName, final String fieldName) {
+    JniValidation.requireNonBlank(moduleName, "moduleName");
+    JniValidation.requireNonBlank(fieldName, "fieldName");
+    ensureNotClosed();
+
+    try {
+      final List<ImportType> imports = getImports();
+      for (final ImportType importType : imports) {
+        if (moduleName.equals(importType.getModuleName()) && fieldName.equals(importType.getFieldName())) {
+          return true;
+        }
+      }
+      return false;
+    } catch (final Exception e) {
+      throw new JniException("Failed to check import existence", e);
+    }
+  }
+
   /**
    * Validates that provided imports satisfy this module's requirements.
    *

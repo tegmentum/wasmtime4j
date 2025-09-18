@@ -3,6 +3,7 @@ package ai.tegmentum.wasmtime4j.jni;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
+import ai.tegmentum.wasmtime4j.TableType;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmGlobal;
 import ai.tegmentum.wasmtime4j.WasmMemory;
@@ -141,6 +142,26 @@ public final class JniInstance extends JniResource implements Instance {
       throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error getting table: " + name, e);
+    }
+  }
+
+  @Override
+  public Optional<TableType> getTableType(final String tableName) {
+    JniValidation.requireNonBlank(tableName, "tableName");
+    ensureNotClosed();
+
+    try {
+      final Optional<WasmTable> table = getTable(tableName);
+      if (!table.isPresent()) {
+        return Optional.empty();
+      }
+      // Get table type information from the native table
+      // For now, return a basic table type - this would need native implementation
+      return Optional.empty(); // TODO: Implement native getTableType
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error getting table type: " + tableName, e);
     }
   }
 
