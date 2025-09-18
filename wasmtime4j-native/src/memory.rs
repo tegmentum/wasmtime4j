@@ -309,6 +309,11 @@ impl Memory {
         })
     }
 
+    /// Get reference to inner Wasmtime memory (internal use)
+    pub(crate) fn inner(&self) -> &WasmtimeMemory {
+        &self.inner
+    }
+
     /// Get current memory size in pages
     pub fn size_pages(&self, store: &Store) -> WasmtimeResult<u64> {
         store.with_context_ro(|ctx| {

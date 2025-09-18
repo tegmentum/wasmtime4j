@@ -1980,6 +1980,12 @@ pub mod jni_hostfunc {
                 backtrace: None,
             })
         }
+
+        fn clone_callback(&self) -> Box<dyn HostFunctionCallback> {
+            Box::new(Self {
+                java_callback_id: self.java_callback_id,
+            })
+        }
     }
 
     /// Create a new host function (JNI version)

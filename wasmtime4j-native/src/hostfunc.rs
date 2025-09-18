@@ -44,13 +44,39 @@ pub struct HostFunction {
     #[allow(dead_code)]
     store_weak: Weak<Mutex<wasmtime::Store<StoreData>>>,
     /// Callback interface for language-specific implementations
-    callback: Box<dyn HostFunctionCallback + Send + Sync>,
+    callback: Box<dyn HostFunctionCallback>,
+}
+
+impl std::fmt::Debug for HostFunction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("HostFunction")
+            .field("id", &self.id)
+            .field("name", &self.name)
+            .field("func_type", &self.func_type)
+            .field("callback", &"<callback>")
+            .finish()
+    }
+}
+
+impl Clone for HostFunction {
+    fn clone(&self) -> Self {
+        Self {
+            id: self.id,
+            name: self.name.clone(),
+            func_type: self.func_type.clone(),
+            store_weak: self.store_weak.clone(),
+            callback: self.callback.clone_callback(),
+        }
+    }
 }
 
 /// Trait for language-specific host function callback implementations
-pub trait HostFunctionCallback {
+pub trait HostFunctionCallback: Send + Sync {
     /// Execute the host function with parameter marshalling
     fn execute(&self, params: &[WasmValue]) -> WasmtimeResult<Vec<WasmValue>>;
+
+    /// Clone the callback (for implementing Clone on HostFunction)
+    fn clone_callback(&self) -> Box<dyn HostFunctionCallback>;
 }
 
 /// Result of host function parameter marshalling
