@@ -52,7 +52,7 @@ public final class PanamaExceptionMapper {
    * @param exception the throwable to map
    * @return the mapped WebAssembly exception
    */
-  public WasmException mapException(final Throwable exception) {
+  public static WasmException mapException(final Throwable exception) {
     if (exception == null) {
       return new WasmException("Unknown error occurred");
     }

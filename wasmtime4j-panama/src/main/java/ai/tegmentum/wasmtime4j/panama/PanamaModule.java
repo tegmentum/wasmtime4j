@@ -532,6 +532,20 @@ public final class PanamaModule implements Module, AutoCloseable {
     }
   }
 
+  /**
+   * Gets the native handle for this module.
+   *
+   * <p>This method returns the native memory segment that represents the underlying Wasmtime module
+   * handle. This is used internally by the Panama FFI implementation for direct native calls.
+   *
+   * @return the native handle as a MemorySegment
+   * @throws IllegalStateException if this module has been closed
+   */
+  public MemorySegment getHandle() {
+    ensureNotClosed();
+    return moduleResource.getNativePointer();
+  }
+
   @Override
   public void close() {
     if (closed) {
