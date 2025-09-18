@@ -1,15 +1,20 @@
 package ai.tegmentum.wasmtime4j.type;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.*;
+import ai.tegmentum.wasmtime4j.Engine;
+import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.DisplayName;
 import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 /**
  * Comprehensive integration tests for the Type Introspection System.
@@ -45,7 +50,8 @@ public class TypeIntrospectionSystemIT {
   @DisplayName("Basic Module Type Introspection")
   void testBasicModuleTypeIntrospection() throws WasmException {
     // Create a comprehensive test module with all types
-    final String wat = """
+    final String wat =
+        """
         (module
           (import "env" "memory" (memory 1 10))
           (import "env" "table" (table 5 funcref))
@@ -91,10 +97,11 @@ public class TypeIntrospectionSystemIT {
     assertEquals(5, imports.size(), "Expected 5 imports");
 
     // Verify memory import
-    final ImportDescriptor memoryImport = imports.stream()
-        .filter(imp -> imp.getName().equals("memory"))
-        .findFirst()
-        .orElseThrow(() -> new AssertionError("Memory import not found"));
+    final ImportDescriptor memoryImport =
+        imports.stream()
+            .filter(imp -> imp.getName().equals("memory"))
+            .findFirst()
+            .orElseThrow(() -> new AssertionError("Memory import not found"));
 
     assertEquals("env", memoryImport.getModuleName());
     assertEquals("memory", memoryImport.getName());
@@ -110,10 +117,11 @@ public class TypeIntrospectionSystemIT {
     assertFalse(memoryType.isShared());
 
     // Verify table import
-    final ImportDescriptor tableImport = imports.stream()
-        .filter(imp -> imp.getName().equals("table"))
-        .findFirst()
-        .orElseThrow(() -> new AssertionError("Table import not found"));
+    final ImportDescriptor tableImport =
+        imports.stream()
+            .filter(imp -> imp.getName().equals("table"))
+            .findFirst()
+            .orElseThrow(() -> new AssertionError("Table import not found"));
 
     assertTrue(tableImport.isTable());
     final TableType tableType = tableImport.asTableType();
@@ -122,30 +130,33 @@ public class TypeIntrospectionSystemIT {
     assertEquals(Optional.empty(), tableType.getMaximum());
 
     // Verify global imports
-    final ImportDescriptor globalImport = imports.stream()
-        .filter(imp -> imp.getName().equals("global_i32"))
-        .findFirst()
-        .orElseThrow(() -> new AssertionError("Global import not found"));
+    final ImportDescriptor globalImport =
+        imports.stream()
+            .filter(imp -> imp.getName().equals("global_i32"))
+            .findFirst()
+            .orElseThrow(() -> new AssertionError("Global import not found"));
 
     assertTrue(globalImport.isGlobal());
     final GlobalType globalType = globalImport.asGlobalType();
     assertEquals(WasmValueType.I32, globalType.getValueType());
     assertFalse(globalType.isMutable());
 
-    final ImportDescriptor mutGlobalImport = imports.stream()
-        .filter(imp -> imp.getName().equals("global_mut_f64"))
-        .findFirst()
-        .orElseThrow(() -> new AssertionError("Mutable global import not found"));
+    final ImportDescriptor mutGlobalImport =
+        imports.stream()
+            .filter(imp -> imp.getName().equals("global_mut_f64"))
+            .findFirst()
+            .orElseThrow(() -> new AssertionError("Mutable global import not found"));
 
     final GlobalType mutGlobalType = mutGlobalImport.asGlobalType();
     assertEquals(WasmValueType.F64, mutGlobalType.getValueType());
     assertTrue(mutGlobalType.isMutable());
 
     // Verify function import
-    final ImportDescriptor funcImport = imports.stream()
-        .filter(imp -> imp.getName().equals("imported_func"))
-        .findFirst()
-        .orElseThrow(() -> new AssertionError("Function import not found"));
+    final ImportDescriptor funcImport =
+        imports.stream()
+            .filter(imp -> imp.getName().equals("imported_func"))
+            .findFirst()
+            .orElseThrow(() -> new AssertionError("Function import not found"));
 
     assertTrue(funcImport.isFunction());
     final FuncType funcType = funcImport.asFunctionType();
@@ -159,24 +170,27 @@ public class TypeIntrospectionSystemIT {
     assertEquals(8, exports.size(), "Expected 8 exports");
 
     // Verify exported functions
-    final ExportDescriptor addExport = exports.stream()
-        .filter(exp -> exp.getName().equals("add"))
-        .findFirst()
-        .orElseThrow(() -> new AssertionError("Add function export not found"));
+    final ExportDescriptor addExport =
+        exports.stream()
+            .filter(exp -> exp.getName().equals("add"))
+            .findFirst()
+            .orElseThrow(() -> new AssertionError("Add function export not found"));
 
     assertTrue(addExport.isFunction());
     final FuncType addFuncType = addExport.asFunctionType();
     assertEquals(List.of(WasmValueType.I32, WasmValueType.I32), addFuncType.getParams());
     assertEquals(List.of(WasmValueType.I32), addFuncType.getResults());
 
-    final ExportDescriptor complexExport = exports.stream()
-        .filter(exp -> exp.getName().equals("complex"))
-        .findFirst()
-        .orElseThrow(() -> new AssertionError("Complex function export not found"));
+    final ExportDescriptor complexExport =
+        exports.stream()
+            .filter(exp -> exp.getName().equals("complex"))
+            .findFirst()
+            .orElseThrow(() -> new AssertionError("Complex function export not found"));
 
     final FuncType complexFuncType = complexExport.asFunctionType();
-    assertEquals(List.of(WasmValueType.I32, WasmValueType.I64, WasmValueType.F32, WasmValueType.F64),
-                 complexFuncType.getParams());
+    assertEquals(
+        List.of(WasmValueType.I32, WasmValueType.I64, WasmValueType.F32, WasmValueType.F64),
+        complexFuncType.getParams());
     assertEquals(List.of(WasmValueType.I32, WasmValueType.I64), complexFuncType.getResults());
 
     // Test direct access methods
@@ -274,18 +288,14 @@ public class TypeIntrospectionSystemIT {
   @DisplayName("Type Interface Equality and ToString")
   void testTypeInterfaceEquality() {
     // Test FuncType equality
-    final FuncType func1 = createMockFuncType(
-        List.of(WasmValueType.I32, WasmValueType.F64),
-        List.of(WasmValueType.I64)
-    );
-    final FuncType func2 = createMockFuncType(
-        List.of(WasmValueType.I32, WasmValueType.F64),
-        List.of(WasmValueType.I64)
-    );
-    final FuncType func3 = createMockFuncType(
-        List.of(WasmValueType.I32),
-        List.of(WasmValueType.I64)
-    );
+    final FuncType func1 =
+        createMockFuncType(
+            List.of(WasmValueType.I32, WasmValueType.F64), List.of(WasmValueType.I64));
+    final FuncType func2 =
+        createMockFuncType(
+            List.of(WasmValueType.I32, WasmValueType.F64), List.of(WasmValueType.I64));
+    final FuncType func3 =
+        createMockFuncType(List.of(WasmValueType.I32), List.of(WasmValueType.I64));
 
     assertEquals(func1, func2);
     assertNotEquals(func1, func3);
@@ -327,162 +337,232 @@ public class TypeIntrospectionSystemIT {
   @DisplayName("Error Handling and Edge Cases")
   void testErrorHandling() {
     // Test invalid table element types
-    assertThrows(IllegalArgumentException.class, () ->
-        createMockTableType(WasmValueType.I32, 1, null));
+    assertThrows(
+        IllegalArgumentException.class, () -> createMockTableType(WasmValueType.I32, 1, null));
 
     // Test negative minimum values
-    assertThrows(IllegalArgumentException.class, () ->
-        createMockMemoryType(-1, null, false, false));
+    assertThrows(
+        IllegalArgumentException.class, () -> createMockMemoryType(-1, null, false, false));
 
-    assertThrows(IllegalArgumentException.class, () ->
-        createMockTableType(WasmValueType.FUNCREF, -1, null));
+    assertThrows(
+        IllegalArgumentException.class, () -> createMockTableType(WasmValueType.FUNCREF, -1, null));
 
     // Test maximum less than minimum
-    assertThrows(IllegalArgumentException.class, () ->
-        createMockMemoryType(10, 5L, false, false));
+    assertThrows(IllegalArgumentException.class, () -> createMockMemoryType(10, 5L, false, false));
 
-    assertThrows(IllegalArgumentException.class, () ->
-        createMockTableType(WasmValueType.FUNCREF, 10, 5L));
+    assertThrows(
+        IllegalArgumentException.class, () -> createMockTableType(WasmValueType.FUNCREF, 10, 5L));
 
     // Test null parameters in constructor-like scenarios
-    assertThrows(IllegalArgumentException.class, () ->
-        createMockFuncType(null, List.of(WasmValueType.I32)));
+    assertThrows(
+        IllegalArgumentException.class, () -> createMockFuncType(null, List.of(WasmValueType.I32)));
 
-    assertThrows(IllegalArgumentException.class, () ->
-        createMockFuncType(List.of(WasmValueType.I32), null));
+    assertThrows(
+        IllegalArgumentException.class, () -> createMockFuncType(List.of(WasmValueType.I32), null));
 
-    assertThrows(IllegalArgumentException.class, () ->
-        createMockGlobalType(null, false));
+    assertThrows(IllegalArgumentException.class, () -> createMockGlobalType(null, false));
   }
 
   // Helper methods to create mock implementations for testing
-  private FuncType createMockFuncType(final List<WasmValueType> params, final List<WasmValueType> results) {
+  private FuncType createMockFuncType(
+      final List<WasmValueType> params, final List<WasmValueType> results) {
     return new FuncType() {
       @Override
-      public List<WasmValueType> getParams() { return params; }
+      public List<WasmValueType> getParams() {
+        return params;
+      }
 
       @Override
-      public List<WasmValueType> getResults() { return results; }
+      public List<WasmValueType> getResults() {
+        return results;
+      }
 
       @Override
-      public WasmTypeKind getKind() { return WasmTypeKind.FUNCTION; }
+      public WasmTypeKind getKind() {
+        return WasmTypeKind.FUNCTION;
+      }
 
       @Override
       public boolean equals(Object obj) {
-        if (!(obj instanceof FuncType)) return false;
+        if (!(obj instanceof FuncType)) {
+          return false;
+        }
         FuncType other = (FuncType) obj;
         return params.equals(other.getParams()) && results.equals(other.getResults());
       }
 
       @Override
-      public int hashCode() { return java.util.Objects.hash(params, results); }
-
-      @Override
-      public String toString() { return String.format("FuncType{params=%s, results=%s}", params, results); }
-    };
-  }
-
-  private MemoryType createMockMemoryType(final long minimum, final Long maximum, final boolean is64Bit, final boolean isShared) {
-    if (minimum < 0) throw new IllegalArgumentException("Minimum cannot be negative");
-    if (maximum != null && maximum < minimum) throw new IllegalArgumentException("Maximum less than minimum");
-
-    return new MemoryType() {
-      @Override
-      public long getMinimum() { return minimum; }
-
-      @Override
-      public Optional<Long> getMaximum() { return Optional.ofNullable(maximum); }
-
-      @Override
-      public boolean is64Bit() { return is64Bit; }
-
-      @Override
-      public boolean isShared() { return isShared; }
-
-      @Override
-      public WasmTypeKind getKind() { return WasmTypeKind.MEMORY; }
-
-      @Override
-      public boolean equals(Object obj) {
-        if (!(obj instanceof MemoryType)) return false;
-        MemoryType other = (MemoryType) obj;
-        return minimum == other.getMinimum() && getMaximum().equals(other.getMaximum()) &&
-               is64Bit == other.is64Bit() && isShared == other.isShared();
+      public int hashCode() {
+        return java.util.Objects.hash(params, results);
       }
 
       @Override
-      public int hashCode() { return java.util.Objects.hash(minimum, getMaximum(), is64Bit, isShared); }
+      public String toString() {
+        return String.format("FuncType{params=%s, results=%s}", params, results);
+      }
+    };
+  }
+
+  private MemoryType createMockMemoryType(
+      final long minimum, final Long maximum, final boolean is64Bit, final boolean isShared) {
+    if (minimum < 0) {
+      throw new IllegalArgumentException("Minimum cannot be negative");
+    }
+    if (maximum != null && maximum < minimum) {
+      throw new IllegalArgumentException("Maximum less than minimum");
+    }
+
+    return new MemoryType() {
+      @Override
+      public long getMinimum() {
+        return minimum;
+      }
+
+      @Override
+      public Optional<Long> getMaximum() {
+        return Optional.ofNullable(maximum);
+      }
+
+      @Override
+      public boolean is64Bit() {
+        return is64Bit;
+      }
+
+      @Override
+      public boolean isShared() {
+        return isShared;
+      }
+
+      @Override
+      public WasmTypeKind getKind() {
+        return WasmTypeKind.MEMORY;
+      }
+
+      @Override
+      public boolean equals(Object obj) {
+        if (!(obj instanceof MemoryType)) {
+          return false;
+        }
+        MemoryType other = (MemoryType) obj;
+        return minimum == other.getMinimum()
+            && getMaximum().equals(other.getMaximum())
+            && is64Bit == other.is64Bit()
+            && isShared == other.isShared();
+      }
+
+      @Override
+      public int hashCode() {
+        return java.util.Objects.hash(minimum, getMaximum(), is64Bit, isShared);
+      }
 
       @Override
       public String toString() {
-        return String.format("MemoryType{min=%d, max=%s, 64bit=%b, shared=%b}",
-                           minimum, getMaximum().map(String::valueOf).orElse("unlimited"), is64Bit, isShared);
+        return String.format(
+            "MemoryType{min=%d, max=%s, 64bit=%b, shared=%b}",
+            minimum, getMaximum().map(String::valueOf).orElse("unlimited"), is64Bit, isShared);
       }
     };
   }
 
   private GlobalType createMockGlobalType(final WasmValueType valueType, final boolean isMutable) {
-    if (valueType == null) throw new IllegalArgumentException("Value type cannot be null");
+    if (valueType == null) {
+      throw new IllegalArgumentException("Value type cannot be null");
+    }
 
     return new GlobalType() {
       @Override
-      public WasmValueType getValueType() { return valueType; }
+      public WasmValueType getValueType() {
+        return valueType;
+      }
 
       @Override
-      public boolean isMutable() { return isMutable; }
+      public boolean isMutable() {
+        return isMutable;
+      }
 
       @Override
-      public WasmTypeKind getKind() { return WasmTypeKind.GLOBAL; }
+      public WasmTypeKind getKind() {
+        return WasmTypeKind.GLOBAL;
+      }
 
       @Override
       public boolean equals(Object obj) {
-        if (!(obj instanceof GlobalType)) return false;
+        if (!(obj instanceof GlobalType)) {
+          return false;
+        }
         GlobalType other = (GlobalType) obj;
         return valueType == other.getValueType() && isMutable == other.isMutable();
       }
 
       @Override
-      public int hashCode() { return java.util.Objects.hash(valueType, isMutable); }
-
-      @Override
-      public String toString() { return String.format("GlobalType{valueType=%s, mutable=%b}", valueType, isMutable); }
-    };
-  }
-
-  private TableType createMockTableType(final WasmValueType elementType, final long minimum, final Long maximum) {
-    if (elementType == null) throw new IllegalArgumentException("Element type cannot be null");
-    if (!elementType.isReference()) throw new IllegalArgumentException("Element type must be reference");
-    if (minimum < 0) throw new IllegalArgumentException("Minimum cannot be negative");
-    if (maximum != null && maximum < minimum) throw new IllegalArgumentException("Maximum less than minimum");
-
-    return new TableType() {
-      @Override
-      public WasmValueType getElementType() { return elementType; }
-
-      @Override
-      public long getMinimum() { return minimum; }
-
-      @Override
-      public Optional<Long> getMaximum() { return Optional.ofNullable(maximum); }
-
-      @Override
-      public WasmTypeKind getKind() { return WasmTypeKind.TABLE; }
-
-      @Override
-      public boolean equals(Object obj) {
-        if (!(obj instanceof TableType)) return false;
-        TableType other = (TableType) obj;
-        return elementType == other.getElementType() && minimum == other.getMinimum() &&
-               getMaximum().equals(other.getMaximum());
+      public int hashCode() {
+        return java.util.Objects.hash(valueType, isMutable);
       }
 
       @Override
-      public int hashCode() { return java.util.Objects.hash(elementType, minimum, getMaximum()); }
+      public String toString() {
+        return String.format("GlobalType{valueType=%s, mutable=%b}", valueType, isMutable);
+      }
+    };
+  }
+
+  private TableType createMockTableType(
+      final WasmValueType elementType, final long minimum, final Long maximum) {
+    if (elementType == null) {
+      throw new IllegalArgumentException("Element type cannot be null");
+    }
+    if (!elementType.isReference()) {
+      throw new IllegalArgumentException("Element type must be reference");
+    }
+    if (minimum < 0) {
+      throw new IllegalArgumentException("Minimum cannot be negative");
+    }
+    if (maximum != null && maximum < minimum) {
+      throw new IllegalArgumentException("Maximum less than minimum");
+    }
+
+    return new TableType() {
+      @Override
+      public WasmValueType getElementType() {
+        return elementType;
+      }
+
+      @Override
+      public long getMinimum() {
+        return minimum;
+      }
+
+      @Override
+      public Optional<Long> getMaximum() {
+        return Optional.ofNullable(maximum);
+      }
+
+      @Override
+      public WasmTypeKind getKind() {
+        return WasmTypeKind.TABLE;
+      }
+
+      @Override
+      public boolean equals(Object obj) {
+        if (!(obj instanceof TableType)) {
+          return false;
+        }
+        TableType other = (TableType) obj;
+        return elementType == other.getElementType()
+            && minimum == other.getMinimum()
+            && getMaximum().equals(other.getMaximum());
+      }
+
+      @Override
+      public int hashCode() {
+        return java.util.Objects.hash(elementType, minimum, getMaximum());
+      }
 
       @Override
       public String toString() {
-        return String.format("TableType{element=%s, min=%d, max=%s}",
-                           elementType, minimum, getMaximum().map(String::valueOf).orElse("unlimited"));
+        return String.format(
+            "TableType{element=%s, min=%d, max=%s}",
+            elementType, minimum, getMaximum().map(String::valueOf).orElse("unlimited"));
       }
     };
   }

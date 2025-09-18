@@ -63,8 +63,7 @@ public final class PanamaFuncType implements FuncType {
     this.arena = arena;
     this.nativeHandle = nativeHandle;
 
-    LOGGER.fine(
-        String.format("Created PanamaFuncType: params=%s, results=%s", params, results));
+    LOGGER.fine(String.format("Created PanamaFuncType: params=%s, results=%s", params, results));
   }
 
   /**
@@ -110,13 +109,16 @@ public final class PanamaFuncType implements FuncType {
     nativeGetFuncTypeInfo(nativeHandle, typeInfoSegment);
 
     // Verify counts match
-    final int actualParamCount = (int) typeInfoSegment.get(java.lang.foreign.ValueLayout.JAVA_LONG, 0);
-    final int actualResultCount = (int) typeInfoSegment.get(java.lang.foreign.ValueLayout.JAVA_LONG, 8);
+    final int actualParamCount =
+        (int) typeInfoSegment.get(java.lang.foreign.ValueLayout.JAVA_LONG, 0);
+    final int actualResultCount =
+        (int) typeInfoSegment.get(java.lang.foreign.ValueLayout.JAVA_LONG, 8);
 
     if (actualParamCount != paramCount || actualResultCount != resultCount) {
       throw new IllegalStateException(
           String.format(
-              "Function type count mismatch: expected params=%d, results=%d; got params=%d, results=%d",
+              "Function type count mismatch: expected params=%d, results=%d; got params=%d,"
+                  + " results=%d",
               paramCount, resultCount, actualParamCount, actualResultCount));
     }
 
@@ -125,13 +127,17 @@ public final class PanamaFuncType implements FuncType {
 
     // Extract parameter types
     for (int i = 0; i < paramCount; i++) {
-      final int typeCode = (int) typeInfoSegment.get(java.lang.foreign.ValueLayout.JAVA_LONG, (2 + i) * 8L);
+      final int typeCode =
+          (int) typeInfoSegment.get(java.lang.foreign.ValueLayout.JAVA_LONG, (2 + i) * 8L);
       params[i] = WasmValueType.fromNativeTypeCode(typeCode);
     }
 
     // Extract result types
     for (int i = 0; i < resultCount; i++) {
-      final int typeCode = (int) typeInfoSegment.get(java.lang.foreign.ValueLayout.JAVA_LONG, (2 + paramCount + i) * 8L);
+      final int typeCode =
+          (int)
+              typeInfoSegment.get(
+                  java.lang.foreign.ValueLayout.JAVA_LONG, (2 + paramCount + i) * 8L);
       results[i] = WasmValueType.fromNativeTypeCode(typeCode);
     }
 
@@ -200,13 +206,16 @@ public final class PanamaFuncType implements FuncType {
    * @param nativeHandle the native handle to the function type
    * @param resultBuffer the buffer to store the counts [paramCount, resultCount]
    */
-  private static native void nativeGetFuncTypeCounts(MemorySegment nativeHandle, MemorySegment resultBuffer);
+  private static native void nativeGetFuncTypeCounts(
+      MemorySegment nativeHandle, MemorySegment resultBuffer);
 
   /**
    * Native method to get function type information.
    *
    * @param nativeHandle the native handle to the function type
-   * @param resultBuffer the buffer to store the result [paramCount, resultCount, param0TypeCode, param1TypeCode, ..., result0TypeCode, result1TypeCode, ...]
+   * @param resultBuffer the buffer to store the result [paramCount, resultCount, param0TypeCode,
+   *     param1TypeCode, ..., result0TypeCode, result1TypeCode, ...]
    */
-  private static native void nativeGetFuncTypeInfo(MemorySegment nativeHandle, MemorySegment resultBuffer);
+  private static native void nativeGetFuncTypeInfo(
+      MemorySegment nativeHandle, MemorySegment resultBuffer);
 }

@@ -188,8 +188,7 @@ public final class FormattingConfiguration {
      * @return this builder instance
      */
     public Builder dateTimeFormat(final DateTimeFormat dateTimeFormat) {
-      this.dateTimeFormat =
-          Objects.requireNonNull(dateTimeFormat, "dateTimeFormat cannot be null");
+      this.dateTimeFormat = Objects.requireNonNull(dateTimeFormat, "dateTimeFormat cannot be null");
       return this;
     }
 
