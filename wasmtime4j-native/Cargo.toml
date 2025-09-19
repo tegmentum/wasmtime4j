@@ -62,6 +62,8 @@ wide = { version = "0.7", optional = true }
 
 # Async utilities
 futures = "0.3"
+tokio-stream = "0.1"
+num_cpus = "1.16"
 
 # Network programming utilities
 socket2 = "0.5"

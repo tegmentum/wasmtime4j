@@ -21,6 +21,7 @@ use crate::memory::Memory as WasmMemory;
 use crate::table::Table as WasmTable;
 use crate::global::Global as WasmGlobal;
 use crate::error::{WasmtimeError, WasmtimeResult};
+use crate::wasi::WasiConfig;
 
 /// Thread-safe wrapper around Wasmtime linker with comprehensive host binding support
 #[derive(Debug)]
@@ -347,6 +348,156 @@ impl Linker {
         }
 
         Ok(())
+    }
+
+    /// Defines WASI support with specific configuration
+    ///
+    /// # Arguments
+    /// * `config` - The WASI configuration to use
+    ///
+    /// # Errors
+    /// Returns WasmtimeError if WASI cannot be defined with the given configuration
+    pub fn define_wasi(&mut self, config: &WasiConfig) -> WasmtimeResult<()> {
+        if self.metadata.disposed {
+            return Err(WasmtimeError::Runtime {
+                message: "Linker has been disposed".to_string(),
+                backtrace: None
+            });
+        }
+
+        let mut linker = self.inner.lock()
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Failed to lock linker: {}", e),
+                backtrace: None
+            })?;
+
+        #[cfg(feature = "wasi")]
+        {
+            // For now, enable WASI with the provided config
+            // This would be extended to actually configure WASI based on the config
+            self.metadata.wasi_enabled = true;
+            log::debug!("WASI support defined with configuration");
+        }
+
+        #[cfg(not(feature = "wasi"))]
+        {
+            return Err(WasmtimeError::Runtime {
+                message: "WASI support not compiled in".to_string(),
+                backtrace: None
+            });
+        }
+
+        Ok(())
+    }
+
+    /// Defines a WebAssembly function in the linker
+    ///
+    /// # Arguments
+    /// * `module_name` - The module name for the import
+    /// * `function_name` - The function name for the import
+    /// * `function` - The WebAssembly function to provide
+    ///
+    /// # Errors
+    /// Returns WasmtimeError if the function cannot be defined
+    pub fn define_function(
+        &mut self,
+        module_name: &str,
+        function_name: &str,
+        function: wasmtime::Func,
+    ) -> WasmtimeResult<()> {
+        if self.metadata.disposed {
+            return Err(WasmtimeError::Runtime {
+                message: "Linker has been disposed".to_string(),
+                backtrace: None
+            });
+        }
+
+        let mut linker = self.inner.lock()
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Failed to lock linker: {}", e),
+                backtrace: None
+            })?;
+
+        linker.define(module_name, function_name, function)
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Failed to define function: {}", e),
+                backtrace: None
+            })?;
+
+        self.metadata.import_count += 1;
+        log::debug!("Defined function {}::{}", module_name, function_name);
+        Ok(())
+    }
+
+    /// Creates an alias for a module instance in the linker namespace
+    ///
+    /// # Arguments
+    /// * `name` - The module name to assign to the instance
+    /// * `instance` - The instance whose exports should be aliased
+    ///
+    /// # Errors
+    /// Returns WasmtimeError if the alias cannot be created
+    pub fn alias_module(
+        &mut self,
+        name: &str,
+        instance: &Instance,
+    ) -> WasmtimeResult<()> {
+        if self.metadata.disposed {
+            return Err(WasmtimeError::Runtime {
+                message: "Linker has been disposed".to_string(),
+                backtrace: None
+            });
+        }
+
+        let mut linker = self.inner.lock()
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Failed to lock linker: {}", e),
+                backtrace: None
+            })?;
+
+        let wasmtime_instance = instance.inner()
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Instance not available: {}", e),
+                backtrace: None
+            })?;
+
+        linker.instance(name, &wasmtime_instance)
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Failed to alias module: {}", e),
+                backtrace: None
+            })?;
+
+        self.metadata.import_count += 1;
+        log::debug!("Aliased module instance as '{}'", name);
+        Ok(())
+    }
+
+    /// Instantiates a module asynchronously using this linker
+    pub async fn instantiate_async(
+        &self,
+        store: &mut crate::store::Store,
+        module: &crate::module::Module,
+    ) -> WasmtimeResult<Instance> {
+        // For now, implement as a wrapped sync call
+        // This would be improved to use actual async instantiation in the future
+        tokio::task::spawn_blocking({
+            let linker = self.inner.clone();
+            let store_ref = store as *mut _ as usize;
+            let module_ref = module as *const _ as usize;
+
+            move || {
+                // This is a simplified implementation - proper async would require more sophisticated handling
+                // For now, we just delegate to the sync method
+                // In a full implementation, this would use wasmtime's async capabilities
+                Err(WasmtimeError::Runtime {
+                    message: "Async instantiation not yet implemented".to_string(),
+                    backtrace: None
+                })
+            }
+        }).await.map_err(|e| WasmtimeError::Runtime {
+            message: format!("Async instantiation failed: {}", e),
+            backtrace: None
+        })?
     }
 
     /// Defines a table in the linker

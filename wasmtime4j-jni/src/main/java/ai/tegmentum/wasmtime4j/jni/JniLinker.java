@@ -7,10 +7,12 @@ import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Linker;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
+import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmGlobal;
 import ai.tegmentum.wasmtime4j.WasmMemory;
 import ai.tegmentum.wasmtime4j.WasmTable;
 import ai.tegmentum.wasmtime4j.WasmValueType;
+import ai.tegmentum.wasmtime4j.wasi.WasiConfig;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
@@ -342,6 +344,134 @@ public final class JniLinker extends JniResource implements Linker {
   }
 
   @Override
+  public void define(final String module, final String name, final WasmFunction function)
+      throws WasmException {
+    JniValidation.requireNonBlank(module, "module");
+    JniValidation.requireNonBlank(name, "name");
+    JniValidation.requireNonNull(function, "function");
+    ensureNotClosed();
+
+    try {
+      if (!(function instanceof JniFunction)) {
+        throw new IllegalArgumentException("Function must be a JNI function instance");
+      }
+
+      final JniFunction jniFunction = (JniFunction) function;
+      final boolean success = nativeDefineFunction(
+          getNativeHandle(),
+          module,
+          name,
+          jniFunction.getNativeHandle()
+      );
+
+      if (!success) {
+        throw new WasmException("Failed to define function: " + module + "::" + name);
+      }
+
+      LOGGER.fine("Defined function " + module + "::" + name);
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new WasmException("Unexpected error defining function: " + e.getMessage(), e);
+    }
+  }
+
+  @Override
+  public void defineHostFunction(final String module, final String name, final HostFunction function)
+      throws WasmException {
+    JniValidation.requireNonBlank(module, "module");
+    JniValidation.requireNonBlank(name, "name");
+    JniValidation.requireNonNull(function, "function");
+    ensureNotClosed();
+
+    try {
+      // Create host function wrapper
+      final JniHostFunction jniHostFunction = new JniHostFunction(function);
+
+      final boolean success = nativeDefineHostFunctionSimple(
+          getNativeHandle(),
+          module,
+          name,
+          jniHostFunction.getNativeHandle()
+      );
+
+      if (!success) {
+        throw new WasmException("Failed to define host function: " + module + "::" + name);
+      }
+
+      LOGGER.fine("Defined host function " + module + "::" + name);
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new WasmException("Unexpected error defining host function: " + e.getMessage(), e);
+    }
+  }
+
+  @Override
+  public void defineWasi(final WasiConfig config) throws WasmException {
+    JniValidation.requireNonNull(config, "config");
+    ensureNotClosed();
+
+    try {
+      // For now, delegate to enableWasi - full WASI config support would be added later
+      final boolean success = nativeDefineWasi(getNativeHandle(), 0); // placeholder config handle
+      if (!success) {
+        throw new WasmException("Failed to define WASI with configuration");
+      }
+
+      LOGGER.fine("WASI support defined with configuration");
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new WasmException("Unexpected error defining WASI: " + e.getMessage(), e);
+    }
+  }
+
+  @Override
+  public java.util.concurrent.CompletableFuture<Instance> instantiateAsync(final Store store, final Module module) {
+    JniValidation.requireNonNull(store, "store");
+    JniValidation.requireNonNull(module, "module");
+
+    return java.util.concurrent.CompletableFuture.supplyAsync(() -> {
+      try {
+        return instantiate(store, module);
+      } catch (final WasmException e) {
+        throw new RuntimeException(e);
+      }
+    });
+  }
+
+  @Override
+  public void aliasModule(final String name, final Instance instance) throws WasmException {
+    JniValidation.requireNonBlank(name, "name");
+    JniValidation.requireNonNull(instance, "instance");
+    ensureNotClosed();
+
+    try {
+      if (!(instance instanceof JniInstance)) {
+        throw new IllegalArgumentException("Instance must be a JNI instance");
+      }
+
+      final JniInstance jniInstance = (JniInstance) instance;
+      final boolean success = nativeAliasModule(
+          getNativeHandle(),
+          name,
+          jniInstance.getNativeHandle()
+      );
+
+      if (!success) {
+        throw new WasmException("Failed to alias module: " + name);
+      }
+
+      LOGGER.fine("Aliased module as '" + name + "'");
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new WasmException("Unexpected error aliasing module: " + e.getMessage(), e);
+    }
+  }
+
+  @Override
   public void enableWasi() throws WasmException {
     ensureNotClosed();
 
@@ -554,6 +684,60 @@ public final class JniLinker extends JniResource implements Linker {
    * @return true if successful, false otherwise
    */
   private static native boolean nativeEnableWasi(final long linkerHandle);
+
+  /**
+   * Defines a WebAssembly function in the native linker.
+   *
+   * @param linkerHandle the native linker handle
+   * @param moduleName the module name for the import
+   * @param functionName the function name for the import
+   * @param functionHandle the native function handle
+   * @return true if successful, false otherwise
+   */
+  private static native boolean nativeDefineFunction(
+      final long linkerHandle,
+      final String moduleName,
+      final String functionName,
+      final long functionHandle);
+
+  /**
+   * Defines a host function in the native linker (simple version without type specification).
+   *
+   * @param linkerHandle the native linker handle
+   * @param moduleName the module name for the import
+   * @param functionName the function name for the import
+   * @param hostFunctionHandle the native host function handle
+   * @return true if successful, false otherwise
+   */
+  private static native boolean nativeDefineHostFunctionSimple(
+      final long linkerHandle,
+      final String moduleName,
+      final String functionName,
+      final long hostFunctionHandle);
+
+  /**
+   * Defines WASI support with configuration in the native linker.
+   *
+   * @param linkerHandle the native linker handle
+   * @param configHandle the native WASI config handle (0 for default)
+   * @return true if successful, false otherwise
+   */
+  private static native boolean nativeDefineWasi(
+      final long linkerHandle,
+      final long configHandle);
+
+  /**
+   * Creates an alias for a module instance in the native linker.
+   *
+   * @param linkerHandle the native linker handle
+   * @param moduleName the module name for the alias
+   * @param instanceHandle the native instance handle
+   * @return true if successful, false otherwise
+   */
+  private static native boolean nativeAliasModule(
+      final long linkerHandle,
+      final String moduleName,
+      final long instanceHandle);
 
   /**
    * Destroys the native linker.

@@ -56,6 +56,9 @@ pub mod wasi_advanced;
 pub mod performance;
 pub mod bulk_operations;
 
+// Async runtime support
+pub mod async_runtime;
+
 // Type introspection system
 pub mod type_introspection;
 
@@ -126,6 +129,11 @@ pub use performance::{
 pub use bulk_operations::{
     MemoryBulkOperations, TableBulkOperations, BulkMemoryOperation, BulkTableOperation,
     MemoryOperationParams, TableOperationParams, BulkOperationResult
+};
+
+// Re-export async runtime types
+pub use async_runtime::{
+    AsyncWasmtimeRuntime, ModuleSource, BatchOptions, BatchCompilationResult, AsyncRuntimeStatistics
 };
 
 /// Library version information

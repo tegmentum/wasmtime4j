@@ -23,10 +23,12 @@ import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Linker;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
+import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmGlobal;
 import ai.tegmentum.wasmtime4j.WasmMemory;
 import ai.tegmentum.wasmtime4j.WasmTable;
 import ai.tegmentum.wasmtime4j.WasmValueType;
+import ai.tegmentum.wasmtime4j.wasi.WasiConfig;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaExceptionMapper;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaMemoryManager;
@@ -74,14 +76,18 @@ public final class PanamaLinker implements Linker, AutoCloseable {
 
   // Method handles for native functions (will be initialized from native library)
   private static final MethodHandle CREATE_LINKER;
+  private static final MethodHandle DEFINE_FUNCTION;
   private static final MethodHandle DEFINE_HOST_FUNCTION;
+  private static final MethodHandle DEFINE_HOST_FUNCTION_SIMPLE;
   private static final MethodHandle DEFINE_MEMORY;
   private static final MethodHandle DEFINE_TABLE;
   private static final MethodHandle DEFINE_GLOBAL;
   private static final MethodHandle DEFINE_INSTANCE;
   private static final MethodHandle CREATE_ALIAS;
+  private static final MethodHandle ALIAS_MODULE;
   private static final MethodHandle INSTANTIATE;
   private static final MethodHandle ENABLE_WASI;
+  private static final MethodHandle DEFINE_WASI;
   private static final MethodHandle DESTROY_LINKER;
 
   static {
@@ -90,6 +96,9 @@ public final class PanamaLinker implements Linker, AutoCloseable {
     try {
       CREATE_LINKER = PanamaNativeLibrary.findFunction("wasmtime4j_linker_create",
           FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+      DEFINE_FUNCTION = PanamaNativeLibrary.findFunction("wasmtime4j_linker_define_function",
+          FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN,
+              ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
       DEFINE_HOST_FUNCTION = PanamaNativeLibrary.findFunction("wasmtime4j_linker_define_host_function",
           FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN,
               ValueLayout.ADDRESS, // linker
@@ -100,6 +109,9 @@ public final class PanamaLinker implements Linker, AutoCloseable {
               ValueLayout.ADDRESS, // return_types
               ValueLayout.JAVA_INT, // return_count
               ValueLayout.ADDRESS)); // host_function
+      DEFINE_HOST_FUNCTION_SIMPLE = PanamaNativeLibrary.findFunction("wasmtime4j_linker_define_host_function_simple",
+          FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN,
+              ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
       DEFINE_MEMORY = PanamaNativeLibrary.findFunction("wasmtime4j_linker_define_memory",
           FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN,
               ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
@@ -116,11 +128,16 @@ public final class PanamaLinker implements Linker, AutoCloseable {
           FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN,
               ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS,
               ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+      ALIAS_MODULE = PanamaNativeLibrary.findFunction("wasmtime4j_linker_alias_module",
+          FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN,
+              ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
       INSTANTIATE = PanamaNativeLibrary.findFunction("wasmtime4j_linker_instantiate",
           FunctionDescriptor.of(ValueLayout.ADDRESS,
               ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
       ENABLE_WASI = PanamaNativeLibrary.findFunction("wasmtime4j_linker_enable_wasi",
           FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN, ValueLayout.ADDRESS));
+      DEFINE_WASI = PanamaNativeLibrary.findFunction("wasmtime4j_linker_define_wasi",
+          FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
       DESTROY_LINKER = PanamaNativeLibrary.findFunction("wasmtime4j_linker_destroy",
           FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
     } catch (final Exception e) {
@@ -471,6 +488,142 @@ public final class PanamaLinker implements Linker, AutoCloseable {
       // If we can't register the instance, still return it but close it
       instance.close();
       throw e;
+    }
+  }
+
+  @Override
+  public void define(final String module, final String name, final WasmFunction function)
+      throws WasmException {
+    PanamaValidation.requireNonBlank(module, "module");
+    PanamaValidation.requireNonBlank(name, "name");
+    PanamaValidation.requireNonNull(function, "function");
+    ensureNotClosed();
+
+    try {
+      if (!(function instanceof PanamaFunction)) {
+        throw new IllegalArgumentException("Function must be a Panama function instance");
+      }
+
+      final PanamaFunction panamaFunction = (PanamaFunction) function;
+      final MemorySegment moduleSegment = memoryManager.allocateString(module);
+      final MemorySegment nameSegment = memoryManager.allocateString(name);
+      final MemorySegment functionHandle = panamaFunction.getHandle();
+
+      final boolean success = (boolean) DEFINE_FUNCTION.invokeExact(
+          linkerHandle,
+          moduleSegment,
+          nameSegment,
+          functionHandle
+      );
+
+      if (!success) {
+        throw new WasmException("Failed to define function: " + module + "::" + name);
+      }
+
+      LOGGER.fine("Defined function " + module + "::" + name);
+    } catch (final WasmException e) {
+      throw e;
+    } catch (final Throwable e) {
+      throw PanamaExceptionMapper.mapException(e);
+    }
+  }
+
+  @Override
+  public void defineHostFunction(final String module, final String name, final HostFunction function)
+      throws WasmException {
+    PanamaValidation.requireNonBlank(module, "module");
+    PanamaValidation.requireNonBlank(name, "name");
+    PanamaValidation.requireNonNull(function, "function");
+    ensureNotClosed();
+
+    try {
+      final MemorySegment moduleSegment = memoryManager.allocateString(module);
+      final MemorySegment nameSegment = memoryManager.allocateString(name);
+      final MemorySegment hostFunctionHandle = createHostFunction(function, null);
+
+      final boolean success = (boolean) DEFINE_HOST_FUNCTION_SIMPLE.invokeExact(
+          linkerHandle,
+          moduleSegment,
+          nameSegment,
+          hostFunctionHandle
+      );
+
+      if (!success) {
+        throw new WasmException("Failed to define host function: " + module + "::" + name);
+      }
+
+      LOGGER.fine("Defined host function " + module + "::" + name);
+    } catch (final WasmException e) {
+      throw e;
+    } catch (final Throwable e) {
+      throw PanamaExceptionMapper.mapException(e);
+    }
+  }
+
+  @Override
+  public void defineWasi(final WasiConfig config) throws WasmException {
+    PanamaValidation.requireNonNull(config, "config");
+    ensureNotClosed();
+
+    try {
+      // For now, pass NULL as config handle - full WASI config support would be added later
+      final boolean success = (boolean) DEFINE_WASI.invokeExact(linkerHandle, MemorySegment.NULL);
+      if (!success) {
+        throw new WasmException("Failed to define WASI with configuration");
+      }
+
+      LOGGER.fine("WASI support defined with configuration");
+    } catch (final WasmException e) {
+      throw e;
+    } catch (final Throwable e) {
+      throw PanamaExceptionMapper.mapException(e);
+    }
+  }
+
+  @Override
+  public java.util.concurrent.CompletableFuture<Instance> instantiateAsync(final Store store, final Module module) {
+    PanamaValidation.requireNonNull(store, "store");
+    PanamaValidation.requireNonNull(module, "module");
+
+    return java.util.concurrent.CompletableFuture.supplyAsync(() -> {
+      try {
+        return instantiate(store, module);
+      } catch (final WasmException e) {
+        throw new RuntimeException(e);
+      }
+    });
+  }
+
+  @Override
+  public void aliasModule(final String name, final Instance instance) throws WasmException {
+    PanamaValidation.requireNonBlank(name, "name");
+    PanamaValidation.requireNonNull(instance, "instance");
+    ensureNotClosed();
+
+    try {
+      if (!(instance instanceof PanamaInstance)) {
+        throw new IllegalArgumentException("Instance must be a Panama instance");
+      }
+
+      final PanamaInstance panamaInstance = (PanamaInstance) instance;
+      final MemorySegment nameSegment = memoryManager.allocateString(name);
+      final MemorySegment instanceHandle = panamaInstance.getHandle();
+
+      final boolean success = (boolean) ALIAS_MODULE.invokeExact(
+          linkerHandle,
+          nameSegment,
+          instanceHandle
+      );
+
+      if (!success) {
+        throw new WasmException("Failed to alias module: " + name);
+      }
+
+      LOGGER.fine("Aliased module as '" + name + "'");
+    } catch (final WasmException e) {
+      throw e;
+    } catch (final Throwable e) {
+      throw PanamaExceptionMapper.mapException(e);
     }
   }
 

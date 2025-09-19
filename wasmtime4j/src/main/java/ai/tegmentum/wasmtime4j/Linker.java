@@ -2,7 +2,9 @@ package ai.tegmentum.wasmtime4j;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
+import ai.tegmentum.wasmtime4j.wasi.WasiConfig;
 import java.io.Closeable;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * WebAssembly linker interface for defining host functions and resolving imports.
@@ -27,6 +29,21 @@ import java.io.Closeable;
 public interface Linker extends Closeable {
 
   /**
+   * Defines a WebAssembly function that can be imported by WebAssembly modules.
+   *
+   * <p>The function will be available to any module instantiated through this linker that imports
+   * a function with the specified module and name. The function type must match exactly.
+   *
+   * @param module the module name for the import (e.g., "env")
+   * @param name the function name for the import
+   * @param function the WebAssembly function to provide
+   * @throws WasmException if the function cannot be defined
+   * @throws IllegalArgumentException if any parameter is null
+   */
+  void define(final String module, final String name, final WasmFunction function)
+      throws WasmException;
+
+  /**
    * Defines a host function that can be imported by WebAssembly modules.
    *
    * <p>The function will be available to any module instantiated through this linker that imports
@@ -44,6 +61,21 @@ public interface Linker extends Closeable {
       final String name,
       final FunctionType functionType,
       final HostFunction implementation)
+      throws WasmException;
+
+  /**
+   * Defines a host function that can be imported by WebAssembly modules.
+   *
+   * <p>This is a simplified version that infers the function type from the HostFunction
+   * implementation. The function will be available to any module instantiated through this linker.
+   *
+   * @param module the module name for the import (e.g., "env")
+   * @param name the function name for the import
+   * @param function the Java implementation of the host function
+   * @throws WasmException if the function cannot be defined
+   * @throws IllegalArgumentException if any parameter is null
+   */
+  void defineHostFunction(final String module, final String name, final HostFunction function)
       throws WasmException;
 
   /**
@@ -120,6 +152,19 @@ public interface Linker extends Closeable {
       throws WasmException;
 
   /**
+   * Creates an alias for a module instance in the linker namespace.
+   *
+   * <p>This makes all exports from the instance available under the specified module name,
+   * enabling module-to-module linking scenarios.
+   *
+   * @param name the module name to assign to the instance
+   * @param instance the instance whose exports should be aliased
+   * @throws WasmException if the alias cannot be created
+   * @throws IllegalArgumentException if any parameter is null
+   */
+  void aliasModule(final String name, final Instance instance) throws WasmException;
+
+  /**
    * Instantiates a WebAssembly module using this linker to resolve imports.
    *
    * <p>The linker will provide all defined functions, memories, tables, and globals to satisfy
@@ -132,6 +177,19 @@ public interface Linker extends Closeable {
    * @throws IllegalArgumentException if store or module is null
    */
   Instance instantiate(final Store store, final Module module) throws WasmException;
+
+  /**
+   * Instantiates a WebAssembly module asynchronously using this linker to resolve imports.
+   *
+   * <p>This method performs instantiation asynchronously and returns a CompletableFuture
+   * that will complete with the instance or complete exceptionally if instantiation fails.
+   *
+   * @param store the store to instantiate the module in
+   * @param module the compiled module to instantiate
+   * @return a CompletableFuture that will complete with the instantiated module
+   * @throws IllegalArgumentException if store or module is null
+   */
+  CompletableFuture<Instance> instantiateAsync(final Store store, final Module module);
 
   /**
    * Instantiates a WebAssembly module with a specific name in the linker namespace.
@@ -158,6 +216,19 @@ public interface Linker extends Closeable {
    * @throws WasmException if WASI cannot be enabled
    */
   void enableWasi() throws WasmException;
+
+  /**
+   * Defines WASI (WebAssembly System Interface) support with specific configuration.
+   *
+   * <p>This automatically defines all WASI functions that modules can import, providing
+   * system interface capabilities like file I/O, environment access, and process control
+   * using the specified configuration.
+   *
+   * @param config the WASI configuration to use
+   * @throws WasmException if WASI cannot be defined
+   * @throws IllegalArgumentException if config is null
+   */
+  void defineWasi(final WasiConfig config) throws WasmException;
 
   /**
    * Gets the engine associated with this linker.
