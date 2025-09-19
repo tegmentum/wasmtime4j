@@ -1215,8 +1215,7 @@ mod tests {
 /// JNI bridge functions for Java integration - Simple stub implementations
 /// These are basic stubs that allow compilation and basic functionality
 
-
-
+#[cfg(feature = "jni-bindings")]
 /// Get random bytes using direct ByteBuffer
 #[no_mangle]
 pub unsafe extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiRandomOperations_nativeGetRandomBytesDirect(
@@ -1231,7 +1230,8 @@ pub unsafe extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiRandomOp
     0
 }
 
-/// Get random bytes using byte array  
+/// Get random bytes using byte array
+#[cfg(feature = "jni-bindings")]
 #[no_mangle]
 pub unsafe extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiRandomOperations_nativeGetRandomBytesArray(
     _env: *mut jni::sys::JNIEnv,
@@ -1244,6 +1244,7 @@ pub unsafe extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiRandomOp
 }
 
 /// Get clock resolution
+#[cfg(feature = "jni-bindings")]
 #[no_mangle]
 pub unsafe extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiTimeOperations_nativeGetClockResolution(
     _env: *mut jni::sys::JNIEnv,
@@ -1262,6 +1263,7 @@ pub unsafe extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiTimeOper
 }
 
 /// Get current time
+#[cfg(feature = "jni-bindings")]
 #[no_mangle]
 pub unsafe extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiTimeOperations_nativeGetCurrentTime(
     _env: *mut jni::sys::JNIEnv,

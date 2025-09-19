@@ -19,6 +19,7 @@ use std::sync::Condvar;
 use tokio::task::JoinHandle;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use futures::future::Future;
+use sha2::Digest;
 use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::wasi::{WasiContext, WasiConfig};
 
@@ -458,14 +459,14 @@ impl WasiAdvancedContext {
 
     /// Accept a TCP connection
     pub async fn accept_tcp_connection(&self, socket_id: u32) -> WasmtimeResult<u32> {
-        let listener = {
+        let listener: Arc<tokio::net::TcpListener> = {
             let connections = self.network_manager.active_connections.lock()
                 .map_err(|_| WasmtimeError::Concurrency {
                     message: "Failed to acquire connections lock".to_string(),
                 })?;
 
             match connections.get(&socket_id) {
-                Some(NetworkConnection::TcpListener { listener, .. }) => Arc::clone(listener),
+                Some(NetworkConnection::TcpListener { listener, .. }) => Arc::clone(&listener),
                 _ => return Err(WasmtimeError::Wasi {
                     message: "Invalid TCP listener socket ID".to_string(),
                 }),

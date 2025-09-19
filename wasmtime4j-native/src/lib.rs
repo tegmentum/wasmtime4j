@@ -119,13 +119,13 @@ pub use shared_ffi::{
 // Re-export performance monitoring types
 pub use performance::{
     PerformanceSystem, PerformanceTimer, FunctionCallStats, MemoryStats,
-    CompilationStats, EngineStats, FeatureSupport, BulkOperationResult
+    CompilationStats, EngineStats, FeatureSupport
 };
 
 // Re-export bulk operations types
 pub use bulk_operations::{
     MemoryBulkOperations, TableBulkOperations, BulkMemoryOperation, BulkTableOperation,
-    MemoryOperationParams, TableOperationParams
+    MemoryOperationParams, TableOperationParams, BulkOperationResult
 };
 
 /// Library version information
