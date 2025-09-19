@@ -51,6 +51,9 @@ pub mod panama_ffi;
 // Advanced modules - will be implemented in later tasks
 pub mod wasi;
 
+// Async runtime for async WebAssembly operations
+pub mod async_runtime;
+
 // Type introspection system
 pub mod type_introspection;
 
@@ -89,6 +92,16 @@ pub use type_introspection::{
     IntrospectionValueType, MemoryTypeInfo, TableTypeInfo, GlobalTypeInfo, FuncTypeInfo,
     TypeKind, ImportDescriptorInfo, ExportDescriptorInfo,
     ModuleTypeIntrospector, InstanceTypeIntrospector
+};
+
+// Re-export async runtime types for async WebAssembly operations
+pub use async_runtime::{
+    AsyncOperation, AsyncOperationType, AsyncOperationStatus,
+    AsyncFunctionCallContext, AsyncCompilationContext, CompilationOptions,
+    AsyncCallback, ProgressCallback,
+    get_async_runtime, get_runtime_handle,
+    execute_async_function_call, compile_module_async,
+    cancel_async_operation, get_operation_status, wait_for_operation
 };
 
 // Re-export shared FFI utilities for interface implementations
