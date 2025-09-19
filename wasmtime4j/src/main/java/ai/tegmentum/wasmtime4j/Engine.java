@@ -59,6 +59,13 @@ public interface Engine extends Closeable {
   EngineConfig getConfig();
 
   /**
+   * Gets runtime statistics for this engine.
+   *
+   * @return the engine statistics
+   */
+  EngineStatistics getStatistics();
+
+  /**
    * Checks if the engine is still valid and usable.
    *
    * @return true if the engine is valid, false otherwise

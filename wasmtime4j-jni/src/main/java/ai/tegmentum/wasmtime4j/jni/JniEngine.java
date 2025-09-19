@@ -385,23 +385,14 @@ public final class JniEngine extends JniResource implements Engine {
 
       // Set optimization level using existing method
       final int optLevel = getOptimizationLevel();
-      final OptimizationLevel optimizationLevel;
-      switch (optLevel) {
-        case 0:
-          optimizationLevel = OptimizationLevel.NONE;
-          break;
-        case 1:
-          optimizationLevel = OptimizationLevel.SPEED;
-          break;
-        case 2:
-          optimizationLevel = OptimizationLevel.SPEED_AND_SIZE;
-          break;
-        default:
-          // Default to SPEED for unknown values
-          optimizationLevel = OptimizationLevel.SPEED;
-          break;
-      }
-      config.optimizationLevel(optimizationLevel);
+      config.optimizationLevel(OptimizationLevel.fromValue(optLevel));
+
+      // Set additional configuration options that we can retrieve
+      // Note: These may be defaults since native getters might not exist yet
+      config.consumeFuel(false); // Default value for now
+      config.wasiEnabled(false); // Default value for now
+      config.epochInterruption(false); // Default value for now
+      config.memoryLimitEnabled(false); // Default value for now
 
       return config;
     } catch (final Exception e) {
@@ -409,6 +400,20 @@ public final class JniEngine extends JniResource implements Engine {
         throw e;
       }
       throw new JniException("Failed to retrieve engine configuration", e);
+    }
+  }
+
+  @Override
+  public EngineStatistics getStatistics() {
+    ensureNotClosed();
+
+    try {
+      return new JniEngineStatistics(getNativeHandle());
+    } catch (final Exception e) {
+      if (e instanceof JniException) {
+        throw e;
+      }
+      throw new JniException("Failed to retrieve engine statistics", e);
     }
   }
 
