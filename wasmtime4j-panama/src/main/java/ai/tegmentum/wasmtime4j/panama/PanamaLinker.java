@@ -28,16 +28,18 @@ import ai.tegmentum.wasmtime4j.WasmGlobal;
 import ai.tegmentum.wasmtime4j.WasmMemory;
 import ai.tegmentum.wasmtime4j.WasmTable;
 import ai.tegmentum.wasmtime4j.WasmValueType;
-import ai.tegmentum.wasmtime4j.wasi.WasiConfig;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaExceptionMapper;
-import ai.tegmentum.wasmtime4j.panama.util.PanamaMemoryManager;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
+import ai.tegmentum.wasmtime4j.wasi.WasiConfig;
 import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
+import java.lang.foreign.Linker;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
@@ -71,9 +73,6 @@ public final class PanamaLinker implements Linker, AutoCloseable {
   /** Flag to track if this linker has been closed. */
   private final AtomicBoolean closed = new AtomicBoolean(false);
 
-  /** Memory manager for optimized FFI operations. */
-  private final PanamaMemoryManager memoryManager;
-
   // Method handles for native functions (will be initialized from native library)
   private static final MethodHandle CREATE_LINKER;
   private static final MethodHandle DEFINE_FUNCTION;
@@ -91,15 +90,16 @@ public final class PanamaLinker implements Linker, AutoCloseable {
   private static final MethodHandle DESTROY_LINKER;
 
   static {
-    // Initialize method handles - these would be loaded from the native library
-    // For now, we'll use placeholder implementations
+    // Initialize method handles using the NativeFunctionBindings system
     try {
-      CREATE_LINKER = PanamaNativeLibrary.findFunction("wasmtime4j_linker_create",
+      final NativeFunctionBindings bindings = NativeFunctionBindings.getInstance();
+
+      CREATE_LINKER = bindings.getFunction("wasmtime4j_linker_create",
           FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-      DEFINE_FUNCTION = PanamaNativeLibrary.findFunction("wasmtime4j_linker_define_function",
+      DEFINE_FUNCTION = bindings.getFunction("wasmtime4j_linker_define_function",
           FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN,
               ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-      DEFINE_HOST_FUNCTION = PanamaNativeLibrary.findFunction("wasmtime4j_linker_define_host_function",
+      DEFINE_HOST_FUNCTION = bindings.getFunction("wasmtime4j_linker_define_host_function",
           FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN,
               ValueLayout.ADDRESS, // linker
               ValueLayout.ADDRESS, // module_name
@@ -109,36 +109,36 @@ public final class PanamaLinker implements Linker, AutoCloseable {
               ValueLayout.ADDRESS, // return_types
               ValueLayout.JAVA_INT, // return_count
               ValueLayout.ADDRESS)); // host_function
-      DEFINE_HOST_FUNCTION_SIMPLE = PanamaNativeLibrary.findFunction("wasmtime4j_linker_define_host_function_simple",
+      DEFINE_HOST_FUNCTION_SIMPLE = bindings.getFunction("wasmtime4j_linker_define_host_function_simple",
           FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN,
               ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-      DEFINE_MEMORY = PanamaNativeLibrary.findFunction("wasmtime4j_linker_define_memory",
+      DEFINE_MEMORY = bindings.getFunction("wasmtime4j_linker_define_memory",
           FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN,
               ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-      DEFINE_TABLE = PanamaNativeLibrary.findFunction("wasmtime4j_linker_define_table",
+      DEFINE_TABLE = bindings.getFunction("wasmtime4j_linker_define_table",
           FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN,
               ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-      DEFINE_GLOBAL = PanamaNativeLibrary.findFunction("wasmtime4j_linker_define_global",
+      DEFINE_GLOBAL = bindings.getFunction("wasmtime4j_linker_define_global",
           FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN,
               ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-      DEFINE_INSTANCE = PanamaNativeLibrary.findFunction("wasmtime4j_linker_define_instance",
+      DEFINE_INSTANCE = bindings.getFunction("wasmtime4j_linker_define_instance",
           FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN,
               ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-      CREATE_ALIAS = PanamaNativeLibrary.findFunction("wasmtime4j_linker_alias",
+      CREATE_ALIAS = bindings.getFunction("wasmtime4j_linker_alias",
           FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN,
               ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS,
               ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-      ALIAS_MODULE = PanamaNativeLibrary.findFunction("wasmtime4j_linker_alias_module",
+      ALIAS_MODULE = bindings.getFunction("wasmtime4j_linker_alias_module",
           FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN,
               ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-      INSTANTIATE = PanamaNativeLibrary.findFunction("wasmtime4j_linker_instantiate",
+      INSTANTIATE = bindings.getFunction("wasmtime4j_linker_instantiate",
           FunctionDescriptor.of(ValueLayout.ADDRESS,
               ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-      ENABLE_WASI = PanamaNativeLibrary.findFunction("wasmtime4j_linker_enable_wasi",
+      ENABLE_WASI = bindings.getFunction("wasmtime4j_linker_enable_wasi",
           FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN, ValueLayout.ADDRESS));
-      DEFINE_WASI = PanamaNativeLibrary.findFunction("wasmtime4j_linker_define_wasi",
+      DEFINE_WASI = bindings.getFunction("wasmtime4j_linker_define_wasi",
           FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-      DESTROY_LINKER = PanamaNativeLibrary.findFunction("wasmtime4j_linker_destroy",
+      DESTROY_LINKER = bindings.getFunction("wasmtime4j_linker_destroy",
           FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
     } catch (final Exception e) {
       throw new ExceptionInInitializerError("Failed to initialize Panama linker: " + e.getMessage());
@@ -165,7 +165,6 @@ public final class PanamaLinker implements Linker, AutoCloseable {
     this.linkerHandle = linkerHandle;
     this.arena = arena;
     this.engine = engine;
-    this.memoryManager = new PanamaMemoryManager(arena);
 
     LOGGER.fine("Created Panama linker with handle: " + linkerHandle);
   }
@@ -186,7 +185,8 @@ public final class PanamaLinker implements Linker, AutoCloseable {
     }
 
     final PanamaEngine panamaEngine = (PanamaEngine) engine;
-    final Arena arena = Arena.ofConfined();
+    // Use shared arena for linker lifetime - this lives as long as the linker instance
+    final Arena arena = Arena.ofShared();
 
     try {
       final MemorySegment engineHandle = panamaEngine.getHandle();
@@ -220,19 +220,21 @@ public final class PanamaLinker implements Linker, AutoCloseable {
     PanamaValidation.requireNonNull(implementation, "implementation");
     ensureNotClosed();
 
-    try {
-      // Convert strings to native memory
-      final MemorySegment moduleNameSegment = memoryManager.allocateString(moduleName);
-      final MemorySegment functionNameSegment = memoryManager.allocateString(name);
+    // Use confined arena for temporary allocations during this method call
+    try (Arena callArena = Arena.ofConfined()) {
+      // Convert strings to native memory using confined arena
+      final MemorySegment moduleNameSegment = callArena.allocateUtf8String(moduleName);
+      final MemorySegment functionNameSegment = callArena.allocateUtf8String(name);
 
       // Convert function type to native representation
       final int[] paramTypes = convertToNativeTypes(functionType.getParamTypes());
       final int[] returnTypes = convertToNativeTypes(functionType.getReturnTypes());
 
-      final MemorySegment paramTypesSegment = memoryManager.allocateIntArray(paramTypes);
-      final MemorySegment returnTypesSegment = memoryManager.allocateIntArray(returnTypes);
+      // Allocate type arrays in confined arena
+      final MemorySegment paramTypesSegment = allocateIntArray(callArena, paramTypes);
+      final MemorySegment returnTypesSegment = allocateIntArray(callArena, returnTypes);
 
-      // Create host function wrapper
+      // Create host function wrapper (this uses the linker's shared arena)
       final MemorySegment hostFunctionHandle = createHostFunction(implementation, functionType);
 
       final boolean success = (boolean) DEFINE_HOST_FUNCTION.invokeExact(
@@ -259,6 +261,39 @@ public final class PanamaLinker implements Linker, AutoCloseable {
   }
 
   @Override
+  public void defineHostFunction(final String module, final String name, final HostFunction function)
+      throws WasmException {
+    PanamaValidation.requireNonBlank(module, "module");
+    PanamaValidation.requireNonBlank(name, "name");
+    PanamaValidation.requireNonNull(function, "function");
+    ensureNotClosed();
+
+    // Use confined arena for temporary string allocations
+    try (Arena callArena = Arena.ofConfined()) {
+      final MemorySegment moduleSegment = callArena.allocateUtf8String(module);
+      final MemorySegment nameSegment = callArena.allocateUtf8String(name);
+      final MemorySegment hostFunctionHandle = createHostFunction(function, null);
+
+      final boolean success = (boolean) DEFINE_HOST_FUNCTION_SIMPLE.invokeExact(
+          linkerHandle,
+          moduleSegment,
+          nameSegment,
+          hostFunctionHandle
+      );
+
+      if (!success) {
+        throw new WasmException("Failed to define host function: " + module + "::" + name);
+      }
+
+      LOGGER.fine("Defined host function " + module + "::" + name);
+    } catch (final WasmException e) {
+      throw e;
+    } catch (final Throwable e) {
+      throw PanamaExceptionMapper.mapException(e);
+    }
+  }
+
+  @Override
   public void defineMemory(final String moduleName, final String name, final WasmMemory memory)
       throws WasmException {
     PanamaValidation.requireNonBlank(moduleName, "moduleName");
@@ -266,14 +301,15 @@ public final class PanamaLinker implements Linker, AutoCloseable {
     PanamaValidation.requireNonNull(memory, "memory");
     ensureNotClosed();
 
-    try {
+    // Use confined arena for temporary string allocations
+    try (Arena callArena = Arena.ofConfined()) {
       if (!(memory instanceof PanamaMemory)) {
         throw new IllegalArgumentException("Memory must be a Panama memory instance");
       }
 
       final PanamaMemory panamaMemory = (PanamaMemory) memory;
-      final MemorySegment moduleNameSegment = memoryManager.allocateString(moduleName);
-      final MemorySegment memoryNameSegment = memoryManager.allocateString(name);
+      final MemorySegment moduleNameSegment = callArena.allocateUtf8String(moduleName);
+      final MemorySegment memoryNameSegment = callArena.allocateUtf8String(name);
       final MemorySegment memoryHandle = panamaMemory.getHandle();
 
       final boolean success = (boolean) DEFINE_MEMORY.invokeExact(
@@ -427,7 +463,8 @@ public final class PanamaLinker implements Linker, AutoCloseable {
       );
 
       if (!success) {
-        throw new WasmException("Failed to create alias: " + fromModule + "::" + fromName + " -> " + toModule + "::" + toName);
+        throw new WasmException("Failed to create alias: " + fromModule + "::" + fromName
+            + " -> " + toModule + "::" + toName);
       }
 
       LOGGER.fine("Created alias " + fromModule + "::" + fromName + " -> " + toModule + "::" + toName);
@@ -521,38 +558,6 @@ public final class PanamaLinker implements Linker, AutoCloseable {
       }
 
       LOGGER.fine("Defined function " + module + "::" + name);
-    } catch (final WasmException e) {
-      throw e;
-    } catch (final Throwable e) {
-      throw PanamaExceptionMapper.mapException(e);
-    }
-  }
-
-  @Override
-  public void defineHostFunction(final String module, final String name, final HostFunction function)
-      throws WasmException {
-    PanamaValidation.requireNonBlank(module, "module");
-    PanamaValidation.requireNonBlank(name, "name");
-    PanamaValidation.requireNonNull(function, "function");
-    ensureNotClosed();
-
-    try {
-      final MemorySegment moduleSegment = memoryManager.allocateString(module);
-      final MemorySegment nameSegment = memoryManager.allocateString(name);
-      final MemorySegment hostFunctionHandle = createHostFunction(function, null);
-
-      final boolean success = (boolean) DEFINE_HOST_FUNCTION_SIMPLE.invokeExact(
-          linkerHandle,
-          moduleSegment,
-          nameSegment,
-          hostFunctionHandle
-      );
-
-      if (!success) {
-        throw new WasmException("Failed to define host function: " + module + "::" + name);
-      }
-
-      LOGGER.fine("Defined host function " + module + "::" + name);
     } catch (final WasmException e) {
       throw e;
     } catch (final Throwable e) {
@@ -729,15 +734,429 @@ public final class PanamaLinker implements Linker, AutoCloseable {
   }
 
   /**
-   * Creates a native host function wrapper.
+   * Allocates an int array in the specified arena.
+   *
+   * @param arena the arena to allocate in
+   * @param values the int values to store
+   * @return memory segment containing the int array
+   */
+  private static MemorySegment allocateIntArray(final Arena arena, final int[] values) {
+    if (values.length == 0) {
+      return MemorySegment.NULL;
+    }
+
+    final MemorySegment segment = arena.allocateArray(ValueLayout.JAVA_INT, values.length);
+    for (int i = 0; i < values.length; i++) {
+      segment.setAtIndex(ValueLayout.JAVA_INT, i, values[i]);
+    }
+    return segment;
+  }
+
+  /** Native linker for creating upcall stubs. */
+  private static final Linker NATIVE_LINKER = Linker.nativeLinker();
+
+  /** Function descriptor for host function callbacks. */
+  private static final FunctionDescriptor HOST_FUNCTION_DESCRIPTOR = FunctionDescriptor.of(
+      ValueLayout.JAVA_INT, // return code (0 = success, -1 = error)
+      ValueLayout.ADDRESS, // caller context
+      ValueLayout.ADDRESS, // parameter values array
+      ValueLayout.JAVA_INT, // parameter count
+      ValueLayout.ADDRESS, // result values array
+      ValueLayout.JAVA_INT, // result count
+      ValueLayout.ADDRESS  // user data (host function reference)
+  );
+
+  /**
+   * Creates a native host function wrapper using Panama upcall stubs.
    *
    * @param implementation the host function implementation
-   * @param functionType the function type
-   * @return memory segment representing the native host function
+   * @param functionType the function type (can be null for simple host functions)
+   * @return memory segment representing the native host function upcall stub
    */
   private MemorySegment createHostFunction(final HostFunction implementation, final FunctionType functionType) {
-    // This would create a callback that can be called from native code
-    // For now, return a placeholder
-    return MemorySegment.NULL;
+    try {
+      // Create a method handle for our callback
+      final MethodHandle callbackHandle = MethodHandles.lookup()
+          .findStatic(PanamaLinker.class, "hostFunctionCallback",
+              MethodType.methodType(int.class,
+                  MemorySegment.class, // caller
+                  MemorySegment.class, // params
+                  int.class,           // param_count
+                  MemorySegment.class, // results
+                  int.class,           // result_count
+                  MemorySegment.class  // user_data
+              ));
+
+      // Store the host function implementation in a way we can retrieve it
+      final long hostFunctionId = PanamaHostFunctionRegistry.register(implementation, functionType);
+      final MemorySegment userDataSegment = arena.allocate(ValueLayout.JAVA_LONG);
+      userDataSegment.set(ValueLayout.JAVA_LONG, 0, hostFunctionId);
+
+      // Bind the user data to the callback
+      final MethodHandle boundCallback = callbackHandle.bindTo(userDataSegment);
+
+      // Create the upcall stub
+      final MemorySegment upcallStub = NATIVE_LINKER.upcallStub(
+          boundCallback,
+          HOST_FUNCTION_DESCRIPTOR,
+          arena
+      );
+
+      LOGGER.fine("Created host function upcall stub for implementation: " + implementation.getClass().getSimpleName());
+      return upcallStub;
+    } catch (final Exception e) {
+      LOGGER.severe("Failed to create host function upcall stub: " + e.getMessage());
+      throw new RuntimeException("Failed to create host function wrapper", e);
+    }
+  }
+
+  /**
+   * Static callback method invoked from native code when a host function is called.
+   * This method handles the conversion between native parameters and Java objects.
+   *
+   * @param caller the caller context (currently unused)
+   * @param params pointer to array of parameter values
+   * @param paramCount number of parameters
+   * @param results pointer to array for result values
+   * @param resultCount number of expected results
+   * @param userData pointer to user data containing the host function ID
+   * @return 0 on success, -1 on error
+   */
+  @SuppressWarnings("unused") // Called from native code via upcall
+  public static int hostFunctionCallback(
+      final MemorySegment caller,
+      final MemorySegment params,
+      final int paramCount,
+      final MemorySegment results,
+      final int resultCount,
+      final MemorySegment userData) {
+    try {
+      // Defensive validation of input parameters
+      if (userData == null || userData.equals(MemorySegment.NULL)) {
+        LOGGER.severe("Host function callback invoked with null user data");
+        return -1;
+      }
+
+      if (paramCount < 0 || resultCount < 0) {
+        LOGGER.severe("Host function callback invoked with negative count parameters: "
+            + "paramCount=" + paramCount + ", resultCount=" + resultCount);
+        return -1;
+      }
+
+      if (paramCount > 0 && (params == null || params.equals(MemorySegment.NULL))) {
+        LOGGER.severe("Host function callback invoked with null params but paramCount=" + paramCount);
+        return -1;
+      }
+
+      if (resultCount > 0 && (results == null || results.equals(MemorySegment.NULL))) {
+        LOGGER.severe("Host function callback invoked with null results but resultCount=" + resultCount);
+        return -1;
+      }
+
+      // Retrieve the host function ID from user data
+      final long hostFunctionId = userData.get(ValueLayout.JAVA_LONG, 0);
+
+      // Get the registered host function and its type
+      final PanamaHostFunctionRegistry.HostFunctionEntry entry =
+          PanamaHostFunctionRegistry.get(hostFunctionId);
+
+      if (entry == null) {
+        LOGGER.severe("Host function callback invoked with invalid ID: " + hostFunctionId);
+        return -1; // Error
+      }
+
+      final HostFunction hostFunction = entry.getImplementation();
+      final FunctionType functionType = entry.getFunctionType();
+
+      if (hostFunction == null) {
+        LOGGER.severe("Host function implementation is null for ID: " + hostFunctionId);
+        return -1;
+      }
+
+      // Convert native parameters to Java objects
+      final Object[] javaParams = convertNativeParamsToJava(params, paramCount, functionType);
+
+      // Invoke the host function with defensive error handling
+      final Object[] javaResults;
+      try {
+        javaResults = hostFunction.call(javaParams);
+      } catch (final Exception e) {
+        LOGGER.severe("Host function implementation threw exception: " + e.getMessage());
+        // Don't propagate the exception to native code, return error code instead
+        return -1;
+      }
+
+      // Convert Java results back to native format
+      convertJavaResultsToNative(javaResults, results, resultCount, functionType);
+
+      return 0; // Success
+    } catch (final Throwable e) {
+      // Catch all throwables to prevent any exceptions from propagating to native code
+      LOGGER.severe("Critical error in host function callback: " + e.getClass().getSimpleName()
+          + ": " + e.getMessage());
+      return -1; // Error
+    }
+  }
+
+  /**
+   * Converts native parameter values to Java objects.
+   *
+   * @param params pointer to native parameter array
+   * @param paramCount number of parameters
+   * @param functionType the function type for parameter conversion
+   * @return array of Java objects representing the parameters
+   * @throws IllegalArgumentException if conversion fails
+   * @throws IndexOutOfBoundsException if memory access is invalid
+   */
+  private static Object[] convertNativeParamsToJava(
+      final MemorySegment params,
+      final int paramCount,
+      final FunctionType functionType) {
+
+    if (paramCount == 0) {
+      return new Object[0];
+    }
+
+    if (paramCount < 0) {
+      throw new IllegalArgumentException("Parameter count cannot be negative: " + paramCount);
+    }
+
+    final Object[] javaParams = new Object[paramCount];
+
+    try {
+      // If we have function type information, use it for precise conversion
+      if (functionType != null && functionType.getParamTypes().length == paramCount) {
+        final WasmValueType[] paramTypes = functionType.getParamTypes();
+
+        for (int i = 0; i < paramCount; i++) {
+          final long offset = i * 8L; // Assuming 8-byte values
+          try {
+            javaParams[i] = convertNativeValueToJava(params, offset, paramTypes[i]);
+          } catch (final Exception e) {
+            throw new IllegalArgumentException("Failed to convert parameter " + i
+                + " of type " + paramTypes[i] + ": " + e.getMessage(), e);
+          }
+        }
+      } else {
+        // Fallback to generic conversion (assume i32 for simplicity)
+        for (int i = 0; i < paramCount; i++) {
+          final long offset = i * 8L;
+          try {
+            javaParams[i] = params.get(ValueLayout.JAVA_INT, offset);
+          } catch (final Exception e) {
+            throw new IllegalArgumentException("Failed to convert parameter " + i
+                + " as I32: " + e.getMessage(), e);
+          }
+        }
+      }
+    } catch (final IndexOutOfBoundsException e) {
+      throw new IndexOutOfBoundsException("Memory access out of bounds during parameter conversion: "
+          + e.getMessage());
+    }
+
+    return javaParams;
+  }
+
+  /**
+   * Converts a single native value to a Java object based on the WebAssembly type.
+   *
+   * @param segment the memory segment containing the value
+   * @param offset the offset within the segment
+   * @param valueType the WebAssembly value type
+   * @return the Java object representation
+   */
+  private static Object convertNativeValueToJava(
+      final MemorySegment segment,
+      final long offset,
+      final WasmValueType valueType) {
+
+    switch (valueType) {
+      case I32:
+        return segment.get(ValueLayout.JAVA_INT, offset);
+      case I64:
+        return segment.get(ValueLayout.JAVA_LONG, offset);
+      case F32:
+        return segment.get(ValueLayout.JAVA_FLOAT, offset);
+      case F64:
+        return segment.get(ValueLayout.JAVA_DOUBLE, offset);
+      case V128:
+        // For V128, we'll return a byte array representing the 128-bit value
+        final byte[] v128Value = new byte[16];
+        for (int i = 0; i < 16; i++) {
+          v128Value[i] = segment.get(ValueLayout.JAVA_BYTE, offset + i);
+        }
+        return v128Value;
+      case FUNCREF:
+      case EXTERNREF:
+        // For references, return the pointer value as a long
+        return segment.get(ValueLayout.JAVA_LONG, offset);
+      default:
+        throw new IllegalArgumentException("Unsupported WebAssembly value type: " + valueType);
+    }
+  }
+
+  /**
+   * Converts Java result objects back to native format.
+   *
+   * @param javaResults array of Java result objects
+   * @param results pointer to native results array
+   * @param resultCount expected number of results
+   * @param functionType the function type for result conversion
+   * @throws IllegalArgumentException if conversion fails
+   * @throws IndexOutOfBoundsException if memory access is invalid
+   */
+  private static void convertJavaResultsToNative(
+      final Object[] javaResults,
+      final MemorySegment results,
+      final int resultCount,
+      final FunctionType functionType) {
+
+    if (resultCount == 0 || javaResults == null) {
+      return;
+    }
+
+    if (resultCount < 0) {
+      throw new IllegalArgumentException("Result count cannot be negative: " + resultCount);
+    }
+
+    final int actualResults = Math.min(javaResults.length, resultCount);
+
+    if (javaResults.length < resultCount) {
+      LOGGER.warning("Host function returned " + javaResults.length
+          + " results but " + resultCount + " were expected");
+    }
+
+    try {
+      // If we have function type information, use it for precise conversion
+      if (functionType != null && functionType.getReturnTypes().length >= actualResults) {
+        final WasmValueType[] returnTypes = functionType.getReturnTypes();
+
+        for (int i = 0; i < actualResults; i++) {
+          final long offset = i * 8L; // Assuming 8-byte values
+          try {
+            convertJavaValueToNative(javaResults[i], results, offset, returnTypes[i]);
+          } catch (final Exception e) {
+            throw new IllegalArgumentException("Failed to convert result " + i
+                + " of type " + returnTypes[i] + ": " + e.getMessage(), e);
+          }
+        }
+      } else {
+        // Fallback to generic conversion
+        for (int i = 0; i < actualResults; i++) {
+          final long offset = i * 8L;
+          try {
+            convertJavaValueToNativeGeneric(javaResults[i], results, offset);
+          } catch (final Exception e) {
+            throw new IllegalArgumentException("Failed to convert result " + i
+                + " generically: " + e.getMessage(), e);
+          }
+        }
+      }
+    } catch (final IndexOutOfBoundsException e) {
+      throw new IndexOutOfBoundsException("Memory access out of bounds during result conversion: "
+          + e.getMessage());
+    }
+  }
+
+  /**
+   * Converts a single Java value to native format based on the WebAssembly type.
+   *
+   * @param javaValue the Java value to convert
+   * @param segment the memory segment to write to
+   * @param offset the offset within the segment
+   * @param valueType the WebAssembly value type
+   */
+  private static void convertJavaValueToNative(
+      final Object javaValue,
+      final MemorySegment segment,
+      final long offset,
+      final WasmValueType valueType) {
+
+    if (javaValue == null) {
+      // For null values, write zero
+      segment.set(ValueLayout.JAVA_LONG, offset, 0L);
+      return;
+    }
+
+    switch (valueType) {
+      case I32:
+        if (javaValue instanceof Number) {
+          segment.set(ValueLayout.JAVA_INT, offset, ((Number) javaValue).intValue());
+        } else {
+          throw new IllegalArgumentException("Expected Number for I32, got: " + javaValue.getClass());
+        }
+        break;
+      case I64:
+        if (javaValue instanceof Number) {
+          segment.set(ValueLayout.JAVA_LONG, offset, ((Number) javaValue).longValue());
+        } else {
+          throw new IllegalArgumentException("Expected Number for I64, got: " + javaValue.getClass());
+        }
+        break;
+      case F32:
+        if (javaValue instanceof Number) {
+          segment.set(ValueLayout.JAVA_FLOAT, offset, ((Number) javaValue).floatValue());
+        } else {
+          throw new IllegalArgumentException("Expected Number for F32, got: " + javaValue.getClass());
+        }
+        break;
+      case F64:
+        if (javaValue instanceof Number) {
+          segment.set(ValueLayout.JAVA_DOUBLE, offset, ((Number) javaValue).doubleValue());
+        } else {
+          throw new IllegalArgumentException("Expected Number for F64, got: " + javaValue.getClass());
+        }
+        break;
+      case V128:
+        if (javaValue instanceof byte[]) {
+          final byte[] bytes = (byte[]) javaValue;
+          for (int i = 0; i < Math.min(16, bytes.length); i++) {
+            segment.set(ValueLayout.JAVA_BYTE, offset + i, bytes[i]);
+          }
+        } else {
+          throw new IllegalArgumentException("Expected byte[] for V128, got: " + javaValue.getClass());
+        }
+        break;
+      case FUNCREF:
+      case EXTERNREF:
+        if (javaValue instanceof Number) {
+          segment.set(ValueLayout.JAVA_LONG, offset, ((Number) javaValue).longValue());
+        } else {
+          throw new IllegalArgumentException("Expected Number for reference type, got: " + javaValue.getClass());
+        }
+        break;
+      default:
+        throw new IllegalArgumentException("Unsupported WebAssembly value type: " + valueType);
+    }
+  }
+
+  /**
+   * Generic conversion from Java value to native format when type information is not available.
+   *
+   * @param javaValue the Java value to convert
+   * @param segment the memory segment to write to
+   * @param offset the offset within the segment
+   */
+  private static void convertJavaValueToNativeGeneric(
+      final Object javaValue,
+      final MemorySegment segment,
+      final long offset) {
+
+    if (javaValue == null) {
+      segment.set(ValueLayout.JAVA_LONG, offset, 0L);
+    } else if (javaValue instanceof Integer) {
+      segment.set(ValueLayout.JAVA_INT, offset, (Integer) javaValue);
+    } else if (javaValue instanceof Long) {
+      segment.set(ValueLayout.JAVA_LONG, offset, (Long) javaValue);
+    } else if (javaValue instanceof Float) {
+      segment.set(ValueLayout.JAVA_FLOAT, offset, (Float) javaValue);
+    } else if (javaValue instanceof Double) {
+      segment.set(ValueLayout.JAVA_DOUBLE, offset, (Double) javaValue);
+    } else if (javaValue instanceof Number) {
+      // Fallback for other number types - convert to long
+      segment.set(ValueLayout.JAVA_LONG, offset, ((Number) javaValue).longValue());
+    } else {
+      throw new IllegalArgumentException("Cannot convert Java value to native: " + javaValue.getClass());
+    }
   }
 }
