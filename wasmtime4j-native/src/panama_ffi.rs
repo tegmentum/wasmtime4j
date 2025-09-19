@@ -1014,6 +1014,222 @@ pub mod component {
             crate::component::core::destroy_component_instance(instance_ptr);
         }
     }
+
+    /// Compile a component from WebAssembly bytes (alias for load_from_bytes)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_component_compile(
+        engine_ptr: *mut c_void,
+        wasm_bytes: *const u8,
+        wasm_size: usize,
+        component_ptr: *mut *mut c_void,
+    ) -> c_int {
+        // This is an alias for load_from_bytes for API consistency
+        wasmtime4j_component_load_from_bytes(engine_ptr, wasm_bytes, wasm_size, component_ptr)
+    }
+
+    /// Create a component linker
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_component_linker_create(
+        engine_ptr: *mut c_void,
+        linker_ptr: *mut *mut c_void,
+    ) -> c_int {
+        use crate::component::ComponentEngine;
+        use crate::error::{ffi_utils, ErrorCode};
+
+        if engine_ptr.is_null() || linker_ptr.is_null() {
+            return ErrorCode::InvalidParameter as c_int;
+        }
+
+        ffi_utils::ffi_try(|| {
+            let engine = unsafe { &*(engine_ptr as *const ComponentEngine) };
+            let linker = crate::component::core::create_component_linker(engine)?;
+            unsafe {
+                *linker_ptr = Box::into_raw(linker) as *mut c_void;
+            }
+            Ok(())
+        })
+    }
+
+    /// Get component export count
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_component_get_export_count(
+        component_ptr: *mut c_void,
+        count_out: *mut c_int,
+    ) -> c_int {
+        use crate::component::Component;
+        use crate::error::{ffi_utils, ErrorCode};
+
+        if component_ptr.is_null() || count_out.is_null() {
+            return ErrorCode::InvalidParameter as c_int;
+        }
+
+        ffi_utils::ffi_try(|| {
+            let component = unsafe { &*(component_ptr as *const Component) };
+            let count = crate::component::core::get_export_count(component);
+            unsafe {
+                *count_out = count as c_int;
+            }
+            Ok(())
+        })
+    }
+
+    /// Get component import count
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_component_get_import_count(
+        component_ptr: *mut c_void,
+        count_out: *mut c_int,
+    ) -> c_int {
+        use crate::component::Component;
+        use crate::error::{ffi_utils, ErrorCode};
+
+        if component_ptr.is_null() || count_out.is_null() {
+            return ErrorCode::InvalidParameter as c_int;
+        }
+
+        ffi_utils::ffi_try(|| {
+            let component = unsafe { &*(component_ptr as *const Component) };
+            let count = crate::component::core::get_import_count(component);
+            unsafe {
+                *count_out = count as c_int;
+            }
+            Ok(())
+        })
+    }
+
+    /// Get component export name by index
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_component_get_export_name(
+        component_ptr: *mut c_void,
+        index: c_int,
+        name_buffer: *mut c_char,
+        buffer_size: usize,
+    ) -> c_int {
+        use crate::component::Component;
+        use crate::error::{ffi_utils, ErrorCode};
+        use std::ffi::CString;
+
+        if component_ptr.is_null() || name_buffer.is_null() || buffer_size == 0 {
+            return ErrorCode::InvalidParameter as c_int;
+        }
+
+        ffi_utils::ffi_try(|| {
+            let component = unsafe { &*(component_ptr as *const Component) };
+            let exports = crate::component::core::get_component_exports(component);
+
+            if index < 0 || (index as usize) >= exports.len() {
+                return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: "Export index out of bounds".to_string(),
+                });
+            }
+
+            let export_name = &exports[index as usize];
+            let c_name = CString::new(export_name.as_str())
+                .map_err(|_| crate::error::WasmtimeError::InvalidParameter {
+                    message: "Export name contains null bytes".to_string(),
+                })?;
+
+            let name_bytes = c_name.as_bytes_with_nul();
+            if name_bytes.len() > buffer_size {
+                return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: "Buffer too small for export name".to_string(),
+                });
+            }
+
+            unsafe {
+                std::ptr::copy_nonoverlapping(name_bytes.as_ptr(), name_buffer as *mut u8, name_bytes.len());
+            }
+
+            Ok(())
+        })
+    }
+
+    /// Get component import name by index
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_component_get_import_name(
+        component_ptr: *mut c_void,
+        index: c_int,
+        name_buffer: *mut c_char,
+        buffer_size: usize,
+    ) -> c_int {
+        use crate::component::Component;
+        use crate::error::{ffi_utils, ErrorCode};
+        use std::ffi::CString;
+
+        if component_ptr.is_null() || name_buffer.is_null() || buffer_size == 0 {
+            return ErrorCode::InvalidParameter as c_int;
+        }
+
+        ffi_utils::ffi_try(|| {
+            let component = unsafe { &*(component_ptr as *const Component) };
+            let imports = crate::component::core::get_component_imports(component);
+
+            if index < 0 || (index as usize) >= imports.len() {
+                return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: "Import index out of bounds".to_string(),
+                });
+            }
+
+            let import_name = &imports[index as usize];
+            let c_name = CString::new(import_name.as_str())
+                .map_err(|_| crate::error::WasmtimeError::InvalidParameter {
+                    message: "Import name contains null bytes".to_string(),
+                })?;
+
+            let name_bytes = c_name.as_bytes_with_nul();
+            if name_bytes.len() > buffer_size {
+                return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: "Buffer too small for import name".to_string(),
+                });
+            }
+
+            unsafe {
+                std::ptr::copy_nonoverlapping(name_bytes.as_ptr(), name_buffer as *mut u8, name_bytes.len());
+            }
+
+            Ok(())
+        })
+    }
+
+    /// Get component export by name (returns export metadata)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_component_get_export_by_name(
+        component_ptr: *mut c_void,
+        export_name: *const c_char,
+        found_out: *mut c_int,
+    ) -> c_int {
+        use crate::component::Component;
+        use crate::error::{ffi_utils, ErrorCode};
+
+        if component_ptr.is_null() || export_name.is_null() || found_out.is_null() {
+            return ErrorCode::InvalidParameter as c_int;
+        }
+
+        ffi_utils::ffi_try(|| {
+            let component = unsafe { &*(component_ptr as *const Component) };
+            let name_str = unsafe {
+                std::ffi::CStr::from_ptr(export_name)
+                    .to_str()
+                    .map_err(|_| crate::error::WasmtimeError::InvalidParameter {
+                        message: "Invalid UTF-8 in export name".to_string(),
+                    })?
+            };
+
+            let found = crate::component::core::get_component_export_by_name(component, name_str).is_some();
+            unsafe {
+                *found_out = if found { 1 } else { 0 };
+            }
+
+            Ok(())
+        })
+    }
+
+    /// Destroy a component linker
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_component_linker_destroy(linker_ptr: *mut c_void) {
+        unsafe {
+            crate::component::core::destroy_component_linker(linker_ptr);
+        }
+    }
 }
 
 /// Panama FFI bindings for WebAssembly linear memory operations

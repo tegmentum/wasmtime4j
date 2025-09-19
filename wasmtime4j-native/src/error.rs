@@ -690,8 +690,8 @@ pub mod ffi_utils {
     
     /// Safe slice creation from raw pointer with validation
     pub unsafe fn slice_from_raw_parts<T>(
-        ptr: *const T, 
-        len: usize, 
+        ptr: *const T,
+        len: usize,
         name: &str
     ) -> WasmtimeResult<&'static [T]> {
         if ptr.is_null() {
@@ -705,6 +705,25 @@ pub mod ffi_utils {
             ));
         }
         Ok(std::slice::from_raw_parts(ptr, len))
+    }
+
+    /// Safe mutable slice creation from raw pointer with validation
+    pub unsafe fn slice_from_raw_parts_mut<T>(
+        ptr: *mut T,
+        len: usize,
+        name: &str
+    ) -> WasmtimeResult<&'static mut [T]> {
+        if ptr.is_null() {
+            return Err(WasmtimeError::invalid_parameter(
+                format!("{} pointer cannot be null", name)
+            ));
+        }
+        if len == 0 {
+            return Err(WasmtimeError::invalid_parameter(
+                format!("{} length cannot be zero", name)
+            ));
+        }
+        Ok(std::slice::from_raw_parts_mut(ptr, len))
     }
     
     /// Thread-safe tracking of destroyed pointers to prevent double-free

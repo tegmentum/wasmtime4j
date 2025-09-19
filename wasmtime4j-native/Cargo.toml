@@ -26,6 +26,18 @@ jni = { version = "0.21.1", optional = true }
 # Async runtime for WASI and other async operations
 tokio = { version = "1.35", features = ["full"] }
 
+# HTTP client and server for WASI networking
+reqwest = { version = "0.11", features = ["json", "native-tls"] }
+hyper = { version = "0.14", features = ["full"] }
+
+# Cryptography support for WASI crypto operations
+sha2 = "0.10"
+sha3 = "0.10"
+blake3 = "1.5"
+aes = "0.8"
+rand = "0.8"
+ring = "0.17"
+
 # Serialization support for complex data structures
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
@@ -41,6 +53,19 @@ env_logger = "0.10"
 # Memory management utilities
 once_cell = "1.19"
 
+# Performance monitoring and atomics
+atomic = { version = "0.6", optional = true }
+crossbeam = { version = "0.8", optional = true }
+
+# SIMD support for bulk operations
+wide = { version = "0.7", optional = true }
+
+# Async utilities
+futures = "0.3"
+
+# Network programming utilities
+socket2 = "0.5"
+
 [build-dependencies]
 # Build script dependencies for cross-compilation
 cc = "1.0"
@@ -51,7 +76,7 @@ pkg-config = "0.3"
 tempfile = "3.8"
 
 [features]
-default = ["jni-bindings", "panama-ffi", "component-model", "wasi"]
+default = ["jni-bindings", "panama-ffi", "component-model", "wasi", "performance", "bulk-operations"]
 
 # JNI bindings for Java 8-22
 jni-bindings = ["jni"]
@@ -71,8 +96,14 @@ component-model = [
 # Async support
 async = ["wasmtime/async"]
 
-# Profiling support  
+# Profiling support
 profiling = ["wasmtime/profiling"]
+
+# Performance monitoring infrastructure
+performance = ["atomic", "crossbeam"]
+
+# Bulk operations with SIMD optimization
+bulk-operations = ["wide"]
 
 # Note: Memory64 support not available in Wasmtime 36.0.2
 

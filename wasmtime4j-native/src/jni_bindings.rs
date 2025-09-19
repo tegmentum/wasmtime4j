@@ -1951,6 +1951,152 @@ pub mod jni_component {
             crate::component::core::destroy_component_instance(instance_ptr as *mut std::os::raw::c_void);
         }
     }
+
+    /// Compile a component from WebAssembly bytes (alias for load)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeCompileComponent(
+        env: JNIEnv,
+        _class: JClass,
+        engine_ptr: jlong,
+        wasm_data: jbyteArray,
+    ) -> jlong {
+        // This is an alias for loadComponentFromBytes for API consistency
+        Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeLoadComponentFromBytes(env, _class, engine_ptr, wasm_data)
+    }
+
+    /// Create a component linker
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeCreateComponentLinker(
+        env: JNIEnv,
+        _class: JClass,
+        engine_ptr: jlong,
+    ) -> jlong {
+        jni_utils::jni_try_ptr(env, || {
+            let engine = unsafe {
+                crate::component::core::get_component_engine_ref(engine_ptr as *const std::os::raw::c_void)?
+            };
+            crate::component::core::create_component_linker(engine)
+        }) as jlong
+    }
+
+    /// Get component export count
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeGetExportCount(
+        _env: JNIEnv,
+        _class: JClass,
+        component_ptr: jlong,
+    ) -> jint {
+        if component_ptr == 0 {
+            return -1;
+        }
+
+        let component = unsafe { &*(component_ptr as *const Component) };
+        crate::component::core::get_export_count(component) as jint
+    }
+
+    /// Get component import count
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeGetImportCount(
+        _env: JNIEnv,
+        _class: JClass,
+        component_ptr: jlong,
+    ) -> jint {
+        if component_ptr == 0 {
+            return -1;
+        }
+
+        let component = unsafe { &*(component_ptr as *const Component) };
+        crate::component::core::get_import_count(component) as jint
+    }
+
+    /// Get component export name by index
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeGetExportName(
+        env: JNIEnv,
+        _class: JClass,
+        component_ptr: jlong,
+        index: jint,
+    ) -> jstring {
+        if component_ptr == 0 {
+            return std::ptr::null_mut();
+        }
+
+        let component = unsafe { &*(component_ptr as *const Component) };
+        let exports = crate::component::core::get_component_exports(component);
+
+        if index < 0 || (index as usize) >= exports.len() {
+            return std::ptr::null_mut();
+        }
+
+        let export_name = &exports[index as usize];
+        match env.new_string(export_name) {
+            Ok(jstr) => jstr.into_raw(),
+            Err(_) => std::ptr::null_mut(),
+        }
+    }
+
+    /// Get component import name by index
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeGetImportName(
+        env: JNIEnv,
+        _class: JClass,
+        component_ptr: jlong,
+        index: jint,
+    ) -> jstring {
+        if component_ptr == 0 {
+            return std::ptr::null_mut();
+        }
+
+        let component = unsafe { &*(component_ptr as *const Component) };
+        let imports = crate::component::core::get_component_imports(component);
+
+        if index < 0 || (index as usize) >= imports.len() {
+            return std::ptr::null_mut();
+        }
+
+        let import_name = &imports[index as usize];
+        match env.new_string(import_name) {
+            Ok(jstr) => jstr.into_raw(),
+            Err(_) => std::ptr::null_mut(),
+        }
+    }
+
+    /// Get component export by name (check if exists)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeGetExportByName(
+        env: JNIEnv,
+        _class: JClass,
+        component_ptr: jlong,
+        export_name: jstring,
+    ) -> jboolean {
+        if component_ptr == 0 {
+            return 0;
+        }
+
+        let name_str = match env.get_string(export_name) {
+            Ok(jstr) => jstr.into(),
+            Err(_) => return 0,
+        };
+
+        let component = unsafe { &*(component_ptr as *const Component) };
+        if crate::component::core::get_component_export_by_name(component, &name_str).is_some() {
+            1
+        } else {
+            0
+        }
+    }
+
+    /// Destroy a component linker
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeDestroyComponentLinker(
+        _env: JNIEnv,
+        _class: JClass,
+        linker_ptr: jlong,
+    ) {
+        unsafe {
+            crate::component::core::destroy_component_linker(linker_ptr as *mut std::os::raw::c_void);
+        }
+    }
 }
 
 /// JNI bindings for Host Function operations

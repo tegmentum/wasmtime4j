@@ -781,6 +781,76 @@ pub mod core {
     pub fn get_import_count(component: &Component) -> usize {
         component.metadata().imports.len()
     }
+
+    /// Core function to compile a component directly (alias for load_component_from_bytes)
+    pub fn compile_component(engine: &ComponentEngine, bytes: &[u8]) -> WasmtimeResult<Box<Component>> {
+        load_component_from_bytes(engine, bytes)
+    }
+
+    /// Core function to create a component linker
+    pub fn create_component_linker(engine: &ComponentEngine) -> WasmtimeResult<Box<Linker<ComponentStoreData>>> {
+        let linker = Linker::new(&engine.engine);
+        Ok(Box::new(linker))
+    }
+
+    /// Core function to get component exports as strings
+    pub fn get_component_exports(component: &Component) -> Vec<String> {
+        component.metadata().exports.iter()
+            .map(|export| export.name.clone())
+            .collect()
+    }
+
+    /// Core function to get component imports as strings
+    pub fn get_component_imports(component: &Component) -> Vec<String> {
+        component.metadata().imports.iter()
+            .map(|import| import.name.clone())
+            .collect()
+    }
+
+    /// Core function to get component export names
+    pub fn get_export_names(component: &Component) -> Vec<String> {
+        get_component_exports(component)
+    }
+
+    /// Core function to get component import names
+    pub fn get_import_names(component: &Component) -> Vec<String> {
+        get_component_imports(component)
+    }
+
+    /// Core function to get component export by name
+    pub fn get_component_export_by_name<'a>(component: &'a Component, name: &str) -> Option<&'a InterfaceDefinition> {
+        component.metadata().exports.iter()
+            .find(|export| export.name == name)
+    }
+
+    /// Core function to get component import by name
+    pub fn get_component_import_by_name<'a>(component: &'a Component, name: &str) -> Option<&'a InterfaceDefinition> {
+        component.metadata().imports.iter()
+            .find(|import| import.name == name)
+    }
+
+    /// Core function to validate component linker pointer and get reference
+    pub unsafe fn get_component_linker_ref(linker_ptr: *const c_void) -> WasmtimeResult<&'static Linker<ComponentStoreData>> {
+        validate_ptr_not_null!(linker_ptr, "component linker");
+        Ok(&*(linker_ptr as *const Linker<ComponentStoreData>))
+    }
+
+    /// Core function to validate component linker pointer and get mutable reference
+    pub unsafe fn get_component_linker_mut(linker_ptr: *mut c_void) -> WasmtimeResult<&'static mut Linker<ComponentStoreData>> {
+        validate_ptr_not_null!(linker_ptr, "component linker");
+        Ok(&mut *(linker_ptr as *mut Linker<ComponentStoreData>))
+    }
+
+    /// Core function to validate component instance pointer and get reference
+    pub unsafe fn get_component_instance_ref(instance_ptr: *const c_void) -> WasmtimeResult<&'static Arc<ComponentInstance>> {
+        validate_ptr_not_null!(instance_ptr, "component instance");
+        Ok(&*(instance_ptr as *const Arc<ComponentInstance>))
+    }
+
+    /// Core function to destroy a component linker (safe cleanup)
+    pub unsafe fn destroy_component_linker(linker_ptr: *mut c_void) {
+        ffi_utils::destroy_resource::<Linker<ComponentStoreData>>(linker_ptr, "ComponentLinker");
+    }
 }
 
 impl Default for ComponentEngine {

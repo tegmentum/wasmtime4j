@@ -50,6 +50,11 @@ pub mod panama_ffi;
 
 // Advanced modules - will be implemented in later tasks
 pub mod wasi;
+pub mod wasi_advanced;
+
+// Performance infrastructure
+pub mod performance;
+pub mod bulk_operations;
 
 // Type introspection system
 pub mod type_introspection;
@@ -84,6 +89,16 @@ pub use wasi::{
     WasiExecutionResult
 };
 
+// Re-export advanced WASI types for extended functionality
+pub use wasi_advanced::{
+    WasiAdvancedContext, SecurityPolicy, NetworkPermissions, FilesystemPermissions,
+    ProcessPermissions, CryptoPermissions, ResourceLimits as WasiResourceLimits, PortRange,
+    NetworkManager, ThreadManager, CryptoManager, SystemManager,
+    NetworkConnection, ThreadHandle, HashContext, CipherContext,
+    SharedMemoryRegion, PipeHandle, ResourceHandles,
+    HashAlgorithm, CipherAlgorithm, SocketType, SocketFamily
+};
+
 // Re-export type introspection types
 pub use type_introspection::{
     IntrospectionValueType, MemoryTypeInfo, TableTypeInfo, GlobalTypeInfo, FuncTypeInfo,
@@ -93,12 +108,24 @@ pub use type_introspection::{
 
 // Re-export shared FFI utilities for interface implementations
 pub use shared_ffi::{
-    ParameterConverter, ReturnValueConverter, 
+    ParameterConverter, ReturnValueConverter,
     FFI_SUCCESS, FFI_ERROR,
     FfiStrategy, FfiOptLevel, FfiWasmFeature,
     BooleanReturnConverter, IntegerReturnConverter, PointerReturnConverter,
     convert_wasm_features, validate_wasm_features,
     validation, error_mapping
+};
+
+// Re-export performance monitoring types
+pub use performance::{
+    PerformanceSystem, PerformanceTimer, FunctionCallStats, MemoryStats,
+    CompilationStats, EngineStats, FeatureSupport, BulkOperationResult
+};
+
+// Re-export bulk operations types
+pub use bulk_operations::{
+    MemoryBulkOperations, TableBulkOperations, BulkMemoryOperation, BulkTableOperation,
+    MemoryOperationParams, TableOperationParams
 };
 
 /// Library version information
