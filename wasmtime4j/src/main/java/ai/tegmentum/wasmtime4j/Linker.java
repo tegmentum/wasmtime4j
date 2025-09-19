@@ -14,11 +14,12 @@ import java.util.concurrent.CompletableFuture;
  * functions, memories, tables, and globals that modules can import.
  *
  * <p>Linkers enable advanced WebAssembly integration patterns including:
+ *
  * <ul>
- *   <li>Host function binding - Define Java functions callable from WebAssembly</li>
- *   <li>Module linking - Connect multiple WebAssembly modules together</li>
- *   <li>WASI integration - Automatically provide WASI system interface functions</li>
- *   <li>Import resolution - Satisfy all module import requirements before instantiation</li>
+ *   <li>Host function binding - Define Java functions callable from WebAssembly
+ *   <li>Module linking - Connect multiple WebAssembly modules together
+ *   <li>WASI integration - Automatically provide WASI system interface functions
+ *   <li>Import resolution - Satisfy all module import requirements before instantiation
  * </ul>
  *
  * <p>Linkers are thread-safe and can be reused across multiple module instantiations. They are
@@ -31,8 +32,8 @@ public interface Linker extends Closeable {
   /**
    * Defines a WebAssembly function that can be imported by WebAssembly modules.
    *
-   * <p>The function will be available to any module instantiated through this linker that imports
-   * a function with the specified module and name. The function type must match exactly.
+   * <p>The function will be available to any module instantiated through this linker that imports a
+   * function with the specified module and name. The function type must match exactly.
    *
    * @param module the module name for the import (e.g., "env")
    * @param name the function name for the import
@@ -46,8 +47,8 @@ public interface Linker extends Closeable {
   /**
    * Defines a host function that can be imported by WebAssembly modules.
    *
-   * <p>The function will be available to any module instantiated through this linker that imports
-   * a function with the specified module and name. The function type must match exactly.
+   * <p>The function will be available to any module instantiated through this linker that imports a
+   * function with the specified module and name. The function type must match exactly.
    *
    * @param moduleName the module name for the import (e.g., "env")
    * @param name the function name for the import
@@ -81,8 +82,8 @@ public interface Linker extends Closeable {
   /**
    * Defines a memory that can be imported by WebAssembly modules.
    *
-   * <p>The memory will be available to any module instantiated through this linker that imports
-   * a memory with the specified module and name.
+   * <p>The memory will be available to any module instantiated through this linker that imports a
+   * memory with the specified module and name.
    *
    * @param moduleName the module name for the import
    * @param name the memory name for the import
@@ -96,8 +97,8 @@ public interface Linker extends Closeable {
   /**
    * Defines a table that can be imported by WebAssembly modules.
    *
-   * <p>The table will be available to any module instantiated through this linker that imports
-   * a table with the specified module and name.
+   * <p>The table will be available to any module instantiated through this linker that imports a
+   * table with the specified module and name.
    *
    * @param moduleName the module name for the import
    * @param name the table name for the import
@@ -111,8 +112,8 @@ public interface Linker extends Closeable {
   /**
    * Defines a global that can be imported by WebAssembly modules.
    *
-   * <p>The global will be available to any module instantiated through this linker that imports
-   * a global with the specified module and name.
+   * <p>The global will be available to any module instantiated through this linker that imports a
+   * global with the specified module and name.
    *
    * @param moduleName the module name for the import
    * @param name the global name for the import
@@ -148,14 +149,15 @@ public interface Linker extends Closeable {
    * @throws WasmException if the alias cannot be created
    * @throws IllegalArgumentException if any parameter is null
    */
-  void alias(final String fromModule, final String fromName, final String toModule, final String toName)
+  void alias(
+      final String fromModule, final String fromName, final String toModule, final String toName)
       throws WasmException;
 
   /**
    * Creates an alias for a module instance in the linker namespace.
    *
-   * <p>This makes all exports from the instance available under the specified module name,
-   * enabling module-to-module linking scenarios.
+   * <p>This makes all exports from the instance available under the specified module name, enabling
+   * module-to-module linking scenarios.
    *
    * @param name the module name to assign to the instance
    * @param instance the instance whose exports should be aliased
@@ -167,8 +169,8 @@ public interface Linker extends Closeable {
   /**
    * Instantiates a WebAssembly module using this linker to resolve imports.
    *
-   * <p>The linker will provide all defined functions, memories, tables, and globals to satisfy
-   * the module's import requirements. If any imports cannot be satisfied, instantiation will fail.
+   * <p>The linker will provide all defined functions, memories, tables, and globals to satisfy the
+   * module's import requirements. If any imports cannot be satisfied, instantiation will fail.
    *
    * @param store the store to instantiate the module in
    * @param module the compiled module to instantiate
@@ -181,8 +183,8 @@ public interface Linker extends Closeable {
   /**
    * Instantiates a WebAssembly module asynchronously using this linker to resolve imports.
    *
-   * <p>This method performs instantiation asynchronously and returns a CompletableFuture
-   * that will complete with the instance or complete exceptionally if instantiation fails.
+   * <p>This method performs instantiation asynchronously and returns a CompletableFuture that will
+   * complete with the instance or complete exceptionally if instantiation fails.
    *
    * @param store the store to instantiate the module in
    * @param module the compiled module to instantiate
@@ -194,8 +196,8 @@ public interface Linker extends Closeable {
   /**
    * Instantiates a WebAssembly module with a specific name in the linker namespace.
    *
-   * <p>The instantiated module's exports will be available for linking with other modules
-   * under the specified name. This enables module-to-module linking scenarios.
+   * <p>The instantiated module's exports will be available for linking with other modules under the
+   * specified name. This enables module-to-module linking scenarios.
    *
    * @param store the store to instantiate the module in
    * @param moduleName the name to assign to this module in the linker
@@ -208,10 +210,11 @@ public interface Linker extends Closeable {
       throws WasmException;
 
   /**
-   * Enables WASI (WebAssembly System Interface) support for modules instantiated through this linker.
+   * Enables WASI (WebAssembly System Interface) support for modules instantiated through this
+   * linker.
    *
-   * <p>This automatically defines all WASI functions that modules can import, providing
-   * system interface capabilities like file I/O, environment access, and process control.
+   * <p>This automatically defines all WASI functions that modules can import, providing system
+   * interface capabilities like file I/O, environment access, and process control.
    *
    * @throws WasmException if WASI cannot be enabled
    */
@@ -220,9 +223,9 @@ public interface Linker extends Closeable {
   /**
    * Defines WASI (WebAssembly System Interface) support with specific configuration.
    *
-   * <p>This automatically defines all WASI functions that modules can import, providing
-   * system interface capabilities like file I/O, environment access, and process control
-   * using the specified configuration.
+   * <p>This automatically defines all WASI functions that modules can import, providing system
+   * interface capabilities like file I/O, environment access, and process control using the
+   * specified configuration.
    *
    * @param config the WASI configuration to use
    * @throws WasmException if WASI cannot be defined

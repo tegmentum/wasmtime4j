@@ -65,8 +65,7 @@ public final class PanamaTableType implements TableType {
 
     LOGGER.fine(
         String.format(
-            "Created PanamaTableType: element=%s, min=%d, max=%s",
-            elementType, minimum, maximum));
+            "Created PanamaTableType: element=%s, min=%d, max=%s", elementType, minimum, maximum));
   }
 
   /**
@@ -87,7 +86,8 @@ public final class PanamaTableType implements TableType {
     // Call native function to get table type info
     nativeGetTableTypeInfo(nativeHandle, typeInfoSegment);
 
-    final int elementTypeCode = (int) typeInfoSegment.get(java.lang.foreign.ValueLayout.JAVA_LONG, 0);
+    final int elementTypeCode =
+        (int) typeInfoSegment.get(java.lang.foreign.ValueLayout.JAVA_LONG, 0);
     final WasmValueType elementType = WasmValueType.fromNativeTypeCode(elementTypeCode);
     final long minimum = typeInfoSegment.get(java.lang.foreign.ValueLayout.JAVA_LONG, 8);
     final long maxValue = typeInfoSegment.get(java.lang.foreign.ValueLayout.JAVA_LONG, 16);
@@ -165,7 +165,9 @@ public final class PanamaTableType implements TableType {
    * Native method to get table type information.
    *
    * @param nativeHandle the native handle to the table type
-   * @param resultBuffer the buffer to store the result [elementTypeCode, minimum, maximum(-1 if unlimited)]
+   * @param resultBuffer the buffer to store the result [elementTypeCode, minimum, maximum(-1 if
+   *     unlimited)]
    */
-  private static native void nativeGetTableTypeInfo(MemorySegment nativeHandle, MemorySegment resultBuffer);
+  private static native void nativeGetTableTypeInfo(
+      MemorySegment nativeHandle, MemorySegment resultBuffer);
 }

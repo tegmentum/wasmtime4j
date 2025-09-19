@@ -17,23 +17,13 @@
 package ai.tegmentum.wasmtime4j.panama;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.FunctionType;
 import ai.tegmentum.wasmtime4j.HostFunction;
-import ai.tegmentum.wasmtime4j.Module;
-import ai.tegmentum.wasmtime4j.Store;
-import ai.tegmentum.wasmtime4j.WasmGlobal;
-import ai.tegmentum.wasmtime4j.WasmMemory;
-import ai.tegmentum.wasmtime4j.WasmTable;
 import ai.tegmentum.wasmtime4j.WasmValueType;
-import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.wasi.WasiConfig;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
@@ -92,29 +82,30 @@ class PanamaLinkerTest {
   @Test
   void testConstructorWithNullHandle() {
     // When & Then
-    assertThrows(IllegalArgumentException.class, () ->
-        new PanamaLinker(null, testArena, mockEngine));
+    assertThrows(
+        IllegalArgumentException.class, () -> new PanamaLinker(null, testArena, mockEngine));
   }
 
   @Test
   void testConstructorWithNullSegmentHandle() {
     // When & Then
-    assertThrows(IllegalArgumentException.class, () ->
-        new PanamaLinker(MemorySegment.NULL, testArena, mockEngine));
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> new PanamaLinker(MemorySegment.NULL, testArena, mockEngine));
   }
 
   @Test
   void testConstructorWithNullArena() {
     // When & Then
-    assertThrows(IllegalArgumentException.class, () ->
-        new PanamaLinker(validHandle, null, mockEngine));
+    assertThrows(
+        IllegalArgumentException.class, () -> new PanamaLinker(validHandle, null, mockEngine));
   }
 
   @Test
   void testConstructorWithNullEngine() {
     // When & Then
-    assertThrows(IllegalArgumentException.class, () ->
-        new PanamaLinker(validHandle, testArena, null));
+    assertThrows(
+        IllegalArgumentException.class, () -> new PanamaLinker(validHandle, testArena, null));
   }
 
   @Test
@@ -123,17 +114,21 @@ class PanamaLinkerTest {
     final PanamaLinker linker = new PanamaLinker(validHandle, testArena, mockEngine);
 
     // When & Then
-    assertThrows(IllegalArgumentException.class, () ->
-        linker.defineHostFunction(null, "name", mockFunctionType, mockHostFunction));
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> linker.defineHostFunction(null, "name", mockFunctionType, mockHostFunction));
 
-    assertThrows(IllegalArgumentException.class, () ->
-        linker.defineHostFunction("module", null, mockFunctionType, mockHostFunction));
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> linker.defineHostFunction("module", null, mockFunctionType, mockHostFunction));
 
-    assertThrows(IllegalArgumentException.class, () ->
-        linker.defineHostFunction("module", "name", null, mockHostFunction));
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> linker.defineHostFunction("module", "name", null, mockHostFunction));
 
-    assertThrows(IllegalArgumentException.class, () ->
-        linker.defineHostFunction("module", "name", mockFunctionType, null));
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> linker.defineHostFunction("module", "name", mockFunctionType, null));
   }
 
   @Test
@@ -142,17 +137,21 @@ class PanamaLinkerTest {
     final PanamaLinker linker = new PanamaLinker(validHandle, testArena, mockEngine);
 
     // When & Then
-    assertThrows(IllegalArgumentException.class, () ->
-        linker.defineHostFunction("", "name", mockFunctionType, mockHostFunction));
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> linker.defineHostFunction("", "name", mockFunctionType, mockHostFunction));
 
-    assertThrows(IllegalArgumentException.class, () ->
-        linker.defineHostFunction("module", "", mockFunctionType, mockHostFunction));
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> linker.defineHostFunction("module", "", mockFunctionType, mockHostFunction));
 
-    assertThrows(IllegalArgumentException.class, () ->
-        linker.defineHostFunction("   ", "name", mockFunctionType, mockHostFunction));
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> linker.defineHostFunction("   ", "name", mockFunctionType, mockHostFunction));
 
-    assertThrows(IllegalArgumentException.class, () ->
-        linker.defineHostFunction("module", "   ", mockFunctionType, mockHostFunction));
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> linker.defineHostFunction("module", "   ", mockFunctionType, mockHostFunction));
   }
 
   @Test
@@ -161,14 +160,16 @@ class PanamaLinkerTest {
     final PanamaLinker linker = new PanamaLinker(validHandle, testArena, mockEngine);
 
     // When & Then
-    assertThrows(IllegalArgumentException.class, () ->
-        linker.defineHostFunction(null, "name", mockHostFunction));
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> linker.defineHostFunction(null, "name", mockHostFunction));
 
-    assertThrows(IllegalArgumentException.class, () ->
-        linker.defineHostFunction("module", null, mockHostFunction));
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> linker.defineHostFunction("module", null, mockHostFunction));
 
-    assertThrows(IllegalArgumentException.class, () ->
-        linker.defineHostFunction("module", "name", null));
+    assertThrows(
+        IllegalArgumentException.class, () -> linker.defineHostFunction("module", "name", null));
   }
 
   @Test
@@ -177,14 +178,13 @@ class PanamaLinkerTest {
     final PanamaLinker linker = new PanamaLinker(validHandle, testArena, mockEngine);
 
     // When & Then
-    assertThrows(IllegalArgumentException.class, () ->
-        linker.defineMemory(null, "name", mockMemory));
+    assertThrows(
+        IllegalArgumentException.class, () -> linker.defineMemory(null, "name", mockMemory));
 
-    assertThrows(IllegalArgumentException.class, () ->
-        linker.defineMemory("module", null, mockMemory));
+    assertThrows(
+        IllegalArgumentException.class, () -> linker.defineMemory("module", null, mockMemory));
 
-    assertThrows(IllegalArgumentException.class, () ->
-        linker.defineMemory("module", "name", null));
+    assertThrows(IllegalArgumentException.class, () -> linker.defineMemory("module", "name", null));
   }
 
   @Test
@@ -193,14 +193,12 @@ class PanamaLinkerTest {
     final PanamaLinker linker = new PanamaLinker(validHandle, testArena, mockEngine);
 
     // When & Then
-    assertThrows(IllegalArgumentException.class, () ->
-        linker.defineTable(null, "name", mockTable));
+    assertThrows(IllegalArgumentException.class, () -> linker.defineTable(null, "name", mockTable));
 
-    assertThrows(IllegalArgumentException.class, () ->
-        linker.defineTable("module", null, mockTable));
+    assertThrows(
+        IllegalArgumentException.class, () -> linker.defineTable("module", null, mockTable));
 
-    assertThrows(IllegalArgumentException.class, () ->
-        linker.defineTable("module", "name", null));
+    assertThrows(IllegalArgumentException.class, () -> linker.defineTable("module", "name", null));
   }
 
   @Test
@@ -209,14 +207,13 @@ class PanamaLinkerTest {
     final PanamaLinker linker = new PanamaLinker(validHandle, testArena, mockEngine);
 
     // When & Then
-    assertThrows(IllegalArgumentException.class, () ->
-        linker.defineGlobal(null, "name", mockGlobal));
+    assertThrows(
+        IllegalArgumentException.class, () -> linker.defineGlobal(null, "name", mockGlobal));
 
-    assertThrows(IllegalArgumentException.class, () ->
-        linker.defineGlobal("module", null, mockGlobal));
+    assertThrows(
+        IllegalArgumentException.class, () -> linker.defineGlobal("module", null, mockGlobal));
 
-    assertThrows(IllegalArgumentException.class, () ->
-        linker.defineGlobal("module", "name", null));
+    assertThrows(IllegalArgumentException.class, () -> linker.defineGlobal("module", "name", null));
   }
 
   @Test
@@ -225,11 +222,9 @@ class PanamaLinkerTest {
     final PanamaLinker linker = new PanamaLinker(validHandle, testArena, mockEngine);
 
     // When & Then
-    assertThrows(IllegalArgumentException.class, () ->
-        linker.defineInstance(null, mockInstance));
+    assertThrows(IllegalArgumentException.class, () -> linker.defineInstance(null, mockInstance));
 
-    assertThrows(IllegalArgumentException.class, () ->
-        linker.defineInstance("module", null));
+    assertThrows(IllegalArgumentException.class, () -> linker.defineInstance("module", null));
   }
 
   @Test
@@ -238,17 +233,20 @@ class PanamaLinkerTest {
     final PanamaLinker linker = new PanamaLinker(validHandle, testArena, mockEngine);
 
     // When & Then
-    assertThrows(IllegalArgumentException.class, () ->
-        linker.alias(null, "fromName", "toModule", "toName"));
+    assertThrows(
+        IllegalArgumentException.class, () -> linker.alias(null, "fromName", "toModule", "toName"));
 
-    assertThrows(IllegalArgumentException.class, () ->
-        linker.alias("fromModule", null, "toModule", "toName"));
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> linker.alias("fromModule", null, "toModule", "toName"));
 
-    assertThrows(IllegalArgumentException.class, () ->
-        linker.alias("fromModule", "fromName", null, "toName"));
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> linker.alias("fromModule", "fromName", null, "toName"));
 
-    assertThrows(IllegalArgumentException.class, () ->
-        linker.alias("fromModule", "fromName", "toModule", null));
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> linker.alias("fromModule", "fromName", "toModule", null));
   }
 
   @Test
@@ -257,11 +255,9 @@ class PanamaLinkerTest {
     final PanamaLinker linker = new PanamaLinker(validHandle, testArena, mockEngine);
 
     // When & Then
-    assertThrows(IllegalArgumentException.class, () ->
-        linker.instantiate(null, mockModule));
+    assertThrows(IllegalArgumentException.class, () -> linker.instantiate(null, mockModule));
 
-    assertThrows(IllegalArgumentException.class, () ->
-        linker.instantiate(mockStore, null));
+    assertThrows(IllegalArgumentException.class, () -> linker.instantiate(mockStore, null));
   }
 
   @Test
@@ -270,8 +266,7 @@ class PanamaLinkerTest {
     final PanamaLinker linker = new PanamaLinker(validHandle, testArena, mockEngine);
 
     // When & Then
-    assertThrows(IllegalArgumentException.class, () ->
-        linker.defineWasi(null));
+    assertThrows(IllegalArgumentException.class, () -> linker.defineWasi(null));
   }
 
   @Test
@@ -281,38 +276,36 @@ class PanamaLinkerTest {
     linker.close();
 
     // When & Then - All operations should throw IllegalStateException when closed
-    assertThrows(IllegalStateException.class, () ->
-        linker.defineHostFunction("module", "name", mockFunctionType, mockHostFunction));
+    assertThrows(
+        IllegalStateException.class,
+        () -> linker.defineHostFunction("module", "name", mockFunctionType, mockHostFunction));
 
-    assertThrows(IllegalStateException.class, () ->
-        linker.defineHostFunction("module", "name", mockHostFunction));
+    assertThrows(
+        IllegalStateException.class,
+        () -> linker.defineHostFunction("module", "name", mockHostFunction));
 
-    assertThrows(IllegalStateException.class, () ->
-        linker.defineMemory("module", "name", mockMemory));
+    assertThrows(
+        IllegalStateException.class, () -> linker.defineMemory("module", "name", mockMemory));
 
-    assertThrows(IllegalStateException.class, () ->
-        linker.defineTable("module", "name", mockTable));
+    assertThrows(
+        IllegalStateException.class, () -> linker.defineTable("module", "name", mockTable));
 
-    assertThrows(IllegalStateException.class, () ->
-        linker.defineGlobal("module", "name", mockGlobal));
+    assertThrows(
+        IllegalStateException.class, () -> linker.defineGlobal("module", "name", mockGlobal));
 
-    assertThrows(IllegalStateException.class, () ->
-        linker.defineInstance("module", mockInstance));
+    assertThrows(IllegalStateException.class, () -> linker.defineInstance("module", mockInstance));
 
-    assertThrows(IllegalStateException.class, () ->
-        linker.alias("fromModule", "fromName", "toModule", "toName"));
+    assertThrows(
+        IllegalStateException.class,
+        () -> linker.alias("fromModule", "fromName", "toModule", "toName"));
 
-    assertThrows(IllegalStateException.class, () ->
-        linker.instantiate(mockStore, mockModule));
+    assertThrows(IllegalStateException.class, () -> linker.instantiate(mockStore, mockModule));
 
-    assertThrows(IllegalStateException.class, () ->
-        linker.defineWasi(mockWasiConfig));
+    assertThrows(IllegalStateException.class, () -> linker.defineWasi(mockWasiConfig));
 
-    assertThrows(IllegalStateException.class, () ->
-        linker.enableWasi());
+    assertThrows(IllegalStateException.class, () -> linker.enableWasi());
 
-    assertThrows(IllegalStateException.class, () ->
-        linker.getHandle());
+    assertThrows(IllegalStateException.class, () -> linker.getHandle());
 
     // But these should not throw
     assertThat(linker.getEngine()).isEqualTo(mockEngine);
@@ -337,13 +330,13 @@ class PanamaLinkerTest {
     // Given
     final PanamaLinker linker = new PanamaLinker(validHandle, testArena, mockEngine);
     final WasmValueType[] types = {
-        WasmValueType.I32,
-        WasmValueType.I64,
-        WasmValueType.F32,
-        WasmValueType.F64,
-        WasmValueType.V128,
-        WasmValueType.FUNCREF,
-        WasmValueType.EXTERNREF
+      WasmValueType.I32,
+      WasmValueType.I64,
+      WasmValueType.F32,
+      WasmValueType.F64,
+      WasmValueType.V128,
+      WasmValueType.FUNCREF,
+      WasmValueType.EXTERNREF
     };
 
     // When - Use reflection to test the private method through a mock scenario
@@ -363,19 +356,19 @@ class PanamaLinkerTest {
   @Test
   void testCreateWithNonPanamaEngine() {
     // Given
-    final Engine nonPanamaEngine = new Engine() {
-      @Override
-      public void close() {}
+    final Engine nonPanamaEngine =
+        new Engine() {
+          @Override
+          public void close() {}
 
-      @Override
-      public boolean isValid() {
-        return false;
-      }
-    };
+          @Override
+          public boolean isValid() {
+            return false;
+          }
+        };
 
     // When & Then
-    assertThrows(IllegalArgumentException.class, () ->
-        PanamaLinker.create(nonPanamaEngine));
+    assertThrows(IllegalArgumentException.class, () -> PanamaLinker.create(nonPanamaEngine));
   }
 
   @Test
@@ -388,12 +381,9 @@ class PanamaLinkerTest {
     // that use it, like defineHostFunction with FunctionType
 
     // Then - Verify no exceptions are thrown when using arrays of different sizes
-    when(mockFunctionType.getParamTypes()).thenReturn(new WasmValueType[]{
-        WasmValueType.I32, WasmValueType.I64
-    });
-    when(mockFunctionType.getReturnTypes()).thenReturn(new WasmValueType[]{
-        WasmValueType.F32
-    });
+    when(mockFunctionType.getParamTypes())
+        .thenReturn(new WasmValueType[] {WasmValueType.I32, WasmValueType.I64});
+    when(mockFunctionType.getReturnTypes()).thenReturn(new WasmValueType[] {WasmValueType.F32});
 
     final PanamaLinker linker = new PanamaLinker(validHandle, testArena, mockEngine);
     // This should not throw for the validation and conversion parts
@@ -403,7 +393,7 @@ class PanamaLinkerTest {
   @Test
   void testHostFunctionRegistryIntegration() {
     // Given
-    final HostFunction simpleFunction = (params) -> new Object[]{42};
+    final HostFunction simpleFunction = (params) -> new Object[] {42};
 
     // When
     final long id = PanamaHostFunctionRegistry.register(simpleFunction, null);
@@ -436,11 +426,9 @@ class PanamaLinkerTest {
     final PanamaLinker linker = new PanamaLinker(validHandle, testArena, mockEngine);
 
     // When & Then
-    assertThrows(IllegalArgumentException.class, () ->
-        linker.aliasModule(null, mockInstance));
+    assertThrows(IllegalArgumentException.class, () -> linker.aliasModule(null, mockInstance));
 
-    assertThrows(IllegalArgumentException.class, () ->
-        linker.aliasModule("name", null));
+    assertThrows(IllegalArgumentException.class, () -> linker.aliasModule("name", null));
   }
 
   @Test

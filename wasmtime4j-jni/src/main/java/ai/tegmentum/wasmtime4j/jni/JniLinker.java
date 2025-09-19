@@ -384,7 +384,6 @@ public final class JniLinker extends JniResource implements Linker {
     }
   }
 
-
   @Override
   public void defineWasi(final WasiConfig config) throws WasmException {
     JniValidation.requireNonNull(config, "config");

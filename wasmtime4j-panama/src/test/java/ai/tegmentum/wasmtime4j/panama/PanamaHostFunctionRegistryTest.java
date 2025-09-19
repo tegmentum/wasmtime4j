@@ -17,17 +17,13 @@
 package ai.tegmentum.wasmtime4j.panama;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
 import ai.tegmentum.wasmtime4j.FunctionType;
 import ai.tegmentum.wasmtime4j.HostFunction;
-import ai.tegmentum.wasmtime4j.WasmValueType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -48,8 +44,8 @@ class PanamaHostFunctionRegistryTest {
     // Clear registry before each test
     PanamaHostFunctionRegistry.clear();
 
-    testFunction1 = (params) -> new Object[]{42};
-    testFunction2 = (params) -> new Object[]{"hello"};
+    testFunction1 = (params) -> new Object[] {42};
+    testFunction2 = (params) -> new Object[] {"hello"};
 
     functionType = mock(FunctionType.class);
   }
@@ -57,8 +53,9 @@ class PanamaHostFunctionRegistryTest {
   @Test
   void testRegisterNullFunction() {
     // When & Then
-    assertThrows(IllegalArgumentException.class, () ->
-        PanamaHostFunctionRegistry.register(null, functionType));
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> PanamaHostFunctionRegistry.register(null, functionType));
   }
 
   @Test
@@ -70,8 +67,7 @@ class PanamaHostFunctionRegistryTest {
     assertThat(id).isGreaterThan(0);
     assertThat(PanamaHostFunctionRegistry.getRegisteredCount()).isEqualTo(1);
 
-    final PanamaHostFunctionRegistry.HostFunctionEntry entry =
-        PanamaHostFunctionRegistry.get(id);
+    final PanamaHostFunctionRegistry.HostFunctionEntry entry = PanamaHostFunctionRegistry.get(id);
     assertThat(entry).isNotNull();
     assertThat(entry.getImplementation()).isEqualTo(testFunction1);
     assertThat(entry.getFunctionType()).isEqualTo(functionType);
@@ -88,8 +84,7 @@ class PanamaHostFunctionRegistryTest {
     assertThat(id).isGreaterThan(0);
     assertThat(PanamaHostFunctionRegistry.getRegisteredCount()).isEqualTo(1);
 
-    final PanamaHostFunctionRegistry.HostFunctionEntry entry =
-        PanamaHostFunctionRegistry.get(id);
+    final PanamaHostFunctionRegistry.HostFunctionEntry entry = PanamaHostFunctionRegistry.get(id);
     assertThat(entry).isNotNull();
     assertThat(entry.getImplementation()).isEqualTo(testFunction1);
     assertThat(entry.getFunctionType()).isNull();
@@ -106,10 +101,8 @@ class PanamaHostFunctionRegistryTest {
     assertThat(id1).isNotEqualTo(id2);
     assertThat(PanamaHostFunctionRegistry.getRegisteredCount()).isEqualTo(2);
 
-    final PanamaHostFunctionRegistry.HostFunctionEntry entry1 =
-        PanamaHostFunctionRegistry.get(id1);
-    final PanamaHostFunctionRegistry.HostFunctionEntry entry2 =
-        PanamaHostFunctionRegistry.get(id2);
+    final PanamaHostFunctionRegistry.HostFunctionEntry entry1 = PanamaHostFunctionRegistry.get(id1);
+    final PanamaHostFunctionRegistry.HostFunctionEntry entry2 = PanamaHostFunctionRegistry.get(id2);
 
     assertThat(entry1.getImplementation()).isEqualTo(testFunction1);
     assertThat(entry2.getImplementation()).isEqualTo(testFunction2);
@@ -195,8 +188,7 @@ class PanamaHostFunctionRegistryTest {
   void testHostFunctionEntryToString() {
     // Given
     final long id = PanamaHostFunctionRegistry.register(testFunction1, functionType);
-    final PanamaHostFunctionRegistry.HostFunctionEntry entry =
-        PanamaHostFunctionRegistry.get(id);
+    final PanamaHostFunctionRegistry.HostFunctionEntry entry = PanamaHostFunctionRegistry.get(id);
 
     // When
     final String toString = entry.toString();
@@ -218,10 +210,8 @@ class PanamaHostFunctionRegistryTest {
     final long id2 = PanamaHostFunctionRegistry.register(testFunction2, null);
 
     // When
-    final PanamaHostFunctionRegistry.HostFunctionEntry entry1 =
-        PanamaHostFunctionRegistry.get(id1);
-    final PanamaHostFunctionRegistry.HostFunctionEntry entry2 =
-        PanamaHostFunctionRegistry.get(id2);
+    final PanamaHostFunctionRegistry.HostFunctionEntry entry1 = PanamaHostFunctionRegistry.get(id1);
+    final PanamaHostFunctionRegistry.HostFunctionEntry entry2 = PanamaHostFunctionRegistry.get(id2);
 
     // Then
     assertThat(entry2.getRegistrationTime()).isGreaterThanOrEqualTo(entry1.getRegistrationTime());
@@ -237,12 +227,14 @@ class PanamaHostFunctionRegistryTest {
     // When - Register functions from multiple threads
     for (int i = 0; i < numThreads; i++) {
       final int threadIndex = i;
-      threads[i] = new Thread(() -> {
-        for (int j = 0; j < registrationsPerThread; j++) {
-          final HostFunction func = (params) -> new Object[]{threadIndex * 100 + j};
-          PanamaHostFunctionRegistry.register(func, null);
-        }
-      });
+      threads[i] =
+          new Thread(
+              () -> {
+                for (int j = 0; j < registrationsPerThread; j++) {
+                  final HostFunction func = (params) -> new Object[] {threadIndex * 100 + j};
+                  PanamaHostFunctionRegistry.register(func, null);
+                }
+              });
       threads[i].start();
     }
 

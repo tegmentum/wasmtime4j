@@ -147,14 +147,15 @@ final class EngineStatisticsTest {
     void testRealisticScenario() {
       // Simulate an engine that has compiled 100 modules, with 85% cache hit rate
       // and average compilation time of 250ms
-      final EngineStatistics stats = createMockStatistics(
-          85L,    // cache hits
-          15L,    // cache misses
-          100L,   // compiled modules
-          1024L * 1024L, // 1MB memory usage
-          2048L * 1024L, // 2MB peak memory usage
-          25000L  // 25 seconds total compilation time
-      );
+      final EngineStatistics stats =
+          createMockStatistics(
+              85L, // cache hits
+              15L, // cache misses
+              100L, // compiled modules
+              1024L * 1024L, // 1MB memory usage
+              2048L * 1024L, // 2MB peak memory usage
+              25000L // 25 seconds total compilation time
+              );
 
       // Test cache hit rate
       final double hitRate = stats.getCacheHitRate();
@@ -170,21 +171,23 @@ final class EngineStatisticsTest {
       assertEquals(100L, stats.getCompiledModuleCount(), "Module count should match");
       assertEquals(1024L * 1024L, stats.getMemoryUsage(), "Memory usage should match");
       assertEquals(2048L * 1024L, stats.getPeakMemoryUsage(), "Peak memory usage should match");
-      assertEquals(25000L, stats.getTotalCompilationTimeMs(), "Total compilation time should match");
+      assertEquals(
+          25000L, stats.getTotalCompilationTimeMs(), "Total compilation time should match");
     }
 
     @Test
     @DisplayName("High-performance engine statistics")
     void testHighPerformanceScenario() {
       // Simulate a high-performance engine with excellent cache performance
-      final EngineStatistics stats = createMockStatistics(
-          9950L,  // cache hits
-          50L,    // cache misses (99.5% hit rate)
-          10000L, // compiled modules
-          512L * 1024L, // 512KB memory usage
-          1024L * 1024L, // 1MB peak memory usage
-          5000L   // 5 seconds total compilation time (0.5ms average)
-      );
+      final EngineStatistics stats =
+          createMockStatistics(
+              9950L, // cache hits
+              50L, // cache misses (99.5% hit rate)
+              10000L, // compiled modules
+              512L * 1024L, // 512KB memory usage
+              1024L * 1024L, // 1MB peak memory usage
+              5000L // 5 seconds total compilation time (0.5ms average)
+              );
 
       final double hitRate = stats.getCacheHitRate();
       assertTrue(hitRate > 99.0, "High-performance engine should have >99% hit rate");
@@ -199,14 +202,15 @@ final class EngineStatisticsTest {
     @DisplayName("Development engine statistics")
     void testDevelopmentScenario() {
       // Simulate a development engine with poor cache performance but detailed tracking
-      final EngineStatistics stats = createMockStatistics(
-          10L,    // cache hits
-          90L,    // cache misses (10% hit rate - lots of code changes)
-          100L,   // compiled modules
-          4096L * 1024L, // 4MB memory usage (debug builds)
-          8192L * 1024L, // 8MB peak memory usage
-          50000L  // 50 seconds total compilation time (500ms average - debug builds)
-      );
+      final EngineStatistics stats =
+          createMockStatistics(
+              10L, // cache hits
+              90L, // cache misses (10% hit rate - lots of code changes)
+              100L, // compiled modules
+              4096L * 1024L, // 4MB memory usage (debug builds)
+              8192L * 1024L, // 8MB peak memory usage
+              50000L // 50 seconds total compilation time (500ms average - debug builds)
+              );
 
       final double hitRate = stats.getCacheHitRate();
       assertTrue(hitRate < 20.0, "Development engine should have low hit rate");
@@ -222,9 +226,7 @@ final class EngineStatisticsTest {
     }
   }
 
-  /**
-   * Creates a mock EngineStatistics instance for testing.
-   */
+  /** Creates a mock EngineStatistics instance for testing. */
   private EngineStatistics createMockStatistics(
       final long cacheHits,
       final long cacheMisses,

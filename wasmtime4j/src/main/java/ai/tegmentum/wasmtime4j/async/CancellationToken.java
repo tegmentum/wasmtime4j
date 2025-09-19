@@ -9,13 +9,13 @@ import java.util.function.Consumer;
 /**
  * Provides cancellation support for asynchronous WebAssembly operations.
  *
- * <p>A CancellationToken enables cooperative cancellation of long-running async operations
- * by providing a mechanism for operations to check if cancellation has been requested
- * and respond appropriately. This is essential for responsive applications that need
- * to cancel operations due to user input, timeouts, or changing requirements.
+ * <p>A CancellationToken enables cooperative cancellation of long-running async operations by
+ * providing a mechanism for operations to check if cancellation has been requested and respond
+ * appropriately. This is essential for responsive applications that need to cancel operations due
+ * to user input, timeouts, or changing requirements.
  *
- * <p>Cancellation tokens support both immediate cancellation and scheduled cancellation
- * after a specified timeout period.
+ * <p>Cancellation tokens support both immediate cancellation and scheduled cancellation after a
+ * specified timeout period.
  *
  * @since 1.0.0
  */
@@ -24,8 +24,8 @@ public interface CancellationToken {
   /**
    * Checks if cancellation has been requested.
    *
-   * <p>Operations should periodically check this flag and terminate gracefully
-   * if cancellation has been requested.
+   * <p>Operations should periodically check this flag and terminate gracefully if cancellation has
+   * been requested.
    *
    * @return true if cancellation has been requested
    */
@@ -34,8 +34,8 @@ public interface CancellationToken {
   /**
    * Throws a CancellationException if cancellation has been requested.
    *
-   * <p>This is a convenience method for operations that want to throw immediately
-   * upon detecting cancellation.
+   * <p>This is a convenience method for operations that want to throw immediately upon detecting
+   * cancellation.
    *
    * @throws CancellationException if cancellation has been requested
    */
@@ -44,8 +44,8 @@ public interface CancellationToken {
   /**
    * Registers a callback to be executed when cancellation is requested.
    *
-   * <p>The callback will be executed immediately if cancellation has already
-   * been requested, or when cancellation is requested in the future.
+   * <p>The callback will be executed immediately if cancellation has already been requested, or
+   * when cancellation is requested in the future.
    *
    * @param callback the callback to execute on cancellation
    * @return a registration handle that can be used to unregister the callback
@@ -90,8 +90,7 @@ public interface CancellationToken {
   /**
    * Checks if this token can be cancelled.
    *
-   * <p>Some tokens may be non-cancellable for certain operations that
-   * cannot be safely interrupted.
+   * <p>Some tokens may be non-cancellable for certain operations that cannot be safely interrupted.
    *
    * @return true if this token can be cancelled
    */
@@ -100,8 +99,8 @@ public interface CancellationToken {
   /**
    * Creates a CompletableFuture that completes when cancellation is requested.
    *
-   * <p>This allows integration with async operations that can be cancelled
-   * using CompletableFuture composition.
+   * <p>This allows integration with async operations that can be cancelled using CompletableFuture
+   * composition.
    *
    * @return a CompletableFuture that completes when cancelled
    */
@@ -110,8 +109,7 @@ public interface CancellationToken {
   /**
    * Creates a new token that combines this token with another token.
    *
-   * <p>The combined token will be cancelled if either this token or the
-   * other token is cancelled.
+   * <p>The combined token will be cancelled if either this token or the other token is cancelled.
    *
    * @param other the other token to combine with
    * @return a combined cancellation token
@@ -122,8 +120,8 @@ public interface CancellationToken {
   /**
    * Creates a new token that will be cancelled after the specified timeout.
    *
-   * <p>The returned token will be cancelled if either this token is cancelled
-   * or the timeout expires.
+   * <p>The returned token will be cancelled if either this token is cancelled or the timeout
+   * expires.
    *
    * @param timeout the timeout duration
    * @return a token with timeout-based cancellation
@@ -131,15 +129,13 @@ public interface CancellationToken {
    */
   CancellationToken withTimeout(final Duration timeout);
 
-  /**
-   * A registration handle for cancellation callbacks.
-   */
+  /** A registration handle for cancellation callbacks. */
   interface CancellationRegistration {
     /**
      * Unregisters the callback.
      *
-     * <p>After calling this method, the callback will no longer be executed
-     * when cancellation is requested.
+     * <p>After calling this method, the callback will no longer be executed when cancellation is
+     * requested.
      */
     void unregister();
 
@@ -158,16 +154,12 @@ public interface CancellationToken {
     Instant getRegistrationTime();
   }
 
-  /**
-   * Exception thrown when an operation is cancelled.
-   */
+  /** Exception thrown when an operation is cancelled. */
   class CancellationException extends RuntimeException {
     private final String source;
     private final Instant cancellationTime;
 
-    /**
-     * Creates a new CancellationException.
-     */
+    /** Creates a new CancellationException. */
     public CancellationException() {
       this("Operation was cancelled", null, Instant.now());
     }
@@ -188,7 +180,8 @@ public interface CancellationToken {
      * @param source the cancellation source
      * @param cancellationTime when cancellation occurred
      */
-    public CancellationException(final String message, final String source, final Instant cancellationTime) {
+    public CancellationException(
+        final String message, final String source, final Instant cancellationTime) {
       super(message);
       this.source = source;
       this.cancellationTime = cancellationTime;
@@ -262,9 +255,7 @@ public interface CancellationToken {
   }
 }
 
-/**
- * A source for creating and controlling cancellation tokens.
- */
+/** A source for creating and controlling cancellation tokens. */
 interface CancellationTokenSource {
   /**
    * Gets the token associated with this source.
@@ -273,9 +264,7 @@ interface CancellationTokenSource {
    */
   CancellationToken getToken();
 
-  /**
-   * Requests cancellation of the associated token.
-   */
+  /** Requests cancellation of the associated token. */
   void cancel();
 
   /**
@@ -316,15 +305,11 @@ interface CancellationTokenSource {
    */
   CancellationToken withTimeout(final Duration timeout);
 
-  /**
-   * Closes this source and releases any associated resources.
-   */
+  /** Closes this source and releases any associated resources. */
   void close();
 }
 
-/**
- * Non-cancellable token implementation.
- */
+/** Non-cancellable token implementation. */
 final class NonCancellableToken implements CancellationToken {
   @Override
   public boolean isCancelled() {
@@ -399,9 +384,7 @@ final class NonCancellableToken implements CancellationToken {
   }
 }
 
-/**
- * Pre-cancelled token implementation.
- */
+/** Pre-cancelled token implementation. */
 final class CancelledToken implements CancellationToken {
   static final CancelledToken INSTANCE = new CancelledToken("Operation was cancelled");
 
@@ -490,9 +473,7 @@ final class CancelledToken implements CancellationToken {
   }
 }
 
-/**
- * Implementation of CancellationTokenSource.
- */
+/** Implementation of CancellationTokenSource. */
 final class CancellationTokenSourceImpl implements CancellationTokenSource {
   private volatile boolean cancelled = false;
   private volatile String reason;
@@ -645,7 +626,8 @@ final class CancellationTokenSourceImpl implements CancellationTokenSource {
     }
   }
 
-  private abstract static class CallbackRegistration implements CancellationToken.CancellationRegistration {
+  private abstract static class CallbackRegistration
+      implements CancellationToken.CancellationRegistration {
     private final Instant registrationTime = Instant.now();
     private volatile boolean registered = true;
 
@@ -717,9 +699,7 @@ final class CancellationTokenSourceImpl implements CancellationTokenSource {
   }
 }
 
-/**
- * Combined cancellation token implementation.
- */
+/** Combined cancellation token implementation. */
 final class CombinedToken implements CancellationToken {
   private final CancellationToken token1;
   private final CancellationToken token2;

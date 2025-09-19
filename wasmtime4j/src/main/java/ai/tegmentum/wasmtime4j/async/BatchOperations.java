@@ -14,13 +14,13 @@ import java.util.function.Consumer;
 /**
  * Provides batch operations for efficient processing of multiple WebAssembly operations.
  *
- * <p>BatchOperations enables high-throughput processing by grouping related operations
- * together and executing them efficiently with shared resources, progress tracking,
- * and comprehensive error handling. This is particularly useful for scenarios involving
- * multiple module compilations, function calls, or data processing tasks.
+ * <p>BatchOperations enables high-throughput processing by grouping related operations together and
+ * executing them efficiently with shared resources, progress tracking, and comprehensive error
+ * handling. This is particularly useful for scenarios involving multiple module compilations,
+ * function calls, or data processing tasks.
  *
- * <p>All batch operations support cancellation, progress monitoring, and detailed
- * statistics collection for performance analysis and monitoring.
+ * <p>All batch operations support cancellation, progress monitoring, and detailed statistics
+ * collection for performance analysis and monitoring.
  *
  * @since 1.0.0
  */
@@ -29,8 +29,8 @@ public interface BatchOperations {
   /**
    * Compiles multiple WebAssembly modules concurrently.
    *
-   * <p>This method efficiently compiles multiple modules by sharing compilation
-   * resources and optimizing the compilation pipeline for batch processing.
+   * <p>This method efficiently compiles multiple modules by sharing compilation resources and
+   * optimizing the compilation pipeline for batch processing.
    *
    * @param sources the module sources to compile
    * @return a CompletableFuture that completes with the batch compilation results
@@ -46,13 +46,14 @@ public interface BatchOperations {
    * @return a CompletableFuture that completes with the batch compilation results
    * @throws IllegalArgumentException if sources or options is null
    */
-  CompletableFuture<BatchCompilationResult> compileBatch(final Collection<ModuleSource> sources, final BatchOptions options);
+  CompletableFuture<BatchCompilationResult> compileBatch(
+      final Collection<ModuleSource> sources, final BatchOptions options);
 
   /**
    * Executes multiple function calls concurrently.
    *
-   * <p>This method efficiently executes multiple function calls by optimizing
-   * execution scheduling and resource usage across the batch.
+   * <p>This method efficiently executes multiple function calls by optimizing execution scheduling
+   * and resource usage across the batch.
    *
    * @param calls the function calls to execute
    * @return a CompletableFuture that completes with the batch execution results
@@ -68,13 +69,14 @@ public interface BatchOperations {
    * @return a CompletableFuture that completes with the batch execution results
    * @throws IllegalArgumentException if calls or options is null
    */
-  CompletableFuture<BatchExecutionResult> executeBatch(final Collection<FunctionCallRequest> calls, final BatchOptions options);
+  CompletableFuture<BatchExecutionResult> executeBatch(
+      final Collection<FunctionCallRequest> calls, final BatchOptions options);
 
   /**
    * Performs multiple memory operations concurrently.
    *
-   * <p>This method efficiently performs bulk memory operations such as reads,
-   * writes, and transfers by optimizing memory access patterns and reducing overhead.
+   * <p>This method efficiently performs bulk memory operations such as reads, writes, and transfers
+   * by optimizing memory access patterns and reducing overhead.
    *
    * @param operations the memory operations to perform
    * @return a CompletableFuture that completes with the batch memory results
@@ -90,7 +92,8 @@ public interface BatchOperations {
    * @return a CompletableFuture that completes with the batch memory results
    * @throws IllegalArgumentException if operations or options is null
    */
-  CompletableFuture<BatchMemoryResult> memoryBatch(final Collection<MemoryOperation> operations, final BatchOptions options);
+  CompletableFuture<BatchMemoryResult> memoryBatch(
+      final Collection<MemoryOperation> operations, final BatchOptions options);
 
   /**
    * Creates a batch operation builder for complex batch configurations.
@@ -106,9 +109,7 @@ public interface BatchOperations {
    */
   BatchOperationStatistics getStatistics();
 
-  /**
-   * Represents a module source for batch compilation.
-   */
+  /** Represents a module source for batch compilation. */
   interface ModuleSource {
     /**
      * Gets the unique identifier for this module source.
@@ -139,9 +140,7 @@ public interface BatchOperations {
     Object getMetadata();
   }
 
-  /**
-   * Represents a function call request for batch execution.
-   */
+  /** Represents a function call request for batch execution. */
   interface FunctionCallRequest {
     /**
      * Gets the unique identifier for this call request.
@@ -186,9 +185,7 @@ public interface BatchOperations {
     Object getMetadata();
   }
 
-  /**
-   * Represents a memory operation for batch processing.
-   */
+  /** Represents a memory operation for batch processing. */
   interface MemoryOperation {
     /**
      * Gets the unique identifier for this memory operation.
@@ -240,16 +237,16 @@ public interface BatchOperations {
     Object getMetadata();
   }
 
-  /**
-   * Types of memory operations for batch processing.
-   */
+  /** Types of memory operations for batch processing. */
   enum MemoryOperationType {
-    READ, WRITE, COPY, FILL, COMPARE
+    READ,
+    WRITE,
+    COPY,
+    FILL,
+    COMPARE
   }
 
-  /**
-   * Configuration options for batch operations.
-   */
+  /** Configuration options for batch operations. */
   interface BatchOptions {
     /**
      * Gets the maximum number of concurrent operations.
@@ -329,9 +326,7 @@ public interface BatchOperations {
     boolean isPrioritySortingEnabled();
   }
 
-  /**
-   * Progress information for batch operations.
-   */
+  /** Progress information for batch operations. */
   interface BatchProgress {
     /**
      * Gets the total number of operations in the batch.
@@ -397,9 +392,7 @@ public interface BatchOperations {
     double getAverageThroughput();
   }
 
-  /**
-   * Result of a batch compilation operation.
-   */
+  /** Result of a batch compilation operation. */
   interface BatchCompilationResult {
     /**
      * Gets the list of successful compilation results.
@@ -451,9 +444,7 @@ public interface BatchOperations {
     int getFailureCount();
   }
 
-  /**
-   * Result of a batch execution operation.
-   */
+  /** Result of a batch execution operation. */
   interface BatchExecutionResult {
     /**
      * Gets the list of successful execution results.
@@ -505,9 +496,7 @@ public interface BatchOperations {
     int getFailureCount();
   }
 
-  /**
-   * Result of a batch memory operation.
-   */
+  /** Result of a batch memory operation. */
   interface BatchMemoryResult {
     /**
      * Gets the list of successful memory operation results.
@@ -559,9 +548,7 @@ public interface BatchOperations {
     int getFailureCount();
   }
 
-  /**
-   * Represents a successful compilation result.
-   */
+  /** Represents a successful compilation result. */
   interface CompilationSuccess {
     /**
      * Gets the module source ID.
@@ -592,9 +579,7 @@ public interface BatchOperations {
     Object getMetadata();
   }
 
-  /**
-   * Represents a failed compilation result.
-   */
+  /** Represents a failed compilation result. */
   interface CompilationFailure {
     /**
      * Gets the module source ID.
@@ -625,9 +610,7 @@ public interface BatchOperations {
     Object getMetadata();
   }
 
-  /**
-   * Represents a successful execution result.
-   */
+  /** Represents a successful execution result. */
   interface ExecutionSuccess {
     /**
      * Gets the call request ID.
@@ -658,9 +641,7 @@ public interface BatchOperations {
     Object getMetadata();
   }
 
-  /**
-   * Represents a failed execution result.
-   */
+  /** Represents a failed execution result. */
   interface ExecutionFailure {
     /**
      * Gets the call request ID.
@@ -691,9 +672,7 @@ public interface BatchOperations {
     Object getMetadata();
   }
 
-  /**
-   * Represents a successful memory operation result.
-   */
+  /** Represents a successful memory operation result. */
   interface MemoryOperationSuccess {
     /**
      * Gets the operation ID.
@@ -731,9 +710,7 @@ public interface BatchOperations {
     Object getMetadata();
   }
 
-  /**
-   * Represents a failed memory operation result.
-   */
+  /** Represents a failed memory operation result. */
   interface MemoryOperationFailure {
     /**
      * Gets the operation ID.
@@ -771,9 +748,7 @@ public interface BatchOperations {
     Object getMetadata();
   }
 
-  /**
-   * Overall statistics for a batch operation.
-   */
+  /** Overall statistics for a batch operation. */
   interface BatchStatistics {
     /**
      * Gets the batch start time.
@@ -846,9 +821,7 @@ public interface BatchOperations {
     long getPeakMemoryUsage();
   }
 
-  /**
-   * Builder for creating complex batch operations.
-   */
+  /** Builder for creating complex batch operations. */
   interface BatchOperationBuilder {
     /**
      * Adds module sources for compilation.
@@ -922,9 +895,7 @@ public interface BatchOperations {
     CompletableFuture<MixedBatchResult> execute();
   }
 
-  /**
-   * Result of a mixed batch operation containing multiple operation types.
-   */
+  /** Result of a mixed batch operation containing multiple operation types. */
   interface MixedBatchResult {
     /**
      * Gets the compilation results.
@@ -962,9 +933,7 @@ public interface BatchOperations {
     boolean isCompleteSuccess();
   }
 
-  /**
-   * Statistics for batch operations.
-   */
+  /** Statistics for batch operations. */
   interface BatchOperationStatistics {
     /**
      * Gets the total number of batch operations performed.

@@ -40,7 +40,6 @@ import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
-import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
 
@@ -94,54 +93,117 @@ public final class PanamaLinker implements Linker, AutoCloseable {
     try {
       final NativeFunctionBindings bindings = NativeFunctionBindings.getInstance();
 
-      CREATE_LINKER = bindings.getFunction("wasmtime4j_linker_create",
-          FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-      DEFINE_FUNCTION = bindings.getFunction("wasmtime4j_linker_define_function",
-          FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN,
-              ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-      DEFINE_HOST_FUNCTION = bindings.getFunction("wasmtime4j_linker_define_host_function",
-          FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN,
-              ValueLayout.ADDRESS, // linker
-              ValueLayout.ADDRESS, // module_name
-              ValueLayout.ADDRESS, // function_name
-              ValueLayout.ADDRESS, // param_types
-              ValueLayout.JAVA_INT, // param_count
-              ValueLayout.ADDRESS, // return_types
-              ValueLayout.JAVA_INT, // return_count
-              ValueLayout.ADDRESS)); // host_function
-      DEFINE_HOST_FUNCTION_SIMPLE = bindings.getFunction("wasmtime4j_linker_define_host_function_simple",
-          FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN,
-              ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-      DEFINE_MEMORY = bindings.getFunction("wasmtime4j_linker_define_memory",
-          FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN,
-              ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-      DEFINE_TABLE = bindings.getFunction("wasmtime4j_linker_define_table",
-          FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN,
-              ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-      DEFINE_GLOBAL = bindings.getFunction("wasmtime4j_linker_define_global",
-          FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN,
-              ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-      DEFINE_INSTANCE = bindings.getFunction("wasmtime4j_linker_define_instance",
-          FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN,
-              ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-      CREATE_ALIAS = bindings.getFunction("wasmtime4j_linker_alias",
-          FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN,
-              ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS,
-              ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-      ALIAS_MODULE = bindings.getFunction("wasmtime4j_linker_alias_module",
-          FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN,
-              ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-      INSTANTIATE = bindings.getFunction("wasmtime4j_linker_instantiate",
-          FunctionDescriptor.of(ValueLayout.ADDRESS,
-              ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-      ENABLE_WASI = bindings.getFunction("wasmtime4j_linker_enable_wasi",
-          FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN, ValueLayout.ADDRESS));
-      DEFINE_WASI = bindings.getFunction("wasmtime4j_linker_define_wasi",
-          FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-      DESTROY_LINKER = bindings.getFunction("wasmtime4j_linker_destroy",
-          FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+      CREATE_LINKER =
+          bindings.getFunction(
+              "wasmtime4j_linker_create",
+              FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+      DEFINE_FUNCTION =
+          bindings.getFunction(
+              "wasmtime4j_linker_define_function",
+              FunctionDescriptor.of(
+                  ValueLayout.JAVA_BOOLEAN,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS));
+      DEFINE_HOST_FUNCTION =
+          bindings.getFunction(
+              "wasmtime4j_linker_define_host_function",
+              FunctionDescriptor.of(
+                  ValueLayout.JAVA_BOOLEAN,
+                  ValueLayout.ADDRESS, // linker
+                  ValueLayout.ADDRESS, // module_name
+                  ValueLayout.ADDRESS, // function_name
+                  ValueLayout.ADDRESS, // param_types
+                  ValueLayout.JAVA_INT, // param_count
+                  ValueLayout.ADDRESS, // return_types
+                  ValueLayout.JAVA_INT, // return_count
+                  ValueLayout.ADDRESS)); // host_function
+      DEFINE_HOST_FUNCTION_SIMPLE =
+          bindings.getFunction(
+              "wasmtime4j_linker_define_host_function_simple",
+              FunctionDescriptor.of(
+                  ValueLayout.JAVA_BOOLEAN,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS));
+      DEFINE_MEMORY =
+          bindings.getFunction(
+              "wasmtime4j_linker_define_memory",
+              FunctionDescriptor.of(
+                  ValueLayout.JAVA_BOOLEAN,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS));
+      DEFINE_TABLE =
+          bindings.getFunction(
+              "wasmtime4j_linker_define_table",
+              FunctionDescriptor.of(
+                  ValueLayout.JAVA_BOOLEAN,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS));
+      DEFINE_GLOBAL =
+          bindings.getFunction(
+              "wasmtime4j_linker_define_global",
+              FunctionDescriptor.of(
+                  ValueLayout.JAVA_BOOLEAN,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS));
+      DEFINE_INSTANCE =
+          bindings.getFunction(
+              "wasmtime4j_linker_define_instance",
+              FunctionDescriptor.of(
+                  ValueLayout.JAVA_BOOLEAN,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS));
+      CREATE_ALIAS =
+          bindings.getFunction(
+              "wasmtime4j_linker_alias",
+              FunctionDescriptor.of(
+                  ValueLayout.JAVA_BOOLEAN,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS));
+      ALIAS_MODULE =
+          bindings.getFunction(
+              "wasmtime4j_linker_alias_module",
+              FunctionDescriptor.of(
+                  ValueLayout.JAVA_BOOLEAN,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS));
+      INSTANTIATE =
+          bindings.getFunction(
+              "wasmtime4j_linker_instantiate",
+              FunctionDescriptor.of(
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS));
+      ENABLE_WASI =
+          bindings.getFunction(
+              "wasmtime4j_linker_enable_wasi",
+              FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN, ValueLayout.ADDRESS));
+      DEFINE_WASI =
+          bindings.getFunction(
+              "wasmtime4j_linker_define_wasi",
+              FunctionDescriptor.of(
+                  ValueLayout.JAVA_BOOLEAN, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+      DESTROY_LINKER =
+          bindings.getFunction(
+              "wasmtime4j_linker_destroy", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
     } catch (final Exception e) {
-      throw new ExceptionInInitializerError("Failed to initialize Panama linker: " + e.getMessage());
+      throw new ExceptionInInitializerError(
+          "Failed to initialize Panama linker: " + e.getMessage());
     }
   }
 
@@ -237,16 +299,17 @@ public final class PanamaLinker implements Linker, AutoCloseable {
       // Create host function wrapper (this uses the linker's shared arena)
       final MemorySegment hostFunctionHandle = createHostFunction(implementation, functionType);
 
-      final boolean success = (boolean) DEFINE_HOST_FUNCTION.invokeExact(
-          linkerHandle,
-          moduleNameSegment,
-          functionNameSegment,
-          paramTypesSegment,
-          paramTypes.length,
-          returnTypesSegment,
-          returnTypes.length,
-          hostFunctionHandle
-      );
+      final boolean success =
+          (boolean)
+              DEFINE_HOST_FUNCTION.invokeExact(
+                  linkerHandle,
+                  moduleNameSegment,
+                  functionNameSegment,
+                  paramTypesSegment,
+                  paramTypes.length,
+                  returnTypesSegment,
+                  returnTypes.length,
+                  hostFunctionHandle);
 
       if (!success) {
         throw new WasmException("Failed to define host function: " + moduleName + "::" + name);
@@ -261,8 +324,8 @@ public final class PanamaLinker implements Linker, AutoCloseable {
   }
 
   @Override
-  public void defineHostFunction(final String module, final String name, final HostFunction function)
-      throws WasmException {
+  public void defineHostFunction(
+      final String module, final String name, final HostFunction function) throws WasmException {
     PanamaValidation.requireNonBlank(module, "module");
     PanamaValidation.requireNonBlank(name, "name");
     PanamaValidation.requireNonNull(function, "function");
@@ -274,12 +337,10 @@ public final class PanamaLinker implements Linker, AutoCloseable {
       final MemorySegment nameSegment = callArena.allocateUtf8String(name);
       final MemorySegment hostFunctionHandle = createHostFunction(function, null);
 
-      final boolean success = (boolean) DEFINE_HOST_FUNCTION_SIMPLE.invokeExact(
-          linkerHandle,
-          moduleSegment,
-          nameSegment,
-          hostFunctionHandle
-      );
+      final boolean success =
+          (boolean)
+              DEFINE_HOST_FUNCTION_SIMPLE.invokeExact(
+                  linkerHandle, moduleSegment, nameSegment, hostFunctionHandle);
 
       if (!success) {
         throw new WasmException("Failed to define host function: " + module + "::" + name);
@@ -312,12 +373,10 @@ public final class PanamaLinker implements Linker, AutoCloseable {
       final MemorySegment memoryNameSegment = callArena.allocateUtf8String(name);
       final MemorySegment memoryHandle = panamaMemory.getHandle();
 
-      final boolean success = (boolean) DEFINE_MEMORY.invokeExact(
-          linkerHandle,
-          moduleNameSegment,
-          memoryNameSegment,
-          memoryHandle
-      );
+      final boolean success =
+          (boolean)
+              DEFINE_MEMORY.invokeExact(
+                  linkerHandle, moduleNameSegment, memoryNameSegment, memoryHandle);
 
       if (!success) {
         throw new WasmException("Failed to define memory: " + moduleName + "::" + name);
@@ -349,12 +408,10 @@ public final class PanamaLinker implements Linker, AutoCloseable {
       final MemorySegment tableNameSegment = memoryManager.allocateString(name);
       final MemorySegment tableHandle = panamaTable.getHandle();
 
-      final boolean success = (boolean) DEFINE_TABLE.invokeExact(
-          linkerHandle,
-          moduleNameSegment,
-          tableNameSegment,
-          tableHandle
-      );
+      final boolean success =
+          (boolean)
+              DEFINE_TABLE.invokeExact(
+                  linkerHandle, moduleNameSegment, tableNameSegment, tableHandle);
 
       if (!success) {
         throw new WasmException("Failed to define table: " + moduleName + "::" + name);
@@ -386,12 +443,10 @@ public final class PanamaLinker implements Linker, AutoCloseable {
       final MemorySegment globalNameSegment = memoryManager.allocateString(name);
       final MemorySegment globalHandle = panamaGlobal.getHandle();
 
-      final boolean success = (boolean) DEFINE_GLOBAL.invokeExact(
-          linkerHandle,
-          moduleNameSegment,
-          globalNameSegment,
-          globalHandle
-      );
+      final boolean success =
+          (boolean)
+              DEFINE_GLOBAL.invokeExact(
+                  linkerHandle, moduleNameSegment, globalNameSegment, globalHandle);
 
       if (!success) {
         throw new WasmException("Failed to define global: " + moduleName + "::" + name);
@@ -421,11 +476,8 @@ public final class PanamaLinker implements Linker, AutoCloseable {
       final MemorySegment moduleNameSegment = memoryManager.allocateString(moduleName);
       final MemorySegment instanceHandle = panamaInstance.getHandle();
 
-      final boolean success = (boolean) DEFINE_INSTANCE.invokeExact(
-          linkerHandle,
-          moduleNameSegment,
-          instanceHandle
-      );
+      final boolean success =
+          (boolean) DEFINE_INSTANCE.invokeExact(linkerHandle, moduleNameSegment, instanceHandle);
 
       if (!success) {
         throw new WasmException("Failed to define instance: " + moduleName);
@@ -440,7 +492,8 @@ public final class PanamaLinker implements Linker, AutoCloseable {
   }
 
   @Override
-  public void alias(final String fromModule, final String fromName, final String toModule, final String toName)
+  public void alias(
+      final String fromModule, final String fromName, final String toModule, final String toName)
       throws WasmException {
     PanamaValidation.requireNonBlank(fromModule, "fromModule");
     PanamaValidation.requireNonBlank(fromName, "fromName");
@@ -454,20 +507,25 @@ public final class PanamaLinker implements Linker, AutoCloseable {
       final MemorySegment toModuleSegment = memoryManager.allocateString(toModule);
       final MemorySegment toNameSegment = memoryManager.allocateString(toName);
 
-      final boolean success = (boolean) CREATE_ALIAS.invokeExact(
-          linkerHandle,
-          fromModuleSegment,
-          fromNameSegment,
-          toModuleSegment,
-          toNameSegment
-      );
+      final boolean success =
+          (boolean)
+              CREATE_ALIAS.invokeExact(
+                  linkerHandle, fromModuleSegment, fromNameSegment, toModuleSegment, toNameSegment);
 
       if (!success) {
-        throw new WasmException("Failed to create alias: " + fromModule + "::" + fromName
-            + " -> " + toModule + "::" + toName);
+        throw new WasmException(
+            "Failed to create alias: "
+                + fromModule
+                + "::"
+                + fromName
+                + " -> "
+                + toModule
+                + "::"
+                + toName);
       }
 
-      LOGGER.fine("Created alias " + fromModule + "::" + fromName + " -> " + toModule + "::" + toName);
+      LOGGER.fine(
+          "Created alias " + fromModule + "::" + fromName + " -> " + toModule + "::" + toName);
     } catch (final WasmException e) {
       throw e;
     } catch (final Throwable e) {
@@ -492,17 +550,17 @@ public final class PanamaLinker implements Linker, AutoCloseable {
       final PanamaStore panamaStore = (PanamaStore) store;
       final PanamaModule panamaModule = (PanamaModule) module;
 
-      final MemorySegment instanceHandle = (MemorySegment) INSTANTIATE.invokeExact(
-          linkerHandle,
-          panamaStore.getHandle(),
-          panamaModule.getHandle()
-      );
+      final MemorySegment instanceHandle =
+          (MemorySegment)
+              INSTANTIATE.invokeExact(
+                  linkerHandle, panamaStore.getHandle(), panamaModule.getHandle());
 
       if (instanceHandle.equals(MemorySegment.NULL)) {
         throw new WasmException("Failed to instantiate module");
       }
 
-      final PanamaInstance instance = PanamaInstance.fromHandle(instanceHandle, module, store, arena);
+      final PanamaInstance instance =
+          PanamaInstance.fromHandle(instanceHandle, module, store, arena);
       LOGGER.fine("Successfully instantiated module");
       return instance;
     } catch (final WasmException e) {
@@ -546,12 +604,9 @@ public final class PanamaLinker implements Linker, AutoCloseable {
       final MemorySegment nameSegment = memoryManager.allocateString(name);
       final MemorySegment functionHandle = panamaFunction.getHandle();
 
-      final boolean success = (boolean) DEFINE_FUNCTION.invokeExact(
-          linkerHandle,
-          moduleSegment,
-          nameSegment,
-          functionHandle
-      );
+      final boolean success =
+          (boolean)
+              DEFINE_FUNCTION.invokeExact(linkerHandle, moduleSegment, nameSegment, functionHandle);
 
       if (!success) {
         throw new WasmException("Failed to define function: " + module + "::" + name);
@@ -586,17 +641,19 @@ public final class PanamaLinker implements Linker, AutoCloseable {
   }
 
   @Override
-  public java.util.concurrent.CompletableFuture<Instance> instantiateAsync(final Store store, final Module module) {
+  public java.util.concurrent.CompletableFuture<Instance> instantiateAsync(
+      final Store store, final Module module) {
     PanamaValidation.requireNonNull(store, "store");
     PanamaValidation.requireNonNull(module, "module");
 
-    return java.util.concurrent.CompletableFuture.supplyAsync(() -> {
-      try {
-        return instantiate(store, module);
-      } catch (final WasmException e) {
-        throw new RuntimeException(e);
-      }
-    });
+    return java.util.concurrent.CompletableFuture.supplyAsync(
+        () -> {
+          try {
+            return instantiate(store, module);
+          } catch (final WasmException e) {
+            throw new RuntimeException(e);
+          }
+        });
   }
 
   @Override
@@ -614,11 +671,8 @@ public final class PanamaLinker implements Linker, AutoCloseable {
       final MemorySegment nameSegment = memoryManager.allocateString(name);
       final MemorySegment instanceHandle = panamaInstance.getHandle();
 
-      final boolean success = (boolean) ALIAS_MODULE.invokeExact(
-          linkerHandle,
-          nameSegment,
-          instanceHandle
-      );
+      final boolean success =
+          (boolean) ALIAS_MODULE.invokeExact(linkerHandle, nameSegment, instanceHandle);
 
       if (!success) {
         throw new WasmException("Failed to alias module: " + name);
@@ -756,15 +810,16 @@ public final class PanamaLinker implements Linker, AutoCloseable {
   private static final Linker NATIVE_LINKER = Linker.nativeLinker();
 
   /** Function descriptor for host function callbacks. */
-  private static final FunctionDescriptor HOST_FUNCTION_DESCRIPTOR = FunctionDescriptor.of(
-      ValueLayout.JAVA_INT, // return code (0 = success, -1 = error)
-      ValueLayout.ADDRESS, // caller context
-      ValueLayout.ADDRESS, // parameter values array
-      ValueLayout.JAVA_INT, // parameter count
-      ValueLayout.ADDRESS, // result values array
-      ValueLayout.JAVA_INT, // result count
-      ValueLayout.ADDRESS  // user data (host function reference)
-  );
+  private static final FunctionDescriptor HOST_FUNCTION_DESCRIPTOR =
+      FunctionDescriptor.of(
+          ValueLayout.JAVA_INT, // return code (0 = success, -1 = error)
+          ValueLayout.ADDRESS, // caller context
+          ValueLayout.ADDRESS, // parameter values array
+          ValueLayout.JAVA_INT, // parameter count
+          ValueLayout.ADDRESS, // result values array
+          ValueLayout.JAVA_INT, // result count
+          ValueLayout.ADDRESS // user data (host function reference)
+          );
 
   /**
    * Creates a native host function wrapper using Panama upcall stubs.
@@ -773,19 +828,24 @@ public final class PanamaLinker implements Linker, AutoCloseable {
    * @param functionType the function type (can be null for simple host functions)
    * @return memory segment representing the native host function upcall stub
    */
-  private MemorySegment createHostFunction(final HostFunction implementation, final FunctionType functionType) {
+  private MemorySegment createHostFunction(
+      final HostFunction implementation, final FunctionType functionType) {
     try {
       // Create a method handle for our callback
-      final MethodHandle callbackHandle = MethodHandles.lookup()
-          .findStatic(PanamaLinker.class, "hostFunctionCallback",
-              MethodType.methodType(int.class,
-                  MemorySegment.class, // caller
-                  MemorySegment.class, // params
-                  int.class,           // param_count
-                  MemorySegment.class, // results
-                  int.class,           // result_count
-                  MemorySegment.class  // user_data
-              ));
+      final MethodHandle callbackHandle =
+          MethodHandles.lookup()
+              .findStatic(
+                  PanamaLinker.class,
+                  "hostFunctionCallback",
+                  MethodType.methodType(
+                      int.class,
+                      MemorySegment.class, // caller
+                      MemorySegment.class, // params
+                      int.class, // param_count
+                      MemorySegment.class, // results
+                      int.class, // result_count
+                      MemorySegment.class // user_data
+                      ));
 
       // Store the host function implementation in a way we can retrieve it
       final long hostFunctionId = PanamaHostFunctionRegistry.register(implementation, functionType);
@@ -796,13 +856,12 @@ public final class PanamaLinker implements Linker, AutoCloseable {
       final MethodHandle boundCallback = callbackHandle.bindTo(userDataSegment);
 
       // Create the upcall stub
-      final MemorySegment upcallStub = NATIVE_LINKER.upcallStub(
-          boundCallback,
-          HOST_FUNCTION_DESCRIPTOR,
-          arena
-      );
+      final MemorySegment upcallStub =
+          NATIVE_LINKER.upcallStub(boundCallback, HOST_FUNCTION_DESCRIPTOR, arena);
 
-      LOGGER.fine("Created host function upcall stub for implementation: " + implementation.getClass().getSimpleName());
+      LOGGER.fine(
+          "Created host function upcall stub for implementation: "
+              + implementation.getClass().getSimpleName());
       return upcallStub;
     } catch (final Exception e) {
       LOGGER.severe("Failed to create host function upcall stub: " + e.getMessage());
@@ -811,8 +870,8 @@ public final class PanamaLinker implements Linker, AutoCloseable {
   }
 
   /**
-   * Static callback method invoked from native code when a host function is called.
-   * This method handles the conversion between native parameters and Java objects.
+   * Static callback method invoked from native code when a host function is called. This method
+   * handles the conversion between native parameters and Java objects.
    *
    * @param caller the caller context (currently unused)
    * @param params pointer to array of parameter values
@@ -838,18 +897,24 @@ public final class PanamaLinker implements Linker, AutoCloseable {
       }
 
       if (paramCount < 0 || resultCount < 0) {
-        LOGGER.severe("Host function callback invoked with negative count parameters: "
-            + "paramCount=" + paramCount + ", resultCount=" + resultCount);
+        LOGGER.severe(
+            "Host function callback invoked with negative count parameters: "
+                + "paramCount="
+                + paramCount
+                + ", resultCount="
+                + resultCount);
         return -1;
       }
 
       if (paramCount > 0 && (params == null || params.equals(MemorySegment.NULL))) {
-        LOGGER.severe("Host function callback invoked with null params but paramCount=" + paramCount);
+        LOGGER.severe(
+            "Host function callback invoked with null params but paramCount=" + paramCount);
         return -1;
       }
 
       if (resultCount > 0 && (results == null || results.equals(MemorySegment.NULL))) {
-        LOGGER.severe("Host function callback invoked with null results but resultCount=" + resultCount);
+        LOGGER.severe(
+            "Host function callback invoked with null results but resultCount=" + resultCount);
         return -1;
       }
 
@@ -892,8 +957,11 @@ public final class PanamaLinker implements Linker, AutoCloseable {
       return 0; // Success
     } catch (final Throwable e) {
       // Catch all throwables to prevent any exceptions from propagating to native code
-      LOGGER.severe("Critical error in host function callback: " + e.getClass().getSimpleName()
-          + ": " + e.getMessage());
+      LOGGER.severe(
+          "Critical error in host function callback: "
+              + e.getClass().getSimpleName()
+              + ": "
+              + e.getMessage());
       return -1; // Error
     }
   }
@@ -909,9 +977,7 @@ public final class PanamaLinker implements Linker, AutoCloseable {
    * @throws IndexOutOfBoundsException if memory access is invalid
    */
   private static Object[] convertNativeParamsToJava(
-      final MemorySegment params,
-      final int paramCount,
-      final FunctionType functionType) {
+      final MemorySegment params, final int paramCount, final FunctionType functionType) {
 
     if (paramCount == 0) {
       return new Object[0];
@@ -933,8 +999,14 @@ public final class PanamaLinker implements Linker, AutoCloseable {
           try {
             javaParams[i] = convertNativeValueToJava(params, offset, paramTypes[i]);
           } catch (final Exception e) {
-            throw new IllegalArgumentException("Failed to convert parameter " + i
-                + " of type " + paramTypes[i] + ": " + e.getMessage(), e);
+            throw new IllegalArgumentException(
+                "Failed to convert parameter "
+                    + i
+                    + " of type "
+                    + paramTypes[i]
+                    + ": "
+                    + e.getMessage(),
+                e);
           }
         }
       } else {
@@ -944,14 +1016,14 @@ public final class PanamaLinker implements Linker, AutoCloseable {
           try {
             javaParams[i] = params.get(ValueLayout.JAVA_INT, offset);
           } catch (final Exception e) {
-            throw new IllegalArgumentException("Failed to convert parameter " + i
-                + " as I32: " + e.getMessage(), e);
+            throw new IllegalArgumentException(
+                "Failed to convert parameter " + i + " as I32: " + e.getMessage(), e);
           }
         }
       }
     } catch (final IndexOutOfBoundsException e) {
-      throw new IndexOutOfBoundsException("Memory access out of bounds during parameter conversion: "
-          + e.getMessage());
+      throw new IndexOutOfBoundsException(
+          "Memory access out of bounds during parameter conversion: " + e.getMessage());
     }
 
     return javaParams;
@@ -966,9 +1038,7 @@ public final class PanamaLinker implements Linker, AutoCloseable {
    * @return the Java object representation
    */
   private static Object convertNativeValueToJava(
-      final MemorySegment segment,
-      final long offset,
-      final WasmValueType valueType) {
+      final MemorySegment segment, final long offset, final WasmValueType valueType) {
 
     switch (valueType) {
       case I32:
@@ -1022,8 +1092,12 @@ public final class PanamaLinker implements Linker, AutoCloseable {
     final int actualResults = Math.min(javaResults.length, resultCount);
 
     if (javaResults.length < resultCount) {
-      LOGGER.warning("Host function returned " + javaResults.length
-          + " results but " + resultCount + " were expected");
+      LOGGER.warning(
+          "Host function returned "
+              + javaResults.length
+              + " results but "
+              + resultCount
+              + " were expected");
     }
 
     try {
@@ -1036,8 +1110,14 @@ public final class PanamaLinker implements Linker, AutoCloseable {
           try {
             convertJavaValueToNative(javaResults[i], results, offset, returnTypes[i]);
           } catch (final Exception e) {
-            throw new IllegalArgumentException("Failed to convert result " + i
-                + " of type " + returnTypes[i] + ": " + e.getMessage(), e);
+            throw new IllegalArgumentException(
+                "Failed to convert result "
+                    + i
+                    + " of type "
+                    + returnTypes[i]
+                    + ": "
+                    + e.getMessage(),
+                e);
           }
         }
       } else {
@@ -1047,14 +1127,14 @@ public final class PanamaLinker implements Linker, AutoCloseable {
           try {
             convertJavaValueToNativeGeneric(javaResults[i], results, offset);
           } catch (final Exception e) {
-            throw new IllegalArgumentException("Failed to convert result " + i
-                + " generically: " + e.getMessage(), e);
+            throw new IllegalArgumentException(
+                "Failed to convert result " + i + " generically: " + e.getMessage(), e);
           }
         }
       }
     } catch (final IndexOutOfBoundsException e) {
-      throw new IndexOutOfBoundsException("Memory access out of bounds during result conversion: "
-          + e.getMessage());
+      throw new IndexOutOfBoundsException(
+          "Memory access out of bounds during result conversion: " + e.getMessage());
     }
   }
 
@@ -1083,28 +1163,32 @@ public final class PanamaLinker implements Linker, AutoCloseable {
         if (javaValue instanceof Number) {
           segment.set(ValueLayout.JAVA_INT, offset, ((Number) javaValue).intValue());
         } else {
-          throw new IllegalArgumentException("Expected Number for I32, got: " + javaValue.getClass());
+          throw new IllegalArgumentException(
+              "Expected Number for I32, got: " + javaValue.getClass());
         }
         break;
       case I64:
         if (javaValue instanceof Number) {
           segment.set(ValueLayout.JAVA_LONG, offset, ((Number) javaValue).longValue());
         } else {
-          throw new IllegalArgumentException("Expected Number for I64, got: " + javaValue.getClass());
+          throw new IllegalArgumentException(
+              "Expected Number for I64, got: " + javaValue.getClass());
         }
         break;
       case F32:
         if (javaValue instanceof Number) {
           segment.set(ValueLayout.JAVA_FLOAT, offset, ((Number) javaValue).floatValue());
         } else {
-          throw new IllegalArgumentException("Expected Number for F32, got: " + javaValue.getClass());
+          throw new IllegalArgumentException(
+              "Expected Number for F32, got: " + javaValue.getClass());
         }
         break;
       case F64:
         if (javaValue instanceof Number) {
           segment.set(ValueLayout.JAVA_DOUBLE, offset, ((Number) javaValue).doubleValue());
         } else {
-          throw new IllegalArgumentException("Expected Number for F64, got: " + javaValue.getClass());
+          throw new IllegalArgumentException(
+              "Expected Number for F64, got: " + javaValue.getClass());
         }
         break;
       case V128:
@@ -1114,7 +1198,8 @@ public final class PanamaLinker implements Linker, AutoCloseable {
             segment.set(ValueLayout.JAVA_BYTE, offset + i, bytes[i]);
           }
         } else {
-          throw new IllegalArgumentException("Expected byte[] for V128, got: " + javaValue.getClass());
+          throw new IllegalArgumentException(
+              "Expected byte[] for V128, got: " + javaValue.getClass());
         }
         break;
       case FUNCREF:
@@ -1122,7 +1207,8 @@ public final class PanamaLinker implements Linker, AutoCloseable {
         if (javaValue instanceof Number) {
           segment.set(ValueLayout.JAVA_LONG, offset, ((Number) javaValue).longValue());
         } else {
-          throw new IllegalArgumentException("Expected Number for reference type, got: " + javaValue.getClass());
+          throw new IllegalArgumentException(
+              "Expected Number for reference type, got: " + javaValue.getClass());
         }
         break;
       default:
@@ -1138,9 +1224,7 @@ public final class PanamaLinker implements Linker, AutoCloseable {
    * @param offset the offset within the segment
    */
   private static void convertJavaValueToNativeGeneric(
-      final Object javaValue,
-      final MemorySegment segment,
-      final long offset) {
+      final Object javaValue, final MemorySegment segment, final long offset) {
 
     if (javaValue == null) {
       segment.set(ValueLayout.JAVA_LONG, offset, 0L);
@@ -1156,7 +1240,8 @@ public final class PanamaLinker implements Linker, AutoCloseable {
       // Fallback for other number types - convert to long
       segment.set(ValueLayout.JAVA_LONG, offset, ((Number) javaValue).longValue());
     } else {
-      throw new IllegalArgumentException("Cannot convert Java value to native: " + javaValue.getClass());
+      throw new IllegalArgumentException(
+          "Cannot convert Java value to native: " + javaValue.getClass());
     }
   }
 }

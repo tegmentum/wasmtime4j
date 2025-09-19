@@ -3,7 +3,6 @@ package ai.tegmentum.wasmtime4j.async;
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
-import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.io.InputStream;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
@@ -12,13 +11,12 @@ import java.util.concurrent.Executor;
 /**
  * Asynchronous WebAssembly compilation engine interface.
  *
- * <p>An AsyncEngine extends the standard Engine with non-blocking asynchronous operations
- * for module compilation, store creation, and other time-intensive operations.
- * This enables better responsiveness in applications that process multiple WebAssembly
- * modules concurrently.
+ * <p>An AsyncEngine extends the standard Engine with non-blocking asynchronous operations for
+ * module compilation, store creation, and other time-intensive operations. This enables better
+ * responsiveness in applications that process multiple WebAssembly modules concurrently.
  *
- * <p>All async operations return CompletableFuture instances that can be composed,
- * combined, and integrated with existing Java async patterns.
+ * <p>All async operations return CompletableFuture instances that can be composed, combined, and
+ * integrated with existing Java async patterns.
  *
  * @since 1.0.0
  */
@@ -27,9 +25,8 @@ public interface AsyncEngine extends Engine {
   /**
    * Asynchronously compiles WebAssembly bytecode into a module.
    *
-   * <p>This method validates and compiles the provided WebAssembly bytecode without
-   * blocking the calling thread. The compilation process includes parsing, validation,
-   * and optimization.
+   * <p>This method validates and compiles the provided WebAssembly bytecode without blocking the
+   * calling thread. The compilation process includes parsing, validation, and optimization.
    *
    * @param wasmBytes the WebAssembly bytecode to compile
    * @return a CompletableFuture that completes with the compiled Module
@@ -40,8 +37,8 @@ public interface AsyncEngine extends Engine {
   /**
    * Asynchronously compiles WebAssembly bytecode from an InputStream.
    *
-   * <p>This method enables streaming compilation of large WebAssembly modules
-   * without loading the entire bytecode into memory first.
+   * <p>This method enables streaming compilation of large WebAssembly modules without loading the
+   * entire bytecode into memory first.
    *
    * @param wasmStream the InputStream containing WebAssembly bytecode
    * @return a CompletableFuture that completes with the compiled Module
@@ -52,15 +49,16 @@ public interface AsyncEngine extends Engine {
   /**
    * Asynchronously compiles WebAssembly bytecode with custom options.
    *
-   * <p>This method allows configuration of compilation behavior such as
-   * buffer sizes, progress tracking, timeouts, and custom executors.
+   * <p>This method allows configuration of compilation behavior such as buffer sizes, progress
+   * tracking, timeouts, and custom executors.
    *
    * @param wasmBytes the WebAssembly bytecode to compile
    * @param options compilation options
    * @return a CompletableFuture that completes with the compiled Module
    * @throws IllegalArgumentException if wasmBytes or options is null
    */
-  CompletableFuture<Module> compileModuleAsync(final byte[] wasmBytes, final CompilationOptions options);
+  CompletableFuture<Module> compileModuleAsync(
+      final byte[] wasmBytes, final CompilationOptions options);
 
   /**
    * Asynchronously compiles WebAssembly bytecode from a stream with custom options.
@@ -70,13 +68,14 @@ public interface AsyncEngine extends Engine {
    * @return a CompletableFuture that completes with the compiled Module
    * @throws IllegalArgumentException if wasmStream or options is null
    */
-  CompletableFuture<Module> compileModuleAsync(final InputStream wasmStream, final CompilationOptions options);
+  CompletableFuture<Module> compileModuleAsync(
+      final InputStream wasmStream, final CompilationOptions options);
 
   /**
    * Asynchronously validates WebAssembly bytecode without compilation.
    *
-   * <p>This method performs validation checks on WebAssembly bytecode to verify
-   * its correctness without the overhead of full compilation.
+   * <p>This method performs validation checks on WebAssembly bytecode to verify its correctness
+   * without the overhead of full compilation.
    *
    * @param wasmBytes the WebAssembly bytecode to validate
    * @return a CompletableFuture that completes when validation is finished
@@ -96,8 +95,8 @@ public interface AsyncEngine extends Engine {
   /**
    * Asynchronously creates a new store associated with this engine.
    *
-   * <p>This method creates a new execution context for WebAssembly instances
-   * without blocking the calling thread.
+   * <p>This method creates a new execution context for WebAssembly instances without blocking the
+   * calling thread.
    *
    * @return a CompletableFuture that completes with a new Store instance
    */
@@ -114,8 +113,7 @@ public interface AsyncEngine extends Engine {
   /**
    * Gets the default executor used for async operations.
    *
-   * <p>This executor is used when no custom executor is specified in
-   * compilation options.
+   * <p>This executor is used when no custom executor is specified in compilation options.
    *
    * @return the default executor for async operations
    */
@@ -124,8 +122,8 @@ public interface AsyncEngine extends Engine {
   /**
    * Sets a custom executor for async operations.
    *
-   * <p>This allows customization of the threading behavior for async operations.
-   * If set to null, the default executor will be used.
+   * <p>This allows customization of the threading behavior for async operations. If set to null,
+   * the default executor will be used.
    *
    * @param executor the custom executor to use, or null for default
    */
@@ -138,9 +136,7 @@ public interface AsyncEngine extends Engine {
    */
   AsyncEngineStatistics getAsyncStatistics();
 
-  /**
-   * Configuration options for asynchronous compilation operations.
-   */
+  /** Configuration options for asynchronous compilation operations. */
   interface CompilationOptions {
     /**
      * Gets the buffer size for streaming operations.
@@ -185,9 +181,7 @@ public interface AsyncEngine extends Engine {
     long getMaxMemoryUsage();
   }
 
-  /**
-   * Statistics for async engine operations.
-   */
+  /** Statistics for async engine operations. */
   interface AsyncEngineStatistics {
     /**
      * Gets the total number of async compilations started.

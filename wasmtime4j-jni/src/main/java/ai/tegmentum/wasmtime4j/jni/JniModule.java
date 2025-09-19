@@ -488,6 +488,146 @@ public final class JniModule extends JniResource implements Module {
     return engine;
   }
 
+  @Override
+  public List<ExportDescriptor> getExportDescriptors() {
+    ensureNotClosed();
+
+    try {
+      // Get export descriptors from native layer
+      final long[] descriptorData = nativeGetExportDescriptors(nativeHandle);
+      if (descriptorData == null) {
+        return Collections.emptyList();
+      }
+
+      return parseExportDescriptors(descriptorData);
+    } catch (final Exception e) {
+      LOGGER.warning("Failed to get export descriptors: " + e.getMessage());
+      throw new JniException("Failed to get export descriptors", e);
+    }
+  }
+
+  @Override
+  public List<ImportDescriptor> getImportDescriptors() {
+    ensureNotClosed();
+
+    try {
+      // Get import descriptors from native layer
+      final long[] descriptorData = nativeGetImportDescriptors(nativeHandle);
+      if (descriptorData == null) {
+        return Collections.emptyList();
+      }
+
+      return parseImportDescriptors(descriptorData);
+    } catch (final Exception e) {
+      LOGGER.warning("Failed to get import descriptors: " + e.getMessage());
+      throw new JniException("Failed to get import descriptors", e);
+    }
+  }
+
+  @Override
+  public java.util.Optional<FuncType> getFunctionType(final String functionName) {
+    JniValidation.requireNonNull(functionName, "functionName");
+    ensureNotClosed();
+
+    try {
+      final long funcTypeHandle = nativeGetFunctionType(nativeHandle, functionName);
+      if (funcTypeHandle == 0) {
+        return java.util.Optional.empty();
+      }
+
+      return java.util.Optional.of(
+          ai.tegmentum.wasmtime4j.jni.type.JniFuncType.fromNative(funcTypeHandle));
+    } catch (final Exception e) {
+      LOGGER.warning("Failed to get function type for '" + functionName + "': " + e.getMessage());
+      return java.util.Optional.empty();
+    }
+  }
+
+  @Override
+  public java.util.Optional<GlobalType> getGlobalType(final String globalName) {
+    JniValidation.requireNonNull(globalName, "globalName");
+    ensureNotClosed();
+
+    try {
+      final long globalTypeHandle = nativeGetGlobalType(nativeHandle, globalName);
+      if (globalTypeHandle == 0) {
+        return java.util.Optional.empty();
+      }
+
+      return java.util.Optional.of(
+          ai.tegmentum.wasmtime4j.jni.type.JniGlobalType.fromNative(globalTypeHandle));
+    } catch (final Exception e) {
+      LOGGER.warning("Failed to get global type for '" + globalName + "': " + e.getMessage());
+      return java.util.Optional.empty();
+    }
+  }
+
+  @Override
+  public java.util.Optional<MemoryType> getMemoryType(final String memoryName) {
+    JniValidation.requireNonNull(memoryName, "memoryName");
+    ensureNotClosed();
+
+    try {
+      final long memoryTypeHandle = nativeGetMemoryType(nativeHandle, memoryName);
+      if (memoryTypeHandle == 0) {
+        return java.util.Optional.empty();
+      }
+
+      return java.util.Optional.of(
+          ai.tegmentum.wasmtime4j.jni.type.JniMemoryType.fromNative(memoryTypeHandle));
+    } catch (final Exception e) {
+      LOGGER.warning("Failed to get memory type for '" + memoryName + "': " + e.getMessage());
+      return java.util.Optional.empty();
+    }
+  }
+
+  @Override
+  public java.util.Optional<TableType> getTableType(final String tableName) {
+    JniValidation.requireNonNull(tableName, "tableName");
+    ensureNotClosed();
+
+    try {
+      final long tableTypeHandle = nativeGetTableType(nativeHandle, tableName);
+      if (tableTypeHandle == 0) {
+        return java.util.Optional.empty();
+      }
+
+      return java.util.Optional.of(
+          ai.tegmentum.wasmtime4j.jni.type.JniTableType.fromNative(tableTypeHandle));
+    } catch (final Exception e) {
+      LOGGER.warning("Failed to get table type for '" + tableName + "': " + e.getMessage());
+      return java.util.Optional.empty();
+    }
+  }
+
+  @Override
+  public boolean hasExport(final String name) {
+    JniValidation.requireNonNull(name, "name");
+    ensureNotClosed();
+
+    try {
+      return nativeHasExport(nativeHandle, name);
+    } catch (final Exception e) {
+      LOGGER.warning("Failed to check export '" + name + "': " + e.getMessage());
+      return false;
+    }
+  }
+
+  @Override
+  public boolean hasImport(final String moduleName, final String fieldName) {
+    JniValidation.requireNonNull(moduleName, "moduleName");
+    JniValidation.requireNonNull(fieldName, "fieldName");
+    ensureNotClosed();
+
+    try {
+      return nativeHasImport(nativeHandle, moduleName, fieldName);
+    } catch (final Exception e) {
+      LOGGER.warning(
+          "Failed to check import '" + moduleName + "::" + fieldName + "': " + e.getMessage());
+      return false;
+    }
+  }
+
   /**
    * Gets the name of this module if it has one.
    *
@@ -864,7 +1004,111 @@ public final class JniModule extends JniResource implements Module {
     return "Module";
   }
 
+  /**
+   * Parses export descriptors from native data.
+   *
+   * @param descriptorData native export descriptor data
+   * @return list of export descriptors
+   */
+  private List<ExportDescriptor> parseExportDescriptors(final long[] descriptorData) {
+    final List<ExportDescriptor> descriptors = new ArrayList<>();
+
+    // Implementation would parse the native data and create ExportDescriptor instances
+    // This is a placeholder - actual implementation would depend on the native data format
+    LOGGER.fine("Parsing " + descriptorData.length + " export descriptors");
+
+    return descriptors;
+  }
+
+  /**
+   * Parses import descriptors from native data.
+   *
+   * @param descriptorData native import descriptor data
+   * @return list of import descriptors
+   */
+  private List<ImportDescriptor> parseImportDescriptors(final long[] descriptorData) {
+    final List<ImportDescriptor> descriptors = new ArrayList<>();
+
+    // Implementation would parse the native data and create ImportDescriptor instances
+    // This is a placeholder - actual implementation would depend on the native data format
+    LOGGER.fine("Parsing " + descriptorData.length + " import descriptors");
+
+    return descriptors;
+  }
+
   // Native method declarations
+
+  /**
+   * Gets export descriptors from a module.
+   *
+   * @param moduleHandle the native module handle
+   * @return array of export descriptor data or null on error
+   */
+  private static native long[] nativeGetExportDescriptors(long moduleHandle);
+
+  /**
+   * Gets import descriptors from a module.
+   *
+   * @param moduleHandle the native module handle
+   * @return array of import descriptor data or null on error
+   */
+  private static native long[] nativeGetImportDescriptors(long moduleHandle);
+
+  /**
+   * Gets function type for a specific export.
+   *
+   * @param moduleHandle the native module handle
+   * @param functionName the name of the function
+   * @return native function type handle or 0 if not found
+   */
+  private static native long nativeGetFunctionType(long moduleHandle, String functionName);
+
+  /**
+   * Gets global type for a specific export.
+   *
+   * @param moduleHandle the native module handle
+   * @param globalName the name of the global
+   * @return native global type handle or 0 if not found
+   */
+  private static native long nativeGetGlobalType(long moduleHandle, String globalName);
+
+  /**
+   * Gets memory type for a specific export.
+   *
+   * @param moduleHandle the native module handle
+   * @param memoryName the name of the memory
+   * @return native memory type handle or 0 if not found
+   */
+  private static native long nativeGetMemoryType(long moduleHandle, String memoryName);
+
+  /**
+   * Gets table type for a specific export.
+   *
+   * @param moduleHandle the native module handle
+   * @param tableName the name of the table
+   * @return native table type handle or 0 if not found
+   */
+  private static native long nativeGetTableType(long moduleHandle, String tableName);
+
+  /**
+   * Checks if module has a specific export.
+   *
+   * @param moduleHandle the native module handle
+   * @param name the export name
+   * @return true if export exists
+   */
+  private static native boolean nativeHasExport(long moduleHandle, String name);
+
+  /**
+   * Checks if module has a specific import.
+   *
+   * @param moduleHandle the native module handle
+   * @param moduleName the import module name
+   * @param fieldName the import field name
+   * @return true if import exists
+   */
+  private static native boolean nativeHasImport(
+      long moduleHandle, String moduleName, String fieldName);
 
   /**
    * Instantiates a module within a store context.

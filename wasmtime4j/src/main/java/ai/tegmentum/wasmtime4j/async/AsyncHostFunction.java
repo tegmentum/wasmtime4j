@@ -2,7 +2,6 @@ package ai.tegmentum.wasmtime4j.async;
 
 import ai.tegmentum.wasmtime4j.HostFunction;
 import ai.tegmentum.wasmtime4j.WasmValue;
-import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -10,12 +9,12 @@ import java.util.concurrent.Executor;
 /**
  * Asynchronous host function interface.
  *
- * <p>An AsyncHostFunction extends the standard HostFunction to provide non-blocking
- * asynchronous execution capabilities. This is particularly useful for host functions
- * that perform I/O operations, make network calls, or execute other time-consuming tasks.
+ * <p>An AsyncHostFunction extends the standard HostFunction to provide non-blocking asynchronous
+ * execution capabilities. This is particularly useful for host functions that perform I/O
+ * operations, make network calls, or execute other time-consuming tasks.
  *
- * <p>Async host functions enable better scalability by allowing the WebAssembly runtime
- * to continue processing other tasks while waiting for host function completion.
+ * <p>Async host functions enable better scalability by allowing the WebAssembly runtime to continue
+ * processing other tasks while waiting for host function completion.
  *
  * @since 1.0.0
  */
@@ -24,8 +23,8 @@ public interface AsyncHostFunction extends HostFunction {
   /**
    * Asynchronously invokes this host function with the given parameters.
    *
-   * <p>This method allows the host function to perform non-blocking operations
-   * and return results asynchronously, improving overall system responsiveness.
+   * <p>This method allows the host function to perform non-blocking operations and return results
+   * asynchronously, improving overall system responsiveness.
    *
    * @param params the parameters to pass to the host function
    * @return a CompletableFuture that completes with the function results
@@ -35,8 +34,8 @@ public interface AsyncHostFunction extends HostFunction {
   /**
    * Asynchronously invokes this host function with timeout support.
    *
-   * <p>This method provides automatic timeout handling for host function execution,
-   * preventing indefinitely blocking operations.
+   * <p>This method provides automatic timeout handling for host function execution, preventing
+   * indefinitely blocking operations.
    *
    * @param timeout the maximum execution time
    * @param params the parameters to pass to the host function
@@ -48,21 +47,22 @@ public interface AsyncHostFunction extends HostFunction {
   /**
    * Asynchronously invokes this host function with custom execution options.
    *
-   * <p>This method allows fine-grained control over host function execution,
-   * including custom executors, cancellation support, and resource limits.
+   * <p>This method allows fine-grained control over host function execution, including custom
+   * executors, cancellation support, and resource limits.
    *
    * @param options execution options
    * @param params the parameters to pass to the host function
    * @return a CompletableFuture that completes with the function results
    * @throws IllegalArgumentException if options is null
    */
-  CompletableFuture<WasmValue[]> invokeAsync(final HostExecutionOptions options, final WasmValue... params);
+  CompletableFuture<WasmValue[]> invokeAsync(
+      final HostExecutionOptions options, final WasmValue... params);
 
   /**
    * Checks if this host function supports asynchronous execution.
    *
-   * <p>Some host functions may only support synchronous execution due to
-   * their implementation or the nature of their operations.
+   * <p>Some host functions may only support synchronous execution due to their implementation or
+   * the nature of their operations.
    *
    * @return true if async execution is supported
    */
@@ -82,9 +82,7 @@ public interface AsyncHostFunction extends HostFunction {
    */
   AsyncHostFunctionStatistics getAsyncStatistics();
 
-  /**
-   * Execution mode preferences for host functions.
-   */
+  /** Execution mode preferences for host functions. */
   enum ExecutionMode {
     /** Function prefers synchronous execution */
     SYNCHRONOUS,
@@ -94,9 +92,7 @@ public interface AsyncHostFunction extends HostFunction {
     ADAPTIVE
   }
 
-  /**
-   * Configuration options for asynchronous host function execution.
-   */
+  /** Configuration options for asynchronous host function execution. */
   interface HostExecutionOptions {
     /**
      * Gets the timeout for host function execution.
@@ -155,9 +151,7 @@ public interface AsyncHostFunction extends HostFunction {
     boolean requiresExclusiveAccess();
   }
 
-  /**
-   * Statistics for async host function operations.
-   */
+  /** Statistics for async host function operations. */
   interface AsyncHostFunctionStatistics {
     /**
      * Gets the total number of async invocations started.

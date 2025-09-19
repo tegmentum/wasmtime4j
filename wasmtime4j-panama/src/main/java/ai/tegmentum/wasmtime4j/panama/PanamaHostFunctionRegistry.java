@@ -25,9 +25,9 @@ import java.util.logging.Logger;
 /**
  * Registry for managing host function callbacks in Panama FFI implementation.
  *
- * <p>This registry provides thread-safe storage and retrieval of host function implementations
- * for use with Panama upcall stubs. Each registered host function receives a unique ID that
- * can be used to retrieve the implementation from native callback contexts.
+ * <p>This registry provides thread-safe storage and retrieval of host function implementations for
+ * use with Panama upcall stubs. Each registered host function receives a unique ID that can be used
+ * to retrieve the implementation from native callback contexts.
  *
  * <p>The registry uses weak references where appropriate to prevent memory leaks and provides
  * automatic cleanup of stale registrations.
@@ -39,7 +39,8 @@ public final class PanamaHostFunctionRegistry {
   private static final Logger LOGGER = Logger.getLogger(PanamaHostFunctionRegistry.class.getName());
 
   /** Thread-safe map of host function ID to registry entry. */
-  private static final ConcurrentHashMap<Long, HostFunctionEntry> REGISTRY = new ConcurrentHashMap<>();
+  private static final ConcurrentHashMap<Long, HostFunctionEntry> REGISTRY =
+      new ConcurrentHashMap<>();
 
   /** Atomic counter for generating unique host function IDs. */
   private static final AtomicLong ID_COUNTER = new AtomicLong(1);
@@ -67,8 +68,11 @@ public final class PanamaHostFunctionRegistry {
 
     REGISTRY.put(id, entry);
 
-    LOGGER.fine("Registered host function with ID: " + id + ", implementation: "
-        + implementation.getClass().getSimpleName());
+    LOGGER.fine(
+        "Registered host function with ID: "
+            + id
+            + ", implementation: "
+            + implementation.getClass().getSimpleName());
 
     return id;
   }
@@ -116,8 +120,8 @@ public final class PanamaHostFunctionRegistry {
   /**
    * Clears all registered host functions.
    *
-   * <p>This method should be used with caution as it will invalidate all
-   * existing host function callbacks.
+   * <p>This method should be used with caution as it will invalidate all existing host function
+   * callbacks.
    */
   public static void clear() {
     final int count = REGISTRY.size();
@@ -128,17 +132,15 @@ public final class PanamaHostFunctionRegistry {
   /**
    * Performs cleanup of any stale or invalid registrations.
    *
-   * <p>This method can be called periodically to clean up memory and maintain
-   * registry health. Currently a no-op but can be extended with cleanup logic.
+   * <p>This method can be called periodically to clean up memory and maintain registry health.
+   * Currently a no-op but can be extended with cleanup logic.
    */
   public static void cleanup() {
     // Future enhancement: implement cleanup of stale registrations
     LOGGER.fine("Host function registry cleanup completed");
   }
 
-  /**
-   * Registry entry containing a host function implementation and its metadata.
-   */
+  /** Registry entry containing a host function implementation and its metadata. */
   public static final class HostFunctionEntry {
     private final HostFunction implementation;
     private final FunctionType functionType;
@@ -195,9 +197,12 @@ public final class PanamaHostFunctionRegistry {
     @Override
     public String toString() {
       return "HostFunctionEntry{"
-          + "implementation=" + implementation.getClass().getSimpleName()
-          + ", functionType=" + (functionType != null ? functionType : "null")
-          + ", registrationTime=" + registrationTime
+          + "implementation="
+          + implementation.getClass().getSimpleName()
+          + ", functionType="
+          + (functionType != null ? functionType : "null")
+          + ", registrationTime="
+          + registrationTime
           + '}';
     }
   }

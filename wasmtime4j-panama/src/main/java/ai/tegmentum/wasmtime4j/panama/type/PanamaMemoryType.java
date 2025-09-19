@@ -169,7 +169,9 @@ public final class PanamaMemoryType implements MemoryType {
    * Native method to get memory type information.
    *
    * @param nativeHandle the native handle to the memory type
-   * @param resultBuffer the buffer to store the result [minimum, maximum(-1 if unlimited), is64Bit(0/1), isShared(0/1)]
+   * @param resultBuffer the buffer to store the result [minimum, maximum(-1 if unlimited),
+   *     is64Bit(0/1), isShared(0/1)]
    */
-  private static native void nativeGetMemoryTypeInfo(MemorySegment nativeHandle, MemorySegment resultBuffer);
+  private static native void nativeGetMemoryTypeInfo(
+      MemorySegment nativeHandle, MemorySegment resultBuffer);
 }

@@ -290,8 +290,7 @@ class HtmlDashboardIntegrationTest {
     final FilterResult filterResult = filterEngine.filterReport(testReport, criteria);
 
     // 3. Export filtered results
-    final ExportManager exportManager =
-        new ExportManager(JsonConfiguration.builder().build());
+    final ExportManager exportManager = new ExportManager(JsonConfiguration.builder().build());
     final Path filteredExportPath = tempDir.resolve("filtered-export.json");
     exportManager.exportFilteredResults(
         testReport, filterResult, ExportFormat.JSON, filteredExportPath);
@@ -321,7 +320,8 @@ class HtmlDashboardIntegrationTest {
 
     // Create execution summary
     final ExecutionSummary executionSummary =
-        new ExecutionSummary(10, 8, 2, 0, Duration.ofMinutes(5), now.minus(Duration.ofMinutes(5)), now);
+        new ExecutionSummary(
+            10, 8, 2, 0, Duration.ofMinutes(5), now.minus(Duration.ofMinutes(5)), now);
 
     // Create test results
     final List<TestComparisonResult> testResults =

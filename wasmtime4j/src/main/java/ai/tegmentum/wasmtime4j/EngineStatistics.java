@@ -34,8 +34,8 @@ public interface EngineStatistics {
   /**
    * Gets the number of compilation cache misses.
    *
-   * <p>Cache misses occur when a module must be compiled from scratch because no cached version
-   * is available. This includes first-time compilations and cache evictions.
+   * <p>Cache misses occur when a module must be compiled from scratch because no cached version is
+   * available. This includes first-time compilations and cache evictions.
    *
    * @return the number of cache misses
    */
@@ -74,8 +74,8 @@ public interface EngineStatistics {
   /**
    * Gets the cache hit rate as a percentage.
    *
-   * <p>This is calculated as (cache hits / (cache hits + cache misses)) * 100. A higher
-   * percentage indicates better cache performance.
+   * <p>This is calculated as (cache hits / (cache hits + cache misses)) * 100. A higher percentage
+   * indicates better cache performance.
    *
    * @return the cache hit rate as a percentage (0.0 to 100.0)
    */
@@ -94,8 +94,8 @@ public interface EngineStatistics {
   /**
    * Gets the average compilation time per module in milliseconds.
    *
-   * <p>This is calculated as total compilation time divided by the number of compiled modules.
-   * It provides insight into compilation performance characteristics.
+   * <p>This is calculated as total compilation time divided by the number of compiled modules. It
+   * provides insight into compilation performance characteristics.
    *
    * @return the average compilation time per module in milliseconds
    */

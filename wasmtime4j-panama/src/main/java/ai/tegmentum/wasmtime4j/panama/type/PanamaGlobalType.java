@@ -48,8 +48,7 @@ public final class PanamaGlobalType implements GlobalType {
     this.nativeHandle = nativeHandle;
 
     LOGGER.fine(
-        String.format(
-            "Created PanamaGlobalType: valueType=%s, mutable=%b", valueType, isMutable));
+        String.format("Created PanamaGlobalType: valueType=%s, mutable=%b", valueType, isMutable));
   }
 
   /**
@@ -139,5 +138,6 @@ public final class PanamaGlobalType implements GlobalType {
    * @param nativeHandle the native handle to the global type
    * @param resultBuffer the buffer to store the result [valueTypeCode, isMutable(0/1)]
    */
-  private static native void nativeGetGlobalTypeInfo(MemorySegment nativeHandle, MemorySegment resultBuffer);
+  private static native void nativeGetGlobalTypeInfo(
+      MemorySegment nativeHandle, MemorySegment resultBuffer);
 }

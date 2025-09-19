@@ -4541,6 +4541,7 @@ pub mod jni_linker {
     use crate::instance::core as instance_core;
     use crate::error::jni_utils;
     use std::os::raw::c_void;
+    use jni::sys::{jintArray, jlongArray, jfloatArray, jdoubleArray, jobjectArray};
 
     /// Creates a new native linker
     #[no_mangle]
@@ -5198,6 +5199,7 @@ pub mod jni_type_introspection {
     use super::*;
     use crate::error::jni_utils;
     use std::os::raw::c_void;
+    use std::ptr;
 
     /// Gets memory type information from a native handle
     #[no_mangle]

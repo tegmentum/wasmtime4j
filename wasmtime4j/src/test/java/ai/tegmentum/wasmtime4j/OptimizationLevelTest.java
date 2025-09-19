@@ -13,8 +13,8 @@ import org.junit.jupiter.params.provider.ValueSource;
 /**
  * Comprehensive tests for OptimizationLevel enum.
  *
- * <p>Tests all optimization levels, value mappings, and edge cases to ensure the optimization
- * level API works correctly with native value conversions.
+ * <p>Tests all optimization levels, value mappings, and edge cases to ensure the optimization level
+ * API works correctly with native value conversions.
  */
 @DisplayName("OptimizationLevel Tests")
 final class OptimizationLevelTest {
@@ -45,9 +45,7 @@ final class OptimizationLevelTest {
     @DisplayName("SPEED_AND_SIZE maps to value 2")
     void testSpeedAndSizeValue() {
       assertEquals(
-          2,
-          OptimizationLevel.SPEED_AND_SIZE.getValue(),
-          "SPEED_AND_SIZE should map to value 2");
+          2, OptimizationLevel.SPEED_AND_SIZE.getValue(), "SPEED_AND_SIZE should map to value 2");
     }
 
     @ParameterizedTest
@@ -55,8 +53,7 @@ final class OptimizationLevelTest {
     @DisplayName("All optimization levels have valid values")
     void testAllLevelsHaveValidValues(final OptimizationLevel level) {
       final int value = level.getValue();
-      assertTrue(
-          value >= 0 && value <= 2, "All optimization levels should have values 0-2");
+      assertTrue(value >= 0 && value <= 2, "All optimization levels should have values 0-2");
     }
 
     private void assertTrue(final boolean condition, final String message) {
@@ -118,20 +115,27 @@ final class OptimizationLevelTest {
     @DisplayName("Round-trip conversion preserves values for known mappings")
     void testRoundTripConversion() {
       // Test NONE
-      final OptimizationLevel noneFromValue = OptimizationLevel.fromValue(OptimizationLevel.NONE.getValue());
+      final OptimizationLevel noneFromValue =
+          OptimizationLevel.fromValue(OptimizationLevel.NONE.getValue());
       assertEquals(OptimizationLevel.NONE, noneFromValue, "NONE round-trip should be preserved");
 
       // Test SPEED
-      final OptimizationLevel speedFromValue = OptimizationLevel.fromValue(OptimizationLevel.SPEED.getValue());
+      final OptimizationLevel speedFromValue =
+          OptimizationLevel.fromValue(OptimizationLevel.SPEED.getValue());
       assertEquals(OptimizationLevel.SPEED, speedFromValue, "SPEED round-trip should be preserved");
 
       // Test SIZE (note: this will return SIZE, not SPEED_AND_SIZE)
-      final OptimizationLevel sizeFromValue = OptimizationLevel.fromValue(OptimizationLevel.SIZE.getValue());
+      final OptimizationLevel sizeFromValue =
+          OptimizationLevel.fromValue(OptimizationLevel.SIZE.getValue());
       assertEquals(OptimizationLevel.SIZE, sizeFromValue, "SIZE round-trip should return SIZE");
 
       // Test SPEED_AND_SIZE (this will return SIZE because both map to value 2)
-      final OptimizationLevel speedAndSizeFromValue = OptimizationLevel.fromValue(OptimizationLevel.SPEED_AND_SIZE.getValue());
-      assertEquals(OptimizationLevel.SIZE, speedAndSizeFromValue, "SPEED_AND_SIZE round-trip should return SIZE");
+      final OptimizationLevel speedAndSizeFromValue =
+          OptimizationLevel.fromValue(OptimizationLevel.SPEED_AND_SIZE.getValue());
+      assertEquals(
+          OptimizationLevel.SIZE,
+          speedAndSizeFromValue,
+          "SPEED_AND_SIZE round-trip should return SIZE");
     }
   }
 

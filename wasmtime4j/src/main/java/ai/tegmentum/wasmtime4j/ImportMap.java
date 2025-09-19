@@ -97,7 +97,8 @@ public interface ImportMap {
       } catch (final ClassNotFoundException e2) {
         // No specific implementation found, use Panama as fallback since it's more universal
         throw new UnsupportedOperationException(
-            "No ImportMap implementation available. Ensure wasmtime4j-panama or wasmtime4j-jni is on the classpath.");
+            "No ImportMap implementation available. Ensure wasmtime4j-panama or wasmtime4j-jni is"
+                + " on the classpath.");
       } catch (final Exception e2) {
         throw new RuntimeException("Failed to create JNI ImportMap instance", e2);
       }

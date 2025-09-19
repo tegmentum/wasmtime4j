@@ -1,24 +1,21 @@
 package ai.tegmentum.wasmtime4j.async;
 
 import ai.tegmentum.wasmtime4j.WasmMemory;
-import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
-import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
 
 /**
  * Asynchronous WebAssembly memory interface.
  *
- * <p>An AsyncMemory extends the standard WasmMemory with non-blocking asynchronous
- * operations for memory read/write operations and streaming access. This enables
- * better performance when processing large amounts of data or when memory operations
- * need to be performed without blocking the main execution thread.
+ * <p>An AsyncMemory extends the standard WasmMemory with non-blocking asynchronous operations for
+ * memory read/write operations and streaming access. This enables better performance when
+ * processing large amounts of data or when memory operations need to be performed without blocking
+ * the main execution thread.
  *
- * <p>Async memory operations are particularly useful for I/O-heavy applications
- * and scenarios requiring high throughput data processing.
+ * <p>Async memory operations are particularly useful for I/O-heavy applications and scenarios
+ * requiring high throughput data processing.
  *
  * @since 1.0.0
  */
@@ -27,8 +24,8 @@ public interface AsyncMemory extends WasmMemory {
   /**
    * Asynchronously reads data from memory at the specified offset.
    *
-   * <p>This method performs a non-blocking read operation, returning a
-   * CompletableFuture that completes with a ByteBuffer containing the data.
+   * <p>This method performs a non-blocking read operation, returning a CompletableFuture that
+   * completes with a ByteBuffer containing the data.
    *
    * @param offset the byte offset in memory to read from
    * @param length the number of bytes to read
@@ -40,8 +37,8 @@ public interface AsyncMemory extends WasmMemory {
   /**
    * Asynchronously writes data to memory at the specified offset.
    *
-   * <p>This method performs a non-blocking write operation, returning a
-   * CompletableFuture that completes when the write is finished.
+   * <p>This method performs a non-blocking write operation, returning a CompletableFuture that
+   * completes when the write is finished.
    *
    * @param offset the byte offset in memory to write to
    * @param data the data to write
@@ -63,8 +60,8 @@ public interface AsyncMemory extends WasmMemory {
   /**
    * Asynchronously performs bulk copy operation from another memory region.
    *
-   * <p>This method efficiently copies data between memory regions without
-   * blocking the calling thread, optimized for large data transfers.
+   * <p>This method efficiently copies data between memory regions without blocking the calling
+   * thread, optimized for large data transfers.
    *
    * @param source the source memory to copy from
    * @param srcOffset the offset in the source memory
@@ -73,13 +70,14 @@ public interface AsyncMemory extends WasmMemory {
    * @return a CompletableFuture that completes when the copy is finished
    * @throws IllegalArgumentException if source is null or offsets/length are invalid
    */
-  CompletableFuture<Void> bulkCopyAsync(final AsyncMemory source, final int srcOffset, final int destOffset, final int length);
+  CompletableFuture<Void> bulkCopyAsync(
+      final AsyncMemory source, final int srcOffset, final int destOffset, final int length);
 
   /**
    * Asynchronously performs bulk fill operation.
    *
-   * <p>This method efficiently fills a memory region with a specified value
-   * without blocking the calling thread.
+   * <p>This method efficiently fills a memory region with a specified value without blocking the
+   * calling thread.
    *
    * @param offset the starting offset in memory
    * @param length the number of bytes to fill
@@ -92,8 +90,8 @@ public interface AsyncMemory extends WasmMemory {
   /**
    * Asynchronously compares memory regions.
    *
-   * <p>This method performs a non-blocking comparison of memory regions,
-   * returning the comparison result asynchronously.
+   * <p>This method performs a non-blocking comparison of memory regions, returning the comparison
+   * result asynchronously.
    *
    * @param other the other memory to compare with
    * @param thisOffset the offset in this memory
@@ -102,13 +100,14 @@ public interface AsyncMemory extends WasmMemory {
    * @return a CompletableFuture that completes with the comparison result (0 if equal)
    * @throws IllegalArgumentException if other is null or offsets/length are invalid
    */
-  CompletableFuture<Integer> compareAsync(final AsyncMemory other, final int thisOffset, final int otherOffset, final int length);
+  CompletableFuture<Integer> compareAsync(
+      final AsyncMemory other, final int thisOffset, final int otherOffset, final int length);
 
   /**
    * Creates an asynchronous InputStream for reading from memory.
    *
-   * <p>This method creates a stream that can read data from memory
-   * asynchronously, useful for large data processing scenarios.
+   * <p>This method creates a stream that can read data from memory asynchronously, useful for large
+   * data processing scenarios.
    *
    * @param offset the starting offset in memory
    * @param length the maximum number of bytes to read
@@ -120,8 +119,8 @@ public interface AsyncMemory extends WasmMemory {
   /**
    * Creates an asynchronous OutputStream for writing to memory.
    *
-   * <p>This method creates a stream that can write data to memory
-   * asynchronously, with automatic bounds checking and growth handling.
+   * <p>This method creates a stream that can write data to memory asynchronously, with automatic
+   * bounds checking and growth handling.
    *
    * @param offset the starting offset in memory
    * @param maxLength the maximum number of bytes to write
@@ -137,9 +136,7 @@ public interface AsyncMemory extends WasmMemory {
    */
   AsyncMemoryStatistics getAsyncStatistics();
 
-  /**
-   * Asynchronous InputStream for reading from WebAssembly memory.
-   */
+  /** Asynchronous InputStream for reading from WebAssembly memory. */
   interface AsyncInputStream extends InputStream {
     /**
      * Asynchronously reads data into the provided buffer.
@@ -180,9 +177,7 @@ public interface AsyncMemory extends WasmMemory {
     long getRemaining();
   }
 
-  /**
-   * Asynchronous OutputStream for writing to WebAssembly memory.
-   */
+  /** Asynchronous OutputStream for writing to WebAssembly memory. */
   interface AsyncOutputStream extends OutputStream {
     /**
      * Asynchronously writes data from the provided buffer.
@@ -222,9 +217,7 @@ public interface AsyncMemory extends WasmMemory {
     long getRemaining();
   }
 
-  /**
-   * Statistics for async memory operations.
-   */
+  /** Statistics for async memory operations. */
   interface AsyncMemoryStatistics {
     /**
      * Gets the total number of async read operations started.

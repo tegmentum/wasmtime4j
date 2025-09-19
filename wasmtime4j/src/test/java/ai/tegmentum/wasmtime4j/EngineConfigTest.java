@@ -36,7 +36,8 @@ final class EngineConfigTest {
           OptimizationLevel.SPEED,
           config.getOptimizationLevel(),
           "Default optimization should be SPEED");
-      assertTrue(config.isParallelCompilation(), "Parallel compilation should be enabled by default");
+      assertTrue(
+          config.isParallelCompilation(), "Parallel compilation should be enabled by default");
       assertFalse(
           config.isCraneliftDebugVerifier(),
           "Cranelift debug verifier should be disabled by default");
@@ -213,13 +214,10 @@ final class EngineConfigTest {
           OptimizationLevel.SPEED,
           config.getOptimizationLevel(),
           "Speed config should use SPEED optimization");
-      assertTrue(
-          config.isParallelCompilation(),
-          "Speed config should enable parallel compilation");
+      assertTrue(config.isParallelCompilation(), "Speed config should enable parallel compilation");
       assertFalse(config.isDebugInfo(), "Speed config should not enable debug info");
       assertFalse(
-          config.isCraneliftDebugVerifier(),
-          "Speed config should not enable debug verifier");
+          config.isCraneliftDebugVerifier(), "Speed config should not enable debug verifier");
     }
 
     @Test
@@ -232,8 +230,7 @@ final class EngineConfigTest {
           OptimizationLevel.SIZE,
           config.getOptimizationLevel(),
           "Size config should use SIZE optimization");
-      assertTrue(
-          config.isParallelCompilation(), "Size config should enable parallel compilation");
+      assertTrue(config.isParallelCompilation(), "Size config should enable parallel compilation");
       assertFalse(config.isDebugInfo(), "Size config should not enable debug info");
       assertFalse(
           config.isCraneliftDebugVerifier(), "Size config should not enable debug verifier");
@@ -250,8 +247,7 @@ final class EngineConfigTest {
           config.getOptimizationLevel(),
           "Debug config should use NONE optimization");
       assertTrue(config.isDebugInfo(), "Debug config should enable debug info");
-      assertTrue(
-          config.isCraneliftDebugVerifier(), "Debug config should enable debug verifier");
+      assertTrue(config.isCraneliftDebugVerifier(), "Debug config should enable debug verifier");
     }
 
     @Test
@@ -287,7 +283,9 @@ final class EngineConfigTest {
 
       // Should retain factory settings
       assertEquals(
-          OptimizationLevel.SPEED, config.getOptimizationLevel(), "Should retain SPEED optimization");
+          OptimizationLevel.SPEED,
+          config.getOptimizationLevel(),
+          "Should retain SPEED optimization");
       assertTrue(config.isParallelCompilation(), "Should retain parallel compilation");
 
       // Should have additional settings

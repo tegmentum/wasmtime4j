@@ -2,7 +2,6 @@ package ai.tegmentum.wasmtime4j.async;
 
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmValue;
-import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -10,12 +9,12 @@ import java.util.concurrent.Executor;
 /**
  * Asynchronous WebAssembly function interface.
  *
- * <p>An AsyncFunction extends the standard WasmFunction with non-blocking asynchronous
- * execution capabilities. This enables better performance and responsiveness when calling
- * long-running WebAssembly functions or when processing multiple function calls concurrently.
+ * <p>An AsyncFunction extends the standard WasmFunction with non-blocking asynchronous execution
+ * capabilities. This enables better performance and responsiveness when calling long-running
+ * WebAssembly functions or when processing multiple function calls concurrently.
  *
- * <p>All async operations return CompletableFuture instances that can be composed
- * and integrated with reactive programming patterns.
+ * <p>All async operations return CompletableFuture instances that can be composed and integrated
+ * with reactive programming patterns.
  *
  * @since 1.0.0
  */
@@ -24,8 +23,8 @@ public interface AsyncFunction extends WasmFunction {
   /**
    * Asynchronously calls this function with the given parameters.
    *
-   * <p>This method executes the function without blocking the calling thread,
-   * making it suitable for long-running computations or high-throughput scenarios.
+   * <p>This method executes the function without blocking the calling thread, making it suitable
+   * for long-running computations or high-throughput scenarios.
    *
    * @param params the parameters to pass to the function
    * @return a CompletableFuture that completes with the function results
@@ -35,8 +34,8 @@ public interface AsyncFunction extends WasmFunction {
   /**
    * Asynchronously calls this function with timeout support.
    *
-   * <p>This method provides automatic timeout handling for function execution,
-   * preventing indefinitely blocking calls.
+   * <p>This method provides automatic timeout handling for function execution, preventing
+   * indefinitely blocking calls.
    *
    * @param timeout the maximum execution time
    * @param params the parameters to pass to the function
@@ -48,15 +47,16 @@ public interface AsyncFunction extends WasmFunction {
   /**
    * Asynchronously calls this function with custom execution options.
    *
-   * <p>This method allows fine-grained control over function execution,
-   * including custom executors, cancellation support, and progress tracking.
+   * <p>This method allows fine-grained control over function execution, including custom executors,
+   * cancellation support, and progress tracking.
    *
    * @param options execution options
    * @param params the parameters to pass to the function
    * @return a CompletableFuture that completes with the function results
    * @throws IllegalArgumentException if options is null
    */
-  CompletableFuture<WasmValue[]> callAsync(final ExecutionOptions options, final WasmValue... params);
+  CompletableFuture<WasmValue[]> callAsync(
+      final ExecutionOptions options, final WasmValue... params);
 
   /**
    * Asynchronously calls this function expecting a single integer result.
@@ -111,8 +111,8 @@ public interface AsyncFunction extends WasmFunction {
   /**
    * Checks if this function supports asynchronous execution.
    *
-   * <p>Some functions may not support async execution due to their nature
-   * or implementation constraints.
+   * <p>Some functions may not support async execution due to their nature or implementation
+   * constraints.
    *
    * @return true if async execution is supported
    */
@@ -125,9 +125,7 @@ public interface AsyncFunction extends WasmFunction {
    */
   AsyncFunctionStatistics getAsyncStatistics();
 
-  /**
-   * Configuration options for asynchronous function execution.
-   */
+  /** Configuration options for asynchronous function execution. */
   interface ExecutionOptions {
     /**
      * Gets the timeout for function execution.
@@ -179,9 +177,7 @@ public interface AsyncFunction extends WasmFunction {
     int getPriority();
   }
 
-  /**
-   * Statistics for async function operations.
-   */
+  /** Statistics for async function operations. */
   interface AsyncFunctionStatistics {
     /**
      * Gets the total number of async calls started.

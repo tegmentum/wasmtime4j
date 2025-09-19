@@ -4,18 +4,18 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import ai.tegmentum.wasmtime4j.*;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.DisplayName;
 import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 /**
  * Integration tests for runtime instance type introspection.
  *
- * <p>These tests verify that type introspection works correctly at runtime with actual
- * WebAssembly instances, testing both static module information and dynamic instance state.
+ * <p>These tests verify that type introspection works correctly at runtime with actual WebAssembly
+ * instances, testing both static module information and dynamic instance state.
  *
  * @since 1.0.0
  */
@@ -45,7 +45,8 @@ public class InstanceTypeIntrospectionIT {
   @DisplayName("Runtime Instance Type Introspection")
   void testRuntimeInstanceTypeIntrospection() throws WasmException {
     // Create a module with various exported types
-    final String wat = """
+    final String wat =
+        """
         (module
           (func $simple_add (param i32 i32) (result i32)
             local.get 0
@@ -87,8 +88,8 @@ public class InstanceTypeIntrospectionIT {
 
     // Verify all expected exports are present
     final String[] expectedExports = {
-        "simple_add", "multi_param", "no_param_func", "void_func",
-        "const_global", "mut_global", "main_memory", "func_table"
+      "simple_add", "multi_param", "no_param_func", "void_func",
+      "const_global", "mut_global", "main_memory", "func_table"
     };
 
     for (final String exportName : expectedExports) {
@@ -117,8 +118,9 @@ public class InstanceTypeIntrospectionIT {
     assertTrue(multiFuncTypeOpt.isPresent());
 
     final FuncType multiFuncType = multiFuncTypeOpt.get();
-    assertEquals(List.of(WasmValueType.I32, WasmValueType.I64, WasmValueType.F32, WasmValueType.F64),
-                 multiFuncType.getParams());
+    assertEquals(
+        List.of(WasmValueType.I32, WasmValueType.I64, WasmValueType.F32, WasmValueType.F64),
+        multiFuncType.getParams());
     assertEquals(List.of(WasmValueType.I32, WasmValueType.I64), multiFuncType.getResults());
     assertEquals(4, multiFuncType.getParamCount());
     assertEquals(2, multiFuncType.getResultCount());
@@ -208,7 +210,8 @@ public class InstanceTypeIntrospectionIT {
   @DisplayName("Instance Type Introspection with WASI")
   void testInstanceTypeIntrospectionWithWasi() throws WasmException {
     // Create a module that uses some WASI imports for a more complex scenario
-    final String wat = """
+    final String wat =
+        """
         (module
           (import "wasi_snapshot_preview1" "fd_write"
             (func $fd_write (param i32 i32 i32 i32) (result i32)))
@@ -238,8 +241,9 @@ public class InstanceTypeIntrospectionIT {
     assertTrue(wasiImport.isFunction());
 
     final FuncType wasiFunc = wasiImport.asFunctionType();
-    assertEquals(List.of(WasmValueType.I32, WasmValueType.I32, WasmValueType.I32, WasmValueType.I32),
-                 wasiFunc.getParams());
+    assertEquals(
+        List.of(WasmValueType.I32, WasmValueType.I32, WasmValueType.I32, WasmValueType.I32),
+        wasiFunc.getParams());
     assertEquals(List.of(WasmValueType.I32), wasiFunc.getResults());
 
     final List<ExportDescriptor> exports = module.getExportDescriptors();
@@ -272,7 +276,8 @@ public class InstanceTypeIntrospectionIT {
   @DisplayName("Edge Cases and Error Conditions")
   void testEdgeCasesAndErrors() throws WasmException {
     // Test module with only imports (no exports)
-    final String importOnlyWat = """
+    final String importOnlyWat =
+        """
         (module
           (import "env" "func" (func (param i32) (result i32)))
           (import "env" "memory" (memory 1))
@@ -322,7 +327,8 @@ public class InstanceTypeIntrospectionIT {
   @DisplayName("Complex Type Hierarchies")
   void testComplexTypeHierarchies() throws WasmException {
     // Test a module with complex nested function signatures and multiple table/memory types
-    final String complexWat = """
+    final String complexWat =
+        """
         (module
           (type $complex_sig (func
             (param i32 i64 f32 f64 externref funcref)
@@ -364,11 +370,17 @@ public class InstanceTypeIntrospectionIT {
     final FuncType complexFunc = complexFuncOpt.get();
     assertEquals(6, complexFunc.getParamCount());
     assertEquals(3, complexFunc.getResultCount());
-    assertEquals(List.of(WasmValueType.I32, WasmValueType.I64, WasmValueType.F32,
-                        WasmValueType.F64, WasmValueType.EXTERNREF, WasmValueType.FUNCREF),
-                 complexFunc.getParams());
-    assertEquals(List.of(WasmValueType.I32, WasmValueType.I64, WasmValueType.F32),
-                 complexFunc.getResults());
+    assertEquals(
+        List.of(
+            WasmValueType.I32,
+            WasmValueType.I64,
+            WasmValueType.F32,
+            WasmValueType.F64,
+            WasmValueType.EXTERNREF,
+            WasmValueType.FUNCREF),
+        complexFunc.getParams());
+    assertEquals(
+        List.of(WasmValueType.I32, WasmValueType.I64, WasmValueType.F32), complexFunc.getResults());
 
     // Test callback function with reference types
     final Optional<FuncType> callbackFuncOpt = complexInstance.getFunctionType("callback_func");

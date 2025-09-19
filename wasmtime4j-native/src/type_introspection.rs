@@ -163,8 +163,10 @@ pub struct ImportDescriptorInfo {
     pub global_type: Option<GlobalTypeInfo>,
 }
 
-impl From<WasmtimeImportType<'_>> for ImportDescriptorInfo {
-    fn from(import_type: WasmtimeImportType<'_>) -> Self {
+impl TryFrom<WasmtimeImportType<'_>> for ImportDescriptorInfo {
+    type Error = WasmtimeError;
+
+    fn try_from(import_type: WasmtimeImportType<'_>) -> WasmtimeResult<Self> {
         let mut descriptor = Self {
             module_name: import_type.module().to_string(),
             field_name: import_type.name().to_string(),
@@ -199,7 +201,7 @@ impl From<WasmtimeImportType<'_>> for ImportDescriptorInfo {
             }
         }
 
-        descriptor
+        Ok(descriptor)
     }
 }
 
@@ -215,8 +217,10 @@ pub struct ExportDescriptorInfo {
     pub global_type: Option<GlobalTypeInfo>,
 }
 
-impl From<WasmtimeExportType<'_>> for ExportDescriptorInfo {
-    fn from(export_type: WasmtimeExportType<'_>) -> Self {
+impl TryFrom<WasmtimeExportType<'_>> for ExportDescriptorInfo {
+    type Error = WasmtimeError;
+
+    fn try_from(export_type: WasmtimeExportType<'_>) -> WasmtimeResult<Self> {
         let mut descriptor = Self {
             field_name: export_type.name().to_string(),
             type_kind: TypeKind::Function, // Will be set correctly below
@@ -250,7 +254,7 @@ impl From<WasmtimeExportType<'_>> for ExportDescriptorInfo {
             }
         }
 
-        descriptor
+        Ok(descriptor)
     }
 }
 
@@ -260,19 +264,19 @@ pub struct ModuleTypeIntrospector;
 impl ModuleTypeIntrospector {
     /// Extract all import descriptors from a module
     pub fn get_import_descriptors(module: &Module) -> WasmtimeResult<Vec<ImportDescriptorInfo>> {
-        let descriptors = module
-            .imports()
-            .map(|import| ImportDescriptorInfo::from(import))
-            .collect();
+        let mut descriptors = Vec::new();
+        for import in module.imports() {
+            descriptors.push(ImportDescriptorInfo::try_from(import)?);
+        }
         Ok(descriptors)
     }
 
     /// Extract all export descriptors from a module
     pub fn get_export_descriptors(module: &Module) -> WasmtimeResult<Vec<ExportDescriptorInfo>> {
-        let descriptors = module
-            .exports()
-            .map(|export| ExportDescriptorInfo::from(export))
-            .collect();
+        let mut descriptors = Vec::new();
+        for export in module.exports() {
+            descriptors.push(ExportDescriptorInfo::try_from(export)?);
+        }
         Ok(descriptors)
     }
 
@@ -448,5 +452,178 @@ mod tests {
         assert_eq!(exports.len(), 1);
         assert_eq!(exports[0].field_name, "add");
         assert_eq!(exports[0].type_kind, TypeKind::Function);
+    }
+}
+
+// FFI functions for Module type introspection
+use std::ffi::c_void;
+
+/// Get import descriptors from a module
+#[no_mangle]
+pub extern "C" fn wasmtime4j_module_get_import_descriptors(
+    module_ptr: *mut c_void,
+    count_out: *mut usize,
+) -> *mut *mut ImportDescriptorInfo {
+    if module_ptr.is_null() || count_out.is_null() {
+        return std::ptr::null_mut();
+    }
+
+    let module = unsafe { &*(module_ptr as *const Module) };
+    match ModuleTypeIntrospector::get_import_descriptors(module) {
+        Ok(descriptors) => {
+            unsafe { *count_out = descriptors.len(); }
+            let boxed_descriptors: Vec<Box<ImportDescriptorInfo>> = descriptors
+                .into_iter()
+                .map(Box::new)
+                .collect();
+            let ptr_array = boxed_descriptors
+                .into_iter()
+                .map(Box::into_raw)
+                .collect::<Vec<*mut ImportDescriptorInfo>>();
+
+            let result = ptr_array.as_ptr() as *mut *mut ImportDescriptorInfo;
+            std::mem::forget(ptr_array);
+            result
+        }
+        Err(_) => {
+            unsafe { *count_out = 0; }
+            std::ptr::null_mut()
+        }
+    }
+}
+
+/// Get export descriptors from a module
+#[no_mangle]
+pub extern "C" fn wasmtime4j_module_get_export_descriptors(
+    module_ptr: *mut c_void,
+    count_out: *mut usize,
+) -> *mut *mut ExportDescriptorInfo {
+    if module_ptr.is_null() || count_out.is_null() {
+        return std::ptr::null_mut();
+    }
+
+    let module = unsafe { &*(module_ptr as *const Module) };
+    match ModuleTypeIntrospector::get_export_descriptors(module) {
+        Ok(descriptors) => {
+            unsafe { *count_out = descriptors.len(); }
+            let boxed_descriptors: Vec<Box<ExportDescriptorInfo>> = descriptors
+                .into_iter()
+                .map(Box::new)
+                .collect();
+            let ptr_array = boxed_descriptors
+                .into_iter()
+                .map(Box::into_raw)
+                .collect::<Vec<*mut ExportDescriptorInfo>>();
+
+            let result = ptr_array.as_ptr() as *mut *mut ExportDescriptorInfo;
+            std::mem::forget(ptr_array);
+            result
+        }
+        Err(_) => {
+            unsafe { *count_out = 0; }
+            std::ptr::null_mut()
+        }
+    }
+}
+
+/// Free import descriptor array
+#[no_mangle]
+pub extern "C" fn wasmtime4j_free_import_descriptors(
+    descriptors_ptr: *mut *mut ImportDescriptorInfo,
+    count: usize,
+) {
+    if descriptors_ptr.is_null() {
+        return;
+    }
+
+    let descriptors_array = unsafe { Vec::from_raw_parts(descriptors_ptr, count, count) };
+    for descriptor_ptr in descriptors_array {
+        if !descriptor_ptr.is_null() {
+            unsafe { drop(Box::from_raw(descriptor_ptr)) };
+        }
+    }
+}
+
+/// Free export descriptor array
+#[no_mangle]
+pub extern "C" fn wasmtime4j_free_export_descriptors(
+    descriptors_ptr: *mut *mut ExportDescriptorInfo,
+    count: usize,
+) {
+    if descriptors_ptr.is_null() {
+        return;
+    }
+
+    let descriptors_array = unsafe { Vec::from_raw_parts(descriptors_ptr, count, count) };
+    for descriptor_ptr in descriptors_array {
+        if !descriptor_ptr.is_null() {
+            unsafe { drop(Box::from_raw(descriptor_ptr)) };
+        }
+    }
+}
+
+// FFI functions for Instance type introspection
+
+/// Get runtime export descriptors from an instance
+#[no_mangle]
+pub extern "C" fn wasmtime4j_instance_get_export_descriptors(
+    instance_ptr: *mut c_void,
+    store_ptr: *mut c_void,
+    count_out: *mut usize,
+) -> *mut *mut ExportDescriptorInfo {
+    if instance_ptr.is_null() || store_ptr.is_null() || count_out.is_null() {
+        return std::ptr::null_mut();
+    }
+
+    let instance = unsafe { &*(instance_ptr as *const Instance) };
+    let mut store = unsafe { &mut *(store_ptr as *mut Store<()>) };
+
+    match InstanceTypeIntrospector::get_all_export_types(instance, &mut store) {
+        Ok(exports_map) => {
+            let descriptors: Vec<ExportDescriptorInfo> = exports_map.into_values().collect();
+            unsafe { *count_out = descriptors.len(); }
+
+            let boxed_descriptors: Vec<Box<ExportDescriptorInfo>> = descriptors
+                .into_iter()
+                .map(Box::new)
+                .collect();
+            let ptr_array = boxed_descriptors
+                .into_iter()
+                .map(Box::into_raw)
+                .collect::<Vec<*mut ExportDescriptorInfo>>();
+
+            let result = ptr_array.as_ptr() as *mut *mut ExportDescriptorInfo;
+            std::mem::forget(ptr_array);
+            result
+        }
+        Err(_) => {
+            unsafe { *count_out = 0; }
+            std::ptr::null_mut()
+        }
+    }
+}
+
+/// Get specific export descriptor from an instance
+#[no_mangle]
+pub extern "C" fn wasmtime4j_instance_get_export_descriptor(
+    instance_ptr: *mut c_void,
+    store_ptr: *mut c_void,
+    name_ptr: *const std::os::raw::c_char,
+) -> *mut ExportDescriptorInfo {
+    if instance_ptr.is_null() || store_ptr.is_null() || name_ptr.is_null() {
+        return std::ptr::null_mut();
+    }
+
+    let instance = unsafe { &*(instance_ptr as *const Instance) };
+    let mut store = unsafe { &mut *(store_ptr as *mut Store<()>) };
+    let name = unsafe { std::ffi::CStr::from_ptr(name_ptr) };
+
+    if let Ok(name_str) = name.to_str() {
+        match InstanceTypeIntrospector::get_export_type(instance, &mut store, name_str) {
+            Ok(Some(descriptor)) => Box::into_raw(Box::new(descriptor)),
+            Ok(None) | Err(_) => std::ptr::null_mut(),
+        }
+    } else {
+        std::ptr::null_mut()
     }
 }

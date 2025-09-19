@@ -10,14 +10,13 @@ import java.util.concurrent.Flow.Subscriber;
 /**
  * Reactive WebAssembly engine interface supporting reactive streams.
  *
- * <p>A ReactiveEngine extends the standard Engine with reactive programming support
- * using Java's Flow API (Publisher/Subscriber pattern). This enables building
- * reactive pipelines for WebAssembly operations with built-in backpressure handling
- * and error propagation.
+ * <p>A ReactiveEngine extends the standard Engine with reactive programming support using Java's
+ * Flow API (Publisher/Subscriber pattern). This enables building reactive pipelines for WebAssembly
+ * operations with built-in backpressure handling and error propagation.
  *
- * <p>Reactive engines are particularly useful for streaming data processing,
- * event-driven architectures, and scenarios requiring fine-grained control
- * over execution flow and resource management.
+ * <p>Reactive engines are particularly useful for streaming data processing, event-driven
+ * architectures, and scenarios requiring fine-grained control over execution flow and resource
+ * management.
  *
  * @since 1.0.0
  */
@@ -26,9 +25,9 @@ public interface ReactiveEngine extends Engine {
   /**
    * Creates a reactive stream for module compilation events.
    *
-   * <p>This method returns a Publisher that emits compilation events as modules
-   * are processed through the compilation pipeline, enabling real-time monitoring
-   * and reactive processing of compilation results.
+   * <p>This method returns a Publisher that emits compilation events as modules are processed
+   * through the compilation pipeline, enabling real-time monitoring and reactive processing of
+   * compilation results.
    *
    * @param moduleStream the stream of module sources to compile
    * @return a Publisher that emits compilation events
@@ -39,9 +38,9 @@ public interface ReactiveEngine extends Engine {
   /**
    * Creates a reactive stream for function execution events.
    *
-   * <p>This method returns a Publisher that emits execution events as functions
-   * are called through the execution pipeline, enabling reactive processing
-   * of function call results and error handling.
+   * <p>This method returns a Publisher that emits execution events as functions are called through
+   * the execution pipeline, enabling reactive processing of function call results and error
+   * handling.
    *
    * @param callStream the stream of function calls to execute
    * @return a Publisher that emits execution events
@@ -52,8 +51,8 @@ public interface ReactiveEngine extends Engine {
   /**
    * Creates a reactive stream for engine statistics.
    *
-   * <p>This method returns a Publisher that periodically emits engine statistics,
-   * useful for monitoring and observability in reactive applications.
+   * <p>This method returns a Publisher that periodically emits engine statistics, useful for
+   * monitoring and observability in reactive applications.
    *
    * @param interval the interval between statistics emissions
    * @return a Publisher that emits engine statistics
@@ -64,8 +63,8 @@ public interface ReactiveEngine extends Engine {
   /**
    * Creates a reactive stream for engine events.
    *
-   * <p>This method returns a Publisher that emits various engine events such as
-   * module loading, instance creation, and resource lifecycle events.
+   * <p>This method returns a Publisher that emits various engine events such as module loading,
+   * instance creation, and resource lifecycle events.
    *
    * @return a Publisher that emits engine events
    */
@@ -74,9 +73,8 @@ public interface ReactiveEngine extends Engine {
   /**
    * Creates a reactive stream for performance metrics.
    *
-   * <p>This method returns a Publisher that periodically emits performance metrics,
-   * enabling real-time performance monitoring and reactive adjustment of system
-   * parameters.
+   * <p>This method returns a Publisher that periodically emits performance metrics, enabling
+   * real-time performance monitoring and reactive adjustment of system parameters.
    *
    * @param interval the interval between metrics emissions
    * @return a Publisher that emits performance metrics
@@ -87,8 +85,8 @@ public interface ReactiveEngine extends Engine {
   /**
    * Creates a reactive stream processor for custom operations.
    *
-   * <p>This method allows creation of custom reactive processors that can transform
-   * streams of WebAssembly operations according to application-specific logic.
+   * <p>This method allows creation of custom reactive processors that can transform streams of
+   * WebAssembly operations according to application-specific logic.
    *
    * @param <T> the input type
    * @param <R> the output type
@@ -101,8 +99,8 @@ public interface ReactiveEngine extends Engine {
   /**
    * Subscribes to reactive operations with custom subscriber.
    *
-   * <p>This method enables integration with external reactive libraries and
-   * custom processing logic by accepting any Flow.Subscriber implementation.
+   * <p>This method enables integration with external reactive libraries and custom processing logic
+   * by accepting any Flow.Subscriber implementation.
    *
    * @param <T> the event type
    * @param publisher the event publisher
@@ -126,9 +124,7 @@ public interface ReactiveEngine extends Engine {
    */
   void setReactiveConfiguration(final ReactiveConfiguration configuration);
 
-  /**
-   * Represents a module source for reactive compilation.
-   */
+  /** Represents a module source for reactive compilation. */
   interface ModuleSource {
     /**
      * Gets the unique identifier for this module source.
@@ -152,9 +148,7 @@ public interface ReactiveEngine extends Engine {
     Object getMetadata();
   }
 
-  /**
-   * Represents a function call for reactive execution.
-   */
+  /** Represents a function call for reactive execution. */
   interface FunctionCall {
     /**
      * Gets the unique identifier for this function call.
@@ -185,9 +179,7 @@ public interface ReactiveEngine extends Engine {
     Object getMetadata();
   }
 
-  /**
-   * Represents a compilation event in the reactive stream.
-   */
+  /** Represents a compilation event in the reactive stream. */
   interface CompilationEvent {
     /**
      * Gets the module ID associated with this event.
@@ -232,9 +224,7 @@ public interface ReactiveEngine extends Engine {
     Object getMetadata();
   }
 
-  /**
-   * Represents an execution event in the reactive stream.
-   */
+  /** Represents an execution event in the reactive stream. */
   interface ExecutionEvent {
     /**
      * Gets the function call ID associated with this event.
@@ -279,9 +269,7 @@ public interface ReactiveEngine extends Engine {
     Object getMetadata();
   }
 
-  /**
-   * Engine event types for reactive monitoring.
-   */
+  /** Engine event types for reactive monitoring. */
   interface EngineEvent {
     /**
      * Gets the event type.
@@ -312,9 +300,7 @@ public interface ReactiveEngine extends Engine {
     String getSource();
   }
 
-  /**
-   * Performance metrics for reactive monitoring.
-   */
+  /** Performance metrics for reactive monitoring. */
   interface PerformanceMetrics {
     /**
      * Gets CPU usage percentage.
@@ -359,9 +345,7 @@ public interface ReactiveEngine extends Engine {
     double getErrorRate();
   }
 
-  /**
-   * Stream processor for custom reactive transformations.
-   */
+  /** Stream processor for custom reactive transformations. */
   interface StreamProcessor<T, R> {
     /**
      * Processes input items and produces output items.
@@ -372,9 +356,7 @@ public interface ReactiveEngine extends Engine {
     Publisher<R> process(Publisher<T> input);
   }
 
-  /**
-   * Configuration for reactive operations.
-   */
+  /** Configuration for reactive operations. */
   interface ReactiveConfiguration {
     /**
      * Gets the buffer size for reactive streams.
@@ -412,25 +394,33 @@ public interface ReactiveEngine extends Engine {
     boolean isErrorRecoveryEnabled();
   }
 
-  /**
-   * Compilation phases for progress tracking.
-   */
+  /** Compilation phases for progress tracking. */
   enum CompilationPhase {
-    PARSING, VALIDATION, COMPILATION, OPTIMIZATION, COMPLETED, FAILED
+    PARSING,
+    VALIDATION,
+    COMPILATION,
+    OPTIMIZATION,
+    COMPLETED,
+    FAILED
   }
 
-  /**
-   * Execution phases for progress tracking.
-   */
+  /** Execution phases for progress tracking. */
   enum ExecutionPhase {
-    STARTING, EXECUTING, COMPLETED, FAILED
+    STARTING,
+    EXECUTING,
+    COMPLETED,
+    FAILED
   }
 
-  /**
-   * Engine event types.
-   */
+  /** Engine event types. */
   enum EngineEventType {
-    MODULE_LOADED, MODULE_UNLOADED, INSTANCE_CREATED, INSTANCE_DESTROYED,
-    STORE_CREATED, STORE_DESTROYED, ERROR_OCCURRED, PERFORMANCE_THRESHOLD_EXCEEDED
+    MODULE_LOADED,
+    MODULE_UNLOADED,
+    INSTANCE_CREATED,
+    INSTANCE_DESTROYED,
+    STORE_CREATED,
+    STORE_DESTROYED,
+    ERROR_OCCURRED,
+    PERFORMANCE_THRESHOLD_EXCEEDED
   }
 }

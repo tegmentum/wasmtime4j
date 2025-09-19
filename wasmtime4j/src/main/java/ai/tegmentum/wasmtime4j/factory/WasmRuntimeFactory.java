@@ -228,7 +228,8 @@ public final class WasmRuntimeFactory {
       logger.warning("JNI runtime initialization failed: " + sanitizeForLog(e.getMessage()));
       return false;
     } catch (final Exception e) {
-      logger.warning("Unexpected error checking JNI runtime availability: " + sanitizeForLog(e.getMessage()));
+      logger.warning(
+          "Unexpected error checking JNI runtime availability: " + sanitizeForLog(e.getMessage()));
       return false;
     }
   }
@@ -244,7 +245,9 @@ public final class WasmRuntimeFactory {
       logger.warning("Panama runtime initialization failed: " + sanitizeForLog(e.getMessage()));
       return false;
     } catch (final Exception e) {
-      logger.warning("Unexpected error checking Panama runtime availability: " + sanitizeForLog(e.getMessage()));
+      logger.warning(
+          "Unexpected error checking Panama runtime availability: "
+              + sanitizeForLog(e.getMessage()));
       return false;
     }
   }

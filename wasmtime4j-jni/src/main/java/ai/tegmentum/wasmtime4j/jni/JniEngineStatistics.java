@@ -8,8 +8,8 @@ import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
  * JNI implementation of EngineStatistics providing runtime metrics for WebAssembly engines.
  *
  * <p>This class provides access to various performance and usage statistics from the native
- * Wasmtime engine through JNI calls. Statistics include compilation counts, cache performance,
- * and memory usage metrics.
+ * Wasmtime engine through JNI calls. Statistics include compilation counts, cache performance, and
+ * memory usage metrics.
  *
  * @since 1.0.0
  */
