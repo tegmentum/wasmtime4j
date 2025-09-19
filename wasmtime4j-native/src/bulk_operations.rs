@@ -163,29 +163,26 @@ impl MemoryBulkOperations {
 
         // Validate parameters
         if size > MAX_BULK_OPERATION_SIZE as u64 {
-            return Err(WasmtimeError::new(
-                ErrorCode::InvalidParameter,
-                format!("Bulk copy size {} exceeds maximum {}", size, MAX_BULK_OPERATION_SIZE)
-            ));
+            return Err(WasmtimeError::InvalidParameter {
+                message: format!("Bulk copy size {} exceeds maximum {}", size, MAX_BULK_OPERATION_SIZE)
+            });
         }
 
         let memory_size = memory.data_size(store) as u64;
 
         // Check bounds
         if dst_offset.saturating_add(size) > memory_size {
-            return Err(WasmtimeError::new(
-                ErrorCode::OutOfBounds,
-                format!("Destination range [{}, {}) exceeds memory size {}",
+            return Err(WasmtimeError::Memory {
+                message: format!("Destination range [{}, {}) exceeds memory size {}",
                        dst_offset, dst_offset + size, memory_size)
-            ));
+            });
         }
 
         if src_offset.saturating_add(size) > memory_size {
-            return Err(WasmtimeError::new(
-                ErrorCode::OutOfBounds,
-                format!("Source range [{}, {}) exceeds memory size {}",
+            return Err(WasmtimeError::Memory {
+                message: format!("Source range [{}, {}) exceeds memory size {}",
                        src_offset, src_offset + size, memory_size)
-            ));
+            });
         }
 
         // Perform the copy operation
@@ -212,7 +209,7 @@ impl MemoryBulkOperations {
                 success: false,
                 processed_count: 0,
                 execution_time_micros: execution_time,
-                error_code: e.code() as i32,
+                error_code: -1, // Generic error code
             }),
         }
     }
@@ -230,21 +227,19 @@ impl MemoryBulkOperations {
 
         // Validate parameters
         if size > MAX_BULK_OPERATION_SIZE as u64 {
-            return Err(WasmtimeError::new(
-                ErrorCode::InvalidParameter,
-                format!("Bulk fill size {} exceeds maximum {}", size, MAX_BULK_OPERATION_SIZE)
-            ));
+            return Err(WasmtimeError::InvalidParameter {
+                message: format!("Bulk fill size {} exceeds maximum {}", size, MAX_BULK_OPERATION_SIZE)
+            });
         }
 
         let memory_size = memory.data_size(store) as u64;
 
         // Check bounds
         if dst_offset.saturating_add(size) > memory_size {
-            return Err(WasmtimeError::new(
-                ErrorCode::OutOfBounds,
-                format!("Fill range [{}, {}) exceeds memory size {}",
+            return Err(WasmtimeError::Memory {
+                message: format!("Fill range [{}, {}) exceeds memory size {}",
                        dst_offset, dst_offset + size, memory_size)
-            ));
+            });
         }
 
         // Perform the fill operation
@@ -271,7 +266,7 @@ impl MemoryBulkOperations {
                 success: false,
                 processed_count: 0,
                 execution_time_micros: execution_time,
-                error_code: e.code() as i32,
+                error_code: -1, // Generic error code
             }),
         }
     }
@@ -289,29 +284,26 @@ impl MemoryBulkOperations {
 
         // Validate parameters
         if size > MAX_BULK_OPERATION_SIZE as u64 {
-            return Err(WasmtimeError::new(
-                ErrorCode::InvalidParameter,
-                format!("Bulk compare size {} exceeds maximum {}", size, MAX_BULK_OPERATION_SIZE)
-            ));
+            return Err(WasmtimeError::InvalidParameter {
+                message: format!("Bulk compare size {} exceeds maximum {}", size, MAX_BULK_OPERATION_SIZE)
+            });
         }
 
         let memory_size = memory.data_size(store) as u64;
 
         // Check bounds
         if offset1.saturating_add(size) > memory_size {
-            return Err(WasmtimeError::new(
-                ErrorCode::OutOfBounds,
-                format!("First range [{}, {}) exceeds memory size {}",
+            return Err(WasmtimeError::Memory {
+                message: format!("First range [{}, {}) exceeds memory size {}",
                        offset1, offset1 + size, memory_size)
-            ));
+            });
         }
 
         if offset2.saturating_add(size) > memory_size {
-            return Err(WasmtimeError::new(
-                ErrorCode::OutOfBounds,
-                format!("Second range [{}, {}) exceeds memory size {}",
+            return Err(WasmtimeError::Memory {
+                message: format!("Second range [{}, {}) exceeds memory size {}",
                        offset2, offset2 + size, memory_size)
-            ));
+            });
         }
 
         // Perform the compare operation
@@ -339,10 +331,9 @@ impl MemoryBulkOperations {
 
         // Additional bounds check
         if dst_offset >= data_len || src_offset >= data_len {
-            return Err(WasmtimeError::new(
-                ErrorCode::OutOfBounds,
-                "Offset exceeds memory bounds"
-            ));
+            return Err(WasmtimeError::Memory {
+                message: "Offset exceeds memory bounds".to_string()
+            });
         }
 
         let actual_size = size.min(data_len - dst_offset).min(data_len - src_offset);
@@ -384,10 +375,9 @@ impl MemoryBulkOperations {
 
         // Additional bounds check
         if dst_offset >= data_len {
-            return Err(WasmtimeError::new(
-                ErrorCode::OutOfBounds,
-                "Offset exceeds memory bounds"
-            ));
+            return Err(WasmtimeError::Memory {
+                message: "Offset exceeds memory bounds".to_string()
+            });
         }
 
         let actual_size = size.min(data_len - dst_offset);
@@ -416,10 +406,9 @@ impl MemoryBulkOperations {
 
         // Additional bounds check
         if offset1 >= data_len || offset2 >= data_len {
-            return Err(WasmtimeError::new(
-                ErrorCode::OutOfBounds,
-                "Offset exceeds memory bounds"
-            ));
+            return Err(WasmtimeError::Memory {
+                message: "Offset exceeds memory bounds".to_string()
+            });
         }
 
         let actual_size = size.min(data_len - offset1).min(data_len - offset2);
@@ -534,11 +523,10 @@ impl TableBulkOperations {
 
         // Validate parameters
         if element_count > MAX_BULK_OPERATION_SIZE as u64 {
-            return Err(WasmtimeError::new(
-                ErrorCode::InvalidParameter,
-                format!("Bulk table copy element count {} exceeds maximum {}",
+            return Err(WasmtimeError::InvalidParameter {
+                message: format!("Bulk table copy element count {} exceeds maximum {}",
                        element_count, MAX_BULK_OPERATION_SIZE)
-            ));
+            });
         }
 
         let dst_size = dst_table.size(store) as u64;
@@ -546,19 +534,17 @@ impl TableBulkOperations {
 
         // Check bounds
         if dst_offset.saturating_add(element_count) > dst_size {
-            return Err(WasmtimeError::new(
-                ErrorCode::OutOfBounds,
-                format!("Destination range [{}, {}) exceeds table size {}",
+            return Err(WasmtimeError::Type {
+                message: format!("Destination range [{}, {}) exceeds table size {}",
                        dst_offset, dst_offset + element_count, dst_size)
-            ));
+            });
         }
 
         if src_offset.saturating_add(element_count) > src_size {
-            return Err(WasmtimeError::new(
-                ErrorCode::OutOfBounds,
-                format!("Source range [{}, {}) exceeds table size {}",
+            return Err(WasmtimeError::Type {
+                message: format!("Source range [{}, {}) exceeds table size {}",
                        src_offset, src_offset + element_count, src_size)
-            ));
+            });
         }
 
         // Perform the copy operation
@@ -585,7 +571,7 @@ impl TableBulkOperations {
                 success: false,
                 processed_count: 0,
                 execution_time_micros: execution_time,
-                error_code: e.code() as i32,
+                error_code: -1, // Generic error code
             }),
         }
     }
@@ -603,22 +589,20 @@ impl TableBulkOperations {
 
         // Validate parameters
         if element_count > MAX_BULK_OPERATION_SIZE as u64 {
-            return Err(WasmtimeError::new(
-                ErrorCode::InvalidParameter,
-                format!("Bulk table fill element count {} exceeds maximum {}",
+            return Err(WasmtimeError::InvalidParameter {
+                message: format!("Bulk table fill element count {} exceeds maximum {}",
                        element_count, MAX_BULK_OPERATION_SIZE)
-            ));
+            });
         }
 
         let table_size = table.size(store) as u64;
 
         // Check bounds
         if dst_offset.saturating_add(element_count) > table_size {
-            return Err(WasmtimeError::new(
-                ErrorCode::OutOfBounds,
-                format!("Fill range [{}, {}) exceeds table size {}",
+            return Err(WasmtimeError::Type {
+                message: format!("Fill range [{}, {}) exceeds table size {}",
                        dst_offset, dst_offset + element_count, table_size)
-            ));
+            });
         }
 
         // Perform the fill operation
@@ -645,7 +629,7 @@ impl TableBulkOperations {
                 success: false,
                 processed_count: 0,
                 execution_time_micros: execution_time,
-                error_code: e.code() as i32,
+                error_code: -1, // Generic error code
             }),
         }
     }
@@ -667,17 +651,16 @@ impl TableBulkOperations {
 
             // Get element from source table
             let element = src_table.get(store, src_idx)
-                .ok_or_else(|| WasmtimeError::new(
-                    ErrorCode::OutOfBounds,
-                    format!("Failed to get element at index {}", src_idx)
-                ))?;
+                .ok_or_else(|| WasmtimeError::Type {
+                    message: format!("Failed to get element at index {}", src_idx)
+                })?;
 
             // Set element in destination table
             dst_table.set(store, dst_idx, element)
-                .map_err(|e| WasmtimeError::new(
-                    ErrorCode::RuntimeError,
-                    format!("Failed to set element at index {}: {}", dst_idx, e)
-                ))?;
+                .map_err(|e| WasmtimeError::Runtime {
+                    message: format!("Failed to set element at index {}: {}", dst_idx, e),
+                    backtrace: None,
+                })?;
         }
 
         Ok(())
@@ -698,10 +681,10 @@ impl TableBulkOperations {
 
             // Set element in table
             table.set(store, idx, fill_value.clone())
-                .map_err(|e| WasmtimeError::new(
-                    ErrorCode::RuntimeError,
-                    format!("Failed to set element at index {}: {}", idx, e)
-                ))?;
+                .map_err(|e| WasmtimeError::Runtime {
+                    message: format!("Failed to set element at index {}: {}", idx, e),
+                    backtrace: None,
+                })?;
         }
 
         Ok(())
