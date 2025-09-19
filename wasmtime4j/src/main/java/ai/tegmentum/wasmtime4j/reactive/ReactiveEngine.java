@@ -1,6 +1,7 @@
 package ai.tegmentum.wasmtime4j.reactive;
 
 import ai.tegmentum.wasmtime4j.Engine;
+import ai.tegmentum.wasmtime4j.EngineStatistics;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import java.time.Duration;
 import java.util.concurrent.Flow.Publisher;
