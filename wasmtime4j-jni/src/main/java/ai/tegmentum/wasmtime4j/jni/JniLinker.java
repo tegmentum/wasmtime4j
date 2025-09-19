@@ -12,19 +12,19 @@ import ai.tegmentum.wasmtime4j.WasmGlobal;
 import ai.tegmentum.wasmtime4j.WasmMemory;
 import ai.tegmentum.wasmtime4j.WasmTable;
 import ai.tegmentum.wasmtime4j.WasmValueType;
-import ai.tegmentum.wasmtime4j.wasi.WasiConfig;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
+import ai.tegmentum.wasmtime4j.wasi.WasiConfig;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
 
 /**
  * JNI implementation of the Linker interface.
  *
- * <p>This class provides a WebAssembly linker implementation using JNI calls to the native
- * Wasmtime library. The linker enables defining host functions and resolving imports before
- * instantiating WebAssembly modules.
+ * <p>This class provides a WebAssembly linker implementation using JNI calls to the native Wasmtime
+ * library. The linker enables defining host functions and resolving imports before instantiating
+ * WebAssembly modules.
  *
  * <p>This implementation ensures defensive programming to prevent native resource leaks and JVM
  * crashes.
@@ -102,23 +102,19 @@ public final class JniLinker extends JniResource implements Linker {
     ensureNotClosed();
 
     try {
-      // Create host function wrapper
-      final JniHostFunction jniHostFunction = new JniHostFunction(implementation);
+      // Register host function implementation for callback
+      final long callbackId = JniHostFunctionRegistry.register(implementation);
 
       // Convert FunctionType parameters and returns to native representation
       final int[] paramTypesArray = convertToNativeTypes(functionType.getParamTypes());
       final int[] returnTypesArray = convertToNativeTypes(functionType.getReturnTypes());
 
-      final boolean success = nativeDefineHostFunction(
-          getNativeHandle(),
-          moduleName,
-          name,
-          paramTypesArray,
-          returnTypesArray,
-          jniHostFunction.getNativeHandle()
-      );
+      final boolean success =
+          nativeDefineHostFunction(
+              getNativeHandle(), moduleName, name, paramTypesArray, returnTypesArray, callbackId);
 
       if (!success) {
+        JniHostFunctionRegistry.unregister(callbackId);
         throw new WasmException("Failed to define host function: " + moduleName + "::" + name);
       }
 
@@ -127,6 +123,63 @@ public final class JniLinker extends JniResource implements Linker {
       throw e;
     } catch (final Exception e) {
       throw new WasmException("Unexpected error defining host function: " + e.getMessage(), e);
+    }
+  }
+
+  @Override
+  public void defineHostFunction(
+      final String module, final String name, final HostFunction function) throws WasmException {
+    JniValidation.requireNonBlank(module, "module");
+    JniValidation.requireNonBlank(name, "name");
+    JniValidation.requireNonNull(function, "function");
+    ensureNotClosed();
+
+    try {
+      // Register host function implementation for callback
+      final long callbackId = JniHostFunctionRegistry.register(function);
+
+      final boolean success =
+          nativeDefineHostFunctionSimple(getNativeHandle(), module, name, callbackId);
+
+      if (!success) {
+        JniHostFunctionRegistry.unregister(callbackId);
+        throw new WasmException("Failed to define host function: " + module + "::" + name);
+      }
+
+      LOGGER.fine("Defined host function " + module + "::" + name);
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new WasmException("Unexpected error defining host function: " + e.getMessage(), e);
+    }
+  }
+
+  @Override
+  public void define(final String module, final String name, final WasmFunction function)
+      throws WasmException {
+    JniValidation.requireNonBlank(module, "module");
+    JniValidation.requireNonBlank(name, "name");
+    JniValidation.requireNonNull(function, "function");
+    ensureNotClosed();
+
+    try {
+      if (!(function instanceof JniFunction)) {
+        throw new IllegalArgumentException("Function must be a JNI function instance");
+      }
+
+      final JniFunction jniFunction = (JniFunction) function;
+      final boolean success =
+          nativeDefineFunction(getNativeHandle(), module, name, jniFunction.getNativeHandle());
+
+      if (!success) {
+        throw new WasmException("Failed to define function: " + module + "::" + name);
+      }
+
+      LOGGER.fine("Defined function " + module + "::" + name);
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new WasmException("Unexpected error defining function: " + e.getMessage(), e);
     }
   }
 
@@ -144,12 +197,8 @@ public final class JniLinker extends JniResource implements Linker {
       }
 
       final JniMemory jniMemory = (JniMemory) memory;
-      final boolean success = nativeDefineMemory(
-          getNativeHandle(),
-          moduleName,
-          name,
-          jniMemory.getNativeHandle()
-      );
+      final boolean success =
+          nativeDefineMemory(getNativeHandle(), moduleName, name, jniMemory.getNativeHandle());
 
       if (!success) {
         throw new WasmException("Failed to define memory: " + moduleName + "::" + name);
@@ -177,12 +226,8 @@ public final class JniLinker extends JniResource implements Linker {
       }
 
       final JniTable jniTable = (JniTable) table;
-      final boolean success = nativeDefineTable(
-          getNativeHandle(),
-          moduleName,
-          name,
-          jniTable.getNativeHandle()
-      );
+      final boolean success =
+          nativeDefineTable(getNativeHandle(), moduleName, name, jniTable.getNativeHandle());
 
       if (!success) {
         throw new WasmException("Failed to define table: " + moduleName + "::" + name);
@@ -210,12 +255,8 @@ public final class JniLinker extends JniResource implements Linker {
       }
 
       final JniGlobal jniGlobal = (JniGlobal) global;
-      final boolean success = nativeDefineGlobal(
-          getNativeHandle(),
-          moduleName,
-          name,
-          jniGlobal.getNativeHandle()
-      );
+      final boolean success =
+          nativeDefineGlobal(getNativeHandle(), moduleName, name, jniGlobal.getNativeHandle());
 
       if (!success) {
         throw new WasmException("Failed to define global: " + moduleName + "::" + name);
@@ -242,11 +283,8 @@ public final class JniLinker extends JniResource implements Linker {
       }
 
       final JniInstance jniInstance = (JniInstance) instance;
-      final boolean success = nativeDefineInstance(
-          getNativeHandle(),
-          moduleName,
-          jniInstance.getNativeHandle()
-      );
+      final boolean success =
+          nativeDefineInstance(getNativeHandle(), moduleName, jniInstance.getNativeHandle());
 
       if (!success) {
         throw new WasmException("Failed to define instance: " + moduleName);
@@ -261,7 +299,8 @@ public final class JniLinker extends JniResource implements Linker {
   }
 
   @Override
-  public void alias(final String fromModule, final String fromName, final String toModule, final String toName)
+  public void alias(
+      final String fromModule, final String fromName, final String toModule, final String toName)
       throws WasmException {
     JniValidation.requireNonBlank(fromModule, "fromModule");
     JniValidation.requireNonBlank(fromName, "fromName");
@@ -270,19 +309,23 @@ public final class JniLinker extends JniResource implements Linker {
     ensureNotClosed();
 
     try {
-      final boolean success = nativeAlias(
-          getNativeHandle(),
-          fromModule,
-          fromName,
-          toModule,
-          toName
-      );
+      final boolean success =
+          nativeAlias(getNativeHandle(), fromModule, fromName, toModule, toName);
 
       if (!success) {
-        throw new WasmException("Failed to create alias: " + fromModule + "::" + fromName + " -> " + toModule + "::" + toName);
+        throw new WasmException(
+            "Failed to create alias: "
+                + fromModule
+                + "::"
+                + fromName
+                + " -> "
+                + toModule
+                + "::"
+                + toName);
       }
 
-      LOGGER.fine("Created alias " + fromModule + "::" + fromName + " -> " + toModule + "::" + toName);
+      LOGGER.fine(
+          "Created alias " + fromModule + "::" + fromName + " -> " + toModule + "::" + toName);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -307,11 +350,9 @@ public final class JniLinker extends JniResource implements Linker {
       final JniStore jniStore = (JniStore) store;
       final JniModule jniModule = (JniModule) module;
 
-      final long instanceHandle = nativeInstantiate(
-          getNativeHandle(),
-          jniStore.getNativeHandle(),
-          jniModule.getNativeHandle()
-      );
+      final long instanceHandle =
+          nativeInstantiate(
+              getNativeHandle(), jniStore.getNativeHandle(), jniModule.getNativeHandle());
 
       if (instanceHandle == 0) {
         throw new WasmException("Failed to instantiate module");
@@ -343,69 +384,6 @@ public final class JniLinker extends JniResource implements Linker {
     }
   }
 
-  @Override
-  public void define(final String module, final String name, final WasmFunction function)
-      throws WasmException {
-    JniValidation.requireNonBlank(module, "module");
-    JniValidation.requireNonBlank(name, "name");
-    JniValidation.requireNonNull(function, "function");
-    ensureNotClosed();
-
-    try {
-      if (!(function instanceof JniFunction)) {
-        throw new IllegalArgumentException("Function must be a JNI function instance");
-      }
-
-      final JniFunction jniFunction = (JniFunction) function;
-      final boolean success = nativeDefineFunction(
-          getNativeHandle(),
-          module,
-          name,
-          jniFunction.getNativeHandle()
-      );
-
-      if (!success) {
-        throw new WasmException("Failed to define function: " + module + "::" + name);
-      }
-
-      LOGGER.fine("Defined function " + module + "::" + name);
-    } catch (final RuntimeException e) {
-      throw e;
-    } catch (final Exception e) {
-      throw new WasmException("Unexpected error defining function: " + e.getMessage(), e);
-    }
-  }
-
-  @Override
-  public void defineHostFunction(final String module, final String name, final HostFunction function)
-      throws WasmException {
-    JniValidation.requireNonBlank(module, "module");
-    JniValidation.requireNonBlank(name, "name");
-    JniValidation.requireNonNull(function, "function");
-    ensureNotClosed();
-
-    try {
-      // Create host function wrapper
-      final JniHostFunction jniHostFunction = new JniHostFunction(function);
-
-      final boolean success = nativeDefineHostFunctionSimple(
-          getNativeHandle(),
-          module,
-          name,
-          jniHostFunction.getNativeHandle()
-      );
-
-      if (!success) {
-        throw new WasmException("Failed to define host function: " + module + "::" + name);
-      }
-
-      LOGGER.fine("Defined host function " + module + "::" + name);
-    } catch (final RuntimeException e) {
-      throw e;
-    } catch (final Exception e) {
-      throw new WasmException("Unexpected error defining host function: " + e.getMessage(), e);
-    }
-  }
 
   @Override
   public void defineWasi(final WasiConfig config) throws WasmException {
@@ -428,17 +406,19 @@ public final class JniLinker extends JniResource implements Linker {
   }
 
   @Override
-  public java.util.concurrent.CompletableFuture<Instance> instantiateAsync(final Store store, final Module module) {
+  public java.util.concurrent.CompletableFuture<Instance> instantiateAsync(
+      final Store store, final Module module) {
     JniValidation.requireNonNull(store, "store");
     JniValidation.requireNonNull(module, "module");
 
-    return java.util.concurrent.CompletableFuture.supplyAsync(() -> {
-      try {
-        return instantiate(store, module);
-      } catch (final WasmException e) {
-        throw new RuntimeException(e);
-      }
-    });
+    return java.util.concurrent.CompletableFuture.supplyAsync(
+        () -> {
+          try {
+            return instantiate(store, module);
+          } catch (final WasmException e) {
+            throw new RuntimeException(e);
+          }
+        });
   }
 
   @Override
@@ -453,11 +433,8 @@ public final class JniLinker extends JniResource implements Linker {
       }
 
       final JniInstance jniInstance = (JniInstance) instance;
-      final boolean success = nativeAliasModule(
-          getNativeHandle(),
-          name,
-          jniInstance.getNativeHandle()
-      );
+      final boolean success =
+          nativeAliasModule(getNativeHandle(), name, jniInstance.getNativeHandle());
 
       if (!success) {
         throw new WasmException("Failed to alias module: " + name);
@@ -578,7 +555,7 @@ public final class JniLinker extends JniResource implements Linker {
    * @param functionName the function name for the import
    * @param paramTypes array of parameter type constants
    * @param returnTypes array of return type constants
-   * @param hostFunctionHandle the native host function handle
+   * @param callbackId the callback ID for the host function implementation
    * @return true if successful, false otherwise
    */
   private static native boolean nativeDefineHostFunction(
@@ -587,7 +564,7 @@ public final class JniLinker extends JniResource implements Linker {
       final String functionName,
       final int[] paramTypes,
       final int[] returnTypes,
-      final long hostFunctionHandle);
+      final long callbackId);
 
   /**
    * Defines a memory in the native linker.
@@ -643,9 +620,7 @@ public final class JniLinker extends JniResource implements Linker {
    * @return true if successful, false otherwise
    */
   private static native boolean nativeDefineInstance(
-      final long linkerHandle,
-      final String moduleName,
-      final long instanceHandle);
+      final long linkerHandle, final String moduleName, final long instanceHandle);
 
   /**
    * Creates an alias in the native linker.
@@ -673,9 +648,7 @@ public final class JniLinker extends JniResource implements Linker {
    * @return the native instance handle, or 0 on failure
    */
   private static native long nativeInstantiate(
-      final long linkerHandle,
-      final long storeHandle,
-      final long moduleHandle);
+      final long linkerHandle, final long storeHandle, final long moduleHandle);
 
   /**
    * Enables WASI support in the native linker.
@@ -706,14 +679,14 @@ public final class JniLinker extends JniResource implements Linker {
    * @param linkerHandle the native linker handle
    * @param moduleName the module name for the import
    * @param functionName the function name for the import
-   * @param hostFunctionHandle the native host function handle
+   * @param callbackId the callback ID for the host function implementation
    * @return true if successful, false otherwise
    */
   private static native boolean nativeDefineHostFunctionSimple(
       final long linkerHandle,
       final String moduleName,
       final String functionName,
-      final long hostFunctionHandle);
+      final long callbackId);
 
   /**
    * Defines WASI support with configuration in the native linker.
@@ -722,9 +695,7 @@ public final class JniLinker extends JniResource implements Linker {
    * @param configHandle the native WASI config handle (0 for default)
    * @return true if successful, false otherwise
    */
-  private static native boolean nativeDefineWasi(
-      final long linkerHandle,
-      final long configHandle);
+  private static native boolean nativeDefineWasi(final long linkerHandle, final long configHandle);
 
   /**
    * Creates an alias for a module instance in the native linker.
@@ -735,9 +706,7 @@ public final class JniLinker extends JniResource implements Linker {
    * @return true if successful, false otherwise
    */
   private static native boolean nativeAliasModule(
-      final long linkerHandle,
-      final String moduleName,
-      final long instanceHandle);
+      final long linkerHandle, final String moduleName, final long instanceHandle);
 
   /**
    * Destroys the native linker.

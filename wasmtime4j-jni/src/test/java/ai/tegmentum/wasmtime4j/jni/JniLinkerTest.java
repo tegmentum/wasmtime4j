@@ -11,7 +11,6 @@ import static org.mockito.Mockito.when;
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.FunctionType;
 import ai.tegmentum.wasmtime4j.HostFunction;
-import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmGlobal;
@@ -74,37 +73,55 @@ class JniLinkerTest {
 
   @Test
   void testConstructorWithZeroHandle() {
-    assertThrows(IllegalArgumentException.class, () ->
-        new JniLinker(0L, mockEngine));
+    assertThrows(IllegalArgumentException.class, () -> new JniLinker(0L, mockEngine));
   }
 
   @Test
   void testConstructorWithNullEngine() {
-    assertThrows(JniValidationException.class, () ->
-        new JniLinker(VALID_HANDLE, null));
+    assertThrows(JniValidationException.class, () -> new JniLinker(VALID_HANDLE, null));
   }
 
   @Test
   void testCreateWithValidEngine() throws WasmException {
     // This test would need native library support for actual creation
     // For unit test, we just verify parameter validation
-    assertThrows(JniValidationException.class, () ->
-        JniLinker.create(null));
+    assertThrows(JniValidationException.class, () -> JniLinker.create(null));
   }
 
   @Test
   void testCreateWithNonJniEngine() throws WasmException {
-    Engine nonJniEngine = new Engine() {
-      @Override public Store createStore() throws WasmException { return null; }
-      @Override public Store createStore(Object data) throws WasmException { return null; }
-      @Override public Module compileModule(byte[] wasmBytes) throws WasmException { return null; }
-      @Override public ai.tegmentum.wasmtime4j.EngineConfig getConfig() { return null; }
-      @Override public boolean isValid() { return true; }
-      @Override public void close() {}
-    };
+    Engine nonJniEngine =
+        new Engine() {
+          @Override
+          public Store createStore() throws WasmException {
+            return null;
+          }
 
-    assertThrows(IllegalArgumentException.class, () ->
-        JniLinker.create(nonJniEngine));
+          @Override
+          public Store createStore(Object data) throws WasmException {
+            return null;
+          }
+
+          @Override
+          public Module compileModule(byte[] wasmBytes) throws WasmException {
+            return null;
+          }
+
+          @Override
+          public ai.tegmentum.wasmtime4j.EngineConfig getConfig() {
+            return null;
+          }
+
+          @Override
+          public boolean isValid() {
+            return true;
+          }
+
+          @Override
+          public void close() {}
+        };
+
+    assertThrows(IllegalArgumentException.class, () -> JniLinker.create(nonJniEngine));
   }
 
   @Test
@@ -112,28 +129,34 @@ class JniLinkerTest {
     final JniLinker linker = new JniLinker(VALID_HANDLE, mockEngine);
 
     // Test null module name
-    assertThrows(JniValidationException.class, () ->
-        linker.defineHostFunction(null, "test", mockFunctionType, mockHostFunction));
+    assertThrows(
+        JniValidationException.class,
+        () -> linker.defineHostFunction(null, "test", mockFunctionType, mockHostFunction));
 
     // Test empty module name
-    assertThrows(JniValidationException.class, () ->
-        linker.defineHostFunction("", "test", mockFunctionType, mockHostFunction));
+    assertThrows(
+        JniValidationException.class,
+        () -> linker.defineHostFunction("", "test", mockFunctionType, mockHostFunction));
 
     // Test null function name
-    assertThrows(JniValidationException.class, () ->
-        linker.defineHostFunction("env", null, mockFunctionType, mockHostFunction));
+    assertThrows(
+        JniValidationException.class,
+        () -> linker.defineHostFunction("env", null, mockFunctionType, mockHostFunction));
 
     // Test empty function name
-    assertThrows(JniValidationException.class, () ->
-        linker.defineHostFunction("env", "", mockFunctionType, mockHostFunction));
+    assertThrows(
+        JniValidationException.class,
+        () -> linker.defineHostFunction("env", "", mockFunctionType, mockHostFunction));
 
     // Test null function type
-    assertThrows(JniValidationException.class, () ->
-        linker.defineHostFunction("env", "test", null, mockHostFunction));
+    assertThrows(
+        JniValidationException.class,
+        () -> linker.defineHostFunction("env", "test", null, mockHostFunction));
 
     // Test null host function
-    assertThrows(JniValidationException.class, () ->
-        linker.defineHostFunction("env", "test", mockFunctionType, null));
+    assertThrows(
+        JniValidationException.class,
+        () -> linker.defineHostFunction("env", "test", mockFunctionType, null));
   }
 
   @Test
@@ -141,24 +164,20 @@ class JniLinkerTest {
     final JniLinker linker = new JniLinker(VALID_HANDLE, mockEngine);
 
     // Test null module name
-    assertThrows(JniValidationException.class, () ->
-        linker.defineMemory(null, "memory", mockMemory));
+    assertThrows(
+        JniValidationException.class, () -> linker.defineMemory(null, "memory", mockMemory));
 
     // Test empty module name
-    assertThrows(JniValidationException.class, () ->
-        linker.defineMemory("", "memory", mockMemory));
+    assertThrows(JniValidationException.class, () -> linker.defineMemory("", "memory", mockMemory));
 
     // Test null memory name
-    assertThrows(JniValidationException.class, () ->
-        linker.defineMemory("env", null, mockMemory));
+    assertThrows(JniValidationException.class, () -> linker.defineMemory("env", null, mockMemory));
 
     // Test empty memory name
-    assertThrows(JniValidationException.class, () ->
-        linker.defineMemory("env", "", mockMemory));
+    assertThrows(JniValidationException.class, () -> linker.defineMemory("env", "", mockMemory));
 
     // Test null memory
-    assertThrows(JniValidationException.class, () ->
-        linker.defineMemory("env", "memory", null));
+    assertThrows(JniValidationException.class, () -> linker.defineMemory("env", "memory", null));
   }
 
   @Test
@@ -166,24 +185,19 @@ class JniLinkerTest {
     final JniLinker linker = new JniLinker(VALID_HANDLE, mockEngine);
 
     // Test null module name
-    assertThrows(JniValidationException.class, () ->
-        linker.defineTable(null, "table", mockTable));
+    assertThrows(JniValidationException.class, () -> linker.defineTable(null, "table", mockTable));
 
     // Test empty module name
-    assertThrows(JniValidationException.class, () ->
-        linker.defineTable("", "table", mockTable));
+    assertThrows(JniValidationException.class, () -> linker.defineTable("", "table", mockTable));
 
     // Test null table name
-    assertThrows(JniValidationException.class, () ->
-        linker.defineTable("env", null, mockTable));
+    assertThrows(JniValidationException.class, () -> linker.defineTable("env", null, mockTable));
 
     // Test empty table name
-    assertThrows(JniValidationException.class, () ->
-        linker.defineTable("env", "", mockTable));
+    assertThrows(JniValidationException.class, () -> linker.defineTable("env", "", mockTable));
 
     // Test null table
-    assertThrows(JniValidationException.class, () ->
-        linker.defineTable("env", "table", null));
+    assertThrows(JniValidationException.class, () -> linker.defineTable("env", "table", null));
   }
 
   @Test
@@ -191,24 +205,20 @@ class JniLinkerTest {
     final JniLinker linker = new JniLinker(VALID_HANDLE, mockEngine);
 
     // Test null module name
-    assertThrows(JniValidationException.class, () ->
-        linker.defineGlobal(null, "global", mockGlobal));
+    assertThrows(
+        JniValidationException.class, () -> linker.defineGlobal(null, "global", mockGlobal));
 
     // Test empty module name
-    assertThrows(JniValidationException.class, () ->
-        linker.defineGlobal("", "global", mockGlobal));
+    assertThrows(JniValidationException.class, () -> linker.defineGlobal("", "global", mockGlobal));
 
     // Test null global name
-    assertThrows(JniValidationException.class, () ->
-        linker.defineGlobal("env", null, mockGlobal));
+    assertThrows(JniValidationException.class, () -> linker.defineGlobal("env", null, mockGlobal));
 
     // Test empty global name
-    assertThrows(JniValidationException.class, () ->
-        linker.defineGlobal("env", "", mockGlobal));
+    assertThrows(JniValidationException.class, () -> linker.defineGlobal("env", "", mockGlobal));
 
     // Test null global
-    assertThrows(JniValidationException.class, () ->
-        linker.defineGlobal("env", "global", null));
+    assertThrows(JniValidationException.class, () -> linker.defineGlobal("env", "global", null));
   }
 
   @Test
@@ -216,16 +226,13 @@ class JniLinkerTest {
     final JniLinker linker = new JniLinker(VALID_HANDLE, mockEngine);
 
     // Test null module name
-    assertThrows(JniValidationException.class, () ->
-        linker.defineInstance(null, mockInstance));
+    assertThrows(JniValidationException.class, () -> linker.defineInstance(null, mockInstance));
 
     // Test empty module name
-    assertThrows(JniValidationException.class, () ->
-        linker.defineInstance("", mockInstance));
+    assertThrows(JniValidationException.class, () -> linker.defineInstance("", mockInstance));
 
     // Test null instance
-    assertThrows(JniValidationException.class, () ->
-        linker.defineInstance("module", null));
+    assertThrows(JniValidationException.class, () -> linker.defineInstance("module", null));
   }
 
   @Test
@@ -233,36 +240,38 @@ class JniLinkerTest {
     final JniLinker linker = new JniLinker(VALID_HANDLE, mockEngine);
 
     // Test null from module
-    assertThrows(JniValidationException.class, () ->
-        linker.alias(null, "name", "to_module", "to_name"));
+    assertThrows(
+        JniValidationException.class, () -> linker.alias(null, "name", "to_module", "to_name"));
 
     // Test empty from module
-    assertThrows(JniValidationException.class, () ->
-        linker.alias("", "name", "to_module", "to_name"));
+    assertThrows(
+        JniValidationException.class, () -> linker.alias("", "name", "to_module", "to_name"));
 
     // Test null from name
-    assertThrows(JniValidationException.class, () ->
-        linker.alias("from_module", null, "to_module", "to_name"));
+    assertThrows(
+        JniValidationException.class,
+        () -> linker.alias("from_module", null, "to_module", "to_name"));
 
     // Test empty from name
-    assertThrows(JniValidationException.class, () ->
-        linker.alias("from_module", "", "to_module", "to_name"));
+    assertThrows(
+        JniValidationException.class,
+        () -> linker.alias("from_module", "", "to_module", "to_name"));
 
     // Test null to module
-    assertThrows(JniValidationException.class, () ->
-        linker.alias("from_module", "name", null, "to_name"));
+    assertThrows(
+        JniValidationException.class, () -> linker.alias("from_module", "name", null, "to_name"));
 
     // Test empty to module
-    assertThrows(JniValidationException.class, () ->
-        linker.alias("from_module", "name", "", "to_name"));
+    assertThrows(
+        JniValidationException.class, () -> linker.alias("from_module", "name", "", "to_name"));
 
     // Test null to name
-    assertThrows(JniValidationException.class, () ->
-        linker.alias("from_module", "name", "to_module", null));
+    assertThrows(
+        JniValidationException.class, () -> linker.alias("from_module", "name", "to_module", null));
 
     // Test empty to name
-    assertThrows(JniValidationException.class, () ->
-        linker.alias("from_module", "name", "to_module", ""));
+    assertThrows(
+        JniValidationException.class, () -> linker.alias("from_module", "name", "to_module", ""));
   }
 
   @Test
@@ -270,12 +279,10 @@ class JniLinkerTest {
     final JniLinker linker = new JniLinker(VALID_HANDLE, mockEngine);
 
     // Test null store
-    assertThrows(JniValidationException.class, () ->
-        linker.instantiate(null, mockModule));
+    assertThrows(JniValidationException.class, () -> linker.instantiate(null, mockModule));
 
     // Test null module
-    assertThrows(JniValidationException.class, () ->
-        linker.instantiate(mockStore, null));
+    assertThrows(JniValidationException.class, () -> linker.instantiate(mockStore, null));
   }
 
   @Test
@@ -283,20 +290,19 @@ class JniLinkerTest {
     final JniLinker linker = new JniLinker(VALID_HANDLE, mockEngine);
 
     // Test null store
-    assertThrows(JniValidationException.class, () ->
-        linker.instantiate(null, "module_name", mockModule));
+    assertThrows(
+        JniValidationException.class, () -> linker.instantiate(null, "module_name", mockModule));
 
     // Test null module name
-    assertThrows(JniValidationException.class, () ->
-        linker.instantiate(mockStore, null, mockModule));
+    assertThrows(
+        JniValidationException.class, () -> linker.instantiate(mockStore, null, mockModule));
 
     // Test empty module name
-    assertThrows(JniValidationException.class, () ->
-        linker.instantiate(mockStore, "", mockModule));
+    assertThrows(JniValidationException.class, () -> linker.instantiate(mockStore, "", mockModule));
 
     // Test null module
-    assertThrows(JniValidationException.class, () ->
-        linker.instantiate(mockStore, "module_name", null));
+    assertThrows(
+        JniValidationException.class, () -> linker.instantiate(mockStore, "module_name", null));
   }
 
   @Test
@@ -305,13 +311,13 @@ class JniLinkerTest {
 
     // Test conversion of all value types
     final WasmValueType[] types = {
-        WasmValueType.I32,
-        WasmValueType.I64,
-        WasmValueType.F32,
-        WasmValueType.F64,
-        WasmValueType.V128,
-        WasmValueType.FUNCREF,
-        WasmValueType.EXTERNREF
+      WasmValueType.I32,
+      WasmValueType.I64,
+      WasmValueType.F32,
+      WasmValueType.F64,
+      WasmValueType.V128,
+      WasmValueType.FUNCREF,
+      WasmValueType.EXTERNREF
     };
 
     // We can't directly test the private method, but we can verify it through function type usage
@@ -330,29 +336,25 @@ class JniLinkerTest {
     linker.close();
 
     // Verify all operations throw IllegalStateException after close
-    assertThrows(IllegalStateException.class, () ->
-        linker.defineHostFunction("env", "test", mockFunctionType, mockHostFunction));
+    assertThrows(
+        IllegalStateException.class,
+        () -> linker.defineHostFunction("env", "test", mockFunctionType, mockHostFunction));
 
-    assertThrows(IllegalStateException.class, () ->
-        linker.defineMemory("env", "memory", mockMemory));
+    assertThrows(
+        IllegalStateException.class, () -> linker.defineMemory("env", "memory", mockMemory));
 
-    assertThrows(IllegalStateException.class, () ->
-        linker.defineTable("env", "table", mockTable));
+    assertThrows(IllegalStateException.class, () -> linker.defineTable("env", "table", mockTable));
 
-    assertThrows(IllegalStateException.class, () ->
-        linker.defineGlobal("env", "global", mockGlobal));
+    assertThrows(
+        IllegalStateException.class, () -> linker.defineGlobal("env", "global", mockGlobal));
 
-    assertThrows(IllegalStateException.class, () ->
-        linker.defineInstance("module", mockInstance));
+    assertThrows(IllegalStateException.class, () -> linker.defineInstance("module", mockInstance));
 
-    assertThrows(IllegalStateException.class, () ->
-        linker.alias("from", "name", "to", "name"));
+    assertThrows(IllegalStateException.class, () -> linker.alias("from", "name", "to", "name"));
 
-    assertThrows(IllegalStateException.class, () ->
-        linker.instantiate(mockStore, mockModule));
+    assertThrows(IllegalStateException.class, () -> linker.instantiate(mockStore, mockModule));
 
-    assertThrows(IllegalStateException.class, () ->
-        linker.enableWasi());
+    assertThrows(IllegalStateException.class, () -> linker.enableWasi());
 
     assertFalse(linker.isValid());
   }
@@ -362,42 +364,102 @@ class JniLinkerTest {
     final JniLinker linker = new JniLinker(VALID_HANDLE, mockEngine);
 
     // Create non-JNI implementations
-    WasmMemory nonJniMemory = new WasmMemory() {
-      @Override public long size() { return 0; }
-      @Override public long grow(long pages) { return 0; }
-      @Override public byte[] read(long offset, int length) { return new byte[0]; }
-      @Override public void write(long offset, byte[] data) {}
-      @Override public boolean isValid() { return true; }
-      @Override public void close() {}
-    };
+    WasmMemory nonJniMemory =
+        new WasmMemory() {
+          @Override
+          public long size() {
+            return 0;
+          }
 
-    WasmTable nonJniTable = new WasmTable() {
-      @Override public long size() { return 0; }
-      @Override public long grow(long delta, WasmValue init) { return 0; }
-      @Override public WasmValue get(long index) { return null; }
-      @Override public void set(long index, WasmValue value) {}
-      @Override public boolean isValid() { return true; }
-      @Override public void close() {}
-    };
+          @Override
+          public long grow(long pages) {
+            return 0;
+          }
 
-    WasmGlobal nonJniGlobal = new WasmGlobal() {
-      @Override public WasmValue get() { return null; }
-      @Override public void set(WasmValue value) {}
-      @Override public boolean isMutable() { return false; }
-      @Override public WasmValueType getType() { return WasmValueType.I32; }
-      @Override public boolean isValid() { return true; }
-      @Override public void close() {}
-    };
+          @Override
+          public byte[] read(long offset, int length) {
+            return new byte[0];
+          }
+
+          @Override
+          public void write(long offset, byte[] data) {}
+
+          @Override
+          public boolean isValid() {
+            return true;
+          }
+
+          @Override
+          public void close() {}
+        };
+
+    WasmTable nonJniTable =
+        new WasmTable() {
+          @Override
+          public long size() {
+            return 0;
+          }
+
+          @Override
+          public long grow(long delta, WasmValue init) {
+            return 0;
+          }
+
+          @Override
+          public WasmValue get(long index) {
+            return null;
+          }
+
+          @Override
+          public void set(long index, WasmValue value) {}
+
+          @Override
+          public boolean isValid() {
+            return true;
+          }
+
+          @Override
+          public void close() {}
+        };
+
+    WasmGlobal nonJniGlobal =
+        new WasmGlobal() {
+          @Override
+          public WasmValue get() {
+            return null;
+          }
+
+          @Override
+          public void set(WasmValue value) {}
+
+          @Override
+          public boolean isMutable() {
+            return false;
+          }
+
+          @Override
+          public WasmValueType getType() {
+            return WasmValueType.I32;
+          }
+
+          @Override
+          public boolean isValid() {
+            return true;
+          }
+
+          @Override
+          public void close() {}
+        };
 
     // Test that non-JNI objects are rejected
-    assertThrows(IllegalArgumentException.class, () ->
-        linker.defineMemory("env", "memory", nonJniMemory));
+    assertThrows(
+        IllegalArgumentException.class, () -> linker.defineMemory("env", "memory", nonJniMemory));
 
-    assertThrows(IllegalArgumentException.class, () ->
-        linker.defineTable("env", "table", nonJniTable));
+    assertThrows(
+        IllegalArgumentException.class, () -> linker.defineTable("env", "table", nonJniTable));
 
-    assertThrows(IllegalArgumentException.class, () ->
-        linker.defineGlobal("env", "global", nonJniGlobal));
+    assertThrows(
+        IllegalArgumentException.class, () -> linker.defineGlobal("env", "global", nonJniGlobal));
   }
 
   @Test

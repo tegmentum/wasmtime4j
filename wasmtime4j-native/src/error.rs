@@ -994,6 +994,33 @@ pub mod jni_utils {
             }
         }
     }
+
+    #[cfg(feature = "jni-bindings")]
+    /// Get string from JNI JString
+    pub fn jni_get_string(env: &jni::JNIEnv, jstring: jni::objects::JString) -> WasmtimeResult<String> {
+        let java_string = env.get_string(jstring)
+            .map_err(|e| WasmtimeError::InvalidParameter {
+                message: format!("Failed to get string from JNI: {}", e),
+            })?;
+        Ok(java_string.into())
+    }
+
+    #[cfg(feature = "jni-bindings")]
+    /// Get int array from JNI jintArray
+    pub fn jni_get_int_array(env: &jni::JNIEnv, jint_array: jni::objects::JIntArray) -> WasmtimeResult<Vec<i32>> {
+        let length = env.get_array_length(jint_array)
+            .map_err(|e| WasmtimeError::InvalidParameter {
+                message: format!("Failed to get array length from JNI: {}", e),
+            })?;
+
+        let mut buffer = vec![0i32; length as usize];
+        env.get_int_array_region(jint_array, 0, &mut buffer)
+            .map_err(|e| WasmtimeError::InvalidParameter {
+                message: format!("Failed to get int array region from JNI: {}", e),
+            })?;
+
+        Ok(buffer)
+    }
 }
 
 #[cfg(test)]

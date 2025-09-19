@@ -9,8 +9,8 @@ import java.util.logging.Logger;
 /**
  * JNI implementation of ExportDescriptor interface.
  *
- * <p>This class provides detailed export type information using JNI bindings to the native
- * Wasmtime library.
+ * <p>This class provides detailed export type information using JNI bindings to the native Wasmtime
+ * library.
  *
  * @since 1.0.0
  */
@@ -34,8 +34,7 @@ public final class JniExportDescriptor implements ExportDescriptor {
     this.name = name;
     this.type = type;
 
-    LOGGER.fine(
-        String.format("Created JniExportDescriptor: name=%s, type=%s", name, type));
+    LOGGER.fine(String.format("Created JniExportDescriptor: name=%s, type=%s", name, type));
   }
 
   /**

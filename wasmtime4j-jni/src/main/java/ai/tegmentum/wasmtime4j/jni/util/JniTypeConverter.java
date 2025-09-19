@@ -380,6 +380,43 @@ public final class JniTypeConverter {
   }
 
   /**
+   * Unmarshals parameters from native byte array without type validation.
+   *
+   * @param paramsData the marshalled parameter data
+   * @return array of WasmValue parameters
+   * @throws JniValidationException if unmarshalling fails
+   */
+  public static WasmValue[] unmarshalParameters(final byte[] paramsData) {
+    JniValidation.requireNonNull(paramsData, "paramsData");
+
+    if (paramsData.length < 4) {
+      throw new JniValidationException("Parameter data too short");
+    }
+
+    final int paramCount = readInt(paramsData, 0);
+    int offset = 4;
+
+    // Read type information from the data
+    if (paramsData.length < 4 + paramCount) {
+      throw new JniValidationException("Parameter data missing type information");
+    }
+
+    final ai.tegmentum.wasmtime4j.WasmValueType[] types =
+        new ai.tegmentum.wasmtime4j.WasmValueType[paramCount];
+    for (int i = 0; i < paramCount; i++) {
+      types[i] = decodeValueType(paramsData[offset++]);
+    }
+
+    final WasmValue[] params = new WasmValue[paramCount];
+    for (int i = 0; i < paramCount; i++) {
+      params[i] = unmarshalValue(paramsData, offset, types[i]);
+      offset += getValueSize(types[i]);
+    }
+
+    return params;
+  }
+
+  /**
    * Unmarshals parameters from native byte array.
    *
    * @param paramsData the marshalled parameter data
@@ -415,13 +452,14 @@ public final class JniTypeConverter {
   }
 
   /**
-   * Marshals results to native byte array.
+   * Marshals results to native byte array and returns bytes written.
    *
    * @param results the result values to marshal
    * @param buffer the buffer to write results to
+   * @return the number of bytes written
    * @throws JniValidationException if marshalling fails
    */
-  public static void marshalResults(final WasmValue[] results, final byte[] buffer) {
+  public static int marshalResults(final WasmValue[] results, final byte[] buffer) {
     JniValidation.requireNonNull(results, "results");
     JniValidation.requireNonNull(buffer, "buffer");
 
@@ -436,6 +474,8 @@ public final class JniTypeConverter {
     for (final WasmValue result : results) {
       offset = marshalValue(result, buffer, offset);
     }
+
+    return offset;
   }
 
   /**
@@ -462,6 +502,34 @@ public final class JniTypeConverter {
         return 6;
       default:
         throw new JniValidationException("Unsupported value type: " + valueType);
+    }
+  }
+
+  /**
+   * Decodes a byte representation to WasmValueType.
+   *
+   * @param typeCode the byte representation of the type
+   * @return the decoded value type
+   * @throws JniValidationException if typeCode is invalid
+   */
+  private static ai.tegmentum.wasmtime4j.WasmValueType decodeValueType(final byte typeCode) {
+    switch (typeCode) {
+      case 0:
+        return ai.tegmentum.wasmtime4j.WasmValueType.I32;
+      case 1:
+        return ai.tegmentum.wasmtime4j.WasmValueType.I64;
+      case 2:
+        return ai.tegmentum.wasmtime4j.WasmValueType.F32;
+      case 3:
+        return ai.tegmentum.wasmtime4j.WasmValueType.F64;
+      case 4:
+        return ai.tegmentum.wasmtime4j.WasmValueType.V128;
+      case 5:
+        return ai.tegmentum.wasmtime4j.WasmValueType.FUNCREF;
+      case 6:
+        return ai.tegmentum.wasmtime4j.WasmValueType.EXTERNREF;
+      default:
+        throw new JniValidationException("Invalid value type code: " + typeCode);
     }
   }
 

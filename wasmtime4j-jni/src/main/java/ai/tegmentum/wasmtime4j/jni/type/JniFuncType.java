@@ -49,9 +49,7 @@ public final class JniFuncType implements FuncType {
     this.params = Collections.unmodifiableList(List.copyOf(params));
     this.results = Collections.unmodifiableList(List.copyOf(results));
 
-    LOGGER.fine(
-        String.format(
-            "Created JniFuncType: params=%s, results=%s", params, results));
+    LOGGER.fine(String.format("Created JniFuncType: params=%s, results=%s", params, results));
   }
 
   /**
@@ -148,7 +146,8 @@ public final class JniFuncType implements FuncType {
    * Native method to get function type information.
    *
    * @param nativeHandle the native handle to the function type
-   * @return array containing [paramCount, resultCount, param0TypeCode, param1TypeCode, ..., result0TypeCode, result1TypeCode, ...]
+   * @return array containing [paramCount, resultCount, param0TypeCode, param1TypeCode, ...,
+   *     result0TypeCode, result1TypeCode, ...]
    */
   private static native long[] nativeGetFuncTypeInfo(long nativeHandle);
 }

@@ -4567,17 +4567,17 @@ pub mod jni_linker {
     /// Defines a host function in the native linker
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeDefineHostFunction(
-        env: JNIEnv,
+        mut env: JNIEnv,
         _class: JClass,
         linker_handle: jlong,
         module: JString,
         name: JString,
-        parameter_types: jint,
-        return_types: jint,
-        host_function_handle: jlong,
+        param_types: jintArray,
+        return_types: jintArray,
+        callback_id: jlong,
     ) -> jboolean {
-        if linker_handle == 0 || host_function_handle == 0 {
-            log::error!("JNI Linker.nativeDefineHostFunction: null handle provided");
+        if linker_handle == 0 {
+            log::error!("JNI Linker.nativeDefineHostFunction: null linker handle provided");
             return 0;
         }
 
@@ -4597,23 +4597,99 @@ pub mod jni_linker {
             }
         };
 
+        // Get parameter type array
+        let param_types_vec = match jni_utils::jni_get_int_array(&env, param_types) {
+            Ok(types) => types,
+            Err(e) => {
+                log::error!("Failed to get parameter types array: {}", e);
+                return 0;
+            }
+        };
+
+        // Get return type array
+        let return_types_vec = match jni_utils::jni_get_int_array(&env, return_types) {
+            Ok(types) => types,
+            Err(e) => {
+                log::error!("Failed to get return types array: {}", e);
+                return 0;
+            }
+        };
+
         match jni_utils::jni_try(env, || {
             let linker = unsafe { &mut *(linker_handle as *mut Linker) };
             let module_str: String = module_string.into();
             let name_str: String = name_string.into();
 
-            // Get host function reference
-            let host_function = unsafe { &*(host_function_handle as *const crate::hostfunc::HostFunction) };
+            // Convert type codes to Wasmtime types
+            let param_wasmtime_types: Vec<wasmtime::ValType> = param_types_vec
+                .iter()
+                .map(|&type_code| match type_code {
+                    0 => wasmtime::ValType::I32,
+                    1 => wasmtime::ValType::I64,
+                    2 => wasmtime::ValType::F32,
+                    3 => wasmtime::ValType::F64,
+                    4 => wasmtime::ValType::V128,
+                    5 => wasmtime::ValType::FuncRef,
+                    6 => wasmtime::ValType::ExternRef,
+                    _ => {
+                        log::error!("Invalid parameter type code: {}", type_code);
+                        return Err(crate::error::WasmtimeError::InvalidParameter {
+                            message: format!("Invalid parameter type code: {}", type_code),
+                        });
+                    }
+                })
+                .collect::<Result<Vec<_>, _>>()?;
 
-            // For now, create a simple function type - this should be properly implemented
-            let func_type = wasmtime::FuncType::new(
-                wasmtime::Engine::default(),
-                Vec::new(),
-                Vec::new()
+            let return_wasmtime_types: Vec<wasmtime::ValType> = return_types_vec
+                .iter()
+                .map(|&type_code| match type_code {
+                    0 => wasmtime::ValType::I32,
+                    1 => wasmtime::ValType::I64,
+                    2 => wasmtime::ValType::F32,
+                    3 => wasmtime::ValType::F64,
+                    4 => wasmtime::ValType::V128,
+                    5 => wasmtime::ValType::FuncRef,
+                    6 => wasmtime::ValType::ExternRef,
+                    _ => {
+                        log::error!("Invalid return type code: {}", type_code);
+                        return Err(crate::error::WasmtimeError::InvalidParameter {
+                            message: format!("Invalid return type code: {}", type_code),
+                        });
+                    }
+                })
+                .collect::<Result<Vec<_>, _>>()?;
+
+            // Create function type
+            let func_type = wasmtime::FuncType::new(&linker.engine(), param_wasmtime_types, return_wasmtime_types);
+
+            // Create a host function that calls back to Java
+            let func = wasmtime::Func::new(
+                linker.engine(),
+                func_type,
+                move |_caller, _params, _results| {
+                    // TODO: Implement callback to Java using callback_id
+                    // For now, just return success
+                    log::info!(
+                        "Host function called with callback ID: {}",
+                        callback_id
+                    );
+                    Ok(())
+                }
             );
 
-            linker.define_host_function(&module_str, &name_str, func_type, host_function.clone())?;
-            log::debug!("Defined host function {}::{} in linker", module_str, name_str);
+            // Define the function in the linker
+            linker.define(&module_str, &name_str, func)
+                .map_err(|e| crate::error::WasmtimeError::LinkingError {
+                    message: format!("Failed to define host function: {}", e),
+                })?;
+
+            log::info!(
+                "Defined host function {}::{} with callback ID {}",
+                module_str,
+                name_str,
+                callback_id
+            );
+
             Ok(())
         }) {
             Ok(_) => 1,
@@ -4991,10 +5067,10 @@ pub mod jni_linker {
         linker_handle: jlong,
         module_string: JString,
         name_string: JString,
-        host_function_handle: jlong,
+        callback_id: jlong,
     ) -> jboolean {
-        if linker_handle == 0 || host_function_handle == 0 {
-            log::error!("JNI Linker.nativeDefineHostFunctionSimple: null handle provided");
+        if linker_handle == 0 {
+            log::error!("JNI Linker.nativeDefineHostFunctionSimple: null linker handle provided");
             return 0;
         }
 
@@ -5014,14 +5090,40 @@ pub mod jni_linker {
             }
         };
 
-        // Delegate to existing defineHostFunction implementation with basic types
-        let empty_param_types = vec![];
-        let empty_return_types = vec![];
-
         match jni_utils::jni_try(env, || {
             let linker = unsafe { &mut *(linker_handle as *mut Linker) };
-            // This would need proper host function wrapping
-            log::debug!("Defined host function {}::{} (simple)", module_string, name_string);
+
+            // Create a generic function type (no params, no returns) for simple case
+            let func_type = wasmtime::FuncType::new(&linker.engine(), Vec::new(), Vec::new());
+
+            // Create a host function that calls back to Java
+            let func = wasmtime::Func::new(
+                linker.engine(),
+                func_type,
+                move |_caller, _params, _results| {
+                    // TODO: Implement callback to Java using callback_id
+                    // For now, just return success
+                    log::info!(
+                        "Simple host function called with callback ID: {}",
+                        callback_id
+                    );
+                    Ok(())
+                }
+            );
+
+            // Define the function in the linker
+            linker.define(&module_string, &name_string, func)
+                .map_err(|e| crate::error::WasmtimeError::LinkingError {
+                    message: format!("Failed to define simple host function: {}", e),
+                })?;
+
+            log::info!(
+                "Defined simple host function {}::{} with callback ID {}",
+                module_string,
+                name_string,
+                callback_id
+            );
+
             Ok(())
         }) {
             Ok(_) => 1,
