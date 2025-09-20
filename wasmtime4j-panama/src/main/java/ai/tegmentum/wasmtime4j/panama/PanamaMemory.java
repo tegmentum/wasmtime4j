@@ -16,13 +16,19 @@
 
 package ai.tegmentum.wasmtime4j.panama;
 
+import ai.tegmentum.wasmtime4j.MemoryPerformanceMetrics;
+import ai.tegmentum.wasmtime4j.MemorySegment;
+import ai.tegmentum.wasmtime4j.MemoryStatistics;
+import ai.tegmentum.wasmtime4j.MemoryUsageReport;
 import ai.tegmentum.wasmtime4j.WasmMemory;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.lang.foreign.FunctionDescriptor;
-import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 import java.nio.ByteBuffer;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.logging.Logger;
 
