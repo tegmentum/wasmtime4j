@@ -69,6 +69,11 @@ pub mod type_introspection;
 // Component model support for WASI Preview 2
 pub mod component;
 
+// AOT compilation and serialization support
+pub mod aot_compilation;
+pub mod module_serialization;
+pub mod module_cache;
+
 // Re-export core types for convenience
 pub use engine::{Engine, EngineBuilder, WasmFeature};
 pub use error::{WasmtimeError, WasmtimeResult, ErrorCode};
@@ -144,6 +149,19 @@ pub use bulk_operations::{
 // Re-export async runtime types
 pub use async_runtime::{
     AsyncWasmtimeRuntime, ModuleSource, BatchOptions, BatchCompilationResult, AsyncRuntimeStatistics
+};
+
+// Re-export AOT compilation and serialization types
+pub use aot_compilation::{
+    AotCompiler, AotExecutable, AotExecutableMetadata, AotOptions, TargetPlatform,
+    OptimizationLevel, CompilerBackend
+};
+pub use module_serialization::{
+    ModuleSerializer, SerializedModule, SerializationMetadata, SerializationOptions,
+    SerializationFormat, CompressionType
+};
+pub use module_cache::{
+    PersistentModuleCache, ModuleCacheKey, CacheConfiguration, CacheStatistics
 };
 
 /// Library version information
