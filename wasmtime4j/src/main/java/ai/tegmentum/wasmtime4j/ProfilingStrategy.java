@@ -3,8 +3,8 @@ package ai.tegmentum.wasmtime4j;
 /**
  * Profiling strategies for WebAssembly execution.
  *
- * <p>These strategies control how profiling information is collected during WebAssembly
- * execution, which can be useful for performance analysis and optimization.
+ * <p>These strategies control how profiling information is collected during WebAssembly execution,
+ * which can be useful for performance analysis and optimization.
  *
  * @since 1.0.0
  */

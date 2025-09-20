@@ -3,8 +3,8 @@ package ai.tegmentum.wasmtime4j;
 /**
  * Runtime statistics for a WebAssembly instance.
  *
- * <p>This class provides comprehensive statistics about the runtime behavior
- * and resource usage of a WebAssembly instance.
+ * <p>This class provides comprehensive statistics about the runtime behavior and resource usage of
+ * a WebAssembly instance.
  *
  * @since 1.0.0
  */
@@ -144,9 +144,15 @@ public final class InstanceStatistics {
   public String toString() {
     return String.format(
         "InstanceStatistics{calls=%d, execTime=%dns, memory=%d bytes, "
-        + "peak=%d bytes, tables=%d, globals=%d, fuel=%d, epochs=%d}",
-        functionCallCount, totalExecutionTime, memoryBytesAllocated,
-        peakMemoryUsage, activeTableElements, activeGlobals, fuelConsumed, epochTicks);
+            + "peak=%d bytes, tables=%d, globals=%d, fuel=%d, epochs=%d}",
+        functionCallCount,
+        totalExecutionTime,
+        memoryBytesAllocated,
+        peakMemoryUsage,
+        activeTableElements,
+        activeGlobals,
+        fuelConsumed,
+        epochTicks);
   }
 
   @Override
@@ -170,7 +176,14 @@ public final class InstanceStatistics {
 
   @Override
   public int hashCode() {
-    return java.util.Objects.hash(functionCallCount, totalExecutionTime, memoryBytesAllocated,
-        peakMemoryUsage, activeTableElements, activeGlobals, fuelConsumed, epochTicks);
+    return java.util.Objects.hash(
+        functionCallCount,
+        totalExecutionTime,
+        memoryBytesAllocated,
+        peakMemoryUsage,
+        activeTableElements,
+        activeGlobals,
+        fuelConsumed,
+        epochTicks);
   }
 }

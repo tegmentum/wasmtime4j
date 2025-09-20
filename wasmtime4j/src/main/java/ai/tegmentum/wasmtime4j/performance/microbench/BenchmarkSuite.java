@@ -20,15 +20,17 @@ import java.util.logging.Logger;
  * Manages and executes a suite of generated micro-benchmarks.
  *
  * <p>This class provides comprehensive management of generated benchmark suites including:
+ *
  * <ul>
- *   <li>Writing generated benchmark classes to disk</li>
- *   <li>Compiling benchmark classes with proper dependencies</li>
- *   <li>Executing benchmarks with JMH runner</li>
- *   <li>Collecting and analyzing benchmark results</li>
- *   <li>Exporting results in various formats</li>
+ *   <li>Writing generated benchmark classes to disk
+ *   <li>Compiling benchmark classes with proper dependencies
+ *   <li>Executing benchmarks with JMH runner
+ *   <li>Collecting and analyzing benchmark results
+ *   <li>Exporting results in various formats
  * </ul>
  *
  * <p>Usage example:
+ *
  * <pre>{@code
  * BenchmarkSuite suite = generator.generateFromTestDirectory(testDir);
  *
@@ -58,8 +60,11 @@ public final class BenchmarkSuite {
   private final Path sourceDirectory;
   private final Path classDirectory;
 
-  BenchmarkSuite(final String packageName, final Path outputDirectory,
-                final List<BenchmarkClass> benchmarkClasses, final BenchmarkConfig config) {
+  BenchmarkSuite(
+      final String packageName,
+      final Path outputDirectory,
+      final List<BenchmarkClass> benchmarkClasses,
+      final BenchmarkConfig config) {
     this.packageName = packageName;
     this.outputDirectory = outputDirectory;
     this.benchmarkClasses = List.copyOf(benchmarkClasses);
@@ -147,9 +152,10 @@ public final class BenchmarkSuite {
 
       // Compile each benchmark class
       for (final BenchmarkClass benchmarkClass : benchmarkClasses) {
-        final Path sourceFile = sourceDirectory
-            .resolve(packageName.replace('.', '/'))
-            .resolve(benchmarkClass.getClassName() + ".java");
+        final Path sourceFile =
+            sourceDirectory
+                .resolve(packageName.replace('.', '/'))
+                .resolve(benchmarkClass.getClassName() + ".java");
 
         if (!compileClass(sourceFile, classpath)) {
           throw new BenchmarkCompilationException("Failed to compile: " + sourceFile);
@@ -181,7 +187,8 @@ public final class BenchmarkSuite {
    * @return benchmark results
    * @throws BenchmarkExecutionException if execution fails
    */
-  public BenchmarkResults runBenchmarks(final String... classNames) throws BenchmarkExecutionException {
+  public BenchmarkResults runBenchmarks(final String... classNames)
+      throws BenchmarkExecutionException {
     LOGGER.info("Running benchmarks: " + String.join(", ", classNames));
 
     final Instant startTime = Instant.now();
@@ -205,13 +212,14 @@ public final class BenchmarkSuite {
    * @return future containing benchmark results
    */
   public CompletableFuture<BenchmarkResults> runBenchmarksAsync(final String... classNames) {
-    return CompletableFuture.supplyAsync(() -> {
-      try {
-        return runBenchmarks(classNames);
-      } catch (final BenchmarkExecutionException e) {
-        throw new RuntimeException(e);
-      }
-    });
+    return CompletableFuture.supplyAsync(
+        () -> {
+          try {
+            return runBenchmarks(classNames);
+          } catch (final BenchmarkExecutionException e) {
+            throw new RuntimeException(e);
+          }
+        });
   }
 
   /**
@@ -224,9 +232,10 @@ public final class BenchmarkSuite {
 
     // Check if source files exist
     for (final BenchmarkClass benchmarkClass : benchmarkClasses) {
-      final Path sourceFile = sourceDirectory
-          .resolve(packageName.replace('.', '/'))
-          .resolve(benchmarkClass.getClassName() + ".java");
+      final Path sourceFile =
+          sourceDirectory
+              .resolve(packageName.replace('.', '/'))
+              .resolve(benchmarkClass.getClassName() + ".java");
 
       if (!Files.exists(sourceFile)) {
         issues.add("Source file missing: " + sourceFile);
@@ -235,9 +244,10 @@ public final class BenchmarkSuite {
 
     // Check if classes are compiled
     for (final BenchmarkClass benchmarkClass : benchmarkClasses) {
-      final Path classFile = classDirectory
-          .resolve(packageName.replace('.', '/'))
-          .resolve(benchmarkClass.getClassName() + ".class");
+      final Path classFile =
+          classDirectory
+              .resolve(packageName.replace('.', '/'))
+              .resolve(benchmarkClass.getClassName() + ".class");
 
       if (!Files.exists(classFile)) {
         issues.add("Compiled class missing: " + classFile);
@@ -258,23 +268,16 @@ public final class BenchmarkSuite {
    * @return suite summary
    */
   public SuiteSummary getSummary() {
-    final int totalBenchmarks = benchmarkClasses.stream()
-        .mapToInt(bc -> bc.getTestCases().size())
-        .sum();
+    final int totalBenchmarks =
+        benchmarkClasses.stream().mapToInt(bc -> bc.getTestCases().size()).sum();
 
     final Map<String, Integer> complexityCounts = new HashMap<>();
     benchmarkClasses.stream()
         .flatMap(bc -> bc.getTestCases().stream())
-        .forEach(tc -> complexityCounts.merge(
-            tc.getComplexity().name(), 1, Integer::sum));
+        .forEach(tc -> complexityCounts.merge(tc.getComplexity().name(), 1, Integer::sum));
 
     return new SuiteSummary(
-        benchmarkClasses.size(),
-        totalBenchmarks,
-        complexityCounts,
-        outputDirectory,
-        packageName
-    );
+        benchmarkClasses.size(), totalBenchmarks, complexityCounts, outputDirectory, packageName);
   }
 
   private void generatePomXml() throws IOException {
@@ -284,7 +287,8 @@ public final class BenchmarkSuite {
   }
 
   private String generatePomContent() {
-    return String.format("""
+    return String.format(
+        """
         <?xml version="1.0" encoding="UTF-8"?>
         <project xmlns="http://maven.apache.org/POM/4.0.0"
                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -366,13 +370,13 @@ public final class BenchmarkSuite {
     // This would use JMH's programmatic API to execute benchmarks
     // For now, return mock results
     for (final String className : classNames) {
-      final BenchmarkResult result = new BenchmarkResult(
-          className,
-          1000.0, // operations per second
-          50.0,   // error margin
-          TimeUnit.SECONDS,
-          "Throughput"
-      );
+      final BenchmarkResult result =
+          new BenchmarkResult(
+              className,
+              1000.0, // operations per second
+              50.0, // error margin
+              TimeUnit.SECONDS,
+              "Throughput");
       results.put(className, result);
     }
 
@@ -380,9 +384,7 @@ public final class BenchmarkSuite {
   }
 
   private List<String> getBenchmarkClassNames() {
-    return benchmarkClasses.stream()
-        .map(BenchmarkClass::getClassName)
-        .toList();
+    return benchmarkClasses.stream().map(BenchmarkClass::getClassName).toList();
   }
 
   private boolean hasRequiredDependencies() {
@@ -399,17 +401,17 @@ public final class BenchmarkSuite {
     }
   }
 
-  /**
-   * Results from executing a benchmark suite.
-   */
+  /** Results from executing a benchmark suite. */
   public static final class BenchmarkResults {
     private final Map<String, BenchmarkResult> results;
     private final Duration executionTime;
     private final BenchmarkConfig config;
     private final Instant timestamp;
 
-    public BenchmarkResults(final Map<String, BenchmarkResult> results,
-                           final Duration executionTime, final BenchmarkConfig config) {
+    public BenchmarkResults(
+        final Map<String, BenchmarkResult> results,
+        final Duration executionTime,
+        final BenchmarkConfig config) {
       this.results = Map.copyOf(results);
       this.executionTime = executionTime;
       this.config = config;
@@ -497,9 +499,7 @@ public final class BenchmarkSuite {
     }
   }
 
-  /**
-   * Individual benchmark result.
-   */
+  /** Individual benchmark result. */
   public static final class BenchmarkResult {
     private final String benchmarkName;
     private final double score;
@@ -507,8 +507,12 @@ public final class BenchmarkSuite {
     private final TimeUnit unit;
     private final String mode;
 
-    public BenchmarkResult(final String benchmarkName, final double score,
-                          final double error, final TimeUnit unit, final String mode) {
+    public BenchmarkResult(
+        final String benchmarkName,
+        final double score,
+        final double error,
+        final TimeUnit unit,
+        final String mode) {
       this.benchmarkName = benchmarkName;
       this.score = score;
       this.error = error;
@@ -516,11 +520,25 @@ public final class BenchmarkSuite {
       this.mode = mode;
     }
 
-    public String getBenchmarkName() { return benchmarkName; }
-    public double getScore() { return score; }
-    public double getError() { return error; }
-    public TimeUnit getUnit() { return unit; }
-    public String getMode() { return mode; }
+    public String getBenchmarkName() {
+      return benchmarkName;
+    }
+
+    public double getScore() {
+      return score;
+    }
+
+    public double getError() {
+      return error;
+    }
+
+    public TimeUnit getUnit() {
+      return unit;
+    }
+
+    public String getMode() {
+      return mode;
+    }
 
     String toJson() {
       return String.format(
@@ -529,9 +547,7 @@ public final class BenchmarkSuite {
     }
   }
 
-  /**
-   * Validation result for benchmark suite.
-   */
+  /** Validation result for benchmark suite. */
   public static final class ValidationResult {
     private final boolean valid;
     private final List<String> issues;
@@ -541,13 +557,16 @@ public final class BenchmarkSuite {
       this.issues = List.copyOf(issues);
     }
 
-    public boolean isValid() { return valid; }
-    public List<String> getIssues() { return issues; }
+    public boolean isValid() {
+      return valid;
+    }
+
+    public List<String> getIssues() {
+      return issues;
+    }
   }
 
-  /**
-   * Summary information about the benchmark suite.
-   */
+  /** Summary information about the benchmark suite. */
   public static final class SuiteSummary {
     private final int classCount;
     private final int benchmarkCount;
@@ -555,9 +574,12 @@ public final class BenchmarkSuite {
     private final Path outputDirectory;
     private final String packageName;
 
-    public SuiteSummary(final int classCount, final int benchmarkCount,
-                       final Map<String, Integer> complexityCounts,
-                       final Path outputDirectory, final String packageName) {
+    public SuiteSummary(
+        final int classCount,
+        final int benchmarkCount,
+        final Map<String, Integer> complexityCounts,
+        final Path outputDirectory,
+        final String packageName) {
       this.classCount = classCount;
       this.benchmarkCount = benchmarkCount;
       this.complexityCounts = Map.copyOf(complexityCounts);
@@ -565,11 +587,25 @@ public final class BenchmarkSuite {
       this.packageName = packageName;
     }
 
-    public int getClassCount() { return classCount; }
-    public int getBenchmarkCount() { return benchmarkCount; }
-    public Map<String, Integer> getComplexityCounts() { return complexityCounts; }
-    public Path getOutputDirectory() { return outputDirectory; }
-    public String getPackageName() { return packageName; }
+    public int getClassCount() {
+      return classCount;
+    }
+
+    public int getBenchmarkCount() {
+      return benchmarkCount;
+    }
+
+    public Map<String, Integer> getComplexityCounts() {
+      return complexityCounts;
+    }
+
+    public Path getOutputDirectory() {
+      return outputDirectory;
+    }
+
+    public String getPackageName() {
+      return packageName;
+    }
 
     @Override
     public String toString() {
@@ -579,9 +615,7 @@ public final class BenchmarkSuite {
     }
   }
 
-  /**
-   * Exception thrown when benchmark compilation fails.
-   */
+  /** Exception thrown when benchmark compilation fails. */
   public static final class BenchmarkCompilationException extends Exception {
     public BenchmarkCompilationException(final String message) {
       super(message);
@@ -592,9 +626,7 @@ public final class BenchmarkSuite {
     }
   }
 
-  /**
-   * Exception thrown when benchmark execution fails.
-   */
+  /** Exception thrown when benchmark execution fails. */
   public static final class BenchmarkExecutionException extends Exception {
     public BenchmarkExecutionException(final String message) {
       super(message);

@@ -6,8 +6,8 @@ import java.util.Objects;
 /**
  * Detailed I/O usage information for monitoring disk and file system operations.
  *
- * <p>This class provides comprehensive I/O statistics including bytes read/written,
- * operation counts, timing information, and latency measurements.
+ * <p>This class provides comprehensive I/O statistics including bytes read/written, operation
+ * counts, timing information, and latency measurements.
  *
  * @since 1.0.0
  */
@@ -178,7 +178,9 @@ public final class IoUsage {
    * @return read operations / write operations
    */
   public double getReadWriteRatio() {
-    return writeOperations > 0 ? (double) readOperations / writeOperations : Double.POSITIVE_INFINITY;
+    return writeOperations > 0
+        ? (double) readOperations / writeOperations
+        : Double.POSITIVE_INFINITY;
   }
 
   /**
@@ -277,25 +279,31 @@ public final class IoUsage {
       return false;
     }
     final IoUsage ioUsage = (IoUsage) obj;
-    return bytesRead == ioUsage.bytesRead &&
-        bytesWritten == ioUsage.bytesWritten &&
-        readOperations == ioUsage.readOperations &&
-        writeOperations == ioUsage.writeOperations &&
-        Double.compare(ioUsage.averageLatency, averageLatency) == 0 &&
-        Objects.equals(totalIoTime, ioUsage.totalIoTime);
+    return bytesRead == ioUsage.bytesRead
+        && bytesWritten == ioUsage.bytesWritten
+        && readOperations == ioUsage.readOperations
+        && writeOperations == ioUsage.writeOperations
+        && Double.compare(ioUsage.averageLatency, averageLatency) == 0
+        && Objects.equals(totalIoTime, ioUsage.totalIoTime);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(bytesRead, bytesWritten, readOperations, writeOperations, totalIoTime, averageLatency);
+    return Objects.hash(
+        bytesRead, bytesWritten, readOperations, writeOperations, totalIoTime, averageLatency);
   }
 
   @Override
   public String toString() {
     return String.format(
-        "IoUsage{read=%s (%d ops), written=%s (%d ops), " +
-        "totalTime=%s, avgLatency=%.1fms, avgBytesPerOp=%.0f}",
-        formatBytes(bytesRead), readOperations, formatBytes(bytesWritten), writeOperations,
-        totalIoTime, averageLatency, getAverageBytesPerOperation());
+        "IoUsage{read=%s (%d ops), written=%s (%d ops), "
+            + "totalTime=%s, avgLatency=%.1fms, avgBytesPerOp=%.0f}",
+        formatBytes(bytesRead),
+        readOperations,
+        formatBytes(bytesWritten),
+        writeOperations,
+        totalIoTime,
+        averageLatency,
+        getAverageBytesPerOperation());
   }
 }

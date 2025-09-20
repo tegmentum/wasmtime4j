@@ -1,7 +1,6 @@
 package ai.tegmentum.wasmtime4j.performance.memory;
 
 import ai.tegmentum.wasmtime4j.performance.GcImpactMetrics;
-import ai.tegmentum.wasmtime4j.performance.ProfileSnapshot;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
 import java.lang.management.MemoryPoolMXBean;
@@ -27,15 +26,17 @@ import java.util.logging.Logger;
  * historical analysis to identify optimization opportunities.
  *
  * <p>Key features include:
+ *
  * <ul>
- *   <li>Real-time memory usage tracking</li>
- *   <li>Garbage collection impact measurement</li>
- *   <li>Memory leak detection and analysis</li>
- *   <li>Allocation pattern identification</li>
- *   <li>GC tuning recommendations</li>
+ *   <li>Real-time memory usage tracking
+ *   <li>Garbage collection impact measurement
+ *   <li>Memory leak detection and analysis
+ *   <li>Allocation pattern identification
+ *   <li>GC tuning recommendations
  * </ul>
  *
  * <p>Usage example:
+ *
  * <pre>{@code
  * MemoryAnalyzer analyzer = MemoryAnalyzer.create();
  *
@@ -76,11 +77,14 @@ public final class MemoryAnalyzer {
   private MemoryAnalyzer(final Builder builder) {
     this.memoryBean = ManagementFactory.getMemoryMXBean();
     this.memoryPools = ManagementFactory.getMemoryPoolMXBeans();
-    this.scheduler = Executors.newScheduledThreadPool(1, r -> {
-      final Thread t = new Thread(r, "MemoryAnalyzer-Sampler");
-      t.setDaemon(true);
-      return t;
-    });
+    this.scheduler =
+        Executors.newScheduledThreadPool(
+            1,
+            r -> {
+              final Thread t = new Thread(r, "MemoryAnalyzer-Sampler");
+              t.setDaemon(true);
+              return t;
+            });
     this.activeSessions = new ConcurrentHashMap<>();
     this.memoryHistory = new CircularBuffer<>(builder.historySize);
     this.autoGcDetection = builder.autoGcDetection;
@@ -106,9 +110,7 @@ public final class MemoryAnalyzer {
     return new Builder();
   }
 
-  /**
-   * Starts memory monitoring with the configured sampling interval.
-   */
+  /** Starts memory monitoring with the configured sampling interval. */
   public void startMonitoring() {
     startMonitoring(samplingInterval);
   }
@@ -130,18 +132,12 @@ public final class MemoryAnalyzer {
     this.monitoring = true;
 
     scheduler.scheduleAtFixedRate(
-        this::captureMemorySnapshot,
-        0,
-        interval.toMillis(),
-        TimeUnit.MILLISECONDS
-    );
+        this::captureMemorySnapshot, 0, interval.toMillis(), TimeUnit.MILLISECONDS);
 
     LOGGER.info("Started memory monitoring with interval: " + interval);
   }
 
-  /**
-   * Stops memory monitoring.
-   */
+  /** Stops memory monitoring. */
   public void stopMonitoring() {
     if (!monitoring) {
       return;
@@ -205,8 +201,7 @@ public final class MemoryAnalyzer {
         nonHeapUsage.getUsed(),
         nonHeapUsage.getMax(),
         poolUsages,
-        Instant.now()
-    );
+        Instant.now());
   }
 
   /**
@@ -267,9 +262,7 @@ public final class MemoryAnalyzer {
     return new HashMap<>(activeSessions);
   }
 
-  /**
-   * Closes the memory analyzer and releases resources.
-   */
+  /** Closes the memory analyzer and releases resources. */
   public void close() {
     stopMonitoring();
 
@@ -278,7 +271,8 @@ public final class MemoryAnalyzer {
       try {
         session.complete();
       } catch (final Exception e) {
-        LOGGER.warning("Failed to complete session: " + session.getSessionName() + " - " + e.getMessage());
+        LOGGER.warning(
+            "Failed to complete session: " + session.getSessionName() + " - " + e.getMessage());
       }
     }
 
@@ -313,13 +307,13 @@ public final class MemoryAnalyzer {
 
   private MemoryPatternAnalysis analyzePatterns(final List<MemorySnapshot> history) {
     // Analyze memory usage trends
-    final List<Long> heapUsages = history.stream()
-        .map(s -> s.getMemoryMetrics().getHeapUsed())
-        .toList();
+    final List<Long> heapUsages =
+        history.stream().map(s -> s.getMemoryMetrics().getHeapUsed()).toList();
 
     final TrendAnalysis heapTrend = analyzeTrend(heapUsages);
     final long peakHeapUsage = heapUsages.stream().mapToLong(Long::longValue).max().orElse(0);
-    final double averageHeapUsage = heapUsages.stream().mapToLong(Long::longValue).average().orElse(0);
+    final double averageHeapUsage =
+        heapUsages.stream().mapToLong(Long::longValue).average().orElse(0);
 
     // Analyze allocation patterns
     final AllocationPattern allocationPattern = analyzeAllocationPattern(history);
@@ -328,20 +322,13 @@ public final class MemoryAnalyzer {
     final GcPattern gcPattern = analyzeGcPattern(history);
 
     return new MemoryPatternAnalysis(
-        heapTrend,
-        peakHeapUsage,
-        averageHeapUsage,
-        allocationPattern,
-        gcPattern,
-        Instant.now()
-    );
+        heapTrend, peakHeapUsage, averageHeapUsage, allocationPattern, gcPattern, Instant.now());
   }
 
   private MemoryLeakAnalysis analyzeForLeaks(final List<MemorySnapshot> history) {
     // Simple leak detection based on steadily increasing memory usage
-    final List<Long> heapUsages = history.stream()
-        .map(s -> s.getMemoryMetrics().getHeapUsed())
-        .toList();
+    final List<Long> heapUsages =
+        history.stream().map(s -> s.getMemoryMetrics().getHeapUsed()).toList();
 
     // Calculate slope of memory usage over time
     final double slope = calculateSlope(heapUsages);
@@ -353,9 +340,8 @@ public final class MemoryAnalyzer {
     }
 
     // Check for non-heap memory growth
-    final List<Long> nonHeapUsages = history.stream()
-        .map(s -> s.getMemoryMetrics().getNonHeapUsed())
-        .toList();
+    final List<Long> nonHeapUsages =
+        history.stream().map(s -> s.getMemoryMetrics().getNonHeapUsed()).toList();
 
     final double nonHeapSlope = calculateSlope(nonHeapUsages);
     if (nonHeapSlope > 0.05) {
@@ -363,16 +349,11 @@ public final class MemoryAnalyzer {
     }
 
     return new MemoryLeakAnalysis(
-        potentialLeak,
-        slope,
-        suspiciousPatterns,
-        history.size(),
-        Instant.now()
-    );
+        potentialLeak, slope, suspiciousPatterns, history.size(), Instant.now());
   }
 
-  private GcTuningRecommendations analyzeGcTuning(final List<MemorySnapshot> history,
-                                                 final GcImpactMetrics.Snapshot currentGc) {
+  private GcTuningRecommendations analyzeGcTuning(
+      final List<MemorySnapshot> history, final GcImpactMetrics.Snapshot currentGc) {
     final List<String> recommendations = new ArrayList<>();
 
     // Analyze GC frequency
@@ -380,27 +361,42 @@ public final class MemoryAnalyzer {
     final Duration totalGcTime = currentGc.getTotalGcTime();
 
     if (totalGcTime.toMillis() > 0) {
-      final double gcOverhead = (totalGcTime.toNanos() / (double) Duration.ofMinutes(1).toNanos()) * 100;
+      final double gcOverhead =
+          (totalGcTime.toNanos() / (double) Duration.ofMinutes(1).toNanos()) * 100;
 
       if (gcOverhead > 10.0) {
-        recommendations.add("High GC overhead detected (" + String.format("%.1f", gcOverhead) + "%). Consider increasing heap size.");
+        recommendations.add(
+            "High GC overhead detected ("
+                + String.format("%.1f", gcOverhead)
+                + "%). Consider increasing heap size.");
       }
 
       if (totalGcCollections > 1000) {
-        recommendations.add("Frequent GC collections detected (" + totalGcCollections + "). Consider GC algorithm tuning.");
+        recommendations.add(
+            "Frequent GC collections detected ("
+                + totalGcCollections
+                + "). Consider GC algorithm tuning.");
       }
     }
 
     // Analyze heap utilization
     if (!history.isEmpty()) {
       final MemorySnapshot latest = history.get(history.size() - 1);
-      final double heapUtilization = (double) latest.getMemoryMetrics().getHeapUsed() /
-                                     latest.getMemoryMetrics().getMaxHeap() * 100;
+      final double heapUtilization =
+          (double) latest.getMemoryMetrics().getHeapUsed()
+              / latest.getMemoryMetrics().getMaxHeap()
+              * 100;
 
       if (heapUtilization > 90) {
-        recommendations.add("High heap utilization (" + String.format("%.1f", heapUtilization) + "%). Consider increasing heap size.");
+        recommendations.add(
+            "High heap utilization ("
+                + String.format("%.1f", heapUtilization)
+                + "%). Consider increasing heap size.");
       } else if (heapUtilization < 30) {
-        recommendations.add("Low heap utilization (" + String.format("%.1f", heapUtilization) + "%). Consider reducing heap size.");
+        recommendations.add(
+            "Low heap utilization ("
+                + String.format("%.1f", heapUtilization)
+                + "%). Consider reducing heap size.");
       }
     }
 
@@ -464,7 +460,8 @@ public final class MemoryAnalyzer {
       return AllocationPattern.STABLE;
     }
 
-    final double averageAllocation = allocations.stream().mapToLong(Long::longValue).average().orElse(0);
+    final double averageAllocation =
+        allocations.stream().mapToLong(Long::longValue).average().orElse(0);
     final long maxAllocation = allocations.stream().mapToLong(Long::longValue).max().orElse(0);
 
     if (maxAllocation > averageAllocation * 10) {
@@ -482,9 +479,8 @@ public final class MemoryAnalyzer {
       return GcPattern.INSUFFICIENT_DATA;
     }
 
-    final List<Long> gcCounts = history.stream()
-        .map(s -> s.getGcSnapshot().getTotalCollections())
-        .toList();
+    final List<Long> gcCounts =
+        history.stream().map(s -> s.getGcSnapshot().getTotalCollections()).toList();
 
     final long totalGcIncrease = gcCounts.get(gcCounts.size() - 1) - gcCounts.get(0);
     final double gcRate = (double) totalGcIncrease / history.size();
@@ -498,9 +494,7 @@ public final class MemoryAnalyzer {
     }
   }
 
-  /**
-   * Builder for MemoryAnalyzer.
-   */
+  /** Builder for MemoryAnalyzer. */
   public static final class Builder {
     private Duration samplingInterval = DEFAULT_SAMPLING_INTERVAL;
     private int historySize = DEFAULT_HISTORY_SIZE;
@@ -526,9 +520,7 @@ public final class MemoryAnalyzer {
     }
   }
 
-  /**
-   * Represents current memory metrics.
-   */
+  /** Represents current memory metrics. */
   public static final class MemoryMetrics {
     private final long heapUsed;
     private final long maxHeap;
@@ -537,9 +529,13 @@ public final class MemoryAnalyzer {
     private final Map<String, Long> poolUsages;
     private final Instant timestamp;
 
-    public MemoryMetrics(final long heapUsed, final long maxHeap,
-                        final long nonHeapUsed, final long maxNonHeap,
-                        final Map<String, Long> poolUsages, final Instant timestamp) {
+    public MemoryMetrics(
+        final long heapUsed,
+        final long maxHeap,
+        final long nonHeapUsed,
+        final long maxNonHeap,
+        final Map<String, Long> poolUsages,
+        final Instant timestamp) {
       this.heapUsed = heapUsed;
       this.maxHeap = maxHeap;
       this.nonHeapUsed = nonHeapUsed;
@@ -548,37 +544,56 @@ public final class MemoryAnalyzer {
       this.timestamp = timestamp;
     }
 
-    public long getHeapUsed() { return heapUsed; }
-    public long getMaxHeap() { return maxHeap; }
-    public long getNonHeapUsed() { return nonHeapUsed; }
-    public long getMaxNonHeap() { return maxNonHeap; }
-    public Map<String, Long> getPoolUsages() { return poolUsages; }
-    public Instant getTimestamp() { return timestamp; }
+    public long getHeapUsed() {
+      return heapUsed;
+    }
+
+    public long getMaxHeap() {
+      return maxHeap;
+    }
+
+    public long getNonHeapUsed() {
+      return nonHeapUsed;
+    }
+
+    public long getMaxNonHeap() {
+      return maxNonHeap;
+    }
+
+    public Map<String, Long> getPoolUsages() {
+      return poolUsages;
+    }
+
+    public Instant getTimestamp() {
+      return timestamp;
+    }
 
     public double getHeapUtilization() {
       return maxHeap > 0 ? (double) heapUsed / maxHeap * 100 : 0;
     }
   }
 
-  /**
-   * Memory snapshot combining memory metrics and GC state.
-   */
+  /** Memory snapshot combining memory metrics and GC state. */
   public static final class MemorySnapshot {
     private final MemoryMetrics memoryMetrics;
     private final GcImpactMetrics.Snapshot gcSnapshot;
 
-    public MemorySnapshot(final MemoryMetrics memoryMetrics, final GcImpactMetrics.Snapshot gcSnapshot) {
+    public MemorySnapshot(
+        final MemoryMetrics memoryMetrics, final GcImpactMetrics.Snapshot gcSnapshot) {
       this.memoryMetrics = memoryMetrics;
       this.gcSnapshot = gcSnapshot;
     }
 
-    public MemoryMetrics getMemoryMetrics() { return memoryMetrics; }
-    public GcImpactMetrics.Snapshot getGcSnapshot() { return gcSnapshot; }
+    public MemoryMetrics getMemoryMetrics() {
+      return memoryMetrics;
+    }
+
+    public GcImpactMetrics.Snapshot getGcSnapshot() {
+      return gcSnapshot;
+    }
   }
 
-  /**
-   * Circular buffer for memory history.
-   */
+  /** Circular buffer for memory history. */
   static final class CircularBuffer<T> {
     private final Object[] buffer;
     private final int capacity;
@@ -613,13 +628,27 @@ public final class MemoryAnalyzer {
   }
 
   // Enums and analysis result classes
-  public enum TrendAnalysis { INCREASING, DECREASING, STABLE }
-  public enum AllocationPattern { NORMAL, HIGH_RATE, SPIKY, STABLE }
-  public enum GcPattern { FREQUENT, NORMAL, INFREQUENT, INSUFFICIENT_DATA }
+  public enum TrendAnalysis {
+    INCREASING,
+    DECREASING,
+    STABLE
+  }
 
-  /**
-   * Memory pattern analysis result.
-   */
+  public enum AllocationPattern {
+    NORMAL,
+    HIGH_RATE,
+    SPIKY,
+    STABLE
+  }
+
+  public enum GcPattern {
+    FREQUENT,
+    NORMAL,
+    INFREQUENT,
+    INSUFFICIENT_DATA
+  }
+
+  /** Memory pattern analysis result. */
   public static final class MemoryPatternAnalysis {
     private final TrendAnalysis heapTrend;
     private final long peakHeapUsage;
@@ -628,9 +657,13 @@ public final class MemoryAnalyzer {
     private final GcPattern gcPattern;
     private final Instant analysisTime;
 
-    public MemoryPatternAnalysis(final TrendAnalysis heapTrend, final long peakHeapUsage,
-                                final double averageHeapUsage, final AllocationPattern allocationPattern,
-                                final GcPattern gcPattern, final Instant analysisTime) {
+    public MemoryPatternAnalysis(
+        final TrendAnalysis heapTrend,
+        final long peakHeapUsage,
+        final double averageHeapUsage,
+        final AllocationPattern allocationPattern,
+        final GcPattern gcPattern,
+        final Instant analysisTime) {
       this.heapTrend = heapTrend;
       this.peakHeapUsage = peakHeapUsage;
       this.averageHeapUsage = averageHeapUsage;
@@ -641,21 +674,40 @@ public final class MemoryAnalyzer {
 
     public static MemoryPatternAnalysis insufficient(final int sampleCount) {
       return new MemoryPatternAnalysis(
-          TrendAnalysis.STABLE, 0, 0, AllocationPattern.STABLE,
-          GcPattern.INSUFFICIENT_DATA, Instant.now());
+          TrendAnalysis.STABLE,
+          0,
+          0,
+          AllocationPattern.STABLE,
+          GcPattern.INSUFFICIENT_DATA,
+          Instant.now());
     }
 
-    public TrendAnalysis getHeapTrend() { return heapTrend; }
-    public long getPeakHeapUsage() { return peakHeapUsage; }
-    public double getAverageHeapUsage() { return averageHeapUsage; }
-    public AllocationPattern getAllocationPattern() { return allocationPattern; }
-    public GcPattern getGcPattern() { return gcPattern; }
-    public Instant getAnalysisTime() { return analysisTime; }
+    public TrendAnalysis getHeapTrend() {
+      return heapTrend;
+    }
+
+    public long getPeakHeapUsage() {
+      return peakHeapUsage;
+    }
+
+    public double getAverageHeapUsage() {
+      return averageHeapUsage;
+    }
+
+    public AllocationPattern getAllocationPattern() {
+      return allocationPattern;
+    }
+
+    public GcPattern getGcPattern() {
+      return gcPattern;
+    }
+
+    public Instant getAnalysisTime() {
+      return analysisTime;
+    }
   }
 
-  /**
-   * Memory leak analysis result.
-   */
+  /** Memory leak analysis result. */
   public static final class MemoryLeakAnalysis {
     private final boolean potentialLeak;
     private final double growthRate;
@@ -663,9 +715,12 @@ public final class MemoryAnalyzer {
     private final int sampleCount;
     private final Instant analysisTime;
 
-    public MemoryLeakAnalysis(final boolean potentialLeak, final double growthRate,
-                             final List<String> suspiciousPatterns, final int sampleCount,
-                             final Instant analysisTime) {
+    public MemoryLeakAnalysis(
+        final boolean potentialLeak,
+        final double growthRate,
+        final List<String> suspiciousPatterns,
+        final int sampleCount,
+        final Instant analysisTime) {
       this.potentialLeak = potentialLeak;
       this.growthRate = growthRate;
       this.suspiciousPatterns = List.copyOf(suspiciousPatterns);
@@ -674,34 +729,56 @@ public final class MemoryAnalyzer {
     }
 
     public static MemoryLeakAnalysis insufficient(final int sampleCount) {
-      return new MemoryLeakAnalysis(false, 0, List.of("Insufficient data for analysis"), sampleCount, Instant.now());
+      return new MemoryLeakAnalysis(
+          false, 0, List.of("Insufficient data for analysis"), sampleCount, Instant.now());
     }
 
-    public boolean isPotentialLeak() { return potentialLeak; }
-    public double getGrowthRate() { return growthRate; }
-    public List<String> getSuspiciousPatterns() { return suspiciousPatterns; }
-    public int getSampleCount() { return sampleCount; }
-    public Instant getAnalysisTime() { return analysisTime; }
+    public boolean isPotentialLeak() {
+      return potentialLeak;
+    }
+
+    public double getGrowthRate() {
+      return growthRate;
+    }
+
+    public List<String> getSuspiciousPatterns() {
+      return suspiciousPatterns;
+    }
+
+    public int getSampleCount() {
+      return sampleCount;
+    }
+
+    public Instant getAnalysisTime() {
+      return analysisTime;
+    }
   }
 
-  /**
-   * GC tuning recommendations.
-   */
+  /** GC tuning recommendations. */
   public static final class GcTuningRecommendations {
     private final List<String> recommendations;
     private final GcImpactMetrics.Snapshot gcSnapshot;
     private final Instant analysisTime;
 
-    public GcTuningRecommendations(final List<String> recommendations,
-                                  final GcImpactMetrics.Snapshot gcSnapshot,
-                                  final Instant analysisTime) {
+    public GcTuningRecommendations(
+        final List<String> recommendations,
+        final GcImpactMetrics.Snapshot gcSnapshot,
+        final Instant analysisTime) {
       this.recommendations = List.copyOf(recommendations);
       this.gcSnapshot = gcSnapshot;
       this.analysisTime = analysisTime;
     }
 
-    public List<String> getRecommendations() { return recommendations; }
-    public GcImpactMetrics.Snapshot getGcSnapshot() { return gcSnapshot; }
-    public Instant getAnalysisTime() { return analysisTime; }
+    public List<String> getRecommendations() {
+      return recommendations;
+    }
+
+    public GcImpactMetrics.Snapshot getGcSnapshot() {
+      return gcSnapshot;
+    }
+
+    public Instant getAnalysisTime() {
+      return analysisTime;
+    }
   }
 }

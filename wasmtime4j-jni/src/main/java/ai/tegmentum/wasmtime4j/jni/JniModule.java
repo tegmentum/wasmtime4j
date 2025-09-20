@@ -452,7 +452,8 @@ public final class JniModule extends JniResource implements Module {
     try {
       final List<ImportType> imports = getImports();
       for (final ImportType importType : imports) {
-        if (moduleName.equals(importType.getModuleName()) && fieldName.equals(importType.getName())) {
+        if (moduleName.equals(importType.getModuleName())
+            && fieldName.equals(importType.getName())) {
           return true;
         }
       }

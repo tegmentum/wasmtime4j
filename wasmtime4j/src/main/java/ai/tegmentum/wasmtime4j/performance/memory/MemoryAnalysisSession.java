@@ -15,15 +15,16 @@ import java.util.logging.Logger;
  *
  * <p>A memory analysis session provides detailed tracking of memory usage and garbage collection
  * impact during specific WebAssembly operations. Sessions can be used to:
+ *
  * <ul>
- *   <li>Measure memory allocation patterns for specific operations</li>
- *   <li>Track garbage collection impact during execution</li>
- *   <li>Identify memory leaks or excessive allocation</li>
- *   <li>Compare memory usage across different implementations</li>
+ *   <li>Measure memory allocation patterns for specific operations
+ *   <li>Track garbage collection impact during execution
+ *   <li>Identify memory leaks or excessive allocation
+ *   <li>Compare memory usage across different implementations
  * </ul>
  *
- * <p>Sessions are typically created by {@link MemoryAnalyzer} and provide automatic
- * memory tracking during their lifecycle.
+ * <p>Sessions are typically created by {@link MemoryAnalyzer} and provide automatic memory tracking
+ * during their lifecycle.
  *
  * @since 1.0.0
  */
@@ -177,8 +178,8 @@ public final class MemoryAnalysisSession {
 
     // Calculate GC impact during session
     final Duration sessionDuration = Duration.between(startTime, endTime);
-    final GcImpactMetrics gcImpact = GcImpactMetrics.calculate(
-        initialGcState, finalGcState, sessionDuration);
+    final GcImpactMetrics gcImpact =
+        GcImpactMetrics.calculate(initialGcState, finalGcState, sessionDuration);
 
     // Analyze session data
     this.result = analyzeSessionData(finalMemoryState, gcImpact);
@@ -186,15 +187,17 @@ public final class MemoryAnalysisSession {
     // Remove from active sessions
     analyzer.removeSession(sessionName);
 
-    LOGGER.info("Completed memory analysis session: " + sessionName +
-                " (duration: " + sessionDuration + ")");
+    LOGGER.info(
+        "Completed memory analysis session: "
+            + sessionName
+            + " (duration: "
+            + sessionDuration
+            + ")");
 
     return result;
   }
 
-  /**
-   * Forces completion of the session (typically called during cleanup).
-   */
+  /** Forces completion of the session (typically called during cleanup). */
   void forceComplete() {
     if (!completed) {
       complete();
@@ -207,8 +210,8 @@ public final class MemoryAnalysisSession {
     }
   }
 
-  private MemoryAnalysisResult analyzeSessionData(final MemoryAnalyzer.MemoryMetrics finalState,
-                                                 final GcImpactMetrics gcImpact) {
+  private MemoryAnalysisResult analyzeSessionData(
+      final MemoryAnalyzer.MemoryMetrics finalState, final GcImpactMetrics gcImpact) {
     // Calculate memory deltas
     final long heapDelta = finalState.getHeapUsed() - initialMemoryState.getHeapUsed();
     final long nonHeapDelta = finalState.getNonHeapUsed() - initialMemoryState.getNonHeapUsed();
@@ -220,8 +223,8 @@ public final class MemoryAnalysisSession {
     final List<String> issues = detectIssues(heapDelta, nonHeapDelta, gcImpact);
 
     // Generate recommendations
-    final List<String> recommendations = generateRecommendations(
-        heapDelta, nonHeapDelta, gcImpact, allocationAnalysis);
+    final List<String> recommendations =
+        generateRecommendations(heapDelta, nonHeapDelta, gcImpact, allocationAnalysis);
 
     return new MemoryAnalysisResult(
         sessionName,
@@ -235,8 +238,7 @@ public final class MemoryAnalysisSession {
         allocationAnalysis,
         sessionSnapshots.size(),
         issues,
-        recommendations
-    );
+        recommendations);
   }
 
   private AllocationAnalysis analyzeAllocations() {
@@ -261,24 +263,23 @@ public final class MemoryAnalysisSession {
       }
     }
 
-    final double averageAllocation = allocations.isEmpty() ? 0 :
-        allocations.stream().mapToLong(Long::longValue).average().orElse(0);
+    final double averageAllocation =
+        allocations.isEmpty()
+            ? 0
+            : allocations.stream().mapToLong(Long::longValue).average().orElse(0);
 
     final Duration sessionDuration = getElapsedTime();
-    final double allocationRate = sessionDuration.toMillis() > 0 ?
-        (totalAllocation / 1024.0 / 1024.0) / (sessionDuration.toMillis() / 1000.0) : 0; // MB/s
+    final double allocationRate =
+        sessionDuration.toMillis() > 0
+            ? (totalAllocation / 1024.0 / 1024.0) / (sessionDuration.toMillis() / 1000.0)
+            : 0; // MB/s
 
     return new AllocationAnalysis(
-        totalAllocation,
-        peakAllocation,
-        averageAllocation,
-        allocationRate,
-        allocations.size()
-    );
+        totalAllocation, peakAllocation, averageAllocation, allocationRate, allocations.size());
   }
 
-  private List<String> detectIssues(final long heapDelta, final long nonHeapDelta,
-                                   final GcImpactMetrics gcImpact) {
+  private List<String> detectIssues(
+      final long heapDelta, final long nonHeapDelta, final GcImpactMetrics gcImpact) {
     final List<String> issues = new ArrayList<>();
 
     // Check for excessive memory growth
@@ -292,21 +293,25 @@ public final class MemoryAnalysisSession {
 
     // Check for GC impact
     if (gcImpact.hasSignificantImpact()) {
-      issues.add("High garbage collection overhead: " +
-                 String.format("%.1f%%", gcImpact.getGcOverheadPercentage()));
+      issues.add(
+          "High garbage collection overhead: "
+              + String.format("%.1f%%", gcImpact.getGcOverheadPercentage()));
     }
 
     if (gcImpact.hasHighAllocationRate()) {
-      issues.add("High allocation rate detected: " +
-                 String.format("%.1f MB/s", gcImpact.getAllocationRate()));
+      issues.add(
+          "High allocation rate detected: "
+              + String.format("%.1f MB/s", gcImpact.getAllocationRate()));
     }
 
     return issues;
   }
 
-  private List<String> generateRecommendations(final long heapDelta, final long nonHeapDelta,
-                                              final GcImpactMetrics gcImpact,
-                                              final AllocationAnalysis allocationAnalysis) {
+  private List<String> generateRecommendations(
+      final long heapDelta,
+      final long nonHeapDelta,
+      final GcImpactMetrics gcImpact,
+      final AllocationAnalysis allocationAnalysis) {
     final List<String> recommendations = new ArrayList<>();
 
     // Memory growth recommendations
@@ -349,9 +354,7 @@ public final class MemoryAnalysisSession {
     }
   }
 
-  /**
-   * Represents a marked operation within a memory analysis session.
-   */
+  /** Represents a marked operation within a memory analysis session. */
   public static final class OperationMarker {
     private final String operationName;
     private final MemorySnapshot startSnapshot;
@@ -363,9 +366,17 @@ public final class MemoryAnalysisSession {
       this.startTime = Instant.now();
     }
 
-    public String getOperationName() { return operationName; }
-    public MemorySnapshot getStartSnapshot() { return startSnapshot; }
-    public Instant getStartTime() { return startTime; }
+    public String getOperationName() {
+      return operationName;
+    }
+
+    public MemorySnapshot getStartSnapshot() {
+      return startSnapshot;
+    }
+
+    public Instant getStartTime() {
+      return startTime;
+    }
 
     /**
      * Completes the operation marker and returns analysis of the operation.
@@ -377,23 +388,16 @@ public final class MemoryAnalysisSession {
       final MemorySnapshot endSnapshot = session.captureSnapshot();
       final Duration operationDuration = Duration.between(startTime, Instant.now());
 
-      final long heapDelta = endSnapshot.getMemoryMetrics().getHeapUsed() -
-                           startSnapshot.getMemoryMetrics().getHeapUsed();
+      final long heapDelta =
+          endSnapshot.getMemoryMetrics().getHeapUsed()
+              - startSnapshot.getMemoryMetrics().getHeapUsed();
 
       return new OperationAnalysis(
-          operationName,
-          startTime,
-          operationDuration,
-          heapDelta,
-          startSnapshot,
-          endSnapshot
-      );
+          operationName, startTime, operationDuration, heapDelta, startSnapshot, endSnapshot);
     }
   }
 
-  /**
-   * Analysis result for a specific operation within a session.
-   */
+  /** Analysis result for a specific operation within a session. */
   public static final class OperationAnalysis {
     private final String operationName;
     private final Instant startTime;
@@ -402,9 +406,13 @@ public final class MemoryAnalysisSession {
     private final MemorySnapshot startSnapshot;
     private final MemorySnapshot endSnapshot;
 
-    OperationAnalysis(final String operationName, final Instant startTime,
-                     final Duration duration, final long memoryDelta,
-                     final MemorySnapshot startSnapshot, final MemorySnapshot endSnapshot) {
+    OperationAnalysis(
+        final String operationName,
+        final Instant startTime,
+        final Duration duration,
+        final long memoryDelta,
+        final MemorySnapshot startSnapshot,
+        final MemorySnapshot endSnapshot) {
       this.operationName = operationName;
       this.startTime = startTime;
       this.duration = duration;
@@ -413,17 +421,32 @@ public final class MemoryAnalysisSession {
       this.endSnapshot = endSnapshot;
     }
 
-    public String getOperationName() { return operationName; }
-    public Instant getStartTime() { return startTime; }
-    public Duration getDuration() { return duration; }
-    public long getMemoryDelta() { return memoryDelta; }
-    public MemorySnapshot getStartSnapshot() { return startSnapshot; }
-    public MemorySnapshot getEndSnapshot() { return endSnapshot; }
+    public String getOperationName() {
+      return operationName;
+    }
+
+    public Instant getStartTime() {
+      return startTime;
+    }
+
+    public Duration getDuration() {
+      return duration;
+    }
+
+    public long getMemoryDelta() {
+      return memoryDelta;
+    }
+
+    public MemorySnapshot getStartSnapshot() {
+      return startSnapshot;
+    }
+
+    public MemorySnapshot getEndSnapshot() {
+      return endSnapshot;
+    }
   }
 
-  /**
-   * Analysis of allocation patterns during a session.
-   */
+  /** Analysis of allocation patterns during a session. */
   public static final class AllocationAnalysis {
     private final long totalAllocation;
     private final long peakAllocation;
@@ -431,9 +454,12 @@ public final class MemoryAnalysisSession {
     private final double allocationRate; // MB/s
     private final int allocationEvents;
 
-    AllocationAnalysis(final long totalAllocation, final long peakAllocation,
-                      final double averageAllocation, final double allocationRate,
-                      final int allocationEvents) {
+    AllocationAnalysis(
+        final long totalAllocation,
+        final long peakAllocation,
+        final double averageAllocation,
+        final double allocationRate,
+        final int allocationEvents) {
       this.totalAllocation = totalAllocation;
       this.peakAllocation = peakAllocation;
       this.averageAllocation = averageAllocation;
@@ -445,10 +471,24 @@ public final class MemoryAnalysisSession {
       return new AllocationAnalysis(0, 0, 0, 0, 0);
     }
 
-    public long getTotalAllocation() { return totalAllocation; }
-    public long getPeakAllocation() { return peakAllocation; }
-    public double getAverageAllocation() { return averageAllocation; }
-    public double getAllocationRate() { return allocationRate; }
-    public int getAllocationEvents() { return allocationEvents; }
+    public long getTotalAllocation() {
+      return totalAllocation;
+    }
+
+    public long getPeakAllocation() {
+      return peakAllocation;
+    }
+
+    public double getAverageAllocation() {
+      return averageAllocation;
+    }
+
+    public double getAllocationRate() {
+      return allocationRate;
+    }
+
+    public int getAllocationEvents() {
+      return allocationEvents;
+    }
   }
 }

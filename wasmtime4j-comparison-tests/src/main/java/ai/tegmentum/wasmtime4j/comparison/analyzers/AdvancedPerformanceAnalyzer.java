@@ -6,7 +6,6 @@ import ai.tegmentum.wasmtime4j.performance.insights.PerformanceInsights;
 import ai.tegmentum.wasmtime4j.performance.insights.PerformanceInsightsEngine;
 import ai.tegmentum.wasmtime4j.performance.memory.MemoryAnalysisResult;
 import ai.tegmentum.wasmtime4j.performance.memory.MemoryAnalyzer;
-import ai.tegmentum.wasmtime4j.performance.microbench.BenchmarkSuite;
 import ai.tegmentum.wasmtime4j.performance.profiling.JvmProfilerIntegration;
 import java.time.Duration;
 import java.time.Instant;
@@ -15,7 +14,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 
@@ -24,18 +22,20 @@ import java.util.logging.Logger;
  * PerformanceAnalyzer to provide comprehensive Wasmtime performance analysis.
  *
  * <p>This analyzer extends the base {@link PerformanceAnalyzer} functionality with:
+ *
  * <ul>
- *   <li>JVM profiling integration (async-profiler, JFR)</li>
- *   <li>Real-time memory analysis and GC impact measurement</li>
- *   <li>Micro-benchmark generation and execution</li>
- *   <li>Intelligent performance insights and recommendations</li>
- *   <li>Cross-runtime performance comparison with profiling data</li>
+ *   <li>JVM profiling integration (async-profiler, JFR)
+ *   <li>Real-time memory analysis and GC impact measurement
+ *   <li>Micro-benchmark generation and execution
+ *   <li>Intelligent performance insights and recommendations
+ *   <li>Cross-runtime performance comparison with profiling data
  * </ul>
  *
- * <p>The analyzer maintains compatibility with existing code while providing enhanced
- * analysis capabilities for production performance monitoring and optimization.
+ * <p>The analyzer maintains compatibility with existing code while providing enhanced analysis
+ * capabilities for production performance monitoring and optimization.
  *
  * <p>Usage example:
+ *
  * <pre>{@code
  * AdvancedPerformanceAnalyzer analyzer = AdvancedPerformanceAnalyzer.builder()
  *     .enableJvmProfiling(true)
@@ -58,7 +58,8 @@ import java.util.logging.Logger;
  * @since 1.0.0
  */
 public final class AdvancedPerformanceAnalyzer extends PerformanceAnalyzer {
-  private static final Logger LOGGER = Logger.getLogger(AdvancedPerformanceAnalyzer.class.getName());
+  private static final Logger LOGGER =
+      Logger.getLogger(AdvancedPerformanceAnalyzer.class.getName());
 
   private final boolean jvmProfilingEnabled;
   private final boolean memoryAnalysisEnabled;
@@ -83,11 +84,16 @@ public final class AdvancedPerformanceAnalyzer extends PerformanceAnalyzer {
     this.insightsEngine = insightsGenerationEnabled ? PerformanceInsightsEngine.create() : null;
     this.activeSessions = new ConcurrentHashMap<>();
 
-    LOGGER.info("Advanced Performance Analyzer initialized with features: " +
-                "JVM Profiling=" + jvmProfilingEnabled +
-                ", Memory Analysis=" + memoryAnalysisEnabled +
-                ", Insights=" + insightsGenerationEnabled +
-                ", Microbenchmarks=" + microbenchmarkEnabled);
+    LOGGER.info(
+        "Advanced Performance Analyzer initialized with features: "
+            + "JVM Profiling="
+            + jvmProfilingEnabled
+            + ", Memory Analysis="
+            + memoryAnalysisEnabled
+            + ", Insights="
+            + insightsGenerationEnabled
+            + ", Microbenchmarks="
+            + microbenchmarkEnabled);
   }
 
   /**
@@ -111,8 +117,8 @@ public final class AdvancedPerformanceAnalyzer extends PerformanceAnalyzer {
   /**
    * Analyzes test results with enhanced profiling capabilities.
    *
-   * <p>This method extends the base {@link PerformanceAnalyzer#analyze(List)} method
-   * by adding profiling data collection and analysis.
+   * <p>This method extends the base {@link PerformanceAnalyzer#analyze(List)} method by adding
+   * profiling data collection and analysis.
    *
    * @param results test execution results
    * @return enhanced performance comparison result
@@ -177,32 +183,29 @@ public final class AdvancedPerformanceAnalyzer extends PerformanceAnalyzer {
 
     final Map<String, String> toolStatus = new HashMap<>();
     if (profilerIntegration != null) {
-      toolStatus.put("availableProfilers",
-          profilerIntegration.getAvailableTools().toString());
-      toolStatus.put("activeProfileSessions",
-          String.valueOf(profilerIntegration.getActiveSessionCount()));
+      toolStatus.put("availableProfilers", profilerIntegration.getAvailableTools().toString());
+      toolStatus.put(
+          "activeProfileSessions", String.valueOf(profilerIntegration.getActiveSessionCount()));
     }
 
     if (memoryAnalyzer != null) {
-      toolStatus.put("memoryMonitoring",
-          String.valueOf(memoryAnalyzer.isMonitoring()));
-      toolStatus.put("activeMemorySessions",
-          String.valueOf(memoryAnalyzer.getActiveSessions().size()));
+      toolStatus.put("memoryMonitoring", String.valueOf(memoryAnalyzer.isMonitoring()));
+      toolStatus.put(
+          "activeMemorySessions", String.valueOf(memoryAnalyzer.getActiveSessions().size()));
     }
 
     return new AdvancedFeatureStatus(features, toolStatus);
   }
 
-  /**
-   * Closes the advanced analyzer and releases all resources.
-   */
+  /** Closes the advanced analyzer and releases all resources. */
   public void close() {
     // Complete all active sessions
     for (final AdvancedAnalysisSession session : new ArrayList<>(activeSessions.values())) {
       try {
         session.complete();
       } catch (final Exception e) {
-        LOGGER.warning("Failed to complete session: " + session.getSessionName() + " - " + e.getMessage());
+        LOGGER.warning(
+            "Failed to complete session: " + session.getSessionName() + " - " + e.getMessage());
       }
     }
 
@@ -234,8 +237,8 @@ public final class AdvancedPerformanceAnalyzer extends PerformanceAnalyzer {
     activeSessions.remove(sessionName);
   }
 
-  private void enhanceWithProfilingData(final PerformanceComparisonResult result,
-                                       final List<TestExecutionResult> results) {
+  private void enhanceWithProfilingData(
+      final PerformanceComparisonResult result, final List<TestExecutionResult> results) {
     if (insightsEngine == null) {
       return;
     }
@@ -252,15 +255,18 @@ public final class AdvancedPerformanceAnalyzer extends PerformanceAnalyzer {
     final Map<String, Object> characteristics = extractRuntimeCharacteristics(result);
     for (final Map.Entry<String, Object> entry : characteristics.entrySet()) {
       if (entry.getValue() instanceof Map) {
-        insightsEngine.addRuntimeCharacteristics(entry.getKey(), (Map<String, Object>) entry.getValue());
+        insightsEngine.addRuntimeCharacteristics(
+            entry.getKey(), (Map<String, Object>) entry.getValue());
       }
     }
   }
 
-  private Map<String, Object> extractRuntimeCharacteristics(final PerformanceComparisonResult result) {
+  private Map<String, Object> extractRuntimeCharacteristics(
+      final PerformanceComparisonResult result) {
     final Map<String, Object> characteristics = new HashMap<>();
 
-    for (final Map.Entry<String, PerformanceMetrics> entry : result.getMetricsByRuntime().entrySet()) {
+    for (final Map.Entry<String, PerformanceMetrics> entry :
+        result.getMetricsByRuntime().entrySet()) {
       final String runtime = entry.getKey();
       final PerformanceMetrics metrics = entry.getValue();
 
@@ -284,9 +290,7 @@ public final class AdvancedPerformanceAnalyzer extends PerformanceAnalyzer {
     return characteristics;
   }
 
-  /**
-   * Advanced analysis session that provides comprehensive profiling capabilities.
-   */
+  /** Advanced analysis session that provides comprehensive profiling capabilities. */
   public static final class AdvancedAnalysisSession {
     private final String sessionName;
     private final AdvancedPerformanceAnalyzer analyzer;
@@ -307,8 +311,9 @@ public final class AdvancedPerformanceAnalyzer extends PerformanceAnalyzer {
       // Start profiling if enabled
       if (analyzer.jvmProfilingEnabled && analyzer.profilerIntegration != null) {
         try {
-          this.profilingSession = analyzer.profilerIntegration.startProfiling(
-              JvmProfilerIntegration.ProfilingMode.CPU_SAMPLING);
+          this.profilingSession =
+              analyzer.profilerIntegration.startProfiling(
+                  JvmProfilerIntegration.ProfilingMode.CPU_SAMPLING);
         } catch (final Exception e) {
           LOGGER.warning("Failed to start JVM profiling: " + e.getMessage());
         }
@@ -324,10 +329,21 @@ public final class AdvancedPerformanceAnalyzer extends PerformanceAnalyzer {
       }
     }
 
-    public String getSessionName() { return sessionName; }
-    public Instant getStartTime() { return startTime; }
-    public Duration getElapsedTime() { return Duration.between(startTime, Instant.now()); }
-    public boolean isCompleted() { return completed; }
+    public String getSessionName() {
+      return sessionName;
+    }
+
+    public Instant getStartTime() {
+      return startTime;
+    }
+
+    public Duration getElapsedTime() {
+      return Duration.between(startTime, Instant.now());
+    }
+
+    public boolean isCompleted() {
+      return completed;
+    }
 
     /**
      * Captures a performance snapshot during the session.
@@ -413,8 +429,12 @@ public final class AdvancedPerformanceAnalyzer extends PerformanceAnalyzer {
       // Remove from active sessions
       analyzer.removeSession(sessionName);
 
-      LOGGER.info("Completed advanced analysis session: " + sessionName +
-                  " (duration: " + Duration.between(startTime, endTime) + ")");
+      LOGGER.info(
+          "Completed advanced analysis session: "
+              + sessionName
+              + " (duration: "
+              + Duration.between(startTime, endTime)
+              + ")");
 
       return new AdvancedAnalysisResult(
           sessionName,
@@ -423,8 +443,7 @@ public final class AdvancedPerformanceAnalyzer extends PerformanceAnalyzer {
           profilingResult,
           memoryResult,
           List.copyOf(snapshots),
-          insights
-      );
+          insights);
     }
 
     private ProfileSnapshot createSnapshotPlaceholder() {
@@ -434,9 +453,7 @@ public final class AdvancedPerformanceAnalyzer extends PerformanceAnalyzer {
     }
   }
 
-  /**
-   * Comprehensive result from an advanced analysis session.
-   */
+  /** Comprehensive result from an advanced analysis session. */
   public static final class AdvancedAnalysisResult {
     private final String sessionName;
     private final Instant startTime;
@@ -446,13 +463,14 @@ public final class AdvancedPerformanceAnalyzer extends PerformanceAnalyzer {
     private final List<ProfileSnapshot> snapshots;
     private final PerformanceInsights insights;
 
-    AdvancedAnalysisResult(final String sessionName,
-                          final Instant startTime,
-                          final Instant endTime,
-                          final JvmProfilerIntegration.ProfilingResult profilingResult,
-                          final MemoryAnalysisResult memoryResult,
-                          final List<ProfileSnapshot> snapshots,
-                          final PerformanceInsights insights) {
+    AdvancedAnalysisResult(
+        final String sessionName,
+        final Instant startTime,
+        final Instant endTime,
+        final JvmProfilerIntegration.ProfilingResult profilingResult,
+        final MemoryAnalysisResult memoryResult,
+        final List<ProfileSnapshot> snapshots,
+        final PerformanceInsights insights) {
       this.sessionName = sessionName;
       this.startTime = startTime;
       this.endTime = endTime;
@@ -462,43 +480,76 @@ public final class AdvancedPerformanceAnalyzer extends PerformanceAnalyzer {
       this.insights = insights;
     }
 
-    public String getSessionName() { return sessionName; }
-    public Instant getStartTime() { return startTime; }
-    public Instant getEndTime() { return endTime; }
-    public Duration getSessionDuration() { return Duration.between(startTime, endTime); }
-    public JvmProfilerIntegration.ProfilingResult getProfilingResult() { return profilingResult; }
-    public MemoryAnalysisResult getMemoryResult() { return memoryResult; }
-    public List<ProfileSnapshot> getSnapshots() { return snapshots; }
-    public PerformanceInsights getInsights() { return insights; }
+    public String getSessionName() {
+      return sessionName;
+    }
 
-    public boolean hasProfilingData() { return profilingResult != null; }
-    public boolean hasMemoryData() { return memoryResult != null; }
-    public boolean hasInsights() { return insights != null; }
+    public Instant getStartTime() {
+      return startTime;
+    }
+
+    public Instant getEndTime() {
+      return endTime;
+    }
+
+    public Duration getSessionDuration() {
+      return Duration.between(startTime, endTime);
+    }
+
+    public JvmProfilerIntegration.ProfilingResult getProfilingResult() {
+      return profilingResult;
+    }
+
+    public MemoryAnalysisResult getMemoryResult() {
+      return memoryResult;
+    }
+
+    public List<ProfileSnapshot> getSnapshots() {
+      return snapshots;
+    }
+
+    public PerformanceInsights getInsights() {
+      return insights;
+    }
+
+    public boolean hasProfilingData() {
+      return profilingResult != null;
+    }
+
+    public boolean hasMemoryData() {
+      return memoryResult != null;
+    }
+
+    public boolean hasInsights() {
+      return insights != null;
+    }
   }
 
-  /**
-   * Status of advanced features.
-   */
+  /** Status of advanced features. */
   public static final class AdvancedFeatureStatus {
     private final Map<String, Boolean> features;
     private final Map<String, String> toolStatus;
 
-    AdvancedFeatureStatus(final Map<String, Boolean> features, final Map<String, String> toolStatus) {
+    AdvancedFeatureStatus(
+        final Map<String, Boolean> features, final Map<String, String> toolStatus) {
       this.features = Map.copyOf(features);
       this.toolStatus = Map.copyOf(toolStatus);
     }
 
-    public Map<String, Boolean> getFeatures() { return features; }
-    public Map<String, String> getToolStatus() { return toolStatus; }
+    public Map<String, Boolean> getFeatures() {
+      return features;
+    }
+
+    public Map<String, String> getToolStatus() {
+      return toolStatus;
+    }
 
     public boolean isFeatureEnabled(final String feature) {
       return features.getOrDefault(feature, false);
     }
   }
 
-  /**
-   * Builder for AdvancedPerformanceAnalyzer.
-   */
+  /** Builder for AdvancedPerformanceAnalyzer. */
   public static final class Builder {
     private boolean jvmProfilingEnabled = false;
     private boolean memoryAnalysisEnabled = true;

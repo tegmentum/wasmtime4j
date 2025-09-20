@@ -37,7 +37,8 @@ public final class CompilerConfig {
       final Map<String, Object> features,
       final Map<String, Object> options) {
     this.compilerName = Objects.requireNonNull(compilerName, "compilerName cannot be null");
-    this.optimizationLevel = Objects.requireNonNull(optimizationLevel, "optimizationLevel cannot be null");
+    this.optimizationLevel =
+        Objects.requireNonNull(optimizationLevel, "optimizationLevel cannot be null");
     this.debugInfo = debugInfo;
     this.profilingInfo = profilingInfo;
     this.features = Map.copyOf(Objects.requireNonNull(features, "features cannot be null"));
@@ -140,24 +141,25 @@ public final class CompilerConfig {
       return false;
     }
     final CompilerConfig that = (CompilerConfig) obj;
-    return debugInfo == that.debugInfo &&
-        profilingInfo == that.profilingInfo &&
-        Objects.equals(compilerName, that.compilerName) &&
-        Objects.equals(optimizationLevel, that.optimizationLevel) &&
-        Objects.equals(features, that.features) &&
-        Objects.equals(options, that.options);
+    return debugInfo == that.debugInfo
+        && profilingInfo == that.profilingInfo
+        && Objects.equals(compilerName, that.compilerName)
+        && Objects.equals(optimizationLevel, that.optimizationLevel)
+        && Objects.equals(features, that.features)
+        && Objects.equals(options, that.options);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(compilerName, optimizationLevel, debugInfo, profilingInfo, features, options);
+    return Objects.hash(
+        compilerName, optimizationLevel, debugInfo, profilingInfo, features, options);
   }
 
   @Override
   public String toString() {
     return String.format(
-        "CompilerConfig{compilerName='%s', optimizationLevel='%s', debugInfo=%s, " +
-        "profilingInfo=%s, features=%s, options=%s}",
+        "CompilerConfig{compilerName='%s', optimizationLevel='%s', debugInfo=%s, "
+            + "profilingInfo=%s, features=%s, options=%s}",
         compilerName, optimizationLevel, debugInfo, profilingInfo, features, options);
   }
 }

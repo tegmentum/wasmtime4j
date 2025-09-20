@@ -3,8 +3,8 @@ package ai.tegmentum.wasmtime4j;
 /**
  * Represents a WebAssembly module import with complete type information.
  *
- * <p>This class provides comprehensive import metadata including module name, field name,
- * and specific type information for introspection purposes.
+ * <p>This class provides comprehensive import metadata including module name, field name, and
+ * specific type information for introspection purposes.
  *
  * @since 1.0.0
  */
@@ -22,7 +22,8 @@ public final class ModuleImport {
    * @param importType the type information of the import
    * @throws IllegalArgumentException if any parameter is null
    */
-  public ModuleImport(final String moduleName, final String fieldName, final ImportType importType) {
+  public ModuleImport(
+      final String moduleName, final String fieldName, final ImportType importType) {
     if (moduleName == null) {
       throw new IllegalArgumentException("Module name cannot be null");
     }
@@ -66,8 +67,8 @@ public final class ModuleImport {
 
   @Override
   public String toString() {
-    return String.format("ModuleImport{module='%s', field='%s', type=%s}",
-        moduleName, fieldName, importType);
+    return String.format(
+        "ModuleImport{module='%s', field='%s', type=%s}", moduleName, fieldName, importType);
   }
 
   @Override

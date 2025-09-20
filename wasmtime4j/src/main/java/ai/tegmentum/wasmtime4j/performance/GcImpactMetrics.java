@@ -13,14 +13,16 @@ import java.util.Objects;
  * Captures and analyzes the impact of garbage collection on WebAssembly performance.
  *
  * <p>This class provides comprehensive metrics about garbage collection activity including:
+ *
  * <ul>
- *   <li>GC frequency and duration measurements</li>
- *   <li>Memory allocation and collection patterns</li>
- *   <li>GC overhead percentage calculations</li>
- *   <li>Performance impact assessment</li>
+ *   <li>GC frequency and duration measurements
+ *   <li>Memory allocation and collection patterns
+ *   <li>GC overhead percentage calculations
+ *   <li>Performance impact assessment
  * </ul>
  *
  * <p>Usage example:
+ *
  * <pre>{@code
  * // Capture GC state before operation
  * GcImpactMetrics.Snapshot beforeGc = GcImpactMetrics.captureSnapshot();
@@ -61,7 +63,8 @@ public final class GcImpactMetrics {
     this.totalGcCollections = totalGcCollections;
     this.memoryAllocated = memoryAllocated;
     this.memoryFreed = memoryFreed;
-    this.operationDuration = Objects.requireNonNull(operationDuration, "operationDuration cannot be null");
+    this.operationDuration =
+        Objects.requireNonNull(operationDuration, "operationDuration cannot be null");
     this.collectorMetrics = List.copyOf(collectorMetrics);
     this.captureTime = Instant.now();
 
@@ -93,12 +96,9 @@ public final class GcImpactMetrics {
         totalCollections += collections;
         totalGcTimeMs += gcTime;
 
-        collectorSnapshots.add(new GcCollectorSnapshot(
-            gcBean.getName(),
-            collections,
-            gcTime,
-            gcBean.getMemoryPoolNames()
-        ));
+        collectorSnapshots.add(
+            new GcCollectorSnapshot(
+                gcBean.getName(), collections, gcTime, gcBean.getMemoryPoolNames()));
       }
     }
 
@@ -112,8 +112,7 @@ public final class GcImpactMetrics {
         heapUsage.getUsed(),
         nonHeapUsage.getUsed(),
         heapUsage.getMax(),
-        collectorSnapshots
-    );
+        collectorSnapshots);
   }
 
   /**
@@ -126,9 +125,7 @@ public final class GcImpactMetrics {
    * @throws IllegalArgumentException if parameters are invalid
    */
   public static GcImpactMetrics calculate(
-      final Snapshot before,
-      final Snapshot after,
-      final Duration operationDuration) {
+      final Snapshot before, final Snapshot after, final Duration operationDuration) {
     Objects.requireNonNull(before, "before snapshot cannot be null");
     Objects.requireNonNull(after, "after snapshot cannot be null");
     Objects.requireNonNull(operationDuration, "operationDuration cannot be null");
@@ -153,8 +150,7 @@ public final class GcImpactMetrics {
         memoryAllocated,
         memoryFreed,
         operationDuration,
-        collectorMetrics
-    );
+        collectorMetrics);
   }
 
   /**
@@ -251,8 +247,7 @@ public final class GcImpactMetrics {
         gcOverheadPercentage,
         totalGcCollections,
         memoryAllocated / (1024.0 * 1024.0),
-        allocationRate
-    );
+        allocationRate);
   }
 
   private double calculateGcOverheadPercentage() {
@@ -300,22 +295,24 @@ public final class GcImpactMetrics {
       final String collectorName = beforeCollector.getName();
 
       // Find matching collector in after snapshot
-      final var afterCollector = after.getCollectorSnapshots().stream()
-          .filter(c -> c.getName().equals(collectorName))
-          .findFirst();
+      final var afterCollector =
+          after.getCollectorSnapshots().stream()
+              .filter(c -> c.getName().equals(collectorName))
+              .findFirst();
 
       if (afterCollector.isPresent()) {
         final GcCollectorSnapshot afterSnap = afterCollector.get();
-        final long collections = afterSnap.getCollectionCount() - beforeCollector.getCollectionCount();
+        final long collections =
+            afterSnap.getCollectionCount() - beforeCollector.getCollectionCount();
         final long gcTime = afterSnap.getCollectionTime() - beforeCollector.getCollectionTime();
 
         if (collections > 0 || gcTime > 0) {
-          metrics.add(new GcCollectorMetrics(
-              collectorName,
-              collections,
-              Duration.ofMillis(gcTime),
-              beforeCollector.getMemoryPoolNames()
-          ));
+          metrics.add(
+              new GcCollectorMetrics(
+                  collectorName,
+                  collections,
+                  Duration.ofMillis(gcTime),
+                  beforeCollector.getMemoryPoolNames()));
         }
       }
     }
@@ -326,16 +323,17 @@ public final class GcImpactMetrics {
   @Override
   public String toString() {
     return String.format(
-        "GcImpactMetrics{gcTime=%s, collections=%d, allocated=%d bytes, " +
-        "freed=%d bytes, overhead=%.2f%%, rate=%.2f MB/s}",
-        totalGcTime, totalGcCollections, memoryAllocated, memoryFreed,
-        gcOverheadPercentage, allocationRate
-    );
+        "GcImpactMetrics{gcTime=%s, collections=%d, allocated=%d bytes, "
+            + "freed=%d bytes, overhead=%.2f%%, rate=%.2f MB/s}",
+        totalGcTime,
+        totalGcCollections,
+        memoryAllocated,
+        memoryFreed,
+        gcOverheadPercentage,
+        allocationRate);
   }
 
-  /**
-   * Snapshot of garbage collection state at a specific point in time.
-   */
+  /** Snapshot of garbage collection state at a specific point in time. */
   public static final class Snapshot {
     private final Instant timestamp;
     private final Duration totalGcTime;
@@ -391,9 +389,7 @@ public final class GcImpactMetrics {
     }
   }
 
-  /**
-   * Snapshot of a specific garbage collector's state.
-   */
+  /** Snapshot of a specific garbage collector's state. */
   public static final class GcCollectorSnapshot {
     private final String name;
     private final long collectionCount;
@@ -428,9 +424,7 @@ public final class GcImpactMetrics {
     }
   }
 
-  /**
-   * Metrics for a specific garbage collector.
-   */
+  /** Metrics for a specific garbage collector. */
   public static final class GcCollectorMetrics {
     private final String collectorName;
     private final long collections;

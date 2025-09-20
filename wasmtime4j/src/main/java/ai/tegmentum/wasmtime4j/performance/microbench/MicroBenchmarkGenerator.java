@@ -1,18 +1,16 @@
 package ai.tegmentum.wasmtime4j.performance.microbench;
 
-import ai.tegmentum.wasmtime4j.performance.ExportFormat;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.logging.Logger;
 
 /**
  * Generates JMH micro-benchmarks from Wasmtime test cases for detailed performance analysis.
@@ -21,15 +19,17 @@ import java.util.logging.Logger;
  * enabling precise performance measurement and comparison across different runtime implementations.
  *
  * <p>Features include:
+ *
  * <ul>
- *   <li>Automatic test case discovery and analysis</li>
- *   <li>JMH benchmark code generation with proper annotations</li>
- *   <li>Runtime-specific benchmark variants (JNI vs Panama)</li>
- *   <li>Wasmtime-specific performance metric collection</li>
- *   <li>Benchmark suite organization and management</li>
+ *   <li>Automatic test case discovery and analysis
+ *   <li>JMH benchmark code generation with proper annotations
+ *   <li>Runtime-specific benchmark variants (JNI vs Panama)
+ *   <li>Wasmtime-specific performance metric collection
+ *   <li>Benchmark suite organization and management
  * </ul>
  *
  * <p>Usage example:
+ *
  * <pre>{@code
  * MicroBenchmarkGenerator generator = MicroBenchmarkGenerator.builder()
  *     .packageName("ai.tegmentum.wasmtime4j.benchmarks.generated")
@@ -86,7 +86,8 @@ public final class MicroBenchmarkGenerator {
    * @return benchmark suite
    * @throws BenchmarkGenerationException if generation fails
    */
-  public BenchmarkSuite generateFromTestDirectory(final Path testDirectory) throws BenchmarkGenerationException {
+  public BenchmarkSuite generateFromTestDirectory(final Path testDirectory)
+      throws BenchmarkGenerationException {
     Objects.requireNonNull(testDirectory, "testDirectory cannot be null");
 
     if (!Files.isDirectory(testDirectory)) {
@@ -113,7 +114,8 @@ public final class MicroBenchmarkGenerator {
    * @return benchmark suite
    * @throws BenchmarkGenerationException if generation fails
    */
-  public BenchmarkSuite generateFromTestCases(final List<TestCase> testCases) throws BenchmarkGenerationException {
+  public BenchmarkSuite generateFromTestCases(final List<TestCase> testCases)
+      throws BenchmarkGenerationException {
     Objects.requireNonNull(testCases, "testCases cannot be null");
 
     LOGGER.info("Generating micro-benchmarks from " + testCases.size() + " test cases");
@@ -150,18 +152,21 @@ public final class MicroBenchmarkGenerator {
 
     Files.walk(testDirectory)
         .filter(Files::isRegularFile)
-        .filter(path -> WASM_FILE_PATTERN.matcher(path.getFileName().toString()).matches() ||
-                       path.getFileName().toString().endsWith(".java"))
-        .forEach(path -> {
-          try {
-            final TestCase testCase = parseTestFile(path);
-            if (testCase != null) {
-              testCases.add(testCase);
-            }
-          } catch (final IOException e) {
-            LOGGER.warning("Failed to parse test file: " + path + " - " + e.getMessage());
-          }
-        });
+        .filter(
+            path ->
+                WASM_FILE_PATTERN.matcher(path.getFileName().toString()).matches()
+                    || path.getFileName().toString().endsWith(".java"))
+        .forEach(
+            path -> {
+              try {
+                final TestCase testCase = parseTestFile(path);
+                if (testCase != null) {
+                  testCases.add(testCase);
+                }
+              } catch (final IOException e) {
+                LOGGER.warning("Failed to parse test file: " + path + " - " + e.getMessage());
+              }
+            });
 
     LOGGER.info("Discovered " + testCases.size() + " test cases");
     return testCases;
@@ -211,7 +216,8 @@ public final class MicroBenchmarkGenerator {
     return null;
   }
 
-  private byte[] extractWasmModuleFromJavaTest(final String javaContent, final Path testDir) throws IOException {
+  private byte[] extractWasmModuleFromJavaTest(final String javaContent, final Path testDir)
+      throws IOException {
     // Look for byte array declarations (embedded WASM)
     if (javaContent.contains("byte[]") && javaContent.contains("0x")) {
       return parseInlineByteArray(javaContent);
@@ -291,9 +297,7 @@ public final class MicroBenchmarkGenerator {
   }
 
   private String sanitizeTestName(final String name) {
-    return name.replaceAll("[^a-zA-Z0-9_]", "_")
-        .replaceAll("_+", "_")
-        .replaceAll("^_|_$", "");
+    return name.replaceAll("[^a-zA-Z0-9_]", "_").replaceAll("_+", "_").replaceAll("^_|_$", "");
   }
 
   private TestComplexity analyzeTestComplexity(final TestCase testCase) {
@@ -358,7 +362,8 @@ public final class MicroBenchmarkGenerator {
     }
   }
 
-  private BenchmarkClass generateBenchmarkClass(final String category, final List<TestCase> testCases) {
+  private BenchmarkClass generateBenchmarkClass(
+      final String category, final List<TestCase> testCases) {
     final String className = category + "Benchmark";
     final StringBuilder classCode = new StringBuilder();
 
@@ -421,8 +426,12 @@ public final class MicroBenchmarkGenerator {
     code.append("@State(Scope.Benchmark)\n");
     code.append("@BenchmarkMode(Mode.").append(benchmarkConfig.getBenchmarkMode()).append(")\n");
     code.append("@OutputTimeUnit(TimeUnit.").append(benchmarkConfig.getTimeUnit()).append(")\n");
-    code.append("@Warmup(iterations = ").append(benchmarkConfig.getWarmupIterations()).append(", time = 1)\n");
-    code.append("@Measurement(iterations = ").append(benchmarkConfig.getMeasurementIterations()).append(", time = 1)\n");
+    code.append("@Warmup(iterations = ")
+        .append(benchmarkConfig.getWarmupIterations())
+        .append(", time = 1)\n");
+    code.append("@Measurement(iterations = ")
+        .append(benchmarkConfig.getMeasurementIterations())
+        .append(", time = 1)\n");
     code.append("@Fork(").append(benchmarkConfig.getForkCount()).append(")\n");
     code.append("public class ").append(className).append(" {\n\n");
   }
@@ -459,13 +468,17 @@ public final class MicroBenchmarkGenerator {
     final String methodName = "benchmark" + capitalize(testCase.getName());
 
     code.append("    @Benchmark\n");
-    code.append("    public void ").append(methodName).append("(Blackhole bh) throws Exception {\n");
+    code.append("    public void ")
+        .append(methodName)
+        .append("(Blackhole bh) throws Exception {\n");
 
     if (includeWasmtimeMetrics) {
       code.append("        long startTime = System.nanoTime();\n");
     }
 
-    code.append("        Module module = engine.compileModule(WASM_MODULE_").append(0).append(");\n");
+    code.append("        Module module = engine.compileModule(WASM_MODULE_")
+        .append(0)
+        .append(");\n");
     code.append("        Instance instance = module.instantiate(store);\n");
     code.append("        \n");
     code.append("        // Execute test logic\n");
@@ -480,12 +493,17 @@ public final class MicroBenchmarkGenerator {
     code.append("    }\n\n");
   }
 
-  private void generateComparisonBenchmarkMethod(final StringBuilder code, final TestCase testCase) {
+  private void generateComparisonBenchmarkMethod(
+      final StringBuilder code, final TestCase testCase) {
     final String methodName = "compare" + capitalize(testCase.getName());
 
     code.append("    @Benchmark\n");
-    code.append("    public void ").append(methodName).append("(Blackhole bh) throws Exception {\n");
-    code.append("        WasmRuntime runtimeImpl = WasmRuntimeFactory.create(RuntimeType.valueOf(runtime));\n");
+    code.append("    public void ")
+        .append(methodName)
+        .append("(Blackhole bh) throws Exception {\n");
+    code.append(
+        "        WasmRuntime runtimeImpl ="
+            + " WasmRuntimeFactory.create(RuntimeType.valueOf(runtime));\n");
     code.append("        Engine engineImpl = runtimeImpl.createEngine();\n");
     code.append("        Store storeImpl = engineImpl.createStore();\n");
     code.append("        \n");
@@ -521,9 +539,7 @@ public final class MicroBenchmarkGenerator {
     return str.substring(0, 1).toUpperCase() + str.substring(1);
   }
 
-  /**
-   * Builder for MicroBenchmarkGenerator.
-   */
+  /** Builder for MicroBenchmarkGenerator. */
   public static final class Builder {
     private String packageName = "ai.tegmentum.wasmtime4j.benchmarks.generated";
     private Path outputDirectory = Path.of("target/generated-benchmarks");
@@ -567,9 +583,7 @@ public final class MicroBenchmarkGenerator {
     }
   }
 
-  /**
-   * Represents a test case to be converted to a benchmark.
-   */
+  /** Represents a test case to be converted to a benchmark. */
   public static final class TestCase {
     private final String name;
     private final byte[] wasmModule;
@@ -590,11 +604,25 @@ public final class MicroBenchmarkGenerator {
     }
 
     // Getters
-    public String getName() { return name; }
-    public byte[] getWasmModule() { return wasmModule.clone(); }
-    public Path getSourceFile() { return sourceFile; }
-    public String getTestMethod() { return testMethod; }
-    public TestComplexity getComplexity() { return complexity; }
+    public String getName() {
+      return name;
+    }
+
+    public byte[] getWasmModule() {
+      return wasmModule.clone();
+    }
+
+    public Path getSourceFile() {
+      return sourceFile;
+    }
+
+    public String getTestMethod() {
+      return testMethod;
+    }
+
+    public TestComplexity getComplexity() {
+      return complexity;
+    }
 
     public static final class Builder {
       private String name;
@@ -634,9 +662,7 @@ public final class MicroBenchmarkGenerator {
     }
   }
 
-  /**
-   * Test complexity levels for benchmark optimization.
-   */
+  /** Test complexity levels for benchmark optimization. */
   public enum TestComplexity {
     LOW("Low complexity - simple operations"),
     MEDIUM("Medium complexity - moderate operations"),
@@ -653,28 +679,33 @@ public final class MicroBenchmarkGenerator {
     }
   }
 
-  /**
-   * Represents a generated benchmark class.
-   */
+  /** Represents a generated benchmark class. */
   public static final class BenchmarkClass {
     private final String className;
     private final String sourceCode;
     private final List<TestCase> testCases;
 
-    public BenchmarkClass(final String className, final String sourceCode, final List<TestCase> testCases) {
+    public BenchmarkClass(
+        final String className, final String sourceCode, final List<TestCase> testCases) {
       this.className = className;
       this.sourceCode = sourceCode;
       this.testCases = List.copyOf(testCases);
     }
 
-    public String getClassName() { return className; }
-    public String getSourceCode() { return sourceCode; }
-    public List<TestCase> getTestCases() { return testCases; }
+    public String getClassName() {
+      return className;
+    }
+
+    public String getSourceCode() {
+      return sourceCode;
+    }
+
+    public List<TestCase> getTestCases() {
+      return testCases;
+    }
   }
 
-  /**
-   * Configuration for generated benchmarks.
-   */
+  /** Configuration for generated benchmarks. */
   public static final class BenchmarkConfig {
     private final String benchmarkMode;
     private final String timeUnit;
@@ -682,8 +713,12 @@ public final class MicroBenchmarkGenerator {
     private final int measurementIterations;
     private final int forkCount;
 
-    private BenchmarkConfig(final String benchmarkMode, final String timeUnit,
-                           final int warmupIterations, final int measurementIterations, final int forkCount) {
+    private BenchmarkConfig(
+        final String benchmarkMode,
+        final String timeUnit,
+        final int warmupIterations,
+        final int measurementIterations,
+        final int forkCount) {
       this.benchmarkMode = benchmarkMode;
       this.timeUnit = timeUnit;
       this.warmupIterations = warmupIterations;
@@ -708,16 +743,28 @@ public final class MicroBenchmarkGenerator {
     }
 
     // Getters
-    public String getBenchmarkMode() { return benchmarkMode; }
-    public String getTimeUnit() { return timeUnit; }
-    public int getWarmupIterations() { return warmupIterations; }
-    public int getMeasurementIterations() { return measurementIterations; }
-    public int getForkCount() { return forkCount; }
+    public String getBenchmarkMode() {
+      return benchmarkMode;
+    }
+
+    public String getTimeUnit() {
+      return timeUnit;
+    }
+
+    public int getWarmupIterations() {
+      return warmupIterations;
+    }
+
+    public int getMeasurementIterations() {
+      return measurementIterations;
+    }
+
+    public int getForkCount() {
+      return forkCount;
+    }
   }
 
-  /**
-   * Exception thrown when benchmark generation fails.
-   */
+  /** Exception thrown when benchmark generation fails. */
   public static final class BenchmarkGenerationException extends Exception {
     public BenchmarkGenerationException(final String message) {
       super(message);

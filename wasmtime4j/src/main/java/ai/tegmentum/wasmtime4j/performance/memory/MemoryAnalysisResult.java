@@ -11,17 +11,18 @@ import java.util.Objects;
 /**
  * Comprehensive result of a memory analysis session.
  *
- * <p>This class contains detailed analysis of memory usage patterns, garbage collection impact,
- * and performance insights gathered during a memory analysis session. It provides both
- * raw metrics and actionable recommendations for optimization.
+ * <p>This class contains detailed analysis of memory usage patterns, garbage collection impact, and
+ * performance insights gathered during a memory analysis session. It provides both raw metrics and
+ * actionable recommendations for optimization.
  *
  * <p>Key information includes:
+ *
  * <ul>
- *   <li>Memory usage deltas (heap and non-heap)</li>
- *   <li>Garbage collection impact analysis</li>
- *   <li>Allocation pattern analysis</li>
- *   <li>Performance issues and recommendations</li>
- *   <li>Export capabilities for reporting</li>
+ *   <li>Memory usage deltas (heap and non-heap)
+ *   <li>Garbage collection impact analysis
+ *   <li>Allocation pattern analysis
+ *   <li>Performance issues and recommendations
+ *   <li>Export capabilities for reporting
  * </ul>
  *
  * @since 1.0.0
@@ -40,27 +41,31 @@ public final class MemoryAnalysisResult {
   private final List<String> issues;
   private final List<String> recommendations;
 
-  MemoryAnalysisResult(final String sessionName,
-                      final Instant startTime,
-                      final Instant endTime,
-                      final MemoryAnalyzer.MemoryMetrics initialMemoryState,
-                      final MemoryAnalyzer.MemoryMetrics finalMemoryState,
-                      final long heapDelta,
-                      final long nonHeapDelta,
-                      final GcImpactMetrics gcImpact,
-                      final AllocationAnalysis allocationAnalysis,
-                      final int snapshotCount,
-                      final List<String> issues,
-                      final List<String> recommendations) {
+  MemoryAnalysisResult(
+      final String sessionName,
+      final Instant startTime,
+      final Instant endTime,
+      final MemoryAnalyzer.MemoryMetrics initialMemoryState,
+      final MemoryAnalyzer.MemoryMetrics finalMemoryState,
+      final long heapDelta,
+      final long nonHeapDelta,
+      final GcImpactMetrics gcImpact,
+      final AllocationAnalysis allocationAnalysis,
+      final int snapshotCount,
+      final List<String> issues,
+      final List<String> recommendations) {
     this.sessionName = Objects.requireNonNull(sessionName, "sessionName cannot be null");
     this.startTime = Objects.requireNonNull(startTime, "startTime cannot be null");
     this.endTime = Objects.requireNonNull(endTime, "endTime cannot be null");
-    this.initialMemoryState = Objects.requireNonNull(initialMemoryState, "initialMemoryState cannot be null");
-    this.finalMemoryState = Objects.requireNonNull(finalMemoryState, "finalMemoryState cannot be null");
+    this.initialMemoryState =
+        Objects.requireNonNull(initialMemoryState, "initialMemoryState cannot be null");
+    this.finalMemoryState =
+        Objects.requireNonNull(finalMemoryState, "finalMemoryState cannot be null");
     this.heapDelta = heapDelta;
     this.nonHeapDelta = nonHeapDelta;
     this.gcImpact = Objects.requireNonNull(gcImpact, "gcImpact cannot be null");
-    this.allocationAnalysis = Objects.requireNonNull(allocationAnalysis, "allocationAnalysis cannot be null");
+    this.allocationAnalysis =
+        Objects.requireNonNull(allocationAnalysis, "allocationAnalysis cannot be null");
     this.snapshotCount = snapshotCount;
     this.issues = List.copyOf(issues);
     this.recommendations = List.copyOf(recommendations);
@@ -205,10 +210,11 @@ public final class MemoryAnalysisResult {
    * Gets the memory efficiency score (0-100, higher is better).
    *
    * <p>The efficiency score considers:
+   *
    * <ul>
-   *   <li>Memory growth relative to operation duration</li>
-   *   <li>Garbage collection overhead</li>
-   *   <li>Allocation rate efficiency</li>
+   *   <li>Memory growth relative to operation duration
+   *   <li>Garbage collection overhead
+   *   <li>Allocation rate efficiency
    * </ul>
    *
    * @return efficiency score (0-100)
@@ -272,9 +278,20 @@ public final class MemoryAnalysisResult {
     summary.append("Duration: ").append(formatDuration(getSessionDuration())).append("\n");
     summary.append("Heap Delta: ").append(formatBytes(heapDelta)).append("\n");
     summary.append("Non-Heap Delta: ").append(formatBytes(nonHeapDelta)).append("\n");
-    summary.append("GC Overhead: ").append(String.format("%.1f%%", gcImpact.getGcOverheadPercentage())).append("\n");
-    summary.append("Allocation Rate: ").append(String.format("%.1f MB/s", allocationAnalysis.getAllocationRate())).append("\n");
-    summary.append("Efficiency Score: ").append(String.format("%.1f/100 (Grade: %c)", getMemoryEfficiencyScore(), getPerformanceGrade())).append("\n");
+    summary
+        .append("GC Overhead: ")
+        .append(String.format("%.1f%%", gcImpact.getGcOverheadPercentage()))
+        .append("\n");
+    summary
+        .append("Allocation Rate: ")
+        .append(String.format("%.1f MB/s", allocationAnalysis.getAllocationRate()))
+        .append("\n");
+    summary
+        .append("Efficiency Score: ")
+        .append(
+            String.format(
+                "%.1f/100 (Grade: %c)", getMemoryEfficiencyScore(), getPerformanceGrade()))
+        .append("\n");
 
     if (hasIssues()) {
       summary.append("\nIssues Found:\n");
@@ -322,7 +339,8 @@ public final class MemoryAnalysisResult {
   }
 
   private String exportAsJson() {
-    return String.format("""
+    return String.format(
+        """
         {
           "sessionName": "%s",
           "startTime": "%s",
@@ -358,23 +376,37 @@ public final class MemoryAnalysisResult {
           "issues": [%s],
           "recommendations": [%s]
         }""",
-        sessionName, startTime, endTime, getSessionDuration(),
-        heapDelta, nonHeapDelta, getTotalMemoryDelta(),
-        initialMemoryState.getHeapUsed(), finalMemoryState.getHeapUsed(),
-        initialMemoryState.getNonHeapUsed(), finalMemoryState.getNonHeapUsed(),
-        gcImpact.getGcOverheadPercentage(), gcImpact.getTotalGcCollections(),
-        gcImpact.getTotalGcTime(), gcImpact.getAllocationRate(),
-        allocationAnalysis.getTotalAllocation(), allocationAnalysis.getPeakAllocation(),
-        allocationAnalysis.getAverageAllocation(), allocationAnalysis.getAllocationRate(),
+        sessionName,
+        startTime,
+        endTime,
+        getSessionDuration(),
+        heapDelta,
+        nonHeapDelta,
+        getTotalMemoryDelta(),
+        initialMemoryState.getHeapUsed(),
+        finalMemoryState.getHeapUsed(),
+        initialMemoryState.getNonHeapUsed(),
+        finalMemoryState.getNonHeapUsed(),
+        gcImpact.getGcOverheadPercentage(),
+        gcImpact.getTotalGcCollections(),
+        gcImpact.getTotalGcTime(),
+        gcImpact.getAllocationRate(),
+        allocationAnalysis.getTotalAllocation(),
+        allocationAnalysis.getPeakAllocation(),
+        allocationAnalysis.getAverageAllocation(),
+        allocationAnalysis.getAllocationRate(),
         allocationAnalysis.getAllocationEvents(),
-        getMemoryEfficiencyScore(), getPerformanceGrade(), snapshotCount,
-        formatJsonStringArray(issues), formatJsonStringArray(recommendations)
-    );
+        getMemoryEfficiencyScore(),
+        getPerformanceGrade(),
+        snapshotCount,
+        formatJsonStringArray(issues),
+        formatJsonStringArray(recommendations));
   }
 
   private String exportAsCsv() {
     final StringBuilder csv = new StringBuilder();
-    csv.append("SessionName,Duration,HeapDelta,NonHeapDelta,GcOverhead,AllocationRate,EfficiencyScore,Grade,Issues,Recommendations\n");
+    csv.append(
+        "SessionName,Duration,HeapDelta,NonHeapDelta,GcOverhead,AllocationRate,EfficiencyScore,Grade,Issues,Recommendations\n");
     csv.append(sessionName).append(",");
     csv.append(getSessionDuration()).append(",");
     csv.append(heapDelta).append(",");
@@ -431,13 +463,13 @@ public final class MemoryAnalysisResult {
   public String toString() {
     return String.format(
         "MemoryAnalysisResult{session='%s', duration=%s, heapDelta=%s, efficiency=%.1f%%}",
-        sessionName, formatDuration(getSessionDuration()), formatBytes(heapDelta), getMemoryEfficiencyScore()
-    );
+        sessionName,
+        formatDuration(getSessionDuration()),
+        formatBytes(heapDelta),
+        getMemoryEfficiencyScore());
   }
 
-  /**
-   * Comparison result between two memory analysis results.
-   */
+  /** Comparison result between two memory analysis results. */
   public static final class MemoryAnalysisComparison {
     private final MemoryAnalysisResult baseline;
     private final MemoryAnalysisResult comparison;
@@ -447,25 +479,49 @@ public final class MemoryAnalysisResult {
     private final double allocationRateDifference;
     private final double efficiencyScoreDifference;
 
-    MemoryAnalysisComparison(final MemoryAnalysisResult baseline, final MemoryAnalysisResult comparison) {
+    MemoryAnalysisComparison(
+        final MemoryAnalysisResult baseline, final MemoryAnalysisResult comparison) {
       this.baseline = baseline;
       this.comparison = comparison;
       this.heapDeltaDifference = comparison.getHeapDelta() - baseline.getHeapDelta();
       this.nonHeapDeltaDifference = comparison.getNonHeapDelta() - baseline.getNonHeapDelta();
-      this.gcOverheadDifference = comparison.getGcImpact().getGcOverheadPercentage() -
-                                  baseline.getGcImpact().getGcOverheadPercentage();
-      this.allocationRateDifference = comparison.getAllocationAnalysis().getAllocationRate() -
-                                     baseline.getAllocationAnalysis().getAllocationRate();
-      this.efficiencyScoreDifference = comparison.getMemoryEfficiencyScore() - baseline.getMemoryEfficiencyScore();
+      this.gcOverheadDifference =
+          comparison.getGcImpact().getGcOverheadPercentage()
+              - baseline.getGcImpact().getGcOverheadPercentage();
+      this.allocationRateDifference =
+          comparison.getAllocationAnalysis().getAllocationRate()
+              - baseline.getAllocationAnalysis().getAllocationRate();
+      this.efficiencyScoreDifference =
+          comparison.getMemoryEfficiencyScore() - baseline.getMemoryEfficiencyScore();
     }
 
-    public MemoryAnalysisResult getBaseline() { return baseline; }
-    public MemoryAnalysisResult getComparison() { return comparison; }
-    public long getHeapDeltaDifference() { return heapDeltaDifference; }
-    public long getNonHeapDeltaDifference() { return nonHeapDeltaDifference; }
-    public double getGcOverheadDifference() { return gcOverheadDifference; }
-    public double getAllocationRateDifference() { return allocationRateDifference; }
-    public double getEfficiencyScoreDifference() { return efficiencyScoreDifference; }
+    public MemoryAnalysisResult getBaseline() {
+      return baseline;
+    }
+
+    public MemoryAnalysisResult getComparison() {
+      return comparison;
+    }
+
+    public long getHeapDeltaDifference() {
+      return heapDeltaDifference;
+    }
+
+    public long getNonHeapDeltaDifference() {
+      return nonHeapDeltaDifference;
+    }
+
+    public double getGcOverheadDifference() {
+      return gcOverheadDifference;
+    }
+
+    public double getAllocationRateDifference() {
+      return allocationRateDifference;
+    }
+
+    public double getEfficiencyScoreDifference() {
+      return efficiencyScoreDifference;
+    }
 
     /**
      * Checks if the comparison shows improvement over the baseline.
@@ -495,14 +551,32 @@ public final class MemoryAnalysisResult {
       summary.append("Memory Analysis Comparison\n");
       summary.append("Baseline: ").append(baseline.getSessionName()).append("\n");
       summary.append("Comparison: ").append(comparison.getSessionName()).append("\n");
-      summary.append("Efficiency Score: ").append(String.format("%.1f → %.1f (%.1f)",
-          baseline.getMemoryEfficiencyScore(), comparison.getMemoryEfficiencyScore(), efficiencyScoreDifference)).append("\n");
-      summary.append("Heap Delta: ").append(formatBytes(baseline.getHeapDelta())).append(" → ")
-          .append(formatBytes(comparison.getHeapDelta())).append(" (").append(formatBytes(heapDeltaDifference)).append(")\n");
-      summary.append("GC Overhead: ").append(String.format("%.1f%% → %.1f%% (%.1f%%)",
-          baseline.getGcImpact().getGcOverheadPercentage(),
-          comparison.getGcImpact().getGcOverheadPercentage(),
-          gcOverheadDifference)).append("\n");
+      summary
+          .append("Efficiency Score: ")
+          .append(
+              String.format(
+                  "%.1f → %.1f (%.1f)",
+                  baseline.getMemoryEfficiencyScore(),
+                  comparison.getMemoryEfficiencyScore(),
+                  efficiencyScoreDifference))
+          .append("\n");
+      summary
+          .append("Heap Delta: ")
+          .append(formatBytes(baseline.getHeapDelta()))
+          .append(" → ")
+          .append(formatBytes(comparison.getHeapDelta()))
+          .append(" (")
+          .append(formatBytes(heapDeltaDifference))
+          .append(")\n");
+      summary
+          .append("GC Overhead: ")
+          .append(
+              String.format(
+                  "%.1f%% → %.1f%% (%.1f%%)",
+                  baseline.getGcImpact().getGcOverheadPercentage(),
+                  comparison.getGcImpact().getGcOverheadPercentage(),
+                  gcOverheadDifference))
+          .append("\n");
 
       if (isImprovement()) {
         summary.append("Result: IMPROVEMENT\n");

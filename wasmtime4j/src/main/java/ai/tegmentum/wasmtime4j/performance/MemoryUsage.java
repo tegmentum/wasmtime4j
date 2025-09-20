@@ -243,31 +243,45 @@ public final class MemoryUsage {
       return false;
     }
     final MemoryUsage that = (MemoryUsage) obj;
-    return heapUsed == that.heapUsed &&
-        heapCommitted == that.heapCommitted &&
-        heapMax == that.heapMax &&
-        nonHeapUsed == that.nonHeapUsed &&
-        nonHeapCommitted == that.nonHeapCommitted &&
-        directMemoryUsed == that.directMemoryUsed &&
-        nativeMemoryUsed == that.nativeMemoryUsed &&
-        gcCount == that.gcCount &&
-        Objects.equals(gcTime, that.gcTime);
+    return heapUsed == that.heapUsed
+        && heapCommitted == that.heapCommitted
+        && heapMax == that.heapMax
+        && nonHeapUsed == that.nonHeapUsed
+        && nonHeapCommitted == that.nonHeapCommitted
+        && directMemoryUsed == that.directMemoryUsed
+        && nativeMemoryUsed == that.nativeMemoryUsed
+        && gcCount == that.gcCount
+        && Objects.equals(gcTime, that.gcTime);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(heapUsed, heapCommitted, heapMax, nonHeapUsed, nonHeapCommitted,
-        directMemoryUsed, nativeMemoryUsed, gcCount, gcTime);
+    return Objects.hash(
+        heapUsed,
+        heapCommitted,
+        heapMax,
+        nonHeapUsed,
+        nonHeapCommitted,
+        directMemoryUsed,
+        nativeMemoryUsed,
+        gcCount,
+        gcTime);
   }
 
   @Override
   public String toString() {
     return String.format(
-        "MemoryUsage{heapUsed=%s, heapCommitted=%s, heapMax=%s, " +
-        "nonHeapUsed=%s, directMemoryUsed=%s, nativeMemoryUsed=%s, " +
-        "gcCount=%d, gcTime=%s, utilization=%.1f%%}",
-        formatBytes(heapUsed), formatBytes(heapCommitted), formatBytes(heapMax),
-        formatBytes(nonHeapUsed), formatBytes(directMemoryUsed), formatBytes(nativeMemoryUsed),
-        gcCount, gcTime, getHeapUtilization() * 100);
+        "MemoryUsage{heapUsed=%s, heapCommitted=%s, heapMax=%s, "
+            + "nonHeapUsed=%s, directMemoryUsed=%s, nativeMemoryUsed=%s, "
+            + "gcCount=%d, gcTime=%s, utilization=%.1f%%}",
+        formatBytes(heapUsed),
+        formatBytes(heapCommitted),
+        formatBytes(heapMax),
+        formatBytes(nonHeapUsed),
+        formatBytes(directMemoryUsed),
+        formatBytes(nativeMemoryUsed),
+        gcCount,
+        gcTime,
+        getHeapUtilization() * 100);
   }
 }

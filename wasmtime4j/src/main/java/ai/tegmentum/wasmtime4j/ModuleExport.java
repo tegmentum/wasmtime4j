@@ -3,8 +3,8 @@ package ai.tegmentum.wasmtime4j;
 /**
  * Represents a WebAssembly module export with complete type information.
  *
- * <p>This class provides comprehensive export metadata including name and specific
- * type information for introspection purposes.
+ * <p>This class provides comprehensive export metadata including name and specific type information
+ * for introspection purposes.
  *
  * @since 1.0.0
  */

@@ -145,7 +145,8 @@ public final class PanamaValidation {
    * @param handleName the handle name for error messages
    * @throws IllegalArgumentException if the handle is invalid
    */
-  public static void requireValidHandle(final java.lang.foreign.MemorySegment handle, final String handleName) {
+  public static void requireValidHandle(
+      final java.lang.foreign.MemorySegment handle, final String handleName) {
     requireNonNull(handle, handleName);
     if (handle.equals(java.lang.foreign.MemorySegment.NULL)) {
       throw new IllegalArgumentException(

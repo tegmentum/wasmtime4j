@@ -12,7 +12,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * Comprehensive performance insights containing issues, recommendations, and optimization opportunities.
+ * Comprehensive performance insights containing issues, recommendations, and optimization
+ * opportunities.
  *
  * <p>This class represents the complete analysis result from the PerformanceInsightsEngine,
  * providing structured access to performance findings and actionable guidance.
@@ -27,12 +28,13 @@ public final class PerformanceInsights {
   private final PerformanceSummary summary;
   private final Map<String, Integer> dataSources;
 
-  public PerformanceInsights(final Instant generatedAt,
-                            final List<PerformanceIssue> issues,
-                            final List<PerformanceRecommendation> recommendations,
-                            final List<OptimizationOpportunity> opportunities,
-                            final PerformanceSummary summary,
-                            final Map<String, Integer> dataSources) {
+  public PerformanceInsights(
+      final Instant generatedAt,
+      final List<PerformanceIssue> issues,
+      final List<PerformanceRecommendation> recommendations,
+      final List<OptimizationOpportunity> opportunities,
+      final PerformanceSummary summary,
+      final Map<String, Integer> dataSources) {
     this.generatedAt = generatedAt;
     this.issues = List.copyOf(issues);
     this.recommendations = List.copyOf(recommendations);
@@ -41,50 +43,65 @@ public final class PerformanceInsights {
     this.dataSources = Map.copyOf(dataSources);
   }
 
-  public Instant getGeneratedAt() { return generatedAt; }
-  public List<PerformanceIssue> getIssues() { return issues; }
-  public List<PerformanceRecommendation> getRecommendations() { return recommendations; }
-  public List<OptimizationOpportunity> getOpportunities() { return opportunities; }
-  public PerformanceSummary getSummary() { return summary; }
-  public Map<String, Integer> getDataSources() { return dataSources; }
+  public Instant getGeneratedAt() {
+    return generatedAt;
+  }
 
-  /**
-   * Gets issues filtered by severity.
-   */
+  public List<PerformanceIssue> getIssues() {
+    return issues;
+  }
+
+  public List<PerformanceRecommendation> getRecommendations() {
+    return recommendations;
+  }
+
+  public List<OptimizationOpportunity> getOpportunities() {
+    return opportunities;
+  }
+
+  public PerformanceSummary getSummary() {
+    return summary;
+  }
+
+  public Map<String, Integer> getDataSources() {
+    return dataSources;
+  }
+
+  /** Gets issues filtered by severity. */
   public List<PerformanceIssue> getIssuesBySeverity(final IssueSeverity severity) {
     return issues.stream()
         .filter(issue -> issue.getSeverity() == severity)
         .collect(Collectors.toList());
   }
 
-  /**
-   * Gets recommendations filtered by priority.
-   */
-  public List<PerformanceRecommendation> getRecommendationsByPriority(final RecommendationPriority priority) {
+  /** Gets recommendations filtered by priority. */
+  public List<PerformanceRecommendation> getRecommendationsByPriority(
+      final RecommendationPriority priority) {
     return recommendations.stream()
         .filter(rec -> rec.getPriority() == priority)
         .collect(Collectors.toList());
   }
 
-  /**
-   * Gets high-priority actionable items.
-   */
+  /** Gets high-priority actionable items. */
   public List<String> getHighPriorityActions() {
     return recommendations.stream()
-        .filter(rec -> rec.getPriority() == RecommendationPriority.HIGH ||
-                      rec.getPriority() == RecommendationPriority.CRITICAL)
+        .filter(
+            rec ->
+                rec.getPriority() == RecommendationPriority.HIGH
+                    || rec.getPriority() == RecommendationPriority.CRITICAL)
         .flatMap(rec -> rec.getActionItems().stream())
         .collect(Collectors.toList());
   }
 
-  /**
-   * Exports insights in the specified format.
-   */
+  /** Exports insights in the specified format. */
   public String export(final ExportFormat format) {
     switch (format) {
-      case JSON: return exportAsJson();
-      case CSV: return exportAsCsv();
-      default: throw new IllegalArgumentException("Unsupported format: " + format);
+      case JSON:
+        return exportAsJson();
+      case CSV:
+        return exportAsCsv();
+      default:
+        throw new IllegalArgumentException("Unsupported format: " + format);
     }
   }
 
@@ -129,19 +146,30 @@ public final class PerformanceInsights {
     csv.append("Type,Severity/Priority,Category/Type,Title,Description,Source\n");
 
     for (final PerformanceIssue issue : issues) {
-      csv.append("Issue,").append(issue.getSeverity()).append(",")
-         .append(issue.getCategory()).append(",")
-         .append(escapeCSV(issue.getTitle())).append(",")
-         .append(escapeCSV(issue.getDescription())).append(",")
-         .append(escapeCSV(issue.getSource())).append("\n");
+      csv.append("Issue,")
+          .append(issue.getSeverity())
+          .append(",")
+          .append(issue.getCategory())
+          .append(",")
+          .append(escapeCSV(issue.getTitle()))
+          .append(",")
+          .append(escapeCSV(issue.getDescription()))
+          .append(",")
+          .append(escapeCSV(issue.getSource()))
+          .append("\n");
     }
 
     for (final PerformanceRecommendation rec : recommendations) {
-      csv.append("Recommendation,").append(rec.getPriority()).append(",")
-         .append(rec.getType()).append(",")
-         .append(escapeCSV(rec.getTitle())).append(",")
-         .append(escapeCSV(rec.getDescription())).append(",")
-         .append("Analysis\n");
+      csv.append("Recommendation,")
+          .append(rec.getPriority())
+          .append(",")
+          .append(rec.getType())
+          .append(",")
+          .append(escapeCSV(rec.getTitle()))
+          .append(",")
+          .append(escapeCSV(rec.getDescription()))
+          .append(",")
+          .append("Analysis\n");
     }
 
     return csv.toString();
@@ -156,9 +184,7 @@ public final class PerformanceInsights {
   }
 }
 
-/**
- * Represents a performance issue identified during analysis.
- */
+/** Represents a performance issue identified during analysis. */
 final class PerformanceIssue {
   private final IssueSeverity severity;
   private final IssueCategory category;
@@ -166,8 +192,12 @@ final class PerformanceIssue {
   private final String description;
   private final String source;
 
-  public PerformanceIssue(final IssueSeverity severity, final IssueCategory category,
-                         final String title, final String description, final String source) {
+  public PerformanceIssue(
+      final IssueSeverity severity,
+      final IssueCategory category,
+      final String title,
+      final String description,
+      final String source) {
     this.severity = severity;
     this.category = category;
     this.title = title;
@@ -175,22 +205,35 @@ final class PerformanceIssue {
     this.source = source;
   }
 
-  public IssueSeverity getSeverity() { return severity; }
-  public IssueCategory getCategory() { return category; }
-  public String getTitle() { return title; }
-  public String getDescription() { return description; }
-  public String getSource() { return source; }
+  public IssueSeverity getSeverity() {
+    return severity;
+  }
+
+  public IssueCategory getCategory() {
+    return category;
+  }
+
+  public String getTitle() {
+    return title;
+  }
+
+  public String getDescription() {
+    return description;
+  }
+
+  public String getSource() {
+    return source;
+  }
 
   public String toJson() {
     return String.format(
-        "{\"severity\": \"%s\", \"category\": \"%s\", \"title\": \"%s\", \"description\": \"%s\", \"source\": \"%s\"}",
+        "{\"severity\": \"%s\", \"category\": \"%s\", \"title\": \"%s\", \"description\": \"%s\","
+            + " \"source\": \"%s\"}",
         severity, category, title, description, source);
   }
 }
 
-/**
- * Represents a performance optimization recommendation.
- */
+/** Represents a performance optimization recommendation. */
 final class PerformanceRecommendation {
   private final RecommendationPriority priority;
   private final RecommendationType type;
@@ -199,9 +242,13 @@ final class PerformanceRecommendation {
   private final List<String> actionItems;
   private final EstimatedImpact estimatedImpact;
 
-  public PerformanceRecommendation(final RecommendationPriority priority, final RecommendationType type,
-                                  final String title, final String description,
-                                  final List<String> actionItems, final EstimatedImpact estimatedImpact) {
+  public PerformanceRecommendation(
+      final RecommendationPriority priority,
+      final RecommendationType type,
+      final String title,
+      final String description,
+      final List<String> actionItems,
+      final EstimatedImpact estimatedImpact) {
     this.priority = priority;
     this.type = type;
     this.title = title;
@@ -210,60 +257,89 @@ final class PerformanceRecommendation {
     this.estimatedImpact = estimatedImpact;
   }
 
-  public RecommendationPriority getPriority() { return priority; }
-  public RecommendationType getType() { return type; }
-  public String getTitle() { return title; }
-  public String getDescription() { return description; }
-  public List<String> getActionItems() { return actionItems; }
-  public EstimatedImpact getEstimatedImpact() { return estimatedImpact; }
+  public RecommendationPriority getPriority() {
+    return priority;
+  }
+
+  public RecommendationType getType() {
+    return type;
+  }
+
+  public String getTitle() {
+    return title;
+  }
+
+  public String getDescription() {
+    return description;
+  }
+
+  public List<String> getActionItems() {
+    return actionItems;
+  }
+
+  public EstimatedImpact getEstimatedImpact() {
+    return estimatedImpact;
+  }
 
   public String toJson() {
-    final String actionsJson = actionItems.stream()
-        .map(action -> "\"" + action + "\"")
-        .collect(Collectors.joining(", "));
+    final String actionsJson =
+        actionItems.stream().map(action -> "\"" + action + "\"").collect(Collectors.joining(", "));
 
     return String.format(
-        "{\"priority\": \"%s\", \"type\": \"%s\", \"title\": \"%s\", \"description\": \"%s\", \"actionItems\": [%s], \"estimatedImpact\": \"%s\"}",
+        "{\"priority\": \"%s\", \"type\": \"%s\", \"title\": \"%s\", \"description\": \"%s\","
+            + " \"actionItems\": [%s], \"estimatedImpact\": \"%s\"}",
         priority, type, title, description, actionsJson, estimatedImpact);
   }
 }
 
-/**
- * Represents an optimization opportunity.
- */
+/** Represents an optimization opportunity. */
 final class OptimizationOpportunity {
   private final String title;
   private final String description;
   private final EstimatedImpact impact;
   private final List<String> suggestedActions;
 
-  public OptimizationOpportunity(final String title, final String description,
-                                final EstimatedImpact impact, final List<String> suggestedActions) {
+  public OptimizationOpportunity(
+      final String title,
+      final String description,
+      final EstimatedImpact impact,
+      final List<String> suggestedActions) {
     this.title = title;
     this.description = description;
     this.impact = impact;
     this.suggestedActions = List.copyOf(suggestedActions);
   }
 
-  public String getTitle() { return title; }
-  public String getDescription() { return description; }
-  public EstimatedImpact getImpact() { return impact; }
-  public List<String> getSuggestedActions() { return suggestedActions; }
+  public String getTitle() {
+    return title;
+  }
+
+  public String getDescription() {
+    return description;
+  }
+
+  public EstimatedImpact getImpact() {
+    return impact;
+  }
+
+  public List<String> getSuggestedActions() {
+    return suggestedActions;
+  }
 
   public String toJson() {
-    final String actionsJson = suggestedActions.stream()
-        .map(action -> "\"" + action + "\"")
-        .collect(Collectors.joining(", "));
+    final String actionsJson =
+        suggestedActions.stream()
+            .map(action -> "\"" + action + "\"")
+            .collect(Collectors.joining(", "));
 
     return String.format(
-        "{\"title\": \"%s\", \"description\": \"%s\", \"impact\": \"%s\", \"suggestedActions\": [%s]}",
+        "{\"title\": \"%s\", \"description\": \"%s\", \"impact\": \"%s\", \"suggestedActions\":"
+            + " [%s]}",
         title, description, impact, actionsJson);
   }
 }
 
-/**
- * Performance analysis summary.
- */
+/** Performance analysis summary. */
 final class PerformanceSummary {
   private final String text;
 
@@ -271,5 +347,7 @@ final class PerformanceSummary {
     this.text = text;
   }
 
-  public String getText() { return text; }
+  public String getText() {
+    return text;
+  }
 }

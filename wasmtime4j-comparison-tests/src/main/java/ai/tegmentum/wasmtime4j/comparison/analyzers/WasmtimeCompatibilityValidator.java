@@ -34,7 +34,8 @@ public final class WasmtimeCompatibilityValidator {
   private static final double WASMTIME_FLOAT32_EPSILON = 1.19e-07; // IEEE 754 float32 epsilon
   private static final double WASMTIME_FLOAT64_EPSILON = 2.22e-16; // IEEE 754 float64 epsilon
   private static final long WASMTIME_MAX_MEMORY_PAGES = 65536; // WebAssembly memory limit
-  private static final int WASMTIME_MAX_CALL_STACK_DEPTH = 1024; // Default Wasmtime call stack limit
+  private static final int WASMTIME_MAX_CALL_STACK_DEPTH =
+      1024; // Default Wasmtime call stack limit
 
   private final ToleranceConfiguration toleranceConfig;
 
@@ -44,7 +45,8 @@ public final class WasmtimeCompatibilityValidator {
    * @param toleranceConfig the tolerance configuration for validation
    */
   public WasmtimeCompatibilityValidator(final ToleranceConfiguration toleranceConfig) {
-    this.toleranceConfig = Objects.requireNonNull(toleranceConfig, "toleranceConfig cannot be null");
+    this.toleranceConfig =
+        Objects.requireNonNull(toleranceConfig, "toleranceConfig cannot be null");
   }
 
   /**
@@ -85,9 +87,10 @@ public final class WasmtimeCompatibilityValidator {
       final Map<RuntimeType, BehavioralAnalyzer.TestExecutionResult> executionResults) {
     final List<BehavioralDiscrepancy> issues = new ArrayList<>();
 
-    final List<BehavioralAnalyzer.TestExecutionResult> successfulResults = executionResults.values().stream()
-        .filter(BehavioralAnalyzer.TestExecutionResult::isSuccessful)
-        .toList();
+    final List<BehavioralAnalyzer.TestExecutionResult> successfulResults =
+        executionResults.values().stream()
+            .filter(BehavioralAnalyzer.TestExecutionResult::isSuccessful)
+            .toList();
 
     if (successfulResults.size() < 2) {
       return issues; // Need at least 2 successful results to compare
@@ -121,18 +124,27 @@ public final class WasmtimeCompatibilityValidator {
       final Map<RuntimeType, BehavioralAnalyzer.TestExecutionResult> executionResults) {
     final List<BehavioralDiscrepancy> issues = new ArrayList<>();
 
-    final List<BehavioralAnalyzer.MemoryUsage> memoryUsages = executionResults.values().stream()
-        .filter(r -> r.getMemoryUsage().isPresent())
-        .map(r -> r.getMemoryUsage().get())
-        .toList();
+    final List<BehavioralAnalyzer.MemoryUsage> memoryUsages =
+        executionResults.values().stream()
+            .filter(r -> r.getMemoryUsage().isPresent())
+            .map(r -> r.getMemoryUsage().get())
+            .toList();
 
     if (memoryUsages.size() < 2) {
       return issues; // Need at least 2 memory measurements to compare
     }
 
     // Validate memory usage patterns are consistent
-    final long minHeap = memoryUsages.stream().mapToLong(BehavioralAnalyzer.MemoryUsage::getHeapUsed).min().orElse(0);
-    final long maxHeap = memoryUsages.stream().mapToLong(BehavioralAnalyzer.MemoryUsage::getHeapUsed).max().orElse(0);
+    final long minHeap =
+        memoryUsages.stream()
+            .mapToLong(BehavioralAnalyzer.MemoryUsage::getHeapUsed)
+            .min()
+            .orElse(0);
+    final long maxHeap =
+        memoryUsages.stream()
+            .mapToLong(BehavioralAnalyzer.MemoryUsage::getHeapUsed)
+            .max()
+            .orElse(0);
 
     if (minHeap > 0) {
       final double memoryVariationRatio = (double) (maxHeap - minHeap) / minHeap;
@@ -142,7 +154,8 @@ public final class WasmtimeCompatibilityValidator {
                 DiscrepancyType.MEMORY_USAGE_DEVIATION,
                 DiscrepancySeverity.MAJOR,
                 "Significant memory usage variation between runtimes",
-                String.format("Memory usage varies by %.1f%% across runtimes", memoryVariationRatio * 100),
+                String.format(
+                    "Memory usage varies by %.1f%% across runtimes", memoryVariationRatio * 100),
                 "Investigate memory allocation differences and optimize for consistency",
                 "memory-consistency",
                 executionResults.keySet()));
@@ -157,20 +170,22 @@ public final class WasmtimeCompatibilityValidator {
       final Map<RuntimeType, BehavioralAnalyzer.TestExecutionResult> executionResults) {
     final List<BehavioralDiscrepancy> issues = new ArrayList<>();
 
-    final List<Exception> exceptions = executionResults.values().stream()
-        .filter(r -> !r.isSuccessful() && !r.isSkipped())
-        .map(BehavioralAnalyzer.TestExecutionResult::getException)
-        .filter(Objects::nonNull)
-        .toList();
+    final List<Exception> exceptions =
+        executionResults.values().stream()
+            .filter(r -> !r.isSuccessful() && !r.isSkipped())
+            .map(BehavioralAnalyzer.TestExecutionResult::getException)
+            .filter(Objects::nonNull)
+            .toList();
 
     if (exceptions.size() < 2) {
       return issues; // Need at least 2 exceptions to compare
     }
 
     // Validate exception types are consistent with Wasmtime behavior
-    final Set<String> exceptionCategories = exceptions.stream()
-        .map(this::categorizeWasmtimeException)
-        .collect(java.util.stream.Collectors.toSet());
+    final Set<String> exceptionCategories =
+        exceptions.stream()
+            .map(this::categorizeWasmtimeException)
+            .collect(java.util.stream.Collectors.toSet());
 
     if (exceptionCategories.size() > 1) {
       issues.add(
@@ -192,9 +207,10 @@ public final class WasmtimeCompatibilityValidator {
       final Map<RuntimeType, BehavioralAnalyzer.TestExecutionResult> executionResults) {
     final List<BehavioralDiscrepancy> issues = new ArrayList<>();
 
-    final List<Duration> executionTimes = executionResults.values().stream()
-        .map(BehavioralAnalyzer.TestExecutionResult::getExecutionTime)
-        .toList();
+    final List<Duration> executionTimes =
+        executionResults.values().stream()
+            .map(BehavioralAnalyzer.TestExecutionResult::getExecutionTime)
+            .toList();
 
     if (executionTimes.size() < 2) {
       return issues;
@@ -204,7 +220,8 @@ public final class WasmtimeCompatibilityValidator {
     final Duration maxTime = executionTimes.stream().max(Duration::compareTo).orElse(Duration.ZERO);
 
     if (minTime.toNanos() > 0) {
-      final double performanceVariation = (double) (maxTime.toNanos() - minTime.toNanos()) / minTime.toNanos();
+      final double performanceVariation =
+          (double) (maxTime.toNanos() - minTime.toNanos()) / minTime.toNanos();
 
       // Flag extreme performance variations that suggest implementation differences
       if (performanceVariation > 5.0) { // More than 5x difference
@@ -213,7 +230,8 @@ public final class WasmtimeCompatibilityValidator {
                 DiscrepancyType.PERFORMANCE_DEVIATION,
                 DiscrepancySeverity.MAJOR,
                 "Extreme performance variation suggests implementation differences",
-                String.format("Performance varies by %.1fx across runtimes", performanceVariation + 1),
+                String.format(
+                    "Performance varies by %.1fx across runtimes", performanceVariation + 1),
                 "Investigate and optimize runtime implementations for consistent performance",
                 "performance-consistency",
                 executionResults.keySet()));

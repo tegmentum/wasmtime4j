@@ -3,8 +3,8 @@ package ai.tegmentum.wasmtime4j.performance.events;
 /**
  * Listener interface for receiving performance events.
  *
- * <p>Implementations of this interface can be registered with performance profilers
- * to receive real-time notifications about performance conditions and issues.
+ * <p>Implementations of this interface can be registered with performance profilers to receive
+ * real-time notifications about performance conditions and issues.
  *
  * <p>Usage example:
  *
@@ -29,8 +29,8 @@ public interface PerformanceListener {
   /**
    * Called when a performance event occurs.
    *
-   * <p>This method should execute quickly to avoid impacting performance monitoring.
-   * For expensive operations, consider dispatching to a separate thread.
+   * <p>This method should execute quickly to avoid impacting performance monitoring. For expensive
+   * operations, consider dispatching to a separate thread.
    *
    * @param event the performance event that occurred
    */
@@ -43,7 +43,8 @@ public interface PerformanceListener {
    * @param types the event types to process
    * @return filtered listener
    */
-  static PerformanceListener filtering(final PerformanceListener delegate, final PerformanceEventType... types) {
+  static PerformanceListener filtering(
+      final PerformanceListener delegate, final PerformanceEventType... types) {
     if (types.length == 0) {
       return delegate;
     }
@@ -65,7 +66,8 @@ public interface PerformanceListener {
    * @param minSeverity the minimum severity level (0.0 to 1.0)
    * @return severity-filtered listener
    */
-  static PerformanceListener severityFiltering(final PerformanceListener delegate, final double minSeverity) {
+  static PerformanceListener severityFiltering(
+      final PerformanceListener delegate, final double minSeverity) {
     return event -> {
       if (event.getSeverity() >= minSeverity) {
         delegate.onPerformanceEvent(event);
@@ -96,7 +98,8 @@ public interface PerformanceListener {
    * @param maxEventsPerSecond the maximum events per second to process
    * @return throttled listener
    */
-  static PerformanceListener throttling(final PerformanceListener delegate, final double maxEventsPerSecond) {
+  static PerformanceListener throttling(
+      final PerformanceListener delegate, final double maxEventsPerSecond) {
     return new ThrottlingPerformanceListener(delegate, maxEventsPerSecond);
   }
 
@@ -126,7 +129,9 @@ public interface PerformanceListener {
    */
   static PerformanceListener composite(final PerformanceListener... listeners) {
     if (listeners.length == 0) {
-      return event -> { /* no-op */ };
+      return event -> {
+        /* no-op */
+      };
     }
     if (listeners.length == 1) {
       return listeners[0];
@@ -145,15 +150,14 @@ public interface PerformanceListener {
   }
 }
 
-/**
- * Implementation of throttling performance listener.
- */
+/** Implementation of throttling performance listener. */
 final class ThrottlingPerformanceListener implements PerformanceListener {
   private final PerformanceListener delegate;
   private final long minIntervalNanos;
   private volatile long lastEventTime = 0;
 
-  ThrottlingPerformanceListener(final PerformanceListener delegate, final double maxEventsPerSecond) {
+  ThrottlingPerformanceListener(
+      final PerformanceListener delegate, final double maxEventsPerSecond) {
     this.delegate = delegate;
     this.minIntervalNanos = (long) (1_000_000_000.0 / maxEventsPerSecond);
   }

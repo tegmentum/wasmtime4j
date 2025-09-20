@@ -5,8 +5,8 @@ import java.util.Objects;
 /**
  * Detailed CPU usage information for system and process-level monitoring.
  *
- * <p>This class provides comprehensive CPU statistics including user time, system time,
- * total utilization, context switches, and system calls.
+ * <p>This class provides comprehensive CPU statistics including user time, system time, total
+ * utilization, context switches, and system calls.
  *
  * @since 1.0.0
  */
@@ -211,25 +211,30 @@ public final class CpuUsage {
       return false;
     }
     final CpuUsage cpuUsage = (CpuUsage) obj;
-    return Double.compare(cpuUsage.userCpuTime, userCpuTime) == 0 &&
-        Double.compare(cpuUsage.systemCpuTime, systemCpuTime) == 0 &&
-        Double.compare(cpuUsage.totalCpuTime, totalCpuTime) == 0 &&
-        Double.compare(cpuUsage.cpuUtilization, cpuUtilization) == 0 &&
-        contextSwitches == cpuUsage.contextSwitches &&
-        systemCalls == cpuUsage.systemCalls;
+    return Double.compare(cpuUsage.userCpuTime, userCpuTime) == 0
+        && Double.compare(cpuUsage.systemCpuTime, systemCpuTime) == 0
+        && Double.compare(cpuUsage.totalCpuTime, totalCpuTime) == 0
+        && Double.compare(cpuUsage.cpuUtilization, cpuUtilization) == 0
+        && contextSwitches == cpuUsage.contextSwitches
+        && systemCalls == cpuUsage.systemCalls;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(userCpuTime, systemCpuTime, totalCpuTime, cpuUtilization, contextSwitches, systemCalls);
+    return Objects.hash(
+        userCpuTime, systemCpuTime, totalCpuTime, cpuUtilization, contextSwitches, systemCalls);
   }
 
   @Override
   public String toString() {
     return String.format(
-        "CpuUsage{utilization=%s, user=%s, system=%s, " +
-        "contextSwitches=%d, systemCalls=%d, efficiency=%.1f%%}",
-        formatPercentage(cpuUtilization), formatPercentage(userCpuTime), formatPercentage(systemCpuTime),
-        contextSwitches, systemCalls, getEfficiency() * 100);
+        "CpuUsage{utilization=%s, user=%s, system=%s, "
+            + "contextSwitches=%d, systemCalls=%d, efficiency=%.1f%%}",
+        formatPercentage(cpuUtilization),
+        formatPercentage(userCpuTime),
+        formatPercentage(systemCpuTime),
+        contextSwitches,
+        systemCalls,
+        getEfficiency() * 100);
   }
 }

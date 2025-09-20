@@ -6,8 +6,8 @@ import java.util.Set;
 /**
  * Target platform information for WebAssembly compilation.
  *
- * <p>This class provides details about the target platform that the WebAssembly module
- * was compiled for, including architecture, operating system, and CPU features.
+ * <p>This class provides details about the target platform that the WebAssembly module was compiled
+ * for, including architecture, operating system, and CPU features.
  *
  * @since 1.0.0
  */
@@ -34,9 +34,11 @@ public final class Target {
       final Set<String> cpuFeatures,
       final boolean is64Bit) {
     this.architecture = Objects.requireNonNull(architecture, "architecture cannot be null");
-    this.operatingSystem = Objects.requireNonNull(operatingSystem, "operatingSystem cannot be null");
+    this.operatingSystem =
+        Objects.requireNonNull(operatingSystem, "operatingSystem cannot be null");
     this.abi = Objects.requireNonNull(abi, "abi cannot be null");
-    this.cpuFeatures = Set.copyOf(Objects.requireNonNull(cpuFeatures, "cpuFeatures cannot be null"));
+    this.cpuFeatures =
+        Set.copyOf(Objects.requireNonNull(cpuFeatures, "cpuFeatures cannot be null"));
     this.is64Bit = is64Bit;
   }
 
@@ -140,11 +142,11 @@ public final class Target {
       return false;
     }
     final Target target = (Target) obj;
-    return is64Bit == target.is64Bit &&
-        Objects.equals(architecture, target.architecture) &&
-        Objects.equals(operatingSystem, target.operatingSystem) &&
-        Objects.equals(abi, target.abi) &&
-        Objects.equals(cpuFeatures, target.cpuFeatures);
+    return is64Bit == target.is64Bit
+        && Objects.equals(architecture, target.architecture)
+        && Objects.equals(operatingSystem, target.operatingSystem)
+        && Objects.equals(abi, target.abi)
+        && Objects.equals(cpuFeatures, target.cpuFeatures);
   }
 
   @Override
@@ -155,8 +157,8 @@ public final class Target {
   @Override
   public String toString() {
     return String.format(
-        "Target{architecture='%s', operatingSystem='%s', abi='%s', " +
-        "cpuFeatures=%s, is64Bit=%s}",
+        "Target{architecture='%s', operatingSystem='%s', abi='%s', "
+            + "cpuFeatures=%s, is64Bit=%s}",
         architecture, operatingSystem, abi, cpuFeatures, is64Bit);
   }
 }
