@@ -9,6 +9,8 @@ import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmType;
 import ai.tegmentum.wasmtime4j.WasmTypeKind;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.serialization.SerializedModule;
+import ai.tegmentum.wasmtime4j.serialization.SerializationOptions;
 import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
 import ai.tegmentum.wasmtime4j.jni.nativelib.NativeMethodBindings;
@@ -765,6 +767,72 @@ public final class JniModule extends JniResource implements Module {
     }
   }
 
+  @Override
+  public SerializedModule serialize(final SerializationOptions options) throws WasmException {
+    JniValidation.requireNonNull(options, "SerializationOptions cannot be null");
+    ensureNotClosed();
+
+    try {
+      // Get the module serializer from the engine
+      final ai.tegmentum.wasmtime4j.serialization.ModuleSerializer serializer =
+          engine.getModuleSerializer();
+
+      return serializer.serialize(this, options);
+    } catch (Exception e) {
+      if (e instanceof WasmException) {
+        throw e;
+      }
+      throw new WasmException("Failed to serialize module: " + e.getMessage(), e);
+    }
+  }
+
+  @Override
+  public SerializedModule serialize() throws WasmException {
+    return serialize(SerializationOptions.defaults());
+  }
+
+  @Override
+  public boolean isSerializable() {
+    if (isClosed()) {
+      return false;
+    }
+
+    try {
+      return engine.supportsModuleSerialization();
+    } catch (Exception e) {
+      LOGGER.warning("Error checking serialization support: " + e.getMessage());
+      return false;
+    }
+  }
+
+  @Override
+  public byte[] getBytecodeHash() {
+    ensureNotClosed();
+
+    try {
+      final byte[] hash = nativeGetBytecodeHash(getNativeHandle());
+      JniValidation.requireNonNull(hash, "bytecode hash");
+      return hash.clone();
+    } catch (Exception e) {
+      throw new RuntimeException("Failed to get bytecode hash: " + e.getMessage(), e);
+    }
+  }
+
+  @Override
+  public long getCompiledSize() {
+    ensureNotClosed();
+
+    try {
+      final long size = nativeGetCompiledSize(getNativeHandle());
+      if (size < 0) {
+        throw new RuntimeException("Invalid compiled size returned: " + size);
+      }
+      return size;
+    } catch (Exception e) {
+      throw new RuntimeException("Failed to get compiled size: " + e.getMessage(), e);
+    }
+  }
+
   /**
    * Validates WebAssembly bytecode without compiling it.
    *
@@ -1258,6 +1326,22 @@ public final class JniModule extends JniResource implements Module {
    * @param importMapHandle the native import map handle
    */
   private static native void nativeDestroyImportMap(long importMapHandle);
+
+  /**
+   * Gets the bytecode hash of a compiled module.
+   *
+   * @param moduleHandle the native module handle
+   * @return 32-byte SHA-256 hash of the original WASM bytecode
+   */
+  private static native byte[] nativeGetBytecodeHash(long moduleHandle);
+
+  /**
+   * Gets the compiled size of a module in bytes.
+   *
+   * @param moduleHandle the native module handle
+   * @return the compiled size in bytes
+   */
+  private static native long nativeGetCompiledSize(long moduleHandle);
 
   /**
    * Destroys a native module and releases all associated resources.

@@ -678,6 +678,32 @@ public final class NativeFunctionBindings {
         fileTruncate);
   }
 
+  /**
+   * Gets the bytecode hash of a compiled module.
+   *
+   * @param modulePtr pointer to the module
+   * @param hashOutPtr pointer to receive the 32-byte SHA-256 hash
+   * @return 0 on success, negative error code on failure
+   */
+  public int moduleGetBytecodeHash(
+      final MemorySegment modulePtr, final MemorySegment hashOutPtr) {
+    validatePointer(modulePtr, "modulePtr");
+    validatePointer(hashOutPtr, "hashOutPtr");
+    return callNativeFunction(
+        "wasmtime4j_module_get_bytecode_hash", Integer.class, modulePtr, hashOutPtr);
+  }
+
+  /**
+   * Gets the compiled size of a module in bytes.
+   *
+   * @param modulePtr pointer to the module
+   * @return the compiled size in bytes, or negative error code on failure
+   */
+  public long moduleGetCompiledSize(final MemorySegment modulePtr) {
+    validatePointer(modulePtr, "modulePtr");
+    return callNativeFunction("wasmtime4j_module_get_compiled_size", Long.class, modulePtr);
+  }
+
   // Instance Functions
 
   /**

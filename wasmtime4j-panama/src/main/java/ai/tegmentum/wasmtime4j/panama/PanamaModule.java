@@ -30,8 +30,11 @@ import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.CompilationException;
 import ai.tegmentum.wasmtime4j.exception.ValidationException;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.serialization.SerializedModule;
+import ai.tegmentum.wasmtime4j.serialization.SerializationOptions;
 import java.io.IOException;
 import java.lang.foreign.MemorySegment;
+import java.lang.foreign.ValueLayout;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Path;
@@ -1033,6 +1036,94 @@ public final class PanamaModule implements Module, AutoCloseable {
     @Override
     public String toString() {
       return "WasmType{kind=" + kind + "}";
+    }
+  }
+
+  @Override
+  public SerializedModule serialize(final SerializationOptions options) throws WasmException {
+    Objects.requireNonNull(options, "SerializationOptions cannot be null");
+    ensureNotClosed();
+
+    try {
+      // Get the module serializer from the engine
+      final ai.tegmentum.wasmtime4j.serialization.ModuleSerializer serializer =
+          engine.getModuleSerializer();
+
+      return serializer.serialize(this, options);
+    } catch (Exception e) {
+      if (e instanceof WasmException) {
+        throw e;
+      }
+      throw new WasmException("Failed to serialize module: " + e.getMessage(), e);
+    }
+  }
+
+  @Override
+  public SerializedModule serialize() throws WasmException {
+    return serialize(ai.tegmentum.wasmtime4j.serialization.SerializationOptions.defaults());
+  }
+
+  @Override
+  public boolean isSerializable() {
+    if (isClosed()) {
+      return false;
+    }
+
+    try {
+      return engine.supportsModuleSerialization();
+    } catch (Exception e) {
+      LOGGER.warning("Error checking serialization support: " + e.getMessage());
+      return false;
+    }
+  }
+
+  @Override
+  public byte[] getBytecodeHash() {
+    ensureNotClosed();
+
+    try {
+      ArenaResourceManager resourceManager = engine.getResourceManager();
+      NativeFunctionBindings nativeFunctions = NativeFunctionBindings.getInstance();
+
+      // Allocate memory for hash output (SHA-256 is 32 bytes)
+      ArenaResourceManager.ManagedMemorySegment hashOutPtr =
+          resourceManager.allocate(32);
+
+      // Call native function to get bytecode hash
+      int result = nativeFunctions.moduleGetBytecodeHash(
+          modulePtr, hashOutPtr.getSegment());
+
+      PanamaErrorHandler.safeCheckError(
+          result, "Get bytecode hash", "Failed to retrieve module bytecode hash");
+
+      // Extract hash bytes
+      byte[] hash = new byte[32];
+      MemorySegment.copy(hashOutPtr.getSegment(), ValueLayout.JAVA_BYTE, 0,
+                        hash, 0, 32);
+
+      return hash;
+    } catch (Exception e) {
+      throw new RuntimeException("Failed to get bytecode hash: " + e.getMessage(), e);
+    }
+  }
+
+  @Override
+  public long getCompiledSize() {
+    ensureNotClosed();
+
+    try {
+      NativeFunctionBindings nativeFunctions = NativeFunctionBindings.getInstance();
+
+      // Call native function to get compiled module size
+      long size = nativeFunctions.moduleGetCompiledSize(modulePtr);
+
+      if (size < 0) {
+        throw new RuntimeException("Invalid compiled size returned: " + size);
+      }
+
+      return size;
+    } catch (Exception e) {
+      throw new RuntimeException("Failed to get compiled size: " + e.getMessage(), e);
     }
   }
 

@@ -125,6 +125,247 @@ public interface AsyncFunction extends WasmFunction {
    */
   AsyncFunctionStatistics getAsyncStatistics();
 
+  /**
+   * Creates a reactive stream for function calls using Java Flow API.
+   *
+   * <p>This method enables reactive programming patterns by accepting a stream of parameter sets
+   * and returning a stream of results, with built-in backpressure handling and error propagation.
+   *
+   * @param parameterStream the stream of parameter sets to process
+   * @return a Publisher that emits function call results
+   * @throws IllegalArgumentException if parameterStream is null
+   */
+  java.util.concurrent.Flow.Publisher<WasmValue[]> callReactive(
+      final java.util.concurrent.Flow.Publisher<WasmValue[]> parameterStream);
+
+  /**
+   * Creates a reactive stream for function calls with custom subscription handling.
+   *
+   * <p>This method allows direct subscriber attachment for integration with external reactive
+   * libraries and custom processing logic.
+   *
+   * @param subscriber the subscriber to receive function call results
+   * @param parameterStream the stream of parameter sets to process
+   * @throws IllegalArgumentException if subscriber or parameterStream is null
+   */
+  void subscribeReactive(
+      final java.util.concurrent.Flow.Subscriber<WasmValue[]> subscriber,
+      final java.util.concurrent.Flow.Publisher<WasmValue[]> parameterStream);
+
+  /**
+   * Creates a reactive stream processor for this function with custom transformation.
+   *
+   * <p>This method enables creation of reusable reactive processors that can be composed
+   * and integrated into larger reactive pipelines.
+   *
+   * @param <T> the input parameter type
+   * @param <R> the output result type
+   * @param processor the reactive stream processor
+   * @return a Publisher that applies the processor transformation
+   * @throws IllegalArgumentException if processor is null
+   */
+  <T, R> java.util.concurrent.Flow.Publisher<R> createReactiveProcessor(
+      final ReactiveStreamProcessor<T, R> processor);
+
+  /**
+   * Checks if this function supports reactive stream processing.
+   *
+   * <p>Some functions may not support reactive streaming due to their implementation
+   * or resource requirements.
+   *
+   * @return true if reactive streaming is supported
+   */
+  boolean supportsReactiveStreaming();
+
+  /**
+   * Gets the reactive configuration for this function.
+   *
+   * @return reactive function configuration
+   */
+  ReactiveConfiguration getReactiveConfiguration();
+
+  /**
+   * Sets the reactive configuration for this function.
+   *
+   * @param configuration the new reactive configuration
+   * @throws IllegalArgumentException if configuration is null
+   */
+  void setReactiveConfiguration(final ReactiveConfiguration configuration);
+
+  /** Reactive stream processor for custom function transformations. */
+  interface ReactiveStreamProcessor<T, R> {
+    /**
+     * Processes input stream and produces output stream.
+     *
+     * @param input the input stream
+     * @return the transformed output stream
+     */
+    java.util.concurrent.Flow.Publisher<R> process(final java.util.concurrent.Flow.Publisher<T> input);
+
+    /**
+     * Gets the processor configuration.
+     *
+     * @return processor configuration
+     */
+    ProcessorConfiguration getConfiguration();
+  }
+
+  /** Configuration for reactive stream processing. */
+  interface ProcessorConfiguration {
+    /**
+     * Gets the buffer size for reactive streams.
+     *
+     * @return buffer size
+     */
+    int getBufferSize();
+
+    /**
+     * Gets the maximum concurrency level.
+     *
+     * @return maximum concurrency
+     */
+    int getMaxConcurrency();
+
+    /**
+     * Checks if backpressure handling is enabled.
+     *
+     * @return true if backpressure is enabled
+     */
+    boolean isBackpressureEnabled();
+
+    /**
+     * Gets the timeout for reactive operations.
+     *
+     * @return operation timeout
+     */
+    Duration getReactiveTimeout();
+  }
+
+  /** Configuration for reactive function operations. */
+  interface ReactiveConfiguration {
+    /**
+     * Gets the buffer size for reactive streams.
+     *
+     * @return buffer size
+     */
+    int getBufferSize();
+
+    /**
+     * Gets the maximum concurrent function calls.
+     *
+     * @return maximum concurrency level
+     */
+    int getMaxConcurrency();
+
+    /**
+     * Checks if ordered processing is required.
+     *
+     * <p>When enabled, results will be emitted in the same order as inputs,
+     * potentially reducing throughput.
+     *
+     * @return true if ordered processing is enabled
+     */
+    boolean isOrderedProcessing();
+
+    /**
+     * Checks if error propagation is enabled.
+     *
+     * <p>When enabled, errors from individual function calls will propagate
+     * to the reactive stream, potentially terminating it.
+     *
+     * @return true if error propagation is enabled
+     */
+    boolean isErrorPropagationEnabled();
+
+    /**
+     * Gets the timeout for individual reactive function calls.
+     *
+     * @return call timeout
+     */
+    Duration getCallTimeout();
+
+    /**
+     * Gets the timeout for the entire reactive stream operation.
+     *
+     * @return stream timeout
+     */
+    Duration getStreamTimeout();
+
+    /**
+     * Checks if backpressure handling is enabled.
+     *
+     * @return true if backpressure is enabled
+     */
+    boolean isBackpressureEnabled();
+
+    /**
+     * Gets the backpressure strategy to use.
+     *
+     * @return backpressure strategy
+     */
+    BackpressureStrategy getBackpressureStrategy();
+
+    /**
+     * Gets the retry policy for failed function calls.
+     *
+     * @return retry policy, or null for no retries
+     */
+    RetryPolicy getRetryPolicy();
+  }
+
+  /** Backpressure strategies for reactive streams. */
+  enum BackpressureStrategy {
+    /** Drop newest items when buffer is full */
+    DROP_NEWEST,
+    /** Drop oldest items when buffer is full */
+    DROP_OLDEST,
+    /** Block until space is available */
+    BLOCK,
+    /** Use unbounded buffer (may cause memory issues) */
+    UNBOUNDED,
+    /** Fail when buffer is full */
+    FAIL
+  }
+
+  /** Retry policy for failed reactive operations. */
+  interface RetryPolicy {
+    /**
+     * Gets the maximum number of retry attempts.
+     *
+     * @return maximum retries
+     */
+    int getMaxRetries();
+
+    /**
+     * Gets the delay between retry attempts.
+     *
+     * @return retry delay
+     */
+    Duration getRetryDelay();
+
+    /**
+     * Gets the backoff multiplier for retry delays.
+     *
+     * @return backoff multiplier
+     */
+    double getBackoffMultiplier();
+
+    /**
+     * Gets the maximum retry delay.
+     *
+     * @return maximum delay
+     */
+    Duration getMaxRetryDelay();
+
+    /**
+     * Checks if the given exception should trigger a retry.
+     *
+     * @param exception the exception that occurred
+     * @return true if retry should be attempted
+     */
+    boolean shouldRetry(final Exception exception);
+  }
+
   /** Configuration options for asynchronous function execution. */
   interface ExecutionOptions {
     /**
