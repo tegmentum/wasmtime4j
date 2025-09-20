@@ -264,6 +264,12 @@ public final class ModuleMetadataImpl implements ModuleMetadata {
     private Map<String, String> customProperties = new HashMap<>();
     private String checksum = null;
 
+    /**
+     * Sets the format version.
+     *
+     * @param formatVersion the format version
+     * @return this builder
+     */
     public Builder formatVersion(final String formatVersion) {
       this.formatVersion = formatVersion;
       return this;

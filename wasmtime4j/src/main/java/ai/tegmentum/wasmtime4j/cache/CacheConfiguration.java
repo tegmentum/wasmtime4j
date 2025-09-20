@@ -141,6 +141,12 @@ public interface CacheConfiguration {
     private int concurrencyLevel = Runtime.getRuntime().availableProcessors();
     private boolean compressionEnabled = true;
 
+    /**
+     * Sets the maximum number of entries the cache can hold.
+     *
+     * @param maxSize the maximum cache size
+     * @return this builder
+     */
     public CacheConfigurationBuilder maxSize(final long maxSize) {
       this.maxSize = maxSize;
       return this;
@@ -197,6 +203,11 @@ public interface CacheConfiguration {
       return this;
     }
 
+    /**
+     * Builds the CacheConfiguration instance.
+     *
+     * @return a new CacheConfiguration with the configured settings
+     */
     public CacheConfiguration build() {
       return new CacheConfigurationImpl(
           maxSize,

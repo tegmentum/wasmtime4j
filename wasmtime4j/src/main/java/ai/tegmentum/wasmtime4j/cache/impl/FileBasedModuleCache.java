@@ -526,7 +526,11 @@ public final class FileBasedModuleCache implements ModuleCache {
     volatile Instant lastAccessTime;
     final ModuleCacheKey originalKey;
 
-    CacheEntry(final Path cacheFilePath, final Path metadataFilePath, final Instant creationTime, final ModuleCacheKey originalKey) {
+    CacheEntry(
+        final Path cacheFilePath,
+        final Path metadataFilePath,
+        final Instant creationTime,
+        final ModuleCacheKey originalKey) {
       this.cacheFilePath = cacheFilePath;
       this.metadataFilePath = metadataFilePath;
       this.creationTime = creationTime;

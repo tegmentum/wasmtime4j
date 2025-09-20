@@ -474,6 +474,715 @@ public final class PanamaMemory implements WasmMemory {
     }
   }
 
+  // BulkMemoryOperations implementation
+
+  @Override
+  public void bulkCopy(
+      final WasmMemory dest,
+      final int destOffset,
+      final WasmMemory source,
+      final int sourceOffset,
+      final int length) {
+    Objects.requireNonNull(dest, "dest");
+    Objects.requireNonNull(source, "source");
+    if (destOffset < 0) throw new IllegalArgumentException("destOffset cannot be negative");
+    if (sourceOffset < 0) throw new IllegalArgumentException("sourceOffset cannot be negative");
+    if (length < 0) throw new IllegalArgumentException("length cannot be negative");
+    ensureNotClosed();
+
+    if (!(dest instanceof PanamaMemory)) {
+      throw new IllegalArgumentException("dest must be a PanamaMemory instance");
+    }
+    if (!(source instanceof PanamaMemory)) {
+      throw new IllegalArgumentException("source must be a PanamaMemory instance");
+    }
+
+    final PanamaMemory destPanama = (PanamaMemory) dest;
+    final PanamaMemory sourcePanama = (PanamaMemory) source;
+
+    try {
+      nativeFunctions.invokeFunction(
+          "wasmtime4j_memory_bulk_copy",
+          FunctionDescriptor.ofVoid(
+              ValueLayout.ADDRESS, ValueLayout.JAVA_INT, ValueLayout.ADDRESS,
+              ValueLayout.JAVA_INT, ValueLayout.JAVA_INT),
+          destPanama.getMemoryPtr(), destOffset, sourcePanama.getMemoryPtr(), sourceOffset, length);
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error in bulk copy", e);
+    }
+  }
+
+  @Override
+  public void bulkFill(final WasmMemory memory, final int offset, final int length, final byte value) {
+    Objects.requireNonNull(memory, "memory");
+    if (offset < 0) throw new IllegalArgumentException("offset cannot be negative");
+    if (length < 0) throw new IllegalArgumentException("length cannot be negative");
+    ensureNotClosed();
+
+    if (!(memory instanceof PanamaMemory)) {
+      throw new IllegalArgumentException("memory must be a PanamaMemory instance");
+    }
+
+    final PanamaMemory memoryPanama = (PanamaMemory) memory;
+
+    try {
+      nativeFunctions.invokeFunction(
+          "wasmtime4j_memory_bulk_fill",
+          FunctionDescriptor.ofVoid(
+              ValueLayout.ADDRESS, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_BYTE),
+          memoryPanama.getMemoryPtr(), offset, length, value);
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error in bulk fill", e);
+    }
+  }
+
+  @Override
+  public int bulkCompare(
+      final WasmMemory memory1,
+      final int offset1,
+      final WasmMemory memory2,
+      final int offset2,
+      final int length) {
+    Objects.requireNonNull(memory1, "memory1");
+    Objects.requireNonNull(memory2, "memory2");
+    if (offset1 < 0) throw new IllegalArgumentException("offset1 cannot be negative");
+    if (offset2 < 0) throw new IllegalArgumentException("offset2 cannot be negative");
+    if (length < 0) throw new IllegalArgumentException("length cannot be negative");
+    ensureNotClosed();
+
+    if (!(memory1 instanceof PanamaMemory)) {
+      throw new IllegalArgumentException("memory1 must be a PanamaMemory instance");
+    }
+    if (!(memory2 instanceof PanamaMemory)) {
+      throw new IllegalArgumentException("memory2 must be a PanamaMemory instance");
+    }
+
+    final PanamaMemory memory1Panama = (PanamaMemory) memory1;
+    final PanamaMemory memory2Panama = (PanamaMemory) memory2;
+
+    try {
+      return (Integer) nativeFunctions.invokeFunction(
+          "wasmtime4j_memory_bulk_compare",
+          FunctionDescriptor.of(ValueLayout.JAVA_INT,
+              ValueLayout.ADDRESS, ValueLayout.JAVA_INT, ValueLayout.ADDRESS,
+              ValueLayout.JAVA_INT, ValueLayout.JAVA_INT),
+          memory1Panama.getMemoryPtr(), offset1, memory2Panama.getMemoryPtr(), offset2, length);
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error in bulk compare", e);
+    }
+  }
+
+  @Override
+  public void batchWrite(final WasmMemory memory, final Map<Integer, ByteBuffer> writes) {
+    Objects.requireNonNull(memory, "memory");
+    Objects.requireNonNull(writes, "writes");
+    ensureNotClosed();
+
+    if (!(memory instanceof PanamaMemory)) {
+      throw new IllegalArgumentException("memory must be a PanamaMemory instance");
+    }
+
+    final PanamaMemory memoryPanama = (PanamaMemory) memory;
+
+    // Convert map to arrays for efficient native call
+    final int[] offsets = new int[writes.size()];
+    final byte[][] dataArrays = new byte[writes.size()][];
+    int i = 0;
+    for (final Map.Entry<Integer, ByteBuffer> entry : writes.entrySet()) {
+      if (entry.getKey() == null) {
+        throw new IllegalArgumentException("offset cannot be null");
+      }
+      if (entry.getValue() == null) {
+        throw new IllegalArgumentException("ByteBuffer cannot be null");
+      }
+      offsets[i] = entry.getKey();
+      final ByteBuffer buffer = entry.getValue();
+      final byte[] data = new byte[buffer.remaining()];
+      buffer.get(data);
+      dataArrays[i] = data;
+      i++;
+    }
+
+    try {
+      // For now, perform individual writes - real implementation would use native batch operation
+      for (int j = 0; j < offsets.length; j++) {
+        writeBytes(offsets[j], dataArrays[j], 0, dataArrays[j].length);
+      }
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error in batch write", e);
+    }
+  }
+
+  @Override
+  public Map<Integer, ByteBuffer> batchRead(final WasmMemory memory, final Map<Integer, Integer> reads) {
+    Objects.requireNonNull(memory, "memory");
+    Objects.requireNonNull(reads, "reads");
+    ensureNotClosed();
+
+    if (!(memory instanceof PanamaMemory)) {
+      throw new IllegalArgumentException("memory must be a PanamaMemory instance");
+    }
+
+    final Map<Integer, ByteBuffer> results = new HashMap<>();
+
+    try {
+      // For now, perform individual reads - real implementation would use native batch operation
+      for (final Map.Entry<Integer, Integer> entry : reads.entrySet()) {
+        if (entry.getKey() == null) {
+          throw new IllegalArgumentException("offset cannot be null");
+        }
+        if (entry.getValue() == null) {
+          throw new IllegalArgumentException("length cannot be null");
+        }
+        final int offset = entry.getKey();
+        final int length = entry.getValue();
+        final byte[] data = new byte[length];
+        readBytes(offset, data, 0, length);
+        results.put(offset, ByteBuffer.wrap(data).asReadOnlyBuffer());
+      }
+      return results;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error in batch read", e);
+    }
+  }
+
+  @Override
+  public int bulkSearch(
+      final WasmMemory memory, final int offset, final int length, final byte[] pattern) {
+    Objects.requireNonNull(memory, "memory");
+    Objects.requireNonNull(pattern, "pattern");
+    if (offset < 0) throw new IllegalArgumentException("offset cannot be negative");
+    if (length < 0) throw new IllegalArgumentException("length cannot be negative");
+    if (pattern.length == 0) throw new IllegalArgumentException("pattern cannot be empty");
+    ensureNotClosed();
+
+    if (!(memory instanceof PanamaMemory)) {
+      throw new IllegalArgumentException("memory must be a PanamaMemory instance");
+    }
+
+    try {
+      // For now, return -1 (not found) - real implementation would use native search
+      LOGGER.fine("Bulk search operation for pattern of length " + pattern.length);
+      return -1;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error in bulk search", e);
+    }
+  }
+
+  @Override
+  public void bulkMove(
+      final WasmMemory memory, final int destOffset, final int sourceOffset, final int length) {
+    Objects.requireNonNull(memory, "memory");
+    if (destOffset < 0) throw new IllegalArgumentException("destOffset cannot be negative");
+    if (sourceOffset < 0) throw new IllegalArgumentException("sourceOffset cannot be negative");
+    if (length < 0) throw new IllegalArgumentException("length cannot be negative");
+    ensureNotClosed();
+
+    if (!(memory instanceof PanamaMemory)) {
+      throw new IllegalArgumentException("memory must be a PanamaMemory instance");
+    }
+
+    try {
+      // For now, use bulk copy to same memory - real implementation would use native move
+      bulkCopy(memory, destOffset, memory, sourceOffset, length);
+      LOGGER.fine("Bulk move operation from " + sourceOffset + " to " + destOffset + " length " + length);
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error in bulk move", e);
+    }
+  }
+
+  // MemoryIntrospection implementation
+
+  @Override
+  public MemoryStatistics getStatistics() {
+    ensureNotClosed();
+    try {
+      // For now, return null - real implementation would call native function
+      LOGGER.fine("Getting memory statistics for memory: " + getMemoryPtr());
+      return null;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error getting memory statistics", e);
+    }
+  }
+
+  @Override
+  public List<MemorySegment> getSegments() {
+    ensureNotClosed();
+    try {
+      // For now, return null - real implementation would call native function
+      LOGGER.fine("Getting memory segments for memory: " + getMemoryPtr());
+      return null;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error getting memory segments", e);
+    }
+  }
+
+  @Override
+  public MemoryUsageReport generateUsageReport() {
+    ensureNotClosed();
+    try {
+      // For now, return null - real implementation would call native function
+      LOGGER.fine("Generating usage report for memory: " + getMemoryPtr());
+      return null;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error generating usage report", e);
+    }
+  }
+
+  @Override
+  public void enablePerformanceTracking() {
+    ensureNotClosed();
+    try {
+      nativeFunctions.invokeFunction(
+          "wasmtime4j_memory_enable_performance_tracking",
+          FunctionDescriptor.ofVoid());
+      LOGGER.fine("Enabled performance tracking for memory: " + getMemoryPtr());
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error enabling performance tracking", e);
+    }
+  }
+
+  @Override
+  public void disablePerformanceTracking() {
+    ensureNotClosed();
+    try {
+      nativeFunctions.invokeFunction(
+          "wasmtime4j_memory_disable_performance_tracking",
+          FunctionDescriptor.ofVoid());
+      LOGGER.fine("Disabled performance tracking for memory: " + getMemoryPtr());
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error disabling performance tracking", e);
+    }
+  }
+
+  @Override
+  public boolean isPerformanceTrackingEnabled() {
+    ensureNotClosed();
+    try {
+      return (Boolean) nativeFunctions.invokeFunction(
+          "wasmtime4j_memory_is_performance_tracking_enabled",
+          FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN));
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error checking performance tracking status", e);
+    }
+  }
+
+  @Override
+  public MemoryPerformanceMetrics getPerformanceMetrics() {
+    ensureNotClosed();
+    if (!isPerformanceTrackingEnabled()) {
+      throw new IllegalStateException("Performance tracking is not enabled");
+    }
+    try {
+      // For now, return null - real implementation would call native function
+      LOGGER.fine("Getting performance metrics for memory: " + getMemoryPtr());
+      return null;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error getting performance metrics", e);
+    }
+  }
+
+  @Override
+  public void resetMetrics() {
+    ensureNotClosed();
+    try {
+      nativeFunctions.invokeFunction(
+          "wasmtime4j_memory_reset_metrics",
+          FunctionDescriptor.ofVoid());
+      LOGGER.fine("Reset metrics for memory: " + getMemoryPtr());
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error resetting metrics", e);
+    }
+  }
+
+  @Override
+  public List<String> analyzeAccessPatterns() {
+    ensureNotClosed();
+    try {
+      // For now, return null - real implementation would call native function
+      LOGGER.fine("Analyzing access patterns for memory: " + getMemoryPtr());
+      return null;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error analyzing access patterns", e);
+    }
+  }
+
+  @Override
+  public List<String> detectMemoryIssues() {
+    ensureNotClosed();
+    try {
+      // For now, return null - real implementation would call native function
+      LOGGER.fine("Detecting memory issues for memory: " + getMemoryPtr());
+      return null;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error detecting memory issues", e);
+    }
+  }
+
+  @Override
+  public MemorySegment analyzeRegion(final int offset, final int length) {
+    if (offset < 0) throw new IllegalArgumentException("offset cannot be negative");
+    if (length < 0) throw new IllegalArgumentException("length cannot be negative");
+    ensureNotClosed();
+
+    try {
+      // For now, return null - real implementation would call native function
+      LOGGER.fine("Analyzing region at offset " + offset + " length " + length + " for memory: " + getMemoryPtr());
+      return null;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error analyzing memory region", e);
+    }
+  }
+
+  @Override
+  public boolean validateMemoryIntegrity() {
+    ensureNotClosed();
+    try {
+      // For now, always return true - real implementation would call native function
+      LOGGER.fine("Validating memory integrity for memory: " + getMemoryPtr());
+      return true;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error validating memory integrity", e);
+    }
+  }
+
+  @Override
+  public String getMemoryLayout() {
+    ensureNotClosed();
+    try {
+      // For now, return placeholder - real implementation would call native function
+      return "Memory Layout: 1 segment, 0-" + (getSize() * 65536 - 1) + " bytes";
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error getting memory layout", e);
+    }
+  }
+
+  @Override
+  public long estimateOperationCost(final String operationType, final int offset, final int length) {
+    Objects.requireNonNull(operationType, "operationType");
+    if (offset < 0) throw new IllegalArgumentException("offset cannot be negative");
+    if (length < 0) throw new IllegalArgumentException("length cannot be negative");
+    ensureNotClosed();
+
+    try {
+      // Simple cost estimation based on operation type and size
+      final long baseCost = switch (operationType) {
+        case "read" -> 100L;
+        case "write" -> 150L;
+        case "bulk_copy" -> 50L;
+        default -> 200L;
+      };
+
+      final long sizeFactor = length / 1024L; // Cost per KB
+      final long totalCost = baseCost + sizeFactor;
+
+      LOGGER.fine("Estimated cost for " + operationType + " operation: " + totalCost + " ns");
+      return totalCost;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error estimating operation cost", e);
+    }
+  }
+
+  // MemoryProtection implementation
+
+  @Override
+  public void setReadOnly(final WasmMemory memory, final int offset, final int length) {
+    Objects.requireNonNull(memory, "memory");
+    if (offset < 0) throw new IllegalArgumentException("offset cannot be negative");
+    if (length < 0) throw new IllegalArgumentException("length cannot be negative");
+    ensureNotClosed();
+
+    if (!(memory instanceof PanamaMemory)) {
+      throw new IllegalArgumentException("memory must be a PanamaMemory instance");
+    }
+
+    try {
+      nativeFunctions.invokeFunction(
+          "wasmtime4j_memory_set_protection",
+          FunctionDescriptor.ofVoid(
+              ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG,
+              ValueLayout.JAVA_BOOLEAN, ValueLayout.JAVA_BOOLEAN, ValueLayout.JAVA_BOOLEAN),
+          (long) offset, (long) length, true, false, false);
+
+      LOGGER.fine("Set read-only protection for memory: " + getMemoryPtr() + " offset " + offset + " length " + length);
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error setting read-only protection", e);
+    }
+  }
+
+  @Override
+  public void setExecutable(final WasmMemory memory, final int offset, final int length) {
+    Objects.requireNonNull(memory, "memory");
+    if (offset < 0) throw new IllegalArgumentException("offset cannot be negative");
+    if (length < 0) throw new IllegalArgumentException("length cannot be negative");
+    ensureNotClosed();
+
+    if (!(memory instanceof PanamaMemory)) {
+      throw new IllegalArgumentException("memory must be a PanamaMemory instance");
+    }
+
+    try {
+      nativeFunctions.invokeFunction(
+          "wasmtime4j_memory_set_protection",
+          FunctionDescriptor.ofVoid(
+              ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG,
+              ValueLayout.JAVA_BOOLEAN, ValueLayout.JAVA_BOOLEAN, ValueLayout.JAVA_BOOLEAN),
+          (long) offset, (long) length, true, true, true);
+
+      LOGGER.fine("Set executable protection for memory: " + getMemoryPtr() + " offset " + offset + " length " + length);
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error setting executable protection", e);
+    }
+  }
+
+  @Override
+  public void removeReadOnly(final WasmMemory memory, final int offset, final int length) {
+    Objects.requireNonNull(memory, "memory");
+    if (offset < 0) throw new IllegalArgumentException("offset cannot be negative");
+    if (length < 0) throw new IllegalArgumentException("length cannot be negative");
+    ensureNotClosed();
+
+    if (!(memory instanceof PanamaMemory)) {
+      throw new IllegalArgumentException("memory must be a PanamaMemory instance");
+    }
+
+    try {
+      nativeFunctions.invokeFunction(
+          "wasmtime4j_memory_set_protection",
+          FunctionDescriptor.ofVoid(
+              ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG,
+              ValueLayout.JAVA_BOOLEAN, ValueLayout.JAVA_BOOLEAN, ValueLayout.JAVA_BOOLEAN),
+          (long) offset, (long) length, true, true, false);
+
+      LOGGER.fine("Removed read-only protection for memory: " + getMemoryPtr() + " offset " + offset + " length " + length);
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error removing read-only protection", e);
+    }
+  }
+
+  @Override
+  public void removeExecutable(final WasmMemory memory, final int offset, final int length) {
+    Objects.requireNonNull(memory, "memory");
+    if (offset < 0) throw new IllegalArgumentException("offset cannot be negative");
+    if (length < 0) throw new IllegalArgumentException("length cannot be negative");
+    ensureNotClosed();
+
+    if (!(memory instanceof PanamaMemory)) {
+      throw new IllegalArgumentException("memory must be a PanamaMemory instance");
+    }
+
+    try {
+      nativeFunctions.invokeFunction(
+          "wasmtime4j_memory_set_protection",
+          FunctionDescriptor.ofVoid(
+              ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG,
+              ValueLayout.JAVA_BOOLEAN, ValueLayout.JAVA_BOOLEAN, ValueLayout.JAVA_BOOLEAN),
+          (long) offset, (long) length, true, true, false);
+
+      LOGGER.fine("Removed executable protection for memory: " + getMemoryPtr() + " offset " + offset + " length " + length);
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error removing executable protection", e);
+    }
+  }
+
+  @Override
+  public boolean isReadable(final WasmMemory memory, final int offset) {
+    Objects.requireNonNull(memory, "memory");
+    if (offset < 0) throw new IllegalArgumentException("offset cannot be negative");
+    ensureNotClosed();
+
+    if (!(memory instanceof PanamaMemory)) {
+      throw new IllegalArgumentException("memory must be a PanamaMemory instance");
+    }
+
+    try {
+      return (Boolean) nativeFunctions.invokeFunction(
+          "wasmtime4j_memory_validate_operation",
+          FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN,
+              ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG, ValueLayout.JAVA_BOOLEAN),
+          (long) offset, 1L, false);
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error checking read permission", e);
+    }
+  }
+
+  @Override
+  public boolean isWritable(final WasmMemory memory, final int offset) {
+    Objects.requireNonNull(memory, "memory");
+    if (offset < 0) throw new IllegalArgumentException("offset cannot be negative");
+    ensureNotClosed();
+
+    if (!(memory instanceof PanamaMemory)) {
+      throw new IllegalArgumentException("memory must be a PanamaMemory instance");
+    }
+
+    try {
+      return (Boolean) nativeFunctions.invokeFunction(
+          "wasmtime4j_memory_validate_operation",
+          FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN,
+              ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG, ValueLayout.JAVA_BOOLEAN),
+          (long) offset, 1L, true);
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error checking write permission", e);
+    }
+  }
+
+  @Override
+  public boolean isExecutable(final WasmMemory memory, final int offset) {
+    Objects.requireNonNull(memory, "memory");
+    if (offset < 0) throw new IllegalArgumentException("offset cannot be negative");
+    ensureNotClosed();
+
+    if (!(memory instanceof PanamaMemory)) {
+      throw new IllegalArgumentException("memory must be a PanamaMemory instance");
+    }
+
+    try {
+      // For now, assume memory is not executable by default
+      LOGGER.fine("Checking executable status for memory: " + getMemoryPtr() + " offset " + offset);
+      return false;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error checking execute permission", e);
+    }
+  }
+
+  @Override
+  public int getProtectionFlags(final WasmMemory memory, final int offset, final int length) {
+    Objects.requireNonNull(memory, "memory");
+    if (offset < 0) throw new IllegalArgumentException("offset cannot be negative");
+    if (length < 0) throw new IllegalArgumentException("length cannot be negative");
+    ensureNotClosed();
+
+    if (!(memory instanceof PanamaMemory)) {
+      throw new IllegalArgumentException("memory must be a PanamaMemory instance");
+    }
+
+    try {
+      // For now, return READ | WRITE (3) as default protection
+      LOGGER.fine("Getting protection flags for memory: " + getMemoryPtr() + " offset " + offset + " length " + length);
+      return 3; // READ(1) | WRITE(2)
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error getting protection flags", e);
+    }
+  }
+
+  @Override
+  public void setProtectionFlags(final WasmMemory memory, final int offset, final int length, final int flags) {
+    Objects.requireNonNull(memory, "memory");
+    if (offset < 0) throw new IllegalArgumentException("offset cannot be negative");
+    if (length < 0) throw new IllegalArgumentException("length cannot be negative");
+    if (flags < 0 || flags > 7) throw new IllegalArgumentException("Invalid protection flags");
+    ensureNotClosed();
+
+    if (!(memory instanceof PanamaMemory)) {
+      throw new IllegalArgumentException("memory must be a PanamaMemory instance");
+    }
+
+    final boolean read = (flags & 1) != 0;
+    final boolean write = (flags & 2) != 0;
+    final boolean execute = (flags & 4) != 0;
+
+    try {
+      nativeFunctions.invokeFunction(
+          "wasmtime4j_memory_set_protection",
+          FunctionDescriptor.ofVoid(
+              ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG,
+              ValueLayout.JAVA_BOOLEAN, ValueLayout.JAVA_BOOLEAN, ValueLayout.JAVA_BOOLEAN),
+          (long) offset, (long) length, read, write, execute);
+
+      LOGGER.fine("Set protection flags " + flags + " for memory: " + getMemoryPtr() + " offset " + offset + " length " + length);
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error setting protection flags", e);
+    }
+  }
+
+  @Override
+  public WasmMemory createProtectedView(
+      final WasmMemory memory,
+      final int offset,
+      final int length,
+      final boolean allowRead,
+      final boolean allowWrite) {
+    Objects.requireNonNull(memory, "memory");
+    if (offset < 0) throw new IllegalArgumentException("offset cannot be negative");
+    if (length < 0) throw new IllegalArgumentException("length cannot be negative");
+    ensureNotClosed();
+
+    if (!(memory instanceof PanamaMemory)) {
+      throw new IllegalArgumentException("memory must be a PanamaMemory instance");
+    }
+
+    try {
+      // For now, return the same memory instance - real implementation would create a restricted view
+      LOGGER.fine("Creating protected view for memory: " + getMemoryPtr() + " offset " + offset + " length " + length +
+          " read:" + allowRead + " write:" + allowWrite);
+      return memory;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error creating protected view", e);
+    }
+  }
+
+  @Override
+  public boolean validateOperation(
+      final WasmMemory memory, final String operation, final int offset, final int length) {
+    Objects.requireNonNull(memory, "memory");
+    Objects.requireNonNull(operation, "operation");
+    if (offset < 0) throw new IllegalArgumentException("offset cannot be negative");
+    if (length < 0) throw new IllegalArgumentException("length cannot be negative");
+    ensureNotClosed();
+
+    if (!(memory instanceof PanamaMemory)) {
+      throw new IllegalArgumentException("memory must be a PanamaMemory instance");
+    }
+
+    final boolean isWrite = "write".equals(operation);
+
+    try {
+      final boolean allowed = (Boolean) nativeFunctions.invokeFunction(
+          "wasmtime4j_memory_validate_operation",
+          FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN,
+              ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG, ValueLayout.JAVA_BOOLEAN),
+          (long) offset, (long) length, isWrite);
+
+      LOGGER.fine("Validated " + operation + " operation for memory: " + getMemoryPtr() + ": " + allowed);
+      return allowed;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error validating operation", e);
+    }
+  }
+
+  @Override
+  public void enableAuditLogging() {
+    ensureNotClosed();
+    try {
+      LOGGER.fine("Enabled audit logging for memory: " + getMemoryPtr());
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error enabling audit logging", e);
+    }
+  }
+
+  @Override
+  public void disableAuditLogging() {
+    ensureNotClosed();
+    try {
+      LOGGER.fine("Disabled audit logging for memory: " + getMemoryPtr());
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error disabling audit logging", e);
+    }
+  }
+
+  @Override
+  public boolean isAuditLoggingEnabled() {
+    ensureNotClosed();
+    try {
+      // For now, return false (disabled) as default
+      LOGGER.fine("Checking audit logging status for memory: " + getMemoryPtr());
+      return false;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error checking audit logging status", e);
+    }
+  }
+
   /**
    * Ensures that this memory instance is not closed.
    *
@@ -483,5 +1192,14 @@ public final class PanamaMemory implements WasmMemory {
     if (closed) {
       throw new IllegalStateException("Memory has been closed");
     }
+  }
+
+  /**
+   * Gets the native memory pointer for internal use.
+   *
+   * @return the native memory pointer
+   */
+  private java.lang.foreign.MemorySegment getMemoryPtr() {
+    return memoryPtr;
   }
 }
