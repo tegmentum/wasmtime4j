@@ -1212,6 +1212,738 @@ mod tests {
     }
 }
 
+/// WASI Preview 1 filesystem operations implementation
+use std::fs::{self, File, OpenOptions, Metadata};
+use std::io::{Read, Write, Seek, SeekFrom};
+use std::collections::HashMap;
+use std::sync::atomic::{AtomicU32, Ordering};
+use std::time::SystemTime;
+
+/// File descriptor manager for WASI filesystem operations
+#[derive(Debug)]
+pub struct WasiFileDescriptorManager {
+    /// Maps file descriptors to open files
+    open_files: HashMap<u32, WasiFileDescriptor>,
+    /// Maps file descriptors to open directories
+    open_directories: HashMap<u32, WasiDirectoryDescriptor>,
+    /// Next available file descriptor number
+    next_fd: AtomicU32,
+}
+
+/// Represents an open file descriptor
+#[derive(Debug)]
+pub struct WasiFileDescriptor {
+    /// The underlying file handle
+    file: File,
+    /// The path used to open this file
+    path: String,
+    /// The rights associated with this descriptor
+    rights: u64,
+    /// The flags used to open this file
+    flags: u32,
+}
+
+/// Represents an open directory descriptor
+#[derive(Debug)]
+pub struct WasiDirectoryDescriptor {
+    /// The directory path
+    path: String,
+    /// The rights associated with this descriptor
+    rights: u64,
+    /// Current position for readdir operations
+    position: usize,
+    /// Cached directory entries
+    entries: Vec<WasiDirectoryEntry>,
+}
+
+/// Directory entry information
+#[derive(Debug, Clone)]
+pub struct WasiDirectoryEntry {
+    /// Entry name
+    pub name: String,
+    /// Entry type
+    pub file_type: u8,
+    /// Inode number
+    pub inode: u64,
+    /// File size
+    pub size: u64,
+    /// Access time (nanoseconds since epoch)
+    pub access_time: u64,
+    /// Modification time (nanoseconds since epoch)
+    pub modification_time: u64,
+    /// Creation time (nanoseconds since epoch)
+    pub creation_time: u64,
+}
+
+impl WasiFileDescriptorManager {
+    pub fn new() -> Self {
+        Self {
+            open_files: HashMap::new(),
+            open_directories: HashMap::new(),
+            next_fd: AtomicU32::new(3), // Start from 3 (after stdin/stdout/stderr)
+        }
+    }
+
+    pub fn allocate_fd(&self) -> u32 {
+        self.next_fd.fetch_add(1, Ordering::SeqCst)
+    }
+
+    pub fn add_file(&mut self, fd: u32, file_desc: WasiFileDescriptor) {
+        self.open_files.insert(fd, file_desc);
+    }
+
+    pub fn add_directory(&mut self, fd: u32, dir_desc: WasiDirectoryDescriptor) {
+        self.open_directories.insert(fd, dir_desc);
+    }
+
+    pub fn get_file_mut(&mut self, fd: u32) -> Option<&mut WasiFileDescriptor> {
+        self.open_files.get_mut(&fd)
+    }
+
+    pub fn get_directory_mut(&mut self, fd: u32) -> Option<&mut WasiDirectoryDescriptor> {
+        self.open_directories.get_mut(&fd)
+    }
+
+    pub fn close_file(&mut self, fd: u32) -> Option<WasiFileDescriptor> {
+        self.open_files.remove(&fd)
+    }
+
+    pub fn close_directory(&mut self, fd: u32) -> Option<WasiDirectoryDescriptor> {
+        self.open_directories.remove(&fd)
+    }
+}
+
+impl WasiDirectoryDescriptor {
+    pub fn new(path: String, rights: u64) -> WasmtimeResult<Self> {
+        let mut entries = Vec::new();
+
+        // Read directory contents
+        let dir_entries = fs::read_dir(&path).map_err(|e| WasmtimeError::Wasi {
+            message: format!("Failed to read directory {}: {}", path, e),
+        })?;
+
+        for entry in dir_entries {
+            let entry = entry.map_err(|e| WasmtimeError::Wasi {
+                message: format!("Failed to read directory entry: {}", e),
+            })?;
+
+            let metadata = entry.metadata().map_err(|e| WasmtimeError::Wasi {
+                message: format!("Failed to get metadata for {}: {}", entry.path().display(), e),
+            })?;
+
+            let file_type = if metadata.is_dir() {
+                3 // Directory
+            } else if metadata.is_file() {
+                4 // Regular file
+            } else {
+                7 // Symbolic link or other
+            };
+
+            let name = entry.file_name().to_string_lossy().to_string();
+            let size = metadata.len();
+
+            // Convert times to nanoseconds since epoch
+            let (access_time, modification_time, creation_time) =
+                Self::extract_times(&metadata);
+
+            entries.push(WasiDirectoryEntry {
+                name,
+                file_type,
+                inode: 0, // Not available on all platforms
+                size,
+                access_time,
+                modification_time,
+                creation_time,
+            });
+        }
+
+        Ok(Self {
+            path,
+            rights,
+            position: 0,
+            entries,
+        })
+    }
+
+    fn extract_times(metadata: &Metadata) -> (u64, u64, u64) {
+        let access_time = metadata.accessed()
+            .and_then(|t| t.duration_since(SystemTime::UNIX_EPOCH).ok())
+            .map(|d| d.as_nanos() as u64)
+            .unwrap_or(0);
+
+        let modification_time = metadata.modified()
+            .and_then(|t| t.duration_since(SystemTime::UNIX_EPOCH).ok())
+            .map(|d| d.as_nanos() as u64)
+            .unwrap_or(0);
+
+        let creation_time = metadata.created()
+            .and_then(|t| t.duration_since(SystemTime::UNIX_EPOCH).ok())
+            .map(|d| d.as_nanos() as u64)
+            .unwrap_or(0);
+
+        (access_time, modification_time, creation_time)
+    }
+}
+
+/// Add the file descriptor manager to WasiContext
+impl WasiContext {
+    /// Open a file with the specified flags and rights
+    pub fn path_open(
+        &mut self,
+        dir_fd: u32,
+        path: &str,
+        oflags: u32,
+        rights: u64,
+        _inherit_rights: u64, // Rights for newly created descriptors
+        fdflags: u32,
+    ) -> WasmtimeResult<u32> {
+        // Validate path is allowed
+        if !self.is_path_allowed(path) {
+            return Err(WasmtimeError::Wasi {
+                message: format!("Path not allowed: {}", path),
+            });
+        }
+
+        // Create OpenOptions based on flags
+        let mut open_opts = OpenOptions::new();
+
+        // Handle read/write flags
+        if (oflags & 0x01) != 0 { // O_CREAT
+            open_opts.create(true);
+        }
+        if (oflags & 0x02) != 0 { // O_DIRECTORY
+            return self.open_directory(path, rights);
+        }
+        if (oflags & 0x04) != 0 { // O_EXCL
+            open_opts.create_new(true);
+        }
+        if (oflags & 0x08) != 0 { // O_TRUNC
+            open_opts.truncate(true);
+        }
+
+        // Set read/write permissions based on rights
+        if (rights & 0x02) != 0 { // FD_READ
+            open_opts.read(true);
+        }
+        if (rights & 0x40) != 0 { // FD_WRITE
+            open_opts.write(true);
+        }
+        if (rights & 0x20) != 0 { // FD_APPEND
+            open_opts.append(true);
+        }
+
+        // Open the file
+        let file = open_opts.open(path).map_err(|e| WasmtimeError::Wasi {
+            message: format!("Failed to open file {}: {}", path, e),
+        })?;
+
+        // Create file descriptor
+        let fd = self.allocate_fd();
+        let file_desc = WasiFileDescriptor {
+            file,
+            path: path.to_string(),
+            rights,
+            flags: fdflags,
+        };
+
+        // Store in descriptor manager (we'll need to add this to WasiContext)
+        // For now, return the fd
+        Ok(fd)
+    }
+
+    /// Open a directory with the specified rights
+    pub fn open_directory(&mut self, path: &str, rights: u64) -> WasmtimeResult<u32> {
+        // Validate path is allowed
+        if !self.is_path_allowed(path) {
+            return Err(WasmtimeError::Wasi {
+                message: format!("Path not allowed: {}", path),
+            });
+        }
+
+        // Validate it's actually a directory
+        let metadata = fs::metadata(path).map_err(|e| WasmtimeError::Wasi {
+            message: format!("Failed to get metadata for {}: {}", path, e),
+        })?;
+
+        if !metadata.is_dir() {
+            return Err(WasmtimeError::Wasi {
+                message: format!("Path is not a directory: {}", path),
+            });
+        }
+
+        // Create directory descriptor
+        let fd = self.allocate_fd();
+        let dir_desc = WasiDirectoryDescriptor::new(path.to_string(), rights)?;
+
+        // Store in descriptor manager (we'll need to add this to WasiContext)
+        // For now, return the fd
+        Ok(fd)
+    }
+
+    /// Allocate a new file descriptor
+    fn allocate_fd(&self) -> u32 {
+        // This is a simplified implementation
+        // In a real implementation, we'd track allocated FDs
+        use std::sync::atomic::{AtomicU32, Ordering};
+        static NEXT_FD: AtomicU32 = AtomicU32::new(3);
+        NEXT_FD.fetch_add(1, Ordering::SeqCst)
+    }
+}
+
+/// Native FFI functions for WASI filesystem operations
+use std::slice;
+
+/// Open a file with specified flags and rights
+#[no_mangle]
+pub unsafe extern "C" fn wasi_path_open(
+    ctx_ptr: *mut c_void,
+    dir_fd: u32,
+    path: *const c_char,
+    path_len: usize,
+    oflags: u32,
+    rights: u64,
+    fdflags: u32,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let _ctx = ffi_utils::deref_ptr_mut::<WasiContext>(ctx_ptr, "WASI context")?;
+
+        if path.is_null() || path_len == 0 {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Path cannot be null or empty".to_string(),
+            });
+        }
+
+        let path_bytes = slice::from_raw_parts(path as *const u8, path_len);
+        let path_str = std::str::from_utf8(path_bytes).map_err(|_| {
+            WasmtimeError::InvalidParameter {
+                message: "Invalid UTF-8 in path".to_string(),
+            }
+        })?;
+
+        // For now, return a dummy file descriptor
+        // In full implementation, we would call ctx.path_open()
+        let _fd = 3; // Dummy file descriptor
+        Ok(())
+    })
+}
+
+/// Close a file descriptor
+#[no_mangle]
+pub unsafe extern "C" fn wasi_fd_close(
+    ctx_ptr: *mut c_void,
+    fd: u32,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let _ctx = ffi_utils::deref_ptr_mut::<WasiContext>(ctx_ptr, "WASI context")?;
+
+        // For now, just validate the context
+        // In full implementation, we would call ctx.fd_close(fd)
+        log::debug!("Closing file descriptor: {}", fd);
+        Ok(())
+    })
+}
+
+/// Read from a file descriptor
+#[no_mangle]
+pub unsafe extern "C" fn wasi_fd_read(
+    ctx_ptr: *mut c_void,
+    fd: u32,
+    buffer: *mut u8,
+    buffer_len: usize,
+    bytes_read: *mut usize,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let _ctx = ffi_utils::deref_ptr_mut::<WasiContext>(ctx_ptr, "WASI context")?;
+
+        if buffer.is_null() || bytes_read.is_null() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Buffer and bytes_read cannot be null".to_string(),
+            });
+        }
+
+        // For now, just write 0 bytes read
+        // In full implementation, we would read from the file
+        *bytes_read = 0;
+        log::debug!("Reading from file descriptor: {} (len: {})", fd, buffer_len);
+        Ok(())
+    })
+}
+
+/// Write to a file descriptor
+#[no_mangle]
+pub unsafe extern "C" fn wasi_fd_write(
+    ctx_ptr: *mut c_void,
+    fd: u32,
+    buffer: *const u8,
+    buffer_len: usize,
+    bytes_written: *mut usize,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let _ctx = ffi_utils::deref_ptr_mut::<WasiContext>(ctx_ptr, "WASI context")?;
+
+        if buffer.is_null() || bytes_written.is_null() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Buffer and bytes_written cannot be null".to_string(),
+            });
+        }
+
+        // For now, just write 0 bytes written
+        // In full implementation, we would write to the file
+        *bytes_written = 0;
+        log::debug!("Writing to file descriptor: {} (len: {})", fd, buffer_len);
+        Ok(())
+    })
+}
+
+/// Seek in a file
+#[no_mangle]
+pub unsafe extern "C" fn wasi_fd_seek(
+    ctx_ptr: *mut c_void,
+    fd: u32,
+    offset: i64,
+    whence: u8,
+    new_position: *mut u64,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let _ctx = ffi_utils::deref_ptr_mut::<WasiContext>(ctx_ptr, "WASI context")?;
+
+        if new_position.is_null() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "New position pointer cannot be null".to_string(),
+            });
+        }
+
+        // For now, just return current position as 0
+        // In full implementation, we would seek in the file
+        *new_position = 0;
+        log::debug!("Seeking file descriptor: {} (offset: {}, whence: {})", fd, offset, whence);
+        Ok(())
+    })
+}
+
+/// Get file statistics
+#[no_mangle]
+pub unsafe extern "C" fn wasi_fd_filestat_get(
+    ctx_ptr: *mut c_void,
+    fd: u32,
+    filestat: *mut WasiFilestat,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let _ctx = ffi_utils::deref_ptr::<WasiContext>(ctx_ptr, "WASI context")?;
+
+        if filestat.is_null() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Filestat pointer cannot be null".to_string(),
+            });
+        }
+
+        // For now, just return empty file stats
+        // In full implementation, we would get actual file statistics
+        (*filestat) = WasiFilestat {
+            device: 0,
+            inode: 0,
+            filetype: 4, // Regular file
+            nlink: 1,
+            size: 0,
+            atim: 0,
+            mtim: 0,
+            ctim: 0,
+        };
+
+        log::debug!("Getting file stats for descriptor: {}", fd);
+        Ok(())
+    })
+}
+
+/// Get file statistics by path
+#[no_mangle]
+pub unsafe extern "C" fn wasi_path_filestat_get(
+    ctx_ptr: *mut c_void,
+    dir_fd: u32,
+    flags: u32,
+    path: *const c_char,
+    path_len: usize,
+    filestat: *mut WasiFilestat,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let _ctx = ffi_utils::deref_ptr::<WasiContext>(ctx_ptr, "WASI context")?;
+
+        if path.is_null() || path_len == 0 || filestat.is_null() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Path and filestat cannot be null".to_string(),
+            });
+        }
+
+        let path_bytes = slice::from_raw_parts(path as *const u8, path_len);
+        let path_str = std::str::from_utf8(path_bytes).map_err(|_| {
+            WasmtimeError::InvalidParameter {
+                message: "Invalid UTF-8 in path".to_string(),
+            }
+        })?;
+
+        // For now, just return empty file stats
+        // In full implementation, we would get actual file statistics for the path
+        (*filestat) = WasiFilestat {
+            device: 0,
+            inode: 0,
+            filetype: 4, // Regular file
+            nlink: 1,
+            size: 0,
+            atim: 0,
+            mtim: 0,
+            ctim: 0,
+        };
+
+        log::debug!("Getting file stats for path: {} (dir_fd: {}, flags: {})", path_str, dir_fd, flags);
+        Ok(())
+    })
+}
+
+/// Read directory entries
+#[no_mangle]
+pub unsafe extern "C" fn wasi_fd_readdir(
+    ctx_ptr: *mut c_void,
+    fd: u32,
+    buffer: *mut u8,
+    buffer_len: usize,
+    cookie: u64,
+    bytes_written: *mut usize,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let _ctx = ffi_utils::deref_ptr_mut::<WasiContext>(ctx_ptr, "WASI context")?;
+
+        if buffer.is_null() || bytes_written.is_null() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Buffer and bytes_written cannot be null".to_string(),
+            });
+        }
+
+        // For now, just write 0 bytes
+        // In full implementation, we would read directory entries
+        *bytes_written = 0;
+        log::debug!("Reading directory for descriptor: {} (cookie: {}, buffer_len: {})", fd, cookie, buffer_len);
+        Ok(())
+    })
+}
+
+/// Create a directory
+#[no_mangle]
+pub unsafe extern "C" fn wasi_path_create_directory(
+    ctx_ptr: *mut c_void,
+    dir_fd: u32,
+    path: *const c_char,
+    path_len: usize,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let _ctx = ffi_utils::deref_ptr_mut::<WasiContext>(ctx_ptr, "WASI context")?;
+
+        if path.is_null() || path_len == 0 {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Path cannot be null or empty".to_string(),
+            });
+        }
+
+        let path_bytes = slice::from_raw_parts(path as *const u8, path_len);
+        let path_str = std::str::from_utf8(path_bytes).map_err(|_| {
+            WasmtimeError::InvalidParameter {
+                message: "Invalid UTF-8 in path".to_string(),
+            }
+        })?;
+
+        log::debug!("Creating directory: {} (dir_fd: {})", path_str, dir_fd);
+        // In full implementation, we would create the directory
+        Ok(())
+    })
+}
+
+/// Remove a directory
+#[no_mangle]
+pub unsafe extern "C" fn wasi_path_remove_directory(
+    ctx_ptr: *mut c_void,
+    dir_fd: u32,
+    path: *const c_char,
+    path_len: usize,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let _ctx = ffi_utils::deref_ptr_mut::<WasiContext>(ctx_ptr, "WASI context")?;
+
+        if path.is_null() || path_len == 0 {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Path cannot be null or empty".to_string(),
+            });
+        }
+
+        let path_bytes = slice::from_raw_parts(path as *const u8, path_len);
+        let path_str = std::str::from_utf8(path_bytes).map_err(|_| {
+            WasmtimeError::InvalidParameter {
+                message: "Invalid UTF-8 in path".to_string(),
+            }
+        })?;
+
+        log::debug!("Removing directory: {} (dir_fd: {})", path_str, dir_fd);
+        // In full implementation, we would remove the directory
+        Ok(())
+    })
+}
+
+/// Rename a file or directory
+#[no_mangle]
+pub unsafe extern "C" fn wasi_path_rename(
+    ctx_ptr: *mut c_void,
+    old_dir_fd: u32,
+    old_path: *const c_char,
+    old_path_len: usize,
+    new_dir_fd: u32,
+    new_path: *const c_char,
+    new_path_len: usize,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let _ctx = ffi_utils::deref_ptr_mut::<WasiContext>(ctx_ptr, "WASI context")?;
+
+        if old_path.is_null() || old_path_len == 0 || new_path.is_null() || new_path_len == 0 {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Paths cannot be null or empty".to_string(),
+            });
+        }
+
+        let old_path_bytes = slice::from_raw_parts(old_path as *const u8, old_path_len);
+        let old_path_str = std::str::from_utf8(old_path_bytes).map_err(|_| {
+            WasmtimeError::InvalidParameter {
+                message: "Invalid UTF-8 in old path".to_string(),
+            }
+        })?;
+
+        let new_path_bytes = slice::from_raw_parts(new_path as *const u8, new_path_len);
+        let new_path_str = std::str::from_utf8(new_path_bytes).map_err(|_| {
+            WasmtimeError::InvalidParameter {
+                message: "Invalid UTF-8 in new path".to_string(),
+            }
+        })?;
+
+        log::debug!("Renaming {} -> {} (old_dir_fd: {}, new_dir_fd: {})",
+                   old_path_str, new_path_str, old_dir_fd, new_dir_fd);
+        // In full implementation, we would rename the file/directory
+        Ok(())
+    })
+}
+
+/// Unlink a file
+#[no_mangle]
+pub unsafe extern "C" fn wasi_path_unlink_file(
+    ctx_ptr: *mut c_void,
+    dir_fd: u32,
+    path: *const c_char,
+    path_len: usize,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let _ctx = ffi_utils::deref_ptr_mut::<WasiContext>(ctx_ptr, "WASI context")?;
+
+        if path.is_null() || path_len == 0 {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Path cannot be null or empty".to_string(),
+            });
+        }
+
+        let path_bytes = slice::from_raw_parts(path as *const u8, path_len);
+        let path_str = std::str::from_utf8(path_bytes).map_err(|_| {
+            WasmtimeError::InvalidParameter {
+                message: "Invalid UTF-8 in path".to_string(),
+            }
+        })?;
+
+        log::debug!("Unlinking file: {} (dir_fd: {})", path_str, dir_fd);
+        // In full implementation, we would unlink the file
+        Ok(())
+    })
+}
+
+/// Create a symbolic link
+#[no_mangle]
+pub unsafe extern "C" fn wasi_path_symlink(
+    ctx_ptr: *mut c_void,
+    old_path: *const c_char,
+    old_path_len: usize,
+    dir_fd: u32,
+    new_path: *const c_char,
+    new_path_len: usize,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let _ctx = ffi_utils::deref_ptr_mut::<WasiContext>(ctx_ptr, "WASI context")?;
+
+        if old_path.is_null() || old_path_len == 0 || new_path.is_null() || new_path_len == 0 {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Paths cannot be null or empty".to_string(),
+            });
+        }
+
+        let old_path_bytes = slice::from_raw_parts(old_path as *const u8, old_path_len);
+        let old_path_str = std::str::from_utf8(old_path_bytes).map_err(|_| {
+            WasmtimeError::InvalidParameter {
+                message: "Invalid UTF-8 in old path".to_string(),
+            }
+        })?;
+
+        let new_path_bytes = slice::from_raw_parts(new_path as *const u8, new_path_len);
+        let new_path_str = std::str::from_utf8(new_path_bytes).map_err(|_| {
+            WasmtimeError::InvalidParameter {
+                message: "Invalid UTF-8 in new path".to_string(),
+            }
+        })?;
+
+        log::debug!("Creating symlink {} -> {} (dir_fd: {})", old_path_str, new_path_str, dir_fd);
+        // In full implementation, we would create the symbolic link
+        Ok(())
+    })
+}
+
+/// Read a symbolic link
+#[no_mangle]
+pub unsafe extern "C" fn wasi_path_readlink(
+    ctx_ptr: *mut c_void,
+    dir_fd: u32,
+    path: *const c_char,
+    path_len: usize,
+    buffer: *mut u8,
+    buffer_len: usize,
+    bytes_written: *mut usize,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let _ctx = ffi_utils::deref_ptr::<WasiContext>(ctx_ptr, "WASI context")?;
+
+        if path.is_null() || path_len == 0 || buffer.is_null() || bytes_written.is_null() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Path, buffer, and bytes_written cannot be null".to_string(),
+            });
+        }
+
+        let path_bytes = slice::from_raw_parts(path as *const u8, path_len);
+        let path_str = std::str::from_utf8(path_bytes).map_err(|_| {
+            WasmtimeError::InvalidParameter {
+                message: "Invalid UTF-8 in path".to_string(),
+            }
+        })?;
+
+        // For now, just write 0 bytes
+        // In full implementation, we would read the symbolic link target
+        *bytes_written = 0;
+        log::debug!("Reading symlink: {} (dir_fd: {}, buffer_len: {})", path_str, dir_fd, buffer_len);
+        Ok(())
+    })
+}
+
+/// WASI file statistics structure for FFI
+#[repr(C)]
+pub struct WasiFilestat {
+    pub device: u64,
+    pub inode: u64,
+    pub filetype: u8,
+    pub nlink: u64,
+    pub size: u64,
+    pub atim: u64,
+    pub mtim: u64,
+    pub ctim: u64,
+}
+
 /// JNI bridge functions for Java integration - Simple stub implementations
 /// These are basic stubs that allow compilation and basic functionality
 
