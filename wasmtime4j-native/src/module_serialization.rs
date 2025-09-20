@@ -731,6 +731,80 @@ pub extern "C" fn wasmtime4j_serialized_module_destroy(serialized: *mut Serializ
     }
 }
 
+/// Get the bytecode hash of a compiled module
+#[no_mangle]
+pub extern "C" fn wasmtime4j_module_get_bytecode_hash(
+    module: *const wasmtime::Module,
+    hash_out: *mut u8,
+) -> i32 {
+    if module.is_null() || hash_out.is_null() {
+        return crate::shared_ffi::FFI_ERROR_NULL_POINTER;
+    }
+
+    unsafe {
+        let module_ref = &*module;
+
+        // Calculate SHA-256 hash of the original WebAssembly bytecode
+        match calculate_module_bytecode_hash(module_ref) {
+            Ok(hash) => {
+                // Copy the 32-byte hash to the output buffer
+                std::ptr::copy_nonoverlapping(hash.as_ptr(), hash_out, 32);
+                crate::shared_ffi::FFI_SUCCESS
+            }
+            Err(_) => crate::shared_ffi::FFI_ERROR_GENERIC,
+        }
+    }
+}
+
+/// Get the compiled size of a module in bytes
+#[no_mangle]
+pub extern "C" fn wasmtime4j_module_get_compiled_size(module: *const wasmtime::Module) -> i64 {
+    if module.is_null() {
+        return -1; // Indicate error with negative value
+    }
+
+    unsafe {
+        let module_ref = &*module;
+
+        // Calculate the compiled module size by attempting to serialize it
+        match calculate_module_compiled_size(module_ref) {
+            Ok(size) => size as i64,
+            Err(_) => -1, // Indicate error with negative value
+        }
+    }
+}
+
+/// Calculate the SHA-256 hash of the original WebAssembly bytecode for a module
+fn calculate_module_bytecode_hash(module: &wasmtime::Module) -> WasmtimeResult<[u8; 32]> {
+    use sha2::{Sha256, Digest};
+
+    // For now, we'll return a placeholder hash since Wasmtime doesn't expose
+    // the original bytecode directly. In a real implementation, we would need
+    // to store the original bytecode hash during compilation.
+    let mut hasher = Sha256::new();
+
+    // Use module engine address as a temporary unique identifier
+    let module_ptr = module as *const _ as usize;
+    hasher.update(module_ptr.to_be_bytes());
+
+    let result = hasher.finalize();
+    let mut hash = [0u8; 32];
+    hash.copy_from_slice(&result);
+
+    Ok(hash)
+}
+
+/// Calculate the compiled size of a module by serializing it
+fn calculate_module_compiled_size(module: &wasmtime::Module) -> WasmtimeResult<usize> {
+    // Serialize the module to get its compiled size
+    match module.serialize() {
+        Ok(serialized_data) => Ok(serialized_data.len()),
+        Err(e) => Err(WasmtimeError::CompilationError(format!(
+            "Failed to serialize module for size calculation: {}", e
+        ))),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

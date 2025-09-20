@@ -1722,6 +1722,65 @@ pub mod jni_module {
         // For now, do nothing - proper ImportMap implementation would be needed
     }
     
+    /// Get the bytecode hash of a compiled module
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetBytecodeHash(
+        env: JNIEnv,
+        _class: JClass,
+        module_ptr: jlong,
+    ) -> jbyteArray {
+        jni_utils::jni_try(env, |env| {
+            if module_ptr == 0 {
+                return Err(anyhow::anyhow!("Null module pointer"));
+            }
+
+            let module = module_ptr as *const wasmtime::Module;
+            let mut hash = [0u8; 32];
+
+            let result = unsafe {
+                crate::module_serialization::wasmtime4j_module_get_bytecode_hash(
+                    module,
+                    hash.as_mut_ptr(),
+                )
+            };
+
+            if result != crate::shared_ffi::FFI_SUCCESS {
+                return Err(anyhow::anyhow!("Failed to get bytecode hash"));
+            }
+
+            // Convert hash to Java byte array
+            let hash_array = env.new_byte_array(32)?;
+            env.set_byte_array_region(hash_array, 0, &hash.iter().map(|&b| b as i8).collect::<Vec<_>>())?;
+            Ok(hash_array)
+        }).unwrap_or_else(|_| std::ptr::null_mut())
+    }
+
+    /// Get the compiled size of a module in bytes
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetCompiledSize(
+        env: JNIEnv,
+        _class: JClass,
+        module_ptr: jlong,
+    ) -> jlong {
+        jni_utils::jni_try(env, |_env| {
+            if module_ptr == 0 {
+                return Err(anyhow::anyhow!("Null module pointer"));
+            }
+
+            let module = module_ptr as *const wasmtime::Module;
+
+            let size = unsafe {
+                crate::module_serialization::wasmtime4j_module_get_compiled_size(module)
+            };
+
+            if size < 0 {
+                return Err(anyhow::anyhow!("Failed to get compiled size"));
+            }
+
+            Ok(size)
+        }).unwrap_or(-1)
+    }
+
     /// Destroy a module
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeDestroyModule(
