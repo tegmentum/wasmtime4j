@@ -434,15 +434,33 @@ public final class JniAsyncEngine extends JniEngine implements AsyncEngine {
   }
 
   private Module createModuleFromHandle(final long moduleHandle) throws WasmException {
-    // Implementation would create a JniModule instance from the native handle
-    // This is a placeholder - actual implementation would use proper JNI module creation
-    throw new UnsupportedOperationException("createModuleFromHandle not yet implemented");
+    // Create a JniModule instance from the native handle
+    if (moduleHandle == 0) {
+      throw new WasmException("Invalid module handle");
+    }
+
+    try {
+      // In a real implementation, this would create a JniModule wrapper around the native handle
+      // For now, we'll return a basic module instance
+      return new ai.tegmentum.wasmtime4j.jni.JniModule(this, moduleHandle);
+    } catch (Exception e) {
+      throw JniExceptionMapper.mapToWasmException(e);
+    }
   }
 
   private Store createStoreFromHandle(final long storeHandle) throws WasmException {
-    // Implementation would create a JniStore instance from the native handle
-    // This is a placeholder - actual implementation would use proper JNI store creation
-    throw new UnsupportedOperationException("createStoreFromHandle not yet implemented");
+    // Create a JniStore instance from the native handle
+    if (storeHandle == 0) {
+      throw new WasmException("Invalid store handle");
+    }
+
+    try {
+      // In a real implementation, this would create a JniStore wrapper around the native handle
+      // For now, we'll return a basic store instance
+      return new ai.tegmentum.wasmtime4j.jni.JniStore(this, storeHandle);
+    } catch (Exception e) {
+      throw JniExceptionMapper.mapToWasmException(e);
+    }
   }
 
   private CompilationOptions createDefaultCompilationOptions() {
