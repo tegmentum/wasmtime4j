@@ -165,10 +165,40 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
   public Engine createEngine(final EngineConfig config) throws WasmException {
     JniValidation.requireNonNull(config, "config");
 
-    // For now, create engine with default config and log the custom config request
-    LOGGER.fine(
-        "Creating engine with custom config (config details will be implemented in future)");
-    return createEngine();
+    // Validate configuration before creating engine
+    config.validate();
+
+    try {
+      return concurrencyManager.executeWithReadLock(
+          getNativeHandle(),
+          () -> {
+            try {
+              // Use the JniEngine.createWithConfig method that takes an EngineConfig
+              final JniEngine engine = JniEngine.createWithConfig(config);
+
+              // Register engine for concurrency management and cleanup
+              concurrencyManager.registerResource(engine.getNativeHandle());
+              phantomManager.register(engine, engine.getNativeHandle(), "nativeDestroyEngine");
+
+              // Cache the engine with configuration info
+              final String cacheKey = "engine-" + engine.getNativeHandle() + "-" + config.hashCode();
+              resourceCache.put(cacheKey, engine);
+
+              LOGGER.fine("Created engine with configuration: " + config.getSummary() +
+                         ", handle: 0x" + Long.toHexString(engine.getNativeHandle()));
+              return engine;
+            } catch (final WasmException e) {
+              throw new RuntimeException(e);
+            } catch (final Exception e) {
+              throw new RuntimeException(new WasmException("Unexpected error creating engine with config", e));
+            }
+          });
+    } catch (final RuntimeException e) {
+      if (e.getCause() instanceof WasmException) {
+        throw (WasmException) e.getCause();
+      }
+      throw new WasmException("Unexpected error creating engine with configuration", e);
+    }
   }
 
   @Override

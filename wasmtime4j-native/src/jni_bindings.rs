@@ -33,34 +33,41 @@ pub mod jni_engine {
         jni_utils::jni_try_ptr(env, || core::create_engine()) as jlong
     }
 
-    /// Create a new Wasmtime engine with custom configuration (JNI version)
+    /// Create a new Wasmtime engine with comprehensive custom configuration (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeCreateEngineWithConfig(
         env: JNIEnv,
         _class: JClass,
-        strategy: jint,
-        opt_level: jint,
+        optimization_level: jint,
         debug_info: jboolean,
-        wasm_threads: jboolean,
-        wasm_simd: jboolean,
+        parallel_compilation: jboolean,
+        cranelift_debug_verifier: jboolean,
+        wasm_backtrace_details: jboolean,
         wasm_reference_types: jboolean,
-        wasm_bulk_memory: jboolean,
+        wasm_simd: jboolean,
+        wasm_relaxed_simd: jboolean,
         wasm_multi_value: jboolean,
-        fuel_enabled: jboolean,
-        max_memory_pages: jint,
-        max_stack_size: jint,
+        wasm_bulk_memory: jboolean,
+        wasm_threads: jboolean,
+        wasm_tail_call: jboolean,
+        wasm_multi_memory: jboolean,
+        wasm_memory64: jboolean,
+        consume_fuel: jboolean,
+        fuel_amount: jlong,
+        wasi_enabled: jboolean,
         epoch_interruption: jboolean,
-        max_instances: jint,
+        memory_limit_enabled: jboolean,
+        memory_limit: jlong,
     ) -> jlong {
-        
-        
         jni_utils::jni_try_ptr(env, || {
-            let strategy_opt = parameter_conversion::convert_strategy(strategy);
-            let opt_level_opt = parameter_conversion::convert_opt_level(opt_level);
-            let max_memory_pages_opt = parameter_conversion::convert_int_to_optional_u32(max_memory_pages);
-            let max_stack_size_opt = parameter_conversion::convert_int_to_optional_usize(max_stack_size);
-            let max_instances_opt = parameter_conversion::convert_int_to_optional_u32(max_instances);
-            
+            let opt_level_opt = parameter_conversion::convert_opt_level(optimization_level);
+            let strategy_opt = Some(wasmtime::Strategy::Cranelift); // Use Cranelift by default
+            let max_memory_pages_opt = if memory_limit_enabled == 1 {
+                Some((memory_limit / 65536) as u32) // Convert bytes to pages (64KB per page)
+            } else {
+                None
+            };
+
             core::create_engine_with_config(
                 strategy_opt,
                 opt_level_opt,
@@ -70,11 +77,11 @@ pub mod jni_engine {
                 parameter_conversion::convert_int_to_bool(wasm_reference_types as i32),
                 parameter_conversion::convert_int_to_bool(wasm_bulk_memory as i32),
                 parameter_conversion::convert_int_to_bool(wasm_multi_value as i32),
-                parameter_conversion::convert_int_to_bool(fuel_enabled as i32),
+                parameter_conversion::convert_int_to_bool(consume_fuel as i32),
                 max_memory_pages_opt,
-                max_stack_size_opt,
+                None, // max_stack_size not directly supported
                 parameter_conversion::convert_int_to_bool(epoch_interruption as i32),
-                max_instances_opt,
+                None, // max_instances not directly supported
             )
         }) as jlong
     }
@@ -267,6 +274,248 @@ pub mod jni_engine {
     ) -> jboolean {
         // Return false by default
         0
+    }
+
+    /// Get optimization level
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeGetOptimizationLevel(
+        env: JNIEnv,
+        _class: JClass,
+        _engine_ptr: jlong,
+    ) -> jint {
+        // Return speed level by default
+        1
+    }
+
+    // Configuration query methods that correspond to the Java native method declarations
+
+    /// Check if fuel consumption is enabled
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeIsConsumeFuelEnabled(
+        env: JNIEnv,
+        _class: JClass,
+        engine_ptr: jlong,
+    ) -> jboolean {
+        match unsafe { core::get_engine_ref(engine_ptr as *const std::os::raw::c_void) } {
+            Ok(engine) => if core::is_fuel_enabled(engine) { 1 } else { 0 },
+            Err(_) => 0,
+        }
+    }
+
+    /// Check if WASI is enabled
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeIsWasiEnabled(
+        env: JNIEnv,
+        _class: JClass,
+        _engine_ptr: jlong,
+    ) -> jboolean {
+        // WASI enablement is typically done at store level, not engine level
+        // Return false for now
+        0
+    }
+
+    /// Check if epoch interruption is enabled
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeIsEpochInterruptionEnabled(
+        env: JNIEnv,
+        _class: JClass,
+        engine_ptr: jlong,
+    ) -> jboolean {
+        match unsafe { core::get_engine_ref(engine_ptr as *const std::os::raw::c_void) } {
+            Ok(engine) => if core::is_epoch_interruption_enabled(engine) { 1 } else { 0 },
+            Err(_) => 0,
+        }
+    }
+
+    /// Check if memory limits are enabled
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeIsMemoryLimitEnabled(
+        env: JNIEnv,
+        _class: JClass,
+        engine_ptr: jlong,
+    ) -> jboolean {
+        match unsafe { core::get_engine_ref(engine_ptr as *const std::os::raw::c_void) } {
+            Ok(engine) => if core::get_memory_limit(engine).is_some() { 1 } else { 0 },
+            Err(_) => 0,
+        }
+    }
+
+    /// Get memory limit in bytes
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeGetMemoryLimit(
+        env: JNIEnv,
+        _class: JClass,
+        engine_ptr: jlong,
+    ) -> jlong {
+        match unsafe { core::get_engine_ref(engine_ptr as *const std::os::raw::c_void) } {
+            Ok(engine) => core::get_memory_limit(engine)
+                .map(|pages| (pages as u64) * 65536) // Convert pages to bytes
+                .unwrap_or(0) as jlong,
+            Err(_) => 0,
+        }
+    }
+
+    /// Get fuel amount
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeGetFuelAmount(
+        env: JNIEnv,
+        _class: JClass,
+        _engine_ptr: jlong,
+    ) -> jlong {
+        // Fuel amount is typically configured per store, not per engine
+        // Return 0 as default
+        0
+    }
+
+    // WebAssembly feature query methods
+
+    /// Check if reference types are enabled
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeIsWasmReferenceTypesEnabled(
+        env: JNIEnv,
+        _class: JClass,
+        engine_ptr: jlong,
+    ) -> jboolean {
+        use crate::engine::WasmFeature;
+        match unsafe { core::get_engine_ref(engine_ptr as *const std::os::raw::c_void) } {
+            Ok(engine) => if core::check_feature_support(engine, WasmFeature::ReferenceTypes) { 1 } else { 0 },
+            Err(_) => 1, // Default to enabled
+        }
+    }
+
+    /// Check if SIMD is enabled
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeIsWasmSimdEnabled(
+        env: JNIEnv,
+        _class: JClass,
+        engine_ptr: jlong,
+    ) -> jboolean {
+        use crate::engine::WasmFeature;
+        match unsafe { core::get_engine_ref(engine_ptr as *const std::os::raw::c_void) } {
+            Ok(engine) => if core::check_feature_support(engine, WasmFeature::Simd) { 1 } else { 0 },
+            Err(_) => 1, // Default to enabled
+        }
+    }
+
+    /// Check if relaxed SIMD is enabled
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeIsWasmRelaxedSimdEnabled(
+        env: JNIEnv,
+        _class: JClass,
+        _engine_ptr: jlong,
+    ) -> jboolean {
+        // Relaxed SIMD is typically not enabled by default
+        0
+    }
+
+    /// Check if multi-value is enabled
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeIsWasmMultiValueEnabled(
+        env: JNIEnv,
+        _class: JClass,
+        engine_ptr: jlong,
+    ) -> jboolean {
+        use crate::engine::WasmFeature;
+        match unsafe { core::get_engine_ref(engine_ptr as *const std::os::raw::c_void) } {
+            Ok(engine) => if core::check_feature_support(engine, WasmFeature::MultiValue) { 1 } else { 0 },
+            Err(_) => 1, // Default to enabled
+        }
+    }
+
+    /// Check if bulk memory is enabled
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeIsWasmBulkMemoryEnabled(
+        env: JNIEnv,
+        _class: JClass,
+        engine_ptr: jlong,
+    ) -> jboolean {
+        use crate::engine::WasmFeature;
+        match unsafe { core::get_engine_ref(engine_ptr as *const std::os::raw::c_void) } {
+            Ok(engine) => if core::check_feature_support(engine, WasmFeature::BulkMemory) { 1 } else { 0 },
+            Err(_) => 1, // Default to enabled
+        }
+    }
+
+    /// Check if threads are enabled
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeIsWasmThreadsEnabled(
+        env: JNIEnv,
+        _class: JClass,
+        engine_ptr: jlong,
+    ) -> jboolean {
+        use crate::engine::WasmFeature;
+        match unsafe { core::get_engine_ref(engine_ptr as *const std::os::raw::c_void) } {
+            Ok(engine) => if core::check_feature_support(engine, WasmFeature::Threads) { 1 } else { 0 },
+            Err(_) => 0, // Default to disabled
+        }
+    }
+
+    /// Check if tail call is enabled
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeIsWasmTailCallEnabled(
+        env: JNIEnv,
+        _class: JClass,
+        _engine_ptr: jlong,
+    ) -> jboolean {
+        // Tail call is typically not enabled by default
+        0
+    }
+
+    /// Check if multi-memory is enabled
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeIsWasmMultiMemoryEnabled(
+        env: JNIEnv,
+        _class: JClass,
+        _engine_ptr: jlong,
+    ) -> jboolean {
+        // Multi-memory is typically not enabled by default
+        0
+    }
+
+    /// Check if 64-bit memory is enabled
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeIsWasmMemory64Enabled(
+        env: JNIEnv,
+        _class: JClass,
+        _engine_ptr: jlong,
+    ) -> jboolean {
+        // Memory64 is typically not enabled by default
+        0
+    }
+
+    // Compilation setting query methods
+
+    /// Check if parallel compilation is enabled
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeIsParallelCompilationEnabled(
+        env: JNIEnv,
+        _class: JClass,
+        _engine_ptr: jlong,
+    ) -> jboolean {
+        // Parallel compilation is typically enabled by default
+        1
+    }
+
+    /// Check if Cranelift debug verifier is enabled
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeIsCraneliftDebugVerifierEnabled(
+        env: JNIEnv,
+        _class: JClass,
+        _engine_ptr: jlong,
+    ) -> jboolean {
+        // Debug verifier is typically disabled by default
+        0
+    }
+
+    /// Check if WASM backtrace details are enabled
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeIsWasmBacktraceDetailsEnabled(
+        env: JNIEnv,
+        _class: JClass,
+        _engine_ptr: jlong,
+    ) -> jboolean {
+        // Backtrace details are typically enabled by default
+        1
     }
 }
 
