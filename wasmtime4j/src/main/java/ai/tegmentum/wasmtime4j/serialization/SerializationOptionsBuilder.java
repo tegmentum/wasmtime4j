@@ -1,5 +1,6 @@
 package ai.tegmentum.wasmtime4j.serialization;
 
+import ai.tegmentum.wasmtime4j.serialization.impl.SerializationOptionsImpl;
 import java.util.HashSet;
 import java.util.Set;
 

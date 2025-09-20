@@ -154,6 +154,73 @@ public interface StreamingMemory extends WasmMemory {
    */
   StreamingMemoryStatistics getStreamingStatistics();
 
+  /** Enhanced memory stream interface for streaming operations. */
+  interface MemoryStream {
+    /**
+     * Asynchronously reads data into the provided buffer.
+     *
+     * @param buffer the buffer to read data into
+     * @return a CompletableFuture that completes with the number of bytes read
+     */
+    CompletableFuture<Integer> readAsync(final ByteBuffer buffer);
+
+    /**
+     * Asynchronously writes data from the provided buffer.
+     *
+     * @param buffer the buffer containing data to write
+     * @return a CompletableFuture that completes when the write is finished
+     */
+    CompletableFuture<Integer> writeAsync(final ByteBuffer buffer);
+
+    /**
+     * Asynchronously flushes any buffered data.
+     *
+     * @return a CompletableFuture that completes when the flush is finished
+     */
+    CompletableFuture<Void> flush();
+
+    /**
+     * Closes the memory stream and releases associated resources.
+     */
+    void close();
+
+    /**
+     * Gets the current position in the memory stream.
+     *
+     * @return the current position
+     */
+    long getPosition();
+
+    /**
+     * Sets the position in the memory stream.
+     *
+     * @param position the new position
+     * @throws IllegalArgumentException if position is negative
+     */
+    void setPosition(final long position);
+
+    /**
+     * Gets the remaining bytes available in the stream.
+     *
+     * @return the number of remaining bytes
+     */
+    long getRemaining();
+
+    /**
+     * Checks if the stream has reached the end.
+     *
+     * @return true if at end of stream
+     */
+    boolean isEOF();
+
+    /**
+     * Gets the stream configuration.
+     *
+     * @return stream configuration
+     */
+    StreamOptions getStreamOptions();
+  }
+
   /** Configuration options for memory read operations. */
   interface ReadOptions {
     /**
