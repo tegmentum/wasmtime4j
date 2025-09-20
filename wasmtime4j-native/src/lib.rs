@@ -54,6 +54,7 @@ pub mod wasi_advanced;
 
 // Performance infrastructure
 pub mod performance;
+pub mod performance_enhanced;
 pub mod bulk_operations;
 
 // Advanced memory management
@@ -126,6 +127,12 @@ pub use shared_ffi::{
 pub use performance::{
     PerformanceSystem, PerformanceTimer, FunctionCallStats, MemoryStats,
     CompilationStats, EngineStats, FeatureSupport
+};
+
+// Re-export enhanced performance monitoring types
+pub use performance_enhanced::{
+    EnhancedPerformanceSystem, ProfilingOptions, PerformanceEvent,
+    FunctionProfilingStats, PerformanceThresholds, MonitoringOverheadMetrics
 };
 
 // Re-export bulk operations types
