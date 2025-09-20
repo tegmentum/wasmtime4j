@@ -4,13 +4,14 @@ package ai.tegmentum.wasmtime4j.performance;
  * Supported export formats for performance profiling data.
  *
  * <p>Each format provides different advantages for data analysis and visualization:
+ *
  * <ul>
- *   <li>{@link #JSON} - Human-readable structured data for web dashboards</li>
- *   <li>{@link #CSV} - Tabular data for spreadsheet analysis</li>
- *   <li>{@link #BINARY} - Compact binary format for efficient storage</li>
- *   <li>{@link #JFR} - Java Flight Recorder format for JDK tools</li>
- *   <li>{@link #FLAME_GRAPH} - Flame graph format for visualization tools</li>
- *   <li>{@link #JMH_JSON} - JMH benchmark result format</li>
+ *   <li>{@link #JSON} - Human-readable structured data for web dashboards
+ *   <li>{@link #CSV} - Tabular data for spreadsheet analysis
+ *   <li>{@link #BINARY} - Compact binary format for efficient storage
+ *   <li>{@link #JFR} - Java Flight Recorder format for JDK tools
+ *   <li>{@link #FLAME_GRAPH} - Flame graph format for visualization tools
+ *   <li>{@link #JMH_JSON} - JMH benchmark result format
  * </ul>
  *
  * @since 1.0.0
@@ -20,11 +21,12 @@ public enum ExportFormat {
    * JSON format for structured data export.
    *
    * <p>Produces human-readable JSON output suitable for:
+   *
    * <ul>
-   *   <li>Web dashboard consumption</li>
-   *   <li>REST API integration</li>
-   *   <li>Configuration management</li>
-   *   <li>Custom analysis tools</li>
+   *   <li>Web dashboard consumption
+   *   <li>REST API integration
+   *   <li>Configuration management
+   *   <li>Custom analysis tools
    * </ul>
    *
    * <p>Output includes nested structures for metrics, timelines, and metadata.
@@ -35,11 +37,12 @@ public enum ExportFormat {
    * CSV format for tabular data export.
    *
    * <p>Produces comma-separated values suitable for:
+   *
    * <ul>
-   *   <li>Spreadsheet analysis (Excel, LibreOffice)</li>
-   *   <li>Database import operations</li>
-   *   <li>Statistical analysis tools (R, Python pandas)</li>
-   *   <li>Quick data visualization</li>
+   *   <li>Spreadsheet analysis (Excel, LibreOffice)
+   *   <li>Database import operations
+   *   <li>Statistical analysis tools (R, Python pandas)
+   *   <li>Quick data visualization
    * </ul>
    *
    * <p>Flattens nested data structures into tabular format.
@@ -50,11 +53,12 @@ public enum ExportFormat {
    * Compact binary format for efficient storage and transfer.
    *
    * <p>Produces compressed binary output suitable for:
+   *
    * <ul>
-   *   <li>Long-term archival storage</li>
-   *   <li>Network transfer optimization</li>
-   *   <li>High-volume data collection</li>
-   *   <li>Custom binary analysis tools</li>
+   *   <li>Long-term archival storage
+   *   <li>Network transfer optimization
+   *   <li>High-volume data collection
+   *   <li>Custom binary analysis tools
    * </ul>
    *
    * <p>Uses efficient serialization with optional compression.
@@ -65,11 +69,12 @@ public enum ExportFormat {
    * Java Flight Recorder format for JDK tool integration.
    *
    * <p>Produces JFR-compatible output suitable for:
+   *
    * <ul>
-   *   <li>JDK Mission Control analysis</li>
-   *   <li>JProfiler import</li>
-   *   <li>Standard JVM profiling workflows</li>
-   *   <li>Performance regression testing</li>
+   *   <li>JDK Mission Control analysis
+   *   <li>JProfiler import
+   *   <li>Standard JVM profiling workflows
+   *   <li>Performance regression testing
    * </ul>
    *
    * <p>Integrates with existing JVM profiling ecosystem.
@@ -80,11 +85,12 @@ public enum ExportFormat {
    * Flame graph format for performance visualization.
    *
    * <p>Produces flame graph data suitable for:
+   *
    * <ul>
-   *   <li>FlameGraph tool visualization</li>
-   *   <li>Call stack analysis</li>
-   *   <li>Performance hotspot identification</li>
-   *   <li>CPU profiling visualization</li>
+   *   <li>FlameGraph tool visualization
+   *   <li>Call stack analysis
+   *   <li>Performance hotspot identification
+   *   <li>CPU profiling visualization
    * </ul>
    *
    * <p>Optimized for flame graph rendering tools.
@@ -95,11 +101,12 @@ public enum ExportFormat {
    * JMH JSON format for benchmark result integration.
    *
    * <p>Produces JMH-compatible JSON output suitable for:
+   *
    * <ul>
-   *   <li>JMH benchmark result processing</li>
-   *   <li>Performance comparison tools</li>
-   *   <li>Continuous integration reporting</li>
-   *   <li>Benchmark trend analysis</li>
+   *   <li>JMH benchmark result processing
+   *   <li>Performance comparison tools
+   *   <li>Continuous integration reporting
+   *   <li>Benchmark trend analysis
    * </ul>
    *
    * <p>Compatible with JMH result processing tools.
@@ -220,10 +227,11 @@ public enum ExportFormat {
    * Estimates the relative size of output for this format.
    *
    * <p>Returns a rough multiplier compared to raw data size:
+   *
    * <ul>
-   *   <li>Binary formats: 0.3-0.8 (compressed)</li>
-   *   <li>JSON: 1.5-3.0 (structured text)</li>
-   *   <li>CSV: 1.0-1.5 (tabular text)</li>
+   *   <li>Binary formats: 0.3-0.8 (compressed)
+   *   <li>JSON: 1.5-3.0 (structured text)
+   *   <li>CSV: 1.0-1.5 (tabular text)
    * </ul>
    *
    * @return estimated size multiplier
@@ -255,9 +263,7 @@ public enum ExportFormat {
    * @return the best matching format
    */
   public static ExportFormat getBestMatch(
-      final boolean humanReadable,
-      final boolean compressed,
-      final boolean webCompatible) {
+      final boolean humanReadable, final boolean compressed, final boolean webCompatible) {
     if (webCompatible) {
       return humanReadable ? JSON : CSV;
     }

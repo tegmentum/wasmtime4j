@@ -7,8 +7,8 @@ import java.util.Objects;
 /**
  * Represents a performance event with associated data and metadata.
  *
- * <p>Performance events are generated when significant performance conditions are detected,
- * such as high resource usage, slow operations, or potential bottlenecks.
+ * <p>Performance events are generated when significant performance conditions are detected, such as
+ * high resource usage, slow operations, or potential bottlenecks.
  *
  * @since 1.0.0
  */
@@ -67,9 +67,7 @@ public final class PerformanceEvent {
    * @return new performance event
    */
   public static PerformanceEvent create(
-      final PerformanceEventType type,
-      final Map<String, Object> data,
-      final String message) {
+      final PerformanceEventType type, final Map<String, Object> data, final String message) {
     final double autoSeverity = type.isCritical() ? 0.8 : 0.5;
     return create(type, data, message, autoSeverity);
   }
@@ -216,7 +214,8 @@ public final class PerformanceEvent {
    * @return formatted event string
    */
   public String toLogString() {
-    return String.format("[%s] %s: %s (severity: %.2f) - %s",
+    return String.format(
+        "[%s] %s: %s (severity: %.2f) - %s",
         getSeverityLevel(), type.name(), message, severity, data);
   }
 
@@ -229,11 +228,11 @@ public final class PerformanceEvent {
       return false;
     }
     final PerformanceEvent that = (PerformanceEvent) obj;
-    return Double.compare(that.severity, severity) == 0 &&
-        type == that.type &&
-        Objects.equals(timestamp, that.timestamp) &&
-        Objects.equals(data, that.data) &&
-        Objects.equals(message, that.message);
+    return Double.compare(that.severity, severity) == 0
+        && type == that.type
+        && Objects.equals(timestamp, that.timestamp)
+        && Objects.equals(data, that.data)
+        && Objects.equals(message, that.message);
   }
 
   @Override

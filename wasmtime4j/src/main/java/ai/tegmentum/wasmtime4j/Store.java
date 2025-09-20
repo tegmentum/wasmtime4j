@@ -77,8 +77,8 @@ public interface Store extends Closeable {
   /**
    * Consumes a specific amount of fuel from the store.
    *
-   * <p>This method subtracts the specified amount of fuel from the store's fuel counter.
-   * If the store doesn't have enough fuel, a WasmException is thrown.
+   * <p>This method subtracts the specified amount of fuel from the store's fuel counter. If the
+   * store doesn't have enough fuel, a WasmException is thrown.
    *
    * @param fuel the amount of fuel to consume
    * @return the remaining fuel after consumption
@@ -97,8 +97,8 @@ public interface Store extends Closeable {
   /**
    * Increments the epoch counter for this store.
    *
-   * <p>This method manually advances the epoch counter, which can trigger
-   * epoch-based interruptions if they are enabled.
+   * <p>This method manually advances the epoch counter, which can trigger epoch-based interruptions
+   * if they are enabled.
    */
   void incrementEpoch() throws WasmException;
 

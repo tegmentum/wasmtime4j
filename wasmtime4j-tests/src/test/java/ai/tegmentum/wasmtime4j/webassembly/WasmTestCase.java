@@ -176,8 +176,8 @@ public final class WasmTestCase {
    * @return the test case created from the file
    * @throws IOException if the file cannot be read
    */
-  public static WasmTestCase fromFile(final Path wasmFile, final WasmTestSuiteLoader.TestSuiteType suiteType)
-      throws IOException {
+  public static WasmTestCase fromFile(
+      final Path wasmFile, final WasmTestSuiteLoader.TestSuiteType suiteType) throws IOException {
     final String fileName = wasmFile.getFileName().toString();
     final String testName = fileName.substring(0, fileName.length() - 5); // Remove .wasm extension
 

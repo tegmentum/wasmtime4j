@@ -6,8 +6,8 @@ import java.util.Objects;
 /**
  * Detailed network usage information for monitoring network I/O operations.
  *
- * <p>This class provides comprehensive network statistics including bytes transferred,
- * packet counts, connection information, and latency measurements.
+ * <p>This class provides comprehensive network statistics including bytes transferred, packet
+ * counts, connection information, and latency measurements.
  *
  * @since 1.0.0
  */
@@ -41,10 +41,12 @@ public final class NetworkUsage {
     this.packetsReceived = Math.max(0, packetsReceived);
     this.packetsSent = Math.max(0, packetsSent);
     this.activeConnections = Math.max(0, activeConnections);
-    this.averageConnectionTime = Objects.requireNonNull(averageConnectionTime, "averageConnectionTime cannot be null");
+    this.averageConnectionTime =
+        Objects.requireNonNull(averageConnectionTime, "averageConnectionTime cannot be null");
 
     if (averageConnectionTime.isNegative()) {
-      throw new IllegalArgumentException("averageConnectionTime cannot be negative: " + averageConnectionTime);
+      throw new IllegalArgumentException(
+          "averageConnectionTime cannot be negative: " + averageConnectionTime);
     }
   }
 
@@ -200,8 +202,8 @@ public final class NetworkUsage {
    * @return true if interactive traffic pattern
    */
   public boolean isInteractiveTraffic() {
-    return getAverageBytesPerPacket() < 256 &&
-           averageConnectionTime.compareTo(Duration.ofMinutes(5)) < 0;
+    return getAverageBytesPerPacket() < 256
+        && averageConnectionTime.compareTo(Duration.ofMinutes(5)) < 0;
   }
 
   /**
@@ -218,7 +220,8 @@ public final class NetworkUsage {
   /**
    * Gets the network efficiency score (0.0 to 1.0).
    *
-   * <p>Higher scores indicate better network efficiency (good packet sizes, reasonable connection counts).
+   * <p>Higher scores indicate better network efficiency (good packet sizes, reasonable connection
+   * counts).
    *
    * @return network efficiency score
    */
@@ -271,26 +274,36 @@ public final class NetworkUsage {
       return false;
     }
     final NetworkUsage that = (NetworkUsage) obj;
-    return bytesReceived == that.bytesReceived &&
-        bytesSent == that.bytesSent &&
-        packetsReceived == that.packetsReceived &&
-        packetsSent == that.packetsSent &&
-        activeConnections == that.activeConnections &&
-        Objects.equals(averageConnectionTime, that.averageConnectionTime);
+    return bytesReceived == that.bytesReceived
+        && bytesSent == that.bytesSent
+        && packetsReceived == that.packetsReceived
+        && packetsSent == that.packetsSent
+        && activeConnections == that.activeConnections
+        && Objects.equals(averageConnectionTime, that.averageConnectionTime);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(bytesReceived, bytesSent, packetsReceived, packetsSent,
-                       activeConnections, averageConnectionTime);
+    return Objects.hash(
+        bytesReceived,
+        bytesSent,
+        packetsReceived,
+        packetsSent,
+        activeConnections,
+        averageConnectionTime);
   }
 
   @Override
   public String toString() {
     return String.format(
-        "NetworkUsage{received=%s (%d packets), sent=%s (%d packets), " +
-        "activeConnections=%d, avgConnectionTime=%s, avgBytesPerPacket=%.0f}",
-        formatBytes(bytesReceived), packetsReceived, formatBytes(bytesSent), packetsSent,
-        activeConnections, averageConnectionTime, getAverageBytesPerPacket());
+        "NetworkUsage{received=%s (%d packets), sent=%s (%d packets), "
+            + "activeConnections=%d, avgConnectionTime=%s, avgBytesPerPacket=%.0f}",
+        formatBytes(bytesReceived),
+        packetsReceived,
+        formatBytes(bytesSent),
+        packetsSent,
+        activeConnections,
+        averageConnectionTime,
+        getAverageBytesPerPacket());
   }
 }

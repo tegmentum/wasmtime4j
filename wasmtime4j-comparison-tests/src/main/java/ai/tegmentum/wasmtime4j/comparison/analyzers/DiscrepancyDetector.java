@@ -36,8 +36,10 @@ public final class DiscrepancyDetector {
   private static final int MIN_SAMPLE_SIZE_FOR_PATTERNS = 3;
 
   // Wasmtime-specific detection thresholds for zero discrepancy requirement
-  private static final double WASMTIME_ZERO_TOLERANCE = 1e-15; // Near-zero tolerance for Wasmtime equivalence
-  private static final double WASMTIME_FLOAT_PRECISION_TOLERANCE = 1e-12; // Wasmtime floating-point precision
+  private static final double WASMTIME_ZERO_TOLERANCE =
+      1e-15; // Near-zero tolerance for Wasmtime equivalence
+  private static final double WASMTIME_FLOAT_PRECISION_TOLERANCE =
+      1e-12; // Wasmtime floating-point precision
   private static final int WASMTIME_REGRESSION_WINDOW = 10; // Window for regression detection
 
   private final ToleranceConfiguration toleranceConfig;
@@ -527,9 +529,10 @@ public final class DiscrepancyDetector {
     final List<BehavioralDiscrepancy> validationIssues = new ArrayList<>();
 
     // Check if any critical discrepancies exist that violate zero discrepancy requirement
-    final long criticalCount = existingDiscrepancies.stream()
-        .filter(d -> d.getSeverity() == DiscrepancySeverity.CRITICAL)
-        .count();
+    final long criticalCount =
+        existingDiscrepancies.stream()
+            .filter(d -> d.getSeverity() == DiscrepancySeverity.CRITICAL)
+            .count();
 
     if (criticalCount > 0) {
       validationIssues.add(
@@ -537,16 +540,21 @@ public final class DiscrepancyDetector {
               DiscrepancyType.SYSTEMATIC_PATTERN,
               DiscrepancySeverity.CRITICAL,
               "Zero discrepancy requirement violated",
-              String.format("%d critical discrepancies detected, violating zero tolerance requirement", criticalCount),
+              String.format(
+                  "%d critical discrepancies detected, violating zero tolerance requirement",
+                  criticalCount),
               "Review and fix all critical discrepancies to achieve zero discrepancy goal",
               "validation",
               executionResults.keySet()));
     }
 
     // Check for any behavioral inconsistencies between JNI and Panama
-    if (executionResults.containsKey(RuntimeType.JNI) && executionResults.containsKey(RuntimeType.PANAMA)) {
-      final BehavioralAnalyzer.TestExecutionResult jniResult = executionResults.get(RuntimeType.JNI);
-      final BehavioralAnalyzer.TestExecutionResult panamaResult = executionResults.get(RuntimeType.PANAMA);
+    if (executionResults.containsKey(RuntimeType.JNI)
+        && executionResults.containsKey(RuntimeType.PANAMA)) {
+      final BehavioralAnalyzer.TestExecutionResult jniResult =
+          executionResults.get(RuntimeType.JNI);
+      final BehavioralAnalyzer.TestExecutionResult panamaResult =
+          executionResults.get(RuntimeType.PANAMA);
 
       if (!areResultsEquivalent(jniResult, panamaResult)) {
         validationIssues.add(
@@ -569,7 +577,8 @@ public final class DiscrepancyDetector {
       final BehavioralAnalyzer.TestExecutionResult result1,
       final BehavioralAnalyzer.TestExecutionResult result2) {
     // Check execution status
-    if (result1.isSuccessful() != result2.isSuccessful() || result1.isSkipped() != result2.isSkipped()) {
+    if (result1.isSuccessful() != result2.isSuccessful()
+        || result1.isSkipped() != result2.isSkipped()) {
       return false;
     }
 

@@ -4,33 +4,33 @@ import ai.tegmentum.wasmtime4j.performance.GcImpactMetrics;
 import ai.tegmentum.wasmtime4j.performance.ProfileSnapshot;
 import ai.tegmentum.wasmtime4j.performance.memory.MemoryAnalysisResult;
 import ai.tegmentum.wasmtime4j.performance.microbench.BenchmarkSuite;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import java.util.logging.Logger;
 
 /**
- * Intelligent performance insights engine that analyzes performance data and provides
- * actionable recommendations for WebAssembly optimization.
+ * Intelligent performance insights engine that analyzes performance data and provides actionable
+ * recommendations for WebAssembly optimization.
  *
  * <p>This engine combines multiple data sources to provide comprehensive performance insights:
+ *
  * <ul>
- *   <li>Memory analysis results and patterns</li>
- *   <li>Garbage collection impact analysis</li>
- *   <li>Performance benchmark results</li>
- *   <li>Profile snapshots and trends</li>
- *   <li>Runtime-specific characteristics</li>
+ *   <li>Memory analysis results and patterns
+ *   <li>Garbage collection impact analysis
+ *   <li>Performance benchmark results
+ *   <li>Profile snapshots and trends
+ *   <li>Runtime-specific characteristics
  * </ul>
  *
- * <p>The engine applies machine learning-like pattern recognition and rule-based analysis
- * to identify optimization opportunities and generate specific, actionable recommendations.
+ * <p>The engine applies machine learning-like pattern recognition and rule-based analysis to
+ * identify optimization opportunities and generate specific, actionable recommendations.
  *
  * <p>Usage example:
+ *
  * <pre>{@code
  * PerformanceInsightsEngine engine = PerformanceInsightsEngine.builder()
  *     .withMemoryAnalysis(true)
@@ -158,7 +158,8 @@ public final class PerformanceInsightsEngine {
    * @param runtimeType the runtime type
    * @param characteristics runtime characteristics map
    */
-  public void addRuntimeCharacteristics(final String runtimeType, final Map<String, Object> characteristics) {
+  public void addRuntimeCharacteristics(
+      final String runtimeType, final Map<String, Object> characteristics) {
     Objects.requireNonNull(runtimeType, "runtimeType cannot be null");
     Objects.requireNonNull(characteristics, "characteristics cannot be null");
     runtimeCharacteristics.put(runtimeType, characteristics);
@@ -179,18 +180,10 @@ public final class PerformanceInsightsEngine {
     final PerformanceSummary summary = generateSummary();
 
     return new PerformanceInsights(
-        Instant.now(),
-        issues,
-        recommendations,
-        opportunities,
-        summary,
-        getDataSources()
-    );
+        Instant.now(), issues, recommendations, opportunities, summary, getDataSources());
   }
 
-  /**
-   * Clears all collected performance data.
-   */
+  /** Clears all collected performance data. */
   public void clearData() {
     memoryResults.clear();
     gcMetrics.clear();
@@ -211,8 +204,7 @@ public final class PerformanceInsightsEngine {
         gcMetrics.size(),
         benchmarkResults.size(),
         profileSnapshots.size(),
-        runtimeCharacteristics.size()
-    );
+        runtimeCharacteristics.size());
   }
 
   private List<PerformanceIssue> identifyPerformanceIssues() {
@@ -247,38 +239,41 @@ public final class PerformanceInsightsEngine {
     for (final MemoryAnalysisResult result : memoryResults) {
       // Check for low efficiency
       if (result.getMemoryEfficiencyScore() < LOW_EFFICIENCY_THRESHOLD) {
-        issues.add(new PerformanceIssue(
-            IssueSeverity.MEDIUM,
-            IssueCategory.MEMORY,
-            "Low memory efficiency",
-            String.format("Memory efficiency score of %.1f is below recommended threshold of %.1f",
-                result.getMemoryEfficiencyScore(), LOW_EFFICIENCY_THRESHOLD),
-            result.getSessionName()
-        ));
+        issues.add(
+            new PerformanceIssue(
+                IssueSeverity.MEDIUM,
+                IssueCategory.MEMORY,
+                "Low memory efficiency",
+                String.format(
+                    "Memory efficiency score of %.1f is below recommended threshold of %.1f",
+                    result.getMemoryEfficiencyScore(), LOW_EFFICIENCY_THRESHOLD),
+                result.getSessionName()));
       }
 
       // Check for excessive memory growth
       if (result.getHeapDelta() > 100 * 1024 * 1024) { // 100MB
-        issues.add(new PerformanceIssue(
-            IssueSeverity.HIGH,
-            IssueCategory.MEMORY,
-            "Excessive memory growth",
-            String.format("Heap memory increased by %s during operation",
-                formatBytes(result.getHeapDelta())),
-            result.getSessionName()
-        ));
+        issues.add(
+            new PerformanceIssue(
+                IssueSeverity.HIGH,
+                IssueCategory.MEMORY,
+                "Excessive memory growth",
+                String.format(
+                    "Heap memory increased by %s during operation",
+                    formatBytes(result.getHeapDelta())),
+                result.getSessionName()));
       }
 
       // Check for high allocation rates
       if (result.getAllocationAnalysis().getAllocationRate() > HIGH_ALLOCATION_RATE_THRESHOLD) {
-        issues.add(new PerformanceIssue(
-            IssueSeverity.MEDIUM,
-            IssueCategory.MEMORY,
-            "High allocation rate",
-            String.format("Allocation rate of %.1f MB/s exceeds recommended threshold",
-                result.getAllocationAnalysis().getAllocationRate()),
-            result.getSessionName()
-        ));
+        issues.add(
+            new PerformanceIssue(
+                IssueSeverity.MEDIUM,
+                IssueCategory.MEMORY,
+                "High allocation rate",
+                String.format(
+                    "Allocation rate of %.1f MB/s exceeds recommended threshold",
+                    result.getAllocationAnalysis().getAllocationRate()),
+                result.getSessionName()));
       }
     }
 
@@ -291,26 +286,28 @@ public final class PerformanceInsightsEngine {
     for (final GcImpactMetrics metrics : gcMetrics) {
       // Check for high GC overhead
       if (metrics.getGcOverheadPercentage() > HIGH_GC_OVERHEAD_THRESHOLD) {
-        issues.add(new PerformanceIssue(
-            IssueSeverity.HIGH,
-            IssueCategory.GARBAGE_COLLECTION,
-            "High GC overhead",
-            String.format("Garbage collection overhead of %.1f%% exceeds recommended threshold of %.1f%%",
-                metrics.getGcOverheadPercentage(), HIGH_GC_OVERHEAD_THRESHOLD),
-            "GC Analysis"
-        ));
+        issues.add(
+            new PerformanceIssue(
+                IssueSeverity.HIGH,
+                IssueCategory.GARBAGE_COLLECTION,
+                "High GC overhead",
+                String.format(
+                    "Garbage collection overhead of %.1f%% exceeds recommended threshold of %.1f%%",
+                    metrics.getGcOverheadPercentage(), HIGH_GC_OVERHEAD_THRESHOLD),
+                "GC Analysis"));
       }
 
       // Check for frequent collections
       if (metrics.getTotalGcCollections() > 100) {
-        issues.add(new PerformanceIssue(
-            IssueSeverity.MEDIUM,
-            IssueCategory.GARBAGE_COLLECTION,
-            "Frequent GC collections",
-            String.format("High number of GC collections (%d) indicates potential memory pressure",
-                metrics.getTotalGcCollections()),
-            "GC Analysis"
-        ));
+        issues.add(
+            new PerformanceIssue(
+                IssueSeverity.MEDIUM,
+                IssueCategory.GARBAGE_COLLECTION,
+                "Frequent GC collections",
+                String.format(
+                    "High number of GC collections (%d) indicates potential memory pressure",
+                    metrics.getTotalGcCollections()),
+                "GC Analysis"));
       }
     }
 
@@ -325,26 +322,29 @@ public final class PerformanceInsightsEngine {
       final Map<String, BenchmarkSuite.BenchmarkResult> resultMap = results.getResults();
 
       // Look for performance inconsistencies
-      final var scores = resultMap.values().stream()
-          .mapToDouble(BenchmarkSuite.BenchmarkResult::getScore)
-          .toArray();
+      final var scores =
+          resultMap.values().stream()
+              .mapToDouble(BenchmarkSuite.BenchmarkResult::getScore)
+              .toArray();
 
       if (scores.length > 1) {
         final double mean = java.util.Arrays.stream(scores).average().orElse(0);
-        final double variance = java.util.Arrays.stream(scores)
-            .map(score -> Math.pow(score - mean, 2))
-            .average().orElse(0);
+        final double variance =
+            java.util.Arrays.stream(scores)
+                .map(score -> Math.pow(score - mean, 2))
+                .average()
+                .orElse(0);
         final double stdDev = Math.sqrt(variance);
         final double cv = mean > 0 ? (stdDev / mean) * 100 : 0;
 
         if (cv > 20) { // 20% coefficient of variation
-          issues.add(new PerformanceIssue(
-              IssueSeverity.MEDIUM,
-              IssueCategory.PERFORMANCE_VARIATION,
-              "High performance variation",
-              String.format("Benchmark results show high variation (CV: %.1f%%)", cv),
-              "Benchmark Analysis"
-          ));
+          issues.add(
+              new PerformanceIssue(
+                  IssueSeverity.MEDIUM,
+                  IssueCategory.PERFORMANCE_VARIATION,
+                  "High performance variation",
+                  String.format("Benchmark results show high variation (CV: %.1f%%)", cv),
+                  "Benchmark Analysis"));
         }
       }
     }
@@ -359,19 +359,20 @@ public final class PerformanceInsightsEngine {
     if (runtimeCharacteristics.size() > 1) {
       // This would analyze runtime-specific performance differences
       // Simplified implementation for now
-      issues.add(new PerformanceIssue(
-          IssueSeverity.LOW,
-          IssueCategory.RUNTIME_COMPARISON,
-          "Runtime performance analysis available",
-          "Multiple runtimes detected - consider analyzing performance differences",
-          "Runtime Comparison"
-      ));
+      issues.add(
+          new PerformanceIssue(
+              IssueSeverity.LOW,
+              IssueCategory.RUNTIME_COMPARISON,
+              "Runtime performance analysis available",
+              "Multiple runtimes detected - consider analyzing performance differences",
+              "Runtime Comparison"));
     }
 
     return issues;
   }
 
-  private List<PerformanceRecommendation> generateRecommendations(final List<PerformanceIssue> issues) {
+  private List<PerformanceRecommendation> generateRecommendations(
+      final List<PerformanceIssue> issues) {
     final List<PerformanceRecommendation> recommendations = new ArrayList<>();
 
     for (final PerformanceIssue issue : issues) {
@@ -384,86 +385,101 @@ public final class PerformanceInsightsEngine {
     return recommendations;
   }
 
-  private List<PerformanceRecommendation> generateRecommendationsForIssue(final PerformanceIssue issue) {
+  private List<PerformanceRecommendation> generateRecommendationsForIssue(
+      final PerformanceIssue issue) {
     final List<PerformanceRecommendation> recommendations = new ArrayList<>();
 
     switch (issue.getCategory()) {
       case MEMORY:
         if (issue.getTitle().contains("efficiency")) {
-          recommendations.add(new PerformanceRecommendation(
-              RecommendationPriority.HIGH,
-              RecommendationType.OPTIMIZATION,
-              "Optimize memory usage patterns",
-              "Review object lifecycle management and consider object pooling for frequently allocated objects",
-              List.of("Implement object pooling", "Reduce temporary object creation", "Optimize data structures"),
-              EstimatedImpact.MEDIUM
-          ));
+          recommendations.add(
+              new PerformanceRecommendation(
+                  RecommendationPriority.HIGH,
+                  RecommendationType.OPTIMIZATION,
+                  "Optimize memory usage patterns",
+                  "Review object lifecycle management and consider object pooling for frequently"
+                      + " allocated objects",
+                  List.of(
+                      "Implement object pooling",
+                      "Reduce temporary object creation",
+                      "Optimize data structures"),
+                  EstimatedImpact.MEDIUM));
         }
         if (issue.getTitle().contains("growth")) {
-          recommendations.add(new PerformanceRecommendation(
-              RecommendationPriority.HIGH,
-              RecommendationType.CONFIGURATION,
-              "Investigate memory leaks",
-              "Excessive memory growth may indicate memory leaks or inefficient memory usage",
-              List.of("Use memory profiler", "Review object retention", "Check for circular references"),
-              EstimatedImpact.HIGH
-          ));
+          recommendations.add(
+              new PerformanceRecommendation(
+                  RecommendationPriority.HIGH,
+                  RecommendationType.CONFIGURATION,
+                  "Investigate memory leaks",
+                  "Excessive memory growth may indicate memory leaks or inefficient memory usage",
+                  List.of(
+                      "Use memory profiler",
+                      "Review object retention",
+                      "Check for circular references"),
+                  EstimatedImpact.HIGH));
         }
         if (issue.getTitle().contains("allocation")) {
-          recommendations.add(new PerformanceRecommendation(
-              RecommendationPriority.MEDIUM,
-              RecommendationType.OPTIMIZATION,
-              "Reduce allocation rate",
-              "High allocation rates can cause GC pressure and performance degradation",
-              List.of("Reuse objects where possible", "Use primitive collections", "Optimize hot paths"),
-              EstimatedImpact.MEDIUM
-          ));
+          recommendations.add(
+              new PerformanceRecommendation(
+                  RecommendationPriority.MEDIUM,
+                  RecommendationType.OPTIMIZATION,
+                  "Reduce allocation rate",
+                  "High allocation rates can cause GC pressure and performance degradation",
+                  List.of(
+                      "Reuse objects where possible",
+                      "Use primitive collections",
+                      "Optimize hot paths"),
+                  EstimatedImpact.MEDIUM));
         }
         break;
 
       case GARBAGE_COLLECTION:
         if (issue.getTitle().contains("overhead")) {
-          recommendations.add(new PerformanceRecommendation(
-              RecommendationPriority.HIGH,
-              RecommendationType.CONFIGURATION,
-              "Tune garbage collection settings",
-              "High GC overhead can be reduced through heap sizing and GC algorithm tuning",
-              List.of("Increase heap size", "Consider G1GC or ZGC", "Tune GC parameters"),
-              EstimatedImpact.HIGH
-          ));
+          recommendations.add(
+              new PerformanceRecommendation(
+                  RecommendationPriority.HIGH,
+                  RecommendationType.CONFIGURATION,
+                  "Tune garbage collection settings",
+                  "High GC overhead can be reduced through heap sizing and GC algorithm tuning",
+                  List.of("Increase heap size", "Consider G1GC or ZGC", "Tune GC parameters"),
+                  EstimatedImpact.HIGH));
         }
         if (issue.getTitle().contains("frequent")) {
-          recommendations.add(new PerformanceRecommendation(
-              RecommendationPriority.MEDIUM,
-              RecommendationType.OPTIMIZATION,
-              "Reduce allocation pressure",
-              "Frequent GC collections indicate high allocation rates",
-              List.of("Optimize allocation patterns", "Increase heap size", "Use off-heap storage"),
-              EstimatedImpact.MEDIUM
-          ));
+          recommendations.add(
+              new PerformanceRecommendation(
+                  RecommendationPriority.MEDIUM,
+                  RecommendationType.OPTIMIZATION,
+                  "Reduce allocation pressure",
+                  "Frequent GC collections indicate high allocation rates",
+                  List.of(
+                      "Optimize allocation patterns", "Increase heap size", "Use off-heap storage"),
+                  EstimatedImpact.MEDIUM));
         }
         break;
 
       case PERFORMANCE_VARIATION:
-        recommendations.add(new PerformanceRecommendation(
-            RecommendationPriority.MEDIUM,
-            RecommendationType.INVESTIGATION,
-            "Investigate performance inconsistencies",
-            "High performance variation suggests unstable performance characteristics",
-            List.of("Profile hot paths", "Check for resource contention", "Analyze JIT compilation"),
-            EstimatedImpact.MEDIUM
-        ));
+        recommendations.add(
+            new PerformanceRecommendation(
+                RecommendationPriority.MEDIUM,
+                RecommendationType.INVESTIGATION,
+                "Investigate performance inconsistencies",
+                "High performance variation suggests unstable performance characteristics",
+                List.of(
+                    "Profile hot paths",
+                    "Check for resource contention",
+                    "Analyze JIT compilation"),
+                EstimatedImpact.MEDIUM));
         break;
 
       case RUNTIME_COMPARISON:
-        recommendations.add(new PerformanceRecommendation(
-            RecommendationPriority.LOW,
-            RecommendationType.ANALYSIS,
-            "Analyze runtime performance differences",
-            "Compare performance characteristics across different runtime implementations",
-            List.of("Run comparative benchmarks", "Analyze runtime-specific optimizations"),
-            EstimatedImpact.LOW
-        ));
+        recommendations.add(
+            new PerformanceRecommendation(
+                RecommendationPriority.LOW,
+                RecommendationType.ANALYSIS,
+                "Analyze runtime performance differences",
+                "Compare performance characteristics across different runtime implementations",
+                List.of("Run comparative benchmarks", "Analyze runtime-specific optimizations"),
+                EstimatedImpact.LOW));
         break;
     }
 
@@ -475,25 +491,27 @@ public final class PerformanceInsightsEngine {
 
     // Recommendation based on data availability
     if (memoryResults.isEmpty() && memoryAnalysisEnabled) {
-      recommendations.add(new PerformanceRecommendation(
-          RecommendationPriority.LOW,
-          RecommendationType.MONITORING,
-          "Enable memory monitoring",
-          "No memory analysis data available - consider enabling memory monitoring for better insights",
-          List.of("Start memory analysis sessions", "Configure memory profiling"),
-          EstimatedImpact.LOW
-      ));
+      recommendations.add(
+          new PerformanceRecommendation(
+              RecommendationPriority.LOW,
+              RecommendationType.MONITORING,
+              "Enable memory monitoring",
+              "No memory analysis data available - consider enabling memory monitoring for better"
+                  + " insights",
+              List.of("Start memory analysis sessions", "Configure memory profiling"),
+              EstimatedImpact.LOW));
     }
 
     if (gcMetrics.isEmpty() && gcAnalysisEnabled) {
-      recommendations.add(new PerformanceRecommendation(
-          RecommendationPriority.LOW,
-          RecommendationType.MONITORING,
-          "Enable GC monitoring",
-          "No GC analysis data available - enable GC monitoring to identify optimization opportunities",
-          List.of("Capture GC metrics", "Enable GC logging"),
-          EstimatedImpact.LOW
-      ));
+      recommendations.add(
+          new PerformanceRecommendation(
+              RecommendationPriority.LOW,
+              RecommendationType.MONITORING,
+              "Enable GC monitoring",
+              "No GC analysis data available - enable GC monitoring to identify optimization"
+                  + " opportunities",
+              List.of("Capture GC metrics", "Enable GC logging"),
+              EstimatedImpact.LOW));
     }
 
     return recommendations;
@@ -505,32 +523,43 @@ public final class PerformanceInsightsEngine {
     // Identify opportunities based on collected data patterns
     if (!memoryResults.isEmpty()) {
       // Look for consistent memory patterns across sessions
-      final double avgEfficiency = memoryResults.stream()
-          .mapToDouble(MemoryAnalysisResult::getMemoryEfficiencyScore)
-          .average().orElse(0);
+      final double avgEfficiency =
+          memoryResults.stream()
+              .mapToDouble(MemoryAnalysisResult::getMemoryEfficiencyScore)
+              .average()
+              .orElse(0);
 
       if (avgEfficiency < 80) {
-        opportunities.add(new OptimizationOpportunity(
-            "Memory Efficiency Improvement",
-            String.format("Average memory efficiency is %.1f%% - optimization could improve performance", avgEfficiency),
-            EstimatedImpact.MEDIUM,
-            List.of("Profile memory allocation patterns", "Implement object pooling", "Optimize data structures")
-        ));
+        opportunities.add(
+            new OptimizationOpportunity(
+                "Memory Efficiency Improvement",
+                String.format(
+                    "Average memory efficiency is %.1f%% - optimization could improve performance",
+                    avgEfficiency),
+                EstimatedImpact.MEDIUM,
+                List.of(
+                    "Profile memory allocation patterns",
+                    "Implement object pooling",
+                    "Optimize data structures")));
       }
     }
 
     if (!gcMetrics.isEmpty()) {
-      final double avgGcOverhead = gcMetrics.stream()
-          .mapToDouble(GcImpactMetrics::getGcOverheadPercentage)
-          .average().orElse(0);
+      final double avgGcOverhead =
+          gcMetrics.stream()
+              .mapToDouble(GcImpactMetrics::getGcOverheadPercentage)
+              .average()
+              .orElse(0);
 
       if (avgGcOverhead > 2.0) {
-        opportunities.add(new OptimizationOpportunity(
-            "Garbage Collection Optimization",
-            String.format("Average GC overhead is %.1f%% - tuning could reduce performance impact", avgGcOverhead),
-            EstimatedImpact.HIGH,
-            List.of("Increase heap size", "Tune GC algorithm", "Reduce allocation rate")
-        ));
+        opportunities.add(
+            new OptimizationOpportunity(
+                "Garbage Collection Optimization",
+                String.format(
+                    "Average GC overhead is %.1f%% - tuning could reduce performance impact",
+                    avgGcOverhead),
+                EstimatedImpact.HIGH,
+                List.of("Increase heap size", "Tune GC algorithm", "Reduce allocation rate")));
       }
     }
 
@@ -544,24 +573,33 @@ public final class PerformanceInsightsEngine {
     summary.append("Generated: ").append(Instant.now()).append("\n\n");
 
     if (!memoryResults.isEmpty()) {
-      final double avgEfficiency = memoryResults.stream()
-          .mapToDouble(MemoryAnalysisResult::getMemoryEfficiencyScore)
-          .average().orElse(0);
-      summary.append(String.format("Memory Efficiency: %.1f/100 (avg across %d sessions)\n",
-          avgEfficiency, memoryResults.size()));
+      final double avgEfficiency =
+          memoryResults.stream()
+              .mapToDouble(MemoryAnalysisResult::getMemoryEfficiencyScore)
+              .average()
+              .orElse(0);
+      summary.append(
+          String.format(
+              "Memory Efficiency: %.1f/100 (avg across %d sessions)\n",
+              avgEfficiency, memoryResults.size()));
     }
 
     if (!gcMetrics.isEmpty()) {
-      final double avgGcOverhead = gcMetrics.stream()
-          .mapToDouble(GcImpactMetrics::getGcOverheadPercentage)
-          .average().orElse(0);
-      summary.append(String.format("GC Overhead: %.1f%% (avg across %d measurements)\n",
-          avgGcOverhead, gcMetrics.size()));
+      final double avgGcOverhead =
+          gcMetrics.stream()
+              .mapToDouble(GcImpactMetrics::getGcOverheadPercentage)
+              .average()
+              .orElse(0);
+      summary.append(
+          String.format(
+              "GC Overhead: %.1f%% (avg across %d measurements)\n",
+              avgGcOverhead, gcMetrics.size()));
     }
 
     if (!benchmarkResults.isEmpty()) {
-      summary.append(String.format("Benchmark Results: %d benchmark suites analyzed\n",
-          benchmarkResults.size()));
+      summary.append(
+          String.format(
+              "Benchmark Results: %d benchmark suites analyzed\n", benchmarkResults.size()));
     }
 
     return new PerformanceSummary(summary.toString());
@@ -583,9 +621,7 @@ public final class PerformanceInsightsEngine {
     return String.format("%.1f MB", bytes / 1024.0 / 1024.0);
   }
 
-  /**
-   * Builder for PerformanceInsightsEngine.
-   */
+  /** Builder for PerformanceInsightsEngine. */
   public static final class Builder {
     private boolean memoryAnalysisEnabled = true;
     private boolean gcAnalysisEnabled = true;
@@ -617,9 +653,7 @@ public final class PerformanceInsightsEngine {
     }
   }
 
-  /**
-   * Data collection status.
-   */
+  /** Data collection status. */
   public static final class DataCollectionStatus {
     private final int memoryResults;
     private final int gcMetrics;
@@ -627,9 +661,12 @@ public final class PerformanceInsightsEngine {
     private final int profileSnapshots;
     private final int runtimeCharacteristics;
 
-    public DataCollectionStatus(final int memoryResults, final int gcMetrics,
-                               final int benchmarkResults, final int profileSnapshots,
-                               final int runtimeCharacteristics) {
+    public DataCollectionStatus(
+        final int memoryResults,
+        final int gcMetrics,
+        final int benchmarkResults,
+        final int profileSnapshots,
+        final int runtimeCharacteristics) {
       this.memoryResults = memoryResults;
       this.gcMetrics = gcMetrics;
       this.benchmarkResults = benchmarkResults;
@@ -637,21 +674,68 @@ public final class PerformanceInsightsEngine {
       this.runtimeCharacteristics = runtimeCharacteristics;
     }
 
-    public int getMemoryResults() { return memoryResults; }
-    public int getGcMetrics() { return gcMetrics; }
-    public int getBenchmarkResults() { return benchmarkResults; }
-    public int getProfileSnapshots() { return profileSnapshots; }
-    public int getRuntimeCharacteristics() { return runtimeCharacteristics; }
+    public int getMemoryResults() {
+      return memoryResults;
+    }
+
+    public int getGcMetrics() {
+      return gcMetrics;
+    }
+
+    public int getBenchmarkResults() {
+      return benchmarkResults;
+    }
+
+    public int getProfileSnapshots() {
+      return profileSnapshots;
+    }
+
+    public int getRuntimeCharacteristics() {
+      return runtimeCharacteristics;
+    }
 
     public int getTotalDataPoints() {
-      return memoryResults + gcMetrics + benchmarkResults + profileSnapshots + runtimeCharacteristics;
+      return memoryResults
+          + gcMetrics
+          + benchmarkResults
+          + profileSnapshots
+          + runtimeCharacteristics;
     }
   }
 
   // Enums for categorization
-  public enum IssueSeverity { LOW, MEDIUM, HIGH, CRITICAL }
-  public enum IssueCategory { MEMORY, GARBAGE_COLLECTION, PERFORMANCE_VARIATION, RUNTIME_COMPARISON }
-  public enum RecommendationPriority { LOW, MEDIUM, HIGH, CRITICAL }
-  public enum RecommendationType { OPTIMIZATION, CONFIGURATION, INVESTIGATION, MONITORING, ANALYSIS }
-  public enum EstimatedImpact { LOW, MEDIUM, HIGH }
+  public enum IssueSeverity {
+    LOW,
+    MEDIUM,
+    HIGH,
+    CRITICAL
+  }
+
+  public enum IssueCategory {
+    MEMORY,
+    GARBAGE_COLLECTION,
+    PERFORMANCE_VARIATION,
+    RUNTIME_COMPARISON
+  }
+
+  public enum RecommendationPriority {
+    LOW,
+    MEDIUM,
+    HIGH,
+    CRITICAL
+  }
+
+  public enum RecommendationType {
+    OPTIMIZATION,
+    CONFIGURATION,
+    INVESTIGATION,
+    MONITORING,
+    ANALYSIS
+  }
+
+  public enum EstimatedImpact {
+    LOW,
+    MEDIUM,
+    HIGH
+  }
 }

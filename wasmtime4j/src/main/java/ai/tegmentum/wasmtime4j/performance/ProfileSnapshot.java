@@ -8,17 +8,18 @@ import java.util.Map;
 /**
  * Comprehensive performance snapshot capturing system state at a specific moment.
  *
- * <p>A profile snapshot provides a complete view of performance metrics, resource usage,
- * and system characteristics at the time of capture. This enables:
+ * <p>A profile snapshot provides a complete view of performance metrics, resource usage, and system
+ * characteristics at the time of capture. This enables:
+ *
  * <ul>
- *   <li>Point-in-time performance analysis</li>
- *   <li>Historical trend tracking</li>
- *   <li>Performance comparison across different time periods</li>
- *   <li>System state correlation with performance characteristics</li>
+ *   <li>Point-in-time performance analysis
+ *   <li>Historical trend tracking
+ *   <li>Performance comparison across different time periods
+ *   <li>System state correlation with performance characteristics
  * </ul>
  *
- * <p>Snapshots are automatically captured during profiling sessions and can also be
- * manually triggered for specific analysis needs.
+ * <p>Snapshots are automatically captured during profiling sessions and can also be manually
+ * triggered for specific analysis needs.
  *
  * @since 1.0.0
  */
@@ -41,9 +42,8 @@ public interface ProfileSnapshot {
   /**
    * Gets the overall performance score for this snapshot.
    *
-   * <p>The performance score is a composite metric that combines multiple
-   * performance indicators into a single value for easy comparison.
-   * Higher scores indicate better performance.
+   * <p>The performance score is a composite metric that combines multiple performance indicators
+   * into a single value for easy comparison. Higher scores indicate better performance.
    *
    * @return performance score (0-100 scale)
    */
@@ -156,9 +156,7 @@ public interface ProfileSnapshot {
    */
   String getSummary();
 
-  /**
-   * CPU usage metrics captured in a snapshot.
-   */
+  /** CPU usage metrics captured in a snapshot. */
   interface CpuUsageMetrics {
     /**
      * Gets the overall CPU utilization percentage.
@@ -196,9 +194,7 @@ public interface ProfileSnapshot {
     int getAvailableCores();
   }
 
-  /**
-   * Memory usage metrics captured in a snapshot.
-   */
+  /** Memory usage metrics captured in a snapshot. */
   interface MemoryUsageMetrics {
     /**
      * Gets the heap memory usage in bytes.
@@ -243,9 +239,7 @@ public interface ProfileSnapshot {
     long getNativeMemoryUsed();
   }
 
-  /**
-   * Function execution profile for WebAssembly functions.
-   */
+  /** Function execution profile for WebAssembly functions. */
   interface FunctionProfile {
     /**
      * Gets the function name or identifier.
@@ -290,9 +284,7 @@ public interface ProfileSnapshot {
     boolean isHotspot();
   }
 
-  /**
-   * Thread activity metrics captured in a snapshot.
-   */
+  /** Thread activity metrics captured in a snapshot. */
   interface ThreadActivityMetrics {
     /**
      * Gets the total number of active threads.
@@ -337,9 +329,7 @@ public interface ProfileSnapshot {
     int getWaitingThreadCount();
   }
 
-  /**
-   * I/O operation metrics captured in a snapshot.
-   */
+  /** I/O operation metrics captured in a snapshot. */
   interface IoMetrics {
     /**
      * Gets the total bytes read from I/O operations.
@@ -384,9 +374,7 @@ public interface ProfileSnapshot {
     double getThroughput();
   }
 
-  /**
-   * Compilation and JIT activity metrics captured in a snapshot.
-   */
+  /** Compilation and JIT activity metrics captured in a snapshot. */
   interface CompilationMetrics {
     /**
      * Gets the total compilation time.
@@ -431,9 +419,7 @@ public interface ProfileSnapshot {
     boolean isCodeCacheNearlyFull();
   }
 
-  /**
-   * Result of comparing two performance snapshots.
-   */
+  /** Result of comparing two performance snapshots. */
   interface SnapshotComparison {
     /**
      * Gets the baseline snapshot (earlier in time).

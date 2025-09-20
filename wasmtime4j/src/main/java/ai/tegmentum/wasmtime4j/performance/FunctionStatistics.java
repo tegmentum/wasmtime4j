@@ -45,9 +45,11 @@ public final class FunctionStatistics {
     this.index = index;
     this.bytecodeSize = Math.max(0, bytecodeSize);
     this.compiledSize = Math.max(0, compiledSize);
-    this.compilationTime = Objects.requireNonNull(compilationTime, "compilationTime cannot be null");
+    this.compilationTime =
+        Objects.requireNonNull(compilationTime, "compilationTime cannot be null");
     this.basicBlockCount = Math.max(0, basicBlockCount);
-    this.optimizations = Map.copyOf(Objects.requireNonNull(optimizations, "optimizations cannot be null"));
+    this.optimizations =
+        Map.copyOf(Objects.requireNonNull(optimizations, "optimizations cannot be null"));
 
     if (index < 0) {
       throw new IllegalArgumentException("index cannot be negative: " + index);
@@ -183,25 +185,26 @@ public final class FunctionStatistics {
       return false;
     }
     final FunctionStatistics that = (FunctionStatistics) obj;
-    return index == that.index &&
-        bytecodeSize == that.bytecodeSize &&
-        compiledSize == that.compiledSize &&
-        basicBlockCount == that.basicBlockCount &&
-        Objects.equals(name, that.name) &&
-        Objects.equals(compilationTime, that.compilationTime) &&
-        Objects.equals(optimizations, that.optimizations);
+    return index == that.index
+        && bytecodeSize == that.bytecodeSize
+        && compiledSize == that.compiledSize
+        && basicBlockCount == that.basicBlockCount
+        && Objects.equals(name, that.name)
+        && Objects.equals(compilationTime, that.compilationTime)
+        && Objects.equals(optimizations, that.optimizations);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(name, index, bytecodeSize, compiledSize, compilationTime, basicBlockCount, optimizations);
+    return Objects.hash(
+        name, index, bytecodeSize, compiledSize, compilationTime, basicBlockCount, optimizations);
   }
 
   @Override
   public String toString() {
     return String.format(
-        "FunctionStatistics{name='%s', index=%d, bytecodeSize=%d, compiledSize=%d, " +
-        "compilationTime=%s, basicBlockCount=%d, optimizations=%s}",
+        "FunctionStatistics{name='%s', index=%d, bytecodeSize=%d, compiledSize=%d, "
+            + "compilationTime=%s, basicBlockCount=%d, optimizations=%s}",
         name, index, bytecodeSize, compiledSize, compilationTime, basicBlockCount, optimizations);
   }
 }

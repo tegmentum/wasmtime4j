@@ -8,8 +8,8 @@ import java.util.Map;
  * Comprehensive statistics collection for WebAssembly engine operations.
  *
  * <p>This interface provides detailed metrics about engine performance including compilation,
- * execution, memory usage, and JIT compilation statistics. Statistics can be captured as
- * snapshots or continuously monitored for performance analysis.
+ * execution, memory usage, and JIT compilation statistics. Statistics can be captured as snapshots
+ * or continuously monitored for performance analysis.
  *
  * <p>Usage example:
  *
@@ -220,8 +220,8 @@ public interface EngineStatistics {
   /**
    * Gets extended statistics as a map of key-value pairs.
    *
-   * <p>This method provides access to implementation-specific metrics that may not be covered
-   * by the standard interface methods.
+   * <p>This method provides access to implementation-specific metrics that may not be covered by
+   * the standard interface methods.
    *
    * @return map of extended statistics
    */
@@ -239,7 +239,8 @@ public interface EngineStatistics {
     if (totalTime.isZero()) {
       return false;
     }
-    final double compilationRatio = (double) getTotalCompilationTime().toNanos() / totalTime.toNanos();
+    final double compilationRatio =
+        (double) getTotalCompilationTime().toNanos() / totalTime.toNanos();
     return compilationRatio > 0.5;
   }
 
@@ -262,8 +263,8 @@ public interface EngineStatistics {
   /**
    * Gets the overall performance score based on multiple metrics.
    *
-   * <p>The score is calculated from compilation efficiency, execution throughput,
-   * memory utilization, and cache performance. Score ranges from 0 (poor) to 100 (excellent).
+   * <p>The score is calculated from compilation efficiency, execution throughput, memory
+   * utilization, and cache performance. Score ranges from 0 (poor) to 100 (excellent).
    *
    * @return performance score (0-100)
    */

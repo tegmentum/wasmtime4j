@@ -117,10 +117,7 @@ public final class PanamaInstance implements Instance, AutoCloseable {
    * @throws IllegalArgumentException if any parameter is null
    */
   public static PanamaInstance fromHandle(
-      final MemorySegment instanceHandle,
-      final Module module,
-      final Store store,
-      final Arena arena)
+      final MemorySegment instanceHandle, final Module module, final Store store, final Arena arena)
       throws WasmException {
     if (instanceHandle == null || instanceHandle.equals(MemorySegment.NULL)) {
       throw new IllegalArgumentException("Instance handle cannot be null");

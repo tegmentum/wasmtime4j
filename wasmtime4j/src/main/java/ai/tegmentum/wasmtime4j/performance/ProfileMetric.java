@@ -3,8 +3,8 @@ package ai.tegmentum.wasmtime4j.performance;
 /**
  * Types of performance metrics that can be monitored by the profiler.
  *
- * <p>Each metric represents a different aspect of WebAssembly execution performance
- * and system resource usage.
+ * <p>Each metric represents a different aspect of WebAssembly execution performance and system
+ * resource usage.
  *
  * @since 1.0.0
  */
@@ -13,11 +13,12 @@ public enum ProfileMetric {
    * CPU usage monitoring including user time, system time, and overall utilization.
    *
    * <p>This metric tracks:
+   *
    * <ul>
-   *   <li>CPU utilization percentage</li>
-   *   <li>User vs system time distribution</li>
-   *   <li>Context switch rates</li>
-   *   <li>CPU efficiency metrics</li>
+   *   <li>CPU utilization percentage
+   *   <li>User vs system time distribution
+   *   <li>Context switch rates
+   *   <li>CPU efficiency metrics
    * </ul>
    */
   CPU_USAGE("CPU Usage", "Monitors CPU utilization and efficiency", 1.0),
@@ -26,11 +27,12 @@ public enum ProfileMetric {
    * Memory usage monitoring including heap, non-heap, and native memory.
    *
    * <p>This metric tracks:
+   *
    * <ul>
-   *   <li>Heap memory utilization</li>
-   *   <li>Direct memory usage</li>
-   *   <li>Native memory consumption</li>
-   *   <li>Garbage collection impact</li>
+   *   <li>Heap memory utilization
+   *   <li>Direct memory usage
+   *   <li>Native memory consumption
+   *   <li>Garbage collection impact
    * </ul>
    */
   MEMORY_USAGE("Memory Usage", "Monitors memory consumption and efficiency", 1.2),
@@ -39,11 +41,12 @@ public enum ProfileMetric {
    * Function call monitoring including execution times and call frequencies.
    *
    * <p>This metric tracks:
+   *
    * <ul>
-   *   <li>Function execution times</li>
-   *   <li>Call frequencies and patterns</li>
-   *   <li>Hot function identification</li>
-   *   <li>Function-level performance</li>
+   *   <li>Function execution times
+   *   <li>Call frequencies and patterns
+   *   <li>Hot function identification
+   *   <li>Function-level performance
    * </ul>
    */
   FUNCTION_CALLS("Function Calls", "Monitors function execution performance", 1.5),
@@ -52,11 +55,12 @@ public enum ProfileMetric {
    * Compilation time monitoring for modules and functions.
    *
    * <p>This metric tracks:
+   *
    * <ul>
-   *   <li>Module compilation times</li>
-   *   <li>JIT compilation overhead</li>
-   *   <li>Compilation cache effectiveness</li>
-   *   <li>Code generation efficiency</li>
+   *   <li>Module compilation times
+   *   <li>JIT compilation overhead
+   *   <li>Compilation cache effectiveness
+   *   <li>Code generation efficiency
    * </ul>
    */
   COMPILATION_TIME("Compilation Time", "Monitors compilation performance", 0.8),
@@ -65,11 +69,12 @@ public enum ProfileMetric {
    * Garbage collection activity monitoring.
    *
    * <p>This metric tracks:
+   *
    * <ul>
-   *   <li>GC frequency and duration</li>
-   *   <li>GC overhead percentage</li>
-   *   <li>Memory pressure indicators</li>
-   *   <li>GC efficiency metrics</li>
+   *   <li>GC frequency and duration
+   *   <li>GC overhead percentage
+   *   <li>Memory pressure indicators
+   *   <li>GC efficiency metrics
    * </ul>
    */
   GC_ACTIVITY("GC Activity", "Monitors garbage collection impact", 0.9),
@@ -78,11 +83,12 @@ public enum ProfileMetric {
    * I/O operations monitoring including file and network I/O.
    *
    * <p>This metric tracks:
+   *
    * <ul>
-   *   <li>I/O operation latencies</li>
-   *   <li>Throughput measurements</li>
-   *   <li>I/O wait times</li>
-   *   <li>Operation efficiency</li>
+   *   <li>I/O operation latencies
+   *   <li>Throughput measurements
+   *   <li>I/O wait times
+   *   <li>Operation efficiency
    * </ul>
    */
   I_O_OPERATIONS("I/O Operations", "Monitors I/O performance and latency", 1.1),
@@ -91,11 +97,12 @@ public enum ProfileMetric {
    * Thread activity monitoring including thread pools and contention.
    *
    * <p>This metric tracks:
+   *
    * <ul>
-   *   <li>Thread utilization</li>
-   *   <li>Thread contention</li>
-   *   <li>Thread pool efficiency</li>
-   *   <li>Synchronization overhead</li>
+   *   <li>Thread utilization
+   *   <li>Thread contention
+   *   <li>Thread pool efficiency
+   *   <li>Synchronization overhead
    * </ul>
    */
   THREAD_ACTIVITY("Thread Activity", "Monitors threading and concurrency", 1.3),
@@ -104,11 +111,12 @@ public enum ProfileMetric {
    * Cache performance monitoring for compilation and execution caches.
    *
    * <p>This metric tracks:
+   *
    * <ul>
-   *   <li>Cache hit/miss ratios</li>
-   *   <li>Cache efficiency</li>
-   *   <li>Cache size and utilization</li>
-   *   <li>Cache eviction patterns</li>
+   *   <li>Cache hit/miss ratios
+   *   <li>Cache efficiency
+   *   <li>Cache size and utilization
+   *   <li>Cache eviction patterns
    * </ul>
    */
   CACHE_PERFORMANCE("Cache Performance", "Monitors cache effectiveness", 0.7),
@@ -117,11 +125,12 @@ public enum ProfileMetric {
    * JIT activity monitoring including recompilation and optimization.
    *
    * <p>This metric tracks:
+   *
    * <ul>
-   *   <li>JIT compilation frequency</li>
-   *   <li>Optimization effectiveness</li>
-   *   <li>Hot code identification</li>
-   *   <li>JIT overhead measurement</li>
+   *   <li>JIT compilation frequency
+   *   <li>Optimization effectiveness
+   *   <li>Hot code identification
+   *   <li>JIT overhead measurement
    * </ul>
    */
   JIT_ACTIVITY("JIT Activity", "Monitors JIT compilation and optimization", 1.4);
@@ -157,8 +166,8 @@ public enum ProfileMetric {
   /**
    * Gets the relative overhead factor for monitoring this metric.
    *
-   * <p>Higher values indicate more overhead. The factor is relative to
-   * a baseline of 1.0 for standard CPU usage monitoring.
+   * <p>Higher values indicate more overhead. The factor is relative to a baseline of 1.0 for
+   * standard CPU usage monitoring.
    *
    * @return overhead factor
    */
@@ -190,10 +199,10 @@ public enum ProfileMetric {
    * @return true if this metric monitors system resources
    */
   public boolean isResourceMetric() {
-    return this == CPU_USAGE ||
-           this == MEMORY_USAGE ||
-           this == I_O_OPERATIONS ||
-           this == THREAD_ACTIVITY;
+    return this == CPU_USAGE
+        || this == MEMORY_USAGE
+        || this == I_O_OPERATIONS
+        || this == THREAD_ACTIVITY;
   }
 
   /**
@@ -202,9 +211,7 @@ public enum ProfileMetric {
    * @return true if this metric monitors compilation aspects
    */
   public boolean isCompilationMetric() {
-    return this == COMPILATION_TIME ||
-           this == JIT_ACTIVITY ||
-           this == CACHE_PERFORMANCE;
+    return this == COMPILATION_TIME || this == JIT_ACTIVITY || this == CACHE_PERFORMANCE;
   }
 
   /**
@@ -213,8 +220,6 @@ public enum ProfileMetric {
    * @return true if frequent sampling is beneficial
    */
   public boolean requiresFrequentSampling() {
-    return this == FUNCTION_CALLS ||
-           this == THREAD_ACTIVITY ||
-           this == JIT_ACTIVITY;
+    return this == FUNCTION_CALLS || this == THREAD_ACTIVITY || this == JIT_ACTIVITY;
   }
 }

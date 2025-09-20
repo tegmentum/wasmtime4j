@@ -1,7 +1,6 @@
 package ai.tegmentum.wasmtime4j.comparison.analyzers;
 
 import ai.tegmentum.wasmtime4j.RuntimeType;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -13,8 +12,8 @@ import java.util.logging.Logger;
 
 /**
  * Automated regression detection system that identifies behavioral changes and performance
- * degradations across test executions. Uses historical data analysis and statistical methods
- * to detect significant deviations from established baselines.
+ * degradations across test executions. Uses historical data analysis and statistical methods to
+ * detect significant deviations from established baselines.
  *
  * <p>Features include:
  *
@@ -32,7 +31,8 @@ public final class RegressionDetector {
   private static final Logger LOGGER = Logger.getLogger(RegressionDetector.class.getName());
 
   // Regression detection thresholds
-  private static final double PERFORMANCE_REGRESSION_THRESHOLD = 0.20; // 20% performance degradation
+  private static final double PERFORMANCE_REGRESSION_THRESHOLD =
+      0.20; // 20% performance degradation
   private static final double BEHAVIORAL_CHANGE_THRESHOLD = 0.05; // 5% behavioral change
   private static final int MIN_HISTORICAL_SAMPLES = 5; // Minimum samples for regression analysis
   private static final int REGRESSION_DETECTION_WINDOW = 10; // Number of recent samples to analyze
@@ -92,16 +92,17 @@ public final class RegressionDetector {
       final double value,
       final double tolerance) {
     final String key = createKey(testName, runtimeType, metric);
-    final RegressionBaseline baseline = new RegressionBaseline(key, value, tolerance, Instant.now());
+    final RegressionBaseline baseline =
+        new RegressionBaseline(key, value, tolerance, Instant.now());
     baselines.put(key, baseline);
 
-    LOGGER.fine(String.format("Established regression baseline for %s: %.2f (+/- %.1f%%)",
-        key, value, tolerance * 100));
+    LOGGER.fine(
+        String.format(
+            "Established regression baseline for %s: %.2f (+/- %.1f%%)",
+            key, value, tolerance * 100));
   }
 
-  /**
-   * Clears all historical data and baselines.
-   */
+  /** Clears all historical data and baselines. */
   public void clearHistory() {
     historicalData.clear();
     baselines.clear();
@@ -122,7 +123,8 @@ public final class RegressionDetector {
       final Map<RuntimeType, BehavioralAnalyzer.TestExecutionResult> executionResults) {
     final Instant timestamp = Instant.now();
 
-    for (final Map.Entry<RuntimeType, BehavioralAnalyzer.TestExecutionResult> entry : executionResults.entrySet()) {
+    for (final Map.Entry<RuntimeType, BehavioralAnalyzer.TestExecutionResult> entry :
+        executionResults.entrySet()) {
       final RuntimeType runtime = entry.getKey();
       final BehavioralAnalyzer.TestExecutionResult result = entry.getValue();
 
@@ -163,7 +165,8 @@ public final class RegressionDetector {
       final Map<RuntimeType, BehavioralAnalyzer.TestExecutionResult> executionResults) {
     final List<BehavioralDiscrepancy> regressions = new ArrayList<>();
 
-    for (final Map.Entry<RuntimeType, BehavioralAnalyzer.TestExecutionResult> entry : executionResults.entrySet()) {
+    for (final Map.Entry<RuntimeType, BehavioralAnalyzer.TestExecutionResult> entry :
+        executionResults.entrySet()) {
       final RuntimeType runtime = entry.getKey();
       final BehavioralAnalyzer.TestExecutionResult result = entry.getValue();
 
@@ -183,7 +186,8 @@ public final class RegressionDetector {
                     DiscrepancyType.PERFORMANCE_DEVIATION,
                     DiscrepancySeverity.MAJOR,
                     "Performance regression detected",
-                    String.format("Execution time increased by %.1f%% for runtime %s",
+                    String.format(
+                        "Execution time increased by %.1f%% for runtime %s",
                         regressionRatio * 100, runtime),
                     "Investigate performance degradation and optimize implementation",
                     "performance-regression",
@@ -201,7 +205,8 @@ public final class RegressionDetector {
       final Map<RuntimeType, BehavioralAnalyzer.TestExecutionResult> executionResults) {
     final List<BehavioralDiscrepancy> regressions = new ArrayList<>();
 
-    for (final Map.Entry<RuntimeType, BehavioralAnalyzer.TestExecutionResult> entry : executionResults.entrySet()) {
+    for (final Map.Entry<RuntimeType, BehavioralAnalyzer.TestExecutionResult> entry :
+        executionResults.entrySet()) {
       final RuntimeType runtime = entry.getKey();
       final BehavioralAnalyzer.TestExecutionResult result = entry.getValue();
 
@@ -215,16 +220,18 @@ public final class RegressionDetector {
         final double behavioralChange = Math.abs(recentSuccessRate - historicalSuccessRate);
 
         if (behavioralChange > BEHAVIORAL_CHANGE_THRESHOLD) {
-          final DiscrepancySeverity severity = recentSuccessRate < historicalSuccessRate
-              ? DiscrepancySeverity.CRITICAL
-              : DiscrepancySeverity.MODERATE;
+          final DiscrepancySeverity severity =
+              recentSuccessRate < historicalSuccessRate
+                  ? DiscrepancySeverity.CRITICAL
+                  : DiscrepancySeverity.MODERATE;
 
           regressions.add(
               new BehavioralDiscrepancy(
                   DiscrepancyType.SYSTEMATIC_PATTERN,
                   severity,
                   "Behavioral regression detected",
-                  String.format("Success rate changed from %.1f%% to %.1f%% for runtime %s",
+                  String.format(
+                      "Success rate changed from %.1f%% to %.1f%% for runtime %s",
                       historicalSuccessRate * 100, recentSuccessRate * 100, runtime),
                   "Investigate behavioral changes and verify implementation correctness",
                   "behavioral-regression",
@@ -261,7 +268,8 @@ public final class RegressionDetector {
               DiscrepancyType.SYSTEMATIC_PATTERN,
               DiscrepancySeverity.CRITICAL,
               "Systematic performance regression detected",
-              String.format("Performance issues detected across %d runtimes", runtimesWithPerformanceIssues),
+              String.format(
+                  "Performance issues detected across %d runtimes", runtimesWithPerformanceIssues),
               "Investigate system-wide performance degradation and environmental factors",
               "systematic-performance-regression",
               executionResults.keySet()));
@@ -273,7 +281,8 @@ public final class RegressionDetector {
               DiscrepancyType.SYSTEMATIC_PATTERN,
               DiscrepancySeverity.CRITICAL,
               "Systematic behavioral regression detected",
-              String.format("Behavioral issues detected across %d runtimes", runtimesWithBehavioralIssues),
+              String.format(
+                  "Behavioral issues detected across %d runtimes", runtimesWithBehavioralIssues),
               "Investigate system-wide behavioral changes and test environment",
               "systematic-behavioral-regression",
               executionResults.keySet()));
@@ -284,21 +293,16 @@ public final class RegressionDetector {
 
   /** Calculates historical average for a metric. */
   private double calculateHistoricalAverage(final List<RegressionDataPoint> history) {
-    return history.stream()
-        .mapToDouble(RegressionDataPoint::getValue)
-        .average()
-        .orElse(0.0);
+    return history.stream().mapToDouble(RegressionDataPoint::getValue).average().orElse(0.0);
   }
 
   /** Calculates recent success rate from regression data points. */
   private double calculateRecentSuccessRate(final List<RegressionDataPoint> history) {
     final int recentWindow = Math.min(REGRESSION_DETECTION_WINDOW, history.size());
-    final List<RegressionDataPoint> recentData = history.subList(history.size() - recentWindow, history.size());
+    final List<RegressionDataPoint> recentData =
+        history.subList(history.size() - recentWindow, history.size());
 
-    return recentData.stream()
-        .mapToDouble(RegressionDataPoint::getValue)
-        .average()
-        .orElse(0.0);
+    return recentData.stream().mapToDouble(RegressionDataPoint::getValue).average().orElse(0.0);
   }
 
   /** Checks if a runtime has recent performance regression. */
@@ -313,7 +317,9 @@ public final class RegressionDetector {
     final double recentAverage = calculateRecentAverage(history);
     final double historicalAverage = calculateHistoricalAverage(history);
 
-    return historicalAverage > 0 && (recentAverage - historicalAverage) / historicalAverage > PERFORMANCE_REGRESSION_THRESHOLD;
+    return historicalAverage > 0
+        && (recentAverage - historicalAverage) / historicalAverage
+            > PERFORMANCE_REGRESSION_THRESHOLD;
   }
 
   /** Checks if a runtime has recent behavioral regression. */
@@ -334,12 +340,10 @@ public final class RegressionDetector {
   /** Calculates recent average for performance metrics. */
   private double calculateRecentAverage(final List<RegressionDataPoint> history) {
     final int recentWindow = Math.min(REGRESSION_DETECTION_WINDOW, history.size());
-    final List<RegressionDataPoint> recentData = history.subList(history.size() - recentWindow, history.size());
+    final List<RegressionDataPoint> recentData =
+        history.subList(history.size() - recentWindow, history.size());
 
-    return recentData.stream()
-        .mapToDouble(RegressionDataPoint::getValue)
-        .average()
-        .orElse(0.0);
+    return recentData.stream().mapToDouble(RegressionDataPoint::getValue).average().orElse(0.0);
   }
 
   /** Creates a unique key for data tracking. */
@@ -360,7 +364,8 @@ public final class RegressionDetector {
      * @param timestamp the timestamp when the data was recorded
      * @param successful whether the execution was successful
      */
-    public RegressionDataPoint(final double value, final Instant timestamp, final boolean successful) {
+    public RegressionDataPoint(
+        final double value, final Instant timestamp, final boolean successful) {
       this.value = value;
       this.timestamp = Objects.requireNonNull(timestamp, "timestamp cannot be null");
       this.successful = successful;
@@ -395,7 +400,10 @@ public final class RegressionDetector {
      * @param establishedAt when the baseline was established
      */
     public RegressionBaseline(
-        final String key, final double baselineValue, final double tolerance, final Instant establishedAt) {
+        final String key,
+        final double baselineValue,
+        final double tolerance,
+        final Instant establishedAt) {
       this.key = Objects.requireNonNull(key, "key cannot be null");
       this.baselineValue = baselineValue;
       this.tolerance = tolerance;

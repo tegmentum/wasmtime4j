@@ -9,8 +9,8 @@ import java.util.Set;
 /**
  * Configuration for performance profiler behavior and monitoring settings.
  *
- * <p>This class allows fine-tuning of profiler behavior including sampling intervals,
- * enabled metrics, storage limits, and event thresholds.
+ * <p>This class allows fine-tuning of profiler behavior including sampling intervals, enabled
+ * metrics, storage limits, and event thresholds.
  *
  * @since 1.0.0
  */
@@ -202,40 +202,47 @@ public final class ProfilerConfig {
       return false;
     }
     final ProfilerConfig that = (ProfilerConfig) obj;
-    return maxSnapshots == that.maxSnapshots &&
-        realTimeEnabled == that.realTimeEnabled &&
-        Double.compare(that.eventThreshold, eventThreshold) == 0 &&
-        Objects.equals(samplingInterval, that.samplingInterval) &&
-        Objects.equals(enabledMetrics, that.enabledMetrics) &&
-        Objects.equals(customOptions, that.customOptions) &&
-        Objects.equals(snapshotRetention, that.snapshotRetention);
+    return maxSnapshots == that.maxSnapshots
+        && realTimeEnabled == that.realTimeEnabled
+        && Double.compare(that.eventThreshold, eventThreshold) == 0
+        && Objects.equals(samplingInterval, that.samplingInterval)
+        && Objects.equals(enabledMetrics, that.enabledMetrics)
+        && Objects.equals(customOptions, that.customOptions)
+        && Objects.equals(snapshotRetention, that.snapshotRetention);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(samplingInterval, enabledMetrics, maxSnapshots, realTimeEnabled,
-                       customOptions, snapshotRetention, eventThreshold);
+    return Objects.hash(
+        samplingInterval,
+        enabledMetrics,
+        maxSnapshots,
+        realTimeEnabled,
+        customOptions,
+        snapshotRetention,
+        eventThreshold);
   }
 
   @Override
   public String toString() {
     return String.format(
-        "ProfilerConfig{samplingInterval=%s, enabledMetrics=%s, maxSnapshots=%d, " +
-        "realTimeEnabled=%s, snapshotRetention=%s, eventThreshold=%.2f, customOptions=%s}",
-        samplingInterval, enabledMetrics, maxSnapshots, realTimeEnabled,
-        snapshotRetention, eventThreshold, customOptions);
+        "ProfilerConfig{samplingInterval=%s, enabledMetrics=%s, maxSnapshots=%d, "
+            + "realTimeEnabled=%s, snapshotRetention=%s, eventThreshold=%.2f, customOptions=%s}",
+        samplingInterval,
+        enabledMetrics,
+        maxSnapshots,
+        realTimeEnabled,
+        snapshotRetention,
+        eventThreshold,
+        customOptions);
   }
 
-  /**
-   * Builder for profiler configuration.
-   */
+  /** Builder for profiler configuration. */
   public static final class ProfilerConfigBuilder {
     private Duration samplingInterval = Duration.ofMillis(200);
-    private Set<ProfileMetric> enabledMetrics = EnumSet.of(
-        ProfileMetric.CPU_USAGE,
-        ProfileMetric.MEMORY_USAGE,
-        ProfileMetric.FUNCTION_CALLS
-    );
+    private Set<ProfileMetric> enabledMetrics =
+        EnumSet.of(
+            ProfileMetric.CPU_USAGE, ProfileMetric.MEMORY_USAGE, ProfileMetric.FUNCTION_CALLS);
     private int maxSnapshots = 50;
     private boolean realTimeEnabled = false;
     private Map<String, Object> customOptions = Map.of();

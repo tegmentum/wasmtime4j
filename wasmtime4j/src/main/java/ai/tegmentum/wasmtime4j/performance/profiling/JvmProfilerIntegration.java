@@ -1,7 +1,6 @@
 package ai.tegmentum.wasmtime4j.performance.profiling;
 
 import ai.tegmentum.wasmtime4j.performance.ExportFormat;
-import ai.tegmentum.wasmtime4j.performance.ProfileSnapshot;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.nio.file.Files;
@@ -22,16 +21,18 @@ import javax.management.ObjectName;
  * Integration with JVM profiling tools for detailed performance analysis.
  *
  * <p>This class provides integration with multiple JVM profiling tools:
+ *
  * <ul>
- *   <li>async-profiler - Low-overhead sampling profiler</li>
- *   <li>Java Flight Recorder (JFR) - Built-in JDK profiling</li>
- *   <li>JVM built-in tools - ThreadMXBean, MemoryMXBean, etc.</li>
+ *   <li>async-profiler - Low-overhead sampling profiler
+ *   <li>Java Flight Recorder (JFR) - Built-in JDK profiling
+ *   <li>JVM built-in tools - ThreadMXBean, MemoryMXBean, etc.
  * </ul>
  *
- * <p>The integration automatically detects available profiling tools and provides
- * a unified interface for profiling WebAssembly execution.
+ * <p>The integration automatically detects available profiling tools and provides a unified
+ * interface for profiling WebAssembly execution.
  *
  * <p>Usage example:
+ *
  * <pre>{@code
  * JvmProfilerIntegration profiler = JvmProfilerIntegration.create();
  *
@@ -125,15 +126,12 @@ public final class JvmProfilerIntegration {
     activeSessions.add(session);
     session.start();
 
-    LOGGER.info(String.format("Started profiling session with %s in %s mode",
-        selectedTool, mode));
+    LOGGER.info(String.format("Started profiling session with %s in %s mode", selectedTool, mode));
 
     return session;
   }
 
-  /**
-   * Stops all active profiling sessions.
-   */
+  /** Stops all active profiling sessions. */
   public void stopAllSessions() {
     for (final ActiveSession session : new ArrayList<>(activeSessions)) {
       try {
@@ -173,7 +171,8 @@ public final class JvmProfilerIntegration {
     final ProfilingTool bestTool = selectBestTool(mode);
     final ProfilingConfig recommendedConfig = getRecommendedConfig(bestTool, mode);
 
-    return new ProfilingRecommendations(bestTool, recommendedConfig, getToolSpecificAdvice(bestTool, mode));
+    return new ProfilingRecommendations(
+        bestTool, recommendedConfig, getToolSpecificAdvice(bestTool, mode));
   }
 
   private boolean checkAsyncProfilerAvailability() {
@@ -224,12 +223,14 @@ public final class JvmProfilerIntegration {
     switch (mode) {
       case CPU_SAMPLING:
       case MEMORY_ALLOCATION:
-        return asyncProfilerAvailable ? ProfilingTool.ASYNC_PROFILER :
-               jfrAvailable ? ProfilingTool.JAVA_FLIGHT_RECORDER : ProfilingTool.JVM_BUILTIN;
+        return asyncProfilerAvailable
+            ? ProfilingTool.ASYNC_PROFILER
+            : jfrAvailable ? ProfilingTool.JAVA_FLIGHT_RECORDER : ProfilingTool.JVM_BUILTIN;
 
       case FULL_SYSTEM:
-        return jfrAvailable ? ProfilingTool.JAVA_FLIGHT_RECORDER :
-               asyncProfilerAvailable ? ProfilingTool.ASYNC_PROFILER : ProfilingTool.JVM_BUILTIN;
+        return jfrAvailable
+            ? ProfilingTool.JAVA_FLIGHT_RECORDER
+            : asyncProfilerAvailable ? ProfilingTool.ASYNC_PROFILER : ProfilingTool.JVM_BUILTIN;
 
       case LOW_OVERHEAD:
         return asyncProfilerAvailable ? ProfilingTool.ASYNC_PROFILER : ProfilingTool.JVM_BUILTIN;
@@ -239,8 +240,9 @@ public final class JvmProfilerIntegration {
     }
   }
 
-  private ActiveSession createSession(final ProfilingTool tool, final ProfilingMode mode,
-                                     final ProfilingConfig config) throws ProfilingException {
+  private ActiveSession createSession(
+      final ProfilingTool tool, final ProfilingMode mode, final ProfilingConfig config)
+      throws ProfilingException {
     switch (tool) {
       case ASYNC_PROFILER:
         return new AsyncProfilerSession(mode, config);
@@ -287,16 +289,16 @@ public final class JvmProfilerIntegration {
   private String getToolSpecificAdvice(final ProfilingTool tool, final ProfilingMode mode) {
     switch (tool) {
       case ASYNC_PROFILER:
-        return "async-profiler provides excellent low-overhead CPU and allocation profiling. " +
-               "Ensure the native library is properly installed for your platform.";
+        return "async-profiler provides excellent low-overhead CPU and allocation profiling. "
+            + "Ensure the native library is properly installed for your platform.";
 
       case JAVA_FLIGHT_RECORDER:
-        return "JFR provides comprehensive system profiling with minimal overhead. " +
-               "Consider using predefined profiles for common scenarios.";
+        return "JFR provides comprehensive system profiling with minimal overhead. "
+            + "Consider using predefined profiles for common scenarios.";
 
       case JVM_BUILTIN:
-        return "Built-in JVM tools provide basic profiling capabilities. " +
-               "Consider upgrading to async-profiler or enabling JFR for better insights.";
+        return "Built-in JVM tools provide basic profiling capabilities. "
+            + "Consider upgrading to async-profiler or enabling JFR for better insights.";
 
       default:
         return "No specific advice available for this tool.";
@@ -307,9 +309,7 @@ public final class JvmProfilerIntegration {
     activeSessions.remove(session);
   }
 
-  /**
-   * Available profiling tools.
-   */
+  /** Available profiling tools. */
   public enum ProfilingTool {
     ASYNC_PROFILER("async-profiler", "Low-overhead sampling profiler"),
     JAVA_FLIGHT_RECORDER("JFR", "Built-in JDK profiling"),
@@ -332,9 +332,7 @@ public final class JvmProfilerIntegration {
     }
   }
 
-  /**
-   * Profiling modes for different analysis needs.
-   */
+  /** Profiling modes for different analysis needs. */
   public enum ProfilingMode {
     CPU_SAMPLING("CPU Sampling", "Profile CPU usage and hot methods"),
     MEMORY_ALLOCATION("Memory Allocation", "Track memory allocation patterns"),
@@ -358,9 +356,7 @@ public final class JvmProfilerIntegration {
     }
   }
 
-  /**
-   * Configuration for profiling sessions.
-   */
+  /** Configuration for profiling sessions. */
   public static final class ProfilingConfig {
     private final Duration samplingInterval;
     private final ExportFormat outputFormat;
@@ -387,19 +383,37 @@ public final class JvmProfilerIntegration {
     }
 
     // Getters
-    public Duration getSamplingInterval() { return samplingInterval; }
-    public ExportFormat getOutputFormat() { return outputFormat; }
-    public boolean isIncludeSystemThreads() { return includeSystemThreads; }
-    public boolean isEnableGcAnalysis() { return enableGcAnalysis; }
-    public Path getOutputDirectory() { return outputDirectory; }
-    public int getMaxSamples() { return maxSamples; }
+    public Duration getSamplingInterval() {
+      return samplingInterval;
+    }
+
+    public ExportFormat getOutputFormat() {
+      return outputFormat;
+    }
+
+    public boolean isIncludeSystemThreads() {
+      return includeSystemThreads;
+    }
+
+    public boolean isEnableGcAnalysis() {
+      return enableGcAnalysis;
+    }
+
+    public Path getOutputDirectory() {
+      return outputDirectory;
+    }
+
+    public int getMaxSamples() {
+      return maxSamples;
+    }
 
     public static final class Builder {
       private Duration samplingInterval = Duration.ofMillis(20);
       private ExportFormat outputFormat = ExportFormat.JSON;
       private boolean includeSystemThreads = false;
       private boolean enableGcAnalysis = false;
-      private Path outputDirectory = Paths.get(System.getProperty("java.io.tmpdir"), "wasmtime4j-profiling");
+      private Path outputDirectory =
+          Paths.get(System.getProperty("java.io.tmpdir"), "wasmtime4j-profiling");
       private int maxSamples = 100000;
 
       public Builder samplingInterval(final Duration interval) {
@@ -438,28 +452,33 @@ public final class JvmProfilerIntegration {
     }
   }
 
-  /**
-   * Recommendations for optimal profiling setup.
-   */
+  /** Recommendations for optimal profiling setup. */
   public static final class ProfilingRecommendations {
     private final ProfilingTool recommendedTool;
     private final ProfilingConfig recommendedConfig;
     private final String advice;
 
-    public ProfilingRecommendations(final ProfilingTool tool, final ProfilingConfig config, final String advice) {
+    public ProfilingRecommendations(
+        final ProfilingTool tool, final ProfilingConfig config, final String advice) {
       this.recommendedTool = tool;
       this.recommendedConfig = config;
       this.advice = advice;
     }
 
-    public ProfilingTool getRecommendedTool() { return recommendedTool; }
-    public ProfilingConfig getRecommendedConfig() { return recommendedConfig; }
-    public String getAdvice() { return advice; }
+    public ProfilingTool getRecommendedTool() {
+      return recommendedTool;
+    }
+
+    public ProfilingConfig getRecommendedConfig() {
+      return recommendedConfig;
+    }
+
+    public String getAdvice() {
+      return advice;
+    }
   }
 
-  /**
-   * Exception thrown when profiling operations fail.
-   */
+  /** Exception thrown when profiling operations fail. */
   public static final class ProfilingException extends Exception {
     public ProfilingException(final String message) {
       super(message);
@@ -470,9 +489,7 @@ public final class JvmProfilerIntegration {
     }
   }
 
-  /**
-   * Base class for active profiling sessions.
-   */
+  /** Base class for active profiling sessions. */
   abstract static class ActiveSession implements ProfileSession {
     protected final ProfilingMode mode;
     protected final ProfilingConfig config;
@@ -507,6 +524,7 @@ public final class JvmProfilerIntegration {
     }
 
     protected abstract void doStart() throws ProfilingException;
+
     protected abstract ProfilingResult doStop() throws ProfilingException;
 
     public void start() throws ProfilingException {
@@ -530,9 +548,7 @@ public final class JvmProfilerIntegration {
     }
   }
 
-  /**
-   * async-profiler integration session.
-   */
+  /** async-profiler integration session. */
   static class AsyncProfilerSession extends ActiveSession {
     private Object asyncProfilerInstance;
 
@@ -550,7 +566,9 @@ public final class JvmProfilerIntegration {
         final String command = buildAsyncProfilerCommand();
 
         // Start profiling
-        asyncProfilerClass.getMethod("execute", String.class).invoke(asyncProfilerInstance, command);
+        asyncProfilerClass
+            .getMethod("execute", String.class)
+            .invoke(asyncProfilerInstance, command);
 
       } catch (final Exception e) {
         throw new ProfilingException("Failed to start async-profiler", e);
@@ -563,15 +581,23 @@ public final class JvmProfilerIntegration {
         final Class<?> asyncProfilerClass = Class.forName(ASYNC_PROFILER_CLASS);
 
         // Create output file path
-        final Path outputFile = config.getOutputDirectory().resolve(
-            "profile-" + System.currentTimeMillis() + "." + config.getOutputFormat().getFileExtension());
+        final Path outputFile =
+            config
+                .getOutputDirectory()
+                .resolve(
+                    "profile-"
+                        + System.currentTimeMillis()
+                        + "."
+                        + config.getOutputFormat().getFileExtension());
 
         // Ensure output directory exists
         Files.createDirectories(config.getOutputDirectory());
 
         // Stop profiling and save results
         final String stopCommand = "stop,file=" + outputFile.toString();
-        asyncProfilerClass.getMethod("execute", String.class).invoke(asyncProfilerInstance, stopCommand);
+        asyncProfilerClass
+            .getMethod("execute", String.class)
+            .invoke(asyncProfilerInstance, stopCommand);
 
         return new AsyncProfilerResult(outputFile, config.getOutputFormat(), getElapsedTime());
 
@@ -608,9 +634,7 @@ public final class JvmProfilerIntegration {
     }
   }
 
-  /**
-   * Java Flight Recorder integration session.
-   */
+  /** Java Flight Recorder integration session. */
   static class JfrSession extends ActiveSession {
     private Object recording;
 
@@ -644,8 +668,8 @@ public final class JvmProfilerIntegration {
         recordingClass.getMethod("stop").invoke(recording);
 
         // Create output file
-        final Path outputFile = config.getOutputDirectory().resolve(
-            "profile-" + System.currentTimeMillis() + ".jfr");
+        final Path outputFile =
+            config.getOutputDirectory().resolve("profile-" + System.currentTimeMillis() + ".jfr");
         Files.createDirectories(config.getOutputDirectory());
 
         // Dump recording to file
@@ -667,9 +691,7 @@ public final class JvmProfilerIntegration {
     }
   }
 
-  /**
-   * JVM built-in tools session.
-   */
+  /** JVM built-in tools session. */
   static class JvmBuiltinSession extends ActiveSession {
     private CompletableFuture<ProfilingResult> samplingTask;
 
@@ -680,13 +702,15 @@ public final class JvmProfilerIntegration {
     @Override
     protected void doStart() throws ProfilingException {
       // Start background sampling task
-      samplingTask = CompletableFuture.supplyAsync(() -> {
-        try {
-          return collectBuiltinMetrics();
-        } catch (final Exception e) {
-          throw new RuntimeException(e);
-        }
-      });
+      samplingTask =
+          CompletableFuture.supplyAsync(
+              () -> {
+                try {
+                  return collectBuiltinMetrics();
+                } catch (final Exception e) {
+                  throw new RuntimeException(e);
+                }
+              });
     }
 
     @Override
@@ -701,8 +725,10 @@ public final class JvmProfilerIntegration {
     private ProfilingResult collectBuiltinMetrics() {
       // Collect metrics using JVM MXBeans
       // This is a simplified implementation
-      final Path outputFile = config.getOutputDirectory().resolve(
-          "builtin-metrics-" + System.currentTimeMillis() + ".json");
+      final Path outputFile =
+          config
+              .getOutputDirectory()
+              .resolve("builtin-metrics-" + System.currentTimeMillis() + ".json");
 
       try {
         Files.createDirectories(config.getOutputDirectory());
@@ -714,9 +740,7 @@ public final class JvmProfilerIntegration {
     }
   }
 
-  /**
-   * Base class for profiling results.
-   */
+  /** Base class for profiling results. */
   abstract static class BaseProfilingResult implements ProfilingResult {
     protected final Path outputFile;
     protected final Duration profilingDuration;
@@ -795,7 +819,8 @@ public final class JvmProfilerIntegration {
         if (format == ExportFormat.JSON) {
           return Files.readString(outputFile);
         } else {
-          throw new ProfilingException("Built-in tools format conversion not implemented: " + format);
+          throw new ProfilingException(
+              "Built-in tools format conversion not implemented: " + format);
         }
       } catch (final IOException e) {
         throw new ProfilingException("Failed to read built-in metrics", e);
@@ -803,24 +828,27 @@ public final class JvmProfilerIntegration {
     }
   }
 
-  /**
-   * Interface for active profiling sessions.
-   */
+  /** Interface for active profiling sessions. */
   public interface ProfileSession {
     boolean isActive();
+
     Duration getElapsedTime();
+
     ProfilingMode getMode();
+
     ProfilingConfig getConfig();
+
     ProfilingResult stop() throws ProfilingException;
   }
 
-  /**
-   * Interface for profiling results.
-   */
+  /** Interface for profiling results. */
   public interface ProfilingResult {
     Duration getProfilingDuration();
+
     boolean hasResults();
+
     Path getOutputFile();
+
     String export(ExportFormat format) throws ProfilingException;
   }
 }

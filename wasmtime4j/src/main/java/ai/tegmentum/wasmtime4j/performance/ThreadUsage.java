@@ -37,11 +37,14 @@ public final class ThreadUsage {
     this.activeThreads = Math.max(0, activeThreads);
     this.peakThreads = Math.max(0, peakThreads);
     this.totalStartedThreads = Math.max(0, totalStartedThreads);
-    this.threadsByState = Map.copyOf(Objects.requireNonNull(threadsByState, "threadsByState cannot be null"));
-    this.averageThreadLifetime = Objects.requireNonNull(averageThreadLifetime, "averageThreadLifetime cannot be null");
+    this.threadsByState =
+        Map.copyOf(Objects.requireNonNull(threadsByState, "threadsByState cannot be null"));
+    this.averageThreadLifetime =
+        Objects.requireNonNull(averageThreadLifetime, "averageThreadLifetime cannot be null");
 
     if (averageThreadLifetime.isNegative()) {
-      throw new IllegalArgumentException("averageThreadLifetime cannot be negative: " + averageThreadLifetime);
+      throw new IllegalArgumentException(
+          "averageThreadLifetime cannot be negative: " + averageThreadLifetime);
     }
   }
 
@@ -237,25 +240,30 @@ public final class ThreadUsage {
       return false;
     }
     final ThreadUsage that = (ThreadUsage) obj;
-    return activeThreads == that.activeThreads &&
-        peakThreads == that.peakThreads &&
-        totalStartedThreads == that.totalStartedThreads &&
-        Objects.equals(threadsByState, that.threadsByState) &&
-        Objects.equals(averageThreadLifetime, that.averageThreadLifetime);
+    return activeThreads == that.activeThreads
+        && peakThreads == that.peakThreads
+        && totalStartedThreads == that.totalStartedThreads
+        && Objects.equals(threadsByState, that.threadsByState)
+        && Objects.equals(averageThreadLifetime, that.averageThreadLifetime);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(activeThreads, peakThreads, totalStartedThreads, threadsByState, averageThreadLifetime);
+    return Objects.hash(
+        activeThreads, peakThreads, totalStartedThreads, threadsByState, averageThreadLifetime);
   }
 
   @Override
   public String toString() {
     return String.format(
-        "ThreadUsage{active=%d, peak=%d, started=%d, utilization=%.1f%%, " +
-        "efficiency=%.1f%%, avgLifetime=%s, states=%s}",
-        activeThreads, peakThreads, totalStartedThreads,
-        getThreadUtilization() * 100, getThreadEfficiency() * 100,
-        averageThreadLifetime, threadsByState);
+        "ThreadUsage{active=%d, peak=%d, started=%d, utilization=%.1f%%, "
+            + "efficiency=%.1f%%, avgLifetime=%s, states=%s}",
+        activeThreads,
+        peakThreads,
+        totalStartedThreads,
+        getThreadUtilization() * 100,
+        getThreadEfficiency() * 100,
+        averageThreadLifetime,
+        threadsByState);
   }
 }

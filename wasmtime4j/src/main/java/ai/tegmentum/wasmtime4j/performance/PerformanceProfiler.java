@@ -7,11 +7,12 @@ import java.util.List;
  * Advanced performance profiler for real-time WebAssembly performance monitoring.
  *
  * <p>The performance profiler provides comprehensive real-time monitoring capabilities including:
+ *
  * <ul>
- *   <li>Continuous performance metric collection</li>
- *   <li>Real-time event detection and notification</li>
- *   <li>Profile snapshot capture and analysis</li>
- *   <li>Configurable monitoring thresholds and intervals</li>
+ *   <li>Continuous performance metric collection
+ *   <li>Real-time event detection and notification
+ *   <li>Profile snapshot capture and analysis
+ *   <li>Configurable monitoring thresholds and intervals
  * </ul>
  *
  * <p>Usage example:
@@ -70,15 +71,16 @@ public interface PerformanceProfiler extends AutoCloseable {
    * @return new performance profiler
    * @throws IllegalArgumentException if engine or config is null
    */
-  static PerformanceProfiler create(final ai.tegmentum.wasmtime4j.Engine engine, final ProfilerConfig config) {
+  static PerformanceProfiler create(
+      final ai.tegmentum.wasmtime4j.Engine engine, final ProfilerConfig config) {
     throw new UnsupportedOperationException("Implementation must be provided by runtime factory");
   }
 
   /**
    * Starts performance profiling.
    *
-   * <p>This begins continuous monitoring of performance metrics and event detection.
-   * Profiling continues until {@link #stopProfiling()} is called.
+   * <p>This begins continuous monitoring of performance metrics and event detection. Profiling
+   * continues until {@link #stopProfiling()} is called.
    *
    * @throws IllegalStateException if profiling is already active
    */
@@ -126,8 +128,8 @@ public interface PerformanceProfiler extends AutoCloseable {
   /**
    * Captures a performance snapshot at the current moment.
    *
-   * <p>This provides a comprehensive view of current performance metrics,
-   * resource usage, and function profiles.
+   * <p>This provides a comprehensive view of current performance metrics, resource usage, and
+   * function profiles.
    *
    * @return performance snapshot
    */
@@ -136,8 +138,8 @@ public interface PerformanceProfiler extends AutoCloseable {
   /**
    * Gets all captured performance snapshots.
    *
-   * <p>Snapshots are automatically captured at regular intervals during profiling
-   * and can also be manually captured with {@link #captureSnapshot()}.
+   * <p>Snapshots are automatically captured at regular intervals during profiling and can also be
+   * manually captured with {@link #captureSnapshot()}.
    *
    * @return list of performance snapshots in chronological order
    */
@@ -146,16 +148,15 @@ public interface PerformanceProfiler extends AutoCloseable {
   /**
    * Clears all captured performance snapshots.
    *
-   * <p>This frees memory used by historical snapshots but does not affect
-   * ongoing profiling.
+   * <p>This frees memory used by historical snapshots but does not affect ongoing profiling.
    */
   void clearSnapshots();
 
   /**
    * Adds a performance event listener.
    *
-   * <p>The listener will receive real-time notifications about performance
-   * events such as high resource usage, slow operations, or detected bottlenecks.
+   * <p>The listener will receive real-time notifications about performance events such as high
+   * resource usage, slow operations, or detected bottlenecks.
    *
    * @param listener the listener to add
    * @throws IllegalArgumentException if listener is null
@@ -180,8 +181,8 @@ public interface PerformanceProfiler extends AutoCloseable {
   /**
    * Updates the profiler configuration.
    *
-   * <p>Configuration changes take effect immediately. If profiling is active,
-   * some changes may require stopping and restarting profiling.
+   * <p>Configuration changes take effect immediately. If profiling is active, some changes may
+   * require stopping and restarting profiling.
    *
    * @param config the new configuration
    * @throws IllegalArgumentException if config is null
@@ -191,8 +192,8 @@ public interface PerformanceProfiler extends AutoCloseable {
   /**
    * Gets real-time performance metrics.
    *
-   * <p>This provides current performance metrics without creating a full snapshot.
-   * Useful for lightweight monitoring displays.
+   * <p>This provides current performance metrics without creating a full snapshot. Useful for
+   * lightweight monitoring displays.
    *
    * @return current performance metrics
    */
@@ -230,8 +231,8 @@ public interface PerformanceProfiler extends AutoCloseable {
   /**
    * Closes the profiler and releases all resources.
    *
-   * <p>This stops profiling if active and cleans up all allocated resources.
-   * The profiler cannot be used after closing.
+   * <p>This stops profiling if active and cleans up all allocated resources. The profiler cannot be
+   * used after closing.
    */
   @Override
   void close();

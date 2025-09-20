@@ -8,9 +8,9 @@ import java.util.Optional;
 /**
  * Comprehensive resource usage monitoring for WebAssembly operations.
  *
- * <p>This interface provides detailed metrics about system resource consumption including
- * memory, CPU, threads, I/O, and network usage. Resource usage can be captured as instantaneous
- * snapshots or measured over time windows.
+ * <p>This interface provides detailed metrics about system resource consumption including memory,
+ * CPU, threads, I/O, and network usage. Resource usage can be captured as instantaneous snapshots
+ * or measured over time windows.
  *
  * <p>Usage example:
  *
@@ -40,8 +40,8 @@ public interface ResourceUsage {
   /**
    * Captures resource usage measured over a specified time window.
    *
-   * <p>This method will block for the specified duration to collect accurate measurements
-   * of resource consumption rates.
+   * <p>This method will block for the specified duration to collect accurate measurements of
+   * resource consumption rates.
    *
    * @param window the time window to measure over
    * @return resource usage measured over the window
@@ -131,16 +131,16 @@ public interface ResourceUsage {
    * @return true if system is under pressure
    */
   default boolean isUnderResourcePressure() {
-    return getMemoryUsage().isMemoryPressure() ||
-        getCpuUsage().isHighCpuUsage() ||
-        getIoUsage().isHighIoLoad();
+    return getMemoryUsage().isMemoryPressure()
+        || getCpuUsage().isHighCpuUsage()
+        || getIoUsage().isHighIoLoad();
   }
 
   /**
    * Gets the overall resource utilization score.
    *
-   * <p>The score is calculated from memory, CPU, and I/O utilization.
-   * Score ranges from 0.0 (idle) to 1.0 (fully utilized).
+   * <p>The score is calculated from memory, CPU, and I/O utilization. Score ranges from 0.0 (idle)
+   * to 1.0 (fully utilized).
    *
    * @return overall resource utilization (0.0-1.0)
    */
@@ -155,8 +155,8 @@ public interface ResourceUsage {
   /**
    * Gets extended resource metrics as a map.
    *
-   * <p>This method provides access to platform-specific or implementation-specific
-   * resource metrics that may not be covered by the standard interface methods.
+   * <p>This method provides access to platform-specific or implementation-specific resource metrics
+   * that may not be covered by the standard interface methods.
    *
    * @return map of extended resource metrics
    */

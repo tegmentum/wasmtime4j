@@ -7,8 +7,8 @@ import java.util.Objects;
 /**
  * Represents a phase in the WebAssembly compilation process with timing and metrics.
  *
- * <p>Compilation phases include parsing, validation, optimization, and code generation.
- * Each phase can have associated metrics providing detailed insights into the compilation process.
+ * <p>Compilation phases include parsing, validation, optimization, and code generation. Each phase
+ * can have associated metrics providing detailed insights into the compilation process.
  *
  * @since 1.0.0
  */
@@ -26,9 +26,7 @@ public final class CompilationPhase {
    * @throws IllegalArgumentException if any parameter is invalid
    */
   public CompilationPhase(
-      final String name,
-      final Duration duration,
-      final Map<String, Object> metrics) {
+      final String name, final Duration duration, final Map<String, Object> metrics) {
     this.name = Objects.requireNonNull(name, "name cannot be null");
     this.duration = Objects.requireNonNull(duration, "duration cannot be null");
     this.metrics = Map.copyOf(Objects.requireNonNull(metrics, "metrics cannot be null"));
@@ -137,9 +135,9 @@ public final class CompilationPhase {
       return false;
     }
     final CompilationPhase that = (CompilationPhase) obj;
-    return Objects.equals(name, that.name) &&
-        Objects.equals(duration, that.duration) &&
-        Objects.equals(metrics, that.metrics);
+    return Objects.equals(name, that.name)
+        && Objects.equals(duration, that.duration)
+        && Objects.equals(metrics, that.metrics);
   }
 
   @Override
@@ -150,7 +148,6 @@ public final class CompilationPhase {
   @Override
   public String toString() {
     return String.format(
-        "CompilationPhase{name='%s', duration=%s, metrics=%s}",
-        name, duration, metrics);
+        "CompilationPhase{name='%s', duration=%s, metrics=%s}", name, duration, metrics);
   }
 }

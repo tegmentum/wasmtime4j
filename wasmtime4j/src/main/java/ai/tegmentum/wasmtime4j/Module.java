@@ -165,8 +165,8 @@ public interface Module extends Closeable {
   /**
    * Validates WebAssembly bytecode and returns detailed validation results.
    *
-   * <p>This method performs comprehensive validation of WebAssembly bytecode
-   * without compiling it, providing detailed error and warning information.
+   * <p>This method performs comprehensive validation of WebAssembly bytecode without compiling it,
+   * providing detailed error and warning information.
    *
    * @param engine the engine to use for validation
    * @param wasmBytes the WebAssembly bytecode to validate
@@ -207,8 +207,8 @@ public interface Module extends Closeable {
   /**
    * Gets all function types defined in this module.
    *
-   * <p>This includes function types for both imported and exported functions,
-   * as well as internal functions.
+   * <p>This includes function types for both imported and exported functions, as well as internal
+   * functions.
    *
    * @return an immutable list of function types
    */
@@ -244,8 +244,8 @@ public interface Module extends Closeable {
   /**
    * Gets custom sections from this module.
    *
-   * <p>Custom sections contain arbitrary data that can be embedded in
-   * WebAssembly modules for metadata or debugging purposes.
+   * <p>Custom sections contain arbitrary data that can be embedded in WebAssembly modules for
+   * metadata or debugging purposes.
    *
    * @return a map of custom section names to their data
    */

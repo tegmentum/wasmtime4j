@@ -3,8 +3,8 @@ package ai.tegmentum.wasmtime4j;
 /**
  * WebAssembly features that can be enabled or disabled in an engine configuration.
  *
- * <p>These features correspond to various WebAssembly proposals that extend the core
- * specification with additional functionality.
+ * <p>These features correspond to various WebAssembly proposals that extend the core specification
+ * with additional functionality.
  *
  * @since 1.0.0
  */

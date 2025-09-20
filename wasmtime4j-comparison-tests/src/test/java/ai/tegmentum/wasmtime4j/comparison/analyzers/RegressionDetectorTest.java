@@ -1,18 +1,16 @@
 package ai.tegmentum.wasmtime4j.comparison.analyzers;
 
-import ai.tegmentum.wasmtime4j.RuntimeType;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
+import static org.junit.jupiter.api.Assertions.*;
 
+import ai.tegmentum.wasmtime4j.RuntimeType;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 
 /**
  * Comprehensive test suite for the RegressionDetector automated regression detection system.
@@ -37,7 +35,8 @@ class RegressionDetectorTest {
     @DisplayName("Should detect performance regression when execution time degrades significantly")
     void shouldDetectPerformanceRegression() {
       // Given: Historical performance data showing regression
-      final Map<RuntimeType, BehavioralAnalyzer.TestExecutionResult> baselineResults = new HashMap<>();
+      final Map<RuntimeType, BehavioralAnalyzer.TestExecutionResult> baselineResults =
+          new HashMap<>();
       baselineResults.put(RuntimeType.JNI, createSuccessfulResult(42, Duration.ofMillis(100)));
 
       // Establish baseline with multiple data points
@@ -46,17 +45,22 @@ class RegressionDetectorTest {
       }
 
       // When: Current execution shows significant performance degradation
-      final Map<RuntimeType, BehavioralAnalyzer.TestExecutionResult> currentResults = new HashMap<>();
-      currentResults.put(RuntimeType.JNI, createSuccessfulResult(42, Duration.ofMillis(250))); // 2.5x slower
+      final Map<RuntimeType, BehavioralAnalyzer.TestExecutionResult> currentResults =
+          new HashMap<>();
+      currentResults.put(
+          RuntimeType.JNI, createSuccessfulResult(42, Duration.ofMillis(250))); // 2.5x slower
 
-      final List<BehavioralDiscrepancy> regressions = regressionDetector.detectRegressions(currentResults);
+      final List<BehavioralDiscrepancy> regressions =
+          regressionDetector.detectRegressions(currentResults);
 
       // Then: Should detect performance regression
       assertTrue(
-          regressions.stream().anyMatch(r ->
-              r.getType() == DiscrepancyType.PERFORMANCE_DEVIATION &&
-              r.getDescription().contains("Performance regression detected") &&
-              r.getSeverity() == DiscrepancySeverity.MAJOR),
+          regressions.stream()
+              .anyMatch(
+                  r ->
+                      r.getType() == DiscrepancyType.PERFORMANCE_DEVIATION
+                          && r.getDescription().contains("Performance regression detected")
+                          && r.getSeverity() == DiscrepancySeverity.MAJOR),
           "Should detect performance regression for significant execution time increase");
     }
 
@@ -64,7 +68,8 @@ class RegressionDetectorTest {
     @DisplayName("Should not detect regression for minor performance variations")
     void shouldNotDetectRegressionForMinorVariations() {
       // Given: Historical performance data
-      final Map<RuntimeType, BehavioralAnalyzer.TestExecutionResult> baselineResults = new HashMap<>();
+      final Map<RuntimeType, BehavioralAnalyzer.TestExecutionResult> baselineResults =
+          new HashMap<>();
       baselineResults.put(RuntimeType.JNI, createSuccessfulResult(42, Duration.ofMillis(100)));
 
       // Establish baseline
@@ -73,16 +78,21 @@ class RegressionDetectorTest {
       }
 
       // When: Current execution shows minor variation (within threshold)
-      final Map<RuntimeType, BehavioralAnalyzer.TestExecutionResult> currentResults = new HashMap<>();
-      currentResults.put(RuntimeType.JNI, createSuccessfulResult(42, Duration.ofMillis(115))); // 15% increase
+      final Map<RuntimeType, BehavioralAnalyzer.TestExecutionResult> currentResults =
+          new HashMap<>();
+      currentResults.put(
+          RuntimeType.JNI, createSuccessfulResult(42, Duration.ofMillis(115))); // 15% increase
 
-      final List<BehavioralDiscrepancy> regressions = regressionDetector.detectRegressions(currentResults);
+      final List<BehavioralDiscrepancy> regressions =
+          regressionDetector.detectRegressions(currentResults);
 
       // Then: Should not detect regression for minor variations
       assertTrue(
-          regressions.stream().noneMatch(r ->
-              r.getType() == DiscrepancyType.PERFORMANCE_DEVIATION &&
-              r.getDescription().contains("Performance regression")),
+          regressions.stream()
+              .noneMatch(
+                  r ->
+                      r.getType() == DiscrepancyType.PERFORMANCE_DEVIATION
+                          && r.getDescription().contains("Performance regression")),
           "Should not detect regression for minor performance variations within threshold");
     }
 
@@ -90,7 +100,8 @@ class RegressionDetectorTest {
     @DisplayName("Should track performance across multiple runtimes independently")
     void shouldTrackPerformanceAcrossMultipleRuntimes() {
       // Given: Historical data for both runtimes
-      final Map<RuntimeType, BehavioralAnalyzer.TestExecutionResult> baselineResults = new HashMap<>();
+      final Map<RuntimeType, BehavioralAnalyzer.TestExecutionResult> baselineResults =
+          new HashMap<>();
       baselineResults.put(RuntimeType.JNI, createSuccessfulResult(42, Duration.ofMillis(100)));
       baselineResults.put(RuntimeType.PANAMA, createSuccessfulResult(42, Duration.ofMillis(90)));
 
@@ -100,18 +111,24 @@ class RegressionDetectorTest {
       }
 
       // When: Only JNI shows regression, Panama remains stable
-      final Map<RuntimeType, BehavioralAnalyzer.TestExecutionResult> currentResults = new HashMap<>();
-      currentResults.put(RuntimeType.JNI, createSuccessfulResult(42, Duration.ofMillis(250))); // Regression
-      currentResults.put(RuntimeType.PANAMA, createSuccessfulResult(42, Duration.ofMillis(95))); // Stable
+      final Map<RuntimeType, BehavioralAnalyzer.TestExecutionResult> currentResults =
+          new HashMap<>();
+      currentResults.put(
+          RuntimeType.JNI, createSuccessfulResult(42, Duration.ofMillis(250))); // Regression
+      currentResults.put(
+          RuntimeType.PANAMA, createSuccessfulResult(42, Duration.ofMillis(95))); // Stable
 
-      final List<BehavioralDiscrepancy> regressions = regressionDetector.detectRegressions(currentResults);
+      final List<BehavioralDiscrepancy> regressions =
+          regressionDetector.detectRegressions(currentResults);
 
       // Then: Should detect regression only for JNI runtime
       assertTrue(
-          regressions.stream().anyMatch(r ->
-              r.getDescription().contains("Performance regression") &&
-              r.getAffectedRuntimes().contains(RuntimeType.JNI) &&
-              !r.getAffectedRuntimes().contains(RuntimeType.PANAMA)),
+          regressions.stream()
+              .anyMatch(
+                  r ->
+                      r.getDescription().contains("Performance regression")
+                          && r.getAffectedRuntimes().contains(RuntimeType.JNI)
+                          && !r.getAffectedRuntimes().contains(RuntimeType.PANAMA)),
           "Should detect regression only for affected runtime");
     }
   }
@@ -124,7 +141,8 @@ class RegressionDetectorTest {
     @DisplayName("Should detect behavioral regression when success rate drops")
     void shouldDetectBehavioralRegressionWhenSuccessRateDrops() {
       // Given: Historical success data
-      final Map<RuntimeType, BehavioralAnalyzer.TestExecutionResult> successResults = new HashMap<>();
+      final Map<RuntimeType, BehavioralAnalyzer.TestExecutionResult> successResults =
+          new HashMap<>();
       successResults.put(RuntimeType.JNI, createSuccessfulResult(42, Duration.ofMillis(100)));
 
       // Establish successful baseline
@@ -133,18 +151,23 @@ class RegressionDetectorTest {
       }
 
       // When: Current execution starts failing
-      final Map<RuntimeType, BehavioralAnalyzer.TestExecutionResult> failureResults = new HashMap<>();
-      failureResults.put(RuntimeType.JNI, createFailedResult(
-          new RuntimeException("New failure"), Duration.ofMillis(100)));
+      final Map<RuntimeType, BehavioralAnalyzer.TestExecutionResult> failureResults =
+          new HashMap<>();
+      failureResults.put(
+          RuntimeType.JNI,
+          createFailedResult(new RuntimeException("New failure"), Duration.ofMillis(100)));
 
-      final List<BehavioralDiscrepancy> regressions = regressionDetector.detectRegressions(failureResults);
+      final List<BehavioralDiscrepancy> regressions =
+          regressionDetector.detectRegressions(failureResults);
 
       // Then: Should detect behavioral regression
       assertTrue(
-          regressions.stream().anyMatch(r ->
-              r.getType() == DiscrepancyType.SYSTEMATIC_PATTERN &&
-              r.getDescription().contains("Behavioral regression detected") &&
-              r.getSeverity() == DiscrepancySeverity.CRITICAL),
+          regressions.stream()
+              .anyMatch(
+                  r ->
+                      r.getType() == DiscrepancyType.SYSTEMATIC_PATTERN
+                          && r.getDescription().contains("Behavioral regression detected")
+                          && r.getSeverity() == DiscrepancySeverity.CRITICAL),
           "Should detect behavioral regression when success rate drops significantly");
     }
 
@@ -152,9 +175,11 @@ class RegressionDetectorTest {
     @DisplayName("Should detect improvement in behavioral patterns")
     void shouldDetectImprovementInBehavioralPatterns() {
       // Given: Historical failure data
-      final Map<RuntimeType, BehavioralAnalyzer.TestExecutionResult> failureResults = new HashMap<>();
-      failureResults.put(RuntimeType.JNI, createFailedResult(
-          new RuntimeException("Historical failure"), Duration.ofMillis(100)));
+      final Map<RuntimeType, BehavioralAnalyzer.TestExecutionResult> failureResults =
+          new HashMap<>();
+      failureResults.put(
+          RuntimeType.JNI,
+          createFailedResult(new RuntimeException("Historical failure"), Duration.ofMillis(100)));
 
       // Establish failure baseline
       for (int i = 0; i < 6; i++) {
@@ -162,16 +187,22 @@ class RegressionDetectorTest {
       }
 
       // When: Current execution starts succeeding
-      final Map<RuntimeType, BehavioralAnalyzer.TestExecutionResult> successResults = new HashMap<>();
+      final Map<RuntimeType, BehavioralAnalyzer.TestExecutionResult> successResults =
+          new HashMap<>();
       successResults.put(RuntimeType.JNI, createSuccessfulResult(42, Duration.ofMillis(100)));
 
-      final List<BehavioralDiscrepancy> regressions = regressionDetector.detectRegressions(successResults);
+      final List<BehavioralDiscrepancy> regressions =
+          regressionDetector.detectRegressions(successResults);
 
       // Then: Should detect behavioral improvement (positive change)
       assertTrue(
-          regressions.stream().anyMatch(r ->
-              r.getDescription().contains("Behavioral regression") &&
-              r.getSeverity() == DiscrepancySeverity.MODERATE), // Improvement is moderate, not critical
+          regressions.stream()
+              .anyMatch(
+                  r ->
+                      r.getDescription().contains("Behavioral regression")
+                          && r.getSeverity()
+                              == DiscrepancySeverity
+                                  .MODERATE), // Improvement is moderate, not critical
           "Should detect behavioral change (improvement) with appropriate severity");
     }
   }
@@ -184,7 +215,8 @@ class RegressionDetectorTest {
     @DisplayName("Should detect systematic performance regression across multiple runtimes")
     void shouldDetectSystematicPerformanceRegression() {
       // Given: Historical data for multiple runtimes showing good performance
-      final Map<RuntimeType, BehavioralAnalyzer.TestExecutionResult> baselineResults = new HashMap<>();
+      final Map<RuntimeType, BehavioralAnalyzer.TestExecutionResult> baselineResults =
+          new HashMap<>();
       baselineResults.put(RuntimeType.JNI, createSuccessfulResult(42, Duration.ofMillis(100)));
       baselineResults.put(RuntimeType.PANAMA, createSuccessfulResult(42, Duration.ofMillis(90)));
 
@@ -194,18 +226,22 @@ class RegressionDetectorTest {
       }
 
       // When: Both runtimes show performance regression (systematic issue)
-      final Map<RuntimeType, BehavioralAnalyzer.TestExecutionResult> regressedResults = new HashMap<>();
+      final Map<RuntimeType, BehavioralAnalyzer.TestExecutionResult> regressedResults =
+          new HashMap<>();
       regressedResults.put(RuntimeType.JNI, createSuccessfulResult(42, Duration.ofMillis(250)));
       regressedResults.put(RuntimeType.PANAMA, createSuccessfulResult(42, Duration.ofMillis(225)));
 
-      final List<BehavioralDiscrepancy> regressions = regressionDetector.detectRegressions(regressedResults);
+      final List<BehavioralDiscrepancy> regressions =
+          regressionDetector.detectRegressions(regressedResults);
 
       // Then: Should detect systematic performance regression
       assertTrue(
-          regressions.stream().anyMatch(r ->
-              r.getType() == DiscrepancyType.SYSTEMATIC_PATTERN &&
-              r.getDescription().contains("Systematic performance regression") &&
-              r.getSeverity() == DiscrepancySeverity.CRITICAL),
+          regressions.stream()
+              .anyMatch(
+                  r ->
+                      r.getType() == DiscrepancyType.SYSTEMATIC_PATTERN
+                          && r.getDescription().contains("Systematic performance regression")
+                          && r.getSeverity() == DiscrepancySeverity.CRITICAL),
           "Should detect systematic performance regression affecting multiple runtimes");
     }
 
@@ -213,7 +249,8 @@ class RegressionDetectorTest {
     @DisplayName("Should detect systematic behavioral regression across multiple runtimes")
     void shouldDetectSystematicBehavioralRegression() {
       // Given: Historical success data for multiple runtimes
-      final Map<RuntimeType, BehavioralAnalyzer.TestExecutionResult> successResults = new HashMap<>();
+      final Map<RuntimeType, BehavioralAnalyzer.TestExecutionResult> successResults =
+          new HashMap<>();
       successResults.put(RuntimeType.JNI, createSuccessfulResult(42, Duration.ofMillis(100)));
       successResults.put(RuntimeType.PANAMA, createSuccessfulResult(42, Duration.ofMillis(90)));
 
@@ -223,20 +260,26 @@ class RegressionDetectorTest {
       }
 
       // When: Both runtimes start failing (systematic behavioral issue)
-      final Map<RuntimeType, BehavioralAnalyzer.TestExecutionResult> failureResults = new HashMap<>();
-      failureResults.put(RuntimeType.JNI, createFailedResult(
-          new RuntimeException("Systematic failure"), Duration.ofMillis(100)));
-      failureResults.put(RuntimeType.PANAMA, createFailedResult(
-          new RuntimeException("Systematic failure"), Duration.ofMillis(90)));
+      final Map<RuntimeType, BehavioralAnalyzer.TestExecutionResult> failureResults =
+          new HashMap<>();
+      failureResults.put(
+          RuntimeType.JNI,
+          createFailedResult(new RuntimeException("Systematic failure"), Duration.ofMillis(100)));
+      failureResults.put(
+          RuntimeType.PANAMA,
+          createFailedResult(new RuntimeException("Systematic failure"), Duration.ofMillis(90)));
 
-      final List<BehavioralDiscrepancy> regressions = regressionDetector.detectRegressions(failureResults);
+      final List<BehavioralDiscrepancy> regressions =
+          regressionDetector.detectRegressions(failureResults);
 
       // Then: Should detect systematic behavioral regression
       assertTrue(
-          regressions.stream().anyMatch(r ->
-              r.getType() == DiscrepancyType.SYSTEMATIC_PATTERN &&
-              r.getDescription().contains("Systematic behavioral regression") &&
-              r.getSeverity() == DiscrepancySeverity.CRITICAL),
+          regressions.stream()
+              .anyMatch(
+                  r ->
+                      r.getType() == DiscrepancyType.SYSTEMATIC_PATTERN
+                          && r.getDescription().contains("Systematic behavioral regression")
+                          && r.getSeverity() == DiscrepancySeverity.CRITICAL),
           "Should detect systematic behavioral regression affecting multiple runtimes");
     }
   }
@@ -252,14 +295,18 @@ class RegressionDetectorTest {
       regressionDetector.establishBaseline("test", RuntimeType.JNI, "execution_time", 100.0, 0.2);
 
       // When: Getting baselines
-      final Map<String, RegressionDetector.RegressionBaseline> baselines = regressionDetector.getBaselines();
+      final Map<String, RegressionDetector.RegressionBaseline> baselines =
+          regressionDetector.getBaselines();
 
       // Then: Should contain the established baseline
       assertFalse(baselines.isEmpty(), "Should contain established baseline");
-      assertTrue(baselines.containsKey("test_JNI_execution_time"), "Should use correct baseline key");
+      assertTrue(
+          baselines.containsKey("test_JNI_execution_time"), "Should use correct baseline key");
 
-      final RegressionDetector.RegressionBaseline baseline = baselines.get("test_JNI_execution_time");
-      assertEquals(100.0, baseline.getBaselineValue(), 0.001, "Should store correct baseline value");
+      final RegressionDetector.RegressionBaseline baseline =
+          baselines.get("test_JNI_execution_time");
+      assertEquals(
+          100.0, baseline.getBaselineValue(), 0.001, "Should store correct baseline value");
       assertEquals(0.2, baseline.getTolerance(), 0.001, "Should store correct tolerance");
     }
 
@@ -268,8 +315,8 @@ class RegressionDetectorTest {
     void shouldDetectRegressionAgainstEstablishedBaseline() {
       // Given: Establish a baseline with tight tolerance
       regressionDetector.establishBaseline("test", RuntimeType.JNI, "execution_time", 100.0, 0.1);
-      final RegressionDetector.RegressionBaseline baseline = regressionDetector.getBaselines()
-          .get("test_JNI_execution_time");
+      final RegressionDetector.RegressionBaseline baseline =
+          regressionDetector.getBaselines().get("test_JNI_execution_time");
 
       // When: Testing values against baseline
       final boolean isRegression1 = baseline.isRegression(130.0); // 30% increase
@@ -324,7 +371,8 @@ class RegressionDetectorTest {
       final Map<RuntimeType, BehavioralAnalyzer.TestExecutionResult> emptyResults = new HashMap<>();
 
       // When: Detecting regressions
-      final List<BehavioralDiscrepancy> regressions = regressionDetector.detectRegressions(emptyResults);
+      final List<BehavioralDiscrepancy> regressions =
+          regressionDetector.detectRegressions(emptyResults);
 
       // Then: Should handle gracefully
       assertNotNull(regressions, "Should return non-null result");
@@ -337,36 +385,41 @@ class RegressionDetectorTest {
       // Given: Mixed execution results
       final Map<RuntimeType, BehavioralAnalyzer.TestExecutionResult> mixedResults = new HashMap<>();
       mixedResults.put(RuntimeType.JNI, createSuccessfulResult(42, Duration.ofMillis(100)));
-      mixedResults.put(RuntimeType.PANAMA, createFailedResult(
-          new RuntimeException("Test failure"), Duration.ofMillis(90)));
+      mixedResults.put(
+          RuntimeType.PANAMA,
+          createFailedResult(new RuntimeException("Test failure"), Duration.ofMillis(90)));
 
       // When: Detecting regressions multiple times
-      assertDoesNotThrow(() -> {
-        for (int i = 0; i < 10; i++) {
-          regressionDetector.detectRegressions(mixedResults);
-        }
-      }, "Should handle mixed results without throwing exceptions");
+      assertDoesNotThrow(
+          () -> {
+            for (int i = 0; i < 10; i++) {
+              regressionDetector.detectRegressions(mixedResults);
+            }
+          },
+          "Should handle mixed results without throwing exceptions");
 
       // Then: Should maintain data integrity
-      final Map<String, RegressionDetector.RegressionBaseline> baselines = regressionDetector.getBaselines();
+      final Map<String, RegressionDetector.RegressionBaseline> baselines =
+          regressionDetector.getBaselines();
       assertNotNull(baselines, "Should maintain baseline integrity");
     }
   }
 
   // Helper methods for creating test data
 
-  private BehavioralAnalyzer.TestExecutionResult createSuccessfulResult(final Object returnValue, final Duration executionTime) {
+  private BehavioralAnalyzer.TestExecutionResult createSuccessfulResult(
+      final Object returnValue, final Duration executionTime) {
     return new BehavioralAnalyzer.TestExecutionResult(
         true, false, returnValue, null, executionTime, null);
   }
 
-  private BehavioralAnalyzer.TestExecutionResult createFailedResult(final Exception exception, final Duration executionTime) {
+  private BehavioralAnalyzer.TestExecutionResult createFailedResult(
+      final Exception exception, final Duration executionTime) {
     return new BehavioralAnalyzer.TestExecutionResult(
         false, false, null, exception, executionTime, null);
   }
 
   private BehavioralAnalyzer.TestExecutionResult createSkippedResult(final Duration executionTime) {
-    return new BehavioralAnalyzer.TestExecutionResult(
-        false, true, null, null, executionTime, null);
+    return new BehavioralAnalyzer.TestExecutionResult(false, true, null, null, executionTime, null);
   }
 }

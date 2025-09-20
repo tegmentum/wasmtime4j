@@ -376,7 +376,6 @@ public final class JniLinker extends JniResource implements Linker {
     }
   }
 
-
   /**
    * Converts WasmValueType array to native type representation.
    *

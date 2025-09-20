@@ -1,13 +1,13 @@
 package ai.tegmentum.wasmtime4j;
 
-import java.util.List;
 import java.util.Collections;
+import java.util.List;
 
 /**
  * Result of WebAssembly module validation.
  *
- * <p>This class encapsulates the result of validating WebAssembly bytecode, including
- * whether the validation succeeded and any validation errors or warnings.
+ * <p>This class encapsulates the result of validating WebAssembly bytecode, including whether the
+ * validation succeeded and any validation errors or warnings.
  *
  * @since 1.0.0
  */
@@ -56,7 +56,8 @@ public final class ModuleValidationResult {
    * @param warnings the validation warnings (empty if none)
    * @throws IllegalArgumentException if errors or warnings is null
    */
-  public ModuleValidationResult(final boolean isValid, final List<String> errors, final List<String> warnings) {
+  public ModuleValidationResult(
+      final boolean isValid, final List<String> errors, final List<String> warnings) {
     if (errors == null) {
       throw new IllegalArgumentException("Errors list cannot be null");
     }
@@ -136,9 +137,7 @@ public final class ModuleValidationResult {
       return false;
     }
     final ModuleValidationResult that = (ModuleValidationResult) obj;
-    return isValid == that.isValid
-        && errors.equals(that.errors)
-        && warnings.equals(that.warnings);
+    return isValid == that.isValid && errors.equals(that.errors) && warnings.equals(that.warnings);
   }
 
   @Override
