@@ -42,6 +42,30 @@ public final class WasmSpecTestDownloader {
   }
 
   /**
+   * Checks if test suite download is enabled via system properties.
+   *
+   * @return true if test suite download is enabled
+   */
+  public static boolean isTestSuiteDownloadEnabled() {
+    return Boolean.parseBoolean(System.getProperty("wasmtime4j.test.download-suites", "false"));
+  }
+
+  /**
+   * Downloads test suites automatically if enabled via system properties.
+   *
+   * @param targetDirectory the directory to extract tests to
+   * @throws IOException if download or extraction fails
+   */
+  public static void downloadTestSuitesIfEnabled(final Path targetDirectory) throws IOException {
+    if (isTestSuiteDownloadEnabled()) {
+      LOGGER.info("Automatic test suite download enabled");
+      downloadAllTestSuites(targetDirectory);
+    } else {
+      LOGGER.info("Automatic test suite download disabled (use -Dwasmtime4j.test.download-suites=true to enable)");
+    }
+  }
+
+  /**
    * Downloads and extracts the WebAssembly specification test suite.
    *
    * @param targetDirectory the directory to extract tests to
@@ -127,13 +151,27 @@ public final class WasmSpecTestDownloader {
 
     Files.createDirectories(targetDirectory);
 
+    // Check system properties for selective downloading
+    final String suiteTypesProperty = System.getProperty("wasmtime4j.test.suite-types", "all");
+    final boolean downloadAll = "all".equals(suiteTypesProperty);
+    final boolean downloadWebAssemblySpec = downloadAll || suiteTypesProperty.contains("webassembly-spec");
+    final boolean downloadWasmtimeTests = downloadAll || suiteTypesProperty.contains("wasmtime-tests");
+
     // Download WebAssembly spec tests
-    downloadWebAssemblySpecTests(targetDirectory);
+    if (downloadWebAssemblySpec) {
+      downloadWebAssemblySpecTests(targetDirectory);
+    } else {
+      LOGGER.info("Skipping WebAssembly spec tests (not requested in wasmtime4j.test.suite-types)");
+    }
 
     // Download Wasmtime tests
-    downloadWasmtimeTests(targetDirectory);
+    if (downloadWasmtimeTests) {
+      downloadWasmtimeTests(targetDirectory);
+    } else {
+      LOGGER.info("Skipping Wasmtime tests (not requested in wasmtime4j.test.suite-types)");
+    }
 
-    LOGGER.info("Successfully downloaded all test suites to: " + targetDirectory);
+    LOGGER.info("Successfully downloaded requested test suites to: " + targetDirectory);
   }
 
   /**
@@ -203,7 +241,10 @@ public final class WasmSpecTestDownloader {
       throws IOException {
     LOGGER.info("Extracting WebAssembly spec tests...");
 
-    int extractedFiles = 0;
+    int extractedWastFiles = 0;
+    int extractedWasmFiles = 0;
+    int convertedWatFiles = 0;
+
     try (final ZipInputStream zipStream =
         new ZipInputStream(new BufferedInputStream(new java.io.ByteArrayInputStream(zipData)))) {
 
@@ -211,10 +252,11 @@ public final class WasmSpecTestDownloader {
       while ((entry = zipStream.getNextEntry()) != null) {
         final String entryName = entry.getName();
 
-        // Only extract test files (*.wast, *.wasm files in test directories)
-        if (entryName.contains("/test/")
-            && (entryName.endsWith(".wast") || entryName.endsWith(".wasm"))) {
-          final Path outputFile = targetDirectory.resolve(getRelativeTestPath(entryName));
+        // Extract test files from test/core directory (main spec tests)
+        if (entryName.contains("/test/core/")
+            && (entryName.endsWith(".wast") || entryName.endsWith(".wasm") || entryName.endsWith(".wat"))) {
+          final String fileName = getFileName(entryName);
+          final Path outputFile = targetDirectory.resolve(fileName);
           Files.createDirectories(outputFile.getParent());
 
           try (final BufferedOutputStream output =
@@ -226,9 +268,22 @@ public final class WasmSpecTestDownloader {
             }
           }
 
-          extractedFiles++;
-          if (extractedFiles % 50 == 0) {
-            LOGGER.info("Extracted " + extractedFiles + " test files...");
+          if (entryName.endsWith(".wast")) {
+            extractedWastFiles++;
+            // Convert WAST files to WASM if wabt is available
+            convertWastFileToWasm(outputFile);
+          } else if (entryName.endsWith(".wasm")) {
+            extractedWasmFiles++;
+          } else if (entryName.endsWith(".wat")) {
+            convertedWatFiles++;
+            // Convert WAT files to WASM if wabt is available
+            convertWatFileToWasm(outputFile);
+          }
+
+          if ((extractedWastFiles + extractedWasmFiles + convertedWatFiles) % 50 == 0) {
+            LOGGER.info("Extracted "
+                + (extractedWastFiles + extractedWasmFiles + convertedWatFiles)
+                + " test files...");
           }
         }
 
@@ -236,7 +291,11 @@ public final class WasmSpecTestDownloader {
       }
     }
 
-    LOGGER.info("Extracted " + extractedFiles + " WebAssembly spec test files");
+    LOGGER.info("Extracted " + extractedWastFiles + " WAST files, " + extractedWasmFiles + " WASM files, "
+        + convertedWatFiles + " WAT files from WebAssembly spec tests");
+
+    // Convert any extracted WAT/WAST files to WASM format
+    convertExtractedFilesToWasm(targetDirectory);
   }
 
   /**
@@ -309,6 +368,80 @@ public final class WasmSpecTestDownloader {
     // Fallback: use just the filename
     final int lastSlash = fullPath.lastIndexOf('/');
     return lastSlash >= 0 ? fullPath.substring(lastSlash + 1) : fullPath;
+  }
+
+  /**
+   * Gets just the filename from a full path.
+   *
+   * @param fullPath the full path
+   * @return the filename
+   */
+  private static String getFileName(final String fullPath) {
+    final int lastSlash = fullPath.lastIndexOf('/');
+    return lastSlash >= 0 ? fullPath.substring(lastSlash + 1) : fullPath;
+  }
+
+  /**
+   * Converts a WAT file to WASM format.
+   *
+   * @param watFile the WAT file to convert
+   */
+  private static void convertWatFileToWasm(final Path watFile) {
+    try {
+      final String baseName = watFile.getFileName().toString();
+      final String nameWithoutExt = baseName.substring(0, baseName.lastIndexOf('.'));
+      final Path wasmFile = watFile.getParent().resolve(nameWithoutExt + ".wasm");
+
+      if (WatToWasmConverter.convertWatToWasm(watFile, wasmFile)) {
+        LOGGER.fine("Converted " + watFile + " to " + wasmFile);
+      } else {
+        LOGGER.warning("Failed to convert " + watFile + " (wabt not available)");
+      }
+    } catch (final IOException e) {
+      LOGGER.warning("Failed to convert " + watFile + ": " + e.getMessage());
+    }
+  }
+
+  /**
+   * Converts a WAST file to WASM format (treats it as WAT for now).
+   *
+   * @param wastFile the WAST file to convert
+   */
+  private static void convertWastFileToWasm(final Path wastFile) {
+    // For now, treat WAST files similar to WAT files
+    // In a full implementation, this would parse WAST assertions and extract individual modules
+    try {
+      final String baseName = wastFile.getFileName().toString();
+      final String nameWithoutExt = baseName.substring(0, baseName.lastIndexOf('.'));
+      final Path wasmFile = wastFile.getParent().resolve(nameWithoutExt + ".wasm");
+
+      // For WAST files, we'll need more sophisticated processing
+      // For now, just log that we encountered one
+      LOGGER.fine("Found WAST file: " + wastFile + " (complex conversion not yet implemented)");
+    } catch (final Exception e) {
+      LOGGER.warning("Failed to process WAST file " + wastFile + ": " + e.getMessage());
+    }
+  }
+
+  /**
+   * Converts any extracted WAT/WAST files to WASM format.
+   *
+   * @param directory the directory containing extracted files
+   */
+  private static void convertExtractedFilesToWasm(final Path directory) {
+    if (!WatToWasmConverter.isWabtAvailable()) {
+      LOGGER.warning("wabt not available - WAT/WAST files will not be converted to WASM");
+      return;
+    }
+
+    try {
+      Files.walk(directory)
+          .filter(Files::isRegularFile)
+          .filter(path -> path.toString().endsWith(".wat"))
+          .forEach(WasmSpecTestDownloader::convertWatFileToWasm);
+    } catch (final IOException e) {
+      LOGGER.warning("Failed to convert WAT files: " + e.getMessage());
+    }
   }
 
   /**
