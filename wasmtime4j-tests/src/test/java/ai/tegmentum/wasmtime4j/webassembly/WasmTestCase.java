@@ -1,5 +1,7 @@
 package ai.tegmentum.wasmtime4j.webassembly;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
 import java.util.Optional;
@@ -164,6 +166,34 @@ public final class WasmTestCase {
   public boolean requiresWasi() {
     return suiteType == WasmTestSuiteLoader.TestSuiteType.WASI_TESTS
         || testName.toLowerCase().contains("wasi");
+  }
+
+  /**
+   * Creates a test case from a WebAssembly file with automatic metadata detection.
+   *
+   * @param wasmFile the WebAssembly file path
+   * @param suiteType the test suite type
+   * @return the test case created from the file
+   * @throws IOException if the file cannot be read
+   */
+  public static WasmTestCase fromFile(final Path wasmFile, final WasmTestSuiteLoader.TestSuiteType suiteType)
+      throws IOException {
+    final String fileName = wasmFile.getFileName().toString();
+    final String testName = fileName.substring(0, fileName.length() - 5); // Remove .wasm extension
+
+    final byte[] moduleBytes = Files.readAllBytes(wasmFile);
+
+    // Look for corresponding expected results file
+    final Path expectedFile = wasmFile.getParent().resolve(testName + ".expected");
+    final Optional<String> expectedResults =
+        Files.exists(expectedFile) ? Optional.of(Files.readString(expectedFile)) : Optional.empty();
+
+    // Look for corresponding test metadata file
+    final Path metadataFile = wasmFile.getParent().resolve(testName + ".json");
+    final Optional<String> metadata =
+        Files.exists(metadataFile) ? Optional.of(Files.readString(metadataFile)) : Optional.empty();
+
+    return new WasmTestCase(testName, suiteType, wasmFile, moduleBytes, expectedResults, metadata);
   }
 
   @Override
