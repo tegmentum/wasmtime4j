@@ -3,14 +3,17 @@ package ai.tegmentum.wasmtime4j;
 import java.nio.ByteBuffer;
 
 /**
- * Represents WebAssembly linear memory.
+ * Represents WebAssembly linear memory with advanced management capabilities.
  *
  * <p>Linear memory provides a contiguous, mutable array of bytes that can be accessed by
  * WebAssembly code. Memory can be grown dynamically up to its maximum size limit.
  *
+ * <p>This interface provides comprehensive memory management features including bulk operations,
+ * introspection, and security protection for enterprise-grade applications.
+ *
  * @since 1.0.0
  */
-public interface WasmMemory {
+public interface WasmMemory extends BulkMemoryOperations, MemoryIntrospection, MemoryProtection {
 
   /**
    * Gets the current size of the memory in pages (64KB each).
@@ -93,4 +96,64 @@ public interface WasmMemory {
    * @throws IndexOutOfBoundsException if any offset or length is out of bounds
    */
   void writeBytes(final int offset, final byte[] src, final int srcOffset, final int length);
+
+  /**
+   * Gets the current size of the memory in bytes.
+   *
+   * <p>This provides the exact byte size of the memory, calculated as pages * 64KB.
+   *
+   * @return the current size in bytes
+   */
+  default long getSizeInBytes() {
+    return (long) getSize() * 65536L;
+  }
+
+  /**
+   * Checks if the memory can be grown by the specified number of pages.
+   *
+   * <p>This validates whether a grow operation would succeed without actually
+   * performing the growth, allowing applications to make informed decisions.
+   *
+   * @param pages the number of pages to check for growth capacity
+   * @return true if growth would succeed, false otherwise
+   */
+  default boolean canGrow(final int pages) {
+    final int maxSize = getMaxSize();
+    if (maxSize == -1) {
+      return true; // Unlimited growth
+    }
+    return getSize() + pages <= maxSize;
+  }
+
+  /**
+   * Gets the remaining growth capacity in pages.
+   *
+   * <p>This calculates how many more pages can be allocated before reaching
+   * the maximum size limit.
+   *
+   * @return the remaining pages that can be allocated, or -1 if unlimited
+   */
+  default int getRemainingGrowthCapacity() {
+    final int maxSize = getMaxSize();
+    if (maxSize == -1) {
+      return -1; // Unlimited
+    }
+    return Math.max(0, maxSize - getSize());
+  }
+
+  /**
+   * Calculates the memory utilization ratio.
+   *
+   * <p>This provides insight into how much of the maximum available memory
+   * is currently allocated.
+   *
+   * @return the utilization ratio between 0.0 and 1.0, or -1.0 if unlimited
+   */
+  default double getUtilizationRatio() {
+    final int maxSize = getMaxSize();
+    if (maxSize == -1) {
+      return -1.0; // Unlimited
+    }
+    return maxSize == 0 ? 0.0 : (double) getSize() / maxSize;
+  }
 }

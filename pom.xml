@@ -35,6 +35,8 @@
         <logback.version>1.4.11</logback.version>
         <mockito.version>5.15.2</mockito.version>
         <assertj.version>3.24.2</assertj.version>
+        <reactor.version>3.6.10</reactor.version>
+        <reactive.streams.version>1.0.4</reactive.streams.version>
 
         <!-- Plugin versions -->
         <maven.compiler.plugin.version>3.11.0</maven.compiler.plugin.version>
@@ -179,6 +181,24 @@
                 <groupId>org.assertj</groupId>
                 <artifactId>assertj-core</artifactId>
                 <version>${assertj.version}</version>
+                <scope>test</scope>
+            </dependency>
+
+            <!-- Reactive Streams Dependencies -->
+            <dependency>
+                <groupId>org.reactivestreams</groupId>
+                <artifactId>reactive-streams</artifactId>
+                <version>${reactive.streams.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.projectreactor</groupId>
+                <artifactId>reactor-core</artifactId>
+                <version>${reactor.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.projectreactor</groupId>
+                <artifactId>reactor-test</artifactId>
+                <version>${reactor.version}</version>
                 <scope>test</scope>
             </dependency>
 

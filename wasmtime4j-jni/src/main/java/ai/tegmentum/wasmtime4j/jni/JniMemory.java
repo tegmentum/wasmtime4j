@@ -1,11 +1,18 @@
 package ai.tegmentum.wasmtime4j.jni;
 
+import ai.tegmentum.wasmtime4j.MemoryPerformanceMetrics;
+import ai.tegmentum.wasmtime4j.MemorySegment;
+import ai.tegmentum.wasmtime4j.MemoryStatistics;
+import ai.tegmentum.wasmtime4j.MemoryUsageReport;
 import ai.tegmentum.wasmtime4j.WasmMemory;
 import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.logging.Logger;
 
 /**
@@ -435,8 +442,709 @@ public final class JniMemory extends JniResource implements WasmMemory {
 
   @Override
   public int getMaxSize() {
-    // TODO: Implement native method to get max size
-    return -1;
+    ensureNotClosed();
+    try {
+      return nativeGetMaxSize(getNativeHandle());
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error getting max size", e);
+    }
+  }
+
+  // BulkMemoryOperations implementation
+
+  @Override
+  public void bulkCopy(
+      final WasmMemory dest,
+      final int destOffset,
+      final WasmMemory source,
+      final int sourceOffset,
+      final int length) {
+    JniValidation.requireNonNull(dest, "dest");
+    JniValidation.requireNonNull(source, "source");
+    JniValidation.requireNonNegative(destOffset, "destOffset");
+    JniValidation.requireNonNegative(sourceOffset, "sourceOffset");
+    JniValidation.requireNonNegative(length, "length");
+    ensureNotClosed();
+
+    if (!(dest instanceof JniMemory)) {
+      throw new IllegalArgumentException("dest must be a JniMemory instance");
+    }
+    if (!(source instanceof JniMemory)) {
+      throw new IllegalArgumentException("source must be a JniMemory instance");
+    }
+
+    final JniMemory destJni = (JniMemory) dest;
+    final JniMemory sourceJni = (JniMemory) source;
+
+    try {
+      nativeBulkCopy(
+          destJni.getNativeHandle(),
+          destOffset,
+          sourceJni.getNativeHandle(),
+          sourceOffset,
+          length);
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error in bulk copy", e);
+    }
+  }
+
+  @Override
+  public void bulkFill(final WasmMemory memory, final int offset, final int length, final byte value) {
+    JniValidation.requireNonNull(memory, "memory");
+    JniValidation.requireNonNegative(offset, "offset");
+    JniValidation.requireNonNegative(length, "length");
+    ensureNotClosed();
+
+    if (!(memory instanceof JniMemory)) {
+      throw new IllegalArgumentException("memory must be a JniMemory instance");
+    }
+
+    final JniMemory memoryJni = (JniMemory) memory;
+
+    try {
+      nativeBulkFill(memoryJni.getNativeHandle(), offset, length, value);
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error in bulk fill", e);
+    }
+  }
+
+  @Override
+  public int bulkCompare(
+      final WasmMemory memory1,
+      final int offset1,
+      final WasmMemory memory2,
+      final int offset2,
+      final int length) {
+    JniValidation.requireNonNull(memory1, "memory1");
+    JniValidation.requireNonNull(memory2, "memory2");
+    JniValidation.requireNonNegative(offset1, "offset1");
+    JniValidation.requireNonNegative(offset2, "offset2");
+    JniValidation.requireNonNegative(length, "length");
+    ensureNotClosed();
+
+    if (!(memory1 instanceof JniMemory)) {
+      throw new IllegalArgumentException("memory1 must be a JniMemory instance");
+    }
+    if (!(memory2 instanceof JniMemory)) {
+      throw new IllegalArgumentException("memory2 must be a JniMemory instance");
+    }
+
+    final JniMemory memory1Jni = (JniMemory) memory1;
+    final JniMemory memory2Jni = (JniMemory) memory2;
+
+    try {
+      return nativeBulkCompare(
+          memory1Jni.getNativeHandle(), offset1, memory2Jni.getNativeHandle(), offset2, length);
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error in bulk compare", e);
+    }
+  }
+
+  @Override
+  public void batchWrite(final WasmMemory memory, final Map<Integer, ByteBuffer> writes) {
+    JniValidation.requireNonNull(memory, "memory");
+    JniValidation.requireNonNull(writes, "writes");
+    ensureNotClosed();
+
+    if (!(memory instanceof JniMemory)) {
+      throw new IllegalArgumentException("memory must be a JniMemory instance");
+    }
+
+    final JniMemory memoryJni = (JniMemory) memory;
+
+    // Convert map to arrays for efficient native call
+    final int[] offsets = new int[writes.size()];
+    final byte[][] dataArrays = new byte[writes.size()][];
+    int i = 0;
+    for (final Map.Entry<Integer, ByteBuffer> entry : writes.entrySet()) {
+      if (entry.getKey() == null) {
+        throw new IllegalArgumentException("offset cannot be null");
+      }
+      if (entry.getValue() == null) {
+        throw new IllegalArgumentException("ByteBuffer cannot be null");
+      }
+      offsets[i] = entry.getKey();
+      final ByteBuffer buffer = entry.getValue();
+      final byte[] data = new byte[buffer.remaining()];
+      buffer.get(data);
+      dataArrays[i] = data;
+      i++;
+    }
+
+    try {
+      nativeBatchWrite(memoryJni.getNativeHandle(), offsets, dataArrays);
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error in batch write", e);
+    }
+  }
+
+  @Override
+  public Map<Integer, ByteBuffer> batchRead(final WasmMemory memory, final Map<Integer, Integer> reads) {
+    JniValidation.requireNonNull(memory, "memory");
+    JniValidation.requireNonNull(reads, "reads");
+    ensureNotClosed();
+
+    if (!(memory instanceof JniMemory)) {
+      throw new IllegalArgumentException("memory must be a JniMemory instance");
+    }
+
+    final JniMemory memoryJni = (JniMemory) memory;
+
+    // Convert map to arrays for efficient native call
+    final int[] offsets = new int[reads.size()];
+    final int[] lengths = new int[reads.size()];
+    int i = 0;
+    for (final Map.Entry<Integer, Integer> entry : reads.entrySet()) {
+      if (entry.getKey() == null) {
+        throw new IllegalArgumentException("offset cannot be null");
+      }
+      if (entry.getValue() == null) {
+        throw new IllegalArgumentException("length cannot be null");
+      }
+      offsets[i] = entry.getKey();
+      lengths[i] = entry.getValue();
+      i++;
+    }
+
+    try {
+      final byte[][] results = nativeBatchRead(memoryJni.getNativeHandle(), offsets, lengths);
+      final Map<Integer, ByteBuffer> resultMap = new HashMap<>();
+      for (int j = 0; j < offsets.length; j++) {
+        resultMap.put(offsets[j], ByteBuffer.wrap(results[j]).asReadOnlyBuffer());
+      }
+      return resultMap;
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error in batch read", e);
+    }
+  }
+
+  @Override
+  public int bulkSearch(
+      final WasmMemory memory, final int offset, final int length, final byte[] pattern) {
+    JniValidation.requireNonNull(memory, "memory");
+    JniValidation.requireNonNull(pattern, "pattern");
+    JniValidation.requireNonNegative(offset, "offset");
+    JniValidation.requireNonNegative(length, "length");
+    ensureNotClosed();
+
+    if (pattern.length == 0) {
+      throw new IllegalArgumentException("pattern cannot be empty");
+    }
+
+    if (!(memory instanceof JniMemory)) {
+      throw new IllegalArgumentException("memory must be a JniMemory instance");
+    }
+
+    final JniMemory memoryJni = (JniMemory) memory;
+
+    try {
+      return nativeBulkSearch(memoryJni.getNativeHandle(), offset, length, pattern);
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error in bulk search", e);
+    }
+  }
+
+  @Override
+  public void bulkMove(
+      final WasmMemory memory, final int destOffset, final int sourceOffset, final int length) {
+    JniValidation.requireNonNull(memory, "memory");
+    JniValidation.requireNonNegative(destOffset, "destOffset");
+    JniValidation.requireNonNegative(sourceOffset, "sourceOffset");
+    JniValidation.requireNonNegative(length, "length");
+    ensureNotClosed();
+
+    if (!(memory instanceof JniMemory)) {
+      throw new IllegalArgumentException("memory must be a JniMemory instance");
+    }
+
+    final JniMemory memoryJni = (JniMemory) memory;
+
+    try {
+      nativeBulkMove(memoryJni.getNativeHandle(), destOffset, sourceOffset, length);
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error in bulk move", e);
+    }
+  }
+
+  // MemoryIntrospection implementation
+
+  @Override
+  public MemoryStatistics getStatistics() {
+    ensureNotClosed();
+    try {
+      return nativeGetStatistics(getNativeHandle());
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error getting memory statistics", e);
+    }
+  }
+
+  @Override
+  public List<MemorySegment> getSegments() {
+    ensureNotClosed();
+    try {
+      return nativeGetSegments(getNativeHandle());
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error getting memory segments", e);
+    }
+  }
+
+  @Override
+  public MemoryUsageReport generateUsageReport() {
+    ensureNotClosed();
+    try {
+      return nativeGenerateUsageReport(getNativeHandle());
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error generating usage report", e);
+    }
+  }
+
+  @Override
+  public void enablePerformanceTracking() {
+    ensureNotClosed();
+    try {
+      nativeEnablePerformanceTracking(getNativeHandle());
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error enabling performance tracking", e);
+    }
+  }
+
+  @Override
+  public void disablePerformanceTracking() {
+    ensureNotClosed();
+    try {
+      nativeDisablePerformanceTracking(getNativeHandle());
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error disabling performance tracking", e);
+    }
+  }
+
+  @Override
+  public boolean isPerformanceTrackingEnabled() {
+    ensureNotClosed();
+    try {
+      return nativeIsPerformanceTrackingEnabled(getNativeHandle());
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error checking performance tracking status", e);
+    }
+  }
+
+  @Override
+  public MemoryPerformanceMetrics getPerformanceMetrics() {
+    ensureNotClosed();
+    if (!isPerformanceTrackingEnabled()) {
+      throw new IllegalStateException("Performance tracking is not enabled");
+    }
+    try {
+      return nativeGetPerformanceMetrics(getNativeHandle());
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error getting performance metrics", e);
+    }
+  }
+
+  @Override
+  public void resetMetrics() {
+    ensureNotClosed();
+    try {
+      nativeResetMetrics(getNativeHandle());
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error resetting metrics", e);
+    }
+  }
+
+  @Override
+  public List<String> analyzeAccessPatterns() {
+    ensureNotClosed();
+    try {
+      return nativeAnalyzeAccessPatterns(getNativeHandle());
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error analyzing access patterns", e);
+    }
+  }
+
+  @Override
+  public List<String> detectMemoryIssues() {
+    ensureNotClosed();
+    try {
+      return nativeDetectMemoryIssues(getNativeHandle());
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error detecting memory issues", e);
+    }
+  }
+
+  @Override
+  public MemorySegment analyzeRegion(final int offset, final int length) {
+    JniValidation.requireNonNegative(offset, "offset");
+    JniValidation.requireNonNegative(length, "length");
+    ensureNotClosed();
+    validateOffset(offset, length);
+
+    try {
+      return nativeAnalyzeRegion(getNativeHandle(), offset, length);
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error analyzing memory region", e);
+    }
+  }
+
+  @Override
+  public boolean validateMemoryIntegrity() {
+    ensureNotClosed();
+    try {
+      return nativeValidateMemoryIntegrity(getNativeHandle());
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error validating memory integrity", e);
+    }
+  }
+
+  @Override
+  public String getMemoryLayout() {
+    ensureNotClosed();
+    try {
+      return nativeGetMemoryLayout(getNativeHandle());
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error getting memory layout", e);
+    }
+  }
+
+  @Override
+  public long estimateOperationCost(final String operationType, final int offset, final int length) {
+    JniValidation.requireNonNull(operationType, "operationType");
+    JniValidation.requireNonNegative(offset, "offset");
+    JniValidation.requireNonNegative(length, "length");
+    ensureNotClosed();
+
+    try {
+      return nativeEstimateOperationCost(getNativeHandle(), operationType, offset, length);
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error estimating operation cost", e);
+    }
+  }
+
+  // MemoryProtection implementation
+
+  @Override
+  public void setReadOnly(final WasmMemory memory, final int offset, final int length) {
+    JniValidation.requireNonNull(memory, "memory");
+    JniValidation.requireNonNegative(offset, "offset");
+    JniValidation.requireNonNegative(length, "length");
+    ensureNotClosed();
+
+    if (!(memory instanceof JniMemory)) {
+      throw new IllegalArgumentException("memory must be a JniMemory instance");
+    }
+
+    final JniMemory memoryJni = (JniMemory) memory;
+
+    try {
+      nativeSetReadOnly(memoryJni.getNativeHandle(), offset, length);
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error setting read-only protection", e);
+    }
+  }
+
+  @Override
+  public void setExecutable(final WasmMemory memory, final int offset, final int length) {
+    JniValidation.requireNonNull(memory, "memory");
+    JniValidation.requireNonNegative(offset, "offset");
+    JniValidation.requireNonNegative(length, "length");
+    ensureNotClosed();
+
+    if (!(memory instanceof JniMemory)) {
+      throw new IllegalArgumentException("memory must be a JniMemory instance");
+    }
+
+    final JniMemory memoryJni = (JniMemory) memory;
+
+    try {
+      nativeSetExecutable(memoryJni.getNativeHandle(), offset, length);
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error setting executable protection", e);
+    }
+  }
+
+  @Override
+  public void removeReadOnly(final WasmMemory memory, final int offset, final int length) {
+    JniValidation.requireNonNull(memory, "memory");
+    JniValidation.requireNonNegative(offset, "offset");
+    JniValidation.requireNonNegative(length, "length");
+    ensureNotClosed();
+
+    if (!(memory instanceof JniMemory)) {
+      throw new IllegalArgumentException("memory must be a JniMemory instance");
+    }
+
+    final JniMemory memoryJni = (JniMemory) memory;
+
+    try {
+      nativeRemoveReadOnly(memoryJni.getNativeHandle(), offset, length);
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error removing read-only protection", e);
+    }
+  }
+
+  @Override
+  public void removeExecutable(final WasmMemory memory, final int offset, final int length) {
+    JniValidation.requireNonNull(memory, "memory");
+    JniValidation.requireNonNegative(offset, "offset");
+    JniValidation.requireNonNegative(length, "length");
+    ensureNotClosed();
+
+    if (!(memory instanceof JniMemory)) {
+      throw new IllegalArgumentException("memory must be a JniMemory instance");
+    }
+
+    final JniMemory memoryJni = (JniMemory) memory;
+
+    try {
+      nativeRemoveExecutable(memoryJni.getNativeHandle(), offset, length);
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error removing executable protection", e);
+    }
+  }
+
+  @Override
+  public boolean isReadable(final WasmMemory memory, final int offset) {
+    JniValidation.requireNonNull(memory, "memory");
+    JniValidation.requireNonNegative(offset, "offset");
+    ensureNotClosed();
+
+    if (!(memory instanceof JniMemory)) {
+      throw new IllegalArgumentException("memory must be a JniMemory instance");
+    }
+
+    final JniMemory memoryJni = (JniMemory) memory;
+
+    try {
+      return nativeIsReadable(memoryJni.getNativeHandle(), offset);
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error checking read permission", e);
+    }
+  }
+
+  @Override
+  public boolean isWritable(final WasmMemory memory, final int offset) {
+    JniValidation.requireNonNull(memory, "memory");
+    JniValidation.requireNonNegative(offset, "offset");
+    ensureNotClosed();
+
+    if (!(memory instanceof JniMemory)) {
+      throw new IllegalArgumentException("memory must be a JniMemory instance");
+    }
+
+    final JniMemory memoryJni = (JniMemory) memory;
+
+    try {
+      return nativeIsWritable(memoryJni.getNativeHandle(), offset);
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error checking write permission", e);
+    }
+  }
+
+  @Override
+  public boolean isExecutable(final WasmMemory memory, final int offset) {
+    JniValidation.requireNonNull(memory, "memory");
+    JniValidation.requireNonNegative(offset, "offset");
+    ensureNotClosed();
+
+    if (!(memory instanceof JniMemory)) {
+      throw new IllegalArgumentException("memory must be a JniMemory instance");
+    }
+
+    final JniMemory memoryJni = (JniMemory) memory;
+
+    try {
+      return nativeIsExecutable(memoryJni.getNativeHandle(), offset);
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error checking execute permission", e);
+    }
+  }
+
+  @Override
+  public int getProtectionFlags(final WasmMemory memory, final int offset, final int length) {
+    JniValidation.requireNonNull(memory, "memory");
+    JniValidation.requireNonNegative(offset, "offset");
+    JniValidation.requireNonNegative(length, "length");
+    ensureNotClosed();
+
+    if (!(memory instanceof JniMemory)) {
+      throw new IllegalArgumentException("memory must be a JniMemory instance");
+    }
+
+    final JniMemory memoryJni = (JniMemory) memory;
+
+    try {
+      return nativeGetProtectionFlags(memoryJni.getNativeHandle(), offset, length);
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error getting protection flags", e);
+    }
+  }
+
+  @Override
+  public void setProtectionFlags(final WasmMemory memory, final int offset, final int length, final int flags) {
+    JniValidation.requireNonNull(memory, "memory");
+    JniValidation.requireNonNegative(offset, "offset");
+    JniValidation.requireNonNegative(length, "length");
+    ensureNotClosed();
+
+    if (!(memory instanceof JniMemory)) {
+      throw new IllegalArgumentException("memory must be a JniMemory instance");
+    }
+
+    final JniMemory memoryJni = (JniMemory) memory;
+
+    try {
+      nativeSetProtectionFlags(memoryJni.getNativeHandle(), offset, length, flags);
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error setting protection flags", e);
+    }
+  }
+
+  @Override
+  public WasmMemory createProtectedView(
+      final WasmMemory memory,
+      final int offset,
+      final int length,
+      final boolean allowRead,
+      final boolean allowWrite) {
+    JniValidation.requireNonNull(memory, "memory");
+    JniValidation.requireNonNegative(offset, "offset");
+    JniValidation.requireNonNegative(length, "length");
+    ensureNotClosed();
+
+    if (!(memory instanceof JniMemory)) {
+      throw new IllegalArgumentException("memory must be a JniMemory instance");
+    }
+
+    final JniMemory memoryJni = (JniMemory) memory;
+
+    try {
+      final long viewHandle = nativeCreateProtectedView(
+          memoryJni.getNativeHandle(), offset, length, allowRead, allowWrite);
+      return new JniMemory(viewHandle);
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error creating protected view", e);
+    }
+  }
+
+  @Override
+  public boolean validateOperation(
+      final WasmMemory memory, final String operation, final int offset, final int length) {
+    JniValidation.requireNonNull(memory, "memory");
+    JniValidation.requireNonNull(operation, "operation");
+    JniValidation.requireNonNegative(offset, "offset");
+    JniValidation.requireNonNegative(length, "length");
+    ensureNotClosed();
+
+    if (!(memory instanceof JniMemory)) {
+      throw new IllegalArgumentException("memory must be a JniMemory instance");
+    }
+
+    final JniMemory memoryJni = (JniMemory) memory;
+
+    try {
+      return nativeValidateOperation(memoryJni.getNativeHandle(), operation, offset, length);
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error validating operation", e);
+    }
+  }
+
+  @Override
+  public void enableAuditLogging() {
+    ensureNotClosed();
+    try {
+      nativeEnableAuditLogging(getNativeHandle());
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error enabling audit logging", e);
+    }
+  }
+
+  @Override
+  public void disableAuditLogging() {
+    ensureNotClosed();
+    try {
+      nativeDisableAuditLogging(getNativeHandle());
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error disabling audit logging", e);
+    }
+  }
+
+  @Override
+  public boolean isAuditLoggingEnabled() {
+    ensureNotClosed();
+    try {
+      return nativeIsAuditLoggingEnabled(getNativeHandle());
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error checking audit logging status", e);
+    }
   }
 
   /**
@@ -545,4 +1253,198 @@ public final class JniMemory extends JniResource implements WasmMemory {
    * @param memoryHandle the native memory handle
    */
   private static native void nativeDestroyMemory(long memoryHandle);
+
+  /**
+   * Gets the maximum size of a memory in pages.
+   *
+   * @param memoryHandle the native memory handle
+   * @return the maximum size in pages, or -1 if unlimited
+   */
+  private static native int nativeGetMaxSize(long memoryHandle);
+
+  // Bulk memory operations native methods
+
+  /**
+   * Performs a bulk copy between two memory regions.
+   */
+  private static native void nativeBulkCopy(
+      long destHandle, int destOffset, long sourceHandle, int sourceOffset, int length);
+
+  /**
+   * Fills a memory region with a specific byte value.
+   */
+  private static native void nativeBulkFill(long memoryHandle, int offset, int length, byte value);
+
+  /**
+   * Compares two memory regions.
+   */
+  private static native int nativeBulkCompare(
+      long memory1Handle, int offset1, long memory2Handle, int offset2, int length);
+
+  /**
+   * Performs batched write operations.
+   */
+  private static native void nativeBatchWrite(long memoryHandle, int[] offsets, byte[][] dataArrays);
+
+  /**
+   * Performs batched read operations.
+   */
+  private static native byte[][] nativeBatchRead(long memoryHandle, int[] offsets, int[] lengths);
+
+  /**
+   * Searches for a byte pattern in memory.
+   */
+  private static native int nativeBulkSearch(long memoryHandle, int offset, int length, byte[] pattern);
+
+  /**
+   * Moves memory within the same memory instance.
+   */
+  private static native void nativeBulkMove(long memoryHandle, int destOffset, int sourceOffset, int length);
+
+  // Memory introspection native methods
+
+  /**
+   * Gets memory statistics.
+   */
+  private static native MemoryStatistics nativeGetStatistics(long memoryHandle);
+
+  /**
+   * Gets memory segments.
+   */
+  private static native List<MemorySegment> nativeGetSegments(long memoryHandle);
+
+  /**
+   * Generates a memory usage report.
+   */
+  private static native MemoryUsageReport nativeGenerateUsageReport(long memoryHandle);
+
+  /**
+   * Enables performance tracking.
+   */
+  private static native void nativeEnablePerformanceTracking(long memoryHandle);
+
+  /**
+   * Disables performance tracking.
+   */
+  private static native void nativeDisablePerformanceTracking(long memoryHandle);
+
+  /**
+   * Checks if performance tracking is enabled.
+   */
+  private static native boolean nativeIsPerformanceTrackingEnabled(long memoryHandle);
+
+  /**
+   * Gets performance metrics.
+   */
+  private static native MemoryPerformanceMetrics nativeGetPerformanceMetrics(long memoryHandle);
+
+  /**
+   * Resets performance metrics.
+   */
+  private static native void nativeResetMetrics(long memoryHandle);
+
+  /**
+   * Analyzes memory access patterns.
+   */
+  private static native List<String> nativeAnalyzeAccessPatterns(long memoryHandle);
+
+  /**
+   * Detects memory issues.
+   */
+  private static native List<String> nativeDetectMemoryIssues(long memoryHandle);
+
+  /**
+   * Analyzes a specific memory region.
+   */
+  private static native MemorySegment nativeAnalyzeRegion(long memoryHandle, int offset, int length);
+
+  /**
+   * Validates memory integrity.
+   */
+  private static native boolean nativeValidateMemoryIntegrity(long memoryHandle);
+
+  /**
+   * Gets memory layout information.
+   */
+  private static native String nativeGetMemoryLayout(long memoryHandle);
+
+  /**
+   * Estimates operation cost.
+   */
+  private static native long nativeEstimateOperationCost(
+      long memoryHandle, String operationType, int offset, int length);
+
+  // Memory protection native methods
+
+  /**
+   * Sets a region as read-only.
+   */
+  private static native void nativeSetReadOnly(long memoryHandle, int offset, int length);
+
+  /**
+   * Sets a region as executable.
+   */
+  private static native void nativeSetExecutable(long memoryHandle, int offset, int length);
+
+  /**
+   * Removes read-only protection.
+   */
+  private static native void nativeRemoveReadOnly(long memoryHandle, int offset, int length);
+
+  /**
+   * Removes executable protection.
+   */
+  private static native void nativeRemoveExecutable(long memoryHandle, int offset, int length);
+
+  /**
+   * Checks if a location is readable.
+   */
+  private static native boolean nativeIsReadable(long memoryHandle, int offset);
+
+  /**
+   * Checks if a location is writable.
+   */
+  private static native boolean nativeIsWritable(long memoryHandle, int offset);
+
+  /**
+   * Checks if a location is executable.
+   */
+  private static native boolean nativeIsExecutable(long memoryHandle, int offset);
+
+  /**
+   * Gets protection flags for a region.
+   */
+  private static native int nativeGetProtectionFlags(long memoryHandle, int offset, int length);
+
+  /**
+   * Sets protection flags for a region.
+   */
+  private static native void nativeSetProtectionFlags(long memoryHandle, int offset, int length, int flags);
+
+  /**
+   * Creates a protected memory view.
+   */
+  private static native long nativeCreateProtectedView(
+      long memoryHandle, int offset, int length, boolean allowRead, boolean allowWrite);
+
+  /**
+   * Validates an operation against protection policies.
+   */
+  private static native boolean nativeValidateOperation(
+      long memoryHandle, String operation, int offset, int length);
+
+  /**
+   * Enables audit logging.
+   */
+  private static native void nativeEnableAuditLogging(long memoryHandle);
+
+  /**
+   * Disables audit logging.
+   */
+  private static native void nativeDisableAuditLogging(long memoryHandle);
+
+  /**
+   * Checks if audit logging is enabled.
+   */
+  private static native boolean nativeIsAuditLoggingEnabled(long memoryHandle);
 }

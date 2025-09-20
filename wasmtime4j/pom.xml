@@ -30,7 +30,17 @@
             <artifactId>wasmtime4j-native-loader</artifactId>
             <version>${project.version}</version>
         </dependency>
-        
+
+        <!-- Reactive Streams Dependencies -->
+        <dependency>
+            <groupId>org.reactivestreams</groupId>
+            <artifactId>reactive-streams</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.projectreactor</groupId>
+            <artifactId>reactor-core</artifactId>
+        </dependency>
+
         <!-- Test dependencies -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
