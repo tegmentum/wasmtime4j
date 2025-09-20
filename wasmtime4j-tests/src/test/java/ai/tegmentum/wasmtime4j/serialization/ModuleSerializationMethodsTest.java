@@ -40,7 +40,13 @@ class ModuleSerializationMethodsTest {
     @BeforeEach
     void setUp() throws WasmException {
         engine = WasmRuntimeFactory.create().createEngine();
-        final byte[] wasmBytes = wat.parse(TEST_WAT);
+        // Use a simple pre-compiled WASM module (basic add function)
+        // This is equivalent to: (module (func $add (param i32 i32) (result i32) local.get 0 local.get 1 i32.add) (export "add" (func $add)))
+        final byte[] wasmBytes = new byte[] {
+            0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, 0x01, 0x07, 0x01, 0x60, 0x02, 0x7f, 0x7f, 0x01,
+            0x7f, 0x03, 0x02, 0x01, 0x00, 0x07, 0x07, 0x01, 0x03, 0x61, 0x64, 0x64, 0x00, 0x00, 0x0a, 0x09,
+            0x01, 0x07, 0x00, 0x20, 0x00, 0x20, 0x01, 0x6a, 0x0b
+        };
         testModule = Module.compile(engine, wasmBytes);
     }
 
@@ -138,18 +144,15 @@ class ModuleSerializationMethodsTest {
     @Test
     @DisplayName("Different modules have different bytecode hashes")
     void testBytecodeHashUniqueness() throws WasmException {
-        // Create a different module
-        final String differentWat = """
-                (module
-                  (func $add (param i32 i32) (result i32)
-                    local.get 0
-                    local.get 1
-                    i32.add)
-                  (export "add" (func $add)))
-                """;
+        // Create a different module (multiply function instead of add)
+        // This is equivalent to: (module (func $mul (param i32 i32) (result i32) local.get 0 local.get 1 i32.mul) (export "mul" (func $mul)))
+        final byte[] differentWasmBytes = new byte[] {
+            0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, 0x01, 0x07, 0x01, 0x60, 0x02, 0x7f, 0x7f, 0x01,
+            0x7f, 0x03, 0x02, 0x01, 0x00, 0x07, 0x07, 0x01, 0x03, 0x6d, 0x75, 0x6c, 0x00, 0x00, 0x0a, 0x09,
+            0x01, 0x07, 0x00, 0x20, 0x00, 0x20, 0x01, 0x6c, 0x0b
+        };
 
-        final byte[] wasmBytes = wat.parse(differentWat);
-        try (final Module differentModule = Module.compile(engine, wasmBytes)) {
+        try (final Module differentModule = Module.compile(engine, differentWasmBytes)) {
             final byte[] hash1 = testModule.getBytecodeHash();
             final byte[] hash2 = differentModule.getBytecodeHash();
 
@@ -172,32 +175,18 @@ class ModuleSerializationMethodsTest {
     @Test
     @DisplayName("Compiled size varies with module complexity")
     void testCompiledSizeVariation() throws WasmException {
-        // Create a larger, more complex module
-        final String complexWat = """
-                (module
-                  (memory 10)
-                  (func $complex (param i32 i32 i32) (result i32)
-                    (local i32 i32 i32 i32 i32)
-                    local.get 0
-                    local.get 1
-                    i32.add
-                    local.get 2
-                    i32.mul
-                    local.tee 3
-                    local.get 3
-                    i32.add
-                    local.tee 4
-                    local.get 4
-                    i32.mul)
-                  (func $simple (result i32)
-                    i32.const 42)
-                  (export "complex" (func $complex))
-                  (export "simple" (func $simple))
-                  (export "memory" (memory 0)))
-                """;
+        // Create a larger, more complex module with memory and multiple functions
+        // This is a more complex module with memory and multiple functions
+        final byte[] complexWasmBytes = new byte[] {
+            0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, 0x01, 0x0b, 0x02, 0x60, 0x03, 0x7f, 0x7f, 0x7f,
+            0x01, 0x7f, 0x60, 0x00, 0x01, 0x7f, 0x03, 0x03, 0x02, 0x00, 0x01, 0x05, 0x03, 0x01, 0x00, 0x0a,
+            0x07, 0x0b, 0x02, 0x07, 0x63, 0x6f, 0x6d, 0x70, 0x6c, 0x65, 0x78, 0x00, 0x00, 0x06, 0x73, 0x69,
+            0x6d, 0x70, 0x6c, 0x65, 0x00, 0x01, 0x06, 0x6d, 0x65, 0x6d, 0x6f, 0x72, 0x79, 0x02, 0x00, 0x0a,
+            0x17, 0x02, 0x0a, 0x00, 0x20, 0x00, 0x20, 0x01, 0x6a, 0x20, 0x02, 0x6c, 0x22, 0x03, 0x20, 0x03,
+            0x6a, 0x22, 0x04, 0x20, 0x04, 0x6c, 0x0b, 0x04, 0x00, 0x41, 0x2a, 0x0b
+        };
 
-        final byte[] wasmBytes = wat.parse(complexWat);
-        try (final Module complexModule = Module.compile(engine, wasmBytes)) {
+        try (final Module complexModule = Module.compile(engine, complexWasmBytes)) {
             final long simpleSize = testModule.getCompiledSize();
             final long complexSize = complexModule.getCompiledSize();
 
