@@ -25,6 +25,12 @@ public final class EngineConfig {
   private boolean wasmTailCall = false;
   private boolean wasmMultiMemory = false;
   private boolean wasmMemory64 = false;
+  private long maxWasmStack = 0; // 0 means unlimited
+  private long asyncStackSize = 0; // 0 means unlimited
+  private boolean generateDebugInfo = false;
+  private boolean epochInterruption = false;
+  private java.util.Map<String, String> craneliftSettings = new java.util.HashMap<>();
+  private java.util.Set<WasmFeature> wasmFeatures = new java.util.HashSet<>();
 
   /** Creates a new engine configuration with default settings. */
   public EngineConfig() {
@@ -90,6 +96,139 @@ public final class EngineConfig {
     return this;
   }
 
+  /**
+   * Sets the optimization level for compilation.
+   *
+   * @param level the optimization level
+   * @return this configuration for method chaining
+   * @throws IllegalArgumentException if level is null
+   */
+  public EngineConfig setOptimizationLevel(final OptimizationLevel level) {
+    return optimizationLevel(level);
+  }
+
+  /**
+   * Sets Cranelift-specific settings.
+   *
+   * @param settings map of Cranelift setting names to values
+   * @return this configuration for method chaining
+   * @throws IllegalArgumentException if settings is null
+   */
+  public EngineConfig setCraneliftSettings(final java.util.Map<String, String> settings) {
+    if (settings == null) {
+      throw new IllegalArgumentException("Cranelift settings cannot be null");
+    }
+    this.craneliftSettings.clear();
+    this.craneliftSettings.putAll(settings);
+    return this;
+  }
+
+  /**
+   * Sets the maximum WebAssembly stack size in bytes.
+   *
+   * @param bytes maximum stack size in bytes (0 for unlimited)
+   * @return this configuration for method chaining
+   * @throws IllegalArgumentException if bytes is negative
+   */
+  public EngineConfig setMaxWasmStack(final long bytes) {
+    if (bytes < 0) {
+      throw new IllegalArgumentException("Maximum WebAssembly stack size cannot be negative");
+    }
+    this.maxWasmStack = bytes;
+    return this;
+  }
+
+  /**
+   * Sets the async stack size in bytes.
+   *
+   * @param bytes async stack size in bytes (0 for unlimited)
+   * @return this configuration for method chaining
+   * @throws IllegalArgumentException if bytes is negative
+   */
+  public EngineConfig setAsyncStackSize(final long bytes) {
+    if (bytes < 0) {
+      throw new IllegalArgumentException("Async stack size cannot be negative");
+    }
+    this.asyncStackSize = bytes;
+    return this;
+  }
+
+  /**
+   * Enables or disables generation of debug information.
+   *
+   * @param enabled true to enable debug information generation
+   * @return this configuration for method chaining
+   */
+  public EngineConfig setGenerateDebugInfo(final boolean enabled) {
+    this.generateDebugInfo = enabled;
+    return this;
+  }
+
+  /**
+   * Sets the profiling strategy for execution.
+   *
+   * @param strategy the profiling strategy
+   * @return this configuration for method chaining
+   * @throws IllegalArgumentException if strategy is null
+   */
+  public EngineConfig setProfiling(final ProfilingStrategy strategy) {
+    if (strategy == null) {
+      throw new IllegalArgumentException("Profiling strategy cannot be null");
+    }
+    // Note: For now, we'll just validate the parameter.
+    // Full implementation will be added with native backing.
+    return this;
+  }
+
+  /**
+   * Sets the WebAssembly features to enable.
+   *
+   * @param features set of WebAssembly features to enable
+   * @return this configuration for method chaining
+   * @throws IllegalArgumentException if features is null
+   */
+  public EngineConfig setWasmFeatures(final java.util.Set<WasmFeature> features) {
+    if (features == null) {
+      throw new IllegalArgumentException("WebAssembly features cannot be null");
+    }
+    this.wasmFeatures.clear();
+    this.wasmFeatures.addAll(features);
+
+    // Update individual feature flags based on the set
+    this.wasmReferenceTypes = features.contains(WasmFeature.REFERENCE_TYPES);
+    this.wasmSimd = features.contains(WasmFeature.SIMD);
+    this.wasmRelaxedSimd = features.contains(WasmFeature.RELAXED_SIMD);
+    this.wasmMultiValue = features.contains(WasmFeature.MULTI_VALUE);
+    this.wasmBulkMemory = features.contains(WasmFeature.BULK_MEMORY);
+    this.wasmThreads = features.contains(WasmFeature.THREADS);
+    this.wasmTailCall = features.contains(WasmFeature.TAIL_CALL);
+    this.wasmMultiMemory = features.contains(WasmFeature.MULTI_MEMORY);
+    this.wasmMemory64 = features.contains(WasmFeature.MEMORY64);
+
+    return this;
+  }
+
+  /**
+   * Enables or disables fuel consumption tracking.
+   *
+   * @param enabled true to enable fuel consumption
+   * @return this configuration for method chaining
+   */
+  public EngineConfig setFuelConsumption(final boolean enabled) {
+    return consumeFuel(enabled);
+  }
+
+  /**
+   * Enables or disables epoch-based interruption.
+   *
+   * @param enabled true to enable epoch interruption
+   * @return this configuration for method chaining
+   */
+  public EngineConfig setEpochInterruption(final boolean enabled) {
+    this.epochInterruption = enabled;
+    return this;
+  }
+
   // Getters
 
   public boolean isDebugInfo() {
@@ -150,6 +289,30 @@ public final class EngineConfig {
 
   public boolean isWasmMemory64() {
     return wasmMemory64;
+  }
+
+  public long getMaxWasmStack() {
+    return maxWasmStack;
+  }
+
+  public long getAsyncStackSize() {
+    return asyncStackSize;
+  }
+
+  public boolean isGenerateDebugInfo() {
+    return generateDebugInfo;
+  }
+
+  public boolean isEpochInterruption() {
+    return epochInterruption;
+  }
+
+  public java.util.Map<String, String> getCraneliftSettings() {
+    return new java.util.HashMap<>(craneliftSettings);
+  }
+
+  public java.util.Set<WasmFeature> getWasmFeatures() {
+    return new java.util.HashSet<>(wasmFeatures);
   }
 
   /**

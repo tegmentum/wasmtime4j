@@ -163,6 +163,95 @@ public interface Module extends Closeable {
   boolean validateImports(final ImportMap imports);
 
   /**
+   * Validates WebAssembly bytecode and returns detailed validation results.
+   *
+   * <p>This method performs comprehensive validation of WebAssembly bytecode
+   * without compiling it, providing detailed error and warning information.
+   *
+   * @param engine the engine to use for validation
+   * @param wasmBytes the WebAssembly bytecode to validate
+   * @return detailed validation results
+   * @throws IllegalArgumentException if engine or wasmBytes is null
+   */
+  static ModuleValidationResult validate(final Engine engine, final byte[] wasmBytes) {
+    if (engine == null) {
+      throw new IllegalArgumentException("Engine cannot be null");
+    }
+    if (wasmBytes == null) {
+      throw new IllegalArgumentException("WebAssembly bytes cannot be null");
+    }
+    // Implementation will be provided with native backing
+    throw new UnsupportedOperationException("Module validation not yet implemented");
+  }
+
+  /**
+   * Gets the imports required by this module as ModuleImport objects.
+   *
+   * <p>This method provides enhanced import information compared to {@link #getImports()},
+   * including complete type details for each import.
+   *
+   * @return an immutable list of module imports with complete type information
+   */
+  java.util.List<ModuleImport> getModuleImports();
+
+  /**
+   * Gets the exports defined by this module as ModuleExport objects.
+   *
+   * <p>This method provides enhanced export information compared to {@link #getExports()},
+   * including complete type details for each export.
+   *
+   * @return an immutable list of module exports with complete type information
+   */
+  java.util.List<ModuleExport> getModuleExports();
+
+  /**
+   * Gets all function types defined in this module.
+   *
+   * <p>This includes function types for both imported and exported functions,
+   * as well as internal functions.
+   *
+   * @return an immutable list of function types
+   */
+  java.util.List<FuncType> getFunctionTypes();
+
+  /**
+   * Gets all memory types defined in this module.
+   *
+   * <p>This includes memory types for both imported and exported memories.
+   *
+   * @return an immutable list of memory types
+   */
+  java.util.List<MemoryType> getMemoryTypes();
+
+  /**
+   * Gets all table types defined in this module.
+   *
+   * <p>This includes table types for both imported and exported tables.
+   *
+   * @return an immutable list of table types
+   */
+  java.util.List<TableType> getTableTypes();
+
+  /**
+   * Gets all global types defined in this module.
+   *
+   * <p>This includes global types for both imported and exported globals.
+   *
+   * @return an immutable list of global types
+   */
+  java.util.List<GlobalType> getGlobalTypes();
+
+  /**
+   * Gets custom sections from this module.
+   *
+   * <p>Custom sections contain arbitrary data that can be embedded in
+   * WebAssembly modules for metadata or debugging purposes.
+   *
+   * @return a map of custom section names to their data
+   */
+  java.util.Map<String, String> getCustomSections();
+
+  /**
    * Gets the name of this module if it has one.
    *
    * @return the module name, or null if unnamed

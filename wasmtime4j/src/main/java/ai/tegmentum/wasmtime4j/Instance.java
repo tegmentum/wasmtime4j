@@ -174,6 +174,83 @@ public interface Instance extends Closeable {
       throws WasmException;
 
   /**
+   * Gets an exported function by index.
+   *
+   * <p>Functions are indexed in the order they appear in the module's export section.
+   *
+   * @param index the index of the function
+   * @return the exported function, or empty if not found or not a function
+   * @throws IllegalArgumentException if index is negative
+   */
+  java.util.Optional<WasmFunction> getFunction(final int index);
+
+  /**
+   * Gets an exported memory by index.
+   *
+   * <p>Memories are indexed in the order they appear in the module's export section.
+   *
+   * @param index the index of the memory
+   * @return the exported memory, or empty if not found or not a memory
+   * @throws IllegalArgumentException if index is negative
+   */
+  java.util.Optional<WasmMemory> getMemory(final int index);
+
+  /**
+   * Gets an exported table by index.
+   *
+   * <p>Tables are indexed in the order they appear in the module's export section.
+   *
+   * @param index the index of the table
+   * @return the exported table, or empty if not found or not a table
+   * @throws IllegalArgumentException if index is negative
+   */
+  java.util.Optional<WasmTable> getTable(final int index);
+
+  /**
+   * Gets an exported global by index.
+   *
+   * <p>Globals are indexed in the order they appear in the module's export section.
+   *
+   * @param index the index of the global
+   * @return the exported global, or empty if not found or not a global
+   * @throws IllegalArgumentException if index is negative
+   */
+  java.util.Optional<WasmGlobal> getGlobal(final int index);
+
+  /**
+   * Gets all exports from this instance as a map.
+   *
+   * <p>This method provides a convenient way to access all exports at once.
+   * The map keys are export names and values are the exported objects.
+   *
+   * @return a map of export names to exported objects
+   */
+  java.util.Map<String, Object> getAllExports();
+
+  /**
+   * Sets imports for this instance (used during instantiation).
+   *
+   * <p>This method is typically used internally during module instantiation
+   * to provide the required imports.
+   *
+   * @param imports a map of import names to import objects
+   * @throws IllegalArgumentException if imports is null
+   * @throws WasmException if setting imports fails
+   */
+  void setImports(final java.util.Map<String, Object> imports) throws WasmException;
+
+  /**
+   * Gets runtime statistics for this instance.
+   *
+   * <p>Statistics include information about execution time, memory usage,
+   * function calls, and other runtime metrics.
+   *
+   * @return the instance statistics
+   * @throws WasmException if statistics collection fails
+   */
+  InstanceStatistics getStatistics() throws WasmException;
+
+  /**
    * Checks if the instance is still valid and usable.
    *
    * @return true if the instance is valid, false otherwise
