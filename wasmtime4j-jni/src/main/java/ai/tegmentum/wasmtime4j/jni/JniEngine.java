@@ -92,8 +92,11 @@ public final class JniEngine extends JniResource implements Engine {
   JniEngine(final long nativeHandle, final EngineConfig config) {
     super(nativeHandle);
     this.storedConfig = config != null ? config.copy() : null; // Store defensive copy
-    LOGGER.fine("Created JNI engine with handle: 0x" + Long.toHexString(nativeHandle) +
-                " and configuration: " + (config != null ? config.getSummary() : "default"));
+    LOGGER.fine(
+        "Created JNI engine with handle: 0x"
+            + Long.toHexString(nativeHandle)
+            + " and configuration: "
+            + (config != null ? config.getSummary() : "default"));
   }
 
   /**
@@ -139,28 +142,28 @@ public final class JniEngine extends JniResource implements Engine {
     NativeMethodBindings.ensureInitialized();
 
     try {
-      final long engineHandle = nativeCreateEngineWithConfig(
-          convertOptimizationLevel(config.getOptimizationLevel()),
-          config.isDebugInfo(),
-          config.isParallelCompilation(),
-          config.isCraneliftDebugVerifier(),
-          config.isWasmBacktraceDetails(),
-          config.isWasmReferenceTypes(),
-          config.isWasmSimd(),
-          config.isWasmRelaxedSimd(),
-          config.isWasmMultiValue(),
-          config.isWasmBulkMemory(),
-          config.isWasmThreads(),
-          config.isWasmTailCall(),
-          config.isWasmMultiMemory(),
-          config.isWasmMemory64(),
-          config.isConsumeFuel(),
-          config.getFuelAmount(),
-          config.isWasiEnabled(),
-          config.isEpochInterruptionEnabled(),
-          config.isMemoryLimitEnabled(),
-          config.getMemoryLimit()
-      );
+      final long engineHandle =
+          nativeCreateEngineWithConfig(
+              convertOptimizationLevel(config.getOptimizationLevel()),
+              config.isDebugInfo(),
+              config.isParallelCompilation(),
+              config.isCraneliftDebugVerifier(),
+              config.isWasmBacktraceDetails(),
+              config.isWasmReferenceTypes(),
+              config.isWasmSimd(),
+              config.isWasmRelaxedSimd(),
+              config.isWasmMultiValue(),
+              config.isWasmBulkMemory(),
+              config.isWasmThreads(),
+              config.isWasmTailCall(),
+              config.isWasmMultiMemory(),
+              config.isWasmMemory64(),
+              config.isConsumeFuel(),
+              config.getFuelAmount(),
+              config.isWasiEnabled(),
+              config.isEpochInterruptionEnabled(),
+              config.isMemoryLimitEnabled(),
+              config.getMemoryLimit());
 
       JniValidation.requireValidHandle(engineHandle, "engineHandle");
       return new JniEngine(engineHandle, config);
@@ -172,9 +175,7 @@ public final class JniEngine extends JniResource implements Engine {
     }
   }
 
-  /**
-   * Converts OptimizationLevel enum to integer for native layer.
-   */
+  /** Converts OptimizationLevel enum to integer for native layer. */
   private static int convertOptimizationLevel(final OptimizationLevel level) {
     return level.getValue();
   }

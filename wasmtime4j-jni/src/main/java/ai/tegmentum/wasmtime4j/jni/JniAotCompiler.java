@@ -22,8 +22,8 @@ import java.util.logging.Logger;
  * <p>This class provides JNI bindings to the native Wasmtime AOT compilation functionality,
  * enabling ahead-of-time compilation of WebAssembly modules for optimized deployment.
  *
- * <p>All methods in this class are thread-safe and implement defensive programming patterns
- * to prevent JVM crashes.
+ * <p>All methods in this class are thread-safe and implement defensive programming patterns to
+ * prevent JVM crashes.
  *
  * @since 1.0.0
  */
@@ -61,9 +61,7 @@ public final class JniAotCompiler implements AotCompiler {
 
   @Override
   public SerializedModule compileModule(
-      final Engine engine,
-      final byte[] wasmBytes,
-      final AotOptions options) throws WasmException {
+      final Engine engine, final byte[] wasmBytes, final AotOptions options) throws WasmException {
     return compileModule(engine, wasmBytes, options, TargetPlatform.current());
   }
 
@@ -72,7 +70,8 @@ public final class JniAotCompiler implements AotCompiler {
       final Engine engine,
       final byte[] wasmBytes,
       final AotOptions options,
-      final TargetPlatform targetPlatform) throws WasmException {
+      final TargetPlatform targetPlatform)
+      throws WasmException {
 
     validateNotClosed();
     validateParameters(engine, wasmBytes, options, targetPlatform);
@@ -87,17 +86,15 @@ public final class JniAotCompiler implements AotCompiler {
   }
 
   @Override
-  public SerializedModule compileModule(
-      final Module module,
-      final AotOptions options) throws WasmException {
+  public SerializedModule compileModule(final Module module, final AotOptions options)
+      throws WasmException {
     return compileModule(module, options, TargetPlatform.current());
   }
 
   @Override
   public SerializedModule compileModule(
-      final Module module,
-      final AotOptions options,
-      final TargetPlatform targetPlatform) throws WasmException {
+      final Module module, final AotOptions options, final TargetPlatform targetPlatform)
+      throws WasmException {
 
     validateNotClosed();
     validateParameters(module, options, targetPlatform);
@@ -118,20 +115,21 @@ public final class JniAotCompiler implements AotCompiler {
       final long moduleHandle = extractModuleHandle(module);
 
       // Call native compilation
-      final long executableHandle = nativeCompileToNative(
-          nativeHandle,
-          engineHandle,
-          moduleHandle,
-          options.getOptimizationLevel().ordinal(),
-          targetPlatform.ordinal()
-      );
+      final long executableHandle =
+          nativeCompileToNative(
+              nativeHandle,
+              engineHandle,
+              moduleHandle,
+              options.getOptimizationLevel().ordinal(),
+              targetPlatform.ordinal());
 
       if (executableHandle == 0) {
         throw new WasmException("Native AOT compilation failed");
       }
 
       // Create executable wrapper
-      final AotExecutable executable = new JniAotExecutable(executableHandle, targetPlatform, options);
+      final AotExecutable executable =
+          new JniAotExecutable(executableHandle, targetPlatform, options);
 
       // Cache the result
       compilationCache.put(cacheKey, executable);
@@ -148,8 +146,7 @@ public final class JniAotCompiler implements AotCompiler {
 
   @Override
   public AotExecutable createExecutable(
-      final SerializedModule module,
-      final TargetPlatform platform) throws WasmException {
+      final SerializedModule module, final TargetPlatform platform) throws WasmException {
 
     validateNotClosed();
     validateParameters(module, platform);
@@ -224,8 +221,7 @@ public final class JniAotCompiler implements AotCompiler {
           nativeHandle,
           options.getOptimizationLevel().ordinal(),
           options.isDebugInfo(),
-          options.isProfiling()
-      );
+          options.isProfiling());
     } catch (final Exception e) {
       LOGGER.warning("Failed to validate options: " + e.getMessage());
       return false;
@@ -278,9 +274,7 @@ public final class JniAotCompiler implements AotCompiler {
     }
   }
 
-  /**
-   * Closes this compiler and releases native resources.
-   */
+  /** Closes this compiler and releases native resources. */
   public void close() {
     if (!closed) {
       closed = true;
@@ -309,9 +303,7 @@ public final class JniAotCompiler implements AotCompiler {
   }
 
   private String createCacheKey(
-      final Module module,
-      final AotOptions options,
-      final TargetPlatform targetPlatform) {
+      final Module module, final AotOptions options, final TargetPlatform targetPlatform) {
     // Create a deterministic cache key
     final String moduleId = module.getId() != null ? module.getId() : "unknown";
     final String optionsHash = String.valueOf(options.hashCode());
@@ -373,8 +365,7 @@ public final class JniAotCompiler implements AotCompiler {
       long engineHandle,
       long moduleHandle,
       int optimizationLevel,
-      int targetPlatform
-  );
+      int targetPlatform);
 
   /**
    * Gets the list of supported platform IDs.
@@ -403,11 +394,7 @@ public final class JniAotCompiler implements AotCompiler {
    * @return true if options are valid, false otherwise
    */
   private static native boolean nativeValidateOptions(
-      long compilerHandle,
-      int optimizationLevel,
-      boolean debugInfo,
-      boolean profiling
-  );
+      long compilerHandle, int optimizationLevel, boolean debugInfo, boolean profiling);
 
   /**
    * Gets the compiler version string.

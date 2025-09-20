@@ -1,15 +1,15 @@
 package ai.tegmentum.wasmtime4j.jni.performance;
 
-import ai.tegmentum.wasmtime4j.performance.ExecutionMetrics;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
+import ai.tegmentum.wasmtime4j.performance.ExecutionMetrics;
 import java.time.Duration;
 import java.time.Instant;
 
 /**
  * JNI implementation of ExecutionMetrics interface.
  *
- * <p>This class provides real-time execution metrics for WebAssembly operations
- * by interfacing with the native performance monitoring system through JNI.
+ * <p>This class provides real-time execution metrics for WebAssembly operations by interfacing with
+ * the native performance monitoring system through JNI.
  *
  * @since 1.0.0
  */
@@ -164,23 +164,42 @@ public final class JniExecutionMetrics extends JniResource implements ExecutionM
   // Native method declarations
 
   private static native long nativeGetTimestamp(final long handle);
+
   private static native long nativeGetInstructionsExecuted(final long handle);
+
   private static native long nativeGetExecutionTime(final long handle);
+
   private static native long nativeGetMemoryAllocations(final long handle);
+
   private static native long nativeGetTotalAllocatedBytes(final long handle);
+
   private static native int nativeGetFunctionCalls(final long handle);
+
   private static native double nativeGetCpuUsage(final long handle);
+
   private static native long nativeGetCurrentMemoryUsage(final long handle);
+
   private static native long nativeGetPeakMemoryUsage(final long handle);
+
   private static native int nativeGetGarbageCollectionCount(final long handle);
+
   private static native long nativeGetGarbageCollectionTime(final long handle);
+
   private static native int nativeGetHostFunctionCalls(final long handle);
+
   private static native long nativeGetHostFunctionTime(final long handle);
+
   private static native double nativeGetInstructionsPerSecond(final long handle);
+
   private static native double nativeGetFunctionCallsPerSecond(final long handle);
+
   private static native double nativeGetBytesAllocatedPerSecond(final long handle);
+
   private static native int nativeGetJitCompilationCount(final long handle);
+
   private static native long nativeGetJitCompilationTime(final long handle);
+
   private static native String nativeGetSummary(final long handle);
+
   private static native void nativeDispose(final long handle);
 }

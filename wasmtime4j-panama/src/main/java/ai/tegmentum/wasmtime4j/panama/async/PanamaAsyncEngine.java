@@ -17,7 +17,6 @@ import java.lang.foreign.MemorySegment;
 import java.lang.foreign.SymbolLookup;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodType;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -30,9 +29,9 @@ import java.util.logging.Logger;
 /**
  * Panama implementation of the AsyncEngine interface.
  *
- * <p>This implementation provides asynchronous WebAssembly operations using Panama Foreign
- * Function Interface to communicate with the native Wasmtime async runtime. All operations
- * return CompletableFuture instances that integrate with Java's async programming model.
+ * <p>This implementation provides asynchronous WebAssembly operations using Panama Foreign Function
+ * Interface to communicate with the native Wasmtime async runtime. All operations return
+ * CompletableFuture instances that integrate with Java's async programming model.
  *
  * <p>The implementation uses defensive programming patterns to prevent JVM crashes and provides
  * comprehensive error handling and resource management through Panama's memory management.
@@ -62,29 +61,38 @@ public final class PanamaAsyncEngine extends PanamaEngine implements AsyncEngine
       final Linker linker = Linker.nativeLinker();
 
       // Initialize async runtime
-      wasmtime4j_panama_async_init = linker.downcallHandle(
-          symbolLookup.find("wasmtime4j_panama_async_init").orElseThrow(),
-          FunctionDescriptor.of(ValueLayout.JAVA_INT));
+      wasmtime4j_panama_async_init =
+          linker.downcallHandle(
+              symbolLookup.find("wasmtime4j_panama_async_init").orElseThrow(),
+              FunctionDescriptor.of(ValueLayout.JAVA_INT));
 
       // Async module compilation
-      wasmtime4j_panama_async_compile_module = linker.downcallHandle(
-          symbolLookup.find("wasmtime4j_panama_async_compile_module").orElseThrow(),
-          FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
+      wasmtime4j_panama_async_compile_module =
+          linker.downcallHandle(
+              symbolLookup.find("wasmtime4j_panama_async_compile_module").orElseThrow(),
+              FunctionDescriptor.of(
+                  ValueLayout.JAVA_LONG,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.JAVA_LONG,
+                  ValueLayout.ADDRESS));
 
       // Cancel async operation
-      wasmtime4j_panama_async_cancel_operation = linker.downcallHandle(
-          symbolLookup.find("wasmtime4j_panama_async_cancel_operation").orElseThrow(),
-          FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.JAVA_LONG));
+      wasmtime4j_panama_async_cancel_operation =
+          linker.downcallHandle(
+              symbolLookup.find("wasmtime4j_panama_async_cancel_operation").orElseThrow(),
+              FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.JAVA_LONG));
 
       // Get async statistics
-      wasmtime4j_panama_async_get_statistics = linker.downcallHandle(
-          symbolLookup.find("wasmtime4j_panama_async_get_statistics").orElseThrow(),
-          FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+      wasmtime4j_panama_async_get_statistics =
+          linker.downcallHandle(
+              symbolLookup.find("wasmtime4j_panama_async_get_statistics").orElseThrow(),
+              FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
 
       // Shutdown async runtime
-      wasmtime4j_panama_async_shutdown = linker.downcallHandle(
-          symbolLookup.find("wasmtime4j_panama_async_shutdown").orElseThrow(),
-          FunctionDescriptor.of(ValueLayout.JAVA_INT));
+      wasmtime4j_panama_async_shutdown =
+          linker.downcallHandle(
+              symbolLookup.find("wasmtime4j_panama_async_shutdown").orElseThrow(),
+              FunctionDescriptor.of(ValueLayout.JAVA_INT));
 
     } catch (Throwable e) {
       LOGGER.log(Level.SEVERE, "Failed to initialize Panama async method handles", e);
@@ -179,8 +187,10 @@ public final class PanamaAsyncEngine extends PanamaEngine implements AsyncEngine
             final MemorySegment callbackSegment = arena.allocate(ValueLayout.JAVA_LONG);
             callbackSegment.set(ValueLayout.JAVA_LONG, 0, operationId);
 
-            final long nativeOperationId = (long) wasmtime4j_panama_async_compile_module.invokeExact(
-                wasmSegment, (long) wasmBytes.length, callbackSegment);
+            final long nativeOperationId =
+                (long)
+                    wasmtime4j_panama_async_compile_module.invokeExact(
+                        wasmSegment, (long) wasmBytes.length, callbackSegment);
 
             if (nativeOperationId == 0) {
               completeExceptionally(
@@ -241,19 +251,21 @@ public final class PanamaAsyncEngine extends PanamaEngine implements AsyncEngine
               try {
                 // For validation, we can use the compile function but only validate the result
                 final CompletableFuture<Module> compileFuture = compileModuleAsync(wasmBytes);
-                compileFuture.whenComplete((module, throwable) -> {
-                  if (throwable != null) {
-                    completeExceptionally(operationId,
-                        throwable instanceof WasmException
-                            ? (WasmException) throwable
-                            : new WasmException("Validation failed", throwable));
-                  } else {
-                    completeSuccessfully(operationId, 0); // Validation successful
-                    if (module != null) {
-                      module.close(); // Close the module since we only needed validation
-                    }
-                  }
-                });
+                compileFuture.whenComplete(
+                    (module, throwable) -> {
+                      if (throwable != null) {
+                        completeExceptionally(
+                            operationId,
+                            throwable instanceof WasmException
+                                ? (WasmException) throwable
+                                : new WasmException("Validation failed", throwable));
+                      } else {
+                        completeSuccessfully(operationId, 0); // Validation successful
+                        if (module != null) {
+                          module.close(); // Close the module since we only needed validation
+                        }
+                      }
+                    });
 
               } catch (Exception e) {
                 completeExceptionally(operationId, PanamaExceptionMapper.mapToWasmException(e));

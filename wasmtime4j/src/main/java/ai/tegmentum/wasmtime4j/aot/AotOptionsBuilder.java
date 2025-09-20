@@ -329,9 +329,7 @@ public final class AotOptionsBuilder {
         enableEpochInterruption);
   }
 
-  /**
-   * Implementation of AotOptions.
-   */
+  /** Implementation of AotOptions. */
   private static final class AotOptionsImpl implements AotOptions {
     private final OptimizationLevel optimizationLevel;
     private final boolean enableInterrupts;

@@ -22,8 +22,8 @@ import java.util.logging.Logger;
 /**
  * JNI implementation of a thread-safe WebAssembly store.
  *
- * <p>This implementation wraps a standard JNI store with thread safety guarantees
- * using the JniConcurrencyManager for synchronization.
+ * <p>This implementation wraps a standard JNI store with thread safety guarantees using the
+ * JniConcurrencyManager for synchronization.
  *
  * @since 1.0.0
  */
@@ -49,7 +49,8 @@ public final class JniThreadSafeStore implements ThreadSafeStore {
    */
   public JniThreadSafeStore(final Store delegate, final JniConcurrencyManager concurrencyManager) {
     this.delegate = JniValidation.requireNonNull(delegate, "delegate");
-    this.concurrencyManager = JniValidation.requireNonNull(concurrencyManager, "concurrencyManager");
+    this.concurrencyManager =
+        JniValidation.requireNonNull(concurrencyManager, "concurrencyManager");
     this.synchronizationLock = new ReentrantReadWriteLock(true); // Fair lock
     this.data = new AtomicReference<>(delegate.getData());
     this.currentAccessors = new AtomicInteger(0);
@@ -79,11 +80,12 @@ public final class JniThreadSafeStore implements ThreadSafeStore {
   @Override
   public void setData(final Object data) {
     validateNotClosed();
-    executeWithWriteLock(() -> {
-      this.data.set(data);
-      delegate.setData(data);
-      return null;
-    });
+    executeWithWriteLock(
+        () -> {
+          this.data.set(data);
+          delegate.setData(data);
+          return null;
+        });
   }
 
   @Override
@@ -91,27 +93,29 @@ public final class JniThreadSafeStore implements ThreadSafeStore {
     JniValidation.requireNonNegative(fuel, "fuel");
     validateNotClosed();
 
-    executeWithWriteLock(() -> {
-      try {
-        delegate.setFuel(fuel);
-        return null;
-      } catch (final WasmException e) {
-        throw new RuntimeException("Failed to set fuel", e);
-      }
-    });
+    executeWithWriteLock(
+        () -> {
+          try {
+            delegate.setFuel(fuel);
+            return null;
+          } catch (final WasmException e) {
+            throw new RuntimeException("Failed to set fuel", e);
+          }
+        });
   }
 
   @Override
   public long getFuel() throws WasmException {
     validateNotClosed();
 
-    return executeWithReadLock(() -> {
-      try {
-        return delegate.getFuel();
-      } catch (final WasmException e) {
-        throw new RuntimeException("Failed to get fuel", e);
-      }
-    });
+    return executeWithReadLock(
+        () -> {
+          try {
+            return delegate.getFuel();
+          } catch (final WasmException e) {
+            throw new RuntimeException("Failed to get fuel", e);
+          }
+        });
   }
 
   @Override
@@ -119,28 +123,30 @@ public final class JniThreadSafeStore implements ThreadSafeStore {
     JniValidation.requireNonNegative(fuel, "fuel");
     validateNotClosed();
 
-    executeWithWriteLock(() -> {
-      try {
-        delegate.addFuel(fuel);
-        return null;
-      } catch (final WasmException e) {
-        throw new RuntimeException("Failed to add fuel", e);
-      }
-    });
+    executeWithWriteLock(
+        () -> {
+          try {
+            delegate.addFuel(fuel);
+            return null;
+          } catch (final WasmException e) {
+            throw new RuntimeException("Failed to add fuel", e);
+          }
+        });
   }
 
   @Override
   public void setEpochDeadline(final long ticks) throws WasmException {
     validateNotClosed();
 
-    executeWithWriteLock(() -> {
-      try {
-        delegate.setEpochDeadline(ticks);
-        return null;
-      } catch (final WasmException e) {
-        throw new RuntimeException("Failed to set epoch deadline", e);
-      }
-    });
+    executeWithWriteLock(
+        () -> {
+          try {
+            delegate.setEpochDeadline(ticks);
+            return null;
+          } catch (final WasmException e) {
+            throw new RuntimeException("Failed to set epoch deadline", e);
+          }
+        });
   }
 
   @Override
@@ -152,70 +158,77 @@ public final class JniThreadSafeStore implements ThreadSafeStore {
     JniValidation.requireNonNull(implementation, "implementation");
     validateNotClosed();
 
-    return executeWithWriteLock(() -> {
-      try {
-        final WasmFunction function = delegate.createHostFunction(name, functionType, implementation);
-        return new JniConcurrentWasmFunction(function, concurrencyManager);
-      } catch (final WasmException e) {
-        throw new RuntimeException("Failed to create host function", e);
-      }
-    });
+    return executeWithWriteLock(
+        () -> {
+          try {
+            final WasmFunction function =
+                delegate.createHostFunction(name, functionType, implementation);
+            return new JniConcurrentWasmFunction(function, concurrencyManager);
+          } catch (final WasmException e) {
+            throw new RuntimeException("Failed to create host function", e);
+          }
+        });
   }
 
   @Override
-  public boolean compareAndSetFuel(final long expectedFuel, final long newFuel) throws WasmException {
+  public boolean compareAndSetFuel(final long expectedFuel, final long newFuel)
+      throws WasmException {
     validateNotClosed();
 
-    return executeWithWriteLock(() -> {
-      try {
-        final long currentFuel = delegate.getFuel();
-        if (currentFuel == expectedFuel) {
-          delegate.setFuel(newFuel);
-          return true;
-        }
-        return false;
-      } catch (final WasmException e) {
-        throw new RuntimeException("Failed to compare and set fuel", e);
-      }
-    });
+    return executeWithWriteLock(
+        () -> {
+          try {
+            final long currentFuel = delegate.getFuel();
+            if (currentFuel == expectedFuel) {
+              delegate.setFuel(newFuel);
+              return true;
+            }
+            return false;
+          } catch (final WasmException e) {
+            throw new RuntimeException("Failed to compare and set fuel", e);
+          }
+        });
   }
 
   @Override
   public long getAndAddFuel(final long delta) throws WasmException {
     validateNotClosed();
 
-    return executeWithWriteLock(() -> {
-      try {
-        final long currentFuel = delegate.getFuel();
-        final long newFuel = currentFuel + delta;
-        delegate.setFuel(newFuel);
-        return newFuel;
-      } catch (final WasmException e) {
-        throw new RuntimeException("Failed to get and add fuel", e);
-      }
-    });
+    return executeWithWriteLock(
+        () -> {
+          try {
+            final long currentFuel = delegate.getFuel();
+            final long newFuel = currentFuel + delta;
+            delegate.setFuel(newFuel);
+            return newFuel;
+          } catch (final WasmException e) {
+            throw new RuntimeException("Failed to get and add fuel", e);
+          }
+        });
   }
 
   @Override
   public long getCurrentEpochTicks() throws WasmException {
     validateNotClosed();
 
-    return executeWithReadLock(() -> {
-      // This would need to be implemented in the underlying store
-      // For now, return a placeholder
-      return System.currentTimeMillis() / 1000; // Approximate epoch ticks
-    });
+    return executeWithReadLock(
+        () -> {
+          // This would need to be implemented in the underlying store
+          // For now, return a placeholder
+          return System.currentTimeMillis() / 1000; // Approximate epoch ticks
+        });
   }
 
   @Override
   public long incrementEpoch() throws WasmException {
     validateNotClosed();
 
-    return executeWithWriteLock(() -> {
-      // This would need to be implemented in the underlying store
-      // For now, return current time
-      return System.currentTimeMillis() / 1000;
-    });
+    return executeWithWriteLock(
+        () -> {
+          // This would need to be implemented in the underlying store
+          // For now, return current time
+          return System.currentTimeMillis() / 1000;
+        });
   }
 
   @Override
@@ -228,15 +241,17 @@ public final class JniThreadSafeStore implements ThreadSafeStore {
     JniValidation.requireNonNull(operation, "operation");
     validateNotClosed();
 
-    return concurrencyManager.executeWithReadLock(storeHandle, () -> {
-      currentAccessors.incrementAndGet();
-      totalOperations.incrementAndGet();
-      try {
-        return operation.get();
-      } finally {
-        currentAccessors.decrementAndGet();
-      }
-    });
+    return concurrencyManager.executeWithReadLock(
+        storeHandle,
+        () -> {
+          currentAccessors.incrementAndGet();
+          totalOperations.incrementAndGet();
+          try {
+            return operation.get();
+          } finally {
+            currentAccessors.decrementAndGet();
+          }
+        });
   }
 
   @Override
@@ -244,15 +259,17 @@ public final class JniThreadSafeStore implements ThreadSafeStore {
     JniValidation.requireNonNull(operation, "operation");
     validateNotClosed();
 
-    return concurrencyManager.executeWithWriteLock(storeHandle, () -> {
-      currentAccessors.incrementAndGet();
-      totalOperations.incrementAndGet();
-      try {
-        return operation.get();
-      } finally {
-        currentAccessors.decrementAndGet();
-      }
-    });
+    return concurrencyManager.executeWithWriteLock(
+        storeHandle,
+        () -> {
+          currentAccessors.incrementAndGet();
+          totalOperations.incrementAndGet();
+          try {
+            return operation.get();
+          } finally {
+            currentAccessors.decrementAndGet();
+          }
+        });
   }
 
   @Override
@@ -266,11 +283,7 @@ public final class JniThreadSafeStore implements ThreadSafeStore {
   @Override
   public StoreConcurrencyStatistics getConcurrencyStatistics() {
     return new JniStoreConcurrencyStatistics(
-        concurrencyManager,
-        storeHandle,
-        totalOperations.get(),
-        currentAccessors.get()
-    );
+        concurrencyManager, storeHandle, totalOperations.get(), currentAccessors.get());
   }
 
   @Override

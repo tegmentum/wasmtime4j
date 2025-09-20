@@ -19,8 +19,8 @@ import java.util.logging.Logger;
  * <p>This class provides JNI bindings to the native Wasmtime module serialization functionality,
  * enabling efficient storage and transfer of compiled WebAssembly modules.
  *
- * <p>All methods in this class are thread-safe and implement defensive programming patterns
- * to prevent JVM crashes.
+ * <p>All methods in this class are thread-safe and implement defensive programming patterns to
+ * prevent JVM crashes.
  *
  * @since 1.0.0
  */
@@ -53,9 +53,8 @@ public final class JniModuleSerializer implements ModuleSerializer {
   }
 
   @Override
-  public SerializedModule serialize(
-      final Module module,
-      final SerializationOptions options) throws WasmException {
+  public SerializedModule serialize(final Module module, final SerializationOptions options)
+      throws WasmException {
 
     validateNotClosed();
     validateParameters(module, options);
@@ -66,15 +65,15 @@ public final class JniModuleSerializer implements ModuleSerializer {
       final long engineHandle = extractEngineHandle(module.getEngine());
 
       // Call native serialization
-      final long serializedHandle = nativeSerialize(
-          nativeHandle,
-          moduleHandle,
-          engineHandle,
-          options.getCompression().ordinal(),
-          options.isIncludeDebugInfo(),
-          options.isIncludeProfilingInfo(),
-          options.getCompressionLevel()
-      );
+      final long serializedHandle =
+          nativeSerialize(
+              nativeHandle,
+              moduleHandle,
+              engineHandle,
+              options.getCompression().ordinal(),
+              options.isIncludeDebugInfo(),
+              options.isIncludeProfilingInfo(),
+              options.getCompressionLevel());
 
       if (serializedHandle == 0) {
         throw new WasmException("Native module serialization failed");
@@ -96,9 +95,7 @@ public final class JniModuleSerializer implements ModuleSerializer {
   }
 
   @Override
-  public Module deserialize(
-      final Engine engine,
-      final byte[] serializedData) throws WasmException {
+  public Module deserialize(final Engine engine, final byte[] serializedData) throws WasmException {
 
     validateNotClosed();
     validateParameters(engine, serializedData);
@@ -112,11 +109,7 @@ public final class JniModuleSerializer implements ModuleSerializer {
       final long engineHandle = extractEngineHandle(engine);
 
       // Call native deserialization
-      final long moduleHandle = nativeDeserialize(
-          nativeHandle,
-          engineHandle,
-          serializedData
-      );
+      final long moduleHandle = nativeDeserialize(nativeHandle, engineHandle, serializedData);
 
       if (moduleHandle == 0) {
         throw new WasmException("Native module deserialization failed");
@@ -153,9 +146,8 @@ public final class JniModuleSerializer implements ModuleSerializer {
   }
 
   @Override
-  public boolean isCompatible(
-      final Engine engine,
-      final byte[] serializedData) throws WasmException {
+  public boolean isCompatible(final Engine engine, final byte[] serializedData)
+      throws WasmException {
 
     validateNotClosed();
     validateParameters(engine, serializedData);
@@ -233,8 +225,8 @@ public final class JniModuleSerializer implements ModuleSerializer {
   /**
    * Serializes a module to an output stream.
    *
-   * <p>This method provides streaming serialization for large modules that may not
-   * fit comfortably in memory.
+   * <p>This method provides streaming serialization for large modules that may not fit comfortably
+   * in memory.
    *
    * @param module the module to serialize
    * @param options serialization options
@@ -243,9 +235,8 @@ public final class JniModuleSerializer implements ModuleSerializer {
    * @throws IllegalArgumentException if any parameter is null
    */
   public void serializeStreaming(
-      final Module module,
-      final SerializationOptions options,
-      final OutputStream output) throws WasmException {
+      final Module module, final SerializationOptions options, final OutputStream output)
+      throws WasmException {
 
     validateNotClosed();
     validateParameters(module, options, output);
@@ -283,9 +274,8 @@ public final class JniModuleSerializer implements ModuleSerializer {
    * @throws WasmException if deserialization fails
    * @throws IllegalArgumentException if any parameter is null
    */
-  public Module deserializeStreaming(
-      final Engine engine,
-      final InputStream input) throws WasmException {
+  public Module deserializeStreaming(final Engine engine, final InputStream input)
+      throws WasmException {
 
     validateNotClosed();
     validateParameters(engine, input);
@@ -303,9 +293,7 @@ public final class JniModuleSerializer implements ModuleSerializer {
     }
   }
 
-  /**
-   * Closes this serializer and releases native resources.
-   */
+  /** Closes this serializer and releases native resources. */
   public void close() {
     if (!closed) {
       closed = true;
@@ -426,8 +414,7 @@ public final class JniModuleSerializer implements ModuleSerializer {
       int compressionType,
       boolean includeDebugInfo,
       boolean includeProfilingInfo,
-      int compressionLevel
-  );
+      int compressionLevel);
 
   /**
    * Deserializes a module.
@@ -438,10 +425,7 @@ public final class JniModuleSerializer implements ModuleSerializer {
    * @return module handle, or 0 on failure
    */
   private static native long nativeDeserialize(
-      long serializerHandle,
-      long engineHandle,
-      byte[] serializedData
-  );
+      long serializerHandle, long engineHandle, byte[] serializedData);
 
   /**
    * Validates serialized data.
@@ -461,10 +445,7 @@ public final class JniModuleSerializer implements ModuleSerializer {
    * @return true if compatible, false otherwise
    */
   private static native boolean nativeIsCompatible(
-      long serializerHandle,
-      long engineHandle,
-      byte[] serializedData
-  );
+      long serializerHandle, long engineHandle, byte[] serializedData);
 
   /**
    * Extracts metadata from serialized data.

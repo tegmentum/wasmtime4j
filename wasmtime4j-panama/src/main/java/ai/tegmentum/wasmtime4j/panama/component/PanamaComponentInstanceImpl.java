@@ -10,7 +10,6 @@ import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.panama.ArenaResourceManager;
 import ai.tegmentum.wasmtime4j.panama.NativeFunctionBindings;
 import ai.tegmentum.wasmtime4j.panama.PanamaComponent;
-import ai.tegmentum.wasmtime4j.panama.PanamaErrorHandler;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
 import java.lang.foreign.MemorySegment;
 import java.util.ArrayList;
@@ -27,14 +26,15 @@ import java.util.logging.Logger;
  * Panama FFI implementation of the ComponentInstance interface.
  *
  * <p>This class provides a bridge between the high-level ComponentInstance interface and the
- * low-level Panama FFI component instance operations. It manages the lifecycle of component
- * exports and provides type-safe access to component functionality.
+ * low-level Panama FFI component instance operations. It manages the lifecycle of component exports
+ * and provides type-safe access to component functionality.
  *
  * @since 1.0.0
  */
 public final class PanamaComponentInstanceImpl implements ComponentInstance {
 
-  private static final Logger LOGGER = Logger.getLogger(PanamaComponentInstanceImpl.class.getName());
+  private static final Logger LOGGER =
+      Logger.getLogger(PanamaComponentInstanceImpl.class.getName());
 
   private final ArenaResourceManager resourceManager;
   private final PanamaComponent.PanamaComponentInstanceHandle instanceHandle;
@@ -93,8 +93,8 @@ public final class PanamaComponentInstanceImpl implements ComponentInstance {
         return Optional.empty();
       }
 
-      final ComponentExport export = new PanamaComponentExportImpl(
-          resourceManager, exportPtr, name, this);
+      final ComponentExport export =
+          new PanamaComponentExportImpl(resourceManager, exportPtr, name, this);
       exportCache.put(name, export);
       return Optional.of(export);
 

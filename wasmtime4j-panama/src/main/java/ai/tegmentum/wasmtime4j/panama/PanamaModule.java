@@ -30,8 +30,8 @@ import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.CompilationException;
 import ai.tegmentum.wasmtime4j.exception.ValidationException;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.serialization.SerializedModule;
 import ai.tegmentum.wasmtime4j.serialization.SerializationOptions;
+import ai.tegmentum.wasmtime4j.serialization.SerializedModule;
 import java.io.IOException;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
@@ -1086,20 +1086,17 @@ public final class PanamaModule implements Module, AutoCloseable {
       NativeFunctionBindings nativeFunctions = NativeFunctionBindings.getInstance();
 
       // Allocate memory for hash output (SHA-256 is 32 bytes)
-      ArenaResourceManager.ManagedMemorySegment hashOutPtr =
-          resourceManager.allocate(32);
+      ArenaResourceManager.ManagedMemorySegment hashOutPtr = resourceManager.allocate(32);
 
       // Call native function to get bytecode hash
-      int result = nativeFunctions.moduleGetBytecodeHash(
-          modulePtr, hashOutPtr.getSegment());
+      int result = nativeFunctions.moduleGetBytecodeHash(modulePtr, hashOutPtr.getSegment());
 
       PanamaErrorHandler.safeCheckError(
           result, "Get bytecode hash", "Failed to retrieve module bytecode hash");
 
       // Extract hash bytes
       byte[] hash = new byte[32];
-      MemorySegment.copy(hashOutPtr.getSegment(), ValueLayout.JAVA_BYTE, 0,
-                        hash, 0, 32);
+      MemorySegment.copy(hashOutPtr.getSegment(), ValueLayout.JAVA_BYTE, 0, hash, 0, 32);
 
       return hash;
     } catch (Exception e) {

@@ -8,7 +8,6 @@ import ai.tegmentum.wasmtime4j.component.ComponentInstance;
 import ai.tegmentum.wasmtime4j.component.ComponentInstanceStats;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.JniComponent;
-import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
@@ -68,8 +67,9 @@ public final class JniComponentInstanceImpl extends JniResource implements Compo
     this.store = store;
     this.stats = new JniComponentInstanceStatsImpl(instanceHandle);
 
-    LOGGER.fine("Created JNI component instance implementation with handle: 0x"
-        + Long.toHexString(instanceHandle.getNativeHandle()));
+    LOGGER.fine(
+        "Created JNI component instance implementation with handle: 0x"
+            + Long.toHexString(instanceHandle.getNativeHandle()));
   }
 
   @Override
@@ -212,8 +212,9 @@ public final class JniComponentInstanceImpl extends JniResource implements Compo
 
     if (instanceHandle != null && !instanceHandle.isClosed()) {
       instanceHandle.close();
-      LOGGER.fine("Closed JNI component instance implementation with handle: 0x"
-          + Long.toHexString(getNativeHandle()));
+      LOGGER.fine(
+          "Closed JNI component instance implementation with handle: 0x"
+              + Long.toHexString(getNativeHandle()));
     }
   }
 

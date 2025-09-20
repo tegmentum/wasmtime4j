@@ -5,7 +5,6 @@ import ai.tegmentum.wasmtime4j.cache.CacheStatistics;
 import ai.tegmentum.wasmtime4j.cache.ModuleCache;
 import ai.tegmentum.wasmtime4j.cache.ModuleCacheKey;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.jni.exception.JniExceptionHandler;
 import ai.tegmentum.wasmtime4j.jni.nativelib.NativeLibraryLoader;
 import ai.tegmentum.wasmtime4j.serialization.SerializedModule;
 import java.io.IOException;
@@ -17,11 +16,11 @@ import java.util.logging.Logger;
 /**
  * JNI implementation of the module cache interface.
  *
- * <p>This class provides JNI bindings to the native persistent module cache functionality,
- * enabling efficient storage and retrieval of compiled WebAssembly modules.
+ * <p>This class provides JNI bindings to the native persistent module cache functionality, enabling
+ * efficient storage and retrieval of compiled WebAssembly modules.
  *
- * <p>All methods in this class are thread-safe and implement defensive programming patterns
- * to prevent JVM crashes.
+ * <p>All methods in this class are thread-safe and implement defensive programming patterns to
+ * prevent JVM crashes.
  *
  * @since 1.0.0
  */
@@ -62,11 +61,11 @@ public final class JniModuleCache implements ModuleCache {
     this.keyTracker = ConcurrentHashMap.newKeySet();
 
     // Create native cache
-    this.nativeHandle = nativeCreateCache(
-        configuration.getCacheDirectory().toString(),
-        configuration.getMaxSizeMB(),
-        configuration.getTtlHours()
-    );
+    this.nativeHandle =
+        nativeCreateCache(
+            configuration.getCacheDirectory().toString(),
+            configuration.getMaxSizeMB(),
+            configuration.getTtlHours());
 
     if (this.nativeHandle == 0) {
       throw new WasmException("Failed to create native module cache");
@@ -115,10 +114,8 @@ public final class JniModuleCache implements ModuleCache {
       }
 
       // Create serialized module wrapper
-      final SerializedModule serialized = new JniSerializedModule(
-          serializedHandle,
-          configuration.getDefaultSerializationOptions()
-      );
+      final SerializedModule serialized =
+          new JniSerializedModule(serializedHandle, configuration.getDefaultSerializationOptions());
 
       incrementHits();
       LOGGER.fine("Cache hit for key: " + keyString);

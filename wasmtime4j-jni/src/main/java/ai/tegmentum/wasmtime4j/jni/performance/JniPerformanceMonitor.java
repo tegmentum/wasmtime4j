@@ -1,5 +1,6 @@
 package ai.tegmentum.wasmtime4j.jni.performance;
 
+import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import ai.tegmentum.wasmtime4j.performance.ExecutionMetrics;
 import ai.tegmentum.wasmtime4j.performance.MonitoringOverhead;
 import ai.tegmentum.wasmtime4j.performance.PerformanceEvent;
@@ -7,7 +8,6 @@ import ai.tegmentum.wasmtime4j.performance.PerformanceMonitor;
 import ai.tegmentum.wasmtime4j.performance.PerformanceReport;
 import ai.tegmentum.wasmtime4j.performance.PerformanceThresholdListener;
 import ai.tegmentum.wasmtime4j.performance.PerformanceThresholds;
-import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -16,9 +16,8 @@ import java.util.logging.Logger;
 /**
  * JNI implementation of the PerformanceMonitor interface.
  *
- * <p>This implementation provides comprehensive performance monitoring capabilities
- * for WebAssembly execution using JNI calls to the native performance monitoring
- * system.
+ * <p>This implementation provides comprehensive performance monitoring capabilities for WebAssembly
+ * execution using JNI calls to the native performance monitoring system.
  *
  * @since 1.0.0
  */
@@ -30,7 +29,8 @@ public final class JniPerformanceMonitor extends JniResource implements Performa
   private final long nativeHandle;
 
   /** Performance threshold listeners. */
-  private final List<PerformanceThresholdListener> thresholdListeners = new CopyOnWriteArrayList<>();
+  private final List<PerformanceThresholdListener> thresholdListeners =
+      new CopyOnWriteArrayList<>();
 
   /** Current monitoring interval. */
   private volatile Duration monitoringInterval = Duration.ofMillis(100);
@@ -192,17 +192,19 @@ public final class JniPerformanceMonitor extends JniResource implements Performa
 
     validateNotClosed();
 
-    final int result = nativeSetPerformanceThresholds(nativeHandle,
-        thresholds.getMaxFunctionExecutionTime().toNanos() / 1000,
-        thresholds.getMaxAllocationSize(),
-        thresholds.getMaxTotalMemoryUsage(),
-        (int) thresholds.getMaxCpuUsage(),
-        (long) thresholds.getMinInstructionsPerSecond(),
-        thresholds.getMaxGcEventsPerMinute(),
-        thresholds.getMaxJitCompilationTime().toNanos() / 1000,
-        (long) thresholds.getMaxHostFunctionCallsPerSecond(),
-        thresholds.getMaxErrorsPerMinute(),
-        (int) thresholds.getMaxMonitoringOverhead());
+    final int result =
+        nativeSetPerformanceThresholds(
+            nativeHandle,
+            thresholds.getMaxFunctionExecutionTime().toNanos() / 1000,
+            thresholds.getMaxAllocationSize(),
+            thresholds.getMaxTotalMemoryUsage(),
+            (int) thresholds.getMaxCpuUsage(),
+            (long) thresholds.getMinInstructionsPerSecond(),
+            thresholds.getMaxGcEventsPerMinute(),
+            thresholds.getMaxJitCompilationTime().toNanos() / 1000,
+            (long) thresholds.getMaxHostFunctionCallsPerSecond(),
+            thresholds.getMaxErrorsPerMinute(),
+            (int) thresholds.getMaxMonitoringOverhead());
 
     if (result != 0) {
       throw new RuntimeException("Failed to set performance thresholds: error code " + result);
@@ -339,7 +341,8 @@ public final class JniPerformanceMonitor extends JniResource implements Performa
    * @param intervalMicros monitoring interval in microseconds
    * @return 0 on success, non-zero on error
    */
-  private static native int nativeSetMonitoringInterval(final long handle, final long intervalMicros);
+  private static native int nativeSetMonitoringInterval(
+      final long handle, final long intervalMicros);
 
   /**
    * Sets performance thresholds.

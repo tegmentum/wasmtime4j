@@ -22,8 +22,8 @@ import java.util.logging.Logger;
  * JNI implementation of the StreamingMemory interface.
  *
  * <p>This implementation provides asynchronous and streaming memory operations using JNI to
- * interface with the native Wasmtime runtime. It supports bulk operations, streaming I/O,
- * and comprehensive statistics collection for performance monitoring.
+ * interface with the native Wasmtime runtime. It supports bulk operations, streaming I/O, and
+ * comprehensive statistics collection for performance monitoring.
  *
  * @since 1.0.0
  */
@@ -31,7 +31,8 @@ public final class JniStreamingMemory extends JniMemory implements StreamingMemo
   private static final Logger LOGGER = Logger.getLogger(JniStreamingMemory.class.getName());
 
   private final AtomicLong operationCounter = new AtomicLong();
-  private final ConcurrentHashMap<Long, AsyncMemoryOperation> activeOperations = new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<Long, AsyncMemoryOperation> activeOperations =
+      new ConcurrentHashMap<>();
   private final StreamingMemoryStatisticsImpl statistics = new StreamingMemoryStatisticsImpl();
 
   // Native method declarations
@@ -42,14 +43,20 @@ public final class JniStreamingMemory extends JniMemory implements StreamingMemo
       long memoryHandle, int offset, ByteBuffer data, long operationId);
 
   private static native long nativeBulkCopyAsync(
-      long destMemoryHandle, long srcMemoryHandle, int srcOffset, int destOffset, int length, long operationId);
+      long destMemoryHandle,
+      long srcMemoryHandle,
+      int srcOffset,
+      int destOffset,
+      int length,
+      long operationId);
 
   private static native long nativeBulkFillAsync(
       long memoryHandle, int offset, int length, byte value, long operationId);
 
   private static native int nativePollMemoryOperation(long memoryHandle, long operationId);
 
-  private static native ByteBuffer nativeGetMemoryOperationResult(long memoryHandle, long operationId);
+  private static native ByteBuffer nativeGetMemoryOperationResult(
+      long memoryHandle, long operationId);
 
   private static native void nativeCleanupMemoryOperation(long memoryHandle, long operationId);
 
@@ -92,8 +99,9 @@ public final class JniStreamingMemory extends JniMemory implements StreamingMemo
     final long operationId = operationCounter.getAndIncrement();
     final CompletableFuture<ByteBuffer> future = new CompletableFuture<>();
 
-    final AsyncMemoryOperation operation = new AsyncMemoryOperation(
-        operationId, AsyncMemoryOperationType.READ, future, System.nanoTime(), options);
+    final AsyncMemoryOperation operation =
+        new AsyncMemoryOperation(
+            operationId, AsyncMemoryOperationType.READ, future, System.nanoTime(), options);
 
     activeOperations.put(operationId, operation);
     statistics.incrementAsyncReadsStarted();
@@ -103,23 +111,25 @@ public final class JniStreamingMemory extends JniMemory implements StreamingMemo
       future.orTimeout(options.getTimeout().toMillis(), java.util.concurrent.TimeUnit.MILLISECONDS);
     }
 
-    final Executor executor = options.getExecutor() != null ?
-        options.getExecutor() : ForkJoinPool.commonPool();
+    final Executor executor =
+        options.getExecutor() != null ? options.getExecutor() : ForkJoinPool.commonPool();
 
-    executor.execute(() -> {
-      try {
-        final long nativeOperationId = nativeReadMemoryAsync(getHandle(), offset, length, operationId);
-        if (nativeOperationId == 0) {
-          completeExceptionally(operationId, new WasmException("Failed to start async read"));
-          return;
-        }
+    executor.execute(
+        () -> {
+          try {
+            final long nativeOperationId =
+                nativeReadMemoryAsync(getHandle(), offset, length, operationId);
+            if (nativeOperationId == 0) {
+              completeExceptionally(operationId, new WasmException("Failed to start async read"));
+              return;
+            }
 
-        pollOperationCompletion(operationId, executor);
+            pollOperationCompletion(operationId, executor);
 
-      } catch (Exception e) {
-        completeExceptionally(operationId, JniExceptionMapper.mapToWasmException(e));
-      }
-    });
+          } catch (Exception e) {
+            completeExceptionally(operationId, JniExceptionMapper.mapToWasmException(e));
+          }
+        });
 
     return future;
   }
@@ -143,8 +153,9 @@ public final class JniStreamingMemory extends JniMemory implements StreamingMemo
     final long operationId = operationCounter.getAndIncrement();
     final CompletableFuture<Void> future = new CompletableFuture<>();
 
-    final AsyncMemoryOperation operation = new AsyncMemoryOperation(
-        operationId, AsyncMemoryOperationType.WRITE, future, System.nanoTime(), options);
+    final AsyncMemoryOperation operation =
+        new AsyncMemoryOperation(
+            operationId, AsyncMemoryOperationType.WRITE, future, System.nanoTime(), options);
 
     activeOperations.put(operationId, operation);
     statistics.incrementAsyncWritesStarted();
@@ -154,23 +165,25 @@ public final class JniStreamingMemory extends JniMemory implements StreamingMemo
       future.orTimeout(options.getTimeout().toMillis(), java.util.concurrent.TimeUnit.MILLISECONDS);
     }
 
-    final Executor executor = options.getExecutor() != null ?
-        options.getExecutor() : ForkJoinPool.commonPool();
+    final Executor executor =
+        options.getExecutor() != null ? options.getExecutor() : ForkJoinPool.commonPool();
 
-    executor.execute(() -> {
-      try {
-        final long nativeOperationId = nativeWriteMemoryAsync(getHandle(), offset, data, operationId);
-        if (nativeOperationId == 0) {
-          completeExceptionally(operationId, new WasmException("Failed to start async write"));
-          return;
-        }
+    executor.execute(
+        () -> {
+          try {
+            final long nativeOperationId =
+                nativeWriteMemoryAsync(getHandle(), offset, data, operationId);
+            if (nativeOperationId == 0) {
+              completeExceptionally(operationId, new WasmException("Failed to start async write"));
+              return;
+            }
 
-        pollOperationCompletion(operationId, executor);
+            pollOperationCompletion(operationId, executor);
 
-      } catch (Exception e) {
-        completeExceptionally(operationId, JniExceptionMapper.mapToWasmException(e));
-      }
-    });
+          } catch (Exception e) {
+            completeExceptionally(operationId, JniExceptionMapper.mapToWasmException(e));
+          }
+        });
 
     return future;
   }
@@ -192,13 +205,19 @@ public final class JniStreamingMemory extends JniMemory implements StreamingMemo
   }
 
   @Override
-  public MemoryStream createMemoryStream(final int offset, final int length, final StreamOptions options) {
+  public MemoryStream createMemoryStream(
+      final int offset, final int length, final StreamOptions options) {
     JniValidation.requireNonNegative(offset, "offset");
     JniValidation.requireNonNegative(length, "length");
     JniValidation.requireNonNull(options, "options");
 
-    final long streamHandle = nativeCreateMemoryStream(
-        getHandle(), offset, length, options.getBufferSize(), getStreamModeValue(options.getReadMode()));
+    final long streamHandle =
+        nativeCreateMemoryStream(
+            getHandle(),
+            offset,
+            length,
+            options.getBufferSize(),
+            getStreamModeValue(options.getReadMode()));
 
     if (streamHandle == 0) {
       throw new WasmException("Failed to create memory stream");
@@ -222,29 +241,34 @@ public final class JniStreamingMemory extends JniMemory implements StreamingMemo
     final long operationId = operationCounter.getAndIncrement();
     final CompletableFuture<Void> future = new CompletableFuture<>();
 
-    final AsyncMemoryOperation operation = new AsyncMemoryOperation(
-        operationId, AsyncMemoryOperationType.BULK_COPY, future, System.nanoTime(), null);
+    final AsyncMemoryOperation operation =
+        new AsyncMemoryOperation(
+            operationId, AsyncMemoryOperationType.BULK_COPY, future, System.nanoTime(), null);
 
     activeOperations.put(operationId, operation);
     statistics.incrementBulkCopyOperations();
 
-    ForkJoinPool.commonPool().execute(() -> {
-      try {
-        final long sourceHandle = ((JniStreamingMemory) source).getHandle();
-        final long nativeOperationId = nativeBulkCopyAsync(
-            getHandle(), sourceHandle, srcOffset, destOffset, length, operationId);
+    ForkJoinPool.commonPool()
+        .execute(
+            () -> {
+              try {
+                final long sourceHandle = ((JniStreamingMemory) source).getHandle();
+                final long nativeOperationId =
+                    nativeBulkCopyAsync(
+                        getHandle(), sourceHandle, srcOffset, destOffset, length, operationId);
 
-        if (nativeOperationId == 0) {
-          completeExceptionally(operationId, new WasmException("Failed to start bulk copy"));
-          return;
-        }
+                if (nativeOperationId == 0) {
+                  completeExceptionally(
+                      operationId, new WasmException("Failed to start bulk copy"));
+                  return;
+                }
 
-        pollOperationCompletion(operationId, ForkJoinPool.commonPool());
+                pollOperationCompletion(operationId, ForkJoinPool.commonPool());
 
-      } catch (Exception e) {
-        completeExceptionally(operationId, JniExceptionMapper.mapToWasmException(e));
-      }
-    });
+              } catch (Exception e) {
+                completeExceptionally(operationId, JniExceptionMapper.mapToWasmException(e));
+              }
+            });
 
     return future;
   }
@@ -261,26 +285,31 @@ public final class JniStreamingMemory extends JniMemory implements StreamingMemo
     final long operationId = operationCounter.getAndIncrement();
     final CompletableFuture<Void> future = new CompletableFuture<>();
 
-    final AsyncMemoryOperation operation = new AsyncMemoryOperation(
-        operationId, AsyncMemoryOperationType.BULK_FILL, future, System.nanoTime(), null);
+    final AsyncMemoryOperation operation =
+        new AsyncMemoryOperation(
+            operationId, AsyncMemoryOperationType.BULK_FILL, future, System.nanoTime(), null);
 
     activeOperations.put(operationId, operation);
     statistics.incrementBulkFillOperations();
 
-    ForkJoinPool.commonPool().execute(() -> {
-      try {
-        final long nativeOperationId = nativeBulkFillAsync(getHandle(), offset, length, value, operationId);
-        if (nativeOperationId == 0) {
-          completeExceptionally(operationId, new WasmException("Failed to start bulk fill"));
-          return;
-        }
+    ForkJoinPool.commonPool()
+        .execute(
+            () -> {
+              try {
+                final long nativeOperationId =
+                    nativeBulkFillAsync(getHandle(), offset, length, value, operationId);
+                if (nativeOperationId == 0) {
+                  completeExceptionally(
+                      operationId, new WasmException("Failed to start bulk fill"));
+                  return;
+                }
 
-        pollOperationCompletion(operationId, ForkJoinPool.commonPool());
+                pollOperationCompletion(operationId, ForkJoinPool.commonPool());
 
-      } catch (Exception e) {
-        completeExceptionally(operationId, JniExceptionMapper.mapToWasmException(e));
-      }
-    });
+              } catch (Exception e) {
+                completeExceptionally(operationId, JniExceptionMapper.mapToWasmException(e));
+              }
+            });
 
     return future;
   }
@@ -312,54 +341,58 @@ public final class JniStreamingMemory extends JniMemory implements StreamingMemo
   // Private helper methods
 
   private void pollOperationCompletion(final long operationId, final Executor executor) {
-    executor.execute(() -> {
-      try {
-        final AsyncMemoryOperation operation = activeOperations.get(operationId);
-        if (operation == null || operation.future.isDone()) {
-          return;
-        }
-
-        final int status = nativePollMemoryOperation(getHandle(), operationId);
-
-        switch (status) {
-          case 0: // Pending
-            // Schedule next poll
-            try {
-              Thread.sleep(5); // Brief pause before next poll
-            } catch (InterruptedException e) {
-              Thread.currentThread().interrupt();
-              completeExceptionally(operationId, new WasmException("Operation interrupted"));
+    executor.execute(
+        () -> {
+          try {
+            final AsyncMemoryOperation operation = activeOperations.get(operationId);
+            if (operation == null || operation.future.isDone()) {
               return;
             }
-            pollOperationCompletion(operationId, executor);
-            break;
 
-          case 1: // Completed successfully
-            if (operation.operationType == AsyncMemoryOperationType.READ) {
-              final ByteBuffer result = nativeGetMemoryOperationResult(getHandle(), operationId);
-              completeSuccessfully(operationId, result);
-            } else {
-              completeSuccessfully(operationId, null);
+            final int status = nativePollMemoryOperation(getHandle(), operationId);
+
+            switch (status) {
+              case 0: // Pending
+                // Schedule next poll
+                try {
+                  Thread.sleep(5); // Brief pause before next poll
+                } catch (InterruptedException e) {
+                  Thread.currentThread().interrupt();
+                  completeExceptionally(operationId, new WasmException("Operation interrupted"));
+                  return;
+                }
+                pollOperationCompletion(operationId, executor);
+                break;
+
+              case 1: // Completed successfully
+                if (operation.operationType == AsyncMemoryOperationType.READ) {
+                  final ByteBuffer result =
+                      nativeGetMemoryOperationResult(getHandle(), operationId);
+                  completeSuccessfully(operationId, result);
+                } else {
+                  completeSuccessfully(operationId, null);
+                }
+                break;
+
+              case -1: // Failed
+                completeExceptionally(
+                    operationId, new WasmException("Async memory operation failed"));
+                break;
+
+              case -2: // Cancelled
+                operation.future.cancel(true);
+                cleanupOperation(operationId);
+                break;
+
+              default:
+                completeExceptionally(
+                    operationId, new WasmException("Unknown operation status: " + status));
+                break;
             }
-            break;
-
-          case -1: // Failed
-            completeExceptionally(operationId, new WasmException("Async memory operation failed"));
-            break;
-
-          case -2: // Cancelled
-            operation.future.cancel(true);
-            cleanupOperation(operationId);
-            break;
-
-          default:
-            completeExceptionally(operationId, new WasmException("Unknown operation status: " + status));
-            break;
-        }
-      } catch (Exception e) {
-        completeExceptionally(operationId, JniExceptionMapper.mapToWasmException(e));
-      }
-    });
+          } catch (Exception e) {
+            completeExceptionally(operationId, JniExceptionMapper.mapToWasmException(e));
+          }
+        });
   }
 
   @SuppressWarnings("unchecked")
@@ -414,7 +447,8 @@ public final class JniStreamingMemory extends JniMemory implements StreamingMemo
     }
   }
 
-  private void updateSuccessStatistics(final AsyncMemoryOperationType operationType, final long durationNanos) {
+  private void updateSuccessStatistics(
+      final AsyncMemoryOperationType operationType, final long durationNanos) {
     final double durationMs = durationNanos / 1_000_000.0;
 
     switch (operationType) {
@@ -458,18 +492,26 @@ public final class JniStreamingMemory extends JniMemory implements StreamingMemo
 
   private int getStreamModeValue(final StreamMode mode) {
     switch (mode) {
-      case SEQUENTIAL: return 0;
-      case RANDOM: return 1;
-      case BUFFERED: return 2;
-      case DIRECT: return 3;
-      default: return 0;
+      case SEQUENTIAL:
+        return 0;
+      case RANDOM:
+        return 1;
+      case BUFFERED:
+        return 2;
+      case DIRECT:
+        return 3;
+      default:
+        return 0;
     }
   }
 
   // Inner classes
 
   private enum AsyncMemoryOperationType {
-    READ, WRITE, BULK_COPY, BULK_FILL
+    READ,
+    WRITE,
+    BULK_COPY,
+    BULK_FILL
   }
 
   private static final class AsyncMemoryOperation {
@@ -479,8 +521,12 @@ public final class JniStreamingMemory extends JniMemory implements StreamingMemo
     final long startTime;
     final Object options;
 
-    AsyncMemoryOperation(final long operationId, final AsyncMemoryOperationType operationType,
-                        final CompletableFuture<?> future, final long startTime, final Object options) {
+    AsyncMemoryOperation(
+        final long operationId,
+        final AsyncMemoryOperationType operationType,
+        final CompletableFuture<?> future,
+        final long startTime,
+        final Object options) {
       this.operationId = operationId;
       this.operationType = operationType;
       this.future = future;
@@ -523,7 +569,8 @@ public final class JniStreamingMemory extends JniMemory implements StreamingMemo
 
       final int actualLen = Math.min(len, maxLength - currentPosition);
       try {
-        final ByteBuffer buffer = JniStreamingMemory.this.read(startOffset + currentPosition, actualLen);
+        final ByteBuffer buffer =
+            JniStreamingMemory.this.read(startOffset + currentPosition, actualLen);
         buffer.get(b, off, actualLen);
         currentPosition += actualLen;
         return actualLen;
@@ -546,7 +593,7 @@ public final class JniStreamingMemory extends JniMemory implements StreamingMemo
 
     @Override
     public void write(final int b) throws IOException {
-      write(new byte[]{(byte) b}, 0, 1);
+      write(new byte[] {(byte) b}, 0, 1);
     }
 
     @Override
@@ -632,8 +679,12 @@ public final class JniStreamingMemory extends JniMemory implements StreamingMemo
     private final boolean cancellable;
     private final int priority;
 
-    ReadOptionsImpl(final Duration timeout, final Executor executor, final int bufferSize,
-                   final boolean cancellable, final int priority) {
+    ReadOptionsImpl(
+        final Duration timeout,
+        final Executor executor,
+        final int bufferSize,
+        final boolean cancellable,
+        final int priority) {
       this.timeout = timeout;
       this.executor = executor;
       this.bufferSize = bufferSize;
@@ -642,15 +693,29 @@ public final class JniStreamingMemory extends JniMemory implements StreamingMemo
     }
 
     @Override
-    public Duration getTimeout() { return timeout; }
+    public Duration getTimeout() {
+      return timeout;
+    }
+
     @Override
-    public Executor getExecutor() { return executor; }
+    public Executor getExecutor() {
+      return executor;
+    }
+
     @Override
-    public int getBufferSize() { return bufferSize; }
+    public int getBufferSize() {
+      return bufferSize;
+    }
+
     @Override
-    public boolean isCancellable() { return cancellable; }
+    public boolean isCancellable() {
+      return cancellable;
+    }
+
     @Override
-    public int getPriority() { return priority; }
+    public int getPriority() {
+      return priority;
+    }
   }
 
   private static final class WriteOptionsImpl implements WriteOptions {
@@ -661,8 +726,13 @@ public final class JniStreamingMemory extends JniMemory implements StreamingMemo
     private final boolean immediateFlush;
     private final int priority;
 
-    WriteOptionsImpl(final Duration timeout, final Executor executor, final int bufferSize,
-                    final boolean cancellable, final boolean immediateFlush, final int priority) {
+    WriteOptionsImpl(
+        final Duration timeout,
+        final Executor executor,
+        final int bufferSize,
+        final boolean cancellable,
+        final boolean immediateFlush,
+        final int priority) {
       this.timeout = timeout;
       this.executor = executor;
       this.bufferSize = bufferSize;
@@ -672,17 +742,34 @@ public final class JniStreamingMemory extends JniMemory implements StreamingMemo
     }
 
     @Override
-    public Duration getTimeout() { return timeout; }
+    public Duration getTimeout() {
+      return timeout;
+    }
+
     @Override
-    public Executor getExecutor() { return executor; }
+    public Executor getExecutor() {
+      return executor;
+    }
+
     @Override
-    public int getBufferSize() { return bufferSize; }
+    public int getBufferSize() {
+      return bufferSize;
+    }
+
     @Override
-    public boolean isCancellable() { return cancellable; }
+    public boolean isCancellable() {
+      return cancellable;
+    }
+
     @Override
-    public boolean isImmediateFlush() { return immediateFlush; }
+    public boolean isImmediateFlush() {
+      return immediateFlush;
+    }
+
     @Override
-    public int getPriority() { return priority; }
+    public int getPriority() {
+      return priority;
+    }
   }
 
   private static final class StreamingMemoryStatisticsImpl implements StreamingMemoryStatistics {
@@ -700,14 +787,37 @@ public final class JniStreamingMemory extends JniMemory implements StreamingMemo
     private volatile double averageWriteTimeMs = 0.0;
     private volatile long peakStreamingMemoryUsage = 0;
 
-    void incrementAsyncReadsStarted() { asyncReadsStarted.incrementAndGet(); }
-    void incrementAsyncReadsCompleted() { asyncReadsCompleted.incrementAndGet(); }
-    void incrementAsyncReadsFailed() { asyncReadsFailed.incrementAndGet(); }
-    void incrementAsyncWritesStarted() { asyncWritesStarted.incrementAndGet(); }
-    void incrementAsyncWritesCompleted() { asyncWritesCompleted.incrementAndGet(); }
-    void incrementAsyncWritesFailed() { asyncWritesFailed.incrementAndGet(); }
-    void incrementBulkCopyOperations() { bulkCopyOperations.incrementAndGet(); }
-    void incrementBulkFillOperations() { bulkFillOperations.incrementAndGet(); }
+    void incrementAsyncReadsStarted() {
+      asyncReadsStarted.incrementAndGet();
+    }
+
+    void incrementAsyncReadsCompleted() {
+      asyncReadsCompleted.incrementAndGet();
+    }
+
+    void incrementAsyncReadsFailed() {
+      asyncReadsFailed.incrementAndGet();
+    }
+
+    void incrementAsyncWritesStarted() {
+      asyncWritesStarted.incrementAndGet();
+    }
+
+    void incrementAsyncWritesCompleted() {
+      asyncWritesCompleted.incrementAndGet();
+    }
+
+    void incrementAsyncWritesFailed() {
+      asyncWritesFailed.incrementAndGet();
+    }
+
+    void incrementBulkCopyOperations() {
+      bulkCopyOperations.incrementAndGet();
+    }
+
+    void incrementBulkFillOperations() {
+      bulkFillOperations.incrementAndGet();
+    }
 
     void updateAverageReadTime(final double timeMs) {
       final long completedCount = asyncReadsCompleted.get();
@@ -719,7 +829,8 @@ public final class JniStreamingMemory extends JniMemory implements StreamingMemo
     void updateAverageWriteTime(final double timeMs) {
       final long completedCount = asyncWritesCompleted.get();
       if (completedCount > 0) {
-        averageWriteTimeMs = ((averageWriteTimeMs * (completedCount - 1)) + timeMs) / completedCount;
+        averageWriteTimeMs =
+            ((averageWriteTimeMs * (completedCount - 1)) + timeMs) / completedCount;
       }
     }
 
@@ -733,36 +844,79 @@ public final class JniStreamingMemory extends JniMemory implements StreamingMemo
     }
 
     @Override
-    public long getAsyncReadsStarted() { return asyncReadsStarted.get(); }
+    public long getAsyncReadsStarted() {
+      return asyncReadsStarted.get();
+    }
+
     @Override
-    public long getAsyncReadsCompleted() { return asyncReadsCompleted.get(); }
+    public long getAsyncReadsCompleted() {
+      return asyncReadsCompleted.get();
+    }
+
     @Override
-    public long getAsyncReadsFailed() { return asyncReadsFailed.get(); }
+    public long getAsyncReadsFailed() {
+      return asyncReadsFailed.get();
+    }
+
     @Override
-    public long getAsyncWritesStarted() { return asyncWritesStarted.get(); }
+    public long getAsyncWritesStarted() {
+      return asyncWritesStarted.get();
+    }
+
     @Override
-    public long getAsyncWritesCompleted() { return asyncWritesCompleted.get(); }
+    public long getAsyncWritesCompleted() {
+      return asyncWritesCompleted.get();
+    }
+
     @Override
-    public long getAsyncWritesFailed() { return asyncWritesFailed.get(); }
+    public long getAsyncWritesFailed() {
+      return asyncWritesFailed.get();
+    }
+
     @Override
-    public long getBulkCopyOperations() { return bulkCopyOperations.get(); }
+    public long getBulkCopyOperations() {
+      return bulkCopyOperations.get();
+    }
+
     @Override
-    public long getBulkFillOperations() { return bulkFillOperations.get(); }
+    public long getBulkFillOperations() {
+      return bulkFillOperations.get();
+    }
+
     @Override
-    public long getTotalBytesRead() { return totalBytesRead.get(); }
+    public long getTotalBytesRead() {
+      return totalBytesRead.get();
+    }
+
     @Override
-    public long getTotalBytesWritten() { return totalBytesWritten.get(); }
+    public long getTotalBytesWritten() {
+      return totalBytesWritten.get();
+    }
+
     @Override
-    public double getAverageReadTimeMs() { return averageReadTimeMs; }
+    public double getAverageReadTimeMs() {
+      return averageReadTimeMs;
+    }
+
     @Override
-    public double getAverageWriteTimeMs() { return averageWriteTimeMs; }
+    public double getAverageWriteTimeMs() {
+      return averageWriteTimeMs;
+    }
+
     @Override
     public int getActiveStreamingOperations() {
-      return (int) (asyncReadsStarted.get() + asyncWritesStarted.get() -
-                   asyncReadsCompleted.get() - asyncWritesCompleted.get() -
-                   asyncReadsFailed.get() - asyncWritesFailed.get());
+      return (int)
+          (asyncReadsStarted.get()
+              + asyncWritesStarted.get()
+              - asyncReadsCompleted.get()
+              - asyncWritesCompleted.get()
+              - asyncReadsFailed.get()
+              - asyncWritesFailed.get());
     }
+
     @Override
-    public long getPeakStreamingMemoryUsage() { return peakStreamingMemoryUsage; }
+    public long getPeakStreamingMemoryUsage() {
+      return peakStreamingMemoryUsage;
+    }
   }
 }

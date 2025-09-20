@@ -1,6 +1,7 @@
 package ai.tegmentum.wasmtime4j.tests.async;
 
-import ai.tegmentum.wasmtime4j.EngineConfig;
+import static org.junit.jupiter.api.Assertions.*;
+
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.async.AsyncEngine;
@@ -18,21 +19,20 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 /**
  * Comprehensive integration tests for async and streaming WebAssembly APIs.
  *
- * <p>These tests validate the async engine functionality, streaming compilation,
- * reactive programming patterns, and performance characteristics of the async
- * implementation across both JNI and Panama runtime implementations.
+ * <p>These tests validate the async engine functionality, streaming compilation, reactive
+ * programming patterns, and performance characteristics of the async implementation across both JNI
+ * and Panama runtime implementations.
  *
  * @since 1.0.0
  */
 @EnabledIfSystemProperty(named = "test.async", matches = "true")
 class AsyncEngineIntegrationTest {
 
-  private static final String SIMPLE_WAT = """
+  private static final String SIMPLE_WAT =
+      """
       (module
         (func (export "add") (param i32 i32) (result i32)
           local.get 0
@@ -46,7 +46,8 @@ class AsyncEngineIntegrationTest {
       )
       """;
 
-  private static final String COMPLEX_WAT = """
+  private static final String COMPLEX_WAT =
+      """
       (module
         (memory (export "memory") 2)
         (func (export "fibonacci") (param i32) (result i32)
@@ -106,10 +107,12 @@ class AsyncEngineIntegrationTest {
         asyncEngine = (AsyncEngine) factory.createEngine();
       } else {
         // Skip tests if async engine is not available
-        org.junit.jupiter.api.Assumptions.assumeTrue(false, "AsyncEngine not available in current runtime");
+        org.junit.jupiter.api.Assumptions.assumeTrue(
+            false, "AsyncEngine not available in current runtime");
       }
     } catch (Exception e) {
-      org.junit.jupiter.api.Assumptions.assumeTrue(false, "Failed to create AsyncEngine: " + e.getMessage());
+      org.junit.jupiter.api.Assumptions.assumeTrue(
+          false, "Failed to create AsyncEngine: " + e.getMessage());
     }
 
     // Compile WAT to bytecode for testing
@@ -142,10 +145,11 @@ class AsyncEngineIntegrationTest {
   void testAsyncModuleCompilationWithTimeout() throws Exception {
     assertNotNull(asyncEngine, "AsyncEngine should be available");
 
-    final AsyncEngine.CompilationOptions options = createCompilationOptions(
-        Duration.ofSeconds(5), null, 8192, false);
+    final AsyncEngine.CompilationOptions options =
+        createCompilationOptions(Duration.ofSeconds(5), null, 8192, false);
 
-    final CompletableFuture<Module> future = asyncEngine.compileModuleAsync(complexWasmBytes, options);
+    final CompletableFuture<Module> future =
+        asyncEngine.compileModuleAsync(complexWasmBytes, options);
     assertNotNull(future, "CompileModuleAsync with options should return a non-null future");
 
     final Module module = future.get(10, TimeUnit.SECONDS);
@@ -180,8 +184,8 @@ class AsyncEngineIntegrationTest {
     assertNotNull(future, "ValidateModuleAsync should return a non-null future");
 
     // Should complete without throwing an exception
-    assertDoesNotThrow(() -> future.get(10, TimeUnit.SECONDS),
-        "Valid module validation should not throw");
+    assertDoesNotThrow(
+        () -> future.get(10, TimeUnit.SECONDS), "Valid module validation should not throw");
   }
 
   @Test
@@ -194,7 +198,9 @@ class AsyncEngineIntegrationTest {
     assertNotNull(future, "ValidateModuleAsync should return a non-null future");
 
     // Should complete with an exception
-    assertThrows(ExecutionException.class, () -> future.get(10, TimeUnit.SECONDS),
+    assertThrows(
+        ExecutionException.class,
+        () -> future.get(10, TimeUnit.SECONDS),
         "Invalid module validation should throw ExecutionException");
   }
 
@@ -237,8 +243,8 @@ class AsyncEngineIntegrationTest {
     final ByteArrayInputStream stream = new ByteArrayInputStream(complexWasmBytes);
     final StreamingModule.StreamingOptions options = StreamingModule.createDefaultOptions();
 
-    final CompletableFuture<Module> future = StreamingModule.compileStreaming(
-        asyncEngine, stream, options);
+    final CompletableFuture<Module> future =
+        StreamingModule.compileStreaming(asyncEngine, stream, options);
     assertNotNull(future, "Streaming compilation should return a non-null future");
 
     final Module module = future.get(15, TimeUnit.SECONDS);
@@ -256,13 +262,13 @@ class AsyncEngineIntegrationTest {
     final ByteArrayInputStream stream = new ByteArrayInputStream(simpleWasmBytes);
     final StreamingModule.StreamingOptions options = StreamingModule.createDefaultOptions();
 
-    final CompletableFuture<Void> future = StreamingModule.streamValidation(
-        asyncEngine, stream, options);
+    final CompletableFuture<Void> future =
+        StreamingModule.streamValidation(asyncEngine, stream, options);
     assertNotNull(future, "Streaming validation should return a non-null future");
 
     // Should complete without throwing an exception
-    assertDoesNotThrow(() -> future.get(10, TimeUnit.SECONDS),
-        "Valid streaming validation should not throw");
+    assertDoesNotThrow(
+        () -> future.get(10, TimeUnit.SECONDS), "Valid streaming validation should not throw");
   }
 
   @Test
@@ -278,11 +284,14 @@ class AsyncEngineIntegrationTest {
     assertNotNull(stats, "Async statistics should not be null");
 
     // Verify basic statistics
-    assertTrue(stats.getAsyncCompilationsStarted() >= 1,
+    assertTrue(
+        stats.getAsyncCompilationsStarted() >= 1,
         "Should have at least one async compilation started");
-    assertTrue(stats.getAsyncCompilationsCompleted() >= 1,
+    assertTrue(
+        stats.getAsyncCompilationsCompleted() >= 1,
         "Should have at least one async compilation completed");
-    assertTrue(stats.getAverageCompilationTimeMs() >= 0,
+    assertTrue(
+        stats.getAverageCompilationTimeMs() >= 0,
         "Average compilation time should be non-negative");
 
     module.close();
@@ -319,10 +328,11 @@ class AsyncEngineIntegrationTest {
   void testAsyncOperationTimeout() throws Exception {
     assertNotNull(asyncEngine, "AsyncEngine should be available");
 
-    final AsyncEngine.CompilationOptions options = createCompilationOptions(
-        Duration.ofMillis(1), null, 8192, false); // Very short timeout
+    final AsyncEngine.CompilationOptions options =
+        createCompilationOptions(Duration.ofMillis(1), null, 8192, false); // Very short timeout
 
-    final CompletableFuture<Module> future = asyncEngine.compileModuleAsync(complexWasmBytes, options);
+    final CompletableFuture<Module> future =
+        asyncEngine.compileModuleAsync(complexWasmBytes, options);
     assertNotNull(future, "Compilation with timeout should return a non-null future");
 
     // Should either complete quickly or timeout
@@ -334,8 +344,8 @@ class AsyncEngineIntegrationTest {
       }
     } catch (ExecutionException | TimeoutException e) {
       // Expected for very short timeout
-      assertTrue(e instanceof TimeoutException ||
-                 e.getCause() instanceof WasmException,
+      assertTrue(
+          e instanceof TimeoutException || e.getCause() instanceof WasmException,
           "Should timeout or fail with WasmException");
     }
   }
@@ -374,8 +384,8 @@ class AsyncEngineIntegrationTest {
 
     // For now, return a minimal valid WASM module
     return new byte[] {
-        0x00, 0x61, 0x73, 0x6d, // WASM magic
-        0x01, 0x00, 0x00, 0x00  // WASM version
+      0x00, 0x61, 0x73, 0x6d, // WASM magic
+      0x01, 0x00, 0x00, 0x00 // WASM version
     };
   }
 

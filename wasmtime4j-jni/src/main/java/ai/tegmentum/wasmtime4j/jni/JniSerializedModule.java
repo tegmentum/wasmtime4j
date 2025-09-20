@@ -14,9 +14,9 @@ import java.util.logging.Logger;
 /**
  * JNI implementation of serialized module.
  *
- * <p>This class wraps a native serialized module and provides Java access to the
- * serialized WebAssembly data. It implements defensive programming patterns to ensure
- * safe access to native resources.
+ * <p>This class wraps a native serialized module and provides Java access to the serialized
+ * WebAssembly data. It implements defensive programming patterns to ensure safe access to native
+ * resources.
  *
  * @since 1.0.0
  */
@@ -228,8 +228,8 @@ public final class JniSerializedModule implements SerializedModule {
 
     if (nativeHandle == 0) {
       // Return minimal metadata for raw data
-      return String.format("{\"size\":%d,\"compression\":\"%s\"}",
-                          getSize(), getCompression().name());
+      return String.format(
+          "{\"size\":%d,\"compression\":\"%s\"}", getSize(), getCompression().name());
     }
 
     try {
@@ -263,9 +263,7 @@ public final class JniSerializedModule implements SerializedModule {
     return nativeHandle;
   }
 
-  /**
-   * Closes this serialized module and releases native resources.
-   */
+  /** Closes this serialized module and releases native resources. */
   public void close() {
     if (!closed) {
       closed = true;

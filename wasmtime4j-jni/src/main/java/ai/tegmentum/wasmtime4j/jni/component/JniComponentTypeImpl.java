@@ -11,8 +11,8 @@ import java.util.logging.Logger;
 /**
  * JNI implementation of ComponentType interface.
  *
- * <p>This class provides component type information by making JNI calls to retrieve type data
- * from the native Wasmtime component representation.
+ * <p>This class provides component type information by making JNI calls to retrieve type data from
+ * the native Wasmtime component representation.
  *
  * @since 1.0.0
  */
@@ -114,8 +114,8 @@ public final class JniComponentTypeImpl implements ComponentType {
         return Collections.emptyList();
       }
 
-      final String[] names = JniComponentImpl.nativeGetExportNames(
-          componentHandle.getNativeHandle());
+      final String[] names =
+          JniComponentImpl.nativeGetExportNames(componentHandle.getNativeHandle());
 
       if (names == null || names.length == 0) {
         return Collections.emptyList();
@@ -147,8 +147,8 @@ public final class JniComponentTypeImpl implements ComponentType {
         return Collections.emptyList();
       }
 
-      final String[] names = JniComponentImpl.nativeGetImportNames(
-          componentHandle.getNativeHandle());
+      final String[] names =
+          JniComponentImpl.nativeGetImportNames(componentHandle.getNativeHandle());
 
       if (names == null || names.length == 0) {
         return Collections.emptyList();

@@ -3,8 +3,8 @@ package ai.tegmentum.wasmtime4j.jni.performance;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import ai.tegmentum.wasmtime4j.performance.ExecutionMetrics;
 import ai.tegmentum.wasmtime4j.performance.PerformanceEvent;
-import ai.tegmentum.wasmtime4j.performance.PerformanceReport;
 import ai.tegmentum.wasmtime4j.performance.PerformanceEventType;
+import ai.tegmentum.wasmtime4j.performance.PerformanceReport;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -243,25 +243,46 @@ public final class JniPerformanceReport extends JniResource implements Performan
   // Native method declarations
 
   private static native long nativeGetStartTime(final long handle);
+
   private static native long nativeGetEndTime(final long handle);
+
   private static native long nativeGetTotalDuration(final long handle);
+
   private static native long nativeGetOverallMetrics(final long handle);
+
   private static native long nativeGetAverageMetrics(final long handle);
+
   private static native long nativeGetPeakMetrics(final long handle);
+
   private static native long nativeGetSignificantEvents(final long handle);
+
   private static native long nativeGetEventsByType(final long handle, final int eventType);
+
   private static native long nativeGetEventCounts(final long handle);
+
   private static native long nativeGetPerformanceInsights(final long handle);
+
   private static native long nativeGetOptimizationRecommendations(final long handle);
+
   private static native double nativeGetPerformanceScore(final long handle);
+
   private static native long nativeGetAnalysisSummary(final long handle);
+
   private static native String nativeGetDetailedReport(final long handle);
+
   private static native String nativeGetExecutiveSummary(final long handle);
+
   private static native boolean nativeHasPerformanceIssues(final long handle);
+
   private static native long nativeGetPerformanceIssues(final long handle);
+
   private static native boolean nativeExceedsThresholds(final long handle);
+
   private static native long nativeGetThresholdViolations(final long handle);
+
   private static native String nativeExportToJson(final long handle);
+
   private static native String nativeExportToCsv(final long handle);
+
   private static native void nativeDispose(final long handle);
 }

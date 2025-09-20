@@ -8,8 +8,8 @@ import java.util.logging.Logger;
 /**
  * Utility class for creating Java List of PerformanceEvent from native handles.
  *
- * <p>This class provides static methods to convert native performance event arrays
- * into Java List objects for convenient use in the Java API.
+ * <p>This class provides static methods to convert native performance event arrays into Java List
+ * objects for convenient use in the Java API.
  *
  * @since 1.0.0
  */

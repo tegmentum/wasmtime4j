@@ -2,8 +2,8 @@ package ai.tegmentum.wasmtime4j.jni.performance;
 
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import ai.tegmentum.wasmtime4j.performance.PerformanceEvent;
-import ai.tegmentum.wasmtime4j.performance.PerformanceEventType;
 import ai.tegmentum.wasmtime4j.performance.PerformanceEventSeverity;
+import ai.tegmentum.wasmtime4j.performance.PerformanceEventType;
 import java.time.Instant;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -164,20 +164,36 @@ public final class JniPerformanceEvent extends JniResource implements Performanc
   // Native method declarations
 
   private static native int nativeGetType(final long handle);
+
   private static native int nativeGetSeverity(final long handle);
+
   private static native long nativeGetTimestamp(final long handle);
+
   private static native String nativeGetDescription(final long handle);
+
   private static native String nativeGetSource(final long handle);
+
   private static native double nativeGetValue(final long handle);
+
   private static native String nativeGetUnit(final long handle);
+
   private static native long nativeGetMetadata(final long handle);
+
   private static native String nativeGetContextualInfo(final long handle);
+
   private static native boolean nativeIsThresholdViolation(final long handle);
+
   private static native double nativeGetThresholdValue(final long handle);
+
   private static native String nativeGetRecommendation(final long handle);
+
   private static native long nativeGetEventId(final long handle);
+
   private static native String nativeGetCategory(final long handle);
+
   private static native boolean nativeHasRelatedEvents(final long handle);
+
   private static native String nativeGetFormattedMessage(final long handle);
+
   private static native void nativeDispose(final long handle);
 }

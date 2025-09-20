@@ -3,8 +3,8 @@ package ai.tegmentum.wasmtime4j.performance;
 /**
  * Enumeration of optimization levels for WebAssembly performance optimization.
  *
- * <p>OptimizationLevel defines different tiers of optimization aggressiveness, each with
- * different trade-offs between compilation time, memory usage, and runtime performance.
+ * <p>OptimizationLevel defines different tiers of optimization aggressiveness, each with different
+ * trade-offs between compilation time, memory usage, and runtime performance.
  *
  * @since 1.0.0
  */
@@ -13,14 +13,14 @@ public enum OptimizationLevel {
   /**
    * No optimization applied.
    *
-   * <p>Fastest compilation time with minimal performance optimization. Suitable for
-   * development, debugging, or when compilation speed is more important than runtime performance.
+   * <p>Fastest compilation time with minimal performance optimization. Suitable for development,
+   * debugging, or when compilation speed is more important than runtime performance.
    *
    * <ul>
-   *   <li>Compilation time: Fastest</li>
-   *   <li>Memory usage: Lowest</li>
-   *   <li>Runtime performance: Baseline</li>
-   *   <li>Use cases: Development, debugging, quick prototyping</li>
+   *   <li>Compilation time: Fastest
+   *   <li>Memory usage: Lowest
+   *   <li>Runtime performance: Baseline
+   *   <li>Use cases: Development, debugging, quick prototyping
    * </ul>
    */
   NONE("No optimization", 0, "Fastest compilation, baseline performance"),
@@ -28,14 +28,14 @@ public enum OptimizationLevel {
   /**
    * Basic optimizations with minimal compilation overhead.
    *
-   * <p>Applies fundamental optimizations that provide good performance improvements
-   * with minimal increase in compilation time. Good balance for general use.
+   * <p>Applies fundamental optimizations that provide good performance improvements with minimal
+   * increase in compilation time. Good balance for general use.
    *
    * <ul>
-   *   <li>Compilation time: Fast</li>
-   *   <li>Memory usage: Low</li>
-   *   <li>Runtime performance: Good</li>
-   *   <li>Use cases: General production use, moderate performance requirements</li>
+   *   <li>Compilation time: Fast
+   *   <li>Memory usage: Low
+   *   <li>Runtime performance: Good
+   *   <li>Use cases: General production use, moderate performance requirements
    * </ul>
    */
   BASIC("Basic optimization", 1, "Good performance with fast compilation"),
@@ -43,14 +43,14 @@ public enum OptimizationLevel {
   /**
    * Aggressive optimizations for high-performance scenarios.
    *
-   * <p>Applies more sophisticated optimizations that significantly improve runtime
-   * performance at the cost of increased compilation time and memory usage.
+   * <p>Applies more sophisticated optimizations that significantly improve runtime performance at
+   * the cost of increased compilation time and memory usage.
    *
    * <ul>
-   *   <li>Compilation time: Moderate</li>
-   *   <li>Memory usage: Moderate</li>
-   *   <li>Runtime performance: High</li>
-   *   <li>Use cases: Performance-critical applications, long-running processes</li>
+   *   <li>Compilation time: Moderate
+   *   <li>Memory usage: Moderate
+   *   <li>Runtime performance: High
+   *   <li>Use cases: Performance-critical applications, long-running processes
    * </ul>
    */
   AGGRESSIVE("Aggressive optimization", 2, "High performance with moderate compilation cost"),
@@ -58,14 +58,14 @@ public enum OptimizationLevel {
   /**
    * Maximum optimization for the highest possible performance.
    *
-   * <p>Applies all available optimizations including experimental and advanced techniques.
-   * Provides the best possible runtime performance but with significant compilation overhead.
+   * <p>Applies all available optimizations including experimental and advanced techniques. Provides
+   * the best possible runtime performance but with significant compilation overhead.
    *
    * <ul>
-   *   <li>Compilation time: Slow</li>
-   *   <li>Memory usage: High</li>
-   *   <li>Runtime performance: Maximum</li>
-   *   <li>Use cases: Performance-critical code, server applications, compute-intensive workloads</li>
+   *   <li>Compilation time: Slow
+   *   <li>Memory usage: High
+   *   <li>Runtime performance: Maximum
+   *   <li>Use cases: Performance-critical code, server applications, compute-intensive workloads
    * </ul>
    */
   MAXIMUM("Maximum optimization", 3, "Best performance with highest compilation cost");
@@ -206,7 +206,8 @@ public enum OptimizationLevel {
   /**
    * Determines the recommended optimization level based on use case requirements.
    *
-   * @param prioritizeCompilationSpeed true if compilation speed is more important than runtime performance
+   * @param prioritizeCompilationSpeed true if compilation speed is more important than runtime
+   *     performance
    * @param isLongRunning true if the application runs for extended periods
    * @param isPerformanceCritical true if runtime performance is critical
    * @return recommended optimization level

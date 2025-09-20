@@ -29,8 +29,8 @@ import java.util.logging.Logger;
  * Panama implementation of the AsyncFunction interface.
  *
  * <p>This implementation provides asynchronous function execution using Panama Foreign Function
- * Interface to communicate with the native Wasmtime runtime. It supports reactive streams,
- * timeout handling, and comprehensive statistics collection for performance monitoring.
+ * Interface to communicate with the native Wasmtime runtime. It supports reactive streams, timeout
+ * handling, and comprehensive statistics collection for performance monitoring.
  *
  * @since 1.0.0
  */
@@ -55,37 +55,46 @@ public final class PanamaAsyncFunction extends PanamaFunction implements AsyncFu
       final Linker linker = Linker.nativeLinker();
       final SymbolLookup wasmtimeLib = SymbolLookup.loaderLookup();
 
-      CALL_FUNCTION_ASYNC = linker.downcallHandle(
-          wasmtimeLib.find("wasmtime4j_call_function_async").orElseThrow(),
-          FunctionDescriptor.of(ValueLayout.JAVA_LONG, // returns operation handle
-              ValueLayout.ADDRESS, // function handle
-              ValueLayout.ADDRESS, // param handles array
-              ValueLayout.JAVA_INT, // param count
-              ValueLayout.JAVA_LONG)); // call id
+      CALL_FUNCTION_ASYNC =
+          linker.downcallHandle(
+              wasmtimeLib.find("wasmtime4j_call_function_async").orElseThrow(),
+              FunctionDescriptor.of(
+                  ValueLayout.JAVA_LONG, // returns operation handle
+                  ValueLayout.ADDRESS, // function handle
+                  ValueLayout.ADDRESS, // param handles array
+                  ValueLayout.JAVA_INT, // param count
+                  ValueLayout.JAVA_LONG)); // call id
 
-      POLL_ASYNC_CALL = linker.downcallHandle(
-          wasmtimeLib.find("wasmtime4j_poll_async_call").orElseThrow(),
-          FunctionDescriptor.of(ValueLayout.JAVA_INT, // returns status
-              ValueLayout.ADDRESS, // function handle
-              ValueLayout.JAVA_LONG)); // call id
+      POLL_ASYNC_CALL =
+          linker.downcallHandle(
+              wasmtimeLib.find("wasmtime4j_poll_async_call").orElseThrow(),
+              FunctionDescriptor.of(
+                  ValueLayout.JAVA_INT, // returns status
+                  ValueLayout.ADDRESS, // function handle
+                  ValueLayout.JAVA_LONG)); // call id
 
-      GET_ASYNC_CALL_RESULT = linker.downcallHandle(
-          wasmtimeLib.find("wasmtime4j_get_async_call_result").orElseThrow(),
-          FunctionDescriptor.of(ValueLayout.ADDRESS, // returns result array
-              ValueLayout.ADDRESS, // function handle
-              ValueLayout.JAVA_LONG)); // call id
+      GET_ASYNC_CALL_RESULT =
+          linker.downcallHandle(
+              wasmtimeLib.find("wasmtime4j_get_async_call_result").orElseThrow(),
+              FunctionDescriptor.of(
+                  ValueLayout.ADDRESS, // returns result array
+                  ValueLayout.ADDRESS, // function handle
+                  ValueLayout.JAVA_LONG)); // call id
 
-      CLEANUP_ASYNC_CALL = linker.downcallHandle(
-          wasmtimeLib.find("wasmtime4j_cleanup_async_call").orElseThrow(),
-          FunctionDescriptor.ofVoid(
-              ValueLayout.ADDRESS, // function handle
-              ValueLayout.JAVA_LONG)); // call id
+      CLEANUP_ASYNC_CALL =
+          linker.downcallHandle(
+              wasmtimeLib.find("wasmtime4j_cleanup_async_call").orElseThrow(),
+              FunctionDescriptor.ofVoid(
+                  ValueLayout.ADDRESS, // function handle
+                  ValueLayout.JAVA_LONG)); // call id
 
-      CANCEL_ASYNC_CALL = linker.downcallHandle(
-          wasmtimeLib.find("wasmtime4j_cancel_async_call").orElseThrow(),
-          FunctionDescriptor.of(ValueLayout.JAVA_INT, // returns success status
-              ValueLayout.ADDRESS, // function handle
-              ValueLayout.JAVA_LONG)); // call id
+      CANCEL_ASYNC_CALL =
+          linker.downcallHandle(
+              wasmtimeLib.find("wasmtime4j_cancel_async_call").orElseThrow(),
+              FunctionDescriptor.of(
+                  ValueLayout.JAVA_INT, // returns success status
+                  ValueLayout.ADDRESS, // function handle
+                  ValueLayout.JAVA_LONG)); // call id
 
     } catch (Throwable e) {
       LOGGER.log(Level.SEVERE, "Failed to initialize Panama FFI method handles", e);
@@ -93,7 +102,8 @@ public final class PanamaAsyncFunction extends PanamaFunction implements AsyncFu
     }
   }
 
-  public PanamaAsyncFunction(final MemorySegment functionHandle, final String name, final Arena arena) {
+  public PanamaAsyncFunction(
+      final MemorySegment functionHandle, final String name, final Arena arena) {
     super(functionHandle, name, arena);
     this.functionArena = Arena.ofShared();
     this.reactiveConfiguration = createDefaultReactiveConfiguration();
@@ -105,9 +115,10 @@ public final class PanamaAsyncFunction extends PanamaFunction implements AsyncFu
   }
 
   @Override
-  public CompletableFuture<WasmValue[]> callAsync(final Duration timeout, final WasmValue... params) {
-    final ExecutionOptions options = new ExecutionOptionsImpl(
-        timeout, null, true, false, -1, -1, 0);
+  public CompletableFuture<WasmValue[]> callAsync(
+      final Duration timeout, final WasmValue... params) {
+    final ExecutionOptions options =
+        new ExecutionOptionsImpl(timeout, null, true, false, -1, -1, 0);
     return callAsync(options, params);
   }
 
@@ -124,8 +135,8 @@ public final class PanamaAsyncFunction extends PanamaFunction implements AsyncFu
     final long callId = callCounter.getAndIncrement();
     final CompletableFuture<WasmValue[]> future = new CompletableFuture<>();
 
-    final AsyncCallContext context = new AsyncCallContext(
-        callId, future, System.nanoTime(), options);
+    final AsyncCallContext context =
+        new AsyncCallContext(callId, future, System.nanoTime(), options);
 
     activeCalls.put(callId, context);
     statistics.incrementAsyncCallsStarted();
@@ -135,71 +146,81 @@ public final class PanamaAsyncFunction extends PanamaFunction implements AsyncFu
       future.orTimeout(options.getTimeout().toMillis(), java.util.concurrent.TimeUnit.MILLISECONDS);
     }
 
-    final Executor executor = options.getExecutor() != null ?
-        options.getExecutor() : ForkJoinPool.commonPool();
+    final Executor executor =
+        options.getExecutor() != null ? options.getExecutor() : ForkJoinPool.commonPool();
 
-    executor.execute(() -> {
-      try {
-        // Convert parameters to native format
-        final MemorySegment paramHandles = convertParamsToSegment(params);
+    executor.execute(
+        () -> {
+          try {
+            // Convert parameters to native format
+            final MemorySegment paramHandles = convertParamsToSegment(params);
 
-        final long nativeOperationId = (long) CALL_FUNCTION_ASYNC.invoke(
-            getHandle(), paramHandles, params.length, callId);
+            final long nativeOperationId =
+                (long) CALL_FUNCTION_ASYNC.invoke(getHandle(), paramHandles, params.length, callId);
 
-        if (nativeOperationId == 0) {
-          completeExceptionally(callId, new WasmException("Failed to start async function call"));
-          return;
-        }
+            if (nativeOperationId == 0) {
+              completeExceptionally(
+                  callId, new WasmException("Failed to start async function call"));
+              return;
+            }
 
-        // Start polling for completion
-        pollCallCompletion(callId, executor);
+            // Start polling for completion
+            pollCallCompletion(callId, executor);
 
-      } catch (Throwable e) {
-        completeExceptionally(callId, PanamaExceptionMapper.mapToWasmException(e));
-      }
-    });
+          } catch (Throwable e) {
+            completeExceptionally(callId, PanamaExceptionMapper.mapToWasmException(e));
+          }
+        });
 
     return future;
   }
 
   @Override
   public CompletableFuture<Integer> callAsyncInt(final WasmValue... params) {
-    return callAsync(params).thenApply(results -> {
-      if (results.length == 0) {
-        throw new RuntimeException("Function returned no values");
-      }
-      return results[0].asInt();
-    });
+    return callAsync(params)
+        .thenApply(
+            results -> {
+              if (results.length == 0) {
+                throw new RuntimeException("Function returned no values");
+              }
+              return results[0].asInt();
+            });
   }
 
   @Override
   public CompletableFuture<Long> callAsyncLong(final WasmValue... params) {
-    return callAsync(params).thenApply(results -> {
-      if (results.length == 0) {
-        throw new RuntimeException("Function returned no values");
-      }
-      return results[0].asLong();
-    });
+    return callAsync(params)
+        .thenApply(
+            results -> {
+              if (results.length == 0) {
+                throw new RuntimeException("Function returned no values");
+              }
+              return results[0].asLong();
+            });
   }
 
   @Override
   public CompletableFuture<Float> callAsyncFloat(final WasmValue... params) {
-    return callAsync(params).thenApply(results -> {
-      if (results.length == 0) {
-        throw new RuntimeException("Function returned no values");
-      }
-      return results[0].asFloat();
-    });
+    return callAsync(params)
+        .thenApply(
+            results -> {
+              if (results.length == 0) {
+                throw new RuntimeException("Function returned no values");
+              }
+              return results[0].asFloat();
+            });
   }
 
   @Override
   public CompletableFuture<Double> callAsyncDouble(final WasmValue... params) {
-    return callAsync(params).thenApply(results -> {
-      if (results.length == 0) {
-        throw new RuntimeException("Function returned no values");
-      }
-      return results[0].asDouble();
-    });
+    return callAsync(params)
+        .thenApply(
+            results -> {
+              if (results.length == 0) {
+                throw new RuntimeException("Function returned no values");
+              }
+              return results[0].asDouble();
+            });
   }
 
   @Override
@@ -221,55 +242,57 @@ public final class PanamaAsyncFunction extends PanamaFunction implements AsyncFu
   public Publisher<WasmValue[]> callReactive(final Publisher<WasmValue[]> parameterStream) {
     PanamaValidation.requireNonNull(parameterStream, "parameterStream");
 
-    final SubmissionPublisher<WasmValue[]> publisher = new SubmissionPublisher<>(
-        ForkJoinPool.commonPool(),
-        reactiveConfiguration.getBufferSize());
+    final SubmissionPublisher<WasmValue[]> publisher =
+        new SubmissionPublisher<>(ForkJoinPool.commonPool(), reactiveConfiguration.getBufferSize());
 
-    parameterStream.subscribe(new Subscriber<WasmValue[]>() {
-      private java.util.concurrent.Flow.Subscription subscription;
+    parameterStream.subscribe(
+        new Subscriber<WasmValue[]>() {
+          private java.util.concurrent.Flow.Subscription subscription;
 
-      @Override
-      public void onSubscribe(final java.util.concurrent.Flow.Subscription subscription) {
-        this.subscription = subscription;
-        subscription.request(1);
-      }
+          @Override
+          public void onSubscribe(final java.util.concurrent.Flow.Subscription subscription) {
+            this.subscription = subscription;
+            subscription.request(1);
+          }
 
-      @Override
-      public void onNext(final WasmValue[] params) {
-        callAsync(params)
-            .thenAccept(result -> {
-              publisher.submit(result);
-              subscription.request(1);
-            })
-            .exceptionally(throwable -> {
-              publisher.closeExceptionally(throwable);
-              return null;
-            });
-      }
+          @Override
+          public void onNext(final WasmValue[] params) {
+            callAsync(params)
+                .thenAccept(
+                    result -> {
+                      publisher.submit(result);
+                      subscription.request(1);
+                    })
+                .exceptionally(
+                    throwable -> {
+                      publisher.closeExceptionally(throwable);
+                      return null;
+                    });
+          }
 
-      @Override
-      public void onError(final Throwable throwable) {
-        publisher.closeExceptionally(throwable);
-      }
+          @Override
+          public void onError(final Throwable throwable) {
+            publisher.closeExceptionally(throwable);
+          }
 
-      @Override
-      public void onComplete() {
-        publisher.close();
-      }
-    });
+          @Override
+          public void onComplete() {
+            publisher.close();
+          }
+        });
 
     return publisher;
   }
 
   @Override
   public void subscribeReactive(
-      final Subscriber<WasmValue[]> subscriber,
-      final Publisher<WasmValue[]> parameterStream) {
+      final Subscriber<WasmValue[]> subscriber, final Publisher<WasmValue[]> parameterStream) {
     callReactive(parameterStream).subscribe(subscriber);
   }
 
   @Override
-  public <T, R> Publisher<R> createReactiveProcessor(final ReactiveStreamProcessor<T, R> processor) {
+  public <T, R> Publisher<R> createReactiveProcessor(
+      final ReactiveStreamProcessor<T, R> processor) {
     PanamaValidation.requireNonNull(processor, "processor");
     throw new UnsupportedOperationException("Custom reactive processors not yet implemented");
   }
@@ -312,51 +335,53 @@ public final class PanamaAsyncFunction extends PanamaFunction implements AsyncFu
   // Private helper methods
 
   private void pollCallCompletion(final long callId, final Executor executor) {
-    executor.execute(() -> {
-      try {
-        final AsyncCallContext context = activeCalls.get(callId);
-        if (context == null || context.future.isDone()) {
-          return;
-        }
-
-        final int status = (int) POLL_ASYNC_CALL.invoke(getHandle(), callId);
-
-        switch (status) {
-          case 0: // Pending
-            // Schedule next poll
-            try {
-              Thread.sleep(5); // Brief pause before next poll
-            } catch (InterruptedException e) {
-              Thread.currentThread().interrupt();
-              completeExceptionally(callId, new WasmException("Call interrupted"));
+    executor.execute(
+        () -> {
+          try {
+            final AsyncCallContext context = activeCalls.get(callId);
+            if (context == null || context.future.isDone()) {
               return;
             }
-            pollCallCompletion(callId, executor);
-            break;
 
-          case 1: // Completed successfully
-            final MemorySegment resultSegment = (MemorySegment) GET_ASYNC_CALL_RESULT.invoke(getHandle(), callId);
-            final WasmValue[] results = convertSegmentToResults(resultSegment);
-            completeSuccessfully(callId, results);
-            break;
+            final int status = (int) POLL_ASYNC_CALL.invoke(getHandle(), callId);
 
-          case -1: // Failed
-            completeExceptionally(callId, new WasmException("Async function call failed"));
-            break;
+            switch (status) {
+              case 0: // Pending
+                // Schedule next poll
+                try {
+                  Thread.sleep(5); // Brief pause before next poll
+                } catch (InterruptedException e) {
+                  Thread.currentThread().interrupt();
+                  completeExceptionally(callId, new WasmException("Call interrupted"));
+                  return;
+                }
+                pollCallCompletion(callId, executor);
+                break;
 
-          case -2: // Cancelled
-            context.future.cancel(true);
-            cleanupCall(callId);
-            break;
+              case 1: // Completed successfully
+                final MemorySegment resultSegment =
+                    (MemorySegment) GET_ASYNC_CALL_RESULT.invoke(getHandle(), callId);
+                final WasmValue[] results = convertSegmentToResults(resultSegment);
+                completeSuccessfully(callId, results);
+                break;
 
-          default:
-            completeExceptionally(callId, new WasmException("Unknown call status: " + status));
-            break;
-        }
-      } catch (Throwable e) {
-        completeExceptionally(callId, PanamaExceptionMapper.mapToWasmException(e));
-      }
-    });
+              case -1: // Failed
+                completeExceptionally(callId, new WasmException("Async function call failed"));
+                break;
+
+              case -2: // Cancelled
+                context.future.cancel(true);
+                cleanupCall(callId);
+                break;
+
+              default:
+                completeExceptionally(callId, new WasmException("Unknown call status: " + status));
+                break;
+            }
+          } catch (Throwable e) {
+            completeExceptionally(callId, PanamaExceptionMapper.mapToWasmException(e));
+          }
+        });
   }
 
   private void completeSuccessfully(final long callId, final WasmValue[] results) {
@@ -411,7 +436,7 @@ public final class PanamaAsyncFunction extends PanamaFunction implements AsyncFu
 
   private WasmValue[] convertSegmentToResults(final MemorySegment segment) {
     // In a real implementation, this would convert native result array to WasmValue[]
-    return new WasmValue[]{WasmValue.ofInt(0)}; // Placeholder
+    return new WasmValue[] {WasmValue.ofInt(0)}; // Placeholder
   }
 
   private ExecutionOptions createDefaultExecutionOptions() {
@@ -423,7 +448,7 @@ public final class PanamaAsyncFunction extends PanamaFunction implements AsyncFu
         -1, // unlimited memory
         -1, // unlimited instructions
         0 // normal priority
-    );
+        );
   }
 
   private ReactiveConfiguration createDefaultReactiveConfiguration() {
@@ -437,7 +462,7 @@ public final class PanamaAsyncFunction extends PanamaFunction implements AsyncFu
         true, // backpressure enabled
         BackpressureStrategy.BLOCK, // backpressure strategy
         null // no retry policy
-    );
+        );
   }
 
   // Inner classes - same as JNI implementation but adapted for Panama
@@ -448,8 +473,11 @@ public final class PanamaAsyncFunction extends PanamaFunction implements AsyncFu
     final long startTime;
     final ExecutionOptions options;
 
-    AsyncCallContext(final long callId, final CompletableFuture<WasmValue[]> future,
-                    final long startTime, final ExecutionOptions options) {
+    AsyncCallContext(
+        final long callId,
+        final CompletableFuture<WasmValue[]> future,
+        final long startTime,
+        final ExecutionOptions options) {
       this.callId = callId;
       this.future = future;
       this.startTime = startTime;
@@ -466,9 +494,14 @@ public final class PanamaAsyncFunction extends PanamaFunction implements AsyncFu
     private final long maxInstructions;
     private final int priority;
 
-    ExecutionOptionsImpl(final Duration timeout, final Executor executor, final boolean cancellable,
-                        final boolean progressTrackingEnabled, final long maxMemoryUsage,
-                        final long maxInstructions, final int priority) {
+    ExecutionOptionsImpl(
+        final Duration timeout,
+        final Executor executor,
+        final boolean cancellable,
+        final boolean progressTrackingEnabled,
+        final long maxMemoryUsage,
+        final long maxInstructions,
+        final int priority) {
       this.timeout = timeout;
       this.executor = executor;
       this.cancellable = cancellable;
@@ -479,19 +512,39 @@ public final class PanamaAsyncFunction extends PanamaFunction implements AsyncFu
     }
 
     @Override
-    public Duration getTimeout() { return timeout; }
+    public Duration getTimeout() {
+      return timeout;
+    }
+
     @Override
-    public Executor getExecutor() { return executor; }
+    public Executor getExecutor() {
+      return executor;
+    }
+
     @Override
-    public boolean isCancellable() { return cancellable; }
+    public boolean isCancellable() {
+      return cancellable;
+    }
+
     @Override
-    public boolean isProgressTrackingEnabled() { return progressTrackingEnabled; }
+    public boolean isProgressTrackingEnabled() {
+      return progressTrackingEnabled;
+    }
+
     @Override
-    public long getMaxMemoryUsage() { return maxMemoryUsage; }
+    public long getMaxMemoryUsage() {
+      return maxMemoryUsage;
+    }
+
     @Override
-    public long getMaxInstructions() { return maxInstructions; }
+    public long getMaxInstructions() {
+      return maxInstructions;
+    }
+
     @Override
-    public int getPriority() { return priority; }
+    public int getPriority() {
+      return priority;
+    }
   }
 
   private static final class ReactiveConfigurationImpl implements ReactiveConfiguration {
@@ -505,11 +558,16 @@ public final class PanamaAsyncFunction extends PanamaFunction implements AsyncFu
     private final BackpressureStrategy backpressureStrategy;
     private final RetryPolicy retryPolicy;
 
-    ReactiveConfigurationImpl(final int bufferSize, final int maxConcurrency,
-                             final boolean orderedProcessing, final boolean errorPropagationEnabled,
-                             final Duration callTimeout, final Duration streamTimeout,
-                             final boolean backpressureEnabled, final BackpressureStrategy backpressureStrategy,
-                             final RetryPolicy retryPolicy) {
+    ReactiveConfigurationImpl(
+        final int bufferSize,
+        final int maxConcurrency,
+        final boolean orderedProcessing,
+        final boolean errorPropagationEnabled,
+        final Duration callTimeout,
+        final Duration streamTimeout,
+        final boolean backpressureEnabled,
+        final BackpressureStrategy backpressureStrategy,
+        final RetryPolicy retryPolicy) {
       this.bufferSize = bufferSize;
       this.maxConcurrency = maxConcurrency;
       this.orderedProcessing = orderedProcessing;
@@ -522,23 +580,49 @@ public final class PanamaAsyncFunction extends PanamaFunction implements AsyncFu
     }
 
     @Override
-    public int getBufferSize() { return bufferSize; }
+    public int getBufferSize() {
+      return bufferSize;
+    }
+
     @Override
-    public int getMaxConcurrency() { return maxConcurrency; }
+    public int getMaxConcurrency() {
+      return maxConcurrency;
+    }
+
     @Override
-    public boolean isOrderedProcessing() { return orderedProcessing; }
+    public boolean isOrderedProcessing() {
+      return orderedProcessing;
+    }
+
     @Override
-    public boolean isErrorPropagationEnabled() { return errorPropagationEnabled; }
+    public boolean isErrorPropagationEnabled() {
+      return errorPropagationEnabled;
+    }
+
     @Override
-    public Duration getCallTimeout() { return callTimeout; }
+    public Duration getCallTimeout() {
+      return callTimeout;
+    }
+
     @Override
-    public Duration getStreamTimeout() { return streamTimeout; }
+    public Duration getStreamTimeout() {
+      return streamTimeout;
+    }
+
     @Override
-    public boolean isBackpressureEnabled() { return backpressureEnabled; }
+    public boolean isBackpressureEnabled() {
+      return backpressureEnabled;
+    }
+
     @Override
-    public BackpressureStrategy getBackpressureStrategy() { return backpressureStrategy; }
+    public BackpressureStrategy getBackpressureStrategy() {
+      return backpressureStrategy;
+    }
+
     @Override
-    public RetryPolicy getRetryPolicy() { return retryPolicy; }
+    public RetryPolicy getRetryPolicy() {
+      return retryPolicy;
+    }
   }
 
   private static final class AsyncFunctionStatisticsImpl implements AsyncFunctionStatistics {
@@ -551,14 +635,23 @@ public final class PanamaAsyncFunction extends PanamaFunction implements AsyncFu
     private volatile long maxExecutionTimeMs = 0;
     private volatile long minExecutionTimeMs = Long.MAX_VALUE;
 
-    void incrementAsyncCallsStarted() { asyncCallsStarted.incrementAndGet(); }
-    void incrementAsyncCallsCompleted() { asyncCallsCompleted.incrementAndGet(); }
-    void incrementAsyncCallsFailed() { asyncCallsFailed.incrementAndGet(); }
+    void incrementAsyncCallsStarted() {
+      asyncCallsStarted.incrementAndGet();
+    }
+
+    void incrementAsyncCallsCompleted() {
+      asyncCallsCompleted.incrementAndGet();
+    }
+
+    void incrementAsyncCallsFailed() {
+      asyncCallsFailed.incrementAndGet();
+    }
 
     void updateAverageExecutionTime(final double timeMs) {
       final long completedCount = asyncCallsCompleted.get();
       if (completedCount > 0) {
-        averageExecutionTimeMs = ((averageExecutionTimeMs * (completedCount - 1)) + timeMs) / completedCount;
+        averageExecutionTimeMs =
+            ((averageExecutionTimeMs * (completedCount - 1)) + timeMs) / completedCount;
       }
 
       final long timeRounded = Math.round(timeMs);
@@ -571,21 +664,45 @@ public final class PanamaAsyncFunction extends PanamaFunction implements AsyncFu
     }
 
     @Override
-    public long getAsyncCallsStarted() { return asyncCallsStarted.get(); }
+    public long getAsyncCallsStarted() {
+      return asyncCallsStarted.get();
+    }
+
     @Override
-    public long getAsyncCallsCompleted() { return asyncCallsCompleted.get(); }
+    public long getAsyncCallsCompleted() {
+      return asyncCallsCompleted.get();
+    }
+
     @Override
-    public long getAsyncCallsFailed() { return asyncCallsFailed.get(); }
+    public long getAsyncCallsFailed() {
+      return asyncCallsFailed.get();
+    }
+
     @Override
-    public long getAsyncCallsCancelled() { return asyncCallsCancelled.get(); }
+    public long getAsyncCallsCancelled() {
+      return asyncCallsCancelled.get();
+    }
+
     @Override
-    public long getAsyncCallsTimedOut() { return asyncCallsTimedOut.get(); }
+    public long getAsyncCallsTimedOut() {
+      return asyncCallsTimedOut.get();
+    }
+
     @Override
-    public double getAverageExecutionTimeMs() { return averageExecutionTimeMs; }
+    public double getAverageExecutionTimeMs() {
+      return averageExecutionTimeMs;
+    }
+
     @Override
-    public long getMaxExecutionTimeMs() { return maxExecutionTimeMs; }
+    public long getMaxExecutionTimeMs() {
+      return maxExecutionTimeMs;
+    }
+
     @Override
-    public long getMinExecutionTimeMs() { return minExecutionTimeMs == Long.MAX_VALUE ? 0 : minExecutionTimeMs; }
+    public long getMinExecutionTimeMs() {
+      return minExecutionTimeMs == Long.MAX_VALUE ? 0 : minExecutionTimeMs;
+    }
+
     @Override
     public int getActiveAsyncExecutions() {
       return (int) (asyncCallsStarted.get() - asyncCallsCompleted.get() - asyncCallsFailed.get());

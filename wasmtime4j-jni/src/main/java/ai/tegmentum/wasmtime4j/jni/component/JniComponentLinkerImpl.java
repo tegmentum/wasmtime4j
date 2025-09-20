@@ -12,12 +12,10 @@ import ai.tegmentum.wasmtime4j.component.ComponentResource;
 import ai.tegmentum.wasmtime4j.component.InterfaceType;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.JniEngine;
-import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -58,8 +56,9 @@ public final class JniComponentLinkerImpl extends JniResource implements Compone
     this.engine = engine;
     this.metadata = new JniComponentLinkerMetadataImpl(nativeHandle);
 
-    LOGGER.fine("Created JNI component linker implementation with handle: 0x"
-        + Long.toHexString(nativeHandle));
+    LOGGER.fine(
+        "Created JNI component linker implementation with handle: 0x"
+            + Long.toHexString(nativeHandle));
   }
 
   /**
@@ -112,11 +111,8 @@ public final class JniComponentLinkerImpl extends JniResource implements Compone
     }
 
     try {
-      final boolean success = nativeDefineComponent(
-          getNativeHandle(),
-          name,
-          jniComponent.getNativeHandle()
-      );
+      final boolean success =
+          nativeDefineComponent(getNativeHandle(), name, jniComponent.getNativeHandle());
 
       if (!success) {
         throw new WasmException("Failed to define component: " + name);
@@ -146,11 +142,8 @@ public final class JniComponentLinkerImpl extends JniResource implements Compone
     final JniInterfaceTypeImpl jniInterface = (JniInterfaceTypeImpl) interfaceType;
 
     try {
-      final boolean success = nativeDefineInterface(
-          getNativeHandle(),
-          name,
-          jniInterface.getNativeHandle()
-      );
+      final boolean success =
+          nativeDefineInterface(getNativeHandle(), name, jniInterface.getNativeHandle());
 
       if (!success) {
         throw new WasmException("Failed to define interface: " + name);
@@ -180,11 +173,8 @@ public final class JniComponentLinkerImpl extends JniResource implements Compone
     final JniComponentFunctionImpl jniFunction = (JniComponentFunctionImpl) function;
 
     try {
-      final boolean success = nativeDefineFunction(
-          getNativeHandle(),
-          name,
-          jniFunction.getNativeHandle()
-      );
+      final boolean success =
+          nativeDefineFunction(getNativeHandle(), name, jniFunction.getNativeHandle());
 
       if (!success) {
         throw new WasmException("Failed to define function: " + name);
@@ -214,11 +204,8 @@ public final class JniComponentLinkerImpl extends JniResource implements Compone
     final JniComponentResourceImpl jniResource = (JniComponentResourceImpl) resource;
 
     try {
-      final boolean success = nativeDefineResource(
-          getNativeHandle(),
-          name,
-          jniResource.getNativeHandle()
-      );
+      final boolean success =
+          nativeDefineResource(getNativeHandle(), name, jniResource.getNativeHandle());
 
       if (!success) {
         throw new WasmException("Failed to define resource: " + name);
@@ -262,11 +249,9 @@ public final class JniComponentLinkerImpl extends JniResource implements Compone
     }
 
     try {
-      final long instanceHandle = nativeInstantiate(
-          getNativeHandle(),
-          jniStore.getNativeHandle(),
-          jniComponent.getNativeHandle()
-      );
+      final long instanceHandle =
+          nativeInstantiate(
+              getNativeHandle(), jniStore.getNativeHandle(), jniComponent.getNativeHandle());
 
       JniValidation.requireValidHandle(instanceHandle, "instanceHandle");
 
@@ -328,10 +313,8 @@ public final class JniComponentLinkerImpl extends JniResource implements Compone
     }
 
     try {
-      final boolean isValid = nativeValidateImports(
-          getNativeHandle(),
-          jniComponent.getNativeHandle()
-      );
+      final boolean isValid =
+          nativeValidateImports(getNativeHandle(), jniComponent.getNativeHandle());
 
       if (!isValid) {
         throw new WasmException("Import validation failed for component");
@@ -395,8 +378,8 @@ public final class JniComponentLinkerImpl extends JniResource implements Compone
 
     if (getNativeHandle() != 0) {
       nativeDestroyLinker(getNativeHandle());
-      LOGGER.fine("Destroyed JNI component linker with handle: 0x"
-          + Long.toHexString(getNativeHandle()));
+      LOGGER.fine(
+          "Destroyed JNI component linker with handle: 0x" + Long.toHexString(getNativeHandle()));
     }
   }
 

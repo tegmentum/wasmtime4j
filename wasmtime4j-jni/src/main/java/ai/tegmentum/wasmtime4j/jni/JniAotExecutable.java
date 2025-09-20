@@ -15,9 +15,8 @@ import java.util.logging.Logger;
 /**
  * JNI implementation of AOT executable.
  *
- * <p>This class wraps a native AOT executable and provides Java access to the compiled
- * WebAssembly code. It implements defensive programming patterns to ensure safe access
- * to native resources.
+ * <p>This class wraps a native AOT executable and provides Java access to the compiled WebAssembly
+ * code. It implements defensive programming patterns to ensure safe access to native resources.
  *
  * @since 1.0.0
  */
@@ -51,9 +50,7 @@ public final class JniAotExecutable implements AotExecutable {
    * @throws IllegalArgumentException if any parameter is null
    */
   public JniAotExecutable(
-      final long nativeHandle,
-      final TargetPlatform targetPlatform,
-      final AotOptions options) {
+      final long nativeHandle, final TargetPlatform targetPlatform, final AotOptions options) {
 
     if (targetPlatform == null) {
       throw new IllegalArgumentException("Target platform cannot be null");
@@ -209,9 +206,7 @@ public final class JniAotExecutable implements AotExecutable {
     return nativeHandle;
   }
 
-  /**
-   * Closes this executable and releases native resources.
-   */
+  /** Closes this executable and releases native resources. */
   public void close() {
     if (!closed) {
       closed = true;

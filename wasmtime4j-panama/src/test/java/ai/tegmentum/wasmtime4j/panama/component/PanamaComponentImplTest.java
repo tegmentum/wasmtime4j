@@ -27,12 +27,12 @@ import org.junit.jupiter.api.condition.JRE;
 /**
  * Test suite for Panama FFI-based Component implementation.
  *
- * <p>Tests the PanamaComponentImpl class to ensure proper component compilation, instantiation,
- * and lifecycle management through the Panama Foreign Function Interface to the native
- * Wasmtime runtime.
+ * <p>Tests the PanamaComponentImpl class to ensure proper component compilation, instantiation, and
+ * lifecycle management through the Panama Foreign Function Interface to the native Wasmtime
+ * runtime.
  *
- * <p>These tests focus on validating the Panama FFI bridge implementation, Arena-based
- * resource management, and ensuring that zero-copy optimizations work correctly.
+ * <p>These tests focus on validating the Panama FFI bridge implementation, Arena-based resource
+ * management, and ensuring that zero-copy optimizations work correctly.
  */
 @DisplayName("Panama Component Implementation Tests")
 @EnabledForJreRange(min = JRE.JAVA_23) // Panama FFI requires Java 23+
@@ -69,22 +69,25 @@ class PanamaComponentImplTest {
     // Test basic component creation with proper validation
     final byte[] validComponentBytes = createMinimalComponent();
 
-    assertDoesNotThrow(() -> {
-      final Component component = new PanamaComponentImpl(engine, validComponentBytes, arena);
-      assertNotNull(component);
-      assertTrue(component.isValid());
-    });
+    assertDoesNotThrow(
+        () -> {
+          final Component component = new PanamaComponentImpl(engine, validComponentBytes, arena);
+          assertNotNull(component);
+          assertTrue(component.isValid());
+        });
   }
 
   @Test
   @DisplayName("PanamaComponentImpl should reject invalid component bytes")
   void testComponentCreationWithInvalidBytes() {
     // Test that invalid bytes are properly rejected
-    final byte[] invalidBytes = new byte[]{0x00, 0x01, 0x02, 0x03}; // Not a valid component
+    final byte[] invalidBytes = new byte[] {0x00, 0x01, 0x02, 0x03}; // Not a valid component
 
-    assertThrows(WasmException.class, () -> {
-      new PanamaComponentImpl(engine, invalidBytes, arena);
-    });
+    assertThrows(
+        WasmException.class,
+        () -> {
+          new PanamaComponentImpl(engine, invalidBytes, arena);
+        });
   }
 
   @Test
@@ -93,19 +96,25 @@ class PanamaComponentImplTest {
     final byte[] validBytes = createMinimalComponent();
 
     // Test null engine
-    assertThrows(IllegalArgumentException.class, () -> {
-      new PanamaComponentImpl(null, validBytes, arena);
-    });
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new PanamaComponentImpl(null, validBytes, arena);
+        });
 
     // Test null bytes
-    assertThrows(IllegalArgumentException.class, () -> {
-      new PanamaComponentImpl(engine, null, arena);
-    });
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new PanamaComponentImpl(engine, null, arena);
+        });
 
     // Test null arena
-    assertThrows(IllegalArgumentException.class, () -> {
-      new PanamaComponentImpl(engine, validBytes, null);
-    });
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new PanamaComponentImpl(engine, validBytes, null);
+        });
   }
 
   @Test
@@ -114,9 +123,11 @@ class PanamaComponentImplTest {
     // Test that empty bytes are properly rejected
     final byte[] emptyBytes = new byte[0];
 
-    assertThrows(IllegalArgumentException.class, () -> {
-      new PanamaComponentImpl(engine, emptyBytes, arena);
-    });
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new PanamaComponentImpl(engine, emptyBytes, arena);
+        });
   }
 
   @Test
@@ -125,12 +136,13 @@ class PanamaComponentImplTest {
     final byte[] componentBytes = createMinimalComponent();
     final Component component = new PanamaComponentImpl(engine, componentBytes, arena);
 
-    assertDoesNotThrow(() -> {
-      final ComponentMetadata metadata = component.getMetadata();
-      assertNotNull(metadata);
-      assertTrue(metadata.getSize() > 0);
-      assertTrue(metadata.getComplexityScore() >= 0);
-    });
+    assertDoesNotThrow(
+        () -> {
+          final ComponentMetadata metadata = component.getMetadata();
+          assertNotNull(metadata);
+          assertTrue(metadata.getSize() > 0);
+          assertTrue(metadata.getComplexityScore() >= 0);
+        });
   }
 
   @Test
@@ -139,13 +151,14 @@ class PanamaComponentImplTest {
     final byte[] componentBytes = createMinimalComponent();
     final Component component = new PanamaComponentImpl(engine, componentBytes, arena);
 
-    assertDoesNotThrow(() -> {
-      final ComponentType type = component.getType();
-      assertNotNull(type);
-      // The type should be valid even for minimal components
-      assertTrue(type.getImports().size() >= 0);
-      assertTrue(type.getExports().size() >= 0);
-    });
+    assertDoesNotThrow(
+        () -> {
+          final ComponentType type = component.getType();
+          assertNotNull(type);
+          // The type should be valid even for minimal components
+          assertTrue(type.getImports().size() >= 0);
+          assertTrue(type.getExports().size() >= 0);
+        });
   }
 
   @Test
@@ -154,11 +167,12 @@ class PanamaComponentImplTest {
     final byte[] componentBytes = createMinimalComponent();
     final Component component = new PanamaComponentImpl(engine, componentBytes, arena);
 
-    assertDoesNotThrow(() -> {
-      final ComponentLinker linker = ComponentLinker.create(engine);
-      final ComponentInstance instance = component.instantiate(store, linker);
-      assertNotNull(instance);
-    });
+    assertDoesNotThrow(
+        () -> {
+          final ComponentLinker linker = ComponentLinker.create(engine);
+          final ComponentInstance instance = component.instantiate(store, linker);
+          assertNotNull(instance);
+        });
   }
 
   @Test
@@ -169,14 +183,18 @@ class PanamaComponentImplTest {
     final ComponentLinker linker = ComponentLinker.create(engine);
 
     // Test null store
-    assertThrows(IllegalArgumentException.class, () -> {
-      component.instantiate(null, linker);
-    });
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          component.instantiate(null, linker);
+        });
 
     // Test null linker
-    assertThrows(IllegalArgumentException.class, () -> {
-      component.instantiate(store, null);
-    });
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          component.instantiate(store, null);
+        });
   }
 
   @Test
@@ -185,15 +203,17 @@ class PanamaComponentImplTest {
     final byte[] componentBytes = createMinimalComponent();
     final Component component = new PanamaComponentImpl(engine, componentBytes, arena);
 
-    assertDoesNotThrow(() -> {
-      final byte[] serialized = component.serialize();
-      assertNotNull(serialized);
-      assertTrue(serialized.length > 0);
+    assertDoesNotThrow(
+        () -> {
+          final byte[] serialized = component.serialize();
+          assertNotNull(serialized);
+          assertTrue(serialized.length > 0);
 
-      // Serialized bytes should be valid for creating a new component
-      final Component deserializedComponent = new PanamaComponentImpl(engine, serialized, arena);
-      assertNotNull(deserializedComponent);
-    });
+          // Serialized bytes should be valid for creating a new component
+          final Component deserializedComponent =
+              new PanamaComponentImpl(engine, serialized, arena);
+          assertNotNull(deserializedComponent);
+        });
   }
 
   @Test
@@ -202,11 +222,12 @@ class PanamaComponentImplTest {
     final byte[] componentBytes = createMinimalComponent();
     final Component component = new PanamaComponentImpl(engine, componentBytes, arena);
 
-    assertDoesNotThrow(() -> {
-      component.validate();
-      // If validation doesn't throw, the component is valid
-      assertTrue(component.isValid());
-    });
+    assertDoesNotThrow(
+        () -> {
+          component.validate();
+          // If validation doesn't throw, the component is valid
+          assertTrue(component.isValid());
+        });
   }
 
   @Test
@@ -224,13 +245,17 @@ class PanamaComponentImplTest {
     assertFalse(component.isValid());
 
     // Operations on closed component should fail
-    assertThrows(IllegalStateException.class, () -> {
-      component.getType();
-    });
+    assertThrows(
+        IllegalStateException.class,
+        () -> {
+          component.getType();
+        });
 
-    assertThrows(IllegalStateException.class, () -> {
-      component.getMetadata();
-    });
+    assertThrows(
+        IllegalStateException.class,
+        () -> {
+          component.getMetadata();
+        });
   }
 
   @Test
@@ -248,9 +273,11 @@ class PanamaComponentImplTest {
     assertFalse(component.isValid());
 
     // Operations should fail gracefully
-    assertThrows(IllegalStateException.class, () -> {
-      component.getType();
-    });
+    assertThrows(
+        IllegalStateException.class,
+        () -> {
+          component.getType();
+        });
   }
 
   @Test
@@ -268,9 +295,11 @@ class PanamaComponentImplTest {
     assertFalse(component.isValid());
 
     // Operations should fail gracefully
-    assertThrows(IllegalStateException.class, () -> {
-      component.getType();
-    });
+    assertThrows(
+        IllegalStateException.class,
+        () -> {
+          component.getType();
+        });
   }
 
   @Test
@@ -279,16 +308,17 @@ class PanamaComponentImplTest {
     final byte[] componentBytes = createMinimalComponent();
     final Component component = new PanamaComponentImpl(engine, componentBytes, arena);
 
-    assertDoesNotThrow(() -> {
-      // Serialization should use zero-copy optimizations
-      final byte[] serialized = component.serialize();
-      assertNotNull(serialized);
+    assertDoesNotThrow(
+        () -> {
+          // Serialization should use zero-copy optimizations
+          final byte[] serialized = component.serialize();
+          assertNotNull(serialized);
 
-      // The serialized bytes should be efficient (no unnecessary copying)
-      // This is more about ensuring the implementation doesn't throw errors
-      // when using zero-copy patterns
-      assertTrue(serialized.length > 0);
-    });
+          // The serialized bytes should be efficient (no unnecessary copying)
+          // This is more about ensuring the implementation doesn't throw errors
+          // when using zero-copy patterns
+          assertTrue(serialized.length > 0);
+        });
   }
 
   @Test
@@ -304,15 +334,17 @@ class PanamaComponentImplTest {
 
     for (int i = 0; i < threadCount; i++) {
       final int index = i;
-      threads[i] = new Thread(() -> {
-        try {
-          final ComponentMetadata metadata = component.getMetadata();
-          final ComponentType type = component.getType();
-          results[index] = metadata != null && type != null;
-        } catch (final Exception e) {
-          results[index] = false;
-        }
-      });
+      threads[i] =
+          new Thread(
+              () -> {
+                try {
+                  final ComponentMetadata metadata = component.getMetadata();
+                  final ComponentType type = component.getType();
+                  results[index] = metadata != null && type != null;
+                } catch (final Exception e) {
+                  results[index] = false;
+                }
+              });
       threads[i].start();
     }
 
@@ -330,18 +362,22 @@ class PanamaComponentImplTest {
   @Test
   @DisplayName("PanamaComponentImpl should provide meaningful error messages")
   void testComponentErrorMessages() {
-    final byte[] invalidBytes = new byte[]{0x00, 0x61, 0x73, 0x6d}; // Partial WASM header
+    final byte[] invalidBytes = new byte[] {0x00, 0x61, 0x73, 0x6d}; // Partial WASM header
 
-    final WasmException exception = assertThrows(WasmException.class, () -> {
-      new PanamaComponentImpl(engine, invalidBytes, arena);
-    });
+    final WasmException exception =
+        assertThrows(
+            WasmException.class,
+            () -> {
+              new PanamaComponentImpl(engine, invalidBytes, arena);
+            });
 
     // Error message should be informative
     assertNotNull(exception.getMessage());
     assertFalse(exception.getMessage().isEmpty());
-    assertTrue(exception.getMessage().toLowerCase().contains("component") ||
-               exception.getMessage().toLowerCase().contains("compilation") ||
-               exception.getMessage().toLowerCase().contains("invalid"));
+    assertTrue(
+        exception.getMessage().toLowerCase().contains("component")
+            || exception.getMessage().toLowerCase().contains("compilation")
+            || exception.getMessage().toLowerCase().contains("invalid"));
   }
 
   @Test
@@ -353,10 +389,11 @@ class PanamaComponentImplTest {
     System.arraycopy(baseComponent, 0, largeComponent, 0, baseComponent.length);
 
     // This should still work but Arena should handle the memory efficiently
-    assertDoesNotThrow(() -> {
-      final Component component = new PanamaComponentImpl(engine, largeComponent, arena);
-      assertNotNull(component);
-    });
+    assertDoesNotThrow(
+        () -> {
+          final Component component = new PanamaComponentImpl(engine, largeComponent, arena);
+          assertNotNull(component);
+        });
   }
 
   @Test
@@ -382,23 +419,21 @@ class PanamaComponentImplTest {
   /**
    * Creates a minimal valid WebAssembly component for testing.
    *
-   * <p>In a real implementation, this would create an actual valid component.
-   * For now, we'll simulate this by creating a minimal WASM module structure.
+   * <p>In a real implementation, this would create an actual valid component. For now, we'll
+   * simulate this by creating a minimal WASM module structure.
    */
   private byte[] createMinimalComponent() {
     // This is a simplified representation of a minimal WebAssembly component
     // In reality, this would be a properly formatted component binary
     return new byte[] {
-        0x00, 0x61, 0x73, 0x6d, // WASM magic number
-        0x0d, 0x00, 0x01, 0x00, // Component version (hypothetical)
-        0x01, 0x00, 0x00, 0x00, // Minimal component sections
-        0x00 // End marker
+      0x00, 0x61, 0x73, 0x6d, // WASM magic number
+      0x0d, 0x00, 0x01, 0x00, // Component version (hypothetical)
+      0x01, 0x00, 0x00, 0x00, // Minimal component sections
+      0x00 // End marker
     };
   }
 
-  /**
-   * Creates a component from a file if available for more realistic testing.
-   */
+  /** Creates a component from a file if available for more realistic testing. */
   private byte[] loadComponentFromFile(final String filename) {
     try {
       final Path path = Paths.get("src/test/resources/components/" + filename);

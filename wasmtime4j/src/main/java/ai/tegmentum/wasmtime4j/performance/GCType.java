@@ -44,9 +44,7 @@ public enum GCType {
    */
   INCREMENTAL("Incremental GC"),
 
-  /**
-   * Unknown or custom garbage collection type.
-   */
+  /** Unknown or custom garbage collection type. */
   UNKNOWN("Unknown GC");
 
   private final String displayName;

@@ -18,8 +18,8 @@ public interface AotOptions {
   /**
    * Gets the optimization level to apply during AOT compilation.
    *
-   * <p>The optimization level affects compilation time, code size, and runtime performance.
-   * Higher optimization levels typically produce faster code but increase compilation time.
+   * <p>The optimization level affects compilation time, code size, and runtime performance. Higher
+   * optimization levels typically produce faster code but increase compilation time.
    *
    * @return the optimization level
    */
@@ -88,8 +88,8 @@ public interface AotOptions {
   /**
    * Gets the maximum number of locals allowed in functions.
    *
-   * <p>This limit prevents compilation of functions with excessive local variables that could
-   * cause performance issues or stack overflow.
+   * <p>This limit prevents compilation of functions with excessive local variables that could cause
+   * performance issues or stack overflow.
    *
    * @return the maximum number of locals, or -1 for no limit
    */

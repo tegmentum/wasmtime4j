@@ -5,9 +5,9 @@ import java.util.Objects;
 /**
  * Performance metrics for WebAssembly memory operations tracking.
  *
- * <p>This class provides detailed performance metrics for memory operations, enabling
- * performance analysis, optimization, and monitoring in enterprise applications.
- * All metrics are collected with minimal overhead and provide actionable insights.
+ * <p>This class provides detailed performance metrics for memory operations, enabling performance
+ * analysis, optimization, and monitoring in enterprise applications. All metrics are collected with
+ * minimal overhead and provide actionable insights.
  *
  * @since 1.0.0
  */
@@ -77,7 +77,8 @@ public final class MemoryPerformanceMetrics {
       throw new IllegalArgumentException("bulkOperations cannot be negative: " + bulkOperations);
     }
     if (singleOperations < 0) {
-      throw new IllegalArgumentException("singleOperations cannot be negative: " + singleOperations);
+      throw new IllegalArgumentException(
+          "singleOperations cannot be negative: " + singleOperations);
     }
 
     this.totalOperations = totalOperations;
@@ -270,8 +271,8 @@ public final class MemoryPerformanceMetrics {
   /**
    * Calculates the performance efficiency score based on various metrics.
    *
-   * <p>This is a normalized score between 0.0 and 1.0 that considers throughput,
-   * cache hit ratio, and bulk operation usage to provide an overall performance indicator.
+   * <p>This is a normalized score between 0.0 and 1.0 that considers throughput, cache hit ratio,
+   * and bulk operation usage to provide an overall performance indicator.
    *
    * @return the performance efficiency score between 0.0 and 1.0
    */

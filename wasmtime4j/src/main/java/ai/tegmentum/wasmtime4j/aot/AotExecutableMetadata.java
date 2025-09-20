@@ -6,8 +6,8 @@ import java.time.Instant;
 /**
  * Metadata associated with an AOT-compiled WebAssembly executable.
  *
- * <p>AotExecutableMetadata provides information about the compilation process, target platform,
- * and other details relevant to the AOT executable.
+ * <p>AotExecutableMetadata provides information about the compilation process, target platform, and
+ * other details relevant to the AOT executable.
  *
  * @since 1.0.0
  */

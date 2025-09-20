@@ -3,7 +3,6 @@ package ai.tegmentum.wasmtime4j.jni.component;
 import ai.tegmentum.wasmtime4j.component.ComponentMetadata;
 import ai.tegmentum.wasmtime4j.component.ComponentPerformanceHints;
 import ai.tegmentum.wasmtime4j.jni.JniComponent;
-import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import java.time.Instant;
 import java.util.Collections;
@@ -96,34 +95,37 @@ public final class JniComponentMetadataImpl implements ComponentMetadata {
 
   @Override
   public Map<String, Object> getCustomProperties() {
-    return cache.computeIfAbsent("customProperties", k -> {
-      try {
-        if (componentHandle.isClosed()) {
-          return Collections.emptyMap();
-        }
-
-        final String[] keys = nativeGetCustomPropertyKeys(componentHandle.getNativeHandle());
-        if (keys == null || keys.length == 0) {
-          return Collections.emptyMap();
-        }
-
-        final Map<String, Object> properties = new HashMap<>();
-        for (final String key : keys) {
-          if (key != null && !key.trim().isEmpty()) {
-            final String value = nativeGetCustomProperty(componentHandle.getNativeHandle(), key);
-            if (value != null) {
-              properties.put(key, value);
+    return cache.computeIfAbsent(
+        "customProperties",
+        k -> {
+          try {
+            if (componentHandle.isClosed()) {
+              return Collections.emptyMap();
             }
+
+            final String[] keys = nativeGetCustomPropertyKeys(componentHandle.getNativeHandle());
+            if (keys == null || keys.length == 0) {
+              return Collections.emptyMap();
+            }
+
+            final Map<String, Object> properties = new HashMap<>();
+            for (final String key : keys) {
+              if (key != null && !key.trim().isEmpty()) {
+                final String value =
+                    nativeGetCustomProperty(componentHandle.getNativeHandle(), key);
+                if (value != null) {
+                  properties.put(key, value);
+                }
+              }
+            }
+
+            return Collections.unmodifiableMap(properties);
+
+          } catch (final Exception e) {
+            LOGGER.warning("Failed to get custom properties: " + e.getMessage());
+            return Collections.emptyMap();
           }
-        }
-
-        return Collections.unmodifiableMap(properties);
-
-      } catch (final Exception e) {
-        LOGGER.warning("Failed to get custom properties: " + e.getMessage());
-        return Collections.emptyMap();
-      }
-    });
+        });
   }
 
   @Override
@@ -144,49 +146,57 @@ public final class JniComponentMetadataImpl implements ComponentMetadata {
   @Override
   @SuppressWarnings("unchecked")
   public List<String> getWasiInterfaces() {
-    return (List<String>) cache.computeIfAbsent("wasiInterfaces", k -> {
-      try {
-        if (componentHandle.isClosed()) {
-          return Collections.emptyList();
-        }
+    return (List<String>)
+        cache.computeIfAbsent(
+            "wasiInterfaces",
+            k -> {
+              try {
+                if (componentHandle.isClosed()) {
+                  return Collections.emptyList();
+                }
 
-        final String[] interfaces = nativeGetWasiInterfaces(componentHandle.getNativeHandle());
-        if (interfaces == null || interfaces.length == 0) {
-          return Collections.emptyList();
-        }
+                final String[] interfaces =
+                    nativeGetWasiInterfaces(componentHandle.getNativeHandle());
+                if (interfaces == null || interfaces.length == 0) {
+                  return Collections.emptyList();
+                }
 
-        final List<String> interfaceList = new java.util.ArrayList<>();
-        for (final String interfaceName : interfaces) {
-          if (interfaceName != null && !interfaceName.trim().isEmpty()) {
-            interfaceList.add(interfaceName);
-          }
-        }
+                final List<String> interfaceList = new java.util.ArrayList<>();
+                for (final String interfaceName : interfaces) {
+                  if (interfaceName != null && !interfaceName.trim().isEmpty()) {
+                    interfaceList.add(interfaceName);
+                  }
+                }
 
-        return Collections.unmodifiableList(interfaceList);
+                return Collections.unmodifiableList(interfaceList);
 
-      } catch (final Exception e) {
-        LOGGER.warning("Failed to get WASI interfaces: " + e.getMessage());
-        return Collections.emptyList();
-      }
-    });
+              } catch (final Exception e) {
+                LOGGER.warning("Failed to get WASI interfaces: " + e.getMessage());
+                return Collections.emptyList();
+              }
+            });
   }
 
   @Override
   public ComponentPerformanceHints getPerformanceHints() {
-    return (ComponentPerformanceHints) cache.computeIfAbsent("performanceHints", k -> {
-      try {
-        if (componentHandle.isClosed()) {
-          return new JniComponentPerformanceHintsImpl(null);
-        }
+    return (ComponentPerformanceHints)
+        cache.computeIfAbsent(
+            "performanceHints",
+            k -> {
+              try {
+                if (componentHandle.isClosed()) {
+                  return new JniComponentPerformanceHintsImpl(null);
+                }
 
-        final long hintsHandle = nativeGetPerformanceHints(componentHandle.getNativeHandle());
-        return new JniComponentPerformanceHintsImpl(hintsHandle);
+                final long hintsHandle =
+                    nativeGetPerformanceHints(componentHandle.getNativeHandle());
+                return new JniComponentPerformanceHintsImpl(hintsHandle);
 
-      } catch (final Exception e) {
-        LOGGER.warning("Failed to get performance hints: " + e.getMessage());
-        return new JniComponentPerformanceHintsImpl(null);
-      }
-    });
+              } catch (final Exception e) {
+                LOGGER.warning("Failed to get performance hints: " + e.getMessage());
+                return new JniComponentPerformanceHintsImpl(null);
+              }
+            });
   }
 
   /**
@@ -202,8 +212,8 @@ public final class JniComponentMetadataImpl implements ComponentMetadata {
             if (componentHandle.isClosed()) {
               cachedMetadata = new MetadataStruct();
             } else {
-              cachedMetadata = JniComponentImpl.nativeGetComponentMetadata(
-                  componentHandle.getNativeHandle());
+              cachedMetadata =
+                  JniComponentImpl.nativeGetComponentMetadata(componentHandle.getNativeHandle());
               if (cachedMetadata == null) {
                 cachedMetadata = new MetadataStruct();
               }
@@ -253,9 +263,7 @@ public final class JniComponentMetadataImpl implements ComponentMetadata {
    */
   private static native long nativeGetPerformanceHints(long componentHandle);
 
-  /**
-   * Structure containing component metadata from native code.
-   */
+  /** Structure containing component metadata from native code. */
   public static final class MetadataStruct {
     public long size;
     public int exportCount;

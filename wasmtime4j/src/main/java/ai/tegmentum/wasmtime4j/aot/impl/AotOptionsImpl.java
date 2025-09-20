@@ -64,11 +64,13 @@ public final class AotOptionsImpl implements AotOptions {
       final long maxTableElements,
       final boolean enableEpochInterruption) {
 
-    this.optimizationLevel = Objects.requireNonNull(optimizationLevel, "Optimization level cannot be null");
+    this.optimizationLevel =
+        Objects.requireNonNull(optimizationLevel, "Optimization level cannot be null");
     this.enableInterrupts = enableInterrupts;
     this.enableFuelConsumption = enableFuelConsumption;
-    this.enabledFeatures = Collections.unmodifiableSet(
-        Objects.requireNonNull(enabledFeatures, "Enabled features set cannot be null"));
+    this.enabledFeatures =
+        Collections.unmodifiableSet(
+            Objects.requireNonNull(enabledFeatures, "Enabled features set cannot be null"));
     this.preserveDebugInfo = preserveDebugInfo;
     this.enableStackProbes = enableStackProbes;
     this.enableBoundsChecking = enableBoundsChecking;
@@ -94,7 +96,8 @@ public final class AotOptionsImpl implements AotOptions {
     this.maxMemorySize = maxMemorySize;
 
     if (maxTableElements < 0) {
-      throw new IllegalArgumentException("Max table elements must be non-negative: " + maxTableElements);
+      throw new IllegalArgumentException(
+          "Max table elements must be non-negative: " + maxTableElements);
     }
     this.maxTableElements = maxTableElements;
 
@@ -212,19 +215,32 @@ public final class AotOptionsImpl implements AotOptions {
   @Override
   public String toString() {
     return "AotOptions{"
-        + "optimizationLevel=" + optimizationLevel
-        + ", enableInterrupts=" + enableInterrupts
-        + ", enableFuelConsumption=" + enableFuelConsumption
-        + ", enabledFeatures=" + enabledFeatures
-        + ", preserveDebugInfo=" + preserveDebugInfo
-        + ", enableStackProbes=" + enableStackProbes
-        + ", enableBoundsChecking=" + enableBoundsChecking
-        + ", maxLocals=" + maxLocals
-        + ", maxParams=" + maxParams
-        + ", maxReturns=" + maxReturns
-        + ", maxMemorySize=" + maxMemorySize
-        + ", maxTableElements=" + maxTableElements
-        + ", enableEpochInterruption=" + enableEpochInterruption
+        + "optimizationLevel="
+        + optimizationLevel
+        + ", enableInterrupts="
+        + enableInterrupts
+        + ", enableFuelConsumption="
+        + enableFuelConsumption
+        + ", enabledFeatures="
+        + enabledFeatures
+        + ", preserveDebugInfo="
+        + preserveDebugInfo
+        + ", enableStackProbes="
+        + enableStackProbes
+        + ", enableBoundsChecking="
+        + enableBoundsChecking
+        + ", maxLocals="
+        + maxLocals
+        + ", maxParams="
+        + maxParams
+        + ", maxReturns="
+        + maxReturns
+        + ", maxMemorySize="
+        + maxMemorySize
+        + ", maxTableElements="
+        + maxTableElements
+        + ", enableEpochInterruption="
+        + enableEpochInterruption
         + '}';
   }
 }

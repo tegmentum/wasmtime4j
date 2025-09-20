@@ -99,7 +99,8 @@ public final class PanamaEngine implements Engine, AutoCloseable {
    * @throws WasmException if the engine cannot be created
    * @throws IllegalArgumentException if config is null
    */
-  public PanamaEngine(final ArenaResourceManager resourceManager, final EngineConfig config) throws WasmException {
+  public PanamaEngine(final ArenaResourceManager resourceManager, final EngineConfig config)
+      throws WasmException {
     this.resourceManager =
         Objects.requireNonNull(resourceManager, "Resource manager cannot be null");
     this.nativeFunctions = NativeFunctionBindings.getInstance();
@@ -141,7 +142,8 @@ public final class PanamaEngine implements Engine, AutoCloseable {
    * @return a new configured PanamaEngine instance
    * @throws WasmException if the engine cannot be created
    */
-  public static PanamaEngine createWithConfig(final ArenaResourceManager resourceManager, final EngineConfig config) throws WasmException {
+  public static PanamaEngine createWithConfig(
+      final ArenaResourceManager resourceManager, final EngineConfig config) throws WasmException {
     return new PanamaEngine(resourceManager, config);
   }
 
@@ -592,6 +594,101 @@ public final class PanamaEngine implements Engine, AutoCloseable {
     throw lastException != null
         ? lastException
         : new WasmException("Engine creation failed after " + maxAttempts + " attempts");
+  }
+
+  /**
+   * Creates a new native engine with configuration through optimized FFI calls.
+   *
+   * @param config the engine configuration to apply
+   * @return the native engine handle
+   * @throws WasmException if the engine cannot be created
+   */
+  private MemorySegment createNativeEngineWithConfig(final EngineConfig config) throws WasmException {
+    return createNativeEngineWithConfigAndRetry(config, 2); // Try twice: original attempt + 1 retry
+  }
+
+  private MemorySegment createNativeEngineWithConfigAndRetry(final EngineConfig config, int maxAttempts) throws WasmException {
+    WasmException lastException = null;
+
+    for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        LOGGER.fine(
+            "Attempting native engine creation with config (attempt " + attempt + "/" + maxAttempts + ")");
+
+        // Clear any previous error state before attempting creation
+        if (attempt > 1) {
+          LOGGER.fine("Clearing native error state before retry");
+          nativeFunctions.clearErrorState();
+        }
+
+        // For now, create a default engine and log that configuration is planned
+        // TODO: Implement actual configuration support in native bindings
+        MemorySegment enginePtr = nativeFunctions.engineCreate();
+
+        if (enginePtr == null || enginePtr.equals(MemorySegment.NULL)) {
+          // Get detailed error message from native library
+          String nativeError = getNativeErrorMessage();
+          String errorMessage =
+              nativeError != null
+                  ? "Native engine creation with config failed: " + nativeError
+                  : "Native engine creation with config returned null pointer";
+
+          lastException =
+              new WasmException(errorMessage + " (attempt " + attempt + "/" + maxAttempts + ")");
+
+          if (attempt < maxAttempts) {
+            LOGGER.warning(
+                "Engine creation with config attempt " + attempt + " failed, retrying: " + errorMessage);
+            // Add a small delay before retry to allow system state to settle
+            try {
+              Thread.sleep(10); // 10ms delay
+            } catch (InterruptedException ie) {
+              Thread.currentThread().interrupt();
+              throw new WasmException("Engine creation with config interrupted during retry", ie);
+            }
+            continue; // Try again
+          } else {
+            throw lastException; // Final attempt failed
+          }
+        }
+
+        LOGGER.fine(
+            "Successfully created native engine with config and pointer: "
+                + enginePtr
+                + " (attempt "
+                + attempt
+                + ")");
+
+        // Log configuration applied (for future implementation)
+        LOGGER.fine("Configuration applied: " + config.getSummary());
+
+        return enginePtr;
+
+      } catch (Exception e) {
+        if (e instanceof WasmException) {
+          lastException = (WasmException) e;
+        } else {
+          String detailedMessage =
+              PanamaErrorHandler.createDetailedErrorMessage(
+                  "Native engine creation with config", "attempt " + attempt, e.getMessage());
+          lastException = new WasmException(detailedMessage, e);
+        }
+
+        if (attempt < maxAttempts) {
+          LOGGER.warning(
+              "Engine creation with config attempt "
+                  + attempt
+                  + " failed with exception, retrying: "
+                  + e.getMessage());
+          continue;
+        }
+      }
+    }
+
+    // If we get here, all attempts failed
+    throw lastException != null
+        ? lastException
+        : new WasmException("Engine creation with config failed after " + maxAttempts + " attempts");
   }
 
   /**

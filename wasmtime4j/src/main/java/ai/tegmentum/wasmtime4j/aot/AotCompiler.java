@@ -11,8 +11,8 @@ import java.util.List;
  * Ahead-of-Time (AOT) compiler interface for WebAssembly modules.
  *
  * <p>AotCompiler provides functionality to compile WebAssembly modules ahead of time for specific
- * target platforms, enabling optimized execution and reduced startup time. AOT compilation
- * produces platform-specific serialized modules that can be loaded efficiently at runtime.
+ * target platforms, enabling optimized execution and reduced startup time. AOT compilation produces
+ * platform-specific serialized modules that can be loaded efficiently at runtime.
  *
  * <p>AOT compilation is particularly beneficial for production deployments where startup time is
  * critical and the target platforms are known in advance.
@@ -41,8 +41,8 @@ public interface AotCompiler {
   /**
    * Compiles a WebAssembly module ahead of time for a specific target platform.
    *
-   * <p>This method enables cross-compilation for different target platforms, allowing modules to
-   * be compiled on one platform for deployment on another.
+   * <p>This method enables cross-compilation for different target platforms, allowing modules to be
+   * compiled on one platform for deployment on another.
    *
    * @param engine the engine to use for compilation
    * @param wasmBytes the WebAssembly bytecode to compile
@@ -93,8 +93,7 @@ public interface AotCompiler {
    * Creates an AOT executable from a serialized module.
    *
    * <p>An AOT executable represents a fully compiled and linked module that can be executed
-   * directly without further compilation overhead. This provides the fastest possible startup
-   * time.
+   * directly without further compilation overhead. This provides the fastest possible startup time.
    *
    * @param module the serialized module to create an executable from
    * @param platform the target platform for the executable

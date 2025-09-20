@@ -503,18 +503,28 @@ public final class PanamaMemory implements WasmMemory {
     try {
       nativeFunctions.invokeFunction(
           "wasmtime4j_memory_bulk_copy",
-          FunctionDescriptor.of(ValueLayout.JAVA_INT,
-              ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
-              ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG, ValueLayout.ADDRESS),
-          destPanama.getMemoryPtr(), sourcePanama.getMemoryPtr(), (long)destOffset,
-          (long)sourceOffset, (long)length, java.lang.foreign.MemorySegment.NULL);
+          FunctionDescriptor.of(
+              ValueLayout.JAVA_INT,
+              ValueLayout.ADDRESS,
+              ValueLayout.ADDRESS,
+              ValueLayout.JAVA_LONG,
+              ValueLayout.JAVA_LONG,
+              ValueLayout.JAVA_LONG,
+              ValueLayout.ADDRESS),
+          destPanama.getMemoryPtr(),
+          sourcePanama.getMemoryPtr(),
+          (long) destOffset,
+          (long) sourceOffset,
+          (long) length,
+          java.lang.foreign.MemorySegment.NULL);
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error in bulk copy", e);
     }
   }
 
   @Override
-  public void bulkFill(final WasmMemory memory, final int offset, final int length, final byte value) {
+  public void bulkFill(
+      final WasmMemory memory, final int offset, final int length, final byte value) {
     Objects.requireNonNull(memory, "memory");
     if (offset < 0) throw new IllegalArgumentException("offset cannot be negative");
     if (length < 0) throw new IllegalArgumentException("length cannot be negative");
@@ -529,11 +539,20 @@ public final class PanamaMemory implements WasmMemory {
     try {
       nativeFunctions.invokeFunction(
           "wasmtime4j_memory_bulk_fill",
-          FunctionDescriptor.of(ValueLayout.JAVA_INT,
-              ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
-              ValueLayout.JAVA_BYTE, ValueLayout.JAVA_LONG, ValueLayout.ADDRESS),
-          memoryPanama.getMemoryPtr(), java.lang.foreign.MemorySegment.NULL, (long)offset,
-          value, (long)length, java.lang.foreign.MemorySegment.NULL);
+          FunctionDescriptor.of(
+              ValueLayout.JAVA_INT,
+              ValueLayout.ADDRESS,
+              ValueLayout.ADDRESS,
+              ValueLayout.JAVA_LONG,
+              ValueLayout.JAVA_BYTE,
+              ValueLayout.JAVA_LONG,
+              ValueLayout.ADDRESS),
+          memoryPanama.getMemoryPtr(),
+          java.lang.foreign.MemorySegment.NULL,
+          (long) offset,
+          value,
+          (long) length,
+          java.lang.foreign.MemorySegment.NULL);
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error in bulk fill", e);
     }
@@ -564,13 +583,23 @@ public final class PanamaMemory implements WasmMemory {
     final PanamaMemory memory2Panama = (PanamaMemory) memory2;
 
     try {
-      return (Integer) nativeFunctions.invokeFunction(
-          "wasmtime4j_memory_bulk_compare",
-          FunctionDescriptor.of(ValueLayout.JAVA_INT,
-              ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
-              ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG, ValueLayout.ADDRESS),
-          memory1Panama.getMemoryPtr(), memory2Panama.getMemoryPtr(), (long)offset1,
-          (long)offset2, (long)length, java.lang.foreign.MemorySegment.NULL);
+      return (Integer)
+          nativeFunctions.invokeFunction(
+              "wasmtime4j_memory_bulk_compare",
+              FunctionDescriptor.of(
+                  ValueLayout.JAVA_INT,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.JAVA_LONG,
+                  ValueLayout.JAVA_LONG,
+                  ValueLayout.JAVA_LONG,
+                  ValueLayout.ADDRESS),
+              memory1Panama.getMemoryPtr(),
+              memory2Panama.getMemoryPtr(),
+              (long) offset1,
+              (long) offset2,
+              (long) length,
+              java.lang.foreign.MemorySegment.NULL);
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error in bulk compare", e);
     }
@@ -618,7 +647,8 @@ public final class PanamaMemory implements WasmMemory {
   }
 
   @Override
-  public Map<Integer, ByteBuffer> batchRead(final WasmMemory memory, final Map<Integer, Integer> reads) {
+  public Map<Integer, ByteBuffer> batchRead(
+      final WasmMemory memory, final Map<Integer, Integer> reads) {
     Objects.requireNonNull(memory, "memory");
     Objects.requireNonNull(reads, "reads");
     ensureNotClosed();
@@ -671,13 +701,24 @@ public final class PanamaMemory implements WasmMemory {
       java.lang.foreign.MemorySegment patternSegment =
           java.lang.foreign.MemorySegment.ofArray(pattern);
 
-      Long result = (Long) nativeFunctions.invokeFunction(
-          "wasmtime4j_memory_bulk_search",
-          FunctionDescriptor.of(ValueLayout.JAVA_LONG,
-              ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
-              ValueLayout.JAVA_LONG, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG),
-          memoryPanama.getMemoryPtr(), java.lang.foreign.MemorySegment.NULL, (long)offset,
-          (long)length, patternSegment, (long)pattern.length);
+      Long result =
+          (Long)
+              nativeFunctions.invokeFunction(
+                  "wasmtime4j_memory_bulk_search",
+                  FunctionDescriptor.of(
+                      ValueLayout.JAVA_LONG,
+                      ValueLayout.ADDRESS,
+                      ValueLayout.ADDRESS,
+                      ValueLayout.JAVA_LONG,
+                      ValueLayout.JAVA_LONG,
+                      ValueLayout.ADDRESS,
+                      ValueLayout.JAVA_LONG),
+                  memoryPanama.getMemoryPtr(),
+                  java.lang.foreign.MemorySegment.NULL,
+                  (long) offset,
+                  (long) length,
+                  patternSegment,
+                  (long) pattern.length);
 
       return result.intValue();
     } catch (final Exception e) {
@@ -703,13 +744,21 @@ public final class PanamaMemory implements WasmMemory {
 
       nativeFunctions.invokeFunction(
           "wasmtime4j_memory_bulk_move",
-          FunctionDescriptor.of(ValueLayout.JAVA_INT,
-              ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
-              ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG),
-          memoryPanama.getMemoryPtr(), java.lang.foreign.MemorySegment.NULL, (long)destOffset,
-          (long)sourceOffset, (long)length);
+          FunctionDescriptor.of(
+              ValueLayout.JAVA_INT,
+              ValueLayout.ADDRESS,
+              ValueLayout.ADDRESS,
+              ValueLayout.JAVA_LONG,
+              ValueLayout.JAVA_LONG,
+              ValueLayout.JAVA_LONG),
+          memoryPanama.getMemoryPtr(),
+          java.lang.foreign.MemorySegment.NULL,
+          (long) destOffset,
+          (long) sourceOffset,
+          (long) length);
 
-      LOGGER.fine("Bulk move operation from " + sourceOffset + " to " + destOffset + " length " + length);
+      LOGGER.fine(
+          "Bulk move operation from " + sourceOffset + " to " + destOffset + " length " + length);
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error in bulk move", e);
     }
@@ -758,8 +807,7 @@ public final class PanamaMemory implements WasmMemory {
     ensureNotClosed();
     try {
       nativeFunctions.invokeFunction(
-          "wasmtime4j_memory_enable_performance_tracking",
-          FunctionDescriptor.ofVoid());
+          "wasmtime4j_memory_enable_performance_tracking", FunctionDescriptor.ofVoid());
       LOGGER.fine("Enabled performance tracking for memory: " + getMemoryPtr());
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error enabling performance tracking", e);
@@ -771,8 +819,7 @@ public final class PanamaMemory implements WasmMemory {
     ensureNotClosed();
     try {
       nativeFunctions.invokeFunction(
-          "wasmtime4j_memory_disable_performance_tracking",
-          FunctionDescriptor.ofVoid());
+          "wasmtime4j_memory_disable_performance_tracking", FunctionDescriptor.ofVoid());
       LOGGER.fine("Disabled performance tracking for memory: " + getMemoryPtr());
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error disabling performance tracking", e);
@@ -783,9 +830,10 @@ public final class PanamaMemory implements WasmMemory {
   public boolean isPerformanceTrackingEnabled() {
     ensureNotClosed();
     try {
-      return (Boolean) nativeFunctions.invokeFunction(
-          "wasmtime4j_memory_is_performance_tracking_enabled",
-          FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN));
+      return (Boolean)
+          nativeFunctions.invokeFunction(
+              "wasmtime4j_memory_is_performance_tracking_enabled",
+              FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN));
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error checking performance tracking status", e);
     }
@@ -811,8 +859,7 @@ public final class PanamaMemory implements WasmMemory {
     ensureNotClosed();
     try {
       nativeFunctions.invokeFunction(
-          "wasmtime4j_memory_reset_metrics",
-          FunctionDescriptor.ofVoid());
+          "wasmtime4j_memory_reset_metrics", FunctionDescriptor.ofVoid());
       LOGGER.fine("Reset metrics for memory: " + getMemoryPtr());
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error resetting metrics", e);
@@ -851,7 +898,13 @@ public final class PanamaMemory implements WasmMemory {
 
     try {
       // For now, return null - real implementation would call native function
-      LOGGER.fine("Analyzing region at offset " + offset + " length " + length + " for memory: " + getMemoryPtr());
+      LOGGER.fine(
+          "Analyzing region at offset "
+              + offset
+              + " length "
+              + length
+              + " for memory: "
+              + getMemoryPtr());
       return null;
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error analyzing memory region", e);
@@ -882,7 +935,8 @@ public final class PanamaMemory implements WasmMemory {
   }
 
   @Override
-  public long estimateOperationCost(final String operationType, final int offset, final int length) {
+  public long estimateOperationCost(
+      final String operationType, final int offset, final int length) {
     Objects.requireNonNull(operationType, "operationType");
     if (offset < 0) throw new IllegalArgumentException("offset cannot be negative");
     if (length < 0) throw new IllegalArgumentException("length cannot be negative");
@@ -890,12 +944,13 @@ public final class PanamaMemory implements WasmMemory {
 
     try {
       // Simple cost estimation based on operation type and size
-      final long baseCost = switch (operationType) {
-        case "read" -> 100L;
-        case "write" -> 150L;
-        case "bulk_copy" -> 50L;
-        default -> 200L;
-      };
+      final long baseCost =
+          switch (operationType) {
+            case "read" -> 100L;
+            case "write" -> 150L;
+            case "bulk_copy" -> 50L;
+            default -> 200L;
+          };
 
       final long sizeFactor = length / 1024L; // Cost per KB
       final long totalCost = baseCost + sizeFactor;
@@ -924,11 +979,24 @@ public final class PanamaMemory implements WasmMemory {
       nativeFunctions.invokeFunction(
           "wasmtime4j_memory_set_protection",
           FunctionDescriptor.ofVoid(
-              ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG,
-              ValueLayout.JAVA_BOOLEAN, ValueLayout.JAVA_BOOLEAN, ValueLayout.JAVA_BOOLEAN),
-          (long) offset, (long) length, true, false, false);
+              ValueLayout.JAVA_LONG,
+              ValueLayout.JAVA_LONG,
+              ValueLayout.JAVA_BOOLEAN,
+              ValueLayout.JAVA_BOOLEAN,
+              ValueLayout.JAVA_BOOLEAN),
+          (long) offset,
+          (long) length,
+          true,
+          false,
+          false);
 
-      LOGGER.fine("Set read-only protection for memory: " + getMemoryPtr() + " offset " + offset + " length " + length);
+      LOGGER.fine(
+          "Set read-only protection for memory: "
+              + getMemoryPtr()
+              + " offset "
+              + offset
+              + " length "
+              + length);
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error setting read-only protection", e);
     }
@@ -949,11 +1017,24 @@ public final class PanamaMemory implements WasmMemory {
       nativeFunctions.invokeFunction(
           "wasmtime4j_memory_set_protection",
           FunctionDescriptor.ofVoid(
-              ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG,
-              ValueLayout.JAVA_BOOLEAN, ValueLayout.JAVA_BOOLEAN, ValueLayout.JAVA_BOOLEAN),
-          (long) offset, (long) length, true, true, true);
+              ValueLayout.JAVA_LONG,
+              ValueLayout.JAVA_LONG,
+              ValueLayout.JAVA_BOOLEAN,
+              ValueLayout.JAVA_BOOLEAN,
+              ValueLayout.JAVA_BOOLEAN),
+          (long) offset,
+          (long) length,
+          true,
+          true,
+          true);
 
-      LOGGER.fine("Set executable protection for memory: " + getMemoryPtr() + " offset " + offset + " length " + length);
+      LOGGER.fine(
+          "Set executable protection for memory: "
+              + getMemoryPtr()
+              + " offset "
+              + offset
+              + " length "
+              + length);
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error setting executable protection", e);
     }
@@ -974,11 +1055,24 @@ public final class PanamaMemory implements WasmMemory {
       nativeFunctions.invokeFunction(
           "wasmtime4j_memory_set_protection",
           FunctionDescriptor.ofVoid(
-              ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG,
-              ValueLayout.JAVA_BOOLEAN, ValueLayout.JAVA_BOOLEAN, ValueLayout.JAVA_BOOLEAN),
-          (long) offset, (long) length, true, true, false);
+              ValueLayout.JAVA_LONG,
+              ValueLayout.JAVA_LONG,
+              ValueLayout.JAVA_BOOLEAN,
+              ValueLayout.JAVA_BOOLEAN,
+              ValueLayout.JAVA_BOOLEAN),
+          (long) offset,
+          (long) length,
+          true,
+          true,
+          false);
 
-      LOGGER.fine("Removed read-only protection for memory: " + getMemoryPtr() + " offset " + offset + " length " + length);
+      LOGGER.fine(
+          "Removed read-only protection for memory: "
+              + getMemoryPtr()
+              + " offset "
+              + offset
+              + " length "
+              + length);
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error removing read-only protection", e);
     }
@@ -999,11 +1093,24 @@ public final class PanamaMemory implements WasmMemory {
       nativeFunctions.invokeFunction(
           "wasmtime4j_memory_set_protection",
           FunctionDescriptor.ofVoid(
-              ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG,
-              ValueLayout.JAVA_BOOLEAN, ValueLayout.JAVA_BOOLEAN, ValueLayout.JAVA_BOOLEAN),
-          (long) offset, (long) length, true, true, false);
+              ValueLayout.JAVA_LONG,
+              ValueLayout.JAVA_LONG,
+              ValueLayout.JAVA_BOOLEAN,
+              ValueLayout.JAVA_BOOLEAN,
+              ValueLayout.JAVA_BOOLEAN),
+          (long) offset,
+          (long) length,
+          true,
+          true,
+          false);
 
-      LOGGER.fine("Removed executable protection for memory: " + getMemoryPtr() + " offset " + offset + " length " + length);
+      LOGGER.fine(
+          "Removed executable protection for memory: "
+              + getMemoryPtr()
+              + " offset "
+              + offset
+              + " length "
+              + length);
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error removing executable protection", e);
     }
@@ -1020,11 +1127,17 @@ public final class PanamaMemory implements WasmMemory {
     }
 
     try {
-      return (Boolean) nativeFunctions.invokeFunction(
-          "wasmtime4j_memory_validate_operation",
-          FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN,
-              ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG, ValueLayout.JAVA_BOOLEAN),
-          (long) offset, 1L, false);
+      return (Boolean)
+          nativeFunctions.invokeFunction(
+              "wasmtime4j_memory_validate_operation",
+              FunctionDescriptor.of(
+                  ValueLayout.JAVA_BOOLEAN,
+                  ValueLayout.JAVA_LONG,
+                  ValueLayout.JAVA_LONG,
+                  ValueLayout.JAVA_BOOLEAN),
+              (long) offset,
+              1L,
+              false);
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error checking read permission", e);
     }
@@ -1041,11 +1154,17 @@ public final class PanamaMemory implements WasmMemory {
     }
 
     try {
-      return (Boolean) nativeFunctions.invokeFunction(
-          "wasmtime4j_memory_validate_operation",
-          FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN,
-              ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG, ValueLayout.JAVA_BOOLEAN),
-          (long) offset, 1L, true);
+      return (Boolean)
+          nativeFunctions.invokeFunction(
+              "wasmtime4j_memory_validate_operation",
+              FunctionDescriptor.of(
+                  ValueLayout.JAVA_BOOLEAN,
+                  ValueLayout.JAVA_LONG,
+                  ValueLayout.JAVA_LONG,
+                  ValueLayout.JAVA_BOOLEAN),
+              (long) offset,
+              1L,
+              true);
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error checking write permission", e);
     }
@@ -1083,7 +1202,13 @@ public final class PanamaMemory implements WasmMemory {
 
     try {
       // For now, return READ | WRITE (3) as default protection
-      LOGGER.fine("Getting protection flags for memory: " + getMemoryPtr() + " offset " + offset + " length " + length);
+      LOGGER.fine(
+          "Getting protection flags for memory: "
+              + getMemoryPtr()
+              + " offset "
+              + offset
+              + " length "
+              + length);
       return 3; // READ(1) | WRITE(2)
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error getting protection flags", e);
@@ -1091,7 +1216,8 @@ public final class PanamaMemory implements WasmMemory {
   }
 
   @Override
-  public void setProtectionFlags(final WasmMemory memory, final int offset, final int length, final int flags) {
+  public void setProtectionFlags(
+      final WasmMemory memory, final int offset, final int length, final int flags) {
     Objects.requireNonNull(memory, "memory");
     if (offset < 0) throw new IllegalArgumentException("offset cannot be negative");
     if (length < 0) throw new IllegalArgumentException("length cannot be negative");
@@ -1110,11 +1236,26 @@ public final class PanamaMemory implements WasmMemory {
       nativeFunctions.invokeFunction(
           "wasmtime4j_memory_set_protection",
           FunctionDescriptor.ofVoid(
-              ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG,
-              ValueLayout.JAVA_BOOLEAN, ValueLayout.JAVA_BOOLEAN, ValueLayout.JAVA_BOOLEAN),
-          (long) offset, (long) length, read, write, execute);
+              ValueLayout.JAVA_LONG,
+              ValueLayout.JAVA_LONG,
+              ValueLayout.JAVA_BOOLEAN,
+              ValueLayout.JAVA_BOOLEAN,
+              ValueLayout.JAVA_BOOLEAN),
+          (long) offset,
+          (long) length,
+          read,
+          write,
+          execute);
 
-      LOGGER.fine("Set protection flags " + flags + " for memory: " + getMemoryPtr() + " offset " + offset + " length " + length);
+      LOGGER.fine(
+          "Set protection flags "
+              + flags
+              + " for memory: "
+              + getMemoryPtr()
+              + " offset "
+              + offset
+              + " length "
+              + length);
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error setting protection flags", e);
     }
@@ -1137,9 +1278,19 @@ public final class PanamaMemory implements WasmMemory {
     }
 
     try {
-      // For now, return the same memory instance - real implementation would create a restricted view
-      LOGGER.fine("Creating protected view for memory: " + getMemoryPtr() + " offset " + offset + " length " + length +
-          " read:" + allowRead + " write:" + allowWrite);
+      // For now, return the same memory instance - real implementation would create a restricted
+      // view
+      LOGGER.fine(
+          "Creating protected view for memory: "
+              + getMemoryPtr()
+              + " offset "
+              + offset
+              + " length "
+              + length
+              + " read:"
+              + allowRead
+              + " write:"
+              + allowWrite);
       return memory;
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error creating protected view", e);
@@ -1162,13 +1313,21 @@ public final class PanamaMemory implements WasmMemory {
     final boolean isWrite = "write".equals(operation);
 
     try {
-      final boolean allowed = (Boolean) nativeFunctions.invokeFunction(
-          "wasmtime4j_memory_validate_operation",
-          FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN,
-              ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG, ValueLayout.JAVA_BOOLEAN),
-          (long) offset, (long) length, isWrite);
+      final boolean allowed =
+          (Boolean)
+              nativeFunctions.invokeFunction(
+                  "wasmtime4j_memory_validate_operation",
+                  FunctionDescriptor.of(
+                      ValueLayout.JAVA_BOOLEAN,
+                      ValueLayout.JAVA_LONG,
+                      ValueLayout.JAVA_LONG,
+                      ValueLayout.JAVA_BOOLEAN),
+                  (long) offset,
+                  (long) length,
+                  isWrite);
 
-      LOGGER.fine("Validated " + operation + " operation for memory: " + getMemoryPtr() + ": " + allowed);
+      LOGGER.fine(
+          "Validated " + operation + " operation for memory: " + getMemoryPtr() + ": " + allowed);
       return allowed;
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error validating operation", e);

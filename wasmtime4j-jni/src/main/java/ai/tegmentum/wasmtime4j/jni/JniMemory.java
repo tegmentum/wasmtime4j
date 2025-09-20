@@ -478,11 +478,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
 
     try {
       nativeBulkCopy(
-          destJni.getNativeHandle(),
-          destOffset,
-          sourceJni.getNativeHandle(),
-          sourceOffset,
-          length);
+          destJni.getNativeHandle(), destOffset, sourceJni.getNativeHandle(), sourceOffset, length);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -491,7 +487,8 @@ public final class JniMemory extends JniResource implements WasmMemory {
   }
 
   @Override
-  public void bulkFill(final WasmMemory memory, final int offset, final int length, final byte value) {
+  public void bulkFill(
+      final WasmMemory memory, final int offset, final int length, final byte value) {
     JniValidation.requireNonNull(memory, "memory");
     JniValidation.requireNonNegative(offset, "offset");
     JniValidation.requireNonNegative(length, "length");
@@ -587,7 +584,8 @@ public final class JniMemory extends JniResource implements WasmMemory {
   }
 
   @Override
-  public Map<Integer, ByteBuffer> batchRead(final WasmMemory memory, final Map<Integer, Integer> reads) {
+  public Map<Integer, ByteBuffer> batchRead(
+      final WasmMemory memory, final Map<Integer, Integer> reads) {
     JniValidation.requireNonNull(memory, "memory");
     JniValidation.requireNonNull(reads, "reads");
     ensureNotClosed();
@@ -846,7 +844,8 @@ public final class JniMemory extends JniResource implements WasmMemory {
   }
 
   @Override
-  public long estimateOperationCost(final String operationType, final int offset, final int length) {
+  public long estimateOperationCost(
+      final String operationType, final int offset, final int length) {
     JniValidation.requireNonNull(operationType, "operationType");
     JniValidation.requireNonNegative(offset, "offset");
     JniValidation.requireNonNegative(length, "length");
@@ -1037,7 +1036,8 @@ public final class JniMemory extends JniResource implements WasmMemory {
   }
 
   @Override
-  public void setProtectionFlags(final WasmMemory memory, final int offset, final int length, final int flags) {
+  public void setProtectionFlags(
+      final WasmMemory memory, final int offset, final int length, final int flags) {
     JniValidation.requireNonNull(memory, "memory");
     JniValidation.requireNonNegative(offset, "offset");
     JniValidation.requireNonNegative(length, "length");
@@ -1077,8 +1077,9 @@ public final class JniMemory extends JniResource implements WasmMemory {
     final JniMemory memoryJni = (JniMemory) memory;
 
     try {
-      final long viewHandle = nativeCreateProtectedView(
-          memoryJni.getNativeHandle(), offset, length, allowRead, allowWrite);
+      final long viewHandle =
+          nativeCreateProtectedView(
+              memoryJni.getNativeHandle(), offset, length, allowRead, allowWrite);
       return new JniMemory(viewHandle);
     } catch (final RuntimeException e) {
       throw e;
@@ -1264,187 +1265,122 @@ public final class JniMemory extends JniResource implements WasmMemory {
 
   // Bulk memory operations native methods
 
-  /**
-   * Performs a bulk copy between two memory regions.
-   */
+  /** Performs a bulk copy between two memory regions. */
   private static native void nativeBulkCopy(
       long destHandle, int destOffset, long sourceHandle, int sourceOffset, int length);
 
-  /**
-   * Fills a memory region with a specific byte value.
-   */
+  /** Fills a memory region with a specific byte value. */
   private static native void nativeBulkFill(long memoryHandle, int offset, int length, byte value);
 
-  /**
-   * Compares two memory regions.
-   */
+  /** Compares two memory regions. */
   private static native int nativeBulkCompare(
       long memory1Handle, int offset1, long memory2Handle, int offset2, int length);
 
-  /**
-   * Performs batched write operations.
-   */
-  private static native void nativeBatchWrite(long memoryHandle, int[] offsets, byte[][] dataArrays);
+  /** Performs batched write operations. */
+  private static native void nativeBatchWrite(
+      long memoryHandle, int[] offsets, byte[][] dataArrays);
 
-  /**
-   * Performs batched read operations.
-   */
+  /** Performs batched read operations. */
   private static native byte[][] nativeBatchRead(long memoryHandle, int[] offsets, int[] lengths);
 
-  /**
-   * Searches for a byte pattern in memory.
-   */
-  private static native int nativeBulkSearch(long memoryHandle, int offset, int length, byte[] pattern);
+  /** Searches for a byte pattern in memory. */
+  private static native int nativeBulkSearch(
+      long memoryHandle, int offset, int length, byte[] pattern);
 
-  /**
-   * Moves memory within the same memory instance.
-   */
-  private static native void nativeBulkMove(long memoryHandle, int destOffset, int sourceOffset, int length);
+  /** Moves memory within the same memory instance. */
+  private static native void nativeBulkMove(
+      long memoryHandle, int destOffset, int sourceOffset, int length);
 
   // Memory introspection native methods
 
-  /**
-   * Gets memory statistics.
-   */
+  /** Gets memory statistics. */
   private static native MemoryStatistics nativeGetStatistics(long memoryHandle);
 
-  /**
-   * Gets memory segments.
-   */
+  /** Gets memory segments. */
   private static native List<MemorySegment> nativeGetSegments(long memoryHandle);
 
-  /**
-   * Generates a memory usage report.
-   */
+  /** Generates a memory usage report. */
   private static native MemoryUsageReport nativeGenerateUsageReport(long memoryHandle);
 
-  /**
-   * Enables performance tracking.
-   */
+  /** Enables performance tracking. */
   private static native void nativeEnablePerformanceTracking(long memoryHandle);
 
-  /**
-   * Disables performance tracking.
-   */
+  /** Disables performance tracking. */
   private static native void nativeDisablePerformanceTracking(long memoryHandle);
 
-  /**
-   * Checks if performance tracking is enabled.
-   */
+  /** Checks if performance tracking is enabled. */
   private static native boolean nativeIsPerformanceTrackingEnabled(long memoryHandle);
 
-  /**
-   * Gets performance metrics.
-   */
+  /** Gets performance metrics. */
   private static native MemoryPerformanceMetrics nativeGetPerformanceMetrics(long memoryHandle);
 
-  /**
-   * Resets performance metrics.
-   */
+  /** Resets performance metrics. */
   private static native void nativeResetMetrics(long memoryHandle);
 
-  /**
-   * Analyzes memory access patterns.
-   */
+  /** Analyzes memory access patterns. */
   private static native List<String> nativeAnalyzeAccessPatterns(long memoryHandle);
 
-  /**
-   * Detects memory issues.
-   */
+  /** Detects memory issues. */
   private static native List<String> nativeDetectMemoryIssues(long memoryHandle);
 
-  /**
-   * Analyzes a specific memory region.
-   */
-  private static native MemorySegment nativeAnalyzeRegion(long memoryHandle, int offset, int length);
+  /** Analyzes a specific memory region. */
+  private static native MemorySegment nativeAnalyzeRegion(
+      long memoryHandle, int offset, int length);
 
-  /**
-   * Validates memory integrity.
-   */
+  /** Validates memory integrity. */
   private static native boolean nativeValidateMemoryIntegrity(long memoryHandle);
 
-  /**
-   * Gets memory layout information.
-   */
+  /** Gets memory layout information. */
   private static native String nativeGetMemoryLayout(long memoryHandle);
 
-  /**
-   * Estimates operation cost.
-   */
+  /** Estimates operation cost. */
   private static native long nativeEstimateOperationCost(
       long memoryHandle, String operationType, int offset, int length);
 
   // Memory protection native methods
 
-  /**
-   * Sets a region as read-only.
-   */
+  /** Sets a region as read-only. */
   private static native void nativeSetReadOnly(long memoryHandle, int offset, int length);
 
-  /**
-   * Sets a region as executable.
-   */
+  /** Sets a region as executable. */
   private static native void nativeSetExecutable(long memoryHandle, int offset, int length);
 
-  /**
-   * Removes read-only protection.
-   */
+  /** Removes read-only protection. */
   private static native void nativeRemoveReadOnly(long memoryHandle, int offset, int length);
 
-  /**
-   * Removes executable protection.
-   */
+  /** Removes executable protection. */
   private static native void nativeRemoveExecutable(long memoryHandle, int offset, int length);
 
-  /**
-   * Checks if a location is readable.
-   */
+  /** Checks if a location is readable. */
   private static native boolean nativeIsReadable(long memoryHandle, int offset);
 
-  /**
-   * Checks if a location is writable.
-   */
+  /** Checks if a location is writable. */
   private static native boolean nativeIsWritable(long memoryHandle, int offset);
 
-  /**
-   * Checks if a location is executable.
-   */
+  /** Checks if a location is executable. */
   private static native boolean nativeIsExecutable(long memoryHandle, int offset);
 
-  /**
-   * Gets protection flags for a region.
-   */
+  /** Gets protection flags for a region. */
   private static native int nativeGetProtectionFlags(long memoryHandle, int offset, int length);
 
-  /**
-   * Sets protection flags for a region.
-   */
-  private static native void nativeSetProtectionFlags(long memoryHandle, int offset, int length, int flags);
+  /** Sets protection flags for a region. */
+  private static native void nativeSetProtectionFlags(
+      long memoryHandle, int offset, int length, int flags);
 
-  /**
-   * Creates a protected memory view.
-   */
+  /** Creates a protected memory view. */
   private static native long nativeCreateProtectedView(
       long memoryHandle, int offset, int length, boolean allowRead, boolean allowWrite);
 
-  /**
-   * Validates an operation against protection policies.
-   */
+  /** Validates an operation against protection policies. */
   private static native boolean nativeValidateOperation(
       long memoryHandle, String operation, int offset, int length);
 
-  /**
-   * Enables audit logging.
-   */
+  /** Enables audit logging. */
   private static native void nativeEnableAuditLogging(long memoryHandle);
 
-  /**
-   * Disables audit logging.
-   */
+  /** Disables audit logging. */
   private static native void nativeDisableAuditLogging(long memoryHandle);
 
-  /**
-   * Checks if audit logging is enabled.
-   */
+  /** Checks if audit logging is enabled. */
   private static native boolean nativeIsAuditLoggingEnabled(long memoryHandle);
 }

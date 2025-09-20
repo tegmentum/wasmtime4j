@@ -8,7 +8,6 @@ import ai.tegmentum.wasmtime4j.component.ComponentMetadata;
 import ai.tegmentum.wasmtime4j.component.ComponentType;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.JniComponent;
-import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
@@ -53,8 +52,9 @@ public final class JniComponentImpl extends JniResource implements Component {
     this.metadata = new JniComponentMetadataImpl(componentHandle);
     this.componentType = new JniComponentTypeImpl(componentHandle);
 
-    LOGGER.fine("Created JNI component implementation with handle: 0x"
-        + Long.toHexString(componentHandle.getNativeHandle()));
+    LOGGER.fine(
+        "Created JNI component implementation with handle: 0x"
+            + Long.toHexString(componentHandle.getNativeHandle()));
   }
 
   @Override
@@ -87,11 +87,9 @@ public final class JniComponentImpl extends JniResource implements Component {
       }
 
       // Call native instantiation method
-      final long instanceHandle = nativeInstantiateWithLinker(
-          getNativeHandle(),
-          jniStore.getNativeHandle(),
-          jniLinker.getNativeHandle()
-      );
+      final long instanceHandle =
+          nativeInstantiateWithLinker(
+              getNativeHandle(), jniStore.getNativeHandle(), jniLinker.getNativeHandle());
 
       JniValidation.requireValidHandle(instanceHandle, "instanceHandle");
 
@@ -163,8 +161,9 @@ public final class JniComponentImpl extends JniResource implements Component {
   protected void doClose() throws Exception {
     if (componentHandle != null && !componentHandle.isClosed()) {
       componentHandle.close();
-      LOGGER.fine("Closed JNI component implementation with handle: 0x"
-          + Long.toHexString(getNativeHandle()));
+      LOGGER.fine(
+          "Closed JNI component implementation with handle: 0x"
+              + Long.toHexString(getNativeHandle()));
     }
   }
 

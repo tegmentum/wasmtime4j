@@ -3,8 +3,9 @@ package ai.tegmentum.wasmtime4j.performance;
 /**
  * Represents the compilation tier of WebAssembly code execution.
  *
- * <p>Different compilation tiers provide different performance characteristics and compilation overhead.
- * Understanding the current tier helps interpret performance metrics and optimization opportunities.
+ * <p>Different compilation tiers provide different performance characteristics and compilation
+ * overhead. Understanding the current tier helps interpret performance metrics and optimization
+ * opportunities.
  *
  * @since 1.0.0
  */
@@ -38,9 +39,7 @@ public enum CompilationTier {
    */
   AOT("Ahead-of-Time"),
 
-  /**
-   * Compilation tier is unknown or not applicable.
-   */
+  /** Compilation tier is unknown or not applicable. */
   UNKNOWN("Unknown");
 
   private final String displayName;

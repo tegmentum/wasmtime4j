@@ -9,8 +9,8 @@ import java.time.Instant;
  * <p>ExecutionMetrics provides detailed performance data about WebAssembly execution including
  * instruction counts, timing information, memory usage, and function call statistics.
  *
- * <p>All metrics are cumulative since the start of monitoring and represent the state at the
- * time the metrics object was created.
+ * <p>All metrics are cumulative since the start of monitoring and represent the state at the time
+ * the metrics object was created.
  *
  * @since 1.0.0
  */
@@ -26,8 +26,8 @@ public interface ExecutionMetrics {
   /**
    * Gets the total number of WebAssembly instructions executed.
    *
-   * <p>This includes all instruction types (arithmetic, memory, control flow, etc.) executed
-   * since monitoring began.
+   * <p>This includes all instruction types (arithmetic, memory, control flow, etc.) executed since
+   * monitoring began.
    *
    * @return total instruction count
    */
@@ -36,8 +36,8 @@ public interface ExecutionMetrics {
   /**
    * Gets the cumulative execution time for all WebAssembly operations.
    *
-   * <p>This represents actual CPU time spent executing WebAssembly code, excluding time spent
-   * in host functions or waiting for I/O operations.
+   * <p>This represents actual CPU time spent executing WebAssembly code, excluding time spent in
+   * host functions or waiting for I/O operations.
    *
    * @return total execution time
    */
@@ -46,8 +46,8 @@ public interface ExecutionMetrics {
   /**
    * Gets the total number of memory allocations performed.
    *
-   * <p>This includes both WebAssembly linear memory allocations and native memory allocations
-   * made by the runtime for supporting WebAssembly execution.
+   * <p>This includes both WebAssembly linear memory allocations and native memory allocations made
+   * by the runtime for supporting WebAssembly execution.
    *
    * @return total memory allocation count
    */
@@ -65,8 +65,8 @@ public interface ExecutionMetrics {
   /**
    * Gets the total number of WebAssembly function calls made.
    *
-   * <p>This includes calls to both imported and exported functions, but excludes calls to
-   * host functions unless they subsequently call back into WebAssembly.
+   * <p>This includes calls to both imported and exported functions, but excludes calls to host
+   * functions unless they subsequently call back into WebAssembly.
    *
    * @return total function call count
    */
@@ -85,8 +85,8 @@ public interface ExecutionMetrics {
   /**
    * Gets the current memory usage by WebAssembly instances.
    *
-   * <p>This includes linear memory, table memory, and runtime overhead for all active
-   * WebAssembly instances.
+   * <p>This includes linear memory, table memory, and runtime overhead for all active WebAssembly
+   * instances.
    *
    * @return current memory usage in bytes
    */
@@ -95,8 +95,7 @@ public interface ExecutionMetrics {
   /**
    * Gets the peak memory usage recorded during monitoring.
    *
-   * <p>This represents the highest memory usage reached at any point during the monitoring
-   * session.
+   * <p>This represents the highest memory usage reached at any point during the monitoring session.
    *
    * @return peak memory usage in bytes
    */
@@ -105,8 +104,8 @@ public interface ExecutionMetrics {
   /**
    * Gets the number of garbage collection events that occurred during WebAssembly execution.
    *
-   * <p>This tracks garbage collection events in the host JVM that may have been triggered
-   * by WebAssembly memory allocation patterns.
+   * <p>This tracks garbage collection events in the host JVM that may have been triggered by
+   * WebAssembly memory allocation patterns.
    *
    * @return garbage collection count
    */
@@ -140,8 +139,8 @@ public interface ExecutionMetrics {
   /**
    * Gets the average instructions per second execution rate.
    *
-   * <p>This provides a measure of execution throughput based on the total instructions
-   * executed divided by the total execution time.
+   * <p>This provides a measure of execution throughput based on the total instructions executed
+   * divided by the total execution time.
    *
    * @return instructions per second
    */
@@ -168,8 +167,8 @@ public interface ExecutionMetrics {
   /**
    * Gets the JIT compilation events count.
    *
-   * <p>This tracks the number of Just-In-Time compilation events that occurred during
-   * WebAssembly execution.
+   * <p>This tracks the number of Just-In-Time compilation events that occurred during WebAssembly
+   * execution.
    *
    * @return JIT compilation count
    */
@@ -187,8 +186,8 @@ public interface ExecutionMetrics {
   /**
    * Creates a summary string representation of these metrics.
    *
-   * <p>The summary includes key performance indicators in a human-readable format suitable
-   * for logging or display.
+   * <p>The summary includes key performance indicators in a human-readable format suitable for
+   * logging or display.
    *
    * @return formatted metrics summary
    */

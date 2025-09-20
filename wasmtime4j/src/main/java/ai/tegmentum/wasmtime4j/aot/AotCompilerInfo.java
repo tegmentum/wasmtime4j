@@ -8,8 +8,8 @@ import java.util.Set;
 /**
  * Information about the AOT compiler capabilities and configuration.
  *
- * <p>AotCompilerInfo provides details about the compiler version, supported features, and
- * platform capabilities to help with compatibility checking and feature detection.
+ * <p>AotCompilerInfo provides details about the compiler version, supported features, and platform
+ * capabilities to help with compatibility checking and feature detection.
  *
  * @since 1.0.0
  */
@@ -53,8 +53,7 @@ public interface AotCompilerInfo {
   /**
    * Checks if the compiler supports cross-compilation.
    *
-   * <p>Cross-compilation allows compiling for target platforms different from the current
-   * platform.
+   * <p>Cross-compilation allows compiling for target platforms different from the current platform.
    *
    * @return true if cross-compilation is supported, false otherwise
    */

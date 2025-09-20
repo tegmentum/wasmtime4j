@@ -1,14 +1,13 @@
 package ai.tegmentum.wasmtime4j.performance;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
 /**
  * Memory allocation and usage profiling data.
  *
- * <p>MemoryProfile provides detailed information about memory allocation patterns,
- * usage trends, and memory-related performance characteristics during WebAssembly execution.
+ * <p>MemoryProfile provides detailed information about memory allocation patterns, usage trends,
+ * and memory-related performance characteristics during WebAssembly execution.
  *
  * @since 1.0.0
  */

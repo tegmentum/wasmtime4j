@@ -685,8 +685,7 @@ public final class NativeFunctionBindings {
    * @param hashOutPtr pointer to receive the 32-byte SHA-256 hash
    * @return 0 on success, negative error code on failure
    */
-  public int moduleGetBytecodeHash(
-      final MemorySegment modulePtr, final MemorySegment hashOutPtr) {
+  public int moduleGetBytecodeHash(final MemorySegment modulePtr, final MemorySegment hashOutPtr) {
     validatePointer(modulePtr, "modulePtr");
     validatePointer(hashOutPtr, "hashOutPtr");
     return callNativeFunction(

@@ -1,5 +1,6 @@
 package ai.tegmentum.wasmtime4j.jni.performance;
 
+import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import ai.tegmentum.wasmtime4j.performance.CallStack;
 import ai.tegmentum.wasmtime4j.performance.CompilationProfile;
 import ai.tegmentum.wasmtime4j.performance.FunctionProfile;
@@ -11,7 +12,6 @@ import ai.tegmentum.wasmtime4j.performance.ProfilingMarker;
 import ai.tegmentum.wasmtime4j.performance.ProfilingOptions;
 import ai.tegmentum.wasmtime4j.performance.ProfilingStatistics;
 import ai.tegmentum.wasmtime4j.performance.WasmProfiler;
-import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -19,8 +19,8 @@ import java.util.logging.Logger;
 /**
  * JNI implementation of the WasmProfiler interface.
  *
- * <p>This implementation provides comprehensive WebAssembly execution profiling
- * capabilities using JNI calls to the native profiling system.
+ * <p>This implementation provides comprehensive WebAssembly execution profiling capabilities using
+ * JNI calls to the native profiling system.
  *
  * @since 1.0.0
  */
@@ -68,21 +68,23 @@ public final class JniWasmProfiler extends JniResource implements WasmProfiler {
       throw new IllegalStateException("Profiling is already active");
     }
 
-    final int result = nativeStartProfiling(nativeHandle,
-        options.isEnableFunctionProfiling(),
-        options.isEnableMemoryProfiling(),
-        options.isEnableCallStackSampling(),
-        options.isEnableCompilationProfiling(),
-        options.isEnableHostFunctionProfiling(),
-        options.isEnableInstructionProfiling(),
-        options.getSamplingInterval().toNanos() / 1000,
-        options.getMaxSamples(),
-        options.getMinExecutionTimeThreshold().toNanos() / 1000,
-        options.getMinAllocationSizeThreshold(),
-        options.isAggregateData(),
-        options.isIncludeSourceLocations(),
-        options.getBufferSize(),
-        options.isThreadSafe());
+    final int result =
+        nativeStartProfiling(
+            nativeHandle,
+            options.isEnableFunctionProfiling(),
+            options.isEnableMemoryProfiling(),
+            options.isEnableCallStackSampling(),
+            options.isEnableCompilationProfiling(),
+            options.isEnableHostFunctionProfiling(),
+            options.isEnableInstructionProfiling(),
+            options.getSamplingInterval().toNanos() / 1000,
+            options.getMaxSamples(),
+            options.getMinExecutionTimeThreshold().toNanos() / 1000,
+            options.getMinAllocationSizeThreshold(),
+            options.isAggregateData(),
+            options.isIncludeSourceLocations(),
+            options.getBufferSize(),
+            options.isThreadSafe());
 
     if (result != 0) {
       throw new RuntimeException("Failed to start profiling: error code " + result);
@@ -347,17 +349,31 @@ public final class JniWasmProfiler extends JniResource implements WasmProfiler {
       final boolean threadSafe);
 
   private static native long nativeStopProfiling(final long handle);
+
   private static native boolean nativeIsProfiling(final long handle);
+
   private static native long nativeGetFunctionProfiles(final long handle);
+
   private static native long nativeGetSampleCallStacks(final long handle);
+
   private static native long nativeGetMemoryProfile(final long handle);
+
   private static native long nativeGetCompilationProfile(final long handle);
+
   private static native long nativeGetHostFunctionProfile(final long handle);
-  private static native int nativeAddMarker(final long handle, final String markerName, final String metadataString);
+
+  private static native int nativeAddMarker(
+      final long handle, final String markerName, final String metadataString);
+
   private static native long nativeGetMarkers(final long handle);
+
   private static native int nativeReset(final long handle);
+
   private static native long nativeGetCurrentStatistics(final long handle);
+
   private static native int nativeSetMaxDataRetention(final long handle, final int maxDataPoints);
+
   private static native String nativeExportData(final long handle, final String format);
+
   private static native void nativeDispose(final long handle);
 }

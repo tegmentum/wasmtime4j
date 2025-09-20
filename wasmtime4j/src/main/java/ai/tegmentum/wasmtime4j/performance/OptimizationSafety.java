@@ -3,9 +3,9 @@ package ai.tegmentum.wasmtime4j.performance;
 /**
  * Safety levels for optimization strategies.
  *
- * <p>Optimization safety indicates the risk level and thoroughness of analysis required
- * before applying an optimization strategy. Higher safety levels require more careful
- * consideration and testing.
+ * <p>Optimization safety indicates the risk level and thoroughness of analysis required before
+ * applying an optimization strategy. Higher safety levels require more careful consideration and
+ * testing.
  *
  * @since 1.0.0
  */
@@ -14,32 +14,32 @@ public enum OptimizationSafety {
   /**
    * Safe optimizations with minimal risk.
    *
-   * <p>These optimizations are well-established, thoroughly tested, and unlikely
-   * to introduce correctness issues. They can be applied with confidence.
+   * <p>These optimizations are well-established, thoroughly tested, and unlikely to introduce
+   * correctness issues. They can be applied with confidence.
    */
   SAFE("Safe"),
 
   /**
    * Moderate risk optimizations requiring some analysis.
    *
-   * <p>These optimizations are generally safe but may require analysis of specific
-   * code patterns or usage scenarios to ensure correctness.
+   * <p>These optimizations are generally safe but may require analysis of specific code patterns or
+   * usage scenarios to ensure correctness.
    */
   MODERATE("Moderate"),
 
   /**
    * Aggressive optimizations with higher risk.
    *
-   * <p>These optimizations can provide significant performance benefits but require
-   * careful analysis, extensive testing, and may have edge cases or limitations.
+   * <p>These optimizations can provide significant performance benefits but require careful
+   * analysis, extensive testing, and may have edge cases or limitations.
    */
   AGGRESSIVE("Aggressive"),
 
   /**
    * Experimental optimizations with unknown risk.
    *
-   * <p>These optimizations are experimental, unproven, or highly specialized.
-   * They should only be used with thorough testing and understanding of potential risks.
+   * <p>These optimizations are experimental, unproven, or highly specialized. They should only be
+   * used with thorough testing and understanding of potential risks.
    */
   EXPERIMENTAL("Experimental");
 

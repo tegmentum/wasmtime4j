@@ -20,7 +20,6 @@ import ai.tegmentum.wasmtime4j.panama.PanamaStore;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
 import java.lang.foreign.MemorySegment;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -32,8 +31,8 @@ import java.util.logging.Logger;
  * Panama FFI implementation of the ComponentLinker interface.
  *
  * <p>This class provides component linking capabilities through Panama FFI calls to the native
- * Wasmtime component linker. It manages import definitions and handles component instantiation
- * with proper import resolution.
+ * Wasmtime component linker. It manages import definitions and handles component instantiation with
+ * proper import resolution.
  *
  * @since 1.0.0
  */
@@ -69,11 +68,9 @@ public final class PanamaComponentLinkerImpl implements ComponentLinker {
 
     PanamaErrorHandler.requireValidPointer(linkerPtr, "linkerPtr");
 
-    this.linkerResource = resourceManager.manageNativeResource(
-        linkerPtr,
-        () -> destroyNativeLinker(linkerPtr),
-        "Wasmtime Component Linker"
-    );
+    this.linkerResource =
+        resourceManager.manageNativeResource(
+            linkerPtr, () -> destroyNativeLinker(linkerPtr), "Wasmtime Component Linker");
 
     this.metadata = new PanamaComponentLinkerMetadataImpl(resourceManager, linkerResource);
 
@@ -131,11 +128,9 @@ public final class PanamaComponentLinkerImpl implements ComponentLinker {
     }
 
     try {
-      final boolean success = nativeDefineComponent(
-          linkerResource.resource(),
-          name,
-          panamaComponent.getComponentHandle().getResource()
-      );
+      final boolean success =
+          nativeDefineComponent(
+              linkerResource.resource(), name, panamaComponent.getComponentHandle().getResource());
 
       if (!success) {
         throw new WasmException("Failed to define component: " + name);
@@ -165,11 +160,8 @@ public final class PanamaComponentLinkerImpl implements ComponentLinker {
     final PanamaInterfaceTypeImpl panamaInterface = (PanamaInterfaceTypeImpl) interfaceType;
 
     try {
-      final boolean success = nativeDefineInterface(
-          linkerResource.resource(),
-          name,
-          panamaInterface.getResourcePtr()
-      );
+      final boolean success =
+          nativeDefineInterface(linkerResource.resource(), name, panamaInterface.getResourcePtr());
 
       if (!success) {
         throw new WasmException("Failed to define interface: " + name);
@@ -199,11 +191,8 @@ public final class PanamaComponentLinkerImpl implements ComponentLinker {
     final PanamaComponentFunctionImpl panamaFunction = (PanamaComponentFunctionImpl) function;
 
     try {
-      final boolean success = nativeDefineFunction(
-          linkerResource.resource(),
-          name,
-          panamaFunction.getResourcePtr()
-      );
+      final boolean success =
+          nativeDefineFunction(linkerResource.resource(), name, panamaFunction.getResourcePtr());
 
       if (!success) {
         throw new WasmException("Failed to define function: " + name);
@@ -233,11 +222,8 @@ public final class PanamaComponentLinkerImpl implements ComponentLinker {
     final PanamaComponentResourceImpl panamaResource = (PanamaComponentResourceImpl) resource;
 
     try {
-      final boolean success = nativeDefineResource(
-          linkerResource.resource(),
-          name,
-          panamaResource.getResourcePtr()
-      );
+      final boolean success =
+          nativeDefineResource(linkerResource.resource(), name, panamaResource.getResourcePtr());
 
       if (!success) {
         throw new WasmException("Failed to define resource: " + name);
@@ -280,11 +266,11 @@ public final class PanamaComponentLinkerImpl implements ComponentLinker {
     }
 
     try {
-      final MemorySegment instancePtr = nativeInstantiate(
-          linkerResource.resource(),
-          panamaStore.getResourcePtr(),
-          panamaComponent.getComponentHandle().getResource()
-      );
+      final MemorySegment instancePtr =
+          nativeInstantiate(
+              linkerResource.resource(),
+              panamaStore.getResourcePtr(),
+              panamaComponent.getComponentHandle().getResource());
 
       PanamaErrorHandler.requireValidPointer(instancePtr, "instancePtr");
 
@@ -346,10 +332,9 @@ public final class PanamaComponentLinkerImpl implements ComponentLinker {
     }
 
     try {
-      final boolean isValid = nativeValidateImports(
-          linkerResource.resource(),
-          panamaComponent.getComponentHandle().getResource()
-      );
+      final boolean isValid =
+          nativeValidateImports(
+              linkerResource.resource(), panamaComponent.getComponentHandle().getResource());
 
       if (!isValid) {
         throw new WasmException("Import validation failed for component");
@@ -376,8 +361,8 @@ public final class PanamaComponentLinkerImpl implements ComponentLinker {
       final MemorySegment clonedPtr = nativeCloneLinker(linkerResource.resource());
       PanamaErrorHandler.requireValidPointer(clonedPtr, "clonedPtr");
 
-      final ComponentLinker cloned = new PanamaComponentLinkerImpl(
-          resourceManager, clonedPtr, engine);
+      final ComponentLinker cloned =
+          new PanamaComponentLinkerImpl(resourceManager, clonedPtr, engine);
 
       // Copy import definitions
       for (final String name : importDefinitions.keySet()) {
@@ -470,9 +455,8 @@ public final class PanamaComponentLinkerImpl implements ComponentLinker {
    * @throws WasmException if operation fails
    */
   private boolean nativeDefineComponent(
-      final MemorySegment linkerPtr,
-      final String name,
-      final MemorySegment componentPtr) throws WasmException {
+      final MemorySegment linkerPtr, final String name, final MemorySegment componentPtr)
+      throws WasmException {
     try {
       return nativeFunctions.defineComponentImport(linkerPtr, name, componentPtr);
     } catch (final Exception e) {
@@ -490,9 +474,8 @@ public final class PanamaComponentLinkerImpl implements ComponentLinker {
    * @throws WasmException if operation fails
    */
   private boolean nativeDefineInterface(
-      final MemorySegment linkerPtr,
-      final String name,
-      final MemorySegment interfacePtr) throws WasmException {
+      final MemorySegment linkerPtr, final String name, final MemorySegment interfacePtr)
+      throws WasmException {
     try {
       return nativeFunctions.defineInterfaceImport(linkerPtr, name, interfacePtr);
     } catch (final Exception e) {
@@ -510,9 +493,8 @@ public final class PanamaComponentLinkerImpl implements ComponentLinker {
    * @throws WasmException if operation fails
    */
   private boolean nativeDefineFunction(
-      final MemorySegment linkerPtr,
-      final String name,
-      final MemorySegment functionPtr) throws WasmException {
+      final MemorySegment linkerPtr, final String name, final MemorySegment functionPtr)
+      throws WasmException {
     try {
       return nativeFunctions.defineFunctionImport(linkerPtr, name, functionPtr);
     } catch (final Exception e) {
@@ -530,9 +512,8 @@ public final class PanamaComponentLinkerImpl implements ComponentLinker {
    * @throws WasmException if operation fails
    */
   private boolean nativeDefineResource(
-      final MemorySegment linkerPtr,
-      final String name,
-      final MemorySegment resourcePtr) throws WasmException {
+      final MemorySegment linkerPtr, final String name, final MemorySegment resourcePtr)
+      throws WasmException {
     try {
       return nativeFunctions.defineResourceImport(linkerPtr, name, resourcePtr);
     } catch (final Exception e) {
@@ -550,9 +531,8 @@ public final class PanamaComponentLinkerImpl implements ComponentLinker {
    * @throws WasmException if instantiation fails
    */
   private MemorySegment nativeInstantiate(
-      final MemorySegment linkerPtr,
-      final MemorySegment storePtr,
-      final MemorySegment componentPtr) throws WasmException {
+      final MemorySegment linkerPtr, final MemorySegment storePtr, final MemorySegment componentPtr)
+      throws WasmException {
     try {
       return nativeFunctions.instantiateComponentWithLinker(linkerPtr, storePtr, componentPtr);
     } catch (final Exception e) {
@@ -586,8 +566,7 @@ public final class PanamaComponentLinkerImpl implements ComponentLinker {
    * @throws WasmException if validation fails
    */
   private boolean nativeValidateImports(
-      final MemorySegment linkerPtr,
-      final MemorySegment componentPtr) throws WasmException {
+      final MemorySegment linkerPtr, final MemorySegment componentPtr) throws WasmException {
     try {
       return nativeFunctions.validateComponentImports(linkerPtr, componentPtr);
     } catch (final Exception e) {

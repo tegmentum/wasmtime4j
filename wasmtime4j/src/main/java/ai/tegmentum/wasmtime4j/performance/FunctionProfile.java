@@ -8,9 +8,9 @@ import java.util.Map;
 /**
  * Detailed performance profile for a WebAssembly function.
  *
- * <p>FunctionProfile provides comprehensive execution statistics and performance analysis
- * for individual WebAssembly functions including timing, call patterns, memory usage,
- * and optimization opportunities.
+ * <p>FunctionProfile provides comprehensive execution statistics and performance analysis for
+ * individual WebAssembly functions including timing, call patterns, memory usage, and optimization
+ * opportunities.
  *
  * @since 1.0.0
  */
@@ -44,8 +44,8 @@ public interface FunctionProfile {
   /**
    * Gets the total execution time spent in this function.
    *
-   * <p>This includes all calls to the function accumulated over the profiling session.
-   * It represents actual CPU time spent executing the function's instructions.
+   * <p>This includes all calls to the function accumulated over the profiling session. It
+   * represents actual CPU time spent executing the function's instructions.
    *
    * @return total execution time
    */
@@ -54,8 +54,8 @@ public interface FunctionProfile {
   /**
    * Gets the average execution time per function call.
    *
-   * <p>This is calculated as total time divided by call count and provides insight
-   * into typical function performance.
+   * <p>This is calculated as total time divided by call count and provides insight into typical
+   * function performance.
    *
    * @return average execution time per call
    */
@@ -82,8 +82,8 @@ public interface FunctionProfile {
   /**
    * Gets the median execution time for function calls.
    *
-   * <p>The median provides a measure of typical performance that is less affected
-   * by outliers than the average.
+   * <p>The median provides a measure of typical performance that is less affected by outliers than
+   * the average.
    *
    * @return median execution time
    */
@@ -110,8 +110,8 @@ public interface FunctionProfile {
   /**
    * Gets the total memory allocated by this function.
    *
-   * <p>This includes both WebAssembly linear memory allocations and any native
-   * memory allocations made during function execution.
+   * <p>This includes both WebAssembly linear memory allocations and any native memory allocations
+   * made during function execution.
    *
    * @return total memory usage in bytes
    */
@@ -229,8 +229,8 @@ public interface FunctionProfile {
   /**
    * Gets performance anomalies detected for this function.
    *
-   * <p>Anomalies include unusual execution times, memory patterns, or other
-   * performance irregularities that may indicate optimization opportunities.
+   * <p>Anomalies include unusual execution times, memory patterns, or other performance
+   * irregularities that may indicate optimization opportunities.
    *
    * @return list of detected performance anomalies
    */
@@ -248,8 +248,8 @@ public interface FunctionProfile {
   /**
    * Gets execution time distribution histogram.
    *
-   * <p>The histogram shows the distribution of execution times across different
-   * time ranges, helping identify performance patterns.
+   * <p>The histogram shows the distribution of execution times across different time ranges,
+   * helping identify performance patterns.
    *
    * @return execution time histogram
    */
@@ -258,8 +258,8 @@ public interface FunctionProfile {
   /**
    * Gets the recursion depth statistics for this function.
    *
-   * <p>For recursive functions, provides information about recursion patterns
-   * and depth distribution.
+   * <p>For recursive functions, provides information about recursion patterns and depth
+   * distribution.
    *
    * @return recursion statistics, or null if function is not recursive
    */
@@ -268,8 +268,8 @@ public interface FunctionProfile {
   /**
    * Gets custom metadata associated with this function profile.
    *
-   * <p>This includes any additional profiling data specific to the function
-   * or implementation-specific metrics.
+   * <p>This includes any additional profiling data specific to the function or
+   * implementation-specific metrics.
    *
    * @return map of custom metadata
    */

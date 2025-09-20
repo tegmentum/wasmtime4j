@@ -12,7 +12,6 @@ import ai.tegmentum.wasmtime4j.panama.NativeFunctionBindings;
 import ai.tegmentum.wasmtime4j.panama.PanamaComponent;
 import ai.tegmentum.wasmtime4j.panama.PanamaErrorHandler;
 import ai.tegmentum.wasmtime4j.panama.PanamaStore;
-import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
 import java.lang.foreign.MemorySegment;
 import java.util.Objects;
 import java.util.logging.Logger;
@@ -95,11 +94,11 @@ public final class PanamaComponentImpl implements Component {
       }
 
       // Call native instantiation method
-      final MemorySegment instancePtr = nativeInstantiateWithLinker(
-          componentHandle.getResource(),
-          panamaStore.getResourcePtr(),
-          panamaLinker.getResourcePtr()
-      );
+      final MemorySegment instancePtr =
+          nativeInstantiateWithLinker(
+              componentHandle.getResource(),
+              panamaStore.getResourcePtr(),
+              panamaLinker.getResourcePtr());
 
       PanamaErrorHandler.requireValidPointer(instancePtr, "instancePtr");
 
@@ -227,9 +226,8 @@ public final class PanamaComponentImpl implements Component {
    * @throws WasmException if instantiation fails
    */
   private MemorySegment nativeInstantiateWithLinker(
-      final MemorySegment componentPtr,
-      final MemorySegment storePtr,
-      final MemorySegment linkerPtr) throws WasmException {
+      final MemorySegment componentPtr, final MemorySegment storePtr, final MemorySegment linkerPtr)
+      throws WasmException {
     try {
       return nativeFunctions.instantiateComponentWithLinker(componentPtr, storePtr, linkerPtr);
     } catch (final Exception e) {
