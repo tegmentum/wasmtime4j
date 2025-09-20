@@ -1,6 +1,7 @@
 package ai.tegmentum.wasmtime4j.aot;
 
 import ai.tegmentum.wasmtime4j.WasmFeature;
+import ai.tegmentum.wasmtime4j.aot.impl.AotOptionsImpl;
 import ai.tegmentum.wasmtime4j.serialization.OptimizationLevel;
 import java.util.HashSet;
 import java.util.Set;
