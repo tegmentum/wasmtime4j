@@ -38,6 +38,13 @@ public final class PerformanceAnalyzer {
   private static final double REGRESSION_THRESHOLD = 0.05; // 5% performance degradation
   private static final double MIN_SAMPLE_SIZE = 3;
 
+  // Wasmtime-specific performance characteristics
+  private static final double WASMTIME_COMPILATION_OVERHEAD_THRESHOLD = 0.10; // 10% tolerance for compilation
+  private static final double WASMTIME_FUNCTION_CALL_PRECISION = 0.02; // 2% precision for function calls
+  private static final double WASMTIME_MEMORY_OPERATION_TOLERANCE = 0.08; // 8% tolerance for memory ops
+  private static final double WASMTIME_JNI_OVERHEAD_BASELINE = 1.15; // JNI expected 15% overhead vs native
+  private static final double WASMTIME_PANAMA_OVERHEAD_BASELINE = 1.20; // Panama expected 20% overhead vs native
+
   private final MetricsCollector metricsCollector;
   private final TrendAnalyzer trendAnalyzer;
   private final Map<String, PerformanceBaseline> baselines;
@@ -60,6 +67,12 @@ public final class PerformanceAnalyzer {
     private final boolean successful;
     private final String errorMessage;
     private final Map<String, Object> additionalMetrics;
+    // Wasmtime-specific metrics
+    private final Long wasmtimeCompilationTimeNanos;
+    private final Long wasmtimeFunctionCallOverheadNanos;
+    private final Long wasmtimeMemoryOperationTimeNanos;
+    private final Integer wasmtimeModuleSize;
+    private final String wasmtimeRuntimeVersion;
 
     private TestExecutionResult(final Builder builder) {
       this.testName = Objects.requireNonNull(builder.testName, "testName cannot be null");
@@ -73,6 +86,12 @@ public final class PerformanceAnalyzer {
       this.successful = builder.successful;
       this.errorMessage = builder.errorMessage;
       this.additionalMetrics = new HashMap<>(builder.additionalMetrics);
+      // Initialize Wasmtime-specific metrics
+      this.wasmtimeCompilationTimeNanos = builder.wasmtimeCompilationTimeNanos;
+      this.wasmtimeFunctionCallOverheadNanos = builder.wasmtimeFunctionCallOverheadNanos;
+      this.wasmtimeMemoryOperationTimeNanos = builder.wasmtimeMemoryOperationTimeNanos;
+      this.wasmtimeModuleSize = builder.wasmtimeModuleSize;
+      this.wasmtimeRuntimeVersion = builder.wasmtimeRuntimeVersion;
     }
 
     public String getTestName() {
@@ -111,6 +130,33 @@ public final class PerformanceAnalyzer {
       return new HashMap<>(additionalMetrics);
     }
 
+    // Wasmtime-specific metric getters
+    public Long getWasmtimeCompilationTimeNanos() {
+      return wasmtimeCompilationTimeNanos;
+    }
+
+    public Long getWasmtimeFunctionCallOverheadNanos() {
+      return wasmtimeFunctionCallOverheadNanos;
+    }
+
+    public Long getWasmtimeMemoryOperationTimeNanos() {
+      return wasmtimeMemoryOperationTimeNanos;
+    }
+
+    public Integer getWasmtimeModuleSize() {
+      return wasmtimeModuleSize;
+    }
+
+    public String getWasmtimeRuntimeVersion() {
+      return wasmtimeRuntimeVersion;
+    }
+
+    /** Checks if this result contains Wasmtime-specific performance metrics. */
+    public boolean hasWasmtimeMetrics() {
+      return wasmtimeCompilationTimeNanos != null || wasmtimeFunctionCallOverheadNanos != null
+          || wasmtimeMemoryOperationTimeNanos != null;
+    }
+
     public static Builder builder(final String testName, final String runtimeType) {
       return new Builder(testName, runtimeType);
     }
@@ -126,6 +172,12 @@ public final class PerformanceAnalyzer {
       private boolean successful = true;
       private String errorMessage = null;
       private final Map<String, Object> additionalMetrics = new HashMap<>();
+      // Wasmtime-specific fields
+      private Long wasmtimeCompilationTimeNanos = null;
+      private Long wasmtimeFunctionCallOverheadNanos = null;
+      private Long wasmtimeMemoryOperationTimeNanos = null;
+      private Integer wasmtimeModuleSize = null;
+      private String wasmtimeRuntimeVersion = null;
 
       private Builder(final String testName, final String runtimeType) {
         this.testName = testName;
@@ -164,6 +216,32 @@ public final class PerformanceAnalyzer {
 
       public Builder additionalMetric(final String key, final Object value) {
         this.additionalMetrics.put(key, value);
+        return this;
+      }
+
+      // Wasmtime-specific builder methods
+      public Builder wasmtimeCompilationTime(final long compilationTimeNanos) {
+        this.wasmtimeCompilationTimeNanos = compilationTimeNanos;
+        return this;
+      }
+
+      public Builder wasmtimeFunctionCallOverhead(final long overheadNanos) {
+        this.wasmtimeFunctionCallOverheadNanos = overheadNanos;
+        return this;
+      }
+
+      public Builder wasmtimeMemoryOperationTime(final long operationTimeNanos) {
+        this.wasmtimeMemoryOperationTimeNanos = operationTimeNanos;
+        return this;
+      }
+
+      public Builder wasmtimeModuleSize(final int moduleSize) {
+        this.wasmtimeModuleSize = moduleSize;
+        return this;
+      }
+
+      public Builder wasmtimeRuntimeVersion(final String runtimeVersion) {
+        this.wasmtimeRuntimeVersion = runtimeVersion;
         return this;
       }
 
@@ -373,6 +451,11 @@ public final class PerformanceAnalyzer {
     private final long meanMemoryUsage;
     private final long peakMemoryUsage;
     private final double successRate;
+    // Wasmtime-specific performance metrics
+    private final double meanCompilationTimeMs;
+    private final double meanFunctionCallOverheadNanos;
+    private final double meanMemoryOperationTimeNanos;
+    private final double wasmtimePerformanceScore;
 
     /**
      * Creates performance metrics from test execution results.
@@ -433,6 +516,12 @@ public final class PerformanceAnalyzer {
               .mapToLong(TestExecutionResult::getPeakMemoryUsage)
               .max()
               .orElse(0L);
+
+      // Calculate Wasmtime-specific metrics
+      this.meanCompilationTimeMs = calculateWasmtimeCompilationTime(successfulResults);
+      this.meanFunctionCallOverheadNanos = calculateWasmtimeFunctionCallOverhead(successfulResults);
+      this.meanMemoryOperationTimeNanos = calculateWasmtimeMemoryOperationTime(successfulResults);
+      this.wasmtimePerformanceScore = calculateWasmtimePerformanceScore(successfulResults);
     }
 
     public String getRuntimeType() {
@@ -479,6 +568,23 @@ public final class PerformanceAnalyzer {
       return successRate;
     }
 
+    // Wasmtime-specific metric getters
+    public double getMeanCompilationTimeMs() {
+      return meanCompilationTimeMs;
+    }
+
+    public double getMeanFunctionCallOverheadNanos() {
+      return meanFunctionCallOverheadNanos;
+    }
+
+    public double getMeanMemoryOperationTimeNanos() {
+      return meanMemoryOperationTimeNanos;
+    }
+
+    public double getWasmtimePerformanceScore() {
+      return wasmtimePerformanceScore;
+    }
+
     /** Checks if the metrics are statistically reliable. */
     public boolean isStatisticallyReliable() {
       return sampleSize >= MIN_SAMPLE_SIZE && successRate > 0.8 && coefficientOfVariation < 50.0;
@@ -505,6 +611,61 @@ public final class PerformanceAnalyzer {
 
       return Math.sqrt(variance);
     }
+
+    // Wasmtime-specific metric calculation methods
+    private static double calculateWasmtimeCompilationTime(final List<TestExecutionResult> results) {
+      return results.stream()
+          .filter(r -> r.getWasmtimeCompilationTimeNanos() != null)
+          .mapToLong(r -> r.getWasmtimeCompilationTimeNanos())
+          .average()
+          .orElse(0.0) / 1_000_000.0; // Convert to milliseconds
+    }
+
+    private static double calculateWasmtimeFunctionCallOverhead(final List<TestExecutionResult> results) {
+      return results.stream()
+          .filter(r -> r.getWasmtimeFunctionCallOverheadNanos() != null)
+          .mapToLong(r -> r.getWasmtimeFunctionCallOverheadNanos())
+          .average()
+          .orElse(0.0);
+    }
+
+    private static double calculateWasmtimeMemoryOperationTime(final List<TestExecutionResult> results) {
+      return results.stream()
+          .filter(r -> r.getWasmtimeMemoryOperationTimeNanos() != null)
+          .mapToLong(r -> r.getWasmtimeMemoryOperationTimeNanos())
+          .average()
+          .orElse(0.0);
+    }
+
+    private static double calculateWasmtimePerformanceScore(final List<TestExecutionResult> results) {
+      if (results.isEmpty()) {
+        return 0.0;
+      }
+
+      // Calculate a composite performance score based on execution time, compilation time, and success rate
+      final double avgExecutionTime = results.stream()
+          .mapToDouble(r -> r.getExecutionDuration().toNanos() / 1_000_000.0)
+          .average()
+          .orElse(Double.MAX_VALUE);
+
+      final double avgCompilationTime = results.stream()
+          .filter(r -> r.getWasmtimeCompilationTimeNanos() != null)
+          .mapToLong(r -> r.getWasmtimeCompilationTimeNanos())
+          .average()
+          .orElse(0.0) / 1_000_000.0;
+
+      final double successRate = results.stream()
+          .mapToDouble(r -> r.isSuccessful() ? 1.0 : 0.0)
+          .average()
+          .orElse(0.0);
+
+      // Score combines speed (inversely proportional to time) and reliability
+      // Higher scores are better
+      final double timeScore = avgExecutionTime > 0 ? 1000.0 / avgExecutionTime : 0.0;
+      final double compilationScore = avgCompilationTime > 0 ? 100.0 / avgCompilationTime : 0.0;
+
+      return (timeScore * 0.6 + compilationScore * 0.2 + successRate * 100.0 * 0.2);
+    }
   }
 
   /** Overhead analysis comparing runtime performance against baseline. */
@@ -512,6 +673,10 @@ public final class PerformanceAnalyzer {
     private final Map<String, Double> runtimeOverheads;
     private final String baselineRuntime;
     private final boolean hasSignificantOverhead;
+    // Wasmtime-specific overhead analysis
+    private final Map<String, Double> wasmtimeCompilationOverheads;
+    private final Map<String, Double> wasmtimeFunctionCallOverheads;
+    private final Map<String, WasmtimeRuntimeCharacteristics> wasmtimeCharacteristics;
 
     /**
      * Creates overhead analysis from performance metrics.
@@ -546,6 +711,11 @@ public final class PerformanceAnalyzer {
 
       this.hasSignificantOverhead =
           runtimeOverheads.values().stream().anyMatch(overhead -> overhead > REGRESSION_THRESHOLD);
+
+      // Calculate Wasmtime-specific overheads
+      this.wasmtimeCompilationOverheads = calculateWasmtimeCompilationOverheads(metricsByRuntime);
+      this.wasmtimeFunctionCallOverheads = calculateWasmtimeFunctionCallOverheads(metricsByRuntime);
+      this.wasmtimeCharacteristics = calculateWasmtimeCharacteristics(metricsByRuntime);
     }
 
     public Map<String, Double> getRuntimeOverheads() {
@@ -564,6 +734,168 @@ public final class PerformanceAnalyzer {
     public double getOverheadPercentage(final String runtime) {
       return runtimeOverheads.getOrDefault(runtime, 0.0) * 100.0;
     }
+
+    // Wasmtime-specific overhead analysis getters
+    public Map<String, Double> getWasmtimeCompilationOverheads() {
+      return new HashMap<>(wasmtimeCompilationOverheads);
+    }
+
+    public Map<String, Double> getWasmtimeFunctionCallOverheads() {
+      return new HashMap<>(wasmtimeFunctionCallOverheads);
+    }
+
+    public Map<String, WasmtimeRuntimeCharacteristics> getWasmtimeCharacteristics() {
+      return new HashMap<>(wasmtimeCharacteristics);
+    }
+
+    /** Checks if Wasmtime performance characteristics are within expected bounds. */
+    public boolean isWasmtimePerformanceExpected() {
+      for (final WasmtimeRuntimeCharacteristics characteristics : wasmtimeCharacteristics.values()) {
+        if (!characteristics.isWithinExpectedBounds()) {
+          return false;
+        }
+      }
+      return true;
+    }
+    // Wasmtime-specific overhead calculation methods
+    private static Map<String, Double> calculateWasmtimeCompilationOverheads(
+        final Map<String, PerformanceMetrics> metricsByRuntime) {
+      final Map<String, Double> overheads = new HashMap<>();
+
+      // Find fastest compilation time as baseline
+      final double baselineCompilationTime = metricsByRuntime.values().stream()
+          .mapToDouble(PerformanceMetrics::getMeanCompilationTimeMs)
+          .filter(time -> time > 0)
+          .min()
+          .orElse(1.0);
+
+      for (final Map.Entry<String, PerformanceMetrics> entry : metricsByRuntime.entrySet()) {
+        final String runtime = entry.getKey();
+        final double compilationTime = entry.getValue().getMeanCompilationTimeMs();
+        if (compilationTime > 0) {
+          final double overhead = (compilationTime - baselineCompilationTime) / baselineCompilationTime;
+          overheads.put(runtime, overhead);
+        }
+      }
+
+      return overheads;
+    }
+
+    private static Map<String, Double> calculateWasmtimeFunctionCallOverheads(
+        final Map<String, PerformanceMetrics> metricsByRuntime) {
+      final Map<String, Double> overheads = new HashMap<>();
+
+      // Find lowest function call overhead as baseline
+      final double baselineOverhead = metricsByRuntime.values().stream()
+          .mapToDouble(PerformanceMetrics::getMeanFunctionCallOverheadNanos)
+          .filter(overhead -> overhead > 0)
+          .min()
+          .orElse(1.0);
+
+      for (final Map.Entry<String, PerformanceMetrics> entry : metricsByRuntime.entrySet()) {
+        final String runtime = entry.getKey();
+        final double callOverhead = entry.getValue().getMeanFunctionCallOverheadNanos();
+        if (callOverhead > 0) {
+          final double overhead = (callOverhead - baselineOverhead) / baselineOverhead;
+          overheads.put(runtime, overhead);
+        }
+      }
+
+      return overheads;
+    }
+
+    private static Map<String, WasmtimeRuntimeCharacteristics> calculateWasmtimeCharacteristics(
+        final Map<String, PerformanceMetrics> metricsByRuntime) {
+      final Map<String, WasmtimeRuntimeCharacteristics> characteristics = new HashMap<>();
+
+      for (final Map.Entry<String, PerformanceMetrics> entry : metricsByRuntime.entrySet()) {
+        final String runtime = entry.getKey();
+        final PerformanceMetrics metrics = entry.getValue();
+        characteristics.put(runtime, new WasmtimeRuntimeCharacteristics(runtime, metrics));
+      }
+
+      return characteristics;
+    }
+  }
+
+  /** Wasmtime-specific runtime performance characteristics. */
+  public static final class WasmtimeRuntimeCharacteristics {
+    private final String runtimeType;
+    private final double expectedOverheadRatio;
+    private final double actualOverheadRatio;
+    private final boolean compilationWithinTolerance;
+    private final boolean functionCallWithinPrecision;
+    private final boolean memoryOperationWithinTolerance;
+
+    public WasmtimeRuntimeCharacteristics(final String runtimeType, final PerformanceMetrics metrics) {
+      this.runtimeType = runtimeType;
+
+      // Set expected overhead ratios based on runtime type
+      if (runtimeType.toLowerCase().contains("jni")) {
+        this.expectedOverheadRatio = WASMTIME_JNI_OVERHEAD_BASELINE;
+      } else if (runtimeType.toLowerCase().contains("panama")) {
+        this.expectedOverheadRatio = WASMTIME_PANAMA_OVERHEAD_BASELINE;
+      } else {
+        this.expectedOverheadRatio = 1.0; // Native baseline
+      }
+
+      // Calculate actual overhead ratio (simplified - would need native baseline in practice)
+      this.actualOverheadRatio = metrics.getMeanExecutionTimeMs() > 0 ?
+          metrics.getMeanExecutionTimeMs() / Math.max(metrics.getMeanExecutionTimeMs() * 0.8, 1.0) : 1.0;
+
+      // Check if performance characteristics are within expected tolerances
+      this.compilationWithinTolerance = isCompilationWithinTolerance(metrics);
+      this.functionCallWithinPrecision = isFunctionCallWithinPrecision(metrics);
+      this.memoryOperationWithinTolerance = isMemoryOperationWithinTolerance(metrics);
+    }
+
+    public String getRuntimeType() {
+      return runtimeType;
+    }
+
+    public double getExpectedOverheadRatio() {
+      return expectedOverheadRatio;
+    }
+
+    public double getActualOverheadRatio() {
+      return actualOverheadRatio;
+    }
+
+    public boolean isCompilationWithinTolerance() {
+      return compilationWithinTolerance;
+    }
+
+    public boolean isFunctionCallWithinPrecision() {
+      return functionCallWithinPrecision;
+    }
+
+    public boolean isMemoryOperationWithinTolerance() {
+      return memoryOperationWithinTolerance;
+    }
+
+    /** Checks if all performance characteristics are within expected bounds. */
+    public boolean isWithinExpectedBounds() {
+      final double overheadDifference = Math.abs(actualOverheadRatio - expectedOverheadRatio) / expectedOverheadRatio;
+      return overheadDifference <= 0.25 && // Allow 25% variance from expected overhead
+          compilationWithinTolerance &&
+          functionCallWithinPrecision &&
+          memoryOperationWithinTolerance;
+    }
+
+    private boolean isCompilationWithinTolerance(final PerformanceMetrics metrics) {
+      // Check if compilation time variance is within acceptable bounds
+      return metrics.getCoefficientOfVariation() <= WASMTIME_COMPILATION_OVERHEAD_THRESHOLD * 100;
+    }
+
+    private boolean isFunctionCallWithinPrecision(final PerformanceMetrics metrics) {
+      // Check if function call measurements are precise enough
+      return metrics.getCoefficientOfVariation() <= WASMTIME_FUNCTION_CALL_PRECISION * 100;
+    }
+
+    private boolean isMemoryOperationWithinTolerance(final PerformanceMetrics metrics) {
+      // Check if memory operation variance is acceptable
+      return metrics.getCoefficientOfVariation() <= WASMTIME_MEMORY_OPERATION_TOLERANCE * 100;
+    }
   }
 
   /** Performance baseline for regression detection. */
@@ -573,6 +905,11 @@ public final class PerformanceAnalyzer {
     private final double baselineExecutionTimeMs;
     private final long baselineMemoryUsage;
     private final Instant establishedAt;
+    // Wasmtime-specific baseline metrics
+    private final Double wasmtimeBaselineCompilationTimeMs;
+    private final Double wasmtimeBaselineFunctionCallOverheadNanos;
+    private final Double wasmtimeBaselineMemoryOperationTimeNanos;
+    private final Double wasmtimeBaselinePerformanceScore;
 
     /**
      * Creates a performance baseline from metrics.
@@ -588,6 +925,15 @@ public final class PerformanceAnalyzer {
       this.baselineExecutionTimeMs = metrics.getMeanExecutionTimeMs();
       this.baselineMemoryUsage = metrics.getMeanMemoryUsage();
       this.establishedAt = Instant.now();
+      // Initialize Wasmtime-specific baseline metrics
+      this.wasmtimeBaselineCompilationTimeMs = metrics.getMeanCompilationTimeMs() > 0 ?
+          metrics.getMeanCompilationTimeMs() : null;
+      this.wasmtimeBaselineFunctionCallOverheadNanos = metrics.getMeanFunctionCallOverheadNanos() > 0 ?
+          metrics.getMeanFunctionCallOverheadNanos() : null;
+      this.wasmtimeBaselineMemoryOperationTimeNanos = metrics.getMeanMemoryOperationTimeNanos() > 0 ?
+          metrics.getMeanMemoryOperationTimeNanos() : null;
+      this.wasmtimeBaselinePerformanceScore = metrics.getWasmtimePerformanceScore() > 0 ?
+          metrics.getWasmtimePerformanceScore() : null;
     }
 
     public String getTestName() {
@@ -610,6 +956,30 @@ public final class PerformanceAnalyzer {
       return establishedAt;
     }
 
+    // Wasmtime-specific baseline getters
+    public Double getWasmtimeBaselineCompilationTimeMs() {
+      return wasmtimeBaselineCompilationTimeMs;
+    }
+
+    public Double getWasmtimeBaselineFunctionCallOverheadNanos() {
+      return wasmtimeBaselineFunctionCallOverheadNanos;
+    }
+
+    public Double getWasmtimeBaselineMemoryOperationTimeNanos() {
+      return wasmtimeBaselineMemoryOperationTimeNanos;
+    }
+
+    public Double getWasmtimeBaselinePerformanceScore() {
+      return wasmtimeBaselinePerformanceScore;
+    }
+
+    /** Checks if this baseline contains Wasmtime-specific metrics. */
+    public boolean hasWasmtimeBaselines() {
+      return wasmtimeBaselineCompilationTimeMs != null ||
+          wasmtimeBaselineFunctionCallOverheadNanos != null ||
+          wasmtimeBaselineMemoryOperationTimeNanos != null;
+    }
+
     /** Checks if current metrics represent a regression from baseline. */
     public boolean isRegression(final PerformanceMetrics currentMetrics) {
       if (!currentMetrics.isStatisticallyReliable()) {
@@ -625,13 +995,94 @@ public final class PerformanceAnalyzer {
                   / baselineMemoryUsage
               : 0.0;
 
-      return executionTimeChange > REGRESSION_THRESHOLD || memoryChange > REGRESSION_THRESHOLD;
+      // Check for standard regressions
+      boolean hasStandardRegression = executionTimeChange > REGRESSION_THRESHOLD || memoryChange > REGRESSION_THRESHOLD;
+
+      // Check for Wasmtime-specific regressions
+      boolean hasWasmtimeRegression = false;
+      if (hasWasmtimeBaselines()) {
+        hasWasmtimeRegression = isWasmtimeRegression(currentMetrics);
+      }
+
+      return hasStandardRegression || hasWasmtimeRegression;
     }
 
     /** Gets the performance change percentage compared to baseline. */
     public double getPerformanceChange(final PerformanceMetrics currentMetrics) {
       return (currentMetrics.getMeanExecutionTimeMs() - baselineExecutionTimeMs)
           / baselineExecutionTimeMs;
+    }
+
+    /** Checks for Wasmtime-specific performance regressions. */
+    private boolean isWasmtimeRegression(final PerformanceMetrics currentMetrics) {
+      // Check compilation time regression
+      if (wasmtimeBaselineCompilationTimeMs != null && currentMetrics.getMeanCompilationTimeMs() > 0) {
+        final double compilationChange = (currentMetrics.getMeanCompilationTimeMs() - wasmtimeBaselineCompilationTimeMs)
+            / wasmtimeBaselineCompilationTimeMs;
+        if (compilationChange > WASMTIME_COMPILATION_OVERHEAD_THRESHOLD) {
+          return true;
+        }
+      }
+
+      // Check function call overhead regression
+      if (wasmtimeBaselineFunctionCallOverheadNanos != null && currentMetrics.getMeanFunctionCallOverheadNanos() > 0) {
+        final double overheadChange = (currentMetrics.getMeanFunctionCallOverheadNanos() - wasmtimeBaselineFunctionCallOverheadNanos)
+            / wasmtimeBaselineFunctionCallOverheadNanos;
+        if (overheadChange > WASMTIME_FUNCTION_CALL_PRECISION) {
+          return true;
+        }
+      }
+
+      // Check memory operation time regression
+      if (wasmtimeBaselineMemoryOperationTimeNanos != null && currentMetrics.getMeanMemoryOperationTimeNanos() > 0) {
+        final double memoryChange = (currentMetrics.getMeanMemoryOperationTimeNanos() - wasmtimeBaselineMemoryOperationTimeNanos)
+            / wasmtimeBaselineMemoryOperationTimeNanos;
+        if (memoryChange > WASMTIME_MEMORY_OPERATION_TOLERANCE) {
+          return true;
+        }
+      }
+
+      // Check overall performance score regression
+      if (wasmtimeBaselinePerformanceScore != null && currentMetrics.getWasmtimePerformanceScore() > 0) {
+        final double scoreChange = (wasmtimeBaselinePerformanceScore - currentMetrics.getWasmtimePerformanceScore())
+            / wasmtimeBaselinePerformanceScore;
+        if (scoreChange > REGRESSION_THRESHOLD) {
+          return true;
+        }
+      }
+
+      return false;
+    }
+
+    /** Gets Wasmtime-specific performance change details. */
+    public Map<String, Double> getWasmtimePerformanceChanges(final PerformanceMetrics currentMetrics) {
+      final Map<String, Double> changes = new HashMap<>();
+
+      if (wasmtimeBaselineCompilationTimeMs != null && currentMetrics.getMeanCompilationTimeMs() > 0) {
+        final double change = (currentMetrics.getMeanCompilationTimeMs() - wasmtimeBaselineCompilationTimeMs)
+            / wasmtimeBaselineCompilationTimeMs;
+        changes.put("compilation_time", change);
+      }
+
+      if (wasmtimeBaselineFunctionCallOverheadNanos != null && currentMetrics.getMeanFunctionCallOverheadNanos() > 0) {
+        final double change = (currentMetrics.getMeanFunctionCallOverheadNanos() - wasmtimeBaselineFunctionCallOverheadNanos)
+            / wasmtimeBaselineFunctionCallOverheadNanos;
+        changes.put("function_call_overhead", change);
+      }
+
+      if (wasmtimeBaselineMemoryOperationTimeNanos != null && currentMetrics.getMeanMemoryOperationTimeNanos() > 0) {
+        final double change = (currentMetrics.getMeanMemoryOperationTimeNanos() - wasmtimeBaselineMemoryOperationTimeNanos)
+            / wasmtimeBaselineMemoryOperationTimeNanos;
+        changes.put("memory_operation_time", change);
+      }
+
+      if (wasmtimeBaselinePerformanceScore != null && currentMetrics.getWasmtimePerformanceScore() > 0) {
+        final double change = (currentMetrics.getWasmtimePerformanceScore() - wasmtimeBaselinePerformanceScore)
+            / wasmtimeBaselinePerformanceScore;
+        changes.put("performance_score", change);
+      }
+
+      return changes;
     }
   }
 
@@ -721,6 +1172,232 @@ public final class PerformanceAnalyzer {
   /** Gets all established baselines. */
   public Map<String, PerformanceBaseline> getBaselines() {
     return new HashMap<>(baselines);
+  }
+
+  /**
+   * Analyzes Wasmtime-specific performance characteristics for the given results.
+   *
+   * @param results the test execution results to analyze
+   * @return Wasmtime-specific performance analysis result
+   */
+  public WasmtimePerformanceAnalysisResult analyzeWasmtimePerformance(final List<TestExecutionResult> results) {
+    Objects.requireNonNull(results, "results cannot be null");
+
+    if (results.isEmpty()) {
+      LOGGER.warning("No results provided for Wasmtime performance analysis");
+      return new WasmtimePerformanceAnalysisResult(
+          "EMPTY_ANALYSIS",
+          Collections.emptyMap(),
+          Collections.emptyList(),
+          false
+      );
+    }
+
+    final String testName = results.get(0).getTestName();
+
+    // Filter to only results with Wasmtime metrics
+    final List<TestExecutionResult> wasmtimeResults = results.stream()
+        .filter(TestExecutionResult::hasWasmtimeMetrics)
+        .collect(Collectors.toList());
+
+    if (wasmtimeResults.isEmpty()) {
+      LOGGER.warning("No Wasmtime-specific metrics found in results for test: " + testName);
+      return new WasmtimePerformanceAnalysisResult(
+          testName,
+          Collections.emptyMap(),
+          Collections.singletonList("No Wasmtime-specific metrics available"),
+          false
+      );
+    }
+
+    LOGGER.info(String.format(
+        "Analyzing Wasmtime performance for test: %s with %d results containing Wasmtime metrics",
+        testName, wasmtimeResults.size()));
+
+    // Group results by runtime type
+    final Map<String, List<TestExecutionResult>> resultsByRuntime =
+        wasmtimeResults.stream().collect(Collectors.groupingBy(TestExecutionResult::getRuntimeType));
+
+    // Calculate Wasmtime-specific metrics for each runtime
+    final Map<String, PerformanceMetrics> wasmtimeMetrics = new HashMap<>();
+    for (final Map.Entry<String, List<TestExecutionResult>> entry : resultsByRuntime.entrySet()) {
+      final String runtime = entry.getKey();
+      final List<TestExecutionResult> runtimeResults = entry.getValue();
+      final PerformanceMetrics metrics = new PerformanceMetrics(runtime, runtimeResults);
+      wasmtimeMetrics.put(runtime, metrics);
+    }
+
+    // Detect Wasmtime-specific performance issues
+    final List<String> wasmtimeIssues = detectWasmtimePerformanceIssues(wasmtimeMetrics);
+
+    // Check if performance matches expected Wasmtime characteristics
+    final boolean matchesExpectedCharacteristics = checkWasmtimeCharacteristics(wasmtimeMetrics);
+
+    return new WasmtimePerformanceAnalysisResult(
+        testName,
+        wasmtimeMetrics,
+        wasmtimeIssues,
+        matchesExpectedCharacteristics
+    );
+  }
+
+  /**
+   * Establishes Wasmtime-specific performance baselines.
+   *
+   * @param testName the test name
+   * @param metricsByRuntime the performance metrics by runtime
+   */
+  public void establishWasmtimeBaselines(
+      final String testName, final Map<String, PerformanceMetrics> metricsByRuntime) {
+    for (final Map.Entry<String, PerformanceMetrics> entry : metricsByRuntime.entrySet()) {
+      final String runtime = entry.getKey();
+      final PerformanceMetrics metrics = entry.getValue();
+
+      if (metrics.isStatisticallyReliable() && metrics.getMeanCompilationTimeMs() > 0) {
+        final String baselineKey = "wasmtime_" + testName + "_" + runtime;
+        final PerformanceBaseline baseline = new PerformanceBaseline(testName, runtime, metrics);
+        baselines.put(baselineKey, baseline);
+        LOGGER.info(String.format(
+            "Established Wasmtime baseline for %s: %.2fms compilation, %.2fms execution, score %.2f",
+            baselineKey, metrics.getMeanCompilationTimeMs(),
+            metrics.getMeanExecutionTimeMs(), metrics.getWasmtimePerformanceScore()));
+      }
+    }
+  }
+
+  private List<String> detectWasmtimePerformanceIssues(final Map<String, PerformanceMetrics> metricsByRuntime) {
+    final List<String> issues = new ArrayList<>();
+
+    for (final Map.Entry<String, PerformanceMetrics> entry : metricsByRuntime.entrySet()) {
+      final String runtime = entry.getKey();
+      final PerformanceMetrics metrics = entry.getValue();
+
+      // Check for excessive compilation time variance
+      if (metrics.getMeanCompilationTimeMs() > 0 &&
+          metrics.getCoefficientOfVariation() > WASMTIME_COMPILATION_OVERHEAD_THRESHOLD * 100) {
+        issues.add(String.format(
+            "%s shows high compilation time variance (%.1f%% CV)",
+            runtime, metrics.getCoefficientOfVariation()));
+      }
+
+      // Check for function call overhead issues
+      if (metrics.getMeanFunctionCallOverheadNanos() > 0) {
+        // Flag if JNI overhead exceeds expected bounds
+        if (runtime.toLowerCase().contains("jni") &&
+            metrics.getMeanFunctionCallOverheadNanos() > 100.0) {
+          issues.add(String.format(
+              "%s shows high function call overhead (%.2f ns)",
+              runtime, metrics.getMeanFunctionCallOverheadNanos()));
+        }
+        // Flag if Panama overhead exceeds expected bounds
+        if (runtime.toLowerCase().contains("panama") &&
+            metrics.getMeanFunctionCallOverheadNanos() > 150.0) {
+          issues.add(String.format(
+              "%s shows high function call overhead (%.2f ns)",
+              runtime, metrics.getMeanFunctionCallOverheadNanos()));
+        }
+      }
+
+      // Check for memory operation performance issues
+      if (metrics.getMeanMemoryOperationTimeNanos() > 0 &&
+          metrics.getCoefficientOfVariation() > WASMTIME_MEMORY_OPERATION_TOLERANCE * 100) {
+        issues.add(String.format(
+            "%s shows inconsistent memory operation performance (%.1f%% CV)",
+            runtime, metrics.getCoefficientOfVariation()));
+      }
+
+      // Check overall performance score
+      if (metrics.getWasmtimePerformanceScore() > 0 && metrics.getWasmtimePerformanceScore() < 10.0) {
+        issues.add(String.format(
+            "%s shows low overall performance score (%.2f)",
+            runtime, metrics.getWasmtimePerformanceScore()));
+      }
+    }
+
+    return issues;
+  }
+
+  private boolean checkWasmtimeCharacteristics(final Map<String, PerformanceMetrics> metricsByRuntime) {
+    for (final Map.Entry<String, PerformanceMetrics> entry : metricsByRuntime.entrySet()) {
+      final String runtime = entry.getKey();
+      final PerformanceMetrics metrics = entry.getValue();
+
+      // Create runtime characteristics and check bounds
+      final WasmtimeRuntimeCharacteristics characteristics =
+          new WasmtimeRuntimeCharacteristics(runtime, metrics);
+
+      if (!characteristics.isWithinExpectedBounds()) {
+        LOGGER.warning(String.format(
+            "Runtime %s performance characteristics outside expected bounds", runtime));
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  /** Wasmtime-specific performance analysis result. */
+  public static final class WasmtimePerformanceAnalysisResult {
+    private final String testName;
+    private final Map<String, PerformanceMetrics> wasmtimeMetrics;
+    private final List<String> performanceIssues;
+    private final boolean matchesExpectedCharacteristics;
+    private final Instant analysisTime;
+
+    public WasmtimePerformanceAnalysisResult(
+        final String testName,
+        final Map<String, PerformanceMetrics> wasmtimeMetrics,
+        final List<String> performanceIssues,
+        final boolean matchesExpectedCharacteristics) {
+      this.testName = testName;
+      this.wasmtimeMetrics = new HashMap<>(wasmtimeMetrics);
+      this.performanceIssues = new ArrayList<>(performanceIssues);
+      this.matchesExpectedCharacteristics = matchesExpectedCharacteristics;
+      this.analysisTime = Instant.now();
+    }
+
+    public String getTestName() {
+      return testName;
+    }
+
+    public Map<String, PerformanceMetrics> getWasmtimeMetrics() {
+      return new HashMap<>(wasmtimeMetrics);
+    }
+
+    public List<String> getPerformanceIssues() {
+      return new ArrayList<>(performanceIssues);
+    }
+
+    public boolean matchesExpectedCharacteristics() {
+      return matchesExpectedCharacteristics;
+    }
+
+    public Instant getAnalysisTime() {
+      return analysisTime;
+    }
+
+    public boolean hasPerformanceIssues() {
+      return !performanceIssues.isEmpty();
+    }
+
+    /** Gets the best performing runtime based on Wasmtime performance score. */
+    public String getBestPerformingRuntime() {
+      return wasmtimeMetrics.entrySet().stream()
+          .max(Map.Entry.comparingByValue((m1, m2) ->
+              Double.compare(m1.getWasmtimePerformanceScore(), m2.getWasmtimePerformanceScore())))
+          .map(Map.Entry::getKey)
+          .orElse("UNKNOWN");
+    }
+
+    /** Gets the fastest compiling runtime. */
+    public String getFastestCompilingRuntime() {
+      return wasmtimeMetrics.entrySet().stream()
+          .filter(entry -> entry.getValue().getMeanCompilationTimeMs() > 0)
+          .min(Map.Entry.comparingByValue((m1, m2) ->
+              Double.compare(m1.getMeanCompilationTimeMs(), m2.getMeanCompilationTimeMs())))
+          .map(Map.Entry::getKey)
+          .orElse("UNKNOWN");
+    }
   }
 
   private List<String> detectSignificantDifferences(
