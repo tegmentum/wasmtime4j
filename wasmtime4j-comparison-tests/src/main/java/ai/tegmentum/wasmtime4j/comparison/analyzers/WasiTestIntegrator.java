@@ -6,7 +6,6 @@ import ai.tegmentum.wasmtime4j.webassembly.WasmTestSuiteLoader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -22,9 +21,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * Integrates Wasmtime WASI tests into the comparison testing framework. Provides comprehensive
- * WASI test discovery, execution, and analysis capabilities with support for both WASI Preview 1
- * and Preview 2.
+ * Integrates Wasmtime WASI tests into the comparison testing framework. Provides comprehensive WASI
+ * test discovery, execution, and analysis capabilities with support for both WASI Preview 1 and
+ * Preview 2.
  *
  * <p>Key features:
  *
@@ -364,13 +363,14 @@ public final class WasiTestIntegrator {
    * @return map of categorized WASI test cases
    * @throws IOException if test discovery fails
    */
-  public Map<WasiTestCategory, List<WasmTestCase>> discoverWasiTests(final Path wasmtimeTestDirectory)
-      throws IOException {
+  public Map<WasiTestCategory, List<WasmTestCase>> discoverWasiTests(
+      final Path wasmtimeTestDirectory) throws IOException {
     Objects.requireNonNull(wasmtimeTestDirectory, "wasmtimeTestDirectory cannot be null");
 
     LOGGER.info("Discovering WASI tests in: " + wasmtimeTestDirectory);
 
-    final Map<WasiTestCategory, List<WasmTestCase>> discoveredTests = new EnumMap<>(WasiTestCategory.class);
+    final Map<WasiTestCategory, List<WasmTestCase>> discoveredTests =
+        new EnumMap<>(WasiTestCategory.class);
 
     // Initialize empty lists for all categories
     for (final WasiTestCategory category : WasiTestCategory.values()) {
@@ -393,7 +393,12 @@ public final class WasiTestIntegrator {
     categorizedTests.putAll(discoveredTests);
 
     final int totalTests = discoveredTests.values().stream().mapToInt(List::size).sum();
-    LOGGER.info("Discovered " + totalTests + " WASI tests across " + discoveredTests.size() + " categories");
+    LOGGER.info(
+        "Discovered "
+            + totalTests
+            + " WASI tests across "
+            + discoveredTests.size()
+            + " categories");
 
     return Map.copyOf(discoveredTests);
   }
@@ -413,7 +418,8 @@ public final class WasiTestIntegrator {
     LOGGER.info("Executing WASI test: " + testCase.getTestName());
 
     final WasiTestCategory category = categorizeWasiTest(testCase);
-    final Map<RuntimeType, BehavioralAnalyzer.TestExecutionResult> runtimeResults = new EnumMap<>(RuntimeType.class);
+    final Map<RuntimeType, BehavioralAnalyzer.TestExecutionResult> runtimeResults =
+        new EnumMap<>(RuntimeType.class);
 
     // Execute test across all available runtimes
     for (final RuntimeType runtime : RuntimeType.values()) {
@@ -421,9 +427,21 @@ public final class WasiTestIntegrator {
         final BehavioralAnalyzer.TestExecutionResult result =
             executeWasiTestOnRuntime(testCase, environment, runtime);
         runtimeResults.put(runtime, result);
-        LOGGER.fine("WASI test " + testCase.getTestName() + " executed on " + runtime + ": " + result.isSuccessful());
+        LOGGER.fine(
+            "WASI test "
+                + testCase.getTestName()
+                + " executed on "
+                + runtime
+                + ": "
+                + result.isSuccessful());
       } catch (final Exception e) {
-        LOGGER.warning("Failed to execute WASI test " + testCase.getTestName() + " on " + runtime + ": " + e.getMessage());
+        LOGGER.warning(
+            "Failed to execute WASI test "
+                + testCase.getTestName()
+                + " on "
+                + runtime
+                + ": "
+                + e.getMessage());
         // Create failure result
         runtimeResults.put(runtime, createFailureResult(testCase, e));
       }
@@ -437,20 +455,28 @@ public final class WasiTestIntegrator {
     final WasiPerformanceMetrics performanceMetrics =
         measureWasiPerformance(testCase, environment, runtimeResults);
 
-    final boolean successful = runtimeResults.values().stream().anyMatch(BehavioralAnalyzer.TestExecutionResult::isSuccessful);
+    final boolean successful =
+        runtimeResults.values().stream()
+            .anyMatch(BehavioralAnalyzer.TestExecutionResult::isSuccessful);
 
-    final WasiTestExecutionResult result = new WasiTestExecutionResult(
-        testCase.getTestName(),
-        category,
-        environment,
-        runtimeResults,
-        compatibilityAnalysis,
-        performanceMetrics,
-        successful);
+    final WasiTestExecutionResult result =
+        new WasiTestExecutionResult(
+            testCase.getTestName(),
+            category,
+            environment,
+            runtimeResults,
+            compatibilityAnalysis,
+            performanceMetrics,
+            successful);
 
     executionResults.put(testCase.getTestName(), result);
 
-    LOGGER.info("WASI test execution completed: " + testCase.getTestName() + " (success: " + successful + ")");
+    LOGGER.info(
+        "WASI test execution completed: "
+            + testCase.getTestName()
+            + " (success: "
+            + successful
+            + ")");
     return result;
   }
 
@@ -516,13 +542,15 @@ public final class WasiTestIntegrator {
     }
 
     try (final Stream<Path> paths = Files.walk(directory)) {
-      final List<Path> wasmFiles = paths
-          .filter(Files::isRegularFile)
-          .filter(path -> path.toString().endsWith(".wasm"))
-          .collect(Collectors.toList());
+      final List<Path> wasmFiles =
+          paths
+              .filter(Files::isRegularFile)
+              .filter(path -> path.toString().endsWith(".wasm"))
+              .collect(Collectors.toList());
 
       for (final Path wasmFile : wasmFiles) {
-        final WasmTestCase testCase = WasmTestCase.fromFile(wasmFile, WasmTestSuiteLoader.TestSuiteType.WASI_TESTS);
+        final WasmTestCase testCase =
+            WasmTestCase.fromFile(wasmFile, WasmTestSuiteLoader.TestSuiteType.WASI_TESTS);
         final WasiTestCategory category = categorizeWasiTestFromPath(wasmFile);
         discoveredTests.get(category).add(testCase);
       }
@@ -538,14 +566,17 @@ public final class WasiTestIntegrator {
     }
 
     try (final Stream<Path> paths = Files.walk(directory)) {
-      final List<Path> wasmFiles = paths
-          .filter(Files::isRegularFile)
-          .filter(path -> path.toString().endsWith(".wasm"))
-          .filter(path -> path.toString().contains("wasi") || path.toString().contains("component"))
-          .collect(Collectors.toList());
+      final List<Path> wasmFiles =
+          paths
+              .filter(Files::isRegularFile)
+              .filter(path -> path.toString().endsWith(".wasm"))
+              .filter(
+                  path -> path.toString().contains("wasi") || path.toString().contains("component"))
+              .collect(Collectors.toList());
 
       for (final Path wasmFile : wasmFiles) {
-        final WasmTestCase testCase = WasmTestCase.fromFile(wasmFile, WasmTestSuiteLoader.TestSuiteType.WASMTIME_TESTS);
+        final WasmTestCase testCase =
+            WasmTestCase.fromFile(wasmFile, WasmTestSuiteLoader.TestSuiteType.WASMTIME_TESTS);
         final WasiTestCategory category = categorizeWasiTestFromPath(wasmFile);
         discoveredTests.get(category).add(testCase);
       }
@@ -646,7 +677,8 @@ public final class WasiTestIntegrator {
     }
   }
 
-  private void setupWasiEnvironment(final WasiEnvironmentConfiguration environment, final RuntimeType runtime) {
+  private void setupWasiEnvironment(
+      final WasiEnvironmentConfiguration environment, final RuntimeType runtime) {
     // Implementation would setup WASI-specific environment:
     // - Set environment variables
     // - Prepare filesystem access
@@ -656,7 +688,8 @@ public final class WasiTestIntegrator {
     LOGGER.fine("Setting up WASI environment for runtime: " + runtime);
   }
 
-  private void cleanupWasiEnvironment(final WasiEnvironmentConfiguration environment, final RuntimeType runtime) {
+  private void cleanupWasiEnvironment(
+      final WasiEnvironmentConfiguration environment, final RuntimeType runtime) {
     // Implementation would cleanup WASI environment:
     // - Remove temporary files
     // - Close file handles
@@ -664,7 +697,8 @@ public final class WasiTestIntegrator {
     LOGGER.fine("Cleaning up WASI environment for runtime: " + runtime);
   }
 
-  private BehavioralAnalyzer.TestExecutionResult createFailureResult(final WasmTestCase testCase, final Exception e) {
+  private BehavioralAnalyzer.TestExecutionResult createFailureResult(
+      final WasmTestCase testCase, final Exception e) {
     // Create a failure result for behavioral analysis
     return new BehavioralAnalyzer.TestExecutionResult(
         testCase.getTestName(),
@@ -686,7 +720,8 @@ public final class WasiTestIntegrator {
     final Set<String> unsupportedFeatures = new HashSet<>();
     final Map<String, String> issues = new HashMap<>();
 
-    for (final Map.Entry<RuntimeType, BehavioralAnalyzer.TestExecutionResult> entry : runtimeResults.entrySet()) {
+    for (final Map.Entry<RuntimeType, BehavioralAnalyzer.TestExecutionResult> entry :
+        runtimeResults.entrySet()) {
       final RuntimeType runtime = entry.getKey();
       final BehavioralAnalyzer.TestExecutionResult result = entry.getValue();
 
@@ -703,17 +738,11 @@ public final class WasiTestIntegrator {
       }
     }
 
-    final double overallScore = previewScores.values().stream()
-        .mapToDouble(Double::doubleValue)
-        .average()
-        .orElse(0.0);
+    final double overallScore =
+        previewScores.values().stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
 
     return new WasiCompatibilityAnalysis(
-        previewScores,
-        supportedFeatures,
-        unsupportedFeatures,
-        issues,
-        overallScore);
+        previewScores, supportedFeatures, unsupportedFeatures, issues, overallScore);
   }
 
   private WasiPerformanceMetrics measureWasiPerformance(
@@ -727,7 +756,8 @@ public final class WasiTestIntegrator {
     final Map<RuntimeType, Integer> syscallCounts = new EnumMap<>(RuntimeType.class);
     final Map<RuntimeType, Long> memoryUsage = new EnumMap<>(RuntimeType.class);
 
-    for (final Map.Entry<RuntimeType, BehavioralAnalyzer.TestExecutionResult> entry : runtimeResults.entrySet()) {
+    for (final Map.Entry<RuntimeType, BehavioralAnalyzer.TestExecutionResult> entry :
+        runtimeResults.entrySet()) {
       final RuntimeType runtime = entry.getKey();
       final BehavioralAnalyzer.TestExecutionResult result = entry.getValue();
 

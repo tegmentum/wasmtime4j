@@ -52,6 +52,13 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- Test utilities and framework dependencies -->
+        <dependency>
+            <groupId>ai.tegmentum</groupId>
+            <artifactId>wasmtime4j-tests</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
         <!-- Test framework dependencies -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>

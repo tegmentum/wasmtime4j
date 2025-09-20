@@ -5,7 +5,6 @@ import ai.tegmentum.wasmtime4j.webassembly.WasmTestSuiteLoader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -334,76 +333,97 @@ public final class WasiTestDiscovery {
   private static final Map<WasiTestIntegrator.WasiTestCategory, Set<Pattern>> CATEGORY_PATTERNS;
 
   static {
-    final Map<WasiTestIntegrator.WasiTestCategory, Set<Pattern>> patterns = new EnumMap<>(WasiTestIntegrator.WasiTestCategory.class);
+    final Map<WasiTestIntegrator.WasiTestCategory, Set<Pattern>> patterns =
+        new EnumMap<>(WasiTestIntegrator.WasiTestCategory.class);
 
-    patterns.put(WasiTestIntegrator.WasiTestCategory.FILESYSTEM, Set.of(
-        Pattern.compile(".*file.*", Pattern.CASE_INSENSITIVE),
-        Pattern.compile(".*dir.*", Pattern.CASE_INSENSITIVE),
-        Pattern.compile(".*path.*", Pattern.CASE_INSENSITIVE),
-        Pattern.compile(".*fd.*", Pattern.CASE_INSENSITIVE),
-        Pattern.compile(".*open.*", Pattern.CASE_INSENSITIVE),
-        Pattern.compile(".*read.*", Pattern.CASE_INSENSITIVE),
-        Pattern.compile(".*write.*", Pattern.CASE_INSENSITIVE)));
+    patterns.put(
+        WasiTestIntegrator.WasiTestCategory.FILESYSTEM,
+        Set.of(
+            Pattern.compile(".*file.*", Pattern.CASE_INSENSITIVE),
+            Pattern.compile(".*dir.*", Pattern.CASE_INSENSITIVE),
+            Pattern.compile(".*path.*", Pattern.CASE_INSENSITIVE),
+            Pattern.compile(".*fd.*", Pattern.CASE_INSENSITIVE),
+            Pattern.compile(".*open.*", Pattern.CASE_INSENSITIVE),
+            Pattern.compile(".*read.*", Pattern.CASE_INSENSITIVE),
+            Pattern.compile(".*write.*", Pattern.CASE_INSENSITIVE)));
 
-    patterns.put(WasiTestIntegrator.WasiTestCategory.STDIO, Set.of(
-        Pattern.compile(".*stdio.*", Pattern.CASE_INSENSITIVE),
-        Pattern.compile(".*stdout.*", Pattern.CASE_INSENSITIVE),
-        Pattern.compile(".*stdin.*", Pattern.CASE_INSENSITIVE),
-        Pattern.compile(".*stderr.*", Pattern.CASE_INSENSITIVE),
-        Pattern.compile(".*io.*", Pattern.CASE_INSENSITIVE)));
+    patterns.put(
+        WasiTestIntegrator.WasiTestCategory.STDIO,
+        Set.of(
+            Pattern.compile(".*stdio.*", Pattern.CASE_INSENSITIVE),
+            Pattern.compile(".*stdout.*", Pattern.CASE_INSENSITIVE),
+            Pattern.compile(".*stdin.*", Pattern.CASE_INSENSITIVE),
+            Pattern.compile(".*stderr.*", Pattern.CASE_INSENSITIVE),
+            Pattern.compile(".*io.*", Pattern.CASE_INSENSITIVE)));
 
-    patterns.put(WasiTestIntegrator.WasiTestCategory.ENVIRONMENT, Set.of(
-        Pattern.compile(".*env.*", Pattern.CASE_INSENSITIVE),
-        Pattern.compile(".*environ.*", Pattern.CASE_INSENSITIVE),
-        Pattern.compile(".*getenv.*", Pattern.CASE_INSENSITIVE)));
+    patterns.put(
+        WasiTestIntegrator.WasiTestCategory.ENVIRONMENT,
+        Set.of(
+            Pattern.compile(".*env.*", Pattern.CASE_INSENSITIVE),
+            Pattern.compile(".*environ.*", Pattern.CASE_INSENSITIVE),
+            Pattern.compile(".*getenv.*", Pattern.CASE_INSENSITIVE)));
 
-    patterns.put(WasiTestIntegrator.WasiTestCategory.CLOCKS, Set.of(
-        Pattern.compile(".*clock.*", Pattern.CASE_INSENSITIVE),
-        Pattern.compile(".*time.*", Pattern.CASE_INSENSITIVE),
-        Pattern.compile(".*timestamp.*", Pattern.CASE_INSENSITIVE)));
+    patterns.put(
+        WasiTestIntegrator.WasiTestCategory.CLOCKS,
+        Set.of(
+            Pattern.compile(".*clock.*", Pattern.CASE_INSENSITIVE),
+            Pattern.compile(".*time.*", Pattern.CASE_INSENSITIVE),
+            Pattern.compile(".*timestamp.*", Pattern.CASE_INSENSITIVE)));
 
-    patterns.put(WasiTestIntegrator.WasiTestCategory.RANDOM, Set.of(
-        Pattern.compile(".*random.*", Pattern.CASE_INSENSITIVE),
-        Pattern.compile(".*rand.*", Pattern.CASE_INSENSITIVE),
-        Pattern.compile(".*entropy.*", Pattern.CASE_INSENSITIVE)));
+    patterns.put(
+        WasiTestIntegrator.WasiTestCategory.RANDOM,
+        Set.of(
+            Pattern.compile(".*random.*", Pattern.CASE_INSENSITIVE),
+            Pattern.compile(".*rand.*", Pattern.CASE_INSENSITIVE),
+            Pattern.compile(".*entropy.*", Pattern.CASE_INSENSITIVE)));
 
-    patterns.put(WasiTestIntegrator.WasiTestCategory.PROCESS, Set.of(
-        Pattern.compile(".*proc.*", Pattern.CASE_INSENSITIVE),
-        Pattern.compile(".*process.*", Pattern.CASE_INSENSITIVE),
-        Pattern.compile(".*spawn.*", Pattern.CASE_INSENSITIVE)));
+    patterns.put(
+        WasiTestIntegrator.WasiTestCategory.PROCESS,
+        Set.of(
+            Pattern.compile(".*proc.*", Pattern.CASE_INSENSITIVE),
+            Pattern.compile(".*process.*", Pattern.CASE_INSENSITIVE),
+            Pattern.compile(".*spawn.*", Pattern.CASE_INSENSITIVE)));
 
-    patterns.put(WasiTestIntegrator.WasiTestCategory.SOCKETS, Set.of(
-        Pattern.compile(".*socket.*", Pattern.CASE_INSENSITIVE),
-        Pattern.compile(".*net.*", Pattern.CASE_INSENSITIVE),
-        Pattern.compile(".*tcp.*", Pattern.CASE_INSENSITIVE),
-        Pattern.compile(".*udp.*", Pattern.CASE_INSENSITIVE)));
+    patterns.put(
+        WasiTestIntegrator.WasiTestCategory.SOCKETS,
+        Set.of(
+            Pattern.compile(".*socket.*", Pattern.CASE_INSENSITIVE),
+            Pattern.compile(".*net.*", Pattern.CASE_INSENSITIVE),
+            Pattern.compile(".*tcp.*", Pattern.CASE_INSENSITIVE),
+            Pattern.compile(".*udp.*", Pattern.CASE_INSENSITIVE)));
 
-    patterns.put(WasiTestIntegrator.WasiTestCategory.ARGS, Set.of(
-        Pattern.compile(".*args.*", Pattern.CASE_INSENSITIVE),
-        Pattern.compile(".*argv.*", Pattern.CASE_INSENSITIVE),
-        Pattern.compile(".*arguments.*", Pattern.CASE_INSENSITIVE)));
+    patterns.put(
+        WasiTestIntegrator.WasiTestCategory.ARGS,
+        Set.of(
+            Pattern.compile(".*args.*", Pattern.CASE_INSENSITIVE),
+            Pattern.compile(".*argv.*", Pattern.CASE_INSENSITIVE),
+            Pattern.compile(".*arguments.*", Pattern.CASE_INSENSITIVE)));
 
-    patterns.put(WasiTestIntegrator.WasiTestCategory.EXIT, Set.of(
-        Pattern.compile(".*exit.*", Pattern.CASE_INSENSITIVE),
-        Pattern.compile(".*terminate.*", Pattern.CASE_INSENSITIVE),
-        Pattern.compile(".*proc_exit.*", Pattern.CASE_INSENSITIVE)));
+    patterns.put(
+        WasiTestIntegrator.WasiTestCategory.EXIT,
+        Set.of(
+            Pattern.compile(".*exit.*", Pattern.CASE_INSENSITIVE),
+            Pattern.compile(".*terminate.*", Pattern.CASE_INSENSITIVE),
+            Pattern.compile(".*proc_exit.*", Pattern.CASE_INSENSITIVE)));
 
-    patterns.put(WasiTestIntegrator.WasiTestCategory.PREVIEW2, Set.of(
-        Pattern.compile(".*preview2.*", Pattern.CASE_INSENSITIVE),
-        Pattern.compile(".*p2.*", Pattern.CASE_INSENSITIVE),
-        Pattern.compile(".*component.*", Pattern.CASE_INSENSITIVE)));
+    patterns.put(
+        WasiTestIntegrator.WasiTestCategory.PREVIEW2,
+        Set.of(
+            Pattern.compile(".*preview2.*", Pattern.CASE_INSENSITIVE),
+            Pattern.compile(".*p2.*", Pattern.CASE_INSENSITIVE),
+            Pattern.compile(".*component.*", Pattern.CASE_INSENSITIVE)));
 
     CATEGORY_PATTERNS = Map.copyOf(patterns);
   }
 
   // Known Wasmtime WASI test directories
-  private static final List<String> WASI_TEST_DIRECTORIES = List.of(
-      "crates/wasi-tests",
-      "crates/wasi/tests",
-      "crates/wasi-common/tests",
-      "tests/misc_testsuite/wasi",
-      "crates/test-programs/wasi-tests"
-  );
+  private static final List<String> WASI_TEST_DIRECTORIES =
+      List.of(
+          "crates/wasi-tests",
+          "crates/wasi/tests",
+          "crates/wasi-common/tests",
+          "tests/misc_testsuite/wasi",
+          "crates/test-programs/wasi-tests");
 
   private final Map<String, WasiTestMetadata> cachedMetadata = new ConcurrentHashMap<>();
 
@@ -414,18 +434,21 @@ public final class WasiTestDiscovery {
    * @return comprehensive discovery result with categorized tests
    * @throws IOException if test discovery fails
    */
-  public WasiDiscoveryResult discoverWasiTests(final WasiDiscoveryConfiguration config) throws IOException {
+  public WasiDiscoveryResult discoverWasiTests(final WasiDiscoveryConfiguration config)
+      throws IOException {
     Objects.requireNonNull(config, "config cannot be null");
 
     LOGGER.info("Starting WASI test discovery in: " + config.getWasmtimeRootDirectory());
 
-    final Map<WasiTestIntegrator.WasiTestCategory, List<WasmTestCase>> categorizedTests = new EnumMap<>(WasiTestIntegrator.WasiTestCategory.class);
+    final Map<WasiTestIntegrator.WasiTestCategory, List<WasmTestCase>> categorizedTests =
+        new EnumMap<>(WasiTestIntegrator.WasiTestCategory.class);
     final Map<String, WasiTestMetadata> testMetadata = new HashMap<>();
     final List<String> warnings = new ArrayList<>();
     final List<String> validationErrors = new ArrayList<>();
 
     // Initialize empty lists for all categories
-    for (final WasiTestIntegrator.WasiTestCategory category : WasiTestIntegrator.WasiTestCategory.values()) {
+    for (final WasiTestIntegrator.WasiTestCategory category :
+        WasiTestIntegrator.WasiTestCategory.values()) {
       categorizedTests.put(category, new ArrayList<>());
     }
 
@@ -433,7 +456,8 @@ public final class WasiTestDiscovery {
     for (final String testDir : WASI_TEST_DIRECTORIES) {
       final Path wasiTestsPath = config.getWasmtimeRootDirectory().resolve(testDir);
       if (Files.exists(wasiTestsPath)) {
-        discoverTestsInDirectory(wasiTestsPath, config, categorizedTests, testMetadata, warnings, validationErrors);
+        discoverTestsInDirectory(
+            wasiTestsPath, config, categorizedTests, testMetadata, warnings, validationErrors);
       } else {
         warnings.add("WASI test directory not found: " + wasiTestsPath);
       }
@@ -445,9 +469,11 @@ public final class WasiTestDiscovery {
     // Calculate statistics
     final WasiTestStatistics statistics = calculateStatistics(categorizedTests, testMetadata);
 
-    LOGGER.info("WASI test discovery completed: " + statistics.getTotalTestsFound() + " tests found");
+    LOGGER.info(
+        "WASI test discovery completed: " + statistics.getTotalTestsFound() + " tests found");
 
-    return new WasiDiscoveryResult(categorizedTests, testMetadata, statistics, warnings, validationErrors);
+    return new WasiDiscoveryResult(
+        categorizedTests, testMetadata, statistics, warnings, validationErrors);
   }
 
   /**
@@ -456,7 +482,8 @@ public final class WasiTestDiscovery {
    * @param wasmtimeRootDirectory the root directory of the Wasmtime repository
    * @return default discovery configuration
    */
-  public static WasiDiscoveryConfiguration createDefaultConfiguration(final Path wasmtimeRootDirectory) {
+  public static WasiDiscoveryConfiguration createDefaultConfiguration(
+      final Path wasmtimeRootDirectory) {
     return new WasiDiscoveryConfiguration.Builder()
         .wasmtimeRootDirectory(wasmtimeRootDirectory)
         .enableAllCategories()
@@ -478,19 +505,22 @@ public final class WasiTestDiscovery {
       final Map<WasiTestIntegrator.WasiTestCategory, List<WasmTestCase>> categorizedTests,
       final Map<String, WasiTestMetadata> testMetadata,
       final List<String> warnings,
-      final List<String> validationErrors) throws IOException {
+      final List<String> validationErrors)
+      throws IOException {
 
     LOGGER.fine("Discovering WASI tests in directory: " + directory);
 
     try (final Stream<Path> paths = Files.walk(directory)) {
-      final List<Path> wasmFiles = paths
-          .filter(Files::isRegularFile)
-          .filter(path -> path.toString().endsWith(".wasm"))
-          .collect(Collectors.toList());
+      final List<Path> wasmFiles =
+          paths
+              .filter(Files::isRegularFile)
+              .filter(path -> path.toString().endsWith(".wasm"))
+              .collect(Collectors.toList());
 
       for (final Path wasmFile : wasmFiles) {
         try {
-          final WasmTestCase testCase = WasmTestCase.fromFile(wasmFile, WasmTestSuiteLoader.TestSuiteType.WASI_TESTS);
+          final WasmTestCase testCase =
+              WasmTestCase.fromFile(wasmFile, WasmTestSuiteLoader.TestSuiteType.WASI_TESTS);
 
           // Validate test case if strict validation is enabled
           if (config.isStrictValidation() && !testCase.isValidWasmModule()) {
@@ -517,8 +547,9 @@ public final class WasiTestDiscovery {
 
           // Apply name filters
           if (!config.getTestNameFilters().isEmpty()) {
-            final boolean matchesFilter = config.getTestNameFilters().stream()
-                .anyMatch(filter -> testCase.getTestName().contains(filter));
+            final boolean matchesFilter =
+                config.getTestNameFilters().stream()
+                    .anyMatch(filter -> testCase.getTestName().contains(filter));
             if (!matchesFilter) {
               continue;
             }
@@ -535,9 +566,7 @@ public final class WasiTestDiscovery {
   }
 
   private WasiTestMetadata extractTestMetadata(
-      final WasmTestCase testCase,
-      final Path wasmFile,
-      final WasiDiscoveryConfiguration config) {
+      final WasmTestCase testCase, final Path wasmFile, final WasiDiscoveryConfiguration config) {
 
     // Check cache first
     final String cacheKey = testCase.getTestName();
@@ -549,7 +578,8 @@ public final class WasiTestDiscovery {
     final String pathStr = wasmFile.toString().toLowerCase();
 
     // Determine category based on patterns
-    final WasiTestIntegrator.WasiTestCategory category = determineCategoryFromPatterns(testName, pathStr);
+    final WasiTestIntegrator.WasiTestCategory category =
+        determineCategoryFromPatterns(testName, pathStr);
 
     // Determine preview version
     final int previewVersion = determinePreviewVersion(testName, pathStr);
@@ -570,16 +600,17 @@ public final class WasiTestDiscovery {
     // Extract custom attributes
     final Map<String, String> customAttributes = extractCustomAttributes(testCase);
 
-    final WasiTestMetadata metadata = new WasiTestMetadata(
-        testName,
-        category,
-        previewVersion,
-        requiredFeatures,
-        environmentRequirements,
-        experimental,
-        performance,
-        description,
-        customAttributes);
+    final WasiTestMetadata metadata =
+        new WasiTestMetadata(
+            testName,
+            category,
+            previewVersion,
+            requiredFeatures,
+            environmentRequirements,
+            experimental,
+            performance,
+            description,
+            customAttributes);
 
     // Cache the metadata
     cachedMetadata.put(cacheKey, metadata);
@@ -587,8 +618,10 @@ public final class WasiTestDiscovery {
     return metadata;
   }
 
-  private WasiTestIntegrator.WasiTestCategory determineCategoryFromPatterns(final String testName, final String pathStr) {
-    for (final Map.Entry<WasiTestIntegrator.WasiTestCategory, Set<Pattern>> entry : CATEGORY_PATTERNS.entrySet()) {
+  private WasiTestIntegrator.WasiTestCategory determineCategoryFromPatterns(
+      final String testName, final String pathStr) {
+    for (final Map.Entry<WasiTestIntegrator.WasiTestCategory, Set<Pattern>> entry :
+        CATEGORY_PATTERNS.entrySet()) {
       final WasiTestIntegrator.WasiTestCategory category = entry.getKey();
       final Set<Pattern> patterns = entry.getValue();
 
@@ -604,9 +637,11 @@ public final class WasiTestDiscovery {
   }
 
   private int determinePreviewVersion(final String testName, final String pathStr) {
-    if (testName.toLowerCase().contains("preview2") || pathStr.contains("preview2") ||
-        testName.toLowerCase().contains("p2") || pathStr.contains("p2") ||
-        pathStr.contains("component")) {
+    if (testName.toLowerCase().contains("preview2")
+        || pathStr.contains("preview2")
+        || testName.toLowerCase().contains("p2")
+        || pathStr.contains("p2")
+        || pathStr.contains("component")) {
       return 2;
     }
     return 1; // Default to Preview 1
@@ -635,7 +670,8 @@ public final class WasiTestDiscovery {
     return features;
   }
 
-  private Set<String> extractEnvironmentRequirements(final WasmTestCase testCase, final String pathStr) {
+  private Set<String> extractEnvironmentRequirements(
+      final WasmTestCase testCase, final String pathStr) {
     final Set<String> requirements = new HashSet<>();
 
     if (pathStr.contains("filesystem") || pathStr.contains("file")) {
@@ -652,17 +688,17 @@ public final class WasiTestDiscovery {
   }
 
   private boolean isExperimentalTest(final String testName, final String pathStr) {
-    return testName.toLowerCase().contains("experimental") ||
-           pathStr.contains("experimental") ||
-           testName.toLowerCase().contains("unstable") ||
-           pathStr.contains("unstable");
+    return testName.toLowerCase().contains("experimental")
+        || pathStr.contains("experimental")
+        || testName.toLowerCase().contains("unstable")
+        || pathStr.contains("unstable");
   }
 
   private boolean isPerformanceTest(final String testName, final String pathStr) {
-    return testName.toLowerCase().contains("perf") ||
-           testName.toLowerCase().contains("benchmark") ||
-           pathStr.contains("perf") ||
-           pathStr.contains("benchmark");
+    return testName.toLowerCase().contains("perf")
+        || testName.toLowerCase().contains("benchmark")
+        || pathStr.contains("perf")
+        || pathStr.contains("benchmark");
   }
 
   private String extractDescription(final WasmTestCase testCase) {
@@ -691,7 +727,8 @@ public final class WasiTestDiscovery {
       final Map<String, WasiTestMetadata> testMetadata) {
 
     // Apply per-category limits
-    for (final Map.Entry<WasiTestIntegrator.WasiTestCategory, List<WasmTestCase>> entry : categorizedTests.entrySet()) {
+    for (final Map.Entry<WasiTestIntegrator.WasiTestCategory, List<WasmTestCase>> entry :
+        categorizedTests.entrySet()) {
       final List<WasmTestCase> tests = entry.getValue();
       if (tests.size() > config.getMaxTestsPerCategory()) {
         final List<WasmTestCase> limitedTests = tests.subList(0, config.getMaxTestsPerCategory());
@@ -709,7 +746,8 @@ public final class WasiTestDiscovery {
       final Map<WasiTestIntegrator.WasiTestCategory, List<WasmTestCase>> categorizedTests,
       final Map<String, WasiTestMetadata> testMetadata) {
 
-    final Map<WasiTestIntegrator.WasiTestCategory, Integer> testsPerCategory = new EnumMap<>(WasiTestIntegrator.WasiTestCategory.class);
+    final Map<WasiTestIntegrator.WasiTestCategory, Integer> testsPerCategory =
+        new EnumMap<>(WasiTestIntegrator.WasiTestCategory.class);
     int totalTests = 0;
     int preview1Tests = 0;
     int preview2Tests = 0;
@@ -717,7 +755,8 @@ public final class WasiTestDiscovery {
     int performanceTests = 0;
     int validTests = 0;
 
-    for (final Map.Entry<WasiTestIntegrator.WasiTestCategory, List<WasmTestCase>> entry : categorizedTests.entrySet()) {
+    for (final Map.Entry<WasiTestIntegrator.WasiTestCategory, List<WasmTestCase>> entry :
+        categorizedTests.entrySet()) {
       final int categoryCount = entry.getValue().size();
       testsPerCategory.put(entry.getKey(), categoryCount);
       totalTests += categoryCount;
