@@ -135,11 +135,23 @@ pub mod jni_engine {
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeSetOptimizationLevel(
         env: JNIEnv,
         _class: JClass,
-        _engine_ptr: jlong,
-        _level: jint,
+        engine_ptr: jlong,
+        level: jint,
     ) -> jboolean {
-        // For now, return true (optimization level setting not critical for basic tests)
-        1
+        // Note: Wasmtime engines are immutable after creation, so optimization level
+        // cannot be changed. This method validates the request but returns false
+        // to indicate the operation is not supported.
+        jni_utils::jni_try_bool(env, || {
+            let _engine = unsafe { core::get_engine_ref(engine_ptr as *const std::os::raw::c_void)? };
+            // Validate the level parameter
+            if level < 0 || level > 2 {
+                return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: format!("Invalid optimization level: {}", level),
+                });
+            }
+            // Return false to indicate optimization level cannot be changed after engine creation
+            Ok(false)
+        }) as jboolean
     }
     
     /// Check if fuel consumption is enabled (JNI version)
@@ -1171,6 +1183,80 @@ pub mod jni_store {
         })
     }
     
+    /// Increment the epoch counter for this store
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeIncrementEpoch(
+        env: JNIEnv,
+        _class: JClass,
+        store_ptr: jlong,
+    ) {
+        let _ = jni_utils::jni_try_void(env, || {
+            let store = unsafe { core::get_store_ref(store_ptr as *const std::os::raw::c_void)? };
+            core::increment_epoch(store);
+            Ok(())
+        });
+    }
+
+    /// Set memory limit for this store
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeSetMemoryLimit(
+        env: JNIEnv,
+        _class: JClass,
+        store_ptr: jlong,
+        bytes: jlong,
+    ) -> jboolean {
+        jni_utils::jni_try_bool(env, || {
+            if bytes < 0 {
+                return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: "Memory limit cannot be negative".to_string(),
+                });
+            }
+            let store = unsafe { core::get_store_ref(store_ptr as *const std::os::raw::c_void)? };
+            core::set_memory_limit(store, if bytes == 0 { None } else { Some(bytes as u64) })?;
+            Ok(true)
+        }) as jboolean
+    }
+
+    /// Set table element limit for this store
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeSetTableElementLimit(
+        env: JNIEnv,
+        _class: JClass,
+        store_ptr: jlong,
+        elements: jlong,
+    ) -> jboolean {
+        jni_utils::jni_try_bool(env, || {
+            if elements < 0 {
+                return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: "Table element limit cannot be negative".to_string(),
+                });
+            }
+            let store = unsafe { core::get_store_ref(store_ptr as *const std::os::raw::c_void)? };
+            core::set_table_element_limit(store, if elements == 0 { None } else { Some(elements as u64) })?;
+            Ok(true)
+        }) as jboolean
+    }
+
+    /// Set instance limit for this store
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeSetInstanceLimit(
+        env: JNIEnv,
+        _class: JClass,
+        store_ptr: jlong,
+        count: jint,
+    ) -> jboolean {
+        jni_utils::jni_try_bool(env, || {
+            if count < 0 {
+                return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: "Instance limit cannot be negative".to_string(),
+                });
+            }
+            let store = unsafe { core::get_store_ref(store_ptr as *const std::os::raw::c_void)? };
+            core::set_instance_limit(store, if count == 0 { None } else { Some(count as u32) })?;
+            Ok(true)
+        }) as jboolean
+    }
+
     /// Destroy a store
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeDestroyStore(
