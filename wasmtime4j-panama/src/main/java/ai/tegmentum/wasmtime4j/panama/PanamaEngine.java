@@ -50,6 +50,9 @@ public final class PanamaEngine implements Engine, AutoCloseable {
   // Engine state
   private volatile boolean closed = false;
 
+  /** The configuration used to create this engine (if available) */
+  private final EngineConfig storedConfig;
+
   @Override
   public boolean isValid() {
     return !closed;
@@ -65,6 +68,7 @@ public final class PanamaEngine implements Engine, AutoCloseable {
     this.resourceManager =
         Objects.requireNonNull(resourceManager, "Resource manager cannot be null");
     this.nativeFunctions = NativeFunctionBindings.getInstance();
+    this.storedConfig = null; // No configuration stored for default engines
 
     if (!nativeFunctions.isInitialized()) {
       throw new WasmException("Native function bindings not initialized");
@@ -85,6 +89,60 @@ public final class PanamaEngine implements Engine, AutoCloseable {
     } catch (Exception e) {
       throw new WasmException("Failed to create engine", e);
     }
+  }
+
+  /**
+   * Creates a new Panama engine instance with the specified configuration.
+   *
+   * @param resourceManager the arena resource manager for lifecycle management
+   * @param config the engine configuration to use
+   * @throws WasmException if the engine cannot be created
+   * @throws IllegalArgumentException if config is null
+   */
+  public PanamaEngine(final ArenaResourceManager resourceManager, final EngineConfig config) throws WasmException {
+    this.resourceManager =
+        Objects.requireNonNull(resourceManager, "Resource manager cannot be null");
+    this.nativeFunctions = NativeFunctionBindings.getInstance();
+    this.storedConfig = config != null ? config.copy() : null; // Store defensive copy
+
+    if (config == null) {
+      throw new IllegalArgumentException("Engine configuration cannot be null");
+    }
+
+    // Validate configuration before creating engine
+    config.validate();
+
+    if (!nativeFunctions.isInitialized()) {
+      throw new WasmException("Native function bindings not initialized");
+    }
+
+    try {
+      // Create the native engine with configuration through FFI
+      MemorySegment enginePtr = createNativeEngineWithConfig(config);
+      PanamaErrorHandler.requireValidPointer(enginePtr, "enginePtr");
+
+      // Create managed resource with cleanup
+      this.engineResource =
+          resourceManager.manageNativeResource(
+              enginePtr, () -> destroyNativeEngineInternal(enginePtr), "Wasmtime Engine");
+
+      LOGGER.fine("Created Panama engine instance with configuration: " + config.getSummary());
+
+    } catch (Exception e) {
+      throw new WasmException("Failed to create engine with configuration", e);
+    }
+  }
+
+  /**
+   * Factory method to create engine with configuration.
+   *
+   * @param resourceManager the arena resource manager for lifecycle management
+   * @param config the engine configuration
+   * @return a new configured PanamaEngine instance
+   * @throws WasmException if the engine cannot be created
+   */
+  public static PanamaEngine createWithConfig(final ArenaResourceManager resourceManager, final EngineConfig config) throws WasmException {
+    return new PanamaEngine(resourceManager, config);
   }
 
   @Override
