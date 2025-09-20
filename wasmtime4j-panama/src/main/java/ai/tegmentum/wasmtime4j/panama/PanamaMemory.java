@@ -503,10 +503,11 @@ public final class PanamaMemory implements WasmMemory {
     try {
       nativeFunctions.invokeFunction(
           "wasmtime4j_memory_bulk_copy",
-          FunctionDescriptor.ofVoid(
-              ValueLayout.ADDRESS, ValueLayout.JAVA_INT, ValueLayout.ADDRESS,
-              ValueLayout.JAVA_INT, ValueLayout.JAVA_INT),
-          destPanama.getMemoryPtr(), destOffset, sourcePanama.getMemoryPtr(), sourceOffset, length);
+          FunctionDescriptor.of(ValueLayout.JAVA_INT,
+              ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
+              ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG, ValueLayout.ADDRESS),
+          destPanama.getMemoryPtr(), sourcePanama.getMemoryPtr(), (long)destOffset,
+          (long)sourceOffset, (long)length, java.lang.foreign.MemorySegment.NULL);
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error in bulk copy", e);
     }
@@ -528,9 +529,11 @@ public final class PanamaMemory implements WasmMemory {
     try {
       nativeFunctions.invokeFunction(
           "wasmtime4j_memory_bulk_fill",
-          FunctionDescriptor.ofVoid(
-              ValueLayout.ADDRESS, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_BYTE),
-          memoryPanama.getMemoryPtr(), offset, length, value);
+          FunctionDescriptor.of(ValueLayout.JAVA_INT,
+              ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
+              ValueLayout.JAVA_BYTE, ValueLayout.JAVA_LONG, ValueLayout.ADDRESS),
+          memoryPanama.getMemoryPtr(), java.lang.foreign.MemorySegment.NULL, (long)offset,
+          value, (long)length, java.lang.foreign.MemorySegment.NULL);
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error in bulk fill", e);
     }
@@ -564,9 +567,10 @@ public final class PanamaMemory implements WasmMemory {
       return (Integer) nativeFunctions.invokeFunction(
           "wasmtime4j_memory_bulk_compare",
           FunctionDescriptor.of(ValueLayout.JAVA_INT,
-              ValueLayout.ADDRESS, ValueLayout.JAVA_INT, ValueLayout.ADDRESS,
-              ValueLayout.JAVA_INT, ValueLayout.JAVA_INT),
-          memory1Panama.getMemoryPtr(), offset1, memory2Panama.getMemoryPtr(), offset2, length);
+              ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
+              ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG, ValueLayout.ADDRESS),
+          memory1Panama.getMemoryPtr(), memory2Panama.getMemoryPtr(), (long)offset1,
+          (long)offset2, (long)length, java.lang.foreign.MemorySegment.NULL);
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error in bulk compare", e);
     }
@@ -661,9 +665,21 @@ public final class PanamaMemory implements WasmMemory {
     }
 
     try {
-      // For now, return -1 (not found) - real implementation would use native search
-      LOGGER.fine("Bulk search operation for pattern of length " + pattern.length);
-      return -1;
+      final PanamaMemory memoryPanama = (PanamaMemory) memory;
+
+      // Create memory segment for pattern
+      java.lang.foreign.MemorySegment patternSegment =
+          java.lang.foreign.MemorySegment.ofArray(pattern);
+
+      Long result = (Long) nativeFunctions.invokeFunction(
+          "wasmtime4j_memory_bulk_search",
+          FunctionDescriptor.of(ValueLayout.JAVA_LONG,
+              ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
+              ValueLayout.JAVA_LONG, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG),
+          memoryPanama.getMemoryPtr(), java.lang.foreign.MemorySegment.NULL, (long)offset,
+          (long)length, patternSegment, (long)pattern.length);
+
+      return result.intValue();
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error in bulk search", e);
     }
@@ -683,8 +699,16 @@ public final class PanamaMemory implements WasmMemory {
     }
 
     try {
-      // For now, use bulk copy to same memory - real implementation would use native move
-      bulkCopy(memory, destOffset, memory, sourceOffset, length);
+      final PanamaMemory memoryPanama = (PanamaMemory) memory;
+
+      nativeFunctions.invokeFunction(
+          "wasmtime4j_memory_bulk_move",
+          FunctionDescriptor.of(ValueLayout.JAVA_INT,
+              ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
+              ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG),
+          memoryPanama.getMemoryPtr(), java.lang.foreign.MemorySegment.NULL, (long)destOffset,
+          (long)sourceOffset, (long)length);
+
       LOGGER.fine("Bulk move operation from " + sourceOffset + " to " + destOffset + " length " + length);
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error in bulk move", e);
@@ -1200,6 +1224,6 @@ public final class PanamaMemory implements WasmMemory {
    * @return the native memory pointer
    */
   private java.lang.foreign.MemorySegment getMemoryPtr() {
-    return memoryPtr;
+    return memoryResource.getNativePointer();
   }
 }

@@ -168,4 +168,20 @@ public interface Engine extends Closeable {
   static Engine create() throws WasmException {
     return WasmRuntimeFactory.create().createEngine();
   }
+
+  /**
+   * Creates a new Engine with the specified configuration.
+   *
+   * @param config the engine configuration to use
+   * @return a new Engine instance configured with the specified settings
+   * @throws WasmException if the engine cannot be created
+   * @throws IllegalArgumentException if config is null
+   */
+  static Engine create(final EngineConfig config) throws WasmException {
+    if (config == null) {
+      throw new IllegalArgumentException("Engine configuration cannot be null");
+    }
+    config.validate(); // Validate configuration before creating engine
+    return WasmRuntimeFactory.create().createEngine(config);
+  }
 }

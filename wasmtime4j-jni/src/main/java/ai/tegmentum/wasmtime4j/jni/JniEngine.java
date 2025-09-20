@@ -52,6 +52,9 @@ public final class JniEngine extends JniResource implements Engine {
 
   private static final Logger LOGGER = Logger.getLogger(JniEngine.class.getName());
 
+  /** The configuration used to create this engine (if available) */
+  private final EngineConfig storedConfig;
+
   // Load native library when this class is first loaded
   static {
     try {
@@ -73,7 +76,24 @@ public final class JniEngine extends JniResource implements Engine {
    */
   JniEngine(final long nativeHandle) {
     super(nativeHandle);
+    this.storedConfig = null; // No configuration stored for default engines
     LOGGER.fine("Created JNI engine with handle: 0x" + Long.toHexString(nativeHandle));
+  }
+
+  /**
+   * Creates a new JNI engine with the given native handle and configuration.
+   *
+   * <p>This constructor stores the configuration for later retrieval via {@link #getConfig()}.
+   *
+   * @param nativeHandle the native engine handle from Wasmtime
+   * @param config the configuration used to create this engine
+   * @throws JniResourceException if nativeHandle is invalid
+   */
+  JniEngine(final long nativeHandle, final EngineConfig config) {
+    super(nativeHandle);
+    this.storedConfig = config != null ? config.copy() : null; // Store defensive copy
+    LOGGER.fine("Created JNI engine with handle: 0x" + Long.toHexString(nativeHandle) +
+                " and configuration: " + (config != null ? config.getSummary() : "default"));
   }
 
   /**
@@ -95,6 +115,68 @@ public final class JniEngine extends JniResource implements Engine {
     } catch (final Exception e) {
       throw new JniException("Failed to create Wasmtime engine", e);
     }
+  }
+
+  /**
+   * Creates a new engine with the specified configuration.
+   *
+   * <p>This factory method creates an engine with custom Wasmtime settings, allowing fine-grained
+   * control over compilation behavior, optimization levels, and WebAssembly feature support.
+   *
+   * @param config the engine configuration
+   * @return a new engine instance with the specified configuration
+   * @throws JniException if engine creation fails
+   * @throws IllegalArgumentException if config is null
+   */
+  public static JniEngine createWithConfig(final EngineConfig config) {
+    if (config == null) {
+      throw new IllegalArgumentException("Engine configuration cannot be null");
+    }
+
+    // Validate configuration before attempting to create engine
+    config.validate();
+
+    NativeMethodBindings.ensureInitialized();
+
+    try {
+      final long engineHandle = nativeCreateEngineWithConfig(
+          convertOptimizationLevel(config.getOptimizationLevel()),
+          config.isDebugInfo(),
+          config.isParallelCompilation(),
+          config.isCraneliftDebugVerifier(),
+          config.isWasmBacktraceDetails(),
+          config.isWasmReferenceTypes(),
+          config.isWasmSimd(),
+          config.isWasmRelaxedSimd(),
+          config.isWasmMultiValue(),
+          config.isWasmBulkMemory(),
+          config.isWasmThreads(),
+          config.isWasmTailCall(),
+          config.isWasmMultiMemory(),
+          config.isWasmMemory64(),
+          config.isConsumeFuel(),
+          config.getFuelAmount(),
+          config.isWasiEnabled(),
+          config.isEpochInterruptionEnabled(),
+          config.isMemoryLimitEnabled(),
+          config.getMemoryLimit()
+      );
+
+      JniValidation.requireValidHandle(engineHandle, "engineHandle");
+      return new JniEngine(engineHandle, config);
+    } catch (final Exception e) {
+      if (e instanceof JniException) {
+        throw e;
+      }
+      throw new JniException("Failed to create Wasmtime engine with configuration", e);
+    }
+  }
+
+  /**
+   * Converts OptimizationLevel enum to integer for native layer.
+   */
+  private static int convertOptimizationLevel(final OptimizationLevel level) {
+    return level.getValue();
   }
 
   /**
@@ -376,23 +458,48 @@ public final class JniEngine extends JniResource implements Engine {
   public EngineConfig getConfig() {
     ensureNotClosed();
 
+    // Return stored configuration if available
+    if (storedConfig != null) {
+      return storedConfig.copy(); // Return defensive copy
+    }
+
+    // For engines created without configuration, query native layer
     try {
-      // Create config using existing methods to get actual configuration
       final EngineConfig config = new EngineConfig();
 
-      // Set debug info using existing method
+      // Query native layer for current settings
       config.debugInfo(isDebugInfo());
+      config.optimizationLevel(OptimizationLevel.fromValue(getOptimizationLevel()));
 
-      // Set optimization level using existing method
-      final int optLevel = getOptimizationLevel();
-      config.optimizationLevel(OptimizationLevel.fromValue(optLevel));
+      // Query additional settings from native layer
+      config.consumeFuel(nativeIsConsumeFuelEnabled(getNativeHandle()));
+      config.wasiEnabled(nativeIsWasiEnabled(getNativeHandle()));
+      config.epochInterruption(nativeIsEpochInterruptionEnabled(getNativeHandle()));
+      config.memoryLimitEnabled(nativeIsMemoryLimitEnabled(getNativeHandle()));
 
-      // Set additional configuration options that we can retrieve
-      // Note: These may be defaults since native getters might not exist yet
-      config.consumeFuel(false); // Default value for now
-      config.wasiEnabled(false); // Default value for now
-      config.epochInterruption(false); // Default value for now
-      config.memoryLimitEnabled(false); // Default value for now
+      if (config.isMemoryLimitEnabled()) {
+        config.memoryLimit(nativeGetMemoryLimit(getNativeHandle()));
+      }
+
+      if (config.isConsumeFuel()) {
+        config.fuelAmount(nativeGetFuelAmount(getNativeHandle()));
+      }
+
+      // Query WebAssembly feature settings
+      config.wasmReferenceTypes(nativeIsWasmReferenceTypesEnabled(getNativeHandle()));
+      config.wasmSimd(nativeIsWasmSimdEnabled(getNativeHandle()));
+      config.wasmRelaxedSimd(nativeIsWasmRelaxedSimdEnabled(getNativeHandle()));
+      config.wasmMultiValue(nativeIsWasmMultiValueEnabled(getNativeHandle()));
+      config.wasmBulkMemory(nativeIsWasmBulkMemoryEnabled(getNativeHandle()));
+      config.wasmThreads(nativeIsWasmThreadsEnabled(getNativeHandle()));
+      config.wasmTailCall(nativeIsWasmTailCallEnabled(getNativeHandle()));
+      config.wasmMultiMemory(nativeIsWasmMultiMemoryEnabled(getNativeHandle()));
+      config.wasmMemory64(nativeIsWasmMemory64Enabled(getNativeHandle()));
+
+      // Query compilation settings
+      config.parallelCompilation(nativeIsParallelCompilationEnabled(getNativeHandle()));
+      config.craneliftDebugVerifier(nativeIsCraneliftDebugVerifierEnabled(getNativeHandle()));
+      config.wasmBacktraceDetails(nativeIsWasmBacktraceDetailsEnabled(getNativeHandle()));
 
       return config;
     } catch (final Exception e) {
@@ -504,4 +611,201 @@ public final class JniEngine extends JniResource implements Engine {
    * @param engineHandle the native engine handle
    */
   private static native void nativeDestroyEngine(long engineHandle);
+
+  /**
+   * Creates a new native Wasmtime engine with custom configuration.
+   *
+   * @param optimizationLevel the optimization level (0-2)
+   * @param debugInfo whether to enable debug information
+   * @param parallelCompilation whether to enable parallel compilation
+   * @param craneliftDebugVerifier whether to enable Cranelift debug verifier
+   * @param wasmBacktraceDetails whether to enable WASM backtrace details
+   * @param wasmReferenceTypes whether to enable reference types
+   * @param wasmSimd whether to enable SIMD
+   * @param wasmRelaxedSimd whether to enable relaxed SIMD
+   * @param wasmMultiValue whether to enable multi-value
+   * @param wasmBulkMemory whether to enable bulk memory
+   * @param wasmThreads whether to enable threads
+   * @param wasmTailCall whether to enable tail call
+   * @param wasmMultiMemory whether to enable multi-memory
+   * @param wasmMemory64 whether to enable 64-bit memory
+   * @param consumeFuel whether to enable fuel consumption
+   * @param fuelAmount the fuel amount
+   * @param wasiEnabled whether to enable WASI
+   * @param epochInterruption whether to enable epoch interruption
+   * @param memoryLimitEnabled whether to enable memory limits
+   * @param memoryLimit the memory limit in bytes
+   * @return native engine handle or 0 on failure
+   */
+  private static native long nativeCreateEngineWithConfig(
+      int optimizationLevel,
+      boolean debugInfo,
+      boolean parallelCompilation,
+      boolean craneliftDebugVerifier,
+      boolean wasmBacktraceDetails,
+      boolean wasmReferenceTypes,
+      boolean wasmSimd,
+      boolean wasmRelaxedSimd,
+      boolean wasmMultiValue,
+      boolean wasmBulkMemory,
+      boolean wasmThreads,
+      boolean wasmTailCall,
+      boolean wasmMultiMemory,
+      boolean wasmMemory64,
+      boolean consumeFuel,
+      long fuelAmount,
+      boolean wasiEnabled,
+      boolean epochInterruption,
+      boolean memoryLimitEnabled,
+      long memoryLimit);
+
+  // Configuration query native methods
+
+  /**
+   * Checks if fuel consumption is enabled.
+   *
+   * @param engineHandle the native engine handle
+   * @return true if fuel consumption is enabled
+   */
+  private static native boolean nativeIsConsumeFuelEnabled(long engineHandle);
+
+  /**
+   * Checks if WASI is enabled.
+   *
+   * @param engineHandle the native engine handle
+   * @return true if WASI is enabled
+   */
+  private static native boolean nativeIsWasiEnabled(long engineHandle);
+
+  /**
+   * Checks if epoch interruption is enabled.
+   *
+   * @param engineHandle the native engine handle
+   * @return true if epoch interruption is enabled
+   */
+  private static native boolean nativeIsEpochInterruptionEnabled(long engineHandle);
+
+  /**
+   * Checks if memory limits are enabled.
+   *
+   * @param engineHandle the native engine handle
+   * @return true if memory limits are enabled
+   */
+  private static native boolean nativeIsMemoryLimitEnabled(long engineHandle);
+
+  /**
+   * Gets the memory limit in bytes.
+   *
+   * @param engineHandle the native engine handle
+   * @return the memory limit in bytes
+   */
+  private static native long nativeGetMemoryLimit(long engineHandle);
+
+  /**
+   * Gets the fuel amount.
+   *
+   * @param engineHandle the native engine handle
+   * @return the fuel amount
+   */
+  private static native long nativeGetFuelAmount(long engineHandle);
+
+  // WebAssembly feature query methods
+
+  /**
+   * Checks if reference types are enabled.
+   *
+   * @param engineHandle the native engine handle
+   * @return true if reference types are enabled
+   */
+  private static native boolean nativeIsWasmReferenceTypesEnabled(long engineHandle);
+
+  /**
+   * Checks if SIMD is enabled.
+   *
+   * @param engineHandle the native engine handle
+   * @return true if SIMD is enabled
+   */
+  private static native boolean nativeIsWasmSimdEnabled(long engineHandle);
+
+  /**
+   * Checks if relaxed SIMD is enabled.
+   *
+   * @param engineHandle the native engine handle
+   * @return true if relaxed SIMD is enabled
+   */
+  private static native boolean nativeIsWasmRelaxedSimdEnabled(long engineHandle);
+
+  /**
+   * Checks if multi-value is enabled.
+   *
+   * @param engineHandle the native engine handle
+   * @return true if multi-value is enabled
+   */
+  private static native boolean nativeIsWasmMultiValueEnabled(long engineHandle);
+
+  /**
+   * Checks if bulk memory is enabled.
+   *
+   * @param engineHandle the native engine handle
+   * @return true if bulk memory is enabled
+   */
+  private static native boolean nativeIsWasmBulkMemoryEnabled(long engineHandle);
+
+  /**
+   * Checks if threads are enabled.
+   *
+   * @param engineHandle the native engine handle
+   * @return true if threads are enabled
+   */
+  private static native boolean nativeIsWasmThreadsEnabled(long engineHandle);
+
+  /**
+   * Checks if tail call is enabled.
+   *
+   * @param engineHandle the native engine handle
+   * @return true if tail call is enabled
+   */
+  private static native boolean nativeIsWasmTailCallEnabled(long engineHandle);
+
+  /**
+   * Checks if multi-memory is enabled.
+   *
+   * @param engineHandle the native engine handle
+   * @return true if multi-memory is enabled
+   */
+  private static native boolean nativeIsWasmMultiMemoryEnabled(long engineHandle);
+
+  /**
+   * Checks if 64-bit memory is enabled.
+   *
+   * @param engineHandle the native engine handle
+   * @return true if 64-bit memory is enabled
+   */
+  private static native boolean nativeIsWasmMemory64Enabled(long engineHandle);
+
+  // Compilation setting query methods
+
+  /**
+   * Checks if parallel compilation is enabled.
+   *
+   * @param engineHandle the native engine handle
+   * @return true if parallel compilation is enabled
+   */
+  private static native boolean nativeIsParallelCompilationEnabled(long engineHandle);
+
+  /**
+   * Checks if Cranelift debug verifier is enabled.
+   *
+   * @param engineHandle the native engine handle
+   * @return true if Cranelift debug verifier is enabled
+   */
+  private static native boolean nativeIsCraneliftDebugVerifierEnabled(long engineHandle);
+
+  /**
+   * Checks if WASM backtrace details are enabled.
+   *
+   * @param engineHandle the native engine handle
+   * @return true if WASM backtrace details are enabled
+   */
+  private static native boolean nativeIsWasmBacktraceDetailsEnabled(long engineHandle);
 }

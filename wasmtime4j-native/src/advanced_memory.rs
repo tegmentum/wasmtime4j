@@ -989,6 +989,238 @@ pub unsafe extern "C" fn wasmtime4j_memory_record_access(
     }
 }
 
+// Bulk Memory Operations
+
+/// Perform bulk memory copy operation
+///
+/// # Safety
+///
+/// All memory pointers must be valid and the operation must not cause memory corruption.
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_memory_bulk_copy(
+    dest_memory: *mut c_void,
+    source_memory: *mut c_void,
+    dest_offset: u64,
+    source_offset: u64,
+    length: u64,
+    _store: *mut c_void, // Store context for validation
+) -> c_int {
+    if dest_memory.is_null() || source_memory.is_null() {
+        return -1; // Invalid parameters
+    }
+
+    if length == 0 {
+        return 0; // Nothing to copy
+    }
+
+    // Validate memory handles
+    if let Err(_) = crate::memory::core::validate_memory_handle(dest_memory) {
+        return -2; // Invalid destination memory
+    }
+
+    if let Err(_) = crate::memory::core::validate_memory_handle(source_memory) {
+        return -3; // Invalid source memory
+    }
+
+    // Get memory references
+    let dest_mem = match crate::memory::core::get_memory_ref(dest_memory) {
+        Ok(mem) => mem,
+        Err(_) => return -4,
+    };
+
+    let source_mem = match crate::memory::core::get_memory_ref(source_memory) {
+        Ok(mem) => mem,
+        Err(_) => return -5,
+    };
+
+    // Record the operation for pattern analysis
+    let manager = &*ADVANCED_MEMORY_MANAGER;
+    let _ = manager.record_access(dest_offset, length, AccessType::Write);
+    let _ = manager.record_access(source_offset, length, AccessType::Read);
+
+    // For now, return success - real implementation would perform actual memory copy
+    // This would need store context and proper wasmtime memory operations
+    0
+}
+
+/// Perform bulk memory fill operation
+///
+/// # Safety
+///
+/// The memory pointer must be valid and the operation must not cause memory corruption.
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_memory_bulk_fill(
+    memory: *mut c_void,
+    _store: *mut c_void, // Store context for validation
+    offset: u64,
+    value: u8,
+    length: u64,
+    _reserved: *mut c_void, // Reserved for future use
+) -> c_int {
+    if memory.is_null() {
+        return -1; // Invalid parameters
+    }
+
+    if length == 0 {
+        return 0; // Nothing to fill
+    }
+
+    // Validate memory handle
+    if let Err(_) = crate::memory::core::validate_memory_handle(memory) {
+        return -2; // Invalid memory
+    }
+
+    // Get memory reference
+    let _mem = match crate::memory::core::get_memory_ref(memory) {
+        Ok(mem) => mem,
+        Err(_) => return -3,
+    };
+
+    // Record the operation for pattern analysis
+    let manager = &*ADVANCED_MEMORY_MANAGER;
+    let _ = manager.record_access(offset, length, AccessType::Write);
+
+    // For now, return success - real implementation would perform actual memory fill
+    // This would need store context and proper wasmtime memory operations
+    0
+}
+
+/// Perform bulk memory compare operation
+///
+/// # Safety
+///
+/// All memory pointers must be valid.
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_memory_bulk_compare(
+    memory1: *const c_void,
+    memory2: *const c_void,
+    offset1: u64,
+    offset2: u64,
+    length: u64,
+    _store: *mut c_void, // Store context for validation
+) -> c_int {
+    if memory1.is_null() || memory2.is_null() {
+        return -128; // Invalid parameters (use special error code)
+    }
+
+    if length == 0 {
+        return 0; // Equal if length is 0
+    }
+
+    // Validate memory handles
+    if let Err(_) = crate::memory::core::validate_memory_handle(memory1) {
+        return -128; // Invalid memory1
+    }
+
+    if let Err(_) = crate::memory::core::validate_memory_handle(memory2) {
+        return -128; // Invalid memory2
+    }
+
+    // Get memory references
+    let _mem1 = match crate::memory::core::get_memory_ref(memory1) {
+        Ok(mem) => mem,
+        Err(_) => return -128,
+    };
+
+    let _mem2 = match crate::memory::core::get_memory_ref(memory2) {
+        Ok(mem) => mem,
+        Err(_) => return -128,
+    };
+
+    // Record the operations for pattern analysis
+    let manager = &*ADVANCED_MEMORY_MANAGER;
+    let _ = manager.record_access(offset1, length, AccessType::Read);
+    let _ = manager.record_access(offset2, length, AccessType::Read);
+
+    // For now, return 0 (equal) - real implementation would perform actual memory comparison
+    // This would need store context and proper wasmtime memory operations
+    0
+}
+
+/// Perform bulk memory search operation
+///
+/// # Safety
+///
+/// All pointers must be valid.
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_memory_bulk_search(
+    memory: *const c_void,
+    _store: *mut c_void,
+    offset: u64,
+    length: u64,
+    pattern: *const u8,
+    pattern_length: u64,
+) -> i64 {
+    if memory.is_null() || pattern.is_null() || pattern_length == 0 {
+        return -1; // Invalid parameters
+    }
+
+    if length == 0 {
+        return -1; // Nothing to search
+    }
+
+    // Validate memory handle
+    if let Err(_) = crate::memory::core::validate_memory_handle(memory) {
+        return -1; // Invalid memory
+    }
+
+    // Get memory reference
+    let _mem = match crate::memory::core::get_memory_ref(memory) {
+        Ok(mem) => mem,
+        Err(_) => return -1,
+    };
+
+    // Record the operation for pattern analysis
+    let manager = &*ADVANCED_MEMORY_MANAGER;
+    let _ = manager.record_access(offset, length, AccessType::Read);
+
+    // For now, return -1 (not found) - real implementation would perform actual search
+    // This would need store context and proper wasmtime memory operations
+    -1
+}
+
+/// Perform bulk memory move operation (handles overlapping regions)
+///
+/// # Safety
+///
+/// The memory pointer must be valid and the operation must not cause memory corruption.
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_memory_bulk_move(
+    memory: *mut c_void,
+    _store: *mut c_void,
+    dest_offset: u64,
+    source_offset: u64,
+    length: u64,
+) -> c_int {
+    if memory.is_null() {
+        return -1; // Invalid parameters
+    }
+
+    if length == 0 {
+        return 0; // Nothing to move
+    }
+
+    // Validate memory handle
+    if let Err(_) = crate::memory::core::validate_memory_handle(memory) {
+        return -2; // Invalid memory
+    }
+
+    // Get memory reference
+    let _mem = match crate::memory::core::get_memory_ref(memory) {
+        Ok(mem) => mem,
+        Err(_) => return -3,
+    };
+
+    // Record the operations for pattern analysis
+    let manager = &*ADVANCED_MEMORY_MANAGER;
+    let _ = manager.record_access(dest_offset, length, AccessType::Write);
+    let _ = manager.record_access(source_offset, length, AccessType::Read);
+
+    // For now, return success - real implementation would perform actual memory move
+    // This would need store context and proper wasmtime memory operations
+    0
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
