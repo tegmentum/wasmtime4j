@@ -44,7 +44,19 @@ public interface WasiResourceManager {
    * @throws WasmException if creation fails
    */
   static WasiResourceManager create() throws WasmException {
-    throw new UnsupportedOperationException("WASI resource manager creation not yet implemented");
+    return new ai.tegmentum.wasmtime4j.wasi.impl.WasiResourceManagerImpl();
+  }
+
+  /**
+   * Creates a new resource manager with specific limits.
+   *
+   * @param limits initial resource limits
+   * @return a new resource manager instance
+   * @throws WasmException if creation fails
+   * @throws IllegalArgumentException if limits is null
+   */
+  static WasiResourceManager create(final WasiResourceLimits limits) throws WasmException {
+    return new ai.tegmentum.wasmtime4j.wasi.impl.WasiResourceManagerImpl(limits);
   }
 
   /**
