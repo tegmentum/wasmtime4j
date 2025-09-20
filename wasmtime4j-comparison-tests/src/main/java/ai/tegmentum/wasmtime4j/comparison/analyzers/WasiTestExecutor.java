@@ -2,11 +2,9 @@ package ai.tegmentum.wasmtime4j.comparison.analyzers;
 
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.webassembly.WasmTestCase;
-import ai.tegmentum.wasmtime4j.webassembly.WasmTestSuiteLoader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -25,8 +23,8 @@ import java.util.logging.Logger;
 
 /**
  * Executes WASI tests with proper environment isolation and cross-runtime validation. Provides
- * comprehensive WASI test execution capabilities including environment setup, I/O redirection,
- * and performance monitoring.
+ * comprehensive WASI test execution capabilities including environment setup, I/O redirection, and
+ * performance monitoring.
  *
  * <p>Key features:
  *
@@ -288,11 +286,13 @@ public final class WasiTestExecutor {
 
   /** Creates a new WASI test executor with default configuration. */
   public WasiTestExecutor() {
-    this.executorService = Executors.newCachedThreadPool(r -> {
-      final Thread thread = new Thread(r, "wasi-test-executor");
-      thread.setDaemon(true);
-      return thread;
-    });
+    this.executorService =
+        Executors.newCachedThreadPool(
+            r -> {
+              final Thread thread = new Thread(r, "wasi-test-executor");
+              thread.setDaemon(true);
+              return thread;
+            });
     this.behavioralAnalyzer = new BehavioralAnalyzer();
     this.performanceAnalyzer = new PerformanceAnalyzer();
   }
@@ -305,7 +305,8 @@ public final class WasiTestExecutor {
    * @return map of execution results by runtime type
    */
   public Map<RuntimeType, WasiExecutionResult> executeWasiTestAcrossRuntimes(
-      final WasmTestCase testCase, final WasiTestIntegrator.WasiEnvironmentConfiguration environmentConfig) {
+      final WasmTestCase testCase,
+      final WasiTestIntegrator.WasiEnvironmentConfiguration environmentConfig) {
     Objects.requireNonNull(testCase, "testCase cannot be null");
     Objects.requireNonNull(environmentConfig, "environmentConfig cannot be null");
 
@@ -316,8 +317,10 @@ public final class WasiTestExecutor {
 
     // Submit execution tasks for all available runtimes
     for (final RuntimeType runtime : RuntimeType.values()) {
-      futures.put(runtime, executorService.submit(() ->
-          executeWasiTestOnRuntime(testCase, environmentConfig, runtime)));
+      futures.put(
+          runtime,
+          executorService.submit(
+              () -> executeWasiTestOnRuntime(testCase, environmentConfig, runtime)));
     }
 
     // Collect results with timeout
@@ -330,7 +333,8 @@ public final class WasiTestExecutor {
         results.put(runtime, result);
         LOGGER.fine("WASI test completed on " + runtime + ": " + result.isSuccessful());
       } catch (final ExecutionException e) {
-        LOGGER.warning("WASI test execution failed on " + runtime + ": " + e.getCause().getMessage());
+        LOGGER.warning(
+            "WASI test execution failed on " + runtime + ": " + e.getCause().getMessage());
         results.put(runtime, createFailureResult(testCase, runtime, e.getCause()));
       } catch (final Exception e) {
         LOGGER.warning("WASI test execution interrupted on " + runtime + ": " + e.getMessage());
@@ -360,7 +364,8 @@ public final class WasiTestExecutor {
 
     LOGGER.fine("Executing WASI test " + testCase.getTestName() + " on runtime " + runtime);
 
-    try (final WasiExecutionEnvironment environment = new WasiExecutionEnvironment(environmentConfig)) {
+    try (final WasiExecutionEnvironment environment =
+        new WasiExecutionEnvironment(environmentConfig)) {
       return performWasiExecution(testCase, environment, runtime);
     } catch (final Exception e) {
       LOGGER.warning("WASI test execution failed: " + e.getMessage());
@@ -385,7 +390,8 @@ public final class WasiTestExecutor {
   private WasiExecutionResult performWasiExecution(
       final WasmTestCase testCase,
       final WasiExecutionEnvironment environment,
-      final RuntimeType runtime) throws Exception {
+      final RuntimeType runtime)
+      throws Exception {
 
     final long startTime = System.nanoTime();
     final Map<String, Object> performanceMetrics = new HashMap<>();
@@ -445,7 +451,8 @@ public final class WasiTestExecutor {
     }
   }
 
-  private void setupRuntimeWasiContext(final WasiExecutionEnvironment environment, final RuntimeType runtime) {
+  private void setupRuntimeWasiContext(
+      final WasiExecutionEnvironment environment, final RuntimeType runtime) {
     // Implementation would setup runtime-specific WASI context
     // This would involve configuring the WASI instance with:
     // - Environment variables
@@ -455,7 +462,8 @@ public final class WasiTestExecutor {
     LOGGER.fine("Setting up WASI context for runtime: " + runtime);
   }
 
-  private void cleanupRuntimeWasiContext(final WasiExecutionEnvironment environment, final RuntimeType runtime) {
+  private void cleanupRuntimeWasiContext(
+      final WasiExecutionEnvironment environment, final RuntimeType runtime) {
     // Implementation would cleanup runtime-specific WASI context
     LOGGER.fine("Cleaning up WASI context for runtime: " + runtime);
   }
@@ -469,7 +477,8 @@ public final class WasiTestExecutor {
     }
   }
 
-  private List<String> analyzeWasiFeaturesUsed(final BehavioralAnalyzer.TestExecutionResult result) {
+  private List<String> analyzeWasiFeaturesUsed(
+      final BehavioralAnalyzer.TestExecutionResult result) {
     // Implementation would analyze which WASI features were called during execution
     // This could be done through:
     // - Runtime introspection

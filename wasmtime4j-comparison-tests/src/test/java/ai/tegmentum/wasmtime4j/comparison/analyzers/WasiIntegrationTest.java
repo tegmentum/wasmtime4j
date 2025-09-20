@@ -25,9 +25,9 @@ import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.condition.EnabledIf;
 
 /**
- * Integration tests for WASI test integration and execution framework. Validates comprehensive
- * WASI functionality including test discovery, environment setup, execution across runtimes,
- * and performance analysis.
+ * Integration tests for WASI test integration and execution framework. Validates comprehensive WASI
+ * functionality including test discovery, environment setup, execution across runtimes, and
+ * performance analysis.
  *
  * <p>These tests verify:
  *
@@ -106,7 +106,9 @@ public class WasiIntegrationTest {
     final Map<WasiTestIntegrator.WasiTestCategory, ?> categorizedTests =
         wasiIntegrator.getCategorizedTests();
     assertNotNull(categorizedTests, "Categorized tests should be initialized");
-    assertEquals(WasiTestIntegrator.WasiTestCategory.values().length, categorizedTests.size(),
+    assertEquals(
+        WasiTestIntegrator.WasiTestCategory.values().length,
+        categorizedTests.size(),
         "All WASI categories should be initialized");
 
     // Test execution results initialization
@@ -131,9 +133,14 @@ public class WasiIntegrationTest {
         WasiTestDiscovery.createDefaultConfiguration(mockWasmtimeDir);
     assertNotNull(defaultConfig, "Default discovery configuration should be created");
     assertEquals(mockWasmtimeDir, defaultConfig.getWasmtimeRootDirectory());
-    assertTrue(defaultConfig.isIncludePerformanceTests(), "Performance tests should be included by default");
-    assertFalse(defaultConfig.isIncludeExperimentalTests(), "Experimental tests should be excluded by default");
-    assertTrue(defaultConfig.isStrictValidation(), "Strict validation should be enabled by default");
+    assertTrue(
+        defaultConfig.isIncludePerformanceTests(),
+        "Performance tests should be included by default");
+    assertFalse(
+        defaultConfig.isIncludeExperimentalTests(),
+        "Experimental tests should be excluded by default");
+    assertTrue(
+        defaultConfig.isStrictValidation(), "Strict validation should be enabled by default");
 
     // Test custom configuration creation
     final WasiTestDiscovery.WasiDiscoveryConfiguration customConfig =
@@ -149,8 +156,12 @@ public class WasiIntegrationTest {
 
     assertNotNull(customConfig, "Custom discovery configuration should be created");
     assertEquals(2, customConfig.getEnabledCategories().size(), "Should have 2 enabled categories");
-    assertTrue(customConfig.getEnabledCategories().contains(WasiTestIntegrator.WasiTestCategory.FILESYSTEM));
-    assertTrue(customConfig.getEnabledCategories().contains(WasiTestIntegrator.WasiTestCategory.STDIO));
+    assertTrue(
+        customConfig
+            .getEnabledCategories()
+            .contains(WasiTestIntegrator.WasiTestCategory.FILESYSTEM));
+    assertTrue(
+        customConfig.getEnabledCategories().contains(WasiTestIntegrator.WasiTestCategory.STDIO));
     assertEquals(1, customConfig.getTestNameFilters().size(), "Should have 1 test name filter");
     assertTrue(customConfig.getTestNameFilters().contains("simple"));
     assertEquals(5, customConfig.getMaxTestsPerCategory(), "Max tests per category should be 5");
@@ -203,7 +214,7 @@ public class WasiIntegrationTest {
 
     // Test environment isolation through executor
     try (final WasiTestExecutor.WasiExecutionEnvironment execEnv =
-             new WasiTestExecutor.WasiExecutionEnvironment(envConfig)) {
+        new WasiTestExecutor.WasiExecutionEnvironment(envConfig)) {
       assertNotNull(execEnv, "Execution environment should be created");
       assertNotNull(execEnv.getWorkingDirectory(), "Working directory should be set");
       assertNotNull(execEnv.getStdoutCapture(), "Stdout capture should be set");
@@ -242,7 +253,8 @@ public class WasiIntegrationTest {
     assertFalse(results.isEmpty(), "Should have execution results for at least one runtime");
 
     // Verify results for each runtime
-    for (final Map.Entry<RuntimeType, WasiTestExecutor.WasiExecutionResult> entry : results.entrySet()) {
+    for (final Map.Entry<RuntimeType, WasiTestExecutor.WasiExecutionResult> entry :
+        results.entrySet()) {
       final RuntimeType runtime = entry.getKey();
       final WasiTestExecutor.WasiExecutionResult result = entry.getValue();
 
@@ -255,7 +267,8 @@ public class WasiIntegrationTest {
       assertNotNull(result.getWasiFeaturesCalled(), "WASI features called should not be null");
       assertNotNull(result.getExecutionTime(), "Execution time should not be null");
 
-      LOGGER.fine("WASI test execution completed on " + runtime + ": success=" + result.isSuccessful());
+      LOGGER.fine(
+          "WASI test execution completed on " + runtime + ": success=" + result.isSuccessful());
     }
 
     // Test individual runtime execution
@@ -288,34 +301,46 @@ public class WasiIntegrationTest {
     assertNotNull(integrationResult.getCategory(), "Category should be determined");
     assertEquals(envConfig, integrationResult.getEnvironment());
     assertNotNull(integrationResult.getRuntimeResults(), "Runtime results should not be null");
-    assertNotNull(integrationResult.getCompatibilityAnalysis(), "Compatibility analysis should not be null");
-    assertNotNull(integrationResult.getPerformanceMetrics(), "Performance metrics should not be null");
+    assertNotNull(
+        integrationResult.getCompatibilityAnalysis(), "Compatibility analysis should not be null");
+    assertNotNull(
+        integrationResult.getPerformanceMetrics(), "Performance metrics should not be null");
     assertNotNull(integrationResult.getExecutionTime(), "Execution time should not be null");
 
     // Verify compatibility analysis
     final WasiTestIntegrator.WasiCompatibilityAnalysis compatAnalysis =
         integrationResult.getCompatibilityAnalysis();
-    assertNotNull(compatAnalysis.getPreviewCompatibilityScores(), "Preview compatibility scores should not be null");
-    assertNotNull(compatAnalysis.getSupportedWasiFeatures(), "Supported WASI features should not be null");
-    assertNotNull(compatAnalysis.getUnsupportedWasiFeatures(), "Unsupported WASI features should not be null");
-    assertNotNull(compatAnalysis.getCompatibilityIssues(), "Compatibility issues should not be null");
-    assertTrue(compatAnalysis.getOverallCompatibilityScore() >= 0.0 &&
-               compatAnalysis.getOverallCompatibilityScore() <= 100.0,
-               "Overall compatibility score should be between 0 and 100");
+    assertNotNull(
+        compatAnalysis.getPreviewCompatibilityScores(),
+        "Preview compatibility scores should not be null");
+    assertNotNull(
+        compatAnalysis.getSupportedWasiFeatures(), "Supported WASI features should not be null");
+    assertNotNull(
+        compatAnalysis.getUnsupportedWasiFeatures(),
+        "Unsupported WASI features should not be null");
+    assertNotNull(
+        compatAnalysis.getCompatibilityIssues(), "Compatibility issues should not be null");
+    assertTrue(
+        compatAnalysis.getOverallCompatibilityScore() >= 0.0
+            && compatAnalysis.getOverallCompatibilityScore() <= 100.0,
+        "Overall compatibility score should be between 0 and 100");
 
     // Verify performance metrics
     final WasiTestIntegrator.WasiPerformanceMetrics perfMetrics =
         integrationResult.getPerformanceMetrics();
     assertNotNull(perfMetrics.getIoOperationTimes(), "I/O operation times should not be null");
-    assertNotNull(perfMetrics.getFilesystemOperationTimes(), "Filesystem operation times should not be null");
-    assertNotNull(perfMetrics.getNetworkOperationTimes(), "Network operation times should not be null");
+    assertNotNull(
+        perfMetrics.getFilesystemOperationTimes(), "Filesystem operation times should not be null");
+    assertNotNull(
+        perfMetrics.getNetworkOperationTimes(), "Network operation times should not be null");
     assertNotNull(perfMetrics.getSystemCallCounts(), "System call counts should not be null");
     assertNotNull(perfMetrics.getMemoryUsage(), "Memory usage should not be null");
 
     // Verify execution results are stored in integrator
     final Map<String, WasiTestIntegrator.WasiTestExecutionResult> storedResults =
         wasiIntegrator.getExecutionResults();
-    assertTrue(storedResults.containsKey(testCase.getTestName()),
+    assertTrue(
+        storedResults.containsKey(testCase.getTestName()),
         "Test result should be stored in integrator");
 
     LOGGER.info("WASI integration end-to-end test completed successfully");
@@ -334,7 +359,7 @@ public class WasiIntegrationTest {
 
     for (int i = 0; i < environmentCount; i++) {
       try (final WasiTestExecutor.WasiExecutionEnvironment env =
-               new WasiTestExecutor.WasiExecutionEnvironment(baseConfig)) {
+          new WasiTestExecutor.WasiExecutionEnvironment(baseConfig)) {
         assertNotNull(env, "Environment " + i + " should be created");
         assertTrue(Files.exists(env.getWorkingDirectory()), "Working directory should exist");
 
@@ -360,13 +385,17 @@ public class WasiIntegrationTest {
     System.gc();
     final long endMemory = getUsedMemory();
 
-    LOGGER.info("Memory usage: start=" + startMemory + ", end=" + endMemory +
-                ", difference=" + (endMemory - startMemory));
+    LOGGER.info(
+        "Memory usage: start="
+            + startMemory
+            + ", end="
+            + endMemory
+            + ", difference="
+            + (endMemory - startMemory));
 
     // Test integrator cleanup
     wasiIntegrator.clearResults();
-    assertTrue(wasiIntegrator.getExecutionResults().isEmpty(),
-               "Results should be cleared");
+    assertTrue(wasiIntegrator.getExecutionResults().isEmpty(), "Results should be cleared");
 
     // Test discovery cache management
     wasiDiscovery.clearCache();
@@ -386,8 +415,8 @@ public class WasiIntegrationTest {
 
     // Create a simple mock WASM file (minimal valid WebAssembly module)
     final byte[] minimalWasm = {
-        0x00, 0x61, 0x73, 0x6d, // WASM magic
-        0x01, 0x00, 0x00, 0x00  // Version
+      0x00, 0x61, 0x73, 0x6d, // WASM magic
+      0x01, 0x00, 0x00, 0x00 // Version
     };
 
     final Path mockWasmFile = wasiTestsDir.resolve("simple_filesystem_test.wasm");
@@ -399,23 +428,43 @@ public class WasiIntegrationTest {
   private WasmTestCase createMinimalWasiTestCase() throws IOException {
     // Create a minimal valid WebAssembly module for testing
     final byte[] minimalWasm = {
-        0x00, 0x61, 0x73, 0x6d, // WASM magic
-        0x01, 0x00, 0x00, 0x00, // Version
-        0x01, 0x07,             // Type section
-        0x01,                   // 1 type
-        0x60, 0x00, 0x01, 0x7f, // func type (no params, returns i32)
-        0x03, 0x02,             // Function section
-        0x01, 0x00,             // 1 function of type 0
-        0x07, 0x08,             // Export section
-        0x01,                   // 1 export
-        0x04, 0x6d, 0x61, 0x69, 0x6e, // "main"
-        0x00, 0x00,             // function 0
-        0x0a, 0x06,             // Code section
-        0x01,                   // 1 function body
-        0x04,                   // body size
-        0x00,                   // 0 locals
-        0x41, 0x2a,             // i32.const 42
-        0x0b                    // end
+      0x00,
+      0x61,
+      0x73,
+      0x6d, // WASM magic
+      0x01,
+      0x00,
+      0x00,
+      0x00, // Version
+      0x01,
+      0x07, // Type section
+      0x01, // 1 type
+      0x60,
+      0x00,
+      0x01,
+      0x7f, // func type (no params, returns i32)
+      0x03,
+      0x02, // Function section
+      0x01,
+      0x00, // 1 function of type 0
+      0x07,
+      0x08, // Export section
+      0x01, // 1 export
+      0x04,
+      0x6d,
+      0x61,
+      0x69,
+      0x6e, // "main"
+      0x00,
+      0x00, // function 0
+      0x0a,
+      0x06, // Code section
+      0x01, // 1 function body
+      0x04, // body size
+      0x00, // 0 locals
+      0x41,
+      0x2a, // i32.const 42
+      0x0b // end
     };
 
     final Path testFile = tempDirectory.resolve("minimal_wasi_test.wasm");
