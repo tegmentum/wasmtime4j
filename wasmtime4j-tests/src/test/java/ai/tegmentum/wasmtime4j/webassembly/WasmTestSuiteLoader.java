@@ -164,25 +164,35 @@ public final class WasmTestSuiteLoader {
   public static void ensureTestSuitesAvailable() throws IOException {
     final Path wasmTestsRoot = getTestResourcesPath().resolve("wasm");
 
+    // Try to download test suites automatically if enabled
+    WasmSpecTestDownloader.downloadTestSuitesIfEnabled(wasmTestsRoot);
+
     // Check if WebAssembly spec tests are available
     final Path specTestsDir =
         wasmTestsRoot.resolve(TestSuiteType.WEBASSEMBLY_SPEC.getDirectoryName());
-    if (!Files.exists(specTestsDir)) {
+    if (!Files.exists(specTestsDir) || isDirectoryEmpty(specTestsDir)) {
       LOGGER.info(
           "WebAssembly specification tests not found. "
-              + "Please download from https://github.com/WebAssembly/spec/tree/main/test");
-      // In a full implementation, this could automatically download and extract test suites
+              + "To download automatically, use: -Dwasmtime4j.test.download-suites=true "
+              + "Or manually download from https://github.com/WebAssembly/spec/tree/main/test");
       Files.createDirectories(specTestsDir);
+    } else {
+      final long testFileCount = countTestFiles(specTestsDir, ".wasm");
+      LOGGER.info("WebAssembly spec tests available: " + testFileCount + " WASM files found");
     }
 
     // Check if Wasmtime tests are available
     final Path wasmtimeTestsDir =
         wasmTestsRoot.resolve(TestSuiteType.WASMTIME_TESTS.getDirectoryName());
-    if (!Files.exists(wasmtimeTestsDir)) {
+    if (!Files.exists(wasmtimeTestsDir) || isDirectoryEmpty(wasmtimeTestsDir)) {
       LOGGER.info(
-          "Wasmtime tests not found. Please download from"
-              + " https://github.com/bytecodealliance/wasmtime/tree/main/tests");
+          "Wasmtime tests not found. "
+              + "To download automatically, use: -Dwasmtime4j.test.download-suites=true "
+              + "Or manually download from https://github.com/bytecodealliance/wasmtime/tree/main/tests");
       Files.createDirectories(wasmtimeTestsDir);
+    } else {
+      final long testFileCount = countTestFiles(wasmtimeTestsDir, ".wasm");
+      LOGGER.info("Wasmtime tests available: " + testFileCount + " WASM files found");
     }
 
     // Check if WASI tests are available
@@ -245,5 +255,43 @@ public final class WasmTestSuiteLoader {
     }
 
     return stats;
+  }
+
+  /**
+   * Checks if a directory is empty.
+   *
+   * @param directory the directory to check
+   * @return true if the directory is empty or doesn't exist
+   * @throws IOException if directory cannot be read
+   */
+  private static boolean isDirectoryEmpty(final Path directory) throws IOException {
+    if (!Files.exists(directory)) {
+      return true;
+    }
+
+    try (final var files = Files.newDirectoryStream(directory)) {
+      return !files.iterator().hasNext();
+    }
+  }
+
+  /**
+   * Counts the number of files with a specific extension in a directory.
+   *
+   * @param directory the directory to search
+   * @param extension the file extension to count (e.g., ".wasm")
+   * @return the number of files with the extension
+   * @throws IOException if directory cannot be read
+   */
+  private static long countTestFiles(final Path directory, final String extension) throws IOException {
+    if (!Files.exists(directory)) {
+      return 0;
+    }
+
+    try (final Stream<Path> paths = Files.walk(directory)) {
+      return paths
+          .filter(Files::isRegularFile)
+          .filter(path -> path.toString().endsWith(extension))
+          .count();
+    }
   }
 }
