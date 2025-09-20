@@ -458,3 +458,158 @@ jobs:
               repo: context.repo.repo,
               body: '## Performance Regression Test Results\n\nRegression analysis completed. Check the Actions logs for detailed results.'
             })
+
+  # Wasmtime compliance validation (smoke tests)
+  wasmtime-compliance-smoke:
+    name: Wasmtime Compliance (Smoke)
+    needs: [build-and-test]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux-x86_64
+            java-version: '8'
+            runtime: 'jni'
+          - os: ubuntu-latest
+            platform: linux-x86_64
+            java-version: '23'
+            runtime: 'panama'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ matrix.java-version }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ matrix.java-version }}
+          distribution: 'temurin'
+
+      - name: Cache Maven dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-compliance-smoke-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+
+      - name: Install Wasmtime CLI
+        shell: bash
+        run: |
+          WASMTIME_VERSION="26.0.0"
+          if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+            curl -L "https://github.com/bytecodealliance/wasmtime/releases/download/v${WASMTIME_VERSION}/wasmtime-v${WASMTIME_VERSION}-x86_64-linux.tar.xz" -o wasmtime.tar.xz
+            tar -xf wasmtime.tar.xz
+            echo "$(pwd)/wasmtime-v${WASMTIME_VERSION}-x86_64-linux" >> $GITHUB_PATH
+          fi
+
+      - name: Download wasmtime4j artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: native-libs-${{ matrix.platform }}-java${{ matrix.java-version }}
+
+      - name: Run smoke compliance tests
+        shell: bash
+        run: |
+          cd wasmtime4j-comparison-tests
+          ./mvnw test -B \
+            -Dcomparison.suite=smoke \
+            -Dcomparison.targets=native,${{ matrix.runtime }} \
+            -Dtest.runtime=${{ matrix.runtime }} \
+            -Dcomparison.reports.dir=target/smoke-compliance-reports \
+            -Dcomparison.tests.timeout=300
+
+      - name: Upload smoke compliance results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-compliance-${{ matrix.platform }}-${{ matrix.runtime }}-java${{ matrix.java-version }}
+          path: |
+            wasmtime4j-comparison-tests/target/smoke-compliance-reports/
+            wasmtime4j-comparison-tests/target/surefire-reports/
+          retention-days: 7
+
+  # Enhanced reporting with compliance results
+  enhanced-reporting:
+    name: Enhanced CI Reporting
+    needs: [regression, wasmtime-compliance-smoke]
+    if: always() && github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+
+      - name: Generate comprehensive CI report
+        run: |
+          cat > ci_comprehensive_report.md << 'EOF'
+          # 🚀 Wasmtime4j CI Results
+
+          **Commit:** ${{ github.sha }}
+          **PR:** #${{ github.event.number }}
+          **Date:** $(date -u)
+
+          ## 📊 Test Results Summary
+
+          ### Core Functionality
+          EOF
+
+          # Add test results analysis
+          if find . -name "TEST-*.xml" | head -1 | xargs grep -l "failures=\"0\"" >/dev/null 2>&1; then
+            echo "✅ **Core Tests:** PASSED" >> ci_comprehensive_report.md
+          else
+            echo "❌ **Core Tests:** FAILED" >> ci_comprehensive_report.md
+          fi
+
+          # Add compliance results
+          echo "" >> ci_comprehensive_report.md
+          echo "### Wasmtime Compliance" >> ci_comprehensive_report.md
+          if find . -name "*compliance*" -type d | head -1 >/dev/null 2>&1; then
+            echo "✅ **Smoke Compliance:** EXECUTED" >> ci_comprehensive_report.md
+            echo "📋 Compliance validation completed for core Wasmtime features" >> ci_comprehensive_report.md
+          else
+            echo "⚠️ **Smoke Compliance:** SKIPPED" >> ci_comprehensive_report.md
+          fi
+
+          echo "" >> ci_comprehensive_report.md
+          echo "### Performance Analysis" >> ci_comprehensive_report.md
+          if find . -name "*benchmark*" -type f | head -1 >/dev/null 2>&1; then
+            echo "📈 **Performance Tests:** COMPLETED" >> ci_comprehensive_report.md
+            echo "Performance benchmarks executed and available in artifacts" >> ci_comprehensive_report.md
+          else
+            echo "⚠️ **Performance Tests:** NO DATA" >> ci_comprehensive_report.md
+          fi
+
+          echo "" >> ci_comprehensive_report.md
+          echo "## 🔗 Detailed Results" >> ci_comprehensive_report.md
+          echo "- 📁 **Test Reports:** Available in CI artifacts" >> ci_comprehensive_report.md
+          echo "- 🔍 **Compliance Details:** Check smoke-compliance-* artifacts" >> ci_comprehensive_report.md
+          echo "- 📊 **Performance Data:** Check benchmark-results-* artifacts" >> ci_comprehensive_report.md
+          echo "" >> ci_comprehensive_report.md
+          echo "## 🚦 Next Steps" >> ci_comprehensive_report.md
+          echo "- Review any test failures in the logs" >> ci_comprehensive_report.md
+          echo "- Check compliance validation results" >> ci_comprehensive_report.md
+          echo "- Monitor performance trends" >> ci_comprehensive_report.md
+
+      - name: Comment PR with comprehensive report
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+
+            let reportContent = "CI pipeline completed with enhanced validation.";
+            if (fs.existsSync('ci_comprehensive_report.md')) {
+              reportContent = fs.readFileSync('ci_comprehensive_report.md', 'utf8');
+            }
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: reportContent
+            });
