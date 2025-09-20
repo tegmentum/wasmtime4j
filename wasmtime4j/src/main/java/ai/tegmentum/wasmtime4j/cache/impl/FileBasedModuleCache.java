@@ -162,14 +162,25 @@ public final class FileBasedModuleCache implements ModuleCache {
 
       try {
         // Write module data to file
-        Files.write(cacheFilePath, module.getData(), StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING);
+        Files.write(
+            cacheFilePath,
+            module.getData(),
+            StandardOpenOption.CREATE,
+            StandardOpenOption.WRITE,
+            StandardOpenOption.TRUNCATE_EXISTING);
 
         // Write metadata (simplified for now - in production this would be proper serialization)
         final String metadataJson = createMetadataJson(module, key);
-        Files.write(metadataFilePath, metadataJson.getBytes(), StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING);
+        Files.write(
+            metadataFilePath,
+            metadataJson.getBytes(),
+            StandardOpenOption.CREATE,
+            StandardOpenOption.WRITE,
+            StandardOpenOption.TRUNCATE_EXISTING);
 
         // Add to index
-        final CacheEntry entry = new CacheEntry(cacheFilePath, metadataFilePath, Instant.now(), key);
+        final CacheEntry entry =
+            new CacheEntry(cacheFilePath, metadataFilePath, Instant.now(), key);
         indexMap.put(keyStr, entry);
 
         statistics.recordPut();
