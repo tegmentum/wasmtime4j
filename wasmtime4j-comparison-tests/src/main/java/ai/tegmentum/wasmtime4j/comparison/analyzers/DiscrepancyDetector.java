@@ -35,8 +35,15 @@ public final class DiscrepancyDetector {
   private static final double PERFORMANCE_DEVIATION_THRESHOLD = 2.0; // 2x performance difference
   private static final int MIN_SAMPLE_SIZE_FOR_PATTERNS = 3;
 
+  // Wasmtime-specific detection thresholds for zero discrepancy requirement
+  private static final double WASMTIME_ZERO_TOLERANCE = 1e-15; // Near-zero tolerance for Wasmtime equivalence
+  private static final double WASMTIME_FLOAT_PRECISION_TOLERANCE = 1e-12; // Wasmtime floating-point precision
+  private static final int WASMTIME_REGRESSION_WINDOW = 10; // Window for regression detection
+
   private final ToleranceConfiguration toleranceConfig;
   private final Map<String, DiscrepancyPattern> detectedPatterns;
+  private final WasmtimeCompatibilityValidator wasmtimeValidator;
+  private final RegressionDetector regressionDetector;
 
   /**
    * Creates a new DiscrepancyDetector with the specified tolerance configuration.
@@ -47,6 +54,8 @@ public final class DiscrepancyDetector {
     this.toleranceConfig =
         Objects.requireNonNull(toleranceConfig, "toleranceConfig cannot be null");
     this.detectedPatterns = new ConcurrentHashMap<>();
+    this.wasmtimeValidator = new WasmtimeCompatibilityValidator(toleranceConfig);
+    this.regressionDetector = new RegressionDetector();
   }
 
   /**
@@ -84,6 +93,15 @@ public final class DiscrepancyDetector {
 
     // Detect systematic patterns
     discrepancies.addAll(detectSystematicPatterns(executionResults, discrepancies));
+
+    // Wasmtime-specific validations for zero discrepancy requirement
+    discrepancies.addAll(detectWasmtimeCompatibilityIssues(executionResults));
+
+    // Detect regression patterns
+    discrepancies.addAll(detectRegressionPatterns(executionResults));
+
+    // Validate zero discrepancy requirement
+    discrepancies.addAll(validateZeroDiscrepancyRequirement(executionResults, discrepancies));
 
     LOGGER.fine("Detected " + discrepancies.size() + " total discrepancies");
     return discrepancies;
@@ -488,6 +506,162 @@ public final class DiscrepancyDetector {
     } else {
       return "Investigate fundamental compatibility differences between runtime groups";
     }
+  }
+
+  /** Detects Wasmtime-specific compatibility issues for zero discrepancy requirement. */
+  private List<BehavioralDiscrepancy> detectWasmtimeCompatibilityIssues(
+      final Map<RuntimeType, BehavioralAnalyzer.TestExecutionResult> executionResults) {
+    return wasmtimeValidator.validateCompatibility(executionResults);
+  }
+
+  /** Detects regression patterns using historical data. */
+  private List<BehavioralDiscrepancy> detectRegressionPatterns(
+      final Map<RuntimeType, BehavioralAnalyzer.TestExecutionResult> executionResults) {
+    return regressionDetector.detectRegressions(executionResults);
+  }
+
+  /** Validates the zero discrepancy requirement against Wasmtime standards. */
+  private List<BehavioralDiscrepancy> validateZeroDiscrepancyRequirement(
+      final Map<RuntimeType, BehavioralAnalyzer.TestExecutionResult> executionResults,
+      final List<BehavioralDiscrepancy> existingDiscrepancies) {
+    final List<BehavioralDiscrepancy> validationIssues = new ArrayList<>();
+
+    // Check if any critical discrepancies exist that violate zero discrepancy requirement
+    final long criticalCount = existingDiscrepancies.stream()
+        .filter(d -> d.getSeverity() == DiscrepancySeverity.CRITICAL)
+        .count();
+
+    if (criticalCount > 0) {
+      validationIssues.add(
+          new BehavioralDiscrepancy(
+              DiscrepancyType.SYSTEMATIC_PATTERN,
+              DiscrepancySeverity.CRITICAL,
+              "Zero discrepancy requirement violated",
+              String.format("%d critical discrepancies detected, violating zero tolerance requirement", criticalCount),
+              "Review and fix all critical discrepancies to achieve zero discrepancy goal",
+              "validation",
+              executionResults.keySet()));
+    }
+
+    // Check for any behavioral inconsistencies between JNI and Panama
+    if (executionResults.containsKey(RuntimeType.JNI) && executionResults.containsKey(RuntimeType.PANAMA)) {
+      final BehavioralAnalyzer.TestExecutionResult jniResult = executionResults.get(RuntimeType.JNI);
+      final BehavioralAnalyzer.TestExecutionResult panamaResult = executionResults.get(RuntimeType.PANAMA);
+
+      if (!areResultsEquivalent(jniResult, panamaResult)) {
+        validationIssues.add(
+            new BehavioralDiscrepancy(
+                DiscrepancyType.EXECUTION_STATUS_MISMATCH,
+                DiscrepancySeverity.CRITICAL,
+                "JNI vs Panama behavioral divergence detected",
+                "Execution results differ between JNI and Panama implementations",
+                "Investigate and fix behavioral differences to ensure complete equivalence",
+                "jni-panama-equivalence",
+                Set.of(RuntimeType.JNI, RuntimeType.PANAMA)));
+      }
+    }
+
+    return validationIssues;
+  }
+
+  /** Checks if two execution results are equivalent within Wasmtime tolerance. */
+  private boolean areResultsEquivalent(
+      final BehavioralAnalyzer.TestExecutionResult result1,
+      final BehavioralAnalyzer.TestExecutionResult result2) {
+    // Check execution status
+    if (result1.isSuccessful() != result2.isSuccessful() || result1.isSkipped() != result2.isSkipped()) {
+      return false;
+    }
+
+    // For successful results, compare return values with Wasmtime precision
+    if (result1.isSuccessful() && result2.isSuccessful()) {
+      return areValuesEquivalent(result1.getReturnValue(), result2.getReturnValue());
+    }
+
+    // For failed results, compare exception types
+    if (!result1.isSuccessful() && !result2.isSuccessful()) {
+      return areExceptionsEquivalent(result1.getException(), result2.getException());
+    }
+
+    return true;
+  }
+
+  /** Checks if two values are equivalent within Wasmtime precision tolerance. */
+  private boolean areValuesEquivalent(final Object value1, final Object value2) {
+    if (Objects.equals(value1, value2)) {
+      return true;
+    }
+
+    if (value1 == null || value2 == null) {
+      return false;
+    }
+
+    // Handle floating-point comparisons with Wasmtime precision
+    if (value1 instanceof Number && value2 instanceof Number) {
+      final double d1 = ((Number) value1).doubleValue();
+      final double d2 = ((Number) value2).doubleValue();
+      return Math.abs(d1 - d2) <= WASMTIME_FLOAT_PRECISION_TOLERANCE;
+    }
+
+    // Handle array comparisons
+    if (value1.getClass().isArray() && value2.getClass().isArray()) {
+      return areArraysEquivalent(value1, value2);
+    }
+
+    return false;
+  }
+
+  /** Checks if two arrays are equivalent within Wasmtime precision. */
+  private boolean areArraysEquivalent(final Object array1, final Object array2) {
+    if (array1 instanceof byte[] && array2 instanceof byte[]) {
+      return java.util.Arrays.equals((byte[]) array1, (byte[]) array2);
+    }
+    if (array1 instanceof int[] && array2 instanceof int[]) {
+      return java.util.Arrays.equals((int[]) array1, (int[]) array2);
+    }
+    if (array1 instanceof long[] && array2 instanceof long[]) {
+      return java.util.Arrays.equals((long[]) array1, (long[]) array2);
+    }
+    if (array1 instanceof float[] && array2 instanceof float[]) {
+      final float[] f1 = (float[]) array1;
+      final float[] f2 = (float[]) array2;
+      if (f1.length != f2.length) {
+        return false;
+      }
+      for (int i = 0; i < f1.length; i++) {
+        if (Math.abs(f1[i] - f2[i]) > WASMTIME_FLOAT_PRECISION_TOLERANCE) {
+          return false;
+        }
+      }
+      return true;
+    }
+    if (array1 instanceof double[] && array2 instanceof double[]) {
+      final double[] d1 = (double[]) array1;
+      final double[] d2 = (double[]) array2;
+      if (d1.length != d2.length) {
+        return false;
+      }
+      for (int i = 0; i < d1.length; i++) {
+        if (Math.abs(d1[i] - d2[i]) > WASMTIME_FLOAT_PRECISION_TOLERANCE) {
+          return false;
+        }
+      }
+      return true;
+    }
+    return false;
+  }
+
+  /** Checks if two exceptions are equivalent. */
+  private boolean areExceptionsEquivalent(final Exception exception1, final Exception exception2) {
+    if (exception1 == null && exception2 == null) {
+      return true;
+    }
+    if (exception1 == null || exception2 == null) {
+      return false;
+    }
+
+    // Check if exceptions belong to the same semantic category
+    return categorizeException(exception1).equals(categorizeException(exception2));
   }
 
   /** Pattern detected by the discrepancy detector. */
