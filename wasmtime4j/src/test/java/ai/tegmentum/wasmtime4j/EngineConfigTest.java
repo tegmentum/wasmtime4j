@@ -251,6 +251,75 @@ final class EngineConfigTest {
     }
 
     @Test
+    @DisplayName("forProduction() creates production-optimized configuration")
+    void testForProduction() {
+      final EngineConfig config = EngineConfig.forProduction();
+
+      assertNotNull(config, "forProduction() should return non-null configuration");
+      assertEquals(
+          OptimizationLevel.SPEED_AND_SIZE,
+          config.getOptimizationLevel(),
+          "Production config should use SPEED_AND_SIZE optimization");
+      assertTrue(config.isParallelCompilation(), "Production config should enable parallel compilation");
+      assertFalse(config.isDebugInfo(), "Production config should not enable debug info");
+      assertFalse(config.isWasmBacktraceDetails(), "Production config should disable backtrace details");
+      assertFalse(config.isCraneliftDebugVerifier(), "Production config should not enable debug verifier");
+    }
+
+    @Test
+    @DisplayName("forSecurity() creates security-hardened configuration")
+    void testForSecurity() {
+      final EngineConfig config = EngineConfig.forSecurity();
+
+      assertNotNull(config, "forSecurity() should return non-null configuration");
+      assertEquals(OptimizationLevel.SPEED, config.getOptimizationLevel(), "Security config should use SPEED optimization");
+      assertTrue(config.isMemoryLimitEnabled(), "Security config should enable memory limits");
+      assertEquals(256 * 1024 * 1024L, config.getMemoryLimit(), "Security config should set 256MB memory limit");
+      assertTrue(config.isConsumeFuel(), "Security config should enable fuel consumption");
+      assertEquals(1000000L, config.getFuelAmount(), "Security config should set fuel amount");
+      assertTrue(config.isEpochInterruptionEnabled(), "Security config should enable epoch interruption");
+      assertFalse(config.isWasmThreads(), "Security config should disable threads");
+      assertFalse(config.isWasmTailCall(), "Security config should disable tail call");
+      assertFalse(config.isWasmMultiMemory(), "Security config should disable multi-memory");
+      assertFalse(config.isWasmMemory64(), "Security config should disable memory64");
+    }
+
+    @Test
+    @DisplayName("forCompatibility() creates maximum compatibility configuration")
+    void testForCompatibility() {
+      final EngineConfig config = EngineConfig.forCompatibility();
+
+      assertNotNull(config, "forCompatibility() should return non-null configuration");
+      assertEquals(OptimizationLevel.SPEED, config.getOptimizationLevel(), "Compatibility config should use SPEED optimization");
+      assertTrue(config.isWasmReferenceTypes(), "Compatibility config should enable reference types");
+      assertTrue(config.isWasmSimd(), "Compatibility config should enable SIMD");
+      assertTrue(config.isWasmRelaxedSimd(), "Compatibility config should enable relaxed SIMD");
+      assertTrue(config.isWasmMultiValue(), "Compatibility config should enable multi-value");
+      assertTrue(config.isWasmBulkMemory(), "Compatibility config should enable bulk memory");
+      assertTrue(config.isWasmThreads(), "Compatibility config should enable threads");
+      assertTrue(config.isWasmTailCall(), "Compatibility config should enable tail call");
+      assertTrue(config.isWasmMultiMemory(), "Compatibility config should enable multi-memory");
+      assertTrue(config.isWasmMemory64(), "Compatibility config should enable memory64");
+    }
+
+    @Test
+    @DisplayName("forEmbedded() creates low-resource configuration")
+    void testForEmbedded() {
+      final EngineConfig config = EngineConfig.forEmbedded();
+
+      assertNotNull(config, "forEmbedded() should return non-null configuration");
+      assertEquals(OptimizationLevel.SIZE, config.getOptimizationLevel(), "Embedded config should use SIZE optimization");
+      assertFalse(config.isParallelCompilation(), "Embedded config should disable parallel compilation");
+      assertFalse(config.isDebugInfo(), "Embedded config should disable debug info");
+      assertFalse(config.isWasmBacktraceDetails(), "Embedded config should disable backtrace details");
+      assertFalse(config.isWasmThreads(), "Embedded config should disable threads");
+      assertFalse(config.isWasmSimd(), "Embedded config should disable SIMD");
+      assertFalse(config.isWasmRelaxedSimd(), "Embedded config should disable relaxed SIMD");
+      assertTrue(config.isMemoryLimitEnabled(), "Embedded config should enable memory limits");
+      assertEquals(32 * 1024 * 1024L, config.getMemoryLimit(), "Embedded config should set 32MB memory limit");
+    }
+
+    @Test
     @DisplayName("Factory methods return independent instances")
     void testFactoryMethodIndependence() {
       final EngineConfig speedConfig = EngineConfig.forSpeed();
@@ -362,6 +431,358 @@ final class EngineConfigTest {
       assertTrue(config.isWasmTailCall());
       assertTrue(config.isWasmMultiMemory());
       assertTrue(config.isWasmMemory64());
+    }
+  }
+
+  @Nested
+  @DisplayName("Advanced Validation Tests")
+  class AdvancedValidationTests {
+
+    @Test
+    @DisplayName("validate() passes for valid configuration")
+    void testValidConfiguration() {
+      final EngineConfig config = new EngineConfig()
+          .debugInfo(true)
+          .craneliftDebugVerifier(true)
+          .parallelCompilation(false)  // Disabled when debug verifier is enabled
+          .consumeFuel(true)
+          .fuelAmount(1000L)
+          .memoryLimitEnabled(true)
+          .memoryLimit(64 * 1024 * 1024L)  // 64MB
+          .wasmSimd(true)
+          .wasmRelaxedSimd(true)  // Requires SIMD to be enabled
+          .wasmThreads(true)
+          .wasmReferenceTypes(true);  // Required for threads
+
+      // Should not throw any exception
+      config.validate();
+    }
+
+    @Test
+    @DisplayName("validate() throws for cranelift debug verifier without debug info")
+    void testCraneliftDebugVerifierWithoutDebugInfo() {
+      final EngineConfig config = new EngineConfig()
+          .debugInfo(false)
+          .craneliftDebugVerifier(true);
+
+      final IllegalStateException exception = assertThrows(
+          IllegalStateException.class,
+          config::validate,
+          "Should throw IllegalStateException when cranelift debug verifier is enabled without debug info");
+
+      assertEquals("Cranelift debug verifier requires debug info to be enabled", exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("validate() throws for parallel compilation with debug verifier")
+    void testParallelCompilationWithDebugVerifier() {
+      final EngineConfig config = new EngineConfig()
+          .debugInfo(true)
+          .craneliftDebugVerifier(true)
+          .parallelCompilation(true);
+
+      final IllegalStateException exception = assertThrows(
+          IllegalStateException.class,
+          config::validate,
+          "Should throw IllegalStateException when parallel compilation is enabled with debug verifier");
+
+      assertEquals("Parallel compilation should be disabled when using Cranelift debug verifier", exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("validate() throws for memory limit enabled without positive limit")
+    void testMemoryLimitEnabledWithoutPositiveLimit() {
+      final EngineConfig config = new EngineConfig()
+          .memoryLimitEnabled(true)
+          .memoryLimit(0L);
+
+      final IllegalStateException exception = assertThrows(
+          IllegalStateException.class,
+          config::validate,
+          "Should throw IllegalStateException when memory limit is enabled but limit is not positive");
+
+      assertEquals("Memory limit must be positive when memory limiting is enabled", exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("validate() throws for fuel consumption enabled without positive amount")
+    void testFuelConsumptionEnabledWithoutPositiveAmount() {
+      final EngineConfig config = new EngineConfig()
+          .consumeFuel(true)
+          .fuelAmount(0L);
+
+      final IllegalStateException exception = assertThrows(
+          IllegalStateException.class,
+          config::validate,
+          "Should throw IllegalStateException when fuel consumption is enabled but amount is not positive");
+
+      assertEquals("Fuel amount must be positive when fuel consumption is enabled", exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("validate() throws for relaxed SIMD without regular SIMD")
+    void testRelaxedSimdWithoutSimd() {
+      final EngineConfig config = new EngineConfig()
+          .wasmSimd(false)
+          .wasmRelaxedSimd(true);
+
+      final IllegalStateException exception = assertThrows(
+          IllegalStateException.class,
+          config::validate,
+          "Should throw IllegalStateException when relaxed SIMD is enabled without regular SIMD");
+
+      assertEquals("Relaxed SIMD requires SIMD to be enabled", exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("validate() throws for threads without reference types")
+    void testThreadsWithoutReferenceTypes() {
+      final EngineConfig config = new EngineConfig()
+          .wasmThreads(true)
+          .wasmReferenceTypes(false);
+
+      final IllegalStateException exception = assertThrows(
+          IllegalStateException.class,
+          config::validate,
+          "Should throw IllegalStateException when threads are enabled without reference types");
+
+      assertEquals("WebAssembly threads require reference types to be enabled", exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("validate() throws for memory64 and multi-memory together")
+    void testMemory64WithMultiMemory() {
+      final EngineConfig config = new EngineConfig()
+          .wasmMemory64(true)
+          .wasmMultiMemory(true);
+
+      final IllegalStateException exception = assertThrows(
+          IllegalStateException.class,
+          config::validate,
+          "Should throw IllegalStateException when both memory64 and multi-memory are enabled");
+
+      assertEquals("Memory64 and multi-memory features may conflict and should not be enabled together", exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("validate() throws for unreasonable memory limits")
+    void testUnreasonableMemoryLimits() {
+      // Test too small memory limit
+      final EngineConfig configTooSmall = new EngineConfig()
+          .memoryLimitEnabled(true)
+          .memoryLimit(512L); // Less than 1MB
+
+      final IllegalStateException exceptionTooSmall = assertThrows(
+          IllegalStateException.class,
+          configTooSmall::validate,
+          "Should throw IllegalStateException for memory limit too small");
+
+      assertTrue(exceptionTooSmall.getMessage().contains("Memory limit must be between"));
+
+      // Test too large memory limit
+      final EngineConfig configTooLarge = new EngineConfig()
+          .memoryLimitEnabled(true)
+          .memoryLimit(32L * 1024 * 1024 * 1024); // 32GB
+
+      final IllegalStateException exceptionTooLarge = assertThrows(
+          IllegalStateException.class,
+          configTooLarge::validate,
+          "Should throw IllegalStateException for memory limit too large");
+
+      assertTrue(exceptionTooLarge.getMessage().contains("Memory limit must be between"));
+    }
+  }
+
+  @Nested
+  @DisplayName("Configuration Compatibility Tests")
+  class ConfigurationCompatibilityTests {
+
+    @Test
+    @DisplayName("isCompatibleWith() returns true for identical configurations")
+    void testIdenticalConfigurations() {
+      final EngineConfig config1 = EngineConfig.forProduction();
+      final EngineConfig config2 = EngineConfig.forProduction();
+
+      assertTrue(config1.isCompatibleWith(config2), "Identical configurations should be compatible");
+      assertTrue(config2.isCompatibleWith(config1), "Compatibility should be symmetric");
+    }
+
+    @Test
+    @DisplayName("isCompatibleWith() returns false for null configuration")
+    void testNullConfiguration() {
+      final EngineConfig config = new EngineConfig();
+
+      assertFalse(config.isCompatibleWith(null), "Configuration should not be compatible with null");
+    }
+
+    @Test
+    @DisplayName("isCompatibleWith() checks WebAssembly feature compatibility")
+    void testWebAssemblyFeatureCompatibility() {
+      final EngineConfig configBasic = new EngineConfig()
+          .wasmReferenceTypes(true)
+          .wasmSimd(false)
+          .wasmThreads(false);
+
+      final EngineConfig configAdvanced = new EngineConfig()
+          .wasmReferenceTypes(true)
+          .wasmSimd(true)
+          .wasmThreads(true);
+
+      // Basic should be compatible with advanced (advanced supports all basic features)
+      assertTrue(configBasic.isCompatibleWith(configAdvanced),
+          "Basic configuration should be compatible with more advanced configuration");
+
+      // Advanced should not be compatible with basic (basic doesn't support all advanced features)
+      assertFalse(configAdvanced.isCompatibleWith(configBasic),
+          "Advanced configuration should not be compatible with more basic configuration");
+    }
+
+    @Test
+    @DisplayName("isCompatibleWith() checks fuel consumption compatibility")
+    void testFuelConsumptionCompatibility() {
+      final EngineConfig configWithFuel = new EngineConfig()
+          .consumeFuel(true)
+          .fuelAmount(1000L);
+
+      final EngineConfig configWithoutFuel = new EngineConfig()
+          .consumeFuel(false);
+
+      assertFalse(configWithFuel.isCompatibleWith(configWithoutFuel),
+          "Fuel-enabled configuration should not be compatible with fuel-disabled configuration");
+      assertFalse(configWithoutFuel.isCompatibleWith(configWithFuel),
+          "Fuel-disabled configuration should not be compatible with fuel-enabled configuration");
+    }
+
+    @Test
+    @DisplayName("isCompatibleWith() checks memory limit compatibility")
+    void testMemoryLimitCompatibility() {
+      final EngineConfig configSmallMemory = new EngineConfig()
+          .memoryLimitEnabled(true)
+          .memoryLimit(64 * 1024 * 1024L); // 64MB
+
+      final EngineConfig configLargeMemory = new EngineConfig()
+          .memoryLimitEnabled(true)
+          .memoryLimit(256 * 1024 * 1024L); // 256MB
+
+      final EngineConfig configNoMemoryLimit = new EngineConfig()
+          .memoryLimitEnabled(false);
+
+      // Small memory should be compatible with large memory
+      assertTrue(configSmallMemory.isCompatibleWith(configLargeMemory),
+          "Configuration with smaller memory limit should be compatible with larger memory limit");
+
+      // Large memory should not be compatible with small memory
+      assertFalse(configLargeMemory.isCompatibleWith(configSmallMemory),
+          "Configuration with larger memory limit should not be compatible with smaller memory limit");
+
+      // No memory limit should be compatible with any memory limit
+      assertTrue(configNoMemoryLimit.isCompatibleWith(configSmallMemory),
+          "Configuration without memory limit should be compatible with limited memory");
+      assertTrue(configNoMemoryLimit.isCompatibleWith(configLargeMemory),
+          "Configuration without memory limit should be compatible with limited memory");
+    }
+  }
+
+  @Nested
+  @DisplayName("Configuration Utility Tests")
+  class ConfigurationUtilityTests {
+
+    @Test
+    @DisplayName("copy() creates independent copy")
+    void testCopy() {
+      final EngineConfig original = new EngineConfig()
+          .debugInfo(true)
+          .optimizationLevel(OptimizationLevel.SPEED_AND_SIZE)
+          .consumeFuel(true)
+          .fuelAmount(5000L)
+          .wasmThreads(true);
+
+      final EngineConfig copy = original.copy();
+
+      // Verify copy has same values
+      assertEquals(original.isDebugInfo(), copy.isDebugInfo());
+      assertEquals(original.getOptimizationLevel(), copy.getOptimizationLevel());
+      assertEquals(original.isConsumeFuel(), copy.isConsumeFuel());
+      assertEquals(original.getFuelAmount(), copy.getFuelAmount());
+      assertEquals(original.isWasmThreads(), copy.isWasmThreads());
+
+      // Verify copy is independent
+      copy.debugInfo(false);
+      assertTrue(original.isDebugInfo(), "Original should remain unchanged when copy is modified");
+      assertFalse(copy.isDebugInfo(), "Copy should be modified");
+    }
+
+    @Test
+    @DisplayName("getSummary() returns informative summary")
+    void testGetSummary() {
+      final EngineConfig config = new EngineConfig()
+          .optimizationLevel(OptimizationLevel.SPEED_AND_SIZE)
+          .debugInfo(true)
+          .parallelCompilation(false)
+          .consumeFuel(true)
+          .fuelAmount(2000L)
+          .memoryLimitEnabled(true)
+          .memoryLimit(128 * 1024 * 1024L) // 128MB
+          .epochInterruption(true)
+          .wasmReferenceTypes(true)
+          .wasmSimd(true)
+          .wasmThreads(true);
+
+      final String summary = config.getSummary();
+
+      assertNotNull(summary, "Summary should not be null");
+      assertTrue(summary.contains("optimization=SPEED_AND_SIZE"), "Summary should contain optimization level");
+      assertTrue(summary.contains("debug=true"), "Summary should contain debug info");
+      assertTrue(summary.contains("parallel=false"), "Summary should contain parallel compilation");
+      assertTrue(summary.contains("fuel=2000"), "Summary should contain fuel amount");
+      assertTrue(summary.contains("memoryLimit=128MB"), "Summary should contain memory limit");
+      assertTrue(summary.contains("epochInterruption=true"), "Summary should contain epoch interruption");
+      assertTrue(summary.contains("ref-types"), "Summary should contain enabled WASM features");
+      assertTrue(summary.contains("simd"), "Summary should contain enabled WASM features");
+      assertTrue(summary.contains("threads"), "Summary should contain enabled WASM features");
+    }
+
+    @Test
+    @DisplayName("equals() and hashCode() work correctly")
+    void testEqualsAndHashCode() {
+      final EngineConfig config1 = new EngineConfig()
+          .debugInfo(true)
+          .optimizationLevel(OptimizationLevel.SPEED)
+          .consumeFuel(true)
+          .fuelAmount(1000L);
+
+      final EngineConfig config2 = new EngineConfig()
+          .debugInfo(true)
+          .optimizationLevel(OptimizationLevel.SPEED)
+          .consumeFuel(true)
+          .fuelAmount(1000L);
+
+      final EngineConfig config3 = new EngineConfig()
+          .debugInfo(false)
+          .optimizationLevel(OptimizationLevel.SPEED)
+          .consumeFuel(true)
+          .fuelAmount(1000L);
+
+      // Test equals
+      assertEquals(config1, config2, "Configurations with same values should be equal");
+      assertTrue(config1.equals(config1), "Configuration should equal itself");
+      assertFalse(config1.equals(null), "Configuration should not equal null");
+      assertFalse(config1.equals("not a config"), "Configuration should not equal different type");
+      assertFalse(config1.equals(config3), "Configurations with different values should not be equal");
+
+      // Test hashCode consistency
+      assertEquals(config1.hashCode(), config2.hashCode(), "Equal configurations should have same hash code");
+      assertTrue(config1.hashCode() != config3.hashCode(), "Different configurations should likely have different hash codes");
+    }
+
+    @Test
+    @DisplayName("toString() returns summary")
+    void testToString() {
+      final EngineConfig config = EngineConfig.forDebug();
+      final String toStringResult = config.toString();
+      final String summaryResult = config.getSummary();
+
+      assertEquals(summaryResult, toStringResult, "toString() should return same result as getSummary()");
     }
   }
 }
