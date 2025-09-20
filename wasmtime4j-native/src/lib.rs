@@ -56,6 +56,9 @@ pub mod wasi_advanced;
 pub mod performance;
 pub mod bulk_operations;
 
+// Advanced memory management
+pub mod advanced_memory;
+
 // Async runtime support
 pub mod async_runtime;
 
