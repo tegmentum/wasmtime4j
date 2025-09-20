@@ -2,6 +2,8 @@ package ai.tegmentum.wasmtime4j;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
+import ai.tegmentum.wasmtime4j.serialization.SerializationOptions;
+import ai.tegmentum.wasmtime4j.serialization.SerializedModule;
 import java.io.Closeable;
 import java.util.List;
 
@@ -183,6 +185,66 @@ public interface Module extends Closeable {
    */
   @Override
   void close();
+
+  /**
+   * Serializes this module using the specified options.
+   *
+   * <p>Serialization captures the compiled module state for storage or transfer. The resulting
+   * SerializedModule can be deserialized later to recreate an equivalent module without
+   * recompilation.
+   *
+   * @param options serialization options controlling the output format
+   * @return a SerializedModule containing the serialized data and metadata
+   * @throws WasmException if serialization fails
+   * @throws IllegalArgumentException if options is null
+   * @since 1.0.0
+   */
+  SerializedModule serialize(final SerializationOptions options) throws WasmException;
+
+  /**
+   * Serializes this module using default options.
+   *
+   * <p>Uses default serialization settings: no compression, no debug information, standard
+   * optimization level.
+   *
+   * @return a SerializedModule containing the serialized data and metadata
+   * @throws WasmException if serialization fails
+   * @since 1.0.0
+   */
+  SerializedModule serialize() throws WasmException;
+
+  /**
+   * Checks if this module supports serialization.
+   *
+   * <p>Some module types or configurations may not support serialization. This method allows
+   * checking capability before attempting to serialize.
+   *
+   * @return true if the module can be serialized, false otherwise
+   * @since 1.0.0
+   */
+  boolean isSerializable();
+
+  /**
+   * Gets the original WebAssembly bytecode hash for this module.
+   *
+   * <p>This hash can be used for caching and validation purposes. It uniquely identifies the
+   * source WebAssembly bytecode that was compiled to create this module.
+   *
+   * @return the bytecode hash as a byte array
+   * @since 1.0.0
+   */
+  byte[] getBytecodeHash();
+
+  /**
+   * Gets the size of the compiled module in bytes.
+   *
+   * <p>This represents the size of the compiled code and associated metadata, not the original
+   * WebAssembly bytecode size.
+   *
+   * @return the compiled module size in bytes
+   * @since 1.0.0
+   */
+  long getCompiledSize();
 
   /**
    * Compiles WebAssembly bytecode into a Module.

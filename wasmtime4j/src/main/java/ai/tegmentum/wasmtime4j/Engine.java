@@ -1,7 +1,10 @@
 package ai.tegmentum.wasmtime4j;
 
+import ai.tegmentum.wasmtime4j.aot.AotCompiler;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
+import ai.tegmentum.wasmtime4j.serialization.ModuleSerializer;
+import ai.tegmentum.wasmtime4j.serialization.SerializedModule;
 import java.io.Closeable;
 
 /**
@@ -80,6 +83,81 @@ public interface Engine extends Closeable {
    */
   @Override
   void close();
+
+  /**
+   * Deserializes a module from serialized data using this engine.
+   *
+   * <p>This method reconstructs a module from previously serialized data. The deserialization
+   * process validates compatibility and creates a module ready for instantiation.
+   *
+   * @param serializedData the serialized module data
+   * @return a Module deserialized from the data
+   * @throws WasmException if deserialization fails or data is incompatible
+   * @throws IllegalArgumentException if serializedData is null
+   * @since 1.0.0
+   */
+  Module deserializeModule(final byte[] serializedData) throws WasmException;
+
+  /**
+   * Deserializes a module from a SerializedModule using this engine.
+   *
+   * <p>This method is a convenience overload that extracts the data from a SerializedModule
+   * and deserializes it.
+   *
+   * @param serializedModule the serialized module
+   * @return a Module deserialized from the SerializedModule
+   * @throws WasmException if deserialization fails or module is incompatible
+   * @throws IllegalArgumentException if serializedModule is null
+   * @since 1.0.0
+   */
+  Module deserializeModule(final SerializedModule serializedModule) throws WasmException;
+
+  /**
+   * Gets the module serializer associated with this engine.
+   *
+   * <p>The serializer can be used to serialize and deserialize modules compiled by this engine.
+   * Different engines may have different serializers with varying capabilities.
+   *
+   * @return the module serializer for this engine
+   * @since 1.0.0
+   */
+  ModuleSerializer getModuleSerializer();
+
+  /**
+   * Gets the AOT compiler associated with this engine.
+   *
+   * <p>The AOT compiler can be used to perform ahead-of-time compilation for optimized module
+   * deployment. Not all engines may support AOT compilation.
+   *
+   * @return the AOT compiler for this engine
+   * @throws UnsupportedOperationException if AOT compilation is not supported
+   * @since 1.0.0
+   */
+  AotCompiler getAotCompiler();
+
+  /**
+   * Checks if this engine supports module serialization.
+   *
+   * @return true if serialization is supported, false otherwise
+   * @since 1.0.0
+   */
+  boolean supportsModuleSerialization();
+
+  /**
+   * Checks if this engine supports AOT compilation.
+   *
+   * @return true if AOT compilation is supported, false otherwise
+   * @since 1.0.0
+   */
+  boolean supportsAotCompilation();
+
+  /**
+   * Gets the version of the underlying WebAssembly runtime.
+   *
+   * @return the runtime version string
+   * @since 1.0.0
+   */
+  String getRuntimeVersion();
 
   /**
    * Creates a new Engine with default configuration.
