@@ -15,7 +15,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -28,11 +27,11 @@ import org.junit.jupiter.api.Test;
 /**
  * Comprehensive test suite for WASI Resource Manager implementation.
  *
- * <p>Tests the WasiResourceManagerImpl class to ensure proper resource lifecycle management,
- * thread safety, permission enforcement, and integration with different resource types.
+ * <p>Tests the WasiResourceManagerImpl class to ensure proper resource lifecycle management, thread
+ * safety, permission enforcement, and integration with different resource types.
  *
- * <p>These tests validate both the basic functionality and advanced scenarios including
- * concurrent access, resource limits, and error handling.
+ * <p>These tests validate both the basic functionality and advanced scenarios including concurrent
+ * access, resource limits, and error handling.
  */
 @DisplayName("WASI Resource Manager Implementation Tests")
 class WasiResourceManagerImplTest {
@@ -64,11 +63,9 @@ class WasiResourceManagerImplTest {
   @DisplayName("Resource manager should create and track resources correctly")
   void testResourceCreationAndTracking() throws WasmException {
     // Create a filesystem resource
-    final WasiResource resource = resourceManager.createResource(
-        "test-filesystem",
-        WasiResource.class,
-        createFilesystemConfig()
-    );
+    final WasiResource resource =
+        resourceManager.createResource(
+            "test-filesystem", WasiResource.class, createFilesystemConfig());
 
     assertNotNull(resource);
     assertEquals("test-filesystem", ((WasiGenericResourceImpl) resource).getName());
@@ -88,25 +85,16 @@ class WasiResourceManagerImplTest {
   @DisplayName("Resource manager should handle different resource types")
   void testDifferentResourceTypes() throws WasmException {
     // Create filesystem resource
-    final WasiResource filesystemResource = resourceManager.createResource(
-        "filesystem",
-        WasiResource.class,
-        createFilesystemConfig()
-    );
+    final WasiResource filesystemResource =
+        resourceManager.createResource("filesystem", WasiResource.class, createFilesystemConfig());
 
     // Create socket resource
-    final WasiResource socketResource = resourceManager.createResource(
-        "socket",
-        WasiResource.class,
-        createSocketConfig()
-    );
+    final WasiResource socketResource =
+        resourceManager.createResource("socket", WasiResource.class, createSocketConfig());
 
     // Create timer resource
-    final WasiResource timerResource = resourceManager.createResource(
-        "timer",
-        WasiResource.class,
-        createTimerConfig()
-    );
+    final WasiResource timerResource =
+        resourceManager.createResource("timer", WasiResource.class, createTimerConfig());
 
     // Verify all resources are created and tracked
     assertEquals(3, resourceManager.getActiveResourceCount());
@@ -131,22 +119,18 @@ class WasiResourceManagerImplTest {
       // Should be able to create up to the limit
       for (int i = 0; i < strictLimits.getMaxResources(); i++) {
         limitedManager.createResource(
-            "resource-" + i,
-            WasiResource.class,
-            createFilesystemConfig()
-        );
+            "resource-" + i, WasiResource.class, createFilesystemConfig());
       }
 
       assertEquals(strictLimits.getMaxResources(), limitedManager.getActiveResourceCount());
 
       // Creating one more should fail
-      assertThrows(WasmException.class, () -> {
-        limitedManager.createResource(
-            "resource-overflow",
-            WasiResource.class,
-            createFilesystemConfig()
-        );
-      });
+      assertThrows(
+          WasmException.class,
+          () -> {
+            limitedManager.createResource(
+                "resource-overflow", WasiResource.class, createFilesystemConfig());
+          });
     } finally {
       limitedManager.close();
     }
@@ -156,17 +140,11 @@ class WasiResourceManagerImplTest {
   @DisplayName("Resource manager should handle resource release correctly")
   void testResourceRelease() throws WasmException {
     // Create multiple resources
-    final WasiResource resource1 = resourceManager.createResource(
-        "resource1",
-        WasiResource.class,
-        createFilesystemConfig()
-    );
+    final WasiResource resource1 =
+        resourceManager.createResource("resource1", WasiResource.class, createFilesystemConfig());
 
-    final WasiResource resource2 = resourceManager.createResource(
-        "resource2",
-        WasiResource.class,
-        createSocketConfig()
-    );
+    final WasiResource resource2 =
+        resourceManager.createResource("resource2", WasiResource.class, createSocketConfig());
 
     assertEquals(2, resourceManager.getActiveResourceCount());
 
@@ -218,22 +196,20 @@ class WasiResourceManagerImplTest {
     // Create resources concurrently
     for (int i = 0; i < threadCount; i++) {
       final int threadId = i;
-      executor.submit(() -> {
-        try {
-          for (int j = 0; j < resourcesPerThread; j++) {
-            final String resourceName = "thread-" + threadId + "-resource-" + j;
-            resourceManager.createResource(
-                resourceName,
-                WasiResource.class,
-                createFilesystemConfig()
-            );
-          }
-        } catch (final Exception e) {
-          fail("Concurrent resource creation failed: " + e.getMessage());
-        } finally {
-          latch.countDown();
-        }
-      });
+      executor.submit(
+          () -> {
+            try {
+              for (int j = 0; j < resourcesPerThread; j++) {
+                final String resourceName = "thread-" + threadId + "-resource-" + j;
+                resourceManager.createResource(
+                    resourceName, WasiResource.class, createFilesystemConfig());
+              }
+            } catch (final Exception e) {
+              fail("Concurrent resource creation failed: " + e.getMessage());
+            } finally {
+              latch.countDown();
+            }
+          });
     }
 
     // Wait for all threads to complete
@@ -257,9 +233,10 @@ class WasiResourceManagerImplTest {
     resourceManager.createResource("valid2", WasiResource.class, createSocketConfig());
 
     // Validation should pass for valid resources
-    assertDoesNotThrow(() -> {
-      resourceManager.validateResources();
-    });
+    assertDoesNotThrow(
+        () -> {
+          resourceManager.validateResources();
+        });
 
     // Close one resource externally
     final Optional<WasiResource> resource = resourceManager.getResource("valid1");
@@ -267,9 +244,11 @@ class WasiResourceManagerImplTest {
     resource.get().close();
 
     // Validation should detect the invalid resource
-    assertThrows(WasmException.class, () -> {
-      resourceManager.validateResources();
-    });
+    assertThrows(
+        WasmException.class,
+        () -> {
+          resourceManager.validateResources();
+        });
   }
 
   @Test
@@ -323,33 +302,47 @@ class WasiResourceManagerImplTest {
   @DisplayName("Resource manager should handle parameter validation")
   void testParameterValidation() {
     // Test null parameters
-    assertThrows(IllegalArgumentException.class, () -> {
-      resourceManager.createResource(null, WasiResource.class, testConfig);
-    });
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          resourceManager.createResource(null, WasiResource.class, testConfig);
+        });
 
-    assertThrows(IllegalArgumentException.class, () -> {
-      resourceManager.createResource("", WasiResource.class, testConfig);
-    });
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          resourceManager.createResource("", WasiResource.class, testConfig);
+        });
 
-    assertThrows(IllegalArgumentException.class, () -> {
-      resourceManager.createResource("test", null, testConfig);
-    });
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          resourceManager.createResource("test", null, testConfig);
+        });
 
-    assertThrows(IllegalArgumentException.class, () -> {
-      resourceManager.createResource("test", WasiResource.class, null);
-    });
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          resourceManager.createResource("test", WasiResource.class, null);
+        });
 
-    assertThrows(IllegalArgumentException.class, () -> {
-      resourceManager.getResource(null);
-    });
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          resourceManager.getResource(null);
+        });
 
-    assertThrows(IllegalArgumentException.class, () -> {
-      resourceManager.releaseResource((String) null);
-    });
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          resourceManager.releaseResource((String) null);
+        });
 
-    assertThrows(IllegalArgumentException.class, () -> {
-      resourceManager.releaseResource((WasiResource) null);
-    });
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          resourceManager.releaseResource((WasiResource) null);
+        });
   }
 
   @Test
@@ -359,9 +352,11 @@ class WasiResourceManagerImplTest {
     resourceManager.createResource("duplicate", WasiResource.class, createFilesystemConfig());
 
     // Creating another resource with the same name should fail
-    assertThrows(WasmException.class, () -> {
-      resourceManager.createResource("duplicate", WasiResource.class, createSocketConfig());
-    });
+    assertThrows(
+        WasmException.class,
+        () -> {
+          resourceManager.createResource("duplicate", WasiResource.class, createSocketConfig());
+        });
   }
 
   @Test
@@ -378,7 +373,8 @@ class WasiResourceManagerImplTest {
 
     // Get resources by type (this is tested through the interface, actual filtering
     // depends on implementation details)
-    final List<WasiResource> typedResources = resourceManager.getActiveResources(WasiResource.class);
+    final List<WasiResource> typedResources =
+        resourceManager.getActiveResources(WasiResource.class);
     assertEquals(3, typedResources.size()); // All are WasiResource instances
   }
 
@@ -399,18 +395,20 @@ class WasiResourceManagerImplTest {
     assertFalse(resourceManager.isValid());
 
     // Operations should fail
-    assertThrows(IllegalStateException.class, () -> {
-      resourceManager.createResource("new", WasiResource.class, testConfig);
-    });
+    assertThrows(
+        IllegalStateException.class,
+        () -> {
+          resourceManager.createResource("new", WasiResource.class, testConfig);
+        });
 
-    assertThrows(IllegalStateException.class, () -> {
-      resourceManager.getActiveResources();
-    });
+    assertThrows(
+        IllegalStateException.class,
+        () -> {
+          resourceManager.getActiveResources();
+        });
   }
 
-  /**
-   * Creates test resource limits for testing.
-   */
+  /** Creates test resource limits for testing. */
   private WasiResourceLimits createTestResourceLimits() {
     return new WasiResourceLimits() {
       @Override
@@ -440,9 +438,7 @@ class WasiResourceManagerImplTest {
     };
   }
 
-  /**
-   * Creates strict resource limits for testing limit enforcement.
-   */
+  /** Creates strict resource limits for testing limit enforcement. */
   private WasiResourceLimits createStrictResourceLimits() {
     return new WasiResourceLimits() {
       @Override
@@ -472,30 +468,22 @@ class WasiResourceManagerImplTest {
     };
   }
 
-  /**
-   * Creates filesystem resource configuration for testing.
-   */
+  /** Creates filesystem resource configuration for testing. */
   private WasiResourceConfig createFilesystemConfig() {
     return new TestResourceConfig(WasiResourceType.FILESYSTEM, "/tmp");
   }
 
-  /**
-   * Creates socket resource configuration for testing.
-   */
+  /** Creates socket resource configuration for testing. */
   private WasiResourceConfig createSocketConfig() {
     return new TestResourceConfig(WasiResourceType.NETWORK, "localhost:8080");
   }
 
-  /**
-   * Creates timer resource configuration for testing.
-   */
+  /** Creates timer resource configuration for testing. */
   private WasiResourceConfig createTimerConfig() {
     return new TestResourceConfig(WasiResourceType.TIME, "monotonic");
   }
 
-  /**
-   * Test implementation of WasiResourceConfig for testing purposes.
-   */
+  /** Test implementation of WasiResourceConfig for testing purposes. */
   private static class TestResourceConfig implements WasiResourceConfig {
     private final WasiResourceType resourceType;
     private final String name;

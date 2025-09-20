@@ -8,11 +8,11 @@ import java.util.Optional;
  * Represents an event in the WebAssembly module compilation process.
  *
  * <p>CompilationEvent provides detailed information about the various stages of compilation,
- * including progress updates, phase transitions, and error conditions. These events are designed
- * to work with reactive streams for real-time monitoring of compilation operations.
+ * including progress updates, phase transitions, and error conditions. These events are designed to
+ * work with reactive streams for real-time monitoring of compilation operations.
  *
- * <p>Events are immutable and contain all relevant information about the compilation state at
- * the time the event was created.
+ * <p>Events are immutable and contain all relevant information about the compilation state at the
+ * time the event was created.
  *
  * @since 1.0.0
  */
@@ -143,8 +143,22 @@ public interface CompilationEvent {
   static CompilationEvent phaseTransition(
       final String moduleId, final CompilationPhase phase, final Duration elapsed) {
     return new CompilationEventImpl(
-        moduleId, phase, 0.0, null, elapsed, Instant.now(), null, 0, -1, -1, null, null,
-        false, false, false, true);
+        moduleId,
+        phase,
+        0.0,
+        null,
+        elapsed,
+        Instant.now(),
+        null,
+        0,
+        -1,
+        -1,
+        null,
+        null,
+        false,
+        false,
+        false,
+        true);
   }
 
   /**
@@ -166,8 +180,22 @@ public interface CompilationEvent {
       final long bytesProcessed,
       final long totalBytes) {
     return new CompilationEventImpl(
-        moduleId, phase, progress, null, elapsed, Instant.now(), null, bytesProcessed, totalBytes,
-        -1, null, null, false, false, true, false);
+        moduleId,
+        phase,
+        progress,
+        null,
+        elapsed,
+        Instant.now(),
+        null,
+        bytesProcessed,
+        totalBytes,
+        -1,
+        null,
+        null,
+        false,
+        false,
+        true,
+        false);
   }
 
   /**
@@ -179,8 +207,22 @@ public interface CompilationEvent {
    */
   static CompilationEvent completed(final String moduleId, final Duration elapsed) {
     return new CompilationEventImpl(
-        moduleId, CompilationPhase.COMPLETED, 100.0, null, elapsed, Instant.now(), null, -1, -1,
-        -1, null, null, true, false, false, false);
+        moduleId,
+        CompilationPhase.COMPLETED,
+        100.0,
+        null,
+        elapsed,
+        Instant.now(),
+        null,
+        -1,
+        -1,
+        -1,
+        null,
+        null,
+        true,
+        false,
+        false,
+        false);
   }
 
   /**
@@ -194,8 +236,22 @@ public interface CompilationEvent {
   static CompilationEvent failed(
       final String moduleId, final Exception error, final Duration elapsed) {
     return new CompilationEventImpl(
-        moduleId, CompilationPhase.FAILED, 0.0, error, elapsed, Instant.now(), null, -1, -1, -1,
-        null, null, false, true, false, false);
+        moduleId,
+        CompilationPhase.FAILED,
+        0.0,
+        error,
+        elapsed,
+        Instant.now(),
+        null,
+        -1,
+        -1,
+        -1,
+        null,
+        null,
+        false,
+        true,
+        false,
+        false);
   }
 
   /** Default implementation of CompilationEvent. */
@@ -335,7 +391,8 @@ public interface CompilationEvent {
     @Override
     public String toString() {
       return String.format(
-          "CompilationEvent{moduleId='%s', phase=%s, progress=%.1f%%, elapsed=%s, completed=%s, failed=%s}",
+          "CompilationEvent{moduleId='%s', phase=%s, progress=%.1f%%, elapsed=%s, completed=%s,"
+              + " failed=%s}",
           moduleId, phase, progress, elapsed, completed, failed);
     }
   }

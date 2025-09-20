@@ -6,15 +6,16 @@ import java.util.concurrent.TimeUnit;
 /**
  * A mutual exclusion primitive for protecting shared resources in WASI threading.
  *
- * <p>A WasiMutex provides exclusive access to shared resources, ensuring that
- * only one thread can hold the lock at a time. This prevents race conditions
- * and ensures data consistency in multi-threaded applications.
+ * <p>A WasiMutex provides exclusive access to shared resources, ensuring that only one thread can
+ * hold the lock at a time. This prevents race conditions and ensures data consistency in
+ * multi-threaded applications.
  *
- * <p>Mutexes support both blocking and non-blocking lock acquisition, as well
- * as timed lock attempts. They should be used with try-with-resources or
- * explicit unlock calls to ensure proper resource management.
+ * <p>Mutexes support both blocking and non-blocking lock acquisition, as well as timed lock
+ * attempts. They should be used with try-with-resources or explicit unlock calls to ensure proper
+ * resource management.
  *
  * <p>Example usage:
+ *
  * <pre>{@code
  * WasiMutex mutex = threading.createMutex();
  *
@@ -40,9 +41,9 @@ public interface WasiMutex {
   /**
    * Acquires the lock, blocking if necessary until it becomes available.
    *
-   * <p>If the lock is not available, the calling thread will block until
-   * the lock is released by another thread. If the current thread is
-   * interrupted while waiting, an InterruptedException is thrown.
+   * <p>If the lock is not available, the calling thread will block until the lock is released by
+   * another thread. If the current thread is interrupted while waiting, an InterruptedException is
+   * thrown.
    *
    * @return a Lock object that implements AutoCloseable for use with try-with-resources
    * @throws WasmException if lock acquisition fails
@@ -53,9 +54,8 @@ public interface WasiMutex {
   /**
    * Acquires the lock without blocking.
    *
-   * <p>If the lock is available, it is acquired immediately and the method
-   * returns a Lock object. If the lock is not available, the method returns
-   * null immediately without blocking.
+   * <p>If the lock is available, it is acquired immediately and the method returns a Lock object.
+   * If the lock is not available, the method returns null immediately without blocking.
    *
    * @return a Lock object if the lock was acquired, null otherwise
    * @throws WasmException if lock acquisition fails
@@ -65,9 +65,8 @@ public interface WasiMutex {
   /**
    * Attempts to acquire the lock within the specified time.
    *
-   * <p>If the lock is available immediately, it is acquired and the method
-   * returns a Lock object. Otherwise, the thread waits up to the specified
-   * time for the lock to become available.
+   * <p>If the lock is available immediately, it is acquired and the method returns a Lock object.
+   * Otherwise, the thread waits up to the specified time for the lock to become available.
    *
    * @param timeout the maximum time to wait
    * @param unit the time unit of the timeout
@@ -81,11 +80,11 @@ public interface WasiMutex {
   /**
    * Releases the lock.
    *
-   * <p>This method releases the lock held by the current thread. If the
-   * current thread does not hold the lock, an exception is thrown.
+   * <p>This method releases the lock held by the current thread. If the current thread does not
+   * hold the lock, an exception is thrown.
    *
-   * <p><strong>Note:</strong> It is recommended to use the Lock object
-   * returned by lock() methods instead of calling this method directly.
+   * <p><strong>Note:</strong> It is recommended to use the Lock object returned by lock() methods
+   * instead of calling this method directly.
    *
    * @throws WasmException if unlock fails or current thread doesn't hold the lock
    * @throws IllegalStateException if the current thread doesn't hold the lock
@@ -135,8 +134,8 @@ public interface WasiMutex {
   /**
    * Represents a held lock that can be released automatically.
    *
-   * <p>This interface extends AutoCloseable to support try-with-resources
-   * syntax, ensuring that locks are properly released even if exceptions occur.
+   * <p>This interface extends AutoCloseable to support try-with-resources syntax, ensuring that
+   * locks are properly released even if exceptions occur.
    */
   interface Lock extends AutoCloseable {
 
@@ -164,8 +163,8 @@ public interface WasiMutex {
     /**
      * Releases the lock.
      *
-     * <p>After calling this method, the lock becomes invalid and should
-     * not be used. This method can be called multiple times safely.
+     * <p>After calling this method, the lock becomes invalid and should not be used. This method
+     * can be called multiple times safely.
      */
     @Override
     void close();

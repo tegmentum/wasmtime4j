@@ -2,14 +2,13 @@ package ai.tegmentum.wasmtime4j.component;
 
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import java.io.Closeable;
 
 /**
  * Interface for WebAssembly Component Model components.
  *
- * <p>A Component represents a WebAssembly component that has been compiled and validated. Components
- * in the Component Model provide structured interfaces, typed imports/exports, and support for
- * composition and linking.
+ * <p>A Component represents a WebAssembly component that has been compiled and validated.
+ * Components in the Component Model provide structured interfaces, typed imports/exports, and
+ * support for composition and linking.
  *
  * <p>Components differ from core WebAssembly modules by providing higher-level abstractions,
  * structured data types, and interface-based composition capabilities following the WebAssembly
@@ -33,8 +32,8 @@ public interface Component extends AutoCloseable {
    * Instantiates the component with the given store and linker.
    *
    * <p>Creates a new instance of this component using the provided store for execution state and
-   * linker for import resolution. The instance represents a running component with its own
-   * isolated state and exports.
+   * linker for import resolution. The instance represents a running component with its own isolated
+   * state and exports.
    *
    * @param store the store to use for execution state
    * @param linker the linker to use for import resolution
@@ -70,8 +69,8 @@ public interface Component extends AutoCloseable {
   /**
    * Validates the component for correctness and completeness.
    *
-   * <p>Performs comprehensive validation including type checking, import/export compatibility,
-   * and internal consistency. This can be used to verify component validity before instantiation.
+   * <p>Performs comprehensive validation including type checking, import/export compatibility, and
+   * internal consistency. This can be used to verify component validity before instantiation.
    *
    * @throws WasmException if validation fails with details about specific issues
    */
@@ -80,8 +79,8 @@ public interface Component extends AutoCloseable {
   /**
    * Gets metadata about this component.
    *
-   * <p>Returns information about component size, complexity, performance characteristics, and
-   * other metadata useful for tooling and optimization.
+   * <p>Returns information about component size, complexity, performance characteristics, and other
+   * metadata useful for tooling and optimization.
    *
    * @return component metadata
    */

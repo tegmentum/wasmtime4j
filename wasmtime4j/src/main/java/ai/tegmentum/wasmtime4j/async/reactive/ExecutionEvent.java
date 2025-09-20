@@ -9,12 +9,12 @@ import java.util.Optional;
 /**
  * Represents an event in the WebAssembly function execution process.
  *
- * <p>ExecutionEvent provides detailed information about function calls, their parameters,
- * results, and execution characteristics. These events are designed to work with reactive
- * streams for real-time monitoring of WebAssembly function execution.
+ * <p>ExecutionEvent provides detailed information about function calls, their parameters, results,
+ * and execution characteristics. These events are designed to work with reactive streams for
+ * real-time monitoring of WebAssembly function execution.
  *
- * <p>Events are immutable and contain all relevant information about the execution state
- * at the time the event was created.
+ * <p>Events are immutable and contain all relevant information about the execution state at the
+ * time the event was created.
  *
  * @since 1.0.0
  */
@@ -145,8 +145,22 @@ public interface ExecutionEvent {
   static ExecutionEvent executionStart(
       final String executionId, final String functionName, final WasmValue[] parameters) {
     return new ExecutionEventImpl(
-        executionId, functionName, ExecutionPhase.STARTING, parameters, new WasmValue[0], null,
-        Duration.ZERO, Instant.now(), -1, -1, -1, null, false, false, true, false);
+        executionId,
+        functionName,
+        ExecutionPhase.STARTING,
+        parameters,
+        new WasmValue[0],
+        null,
+        Duration.ZERO,
+        Instant.now(),
+        -1,
+        -1,
+        -1,
+        null,
+        false,
+        false,
+        true,
+        false);
   }
 
   /**
@@ -164,8 +178,22 @@ public interface ExecutionEvent {
       final WasmValue[] results,
       final Duration executionTime) {
     return new ExecutionEventImpl(
-        executionId, functionName, ExecutionPhase.COMPLETED, new WasmValue[0], results, null,
-        executionTime, Instant.now(), -1, -1, -1, null, true, false, false, true);
+        executionId,
+        functionName,
+        ExecutionPhase.COMPLETED,
+        new WasmValue[0],
+        results,
+        null,
+        executionTime,
+        Instant.now(),
+        -1,
+        -1,
+        -1,
+        null,
+        true,
+        false,
+        false,
+        true);
   }
 
   /**
@@ -183,8 +211,22 @@ public interface ExecutionEvent {
       final Exception error,
       final Duration executionTime) {
     return new ExecutionEventImpl(
-        executionId, functionName, ExecutionPhase.FAILED, new WasmValue[0], new WasmValue[0], error,
-        executionTime, Instant.now(), -1, -1, -1, null, false, true, false, true);
+        executionId,
+        functionName,
+        ExecutionPhase.FAILED,
+        new WasmValue[0],
+        new WasmValue[0],
+        error,
+        executionTime,
+        Instant.now(),
+        -1,
+        -1,
+        -1,
+        null,
+        false,
+        true,
+        false,
+        true);
   }
 
   /**
@@ -212,9 +254,22 @@ public interface ExecutionEvent {
       final long memoryUsage,
       final int stackDepth) {
     return new ExecutionEventImpl(
-        executionId, functionName, phase, parameters, results, null, executionTime, Instant.now(),
-        instructionCount, memoryUsage, stackDepth, null, phase == ExecutionPhase.COMPLETED,
-        phase == ExecutionPhase.FAILED, false, false);
+        executionId,
+        functionName,
+        phase,
+        parameters,
+        results,
+        null,
+        executionTime,
+        Instant.now(),
+        instructionCount,
+        memoryUsage,
+        stackDepth,
+        null,
+        phase == ExecutionPhase.COMPLETED,
+        phase == ExecutionPhase.FAILED,
+        false,
+        false);
   }
 
   /** Default implementation of ExecutionEvent. */
@@ -256,7 +311,8 @@ public interface ExecutionEvent {
       this.executionId = executionId;
       this.functionName = functionName;
       this.phase = phase;
-      this.parameters = parameters != null ? Arrays.copyOf(parameters, parameters.length) : new WasmValue[0];
+      this.parameters =
+          parameters != null ? Arrays.copyOf(parameters, parameters.length) : new WasmValue[0];
       this.results = results != null ? Arrays.copyOf(results, results.length) : new WasmValue[0];
       this.error = error;
       this.executionTime = executionTime;
@@ -354,7 +410,8 @@ public interface ExecutionEvent {
     @Override
     public String toString() {
       return String.format(
-          "ExecutionEvent{executionId='%s', functionName='%s', phase=%s, executionTime=%s, successful=%s, failed=%s}",
+          "ExecutionEvent{executionId='%s', functionName='%s', phase=%s, executionTime=%s,"
+              + " successful=%s, failed=%s}",
           executionId, functionName, phase, executionTime, successful, failed);
     }
   }

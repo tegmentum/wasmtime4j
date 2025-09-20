@@ -1,7 +1,7 @@
 package ai.tegmentum.wasmtime4j.wasi.impl;
 
-import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.exception.WasiResourceException;
+import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.wasi.WasiResourceConfig;
 import ai.tegmentum.wasmtime4j.wasi.WasiResourcePermissions;
 import java.io.IOException;
@@ -59,12 +59,18 @@ public final class WasiSocketResourceImpl extends WasiGenericResourceImpl {
     }
 
     // Extract network-specific configuration
-    this.host = (String) config.getProperty("host")
-        .orElseThrow(() -> new IllegalArgumentException("Socket host must be specified"));
+    this.host =
+        (String)
+            config
+                .getProperty("host")
+                .orElseThrow(() -> new IllegalArgumentException("Socket host must be specified"));
 
-    final Object portObj = config.getProperty("port")
-        .orElseThrow(() -> new IllegalArgumentException("Socket port must be specified"));
-    this.port = portObj instanceof Integer ? (Integer) portObj : Integer.parseInt(portObj.toString());
+    final Object portObj =
+        config
+            .getProperty("port")
+            .orElseThrow(() -> new IllegalArgumentException("Socket port must be specified"));
+    this.port =
+        portObj instanceof Integer ? (Integer) portObj : Integer.parseInt(portObj.toString());
 
     if (port < 1 || port > 65535) {
       throw new IllegalArgumentException("Port must be between 1 and 65535, got: " + port);
@@ -73,13 +79,16 @@ public final class WasiSocketResourceImpl extends WasiGenericResourceImpl {
     final String typeStr = (String) config.getProperty("socket_type").orElse("TCP");
     this.socketType = SocketType.fromName(typeStr);
 
-    this.permissions = config.getPermissions().getClass().isAssignableFrom(Set.class)
-        ? (Set<WasiResourcePermissions>) config.getPermissions()
-        : WasiResourcePermissions.READ_WRITE;
+    this.permissions =
+        config.getPermissions().getClass().isAssignableFrom(Set.class)
+            ? (Set<WasiResourcePermissions>) config.getPermissions()
+            : WasiResourcePermissions.READ_WRITE;
 
     final Object timeoutObj = config.getProperty("connection_timeout").orElse(30);
-    final long timeoutSeconds = timeoutObj instanceof Integer
-        ? (Integer) timeoutObj : Long.parseLong(timeoutObj.toString());
+    final long timeoutSeconds =
+        timeoutObj instanceof Integer
+            ? (Integer) timeoutObj
+            : Long.parseLong(timeoutObj.toString());
     this.connectionTimeout = Duration.ofSeconds(timeoutSeconds);
 
     // Validate host format (basic validation)
@@ -87,7 +96,16 @@ public final class WasiSocketResourceImpl extends WasiGenericResourceImpl {
       throw new IllegalArgumentException("Host cannot be empty");
     }
 
-    LOGGER.fine("Created socket resource '" + name + "' for " + host + ":" + port + " (" + socketType + ")");
+    LOGGER.fine(
+        "Created socket resource '"
+            + name
+            + "' for "
+            + host
+            + ":"
+            + port
+            + " ("
+            + socketType
+            + ")");
   }
 
   /**
@@ -342,15 +360,14 @@ public final class WasiSocketResourceImpl extends WasiGenericResourceImpl {
    * @param required the required permission
    * @throws WasiResourceException if permission is not granted
    */
-  private void ensurePermission(final WasiResourcePermissions required) throws WasiResourceException {
+  private void ensurePermission(final WasiResourcePermissions required)
+      throws WasiResourceException {
     if (!permissions.contains(required)) {
       throw new WasiResourceException("Permission denied: " + required.getName());
     }
   }
 
-  /**
-   * Enumeration of socket types.
-   */
+  /** Enumeration of socket types. */
   public enum SocketType {
     TCP("tcp"),
     UDP("udp");
@@ -380,16 +397,20 @@ public final class WasiSocketResourceImpl extends WasiGenericResourceImpl {
     }
   }
 
-  /**
-   * Interface for socket-specific statistics.
-   */
+  /** Interface for socket-specific statistics. */
   public interface SocketStats {
     long getBytesReceived();
+
     long getBytesSent();
+
     long getConnectionAttempts();
+
     boolean isConnected();
+
     String getRemoteAddress();
+
     SocketType getSocketType();
+
     Instant getLastConnectionTime();
   }
 }

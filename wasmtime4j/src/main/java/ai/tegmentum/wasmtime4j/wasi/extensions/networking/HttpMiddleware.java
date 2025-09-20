@@ -3,20 +3,22 @@ package ai.tegmentum.wasmtime4j.wasi.extensions.networking;
 /**
  * Functional interface for HTTP middleware components.
  *
- * <p>Middleware functions are executed in the order they are added to the server
- * and can inspect, modify, or reject requests before they reach route handlers.
- * They can also modify responses before they are sent to clients.
+ * <p>Middleware functions are executed in the order they are added to the server and can inspect,
+ * modify, or reject requests before they reach route handlers. They can also modify responses
+ * before they are sent to clients.
  *
  * <p>Middleware can be used for cross-cutting concerns such as:
+ *
  * <ul>
- *   <li>Authentication and authorization</li>
- *   <li>Request logging and metrics</li>
- *   <li>CORS handling</li>
- *   <li>Rate limiting</li>
- *   <li>Request/response transformation</li>
+ *   <li>Authentication and authorization
+ *   <li>Request logging and metrics
+ *   <li>CORS handling
+ *   <li>Rate limiting
+ *   <li>Request/response transformation
  * </ul>
  *
  * <p>Example usage:
+ *
  * <pre>{@code
  * // Logging middleware
  * HttpMiddleware loggingMiddleware = (request, next) -> {
@@ -50,14 +52,14 @@ public interface HttpMiddleware {
   /**
    * Processes an HTTP request with middleware logic.
    *
-   * <p>The middleware function receives the incoming request and a "next" handler
-   * that represents the next middleware in the chain or the final route handler.
-   * The middleware can:
+   * <p>The middleware function receives the incoming request and a "next" handler that represents
+   * the next middleware in the chain or the final route handler. The middleware can:
+   *
    * <ul>
-   *   <li>Inspect the request and call next.handle(request) to continue processing</li>
-   *   <li>Modify the request and call next.handle(modifiedRequest)</li>
-   *   <li>Return a response immediately without calling next (short-circuit)</li>
-   *   <li>Call next.handle(request) and modify the response before returning it</li>
+   *   <li>Inspect the request and call next.handle(request) to continue processing
+   *   <li>Modify the request and call next.handle(modifiedRequest)
+   *   <li>Return a response immediately without calling next (short-circuit)
+   *   <li>Call next.handle(request) and modify the response before returning it
    * </ul>
    *
    * @param request the incoming HTTP request
@@ -69,9 +71,8 @@ public interface HttpMiddleware {
   /**
    * Represents the next handler in the middleware chain.
    *
-   * <p>This interface allows middleware to delegate request processing to
-   * the next component in the chain, which could be another middleware
-   * or the final route handler.
+   * <p>This interface allows middleware to delegate request processing to the next component in the
+   * chain, which could be another middleware or the final route handler.
    */
   @FunctionalInterface
   interface NextHandler {
@@ -112,8 +113,10 @@ public interface HttpMiddleware {
       final WasiHttpResponse response = next.handle(request);
       final long duration = System.currentTimeMillis() - startTime;
 
-      System.out.println(String.format("%s %s -> %d (%dms)",
-          request.getMethod(), request.getUri(), response.getStatusCode(), duration));
+      System.out.println(
+          String.format(
+              "%s %s -> %d (%dms)",
+              request.getMethod(), request.getUri(), response.getStatusCode(), duration));
 
       return response;
     };
@@ -127,9 +130,8 @@ public interface HttpMiddleware {
    * @param allowedHeaders comma-separated list of allowed headers
    * @return a CORS middleware
    */
-  static HttpMiddleware createCorsMiddleware(final String allowedOrigins,
-                                           final String allowedMethods,
-                                           final String allowedHeaders) {
+  static HttpMiddleware createCorsMiddleware(
+      final String allowedOrigins, final String allowedMethods, final String allowedHeaders) {
     return (request, next) -> {
       // Handle preflight OPTIONS request
       if (request.getMethod() == HttpMethod.OPTIONS) {

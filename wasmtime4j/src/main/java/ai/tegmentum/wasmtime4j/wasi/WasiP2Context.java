@@ -11,8 +11,8 @@ import java.util.Map;
  * resource management, security policies, and capability control. This context enables fine-grained
  * control over component access to system resources and external capabilities.
  *
- * <p>WASI Preview 2 introduces a capability-based security model where components must be explicitly
- * granted access to resources through this context configuration.
+ * <p>WASI Preview 2 introduces a capability-based security model where components must be
+ * explicitly granted access to resources through this context configuration.
  *
  * <p>Example usage:
  *
@@ -62,8 +62,8 @@ public interface WasiP2Context extends Closeable {
   /**
    * Sets the security policy for this context.
    *
-   * <p>Security policies define what capabilities and system resources components are allowed
-   * to access, enabling fine-grained security control.
+   * <p>Security policies define what capabilities and system resources components are allowed to
+   * access, enabling fine-grained security control.
    *
    * @param policy the security policy to apply
    * @throws WasmException if policy cannot be applied
@@ -81,8 +81,8 @@ public interface WasiP2Context extends Closeable {
   /**
    * Gets all active resources managed by this context.
    *
-   * <p>Returns a map of resource names to their corresponding resource instances. This can be
-   * used for monitoring resource usage and debugging.
+   * <p>Returns a map of resource names to their corresponding resource instances. This can be used
+   * for monitoring resource usage and debugging.
    *
    * @return map of resource names to WasiResource instances
    * @throws WasmException if resource enumeration fails
@@ -111,13 +111,14 @@ public interface WasiP2Context extends Closeable {
    * @throws WasmException if resource creation fails
    * @throws IllegalArgumentException if name is null/empty or config is null
    */
-  WasiResource createResource(final String name, final WasiResourceConfig config) throws WasmException;
+  WasiResource createResource(final String name, final WasiResourceConfig config)
+      throws WasmException;
 
   /**
    * Releases a resource and removes it from this context.
    *
-   * <p>After releasing a resource, it will no longer be available to components and any
-   * references to it will become invalid.
+   * <p>After releasing a resource, it will no longer be available to components and any references
+   * to it will become invalid.
    *
    * @param name the resource name to release
    * @throws WasmException if resource release fails
@@ -136,8 +137,8 @@ public interface WasiP2Context extends Closeable {
   /**
    * Creates a WASI configuration suitable for component instantiation.
    *
-   * <p>Generates a WasiConfig that incorporates the resource limits, security policy, and
-   * resource mappings from this context.
+   * <p>Generates a WasiConfig that incorporates the resource limits, security policy, and resource
+   * mappings from this context.
    *
    * @return a WASI configuration for component instantiation
    * @throws WasmException if configuration generation fails
@@ -147,8 +148,8 @@ public interface WasiP2Context extends Closeable {
   /**
    * Creates a component from WebAssembly bytes using this context.
    *
-   * <p>Creates and validates a component using the security policy and resource constraints
-   * defined in this context.
+   * <p>Creates and validates a component using the security policy and resource constraints defined
+   * in this context.
    *
    * @param wasmBytes the WebAssembly component bytes
    * @return a new component instance
@@ -160,8 +161,8 @@ public interface WasiP2Context extends Closeable {
   /**
    * Gets usage statistics for this context.
    *
-   * <p>Returns information about resource usage, component instantiations, and performance
-   * metrics for monitoring and optimization purposes.
+   * <p>Returns information about resource usage, component instantiations, and performance metrics
+   * for monitoring and optimization purposes.
    *
    * @return context usage statistics
    */
@@ -189,8 +190,8 @@ public interface WasiP2Context extends Closeable {
   /**
    * Closes this context and releases all associated resources.
    *
-   * <p>After calling this method, the context becomes invalid and should not be used. All
-   * resources managed by this context will be released.
+   * <p>After calling this method, the context becomes invalid and should not be used. All resources
+   * managed by this context will be released.
    */
   @Override
   void close();

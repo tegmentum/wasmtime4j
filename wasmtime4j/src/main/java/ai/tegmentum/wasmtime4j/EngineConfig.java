@@ -490,9 +490,7 @@ public final class EngineConfig {
     validateWasmFeatureCompatibility();
   }
 
-  /**
-   * Validates optimization-related settings.
-   */
+  /** Validates optimization-related settings. */
   private void validateOptimizationSettings() {
     if (optimizationLevel == null) {
       throw new IllegalStateException("Optimization level cannot be null");
@@ -500,8 +498,7 @@ public final class EngineConfig {
 
     // Debug verifier should only be enabled with debug info for performance
     if (craneliftDebugVerifier && !debugInfo) {
-      throw new IllegalStateException(
-          "Cranelift debug verifier requires debug info to be enabled");
+      throw new IllegalStateException("Cranelift debug verifier requires debug info to be enabled");
     }
 
     // Parallel compilation with debug verifier may cause issues
@@ -511,9 +508,7 @@ public final class EngineConfig {
     }
   }
 
-  /**
-   * Validates memory-related settings.
-   */
+  /** Validates memory-related settings. */
   private void validateMemorySettings() {
     if (memoryLimitEnabled && memoryLimit <= 0) {
       throw new IllegalStateException(
@@ -521,8 +516,7 @@ public final class EngineConfig {
     }
 
     if (!memoryLimitEnabled && memoryLimit > 0) {
-      throw new IllegalStateException(
-          "Memory limit is set but memory limiting is not enabled");
+      throw new IllegalStateException("Memory limit is set but memory limiting is not enabled");
     }
 
     // Memory limit should be reasonable (at least 1MB, at most 16GB)
@@ -536,9 +530,7 @@ public final class EngineConfig {
     }
   }
 
-  /**
-   * Validates fuel-related settings.
-   */
+  /** Validates fuel-related settings. */
   private void validateFuelSettings() {
     if (consumeFuel && fuelAmount <= 0) {
       throw new IllegalStateException(
@@ -546,14 +538,11 @@ public final class EngineConfig {
     }
 
     if (!consumeFuel && fuelAmount > 0) {
-      throw new IllegalStateException(
-          "Fuel amount is set but fuel consumption is not enabled");
+      throw new IllegalStateException("Fuel amount is set but fuel consumption is not enabled");
     }
   }
 
-  /**
-   * Validates WebAssembly feature compatibility.
-   */
+  /** Validates WebAssembly feature compatibility. */
   private void validateWasmFeatureCompatibility() {
     // Relaxed SIMD requires regular SIMD
     if (wasmRelaxedSimd && !wasmSimd) {
@@ -587,9 +576,7 @@ public final class EngineConfig {
     return isWasmFeaturesCompatible(other) && isRuntimeSettingsCompatible(other);
   }
 
-  /**
-   * Checks if WebAssembly features are compatible between configurations.
-   */
+  /** Checks if WebAssembly features are compatible between configurations. */
   private boolean isWasmFeaturesCompatible(final EngineConfig other) {
     // All features that are enabled in this config must also be enabled in the other
     // This ensures modules compiled with this config can run in engines with the other config
@@ -604,9 +591,7 @@ public final class EngineConfig {
         && (!wasmMemory64 || other.wasmMemory64);
   }
 
-  /**
-   * Checks if runtime settings are compatible between configurations.
-   */
+  /** Checks if runtime settings are compatible between configurations. */
   private boolean isRuntimeSettingsCompatible(final EngineConfig other) {
     // Fuel consumption must match for proper execution
     if (consumeFuel != other.consumeFuel) {

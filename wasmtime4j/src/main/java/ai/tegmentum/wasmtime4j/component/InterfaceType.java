@@ -11,8 +11,8 @@ import java.util.Optional;
  * specifies a collection of functions, resources, and types. Interfaces enable structured
  * composition and type-safe interaction between components.
  *
- * <p>Interface types follow the WIT specification and provide the foundation for component
- * model composition, import/export resolution, and inter-component communication.
+ * <p>Interface types follow the WIT specification and provide the foundation for component model
+ * composition, import/export resolution, and inter-component communication.
  *
  * <p>Example interface definition:
  *
@@ -74,8 +74,8 @@ public interface InterfaceType {
   /**
    * Gets all resource definitions in this interface.
    *
-   * <p>Returns resource types that are defined within this interface, including their methods
-   * and associated functionality.
+   * <p>Returns resource types that are defined within this interface, including their methods and
+   * associated functionality.
    *
    * @return list of interface resources
    */
@@ -93,8 +93,8 @@ public interface InterfaceType {
   /**
    * Gets all type definitions in this interface.
    *
-   * <p>Returns custom types (records, variants, enums, etc.) that are defined within this
-   * interface and can be used in function signatures.
+   * <p>Returns custom types (records, variants, enums, etc.) that are defined within this interface
+   * and can be used in function signatures.
    *
    * @return map of type names to their definitions
    */
@@ -148,8 +148,8 @@ public interface InterfaceType {
   /**
    * Gets all interface dependencies.
    *
-   * <p>Returns the names of all interfaces that this interface depends on through imports or
-   * type references.
+   * <p>Returns the names of all interfaces that this interface depends on through imports or type
+   * references.
    *
    * @return list of interface names this interface depends on
    */

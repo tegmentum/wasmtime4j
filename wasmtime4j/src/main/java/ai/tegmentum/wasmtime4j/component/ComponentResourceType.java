@@ -11,8 +11,8 @@ import java.util.Optional;
  * properties, lifecycle semantics, and security characteristics. Resource types enable stateful,
  * capability-based abstractions in the Component Model.
  *
- * <p>Resource types define the interface contract for resource instances and provide the
- * foundation for resource management and access control.
+ * <p>Resource types define the interface contract for resource instances and provide the foundation
+ * for resource management and access control.
  *
  * @since 1.0.0
  */

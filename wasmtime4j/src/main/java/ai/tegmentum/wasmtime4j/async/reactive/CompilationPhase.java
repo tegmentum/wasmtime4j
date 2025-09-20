@@ -6,8 +6,8 @@ package ai.tegmentum.wasmtime4j.async.reactive;
  * <p>This enum represents the various stages that a WebAssembly module goes through during
  * compilation, from initial parsing through final optimization and completion.
  *
- * <p>These phases are used in reactive compilation events to provide detailed progress
- * information and enable fine-grained monitoring of the compilation process.
+ * <p>These phases are used in reactive compilation events to provide detailed progress information
+ * and enable fine-grained monitoring of the compilation process.
  *
  * @since 1.0.0
  */
@@ -110,8 +110,8 @@ public enum CompilationPhase {
   /**
    * Checks if this phase represents a terminal state.
    *
-   * <p>Terminal phases are those where compilation cannot proceed further,
-   * including completion, failure, and cancellation.
+   * <p>Terminal phases are those where compilation cannot proceed further, including completion,
+   * failure, and cancellation.
    *
    * @return true if this is a terminal phase
    */
@@ -133,8 +133,8 @@ public enum CompilationPhase {
   /**
    * Gets the estimated progress percentage for this phase.
    *
-   * <p>This provides a rough estimate of overall compilation progress based on
-   * the current phase, useful for progress bars and status displays.
+   * <p>This provides a rough estimate of overall compilation progress based on the current phase,
+   * useful for progress bars and status displays.
    *
    * @return estimated progress percentage (0.0 to 100.0)
    */

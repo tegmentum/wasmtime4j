@@ -155,8 +155,8 @@ public interface AsyncFunction extends WasmFunction {
   /**
    * Creates a reactive stream processor for this function with custom transformation.
    *
-   * <p>This method enables creation of reusable reactive processors that can be composed
-   * and integrated into larger reactive pipelines.
+   * <p>This method enables creation of reusable reactive processors that can be composed and
+   * integrated into larger reactive pipelines.
    *
    * @param <T> the input parameter type
    * @param <R> the output result type
@@ -170,8 +170,8 @@ public interface AsyncFunction extends WasmFunction {
   /**
    * Checks if this function supports reactive stream processing.
    *
-   * <p>Some functions may not support reactive streaming due to their implementation
-   * or resource requirements.
+   * <p>Some functions may not support reactive streaming due to their implementation or resource
+   * requirements.
    *
    * @return true if reactive streaming is supported
    */
@@ -200,7 +200,8 @@ public interface AsyncFunction extends WasmFunction {
      * @param input the input stream
      * @return the transformed output stream
      */
-    java.util.concurrent.Flow.Publisher<R> process(final java.util.concurrent.Flow.Publisher<T> input);
+    java.util.concurrent.Flow.Publisher<R> process(
+        final java.util.concurrent.Flow.Publisher<T> input);
 
     /**
      * Gets the processor configuration.
@@ -260,8 +261,8 @@ public interface AsyncFunction extends WasmFunction {
     /**
      * Checks if ordered processing is required.
      *
-     * <p>When enabled, results will be emitted in the same order as inputs,
-     * potentially reducing throughput.
+     * <p>When enabled, results will be emitted in the same order as inputs, potentially reducing
+     * throughput.
      *
      * @return true if ordered processing is enabled
      */
@@ -270,8 +271,8 @@ public interface AsyncFunction extends WasmFunction {
     /**
      * Checks if error propagation is enabled.
      *
-     * <p>When enabled, errors from individual function calls will propagate
-     * to the reactive stream, potentially terminating it.
+     * <p>When enabled, errors from individual function calls will propagate to the reactive stream,
+     * potentially terminating it.
      *
      * @return true if error propagation is enabled
      */

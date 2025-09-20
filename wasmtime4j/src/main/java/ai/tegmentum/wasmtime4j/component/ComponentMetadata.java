@@ -137,7 +137,8 @@ public interface ComponentMetadata {
   /**
    * Checks if the component supports asynchronous execution.
    *
-   * <p>Returns true if this component is designed to support async execution patterns and non-blocking operations.
+   * <p>Returns true if this component is designed to support async execution patterns and
+   * non-blocking operations.
    *
    * @return true if async execution is supported, false otherwise
    */

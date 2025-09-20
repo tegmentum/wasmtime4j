@@ -6,8 +6,8 @@ import java.util.Optional;
 /**
  * Interface for WebAssembly Component Model interface function definitions.
  *
- * <p>InterfaceFunction represents a function definition within a WIT interface, including its
- * name, parameter types, return type, and other metadata. Interface functions define the callable
+ * <p>InterfaceFunction represents a function definition within a WIT interface, including its name,
+ * parameter types, return type, and other metadata. Interface functions define the callable
  * operations available within component interfaces.
  *
  * <p>Function definitions support complex parameter and return types including structured data,
@@ -56,8 +56,8 @@ public interface InterfaceFunction {
   /**
    * Gets the error type for this function if it can fail.
    *
-   * <p>Returns the type of error that this function can return if it uses result types for
-   * error handling.
+   * <p>Returns the type of error that this function can return if it uses result types for error
+   * handling.
    *
    * @return the error type, or empty if function cannot fail
    */
@@ -83,8 +83,8 @@ public interface InterfaceFunction {
   /**
    * Checks if this function is a resource method.
    *
-   * <p>Returns true if this function is defined as a method on a resource type rather than
-   * a standalone interface function.
+   * <p>Returns true if this function is defined as a method on a resource type rather than a
+   * standalone interface function.
    *
    * @return true if this is a resource method, false otherwise
    */

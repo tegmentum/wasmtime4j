@@ -129,8 +129,7 @@ public enum WasmFeature {
   /**
    * Threads proposal for shared memory and atomic operations.
    *
-   * <p>This feature adds shared linear memory and atomic operations for multi-threaded
-   * WebAssembly.
+   * <p>This feature adds shared linear memory and atomic operations for multi-threaded WebAssembly.
    */
   THREADS("threads");
 
@@ -173,17 +172,29 @@ public enum WasmFeature {
   /**
    * Checks if this feature is considered stable.
    *
-   * <p>Stable features are those that have been finalized in the WebAssembly specification and
-   * are widely supported.
+   * <p>Stable features are those that have been finalized in the WebAssembly specification and are
+   * widely supported.
    *
    * @return true if the feature is stable, false if experimental
    */
   public boolean isStable() {
     return switch (this) {
-      case MULTI_VALUE, REFERENCE_TYPES, BULK_MEMORY, SIGN_EXTENSION, MUTABLE_GLOBALS,
+      case MULTI_VALUE,
+          REFERENCE_TYPES,
+          BULK_MEMORY,
+          SIGN_EXTENSION,
+          MUTABLE_GLOBALS,
           SATURATING_FLOAT_TO_INT -> true;
-      case SIMD, MULTI_MEMORY, EXCEPTION_HANDLING, TAIL_CALL, FUNCTION_REFERENCES, GC,
-          RELAXED_SIMD, EXTENDED_CONST, COMPONENT_MODEL, THREADS -> false;
+      case SIMD,
+          MULTI_MEMORY,
+          EXCEPTION_HANDLING,
+          TAIL_CALL,
+          FUNCTION_REFERENCES,
+          GC,
+          RELAXED_SIMD,
+          EXTENDED_CONST,
+          COMPONENT_MODEL,
+          THREADS -> false;
     };
   }
 

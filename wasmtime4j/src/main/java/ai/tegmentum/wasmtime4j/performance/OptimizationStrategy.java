@@ -3,9 +3,9 @@ package ai.tegmentum.wasmtime4j.performance;
 /**
  * Represents different optimization strategies that can be applied to WebAssembly modules.
  *
- * <p>Optimization strategies provide fine-grained control over which optimizations
- * are applied, allowing developers to customize the optimization process based on
- * specific requirements and constraints.
+ * <p>Optimization strategies provide fine-grained control over which optimizations are applied,
+ * allowing developers to customize the optimization process based on specific requirements and
+ * constraints.
  *
  * @since 1.0.0
  */
@@ -14,79 +14,88 @@ public enum OptimizationStrategy {
   /**
    * Dead code elimination - removes unreachable code.
    *
-   * <p>Safe optimization that reduces module size and improves performance
-   * by eliminating code that cannot be executed.
+   * <p>Safe optimization that reduces module size and improves performance by eliminating code that
+   * cannot be executed.
    */
-  DEAD_CODE_ELIMINATION("Dead Code Elimination", OptimizationCategory.CODE_SIZE, OptimizationSafety.SAFE),
+  DEAD_CODE_ELIMINATION(
+      "Dead Code Elimination", OptimizationCategory.CODE_SIZE, OptimizationSafety.SAFE),
 
   /**
    * Function inlining - inlines small frequently called functions.
    *
-   * <p>Reduces function call overhead but may increase code size.
-   * Most effective for small, frequently called functions.
+   * <p>Reduces function call overhead but may increase code size. Most effective for small,
+   * frequently called functions.
    */
-  FUNCTION_INLINING("Function Inlining", OptimizationCategory.EXECUTION_SPEED, OptimizationSafety.SAFE),
+  FUNCTION_INLINING(
+      "Function Inlining", OptimizationCategory.EXECUTION_SPEED, OptimizationSafety.SAFE),
 
   /**
    * Loop optimization - optimizes loop structures and iterations.
    *
-   * <p>Includes loop unrolling, vectorization, and strength reduction.
-   * Can significantly improve performance for computation-heavy code.
+   * <p>Includes loop unrolling, vectorization, and strength reduction. Can significantly improve
+   * performance for computation-heavy code.
    */
-  LOOP_OPTIMIZATION("Loop Optimization", OptimizationCategory.EXECUTION_SPEED, OptimizationSafety.MODERATE),
+  LOOP_OPTIMIZATION(
+      "Loop Optimization", OptimizationCategory.EXECUTION_SPEED, OptimizationSafety.MODERATE),
 
   /**
    * Constant propagation - replaces variables with their constant values.
    *
-   * <p>Eliminates unnecessary variable lookups and enables further optimizations.
-   * Safe optimization with moderate performance impact.
+   * <p>Eliminates unnecessary variable lookups and enables further optimizations. Safe optimization
+   * with moderate performance impact.
    */
-  CONSTANT_PROPAGATION("Constant Propagation", OptimizationCategory.EXECUTION_SPEED, OptimizationSafety.SAFE),
+  CONSTANT_PROPAGATION(
+      "Constant Propagation", OptimizationCategory.EXECUTION_SPEED, OptimizationSafety.SAFE),
 
   /**
    * Register allocation optimization - optimizes variable to register mapping.
    *
-   * <p>Improves performance by reducing memory accesses and optimizing
-   * register usage patterns.
+   * <p>Improves performance by reducing memory accesses and optimizing register usage patterns.
    */
-  REGISTER_ALLOCATION("Register Allocation", OptimizationCategory.EXECUTION_SPEED, OptimizationSafety.SAFE),
+  REGISTER_ALLOCATION(
+      "Register Allocation", OptimizationCategory.EXECUTION_SPEED, OptimizationSafety.SAFE),
 
   /**
    * Memory access optimization - optimizes memory load/store patterns.
    *
-   * <p>Reduces memory access overhead through caching, prefetching,
-   * and access pattern optimization.
+   * <p>Reduces memory access overhead through caching, prefetching, and access pattern
+   * optimization.
    */
-  MEMORY_ACCESS_OPTIMIZATION("Memory Access Optimization", OptimizationCategory.MEMORY_EFFICIENCY, OptimizationSafety.MODERATE),
+  MEMORY_ACCESS_OPTIMIZATION(
+      "Memory Access Optimization",
+      OptimizationCategory.MEMORY_EFFICIENCY,
+      OptimizationSafety.MODERATE),
 
   /**
    * Instruction scheduling - reorders instructions for better pipeline utilization.
    *
-   * <p>Improves CPU pipeline efficiency by reordering instructions
-   * to minimize stalls and maximize throughput.
+   * <p>Improves CPU pipeline efficiency by reordering instructions to minimize stalls and maximize
+   * throughput.
    */
-  INSTRUCTION_SCHEDULING("Instruction Scheduling", OptimizationCategory.EXECUTION_SPEED, OptimizationSafety.MODERATE),
+  INSTRUCTION_SCHEDULING(
+      "Instruction Scheduling", OptimizationCategory.EXECUTION_SPEED, OptimizationSafety.MODERATE),
 
   /**
    * Branch prediction optimization - optimizes branch patterns.
    *
    * <p>Improves branch prediction accuracy and reduces branch misprediction penalties.
    */
-  BRANCH_OPTIMIZATION("Branch Optimization", OptimizationCategory.EXECUTION_SPEED, OptimizationSafety.MODERATE),
+  BRANCH_OPTIMIZATION(
+      "Branch Optimization", OptimizationCategory.EXECUTION_SPEED, OptimizationSafety.MODERATE),
 
   /**
    * Vectorization - converts scalar operations to vector operations.
    *
-   * <p>Leverages SIMD instructions for improved performance on vectorizable code.
-   * Requires careful analysis to ensure correctness.
+   * <p>Leverages SIMD instructions for improved performance on vectorizable code. Requires careful
+   * analysis to ensure correctness.
    */
-  VECTORIZATION("Vectorization", OptimizationCategory.EXECUTION_SPEED, OptimizationSafety.AGGRESSIVE),
+  VECTORIZATION(
+      "Vectorization", OptimizationCategory.EXECUTION_SPEED, OptimizationSafety.AGGRESSIVE),
 
   /**
    * Code motion - moves invariant code out of loops.
    *
-   * <p>Improves performance by eliminating redundant computations
-   * within loop iterations.
+   * <p>Improves performance by eliminating redundant computations within loop iterations.
    */
   CODE_MOTION("Code Motion", OptimizationCategory.EXECUTION_SPEED, OptimizationSafety.SAFE),
 
@@ -95,37 +104,45 @@ public enum OptimizationStrategy {
    *
    * <p>Replaces multiplication with addition, division with shifts, etc.
    */
-  STRENGTH_REDUCTION("Strength Reduction", OptimizationCategory.EXECUTION_SPEED, OptimizationSafety.SAFE),
+  STRENGTH_REDUCTION(
+      "Strength Reduction", OptimizationCategory.EXECUTION_SPEED, OptimizationSafety.SAFE),
 
   /**
    * Common subexpression elimination - eliminates redundant computations.
    *
-   * <p>Identifies and eliminates repeated calculations to reduce
-   * computational overhead.
+   * <p>Identifies and eliminates repeated calculations to reduce computational overhead.
    */
-  COMMON_SUBEXPRESSION_ELIMINATION("Common Subexpression Elimination", OptimizationCategory.EXECUTION_SPEED, OptimizationSafety.SAFE),
+  COMMON_SUBEXPRESSION_ELIMINATION(
+      "Common Subexpression Elimination",
+      OptimizationCategory.EXECUTION_SPEED,
+      OptimizationSafety.SAFE),
 
   /**
    * Memory layout optimization - optimizes data structure layout.
    *
-   * <p>Improves cache performance through better data locality
-   * and memory access patterns.
+   * <p>Improves cache performance through better data locality and memory access patterns.
    */
-  MEMORY_LAYOUT_OPTIMIZATION("Memory Layout Optimization", OptimizationCategory.MEMORY_EFFICIENCY, OptimizationSafety.MODERATE),
+  MEMORY_LAYOUT_OPTIMIZATION(
+      "Memory Layout Optimization",
+      OptimizationCategory.MEMORY_EFFICIENCY,
+      OptimizationSafety.MODERATE),
 
   /**
    * JIT compilation hints - provides hints for runtime optimization.
    *
-   * <p>Guides JIT compiler optimization decisions based on
-   * static analysis and profiling data.
+   * <p>Guides JIT compiler optimization decisions based on static analysis and profiling data.
    */
-  JIT_HINTS("JIT Compilation Hints", OptimizationCategory.COMPILATION_SPEED, OptimizationSafety.SAFE);
+  JIT_HINTS(
+      "JIT Compilation Hints", OptimizationCategory.COMPILATION_SPEED, OptimizationSafety.SAFE);
 
   private final String displayName;
   private final OptimizationCategory category;
   private final OptimizationSafety safety;
 
-  OptimizationStrategy(final String displayName, final OptimizationCategory category, final OptimizationSafety safety) {
+  OptimizationStrategy(
+      final String displayName,
+      final OptimizationCategory category,
+      final OptimizationSafety safety) {
     this.displayName = displayName;
     this.category = category;
     this.safety = safety;

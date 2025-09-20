@@ -8,8 +8,8 @@ import java.util.Map;
  * Statistics and metrics for a WebAssembly component instance.
  *
  * <p>ComponentInstanceStats provides detailed runtime statistics for component instance execution
- * including performance metrics, resource usage, call counts, and timing information. This data
- * is useful for monitoring, profiling, and optimization.
+ * including performance metrics, resource usage, call counts, and timing information. This data is
+ * useful for monitoring, profiling, and optimization.
  *
  * <p>Statistics are collected continuously during component execution and provide both aggregate
  * totals and current state information.
@@ -90,8 +90,8 @@ public interface ComponentInstanceStats {
   /**
    * Gets the total time spent in garbage collection.
    *
-   * <p>Returns the cumulative time spent in garbage collection operations related to this
-   * component instance.
+   * <p>Returns the cumulative time spent in garbage collection operations related to this component
+   * instance.
    *
    * @return total GC time
    */
@@ -100,8 +100,8 @@ public interface ComponentInstanceStats {
   /**
    * Gets per-export call statistics.
    *
-   * <p>Returns detailed call statistics for each exported function including call counts,
-   * execution times, and error rates.
+   * <p>Returns detailed call statistics for each exported function including call counts, execution
+   * times, and error rates.
    *
    * @return map of export names to their call statistics
    */
@@ -140,8 +140,8 @@ public interface ComponentInstanceStats {
   /**
    * Gets the number of active resources owned by this instance.
    *
-   * <p>Returns the current count of resources that are actively owned and managed by this
-   * component instance.
+   * <p>Returns the current count of resources that are actively owned and managed by this component
+   * instance.
    *
    * @return number of active resources
    */

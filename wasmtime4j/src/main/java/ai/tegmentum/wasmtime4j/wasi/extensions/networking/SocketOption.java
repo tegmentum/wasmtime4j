@@ -3,83 +3,45 @@ package ai.tegmentum.wasmtime4j.wasi.extensions.networking;
 /**
  * Enumeration of socket options for configuring socket behavior.
  *
- * <p>Socket options control various aspects of network socket operation
- * including timeouts, buffer sizes, and protocol-specific behaviors.
- * Each option has an associated value type that must be used when
- * getting or setting the option.
+ * <p>Socket options control various aspects of network socket operation including timeouts, buffer
+ * sizes, and protocol-specific behaviors. Each option has an associated value type that must be
+ * used when getting or setting the option.
  *
  * @since 1.0.0
  */
 public enum SocketOption {
 
-  /**
-   * Socket receive timeout in milliseconds.
-   * Value type: Integer
-   * Default: 0 (no timeout)
-   */
+  /** Socket receive timeout in milliseconds. Value type: Integer Default: 0 (no timeout) */
   SO_RCVTIMEO(1, Integer.class),
 
-  /**
-   * Socket send timeout in milliseconds.
-   * Value type: Integer
-   * Default: 0 (no timeout)
-   */
+  /** Socket send timeout in milliseconds. Value type: Integer Default: 0 (no timeout) */
   SO_SNDTIMEO(2, Integer.class),
 
-  /**
-   * Receive buffer size in bytes.
-   * Value type: Integer
-   * Default: system dependent
-   */
+  /** Receive buffer size in bytes. Value type: Integer Default: system dependent */
   SO_RCVBUF(3, Integer.class),
 
-  /**
-   * Send buffer size in bytes.
-   * Value type: Integer
-   * Default: system dependent
-   */
+  /** Send buffer size in bytes. Value type: Integer Default: system dependent */
   SO_SNDBUF(4, Integer.class),
 
-  /**
-   * Allow reuse of local addresses.
-   * Value type: Boolean
-   * Default: false
-   */
+  /** Allow reuse of local addresses. Value type: Boolean Default: false */
   SO_REUSEADDR(5, Boolean.class),
 
-  /**
-   * Keep connections alive with periodic messages.
-   * Value type: Boolean
-   * Default: false
-   */
+  /** Keep connections alive with periodic messages. Value type: Boolean Default: false */
   SO_KEEPALIVE(6, Boolean.class),
 
-  /**
-   * Disable Nagle's algorithm for TCP sockets.
-   * Value type: Boolean
-   * Default: false
-   */
+  /** Disable Nagle's algorithm for TCP sockets. Value type: Boolean Default: false */
   TCP_NODELAY(7, Boolean.class),
 
-  /**
-   * Socket blocking mode.
-   * Value type: Boolean
-   * Default: true (blocking)
-   */
+  /** Socket blocking mode. Value type: Boolean Default: true (blocking) */
   SO_BLOCKING(8, Boolean.class),
 
   /**
-   * Linger on close - how long to wait for pending data.
-   * Value type: Integer (seconds, -1 = disabled)
-   * Default: -1
+   * Linger on close - how long to wait for pending data. Value type: Integer (seconds, -1 =
+   * disabled) Default: -1
    */
   SO_LINGER(9, Integer.class),
 
-  /**
-   * Type of service / traffic class for IP packets.
-   * Value type: Integer
-   * Default: 0
-   */
+  /** Type of service / traffic class for IP packets. Value type: Integer Default: 0 */
   IP_TOS(10, Integer.class);
 
   private final int value;
@@ -120,8 +82,12 @@ public enum SocketOption {
     }
     if (!valueType.isAssignableFrom(value.getClass())) {
       throw new IllegalArgumentException(
-          "Invalid value type for " + this + ": expected " + valueType.getSimpleName()
-              + ", got " + value.getClass().getSimpleName());
+          "Invalid value type for "
+              + this
+              + ": expected "
+              + valueType.getSimpleName()
+              + ", got "
+              + value.getClass().getSimpleName());
     }
 
     // Additional validation for specific options

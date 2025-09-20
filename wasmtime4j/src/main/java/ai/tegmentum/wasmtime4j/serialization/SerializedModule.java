@@ -42,8 +42,8 @@ public interface SerializedModule {
   /**
    * Checks if this serialized module is compatible with the given engine.
    *
-   * <p>Compatibility is determined by comparing the engine configuration, target platform,
-   * Wasmtime version, and other relevant settings used during serialization.
+   * <p>Compatibility is determined by comparing the engine configuration, target platform, Wasmtime
+   * version, and other relevant settings used during serialization.
    *
    * @param engine the engine to check compatibility with
    * @return true if the module is compatible with the engine, false otherwise

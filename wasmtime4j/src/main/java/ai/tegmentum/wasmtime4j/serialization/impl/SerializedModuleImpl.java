@@ -99,7 +99,8 @@ public final class SerializedModuleImpl implements SerializedModule {
     // Verify data integrity
     final String currentChecksum = calculateChecksum(data);
     if (!checksum.equals(currentChecksum)) {
-      throw new WasmException("Serialized module data corruption detected. Checksums do not match.");
+      throw new WasmException(
+          "Serialized module data corruption detected. Checksums do not match.");
     }
 
     return engine.deserializeModule(data);

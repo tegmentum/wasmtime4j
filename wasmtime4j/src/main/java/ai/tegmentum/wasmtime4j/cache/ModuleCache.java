@@ -9,8 +9,8 @@ import java.util.Set;
  * Interface for caching compiled WebAssembly modules.
  *
  * <p>ModuleCache provides efficient storage and retrieval of serialized modules to avoid
- * recompilation overhead. Different implementations may provide memory-based caching,
- * file-based persistence, or distributed caching capabilities.
+ * recompilation overhead. Different implementations may provide memory-based caching, file-based
+ * persistence, or distributed caching capabilities.
  *
  * <p>Cache implementations should be thread-safe and handle concurrent access gracefully.
  *
@@ -45,8 +45,8 @@ public interface ModuleCache extends Closeable {
   /**
    * Removes a specific module from the cache.
    *
-   * <p>This method invalidates and removes the cached module associated with the given key.
-   * If no module exists for the key, this operation has no effect.
+   * <p>This method invalidates and removes the cached module associated with the given key. If no
+   * module exists for the key, this operation has no effect.
    *
    * @param key the cache key of the module to remove
    * @throws IllegalArgumentException if key is null
@@ -93,8 +93,8 @@ public interface ModuleCache extends Closeable {
   /**
    * Gets all cache keys currently in the cache.
    *
-   * <p>This method returns a snapshot of current keys. The actual cache contents may change
-   * after this method returns due to concurrent operations.
+   * <p>This method returns a snapshot of current keys. The actual cache contents may change after
+   * this method returns due to concurrent operations.
    *
    * @return an immutable set of cache keys
    */
@@ -103,8 +103,8 @@ public interface ModuleCache extends Closeable {
   /**
    * Gets statistics about cache usage and performance.
    *
-   * <p>Statistics include hit/miss ratios, eviction counts, and other metrics useful for
-   * monitoring and tuning cache performance.
+   * <p>Statistics include hit/miss ratios, eviction counts, and other metrics useful for monitoring
+   * and tuning cache performance.
    *
    * @return current cache statistics
    */

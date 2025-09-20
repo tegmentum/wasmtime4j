@@ -3,7 +3,6 @@ package ai.tegmentum.wasmtime4j.concurrency;
 import ai.tegmentum.wasmtime4j.FunctionType;
 import ai.tegmentum.wasmtime4j.HostFunction;
 import ai.tegmentum.wasmtime4j.Store;
-import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.util.concurrent.locks.ReadWriteLock;
 
@@ -15,6 +14,7 @@ import java.util.concurrent.locks.ReadWriteLock;
  * ThreadSafeStore can be safely accessed from multiple threads without additional locking.
  *
  * <p>Key features:
+ *
  * <ul>
  *   <li>Thread-safe fuel and epoch management
  *   <li>Concurrent host function creation and management
@@ -24,6 +24,7 @@ import java.util.concurrent.locks.ReadWriteLock;
  * </ul>
  *
  * <p>Implementation requirements:
+ *
  * <ul>
  *   <li>All operations must be thread-safe without external synchronization
  *   <li>Fuel and epoch operations must be atomic
@@ -46,8 +47,8 @@ public interface ThreadSafeStore extends Store {
   /**
    * Thread-safe access to custom data associated with this store.
    *
-   * <p>This method provides thread-safe read access to the store's custom data.
-   * Multiple threads can safely read the data concurrently.
+   * <p>This method provides thread-safe read access to the store's custom data. Multiple threads
+   * can safely read the data concurrently.
    *
    * @return the custom data, or null if none was set
    */
@@ -57,8 +58,8 @@ public interface ThreadSafeStore extends Store {
   /**
    * Thread-safe modification of custom data associated with this store.
    *
-   * <p>This method provides thread-safe write access to the store's custom data.
-   * The update is atomic and visible to all threads immediately.
+   * <p>This method provides thread-safe write access to the store's custom data. The update is
+   * atomic and visible to all threads immediately.
    *
    * @param data the custom data to associate
    */
@@ -92,8 +93,8 @@ public interface ThreadSafeStore extends Store {
   /**
    * Thread-safe atomic fuel addition.
    *
-   * <p>This method atomically adds fuel to the current amount and is safe to call
-   * from multiple threads. The addition operation is atomic and consistent.
+   * <p>This method atomically adds fuel to the current amount and is safe to call from multiple
+   * threads. The addition operation is atomic and consistent.
    *
    * @param fuel the amount of fuel to add
    * @throws IllegalArgumentException if fuel is negative
@@ -116,8 +117,8 @@ public interface ThreadSafeStore extends Store {
   /**
    * Thread-safe host function creation.
    *
-   * <p>This method creates host functions that are safe to use in concurrent environments.
-   * Multiple threads can create host functions simultaneously without interference.
+   * <p>This method creates host functions that are safe to use in concurrent environments. Multiple
+   * threads can create host functions simultaneously without interference.
    *
    * @param name the name of the function (for debugging/logging purposes)
    * @param functionType the WebAssembly function type signature
@@ -134,8 +135,8 @@ public interface ThreadSafeStore extends Store {
   /**
    * Atomically compares and sets the fuel amount.
    *
-   * <p>This method atomically compares the current fuel amount with the expected value
-   * and sets it to the new value if they match. This is useful for lock-free fuel management.
+   * <p>This method atomically compares the current fuel amount with the expected value and sets it
+   * to the new value if they match. This is useful for lock-free fuel management.
    *
    * @param expectedFuel the expected current fuel amount
    * @param newFuel the new fuel amount to set
@@ -147,8 +148,8 @@ public interface ThreadSafeStore extends Store {
   /**
    * Atomically increments the fuel amount by the specified delta.
    *
-   * <p>This method atomically adds the delta to the current fuel amount and returns
-   * the new value. The operation is atomic and thread-safe.
+   * <p>This method atomically adds the delta to the current fuel amount and returns the new value.
+   * The operation is atomic and thread-safe.
    *
    * @param delta the amount to add to the fuel (can be negative)
    * @return the new fuel amount after the increment
@@ -169,8 +170,8 @@ public interface ThreadSafeStore extends Store {
   /**
    * Increments the epoch by one tick atomically.
    *
-   * <p>This method atomically increments the epoch and is safe to call from multiple threads.
-   * It's useful for coordinated epoch management across threads.
+   * <p>This method atomically increments the epoch and is safe to call from multiple threads. It's
+   * useful for coordinated epoch management across threads.
    *
    * @return the new epoch tick count after increment
    * @throws WasmException if the operation fails
@@ -180,8 +181,8 @@ public interface ThreadSafeStore extends Store {
   /**
    * Gets the read-write lock used for store synchronization.
    *
-   * <p>This exposes the internal synchronization mechanism for advanced use cases
-   * where custom synchronization patterns are needed. Use with caution.
+   * <p>This exposes the internal synchronization mechanism for advanced use cases where custom
+   * synchronization patterns are needed. Use with caution.
    *
    * @return the ReadWriteLock used for synchronization
    */
@@ -190,8 +191,8 @@ public interface ThreadSafeStore extends Store {
   /**
    * Executes a read operation with the store's read lock held.
    *
-   * <p>This method acquires the read lock, executes the operation, and releases the lock.
-   * Multiple read operations can execute concurrently.
+   * <p>This method acquires the read lock, executes the operation, and releases the lock. Multiple
+   * read operations can execute concurrently.
    *
    * @param <T> the return type of the operation
    * @param operation the operation to execute under read lock
@@ -204,8 +205,8 @@ public interface ThreadSafeStore extends Store {
   /**
    * Executes a write operation with the store's write lock held.
    *
-   * <p>This method acquires the write lock, executes the operation, and releases the lock.
-   * Write operations are exclusive and block other read and write operations.
+   * <p>This method acquires the write lock, executes the operation, and releases the lock. Write
+   * operations are exclusive and block other read and write operations.
    *
    * @param <T> the return type of the operation
    * @param operation the operation to execute under write lock
@@ -218,8 +219,8 @@ public interface ThreadSafeStore extends Store {
   /**
    * Checks if the store is currently thread-safe and properly configured.
    *
-   * <p>This method validates that the store's internal synchronization mechanisms
-   * are properly initialized and functioning correctly.
+   * <p>This method validates that the store's internal synchronization mechanisms are properly
+   * initialized and functioning correctly.
    *
    * @return true if the store is thread-safe and properly configured
    */
@@ -228,8 +229,8 @@ public interface ThreadSafeStore extends Store {
   /**
    * Gets statistics about concurrent access to this store.
    *
-   * <p>This includes metrics about lock contention, operation counts, and performance
-   * under concurrent load.
+   * <p>This includes metrics about lock contention, operation counts, and performance under
+   * concurrent load.
    *
    * @return detailed concurrency statistics for this store
    */
@@ -256,8 +257,8 @@ public interface ThreadSafeStore extends Store {
   /**
    * Waits for all current operations to complete.
    *
-   * <p>This method blocks until no threads are currently accessing the store.
-   * It's useful for graceful shutdown or synchronization points.
+   * <p>This method blocks until no threads are currently accessing the store. It's useful for
+   * graceful shutdown or synchronization points.
    *
    * @param timeoutMillis maximum time to wait in milliseconds
    * @return true if all operations completed within the timeout, false otherwise

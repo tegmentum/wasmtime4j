@@ -9,8 +9,8 @@ import java.util.Map;
  * <p>PerformanceEvent captures discrete events that may impact performance including function
  * calls, memory operations, compilation events, and threshold violations.
  *
- * <p>Events are timestamped and include contextual information to aid in performance analysis
- * and debugging.
+ * <p>Events are timestamped and include contextual information to aid in performance analysis and
+ * debugging.
  *
  * @since 1.0.0
  */
@@ -33,8 +33,8 @@ public interface PerformanceEvent {
   /**
    * Gets the severity level of this event.
    *
-   * <p>Severity indicates the potential impact on performance, from informational
-   * events to critical performance issues.
+   * <p>Severity indicates the potential impact on performance, from informational events to
+   * critical performance issues.
    *
    * @return event severity level
    */
@@ -68,8 +68,8 @@ public interface PerformanceEvent {
   /**
    * Gets the duration of this event if applicable.
    *
-   * <p>For events that represent operations with measurable duration such as function
-   * calls or compilation events.
+   * <p>For events that represent operations with measurable duration such as function calls or
+   * compilation events.
    *
    * @return event duration in nanoseconds, or 0 if not applicable
    */
@@ -78,8 +78,8 @@ public interface PerformanceEvent {
   /**
    * Gets additional event-specific data.
    *
-   * <p>Contains contextual information specific to the event type, such as memory
-   * addresses, instruction counts, or error details.
+   * <p>Contains contextual information specific to the event type, such as memory addresses,
+   * instruction counts, or error details.
    *
    * @return map of event data properties
    */
@@ -129,8 +129,8 @@ public interface PerformanceEvent {
   /**
    * Gets the correlation ID for related events.
    *
-   * <p>Events that are part of the same logical operation (such as a function call
-   * and its completion) will share the same correlation ID.
+   * <p>Events that are part of the same logical operation (such as a function call and its
+   * completion) will share the same correlation ID.
    *
    * @return correlation ID, or null if not correlated
    */

@@ -31,8 +31,7 @@ public interface ModuleCacheKey {
    * Gets the engine configuration used for compilation.
    *
    * <p>The engine configuration affects compilation behavior and the resulting module. Different
-   * engine configurations will produce different cache keys even for the same WebAssembly
-   * bytecode.
+   * engine configurations will produce different cache keys even for the same WebAssembly bytecode.
    *
    * @return the engine configuration
    */
@@ -41,8 +40,8 @@ public interface ModuleCacheKey {
   /**
    * Gets the compilation settings used for this module.
    *
-   * <p>Compilation settings include optimization levels, feature flags, and other parameters
-   * that affect the compilation process.
+   * <p>Compilation settings include optimization levels, feature flags, and other parameters that
+   * affect the compilation process.
    *
    * @return the compilation settings
    */
@@ -51,8 +50,8 @@ public interface ModuleCacheKey {
   /**
    * Gets the timestamp when this cache key was created.
    *
-   * <p>The timestamp can be used for cache expiration and invalidation policies. It represents
-   * when the module was compiled, not when the cache key was created.
+   * <p>The timestamp can be used for cache expiration and invalidation policies. It represents when
+   * the module was compiled, not when the cache key was created.
    *
    * @return the creation timestamp in milliseconds since epoch
    */
@@ -81,8 +80,8 @@ public interface ModuleCacheKey {
   /**
    * Gets a string representation of this cache key suitable for use as a filename or identifier.
    *
-   * <p>The string representation is deterministic and unique for each distinct cache key. It
-   * should be safe for use in file systems and URLs.
+   * <p>The string representation is deterministic and unique for each distinct cache key. It should
+   * be safe for use in file systems and URLs.
    *
    * @return a string representation of the cache key
    */
@@ -91,8 +90,8 @@ public interface ModuleCacheKey {
   /**
    * Gets a short hash representation of this cache key.
    *
-   * <p>The short hash provides a compact representation useful for logging and debugging. It
-   * should be reasonably unique but may have collisions.
+   * <p>The short hash provides a compact representation useful for logging and debugging. It should
+   * be reasonably unique but may have collisions.
    *
    * @return a short hash string (typically 8-16 characters)
    */
@@ -101,8 +100,8 @@ public interface ModuleCacheKey {
   /**
    * Checks if this cache key is compatible with another key.
    *
-   * <p>Compatible keys represent modules that can be used interchangeably. This is typically
-   * true only when the keys are exactly equal, but some implementations may allow for compatible
+   * <p>Compatible keys represent modules that can be used interchangeably. This is typically true
+   * only when the keys are exactly equal, but some implementations may allow for compatible
    * differences.
    *
    * @param other the other cache key to check compatibility with
@@ -152,9 +151,7 @@ public interface ModuleCacheKey {
         "wasmtime4j-1.0.0");
   }
 
-  /**
-   * Implementation of ModuleCacheKey.
-   */
+  /** Implementation of ModuleCacheKey. */
   final class ModuleCacheKeyImpl implements ModuleCacheKey {
     private final byte[] wasmHash;
     private final EngineConfig engineConfig;

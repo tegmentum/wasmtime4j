@@ -2,8 +2,8 @@ package ai.tegmentum.wasmtime4j.wasi.impl;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.exception.WasiResourceException;
+import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.wasi.WasiResourceConfig;
 import ai.tegmentum.wasmtime4j.wasi.WasiResourceLimits;
 import ai.tegmentum.wasmtime4j.wasi.WasiResourcePermissions;
@@ -11,7 +11,6 @@ import ai.tegmentum.wasmtime4j.wasi.WasiResourceType;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -25,17 +24,16 @@ import org.junit.jupiter.api.io.TempDir;
 /**
  * Test suite for WASI Filesystem Resource implementation.
  *
- * <p>Tests the WasiFileResourceImpl class to ensure proper filesystem operations,
- * sandboxing, permission enforcement, and error handling for file-based resources.
+ * <p>Tests the WasiFileResourceImpl class to ensure proper filesystem operations, sandboxing,
+ * permission enforcement, and error handling for file-based resources.
  *
- * <p>These tests validate filesystem operations including reading, writing, deletion,
- * and sandbox security to prevent path traversal attacks.
+ * <p>These tests validate filesystem operations including reading, writing, deletion, and sandbox
+ * security to prevent path traversal attacks.
  */
 @DisplayName("WASI Filesystem Resource Implementation Tests")
 class WasiFileResourceImplTest {
 
-  @TempDir
-  Path tempDir;
+  @TempDir Path tempDir;
 
   private WasiFileResourceImpl fileResource;
   private FilesystemResourceConfig config;
@@ -141,33 +139,41 @@ class WasiFileResourceImplTest {
   @DisplayName("Filesystem resource should handle sandbox violations")
   void testSandboxViolation() {
     // Attempting to access files outside the sandbox should fail
-    assertThrows(WasiResourceException.class, () -> {
-      fileResource.readFile("../outside.txt", new byte[1024], 0);
-    });
+    assertThrows(
+        WasiResourceException.class,
+        () -> {
+          fileResource.readFile("../outside.txt", new byte[1024], 0);
+        });
 
-    assertThrows(WasiResourceException.class, () -> {
-      fileResource.readFile("/etc/passwd", new byte[1024], 0);
-    });
+    assertThrows(
+        WasiResourceException.class,
+        () -> {
+          fileResource.readFile("/etc/passwd", new byte[1024], 0);
+        });
 
-    assertThrows(WasiResourceException.class, () -> {
-      fileResource.writeFile("../outside.txt", "data".getBytes(), 0);
-    });
+    assertThrows(
+        WasiResourceException.class,
+        () -> {
+          fileResource.writeFile("../outside.txt", "data".getBytes(), 0);
+        });
   }
 
   @Test
   @DisplayName("Filesystem resource should enforce read permissions")
   void testReadPermissionEnforcement() throws WasmException {
     // Create resource with write-only permissions
-    final FilesystemResourceConfig writeOnlyConfig = new FilesystemResourceConfig(
-        tempDir.toString(), WasiResourcePermissions.WRITE_ONLY);
-    final WasiFileResourceImpl writeOnlyResource = new WasiFileResourceImpl(
-        2L, "write-only", writeOnlyConfig);
+    final FilesystemResourceConfig writeOnlyConfig =
+        new FilesystemResourceConfig(tempDir.toString(), WasiResourcePermissions.WRITE_ONLY);
+    final WasiFileResourceImpl writeOnlyResource =
+        new WasiFileResourceImpl(2L, "write-only", writeOnlyConfig);
 
     try {
       // Reading should fail with write-only permissions
-      assertThrows(WasiResourceException.class, () -> {
-        writeOnlyResource.readFile("test.txt", new byte[1024], 0);
-      });
+      assertThrows(
+          WasiResourceException.class,
+          () -> {
+            writeOnlyResource.readFile("test.txt", new byte[1024], 0);
+          });
     } finally {
       writeOnlyResource.close();
     }
@@ -177,16 +183,18 @@ class WasiFileResourceImplTest {
   @DisplayName("Filesystem resource should enforce write permissions")
   void testWritePermissionEnforcement() throws WasmException {
     // Create resource with read-only permissions
-    final FilesystemResourceConfig readOnlyConfig = new FilesystemResourceConfig(
-        tempDir.toString(), WasiResourcePermissions.READ_ONLY);
-    final WasiFileResourceImpl readOnlyResource = new WasiFileResourceImpl(
-        3L, "read-only", readOnlyConfig);
+    final FilesystemResourceConfig readOnlyConfig =
+        new FilesystemResourceConfig(tempDir.toString(), WasiResourcePermissions.READ_ONLY);
+    final WasiFileResourceImpl readOnlyResource =
+        new WasiFileResourceImpl(3L, "read-only", readOnlyConfig);
 
     try {
       // Writing should fail with read-only permissions
-      assertThrows(WasiResourceException.class, () -> {
-        readOnlyResource.writeFile("readonly.txt", "data".getBytes(), 0);
-      });
+      assertThrows(
+          WasiResourceException.class,
+          () -> {
+            readOnlyResource.writeFile("readonly.txt", "data".getBytes(), 0);
+          });
     } finally {
       readOnlyResource.close();
     }
@@ -196,16 +204,18 @@ class WasiFileResourceImplTest {
   @DisplayName("Filesystem resource should enforce delete permissions")
   void testDeletePermissionEnforcement() throws WasmException {
     // Create resource without delete permissions
-    final FilesystemResourceConfig noDeleteConfig = new FilesystemResourceConfig(
-        tempDir.toString(), WasiResourcePermissions.READ_WRITE);
-    final WasiFileResourceImpl noDeleteResource = new WasiFileResourceImpl(
-        4L, "no-delete", noDeleteConfig);
+    final FilesystemResourceConfig noDeleteConfig =
+        new FilesystemResourceConfig(tempDir.toString(), WasiResourcePermissions.READ_WRITE);
+    final WasiFileResourceImpl noDeleteResource =
+        new WasiFileResourceImpl(4L, "no-delete", noDeleteConfig);
 
     try {
       // Deleting should fail without delete permissions
-      assertThrows(WasiResourceException.class, () -> {
-        noDeleteResource.deleteFile("test.txt");
-      });
+      assertThrows(
+          WasiResourceException.class,
+          () -> {
+            noDeleteResource.deleteFile("test.txt");
+          });
     } finally {
       noDeleteResource.close();
     }
@@ -215,14 +225,18 @@ class WasiFileResourceImplTest {
   @DisplayName("Filesystem resource should handle nonexistent files")
   void testNonexistentFileHandling() {
     // Reading nonexistent file should fail
-    assertThrows(WasiResourceException.class, () -> {
-      fileResource.readFile("nonexistent.txt", new byte[1024], 0);
-    });
+    assertThrows(
+        WasiResourceException.class,
+        () -> {
+          fileResource.readFile("nonexistent.txt", new byte[1024], 0);
+        });
 
     // Deleting nonexistent file should fail
-    assertThrows(WasiResourceException.class, () -> {
-      fileResource.deleteFile("nonexistent.txt");
-    });
+    assertThrows(
+        WasiResourceException.class,
+        () -> {
+          fileResource.deleteFile("nonexistent.txt");
+        });
   }
 
   @Test
@@ -254,7 +268,8 @@ class WasiFileResourceImplTest {
 
     // Test write_file operation
     final byte[] data = "invoke test".getBytes();
-    final Integer bytesWritten = (Integer) fileResource.invoke("write_file", "invoke.txt", data, 0L);
+    final Integer bytesWritten =
+        (Integer) fileResource.invoke("write_file", "invoke.txt", data, 0L);
     assertEquals(data.length, bytesWritten);
 
     // Test get_stats operation
@@ -271,37 +286,49 @@ class WasiFileResourceImplTest {
   @DisplayName("Filesystem resource should handle parameter validation")
   void testParameterValidation() {
     // Test null path
-    assertThrows(WasiResourceException.class, () -> {
-      fileResource.readFile(null, new byte[1024], 0);
-    });
+    assertThrows(
+        WasiResourceException.class,
+        () -> {
+          fileResource.readFile(null, new byte[1024], 0);
+        });
 
-    assertThrows(WasiResourceException.class, () -> {
-      fileResource.writeFile(null, "data".getBytes(), 0);
-    });
+    assertThrows(
+        WasiResourceException.class,
+        () -> {
+          fileResource.writeFile(null, "data".getBytes(), 0);
+        });
 
     // Test empty path
-    assertThrows(WasiResourceException.class, () -> {
-      fileResource.readFile("", new byte[1024], 0);
-    });
+    assertThrows(
+        WasiResourceException.class,
+        () -> {
+          fileResource.readFile("", new byte[1024], 0);
+        });
 
     // Test null buffer
-    assertThrows(IllegalArgumentException.class, () -> {
-      fileResource.invoke("read_file", "test.txt", null, 0L);
-    });
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          fileResource.invoke("read_file", "test.txt", null, 0L);
+        });
   }
 
   @Test
   @DisplayName("Filesystem resource should handle invalid invoke operations")
   void testInvalidInvokeOperations() {
     // Test unsupported operation
-    assertThrows(WasiResourceException.class, () -> {
-      fileResource.invoke("unsupported_operation");
-    });
+    assertThrows(
+        WasiResourceException.class,
+        () -> {
+          fileResource.invoke("unsupported_operation");
+        });
 
     // Test operations with wrong parameters
-    assertThrows(IllegalArgumentException.class, () -> {
-      fileResource.invoke("read_file", "test.txt"); // Missing parameters
-    });
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          fileResource.invoke("read_file", "test.txt"); // Missing parameters
+        });
   }
 
   @Test
@@ -316,14 +343,14 @@ class WasiFileResourceImplTest {
     assertFalse(fileResource.isValid());
 
     // Operations should fail
-    assertThrows(WasiResourceException.class, () -> {
-      fileResource.readFile("test.txt", new byte[1024], 0);
-    });
+    assertThrows(
+        WasiResourceException.class,
+        () -> {
+          fileResource.readFile("test.txt", new byte[1024], 0);
+        });
   }
 
-  /**
-   * Test implementation of WasiResourceConfig for filesystem resources.
-   */
+  /** Test implementation of WasiResourceConfig for filesystem resources. */
   private static class FilesystemResourceConfig implements WasiResourceConfig {
     private final String rootPath;
     private final Set<WasiResourcePermissions> permissions;
@@ -332,8 +359,8 @@ class WasiFileResourceImplTest {
       this(rootPath, WasiResourcePermissions.READ_WRITE);
     }
 
-    public FilesystemResourceConfig(final String rootPath,
-                                  final Set<WasiResourcePermissions> permissions) {
+    public FilesystemResourceConfig(
+        final String rootPath, final Set<WasiResourcePermissions> permissions) {
       this.rootPath = rootPath;
       this.permissions = permissions;
     }

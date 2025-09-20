@@ -3,10 +3,10 @@ package ai.tegmentum.wasmtime4j;
 /**
  * Memory protection and security features for WebAssembly linear memory.
  *
- * <p>This interface provides comprehensive memory protection capabilities including
- * access control, permission management, and security policy enforcement. All protection
- * features are implemented with defensive programming principles to prevent unauthorized
- * access and maintain system security.
+ * <p>This interface provides comprehensive memory protection capabilities including access control,
+ * permission management, and security policy enforcement. All protection features are implemented
+ * with defensive programming principles to prevent unauthorized access and maintain system
+ * security.
  *
  * @since 1.0.0
  */
@@ -15,9 +15,9 @@ public interface MemoryProtection {
   /**
    * Sets a memory region as read-only.
    *
-   * <p>Once set as read-only, any attempt to write to the specified region will
-   * result in a security exception. This protection cannot be bypassed and provides
-   * strong guarantees for memory immutability.
+   * <p>Once set as read-only, any attempt to write to the specified region will result in a
+   * security exception. This protection cannot be bypassed and provides strong guarantees for
+   * memory immutability.
    *
    * @param memory the target memory instance
    * @param offset the starting offset of the region
@@ -32,8 +32,8 @@ public interface MemoryProtection {
   /**
    * Sets a memory region as executable.
    *
-   * <p>This marks the specified region as containing executable code. Depending on
-   * the security policy, this may enable or restrict certain operations on the region.
+   * <p>This marks the specified region as containing executable code. Depending on the security
+   * policy, this may enable or restrict certain operations on the region.
    *
    * @param memory the target memory instance
    * @param offset the starting offset of the region
@@ -48,8 +48,8 @@ public interface MemoryProtection {
   /**
    * Removes read-only protection from a memory region.
    *
-   * <p>This restores write access to a previously read-only region. Requires
-   * appropriate security permissions to prevent unauthorized modifications.
+   * <p>This restores write access to a previously read-only region. Requires appropriate security
+   * permissions to prevent unauthorized modifications.
    *
    * @param memory the target memory instance
    * @param offset the starting offset of the region
@@ -64,8 +64,8 @@ public interface MemoryProtection {
   /**
    * Removes executable protection from a memory region.
    *
-   * <p>This removes the executable flag from the specified region, potentially
-   * changing how the region can be used based on security policies.
+   * <p>This removes the executable flag from the specified region, potentially changing how the
+   * region can be used based on security policies.
    *
    * @param memory the target memory instance
    * @param offset the starting offset of the region
@@ -80,8 +80,8 @@ public interface MemoryProtection {
   /**
    * Checks if a memory location is readable.
    *
-   * <p>This verifies read permissions for a specific memory location without
-   * actually performing a read operation.
+   * <p>This verifies read permissions for a specific memory location without actually performing a
+   * read operation.
    *
    * @param memory the target memory instance
    * @param offset the memory offset to check
@@ -94,8 +94,8 @@ public interface MemoryProtection {
   /**
    * Checks if a memory location is writable.
    *
-   * <p>This verifies write permissions for a specific memory location without
-   * actually performing a write operation.
+   * <p>This verifies write permissions for a specific memory location without actually performing a
+   * write operation.
    *
    * @param memory the target memory instance
    * @param offset the memory offset to check
@@ -121,8 +121,8 @@ public interface MemoryProtection {
   /**
    * Gets the protection flags for a specific memory region.
    *
-   * <p>This returns a bitmask representing the current protection state of
-   * the specified memory region.
+   * <p>This returns a bitmask representing the current protection state of the specified memory
+   * region.
    *
    * @param memory the target memory instance
    * @param offset the memory offset to check
@@ -137,25 +137,27 @@ public interface MemoryProtection {
   /**
    * Sets comprehensive protection flags for a memory region.
    *
-   * <p>This allows setting multiple protection attributes in a single operation
-   * using a bitmask for efficiency.
+   * <p>This allows setting multiple protection attributes in a single operation using a bitmask for
+   * efficiency.
    *
    * @param memory the target memory instance
    * @param offset the starting offset of the region
    * @param length the length of the region in bytes
    * @param flags protection flags as a bitmask (READ=1, WRITE=2, EXECUTE=4)
-   * @throws IllegalArgumentException if memory is null, parameters are invalid, or flags are invalid
+   * @throws IllegalArgumentException if memory is null, parameters are invalid, or flags are
+   *     invalid
    * @throws IndexOutOfBoundsException if the region extends beyond memory bounds
    * @throws SecurityException if the current context lacks permission to modify protection
    * @throws RuntimeException if the protection cannot be set
    */
-  void setProtectionFlags(final WasmMemory memory, final int offset, final int length, final int flags);
+  void setProtectionFlags(
+      final WasmMemory memory, final int offset, final int length, final int flags);
 
   /**
    * Creates a protected memory view with restricted access.
    *
-   * <p>This creates a view of the memory that enforces specific access restrictions,
-   * providing an additional layer of security for sensitive operations.
+   * <p>This creates a view of the memory that enforces specific access restrictions, providing an
+   * additional layer of security for sensitive operations.
    *
    * @param memory the source memory instance
    * @param offset the starting offset of the view
@@ -178,8 +180,8 @@ public interface MemoryProtection {
   /**
    * Validates that a memory operation would be permitted under current protections.
    *
-   * <p>This performs comprehensive validation of a proposed memory operation
-   * against all active protection policies without actually performing the operation.
+   * <p>This performs comprehensive validation of a proposed memory operation against all active
+   * protection policies without actually performing the operation.
    *
    * @param memory the target memory instance
    * @param operation the type of operation ("read", "write", "execute")
@@ -195,8 +197,8 @@ public interface MemoryProtection {
   /**
    * Enables audit logging for memory protection events.
    *
-   * <p>When enabled, all protection changes and access violations will be logged
-   * for security monitoring and compliance purposes.
+   * <p>When enabled, all protection changes and access violations will be logged for security
+   * monitoring and compliance purposes.
    *
    * @throws SecurityException if the current context lacks permission to enable auditing
    * @throws RuntimeException if auditing cannot be enabled
@@ -222,14 +224,19 @@ public interface MemoryProtection {
   final class ProtectionFlags {
     /** Read access permission flag. */
     public static final int READ = 1;
+
     /** Write access permission flag. */
     public static final int WRITE = 2;
+
     /** Execute access permission flag. */
     public static final int EXECUTE = 4;
+
     /** Read-write access permission flags. */
     public static final int READ_WRITE = READ | WRITE;
+
     /** Full access permission flags. */
     public static final int FULL_ACCESS = READ | WRITE | EXECUTE;
+
     /** No access permission flags. */
     public static final int NO_ACCESS = 0;
 

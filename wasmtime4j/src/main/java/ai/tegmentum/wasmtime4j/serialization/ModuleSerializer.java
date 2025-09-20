@@ -8,8 +8,8 @@ import ai.tegmentum.wasmtime4j.exception.WasmException;
  * Provides functionality to serialize and deserialize WebAssembly modules.
  *
  * <p>ModuleSerializer enables efficient storage and transfer of compiled modules without requiring
- * recompilation. It supports various serialization options including compression, debug
- * information inclusion, and optimization settings.
+ * recompilation. It supports various serialization options including compression, debug information
+ * inclusion, and optimization settings.
  *
  * <p>Serialization is platform and engine-specific, ensuring compatibility when deserializing
  * modules on the same or compatible configurations.
@@ -64,8 +64,8 @@ public interface ModuleSerializer {
   /**
    * Validates that the provided data represents a valid serialized module.
    *
-   * <p>This method performs format validation and integrity checks without fully deserializing
-   * the module. It's useful for validating cached or stored serialized modules.
+   * <p>This method performs format validation and integrity checks without fully deserializing the
+   * module. It's useful for validating cached or stored serialized modules.
    *
    * @param data the serialized module data to validate
    * @return true if the data represents a valid serialized module, false otherwise

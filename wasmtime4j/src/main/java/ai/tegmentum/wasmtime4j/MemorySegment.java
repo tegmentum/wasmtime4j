@@ -5,9 +5,9 @@ import java.util.Objects;
 /**
  * Represents a contiguous segment of WebAssembly linear memory.
  *
- * <p>Memory segments provide detailed information about memory layout and usage patterns.
- * This is particularly useful for memory analysis, debugging, and optimization in
- * enterprise applications that require fine-grained memory management.
+ * <p>Memory segments provide detailed information about memory layout and usage patterns. This is
+ * particularly useful for memory analysis, debugging, and optimization in enterprise applications
+ * that require fine-grained memory management.
  *
  * @since 1.0.0
  */

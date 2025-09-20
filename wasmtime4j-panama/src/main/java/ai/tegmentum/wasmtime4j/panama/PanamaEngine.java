@@ -296,23 +296,34 @@ public final class PanamaEngine implements Engine, AutoCloseable {
   public EngineConfig getConfig() {
     ensureNotClosed();
 
+    // Return stored configuration if available
+    if (storedConfig != null) {
+      return storedConfig.copy(); // Return defensive copy
+    }
+
+    // For engines created without configuration, query native layer
     try {
-      // Create config using existing methods to get actual configuration
       final EngineConfig config = new EngineConfig();
 
-      // Set debug info using existing method
+      // Query native layer for current settings
       config.debugInfo(isDebugInfo());
+      config.optimizationLevel(OptimizationLevel.fromValue(getOptimizationLevel()));
 
-      // Set optimization level using existing method
-      final int optLevel = getOptimizationLevel();
-      config.optimizationLevel(OptimizationLevel.fromValue(optLevel));
-
-      // Set additional configuration options that we can retrieve
-      // Note: These may be defaults since native getters might not exist yet
+      // Query additional settings from native layer
+      // Note: These would require corresponding native method implementations
       config.consumeFuel(false); // Default value for now
       config.wasiEnabled(false); // Default value for now
       config.epochInterruption(false); // Default value for now
       config.memoryLimitEnabled(false); // Default value for now
+
+      // Set common defaults for WebAssembly features
+      config.wasmReferenceTypes(true);
+      config.wasmSimd(true);
+      config.wasmMultiValue(true);
+      config.wasmBulkMemory(true);
+      config.wasmThreads(false);
+      config.parallelCompilation(true);
+      config.wasmBacktraceDetails(true);
 
       return config;
     } catch (final Exception e) {

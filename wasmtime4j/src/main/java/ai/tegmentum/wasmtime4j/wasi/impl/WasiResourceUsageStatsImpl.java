@@ -20,9 +20,12 @@ import java.util.concurrent.atomic.AtomicLong;
 public final class WasiResourceUsageStatsImpl implements WasiResourceUsageStats {
 
   private final Instant startTime = Instant.now();
-  private final ConcurrentHashMap<String, AtomicLong> resourceCreationCounts = new ConcurrentHashMap<>();
-  private final ConcurrentHashMap<String, AtomicLong> resourceReleaseCounts = new ConcurrentHashMap<>();
-  private final ConcurrentHashMap<String, AtomicLong> resourceAccessCounts = new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<String, AtomicLong> resourceCreationCounts =
+      new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<String, AtomicLong> resourceReleaseCounts =
+      new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<String, AtomicLong> resourceAccessCounts =
+      new ConcurrentHashMap<>();
   private final ConcurrentHashMap<String, Instant> lastAccessTimes = new ConcurrentHashMap<>();
 
   private final AtomicLong totalResourcesCreated = new AtomicLong(0);
@@ -157,7 +160,8 @@ public final class WasiResourceUsageStatsImpl implements WasiResourceUsageStats 
   /**
    * Records memory usage change.
    *
-   * @param deltaBytes the change in memory usage (positive for allocation, negative for deallocation)
+   * @param deltaBytes the change in memory usage (positive for allocation, negative for
+   *     deallocation)
    */
   public void recordMemoryUsage(final long deltaBytes) {
     totalMemoryUsed.addAndGet(deltaBytes);

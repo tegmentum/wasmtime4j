@@ -9,15 +9,15 @@ import java.util.concurrent.CompletableFuture;
 /**
  * HTTP client interface for WASI networking operations.
  *
- * <p>Provides high-level HTTP functionality including GET, POST, PUT, DELETE
- * and other HTTP methods, with support for headers, request/response bodies,
- * and asynchronous operations.
+ * <p>Provides high-level HTTP functionality including GET, POST, PUT, DELETE and other HTTP
+ * methods, with support for headers, request/response bodies, and asynchronous operations.
  *
- * <p>The HTTP client handles connection management, redirects, and other
- * HTTP protocol details automatically. It's built on top of the socket
- * layer but provides a more convenient API for HTTP communications.
+ * <p>The HTTP client handles connection management, redirects, and other HTTP protocol details
+ * automatically. It's built on top of the socket layer but provides a more convenient API for HTTP
+ * communications.
  *
  * <p>Example usage:
+ *
  * <pre>{@code
  * try (WasiHttpClient client = networking.createHttpClient()) {
  *     WasiHttpRequest request = WasiHttpRequest.builder()
@@ -39,8 +39,8 @@ public interface WasiHttpClient extends AutoCloseable {
   /**
    * Sends an HTTP request synchronously and returns the response.
    *
-   * <p>This method blocks until the complete response is received.
-   * Use {@link #sendAsync(WasiHttpRequest)} for non-blocking operations.
+   * <p>This method blocks until the complete response is received. Use {@link
+   * #sendAsync(WasiHttpRequest)} for non-blocking operations.
    *
    * @param request the HTTP request to send
    * @return the HTTP response
@@ -53,9 +53,8 @@ public interface WasiHttpClient extends AutoCloseable {
   /**
    * Sends an HTTP request asynchronously and returns a future for the response.
    *
-   * <p>This method returns immediately with a CompletableFuture that will
-   * be completed when the response is available. The request is processed
-   * in the background.
+   * <p>This method returns immediately with a CompletableFuture that will be completed when the
+   * response is available. The request is processed in the background.
    *
    * @param request the HTTP request to send
    * @return a CompletableFuture that will contain the HTTP response
@@ -95,7 +94,8 @@ public interface WasiHttpClient extends AutoCloseable {
    * @throws WasmException if the request fails
    * @throws IllegalArgumentException if uri or contentType is null
    */
-  WasiHttpResponse post(final URI uri, final ByteBuffer body, final String contentType) throws WasmException;
+  WasiHttpResponse post(final URI uri, final ByteBuffer body, final String contentType)
+      throws WasmException;
 
   /**
    * Convenience method for sending a POST request with string body.
@@ -107,7 +107,8 @@ public interface WasiHttpClient extends AutoCloseable {
    * @throws WasmException if the request fails
    * @throws IllegalArgumentException if uri or contentType is null
    */
-  WasiHttpResponse post(final URI uri, final String body, final String contentType) throws WasmException;
+  WasiHttpResponse post(final URI uri, final String body, final String contentType)
+      throws WasmException;
 
   /**
    * Convenience method for sending a PUT request with a body.
@@ -119,7 +120,8 @@ public interface WasiHttpClient extends AutoCloseable {
    * @throws WasmException if the request fails
    * @throws IllegalArgumentException if uri or contentType is null
    */
-  WasiHttpResponse put(final URI uri, final ByteBuffer body, final String contentType) throws WasmException;
+  WasiHttpResponse put(final URI uri, final ByteBuffer body, final String contentType)
+      throws WasmException;
 
   /**
    * Convenience method for sending a DELETE request.
@@ -196,9 +198,8 @@ public interface WasiHttpClient extends AutoCloseable {
   /**
    * Closes the HTTP client and releases all associated resources.
    *
-   * <p>This includes closing any persistent connections and canceling
-   * any pending asynchronous requests. After calling this method,
-   * the client becomes unusable.
+   * <p>This includes closing any persistent connections and canceling any pending asynchronous
+   * requests. After calling this method, the client becomes unusable.
    */
   @Override
   void close();

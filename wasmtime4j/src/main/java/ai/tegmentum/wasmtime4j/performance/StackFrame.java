@@ -3,8 +3,8 @@ package ai.tegmentum.wasmtime4j.performance;
 /**
  * Represents a single frame in a call stack.
  *
- * <p>Stack frames contain information about the executing function, its location,
- * and performance characteristics at the time of sampling.
+ * <p>Stack frames contain information about the executing function, its location, and performance
+ * characteristics at the time of sampling.
  *
  * @since 1.0.0
  */
@@ -64,7 +64,8 @@ public interface StackFrame {
   /**
    * Gets the total execution time including called functions.
    *
-   * <p>This represents the time spent in this function including time spent in all called functions.
+   * <p>This represents the time spent in this function including time spent in all called
+   * functions.
    *
    * @return inclusive execution time in nanoseconds
    */

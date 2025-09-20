@@ -3,8 +3,8 @@ package ai.tegmentum.wasmtime4j.performance;
 /**
  * Provides execution context information for performance analysis.
  *
- * <p>Execution context includes information about the runtime state, compilation state,
- * and other contextual factors that may affect performance.
+ * <p>Execution context includes information about the runtime state, compilation state, and other
+ * contextual factors that may affect performance.
  *
  * @since 1.0.0
  */

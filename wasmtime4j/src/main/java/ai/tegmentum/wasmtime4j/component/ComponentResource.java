@@ -37,8 +37,8 @@ public interface ComponentResource extends Closeable {
   /**
    * Gets the handle for this resource instance.
    *
-   * <p>Returns a handle that can be used to reference this resource in component function calls
-   * and resource management operations.
+   * <p>Returns a handle that can be used to reference this resource in component function calls and
+   * resource management operations.
    *
    * @return the resource handle
    */
@@ -139,8 +139,8 @@ public interface ComponentResource extends Closeable {
   /**
    * Checks if this resource instance is still valid and usable.
    *
-   * <p>Resources become invalid when closed, when their parent component instance is closed,
-   * or when their lifecycle policy determines they should be destroyed.
+   * <p>Resources become invalid when closed, when their parent component instance is closed, or
+   * when their lifecycle policy determines they should be destroyed.
    *
    * @return true if the resource is valid and usable, false otherwise
    */
@@ -149,8 +149,8 @@ public interface ComponentResource extends Closeable {
   /**
    * Closes this resource instance and releases associated resources.
    *
-   * <p>After calling this method, the resource becomes invalid and should not be used. The
-   * behavior of this method depends on the resource type's lifecycle policy.
+   * <p>After calling this method, the resource becomes invalid and should not be used. The behavior
+   * of this method depends on the resource type's lifecycle policy.
    */
   @Override
   void close();

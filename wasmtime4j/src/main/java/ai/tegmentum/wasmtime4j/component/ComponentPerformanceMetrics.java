@@ -81,8 +81,8 @@ public interface ComponentPerformanceMetrics {
   /**
    * Gets the CPU utilization percentage.
    *
-   * <p>Returns the percentage of CPU time used by this component instance relative to available
-   * CPU resources.
+   * <p>Returns the percentage of CPU time used by this component instance relative to available CPU
+   * resources.
    *
    * @return CPU utilization percentage (0.0 to 100.0)
    */
@@ -91,8 +91,8 @@ public interface ComponentPerformanceMetrics {
   /**
    * Gets the memory efficiency ratio.
    *
-   * <p>Returns a metric indicating how efficiently the component uses allocated memory, with
-   * higher values indicating better efficiency.
+   * <p>Returns a metric indicating how efficiently the component uses allocated memory, with higher
+   * values indicating better efficiency.
    *
    * @return memory efficiency ratio (0.0 to 1.0)
    */
@@ -140,8 +140,8 @@ public interface ComponentPerformanceMetrics {
   /**
    * Gets the garbage collection overhead percentage.
    *
-   * <p>Returns the percentage of execution time spent in garbage collection operations related
-   * to this component.
+   * <p>Returns the percentage of execution time spent in garbage collection operations related to
+   * this component.
    *
    * @return GC overhead percentage (0.0 to 100.0)
    */
@@ -150,8 +150,8 @@ public interface ComponentPerformanceMetrics {
   /**
    * Gets performance metrics by operation type.
    *
-   * <p>Returns detailed performance metrics broken down by different types of operations
-   * (function calls, resource operations, interface calls, etc.).
+   * <p>Returns detailed performance metrics broken down by different types of operations (function
+   * calls, resource operations, interface calls, etc.).
    *
    * @return map of operation types to their performance metrics
    */
@@ -170,8 +170,8 @@ public interface ComponentPerformanceMetrics {
   /**
    * Gets resource contention metrics.
    *
-   * <p>Returns information about contention for shared resources such as memory, locks, or
-   * external resources.
+   * <p>Returns information about contention for shared resources such as memory, locks, or external
+   * resources.
    *
    * @return resource contention metrics
    */

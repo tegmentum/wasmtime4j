@@ -7,8 +7,8 @@ import java.util.Optional;
  * Interface for WebAssembly Component Model interface function parameters.
  *
  * <p>InterfaceParameter represents a parameter definition within an interface function, including
- * its name, type, optional default value, and documentation. Parameters define the input
- * contract for component interface functions.
+ * its name, type, optional default value, and documentation. Parameters define the input contract
+ * for component interface functions.
  *
  * @since 1.0.0
  */
@@ -40,8 +40,8 @@ public interface InterfaceParameter {
   /**
    * Checks if this parameter is optional.
    *
-   * <p>Returns true if this parameter has a default value or can be omitted when calling
-   * the function.
+   * <p>Returns true if this parameter has a default value or can be omitted when calling the
+   * function.
    *
    * @return true if the parameter is optional, false otherwise
    */
@@ -66,8 +66,8 @@ public interface InterfaceParameter {
   /**
    * Gets validation constraints for this parameter.
    *
-   * <p>Returns constraints such as value ranges, string patterns, or custom validation rules
-   * that apply to this parameter.
+   * <p>Returns constraints such as value ranges, string patterns, or custom validation rules that
+   * apply to this parameter.
    *
    * @return parameter constraints
    */
@@ -76,8 +76,7 @@ public interface InterfaceParameter {
   /**
    * Gets additional attributes/annotations for this parameter.
    *
-   * <p>Returns metadata such as performance hints, validation rules, and tool-specific
-   * annotations.
+   * <p>Returns metadata such as performance hints, validation rules, and tool-specific annotations.
    *
    * @return parameter attributes
    */
@@ -86,8 +85,8 @@ public interface InterfaceParameter {
   /**
    * Validates a value against this parameter's type and constraints.
    *
-   * <p>Checks if the provided value is compatible with this parameter's type and satisfies
-   * any defined constraints.
+   * <p>Checks if the provided value is compatible with this parameter's type and satisfies any
+   * defined constraints.
    *
    * @param value the value to validate
    * @return true if the value is valid for this parameter, false otherwise

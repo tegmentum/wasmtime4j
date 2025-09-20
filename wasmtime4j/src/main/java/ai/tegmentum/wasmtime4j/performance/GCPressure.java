@@ -3,8 +3,8 @@ package ai.tegmentum.wasmtime4j.performance;
 /**
  * Represents the current garbage collection pressure level.
  *
- * <p>GC pressure indicates how much strain the garbage collector is under,
- * which affects performance characteristics and optimization strategies.
+ * <p>GC pressure indicates how much strain the garbage collector is under, which affects
+ * performance characteristics and optimization strategies.
  *
  * @since 1.0.0
  */
@@ -38,9 +38,7 @@ public enum GCPressure {
    */
   CRITICAL("Critical"),
 
-  /**
-   * GC pressure level cannot be determined.
-   */
+  /** GC pressure level cannot be determined. */
   UNKNOWN("Unknown");
 
   private final String displayName;

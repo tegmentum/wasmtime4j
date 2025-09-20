@@ -37,15 +37,14 @@ import org.junit.jupiter.api.io.TempDir;
  * <p>Tests the integration between all Component Model components including JNI and Panama
  * implementations, WASI Preview 2 resource management, and cross-runtime compatibility.
  *
- * <p>These tests validate that the complete Component Model implementation works correctly
- * across different runtime backends and handles complex scenarios involving resource
- * management, component composition, and performance considerations.
+ * <p>These tests validate that the complete Component Model implementation works correctly across
+ * different runtime backends and handles complex scenarios involving resource management, component
+ * composition, and performance considerations.
  */
 @DisplayName("Component Model Integration Tests")
 class ComponentModelIntegrationTest {
 
-  @TempDir
-  Path tempDir;
+  @TempDir Path tempDir;
 
   @Test
   @DisplayName("JNI Component implementation should integrate with resource management")
@@ -86,10 +85,11 @@ class ComponentModelIntegrationTest {
       assertEquals(0, resourceManager.getActiveResourceCount());
 
       // Component should be able to work with linker (interface level test)
-      assertDoesNotThrow(() -> {
-        final ComponentLinker linker = ComponentLinker.create(engine);
-        assertNotNull(linker);
-      });
+      assertDoesNotThrow(
+          () -> {
+            final ComponentLinker linker = ComponentLinker.create(engine);
+            assertNotNull(linker);
+          });
 
     } finally {
       // Cleanup in reverse order
@@ -202,7 +202,8 @@ class ComponentModelIntegrationTest {
           panamaEngine = new PanamaEngine(arena);
           panamaStore = new PanamaStore(panamaEngine, arena);
 
-          final Component panamaComponent = new PanamaComponentImpl(panamaEngine, componentBytes, arena);
+          final Component panamaComponent =
+              new PanamaComponentImpl(panamaEngine, componentBytes, arena);
           final ComponentMetadata panamaMetadata = panamaComponent.getMetadata();
           final ComponentType panamaType = panamaComponent.getType();
 
@@ -240,31 +241,32 @@ class ComponentModelIntegrationTest {
     // Create components concurrently using JNI
     for (int i = 0; i < threadCount; i++) {
       final int threadId = i;
-      executor.submit(() -> {
-        Engine engine = null;
-        Store store = null;
-        try {
-          engine = new JniEngine();
-          store = new JniStore(engine);
+      executor.submit(
+          () -> {
+            Engine engine = null;
+            Store store = null;
+            try {
+              engine = new JniEngine();
+              store = new JniStore(engine);
 
-          for (int j = 0; j < componentsPerThread; j++) {
-            final Component component = new JniComponentImpl(engine, componentBytes);
-            assertNotNull(component);
-            assertTrue(component.isValid());
+              for (int j = 0; j < componentsPerThread; j++) {
+                final Component component = new JniComponentImpl(engine, componentBytes);
+                assertNotNull(component);
+                assertTrue(component.isValid());
 
-            final ComponentMetadata metadata = component.getMetadata();
-            assertNotNull(metadata);
+                final ComponentMetadata metadata = component.getMetadata();
+                assertNotNull(metadata);
 
-            component.close();
-          }
-        } catch (final Exception e) {
-          fail("Concurrent component operations failed: " + e.getMessage());
-        } finally {
-          if (store != null) store.close();
-          if (engine != null) engine.close();
-          latch.countDown();
-        }
-      });
+                component.close();
+              }
+            } catch (final Exception e) {
+              fail("Concurrent component operations failed: " + e.getMessage());
+            } finally {
+              if (store != null) store.close();
+              if (engine != null) engine.close();
+              latch.countDown();
+            }
+          });
     }
 
     assertTrue(latch.await(30, TimeUnit.SECONDS));
@@ -288,24 +290,24 @@ class ComponentModelIntegrationTest {
       Files.createDirectories(filesystemRoot);
 
       // Test filesystem resource integration
-      final TestWasiResourceConfig fsConfig = new TestWasiResourceConfig(
-          WasiResourceType.FILESYSTEM, filesystemRoot.toString());
+      final TestWasiResourceConfig fsConfig =
+          new TestWasiResourceConfig(WasiResourceType.FILESYSTEM, filesystemRoot.toString());
 
       resourceManager.createResource("filesystem", WasiFileResourceImpl.class, fsConfig);
 
       // Test network resource integration
-      final TestWasiResourceConfig netConfig = new TestWasiResourceConfig(
-          WasiResourceType.NETWORK, "localhost:8080");
+      final TestWasiResourceConfig netConfig =
+          new TestWasiResourceConfig(WasiResourceType.NETWORK, "localhost:8080");
 
-      resourceManager.createResource("network",
-          ai.tegmentum.wasmtime4j.wasi.impl.WasiSocketResourceImpl.class, netConfig);
+      resourceManager.createResource(
+          "network", ai.tegmentum.wasmtime4j.wasi.impl.WasiSocketResourceImpl.class, netConfig);
 
       // Test timer resource integration
-      final TestWasiResourceConfig timerConfig = new TestWasiResourceConfig(
-          WasiResourceType.TIME, "monotonic");
+      final TestWasiResourceConfig timerConfig =
+          new TestWasiResourceConfig(WasiResourceType.TIME, "monotonic");
 
-      resourceManager.createResource("timer",
-          ai.tegmentum.wasmtime4j.wasi.impl.WasiTimerResourceImpl.class, timerConfig);
+      resourceManager.createResource(
+          "timer", ai.tegmentum.wasmtime4j.wasi.impl.WasiTimerResourceImpl.class, timerConfig);
 
       // Verify resource manager state
       assertEquals(3, resourceManager.getActiveResourceCount());
@@ -319,7 +321,8 @@ class ComponentModelIntegrationTest {
       assertTrue(component.isValid());
 
       // Test resource statistics
-      final ai.tegmentum.wasmtime4j.wasi.WasiResourceUsageStats stats = resourceManager.getUsageStats();
+      final ai.tegmentum.wasmtime4j.wasi.WasiResourceUsageStats stats =
+          resourceManager.getUsageStats();
       assertEquals(3, stats.getTotalResourcesCreated());
       assertEquals(3, stats.getCurrentActiveResources());
 
@@ -357,21 +360,27 @@ class ComponentModelIntegrationTest {
 
       // Resource manager should still work within its own limits
       for (int i = 0; i < strictLimits.getMaxResources(); i++) {
-        final TestWasiResourceConfig config = new TestWasiResourceConfig(
-            WasiResourceType.CUSTOM, "resource-" + i);
-        limitedManager.createResource("resource-" + i,
-            ai.tegmentum.wasmtime4j.wasi.impl.WasiGenericResourceImpl.class, config);
+        final TestWasiResourceConfig config =
+            new TestWasiResourceConfig(WasiResourceType.CUSTOM, "resource-" + i);
+        limitedManager.createResource(
+            "resource-" + i,
+            ai.tegmentum.wasmtime4j.wasi.impl.WasiGenericResourceImpl.class,
+            config);
       }
 
       assertEquals(strictLimits.getMaxResources(), limitedManager.getActiveResourceCount());
 
       // One more resource should fail
-      assertThrows(WasmException.class, () -> {
-        final TestWasiResourceConfig config = new TestWasiResourceConfig(
-            WasiResourceType.CUSTOM, "overflow");
-        limitedManager.createResource("overflow",
-            ai.tegmentum.wasmtime4j.wasi.impl.WasiGenericResourceImpl.class, config);
-      });
+      assertThrows(
+          WasmException.class,
+          () -> {
+            final TestWasiResourceConfig config =
+                new TestWasiResourceConfig(WasiResourceType.CUSTOM, "overflow");
+            limitedManager.createResource(
+                "overflow",
+                ai.tegmentum.wasmtime4j.wasi.impl.WasiGenericResourceImpl.class,
+                config);
+          });
 
     } finally {
       limitedManager.close();
@@ -393,27 +402,39 @@ class ComponentModelIntegrationTest {
       resourceManager = new WasiResourceManagerImpl();
 
       // Test component creation with invalid bytes
-      final byte[] invalidBytes = new byte[]{0x00, 0x01, 0x02};
-      assertThrows(WasmException.class, () -> {
-        new JniComponentImpl(engine, invalidBytes);
-      });
+      final byte[] invalidBytes = new byte[] {0x00, 0x01, 0x02};
+      assertThrows(
+          WasmException.class,
+          () -> {
+            new JniComponentImpl(engine, invalidBytes);
+          });
 
       // Test resource creation with invalid configuration
       final TestWasiResourceConfig invalidConfig = new TestWasiResourceConfig(null, null);
-      assertThrows(Exception.class, () -> {
-        resourceManager.createResource("invalid",
-            ai.tegmentum.wasmtime4j.wasi.impl.WasiGenericResourceImpl.class, invalidConfig);
-      });
+      assertThrows(
+          Exception.class,
+          () -> {
+            resourceManager.createResource(
+                "invalid",
+                ai.tegmentum.wasmtime4j.wasi.impl.WasiGenericResourceImpl.class,
+                invalidConfig);
+          });
 
       // Test parameter validation
-      assertThrows(IllegalArgumentException.class, () -> {
-        new JniComponentImpl(null, new byte[]{});
-      });
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> {
+            new JniComponentImpl(null, new byte[] {});
+          });
 
-      assertThrows(IllegalArgumentException.class, () -> {
-        resourceManager.createResource(null,
-            ai.tegmentum.wasmtime4j.wasi.impl.WasiGenericResourceImpl.class, invalidConfig);
-      });
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> {
+            resourceManager.createResource(
+                null,
+                ai.tegmentum.wasmtime4j.wasi.impl.WasiGenericResourceImpl.class,
+                invalidConfig);
+          });
 
     } finally {
       if (resourceManager != null) resourceManager.close();
@@ -440,8 +461,8 @@ class ComponentModelIntegrationTest {
       Files.createDirectories(workDir);
       Files.write(workDir.resolve("input.txt"), "Workflow input data".getBytes());
 
-      final TestWasiResourceConfig fsConfig = new TestWasiResourceConfig(
-          WasiResourceType.FILESYSTEM, workDir.toString());
+      final TestWasiResourceConfig fsConfig =
+          new TestWasiResourceConfig(WasiResourceType.FILESYSTEM, workDir.toString());
       resourceManager.createResource("workspace", WasiFileResourceImpl.class, fsConfig);
 
       // Step 3: Create and validate component
@@ -465,12 +486,14 @@ class ComponentModelIntegrationTest {
 
       // Step 6: Component instantiation would happen here
       // (Currently at interface level due to implementation state)
-      assertDoesNotThrow(() -> {
-        component.instantiate(store, linker);
-      });
+      assertDoesNotThrow(
+          () -> {
+            component.instantiate(store, linker);
+          });
 
       // Step 7: Verify resource management statistics
-      final ai.tegmentum.wasmtime4j.wasi.WasiResourceUsageStats stats = resourceManager.getUsageStats();
+      final ai.tegmentum.wasmtime4j.wasi.WasiResourceUsageStats stats =
+          resourceManager.getUsageStats();
       assertEquals(1, stats.getTotalResourcesCreated());
       assertEquals(1, stats.getCurrentActiveResources());
 
@@ -490,21 +513,17 @@ class ComponentModelIntegrationTest {
     }
   }
 
-  /**
-   * Creates minimal WebAssembly component bytes for testing.
-   */
+  /** Creates minimal WebAssembly component bytes for testing. */
   private byte[] createMinimalComponent() {
     return new byte[] {
-        0x00, 0x61, 0x73, 0x6d, // WASM magic number
-        0x0d, 0x00, 0x01, 0x00, // Component version
-        0x01, 0x00, 0x00, 0x00, // Minimal component sections
-        0x00 // End marker
+      0x00, 0x61, 0x73, 0x6d, // WASM magic number
+      0x0d, 0x00, 0x01, 0x00, // Component version
+      0x01, 0x00, 0x00, 0x00, // Minimal component sections
+      0x00 // End marker
     };
   }
 
-  /**
-   * Creates strict resource limits for testing.
-   */
+  /** Creates strict resource limits for testing. */
   private ai.tegmentum.wasmtime4j.wasi.WasiResourceLimits createStrictLimits() {
     return new ai.tegmentum.wasmtime4j.wasi.WasiResourceLimits() {
       @Override
@@ -534,9 +553,7 @@ class ComponentModelIntegrationTest {
     };
   }
 
-  /**
-   * Checks if running on Java 23 or later.
-   */
+  /** Checks if running on Java 23 or later. */
   private boolean isJava23OrLater() {
     try {
       final String version = System.getProperty("java.version");
@@ -547,10 +564,9 @@ class ComponentModelIntegrationTest {
     }
   }
 
-  /**
-   * Test implementation of WasiResourceConfig.
-   */
-  private static class TestWasiResourceConfig implements ai.tegmentum.wasmtime4j.wasi.WasiResourceConfig {
+  /** Test implementation of WasiResourceConfig. */
+  private static class TestWasiResourceConfig
+      implements ai.tegmentum.wasmtime4j.wasi.WasiResourceConfig {
     private final WasiResourceType resourceType;
     private final String value;
 
@@ -573,8 +589,9 @@ class ComponentModelIntegrationTest {
     public java.util.Optional<Object> getProperty(final String name) {
       switch (name) {
         case "root_path":
-          return resourceType == WasiResourceType.FILESYSTEM ?
-              java.util.Optional.ofNullable(value) : java.util.Optional.empty();
+          return resourceType == WasiResourceType.FILESYSTEM
+              ? java.util.Optional.ofNullable(value)
+              : java.util.Optional.empty();
         case "host":
           if (resourceType == WasiResourceType.NETWORK && value != null) {
             return java.util.Optional.of(value.split(":")[0]);
@@ -586,8 +603,9 @@ class ComponentModelIntegrationTest {
           }
           return java.util.Optional.empty();
         case "timer_type":
-          return resourceType == WasiResourceType.TIME ?
-              java.util.Optional.ofNullable(value) : java.util.Optional.empty();
+          return resourceType == WasiResourceType.TIME
+              ? java.util.Optional.ofNullable(value)
+              : java.util.Optional.empty();
         default:
           return java.util.Optional.empty();
       }
@@ -615,8 +633,9 @@ class ComponentModelIntegrationTest {
 
     @Override
     public Object getPermissions() {
-      return resourceType != null ? resourceType.getDefaultPermissions() :
-          ai.tegmentum.wasmtime4j.wasi.WasiResourcePermissions.NONE;
+      return resourceType != null
+          ? resourceType.getDefaultPermissions()
+          : ai.tegmentum.wasmtime4j.wasi.WasiResourcePermissions.NONE;
     }
 
     @Override

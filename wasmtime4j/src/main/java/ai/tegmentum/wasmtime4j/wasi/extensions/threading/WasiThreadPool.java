@@ -8,21 +8,22 @@ import java.util.concurrent.TimeUnit;
 /**
  * A thread pool for managing and executing tasks in WASI threading.
  *
- * <p>A thread pool maintains a collection of worker threads that can execute
- * submitted tasks. This provides efficient task execution by reusing threads
- * rather than creating new ones for each task, reducing the overhead of
- * thread creation and destruction.
+ * <p>A thread pool maintains a collection of worker threads that can execute submitted tasks. This
+ * provides efficient task execution by reusing threads rather than creating new ones for each task,
+ * reducing the overhead of thread creation and destruction.
  *
  * <p>Thread pools support:
+ *
  * <ul>
- *   <li>Configurable core and maximum pool sizes</li>
- *   <li>Task queuing when all threads are busy</li>
- *   <li>Automatic thread lifecycle management</li>
- *   <li>Graceful shutdown with pending task completion</li>
- *   <li>Both synchronous and asynchronous task execution</li>
+ *   <li>Configurable core and maximum pool sizes
+ *   <li>Task queuing when all threads are busy
+ *   <li>Automatic thread lifecycle management
+ *   <li>Graceful shutdown with pending task completion
+ *   <li>Both synchronous and asynchronous task execution
  * </ul>
  *
  * <p>Example usage:
+ *
  * <pre>{@code
  * WasiThreadPool pool = threading.createThreadPool(4, 8);
  *
@@ -51,9 +52,8 @@ public interface WasiThreadPool extends AutoCloseable {
   /**
    * Executes a task without returning a result.
    *
-   * <p>The task is submitted for execution and will be run by one of the
-   * worker threads when available. This method returns immediately without
-   * waiting for task completion.
+   * <p>The task is submitted for execution and will be run by one of the worker threads when
+   * available. This method returns immediately without waiting for task completion.
    *
    * @param task the task to execute
    * @throws WasmException if task submission fails
@@ -65,9 +65,9 @@ public interface WasiThreadPool extends AutoCloseable {
   /**
    * Submits a task for execution and returns a CompletableFuture.
    *
-   * <p>The task is submitted for execution and a CompletableFuture is returned
-   * that will be completed when the task finishes. The future can be used to
-   * retrieve the result or handle exceptions.
+   * <p>The task is submitted for execution and a CompletableFuture is returned that will be
+   * completed when the task finishes. The future can be used to retrieve the result or handle
+   * exceptions.
    *
    * @param task the task to submit
    * @return a CompletableFuture that will be completed when the task finishes
@@ -79,8 +79,8 @@ public interface WasiThreadPool extends AutoCloseable {
   /**
    * Submits a task that returns a result.
    *
-   * <p>The task is submitted for execution and a CompletableFuture is returned
-   * that will contain the result when the task completes successfully.
+   * <p>The task is submitted for execution and a CompletableFuture is returned that will contain
+   * the result when the task completes successfully.
    *
    * @param <T> the type of the result
    * @param task the task to submit
@@ -93,8 +93,8 @@ public interface WasiThreadPool extends AutoCloseable {
   /**
    * Submits a task with a specific result value.
    *
-   * <p>The task is executed and the provided result value is returned
-   * in the CompletableFuture upon successful completion.
+   * <p>The task is executed and the provided result value is returned in the CompletableFuture upon
+   * successful completion.
    *
    * @param <T> the type of the result
    * @param task the task to submit
@@ -108,9 +108,9 @@ public interface WasiThreadPool extends AutoCloseable {
   /**
    * Initiates an orderly shutdown of the thread pool.
    *
-   * <p>Previously submitted tasks are executed, but no new tasks are accepted.
-   * This method does not wait for previously submitted tasks to complete.
-   * Use {@link #awaitTermination(long, TimeUnit)} to wait for completion.
+   * <p>Previously submitted tasks are executed, but no new tasks are accepted. This method does not
+   * wait for previously submitted tasks to complete. Use {@link #awaitTermination(long, TimeUnit)}
+   * to wait for completion.
    *
    * @throws WasmException if shutdown initiation fails
    */
@@ -119,9 +119,8 @@ public interface WasiThreadPool extends AutoCloseable {
   /**
    * Attempts to stop all actively executing tasks and returns a list of waiting tasks.
    *
-   * <p>This method does not guarantee that actively executing tasks will stop,
-   * but makes a best effort attempt to interrupt them. Tasks that were submitted
-   * but not yet started are returned.
+   * <p>This method does not guarantee that actively executing tasks will stop, but makes a best
+   * effort attempt to interrupt them. Tasks that were submitted but not yet started are returned.
    *
    * @return list of tasks that were waiting to be executed
    * @throws WasmException if shutdown fails
@@ -131,8 +130,8 @@ public interface WasiThreadPool extends AutoCloseable {
   /**
    * Blocks until all tasks have completed after a shutdown request.
    *
-   * <p>This method blocks until either all tasks complete, the timeout occurs,
-   * or the current thread is interrupted, whichever happens first.
+   * <p>This method blocks until either all tasks complete, the timeout occurs, or the current
+   * thread is interrupted, whichever happens first.
    *
    * @param timeout the maximum time to wait
    * @param unit the time unit of the timeout
@@ -141,7 +140,8 @@ public interface WasiThreadPool extends AutoCloseable {
    * @throws InterruptedException if the thread is interrupted while waiting
    * @throws IllegalArgumentException if timeout is negative or unit is null
    */
-  boolean awaitTermination(final long timeout, final TimeUnit unit) throws WasmException, InterruptedException;
+  boolean awaitTermination(final long timeout, final TimeUnit unit)
+      throws WasmException, InterruptedException;
 
   /**
    * Checks if the thread pool has been shut down.
@@ -160,8 +160,7 @@ public interface WasiThreadPool extends AutoCloseable {
   /**
    * Gets the core number of threads in the pool.
    *
-   * <p>The core size represents the minimum number of threads that are
-   * kept alive even when idle.
+   * <p>The core size represents the minimum number of threads that are kept alive even when idle.
    *
    * @return the core pool size
    */
@@ -237,8 +236,8 @@ public interface WasiThreadPool extends AutoCloseable {
   /**
    * Gets the keep-alive time for idle threads.
    *
-   * <p>Threads that are idle for longer than this time may be terminated
-   * if the pool size exceeds the core size.
+   * <p>Threads that are idle for longer than this time may be terminated if the pool size exceeds
+   * the core size.
    *
    * @param unit the time unit for the return value
    * @return the keep-alive time in the specified unit
@@ -258,8 +257,8 @@ public interface WasiThreadPool extends AutoCloseable {
   /**
    * Gets statistics for this thread pool.
    *
-   * <p>Returns detailed information about thread pool usage, task execution
-   * patterns, and performance metrics.
+   * <p>Returns detailed information about thread pool usage, task execution patterns, and
+   * performance metrics.
    *
    * @return thread pool statistics object
    * @throws WasmException if statistics retrieval fails
@@ -269,8 +268,8 @@ public interface WasiThreadPool extends AutoCloseable {
   /**
    * Closes the thread pool and releases all resources.
    *
-   * <p>This method calls {@link #shutdown()} and then waits for termination.
-   * It's provided for AutoCloseable support in try-with-resources.
+   * <p>This method calls {@link #shutdown()} and then waits for termination. It's provided for
+   * AutoCloseable support in try-with-resources.
    */
   @Override
   void close();

@@ -9,8 +9,8 @@ import java.util.Map;
  * Metadata and statistics for component linker operations.
  *
  * <p>ComponentLinkerMetadata provides detailed information about linker configuration, import
- * resolution performance, and linking statistics. This information is useful for debugging
- * linking issues, optimizing import resolution, and monitoring component composition.
+ * resolution performance, and linking statistics. This information is useful for debugging linking
+ * issues, optimizing import resolution, and monitoring component composition.
  *
  * @since 1.0.0
  */
@@ -37,8 +37,7 @@ public interface ComponentLinkerMetadata {
   /**
    * Gets the number of successful instantiations performed.
    *
-   * <p>Returns the count of component instantiations that completed successfully using this
-   * linker.
+   * <p>Returns the count of component instantiations that completed successfully using this linker.
    *
    * @return successful instantiation count
    */
@@ -57,8 +56,8 @@ public interface ComponentLinkerMetadata {
   /**
    * Gets the total time spent in linking operations.
    *
-   * <p>Returns the cumulative time spent resolving imports and performing linking operations
-   * across all instantiation attempts.
+   * <p>Returns the cumulative time spent resolving imports and performing linking operations across
+   * all instantiation attempts.
    *
    * @return total linking time
    */
@@ -86,8 +85,7 @@ public interface ComponentLinkerMetadata {
   /**
    * Gets the most frequently used imports.
    *
-   * <p>Returns a list of import names ordered by frequency of use during instantiation
-   * operations.
+   * <p>Returns a list of import names ordered by frequency of use during instantiation operations.
    *
    * @return list of import names ordered by usage frequency
    */
@@ -106,8 +104,8 @@ public interface ComponentLinkerMetadata {
   /**
    * Gets the number of import definition conflicts detected.
    *
-   * <p>Returns the count of times an import definition was redefined or conflicted with an
-   * existing definition.
+   * <p>Returns the count of times an import definition was redefined or conflicted with an existing
+   * definition.
    *
    * @return import conflict count
    */
@@ -145,8 +143,8 @@ public interface ComponentLinkerMetadata {
   /**
    * Gets memory usage information for this linker.
    *
-   * <p>Returns details about memory consumption for storing import definitions, cached
-   * resolutions, and other linker state.
+   * <p>Returns details about memory consumption for storing import definitions, cached resolutions,
+   * and other linker state.
    *
    * @return linker memory usage information
    */
@@ -155,8 +153,8 @@ public interface ComponentLinkerMetadata {
   /**
    * Gets optimization suggestions based on usage patterns.
    *
-   * <p>Returns recommendations for improving linking performance based on observed usage
-   * patterns and bottlenecks.
+   * <p>Returns recommendations for improving linking performance based on observed usage patterns
+   * and bottlenecks.
    *
    * @return list of optimization suggestions
    */

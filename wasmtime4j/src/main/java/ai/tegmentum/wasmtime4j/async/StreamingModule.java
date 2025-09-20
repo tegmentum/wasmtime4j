@@ -14,9 +14,9 @@ import java.util.concurrent.Executor;
  * modules, enabling progressive compilation with progress tracking, memory-efficient processing,
  * and fine-grained control over the compilation process.
  *
- * <p>This interface is particularly useful for large WASM modules that would be inefficient to
- * load entirely into memory before compilation, or when progress feedback is required for
- * user interfaces.
+ * <p>This interface is particularly useful for large WASM modules that would be inefficient to load
+ * entirely into memory before compilation, or when progress feedback is required for user
+ * interfaces.
  *
  * @since 1.0.0
  */
@@ -38,7 +38,8 @@ public interface StreamingModule {
   static CompletableFuture<Module> compileStreaming(
       final Engine engine, final InputStream wasmStream, final StreamingOptions options) {
     if (engine instanceof AsyncEngine) {
-      return ((AsyncEngine) engine).compileModuleAsync(wasmStream, convertToCompilationOptions(options));
+      return ((AsyncEngine) engine)
+          .compileModuleAsync(wasmStream, convertToCompilationOptions(options));
     }
     throw new UnsupportedOperationException("Engine does not support async compilation");
   }
@@ -46,8 +47,8 @@ public interface StreamingModule {
   /**
    * Validates a WebAssembly module from a stream without full compilation.
    *
-   * <p>This method performs streaming validation, checking the module structure and validity
-   * as data becomes available without the overhead of full compilation.
+   * <p>This method performs streaming validation, checking the module structure and validity as
+   * data becomes available without the overhead of full compilation.
    *
    * @param engine the engine to use for validation
    * @param wasmStream the InputStream containing WebAssembly bytecode
@@ -66,8 +67,8 @@ public interface StreamingModule {
   /**
    * Gets compilation progress for a streaming operation.
    *
-   * <p>This method returns a Progress object that can be used to track the current state
-   * of a streaming compilation operation.
+   * <p>This method returns a Progress object that can be used to track the current state of a
+   * streaming compilation operation.
    *
    * @param operationId the ID of the streaming operation
    * @return progress information for the operation
@@ -91,7 +92,7 @@ public interface StreamingModule {
         1024 * 1024 * 16, // 16MB max memory
         false, // validation not skipped
         1 // normal priority
-    );
+        );
   }
 
   /**
@@ -116,7 +117,7 @@ public interface StreamingModule {
         1024 * 1024 * 16, // 16MB max memory
         false, // validation not skipped
         1 // normal priority
-    );
+        );
   }
 
   // Private helper method to convert StreamingOptions to CompilationOptions

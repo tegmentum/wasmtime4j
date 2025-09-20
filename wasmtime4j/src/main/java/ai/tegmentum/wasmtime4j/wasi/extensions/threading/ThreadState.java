@@ -3,9 +3,8 @@ package ai.tegmentum.wasmtime4j.wasi.extensions.threading;
 /**
  * Enumeration of thread states in the WASI threading system.
  *
- * <p>Thread states represent the current execution status of a thread.
- * These states correspond to the standard Java thread states but are
- * adapted for the WASI environment.
+ * <p>Thread states represent the current execution status of a thread. These states correspond to
+ * the standard Java thread states but are adapted for the WASI environment.
  *
  * @since 1.0.0
  */
@@ -14,24 +13,24 @@ public enum ThreadState {
   /**
    * Thread has been created but not yet started.
    *
-   * <p>A thread in this state has been instantiated but the {@code start()}
-   * method has not been called. The thread is not yet executing.
+   * <p>A thread in this state has been instantiated but the {@code start()} method has not been
+   * called. The thread is not yet executing.
    */
   NEW,
 
   /**
    * Thread is executing or ready to execute.
    *
-   * <p>A thread in this state is either currently running or is ready to
-   * run and waiting for the thread scheduler to allocate CPU time.
+   * <p>A thread in this state is either currently running or is ready to run and waiting for the
+   * thread scheduler to allocate CPU time.
    */
   RUNNABLE,
 
   /**
    * Thread is blocked waiting for a monitor lock.
    *
-   * <p>A thread in this state is blocked waiting to enter a synchronized
-   * block or method, or waiting to re-enter after calling wait().
+   * <p>A thread in this state is blocked waiting to enter a synchronized block or method, or
+   * waiting to re-enter after calling wait().
    */
   BLOCKED,
 
@@ -39,10 +38,11 @@ public enum ThreadState {
    * Thread is waiting indefinitely for another thread to perform a specific action.
    *
    * <p>A thread enters this state as a result of calling:
+   *
    * <ul>
-   *   <li>{@code Object.wait()} with no timeout</li>
-   *   <li>{@code Thread.join()} with no timeout</li>
-   *   <li>{@code LockSupport.park()}</li>
+   *   <li>{@code Object.wait()} with no timeout
+   *   <li>{@code Thread.join()} with no timeout
+   *   <li>{@code LockSupport.park()}
    * </ul>
    */
   WAITING,
@@ -51,12 +51,13 @@ public enum ThreadState {
    * Thread is waiting for another thread to perform an action for up to a specified time.
    *
    * <p>A thread enters this state as a result of calling:
+   *
    * <ul>
-   *   <li>{@code Thread.sleep()}</li>
-   *   <li>{@code Object.wait()} with timeout</li>
-   *   <li>{@code Thread.join()} with timeout</li>
-   *   <li>{@code LockSupport.parkNanos()}</li>
-   *   <li>{@code LockSupport.parkUntil()}</li>
+   *   <li>{@code Thread.sleep()}
+   *   <li>{@code Object.wait()} with timeout
+   *   <li>{@code Thread.join()} with timeout
+   *   <li>{@code LockSupport.parkNanos()}
+   *   <li>{@code LockSupport.parkUntil()}
    * </ul>
    */
   TIMED_WAITING,
@@ -64,17 +65,15 @@ public enum ThreadState {
   /**
    * Thread has completed execution.
    *
-   * <p>A thread in this state has finished executing its run() method
-   * and cannot be restarted.
+   * <p>A thread in this state has finished executing its run() method and cannot be restarted.
    */
   TERMINATED;
 
   /**
    * Checks if this state represents an active thread.
    *
-   * <p>Active threads are those that have been started but have not
-   * yet terminated. This includes RUNNABLE, BLOCKED, WAITING, and
-   * TIMED_WAITING states.
+   * <p>Active threads are those that have been started but have not yet terminated. This includes
+   * RUNNABLE, BLOCKED, WAITING, and TIMED_WAITING states.
    *
    * @return true if the thread is active, false otherwise
    */
@@ -85,8 +84,8 @@ public enum ThreadState {
   /**
    * Checks if this state represents a waiting thread.
    *
-   * <p>Waiting threads are those that are blocked or waiting for
-   * some condition. This includes BLOCKED, WAITING, and TIMED_WAITING states.
+   * <p>Waiting threads are those that are blocked or waiting for some condition. This includes
+   * BLOCKED, WAITING, and TIMED_WAITING states.
    *
    * @return true if the thread is waiting, false otherwise
    */

@@ -7,12 +7,12 @@ import java.util.Optional;
 /**
  * Represents an event in the WebAssembly engine lifecycle.
  *
- * <p>EngineEvent provides information about engine state changes, resource management,
- * and operational events. These events enable monitoring of engine health, performance,
- * and resource utilization in reactive applications.
+ * <p>EngineEvent provides information about engine state changes, resource management, and
+ * operational events. These events enable monitoring of engine health, performance, and resource
+ * utilization in reactive applications.
  *
- * <p>Events are immutable and contain all relevant information about the engine state
- * at the time the event was created.
+ * <p>Events are immutable and contain all relevant information about the engine state at the time
+ * the event was created.
  *
  * @since 1.0.0
  */
@@ -134,8 +134,21 @@ public interface EngineEvent {
    */
   static EngineEvent engineStartup(final String engineId, final String message) {
     return new EngineEventImpl(
-        generateEventId(), engineId, EngineEventType.ENGINE_STARTUP, Instant.now(), message,
-        null, null, -1, -1, -1, -1, null, false, false, true);
+        generateEventId(),
+        engineId,
+        EngineEventType.ENGINE_STARTUP,
+        Instant.now(),
+        message,
+        null,
+        null,
+        -1,
+        -1,
+        -1,
+        -1,
+        null,
+        false,
+        false,
+        true);
   }
 
   /**
@@ -147,8 +160,21 @@ public interface EngineEvent {
    */
   static EngineEvent engineShutdown(final String engineId, final Duration uptime) {
     return new EngineEventImpl(
-        generateEventId(), engineId, EngineEventType.ENGINE_SHUTDOWN, Instant.now(),
-        "Engine shutting down", null, null, -1, -1, -1, -1, uptime, false, false, true);
+        generateEventId(),
+        engineId,
+        EngineEventType.ENGINE_SHUTDOWN,
+        Instant.now(),
+        "Engine shutting down",
+        null,
+        null,
+        -1,
+        -1,
+        -1,
+        -1,
+        uptime,
+        false,
+        false,
+        true);
   }
 
   /**
@@ -172,8 +198,21 @@ public interface EngineEvent {
       final int activeModules,
       final int activeInstances) {
     return new EngineEventImpl(
-        generateEventId(), engineId, eventType, Instant.now(), message, null, null, memoryUsage,
-        activeStores, activeModules, activeInstances, null, false, false, true);
+        generateEventId(),
+        engineId,
+        eventType,
+        Instant.now(),
+        message,
+        null,
+        null,
+        memoryUsage,
+        activeStores,
+        activeModules,
+        activeInstances,
+        null,
+        false,
+        false,
+        true);
   }
 
   /**
@@ -187,8 +226,21 @@ public interface EngineEvent {
   static EngineEvent engineError(
       final String engineId, final String message, final Exception error) {
     return new EngineEventImpl(
-        generateEventId(), engineId, EngineEventType.ENGINE_ERROR, Instant.now(), message, null,
-        error, -1, -1, -1, -1, null, true, false, false);
+        generateEventId(),
+        engineId,
+        EngineEventType.ENGINE_ERROR,
+        Instant.now(),
+        message,
+        null,
+        error,
+        -1,
+        -1,
+        -1,
+        -1,
+        null,
+        true,
+        false,
+        false);
   }
 
   /**
@@ -202,8 +254,21 @@ public interface EngineEvent {
   static EngineEvent engineWarning(
       final String engineId, final String message, final String details) {
     return new EngineEventImpl(
-        generateEventId(), engineId, EngineEventType.ENGINE_WARNING, Instant.now(), message,
-        details, null, -1, -1, -1, -1, null, false, true, false);
+        generateEventId(),
+        engineId,
+        EngineEventType.ENGINE_WARNING,
+        Instant.now(),
+        message,
+        details,
+        null,
+        -1,
+        -1,
+        -1,
+        -1,
+        null,
+        false,
+        true,
+        false);
   }
 
   // Helper method to generate event IDs
@@ -340,7 +405,8 @@ public interface EngineEvent {
     @Override
     public String toString() {
       return String.format(
-          "EngineEvent{eventId='%s', engineId='%s', eventType=%s, message='%s', isError=%s, isWarning=%s}",
+          "EngineEvent{eventId='%s', engineId='%s', eventType=%s, message='%s', isError=%s,"
+              + " isWarning=%s}",
           eventId, engineId, eventType, message, isError, isWarning);
     }
   }

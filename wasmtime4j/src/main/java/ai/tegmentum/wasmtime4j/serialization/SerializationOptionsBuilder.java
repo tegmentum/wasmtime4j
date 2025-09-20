@@ -7,8 +7,8 @@ import java.util.Set;
 /**
  * Builder for constructing SerializationOptions instances.
  *
- * <p>This builder provides a fluent interface for configuring serialization options with
- * validation and sensible defaults.
+ * <p>This builder provides a fluent interface for configuring serialization options with validation
+ * and sensible defaults.
  *
  * @since 1.0.0
  */
@@ -221,9 +221,7 @@ public final class SerializationOptionsBuilder {
         includeChecksum);
   }
 
-  /**
-   * Implementation of SerializationOptions.
-   */
+  /** Implementation of SerializationOptions. */
   private static final class SerializationOptionsImpl implements SerializationOptions {
     private final CompressionType compression;
     private final boolean includeDebugInfo;

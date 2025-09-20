@@ -6,19 +6,21 @@ import java.util.concurrent.TimeUnit;
 /**
  * A counting semaphore for controlling access to limited resources in WASI threading.
  *
- * <p>A semaphore maintains a count of permits that represent available resources.
- * Threads can acquire permits to access resources and release permits when done.
- * If no permits are available, threads will block until permits become available.
+ * <p>A semaphore maintains a count of permits that represent available resources. Threads can
+ * acquire permits to access resources and release permits when done. If no permits are available,
+ * threads will block until permits become available.
  *
  * <p>Semaphores are useful for:
+ *
  * <ul>
- *   <li>Limiting the number of threads that can access a resource simultaneously</li>
- *   <li>Implementing producer-consumer patterns</li>
- *   <li>Rate limiting and throttling</li>
- *   <li>Resource pooling</li>
+ *   <li>Limiting the number of threads that can access a resource simultaneously
+ *   <li>Implementing producer-consumer patterns
+ *   <li>Rate limiting and throttling
+ *   <li>Resource pooling
  * </ul>
  *
  * <p>Example usage:
+ *
  * <pre>{@code
  * // Create a semaphore with 3 permits (e.g., for a connection pool of size 3)
  * WasiSemaphore semaphore = threading.createSemaphore(3);
@@ -46,9 +48,9 @@ public interface WasiSemaphore {
   /**
    * Acquires a permit, blocking if necessary until one becomes available.
    *
-   * <p>If a permit is available, it is acquired and the method returns immediately.
-   * If no permit is available, the thread blocks until a permit is released
-   * by another thread or the thread is interrupted.
+   * <p>If a permit is available, it is acquired and the method returns immediately. If no permit is
+   * available, the thread blocks until a permit is released by another thread or the thread is
+   * interrupted.
    *
    * @throws WasmException if permit acquisition fails
    * @throws InterruptedException if the thread is interrupted while waiting
@@ -58,8 +60,8 @@ public interface WasiSemaphore {
   /**
    * Acquires the specified number of permits, blocking if necessary.
    *
-   * <p>This method acquires the given number of permits atomically. If fewer
-   * permits are available, the thread blocks until enough permits become available.
+   * <p>This method acquires the given number of permits atomically. If fewer permits are available,
+   * the thread blocks until enough permits become available.
    *
    * @param permits the number of permits to acquire (must be positive)
    * @throws WasmException if permit acquisition fails
@@ -71,8 +73,8 @@ public interface WasiSemaphore {
   /**
    * Acquires a permit without blocking.
    *
-   * <p>If a permit is available, it is acquired and the method returns true.
-   * If no permit is available, the method returns false immediately without blocking.
+   * <p>If a permit is available, it is acquired and the method returns true. If no permit is
+   * available, the method returns false immediately without blocking.
    *
    * @return true if a permit was acquired, false otherwise
    * @throws WasmException if permit acquisition fails
@@ -92,9 +94,8 @@ public interface WasiSemaphore {
   /**
    * Attempts to acquire a permit within the specified time.
    *
-   * <p>If a permit is available immediately, it is acquired and the method
-   * returns true. Otherwise, the thread waits up to the specified time
-   * for a permit to become available.
+   * <p>If a permit is available immediately, it is acquired and the method returns true. Otherwise,
+   * the thread waits up to the specified time for a permit to become available.
    *
    * @param timeout the maximum time to wait
    * @param unit the time unit of the timeout
@@ -103,7 +104,8 @@ public interface WasiSemaphore {
    * @throws InterruptedException if the thread is interrupted while waiting
    * @throws IllegalArgumentException if timeout is negative or unit is null
    */
-  boolean tryAcquire(final long timeout, final TimeUnit unit) throws WasmException, InterruptedException;
+  boolean tryAcquire(final long timeout, final TimeUnit unit)
+      throws WasmException, InterruptedException;
 
   /**
    * Attempts to acquire the specified number of permits within the specified time.
@@ -114,7 +116,8 @@ public interface WasiSemaphore {
    * @return true if the permits were acquired within the timeout, false otherwise
    * @throws WasmException if permit acquisition fails
    * @throws InterruptedException if the thread is interrupted while waiting
-   * @throws IllegalArgumentException if permits is not positive, timeout is negative, or unit is null
+   * @throws IllegalArgumentException if permits is not positive, timeout is negative, or unit is
+   *     null
    */
   boolean tryAcquire(final int permits, final long timeout, final TimeUnit unit)
       throws WasmException, InterruptedException;
@@ -122,8 +125,8 @@ public interface WasiSemaphore {
   /**
    * Acquires a permit and returns a Permit object for use with try-with-resources.
    *
-   * <p>This method is equivalent to {@link #acquire()} but returns a Permit
-   * object that implements AutoCloseable, allowing for automatic permit release.
+   * <p>This method is equivalent to {@link #acquire()} but returns a Permit object that implements
+   * AutoCloseable, allowing for automatic permit release.
    *
    * @return a Permit object that will automatically release the permit when closed
    * @throws WasmException if permit acquisition fails
@@ -142,8 +145,8 @@ public interface WasiSemaphore {
   /**
    * Releases a permit, making it available for other threads.
    *
-   * <p>This method increases the number of available permits by one.
-   * If threads are waiting for permits, one will be awakened.
+   * <p>This method increases the number of available permits by one. If threads are waiting for
+   * permits, one will be awakened.
    *
    * @throws WasmException if permit release fails
    */
@@ -152,8 +155,8 @@ public interface WasiSemaphore {
   /**
    * Releases the specified number of permits.
    *
-   * <p>This method increases the number of available permits by the specified amount.
-   * Waiting threads will be awakened as permits become available.
+   * <p>This method increases the number of available permits by the specified amount. Waiting
+   * threads will be awakened as permits become available.
    *
    * @param permits the number of permits to release (must be positive)
    * @throws WasmException if permit release fails
@@ -164,8 +167,8 @@ public interface WasiSemaphore {
   /**
    * Gets the current number of available permits.
    *
-   * <p>This method returns the current number of permits available for acquisition.
-   * The value may change immediately after this method returns due to concurrent operations.
+   * <p>This method returns the current number of permits available for acquisition. The value may
+   * change immediately after this method returns due to concurrent operations.
    *
    * @return the number of available permits
    */
@@ -174,8 +177,8 @@ public interface WasiSemaphore {
   /**
    * Acquires all available permits and returns the number acquired.
    *
-   * <p>This method acquires all permits that are currently available
-   * and returns the number of permits that were acquired.
+   * <p>This method acquires all permits that are currently available and returns the number of
+   * permits that were acquired.
    *
    * @return the number of permits acquired
    * @throws WasmException if permit acquisition fails
@@ -201,8 +204,7 @@ public interface WasiSemaphore {
   /**
    * Gets statistics for this semaphore.
    *
-   * <p>Returns information about permit usage, waiting patterns,
-   * and performance metrics.
+   * <p>Returns information about permit usage, waiting patterns, and performance metrics.
    *
    * @return semaphore statistics object
    * @throws WasmException if statistics retrieval fails
@@ -212,8 +214,8 @@ public interface WasiSemaphore {
   /**
    * Represents a permit that can be released automatically.
    *
-   * <p>This interface extends AutoCloseable to support try-with-resources
-   * syntax, ensuring that permits are properly released even if exceptions occur.
+   * <p>This interface extends AutoCloseable to support try-with-resources syntax, ensuring that
+   * permits are properly released even if exceptions occur.
    */
   interface Permit extends AutoCloseable {
 
@@ -241,8 +243,8 @@ public interface WasiSemaphore {
     /**
      * Releases the permit.
      *
-     * <p>After calling this method, the permit becomes invalid and should
-     * not be used. This method can be called multiple times safely.
+     * <p>After calling this method, the permit becomes invalid and should not be used. This method
+     * can be called multiple times safely.
      */
     @Override
     void close();

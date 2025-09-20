@@ -10,8 +10,8 @@ import java.util.Map;
  * Comprehensive report of performance optimization analysis.
  *
  * <p>OptimizationReport provides detailed analysis of a WebAssembly module's performance
- * characteristics, identifying bottlenecks, optimization opportunities, and providing
- * actionable recommendations for performance improvements.
+ * characteristics, identifying bottlenecks, optimization opportunities, and providing actionable
+ * recommendations for performance improvements.
  *
  * @since 1.0.0
  */
@@ -41,8 +41,8 @@ public interface OptimizationReport {
   /**
    * Gets the overall performance score of the module.
    *
-   * <p>Performance score is a normalized value from 0.0 (worst) to 1.0 (best)
-   * indicating the overall optimization level of the module.
+   * <p>Performance score is a normalized value from 0.0 (worst) to 1.0 (best) indicating the
+   * overall optimization level of the module.
    *
    * @return performance score between 0.0 and 1.0
    */

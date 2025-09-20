@@ -11,8 +11,8 @@ import java.util.Map;
  * analysis, memory allocation profiling, call stack sampling, and performance bottleneck
  * identification.
  *
- * <p>Profiling is more detailed than monitoring but has higher overhead. It should be used
- * for development, debugging, and optimization analysis rather than production monitoring.
+ * <p>Profiling is more detailed than monitoring but has higher overhead. It should be used for
+ * development, debugging, and optimization analysis rather than production monitoring.
  *
  * <p>Usage Example:
  *
@@ -53,8 +53,8 @@ public interface WasmProfiler extends Closeable {
   /**
    * Stops profiling and generates a comprehensive profile report.
    *
-   * <p>This finalizes data collection and analysis, returning detailed profiling results.
-   * After stopping, profiling can be restarted with new options if needed.
+   * <p>This finalizes data collection and analysis, returning detailed profiling results. After
+   * stopping, profiling can be restarted with new options if needed.
    *
    * @return comprehensive profiling report
    * @throws IllegalStateException if profiling is not active
@@ -71,8 +71,8 @@ public interface WasmProfiler extends Closeable {
   /**
    * Gets function-level execution profiles for the current or last profiling session.
    *
-   * <p>Function profiles include execution times, call counts, and performance characteristics
-   * for each WebAssembly function.
+   * <p>Function profiles include execution times, call counts, and performance characteristics for
+   * each WebAssembly function.
    *
    * @return map of function names to their execution profiles
    * @throws IllegalStateException if no profiling data is available
@@ -82,8 +82,8 @@ public interface WasmProfiler extends Closeable {
   /**
    * Gets call stack samples collected during profiling.
    *
-   * <p>Call stack samples provide insight into execution patterns and help identify
-   * performance bottlenecks in complex call hierarchies.
+   * <p>Call stack samples provide insight into execution patterns and help identify performance
+   * bottlenecks in complex call hierarchies.
    *
    * @return list of sampled call stacks
    * @throws IllegalStateException if no profiling data is available
@@ -93,8 +93,8 @@ public interface WasmProfiler extends Closeable {
   /**
    * Gets memory allocation profiles for the profiling session.
    *
-   * <p>Memory profiles include allocation patterns, sizes, and timing information
-   * for both WebAssembly linear memory and native allocations.
+   * <p>Memory profiles include allocation patterns, sizes, and timing information for both
+   * WebAssembly linear memory and native allocations.
    *
    * @return memory allocation profiling data
    * @throws IllegalStateException if no profiling data is available
@@ -104,8 +104,8 @@ public interface WasmProfiler extends Closeable {
   /**
    * Gets JIT compilation profiling data.
    *
-   * <p>Compilation profiles include timing, optimization levels, and code generation
-   * statistics for JIT compilation events during execution.
+   * <p>Compilation profiles include timing, optimization levels, and code generation statistics for
+   * JIT compilation events during execution.
    *
    * @return JIT compilation profiling data
    * @throws IllegalStateException if no profiling data is available
@@ -115,8 +115,8 @@ public interface WasmProfiler extends Closeable {
   /**
    * Gets host function interaction profiles.
    *
-   * <p>Host function profiles include call frequencies, execution times, and overhead
-   * analysis for calls between WebAssembly and host functions.
+   * <p>Host function profiles include call frequencies, execution times, and overhead analysis for
+   * calls between WebAssembly and host functions.
    *
    * @return host function interaction profiles
    * @throws IllegalStateException if no profiling data is available
@@ -126,8 +126,8 @@ public interface WasmProfiler extends Closeable {
   /**
    * Adds a custom profiling marker at the current execution point.
    *
-   * <p>Custom markers help correlate profiling data with application-specific events
-   * or execution phases.
+   * <p>Custom markers help correlate profiling data with application-specific events or execution
+   * phases.
    *
    * @param markerName descriptive name for the marker
    * @param metadata optional metadata associated with the marker
@@ -153,8 +153,8 @@ public interface WasmProfiler extends Closeable {
   /**
    * Resets all collected profiling data while maintaining current configuration.
    *
-   * <p>This allows starting fresh data collection without recreating the profiler.
-   * Profiling state (active/inactive) is preserved.
+   * <p>This allows starting fresh data collection without recreating the profiler. Profiling state
+   * (active/inactive) is preserved.
    */
   void reset();
 
@@ -168,8 +168,8 @@ public interface WasmProfiler extends Closeable {
   /**
    * Gets real-time profiling statistics without stopping profiling.
    *
-   * <p>This provides a snapshot of current profiling progress and basic statistics
-   * without the overhead of generating a full report.
+   * <p>This provides a snapshot of current profiling progress and basic statistics without the
+   * overhead of generating a full report.
    *
    * @return current profiling statistics
    * @throws IllegalStateException if profiling is not active
@@ -179,8 +179,8 @@ public interface WasmProfiler extends Closeable {
   /**
    * Sets the maximum amount of profiling data to retain.
    *
-   * <p>This helps control memory usage during long profiling sessions by limiting
-   * the amount of historical data kept in memory.
+   * <p>This helps control memory usage during long profiling sessions by limiting the amount of
+   * historical data kept in memory.
    *
    * @param maxDataPoints maximum number of data points to retain
    * @throws IllegalArgumentException if maxDataPoints is negative
@@ -197,8 +197,8 @@ public interface WasmProfiler extends Closeable {
   /**
    * Exports profiling data in the specified format.
    *
-   * <p>Supported formats may include standard profiling formats for integration
-   * with external analysis tools.
+   * <p>Supported formats may include standard profiling formats for integration with external
+   * analysis tools.
    *
    * @param format export format specification
    * @return exported profiling data

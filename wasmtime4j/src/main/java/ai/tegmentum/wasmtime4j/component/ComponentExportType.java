@@ -121,8 +121,8 @@ public interface ComponentExportType {
   /**
    * Gets the nullability information for this export type.
    *
-   * <p>Returns whether values of this type can be null or must always have a valid value. This
-   * is relevant for optional types and resource handles.
+   * <p>Returns whether values of this type can be null or must always have a valid value. This is
+   * relevant for optional types and resource handles.
    *
    * @return true if the type is nullable, false otherwise
    */
@@ -151,8 +151,8 @@ public interface ComponentExportType {
   /**
    * Gets the size information for this type.
    *
-   * <p>Returns size characteristics including fixed size (for value types), alignment
-   * requirements, and memory layout information.
+   * <p>Returns size characteristics including fixed size (for value types), alignment requirements,
+   * and memory layout information.
    *
    * @return type size information
    */

@@ -36,8 +36,8 @@ public interface ComponentExportStats {
   /**
    * Gets the total number of calls made to this export.
    *
-   * <p>Returns the cumulative count of all invocations of this export since the component
-   * instance was created or statistics were last reset.
+   * <p>Returns the cumulative count of all invocations of this export since the component instance
+   * was created or statistics were last reset.
    *
    * @return total call count
    */
@@ -46,8 +46,7 @@ public interface ComponentExportStats {
   /**
    * Gets the total execution time spent in this export.
    *
-   * <p>Returns the cumulative time spent executing code within this export across all
-   * invocations.
+   * <p>Returns the cumulative time spent executing code within this export across all invocations.
    *
    * @return total execution time
    */
@@ -83,8 +82,8 @@ public interface ComponentExportStats {
   /**
    * Gets the number of errors that occurred during export calls.
    *
-   * <p>Returns the count of exceptions, traps, or other error conditions that occurred when
-   * calling this export.
+   * <p>Returns the count of exceptions, traps, or other error conditions that occurred when calling
+   * this export.
    *
    * @return error count
    */
@@ -120,8 +119,7 @@ public interface ComponentExportStats {
   /**
    * Gets the number of concurrent calls currently executing.
    *
-   * <p>Returns the count of calls to this export that are currently in progress across all
-   * threads.
+   * <p>Returns the count of calls to this export that are currently in progress across all threads.
    *
    * @return current concurrent call count
    */
@@ -140,8 +138,8 @@ public interface ComponentExportStats {
   /**
    * Gets the total memory allocated by this export.
    *
-   * <p>Returns the cumulative amount of memory allocated during execution of this export across
-   * all calls.
+   * <p>Returns the cumulative amount of memory allocated during execution of this export across all
+   * calls.
    *
    * @return total memory allocated in bytes
    */
@@ -168,8 +166,8 @@ public interface ComponentExportStats {
   /**
    * Resets all statistics for this export to zero.
    *
-   * <p>Clears all accumulated statistics while preserving the export name and kind. Timestamps
-   * are reset to null and counters are reset to zero.
+   * <p>Clears all accumulated statistics while preserving the export name and kind. Timestamps are
+   * reset to null and counters are reset to zero.
    */
   void reset();
 }

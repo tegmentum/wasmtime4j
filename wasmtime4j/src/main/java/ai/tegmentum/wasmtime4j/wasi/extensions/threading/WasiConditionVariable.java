@@ -6,22 +6,23 @@ import java.util.concurrent.TimeUnit;
 /**
  * A condition variable for thread coordination in WASI threading.
  *
- * <p>A condition variable allows threads to wait for specific conditions
- * to be met and to be notified when those conditions change. Condition
- * variables must be used in conjunction with a mutex to ensure proper
- * synchronization.
+ * <p>A condition variable allows threads to wait for specific conditions to be met and to be
+ * notified when those conditions change. Condition variables must be used in conjunction with a
+ * mutex to ensure proper synchronization.
  *
  * <p>The typical usage pattern is:
+ *
  * <ol>
- *   <li>Acquire the associated mutex</li>
- *   <li>Check the condition</li>
- *   <li>If condition is not met, wait on the condition variable</li>
- *   <li>When notified, re-check the condition (spurious wakeups possible)</li>
- *   <li>Process the condition change</li>
- *   <li>Release the mutex</li>
+ *   <li>Acquire the associated mutex
+ *   <li>Check the condition
+ *   <li>If condition is not met, wait on the condition variable
+ *   <li>When notified, re-check the condition (spurious wakeups possible)
+ *   <li>Process the condition change
+ *   <li>Release the mutex
  * </ol>
  *
  * <p>Example usage:
+ *
  * <pre>{@code
  * WasiMutex mutex = threading.createMutex();
  * WasiConditionVariable condition = threading.createConditionVariable();
@@ -50,12 +51,11 @@ public interface WasiConditionVariable {
   /**
    * Waits until signaled or interrupted.
    *
-   * <p>This method causes the current thread to wait until it is signaled
-   * or interrupted. The associated mutex lock is automatically released
-   * while waiting and re-acquired before returning.
+   * <p>This method causes the current thread to wait until it is signaled or interrupted. The
+   * associated mutex lock is automatically released while waiting and re-acquired before returning.
    *
-   * <p><strong>Important:</strong> This method should always be called
-   * in a loop that checks the condition, as spurious wakeups are possible.
+   * <p><strong>Important:</strong> This method should always be called in a loop that checks the
+   * condition, as spurious wakeups are possible.
    *
    * @param mutexLock the mutex lock that must be held by the current thread
    * @throws WasmException if wait operation fails
@@ -68,8 +68,8 @@ public interface WasiConditionVariable {
   /**
    * Waits until signaled, interrupted, or the specified timeout elapses.
    *
-   * <p>This method is similar to {@link #await(WasiMutex.Lock)} but will
-   * return false if the timeout elapses before a signal is received.
+   * <p>This method is similar to {@link #await(WasiMutex.Lock)} but will return false if the
+   * timeout elapses before a signal is received.
    *
    * @param mutexLock the mutex lock that must be held by the current thread
    * @param timeout the maximum time to wait
@@ -86,8 +86,8 @@ public interface WasiConditionVariable {
   /**
    * Waits until signaled, interrupted, or the specified deadline.
    *
-   * <p>This method waits until signaled or until the specified absolute
-   * time (in milliseconds since epoch) is reached.
+   * <p>This method waits until signaled or until the specified absolute time (in milliseconds since
+   * epoch) is reached.
    *
    * @param mutexLock the mutex lock that must be held by the current thread
    * @param deadlineMillis the absolute time to wait until (milliseconds since epoch)
@@ -103,9 +103,9 @@ public interface WasiConditionVariable {
   /**
    * Waits until signaled or interrupted, ignoring interrupts.
    *
-   * <p>This method is similar to {@link #await(WasiMutex.Lock)} but will
-   * not throw InterruptedException. If the thread is interrupted while
-   * waiting, the interrupted status is restored when the method returns.
+   * <p>This method is similar to {@link #await(WasiMutex.Lock)} but will not throw
+   * InterruptedException. If the thread is interrupted while waiting, the interrupted status is
+   * restored when the method returns.
    *
    * @param mutexLock the mutex lock that must be held by the current thread
    * @throws WasmException if wait operation fails
@@ -117,12 +117,12 @@ public interface WasiConditionVariable {
   /**
    * Signals one waiting thread.
    *
-   * <p>This method wakes up one thread that is waiting on this condition
-   * variable. If multiple threads are waiting, only one is awakened.
-   * The choice of which thread to wake up is implementation-dependent.
+   * <p>This method wakes up one thread that is waiting on this condition variable. If multiple
+   * threads are waiting, only one is awakened. The choice of which thread to wake up is
+   * implementation-dependent.
    *
-   * <p><strong>Note:</strong> The calling thread should hold the associated
-   * mutex when calling this method, though it's not strictly required.
+   * <p><strong>Note:</strong> The calling thread should hold the associated mutex when calling this
+   * method, though it's not strictly required.
    *
    * @throws WasmException if signal operation fails
    */
@@ -131,9 +131,8 @@ public interface WasiConditionVariable {
   /**
    * Signals all waiting threads.
    *
-   * <p>This method wakes up all threads that are currently waiting on
-   * this condition variable. All waiting threads will attempt to
-   * re-acquire the associated mutex when they wake up.
+   * <p>This method wakes up all threads that are currently waiting on this condition variable. All
+   * waiting threads will attempt to re-acquire the associated mutex when they wake up.
    *
    * @throws WasmException if broadcast operation fails
    */
@@ -158,8 +157,7 @@ public interface WasiConditionVariable {
   /**
    * Gets statistics for this condition variable.
    *
-   * <p>Returns information about waiting patterns, signal counts,
-   * and performance metrics.
+   * <p>Returns information about waiting patterns, signal counts, and performance metrics.
    *
    * @return condition variable statistics object
    * @throws WasmException if statistics retrieval fails

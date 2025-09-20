@@ -33,8 +33,8 @@ public interface ComponentCase {
   /**
    * Gets the payload type for this case.
    *
-   * <p>Returns the type of data that this case can carry, or empty if this is a unit case
-   * with no payload.
+   * <p>Returns the type of data that this case can carry, or empty if this is a unit case with no
+   * payload.
    *
    * @return the payload type, or empty if no payload
    */

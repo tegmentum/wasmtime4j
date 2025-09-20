@@ -72,7 +72,8 @@ public final class ModuleMetadataImpl implements ModuleMetadata {
     this.compilationTimestamp =
         Objects.requireNonNull(compilationTimestamp, "Compilation timestamp cannot be null");
     this.optimizationLevels =
-        Set.copyOf(Objects.requireNonNull(optimizationLevels, "Optimization levels cannot be null"));
+        Set.copyOf(
+            Objects.requireNonNull(optimizationLevels, "Optimization levels cannot be null"));
     this.compressionType =
         Objects.requireNonNull(compressionType, "Compression type cannot be null");
     this.hasDebugInfo = hasDebugInfo;
@@ -81,9 +82,7 @@ public final class ModuleMetadataImpl implements ModuleMetadata {
         Objects.requireNonNull(originalModuleHash, "Original module hash cannot be null");
     this.dataSize = dataSize;
     this.originalSize = originalSize;
-    this.customProperties =
-        Map.copyOf(
-            Objects.requireNonNullElse(customProperties, Map.of()));
+    this.customProperties = Map.copyOf(Objects.requireNonNullElse(customProperties, Map.of()));
     this.checksum = checksum; // Can be null if no checksum was calculated
   }
 
@@ -246,9 +245,7 @@ public final class ModuleMetadataImpl implements ModuleMetadata {
     return toSummaryString();
   }
 
-  /**
-   * Builder for creating ModuleMetadataImpl instances.
-   */
+  /** Builder for creating ModuleMetadataImpl instances. */
   public static final class Builder {
     private String formatVersion = "1.0";
     private String wasmtimeVersion = "unknown";

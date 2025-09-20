@@ -91,8 +91,8 @@ public interface InterfaceResource {
   /**
    * Gets the primary constructor if defined.
    *
-   * <p>Returns the main constructor function for this resource, or empty if no constructors
-   * are defined or if there are multiple constructors without a designated primary.
+   * <p>Returns the main constructor function for this resource, or empty if no constructors are
+   * defined or if there are multiple constructors without a designated primary.
    *
    * @return the primary constructor, or empty if not available
    */
@@ -101,8 +101,8 @@ public interface InterfaceResource {
   /**
    * Gets the destructor function if defined.
    *
-   * <p>Returns the function responsible for cleaning up resources when the resource instance
-   * is no longer needed.
+   * <p>Returns the function responsible for cleaning up resources when the resource instance is no
+   * longer needed.
    *
    * @return the destructor function, or empty if not defined
    */
@@ -129,8 +129,7 @@ public interface InterfaceResource {
   /**
    * Gets the interfaces that this resource depends on.
    *
-   * <p>Returns interfaces whose types are used in this resource's method signatures or
-   * properties.
+   * <p>Returns interfaces whose types are used in this resource's method signatures or properties.
    *
    * @return list of interface names this resource depends on
    */
@@ -157,8 +156,8 @@ public interface InterfaceResource {
   /**
    * Gets the resource's lifecycle policy.
    *
-   * <p>Returns information about how instances of this resource are managed, including
-   * ownership semantics and cleanup behavior.
+   * <p>Returns information about how instances of this resource are managed, including ownership
+   * semantics and cleanup behavior.
    *
    * @return the lifecycle policy
    */
@@ -167,8 +166,8 @@ public interface InterfaceResource {
   /**
    * Gets security attributes for this resource.
    *
-   * <p>Returns security-related metadata such as required permissions, access controls,
-   * and isolation requirements.
+   * <p>Returns security-related metadata such as required permissions, access controls, and
+   * isolation requirements.
    *
    * @return resource security attributes
    */
@@ -177,8 +176,8 @@ public interface InterfaceResource {
   /**
    * Validates this resource definition for correctness.
    *
-   * <p>Validation includes method signature checking, property type validation, and
-   * lifecycle consistency.
+   * <p>Validation includes method signature checking, property type validation, and lifecycle
+   * consistency.
    *
    * @throws IllegalArgumentException if validation fails with details about specific issues
    */
@@ -187,8 +186,8 @@ public interface InterfaceResource {
   /**
    * Checks if this resource is compatible with another resource definition.
    *
-   * <p>Compatibility checking considers method signatures, properties, capabilities, and
-   * lifecycle policies.
+   * <p>Compatibility checking considers method signatures, properties, capabilities, and lifecycle
+   * policies.
    *
    * @param other the resource to check compatibility with
    * @return true if resources are compatible, false otherwise

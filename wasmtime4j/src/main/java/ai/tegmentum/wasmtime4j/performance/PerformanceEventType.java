@@ -3,8 +3,8 @@ package ai.tegmentum.wasmtime4j.performance;
 /**
  * Enumeration of performance event types in WebAssembly execution.
  *
- * <p>These event types categorize different kinds of performance-related occurrences
- * during WebAssembly execution for analysis and monitoring purposes.
+ * <p>These event types categorize different kinds of performance-related occurrences during
+ * WebAssembly execution for analysis and monitoring purposes.
  *
  * @since 1.0.0
  */

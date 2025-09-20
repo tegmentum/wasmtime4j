@@ -3,12 +3,11 @@ package ai.tegmentum.wasmtime4j.wasi.extensions.networking;
 /**
  * Statistics and performance metrics for a WASI socket.
  *
- * <p>This class provides detailed information about socket usage,
- * performance characteristics, and current state. All values are
- * cumulative since the socket was created.
+ * <p>This class provides detailed information about socket usage, performance characteristics, and
+ * current state. All values are cumulative since the socket was created.
  *
- * <p>Instances of this class are immutable and represent a snapshot
- * of socket statistics at the time of creation.
+ * <p>Instances of this class are immutable and represent a snapshot of socket statistics at the
+ * time of creation.
  *
  * @since 1.0.0
  */
@@ -43,12 +42,19 @@ public final class WasiSocketStats {
    * @param availableBytes bytes available for reading without blocking
    * @param isBlocking whether socket is in blocking mode
    */
-  public WasiSocketStats(final long bytesRead, final long bytesWritten,
-                         final long packetsRead, final long packetsWritten,
-                         final long readOperations, final long writeOperations,
-                         final long connectTime, final long lastActivityTime,
-                         final int readBufferSize, final int writeBufferSize,
-                         final int availableBytes, final boolean isBlocking) {
+  public WasiSocketStats(
+      final long bytesRead,
+      final long bytesWritten,
+      final long packetsRead,
+      final long packetsWritten,
+      final long readOperations,
+      final long writeOperations,
+      final long connectTime,
+      final long lastActivityTime,
+      final int readBufferSize,
+      final int writeBufferSize,
+      final int availableBytes,
+      final boolean isBlocking) {
     this.bytesRead = bytesRead;
     this.bytesWritten = bytesWritten;
     this.packetsRead = packetsRead;
@@ -209,19 +215,31 @@ public final class WasiSocketStats {
 
   @Override
   public String toString() {
-    return "WasiSocketStats{" +
-           "bytesRead=" + bytesRead +
-           ", bytesWritten=" + bytesWritten +
-           ", packetsRead=" + packetsRead +
-           ", packetsWritten=" + packetsWritten +
-           ", readOperations=" + readOperations +
-           ", writeOperations=" + writeOperations +
-           ", connectTime=" + connectTime +
-           ", lastActivityTime=" + lastActivityTime +
-           ", readBufferSize=" + readBufferSize +
-           ", writeBufferSize=" + writeBufferSize +
-           ", availableBytes=" + availableBytes +
-           ", isBlocking=" + isBlocking +
-           '}';
+    return "WasiSocketStats{"
+        + "bytesRead="
+        + bytesRead
+        + ", bytesWritten="
+        + bytesWritten
+        + ", packetsRead="
+        + packetsRead
+        + ", packetsWritten="
+        + packetsWritten
+        + ", readOperations="
+        + readOperations
+        + ", writeOperations="
+        + writeOperations
+        + ", connectTime="
+        + connectTime
+        + ", lastActivityTime="
+        + lastActivityTime
+        + ", readBufferSize="
+        + readBufferSize
+        + ", writeBufferSize="
+        + writeBufferSize
+        + ", availableBytes="
+        + availableBytes
+        + ", isBlocking="
+        + isBlocking
+        + '}';
   }
 }

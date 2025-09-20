@@ -6,71 +6,49 @@ import java.util.Set;
 /**
  * Enumeration of WASI resource permission types.
  *
- * <p>Defines the different permission levels that can be granted to components for accessing
- * WASI resources. Permissions can be combined to create fine-grained access control policies.
+ * <p>Defines the different permission levels that can be granted to components for accessing WASI
+ * resources. Permissions can be combined to create fine-grained access control policies.
  *
  * @since 1.0.0
  */
 public enum WasiResourcePermissions {
-  /**
-   * No permissions - resource cannot be accessed.
-   */
+  /** No permissions - resource cannot be accessed. */
   NONE("none", 0),
 
-  /**
-   * Read permission - resource can be read from.
-   */
+  /** Read permission - resource can be read from. */
   READ("read", 1),
 
-  /**
-   * Write permission - resource can be written to.
-   */
+  /** Write permission - resource can be written to. */
   WRITE("write", 2),
 
-  /**
-   * Execute permission - resource can be executed or invoked.
-   */
+  /** Execute permission - resource can be executed or invoked. */
   EXECUTE("execute", 4),
 
-  /**
-   * Create permission - new instances of the resource can be created.
-   */
+  /** Create permission - new instances of the resource can be created. */
   CREATE("create", 8),
 
-  /**
-   * Delete permission - resource instances can be deleted.
-   */
+  /** Delete permission - resource instances can be deleted. */
   DELETE("delete", 16),
 
-  /**
-   * Admin permission - full administrative access to the resource.
-   */
+  /** Admin permission - full administrative access to the resource. */
   ADMIN("admin", 32);
 
-  /**
-   * Read-only permission set.
-   */
+  /** Read-only permission set. */
   public static final Set<WasiResourcePermissions> READ_ONLY = EnumSet.of(READ);
 
-  /**
-   * Write-only permission set.
-   */
+  /** Write-only permission set. */
   public static final Set<WasiResourcePermissions> WRITE_ONLY = EnumSet.of(WRITE);
 
-  /**
-   * Read-write permission set.
-   */
+  /** Read-write permission set. */
   public static final Set<WasiResourcePermissions> READ_WRITE = EnumSet.of(READ, WRITE);
 
-  /**
-   * Full permission set (all permissions except ADMIN).
-   */
-  public static final Set<WasiResourcePermissions> FULL = EnumSet.of(READ, WRITE, EXECUTE, CREATE, DELETE);
+  /** Full permission set (all permissions except ADMIN). */
+  public static final Set<WasiResourcePermissions> FULL =
+      EnumSet.of(READ, WRITE, EXECUTE, CREATE, DELETE);
 
-  /**
-   * All permissions including administrative access.
-   */
-  public static final Set<WasiResourcePermissions> ALL = EnumSet.allOf(WasiResourcePermissions.class);
+  /** All permissions including administrative access. */
+  public static final Set<WasiResourcePermissions> ALL =
+      EnumSet.allOf(WasiResourcePermissions.class);
 
   private final String name;
   private final int mask;
@@ -134,8 +112,8 @@ public enum WasiResourcePermissions {
    * @return true if all required permissions are present, false otherwise
    * @throws IllegalArgumentException if any parameter is null
    */
-  public static boolean hasAll(final Set<WasiResourcePermissions> permissions,
-      final WasiResourcePermissions... required) {
+  public static boolean hasAll(
+      final Set<WasiResourcePermissions> permissions, final WasiResourcePermissions... required) {
     if (permissions == null) {
       throw new IllegalArgumentException("Permissions set cannot be null");
     }
@@ -159,8 +137,8 @@ public enum WasiResourcePermissions {
    * @return true if any candidate permission is present, false otherwise
    * @throws IllegalArgumentException if any parameter is null
    */
-  public static boolean hasAny(final Set<WasiResourcePermissions> permissions,
-      final WasiResourcePermissions... candidates) {
+  public static boolean hasAny(
+      final Set<WasiResourcePermissions> permissions, final WasiResourcePermissions... candidates) {
     if (permissions == null) {
       throw new IllegalArgumentException("Permissions set cannot be null");
     }

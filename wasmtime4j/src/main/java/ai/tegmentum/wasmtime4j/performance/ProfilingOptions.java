@@ -5,8 +5,8 @@ import java.time.Duration;
 /**
  * Configuration options for WebAssembly profiling.
  *
- * <p>ProfilingOptions controls what data is collected during profiling, sampling intervals,
- * and various profiling behaviors. Different options have different overhead characteristics.
+ * <p>ProfilingOptions controls what data is collected during profiling, sampling intervals, and
+ * various profiling behaviors. Different options have different overhead characteristics.
  *
  * @since 1.0.0
  */
@@ -15,8 +15,8 @@ public interface ProfilingOptions {
   /**
    * Checks if function-level profiling is enabled.
    *
-   * <p>Function profiling tracks execution times, call counts, and performance metrics
-   * for individual WebAssembly functions.
+   * <p>Function profiling tracks execution times, call counts, and performance metrics for
+   * individual WebAssembly functions.
    *
    * @return true if function profiling is enabled
    */
@@ -25,8 +25,8 @@ public interface ProfilingOptions {
   /**
    * Checks if memory allocation profiling is enabled.
    *
-   * <p>Memory profiling tracks allocation patterns, sizes, and timing for both
-   * WebAssembly linear memory and native allocations.
+   * <p>Memory profiling tracks allocation patterns, sizes, and timing for both WebAssembly linear
+   * memory and native allocations.
    *
    * @return true if memory profiling is enabled
    */
@@ -35,8 +35,8 @@ public interface ProfilingOptions {
   /**
    * Checks if call stack sampling is enabled.
    *
-   * <p>Call stack sampling periodically captures execution call stacks to identify
-   * performance hotspots and execution patterns.
+   * <p>Call stack sampling periodically captures execution call stacks to identify performance
+   * hotspots and execution patterns.
    *
    * @return true if call stack sampling is enabled
    */
@@ -45,8 +45,8 @@ public interface ProfilingOptions {
   /**
    * Checks if JIT compilation profiling is enabled.
    *
-   * <p>Compilation profiling tracks JIT compilation events, timing, and optimization
-   * decisions during WebAssembly execution.
+   * <p>Compilation profiling tracks JIT compilation events, timing, and optimization decisions
+   * during WebAssembly execution.
    *
    * @return true if compilation profiling is enabled
    */
@@ -55,8 +55,8 @@ public interface ProfilingOptions {
   /**
    * Checks if host function interaction profiling is enabled.
    *
-   * <p>Host function profiling tracks calls between WebAssembly and host functions,
-   * including frequency, timing, and overhead analysis.
+   * <p>Host function profiling tracks calls between WebAssembly and host functions, including
+   * frequency, timing, and overhead analysis.
    *
    * @return true if host function profiling is enabled
    */
@@ -65,8 +65,8 @@ public interface ProfilingOptions {
   /**
    * Checks if instruction-level profiling is enabled.
    *
-   * <p>Instruction profiling provides detailed execution statistics at the individual
-   * WebAssembly instruction level. This has high overhead but provides maximum detail.
+   * <p>Instruction profiling provides detailed execution statistics at the individual WebAssembly
+   * instruction level. This has high overhead but provides maximum detail.
    *
    * @return true if instruction profiling is enabled
    */
@@ -75,8 +75,8 @@ public interface ProfilingOptions {
   /**
    * Gets the sampling interval for periodic data collection.
    *
-   * <p>Shorter intervals provide more detailed data but increase overhead.
-   * Longer intervals reduce overhead but may miss short-duration events.
+   * <p>Shorter intervals provide more detailed data but increase overhead. Longer intervals reduce
+   * overhead but may miss short-duration events.
    *
    * @return sampling interval duration
    */
@@ -85,8 +85,8 @@ public interface ProfilingOptions {
   /**
    * Gets the maximum number of samples to collect.
    *
-   * <p>This limits memory usage during profiling by capping the amount of data collected.
-   * Older samples may be discarded when the limit is reached.
+   * <p>This limits memory usage during profiling by capping the amount of data collected. Older
+   * samples may be discarded when the limit is reached.
    *
    * @return maximum sample count
    */
@@ -95,8 +95,8 @@ public interface ProfilingOptions {
   /**
    * Gets the minimum execution time threshold for function profiling.
    *
-   * <p>Functions executing faster than this threshold may be excluded from detailed
-   * profiling to reduce overhead and focus on significant performance contributors.
+   * <p>Functions executing faster than this threshold may be excluded from detailed profiling to
+   * reduce overhead and focus on significant performance contributors.
    *
    * @return minimum execution time threshold
    */
@@ -105,8 +105,8 @@ public interface ProfilingOptions {
   /**
    * Gets the minimum allocation size threshold for memory profiling.
    *
-   * <p>Allocations smaller than this threshold may be excluded from detailed
-   * profiling to reduce overhead.
+   * <p>Allocations smaller than this threshold may be excluded from detailed profiling to reduce
+   * overhead.
    *
    * @return minimum allocation size in bytes
    */
@@ -124,8 +124,8 @@ public interface ProfilingOptions {
   /**
    * Checks if profiling should include source location information.
    *
-   * <p>Source locations help correlate profiling data with original source code
-   * but may not be available for all WebAssembly modules.
+   * <p>Source locations help correlate profiling data with original source code but may not be
+   * available for all WebAssembly modules.
    *
    * @return true if source locations should be included
    */
@@ -143,8 +143,8 @@ public interface ProfilingOptions {
   /**
    * Checks if profiling should be thread-safe for multi-threaded execution.
    *
-   * <p>Thread-safe profiling has higher overhead but is required for accurate
-   * profiling in multi-threaded WebAssembly execution.
+   * <p>Thread-safe profiling has higher overhead but is required for accurate profiling in
+   * multi-threaded WebAssembly execution.
    *
    * @return true if thread-safe profiling is enabled
    */
@@ -153,8 +153,8 @@ public interface ProfilingOptions {
   /**
    * Gets custom profiling filters if configured.
    *
-   * <p>Filters can exclude specific functions, modules, or patterns from profiling
-   * to focus on areas of interest and reduce overhead.
+   * <p>Filters can exclude specific functions, modules, or patterns from profiling to focus on
+   * areas of interest and reduce overhead.
    *
    * @return profiling filters, or null if none configured
    */
@@ -187,8 +187,8 @@ public interface ProfilingOptions {
   /**
    * Creates profiling options with comprehensive settings for detailed analysis.
    *
-   * <p>These options enable all profiling features but have higher overhead.
-   * Recommended for development and optimization analysis.
+   * <p>These options enable all profiling features but have higher overhead. Recommended for
+   * development and optimization analysis.
    *
    * @return comprehensive profiling options
    */
@@ -205,9 +205,7 @@ public interface ProfilingOptions {
         .build();
   }
 
-  /**
-   * Builder interface for creating profiling option configurations.
-   */
+  /** Builder interface for creating profiling option configurations. */
   interface ProfilingOptionsBuilder {
 
     /**

@@ -1,7 +1,7 @@
 package ai.tegmentum.wasmtime4j.wasi.impl;
 
-import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.exception.WasiResourceException;
+import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.wasi.WasiResource;
 import ai.tegmentum.wasmtime4j.wasi.WasiResourceConfig;
 import ai.tegmentum.wasmtime4j.wasi.WasiResourceLimits;
@@ -31,11 +31,12 @@ import java.util.logging.Logger;
  * types and implements defensive programming patterns to prevent resource leaks.
  *
  * <p>The implementation uses:
+ *
  * <ul>
- *   <li>Concurrent data structures for thread safety</li>
- *   <li>Read-write locks for optimal concurrent access</li>
- *   <li>Automatic resource cleanup and leak detection</li>
- *   <li>Comprehensive validation and error handling</li>
+ *   <li>Concurrent data structures for thread safety
+ *   <li>Read-write locks for optimal concurrent access
+ *   <li>Automatic resource cleanup and leak detection
+ *   <li>Comprehensive validation and error handling
  * </ul>
  *
  * @since 1.0.0
@@ -58,9 +59,7 @@ public final class WasiResourceManagerImpl implements WasiResourceManager {
   private final Instant createdAt = Instant.now();
   private volatile boolean closed = false;
 
-  /**
-   * Creates a new WASI resource manager with default configuration.
-   */
+  /** Creates a new WASI resource manager with default configuration. */
   public WasiResourceManagerImpl() {
     LOGGER.fine("Created WASI resource manager");
   }
@@ -77,8 +76,8 @@ public final class WasiResourceManagerImpl implements WasiResourceManager {
   }
 
   @Override
-  public <T extends WasiResource> T createResource(final Class<T> type, final WasiResourceConfig config)
-      throws WasmException {
+  public <T extends WasiResource> T createResource(
+      final Class<T> type, final WasiResourceConfig config) throws WasmException {
     Objects.requireNonNull(type, "type");
     Objects.requireNonNull(config, "config");
     ensureNotClosed();
@@ -88,8 +87,9 @@ public final class WasiResourceManagerImpl implements WasiResourceManager {
   }
 
   @Override
-  public <T extends WasiResource> T createResource(final String name, final Class<T> type,
-      final WasiResourceConfig config) throws WasmException {
+  public <T extends WasiResource> T createResource(
+      final String name, final Class<T> type, final WasiResourceConfig config)
+      throws WasmException {
     validateNonEmpty(name, "name");
     Objects.requireNonNull(type, "type");
     Objects.requireNonNull(config, "config");
@@ -221,7 +221,8 @@ public final class WasiResourceManagerImpl implements WasiResourceManager {
 
   @Override
   @SuppressWarnings("unchecked")
-  public <T extends WasiResource> List<T> getActiveResources(final Class<T> type) throws WasmException {
+  public <T extends WasiResource> List<T> getActiveResources(final Class<T> type)
+      throws WasmException {
     Objects.requireNonNull(type, "type");
     ensureNotClosed();
 
@@ -478,21 +479,31 @@ public final class WasiResourceManagerImpl implements WasiResourceManager {
    * @param type the resource type to check
    * @throws WasiResourceException if limits would be exceeded
    */
-  private void checkResourceLimits(final Class<? extends WasiResource> type) throws WasiResourceException {
+  private void checkResourceLimits(final Class<? extends WasiResource> type)
+      throws WasiResourceException {
     final int currentCount = getActiveResourceCount();
     if (currentCount >= resourceLimits.getMaxTotalResources()) {
       throw new WasiResourceException(
-          "Maximum resource limit exceeded: " + currentCount + " >= " + resourceLimits.getMaxTotalResources());
+          "Maximum resource limit exceeded: "
+              + currentCount
+              + " >= "
+              + resourceLimits.getMaxTotalResources());
     }
 
     final int typeCount = getActiveResourceCount(type);
-    final int typeLimit = resourceLimits.getMaxResourcesPerType().getOrDefault(
-        type.getSimpleName(), resourceLimits.getMaxTotalResources());
+    final int typeLimit =
+        resourceLimits
+            .getMaxResourcesPerType()
+            .getOrDefault(type.getSimpleName(), resourceLimits.getMaxTotalResources());
 
     if (typeCount >= typeLimit) {
       throw new WasiResourceException(
-          "Maximum resource limit exceeded for type " + type.getSimpleName() + ": "
-          + typeCount + " >= " + typeLimit);
+          "Maximum resource limit exceeded for type "
+              + type.getSimpleName()
+              + ": "
+              + typeCount
+              + " >= "
+              + typeLimit);
     }
   }
 
@@ -508,8 +519,12 @@ public final class WasiResourceManagerImpl implements WasiResourceManager {
    * @throws WasmException if resource creation fails
    */
   @SuppressWarnings("unchecked")
-  private <T extends WasiResource> T createResourceInstance(final long resourceId, final String name,
-      final Class<T> type, final WasiResourceConfig config) throws WasmException {
+  private <T extends WasiResource> T createResourceInstance(
+      final long resourceId,
+      final String name,
+      final Class<T> type,
+      final WasiResourceConfig config)
+      throws WasmException {
 
     // This is a factory method that would create the appropriate resource implementation
     // based on the type and configuration. For now, we'll use a generic implementation.
@@ -560,7 +575,10 @@ public final class WasiResourceManagerImpl implements WasiResourceManager {
     final int currentCount = getActiveResourceCount();
     if (currentCount > newLimits.getMaxTotalResources()) {
       throw new WasiResourceException(
-          "Current resource count " + currentCount + " exceeds new limit " + newLimits.getMaxTotalResources());
+          "Current resource count "
+              + currentCount
+              + " exceeds new limit "
+              + newLimits.getMaxTotalResources());
     }
 
     // Check per-type limits
@@ -568,14 +586,19 @@ public final class WasiResourceManagerImpl implements WasiResourceManager {
       final String typeName = entry.getKey();
       final int limit = entry.getValue();
 
-      final long currentTypeCount = resources.values().stream()
-          .filter(r -> r.isValid() && r.getType().contains(typeName))
-          .count();
+      final long currentTypeCount =
+          resources.values().stream()
+              .filter(r -> r.isValid() && r.getType().contains(typeName))
+              .count();
 
       if (currentTypeCount > limit) {
         throw new WasiResourceException(
-            "Current resource count for type " + typeName + " (" + currentTypeCount
-            + ") exceeds new limit " + limit);
+            "Current resource count for type "
+                + typeName
+                + " ("
+                + currentTypeCount
+                + ") exceeds new limit "
+                + limit);
       }
     }
   }

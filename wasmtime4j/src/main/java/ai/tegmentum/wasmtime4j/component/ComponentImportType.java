@@ -66,8 +66,8 @@ public interface ComponentImportType {
   /**
    * Gets resource type information if this import is a resource.
    *
-   * <p>Returns resource type definition that the import implementation must provide. Returns
-   * empty if this import is not a resource.
+   * <p>Returns resource type definition that the import implementation must provide. Returns empty
+   * if this import is not a resource.
    *
    * @return resource type information, or empty if not a resource
    */
@@ -76,8 +76,8 @@ public interface ComponentImportType {
   /**
    * Gets component type information if this import is a component.
    *
-   * <p>Returns component type definition that the imported component must satisfy. Returns empty
-   * if this import is not a component.
+   * <p>Returns component type definition that the imported component must satisfy. Returns empty if
+   * this import is not a component.
    *
    * @return component type information, or empty if not a component
    */
@@ -86,8 +86,8 @@ public interface ComponentImportType {
   /**
    * Checks if this import is required or optional.
    *
-   * <p>Returns true if this import must be satisfied for the component to instantiate
-   * successfully, false if it's optional.
+   * <p>Returns true if this import must be satisfied for the component to instantiate successfully,
+   * false if it's optional.
    *
    * @return true if the import is required, false if optional
    */
@@ -118,8 +118,8 @@ public interface ComponentImportType {
   /**
    * Gets the type constraints for this import.
    *
-   * <p>Returns any additional constraints or validation rules that apply to implementations of
-   * this import beyond the basic type structure.
+   * <p>Returns any additional constraints or validation rules that apply to implementations of this
+   * import beyond the basic type structure.
    *
    * @return list of type constraints
    */

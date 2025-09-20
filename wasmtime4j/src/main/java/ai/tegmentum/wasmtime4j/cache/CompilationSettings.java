@@ -8,9 +8,9 @@ import java.util.Set;
 /**
  * Represents compilation settings that affect module compilation and caching.
  *
- * <p>CompilationSettings capture the various configuration options that influence how a
- * WebAssembly module is compiled. These settings are used as part of cache keys to ensure
- * that modules compiled with different settings are cached separately.
+ * <p>CompilationSettings capture the various configuration options that influence how a WebAssembly
+ * module is compiled. These settings are used as part of cache keys to ensure that modules compiled
+ * with different settings are cached separately.
  *
  * @since 1.0.0
  */
@@ -131,22 +131,10 @@ public interface CompilationSettings {
    * @return a new CompilationSettings instance with default values
    */
   static CompilationSettings defaults() {
-    return create(
-        OptimizationLevel.BASIC,
-        Set.of(),
-        false,
-        false,
-        false,
-        -1,
-        -1,
-        -1L,
-        true,
-        true);
+    return create(OptimizationLevel.BASIC, Set.of(), false, false, false, -1, -1, -1L, true, true);
   }
 
-  /**
-   * Implementation of CompilationSettings.
-   */
+  /** Implementation of CompilationSettings. */
   final class CompilationSettingsImpl implements CompilationSettings {
     private final OptimizationLevel optimizationLevel;
     private final Set<WasmFeature> enabledFeatures;

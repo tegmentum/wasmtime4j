@@ -6,8 +6,8 @@ import java.time.Instant;
 /**
  * Provides information about the current garbage collection state.
  *
- * <p>GC state affects performance characteristics and helps interpret
- * performance measurements in the context of memory management activity.
+ * <p>GC state affects performance characteristics and helps interpret performance measurements in
+ * the context of memory management activity.
  *
  * @since 1.0.0
  */

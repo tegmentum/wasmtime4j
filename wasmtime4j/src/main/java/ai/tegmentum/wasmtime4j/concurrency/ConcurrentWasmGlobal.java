@@ -8,10 +8,11 @@ import java.util.concurrent.CompletableFuture;
  * Thread-safe WebAssembly global interface for concurrent access.
  *
  * <p>A ConcurrentWasmGlobal extends the standard WasmGlobal interface with explicit thread safety
- * guarantees for all global variable operations. Multiple threads can safely read and write
- * global values simultaneously with proper synchronization.
+ * guarantees for all global variable operations. Multiple threads can safely read and write global
+ * values simultaneously with proper synchronization.
  *
  * <p>Key features:
+ *
  * <ul>
  *   <li>Thread-safe global value read and write operations
  *   <li>Atomic operations for concurrent access
@@ -27,8 +28,8 @@ public interface ConcurrentWasmGlobal extends WasmGlobal {
   /**
    * Thread-safe atomic read of the global value.
    *
-   * <p>This method provides an atomic snapshot of the global value that is
-   * consistent across all threads.
+   * <p>This method provides an atomic snapshot of the global value that is consistent across all
+   * threads.
    *
    * @return the current value of the global
    * @throws WasmException if the read operation fails
@@ -38,8 +39,8 @@ public interface ConcurrentWasmGlobal extends WasmGlobal {
   /**
    * Thread-safe atomic write of the global value.
    *
-   * <p>This method atomically updates the global value and ensures the change
-   * is immediately visible to all threads.
+   * <p>This method atomically updates the global value and ensures the change is immediately
+   * visible to all threads.
    *
    * @param value the new value to set
    * @throws WasmException if the write operation fails or value type is invalid
@@ -50,8 +51,8 @@ public interface ConcurrentWasmGlobal extends WasmGlobal {
   /**
    * Atomically compares and sets the global value.
    *
-   * <p>This method atomically compares the current value with the expected value
-   * and sets it to the new value if they match. This is useful for lock-free programming.
+   * <p>This method atomically compares the current value with the expected value and sets it to the
+   * new value if they match. This is useful for lock-free programming.
    *
    * @param expectedValue the expected current value
    * @param newValue the new value to set
@@ -76,8 +77,8 @@ public interface ConcurrentWasmGlobal extends WasmGlobal {
   /**
    * Asynchronously reads the global value.
    *
-   * <p>This method returns immediately and provides the global value asynchronously.
-   * Useful for non-blocking access patterns.
+   * <p>This method returns immediately and provides the global value asynchronously. Useful for
+   * non-blocking access patterns.
    *
    * @return a CompletableFuture that completes with the global value
    */
@@ -97,9 +98,9 @@ public interface ConcurrentWasmGlobal extends WasmGlobal {
   /**
    * Atomically increments a numeric global value.
    *
-   * <p>This method is only valid for numeric global types (i32, i64, f32, f64).
-   * For integer types, it performs integer arithmetic. For floating-point types,
-   * it performs floating-point arithmetic.
+   * <p>This method is only valid for numeric global types (i32, i64, f32, f64). For integer types,
+   * it performs integer arithmetic. For floating-point types, it performs floating-point
+   * arithmetic.
    *
    * @param delta the value to add (must be compatible with global type)
    * @return the new value after increment
@@ -159,8 +160,8 @@ public interface ConcurrentWasmGlobal extends WasmGlobal {
   /**
    * Registers a listener for global value changes.
    *
-   * <p>The listener will be notified whenever the global value is modified.
-   * This is useful for implementing reactive patterns or monitoring global state.
+   * <p>The listener will be notified whenever the global value is modified. This is useful for
+   * implementing reactive patterns or monitoring global state.
    *
    * @param listener the listener to register
    * @throws IllegalArgumentException if listener is null
@@ -212,8 +213,8 @@ public interface ConcurrentWasmGlobal extends WasmGlobal {
   /**
    * Creates a thread-safe wrapper around this global for specific access patterns.
    *
-   * <p>This can be used to create specialized views with different synchronization
-   * strategies or access controls.
+   * <p>This can be used to create specialized views with different synchronization strategies or
+   * access controls.
    *
    * @param accessPattern the expected access pattern
    * @return a specialized thread-safe wrapper

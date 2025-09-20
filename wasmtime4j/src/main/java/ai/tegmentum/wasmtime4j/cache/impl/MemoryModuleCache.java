@@ -10,7 +10,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.logging.Logger;
@@ -65,18 +64,20 @@ public final class MemoryModuleCache implements ModuleCache {
     this.closed = false;
 
     // Create thread-safe LRU cache
-    this.cache = new LinkedHashMap<ModuleCacheKey, SerializedModule>(
-        (int) Math.min(maxSize + 1, Integer.MAX_VALUE), 0.75f, true) {
-      @Override
-      protected boolean removeEldestEntry(final Map.Entry<ModuleCacheKey, SerializedModule> eldest) {
-        final boolean shouldRemove = size() > maxSize;
-        if (shouldRemove) {
-          statistics.recordEviction();
-          LOGGER.fine("Evicting oldest cache entry: " + eldest.getKey());
-        }
-        return shouldRemove;
-      }
-    };
+    this.cache =
+        new LinkedHashMap<ModuleCacheKey, SerializedModule>(
+            (int) Math.min(maxSize + 1, Integer.MAX_VALUE), 0.75f, true) {
+          @Override
+          protected boolean removeEldestEntry(
+              final Map.Entry<ModuleCacheKey, SerializedModule> eldest) {
+            final boolean shouldRemove = size() > maxSize;
+            if (shouldRemove) {
+              statistics.recordEviction();
+              LOGGER.fine("Evicting oldest cache entry: " + eldest.getKey());
+            }
+            return shouldRemove;
+          }
+        };
   }
 
   @Override
@@ -298,10 +299,14 @@ public final class MemoryModuleCache implements ModuleCache {
     lock.readLock().lock();
     try {
       return "MemoryModuleCache{"
-          + "size=" + cache.size()
-          + ", maxSize=" + maxSize
-          + ", hitRate=" + statistics.getHitRate()
-          + ", closed=" + closed
+          + "size="
+          + cache.size()
+          + ", maxSize="
+          + maxSize
+          + ", hitRate="
+          + statistics.getHitRate()
+          + ", closed="
+          + closed
           + '}';
     } finally {
       lock.readLock().unlock();

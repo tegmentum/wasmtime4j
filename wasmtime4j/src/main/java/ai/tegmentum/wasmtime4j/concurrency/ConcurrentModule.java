@@ -1,7 +1,6 @@
 package ai.tegmentum.wasmtime4j.concurrency;
 
 import ai.tegmentum.wasmtime4j.ImportMap;
-import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
@@ -11,11 +10,13 @@ import java.util.concurrent.ExecutorService;
 /**
  * Thread-safe WebAssembly module interface with shared instance support.
  *
- * <p>A ConcurrentModule extends the standard Module interface with explicit thread safety guarantees
- * and concurrent instantiation capabilities. Unlike the base Module interface, ConcurrentModule can
- * be safely accessed from multiple threads and supports concurrent instantiation operations.
+ * <p>A ConcurrentModule extends the standard Module interface with explicit thread safety
+ * guarantees and concurrent instantiation capabilities. Unlike the base Module interface,
+ * ConcurrentModule can be safely accessed from multiple threads and supports concurrent
+ * instantiation operations.
  *
  * <p>Key features:
+ *
  * <ul>
  *   <li>Thread-safe module introspection and metadata access
  *   <li>Concurrent instance creation without contention
@@ -25,6 +26,7 @@ import java.util.concurrent.ExecutorService;
  * </ul>
  *
  * <p>Implementation requirements:
+ *
  * <ul>
  *   <li>All operations must be thread-safe without external synchronization
  *   <li>Module metadata must be immutable and safely shareable
@@ -39,8 +41,8 @@ public interface ConcurrentModule extends Module {
   /**
    * Thread-safe creation of an instance in the given store.
    *
-   * <p>This method is thread-safe and can be called concurrently from multiple threads.
-   * Each instance will be properly isolated even when created simultaneously.
+   * <p>This method is thread-safe and can be called concurrently from multiple threads. Each
+   * instance will be properly isolated even when created simultaneously.
    *
    * @param store the store to create the instance in
    * @return a new thread-safe Instance of this module
@@ -67,8 +69,8 @@ public interface ConcurrentModule extends Module {
   /**
    * Asynchronously creates an instance of this module in the given store.
    *
-   * <p>This method returns immediately and performs instantiation in the background.
-   * The returned CompletableFuture can be used to retrieve the instance or handle errors.
+   * <p>This method returns immediately and performs instantiation in the background. The returned
+   * CompletableFuture can be used to retrieve the instance or handle errors.
    *
    * @param store the store to create the instance in
    * @return a CompletableFuture that will complete with the new instance
@@ -106,8 +108,8 @@ public interface ConcurrentModule extends Module {
   /**
    * Creates multiple instances concurrently across different stores.
    *
-   * <p>This method optimizes the instantiation of the same module across multiple stores
-   * by processing them in parallel. All instances share the same compiled module data.
+   * <p>This method optimizes the instantiation of the same module across multiple stores by
+   * processing them in parallel. All instances share the same compiled module data.
    *
    * @param stores array of stores to create instances in
    * @return a CompletableFuture that completes with an array of instances
@@ -118,8 +120,8 @@ public interface ConcurrentModule extends Module {
   /**
    * Creates multiple instances concurrently with different import configurations.
    *
-   * <p>This method creates instances across multiple stores, each with potentially
-   * different import configurations.
+   * <p>This method creates instances across multiple stores, each with potentially different import
+   * configurations.
    *
    * @param stores array of stores to create instances in
    * @param imports array of import configurations (must match stores length)
@@ -132,8 +134,8 @@ public interface ConcurrentModule extends Module {
   /**
    * Gets the number of active instances created from this module.
    *
-   * <p>This count includes all instances that are currently active across all stores.
-   * The count is updated atomically as instances are created and destroyed.
+   * <p>This count includes all instances that are currently active across all stores. The count is
+   * updated atomically as instances are created and destroyed.
    *
    * @return the number of active instances
    */
@@ -142,8 +144,8 @@ public interface ConcurrentModule extends Module {
   /**
    * Gets the total number of instances ever created from this module.
    *
-   * <p>This is a cumulative counter that never decreases, useful for monitoring
-   * and debugging module usage patterns.
+   * <p>This is a cumulative counter that never decreases, useful for monitoring and debugging
+   * module usage patterns.
    *
    * @return the total number of instances created
    */
@@ -162,8 +164,8 @@ public interface ConcurrentModule extends Module {
   /**
    * Checks if this module supports concurrent instantiation.
    *
-   * <p>While all ConcurrentModule implementations should support this,
-   * this method allows checking for any implementation-specific limitations.
+   * <p>While all ConcurrentModule implementations should support this, this method allows checking
+   * for any implementation-specific limitations.
    *
    * @return true if concurrent instantiation is fully supported
    */
@@ -198,8 +200,8 @@ public interface ConcurrentModule extends Module {
   /**
    * Waits for all pending instantiation operations to complete.
    *
-   * <p>This method blocks until all currently running async instantiation operations
-   * finish. It's useful for graceful shutdown or batch completion scenarios.
+   * <p>This method blocks until all currently running async instantiation operations finish. It's
+   * useful for graceful shutdown or batch completion scenarios.
    *
    * @return a CompletableFuture that completes when all pending operations are done
    */
@@ -208,8 +210,8 @@ public interface ConcurrentModule extends Module {
   /**
    * Cancels all pending instantiation operations.
    *
-   * <p>This attempts to cancel any queued instantiation operations that haven't
-   * started yet. Operations that are already running may not be immediately cancellable.
+   * <p>This attempts to cancel any queued instantiation operations that haven't started yet.
+   * Operations that are already running may not be immediately cancellable.
    *
    * @return the number of operations that were successfully cancelled
    */
@@ -218,8 +220,8 @@ public interface ConcurrentModule extends Module {
   /**
    * Creates a shared module context for optimized instance creation.
    *
-   * <p>This creates a context that can be reused across multiple instantiation
-   * operations for better performance when creating many instances of the same module.
+   * <p>This creates a context that can be reused across multiple instantiation operations for
+   * better performance when creating many instances of the same module.
    *
    * @return a new SharedModuleContext
    */
@@ -228,8 +230,8 @@ public interface ConcurrentModule extends Module {
   /**
    * Gets comprehensive instantiation statistics for this module.
    *
-   * <p>This includes metrics about instance creation performance, resource usage,
-   * and concurrency patterns.
+   * <p>This includes metrics about instance creation performance, resource usage, and concurrency
+   * patterns.
    *
    * @return detailed instantiation statistics
    */
@@ -238,8 +240,8 @@ public interface ConcurrentModule extends Module {
   /**
    * Validates that the module is properly configured for concurrent use.
    *
-   * <p>This checks internal state to ensure the module can safely handle
-   * concurrent instantiation operations.
+   * <p>This checks internal state to ensure the module can safely handle concurrent instantiation
+   * operations.
    *
    * @return true if the module is properly configured for concurrency
    */

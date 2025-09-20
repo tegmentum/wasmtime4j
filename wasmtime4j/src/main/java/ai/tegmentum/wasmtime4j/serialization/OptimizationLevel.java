@@ -4,8 +4,8 @@ package ai.tegmentum.wasmtime4j.serialization;
  * Optimization levels that can be applied during module serialization.
  *
  * <p>Optimization levels control various compiler optimizations that affect code generation,
- * performance, and debugging capabilities. Higher optimization levels typically produce faster
- * code but may increase compilation time and reduce debugging information.
+ * performance, and debugging capabilities. Higher optimization levels typically produce faster code
+ * but may increase compilation time and reduce debugging information.
  *
  * @since 1.0.0
  */
@@ -31,8 +31,8 @@ public enum OptimizationLevel {
    * Speed-focused optimizations.
    *
    * <p>Aggressive optimizations focused on runtime performance. May significantly increase
-   * compilation time and reduce debugging capabilities. Best for production code where
-   * performance is critical.
+   * compilation time and reduce debugging capabilities. Best for production code where performance
+   * is critical.
    */
   SPEED("speed", 2),
 
@@ -47,8 +47,8 @@ public enum OptimizationLevel {
   /**
    * Advanced optimizations.
    *
-   * <p>Experimental and advanced optimizations that may provide additional performance benefits
-   * but could be less stable or have higher compilation overhead. Use with caution in production.
+   * <p>Experimental and advanced optimizations that may provide additional performance benefits but
+   * could be less stable or have higher compilation overhead. Use with caution in production.
    */
   ADVANCED("advanced", 4);
 

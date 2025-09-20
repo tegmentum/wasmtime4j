@@ -7,8 +7,8 @@ import java.util.Optional;
  * Interface for WebAssembly Component Model component exports.
  *
  * <p>ComponentExport represents an exported entity from a component instance. Exports can be
- * functions, interfaces, resources, or other component-defined entities that are made available
- * to external consumers.
+ * functions, interfaces, resources, or other component-defined entities that are made available to
+ * external consumers.
  *
  * <p>Component exports provide typed access to component functionality and maintain the structured
  * interface contracts defined by the Component Model specification.
@@ -51,8 +51,8 @@ public interface ComponentExport {
   /**
    * Gets the type information for this export.
    *
-   * <p>Returns detailed type information including function signatures, interface definitions,
-   * or resource type specifications.
+   * <p>Returns detailed type information including function signatures, interface definitions, or
+   * resource type specifications.
    *
    * @return the export type information
    */

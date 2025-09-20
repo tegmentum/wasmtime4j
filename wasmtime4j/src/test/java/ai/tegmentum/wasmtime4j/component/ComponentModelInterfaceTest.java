@@ -8,12 +8,12 @@ import org.junit.jupiter.api.Test;
 /**
  * Test suite for WebAssembly Component Model interface definitions.
  *
- * <p>Validates the structure, behavior, and contracts of the Component Model interfaces
- * including type validation, compatibility checking, and metadata access.
+ * <p>Validates the structure, behavior, and contracts of the Component Model interfaces including
+ * type validation, compatibility checking, and metadata access.
  *
- * <p>These tests focus on the interface contracts rather than implementation details,
- * ensuring that the Component Model API provides the expected functionality for
- * component composition and interaction.
+ * <p>These tests focus on the interface contracts rather than implementation details, ensuring that
+ * the Component Model API provides the expected functionality for component composition and
+ * interaction.
  */
 @DisplayName("Component Model Interface Tests")
 class ComponentModelInterfaceTest {
@@ -160,20 +160,20 @@ class ComponentModelInterfaceTest {
     assertThrows(UnsupportedOperationException.class, () -> ComponentValue.string("test"));
     assertThrows(UnsupportedOperationException.class, () -> ComponentValue.s32(42));
     assertThrows(UnsupportedOperationException.class, () -> ComponentValue.u32(42L));
-    assertThrows(UnsupportedOperationException.class, () ->
-        ComponentValue.list(java.util.Collections.emptyList()));
-    assertThrows(UnsupportedOperationException.class, () ->
-        ComponentValue.option(null));
-    assertThrows(UnsupportedOperationException.class, () ->
-        ComponentValue.record(java.util.Collections.emptyMap()));
+    assertThrows(
+        UnsupportedOperationException.class,
+        () -> ComponentValue.list(java.util.Collections.emptyList()));
+    assertThrows(UnsupportedOperationException.class, () -> ComponentValue.option(null));
+    assertThrows(
+        UnsupportedOperationException.class,
+        () -> ComponentValue.record(java.util.Collections.emptyMap()));
   }
 
   @Test
   @DisplayName("ComponentLinker factory method should exist")
   void testComponentLinkerFactoryMethod() {
     // The create method should exist and throw UnsupportedOperationException until implemented
-    assertThrows(UnsupportedOperationException.class, () ->
-        ComponentLinker.create(null));
+    assertThrows(UnsupportedOperationException.class, () -> ComponentLinker.create(null));
   }
 
   @Test
@@ -183,40 +183,48 @@ class ComponentModelInterfaceTest {
     // compilation errors when referenced
 
     // Component interface methods
-    assertDoesNotThrow(() -> {
-      java.lang.reflect.Method instantiate = Component.class.getMethod("instantiate",
-          ai.tegmentum.wasmtime4j.Store.class, ComponentLinker.class);
-      assertNotNull(instantiate);
-    });
+    assertDoesNotThrow(
+        () -> {
+          java.lang.reflect.Method instantiate =
+              Component.class.getMethod(
+                  "instantiate", ai.tegmentum.wasmtime4j.Store.class, ComponentLinker.class);
+          assertNotNull(instantiate);
+        });
 
-    assertDoesNotThrow(() -> {
-      java.lang.reflect.Method getType = Component.class.getMethod("getType");
-      assertNotNull(getType);
-    });
+    assertDoesNotThrow(
+        () -> {
+          java.lang.reflect.Method getType = Component.class.getMethod("getType");
+          assertNotNull(getType);
+        });
 
     // ComponentInstance interface methods
-    assertDoesNotThrow(() -> {
-      java.lang.reflect.Method getExport = ComponentInstance.class.getMethod("getExport", String.class);
-      assertNotNull(getExport);
-    });
+    assertDoesNotThrow(
+        () -> {
+          java.lang.reflect.Method getExport =
+              ComponentInstance.class.getMethod("getExport", String.class);
+          assertNotNull(getExport);
+        });
 
-    assertDoesNotThrow(() -> {
-      java.lang.reflect.Method getExports = ComponentInstance.class.getMethod("getExports");
-      assertNotNull(getExports);
-    });
+    assertDoesNotThrow(
+        () -> {
+          java.lang.reflect.Method getExports = ComponentInstance.class.getMethod("getExports");
+          assertNotNull(getExports);
+        });
 
     // ComponentLinker interface methods
-    assertDoesNotThrow(() -> {
-      java.lang.reflect.Method defineComponent = ComponentLinker.class.getMethod("defineComponent",
-          String.class, Component.class);
-      assertNotNull(defineComponent);
-    });
+    assertDoesNotThrow(
+        () -> {
+          java.lang.reflect.Method defineComponent =
+              ComponentLinker.class.getMethod("defineComponent", String.class, Component.class);
+          assertNotNull(defineComponent);
+        });
 
-    assertDoesNotThrow(() -> {
-      java.lang.reflect.Method defineInterface = ComponentLinker.class.getMethod("defineInterface",
-          String.class, InterfaceType.class);
-      assertNotNull(defineInterface);
-    });
+    assertDoesNotThrow(
+        () -> {
+          java.lang.reflect.Method defineInterface =
+              ComponentLinker.class.getMethod("defineInterface", String.class, InterfaceType.class);
+          assertNotNull(defineInterface);
+        });
   }
 
   @Test
@@ -225,43 +233,54 @@ class ComponentModelInterfaceTest {
     // Test that interface methods specify proper parameter validation through throws clauses
 
     // Check Component.instantiate throws clauses
-    assertDoesNotThrow(() -> {
-      java.lang.reflect.Method instantiate = Component.class.getMethod("instantiate",
-          ai.tegmentum.wasmtime4j.Store.class, ComponentLinker.class);
-      Class<?>[] exceptions = instantiate.getExceptionTypes();
-      assertTrue(java.util.Arrays.asList(exceptions).contains(
-          ai.tegmentum.wasmtime4j.exception.WasmException.class));
-      assertTrue(java.util.Arrays.asList(exceptions).contains(IllegalArgumentException.class));
-    });
+    assertDoesNotThrow(
+        () -> {
+          java.lang.reflect.Method instantiate =
+              Component.class.getMethod(
+                  "instantiate", ai.tegmentum.wasmtime4j.Store.class, ComponentLinker.class);
+          Class<?>[] exceptions = instantiate.getExceptionTypes();
+          assertTrue(
+              java.util.Arrays.asList(exceptions)
+                  .contains(ai.tegmentum.wasmtime4j.exception.WasmException.class));
+          assertTrue(java.util.Arrays.asList(exceptions).contains(IllegalArgumentException.class));
+        });
 
     // Check ComponentInstance.getExport throws clauses
-    assertDoesNotThrow(() -> {
-      java.lang.reflect.Method getExport = ComponentInstance.class.getMethod("getExport", String.class);
-      Class<?>[] exceptions = getExport.getExceptionTypes();
-      assertTrue(java.util.Arrays.asList(exceptions).contains(
-          ai.tegmentum.wasmtime4j.exception.WasmException.class));
-      assertTrue(java.util.Arrays.asList(exceptions).contains(IllegalArgumentException.class));
-    });
+    assertDoesNotThrow(
+        () -> {
+          java.lang.reflect.Method getExport =
+              ComponentInstance.class.getMethod("getExport", String.class);
+          Class<?>[] exceptions = getExport.getExceptionTypes();
+          assertTrue(
+              java.util.Arrays.asList(exceptions)
+                  .contains(ai.tegmentum.wasmtime4j.exception.WasmException.class));
+          assertTrue(java.util.Arrays.asList(exceptions).contains(IllegalArgumentException.class));
+        });
   }
 
   @Test
   @DisplayName("Return types should use appropriate Optional patterns")
   void testOptionalReturnTypes() {
     // Test that appropriate methods return Optional for nullable values
-    assertDoesNotThrow(() -> {
-      java.lang.reflect.Method getExport = ComponentInstance.class.getMethod("getExport", String.class);
-      assertEquals(java.util.Optional.class, getExport.getReturnType());
-    });
+    assertDoesNotThrow(
+        () -> {
+          java.lang.reflect.Method getExport =
+              ComponentInstance.class.getMethod("getExport", String.class);
+          assertEquals(java.util.Optional.class, getExport.getReturnType());
+        });
 
-    assertDoesNotThrow(() -> {
-      java.lang.reflect.Method getReturnType = ComponentFunction.class.getMethod("getReturnType");
-      assertEquals(java.util.Optional.class, getReturnType.getReturnType());
-    });
+    assertDoesNotThrow(
+        () -> {
+          java.lang.reflect.Method getReturnType =
+              ComponentFunction.class.getMethod("getReturnType");
+          assertEquals(java.util.Optional.class, getReturnType.getReturnType());
+        });
 
-    assertDoesNotThrow(() -> {
-      java.lang.reflect.Method getErrorType = ComponentFunction.class.getMethod("getErrorType");
-      assertEquals(java.util.Optional.class, getErrorType.getReturnType());
-    });
+    assertDoesNotThrow(
+        () -> {
+          java.lang.reflect.Method getErrorType = ComponentFunction.class.getMethod("getErrorType");
+          assertEquals(java.util.Optional.class, getErrorType.getReturnType());
+        });
   }
 
   @Test
@@ -277,7 +296,8 @@ class ComponentModelInterfaceTest {
 
     // Export/Import types
     assertDoesNotThrow(() -> Class.forName("ai.tegmentum.wasmtime4j.component.ComponentExport"));
-    assertDoesNotThrow(() -> Class.forName("ai.tegmentum.wasmtime4j.component.ComponentExportKind"));
+    assertDoesNotThrow(
+        () -> Class.forName("ai.tegmentum.wasmtime4j.component.ComponentExportKind"));
 
     // Function types
     assertDoesNotThrow(() -> Class.forName("ai.tegmentum.wasmtime4j.component.ComponentFunction"));
@@ -297,7 +317,8 @@ class ComponentModelInterfaceTest {
 
     // Resource types
     assertDoesNotThrow(() -> Class.forName("ai.tegmentum.wasmtime4j.component.ComponentResource"));
-    assertDoesNotThrow(() -> Class.forName("ai.tegmentum.wasmtime4j.component.ComponentResourceType"));
+    assertDoesNotThrow(
+        () -> Class.forName("ai.tegmentum.wasmtime4j.component.ComponentResourceType"));
 
     // Value types
     assertDoesNotThrow(() -> Class.forName("ai.tegmentum.wasmtime4j.component.ComponentValueType"));

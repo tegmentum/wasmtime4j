@@ -12,7 +12,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileTime;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.Set;
@@ -31,8 +30,8 @@ import java.util.stream.Stream;
  * application restarts. It supports configurable expiration, size limits, and maintenance
  * operations.
  *
- * <p>Cache files are organized in a directory structure and include both the serialized module
- * data and metadata for validation and management.
+ * <p>Cache files are organized in a directory structure and include both the serialized module data
+ * and metadata for validation and management.
  *
  * @since 1.0.0
  */
@@ -110,13 +109,15 @@ public final class FileBasedModuleCache implements ModuleCache {
 
       // Load module from file
       try {
-        final SerializedModule module = loadModuleFromFile(entry.cacheFilePath, entry.metadataFilePath);
+        final SerializedModule module =
+            loadModuleFromFile(entry.cacheFilePath, entry.metadataFilePath);
         entry.lastAccessTime = Instant.now();
         statistics.recordHit();
         statistics.recordOperationTime(System.nanoTime() - startTime);
         return Optional.of(module);
       } catch (final IOException e) {
-        LOGGER.log(Level.WARNING, "Failed to load module from cache file: " + entry.cacheFilePath, e);
+        LOGGER.log(
+            Level.WARNING, "Failed to load module from cache file: " + entry.cacheFilePath, e);
         // Remove corrupted entry
         cacheLock.readLock().unlock();
         cacheLock.writeLock().lock();
@@ -361,7 +362,8 @@ public final class FileBasedModuleCache implements ModuleCache {
       throw new IllegalArgumentException("Cache configuration cannot be null");
     }
     if (!config.isPersistenceEnabled() || config.getPersistencePath() == null) {
-      throw new IllegalArgumentException("File-based cache requires persistence to be enabled with a valid path");
+      throw new IllegalArgumentException(
+          "File-based cache requires persistence to be enabled with a valid path");
     }
     return config;
   }
@@ -382,7 +384,8 @@ public final class FileBasedModuleCache implements ModuleCache {
     }
 
     try (final Stream<Path> files = Files.list(cacheDirectory)) {
-      files.filter(path -> path.toString().endsWith(CACHE_FILE_EXTENSION))
+      files
+          .filter(path -> path.toString().endsWith(CACHE_FILE_EXTENSION))
           .forEach(this::loadCacheEntry);
     }
   }
@@ -390,14 +393,16 @@ public final class FileBasedModuleCache implements ModuleCache {
   private void loadCacheEntry(final Path cacheFilePath) {
     try {
       final String fileName = cacheFilePath.getFileName().toString();
-      final String keyStr = fileName.substring(0, fileName.length() - CACHE_FILE_EXTENSION.length());
+      final String keyStr =
+          fileName.substring(0, fileName.length() - CACHE_FILE_EXTENSION.length());
       final Path metadataFilePath = cacheDirectory.resolve(keyStr + METADATA_FILE_EXTENSION);
 
       if (Files.exists(metadataFilePath)) {
         final FileTime lastModified = Files.getLastModifiedTime(cacheFilePath);
         // For now, create a dummy key - in production we'd deserialize the actual key
         final ModuleCacheKey key = createDummyKey(keyStr);
-        final CacheEntry entry = new CacheEntry(cacheFilePath, metadataFilePath, lastModified.toInstant(), key);
+        final CacheEntry entry =
+            new CacheEntry(cacheFilePath, metadataFilePath, lastModified.toInstant(), key);
         indexMap.put(keyStr, entry);
       }
     } catch (final IOException e) {
@@ -412,11 +417,11 @@ public final class FileBasedModuleCache implements ModuleCache {
         null, // Would be loaded from metadata
         null, // Would be loaded from metadata
         "unknown",
-        "unknown"
-    );
+        "unknown");
   }
 
-  private SerializedModule loadModuleFromFile(final Path cacheFilePath, final Path metadataFilePath) throws IOException {
+  private SerializedModule loadModuleFromFile(final Path cacheFilePath, final Path metadataFilePath)
+      throws IOException {
     final byte[] data = Files.readAllBytes(cacheFilePath);
     // In production, we'd deserialize the actual metadata
     final ai.tegmentum.wasmtime4j.serialization.impl.ModuleMetadataImpl metadata =
@@ -428,11 +433,7 @@ public final class FileBasedModuleCache implements ModuleCache {
     // Simplified JSON creation - in production we'd use a proper JSON library
     return String.format(
         "{\"key\":\"%s\",\"size\":%d,\"checksum\":\"%s\",\"timestamp\":\"%s\"}",
-        key.toStringRepresentation(),
-        module.getSize(),
-        module.getChecksum(),
-        Instant.now()
-    );
+        key.toStringRepresentation(), module.getSize(), module.getChecksum(), Instant.now());
   }
 
   private boolean isExpired(final CacheEntry entry) {
@@ -495,10 +496,11 @@ public final class FileBasedModuleCache implements ModuleCache {
 
   private long evictEntries(final long count) {
     // Use LRU eviction policy
-    final var entries = indexMap.entrySet().stream()
-        .sorted((a, b) -> a.getValue().lastAccessTime.compareTo(b.getValue().lastAccessTime))
-        .limit(count)
-        .collect(Collectors.toList());
+    final var entries =
+        indexMap.entrySet().stream()
+            .sorted((a, b) -> a.getValue().lastAccessTime.compareTo(b.getValue().lastAccessTime))
+            .limit(count)
+            .collect(Collectors.toList());
 
     long evicted = 0;
     for (final var entry : entries) {
@@ -516,9 +518,7 @@ public final class FileBasedModuleCache implements ModuleCache {
     }
   }
 
-  /**
-   * Represents a cache entry with file paths and timing information.
-   */
+  /** Represents a cache entry with file paths and timing information. */
   private static final class CacheEntry {
     final Path cacheFilePath;
     final Path metadataFilePath;

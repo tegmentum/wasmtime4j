@@ -12,6 +12,7 @@ import java.util.concurrent.CompletableFuture;
  * simultaneously with proper synchronization.
  *
  * <p>Key features:
+ *
  * <ul>
  *   <li>Thread-safe table element read and write operations
  *   <li>Atomic operations for concurrent access
@@ -122,15 +123,16 @@ public interface ConcurrentWasmTable extends WasmTable {
   /**
    * Thread-safe atomic table growth operation.
    *
-   * <p>This method atomically grows the table size and initializes new elements.
-   * All concurrent operations are properly coordinated during the growth.
+   * <p>This method atomically grows the table size and initializes new elements. All concurrent
+   * operations are properly coordinated during the growth.
    *
    * @param newSize the new table size
    * @param initElement the element to initialize new slots with
    * @return a CompletableFuture that completes when growth is done
    * @throws WasmException if the new size is invalid or growth fails
    */
-  CompletableFuture<Void> growAsync(final int newSize, final Object initElement) throws WasmException;
+  CompletableFuture<Void> growAsync(final int newSize, final Object initElement)
+      throws WasmException;
 
   /**
    * Executes a table operation with a read lock held.

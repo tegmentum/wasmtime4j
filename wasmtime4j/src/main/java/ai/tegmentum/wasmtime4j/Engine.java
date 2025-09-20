@@ -101,8 +101,8 @@ public interface Engine extends Closeable {
   /**
    * Deserializes a module from a SerializedModule using this engine.
    *
-   * <p>This method is a convenience overload that extracts the data from a SerializedModule
-   * and deserializes it.
+   * <p>This method is a convenience overload that extracts the data from a SerializedModule and
+   * deserializes it.
    *
    * @param serializedModule the serialized module
    * @return a Module deserialized from the SerializedModule

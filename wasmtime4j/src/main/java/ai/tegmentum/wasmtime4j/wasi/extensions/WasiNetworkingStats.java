@@ -3,12 +3,11 @@ package ai.tegmentum.wasmtime4j.wasi.extensions;
 /**
  * Statistics and performance metrics for WASI networking operations.
  *
- * <p>This class provides comprehensive information about networking usage,
- * performance characteristics, and resource utilization across all
- * networking operations in a WASI context.
+ * <p>This class provides comprehensive information about networking usage, performance
+ * characteristics, and resource utilization across all networking operations in a WASI context.
  *
- * <p>Instances of this class are immutable and represent a snapshot
- * of networking statistics at the time of creation.
+ * <p>Instances of this class are immutable and represent a snapshot of networking statistics at the
+ * time of creation.
  *
  * @since 1.0.0
  */
@@ -55,15 +54,25 @@ public final class WasiNetworkingStats {
    * @param peakActiveConnections peak number of simultaneous connections
    * @param startTime timestamp when networking was initialized
    */
-  public WasiNetworkingStats(final long totalSocketsCreated, final int activeSocketsCount,
-                           final long totalConnectionsEstablished, final int activeConnectionsCount,
-                           final long totalBytesTransferred, final long totalBytesReceived,
-                           final long totalBytesSent, final long totalPacketsReceived,
-                           final long totalPacketsSent, final long httpRequestsSent,
-                           final long httpResponsesReceived, final int httpClientsActive,
-                           final int httpServersActive, final long connectionErrors,
-                           final long timeoutErrors, final double averageConnectionTime,
-                           final long peakActiveConnections, final long startTime) {
+  public WasiNetworkingStats(
+      final long totalSocketsCreated,
+      final int activeSocketsCount,
+      final long totalConnectionsEstablished,
+      final int activeConnectionsCount,
+      final long totalBytesTransferred,
+      final long totalBytesReceived,
+      final long totalBytesSent,
+      final long totalPacketsReceived,
+      final long totalPacketsSent,
+      final long httpRequestsSent,
+      final long httpResponsesReceived,
+      final int httpClientsActive,
+      final int httpServersActive,
+      final long connectionErrors,
+      final long timeoutErrors,
+      final double averageConnectionTime,
+      final long peakActiveConnections,
+      final long startTime) {
     this.totalSocketsCreated = totalSocketsCreated;
     this.activeSocketsCount = activeSocketsCount;
     this.totalConnectionsEstablished = totalConnectionsEstablished;
@@ -305,18 +314,29 @@ public final class WasiNetworkingStats {
 
   @Override
   public String toString() {
-    return "WasiNetworkingStats{" +
-           "totalSocketsCreated=" + totalSocketsCreated +
-           ", activeSocketsCount=" + activeSocketsCount +
-           ", totalConnectionsEstablished=" + totalConnectionsEstablished +
-           ", activeConnectionsCount=" + activeConnectionsCount +
-           ", totalBytesTransferred=" + totalBytesTransferred +
-           ", totalBytesReceived=" + totalBytesReceived +
-           ", totalBytesSent=" + totalBytesSent +
-           ", httpRequestsSent=" + httpRequestsSent +
-           ", httpResponsesReceived=" + httpResponsesReceived +
-           ", errorRate=" + String.format("%.2f%%", getErrorRate()) +
-           ", throughput=" + String.format("%.2f B/s", getThroughputBytesPerSecond()) +
-           '}';
+    return "WasiNetworkingStats{"
+        + "totalSocketsCreated="
+        + totalSocketsCreated
+        + ", activeSocketsCount="
+        + activeSocketsCount
+        + ", totalConnectionsEstablished="
+        + totalConnectionsEstablished
+        + ", activeConnectionsCount="
+        + activeConnectionsCount
+        + ", totalBytesTransferred="
+        + totalBytesTransferred
+        + ", totalBytesReceived="
+        + totalBytesReceived
+        + ", totalBytesSent="
+        + totalBytesSent
+        + ", httpRequestsSent="
+        + httpRequestsSent
+        + ", httpResponsesReceived="
+        + httpResponsesReceived
+        + ", errorRate="
+        + String.format("%.2f%%", getErrorRate())
+        + ", throughput="
+        + String.format("%.2f B/s", getThroughputBytesPerSecond())
+        + '}';
   }
 }

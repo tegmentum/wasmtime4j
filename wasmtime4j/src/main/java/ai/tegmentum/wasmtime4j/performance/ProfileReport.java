@@ -8,9 +8,9 @@ import java.util.Map;
 /**
  * Comprehensive profiling report generated after profiling completion.
  *
- * <p>ProfileReport aggregates all profiling data collected during a profiling session,
- * providing detailed analysis of execution patterns, performance characteristics,
- * and optimization opportunities.
+ * <p>ProfileReport aggregates all profiling data collected during a profiling session, providing
+ * detailed analysis of execution patterns, performance characteristics, and optimization
+ * opportunities.
  *
  * @since 1.0.0
  */

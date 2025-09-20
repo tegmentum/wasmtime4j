@@ -7,9 +7,9 @@ import java.util.Objects;
 /**
  * Comprehensive memory usage report for WebAssembly linear memory analysis.
  *
- * <p>This class provides a detailed snapshot of memory usage patterns, statistics,
- * and recommendations for optimization. It combines multiple data sources to provide
- * actionable insights for enterprise memory management.
+ * <p>This class provides a detailed snapshot of memory usage patterns, statistics, and
+ * recommendations for optimization. It combines multiple data sources to provide actionable
+ * insights for enterprise memory management.
  *
  * @since 1.0.0
  */
@@ -205,7 +205,8 @@ public final class MemoryUsageReport {
    */
   public String getSummary() {
     return String.format(
-        "MemoryUsageReport: %d segments (%d active), %.2f MB total, %.1f%% utilization, %d warnings, %d recommendations",
+        "MemoryUsageReport: %d segments (%d active), %.2f MB total, %.1f%% utilization, %d"
+            + " warnings, %d recommendations",
         segments.size(),
         getActiveSegmentCount(),
         getTotalSegmentSize() / (1024.0 * 1024.0),
@@ -234,7 +235,12 @@ public final class MemoryUsageReport {
   @Override
   public int hashCode() {
     return Objects.hash(
-        reportTimestamp, statistics, segments, recommendations, warnings, reportGenerationTimeNanos);
+        reportTimestamp,
+        statistics,
+        segments,
+        recommendations,
+        warnings,
+        reportGenerationTimeNanos);
   }
 
   @Override

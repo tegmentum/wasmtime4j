@@ -7,9 +7,9 @@ import java.util.Set;
 /**
  * Metadata associated with a serialized WebAssembly module.
  *
- * <p>ModuleMetadata contains information about the serialized module including version
- * information, compilation settings, target platform, and other details required for validation
- * and compatibility checking.
+ * <p>ModuleMetadata contains information about the serialized module including version information,
+ * compilation settings, target platform, and other details required for validation and
+ * compatibility checking.
  *
  * <p>This metadata is embedded in serialized modules and can be extracted without full
  * deserialization to enable efficient compatibility checking and caching decisions.
@@ -115,8 +115,8 @@ public interface ModuleMetadata {
   /**
    * Gets the compression ratio achieved during serialization.
    *
-   * <p>This is calculated as originalSize / dataSize. A value greater than 1 indicates
-   * compression, while 1 indicates no size change.
+   * <p>This is calculated as originalSize / dataSize. A value greater than 1 indicates compression,
+   * while 1 indicates no size change.
    *
    * @return the compression ratio
    */

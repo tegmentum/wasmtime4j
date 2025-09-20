@@ -111,8 +111,8 @@ public interface WasmMemory extends BulkMemoryOperations, MemoryIntrospection, M
   /**
    * Checks if the memory can be grown by the specified number of pages.
    *
-   * <p>This validates whether a grow operation would succeed without actually
-   * performing the growth, allowing applications to make informed decisions.
+   * <p>This validates whether a grow operation would succeed without actually performing the
+   * growth, allowing applications to make informed decisions.
    *
    * @param pages the number of pages to check for growth capacity
    * @return true if growth would succeed, false otherwise
@@ -128,8 +128,7 @@ public interface WasmMemory extends BulkMemoryOperations, MemoryIntrospection, M
   /**
    * Gets the remaining growth capacity in pages.
    *
-   * <p>This calculates how many more pages can be allocated before reaching
-   * the maximum size limit.
+   * <p>This calculates how many more pages can be allocated before reaching the maximum size limit.
    *
    * @return the remaining pages that can be allocated, or -1 if unlimited
    */
@@ -144,8 +143,7 @@ public interface WasmMemory extends BulkMemoryOperations, MemoryIntrospection, M
   /**
    * Calculates the memory utilization ratio.
    *
-   * <p>This provides insight into how much of the maximum available memory
-   * is currently allocated.
+   * <p>This provides insight into how much of the maximum available memory is currently allocated.
    *
    * @return the utilization ratio between 0.0 and 1.0, or -1.0 if unlimited
    */

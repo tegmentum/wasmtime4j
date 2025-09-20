@@ -3,12 +3,11 @@ package ai.tegmentum.wasmtime4j.wasi.extensions.networking;
 /**
  * Statistics and performance metrics for a WASI HTTP server.
  *
- * <p>This class provides detailed information about HTTP server usage,
- * performance characteristics, and request handling patterns. All values
- * are cumulative since the server was started.
+ * <p>This class provides detailed information about HTTP server usage, performance characteristics,
+ * and request handling patterns. All values are cumulative since the server was started.
  *
- * <p>Instances of this class are immutable and represent a snapshot
- * of server statistics at the time of creation.
+ * <p>Instances of this class are immutable and represent a snapshot of server statistics at the
+ * time of creation.
  *
  * @since 1.0.0
  */
@@ -53,15 +52,24 @@ public final class WasiHttpServerStats {
    * @param startTime timestamp when server was started
    * @param isRunning whether the server is currently running
    */
-  public WasiHttpServerStats(final long totalRequestsReceived, final long successfulResponses,
-                           final long clientErrorResponses, final long serverErrorResponses,
-                           final long totalBytesReceived, final long totalBytesSent,
-                           final long totalRequestProcessingTime, final int currentActiveConnections,
-                           final int maxConcurrentConnections, final long totalConnectionsAccepted,
-                           final long totalConnectionsClosed, final double averageRequestProcessingTime,
-                           final double averageResponseSize, final long routeNotFoundCount,
-                           final long middlewareExecutionTime, final long startTime,
-                           final boolean isRunning) {
+  public WasiHttpServerStats(
+      final long totalRequestsReceived,
+      final long successfulResponses,
+      final long clientErrorResponses,
+      final long serverErrorResponses,
+      final long totalBytesReceived,
+      final long totalBytesSent,
+      final long totalRequestProcessingTime,
+      final int currentActiveConnections,
+      final int maxConcurrentConnections,
+      final long totalConnectionsAccepted,
+      final long totalConnectionsClosed,
+      final double averageRequestProcessingTime,
+      final double averageResponseSize,
+      final long routeNotFoundCount,
+      final long middlewareExecutionTime,
+      final long startTime,
+      final boolean isRunning) {
     this.totalRequestsReceived = totalRequestsReceived;
     this.successfulResponses = successfulResponses;
     this.clientErrorResponses = clientErrorResponses;
@@ -356,16 +364,25 @@ public final class WasiHttpServerStats {
 
   @Override
   public String toString() {
-    return "WasiHttpServerStats{" +
-           "totalRequests=" + totalRequestsReceived +
-           ", successfulResponses=" + successfulResponses +
-           ", errorResponses=" + (clientErrorResponses + serverErrorResponses) +
-           ", successRate=" + String.format("%.2f%%", getSuccessRate()) +
-           ", averageProcessingTime=" + String.format("%.2fms", averageRequestProcessingTime) +
-           ", requestRate=" + String.format("%.2f req/s", getRequestRate()) +
-           ", throughput=" + String.format("%.2f B/s", getThroughputBytesPerSecond()) +
-           ", activeConnections=" + currentActiveConnections +
-           ", isRunning=" + isRunning +
-           '}';
+    return "WasiHttpServerStats{"
+        + "totalRequests="
+        + totalRequestsReceived
+        + ", successfulResponses="
+        + successfulResponses
+        + ", errorResponses="
+        + (clientErrorResponses + serverErrorResponses)
+        + ", successRate="
+        + String.format("%.2f%%", getSuccessRate())
+        + ", averageProcessingTime="
+        + String.format("%.2fms", averageRequestProcessingTime)
+        + ", requestRate="
+        + String.format("%.2f req/s", getRequestRate())
+        + ", throughput="
+        + String.format("%.2f B/s", getThroughputBytesPerSecond())
+        + ", activeConnections="
+        + currentActiveConnections
+        + ", isRunning="
+        + isRunning
+        + '}';
   }
 }

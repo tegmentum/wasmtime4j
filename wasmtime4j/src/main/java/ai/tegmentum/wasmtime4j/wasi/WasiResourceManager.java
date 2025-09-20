@@ -83,8 +83,8 @@ public interface WasiResourceManager {
    * @throws WasmException if resource creation fails
    * @throws IllegalArgumentException if any parameter is null or name is empty
    */
-  <T extends WasiResource> T createResource(final String name, final Class<T> type,
-      final WasiResourceConfig config) throws WasmException;
+  <T extends WasiResource> T createResource(
+      final String name, final Class<T> type, final WasiResourceConfig config) throws WasmException;
 
   /**
    * Gets an existing resource by name.
@@ -152,8 +152,8 @@ public interface WasiResourceManager {
   /**
    * Gets resource usage statistics.
    *
-   * <p>Returns information about resource allocation, usage patterns, and performance metrics
-   * for monitoring and optimization purposes.
+   * <p>Returns information about resource allocation, usage patterns, and performance metrics for
+   * monitoring and optimization purposes.
    *
    * @return resource usage statistics
    */
@@ -191,8 +191,8 @@ public interface WasiResourceManager {
   /**
    * Performs cleanup of inactive or invalid resources.
    *
-   * <p>Automatically releases resources that are no longer valid or accessible, freeing
-   * up system resources and preventing leaks.
+   * <p>Automatically releases resources that are no longer valid or accessible, freeing up system
+   * resources and preventing leaks.
    *
    * @return the number of resources that were cleaned up
    * @throws WasmException if cleanup fails
@@ -202,8 +202,8 @@ public interface WasiResourceManager {
   /**
    * Gets metadata about managed resources.
    *
-   * <p>Returns detailed information about resource types, configurations, and usage patterns
-   * for debugging and monitoring purposes.
+   * <p>Returns detailed information about resource types, configurations, and usage patterns for
+   * debugging and monitoring purposes.
    *
    * @return map of resource names to their metadata
    * @throws WasmException if metadata collection fails
@@ -246,8 +246,8 @@ public interface WasiResourceManager {
   /**
    * Closes the resource manager and releases all managed resources.
    *
-   * <p>After calling this method, the manager becomes invalid and should not be used.
-   * All managed resources will be released and closed.
+   * <p>After calling this method, the manager becomes invalid and should not be used. All managed
+   * resources will be released and closed.
    */
   void close();
 }

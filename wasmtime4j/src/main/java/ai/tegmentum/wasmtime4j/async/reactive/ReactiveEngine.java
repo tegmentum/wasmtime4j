@@ -1,6 +1,5 @@
 package ai.tegmentum.wasmtime4j.async.reactive;
 
-import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.EngineStatistics;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.async.AsyncEngine;
@@ -17,8 +16,8 @@ import reactor.core.publisher.Mono;
  * stream composition for WebAssembly operations.
  *
  * <p>The interface provides reactive streams for compilation events, execution monitoring,
- * performance metrics, and engine lifecycle events, enabling real-time monitoring and
- * responsive application architectures.
+ * performance metrics, and engine lifecycle events, enabling real-time monitoring and responsive
+ * application architectures.
  *
  * @since 1.0.0
  */
@@ -27,8 +26,8 @@ public interface ReactiveEngine extends AsyncEngine {
   /**
    * Creates a reactive stream of compilation events for module compilation operations.
    *
-   * <p>This method enables real-time monitoring of compilation progress, phase transitions,
-   * and completion or failure events through a Flux stream.
+   * <p>This method enables real-time monitoring of compilation progress, phase transitions, and
+   * completion or failure events through a Flux stream.
    *
    * @param moduleStream the stream of module sources to compile
    * @return a Flux of compilation events
@@ -51,8 +50,8 @@ public interface ReactiveEngine extends AsyncEngine {
   /**
    * Gets engine statistics as a reactive Mono.
    *
-   * <p>This method provides reactive access to engine statistics, enabling integration
-   * with reactive pipelines and composition with other reactive operations.
+   * <p>This method provides reactive access to engine statistics, enabling integration with
+   * reactive pipelines and composition with other reactive operations.
    *
    * @return a Mono containing engine statistics
    */
@@ -61,8 +60,8 @@ public interface ReactiveEngine extends AsyncEngine {
   /**
    * Creates a reactive stream of engine events.
    *
-   * <p>This stream emits events related to engine lifecycle, resource management, performance,
-   * and error conditions, enabling comprehensive monitoring of engine health and activity.
+   * <p>This stream emits events related to engine lifecycle, resource management, performance, and
+   * error conditions, enabling comprehensive monitoring of engine health and activity.
    *
    * @return a Flux of engine events
    */
@@ -71,8 +70,8 @@ public interface ReactiveEngine extends AsyncEngine {
   /**
    * Creates a reactive stream of engine events filtered by type.
    *
-   * <p>This method allows subscribing to specific types of engine events, reducing noise
-   * and enabling focused monitoring of particular aspects of engine operation.
+   * <p>This method allows subscribing to specific types of engine events, reducing noise and
+   * enabling focused monitoring of particular aspects of engine operation.
    *
    * @param eventFilter predicate to filter events
    * @return a Flux of filtered engine events
@@ -83,8 +82,8 @@ public interface ReactiveEngine extends AsyncEngine {
   /**
    * Creates a reactive stream of performance metrics at regular intervals.
    *
-   * <p>This method provides periodic snapshots of engine performance metrics, enabling
-   * time-series monitoring and alerting based on performance thresholds.
+   * <p>This method provides periodic snapshots of engine performance metrics, enabling time-series
+   * monitoring and alerting based on performance thresholds.
    *
    * @param interval the interval between metric snapshots
    * @return a Flux of performance metrics
@@ -95,8 +94,8 @@ public interface ReactiveEngine extends AsyncEngine {
   /**
    * Creates a reactive stream of memory usage statistics.
    *
-   * <p>This method provides real-time monitoring of memory usage across all stores
-   * and instances managed by this engine.
+   * <p>This method provides real-time monitoring of memory usage across all stores and instances
+   * managed by this engine.
    *
    * @param interval the interval between memory usage snapshots
    * @return a Flux of memory usage metrics
@@ -107,8 +106,8 @@ public interface ReactiveEngine extends AsyncEngine {
   /**
    * Creates a reactive stream of compilation cache statistics.
    *
-   * <p>This method provides insights into compilation cache efficiency, hit rates,
-   * and memory usage for optimization and debugging purposes.
+   * <p>This method provides insights into compilation cache efficiency, hit rates, and memory usage
+   * for optimization and debugging purposes.
    *
    * @param interval the interval between cache statistics snapshots
    * @return a Flux of compilation cache metrics
@@ -119,8 +118,8 @@ public interface ReactiveEngine extends AsyncEngine {
   /**
    * Creates a reactive stream for monitoring store lifecycle events.
    *
-   * <p>This method enables monitoring of store creation, destruction, and state changes
-   * across all stores managed by this engine.
+   * <p>This method enables monitoring of store creation, destruction, and state changes across all
+   * stores managed by this engine.
    *
    * @return a Flux of store lifecycle events
    */
@@ -129,8 +128,8 @@ public interface ReactiveEngine extends AsyncEngine {
   /**
    * Creates a reactive stream for monitoring module lifecycle events.
    *
-   * <p>This method enables monitoring of module loading, unloading, and compilation
-   * across all modules managed by this engine.
+   * <p>This method enables monitoring of module loading, unloading, and compilation across all
+   * modules managed by this engine.
    *
    * @return a Flux of module lifecycle events
    */
@@ -139,8 +138,8 @@ public interface ReactiveEngine extends AsyncEngine {
   /**
    * Creates a reactive stream for monitoring instance lifecycle events.
    *
-   * <p>This method enables monitoring of instance creation, destruction, and execution
-   * across all instances managed by this engine.
+   * <p>This method enables monitoring of instance creation, destruction, and execution across all
+   * instances managed by this engine.
    *
    * @return a Flux of instance lifecycle events
    */
@@ -149,8 +148,8 @@ public interface ReactiveEngine extends AsyncEngine {
   /**
    * Gets the current health status of the engine as a reactive Mono.
    *
-   * <p>Health status includes operational state, resource utilization, error rates,
-   * and overall engine wellness indicators.
+   * <p>Health status includes operational state, resource utilization, error rates, and overall
+   * engine wellness indicators.
    *
    * @return a Mono containing the current health status
    */
@@ -171,8 +170,8 @@ public interface ReactiveEngine extends AsyncEngine {
   /**
    * Creates a reactive Mono for graceful engine shutdown.
    *
-   * <p>This method initiates a graceful shutdown process and returns a Mono that completes
-   * when the shutdown is finished, enabling reactive composition of shutdown sequences.
+   * <p>This method initiates a graceful shutdown process and returns a Mono that completes when the
+   * shutdown is finished, enabling reactive composition of shutdown sequences.
    *
    * @param timeout maximum time to wait for graceful shutdown
    * @return a Mono that completes when shutdown is finished
@@ -467,7 +466,11 @@ public interface ReactiveEngine extends AsyncEngine {
 
   /** Store event types. */
   enum StoreEventType {
-    CREATED, DESTROYED, SUSPENDED, RESUMED, ERROR
+    CREATED,
+    DESTROYED,
+    SUSPENDED,
+    RESUMED,
+    ERROR
   }
 
   /** Module lifecycle events. */
@@ -489,7 +492,11 @@ public interface ReactiveEngine extends AsyncEngine {
 
   /** Module event types. */
   enum ModuleEventType {
-    LOADED, UNLOADED, COMPILED, COMPILATION_FAILED, VALIDATION_FAILED
+    LOADED,
+    UNLOADED,
+    COMPILED,
+    COMPILATION_FAILED,
+    VALIDATION_FAILED
   }
 
   /** Instance lifecycle events. */
@@ -511,7 +518,12 @@ public interface ReactiveEngine extends AsyncEngine {
 
   /** Instance event types. */
   enum InstanceEventType {
-    CREATED, DESTROYED, FUNCTION_CALLED, FUNCTION_RETURNED, FUNCTION_FAILED, MEMORY_GROWN
+    CREATED,
+    DESTROYED,
+    FUNCTION_CALLED,
+    FUNCTION_RETURNED,
+    FUNCTION_FAILED,
+    MEMORY_GROWN
   }
 
   /** Engine health status. */
@@ -547,7 +559,10 @@ public interface ReactiveEngine extends AsyncEngine {
 
   /** Health status levels. */
   enum HealthStatus {
-    HEALTHY, DEGRADED, UNHEALTHY, CRITICAL
+    HEALTHY,
+    DEGRADED,
+    UNHEALTHY,
+    CRITICAL
   }
 
   /** Health issue information. */
@@ -583,6 +598,9 @@ public interface ReactiveEngine extends AsyncEngine {
 
   /** Issue severity levels. */
   enum Severity {
-    LOW, MEDIUM, HIGH, CRITICAL
+    LOW,
+    MEDIUM,
+    HIGH,
+    CRITICAL
   }
 }

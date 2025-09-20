@@ -1,7 +1,7 @@
 package ai.tegmentum.wasmtime4j.wasi.impl;
 
-import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.exception.WasiResourceException;
+import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.wasi.WasiResourceConfig;
 import ai.tegmentum.wasmtime4j.wasi.WasiResourcePermissions;
 import java.time.Duration;
@@ -20,8 +20,8 @@ import java.util.logging.Logger;
  * Implementation of WasiResource for timer and time-based resources.
  *
  * <p>This implementation provides WASI Preview 2 time resource management including timer
- * operations, scheduling, and time-based events with proper permission enforcement and
- * resource limits.
+ * operations, scheduling, and time-based events with proper permission enforcement and resource
+ * limits.
  *
  * @since 1.0.0
  */
@@ -62,30 +62,42 @@ public final class WasiTimerResourceImpl extends WasiGenericResourceImpl {
     final String typeStr = (String) config.getProperty("timer_type").orElse("MONOTONIC");
     this.timerType = TimerType.fromName(typeStr);
 
-    this.permissions = config.getPermissions().getClass().isAssignableFrom(Set.class)
-        ? (Set<WasiResourcePermissions>) config.getPermissions()
-        : WasiResourcePermissions.READ_ONLY;
+    this.permissions =
+        config.getPermissions().getClass().isAssignableFrom(Set.class)
+            ? (Set<WasiResourcePermissions>) config.getPermissions()
+            : WasiResourcePermissions.READ_ONLY;
 
     final Object resolutionObj = config.getProperty("resolution_ms").orElse(1);
-    final long resolutionMs = resolutionObj instanceof Integer
-        ? (Integer) resolutionObj : Long.parseLong(resolutionObj.toString());
+    final long resolutionMs =
+        resolutionObj instanceof Integer
+            ? (Integer) resolutionObj
+            : Long.parseLong(resolutionObj.toString());
     this.resolution = Duration.ofMillis(resolutionMs);
 
     this.allowScheduling = (Boolean) config.getProperty("allow_scheduling").orElse(false);
 
     // Create executor only if scheduling is allowed
     if (allowScheduling) {
-      this.executor = Executors.newSingleThreadScheduledExecutor(r -> {
-        final Thread t = new Thread(r, "WasiTimer-" + name);
-        t.setDaemon(true); // Don't prevent JVM shutdown
-        return t;
-      });
+      this.executor =
+          Executors.newSingleThreadScheduledExecutor(
+              r -> {
+                final Thread t = new Thread(r, "WasiTimer-" + name);
+                t.setDaemon(true); // Don't prevent JVM shutdown
+                return t;
+              });
     } else {
       this.executor = null;
     }
 
-    LOGGER.fine("Created timer resource '" + name + "' with type: " + timerType +
-        ", resolution: " + resolution.toMillis() + "ms, scheduling: " + allowScheduling);
+    LOGGER.fine(
+        "Created timer resource '"
+            + name
+            + "' with type: "
+            + timerType
+            + ", resolution: "
+            + resolution.toMillis()
+            + "ms, scheduling: "
+            + allowScheduling);
   }
 
   /**
@@ -146,18 +158,19 @@ public final class WasiTimerResourceImpl extends WasiGenericResourceImpl {
     cancelScheduledTask();
 
     // Wrap the task to track execution
-    final Runnable wrappedTask = () -> {
-      try {
-        timerExecutions.incrementAndGet();
-        lastExecutionTime = Instant.now();
-        task.run();
-        LOGGER.fine("Executed scheduled task for timer " + getName());
-      } catch (final Exception e) {
-        LOGGER.warning("Error executing scheduled task: " + e.getMessage());
-      } finally {
-        timerActive.set(false);
-      }
-    };
+    final Runnable wrappedTask =
+        () -> {
+          try {
+            timerExecutions.incrementAndGet();
+            lastExecutionTime = Instant.now();
+            task.run();
+            LOGGER.fine("Executed scheduled task for timer " + getName());
+          } catch (final Exception e) {
+            LOGGER.warning("Error executing scheduled task: " + e.getMessage());
+          } finally {
+            timerActive.set(false);
+          }
+        };
 
     scheduledTask = executor.schedule(wrappedTask, delay.toMillis(), TimeUnit.MILLISECONDS);
     timerActive.set(true);
@@ -174,7 +187,8 @@ public final class WasiTimerResourceImpl extends WasiGenericResourceImpl {
    * @param task the task to execute
    * @throws WasmException if scheduling fails
    */
-  public void scheduleRepeating(final Duration initialDelay, final Duration period, final Runnable task)
+  public void scheduleRepeating(
+      final Duration initialDelay, final Duration period, final Runnable task)
       throws WasmException {
     ensureValid();
     ensurePermission(WasiResourcePermissions.EXECUTE);
@@ -204,24 +218,30 @@ public final class WasiTimerResourceImpl extends WasiGenericResourceImpl {
     cancelScheduledTask();
 
     // Wrap the task to track execution
-    final Runnable wrappedTask = () -> {
-      try {
-        timerExecutions.incrementAndGet();
-        lastExecutionTime = Instant.now();
-        task.run();
-        LOGGER.fine("Executed repeating task for timer " + getName());
-      } catch (final Exception e) {
-        LOGGER.warning("Error executing repeating task: " + e.getMessage());
-      }
-    };
+    final Runnable wrappedTask =
+        () -> {
+          try {
+            timerExecutions.incrementAndGet();
+            lastExecutionTime = Instant.now();
+            task.run();
+            LOGGER.fine("Executed repeating task for timer " + getName());
+          } catch (final Exception e) {
+            LOGGER.warning("Error executing repeating task: " + e.getMessage());
+          }
+        };
 
-    scheduledTask = executor.scheduleAtFixedRate(wrappedTask,
-        initialDelay.toMillis(), period.toMillis(), TimeUnit.MILLISECONDS);
+    scheduledTask =
+        executor.scheduleAtFixedRate(
+            wrappedTask, initialDelay.toMillis(), period.toMillis(), TimeUnit.MILLISECONDS);
     timerActive.set(true);
     lastScheduledDuration = period;
 
-    LOGGER.fine("Scheduled repeating task with initial delay " + initialDelay.toMillis() +
-        "ms and period " + period.toMillis() + "ms");
+    LOGGER.fine(
+        "Scheduled repeating task with initial delay "
+            + initialDelay.toMillis()
+            + "ms and period "
+            + period.toMillis()
+            + "ms");
   }
 
   /**
@@ -339,9 +359,11 @@ public final class WasiTimerResourceImpl extends WasiGenericResourceImpl {
 
       case "schedule_repeating":
         if (parameters.length < 3) {
-          throw new IllegalArgumentException("schedule_repeating requires initialDelay, period, and task parameters");
+          throw new IllegalArgumentException(
+              "schedule_repeating requires initialDelay, period, and task parameters");
         }
-        scheduleRepeating((Duration) parameters[0], (Duration) parameters[1], (Runnable) parameters[2]);
+        scheduleRepeating(
+            (Duration) parameters[0], (Duration) parameters[1], (Runnable) parameters[2]);
         return null;
 
       case "cancel_task":
@@ -401,15 +423,14 @@ public final class WasiTimerResourceImpl extends WasiGenericResourceImpl {
    * @param required the required permission
    * @throws WasiResourceException if permission is not granted
    */
-  private void ensurePermission(final WasiResourcePermissions required) throws WasiResourceException {
+  private void ensurePermission(final WasiResourcePermissions required)
+      throws WasiResourceException {
     if (!permissions.contains(required)) {
       throw new WasiResourceException("Permission denied: " + required.getName());
     }
   }
 
-  /**
-   * Enumeration of timer types.
-   */
+  /** Enumeration of timer types. */
   public enum TimerType {
     REALTIME("realtime"),
     MONOTONIC("monotonic");
@@ -439,17 +460,22 @@ public final class WasiTimerResourceImpl extends WasiGenericResourceImpl {
     }
   }
 
-  /**
-   * Interface for timer-specific statistics.
-   */
+  /** Interface for timer-specific statistics. */
   public interface TimerStats {
     long getTimerExecutions();
+
     long getTimeRequests();
+
     boolean isTimerActive();
+
     TimerType getTimerType();
+
     Duration getResolution();
+
     Instant getLastExecutionTime();
+
     Duration getLastScheduledDuration();
+
     boolean isSchedulingAllowed();
   }
 }

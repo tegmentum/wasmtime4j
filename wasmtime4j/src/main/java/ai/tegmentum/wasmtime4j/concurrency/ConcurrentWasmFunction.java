@@ -1,7 +1,6 @@
 package ai.tegmentum.wasmtime4j.concurrency;
 
 import ai.tegmentum.wasmtime4j.WasmFunction;
-import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 
@@ -13,6 +12,7 @@ import java.util.concurrent.ExecutorService;
  * same function simultaneously when the underlying WebAssembly code supports it.
  *
  * <p>Key features:
+ *
  * <ul>
  *   <li>Thread-safe function calls from multiple threads
  *   <li>Asynchronous function execution with CompletableFuture
@@ -28,8 +28,8 @@ public interface ConcurrentWasmFunction extends WasmFunction {
   /**
    * Asynchronously calls this function with the specified parameters.
    *
-   * <p>This method returns immediately and executes the function call in the background.
-   * The returned CompletableFuture can be used to retrieve the result or handle errors.
+   * <p>This method returns immediately and executes the function call in the background. The
+   * returned CompletableFuture can be used to retrieve the result or handle errors.
    *
    * @param parameters the parameters to pass to the function
    * @return a CompletableFuture that will complete with the function result
@@ -52,8 +52,8 @@ public interface ConcurrentWasmFunction extends WasmFunction {
   /**
    * Calls this function with a timeout.
    *
-   * <p>This method calls the function and cancels execution if it doesn't complete
-   * within the specified timeout period.
+   * <p>This method calls the function and cancels execution if it doesn't complete within the
+   * specified timeout period.
    *
    * @param timeoutMillis maximum execution time in milliseconds
    * @param parameters the parameters to pass to the function
@@ -65,8 +65,8 @@ public interface ConcurrentWasmFunction extends WasmFunction {
   /**
    * Executes multiple function calls with different parameter sets concurrently.
    *
-   * <p>This method optimizes the execution of multiple calls to the same function
-   * by running them in parallel.
+   * <p>This method optimizes the execution of multiple calls to the same function by running them
+   * in parallel.
    *
    * @param parameterSets array of parameter arrays for each call
    * @return a CompletableFuture that completes with an array of results
@@ -77,9 +77,9 @@ public interface ConcurrentWasmFunction extends WasmFunction {
   /**
    * Checks if this function supports concurrent execution.
    *
-   * <p>Some WebAssembly functions may have dependencies or side effects that prevent
-   * safe concurrent execution. This method indicates whether the function can be
-   * called concurrently from multiple threads.
+   * <p>Some WebAssembly functions may have dependencies or side effects that prevent safe
+   * concurrent execution. This method indicates whether the function can be called concurrently
+   * from multiple threads.
    *
    * @return true if the function supports concurrent execution
    */

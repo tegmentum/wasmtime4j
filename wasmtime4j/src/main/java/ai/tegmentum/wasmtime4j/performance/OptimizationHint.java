@@ -6,8 +6,8 @@ import java.util.Map;
  * Optimization hint providing guidance for JIT compiler optimization decisions.
  *
  * <p>OptimizationHint contains information about expected usage patterns, performance
- * characteristics, and optimization preferences for specific functions or code patterns.
- * These hints help the JIT compiler make better optimization decisions.
+ * characteristics, and optimization preferences for specific functions or code patterns. These
+ * hints help the JIT compiler make better optimization decisions.
  *
  * @since 1.0.0
  */
@@ -30,8 +30,8 @@ public interface OptimizationHint {
   /**
    * Gets the confidence level for this hint.
    *
-   * <p>Higher confidence levels indicate more reliable profiling data or
-   * stronger evidence supporting the hint.
+   * <p>Higher confidence levels indicate more reliable profiling data or stronger evidence
+   * supporting the hint.
    *
    * @return confidence level from 0.0 (no confidence) to 1.0 (full confidence)
    */
@@ -140,8 +140,8 @@ public interface OptimizationHint {
   /**
    * Combines this hint with another hint to create a merged hint.
    *
-   * <p>Merging helps consolidate multiple hints for the same target,
-   * with appropriate confidence and priority adjustments.
+   * <p>Merging helps consolidate multiple hints for the same target, with appropriate confidence
+   * and priority adjustments.
    *
    * @param other the other hint to merge with
    * @return merged optimization hint

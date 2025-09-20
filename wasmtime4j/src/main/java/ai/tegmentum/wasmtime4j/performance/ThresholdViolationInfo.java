@@ -5,8 +5,8 @@ import java.time.Instant;
 /**
  * Information about a performance threshold violation.
  *
- * <p>ThresholdViolationInfo provides details about which threshold was exceeded,
- * by how much, and the context in which the violation occurred.
+ * <p>ThresholdViolationInfo provides details about which threshold was exceeded, by how much, and
+ * the context in which the violation occurred.
  *
  * @since 1.0.0
  */
@@ -43,8 +43,8 @@ public interface ThresholdViolationInfo {
   /**
    * Gets the percentage by which the threshold was exceeded.
    *
-   * <p>For example, if the threshold was 100ms and the measured value was 150ms,
-   * this would return 50.0 (50% over the threshold).
+   * <p>For example, if the threshold was 100ms and the measured value was 150ms, this would return
+   * 50.0 (50% over the threshold).
    *
    * @return percentage over threshold
    */
@@ -96,9 +96,7 @@ public interface ThresholdViolationInfo {
    */
   String getSuggestedActions();
 
-  /**
-   * Enumeration of threshold types that can be violated.
-   */
+  /** Enumeration of threshold types that can be violated. */
   enum ThresholdType {
     /** Function execution time threshold. */
     FUNCTION_EXECUTION_TIME,

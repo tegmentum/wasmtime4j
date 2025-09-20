@@ -8,8 +8,8 @@ import java.util.Map;
  * Statistics for component resource usage and management.
  *
  * <p>ComponentResourceStats provides detailed metrics about resource creation, usage, lifecycle
- * management, and cleanup within a component instance. This includes both component-model
- * resources and system resources used by the component.
+ * management, and cleanup within a component instance. This includes both component-model resources
+ * and system resources used by the component.
  *
  * @since 1.0.0
  */
@@ -38,8 +38,8 @@ public interface ComponentResourceStats {
   /**
    * Gets the peak number of active resources.
    *
-   * <p>Returns the maximum number of resources that were simultaneously active at any point
-   * during the component instance's lifetime.
+   * <p>Returns the maximum number of resources that were simultaneously active at any point during
+   * the component instance's lifetime.
    *
    * @return peak active resource count
    */
@@ -48,8 +48,8 @@ public interface ComponentResourceStats {
   /**
    * Gets the total number of resources destroyed.
    *
-   * <p>Returns the cumulative count of resource instances that have been explicitly destroyed
-   * or garbage collected.
+   * <p>Returns the cumulative count of resource instances that have been explicitly destroyed or
+   * garbage collected.
    *
    * @return total resource destruction count
    */
@@ -67,8 +67,8 @@ public interface ComponentResourceStats {
   /**
    * Gets the average resource lifetime.
    *
-   * <p>Returns the mean duration between resource creation and destruction for resources that
-   * have completed their lifecycle.
+   * <p>Returns the mean duration between resource creation and destruction for resources that have
+   * completed their lifecycle.
    *
    * @return average resource lifetime
    */
@@ -77,8 +77,8 @@ public interface ComponentResourceStats {
   /**
    * Gets resource statistics by type.
    *
-   * <p>Returns detailed statistics broken down by resource type, including creation counts,
-   * active counts, and lifecycle metrics for each resource type.
+   * <p>Returns detailed statistics broken down by resource type, including creation counts, active
+   * counts, and lifecycle metrics for each resource type.
    *
    * @return map of resource type names to their statistics
    */
@@ -87,8 +87,8 @@ public interface ComponentResourceStats {
   /**
    * Gets the number of resource leaks detected.
    *
-   * <p>Returns the count of resources that were not properly cleaned up and had to be
-   * garbage collected or forcibly destroyed.
+   * <p>Returns the count of resources that were not properly cleaned up and had to be garbage
+   * collected or forcibly destroyed.
    *
    * @return resource leak count
    */
@@ -97,8 +97,7 @@ public interface ComponentResourceStats {
   /**
    * Gets the total memory used by active resources.
    *
-   * <p>Returns the current memory usage of all active resource instances managed by this
-   * component.
+   * <p>Returns the current memory usage of all active resource instances managed by this component.
    *
    * @return total resource memory usage in bytes
    */
@@ -144,8 +143,8 @@ public interface ComponentResourceStats {
   /**
    * Gets the timestamp of the first resource creation.
    *
-   * <p>Returns the time when the first resource was created by this component instance, or null
-   * if no resources have been created.
+   * <p>Returns the time when the first resource was created by this component instance, or null if
+   * no resources have been created.
    *
    * @return first resource creation timestamp, or null if none created
    */

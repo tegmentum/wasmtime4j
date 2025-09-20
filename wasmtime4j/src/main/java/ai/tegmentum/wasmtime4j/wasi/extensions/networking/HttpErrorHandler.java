@@ -3,14 +3,15 @@ package ai.tegmentum.wasmtime4j.wasi.extensions.networking;
 /**
  * Functional interface for handling errors during HTTP request processing.
  *
- * <p>Error handlers are invoked when exceptions occur during request processing,
- * allowing applications to provide custom error responses and logging. The
- * handler receives both the original request and the exception that occurred.
+ * <p>Error handlers are invoked when exceptions occur during request processing, allowing
+ * applications to provide custom error responses and logging. The handler receives both the
+ * original request and the exception that occurred.
  *
- * <p>Error handlers should be designed to be resilient and not throw exceptions
- * themselves, as this could lead to infinite error handling loops.
+ * <p>Error handlers should be designed to be resilient and not throw exceptions themselves, as this
+ * could lead to infinite error handling loops.
  *
  * <p>Example usage:
+ *
  * <pre>{@code
  * HttpErrorHandler customErrorHandler = (request, exception) -> {
  *     // Log the error
@@ -51,13 +52,12 @@ public interface HttpErrorHandler {
   /**
    * Handles an error that occurred during HTTP request processing.
    *
-   * <p>This method is called when an exception occurs in a route handler or
-   * middleware. The implementation should return an appropriate HTTP response
-   * based on the type of error and the application's error handling policy.
+   * <p>This method is called when an exception occurs in a route handler or middleware. The
+   * implementation should return an appropriate HTTP response based on the type of error and the
+   * application's error handling policy.
    *
-   * <p><strong>Important:</strong> This method should not throw exceptions.
-   * If an exception is thrown from this method, the server will return a
-   * generic 500 Internal Server Error response.
+   * <p><strong>Important:</strong> This method should not throw exceptions. If an exception is
+   * thrown from this method, the server will return a generic 500 Internal Server Error response.
    *
    * @param request the original HTTP request being processed
    * @param exception the exception that occurred during processing
@@ -68,8 +68,8 @@ public interface HttpErrorHandler {
   /**
    * Creates a default error handler that provides standard HTTP error responses.
    *
-   * <p>The default handler maps common exception types to appropriate HTTP
-   * status codes and provides generic error messages.
+   * <p>The default handler maps common exception types to appropriate HTTP status codes and
+   * provides generic error messages.
    *
    * @return a default error handler implementation
    */
@@ -91,12 +91,16 @@ public interface HttpErrorHandler {
       }
 
       // Create basic error response
-      final String errorBody = String.format("{\"error\":\"%s\",\"message\":\"%s\"}",
-          reasonPhrase, sanitizeErrorMessage(exception.getMessage()));
+      final String errorBody =
+          String.format(
+              "{\"error\":\"%s\",\"message\":\"%s\"}",
+              reasonPhrase, sanitizeErrorMessage(exception.getMessage()));
 
       // Note: This would require WasiHttpResponse to have a builder
       // For now, we'll use a constructor-based approach
-      return new WasiHttpResponse(statusCode, reasonPhrase,
+      return new WasiHttpResponse(
+          statusCode,
+          reasonPhrase,
           java.util.Map.of("Content-Type", "application/json"),
           java.nio.ByteBuffer.wrap(errorBody.getBytes(java.nio.charset.StandardCharsets.UTF_8)),
           0);
@@ -112,8 +116,13 @@ public interface HttpErrorHandler {
   static HttpErrorHandler withLogging(final HttpErrorHandler delegate) {
     return (request, exception) -> {
       // Log the error (in a real implementation, use proper logging framework)
-      System.err.println("HTTP Error processing " + request.getMethod() + " " +
-                        request.getUri() + ": " + exception.getMessage());
+      System.err.println(
+          "HTTP Error processing "
+              + request.getMethod()
+              + " "
+              + request.getUri()
+              + ": "
+              + exception.getMessage());
       exception.printStackTrace(System.err);
 
       // Delegate to the provided handler
@@ -124,8 +133,8 @@ public interface HttpErrorHandler {
   /**
    * Creates an error handler that provides detailed error information for development.
    *
-   * <p><strong>Warning:</strong> This handler includes stack traces in responses
-   * and should only be used in development environments, not in production.
+   * <p><strong>Warning:</strong> This handler includes stack traces in responses and should only be
+   * used in development environments, not in production.
    *
    * @return a development-oriented error handler
    */
@@ -133,8 +142,14 @@ public interface HttpErrorHandler {
     return (request, exception) -> {
       final StringBuilder errorDetails = new StringBuilder();
       errorDetails.append("{\n");
-      errorDetails.append("  \"error\": \"").append(exception.getClass().getSimpleName()).append("\",\n");
-      errorDetails.append("  \"message\": \"").append(sanitizeErrorMessage(exception.getMessage())).append("\",\n");
+      errorDetails
+          .append("  \"error\": \"")
+          .append(exception.getClass().getSimpleName())
+          .append("\",\n");
+      errorDetails
+          .append("  \"message\": \"")
+          .append(sanitizeErrorMessage(exception.getMessage()))
+          .append("\",\n");
       errorDetails.append("  \"request\": {\n");
       errorDetails.append("    \"method\": \"").append(request.getMethod()).append("\",\n");
       errorDetails.append("    \"uri\": \"").append(request.getUri()).append("\"\n");
@@ -152,9 +167,12 @@ public interface HttpErrorHandler {
 
       errorDetails.append("\n  ]\n}");
 
-      return new WasiHttpResponse(500, "Internal Server Error",
+      return new WasiHttpResponse(
+          500,
+          "Internal Server Error",
           java.util.Map.of("Content-Type", "application/json"),
-          java.nio.ByteBuffer.wrap(errorDetails.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8)),
+          java.nio.ByteBuffer.wrap(
+              errorDetails.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8)),
           0);
     };
   }
@@ -170,9 +188,10 @@ public interface HttpErrorHandler {
       return "Unknown error";
     }
     // Escape quotes and newlines to prevent JSON injection
-    return message.replace("\"", "\\\"")
-                 .replace("\n", "\\n")
-                 .replace("\r", "\\r")
-                 .replace("\t", "\\t");
+    return message
+        .replace("\"", "\\\"")
+        .replace("\n", "\\n")
+        .replace("\r", "\\r")
+        .replace("\t", "\\t");
   }
 }

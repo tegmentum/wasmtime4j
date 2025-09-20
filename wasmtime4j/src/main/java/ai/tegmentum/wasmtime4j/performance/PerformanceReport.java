@@ -52,8 +52,8 @@ public interface PerformanceReport {
   /**
    * Gets performance metrics broken down by time intervals.
    *
-   * <p>This provides a time-series view of performance metrics, useful for identifying
-   * performance trends and patterns over time.
+   * <p>This provides a time-series view of performance metrics, useful for identifying performance
+   * trends and patterns over time.
    *
    * @return list of time-interval metrics in chronological order
    */
@@ -62,8 +62,8 @@ public interface PerformanceReport {
   /**
    * Gets performance statistics broken down by function.
    *
-   * <p>This provides detailed analysis of individual function performance including
-   * call counts, execution times, and resource usage.
+   * <p>This provides detailed analysis of individual function performance including call counts,
+   * execution times, and resource usage.
    *
    * @return map of function names to their performance statistics
    */
@@ -72,8 +72,8 @@ public interface PerformanceReport {
   /**
    * Gets memory usage analysis and statistics.
    *
-   * <p>This includes allocation patterns, peak usage, garbage collection impact,
-   * and memory efficiency metrics.
+   * <p>This includes allocation patterns, peak usage, garbage collection impact, and memory
+   * efficiency metrics.
    *
    * @return memory performance analysis
    */
@@ -92,8 +92,8 @@ public interface PerformanceReport {
   /**
    * Identifies performance bottlenecks and areas for optimization.
    *
-   * <p>This analyzes the collected performance data to identify functions, operations,
-   * or patterns that are consuming disproportionate resources.
+   * <p>This analyzes the collected performance data to identify functions, operations, or patterns
+   * that are consuming disproportionate resources.
    *
    * @return list of identified performance bottlenecks
    */
@@ -102,8 +102,8 @@ public interface PerformanceReport {
   /**
    * Gets recommendations for performance optimization.
    *
-   * <p>Based on the performance analysis, this provides actionable recommendations
-   * for improving WebAssembly execution performance.
+   * <p>Based on the performance analysis, this provides actionable recommendations for improving
+   * WebAssembly execution performance.
    *
    * @return list of optimization recommendations
    */
@@ -112,8 +112,8 @@ public interface PerformanceReport {
   /**
    * Gets performance comparison with previous reports if available.
    *
-   * <p>This provides regression analysis by comparing current performance with
-   * previous monitoring sessions.
+   * <p>This provides regression analysis by comparing current performance with previous monitoring
+   * sessions.
    *
    * @return performance comparison analysis, or null if no previous data available
    */
@@ -122,8 +122,8 @@ public interface PerformanceReport {
   /**
    * Gets resource utilization statistics.
    *
-   * <p>This includes CPU usage, memory efficiency, and other resource utilization
-   * metrics during WebAssembly execution.
+   * <p>This includes CPU usage, memory efficiency, and other resource utilization metrics during
+   * WebAssembly execution.
    *
    * @return resource utilization statistics
    */
@@ -132,8 +132,8 @@ public interface PerformanceReport {
   /**
    * Gets error and exception statistics that may impact performance.
    *
-   * <p>This includes WebAssembly traps, host function errors, and other exceptions
-   * that occurred during the monitoring period.
+   * <p>This includes WebAssembly traps, host function errors, and other exceptions that occurred
+   * during the monitoring period.
    *
    * @return error statistics
    */
@@ -142,8 +142,8 @@ public interface PerformanceReport {
   /**
    * Gets the confidence level of the performance measurements.
    *
-   * <p>This indicates the statistical reliability of the performance data based on
-   * sample size, measurement variance, and monitoring duration.
+   * <p>This indicates the statistical reliability of the performance data based on sample size,
+   * measurement variance, and monitoring duration.
    *
    * @return confidence level percentage (0.0 to 100.0)
    */
@@ -152,8 +152,8 @@ public interface PerformanceReport {
   /**
    * Exports the performance report in the specified format.
    *
-   * <p>Supported formats may include JSON, CSV, HTML, or other structured formats
-   * suitable for external analysis tools.
+   * <p>Supported formats may include JSON, CSV, HTML, or other structured formats suitable for
+   * external analysis tools.
    *
    * @param format export format specification
    * @return exported report data
@@ -164,8 +164,8 @@ public interface PerformanceReport {
   /**
    * Creates a summary string representation of the performance report.
    *
-   * <p>The summary includes key findings and metrics in a human-readable format
-   * suitable for logging or quick analysis.
+   * <p>The summary includes key findings and metrics in a human-readable format suitable for
+   * logging or quick analysis.
    *
    * @return formatted report summary
    */
@@ -174,8 +174,8 @@ public interface PerformanceReport {
   /**
    * Gets the monitoring overhead impact on the reported performance.
    *
-   * <p>This provides transparency about the performance cost of monitoring itself
-   * and its impact on the measured results.
+   * <p>This provides transparency about the performance cost of monitoring itself and its impact on
+   * the measured results.
    *
    * @return monitoring overhead analysis
    */

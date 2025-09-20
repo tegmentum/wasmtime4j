@@ -1,7 +1,7 @@
 package ai.tegmentum.wasmtime4j.wasi.impl;
 
-import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.exception.WasiResourceException;
+import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.wasi.WasiResourceConfig;
 import ai.tegmentum.wasmtime4j.wasi.WasiResourcePermissions;
 import java.io.IOException;
@@ -48,13 +48,18 @@ public final class WasiFileResourceImpl extends WasiGenericResourceImpl {
     }
 
     // Extract filesystem-specific configuration
-    final String rootPathStr = (String) config.getProperty("root_path")
-        .orElseThrow(() -> new IllegalArgumentException("Filesystem root path must be specified"));
+    final String rootPathStr =
+        (String)
+            config
+                .getProperty("root_path")
+                .orElseThrow(
+                    () -> new IllegalArgumentException("Filesystem root path must be specified"));
 
     this.rootPath = validateAndNormalizePath(rootPathStr);
-    this.permissions = config.getPermissions().getClass().isAssignableFrom(Set.class)
-        ? (Set<WasiResourcePermissions>) config.getPermissions()
-        : WasiResourcePermissions.READ_ONLY;
+    this.permissions =
+        config.getPermissions().getClass().isAssignableFrom(Set.class)
+            ? (Set<WasiResourcePermissions>) config.getPermissions()
+            : WasiResourcePermissions.READ_ONLY;
 
     // Validate root path exists and is accessible
     if (!Files.exists(rootPath)) {
@@ -178,7 +183,8 @@ public final class WasiFileResourceImpl extends WasiGenericResourceImpl {
         try {
           Files.delete(targetPath);
         } catch (final IOException e) {
-          throw new WasiResourceException("Directory not empty or deletion failed: " + relativePath, e);
+          throw new WasiResourceException(
+              "Directory not empty or deletion failed: " + relativePath, e);
         }
       } else {
         Files.delete(targetPath);
@@ -230,13 +236,15 @@ public final class WasiFileResourceImpl extends WasiGenericResourceImpl {
     switch (operation.toLowerCase()) {
       case "read_file":
         if (parameters.length < 3) {
-          throw new IllegalArgumentException("read_file requires path, buffer, and offset parameters");
+          throw new IllegalArgumentException(
+              "read_file requires path, buffer, and offset parameters");
         }
         return readFile((String) parameters[0], (byte[]) parameters[1], (Long) parameters[2]);
 
       case "write_file":
         if (parameters.length < 3) {
-          throw new IllegalArgumentException("write_file requires path, buffer, and offset parameters");
+          throw new IllegalArgumentException(
+              "write_file requires path, buffer, and offset parameters");
         }
         return writeFile((String) parameters[0], (byte[]) parameters[1], (Long) parameters[2]);
 
@@ -319,19 +327,21 @@ public final class WasiFileResourceImpl extends WasiGenericResourceImpl {
    * @param required the required permission
    * @throws WasiResourceException if permission is not granted
    */
-  private void ensurePermission(final WasiResourcePermissions required) throws WasiResourceException {
+  private void ensurePermission(final WasiResourcePermissions required)
+      throws WasiResourceException {
     if (!permissions.contains(required)) {
       throw new WasiResourceException("Permission denied: " + required.getName());
     }
   }
 
-  /**
-   * Interface for filesystem-specific statistics.
-   */
+  /** Interface for filesystem-specific statistics. */
   public interface FileSystemStats {
     long getBytesRead();
+
     long getBytesWritten();
+
     long getFileOperations();
+
     String getRootPath();
   }
 }

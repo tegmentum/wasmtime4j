@@ -7,9 +7,9 @@ import java.util.Objects;
 /**
  * Represents a socket address for WASI networking operations.
  *
- * <p>A socket address consists of an address (IP address or filesystem path)
- * and optional port number, depending on the address family. This class
- * provides factory methods for creating addresses for different socket families.
+ * <p>A socket address consists of an address (IP address or filesystem path) and optional port
+ * number, depending on the address family. This class provides factory methods for creating
+ * addresses for different socket families.
  *
  * <p>Instances of this class are immutable and thread-safe.
  *
@@ -22,7 +22,8 @@ public final class WasiSocketAddress {
   private final int port;
   private final String path;
 
-  private WasiSocketAddress(final SocketFamily family, final String address, final int port, final String path) {
+  private WasiSocketAddress(
+      final SocketFamily family, final String address, final int port, final String path) {
     this.family = family;
     this.address = address;
     this.port = port;
@@ -99,7 +100,8 @@ public final class WasiSocketAddress {
       throw new IllegalArgumentException("Unix socket path cannot be null or empty");
     }
     if (path.length() > 108) { // Standard Unix socket path limit
-      throw new IllegalArgumentException("Unix socket path too long (max 108 characters): " + path.length());
+      throw new IllegalArgumentException(
+          "Unix socket path too long (max 108 characters): " + path.length());
     }
 
     return new WasiSocketAddress(SocketFamily.UNIX, null, 0, path);
@@ -197,10 +199,10 @@ public final class WasiSocketAddress {
     }
 
     final WasiSocketAddress that = (WasiSocketAddress) obj;
-    return port == that.port &&
-           family == that.family &&
-           Objects.equals(address, that.address) &&
-           Objects.equals(path, that.path);
+    return port == that.port
+        && family == that.family
+        && Objects.equals(address, that.address)
+        && Objects.equals(path, that.path);
   }
 
   @Override

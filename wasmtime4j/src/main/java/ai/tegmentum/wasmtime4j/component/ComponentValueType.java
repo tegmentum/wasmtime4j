@@ -14,128 +14,80 @@ package ai.tegmentum.wasmtime4j.component;
  */
 public enum ComponentValueType {
   // Primitive numeric types
-  /**
-   * Boolean type (true/false).
-   */
+  /** Boolean type (true/false). */
   BOOL,
 
-  /**
-   * Signed 8-bit integer.
-   */
+  /** Signed 8-bit integer. */
   S8,
 
-  /**
-   * Unsigned 8-bit integer.
-   */
+  /** Unsigned 8-bit integer. */
   U8,
 
-  /**
-   * Signed 16-bit integer.
-   */
+  /** Signed 16-bit integer. */
   S16,
 
-  /**
-   * Unsigned 16-bit integer.
-   */
+  /** Unsigned 16-bit integer. */
   U16,
 
-  /**
-   * Signed 32-bit integer.
-   */
+  /** Signed 32-bit integer. */
   S32,
 
-  /**
-   * Unsigned 32-bit integer.
-   */
+  /** Unsigned 32-bit integer. */
   U32,
 
-  /**
-   * Signed 64-bit integer.
-   */
+  /** Signed 64-bit integer. */
   S64,
 
-  /**
-   * Unsigned 64-bit integer.
-   */
+  /** Unsigned 64-bit integer. */
   U64,
 
-  /**
-   * 32-bit floating point number.
-   */
+  /** 32-bit floating point number. */
   F32,
 
-  /**
-   * 64-bit floating point number.
-   */
+  /** 64-bit floating point number. */
   F64,
 
   // Text and character types
-  /**
-   * Unicode character.
-   */
+  /** Unicode character. */
   CHAR,
 
-  /**
-   * UTF-8 encoded string.
-   */
+  /** UTF-8 encoded string. */
   STRING,
 
   // Structured types
-  /**
-   * List/array of values of the same type.
-   */
+  /** List/array of values of the same type. */
   LIST,
 
-  /**
-   * Record type with named fields of different types.
-   */
+  /** Record type with named fields of different types. */
   RECORD,
 
-  /**
-   * Variant type representing one of several possible types.
-   */
+  /** Variant type representing one of several possible types. */
   VARIANT,
 
-  /**
-   * Tuple type with multiple unnamed values.
-   */
+  /** Tuple type with multiple unnamed values. */
   TUPLE,
 
-  /**
-   * Flags type representing a set of boolean flags.
-   */
+  /** Flags type representing a set of boolean flags. */
   FLAGS,
 
-  /**
-   * Enumeration type with named constants.
-   */
+  /** Enumeration type with named constants. */
   ENUM,
 
   // Optional and result types
-  /**
-   * Optional type that may or may not contain a value.
-   */
+  /** Optional type that may or may not contain a value. */
   OPTION,
 
-  /**
-   * Result type representing either success or error.
-   */
+  /** Result type representing either success or error. */
   RESULT,
 
   // Resource types
-  /**
-   * Resource handle type for managing stateful objects.
-   */
+  /** Resource handle type for managing stateful objects. */
   RESOURCE,
 
-  /**
-   * Borrowed resource handle with limited lifetime.
-   */
+  /** Borrowed resource handle with limited lifetime. */
   BORROW,
 
-  /**
-   * Owned resource handle with transfer semantics.
-   */
+  /** Owned resource handle with transfer semantics. */
   OWN;
 
   /**
@@ -144,9 +96,16 @@ public enum ComponentValueType {
    * @return true if this is a numeric primitive type
    */
   public boolean isNumeric() {
-    return this == S8 || this == U8 || this == S16 || this == U16
-        || this == S32 || this == U32 || this == S64 || this == U64
-        || this == F32 || this == F64;
+    return this == S8
+        || this == U8
+        || this == S16
+        || this == U16
+        || this == S32
+        || this == U32
+        || this == S64
+        || this == U64
+        || this == F32
+        || this == F64;
   }
 
   /**
@@ -191,8 +150,12 @@ public enum ComponentValueType {
    * @return true if this is a structured type
    */
   public boolean isStructured() {
-    return this == LIST || this == RECORD || this == VARIANT
-        || this == TUPLE || this == FLAGS || this == ENUM;
+    return this == LIST
+        || this == RECORD
+        || this == VARIANT
+        || this == TUPLE
+        || this == FLAGS
+        || this == ENUM;
   }
 
   /**

@@ -7,9 +7,9 @@ import java.util.Optional;
 /**
  * Interface for WebAssembly Component Model component type information.
  *
- * <p>ComponentType provides comprehensive type information about a component including its
- * imports, exports, and interface definitions. This information is essential for validation,
- * tooling, and dynamic interaction with components.
+ * <p>ComponentType provides comprehensive type information about a component including its imports,
+ * exports, and interface definitions. This information is essential for validation, tooling, and
+ * dynamic interaction with components.
  *
  * <p>Component types are immutable and reflect the component definition at compile time.
  *
@@ -65,8 +65,8 @@ public interface ComponentType {
   /**
    * Gets all interface definitions used by this component.
    *
-   * <p>Returns interfaces that are either imported, exported, or used internally by the
-   * component. This includes both component-defined and referenced external interfaces.
+   * <p>Returns interfaces that are either imported, exported, or used internally by the component.
+   * This includes both component-defined and referenced external interfaces.
    *
    * @return map of interface names to their definitions
    */

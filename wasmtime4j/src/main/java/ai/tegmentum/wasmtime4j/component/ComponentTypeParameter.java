@@ -26,8 +26,8 @@ public interface ComponentTypeParameter {
   /**
    * Gets the bounds for this type parameter.
    *
-   * <p>Returns the constraints that concrete types must satisfy to be used as this type
-   * parameter. These define the upper and lower bounds for valid substitutions.
+   * <p>Returns the constraints that concrete types must satisfy to be used as this type parameter.
+   * These define the upper and lower bounds for valid substitutions.
    *
    * @return list of type bounds
    */
@@ -46,8 +46,8 @@ public interface ComponentTypeParameter {
   /**
    * Gets the variance of this type parameter.
    *
-   * <p>Returns whether this type parameter is covariant, contravariant, or invariant with
-   * respect to subtyping relationships.
+   * <p>Returns whether this type parameter is covariant, contravariant, or invariant with respect
+   * to subtyping relationships.
    *
    * @return type variance
    */
@@ -67,8 +67,7 @@ public interface ComponentTypeParameter {
   /**
    * Validates a concrete type against this parameter's constraints.
    *
-   * <p>Checks if the provided type can be used as a concrete substitution for this type
-   * parameter.
+   * <p>Checks if the provided type can be used as a concrete substitution for this type parameter.
    *
    * @param concreteType the concrete type to validate
    * @return true if the type satisfies all bounds, false otherwise
@@ -85,9 +84,7 @@ public interface ComponentTypeParameter {
    */
   Optional<String> getDocumentation();
 
-  /**
-   * Type variance options for generic type parameters.
-   */
+  /** Type variance options for generic type parameters. */
   enum TypeVariance {
     /** Type parameter is covariant (can be substituted with subtypes) */
     COVARIANT,

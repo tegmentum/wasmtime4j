@@ -6,10 +6,10 @@ import java.nio.ByteBuffer;
 /**
  * Represents a network socket for WASI networking operations.
  *
- * <p>A WasiSocket provides low-level network I/O operations including reading,
- * writing, connecting, and configuration. Sockets are created through the
- * {@link ai.tegmentum.wasmtime4j.wasi.extensions.WasiNetworking} interface
- * and must be properly closed to release system resources.
+ * <p>A WasiSocket provides low-level network I/O operations including reading, writing, connecting,
+ * and configuration. Sockets are created through the {@link
+ * ai.tegmentum.wasmtime4j.wasi.extensions.WasiNetworking} interface and must be properly closed to
+ * release system resources.
  *
  * <p>This interface implements AutoCloseable to support try-with-resources:
  *
@@ -27,9 +27,9 @@ public interface WasiSocket extends AutoCloseable {
   /**
    * Connects the socket to a remote address.
    *
-   * <p>For stream sockets (TCP), this establishes a connection to the remote peer.
-   * For datagram sockets (UDP), this sets the default destination for sends and
-   * filters incoming packets to only those from the specified address.
+   * <p>For stream sockets (TCP), this establishes a connection to the remote peer. For datagram
+   * sockets (UDP), this sets the default destination for sends and filters incoming packets to only
+   * those from the specified address.
    *
    * @param address the remote address to connect to
    * @throws WasmException if connection fails or permission is denied
@@ -41,10 +41,9 @@ public interface WasiSocket extends AutoCloseable {
   /**
    * Reads data from the socket into the provided buffer.
    *
-   * <p>This method reads available data from the socket into the buffer.
-   * The buffer's position will be advanced by the number of bytes read.
-   * For stream sockets, this may read fewer bytes than the buffer capacity.
-   * For datagram sockets, this reads one complete packet.
+   * <p>This method reads available data from the socket into the buffer. The buffer's position will
+   * be advanced by the number of bytes read. For stream sockets, this may read fewer bytes than the
+   * buffer capacity. For datagram sockets, this reads one complete packet.
    *
    * @param buffer the buffer to read data into
    * @return the number of bytes read, or -1 if end of stream reached
@@ -57,10 +56,9 @@ public interface WasiSocket extends AutoCloseable {
   /**
    * Writes data from the buffer to the socket.
    *
-   * <p>This method writes data from the buffer to the socket.
-   * The buffer's position will be advanced by the number of bytes written.
-   * For stream sockets, this may write fewer bytes than available in the buffer.
-   * For datagram sockets, this sends one complete packet.
+   * <p>This method writes data from the buffer to the socket. The buffer's position will be
+   * advanced by the number of bytes written. For stream sockets, this may write fewer bytes than
+   * available in the buffer. For datagram sockets, this sends one complete packet.
    *
    * @param buffer the buffer containing data to write
    * @return the number of bytes written
@@ -73,8 +71,8 @@ public interface WasiSocket extends AutoCloseable {
   /**
    * Sets a socket option to configure socket behavior.
    *
-   * <p>Socket options control various aspects of socket behavior such as
-   * timeouts, buffer sizes, and protocol-specific settings.
+   * <p>Socket options control various aspects of socket behavior such as timeouts, buffer sizes,
+   * and protocol-specific settings.
    *
    * @param option the socket option to set
    * @param value the value for the option
@@ -151,8 +149,8 @@ public interface WasiSocket extends AutoCloseable {
   /**
    * Shuts down the input side of the socket connection.
    *
-   * <p>After calling this method, the socket will not receive any more data.
-   * Any attempt to read from the socket will return -1 (end of stream).
+   * <p>After calling this method, the socket will not receive any more data. Any attempt to read
+   * from the socket will return -1 (end of stream).
    *
    * @throws WasmException if shutdown fails
    * @throws IllegalStateException if socket is not connected or already closed
@@ -162,8 +160,8 @@ public interface WasiSocket extends AutoCloseable {
   /**
    * Shuts down the output side of the socket connection.
    *
-   * <p>After calling this method, the socket will not send any more data.
-   * Any attempt to write to the socket will throw an exception.
+   * <p>After calling this method, the socket will not send any more data. Any attempt to write to
+   * the socket will throw an exception.
    *
    * @throws WasmException if shutdown fails
    * @throws IllegalStateException if socket is not connected or already closed
@@ -181,9 +179,8 @@ public interface WasiSocket extends AutoCloseable {
   /**
    * Closes the socket and releases all associated resources.
    *
-   * <p>After calling this method, the socket becomes unusable and all
-   * subsequent operations will throw exceptions. This method can be
-   * called multiple times safely.
+   * <p>After calling this method, the socket becomes unusable and all subsequent operations will
+   * throw exceptions. This method can be called multiple times safely.
    */
   @Override
   void close();

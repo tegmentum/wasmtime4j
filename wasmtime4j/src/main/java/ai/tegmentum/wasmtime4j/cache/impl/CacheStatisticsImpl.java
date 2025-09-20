@@ -188,63 +188,49 @@ public final class CacheStatisticsImpl implements CacheStatistics {
         getCollectionDuration());
   }
 
-  /**
-   * Records a cache hit.
-   */
+  /** Records a cache hit. */
   public void recordHit() {
     if (enabled) {
       hitCount.incrementAndGet();
     }
   }
 
-  /**
-   * Records a cache miss.
-   */
+  /** Records a cache miss. */
   public void recordMiss() {
     if (enabled) {
       missCount.incrementAndGet();
     }
   }
 
-  /**
-   * Records an eviction.
-   */
+  /** Records an eviction. */
   public void recordEviction() {
     if (enabled) {
       evictionCount.incrementAndGet();
     }
   }
 
-  /**
-   * Records a put operation.
-   */
+  /** Records a put operation. */
   public void recordPut() {
     if (enabled) {
       putCount.incrementAndGet();
     }
   }
 
-  /**
-   * Records a removal operation.
-   */
+  /** Records a removal operation. */
   public void recordRemoval() {
     if (enabled) {
       removalCount.incrementAndGet();
     }
   }
 
-  /**
-   * Records a maintenance operation.
-   */
+  /** Records a maintenance operation. */
   public void recordMaintenanceOperation() {
     if (enabled) {
       maintenanceCount.incrementAndGet();
     }
   }
 
-  /**
-   * Records an integrity failure.
-   */
+  /** Records an integrity failure. */
   public void recordIntegrityFailure() {
     if (enabled) {
       integrityFailureCount.incrementAndGet();
@@ -263,9 +249,7 @@ public final class CacheStatisticsImpl implements CacheStatistics {
     }
   }
 
-  /**
-   * Immutable snapshot of cache statistics.
-   */
+  /** Immutable snapshot of cache statistics. */
   private static final class CacheStatisticsSnapshot implements CacheStatistics {
     private final boolean enabled;
     private final long hitCount;

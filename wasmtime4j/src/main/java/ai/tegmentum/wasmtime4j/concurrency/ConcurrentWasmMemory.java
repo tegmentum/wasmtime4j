@@ -2,7 +2,6 @@ package ai.tegmentum.wasmtime4j.concurrency;
 
 import ai.tegmentum.wasmtime4j.WasmMemory;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.locks.ReadWriteLock;
 
@@ -14,6 +13,7 @@ import java.util.concurrent.locks.ReadWriteLock;
  * simultaneously with proper synchronization.
  *
  * <p>Key features:
+ *
  * <ul>
  *   <li>Thread-safe memory read and write operations
  *   <li>Atomic memory operations for concurrent access

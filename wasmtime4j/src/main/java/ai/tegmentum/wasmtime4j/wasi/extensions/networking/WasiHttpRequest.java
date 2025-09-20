@@ -11,11 +11,11 @@ import java.util.Objects;
 /**
  * Represents an HTTP request for WASI HTTP operations.
  *
- * <p>This class encapsulates all components of an HTTP request including
- * method, URI, headers, and body. Instances are immutable and constructed
- * using the builder pattern for flexibility.
+ * <p>This class encapsulates all components of an HTTP request including method, URI, headers, and
+ * body. Instances are immutable and constructed using the builder pattern for flexibility.
  *
  * <p>Example usage:
+ *
  * <pre>{@code
  * WasiHttpRequest request = WasiHttpRequest.builder()
  *     .method(HttpMethod.POST)
@@ -36,9 +36,12 @@ public final class WasiHttpRequest {
   private final ByteBuffer body;
   private final int timeoutMillis;
 
-  private WasiHttpRequest(final HttpMethod method, final URI uri,
-                         final Map<String, String> headers, final ByteBuffer body,
-                         final int timeoutMillis) {
+  private WasiHttpRequest(
+      final HttpMethod method,
+      final URI uri,
+      final Map<String, String> headers,
+      final ByteBuffer body,
+      final int timeoutMillis) {
     this.method = method;
     this.uri = uri;
     this.headers = Collections.unmodifiableMap(new HashMap<>(headers));
@@ -187,11 +190,11 @@ public final class WasiHttpRequest {
     }
 
     final WasiHttpRequest that = (WasiHttpRequest) obj;
-    return timeoutMillis == that.timeoutMillis &&
-           method == that.method &&
-           Objects.equals(uri, that.uri) &&
-           Objects.equals(headers, that.headers) &&
-           Objects.equals(body, that.body);
+    return timeoutMillis == that.timeoutMillis
+        && method == that.method
+        && Objects.equals(uri, that.uri)
+        && Objects.equals(headers, that.headers)
+        && Objects.equals(body, that.body);
   }
 
   @Override
@@ -201,19 +204,23 @@ public final class WasiHttpRequest {
 
   @Override
   public String toString() {
-    return "WasiHttpRequest{" +
-           "method=" + method +
-           ", uri=" + uri +
-           ", headers=" + headers.size() +
-           ", hasBody=" + hasBody() +
-           ", bodyLength=" + getBodyLength() +
-           ", timeout=" + timeoutMillis +
-           '}';
+    return "WasiHttpRequest{"
+        + "method="
+        + method
+        + ", uri="
+        + uri
+        + ", headers="
+        + headers.size()
+        + ", hasBody="
+        + hasBody()
+        + ", bodyLength="
+        + getBodyLength()
+        + ", timeout="
+        + timeoutMillis
+        + '}';
   }
 
-  /**
-   * Builder for constructing WasiHttpRequest instances.
-   */
+  /** Builder for constructing WasiHttpRequest instances. */
   public static final class Builder {
     private HttpMethod method = HttpMethod.GET;
     private URI uri;

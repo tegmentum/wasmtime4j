@@ -3,8 +3,8 @@ package ai.tegmentum.wasmtime4j.performance;
 /**
  * Severity levels for performance events.
  *
- * <p>These severity levels indicate the potential impact of performance events on
- * overall system performance and operation.
+ * <p>These severity levels indicate the potential impact of performance events on overall system
+ * performance and operation.
  *
  * @since 1.0.0
  */

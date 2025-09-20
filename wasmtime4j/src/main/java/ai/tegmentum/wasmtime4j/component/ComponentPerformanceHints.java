@@ -89,9 +89,7 @@ public interface ComponentPerformanceHints {
    */
   Map<String, Object> getCustomHints();
 
-  /**
-   * Execution frequency categories for performance hints.
-   */
+  /** Execution frequency categories for performance hints. */
   enum ExecutionFrequency {
     /** Component is executed very rarely */
     RARE,
@@ -105,9 +103,7 @@ public interface ComponentPerformanceHints {
     CONTINUOUS
   }
 
-  /**
-   * Memory access pattern categories for performance optimization.
-   */
+  /** Memory access pattern categories for performance optimization. */
   enum MemoryAccessPattern {
     /** Sequential memory access patterns */
     SEQUENTIAL,
@@ -121,9 +117,7 @@ public interface ComponentPerformanceHints {
     MIXED
   }
 
-  /**
-   * CPU intensity levels for resource allocation.
-   */
+  /** CPU intensity levels for resource allocation. */
   enum CpuIntensity {
     /** Low CPU usage, mostly I/O or waiting */
     LOW,
@@ -135,9 +129,7 @@ public interface ComponentPerformanceHints {
     VERY_HIGH
   }
 
-  /**
-   * I/O characteristics for performance optimization.
-   */
+  /** I/O characteristics for performance optimization. */
   enum IoCharacteristics {
     /** Minimal I/O operations */
     MINIMAL,

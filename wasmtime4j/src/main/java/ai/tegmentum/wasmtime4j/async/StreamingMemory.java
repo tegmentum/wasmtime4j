@@ -92,8 +92,8 @@ public interface StreamingMemory extends WasmMemory {
   /**
    * Creates an OutputStream for writing to memory.
    *
-   * <p>The returned OutputStream provides sequential access for writing to memory starting from
-   * the specified offset. The stream will allow writing up to maxLength bytes.
+   * <p>The returned OutputStream provides sequential access for writing to memory starting from the
+   * specified offset. The stream will allow writing up to maxLength bytes.
    *
    * @param offset the starting byte offset in memory
    * @param maxLength the maximum number of bytes to write, or -1 for unlimited
@@ -106,8 +106,8 @@ public interface StreamingMemory extends WasmMemory {
   /**
    * Asynchronously copies data from another StreamingMemory.
    *
-   * <p>This method performs efficient bulk copying between memory instances, which can be
-   * optimized at the native level for better performance than individual read/write operations.
+   * <p>This method performs efficient bulk copying between memory instances, which can be optimized
+   * at the native level for better performance than individual read/write operations.
    *
    * @param source the source memory to copy from
    * @param srcOffset the offset in the source memory
@@ -122,8 +122,8 @@ public interface StreamingMemory extends WasmMemory {
   /**
    * Asynchronously fills a region of memory with a specific byte value.
    *
-   * <p>This method efficiently sets a contiguous region of memory to the specified value,
-   * which is useful for initialization or clearing operations.
+   * <p>This method efficiently sets a contiguous region of memory to the specified value, which is
+   * useful for initialization or clearing operations.
    *
    * @param offset the starting byte offset in memory
    * @param length the number of bytes to fill
@@ -179,9 +179,7 @@ public interface StreamingMemory extends WasmMemory {
      */
     CompletableFuture<Void> flush();
 
-    /**
-     * Closes the memory stream and releases associated resources.
-     */
+    /** Closes the memory stream and releases associated resources. */
     void close();
 
     /**

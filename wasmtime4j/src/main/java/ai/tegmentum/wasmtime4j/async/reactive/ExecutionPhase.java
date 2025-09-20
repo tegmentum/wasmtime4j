@@ -6,8 +6,8 @@ package ai.tegmentum.wasmtime4j.async.reactive;
  * <p>This enum represents the various stages that a WebAssembly function goes through during
  * execution, from initial preparation through completion or failure.
  *
- * <p>These phases are used in reactive execution events to provide detailed progress
- * information and enable monitoring of function execution lifecycle.
+ * <p>These phases are used in reactive execution events to provide detailed progress information
+ * and enable monitoring of function execution lifecycle.
  *
  * @since 1.0.0
  */
@@ -119,8 +119,8 @@ public enum ExecutionPhase {
   /**
    * Checks if this phase represents a terminal state.
    *
-   * <p>Terminal phases are those where execution cannot proceed further,
-   * including completion, failure, cancellation, and timeout.
+   * <p>Terminal phases are those where execution cannot proceed further, including completion,
+   * failure, cancellation, and timeout.
    *
    * @return true if this is a terminal phase
    */
@@ -153,8 +153,8 @@ public enum ExecutionPhase {
   /**
    * Gets the estimated progress percentage for this phase.
    *
-   * <p>This provides a rough estimate of execution progress based on
-   * the current phase, useful for progress indicators.
+   * <p>This provides a rough estimate of execution progress based on the current phase, useful for
+   * progress indicators.
    *
    * @return estimated progress percentage (0.0 to 100.0)
    */

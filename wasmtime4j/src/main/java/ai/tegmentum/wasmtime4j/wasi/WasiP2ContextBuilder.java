@@ -105,8 +105,8 @@ public interface WasiP2ContextBuilder {
   /**
    * Validates the builder configuration.
    *
-   * <p>Checks that all required settings are present and that the configuration is consistent
-   * and valid for creating a WASI Preview 2 context.
+   * <p>Checks that all required settings are present and that the configuration is consistent and
+   * valid for creating a WASI Preview 2 context.
    *
    * @throws WasmException if validation fails with details about specific issues
    */

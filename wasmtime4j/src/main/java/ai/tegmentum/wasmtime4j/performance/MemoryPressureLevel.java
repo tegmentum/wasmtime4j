@@ -3,9 +3,8 @@ package ai.tegmentum.wasmtime4j.performance;
 /**
  * Represents the current memory pressure level in the system.
  *
- * <p>Memory pressure affects performance characteristics and optimization decisions.
- * High memory pressure may trigger more aggressive garbage collection or
- * influence JIT compilation strategies.
+ * <p>Memory pressure affects performance characteristics and optimization decisions. High memory
+ * pressure may trigger more aggressive garbage collection or influence JIT compilation strategies.
  *
  * @since 1.0.0
  */
@@ -39,16 +38,15 @@ public enum MemoryPressureLevel {
    */
   CRITICAL("Critical", 0.95, 1.0),
 
-  /**
-   * Memory pressure level cannot be determined.
-   */
+  /** Memory pressure level cannot be determined. */
   UNKNOWN("Unknown", 0.0, 1.0);
 
   private final String displayName;
   private final double minThreshold;
   private final double maxThreshold;
 
-  MemoryPressureLevel(final String displayName, final double minThreshold, final double maxThreshold) {
+  MemoryPressureLevel(
+      final String displayName, final double minThreshold, final double maxThreshold) {
     this.displayName = displayName;
     this.minThreshold = minThreshold;
     this.maxThreshold = maxThreshold;
@@ -94,7 +92,9 @@ public enum MemoryPressureLevel {
     }
 
     for (final MemoryPressureLevel level : values()) {
-      if (level != UNKNOWN && memoryUsagePercent >= level.minThreshold && memoryUsagePercent < level.maxThreshold) {
+      if (level != UNKNOWN
+          && memoryUsagePercent >= level.minThreshold
+          && memoryUsagePercent < level.maxThreshold) {
         return level;
       }
     }

@@ -108,9 +108,7 @@ public interface CacheConfiguration {
     return builder().build();
   }
 
-  /**
-   * Eviction policies for cache entries.
-   */
+  /** Eviction policies for cache entries. */
   enum EvictionPolicy {
     /** Least Recently Used - evict the least recently accessed entry. */
     LRU,
@@ -125,9 +123,7 @@ public interface CacheConfiguration {
     RANDOM
   }
 
-  /**
-   * Builder for CacheConfiguration.
-   */
+  /** Builder for CacheConfiguration. */
   final class CacheConfigurationBuilder {
     private long maxSize = 1000;
     private long maxMemoryUsage = -1;
@@ -224,9 +220,7 @@ public interface CacheConfiguration {
     }
   }
 
-  /**
-   * Implementation of CacheConfiguration.
-   */
+  /** Implementation of CacheConfiguration. */
   final class CacheConfigurationImpl implements CacheConfiguration {
     private final long maxSize;
     private final long maxMemoryUsage;

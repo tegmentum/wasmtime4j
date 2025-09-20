@@ -8,8 +8,8 @@ import java.util.Map;
  * Comprehensive statistics about concurrency performance and patterns.
  *
  * <p>This interface provides detailed metrics about concurrent operations, thread usage,
- * performance characteristics, and resource contention patterns in WebAssembly engines
- * and their components.
+ * performance characteristics, and resource contention patterns in WebAssembly engines and their
+ * components.
  *
  * @since 1.0.0
  */
@@ -137,8 +137,8 @@ public interface ConcurrencyStatistics {
   /**
    * Gets the efficiency ratio of concurrent operations.
    *
-   * <p>This measures how effectively concurrent operations are utilizing available resources.
-   * A higher ratio indicates better parallel efficiency.
+   * <p>This measures how effectively concurrent operations are utilizing available resources. A
+   * higher ratio indicates better parallel efficiency.
    *
    * @return the efficiency ratio (0.0 to 1.0)
    */

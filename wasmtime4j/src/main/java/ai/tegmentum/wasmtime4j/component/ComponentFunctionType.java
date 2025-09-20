@@ -26,8 +26,8 @@ public interface ComponentFunctionType {
   /**
    * Gets the parameter types for this function.
    *
-   * <p>Returns an ordered list of parameter types that must be provided when calling this
-   * function. Each parameter includes name, type, and constraint information.
+   * <p>Returns an ordered list of parameter types that must be provided when calling this function.
+   * Each parameter includes name, type, and constraint information.
    *
    * @return list of parameter types
    */
@@ -56,8 +56,8 @@ public interface ComponentFunctionType {
   /**
    * Checks if this function can raise exceptions.
    *
-   * <p>Returns true if this function may throw exceptions or trigger error conditions that need
-   * to be handled by the caller.
+   * <p>Returns true if this function may throw exceptions or trigger error conditions that need to
+   * be handled by the caller.
    *
    * @return true if the function can raise exceptions, false otherwise
    */
@@ -66,8 +66,8 @@ public interface ComponentFunctionType {
   /**
    * Gets the exception types that this function can raise.
    *
-   * <p>Returns a list of exception or error types that may be thrown by this function. Empty if
-   * the function cannot raise exceptions.
+   * <p>Returns a list of exception or error types that may be thrown by this function. Empty if the
+   * function cannot raise exceptions.
    *
    * @return list of exception types
    */
@@ -96,8 +96,8 @@ public interface ComponentFunctionType {
   /**
    * Gets resource requirements for calling this function.
    *
-   * <p>Returns information about resources that must be available or may be consumed when
-   * calling this function.
+   * <p>Returns information about resources that must be available or may be consumed when calling
+   * this function.
    *
    * @return resource requirements
    */
@@ -128,8 +128,8 @@ public interface ComponentFunctionType {
   /**
    * Checks if this function type is compatible with another function type.
    *
-   * <p>Determines if functions of this type can be used where the other type is expected,
-   * following component model subtyping rules.
+   * <p>Determines if functions of this type can be used where the other type is expected, following
+   * component model subtyping rules.
    *
    * @param other the function type to check compatibility with
    * @return true if types are compatible, false otherwise
@@ -140,8 +140,8 @@ public interface ComponentFunctionType {
   /**
    * Gets documentation for this function.
    *
-   * <p>Returns human-readable documentation that was embedded with this function's definition,
-   * if available.
+   * <p>Returns human-readable documentation that was embedded with this function's definition, if
+   * available.
    *
    * @return function documentation, or empty if none available
    */

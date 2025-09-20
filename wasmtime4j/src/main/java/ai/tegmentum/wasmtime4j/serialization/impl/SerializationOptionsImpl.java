@@ -53,8 +53,9 @@ public final class SerializationOptionsImpl implements SerializationOptions {
     this.compression = Objects.requireNonNull(compression, "Compression type cannot be null");
     this.includeDebugInfo = includeDebugInfo;
     this.includeSourceMap = includeSourceMap;
-    this.optimizations = Collections.unmodifiableSet(
-        Objects.requireNonNull(optimizations, "Optimizations set cannot be null"));
+    this.optimizations =
+        Collections.unmodifiableSet(
+            Objects.requireNonNull(optimizations, "Optimizations set cannot be null"));
     this.targetPlatform = targetPlatform; // null is allowed for current platform
     this.strictValidation = strictValidation;
 
@@ -146,14 +147,22 @@ public final class SerializationOptionsImpl implements SerializationOptions {
   @Override
   public String toString() {
     return "SerializationOptions{"
-        + "compression=" + compression
-        + ", includeDebugInfo=" + includeDebugInfo
-        + ", includeSourceMap=" + includeSourceMap
-        + ", optimizations=" + optimizations
-        + ", targetPlatform=" + targetPlatform
-        + ", strictValidation=" + strictValidation
-        + ", maxSize=" + maxSize
-        + ", includeChecksum=" + includeChecksum
+        + "compression="
+        + compression
+        + ", includeDebugInfo="
+        + includeDebugInfo
+        + ", includeSourceMap="
+        + includeSourceMap
+        + ", optimizations="
+        + optimizations
+        + ", targetPlatform="
+        + targetPlatform
+        + ", strictValidation="
+        + strictValidation
+        + ", maxSize="
+        + maxSize
+        + ", includeChecksum="
+        + includeChecksum
         + '}';
   }
 }

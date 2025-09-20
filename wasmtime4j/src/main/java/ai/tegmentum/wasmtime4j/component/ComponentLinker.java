@@ -5,7 +5,6 @@ import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.io.Closeable;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -15,8 +14,8 @@ import java.util.Optional;
  * instantiation. It manages the mapping between component imports and their implementations,
  * enabling component composition and dependency injection.
  *
- * <p>The linker supports linking components to other components, host-provided implementations,
- * and interface-based composition patterns defined by the Component Model specification.
+ * <p>The linker supports linking components to other components, host-provided implementations, and
+ * interface-based composition patterns defined by the Component Model specification.
  *
  * <p>Example usage:
  *
@@ -108,8 +107,8 @@ public interface ComponentLinker extends Closeable {
    * Instantiates a component with this linker's import resolutions.
    *
    * <p>Creates a new instance of the specified component, resolving all imports using the
-   * definitions provided to this linker. All required imports must be satisfied for
-   * instantiation to succeed.
+   * definitions provided to this linker. All required imports must be satisfied for instantiation
+   * to succeed.
    *
    * @param store the store to use for execution state
    * @param component the component to instantiate
@@ -122,8 +121,8 @@ public interface ComponentLinker extends Closeable {
   /**
    * Gets the names of all defined imports.
    *
-   * <p>Returns a list of all import names that have been defined in this linker. This can be
-   * used for discovery and validation of available imports.
+   * <p>Returns a list of all import names that have been defined in this linker. This can be used
+   * for discovery and validation of available imports.
    *
    * @return list of defined import names
    */
@@ -154,8 +153,8 @@ public interface ComponentLinker extends Closeable {
   /**
    * Validates that all imports for a component can be resolved.
    *
-   * <p>Checks that all imports required by the specified component have been defined in this
-   * linker and that their types are compatible.
+   * <p>Checks that all imports required by the specified component have been defined in this linker
+   * and that their types are compatible.
    *
    * @param component the component to validate imports for
    * @throws WasmException if validation fails with details about missing or incompatible imports
@@ -176,8 +175,8 @@ public interface ComponentLinker extends Closeable {
   /**
    * Creates a copy of this linker with the same import definitions.
    *
-   * <p>Returns a new linker instance with all the same import definitions as this linker. This
-   * can be useful for creating variations or avoiding shared state.
+   * <p>Returns a new linker instance with all the same import definitions as this linker. This can
+   * be useful for creating variations or avoiding shared state.
    *
    * @return a new ComponentLinker with the same definitions
    * @throws WasmException if cloning fails
@@ -196,8 +195,8 @@ public interface ComponentLinker extends Closeable {
   /**
    * Closes the linker and releases associated resources.
    *
-   * <p>After calling this method, the linker becomes invalid and should not be used. Any
-   * component instances created using this linker will not be affected.
+   * <p>After calling this method, the linker becomes invalid and should not be used. Any component
+   * instances created using this linker will not be affected.
    */
   @Override
   void close();

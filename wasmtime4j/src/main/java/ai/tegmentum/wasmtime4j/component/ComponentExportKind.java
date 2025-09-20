@@ -3,8 +3,8 @@ package ai.tegmentum.wasmtime4j.component;
 /**
  * Enumeration of WebAssembly Component Model export kinds.
  *
- * <p>Defines the different types of entities that can be exported from a component according to
- * the WebAssembly Component Model specification.
+ * <p>Defines the different types of entities that can be exported from a component according to the
+ * WebAssembly Component Model specification.
  *
  * @since 1.0.0
  */
@@ -52,16 +52,16 @@ public enum ComponentExportKind {
   /**
    * A component export.
    *
-   * <p>Represents another component that is nested within and exported by this component,
-   * enabling hierarchical composition.
+   * <p>Represents another component that is nested within and exported by this component, enabling
+   * hierarchical composition.
    */
   COMPONENT,
 
   /**
    * An instance export.
    *
-   * <p>Represents an instantiated component or module that is exported with its current state
-   * and bindings.
+   * <p>Represents an instantiated component or module that is exported with its current state and
+   * bindings.
    */
   INSTANCE,
 

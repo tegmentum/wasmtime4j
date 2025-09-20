@@ -22,11 +22,12 @@ public interface MemoryStream extends Closeable {
   /**
    * Asynchronously reads data from the memory stream into the provided buffer.
    *
-   * <p>This method attempts to read up to buffer.remaining() bytes from the stream into the
-   * buffer. The buffer's position will be advanced by the number of bytes read.
+   * <p>This method attempts to read up to buffer.remaining() bytes from the stream into the buffer.
+   * The buffer's position will be advanced by the number of bytes read.
    *
    * @param buffer the ByteBuffer to read data into
-   * @return a CompletableFuture that completes with the number of bytes read, or -1 if end of stream
+   * @return a CompletableFuture that completes with the number of bytes read, or -1 if end of
+   *     stream
    * @throws IllegalArgumentException if buffer is null
    * @throws IllegalStateException if the stream is closed
    */
@@ -107,8 +108,8 @@ public interface MemoryStream extends Closeable {
   /**
    * Gets the current position in the memory stream.
    *
-   * <p>The position represents the offset from the start of the stream where the next read or
-   * write operation will occur.
+   * <p>The position represents the offset from the start of the stream where the next read or write
+   * operation will occur.
    *
    * @return the current stream position
    * @throws IllegalStateException if the stream is closed
@@ -202,8 +203,8 @@ public interface MemoryStream extends Closeable {
   /**
    * Closes the memory stream and releases associated resources.
    *
-   * <p>After closing, all pending operations will be cancelled and no new operations can be
-   * started on this stream.
+   * <p>After closing, all pending operations will be cancelled and no new operations can be started
+   * on this stream.
    */
   @Override
   void close();

@@ -9,74 +9,46 @@ package ai.tegmentum.wasmtime4j.wasi;
  * @since 1.0.0
  */
 public enum WasiResourceType {
-  /**
-   * Filesystem resource for file and directory operations.
-   */
+  /** Filesystem resource for file and directory operations. */
   FILESYSTEM("filesystem", "File system access and operations"),
 
-  /**
-   * Network resource for socket and network operations.
-   */
+  /** Network resource for socket and network operations. */
   NETWORK("network", "Network connectivity and socket operations"),
 
-  /**
-   * Process resource for process spawning and management.
-   */
+  /** Process resource for process spawning and management. */
   PROCESS("process", "Process creation and management"),
 
-  /**
-   * Environment resource for environment variable access.
-   */
+  /** Environment resource for environment variable access. */
   ENVIRONMENT("environment", "Environment variable access"),
 
-  /**
-   * Time resource for time and clock operations.
-   */
+  /** Time resource for time and clock operations. */
   TIME("time", "Time and clock access"),
 
-  /**
-   * Random resource for random number generation.
-   */
+  /** Random resource for random number generation. */
   RANDOM("random", "Random number generation"),
 
-  /**
-   * Stdio resource for standard input/output operations.
-   */
+  /** Stdio resource for standard input/output operations. */
   STDIO("stdio", "Standard input/output streams"),
 
-  /**
-   * Memory resource for shared memory operations.
-   */
+  /** Memory resource for shared memory operations. */
   MEMORY("memory", "Shared memory management"),
 
-  /**
-   * Thread resource for threading operations.
-   */
+  /** Thread resource for threading operations. */
   THREAD("thread", "Thread creation and management"),
 
-  /**
-   * Crypto resource for cryptographic operations.
-   */
+  /** Crypto resource for cryptographic operations. */
   CRYPTO("crypto", "Cryptographic operations"),
 
-  /**
-   * HTTP resource for HTTP client/server operations.
-   */
+  /** HTTP resource for HTTP client/server operations. */
   HTTP("http", "HTTP client and server operations"),
 
-  /**
-   * Database resource for database connectivity.
-   */
+  /** Database resource for database connectivity. */
   DATABASE("database", "Database connectivity and operations"),
 
-  /**
-   * Log resource for logging operations.
-   */
+  /** Log resource for logging operations. */
   LOG("log", "Logging and diagnostic output"),
 
-  /**
-   * Custom resource for user-defined resource types.
-   */
+  /** Custom resource for user-defined resource types. */
   CUSTOM("custom", "User-defined resource type");
 
   private final String name;
@@ -129,8 +101,13 @@ public enum WasiResourceType {
    * @return true if cleanup is required, false otherwise
    */
   public boolean requiresCleanup() {
-    return this == FILESYSTEM || this == NETWORK || this == PROCESS || this == MEMORY
-        || this == THREAD || this == DATABASE || this == HTTP;
+    return this == FILESYSTEM
+        || this == NETWORK
+        || this == PROCESS
+        || this == MEMORY
+        || this == THREAD
+        || this == DATABASE
+        || this == HTTP;
   }
 
   /**

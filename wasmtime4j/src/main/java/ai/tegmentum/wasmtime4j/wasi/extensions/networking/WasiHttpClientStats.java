@@ -3,12 +3,11 @@ package ai.tegmentum.wasmtime4j.wasi.extensions.networking;
 /**
  * Statistics and performance metrics for a WASI HTTP client.
  *
- * <p>This class provides detailed information about HTTP client usage,
- * performance characteristics, and request/response patterns. All values
- * are cumulative since the client was created.
+ * <p>This class provides detailed information about HTTP client usage, performance characteristics,
+ * and request/response patterns. All values are cumulative since the client was created.
  *
- * <p>Instances of this class are immutable and represent a snapshot
- * of client statistics at the time of creation.
+ * <p>Instances of this class are immutable and represent a snapshot of client statistics at the
+ * time of creation.
  *
  * @since 1.0.0
  */
@@ -55,15 +54,25 @@ public final class WasiHttpClientStats {
    * @param averageResponseTime average time per response (ms)
    * @param startTime timestamp when client was created
    */
-  public WasiHttpClientStats(final long totalRequests, final long successfulRequests,
-                           final long failedRequests, final long timeoutRequests,
-                           final long redirectsFollowed, final long totalBytesUploaded,
-                           final long totalBytesDownloaded, final long totalConnectionTime,
-                           final long totalRequestTime, final long totalResponseTime,
-                           final int activeRequests, final int connectionPoolSize,
-                           final int maxConnectionPoolSize, final long connectionsCreated,
-                           final long connectionsReused, final double averageRequestTime,
-                           final double averageResponseTime, final long startTime) {
+  public WasiHttpClientStats(
+      final long totalRequests,
+      final long successfulRequests,
+      final long failedRequests,
+      final long timeoutRequests,
+      final long redirectsFollowed,
+      final long totalBytesUploaded,
+      final long totalBytesDownloaded,
+      final long totalConnectionTime,
+      final long totalRequestTime,
+      final long totalResponseTime,
+      final int activeRequests,
+      final int connectionPoolSize,
+      final int maxConnectionPoolSize,
+      final long connectionsCreated,
+      final long connectionsReused,
+      final double averageRequestTime,
+      final double averageResponseTime,
+      final long startTime) {
     this.totalRequests = totalRequests;
     this.successfulRequests = successfulRequests;
     this.failedRequests = failedRequests;
@@ -344,15 +353,23 @@ public final class WasiHttpClientStats {
 
   @Override
   public String toString() {
-    return "WasiHttpClientStats{" +
-           "totalRequests=" + totalRequests +
-           ", successfulRequests=" + successfulRequests +
-           ", failedRequests=" + failedRequests +
-           ", timeoutRequests=" + timeoutRequests +
-           ", successRate=" + String.format("%.2f%%", getSuccessRate()) +
-           ", averageRequestTime=" + String.format("%.2fms", averageRequestTime) +
-           ", throughput=" + String.format("%.2f B/s", getThroughputBytesPerSecond()) +
-           ", connectionReuseRate=" + String.format("%.2f%%", getConnectionReuseRate()) +
-           '}';
+    return "WasiHttpClientStats{"
+        + "totalRequests="
+        + totalRequests
+        + ", successfulRequests="
+        + successfulRequests
+        + ", failedRequests="
+        + failedRequests
+        + ", timeoutRequests="
+        + timeoutRequests
+        + ", successRate="
+        + String.format("%.2f%%", getSuccessRate())
+        + ", averageRequestTime="
+        + String.format("%.2fms", averageRequestTime)
+        + ", throughput="
+        + String.format("%.2f B/s", getThroughputBytesPerSecond())
+        + ", connectionReuseRate="
+        + String.format("%.2f%%", getConnectionReuseRate())
+        + '}';
   }
 }

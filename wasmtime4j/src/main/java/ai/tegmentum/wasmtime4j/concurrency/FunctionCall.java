@@ -6,8 +6,8 @@ import java.util.Objects;
 /**
  * Represents a function call specification for batch execution.
  *
- * <p>This class encapsulates the details of a function call, including the function name
- * and parameters, for use in concurrent batch execution scenarios.
+ * <p>This class encapsulates the details of a function call, including the function name and
+ * parameters, for use in concurrent batch execution scenarios.
  *
  * @since 1.0.0
  */

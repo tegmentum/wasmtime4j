@@ -17,8 +17,8 @@ public interface BulkMemoryOperations {
   /**
    * Performs a high-performance bulk copy between two memory regions.
    *
-   * <p>This operation is optimized for large data transfers and uses native implementations
-   * for maximum performance while maintaining safety through defensive programming.
+   * <p>This operation is optimized for large data transfers and uses native implementations for
+   * maximum performance while maintaining safety through defensive programming.
    *
    * @param dest the destination memory
    * @param destOffset the offset in the destination memory
@@ -39,8 +39,8 @@ public interface BulkMemoryOperations {
   /**
    * Fills a memory region with a specified byte value using optimized bulk operations.
    *
-   * <p>This operation provides high-performance memory initialization and clearing
-   * capabilities with comprehensive bounds validation.
+   * <p>This operation provides high-performance memory initialization and clearing capabilities
+   * with comprehensive bounds validation.
    *
    * @param memory the target memory
    * @param offset the starting offset in memory
@@ -55,8 +55,8 @@ public interface BulkMemoryOperations {
   /**
    * Compares two memory regions for equality using optimized bulk comparison.
    *
-   * <p>This operation provides high-performance memory comparison with early termination
-   * and comprehensive bounds checking.
+   * <p>This operation provides high-performance memory comparison with early termination and
+   * comprehensive bounds checking.
    *
    * @param memory1 the first memory to compare
    * @param offset1 the offset in the first memory
@@ -78,8 +78,8 @@ public interface BulkMemoryOperations {
   /**
    * Performs batched write operations to memory using a single native call for optimal performance.
    *
-   * <p>This operation reduces JNI/Panama call overhead by batching multiple write operations
-   * into a single native invocation while maintaining full validation and error handling.
+   * <p>This operation reduces JNI/Panama call overhead by batching multiple write operations into a
+   * single native invocation while maintaining full validation and error handling.
    *
    * @param memory the target memory
    * @param writes a map of offset to ByteBuffer pairs representing the data to write
@@ -90,10 +90,11 @@ public interface BulkMemoryOperations {
   void batchWrite(final WasmMemory memory, final Map<Integer, ByteBuffer> writes);
 
   /**
-   * Performs batched read operations from memory using a single native call for optimal performance.
+   * Performs batched read operations from memory using a single native call for optimal
+   * performance.
    *
-   * <p>This operation reduces JNI/Panama call overhead by batching multiple read operations
-   * into a single native invocation while maintaining full validation and error handling.
+   * <p>This operation reduces JNI/Panama call overhead by batching multiple read operations into a
+   * single native invocation while maintaining full validation and error handling.
    *
    * @param memory the source memory
    * @param reads a map of offset to length pairs representing the data to read
@@ -107,8 +108,8 @@ public interface BulkMemoryOperations {
   /**
    * Performs an optimized memory search operation for a specific byte pattern.
    *
-   * <p>This operation provides high-performance pattern matching within memory regions
-   * using native optimization techniques.
+   * <p>This operation provides high-performance pattern matching within memory regions using native
+   * optimization techniques.
    *
    * @param memory the memory to search
    * @param offset the starting offset for the search
@@ -119,14 +120,13 @@ public interface BulkMemoryOperations {
    * @throws IndexOutOfBoundsException if the search region is invalid
    * @throws RuntimeException if the search operation fails
    */
-  int bulkSearch(
-      final WasmMemory memory, final int offset, final int length, final byte[] pattern);
+  int bulkSearch(final WasmMemory memory, final int offset, final int length, final byte[] pattern);
 
   /**
    * Performs an optimized memory move operation that handles overlapping regions correctly.
    *
-   * <p>This operation provides safe memory movement even when source and destination
-   * regions overlap, using appropriate copy direction to prevent data corruption.
+   * <p>This operation provides safe memory movement even when source and destination regions
+   * overlap, using appropriate copy direction to prevent data corruption.
    *
    * @param memory the target memory (both source and destination)
    * @param destOffset the destination offset

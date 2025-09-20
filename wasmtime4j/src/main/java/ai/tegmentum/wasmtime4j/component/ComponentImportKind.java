@@ -53,16 +53,16 @@ public enum ComponentImportKind {
   /**
    * Type import.
    *
-   * <p>A type definition that must be provided by the host environment. Type imports enable
-   * sharing of type definitions across component boundaries.
+   * <p>A type definition that must be provided by the host environment. Type imports enable sharing
+   * of type definitions across component boundaries.
    */
   TYPE("type"),
 
   /**
    * Module import.
    *
-   * <p>A core WebAssembly module that must be provided. Module imports allow components to
-   * depend on traditional WebAssembly modules.
+   * <p>A core WebAssembly module that must be provided. Module imports allow components to depend
+   * on traditional WebAssembly modules.
    */
   MODULE("module"),
 
@@ -83,8 +83,8 @@ public enum ComponentImportKind {
   /**
    * Gets the human-readable display name for this import kind.
    *
-   * <p>Returns a string representation suitable for use in error messages, debugging output,
-   * and user interfaces.
+   * <p>Returns a string representation suitable for use in error messages, debugging output, and
+   * user interfaces.
    *
    * @return the display name
    */

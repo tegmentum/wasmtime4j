@@ -8,11 +8,11 @@ import java.util.Optional;
  * Interface for WebAssembly Component Model record types.
  *
  * <p>ComponentRecord represents a structured data type with named fields, similar to structs in
- * other programming languages. Records enable complex data composition and type-safe data
- * exchange between components.
+ * other programming languages. Records enable complex data composition and type-safe data exchange
+ * between components.
  *
- * <p>Records support nested types, optional fields, and comprehensive type validation according
- * to the Component Model specification.
+ * <p>Records support nested types, optional fields, and comprehensive type validation according to
+ * the Component Model specification.
  *
  * <p>Example record definition:
  *
@@ -109,8 +109,8 @@ public interface ComponentRecord {
   /**
    * Creates a new record value with the specified field values.
    *
-   * <p>Validates that all required fields are provided and that field values match their
-   * declared types.
+   * <p>Validates that all required fields are provided and that field values match their declared
+   * types.
    *
    * @param fieldValues map of field names to their values
    * @return a new record value
@@ -121,8 +121,8 @@ public interface ComponentRecord {
   /**
    * Validates a map of field values against this record definition.
    *
-   * <p>Checks that all required fields are present and that all values are compatible with
-   * their declared types.
+   * <p>Checks that all required fields are present and that all values are compatible with their
+   * declared types.
    *
    * @param fieldValues the field values to validate
    * @return true if the values are valid for this record, false otherwise

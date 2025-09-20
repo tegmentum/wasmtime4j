@@ -146,16 +146,15 @@ public interface CacheStatistics {
   /**
    * Resets all statistics to zero.
    *
-   * <p>This method clears all accumulated statistics and restarts collection from the current
-   * time.
+   * <p>This method clears all accumulated statistics and restarts collection from the current time.
    */
   void reset();
 
   /**
    * Creates a snapshot of the current statistics.
    *
-   * <p>The snapshot represents the state at the time this method is called and will not change
-   * as new operations occur.
+   * <p>The snapshot represents the state at the time this method is called and will not change as
+   * new operations occur.
    *
    * @return an immutable snapshot of current statistics
    */

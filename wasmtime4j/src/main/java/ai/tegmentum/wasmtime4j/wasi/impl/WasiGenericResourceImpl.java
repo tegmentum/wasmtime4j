@@ -1,7 +1,7 @@
 package ai.tegmentum.wasmtime4j.wasi.impl;
 
-import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.exception.WasiResourceException;
+import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.wasi.WasiInstance;
 import ai.tegmentum.wasmtime4j.wasi.WasiResource;
 import ai.tegmentum.wasmtime4j.wasi.WasiResourceConfig;
@@ -25,8 +25,8 @@ import java.util.logging.Logger;
  * Generic implementation of WasiResource for basic resource types.
  *
  * <p>This implementation provides a foundation for WASI Preview 2 resources with common
- * functionality including lifecycle management, metadata tracking, and basic operations.
- * It can be extended for specific resource types or used directly for simple resources.
+ * functionality including lifecycle management, metadata tracking, and basic operations. It can be
+ * extended for specific resource types or used directly for simple resources.
  *
  * @since 1.0.0
  */
@@ -55,8 +55,8 @@ public class WasiGenericResourceImpl implements WasiResource {
    * @param config the resource configuration
    * @throws IllegalArgumentException if any parameter is null or invalid
    */
-  public WasiGenericResourceImpl(final long id, final String name, final String type,
-      final WasiResourceConfig config) {
+  public WasiGenericResourceImpl(
+      final long id, final String name, final String type, final WasiResourceConfig config) {
     if (id <= 0) {
       throw new IllegalArgumentException("Resource ID must be positive");
     }
@@ -253,12 +253,7 @@ public class WasiGenericResourceImpl implements WasiResource {
       return Collections.emptyList();
     }
 
-    return Arrays.asList(
-        "get_info",
-        "get_config",
-        "get_access_count",
-        "is_owned"
-    );
+    return Arrays.asList("get_info", "get_config", "get_access_count", "is_owned");
   }
 
   @Override
@@ -369,17 +364,15 @@ public class WasiGenericResourceImpl implements WasiResource {
     }
   }
 
-  /**
-   * Records an access to this resource for statistics.
-   */
+  /** Records an access to this resource for statistics. */
   protected void recordAccess() {
     accessCount.incrementAndGet();
     lastAccessedAt = Instant.now();
   }
 
   /**
-   * Performs resource-specific cleanup.
-   * Subclasses can override this method to provide custom cleanup logic.
+   * Performs resource-specific cleanup. Subclasses can override this method to provide custom
+   * cleanup logic.
    */
   protected void performCleanup() {
     // Default implementation does nothing
@@ -405,12 +398,19 @@ public class WasiGenericResourceImpl implements WasiResource {
 
   @Override
   public String toString() {
-    return "WasiResource{" +
-        "id=" + id +
-        ", name='" + name + '\'' +
-        ", type='" + type + '\'' +
-        ", owned=" + owned +
-        ", valid=" + isValid() +
-        '}';
+    return "WasiResource{"
+        + "id="
+        + id
+        + ", name='"
+        + name
+        + '\''
+        + ", type='"
+        + type
+        + '\''
+        + ", owned="
+        + owned
+        + ", valid="
+        + isValid()
+        + '}';
   }
 }

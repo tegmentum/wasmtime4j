@@ -6,9 +6,9 @@ import java.util.List;
 /**
  * Represents a call stack sample captured during profiling.
  *
- * <p>Call stacks provide insight into execution flow and help identify performance bottlenecks
- * in complex call hierarchies. Each stack frame contains information about the executing function
- * and its position in the call chain.
+ * <p>Call stacks provide insight into execution flow and help identify performance bottlenecks in
+ * complex call hierarchies. Each stack frame contains information about the executing function and
+ * its position in the call chain.
  *
  * @since 1.0.0
  */
@@ -31,8 +31,8 @@ public interface CallStack {
   /**
    * Gets the list of stack frames from top (current) to bottom (root).
    *
-   * <p>The first frame represents the currently executing function, and subsequent frames
-   * represent the call hierarchy leading to that function.
+   * <p>The first frame represents the currently executing function, and subsequent frames represent
+   * the call hierarchy leading to that function.
    *
    * @return ordered list of stack frames
    */

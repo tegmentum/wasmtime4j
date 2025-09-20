@@ -132,15 +132,19 @@ public final class PanamaWasmRuntime implements WasmRuntime {
       throw new IllegalArgumentException("EngineConfig cannot be null");
     }
 
+    // Validate configuration before creating engine
+    config.validate();
+
     try {
       // Create an arena-based resource manager for the engine
       Arena engineArena = Arena.ofConfined();
       ArenaResourceManager resourceManager = new ArenaResourceManager(engineArena, true);
 
-      // For now, ignore the config and create a default engine
-      // TODO: Implement engine configuration support
-      logger.warning("Engine configuration not yet supported, creating default engine");
-      return new PanamaEngine(resourceManager);
+      // Create engine with configuration
+      PanamaEngine engine = PanamaEngine.createWithConfig(resourceManager, config);
+
+      logger.fine("Created Panama engine with configuration: " + config.getSummary());
+      return engine;
     } catch (Exception e) {
       throw exceptionMapper.mapException(e);
     }

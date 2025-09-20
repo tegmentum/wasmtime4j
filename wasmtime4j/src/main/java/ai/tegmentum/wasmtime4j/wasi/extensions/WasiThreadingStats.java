@@ -3,12 +3,11 @@ package ai.tegmentum.wasmtime4j.wasi.extensions;
 /**
  * Statistics and performance metrics for WASI threading operations.
  *
- * <p>This class provides comprehensive information about threading usage,
- * performance characteristics, and resource utilization across all
- * threading operations in a WASI context.
+ * <p>This class provides comprehensive information about threading usage, performance
+ * characteristics, and resource utilization across all threading operations in a WASI context.
  *
- * <p>Instances of this class are immutable and represent a snapshot
- * of threading statistics at the time of creation.
+ * <p>Instances of this class are immutable and represent a snapshot of threading statistics at the
+ * time of creation.
  *
  * @since 1.0.0
  */
@@ -65,18 +64,30 @@ public final class WasiThreadingStats {
    * @param peakActiveThreads peak number of simultaneous active threads
    * @param startTime timestamp when threading was initialized
    */
-  public WasiThreadingStats(final long totalThreadsCreated, final int activeThreadsCount,
-                          final int daemonThreadsCount, final long totalMutexesCreated,
-                          final int activeMutexesCount, final long totalConditionVariablesCreated,
-                          final int activeConditionVariablesCount, final long totalSemaphoresCreated,
-                          final int activeSemaphoresCount, final long totalThreadPoolsCreated,
-                          final int activeThreadPoolsCount, final long totalTasksSubmitted,
-                          final long totalTasksCompleted, final long totalTasksFailed,
-                          final long totalLockAcquisitions, final long totalLockContentions,
-                          final long totalWaitOperations, final long totalSignalOperations,
-                          final double averageTaskExecutionTime, final double averageLockHoldTime,
-                          final double averageWaitTime, final long peakActiveThreads,
-                          final long startTime) {
+  public WasiThreadingStats(
+      final long totalThreadsCreated,
+      final int activeThreadsCount,
+      final int daemonThreadsCount,
+      final long totalMutexesCreated,
+      final int activeMutexesCount,
+      final long totalConditionVariablesCreated,
+      final int activeConditionVariablesCount,
+      final long totalSemaphoresCreated,
+      final int activeSemaphoresCount,
+      final long totalThreadPoolsCreated,
+      final int activeThreadPoolsCount,
+      final long totalTasksSubmitted,
+      final long totalTasksCompleted,
+      final long totalTasksFailed,
+      final long totalLockAcquisitions,
+      final long totalLockContentions,
+      final long totalWaitOperations,
+      final long totalSignalOperations,
+      final double averageTaskExecutionTime,
+      final double averageLockHoldTime,
+      final double averageWaitTime,
+      final long peakActiveThreads,
+      final long startTime) {
     this.totalThreadsCreated = totalThreadsCreated;
     this.activeThreadsCount = activeThreadsCount;
     this.daemonThreadsCount = daemonThreadsCount;
@@ -415,17 +426,27 @@ public final class WasiThreadingStats {
 
   @Override
   public String toString() {
-    return "WasiThreadingStats{" +
-           "activeThreads=" + activeThreadsCount +
-           ", totalThreadsCreated=" + totalThreadsCreated +
-           ", activeMutexes=" + activeMutexesCount +
-           ", activeCondVars=" + activeConditionVariablesCount +
-           ", activeSemaphores=" + activeSemaphoresCount +
-           ", activeThreadPools=" + activeThreadPoolsCount +
-           ", tasksCompleted=" + totalTasksCompleted +
-           ", taskSuccessRate=" + String.format("%.2f%%", getTaskSuccessRate()) +
-           ", lockContentionRate=" + String.format("%.2f%%", getLockContentionRate()) +
-           ", taskThroughput=" + String.format("%.2f tasks/s", getTaskThroughput()) +
-           '}';
+    return "WasiThreadingStats{"
+        + "activeThreads="
+        + activeThreadsCount
+        + ", totalThreadsCreated="
+        + totalThreadsCreated
+        + ", activeMutexes="
+        + activeMutexesCount
+        + ", activeCondVars="
+        + activeConditionVariablesCount
+        + ", activeSemaphores="
+        + activeSemaphoresCount
+        + ", activeThreadPools="
+        + activeThreadPoolsCount
+        + ", tasksCompleted="
+        + totalTasksCompleted
+        + ", taskSuccessRate="
+        + String.format("%.2f%%", getTaskSuccessRate())
+        + ", lockContentionRate="
+        + String.format("%.2f%%", getLockContentionRate())
+        + ", taskThroughput="
+        + String.format("%.2f tasks/s", getTaskThroughput())
+        + '}';
   }
 }

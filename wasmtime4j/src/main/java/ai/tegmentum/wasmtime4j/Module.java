@@ -227,8 +227,8 @@ public interface Module extends Closeable {
   /**
    * Gets the original WebAssembly bytecode hash for this module.
    *
-   * <p>This hash can be used for caching and validation purposes. It uniquely identifies the
-   * source WebAssembly bytecode that was compiled to create this module.
+   * <p>This hash can be used for caching and validation purposes. It uniquely identifies the source
+   * WebAssembly bytecode that was compiled to create this module.
    *
    * @return the bytecode hash as a byte array
    * @since 1.0.0

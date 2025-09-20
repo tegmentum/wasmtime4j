@@ -38,8 +38,8 @@ public interface ComponentErrorStats {
   /**
    * Gets the number of validation errors.
    *
-   * <p>Returns the count of validation errors encountered during type checking, import
-   * resolution, or other validation phases.
+   * <p>Returns the count of validation errors encountered during type checking, import resolution,
+   * or other validation phases.
    *
    * @return validation error count
    */
@@ -77,8 +77,8 @@ public interface ComponentErrorStats {
   /**
    * Gets error statistics by export.
    *
-   * <p>Returns error counts broken down by which export function or interface the errors
-   * occurred in.
+   * <p>Returns error counts broken down by which export function or interface the errors occurred
+   * in.
    *
    * @return map of export names to their error counts
    */
@@ -166,8 +166,8 @@ public interface ComponentErrorStats {
   /**
    * Resets all error statistics to zero.
    *
-   * <p>Clears all accumulated error statistics and history while preserving the component
-   * instance state. Timestamps are reset and counters are cleared.
+   * <p>Clears all accumulated error statistics and history while preserving the component instance
+   * state. Timestamps are reset and counters are cleared.
    */
   void reset();
 }

@@ -7,8 +7,8 @@ import java.util.Optional;
 /**
  * Interface for WebAssembly Component Model component functions.
  *
- * <p>ComponentFunction represents a callable function exported from a component instance.
- * Component functions support typed arguments and return values according to the Component Model
+ * <p>ComponentFunction represents a callable function exported from a component instance. Component
+ * functions support typed arguments and return values according to the Component Model
  * specification, enabling type-safe interaction between components and host environments.
  *
  * <p>Component functions handle complex data types, resource management, and error propagation
@@ -116,8 +116,8 @@ public interface ComponentFunction {
   /**
    * Validates arguments against this function's signature.
    *
-   * <p>Checks that the provided arguments match the function's parameter types and count
-   * without actually calling the function.
+   * <p>Checks that the provided arguments match the function's parameter types and count without
+   * actually calling the function.
    *
    * @param arguments the arguments to validate
    * @return true if arguments are valid, false otherwise
@@ -179,8 +179,7 @@ public interface ComponentFunction {
   /**
    * Checks if this function is still valid and callable.
    *
-   * <p>Functions become invalid when their parent component instance is closed or becomes
-   * invalid.
+   * <p>Functions become invalid when their parent component instance is closed or becomes invalid.
    *
    * @return true if the function is valid and callable, false otherwise
    */

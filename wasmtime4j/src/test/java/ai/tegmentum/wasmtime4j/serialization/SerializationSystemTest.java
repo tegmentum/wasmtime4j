@@ -10,7 +10,6 @@ import ai.tegmentum.wasmtime4j.cache.impl.FileBasedModuleCache;
 import ai.tegmentum.wasmtime4j.serialization.impl.ModuleMetadataImpl;
 import ai.tegmentum.wasmtime4j.serialization.impl.SerializedModuleImpl;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
@@ -234,7 +233,8 @@ class SerializationSystemTest {
 
     // When
     final ModuleCacheKey key =
-        ModuleCacheKey.create(wasmHash, null, compilationSettings, "linux-x86_64", "wasmtime4j-1.0");
+        ModuleCacheKey.create(
+            wasmHash, null, compilationSettings, "linux-x86_64", "wasmtime4j-1.0");
 
     // Then
     assertThat(key.getWasmHash()).isEqualTo(wasmHash);
@@ -247,11 +247,13 @@ class SerializationSystemTest {
 
     // Test compatibility
     final ModuleCacheKey sameKey =
-        ModuleCacheKey.create(wasmHash, null, compilationSettings, "linux-x86_64", "wasmtime4j-1.0");
+        ModuleCacheKey.create(
+            wasmHash, null, compilationSettings, "linux-x86_64", "wasmtime4j-1.0");
     assertThat(key.isCompatibleWith(sameKey)).isTrue();
 
     final ModuleCacheKey differentKey =
-        ModuleCacheKey.create("different".getBytes(), null, compilationSettings, "linux-x86_64", "wasmtime4j-1.0");
+        ModuleCacheKey.create(
+            "different".getBytes(), null, compilationSettings, "linux-x86_64", "wasmtime4j-1.0");
     assertThat(key.isCompatibleWith(differentKey)).isFalse();
   }
 
@@ -415,8 +417,10 @@ class SerializationSystemTest {
     assertThat(validConfig.isCompressionEnabled()).isTrue();
 
     // Test invalid configuration for file-based cache
-    assertThatThrownBy(() -> new FileBasedModuleCache(
-        CacheConfiguration.builder().persistence(false, null).build()))
+    assertThatThrownBy(
+            () ->
+                new FileBasedModuleCache(
+                    CacheConfiguration.builder().persistence(false, null).build()))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("File-based cache requires persistence");
   }

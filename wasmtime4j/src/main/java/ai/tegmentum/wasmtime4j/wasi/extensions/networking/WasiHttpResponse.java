@@ -10,11 +10,11 @@ import java.util.Objects;
 /**
  * Represents an HTTP response from WASI HTTP operations.
  *
- * <p>This class encapsulates all components of an HTTP response including
- * status code, headers, and body. Instances are immutable and typically
- * created by HTTP client implementations.
+ * <p>This class encapsulates all components of an HTTP response including status code, headers, and
+ * body. Instances are immutable and typically created by HTTP client implementations.
  *
  * <p>Example usage:
+ *
  * <pre>{@code
  * WasiHttpResponse response = httpClient.get(URI.create("https://api.example.com/users"));
  *
@@ -46,12 +46,16 @@ public final class WasiHttpResponse {
    * @param body the response body
    * @param responseTime the time taken to receive the response in milliseconds
    */
-  public WasiHttpResponse(final int statusCode, final String reasonPhrase,
-                         final Map<String, String> headers, final ByteBuffer body,
-                         final long responseTime) {
+  public WasiHttpResponse(
+      final int statusCode,
+      final String reasonPhrase,
+      final Map<String, String> headers,
+      final ByteBuffer body,
+      final long responseTime) {
     this.statusCode = statusCode;
     this.reasonPhrase = reasonPhrase != null ? reasonPhrase : getDefaultReasonPhrase(statusCode);
-    this.headers = Collections.unmodifiableMap(new HashMap<>(headers != null ? headers : new HashMap<>()));
+    this.headers =
+        Collections.unmodifiableMap(new HashMap<>(headers != null ? headers : new HashMap<>()));
     this.body = body != null ? body.asReadOnlyBuffer() : null;
     this.responseTime = responseTime;
     this.contentLength = body != null ? body.remaining() : 0;
@@ -287,29 +291,52 @@ public final class WasiHttpResponse {
 
   private static String getDefaultReasonPhrase(final int statusCode) {
     switch (statusCode) {
-      case 200: return "OK";
-      case 201: return "Created";
-      case 202: return "Accepted";
-      case 204: return "No Content";
-      case 301: return "Moved Permanently";
-      case 302: return "Found";
-      case 304: return "Not Modified";
-      case 400: return "Bad Request";
-      case 401: return "Unauthorized";
-      case 403: return "Forbidden";
-      case 404: return "Not Found";
-      case 405: return "Method Not Allowed";
-      case 409: return "Conflict";
-      case 410: return "Gone";
-      case 412: return "Precondition Failed";
-      case 422: return "Unprocessable Entity";
-      case 429: return "Too Many Requests";
-      case 500: return "Internal Server Error";
-      case 501: return "Not Implemented";
-      case 502: return "Bad Gateway";
-      case 503: return "Service Unavailable";
-      case 504: return "Gateway Timeout";
-      default: return "Unknown Status";
+      case 200:
+        return "OK";
+      case 201:
+        return "Created";
+      case 202:
+        return "Accepted";
+      case 204:
+        return "No Content";
+      case 301:
+        return "Moved Permanently";
+      case 302:
+        return "Found";
+      case 304:
+        return "Not Modified";
+      case 400:
+        return "Bad Request";
+      case 401:
+        return "Unauthorized";
+      case 403:
+        return "Forbidden";
+      case 404:
+        return "Not Found";
+      case 405:
+        return "Method Not Allowed";
+      case 409:
+        return "Conflict";
+      case 410:
+        return "Gone";
+      case 412:
+        return "Precondition Failed";
+      case 422:
+        return "Unprocessable Entity";
+      case 429:
+        return "Too Many Requests";
+      case 500:
+        return "Internal Server Error";
+      case 501:
+        return "Not Implemented";
+      case 502:
+        return "Bad Gateway";
+      case 503:
+        return "Service Unavailable";
+      case 504:
+        return "Gateway Timeout";
+      default:
+        return "Unknown Status";
     }
   }
 
@@ -323,12 +350,12 @@ public final class WasiHttpResponse {
     }
 
     final WasiHttpResponse that = (WasiHttpResponse) obj;
-    return statusCode == that.statusCode &&
-           responseTime == that.responseTime &&
-           contentLength == that.contentLength &&
-           Objects.equals(reasonPhrase, that.reasonPhrase) &&
-           Objects.equals(headers, that.headers) &&
-           Objects.equals(body, that.body);
+    return statusCode == that.statusCode
+        && responseTime == that.responseTime
+        && contentLength == that.contentLength
+        && Objects.equals(reasonPhrase, that.reasonPhrase)
+        && Objects.equals(headers, that.headers)
+        && Objects.equals(body, that.body);
   }
 
   @Override
@@ -338,13 +365,21 @@ public final class WasiHttpResponse {
 
   @Override
   public String toString() {
-    return "WasiHttpResponse{" +
-           "statusCode=" + statusCode +
-           ", reasonPhrase='" + reasonPhrase + '\'' +
-           ", headers=" + headers.size() +
-           ", hasBody=" + hasBody() +
-           ", contentLength=" + contentLength +
-           ", responseTime=" + responseTime + "ms" +
-           '}';
+    return "WasiHttpResponse{"
+        + "statusCode="
+        + statusCode
+        + ", reasonPhrase='"
+        + reasonPhrase
+        + '\''
+        + ", headers="
+        + headers.size()
+        + ", hasBody="
+        + hasBody()
+        + ", contentLength="
+        + contentLength
+        + ", responseTime="
+        + responseTime
+        + "ms"
+        + '}';
   }
 }

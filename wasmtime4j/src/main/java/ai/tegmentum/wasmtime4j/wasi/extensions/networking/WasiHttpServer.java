@@ -7,15 +7,15 @@ import java.util.function.Function;
 /**
  * HTTP server interface for WASI networking operations.
  *
- * <p>Provides high-level HTTP server functionality including request handling,
- * routing, middleware support, and connection management. The server handles
- * HTTP protocol details automatically and provides a convenient API for
- * building web services.
+ * <p>Provides high-level HTTP server functionality including request handling, routing, middleware
+ * support, and connection management. The server handles HTTP protocol details automatically and
+ * provides a convenient API for building web services.
  *
- * <p>The HTTP server supports both synchronous and asynchronous request
- * handling, allowing for scalable web applications.
+ * <p>The HTTP server supports both synchronous and asynchronous request handling, allowing for
+ * scalable web applications.
  *
  * <p>Example usage:
+ *
  * <pre>{@code
  * try (WasiHttpServer server = networking.createHttpServer()) {
  *     // Add route handlers
@@ -43,8 +43,8 @@ public interface WasiHttpServer extends AutoCloseable {
   /**
    * Binds the server to a specific address and port.
    *
-   * <p>This method configures the server to listen on the specified address
-   * and port. The server must be bound before it can be started.
+   * <p>This method configures the server to listen on the specified address and port. The server
+   * must be bound before it can be started.
    *
    * @param address the address and port to bind to
    * @throws WasmException if binding fails or permission is denied
@@ -56,8 +56,8 @@ public interface WasiHttpServer extends AutoCloseable {
   /**
    * Starts the HTTP server to accept incoming connections.
    *
-   * <p>After calling this method, the server will begin accepting HTTP
-   * requests on the bound address. The server must be bound before starting.
+   * <p>After calling this method, the server will begin accepting HTTP requests on the bound
+   * address. The server must be bound before starting.
    *
    * @throws WasmException if server startup fails
    * @throws IllegalStateException if server is not bound or already started
@@ -67,9 +67,8 @@ public interface WasiHttpServer extends AutoCloseable {
   /**
    * Stops the HTTP server and closes all active connections.
    *
-   * <p>This method gracefully shuts down the server, finishing processing
-   * of current requests before closing connections. New requests will be
-   * rejected immediately.
+   * <p>This method gracefully shuts down the server, finishing processing of current requests
+   * before closing connections. New requests will be rejected immediately.
    *
    * @throws WasmException if server shutdown fails
    * @throws IllegalStateException if server is not started
@@ -79,9 +78,8 @@ public interface WasiHttpServer extends AutoCloseable {
   /**
    * Adds a route handler for the specified path and HTTP method.
    *
-   * <p>Route handlers process incoming HTTP requests that match the specified
-   * path and method. The handler function receives the request and must
-   * return an appropriate response.
+   * <p>Route handlers process incoming HTTP requests that match the specified path and method. The
+   * handler function receives the request and must return an appropriate response.
    *
    * @param path the URL path to match (supports wildcards and parameters)
    * @param method the HTTP method to match
@@ -89,8 +87,10 @@ public interface WasiHttpServer extends AutoCloseable {
    * @throws IllegalArgumentException if path, method, or handler is null
    * @throws IllegalStateException if server is already started
    */
-  void addRoute(final String path, final HttpMethod method,
-                final Function<WasiHttpRequest, WasiHttpResponse> handler);
+  void addRoute(
+      final String path,
+      final HttpMethod method,
+      final Function<WasiHttpRequest, WasiHttpResponse> handler);
 
   /**
    * Adds a route handler that matches any HTTP method.
@@ -105,8 +105,8 @@ public interface WasiHttpServer extends AutoCloseable {
   /**
    * Adds an asynchronous route handler for the specified path and method.
    *
-   * <p>Asynchronous handlers return a CompletableFuture that will be completed
-   * with the response. This allows for non-blocking request processing.
+   * <p>Asynchronous handlers return a CompletableFuture that will be completed with the response.
+   * This allows for non-blocking request processing.
    *
    * @param path the URL path to match
    * @param method the HTTP method to match
@@ -114,8 +114,10 @@ public interface WasiHttpServer extends AutoCloseable {
    * @throws IllegalArgumentException if path, method, or handler is null
    * @throws IllegalStateException if server is already started
    */
-  void addAsyncRoute(final String path, final HttpMethod method,
-                     final Function<WasiHttpRequest, CompletableFuture<WasiHttpResponse>> handler);
+  void addAsyncRoute(
+      final String path,
+      final HttpMethod method,
+      final Function<WasiHttpRequest, CompletableFuture<WasiHttpResponse>> handler);
 
   /**
    * Removes a route handler for the specified path and method.
@@ -130,9 +132,8 @@ public interface WasiHttpServer extends AutoCloseable {
   /**
    * Adds middleware that will be executed for all requests.
    *
-   * <p>Middleware functions can inspect and modify requests before they
-   * reach route handlers, or modify responses before they are sent.
-   * Middleware is executed in the order it was added.
+   * <p>Middleware functions can inspect and modify requests before they reach route handlers, or
+   * modify responses before they are sent. Middleware is executed in the order it was added.
    *
    * @param middleware the middleware function
    * @throws IllegalArgumentException if middleware is null
@@ -143,8 +144,7 @@ public interface WasiHttpServer extends AutoCloseable {
   /**
    * Sets the default handler for requests that don't match any routes.
    *
-   * <p>If no default handler is set, unmatched requests will receive
-   * a 404 Not Found response.
+   * <p>If no default handler is set, unmatched requests will receive a 404 Not Found response.
    *
    * @param handler the default request handler
    * @throws IllegalArgumentException if handler is null
@@ -155,8 +155,8 @@ public interface WasiHttpServer extends AutoCloseable {
   /**
    * Sets the error handler for processing exceptions during request handling.
    *
-   * <p>The error handler receives both the original request and the exception
-   * that occurred, allowing for custom error responses.
+   * <p>The error handler receives both the original request and the exception that occurred,
+   * allowing for custom error responses.
    *
    * @param errorHandler the error handling function
    * @throws IllegalArgumentException if errorHandler is null
@@ -233,8 +233,8 @@ public interface WasiHttpServer extends AutoCloseable {
   /**
    * Closes the HTTP server and releases all associated resources.
    *
-   * <p>This method stops the server if it's running and releases all
-   * resources including network connections and thread pools.
+   * <p>This method stops the server if it's running and releases all resources including network
+   * connections and thread pools.
    */
   @Override
   void close();

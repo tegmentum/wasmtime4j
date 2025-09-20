@@ -9,8 +9,8 @@ import java.util.Map;
  * Interface for WebAssembly performance optimization and analysis.
  *
  * <p>PerformanceOptimizer provides automated performance analysis, optimization recommendations,
- * and module optimization capabilities. It analyzes execution patterns, identifies bottlenecks,
- * and can apply various optimization techniques to improve performance.
+ * and module optimization capabilities. It analyzes execution patterns, identifies bottlenecks, and
+ * can apply various optimization techniques to improve performance.
  *
  * <p>Usage Example:
  *
@@ -48,8 +48,8 @@ public interface PerformanceOptimizer extends Closeable {
   /**
    * Applies performance optimizations to a WebAssembly module.
    *
-   * <p>Creates an optimized version of the module with various performance improvements
-   * applied according to the specified optimization level.
+   * <p>Creates an optimized version of the module with various performance improvements applied
+   * according to the specified optimization level.
    *
    * @param module the source module to optimize
    * @param level the optimization level to apply
@@ -61,8 +61,8 @@ public interface PerformanceOptimizer extends Closeable {
   /**
    * Applies specific optimization strategies to a module.
    *
-   * <p>Allows fine-grained control over which optimizations are applied by specifying
-   * individual optimization strategies.
+   * <p>Allows fine-grained control over which optimizations are applied by specifying individual
+   * optimization strategies.
    *
    * @param module the source module to optimize
    * @param strategies list of optimization strategies to apply
@@ -74,8 +74,8 @@ public interface PerformanceOptimizer extends Closeable {
   /**
    * Adds a function as a hot function for JIT compilation prioritization.
    *
-   * <p>Hot functions are prioritized for aggressive optimization and may be compiled
-   * with higher optimization levels or compilation hints.
+   * <p>Hot functions are prioritized for aggressive optimization and may be compiled with higher
+   * optimization levels or compilation hints.
    *
    * @param functionName the name of the hot function
    * @throws IllegalArgumentException if functionName is null or empty
@@ -100,8 +100,8 @@ public interface PerformanceOptimizer extends Closeable {
   /**
    * Sets optimization hints for specific functions or code patterns.
    *
-   * <p>Optimization hints provide guidance to the JIT compiler about how to optimize
-   * specific functions based on expected usage patterns.
+   * <p>Optimization hints provide guidance to the JIT compiler about how to optimize specific
+   * functions based on expected usage patterns.
    *
    * @param hints map of function/pattern names to optimization hints
    * @throws IllegalArgumentException if hints is null
@@ -127,27 +127,29 @@ public interface PerformanceOptimizer extends Closeable {
   /**
    * Analyzes runtime performance data to generate optimization recommendations.
    *
-   * <p>Uses profiling data and execution statistics to identify optimization opportunities
-   * that may not be apparent from static analysis alone.
+   * <p>Uses profiling data and execution statistics to identify optimization opportunities that may
+   * not be apparent from static analysis alone.
    *
    * @param performanceData runtime performance data from monitoring or profiling
    * @return list of optimization recommendations
    * @throws IllegalArgumentException if performanceData is null
    */
-  List<OptimizationRecommendation> analyzeRuntimePerformance(final RuntimePerformanceData performanceData);
+  List<OptimizationRecommendation> analyzeRuntimePerformance(
+      final RuntimePerformanceData performanceData);
 
   /**
    * Validates that optimizations maintain functional correctness.
    *
-   * <p>Performs validation checks to ensure that applied optimizations do not change
-   * the functional behavior of WebAssembly modules.
+   * <p>Performs validation checks to ensure that applied optimizations do not change the functional
+   * behavior of WebAssembly modules.
    *
    * @param originalModule the original unoptimized module
    * @param optimizedModule the optimized module to validate
    * @return validation results
    * @throws IllegalArgumentException if either module is null
    */
-  OptimizationValidationResult validateOptimizations(final Module originalModule, final Module optimizedModule);
+  OptimizationValidationResult validateOptimizations(
+      final Module originalModule, final Module optimizedModule);
 
   /**
    * Gets performance benchmarking results for optimization comparison.
@@ -159,13 +161,14 @@ public interface PerformanceOptimizer extends Closeable {
    * @return benchmark comparison results
    * @throws IllegalArgumentException if either module is null
    */
-  OptimizationBenchmarkResult benchmarkOptimizations(final Module originalModule, final Module optimizedModule);
+  OptimizationBenchmarkResult benchmarkOptimizations(
+      final Module originalModule, final Module optimizedModule);
 
   /**
    * Configures automatic optimization based on runtime feedback.
    *
-   * <p>Enables adaptive optimization that adjusts optimization strategies based on
-   * observed runtime performance characteristics.
+   * <p>Enables adaptive optimization that adjusts optimization strategies based on observed runtime
+   * performance characteristics.
    *
    * @param config adaptive optimization configuration
    * @throws IllegalArgumentException if config is null
@@ -189,8 +192,8 @@ public interface PerformanceOptimizer extends Closeable {
   /**
    * Exports optimization statistics and configuration.
    *
-   * <p>Provides detailed information about applied optimizations, their impact,
-   * and current optimizer configuration for analysis and debugging.
+   * <p>Provides detailed information about applied optimizations, their impact, and current
+   * optimizer configuration for analysis and debugging.
    *
    * @return optimization statistics and configuration data
    */
@@ -199,16 +202,16 @@ public interface PerformanceOptimizer extends Closeable {
   /**
    * Resets optimizer state and clears all configuration.
    *
-   * <p>Removes all hot function markers, optimization hints, and adaptive configuration,
-   * returning the optimizer to its default state.
+   * <p>Removes all hot function markers, optimization hints, and adaptive configuration, returning
+   * the optimizer to its default state.
    */
   void reset();
 
   /**
    * Sets the optimization cache for storing compiled optimization results.
    *
-   * <p>Caching can improve performance by reusing optimization results for modules
-   * with similar characteristics.
+   * <p>Caching can improve performance by reusing optimization results for modules with similar
+   * characteristics.
    *
    * @param cache optimization cache implementation
    */
@@ -224,8 +227,8 @@ public interface PerformanceOptimizer extends Closeable {
   /**
    * Creates a snapshot of the current optimizer configuration.
    *
-   * <p>Snapshots can be used to save and restore optimizer state for reproducible
-   * optimization results.
+   * <p>Snapshots can be used to save and restore optimizer state for reproducible optimization
+   * results.
    *
    * @return optimizer configuration snapshot
    */

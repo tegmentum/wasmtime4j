@@ -99,8 +99,8 @@ public interface PerformanceThresholds {
   /**
    * Gets the monitoring overhead threshold.
    *
-   * <p>Monitoring overhead exceeding this percentage may require adjustment of monitoring
-   * intervals or scope.
+   * <p>Monitoring overhead exceeding this percentage may require adjustment of monitoring intervals
+   * or scope.
    *
    * @return maximum monitoring overhead percentage (0.0 to 100.0)
    */
@@ -122,9 +122,7 @@ public interface PerformanceThresholds {
     return new DefaultPerformanceThresholdsBuilder();
   }
 
-  /**
-   * Builder interface for creating performance threshold configurations.
-   */
+  /** Builder interface for creating performance threshold configurations. */
   interface PerformanceThresholdsBuilder {
 
     /**

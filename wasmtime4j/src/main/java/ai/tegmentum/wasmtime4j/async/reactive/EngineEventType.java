@@ -3,11 +3,11 @@ package ai.tegmentum.wasmtime4j.async.reactive;
 /**
  * Enumeration of WebAssembly engine event types.
  *
- * <p>This enum represents the various types of events that can occur during the lifecycle
- * of a WebAssembly engine, including startup, shutdown, resource management, and error conditions.
+ * <p>This enum represents the various types of events that can occur during the lifecycle of a
+ * WebAssembly engine, including startup, shutdown, resource management, and error conditions.
  *
- * <p>These event types are used in reactive engine events to categorize and filter
- * different kinds of engine activities.
+ * <p>These event types are used in reactive engine events to categorize and filter different kinds
+ * of engine activities.
  *
  * @since 1.0.0
  */
@@ -21,17 +21,20 @@ public enum EngineEventType {
   ENGINE_SHUTDOWN("Engine Shutdown", "Engine shutdown and cleanup", EventCategory.LIFECYCLE),
 
   /** Engine configuration has been updated. */
-  ENGINE_CONFIGURATION_CHANGED("Configuration Changed", "Engine configuration updated", EventCategory.LIFECYCLE),
+  ENGINE_CONFIGURATION_CHANGED(
+      "Configuration Changed", "Engine configuration updated", EventCategory.LIFECYCLE),
 
   // Resource management events
   /** Memory usage has changed significantly. */
-  MEMORY_USAGE_CHANGED("Memory Usage Changed", "Significant memory usage change", EventCategory.RESOURCE),
+  MEMORY_USAGE_CHANGED(
+      "Memory Usage Changed", "Significant memory usage change", EventCategory.RESOURCE),
 
   /** Memory cleanup and garbage collection occurred. */
   MEMORY_CLEANUP("Memory Cleanup", "Memory cleanup and garbage collection", EventCategory.RESOURCE),
 
   /** Memory usage exceeded warning threshold. */
-  MEMORY_WARNING("Memory Warning", "Memory usage warning threshold exceeded", EventCategory.RESOURCE),
+  MEMORY_WARNING(
+      "Memory Warning", "Memory usage warning threshold exceeded", EventCategory.RESOURCE),
 
   /** Store was created. */
   STORE_CREATED("Store Created", "New WebAssembly store created", EventCategory.RESOURCE),
@@ -49,17 +52,21 @@ public enum EngineEventType {
   INSTANCE_CREATED("Instance Created", "WebAssembly instance created", EventCategory.RESOURCE),
 
   /** Instance was destroyed. */
-  INSTANCE_DESTROYED("Instance Destroyed", "WebAssembly instance destroyed", EventCategory.RESOURCE),
+  INSTANCE_DESTROYED(
+      "Instance Destroyed", "WebAssembly instance destroyed", EventCategory.RESOURCE),
 
   // Performance events
   /** Performance metrics update. */
-  PERFORMANCE_METRICS("Performance Metrics", "Engine performance metrics update", EventCategory.PERFORMANCE),
+  PERFORMANCE_METRICS(
+      "Performance Metrics", "Engine performance metrics update", EventCategory.PERFORMANCE),
 
   /** Performance warning threshold exceeded. */
-  PERFORMANCE_WARNING("Performance Warning", "Performance warning threshold exceeded", EventCategory.PERFORMANCE),
+  PERFORMANCE_WARNING(
+      "Performance Warning", "Performance warning threshold exceeded", EventCategory.PERFORMANCE),
 
   /** Compilation cache statistics updated. */
-  COMPILATION_CACHE_STATS("Compilation Cache Stats", "Compilation cache statistics", EventCategory.PERFORMANCE),
+  COMPILATION_CACHE_STATS(
+      "Compilation Cache Stats", "Compilation cache statistics", EventCategory.PERFORMANCE),
 
   // Error and warning events
   /** Generic engine error occurred. */
@@ -69,39 +76,48 @@ public enum EngineEventType {
   ENGINE_WARNING("Engine Warning", "Engine warning condition", EventCategory.WARNING),
 
   /** Resource leak detected. */
-  RESOURCE_LEAK_DETECTED("Resource Leak Detected", "Potential resource leak detected", EventCategory.WARNING),
+  RESOURCE_LEAK_DETECTED(
+      "Resource Leak Detected", "Potential resource leak detected", EventCategory.WARNING),
 
   /** Unusual activity pattern detected. */
   UNUSUAL_ACTIVITY("Unusual Activity", "Unusual engine activity pattern", EventCategory.WARNING),
 
   // Security events
   /** Security validation failure. */
-  SECURITY_VALIDATION_FAILURE("Security Validation Failure", "Security validation failed", EventCategory.SECURITY),
+  SECURITY_VALIDATION_FAILURE(
+      "Security Validation Failure", "Security validation failed", EventCategory.SECURITY),
 
   /** Resource limit exceeded. */
-  RESOURCE_LIMIT_EXCEEDED("Resource Limit Exceeded", "Resource limit exceeded", EventCategory.SECURITY),
+  RESOURCE_LIMIT_EXCEEDED(
+      "Resource Limit Exceeded", "Resource limit exceeded", EventCategory.SECURITY),
 
   /** Untrusted operation attempted. */
-  UNTRUSTED_OPERATION("Untrusted Operation", "Untrusted operation attempted", EventCategory.SECURITY),
+  UNTRUSTED_OPERATION(
+      "Untrusted Operation", "Untrusted operation attempted", EventCategory.SECURITY),
 
   // Operational events
   /** Background maintenance task started. */
-  MAINTENANCE_STARTED("Maintenance Started", "Background maintenance task started", EventCategory.OPERATIONAL),
+  MAINTENANCE_STARTED(
+      "Maintenance Started", "Background maintenance task started", EventCategory.OPERATIONAL),
 
   /** Background maintenance task completed. */
-  MAINTENANCE_COMPLETED("Maintenance Completed", "Background maintenance task completed", EventCategory.OPERATIONAL),
+  MAINTENANCE_COMPLETED(
+      "Maintenance Completed", "Background maintenance task completed", EventCategory.OPERATIONAL),
 
   /** Engine statistics reset. */
-  STATISTICS_RESET("Statistics Reset", "Engine statistics counters reset", EventCategory.OPERATIONAL),
+  STATISTICS_RESET(
+      "Statistics Reset", "Engine statistics counters reset", EventCategory.OPERATIONAL),
 
   /** Configuration reload completed. */
-  CONFIGURATION_RELOAD("Configuration Reload", "Engine configuration reloaded", EventCategory.OPERATIONAL);
+  CONFIGURATION_RELOAD(
+      "Configuration Reload", "Engine configuration reloaded", EventCategory.OPERATIONAL);
 
   private final String displayName;
   private final String description;
   private final EventCategory category;
 
-  EngineEventType(final String displayName, final String description, final EventCategory category) {
+  EngineEventType(
+      final String displayName, final String description, final EventCategory category) {
     this.displayName = displayName;
     this.description = description;
     this.category = category;

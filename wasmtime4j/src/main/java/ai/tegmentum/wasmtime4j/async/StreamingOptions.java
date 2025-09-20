@@ -6,9 +6,9 @@ import java.util.concurrent.Executor;
 /**
  * Configuration options for streaming WebAssembly operations.
  *
- * <p>StreamingOptions provides fine-grained control over streaming compilation, validation,
- * and memory operations. This interface allows customization of buffer sizes, timeouts,
- * progress tracking, and resource limits for streaming operations.
+ * <p>StreamingOptions provides fine-grained control over streaming compilation, validation, and
+ * memory operations. This interface allows customization of buffer sizes, timeouts, progress
+ * tracking, and resource limits for streaming operations.
  *
  * <p>Streaming options are particularly important for optimizing performance in different
  * environments and use cases, from memory-constrained systems to high-throughput scenarios.
@@ -30,8 +30,8 @@ public interface StreamingOptions {
   /**
    * Checks if progress tracking is enabled for streaming operations.
    *
-   * <p>When enabled, streaming operations will emit progress events that can be monitored
-   * for user interface updates or operational monitoring.
+   * <p>When enabled, streaming operations will emit progress events that can be monitored for user
+   * interface updates or operational monitoring.
    *
    * @return true if progress tracking is enabled
    */
@@ -40,8 +40,8 @@ public interface StreamingOptions {
   /**
    * Gets the timeout for streaming operations.
    *
-   * <p>This timeout applies to the entire streaming operation. Individual buffer operations
-   * may have their own shorter timeouts.
+   * <p>This timeout applies to the entire streaming operation. Individual buffer operations may
+   * have their own shorter timeouts.
    *
    * @return timeout duration, or null for no timeout
    */
@@ -50,8 +50,8 @@ public interface StreamingOptions {
   /**
    * Gets the custom executor for streaming operations.
    *
-   * <p>When specified, streaming operations will use this executor instead of the default
-   * async executor. This allows for custom threading behavior and resource management.
+   * <p>When specified, streaming operations will use this executor instead of the default async
+   * executor. This allows for custom threading behavior and resource management.
    *
    * @return custom executor, or null to use default
    */
@@ -60,8 +60,8 @@ public interface StreamingOptions {
   /**
    * Gets the maximum memory usage allowed during streaming operations.
    *
-   * <p>This limit helps prevent memory exhaustion during processing of large modules
-   * or high-throughput scenarios.
+   * <p>This limit helps prevent memory exhaustion during processing of large modules or
+   * high-throughput scenarios.
    *
    * @return maximum memory in bytes, or -1 for unlimited
    */
@@ -70,8 +70,8 @@ public interface StreamingOptions {
   /**
    * Checks if validation should be skipped during streaming compilation.
    *
-   * <p>Skipping validation can improve performance but reduces safety. Only use this
-   * when the source is trusted and performance is critical.
+   * <p>Skipping validation can improve performance but reduces safety. Only use this when the
+   * source is trusted and performance is critical.
    *
    * @return true if validation should be skipped
    */
@@ -80,8 +80,8 @@ public interface StreamingOptions {
   /**
    * Gets the priority level for streaming operations.
    *
-   * <p>Higher priority operations may be scheduled before lower priority ones when
-   * multiple streaming operations are queued.
+   * <p>Higher priority operations may be scheduled before lower priority ones when multiple
+   * streaming operations are queued.
    *
    * @return priority level (higher values indicate higher priority)
    */
@@ -90,8 +90,8 @@ public interface StreamingOptions {
   /**
    * Gets the chunk size for progressive processing.
    *
-   * <p>This determines how the stream is divided for progressive processing. Smaller
-   * chunks provide more granular progress updates but may reduce efficiency.
+   * <p>This determines how the stream is divided for progressive processing. Smaller chunks provide
+   * more granular progress updates but may reduce efficiency.
    *
    * @return chunk size in bytes
    */
@@ -100,8 +100,8 @@ public interface StreamingOptions {
   /**
    * Checks if parallel processing is enabled for streaming operations.
    *
-   * <p>When enabled, different parts of the streaming operation may be processed
-   * concurrently to improve performance on multi-core systems.
+   * <p>When enabled, different parts of the streaming operation may be processed concurrently to
+   * improve performance on multi-core systems.
    *
    * @return true if parallel processing is enabled
    */
@@ -110,8 +110,8 @@ public interface StreamingOptions {
   /**
    * Gets the maximum number of concurrent processing threads.
    *
-   * <p>This limits the concurrency level for parallel streaming operations to prevent
-   * resource exhaustion.
+   * <p>This limits the concurrency level for parallel streaming operations to prevent resource
+   * exhaustion.
    *
    * @return maximum concurrent threads, or -1 for unlimited
    */
@@ -120,8 +120,8 @@ public interface StreamingOptions {
   /**
    * Checks if compression is enabled for streaming data.
    *
-   * <p>When enabled, streaming data may be compressed to reduce I/O overhead,
-   * particularly useful for network-based streams.
+   * <p>When enabled, streaming data may be compressed to reduce I/O overhead, particularly useful
+   * for network-based streams.
    *
    * @return true if compression is enabled
    */
@@ -130,8 +130,8 @@ public interface StreamingOptions {
   /**
    * Gets the compression level for streaming operations.
    *
-   * <p>Higher compression levels reduce data size but increase CPU usage.
-   * Only relevant when compression is enabled.
+   * <p>Higher compression levels reduce data size but increase CPU usage. Only relevant when
+   * compression is enabled.
    *
    * @return compression level (0-9), where 0 is no compression and 9 is maximum
    */
@@ -140,8 +140,8 @@ public interface StreamingOptions {
   /**
    * Checks if error recovery is enabled for streaming operations.
    *
-   * <p>When enabled, streaming operations may attempt to recover from certain
-   * types of errors rather than failing immediately.
+   * <p>When enabled, streaming operations may attempt to recover from certain types of errors
+   * rather than failing immediately.
    *
    * @return true if error recovery is enabled
    */
@@ -150,8 +150,8 @@ public interface StreamingOptions {
   /**
    * Gets the maximum number of recovery attempts for failed operations.
    *
-   * <p>This limits the number of times error recovery will be attempted before
-   * giving up and reporting failure.
+   * <p>This limits the number of times error recovery will be attempted before giving up and
+   * reporting failure.
    *
    * @return maximum recovery attempts
    */
@@ -160,8 +160,8 @@ public interface StreamingOptions {
   /**
    * Gets the delay between recovery attempts.
    *
-   * <p>This provides a back-off period between recovery attempts to avoid
-   * overwhelming the system or external resources.
+   * <p>This provides a back-off period between recovery attempts to avoid overwhelming the system
+   * or external resources.
    *
    * @return recovery delay duration
    */
@@ -170,8 +170,8 @@ public interface StreamingOptions {
   /**
    * Checks if detailed metrics collection is enabled.
    *
-   * <p>When enabled, streaming operations collect detailed performance metrics
-   * that can be used for monitoring and optimization.
+   * <p>When enabled, streaming operations collect detailed performance metrics that can be used for
+   * monitoring and optimization.
    *
    * @return true if metrics collection is enabled
    */
@@ -180,8 +180,8 @@ public interface StreamingOptions {
   /**
    * Gets the interval for metrics sampling.
    *
-   * <p>This determines how frequently metrics are collected during streaming
-   * operations. More frequent sampling provides better resolution but uses more resources.
+   * <p>This determines how frequently metrics are collected during streaming operations. More
+   * frequent sampling provides better resolution but uses more resources.
    *
    * @return metrics sampling interval
    */

@@ -9,8 +9,8 @@ import java.util.Optional;
  * Interface for WebAssembly Component Model component instances.
  *
  * <p>A ComponentInstance represents a running instance of a component with its own execution state
- * and exported interfaces. Component instances provide access to exported functions, resources,
- * and interfaces defined by the component.
+ * and exported interfaces. Component instances provide access to exported functions, resources, and
+ * interfaces defined by the component.
  *
  * <p>Component instances maintain isolation between different instantiations of the same component
  * and provide structured access to component exports through the Component Model interface system.
@@ -55,8 +55,8 @@ public interface ComponentInstance extends Closeable {
   /**
    * Gets the names of all exports.
    *
-   * <p>Returns a list of all export names available from this component instance. This can be
-   * used for discovery and enumeration of available component functionality.
+   * <p>Returns a list of all export names available from this component instance. This can be used
+   * for discovery and enumeration of available component functionality.
    *
    * @return list of export names
    * @throws WasmException if the instance is invalid

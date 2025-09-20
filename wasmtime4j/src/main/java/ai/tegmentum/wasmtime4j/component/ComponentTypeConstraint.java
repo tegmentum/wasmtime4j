@@ -49,9 +49,7 @@ public interface ComponentTypeConstraint {
    */
   ConstraintSeverity getSeverity();
 
-  /**
-   * Categories of type constraints.
-   */
+  /** Categories of type constraints. */
   enum ConstraintType {
     /** Size or length constraints */
     SIZE,
@@ -69,9 +67,7 @@ public interface ComponentTypeConstraint {
     CUSTOM
   }
 
-  /**
-   * Severity levels for constraint violations.
-   */
+  /** Severity levels for constraint violations. */
   enum ConstraintSeverity {
     /** Violation is informational only */
     INFO,

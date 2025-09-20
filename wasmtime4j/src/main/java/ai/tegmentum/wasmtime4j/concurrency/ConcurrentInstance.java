@@ -1,11 +1,6 @@
 package ai.tegmentum.wasmtime4j.concurrency;
 
 import ai.tegmentum.wasmtime4j.Instance;
-import ai.tegmentum.wasmtime4j.WasmFunction;
-import ai.tegmentum.wasmtime4j.WasmGlobal;
-import ai.tegmentum.wasmtime4j.WasmMemory;
-import ai.tegmentum.wasmtime4j.WasmTable;
-import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 
@@ -17,6 +12,7 @@ import java.util.concurrent.ExecutorService;
  * WebAssembly instance simultaneously, enabling true concurrent execution of WebAssembly code.
  *
  * <p>Key features:
+ *
  * <ul>
  *   <li>Thread-safe function calls with concurrent execution support
  *   <li>Concurrent access to memory, globals, and tables
@@ -26,6 +22,7 @@ import java.util.concurrent.ExecutorService;
  * </ul>
  *
  * <p>Implementation requirements:
+ *
  * <ul>
  *   <li>All operations must be thread-safe without external synchronization
  *   <li>Function calls must support true concurrent execution when safe
@@ -104,8 +101,8 @@ public interface ConcurrentInstance extends Instance {
   /**
    * Asynchronously calls an exported function.
    *
-   * <p>This method returns immediately and executes the function call in the background.
-   * The returned CompletableFuture can be used to retrieve the result or handle errors.
+   * <p>This method returns immediately and executes the function call in the background. The
+   * returned CompletableFuture can be used to retrieve the result or handle errors.
    *
    * @param functionName the name of the function to call
    * @param parameters the parameters to pass to the function
@@ -132,8 +129,8 @@ public interface ConcurrentInstance extends Instance {
   /**
    * Executes multiple function calls concurrently.
    *
-   * <p>This method optimizes the execution of multiple function calls by running them
-   * in parallel. All calls are executed within the same instance context.
+   * <p>This method optimizes the execution of multiple function calls by running them in parallel.
+   * All calls are executed within the same instance context.
    *
    * @param functionCalls array of function call specifications
    * @return a CompletableFuture that completes with an array of results
@@ -144,8 +141,8 @@ public interface ConcurrentInstance extends Instance {
   /**
    * Calls a function with a timeout.
    *
-   * <p>This method calls a function and cancels execution if it doesn't complete
-   * within the specified timeout period.
+   * <p>This method calls a function and cancels execution if it doesn't complete within the
+   * specified timeout period.
    *
    * @param functionName the name of the function to call
    * @param timeoutMillis maximum execution time in milliseconds
@@ -159,8 +156,8 @@ public interface ConcurrentInstance extends Instance {
   /**
    * Creates a concurrent execution context for this instance.
    *
-   * <p>This creates an isolated execution context that can be used to group related
-   * operations together for better performance and resource management.
+   * <p>This creates an isolated execution context that can be used to group related operations
+   * together for better performance and resource management.
    *
    * @return a new ConcurrentExecutionContext for this instance
    */
@@ -195,8 +192,8 @@ public interface ConcurrentInstance extends Instance {
   /**
    * Gets the total number of function calls executed on this instance.
    *
-   * <p>This is a cumulative counter that tracks all function calls, both
-   * synchronous and asynchronous.
+   * <p>This is a cumulative counter that tracks all function calls, both synchronous and
+   * asynchronous.
    *
    * @return the total number of function calls
    */
@@ -205,8 +202,8 @@ public interface ConcurrentInstance extends Instance {
   /**
    * Waits for all pending function calls to complete.
    *
-   * <p>This method blocks until all currently running async function calls finish.
-   * It's useful for graceful shutdown or batch completion scenarios.
+   * <p>This method blocks until all currently running async function calls finish. It's useful for
+   * graceful shutdown or batch completion scenarios.
    *
    * @return a CompletableFuture that completes when all pending calls are done
    */
@@ -215,8 +212,8 @@ public interface ConcurrentInstance extends Instance {
   /**
    * Cancels all pending function calls.
    *
-   * <p>This attempts to cancel any queued function calls that haven't started yet.
-   * Calls that are already executing may not be immediately cancellable.
+   * <p>This attempts to cancel any queued function calls that haven't started yet. Calls that are
+   * already executing may not be immediately cancellable.
    *
    * @return the number of calls that were successfully cancelled
    */
@@ -225,8 +222,8 @@ public interface ConcurrentInstance extends Instance {
   /**
    * Checks if this instance supports concurrent function execution.
    *
-   * <p>While all ConcurrentInstance implementations should support this,
-   * this method allows checking for any implementation-specific limitations.
+   * <p>While all ConcurrentInstance implementations should support this, this method allows
+   * checking for any implementation-specific limitations.
    *
    * @return true if concurrent function execution is fully supported
    */
@@ -235,8 +232,8 @@ public interface ConcurrentInstance extends Instance {
   /**
    * Gets comprehensive execution statistics for this instance.
    *
-   * <p>This includes metrics about function call performance, concurrency patterns,
-   * and resource usage.
+   * <p>This includes metrics about function call performance, concurrency patterns, and resource
+   * usage.
    *
    * @return detailed execution statistics
    */
@@ -245,8 +242,8 @@ public interface ConcurrentInstance extends Instance {
   /**
    * Validates that the instance is properly configured for concurrent use.
    *
-   * <p>This checks internal state to ensure the instance can safely handle
-   * concurrent function calls and resource access.
+   * <p>This checks internal state to ensure the instance can safely handle concurrent function
+   * calls and resource access.
    *
    * @return true if the instance is properly configured for concurrency
    */
@@ -255,8 +252,8 @@ public interface ConcurrentInstance extends Instance {
   /**
    * Gets the thread pool used for asynchronous function execution.
    *
-   * <p>This can be used to monitor the state of the thread pool or submit
-   * additional tasks that should run in the same context.
+   * <p>This can be used to monitor the state of the thread pool or submit additional tasks that
+   * should run in the same context.
    *
    * @return the ExecutorService used for async function calls
    */
@@ -265,8 +262,8 @@ public interface ConcurrentInstance extends Instance {
   /**
    * Sets a custom thread pool for asynchronous function execution.
    *
-   * <p>This allows using a specific thread pool configuration optimized for
-   * the application's function call patterns.
+   * <p>This allows using a specific thread pool configuration optimized for the application's
+   * function call patterns.
    *
    * @param executorService the executor service to use
    * @throws IllegalArgumentException if executorService is null
@@ -276,8 +273,8 @@ public interface ConcurrentInstance extends Instance {
   /**
    * Creates a snapshot of the current instance state for debugging.
    *
-   * <p>This creates a read-only snapshot that can be safely accessed without
-   * affecting ongoing concurrent operations.
+   * <p>This creates a read-only snapshot that can be safely accessed without affecting ongoing
+   * concurrent operations.
    *
    * @return a thread-safe snapshot of the instance state
    */

@@ -2,7 +2,6 @@ package ai.tegmentum.wasmtime4j.async;
 
 import java.time.Duration;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -12,9 +11,9 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * Manager for async executors optimized for WebAssembly workloads.
  *
- * <p>AsyncExecutorManager provides specialized thread pools and execution strategies designed
- * for WebAssembly operations. It manages different types of executors for different async
- * operation categories and provides automatic optimization based on workload characteristics.
+ * <p>AsyncExecutorManager provides specialized thread pools and execution strategies designed for
+ * WebAssembly operations. It manages different types of executors for different async operation
+ * categories and provides automatic optimization based on workload characteristics.
  *
  * <p>This manager is designed to optimize performance for WASM-specific workloads including
  * compilation, execution, memory operations, and streaming tasks.
@@ -26,8 +25,8 @@ public interface AsyncExecutorManager {
   /**
    * Gets the default executor for general async operations.
    *
-   * <p>Returns a general-purpose executor suitable for most async WebAssembly operations
-   * that don't have specific performance requirements.
+   * <p>Returns a general-purpose executor suitable for most async WebAssembly operations that don't
+   * have specific performance requirements.
    *
    * @return default async executor
    */
@@ -36,8 +35,8 @@ public interface AsyncExecutorManager {
   /**
    * Gets the executor optimized for compilation operations.
    *
-   * <p>Returns an executor configured for CPU-intensive compilation tasks with appropriate
-   * thread pool sizing and priority handling.
+   * <p>Returns an executor configured for CPU-intensive compilation tasks with appropriate thread
+   * pool sizing and priority handling.
    *
    * @return compilation executor
    */
@@ -46,8 +45,8 @@ public interface AsyncExecutorManager {
   /**
    * Gets the executor optimized for function execution.
    *
-   * <p>Returns an executor designed for WebAssembly function calls with low latency
-   * and high throughput characteristics.
+   * <p>Returns an executor designed for WebAssembly function calls with low latency and high
+   * throughput characteristics.
    *
    * @return function execution executor
    */
@@ -56,8 +55,8 @@ public interface AsyncExecutorManager {
   /**
    * Gets the executor optimized for memory operations.
    *
-   * <p>Returns an executor specialized for memory I/O operations including bulk transfers
-   * and streaming memory access.
+   * <p>Returns an executor specialized for memory I/O operations including bulk transfers and
+   * streaming memory access.
    *
    * @return memory operations executor
    */
@@ -66,8 +65,8 @@ public interface AsyncExecutorManager {
   /**
    * Gets the scheduled executor for timed operations.
    *
-   * <p>Returns a scheduled executor service for operations requiring timeouts,
-   * periodic execution, or delayed execution.
+   * <p>Returns a scheduled executor service for operations requiring timeouts, periodic execution,
+   * or delayed execution.
    *
    * @return scheduled executor service
    */
@@ -76,8 +75,8 @@ public interface AsyncExecutorManager {
   /**
    * Creates a custom executor with specific configuration.
    *
-   * <p>Creates an executor tailored for specific workload characteristics including
-   * thread count, priority, and threading model.
+   * <p>Creates an executor tailored for specific workload characteristics including thread count,
+   * priority, and threading model.
    *
    * @param config executor configuration
    * @return configured custom executor
@@ -88,8 +87,8 @@ public interface AsyncExecutorManager {
   /**
    * Gets executor performance statistics.
    *
-   * <p>Returns performance metrics for all managed executors including throughput,
-   * latency, and resource utilization.
+   * <p>Returns performance metrics for all managed executors including throughput, latency, and
+   * resource utilization.
    *
    * @return executor performance statistics
    */
@@ -98,24 +97,24 @@ public interface AsyncExecutorManager {
   /**
    * Optimizes executor configuration based on runtime metrics.
    *
-   * <p>Analyzes executor performance and adjusts configuration parameters to
-   * improve throughput and reduce latency for current workloads.
+   * <p>Analyzes executor performance and adjusts configuration parameters to improve throughput and
+   * reduce latency for current workloads.
    */
   void optimizeConfiguration();
 
   /**
    * Shuts down all managed executors gracefully.
    *
-   * <p>Initiates graceful shutdown of all executors with a reasonable timeout.
-   * Operations should complete this call before application termination.
+   * <p>Initiates graceful shutdown of all executors with a reasonable timeout. Operations should
+   * complete this call before application termination.
    */
   void shutdown();
 
   /**
    * Shuts down all managed executors with timeout.
    *
-   * <p>Initiates graceful shutdown with specified timeout. Forces termination
-   * of remaining tasks if timeout is exceeded.
+   * <p>Initiates graceful shutdown with specified timeout. Forces termination of remaining tasks if
+   * timeout is exceeded.
    *
    * @param timeout maximum time to wait for shutdown
    * @throws IllegalArgumentException if timeout is null or negative
@@ -444,41 +443,46 @@ public interface AsyncExecutorManager {
       this.config = config;
 
       // Create thread factory for WASM operations
-      final ThreadFactory wasmThreadFactory = r -> {
-        final Thread thread = new Thread(r, "wasm-async-" + taskCounter.incrementAndGet());
-        thread.setDaemon(true);
-        thread.setPriority(Thread.NORM_PRIORITY + 1);
-        return thread;
-      };
+      final ThreadFactory wasmThreadFactory =
+          r -> {
+            final Thread thread = new Thread(r, "wasm-async-" + taskCounter.incrementAndGet());
+            thread.setDaemon(true);
+            thread.setPriority(Thread.NORM_PRIORITY + 1);
+            return thread;
+          };
 
       // Initialize executors with optimal configurations
-      this.defaultExecutor = new ForkJoinPool(
-          Runtime.getRuntime().availableProcessors(),
-          ForkJoinPool.defaultForkJoinWorkerThreadFactory,
-          null,
-          true);
+      this.defaultExecutor =
+          new ForkJoinPool(
+              Runtime.getRuntime().availableProcessors(),
+              ForkJoinPool.defaultForkJoinWorkerThreadFactory,
+              null,
+              true);
 
-      this.compilationExecutor = new ForkJoinPool(
-          Math.max(1, Runtime.getRuntime().availableProcessors() - 1),
-          ForkJoinPool.defaultForkJoinWorkerThreadFactory,
-          null,
-          false);
+      this.compilationExecutor =
+          new ForkJoinPool(
+              Math.max(1, Runtime.getRuntime().availableProcessors() - 1),
+              ForkJoinPool.defaultForkJoinWorkerThreadFactory,
+              null,
+              false);
 
-      this.executionExecutor = new ForkJoinPool(
-          Runtime.getRuntime().availableProcessors() * 2,
-          ForkJoinPool.defaultForkJoinWorkerThreadFactory,
-          null,
-          true);
+      this.executionExecutor =
+          new ForkJoinPool(
+              Runtime.getRuntime().availableProcessors() * 2,
+              ForkJoinPool.defaultForkJoinWorkerThreadFactory,
+              null,
+              true);
 
-      this.memoryExecutor = new ForkJoinPool(
-          Math.max(2, Runtime.getRuntime().availableProcessors() / 2),
-          ForkJoinPool.defaultForkJoinWorkerThreadFactory,
-          null,
-          true);
+      this.memoryExecutor =
+          new ForkJoinPool(
+              Math.max(2, Runtime.getRuntime().availableProcessors() / 2),
+              ForkJoinPool.defaultForkJoinWorkerThreadFactory,
+              null,
+              true);
 
-      this.scheduledExecutor = new ScheduledThreadPoolExecutor(
-          Math.max(1, Runtime.getRuntime().availableProcessors() / 4),
-          wasmThreadFactory);
+      this.scheduledExecutor =
+          new ScheduledThreadPoolExecutor(
+              Math.max(1, Runtime.getRuntime().availableProcessors() / 4), wasmThreadFactory);
     }
 
     @Override

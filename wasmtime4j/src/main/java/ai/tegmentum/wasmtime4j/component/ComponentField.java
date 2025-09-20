@@ -6,8 +6,8 @@ import java.util.Optional;
 /**
  * Interface for WebAssembly Component Model record field definitions.
  *
- * <p>ComponentField represents a field within a record type, including its name, type,
- * optionality, and metadata. Fields define the structure and constraints for record data.
+ * <p>ComponentField represents a field within a record type, including its name, type, optionality,
+ * and metadata. Fields define the structure and constraints for record data.
  *
  * @since 1.0.0
  */

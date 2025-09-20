@@ -8,11 +8,11 @@ import org.junit.jupiter.api.Test;
 /**
  * Test suite for WASI Preview 2 integration interfaces.
  *
- * <p>Validates the WASI Preview 2 context management, resource configuration, and security
- * policy interfaces that enable capability-based component execution.
+ * <p>Validates the WASI Preview 2 context management, resource configuration, and security policy
+ * interfaces that enable capability-based component execution.
  *
- * <p>These tests ensure that the WASI Preview 2 API provides comprehensive resource management
- * and security control capabilities for component model execution.
+ * <p>These tests ensure that the WASI Preview 2 API provides comprehensive resource management and
+ * security control capabilities for component model execution.
  */
 @DisplayName("WASI Preview 2 Integration Tests")
 class WasiPreview2IntegrationTest {
@@ -87,34 +87,29 @@ class WasiPreview2IntegrationTest {
   @DisplayName("WasiResourceType default permissions should be appropriate")
   void testWasiResourceTypeDefaultPermissions() {
     // Test read-only default permissions
-    assertEquals(WasiResourcePermissions.READ_ONLY,
-        WasiResourceType.FILESYSTEM.getDefaultPermissions());
-    assertEquals(WasiResourcePermissions.READ_ONLY,
-        WasiResourceType.ENVIRONMENT.getDefaultPermissions());
+    assertEquals(
+        WasiResourcePermissions.READ_ONLY, WasiResourceType.FILESYSTEM.getDefaultPermissions());
+    assertEquals(
+        WasiResourcePermissions.READ_ONLY, WasiResourceType.ENVIRONMENT.getDefaultPermissions());
 
     // Test read-write default permissions
-    assertEquals(WasiResourcePermissions.READ_WRITE,
-        WasiResourceType.NETWORK.getDefaultPermissions());
-    assertEquals(WasiResourcePermissions.READ_WRITE,
-        WasiResourceType.TIME.getDefaultPermissions());
-    assertEquals(WasiResourcePermissions.READ_WRITE,
-        WasiResourceType.RANDOM.getDefaultPermissions());
-    assertEquals(WasiResourcePermissions.READ_WRITE,
-        WasiResourceType.STDIO.getDefaultPermissions());
+    assertEquals(
+        WasiResourcePermissions.READ_WRITE, WasiResourceType.NETWORK.getDefaultPermissions());
+    assertEquals(WasiResourcePermissions.READ_WRITE, WasiResourceType.TIME.getDefaultPermissions());
+    assertEquals(
+        WasiResourcePermissions.READ_WRITE, WasiResourceType.RANDOM.getDefaultPermissions());
+    assertEquals(
+        WasiResourcePermissions.READ_WRITE, WasiResourceType.STDIO.getDefaultPermissions());
 
     // Test execute permissions
-    assertEquals(WasiResourcePermissions.EXECUTE,
-        WasiResourceType.PROCESS.getDefaultPermissions());
-    assertEquals(WasiResourcePermissions.EXECUTE,
-        WasiResourceType.CRYPTO.getDefaultPermissions());
+    assertEquals(WasiResourcePermissions.EXECUTE, WasiResourceType.PROCESS.getDefaultPermissions());
+    assertEquals(WasiResourcePermissions.EXECUTE, WasiResourceType.CRYPTO.getDefaultPermissions());
 
     // Test write-only permissions
-    assertEquals(WasiResourcePermissions.WRITE_ONLY,
-        WasiResourceType.LOG.getDefaultPermissions());
+    assertEquals(WasiResourcePermissions.WRITE_ONLY, WasiResourceType.LOG.getDefaultPermissions());
 
     // Test no permissions for custom types
-    assertEquals(WasiResourcePermissions.NONE,
-        WasiResourceType.CUSTOM.getDefaultPermissions());
+    assertEquals(WasiResourcePermissions.NONE, WasiResourceType.CUSTOM.getDefaultPermissions());
   }
 
   @Test
@@ -220,22 +215,35 @@ class WasiPreview2IntegrationTest {
     assertFalse(WasiResourcePermissions.READ.includes(WasiResourcePermissions.ADMIN));
 
     // Test with method
-    java.util.Set<WasiResourcePermissions> combined = WasiResourcePermissions.READ.with(WasiResourcePermissions.WRITE);
+    java.util.Set<WasiResourcePermissions> combined =
+        WasiResourcePermissions.READ.with(WasiResourcePermissions.WRITE);
     assertEquals(2, combined.size());
     assertTrue(combined.contains(WasiResourcePermissions.READ));
     assertTrue(combined.contains(WasiResourcePermissions.WRITE));
 
     // Test hasAll method
-    assertTrue(WasiResourcePermissions.hasAll(WasiResourcePermissions.READ_WRITE,
-        WasiResourcePermissions.READ, WasiResourcePermissions.WRITE));
-    assertFalse(WasiResourcePermissions.hasAll(WasiResourcePermissions.READ_ONLY,
-        WasiResourcePermissions.READ, WasiResourcePermissions.WRITE));
+    assertTrue(
+        WasiResourcePermissions.hasAll(
+            WasiResourcePermissions.READ_WRITE,
+            WasiResourcePermissions.READ,
+            WasiResourcePermissions.WRITE));
+    assertFalse(
+        WasiResourcePermissions.hasAll(
+            WasiResourcePermissions.READ_ONLY,
+            WasiResourcePermissions.READ,
+            WasiResourcePermissions.WRITE));
 
     // Test hasAny method
-    assertTrue(WasiResourcePermissions.hasAny(WasiResourcePermissions.READ_WRITE,
-        WasiResourcePermissions.READ, WasiResourcePermissions.EXECUTE));
-    assertFalse(WasiResourcePermissions.hasAny(WasiResourcePermissions.READ_ONLY,
-        WasiResourcePermissions.WRITE, WasiResourcePermissions.EXECUTE));
+    assertTrue(
+        WasiResourcePermissions.hasAny(
+            WasiResourcePermissions.READ_WRITE,
+            WasiResourcePermissions.READ,
+            WasiResourcePermissions.EXECUTE));
+    assertFalse(
+        WasiResourcePermissions.hasAny(
+            WasiResourcePermissions.READ_ONLY,
+            WasiResourcePermissions.WRITE,
+            WasiResourcePermissions.EXECUTE));
   }
 
   @Test
@@ -305,35 +313,41 @@ class WasiPreview2IntegrationTest {
   @DisplayName("WASI P2 interfaces should have proper method signatures")
   void testWasiP2InterfaceMethodSignatures() {
     // Test WasiP2Context interface methods
-    assertDoesNotThrow(() -> {
-      java.lang.reflect.Method setResourceLimits = WasiP2Context.class.getMethod(
-          "setResourceLimits", WasiResourceLimits.class);
-      assertNotNull(setResourceLimits);
-    });
+    assertDoesNotThrow(
+        () -> {
+          java.lang.reflect.Method setResourceLimits =
+              WasiP2Context.class.getMethod("setResourceLimits", WasiResourceLimits.class);
+          assertNotNull(setResourceLimits);
+        });
 
-    assertDoesNotThrow(() -> {
-      java.lang.reflect.Method setSecurityPolicy = WasiP2Context.class.getMethod(
-          "setSecurityPolicy", WasiSecurityPolicy.class);
-      assertNotNull(setSecurityPolicy);
-    });
+    assertDoesNotThrow(
+        () -> {
+          java.lang.reflect.Method setSecurityPolicy =
+              WasiP2Context.class.getMethod("setSecurityPolicy", WasiSecurityPolicy.class);
+          assertNotNull(setSecurityPolicy);
+        });
 
-    assertDoesNotThrow(() -> {
-      java.lang.reflect.Method getResources = WasiP2Context.class.getMethod("getResources");
-      assertNotNull(getResources);
-    });
+    assertDoesNotThrow(
+        () -> {
+          java.lang.reflect.Method getResources = WasiP2Context.class.getMethod("getResources");
+          assertNotNull(getResources);
+        });
 
     // Test WasiResourceManager interface methods
-    assertDoesNotThrow(() -> {
-      java.lang.reflect.Method createResource = WasiResourceManager.class.getMethod(
-          "createResource", Class.class, WasiResourceConfig.class);
-      assertNotNull(createResource);
-    });
+    assertDoesNotThrow(
+        () -> {
+          java.lang.reflect.Method createResource =
+              WasiResourceManager.class.getMethod(
+                  "createResource", Class.class, WasiResourceConfig.class);
+          assertNotNull(createResource);
+        });
 
-    assertDoesNotThrow(() -> {
-      java.lang.reflect.Method getResource = WasiResourceManager.class.getMethod(
-          "getResource", String.class);
-      assertNotNull(getResource);
-    });
+    assertDoesNotThrow(
+        () -> {
+          java.lang.reflect.Method getResource =
+              WasiResourceManager.class.getMethod("getResource", String.class);
+          assertNotNull(getResource);
+        });
   }
 
   @Test

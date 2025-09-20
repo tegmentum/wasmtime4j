@@ -37,8 +37,7 @@ public interface ComponentVariant {
   /**
    * Gets all cases defined in this variant.
    *
-   * <p>Returns an ordered list of variant cases including their names, payload types, and
-   * metadata.
+   * <p>Returns an ordered list of variant cases including their names, payload types, and metadata.
    *
    * @return list of variant cases
    */
@@ -109,8 +108,8 @@ public interface ComponentVariant {
   /**
    * Gets the discriminant type used for this variant.
    *
-   * <p>Returns the integer type used to represent which case is active in the variant's
-   * runtime representation.
+   * <p>Returns the integer type used to represent which case is active in the variant's runtime
+   * representation.
    *
    * @return the discriminant type
    */
@@ -140,8 +139,8 @@ public interface ComponentVariant {
   /**
    * Validates a case name and payload value against this variant definition.
    *
-   * <p>Checks that the case exists and that the payload value is compatible with the case's
-   * payload type.
+   * <p>Checks that the case exists and that the payload value is compatible with the case's payload
+   * type.
    *
    * @param caseName the case name
    * @param payload the payload value
@@ -170,8 +169,7 @@ public interface ComponentVariant {
   /**
    * Validates this variant definition for correctness.
    *
-   * <p>Validation includes case name uniqueness, payload type validity, and structural
-   * consistency.
+   * <p>Validation includes case name uniqueness, payload type validity, and structural consistency.
    *
    * @throws IllegalArgumentException if validation fails with details about specific issues
    */

@@ -4,7 +4,6 @@ import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -12,12 +11,12 @@ import java.util.function.Supplier;
  * Manager for WebAssembly CompletableFuture operations with timeout and cancellation support.
  *
  * <p>WasmFutureManager provides comprehensive future management capabilities including timeout
- * handling, cancellation support, resource cleanup, and integration with native operations.
- * It's designed specifically for WebAssembly async operations where proper resource management
- * and cancellation are critical.
+ * handling, cancellation support, resource cleanup, and integration with native operations. It's
+ * designed specifically for WebAssembly async operations where proper resource management and
+ * cancellation are critical.
  *
- * <p>This manager ensures that native resources are properly cleaned up when futures are
- * cancelled or timeout, preventing resource leaks in long-running applications.
+ * <p>This manager ensures that native resources are properly cleaned up when futures are cancelled
+ * or timeout, preventing resource leaks in long-running applications.
  *
  * @since 1.0.0
  */
@@ -26,8 +25,8 @@ public interface WasmFutureManager {
   /**
    * Creates a CompletableFuture with timeout support.
    *
-   * <p>Creates a future that will automatically timeout after the specified duration,
-   * with proper cleanup of associated native resources.
+   * <p>Creates a future that will automatically timeout after the specified duration, with proper
+   * cleanup of associated native resources.
    *
    * @param <T> the result type
    * @param supplier the supplier that produces the result
@@ -53,8 +52,8 @@ public interface WasmFutureManager {
   /**
    * Creates a CompletableFuture for a native operation.
    *
-   * <p>Creates a future that manages a native operation handle, ensuring proper cleanup
-   * when the operation completes, fails, or is cancelled.
+   * <p>Creates a future that manages a native operation handle, ensuring proper cleanup when the
+   * operation completes, fails, or is cancelled.
    *
    * @param <T> the result type
    * @param nativeHandle the native operation handle
@@ -81,8 +80,8 @@ public interface WasmFutureManager {
   /**
    * Adds timeout to an existing CompletableFuture.
    *
-   * <p>Wraps an existing future with timeout handling, automatically cancelling
-   * the operation if it doesn't complete within the specified time.
+   * <p>Wraps an existing future with timeout handling, automatically cancelling the operation if it
+   * doesn't complete within the specified time.
    *
    * @param <T> the result type
    * @param future the future to add timeout to
@@ -95,8 +94,8 @@ public interface WasmFutureManager {
   /**
    * Adds cancellation support to a CompletableFuture.
    *
-   * <p>Enhances a future with cancellation capabilities that properly clean up
-   * associated native resources when cancelled.
+   * <p>Enhances a future with cancellation capabilities that properly clean up associated native
+   * resources when cancelled.
    *
    * @param <T> the result type
    * @param future the future to add cancellation to
@@ -110,8 +109,8 @@ public interface WasmFutureManager {
   /**
    * Creates a CompletableFuture with retry support.
    *
-   * <p>Creates a future that will automatically retry the operation according to
-   * the specified retry policy if it fails.
+   * <p>Creates a future that will automatically retry the operation according to the specified
+   * retry policy if it fails.
    *
    * @param <T> the result type
    * @param supplier the supplier that produces the result
@@ -125,8 +124,8 @@ public interface WasmFutureManager {
   /**
    * Combines multiple futures with timeout support.
    *
-   * <p>Combines the results of multiple futures, with overall timeout handling
-   * that cancels all operations if the combined timeout is exceeded.
+   * <p>Combines the results of multiple futures, with overall timeout handling that cancels all
+   * operations if the combined timeout is exceeded.
    *
    * @param futures the futures to combine
    * @param timeout the overall timeout duration
@@ -139,8 +138,8 @@ public interface WasmFutureManager {
   /**
    * Gets statistics about managed futures.
    *
-   * <p>Returns metrics about future performance including completion rates,
-   * timeout frequencies, and resource usage.
+   * <p>Returns metrics about future performance including completion rates, timeout frequencies,
+   * and resource usage.
    *
    * @return future management statistics
    */
@@ -149,8 +148,8 @@ public interface WasmFutureManager {
   /**
    * Cancels all active futures managed by this manager.
    *
-   * <p>Cancels all currently active futures with proper resource cleanup.
-   * This is useful for shutdown scenarios.
+   * <p>Cancels all currently active futures with proper resource cleanup. This is useful for
+   * shutdown scenarios.
    *
    * @param mayInterruptIfRunning whether to interrupt running tasks
    * @return the number of futures that were cancelled
@@ -160,8 +159,8 @@ public interface WasmFutureManager {
   /**
    * Shuts down the future manager.
    *
-   * <p>Cancels all active futures and shuts down internal resources.
-   * No new futures can be created after shutdown.
+   * <p>Cancels all active futures and shuts down internal resources. No new futures can be created
+   * after shutdown.
    */
   void shutdown();
 
@@ -407,7 +406,8 @@ public interface WasmFutureManager {
     }
 
     @Override
-    public <T> CompletableFuture<T> createWithTimeout(final Supplier<T> supplier, final Duration timeout) {
+    public <T> CompletableFuture<T> createWithTimeout(
+        final Supplier<T> supplier, final Duration timeout) {
       return CompletableFuture.supplyAsync(supplier)
           .orTimeout(timeout.toMillis(), TimeUnit.MILLISECONDS);
     }
@@ -434,7 +434,8 @@ public interface WasmFutureManager {
     }
 
     @Override
-    public <T> CompletableFuture<T> withTimeout(final CompletableFuture<T> future, final Duration timeout) {
+    public <T> CompletableFuture<T> withTimeout(
+        final CompletableFuture<T> future, final Duration timeout) {
       return future.orTimeout(timeout.toMillis(), TimeUnit.MILLISECONDS);
     }
 
@@ -442,11 +443,12 @@ public interface WasmFutureManager {
     public <T> CompletableFuture<T> withCancellation(
         final CompletableFuture<T> future, final CancellationHandler cancellationHandler) {
       // Implementation would add cancellation handling
-      return future.whenComplete((result, throwable) -> {
-        if (future.isCancelled()) {
-          cancellationHandler.handleCancellation("unknown");
-        }
-      });
+      return future.whenComplete(
+          (result, throwable) -> {
+            if (future.isCancelled()) {
+              cancellationHandler.handleCancellation("unknown");
+            }
+          });
     }
 
     @Override
@@ -459,8 +461,7 @@ public interface WasmFutureManager {
     @Override
     public CompletableFuture<Void> combineWithTimeout(
         final CompletableFuture<?>[] futures, final Duration timeout) {
-      return CompletableFuture.allOf(futures)
-          .orTimeout(timeout.toMillis(), TimeUnit.MILLISECONDS);
+      return CompletableFuture.allOf(futures).orTimeout(timeout.toMillis(), TimeUnit.MILLISECONDS);
     }
 
     @Override
