@@ -123,9 +123,16 @@ pub enum WasmtimeError {
 
     /// WASI-specific errors (for future use)
     #[error("WASI error: {message}")]
-    Wasi { 
+    Wasi {
         /// Error message describing the WASI-related error
-        message: String 
+        message: String
+    },
+
+    /// Security and permission violations
+    #[error("Security error: {message}")]
+    Security {
+        /// Error message describing the security violation
+        message: String
     },
 
     /// Component model specific errors
@@ -203,12 +210,14 @@ pub enum ErrorCode {
     ConcurrencyError = -14,
     /// WASI-related error
     WasiError = -15,
+    /// Security and permission violation error
+    SecurityError = -16,
     /// Component model error
-    ComponentError = -16,
+    ComponentError = -17,
     /// Interface definition or binding error
-    InterfaceError = -17,
+    InterfaceError = -18,
     /// Internal system error
-    InternalError = -18,
+    InternalError = -19,
 }
 
 // The impl WasmtimeError block is defined below to avoid duplication
@@ -249,6 +258,7 @@ impl WasmtimeError {
             WasmtimeError::InvalidParameter { .. } => ErrorCode::InvalidParameterError,
             WasmtimeError::Concurrency { .. } => ErrorCode::ConcurrencyError,
             WasmtimeError::Wasi { .. } => ErrorCode::WasiError,
+            WasmtimeError::Security { .. } => ErrorCode::SecurityError,
             WasmtimeError::Component { .. } => ErrorCode::ComponentError,
             WasmtimeError::Interface { .. } => ErrorCode::InterfaceError,
             WasmtimeError::Internal { .. } => ErrorCode::InternalError,
@@ -275,6 +285,20 @@ impl WasmtimeError {
     /// Create invalid parameter error with defensive checks
     pub fn invalid_parameter<S: Into<String>>(message: S) -> Self {
         WasmtimeError::InvalidParameter {
+            message: message.into(),
+        }
+    }
+
+    /// Create security violation error
+    pub fn security_violation<S: Into<String>>(message: S) -> Self {
+        WasmtimeError::Security {
+            message: message.into(),
+        }
+    }
+
+    /// Create resource management error
+    pub fn resource_error<S: Into<String>>(message: S) -> Self {
+        WasmtimeError::Resource {
             message: message.into(),
         }
     }
@@ -402,9 +426,52 @@ pub mod ffi_utils {
     use std::collections::HashMap;
     use std::os::raw::c_void;
 
-    // Store last error for FFI error handling
+    /// Enhanced error context for better diagnostics and debugging
+    #[derive(Debug, Clone)]
+    pub struct ErrorContext {
+        pub error: WasmtimeError,
+        pub operation: Option<String>,
+        pub file: Option<String>,
+        pub line: Option<u32>,
+        pub timestamp: std::time::Instant,
+        pub thread_id: String,
+        pub stack_trace: Option<String>,
+    }
+
+    impl ErrorContext {
+        pub fn new(error: WasmtimeError) -> Self {
+            Self {
+                error,
+                operation: None,
+                file: None,
+                line: None,
+                timestamp: std::time::Instant::now(),
+                thread_id: format!("{:?}", std::thread::current().id()),
+                stack_trace: None,
+            }
+        }
+
+        pub fn with_operation(mut self, operation: String) -> Self {
+            self.operation = Some(operation);
+            self
+        }
+
+        pub fn with_location(mut self, file: String, line: u32) -> Self {
+            self.file = Some(file);
+            self.line = Some(line);
+            self
+        }
+
+        pub fn with_stack_trace(mut self, stack_trace: String) -> Self {
+            self.stack_trace = Some(stack_trace);
+            self
+        }
+    }
+
+    // Store last error with enhanced context for FFI error handling
     thread_local! {
         static LAST_ERROR: std::cell::RefCell<Option<WasmtimeError>> = std::cell::RefCell::new(None);
+        static LAST_ERROR_CONTEXT: std::cell::RefCell<Option<ErrorContext>> = std::cell::RefCell::new(None);
     }
 
     /// Resource handle type for thread-safe resource management
@@ -604,6 +671,80 @@ pub mod ffi_utils {
             Ok((has_error, message)) => (has_error, message),
             Err(_) => (false, "Panic occurred during error stats check".to_string()),
         }
+    }
+
+    /// Set error context with enhanced diagnostic information
+    pub fn set_error_context(context: ErrorContext) {
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            // Set both the basic error and the enhanced context
+            LAST_ERROR.with(|e| {
+                if let Ok(mut error_ref) = e.try_borrow_mut() {
+                    *error_ref = Some(context.error.clone());
+                }
+            });
+
+            LAST_ERROR_CONTEXT.with(|ctx| {
+                if let Ok(mut context_ref) = ctx.try_borrow_mut() {
+                    *context_ref = Some(context);
+                }
+            });
+        }));
+
+        if result.is_err() {
+            log::error!("Panic occurred while setting error context - prevented JVM crash");
+        }
+    }
+
+    /// Get the enhanced error context if available
+    pub fn get_error_context() -> Option<ErrorContext> {
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            LAST_ERROR_CONTEXT.with(|ctx| {
+                match ctx.try_borrow() {
+                    Ok(context_ref) => context_ref.clone(),
+                    Err(_) => {
+                        log::warn!("Failed to get error context due to borrow check failure");
+                        None
+                    }
+                }
+            })
+        }));
+
+        match result {
+            Ok(context) => context,
+            Err(_) => {
+                log::error!("Panic occurred while getting error context - prevented JVM crash");
+                None
+            }
+        }
+    }
+
+    /// Clear error context
+    pub fn clear_error_context() {
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            LAST_ERROR_CONTEXT.with(|ctx| {
+                if let Ok(mut context_ref) = ctx.try_borrow_mut() {
+                    *context_ref = None;
+                }
+            });
+        }));
+
+        if result.is_err() {
+            log::error!("Panic occurred while clearing error context - prevented JVM crash");
+        }
+    }
+
+    /// Create error context with file and line information
+    #[macro_export]
+    macro_rules! error_context {
+        ($error:expr) => {
+            ErrorContext::new($error)
+                .with_location(file!().to_string(), line!())
+        };
+        ($error:expr, $operation:expr) => {
+            ErrorContext::new($error)
+                .with_operation($operation.to_string())
+                .with_location(file!().to_string(), line!())
+        };
     }
 
     /// Execute operation with FFI error handling
@@ -806,9 +947,10 @@ pub mod jni_utils {
             WasmtimeError::Store { .. } => "ai/tegmentum/wasmtime4j/WasmStoreException",
             WasmtimeError::Instance { .. } => "ai/tegmentum/wasmtime4j/WasmInstanceException",
             WasmtimeError::ImportExport { .. } => "ai/tegmentum/wasmtime4j/WasmImportExportException",
-            WasmtimeError::Resource { .. } => "ai/tegmentum/wasmtime4j/WasmResourceException",
+            WasmtimeError::Resource { .. } => "ai/tegmentum/wasmtime4j/exception/ResourceException",
             WasmtimeError::Concurrency { .. } => "ai/tegmentum/wasmtime4j/WasmConcurrencyException",
             WasmtimeError::Wasi { .. } => "ai/tegmentum/wasmtime4j/WasiException",
+            WasmtimeError::Security { .. } => "ai/tegmentum/wasmtime4j/exception/SecurityException",
             WasmtimeError::Internal { .. } => "ai/tegmentum/wasmtime4j/WasmInternalException",
             WasmtimeError::Execution { .. } => "ai/tegmentum/wasmtime4j/WasmExecutionException",
             WasmtimeError::ExportNotFound { .. } => "ai/tegmentum/wasmtime4j/WasmExportNotFoundException",
