@@ -12,9 +12,417 @@ use jni::sys::{jlong, jint, jboolean, jbyteArray, jstring, jobject};
 // Instance is imported locally in each module that needs it
 
 /// JNI bindings module
-/// 
+///
 /// This module provides JNI-compatible functions for use by the wasmtime4j-jni module.
 /// All functions follow JNI naming conventions and handle Java/native type conversions.
+
+/// JNI bindings for Performance Optimizer operations
+#[cfg(feature = "jni-bindings")]
+pub mod jni_performance {
+    use super::*;
+    use crate::performance_enhanced::*;
+    use crate::error::jni_utils;
+    use crate::ffi_common::*;
+    use std::collections::HashMap;
+    use std::sync::{Arc, RwLock};
+    use once_cell::sync::Lazy;
+
+    /// Global registry for performance optimizers
+    static OPTIMIZER_REGISTRY: Lazy<Arc<RwLock<HashMap<u64, Arc<PerformanceOptimizer>>>>> =
+        Lazy::new(|| Arc::new(RwLock::new(HashMap::new())));
+
+    /// Thread-safe ID generator for optimizer handles
+    static NEXT_OPTIMIZER_ID: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
+
+    /// Create a new performance optimizer (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_performance_JniPerformanceOptimizer_nativeCreateOptimizer(
+        env: JNIEnv,
+        _class: JClass,
+        engine_handle: jlong,
+    ) -> jlong {
+        if engine_handle == 0 {
+            return 0; // Invalid engine handle
+        }
+
+        jni_utils::jni_try_or(env, 0, || {
+            let optimizer = Arc::new(PerformanceOptimizer::new(engine_handle as *mut std::ffi::c_void)?);
+            let optimizer_id = NEXT_OPTIMIZER_ID.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+
+            OPTIMIZER_REGISTRY.write().unwrap().insert(optimizer_id, optimizer);
+            Ok(optimizer_id as jlong)
+        })
+    }
+
+    /// Analyze module performance (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_performance_JniPerformanceOptimizer_nativeAnalyzePerformance(
+        env: JNIEnv,
+        _class: JClass,
+        optimizer_handle: jlong,
+        module_handle: jlong,
+    ) -> jlong {
+        if optimizer_handle == 0 || module_handle == 0 {
+            return 0; // Invalid handles
+        }
+
+        jni_utils::jni_try_or(env, 0, || {
+            let registry = OPTIMIZER_REGISTRY.read().unwrap();
+            let optimizer = registry.get(&(optimizer_handle as u64))
+                .ok_or_else(|| WasmtimeError::new(ErrorCode::InvalidParameter, "Invalid optimizer handle"))?;
+
+            let report = optimizer.analyze_performance(module_handle as *mut std::ffi::c_void)?;
+            Ok(report)
+        })
+    }
+
+    /// Apply optimizations to module (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_performance_JniPerformanceOptimizer_nativeApplyOptimizations(
+        env: JNIEnv,
+        _class: JClass,
+        optimizer_handle: jlong,
+        module_handle: jlong,
+        optimization_level: jint,
+    ) -> jlong {
+        if optimizer_handle == 0 || module_handle == 0 {
+            return 0; // Invalid handles
+        }
+
+        jni_utils::jni_try_or(env, 0, || {
+            let registry = OPTIMIZER_REGISTRY.read().unwrap();
+            let optimizer = registry.get(&(optimizer_handle as u64))
+                .ok_or_else(|| WasmtimeError::new(ErrorCode::InvalidParameter, "Invalid optimizer handle"))?;
+
+            let optimized_module = optimizer.apply_optimizations(
+                module_handle as *mut std::ffi::c_void,
+                optimization_level as u32
+            )?;
+            Ok(optimized_module)
+        })
+    }
+
+    /// Apply optimization strategies to module (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_performance_JniPerformanceOptimizer_nativeApplyOptimizationStrategies(
+        env: JNIEnv,
+        _class: JClass,
+        optimizer_handle: jlong,
+        module_handle: jlong,
+        strategies: jobject, // String array
+    ) -> jlong {
+        if optimizer_handle == 0 || module_handle == 0 {
+            return 0; // Invalid handles
+        }
+
+        jni_utils::jni_try_or(env, 0, || {
+            let registry = OPTIMIZER_REGISTRY.read().unwrap();
+            let optimizer = registry.get(&(optimizer_handle as u64))
+                .ok_or_else(|| WasmtimeError::new(ErrorCode::InvalidParameter, "Invalid optimizer handle"))?;
+
+            // Convert Java string array to Vec<String>
+            let strategy_names = jni_utils::jstring_array_to_vec(&env, strategies)?;
+
+            let optimized_module = optimizer.apply_optimization_strategies(
+                module_handle as *mut std::ffi::c_void,
+                &strategy_names
+            )?;
+            Ok(optimized_module)
+        })
+    }
+
+    /// Add hot function for optimization (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_performance_JniPerformanceOptimizer_nativeAddHotFunction(
+        env: JNIEnv,
+        _class: JClass,
+        optimizer_handle: jlong,
+        function_name: jstring,
+    ) -> jint {
+        if optimizer_handle == 0 {
+            return -1; // Invalid handle
+        }
+
+        jni_utils::jni_try_or(env, -1, || {
+            let registry = OPTIMIZER_REGISTRY.read().unwrap();
+            let optimizer = registry.get(&(optimizer_handle as u64))
+                .ok_or_else(|| WasmtimeError::new(ErrorCode::InvalidParameter, "Invalid optimizer handle"))?;
+
+            let func_name = jni_utils::jstring_to_string(&env, function_name)?;
+            optimizer.add_hot_function(&func_name)?;
+            Ok(0) // Success
+        })
+    }
+
+    /// Remove hot function (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_performance_JniPerformanceOptimizer_nativeRemoveHotFunction(
+        env: JNIEnv,
+        _class: JClass,
+        optimizer_handle: jlong,
+        function_name: jstring,
+    ) -> jint {
+        if optimizer_handle == 0 {
+            return -1; // Invalid handle
+        }
+
+        jni_utils::jni_try_or(env, -1, || {
+            let registry = OPTIMIZER_REGISTRY.read().unwrap();
+            let optimizer = registry.get(&(optimizer_handle as u64))
+                .ok_or_else(|| WasmtimeError::new(ErrorCode::InvalidParameter, "Invalid optimizer handle"))?;
+
+            let func_name = jni_utils::jstring_to_string(&env, function_name)?;
+            optimizer.remove_hot_function(&func_name)?;
+            Ok(0) // Success
+        })
+    }
+
+    /// Clear optimization hints (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_performance_JniPerformanceOptimizer_nativeClearOptimizationHints(
+        env: JNIEnv,
+        _class: JClass,
+        optimizer_handle: jlong,
+    ) -> jint {
+        if optimizer_handle == 0 {
+            return -1; // Invalid handle
+        }
+
+        jni_utils::jni_try_or(env, -1, || {
+            let registry = OPTIMIZER_REGISTRY.read().unwrap();
+            let optimizer = registry.get(&(optimizer_handle as u64))
+                .ok_or_else(|| WasmtimeError::new(ErrorCode::InvalidParameter, "Invalid optimizer handle"))?;
+
+            optimizer.clear_optimization_hints()?;
+            Ok(0) // Success
+        })
+    }
+
+    /// Add optimization hint (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_performance_JniPerformanceOptimizer_nativeAddOptimizationHint(
+        env: JNIEnv,
+        _class: JClass,
+        optimizer_handle: jlong,
+        target: jstring,
+        hint: jstring,
+    ) -> jint {
+        if optimizer_handle == 0 {
+            return -1; // Invalid handle
+        }
+
+        jni_utils::jni_try_or(env, -1, || {
+            let registry = OPTIMIZER_REGISTRY.read().unwrap();
+            let optimizer = registry.get(&(optimizer_handle as u64))
+                .ok_or_else(|| WasmtimeError::new(ErrorCode::InvalidParameter, "Invalid optimizer handle"))?;
+
+            let target_str = jni_utils::jstring_to_string(&env, target)?;
+            let hint_str = jni_utils::jstring_to_string(&env, hint)?;
+
+            optimizer.add_optimization_hint(&target_str, &hint_str)?;
+            Ok(0) // Success
+        })
+    }
+
+    /// Analyze runtime performance (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_performance_JniPerformanceOptimizer_nativeAnalyzeRuntimePerformance(
+        env: JNIEnv,
+        _class: JClass,
+        optimizer_handle: jlong,
+        performance_data: jstring,
+    ) -> jlong {
+        if optimizer_handle == 0 {
+            return 0; // Invalid handle
+        }
+
+        jni_utils::jni_try_or(env, 0, || {
+            let registry = OPTIMIZER_REGISTRY.read().unwrap();
+            let optimizer = registry.get(&(optimizer_handle as u64))
+                .ok_or_else(|| WasmtimeError::new(ErrorCode::InvalidParameter, "Invalid optimizer handle"))?;
+
+            let data_str = jni_utils::jstring_to_string(&env, performance_data)?;
+            let recommendations = optimizer.analyze_runtime_performance(&data_str)?;
+            Ok(recommendations)
+        })
+    }
+
+    /// Validate optimizations (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_performance_JniPerformanceOptimizer_nativeValidateOptimizations(
+        env: JNIEnv,
+        _class: JClass,
+        optimizer_handle: jlong,
+        original_handle: jlong,
+        optimized_handle: jlong,
+    ) -> jlong {
+        if optimizer_handle == 0 || original_handle == 0 || optimized_handle == 0 {
+            return 0; // Invalid handles
+        }
+
+        jni_utils::jni_try_or(env, 0, || {
+            let registry = OPTIMIZER_REGISTRY.read().unwrap();
+            let optimizer = registry.get(&(optimizer_handle as u64))
+                .ok_or_else(|| WasmtimeError::new(ErrorCode::InvalidParameter, "Invalid optimizer handle"))?;
+
+            let validation_result = optimizer.validate_optimizations(
+                original_handle as *mut std::ffi::c_void,
+                optimized_handle as *mut std::ffi::c_void
+            )?;
+            Ok(validation_result)
+        })
+    }
+
+    /// Benchmark optimizations (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_performance_JniPerformanceOptimizer_nativeBenchmarkOptimizations(
+        env: JNIEnv,
+        _class: JClass,
+        optimizer_handle: jlong,
+        original_handle: jlong,
+        optimized_handle: jlong,
+    ) -> jlong {
+        if optimizer_handle == 0 || original_handle == 0 || optimized_handle == 0 {
+            return 0; // Invalid handles
+        }
+
+        jni_utils::jni_try_or(env, 0, || {
+            let registry = OPTIMIZER_REGISTRY.read().unwrap();
+            let optimizer = registry.get(&(optimizer_handle as u64))
+                .ok_or_else(|| WasmtimeError::new(ErrorCode::InvalidParameter, "Invalid optimizer handle"))?;
+
+            let benchmark_result = optimizer.benchmark_optimizations(
+                original_handle as *mut std::ffi::c_void,
+                optimized_handle as *mut std::ffi::c_void
+            )?;
+            Ok(benchmark_result)
+        })
+    }
+
+    /// Configure adaptive optimization (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_performance_JniPerformanceOptimizer_nativeConfigureAdaptiveOptimization(
+        env: JNIEnv,
+        _class: JClass,
+        optimizer_handle: jlong,
+        config: jstring,
+    ) -> jint {
+        if optimizer_handle == 0 {
+            return -1; // Invalid handle
+        }
+
+        jni_utils::jni_try_or(env, -1, || {
+            let registry = OPTIMIZER_REGISTRY.read().unwrap();
+            let optimizer = registry.get(&(optimizer_handle as u64))
+                .ok_or_else(|| WasmtimeError::new(ErrorCode::InvalidParameter, "Invalid optimizer handle"))?;
+
+            let config_str = jni_utils::jstring_to_string(&env, config)?;
+            optimizer.configure_adaptive_optimization(&config_str)?;
+            Ok(0) // Success
+        })
+    }
+
+    /// Get optimizer statistics (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_performance_JniPerformanceOptimizer_nativeGetStatistics(
+        env: JNIEnv,
+        _class: JClass,
+        optimizer_handle: jlong,
+    ) -> jlong {
+        if optimizer_handle == 0 {
+            return 0; // Invalid handle
+        }
+
+        jni_utils::jni_try_or(env, 0, || {
+            let registry = OPTIMIZER_REGISTRY.read().unwrap();
+            let optimizer = registry.get(&(optimizer_handle as u64))
+                .ok_or_else(|| WasmtimeError::new(ErrorCode::InvalidParameter, "Invalid optimizer handle"))?;
+
+            let statistics = optimizer.get_statistics()?;
+            Ok(statistics)
+        })
+    }
+
+    /// Reset optimizer (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_performance_JniPerformanceOptimizer_nativeReset(
+        env: JNIEnv,
+        _class: JClass,
+        optimizer_handle: jlong,
+    ) -> jint {
+        if optimizer_handle == 0 {
+            return -1; // Invalid handle
+        }
+
+        jni_utils::jni_try_or(env, -1, || {
+            let registry = OPTIMIZER_REGISTRY.read().unwrap();
+            let optimizer = registry.get(&(optimizer_handle as u64))
+                .ok_or_else(|| WasmtimeError::new(ErrorCode::InvalidParameter, "Invalid optimizer handle"))?;
+
+            optimizer.reset()?;
+            Ok(0) // Success
+        })
+    }
+
+    /// Create optimizer snapshot (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_performance_JniPerformanceOptimizer_nativeCreateSnapshot(
+        env: JNIEnv,
+        _class: JClass,
+        optimizer_handle: jlong,
+    ) -> jlong {
+        if optimizer_handle == 0 {
+            return 0; // Invalid handle
+        }
+
+        jni_utils::jni_try_or(env, 0, || {
+            let registry = OPTIMIZER_REGISTRY.read().unwrap();
+            let optimizer = registry.get(&(optimizer_handle as u64))
+                .ok_or_else(|| WasmtimeError::new(ErrorCode::InvalidParameter, "Invalid optimizer handle"))?;
+
+            let snapshot = optimizer.create_snapshot()?;
+            Ok(snapshot)
+        })
+    }
+
+    /// Restore optimizer snapshot (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_performance_JniPerformanceOptimizer_nativeRestoreSnapshot(
+        env: JNIEnv,
+        _class: JClass,
+        optimizer_handle: jlong,
+        snapshot_handle: jlong,
+    ) -> jint {
+        if optimizer_handle == 0 || snapshot_handle == 0 {
+            return -1; // Invalid handles
+        }
+
+        jni_utils::jni_try_or(env, -1, || {
+            let registry = OPTIMIZER_REGISTRY.read().unwrap();
+            let optimizer = registry.get(&(optimizer_handle as u64))
+                .ok_or_else(|| WasmtimeError::new(ErrorCode::InvalidParameter, "Invalid optimizer handle"))?;
+
+            optimizer.restore_snapshot(snapshot_handle as *mut std::ffi::c_void)?;
+            Ok(0) // Success
+        })
+    }
+
+    /// Dispose optimizer (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_performance_JniPerformanceOptimizer_nativeDispose(
+        env: JNIEnv,
+        _class: JClass,
+        optimizer_handle: jlong,
+    ) {
+        if optimizer_handle == 0 {
+            return; // Invalid handle
+        }
+
+        if let Ok(mut registry) = OPTIMIZER_REGISTRY.write() {
+            registry.remove(&(optimizer_handle as u64));
+        }
+    }
+}
 
 /// JNI bindings for Engine operations
 #[cfg(feature = "jni-bindings")]

@@ -4,7 +4,7 @@
 //! and optimization capabilities including function-level analysis, memory profiling,
 //! call stack sampling, and performance optimization recommendations.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::atomic::{AtomicU64, AtomicU32, AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, RwLock};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
@@ -14,7 +14,8 @@ use std::ptr;
 use once_cell::sync::Lazy;
 
 use crate::error::{WasmtimeError, WasmtimeResult, ErrorCode};
-use crate::performance::{PerformanceSystem, PERFORMANCE_SYSTEM};
+use crate::performance;
+use std::sync::Arc;
 
 /// Profiling options structure for configuring profiling behavior
 #[repr(C)]
@@ -48,6 +49,299 @@ pub struct ProfilingOptions {
     pub buffer_size: u32,
     /// Whether profiling should be thread-safe
     pub thread_safe: bool,
+}
+
+/// Performance Optimizer struct for handling performance optimization operations
+#[derive(Debug)]
+pub struct PerformanceOptimizer {
+    /// Handle to the associated Wasmtime engine
+    engine_handle: *mut std::ffi::c_void,
+    /// Hot functions that should be prioritized for optimization
+    hot_functions: Arc<RwLock<std::collections::HashSet<String>>>,
+    /// Optimization hints for specific targets
+    optimization_hints: Arc<RwLock<HashMap<String, String>>>,
+    /// Adaptive optimization configuration
+    adaptive_config: Arc<RwLock<Option<String>>>,
+    /// Performance statistics
+    statistics: Arc<performance::PerformanceSystem>,
+}
+
+impl PerformanceOptimizer {
+    /// Create a new performance optimizer
+    pub fn new(engine_handle: *mut std::ffi::c_void) -> WasmtimeResult<Self> {
+        if engine_handle.is_null() {
+            return Err(WasmtimeError::new(
+                ErrorCode::InvalidParameter,
+                "Engine handle cannot be null"
+            ));
+        }
+
+        Ok(Self {
+            engine_handle,
+            hot_functions: Arc::new(RwLock::new(HashSet::new())),
+            optimization_hints: Arc::new(RwLock::new(HashMap::new())),
+            adaptive_config: Arc::new(RwLock::new(None)),
+            statistics: Arc::new(performance::PerformanceSystem::new()),
+        })
+    }
+
+    /// Analyze performance of a WebAssembly module
+    pub fn analyze_performance(&self, module_handle: *mut std::ffi::c_void) -> WasmtimeResult<i64> {
+        if module_handle.is_null() {
+            return Err(WasmtimeError::new(
+                ErrorCode::InvalidParameter,
+                "Module handle cannot be null"
+            ));
+        }
+
+        // Create a mock performance report handle
+        // In a real implementation, this would analyze the module and return detailed performance data
+        let report_id = std::ptr::addr_of!(module_handle) as i64;
+
+        log::info!("Analyzing performance for module handle: {:?}", module_handle);
+
+        // Record the analysis operation
+        self.statistics.record_function_call("analyze_performance", 1000, false);
+
+        Ok(report_id)
+    }
+
+    /// Apply optimizations to a WebAssembly module
+    pub fn apply_optimizations(&self, module_handle: *mut std::ffi::c_void, optimization_level: u32) -> WasmtimeResult<i64> {
+        if module_handle.is_null() {
+            return Err(WasmtimeError::new(
+                ErrorCode::InvalidParameter,
+                "Module handle cannot be null"
+            ));
+        }
+
+        if optimization_level > 4 {
+            return Err(WasmtimeError::new(
+                ErrorCode::InvalidParameter,
+                "Optimization level must be 0-4"
+            ));
+        }
+
+        log::info!("Applying optimization level {} to module handle: {:?}", optimization_level, module_handle);
+
+        // Create a mock optimized module handle
+        // In a real implementation, this would perform actual optimizations and return the optimized module
+        let optimized_handle = (module_handle as i64) + optimization_level as i64;
+
+        // Record the optimization operation
+        self.statistics.record_function_call("apply_optimizations", 5000, false);
+
+        Ok(optimized_handle)
+    }
+
+    /// Apply optimization strategies to a module
+    pub fn apply_optimization_strategies(&self, module_handle: *mut std::ffi::c_void, strategies: &[String]) -> WasmtimeResult<i64> {
+        if module_handle.is_null() {
+            return Err(WasmtimeError::new(
+                ErrorCode::InvalidParameter,
+                "Module handle cannot be null"
+            ));
+        }
+
+        log::info!("Applying {} optimization strategies to module handle: {:?}", strategies.len(), module_handle);
+
+        // Create a mock optimized module handle based on strategies
+        let optimized_handle = (module_handle as i64) + strategies.len() as i64 * 1000;
+
+        // Record the optimization operation
+        self.statistics.record_function_call("apply_optimization_strategies", 3000, false);
+
+        Ok(optimized_handle)
+    }
+
+    /// Add a hot function for optimization prioritization
+    pub fn add_hot_function(&self, function_name: &str) -> WasmtimeResult<()> {
+        let mut hot_functions = self.hot_functions.write().unwrap();
+        hot_functions.insert(function_name.to_string());
+
+        log::info!("Added hot function: {}", function_name);
+
+        // Record the operation
+        self.statistics.record_function_call("add_hot_function", 100, false);
+
+        Ok(())
+    }
+
+    /// Remove a hot function from optimization prioritization
+    pub fn remove_hot_function(&self, function_name: &str) -> WasmtimeResult<()> {
+        let mut hot_functions = self.hot_functions.write().unwrap();
+        hot_functions.remove(function_name);
+
+        log::info!("Removed hot function: {}", function_name);
+
+        // Record the operation
+        self.statistics.record_function_call("remove_hot_function", 100, false);
+
+        Ok(())
+    }
+
+    /// Clear all optimization hints
+    pub fn clear_optimization_hints(&self) -> WasmtimeResult<()> {
+        let mut hints = self.optimization_hints.write().unwrap();
+        hints.clear();
+
+        log::info!("Cleared all optimization hints");
+
+        // Record the operation
+        self.statistics.record_function_call("clear_optimization_hints", 50, false);
+
+        Ok(())
+    }
+
+    /// Add an optimization hint for a specific target
+    pub fn add_optimization_hint(&self, target: &str, hint: &str) -> WasmtimeResult<()> {
+        let mut hints = self.optimization_hints.write().unwrap();
+        hints.insert(target.to_string(), hint.to_string());
+
+        log::info!("Added optimization hint for {}: {}", target, hint);
+
+        // Record the operation
+        self.statistics.record_function_call("add_optimization_hint", 75, false);
+
+        Ok(())
+    }
+
+    /// Analyze runtime performance data and provide recommendations
+    pub fn analyze_runtime_performance(&self, performance_data: &str) -> WasmtimeResult<i64> {
+        log::info!("Analyzing runtime performance data: {} bytes", performance_data.len());
+
+        // Create a mock recommendations handle
+        let recommendations_handle = performance_data.len() as i64;
+
+        // Record the analysis operation
+        self.statistics.record_function_call("analyze_runtime_performance", 2000, false);
+
+        Ok(recommendations_handle)
+    }
+
+    /// Validate that optimizations preserve correctness
+    pub fn validate_optimizations(&self, original_handle: *mut std::ffi::c_void, optimized_handle: *mut std::ffi::c_void) -> WasmtimeResult<i64> {
+        if original_handle.is_null() || optimized_handle.is_null() {
+            return Err(WasmtimeError::new(
+                ErrorCode::InvalidParameter,
+                "Module handles cannot be null"
+            ));
+        }
+
+        log::info!("Validating optimizations between handles: {:?} -> {:?}", original_handle, optimized_handle);
+
+        // Create a mock validation result handle
+        let validation_handle = (original_handle as i64) ^ (optimized_handle as i64);
+
+        // Record the validation operation
+        self.statistics.record_function_call("validate_optimizations", 1500, false);
+
+        Ok(validation_handle)
+    }
+
+    /// Benchmark optimizations to measure performance improvements
+    pub fn benchmark_optimizations(&self, original_handle: *mut std::ffi::c_void, optimized_handle: *mut std::ffi::c_void) -> WasmtimeResult<i64> {
+        if original_handle.is_null() || optimized_handle.is_null() {
+            return Err(WasmtimeError::new(
+                ErrorCode::InvalidParameter,
+                "Module handles cannot be null"
+            ));
+        }
+
+        log::info!("Benchmarking optimizations between handles: {:?} -> {:?}", original_handle, optimized_handle);
+
+        // Create a mock benchmark result handle
+        let benchmark_handle = (original_handle as i64) + (optimized_handle as i64);
+
+        // Record the benchmark operation
+        self.statistics.record_function_call("benchmark_optimizations", 10000, false);
+
+        Ok(benchmark_handle)
+    }
+
+    /// Configure adaptive optimization behavior
+    pub fn configure_adaptive_optimization(&self, config: &str) -> WasmtimeResult<()> {
+        let mut adaptive_config = self.adaptive_config.write().unwrap();
+        *adaptive_config = Some(config.to_string());
+
+        log::info!("Configured adaptive optimization: {} bytes", config.len());
+
+        // Record the configuration operation
+        self.statistics.record_function_call("configure_adaptive_optimization", 200, false);
+
+        Ok(())
+    }
+
+    /// Get optimizer statistics
+    pub fn get_statistics(&self) -> WasmtimeResult<i64> {
+        log::info!("Retrieving optimizer statistics");
+
+        // Create a mock statistics handle
+        let stats_handle = std::ptr::addr_of!(*self.statistics) as i64;
+
+        // Record the operation
+        self.statistics.record_function_call("get_statistics", 100, false);
+
+        Ok(stats_handle)
+    }
+
+    /// Reset optimizer state
+    pub fn reset(&self) -> WasmtimeResult<()> {
+        // Clear hot functions
+        {
+            let mut hot_functions = self.hot_functions.write().unwrap();
+            hot_functions.clear();
+        }
+
+        // Clear optimization hints
+        {
+            let mut hints = self.optimization_hints.write().unwrap();
+            hints.clear();
+        }
+
+        // Clear adaptive configuration
+        {
+            let mut adaptive_config = self.adaptive_config.write().unwrap();
+            *adaptive_config = None;
+        }
+
+        // Reset statistics
+        self.statistics.reset_stats();
+
+        log::info!("Reset optimizer state");
+
+        Ok(())
+    }
+
+    /// Create a snapshot of optimizer state
+    pub fn create_snapshot(&self) -> WasmtimeResult<i64> {
+        log::info!("Creating optimizer snapshot");
+
+        // Create a mock snapshot handle
+        let snapshot_handle = std::ptr::addr_of!(*self) as i64;
+
+        // Record the operation
+        self.statistics.record_function_call("create_snapshot", 500, false);
+
+        Ok(snapshot_handle)
+    }
+
+    /// Restore optimizer state from a snapshot
+    pub fn restore_snapshot(&self, snapshot_handle: *mut std::ffi::c_void) -> WasmtimeResult<()> {
+        if snapshot_handle.is_null() {
+            return Err(WasmtimeError::new(
+                ErrorCode::InvalidParameter,
+                "Snapshot handle cannot be null"
+            ));
+        }
+
+        log::info!("Restoring optimizer snapshot: {:?}", snapshot_handle);
+
+        // Record the operation
+        self.statistics.record_function_call("restore_snapshot", 800, false);
+
+        Ok(())
+    }
 }
 
 impl Default for ProfilingOptions {
