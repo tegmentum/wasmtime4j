@@ -2,7 +2,6 @@ package ai.tegmentum.wasmtime4j.panama.wasi;
 
 import ai.tegmentum.wasmtime4j.panama.ArenaResourceManager;
 import ai.tegmentum.wasmtime4j.panama.wasi.permission.WasiPermissionManager;
-import ai.tegmentum.wasmtime4j.panama.wasi.security.WasiSecurityValidator;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
@@ -66,8 +65,6 @@ public final class WasiContextBuilder {
   /** Permission manager for controlling WASI capabilities. */
   private WasiPermissionManager permissionManager = WasiPermissionManager.defaultManager();
 
-  /** Security validator for preventing unauthorized access. */
-  private WasiSecurityValidator securityValidator = WasiSecurityValidator.defaultValidator();
 
   /** Package-private constructor - use WasiContext.builder() to create. */
   WasiContextBuilder() {
@@ -249,23 +246,6 @@ public final class WasiContextBuilder {
     return this;
   }
 
-  /**
-   * Sets the security validator for preventing unauthorized access.
-   *
-   * @param validator the security validator to use
-   * @return this builder for method chaining
-   * @throws IllegalArgumentException if validator is null
-   */
-  public WasiContextBuilder withSecurityValidator(final WasiSecurityValidator validator) {
-    if (validator == null) {
-      throw new IllegalArgumentException("Security validator cannot be null");
-    }
-
-    this.securityValidator = validator;
-    LOGGER.fine("Set custom security validator");
-
-    return this;
-  }
 
   /**
    * Creates a WASI context with the configured settings.
@@ -324,14 +304,6 @@ public final class WasiContextBuilder {
     return permissionManager;
   }
 
-  /**
-   * Gets the security validator.
-   *
-   * @return the security validator
-   */
-  WasiSecurityValidator getSecurityValidator() {
-    return securityValidator;
-  }
 
   /**
    * Gets the environment variables.
