@@ -10,9 +10,15 @@ use wasmtime::{Store as WasmtimeStore, StoreContext, StoreContextMut, AsContext,
 use crate::engine::Engine;
 use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::hostfunc::{HostFunction, HostFunctionCallback};
+use once_cell::sync::Lazy;
+
+/// Store ID counter for unique identification
+static STORE_ID_COUNTER: Lazy<Mutex<u64>> = Lazy::new(|| Mutex::new(1));
 
 /// Thread-safe wrapper around Wasmtime store with resource management
 pub struct Store {
+    /// Unique identifier for this store
+    id: u64,
     inner: Arc<Mutex<WasmtimeStore<StoreData>>>,
     metadata: StoreMetadata,
 }
@@ -97,6 +103,12 @@ impl Store {
     pub fn new(engine: &Engine) -> WasmtimeResult<Self> {
         StoreBuilder::new().build(engine)
     }
+
+    /// Get the unique identifier for this store
+    pub fn id(&self) -> u64 {
+        self.id
+    }
+
 
     /// Create store builder for custom configuration
     pub fn builder() -> StoreBuilder {
@@ -332,6 +344,16 @@ impl StoreBuilder {
     pub fn build(self, engine: &Engine) -> WasmtimeResult<Store> {
         engine.validate()?;
 
+        // Generate unique store ID
+        let store_id = {
+            let mut counter = STORE_ID_COUNTER.lock().map_err(|e| WasmtimeError::Store {
+                message: format!("Failed to acquire store ID counter: {}", e),
+            })?;
+            let id = *counter;
+            *counter += 1;
+            id
+        };
+
         let store_data = StoreData {
             user_data: None,
             resource_limits: self.resource_limits,
@@ -361,6 +383,7 @@ impl StoreBuilder {
         };
 
         Ok(Store {
+            id: store_id,
             inner: Arc::new(Mutex::new(wasmtime_store)),
             metadata,
         })
@@ -404,6 +427,12 @@ impl Default for ExecutionState {
 unsafe impl Send for Store {}
 unsafe impl Sync for Store {}
 
+impl Drop for Store {
+    fn drop(&mut self) {
+        log::debug!("Store {} dropped", self.id);
+    }
+}
+
 /// Shared core functions for store operations used by both JNI and Panama interfaces
 /// 
 /// These functions eliminate code duplication and provide consistent behavior
@@ -417,7 +446,16 @@ pub mod core {
     
     /// Core function to create a new store with default configuration
     pub fn create_store(engine: &Engine) -> WasmtimeResult<Box<Store>> {
-        Store::new(engine).map(Box::new)
+        let store = Store::new(engine)?;
+        Ok(Box::new(store))
+    }
+
+
+    /// Get store ID from pointer
+    pub fn get_store_id(store_ptr: *const c_void) -> WasmtimeResult<u64> {
+        validate_ptr_not_null!(store_ptr, "store");
+        let store_ref = unsafe { &*(store_ptr as *const Store) };
+        Ok(store_ref.id())
     }
     
     /// Core function to create a store with custom configuration
