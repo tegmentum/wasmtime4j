@@ -31,6 +31,19 @@ pub struct WasiContext {
     stdio_config: StdioConfig,
 }
 
+impl std::fmt::Debug for WasiContext {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("WasiContext")
+            .field("config", &self.config)
+            .field("directory_mappings", &self.directory_mappings)
+            .field("environment", &self.environment)
+            .field("arguments", &self.arguments)
+            .field("stdio_config", &self.stdio_config)
+            .field("inner", &"<WasiCtx>")
+            .finish()
+    }
+}
+
 /// WASI configuration options
 #[derive(Debug, Clone)]
 pub struct WasiConfig {
@@ -1389,9 +1402,17 @@ impl WasiDirectoryDescriptor {
 
 /// Add the file descriptor manager to WasiContext
 impl WasiContext {
+    /// Add file descriptor manager to WasiContext
+    pub fn new_with_fd_manager() -> WasmtimeResult<(Self, WasiFileDescriptorManager)> {
+        let ctx = Self::new()?;
+        let fd_manager = WasiFileDescriptorManager::new();
+        Ok((ctx, fd_manager))
+    }
+
     /// Open a file with the specified flags and rights
     pub fn path_open(
         &mut self,
+        fd_manager: &mut WasiFileDescriptorManager,
         dir_fd: u32,
         path: &str,
         oflags: u32,
@@ -1406,15 +1427,25 @@ impl WasiContext {
             });
         }
 
+        // Resolve path relative to directory fd if needed
+        let full_path = if dir_fd == u32::MAX || dir_fd == 0 {
+            // AT_FDCWD or root - use path as-is
+            path.to_string()
+        } else {
+            // TODO: Resolve relative to directory fd
+            // For now, treat as absolute path
+            path.to_string()
+        };
+
         // Create OpenOptions based on flags
         let mut open_opts = OpenOptions::new();
 
-        // Handle read/write flags
+        // Handle creation and directory flags
         if (oflags & 0x01) != 0 { // O_CREAT
             open_opts.create(true);
         }
         if (oflags & 0x02) != 0 { // O_DIRECTORY
-            return self.open_directory(path, rights);
+            return self.open_directory(fd_manager, &full_path, rights);
         }
         if (oflags & 0x04) != 0 { // O_EXCL
             open_opts.create_new(true);
@@ -1434,27 +1465,197 @@ impl WasiContext {
             open_opts.append(true);
         }
 
+        // Validate we have at least read or write permissions
+        if (rights & 0x42) == 0 { // Neither FD_READ nor FD_WRITE
+            open_opts.read(true); // Default to read-only
+        }
+
         // Open the file
-        let file = open_opts.open(path).map_err(|e| WasmtimeError::Wasi {
-            message: format!("Failed to open file {}: {}", path, e),
+        let file = open_opts.open(&full_path).map_err(|e| WasmtimeError::Wasi {
+            message: format!("Failed to open file {}: {}", full_path, e),
         })?;
 
         // Create file descriptor
-        let fd = self.allocate_fd();
+        let fd = fd_manager.allocate_fd();
         let file_desc = WasiFileDescriptor {
             file,
-            path: path.to_string(),
+            path: full_path,
             rights,
             flags: fdflags,
         };
 
-        // Store in descriptor manager (we'll need to add this to WasiContext)
-        // For now, return the fd
+        // Store in descriptor manager
+        fd_manager.add_file(fd, file_desc);
         Ok(fd)
     }
 
+    /// Read from a file descriptor
+    pub fn fd_read(
+        &self,
+        fd_manager: &mut WasiFileDescriptorManager,
+        fd: u32,
+        buffer: &mut [u8],
+    ) -> WasmtimeResult<usize> {
+        let file_desc = fd_manager.get_file_mut(fd)
+            .ok_or_else(|| WasmtimeError::Wasi {
+                message: format!("Invalid file descriptor: {}", fd),
+            })?;
+
+        // Check read permissions
+        if (file_desc.rights & 0x02) == 0 { // FD_READ
+            return Err(WasmtimeError::Wasi {
+                message: format!("File descriptor {} does not have read permissions", fd),
+            });
+        }
+
+        // Read from file
+        file_desc.file.read(buffer).map_err(|e| WasmtimeError::Wasi {
+            message: format!("Failed to read from file {}: {}", file_desc.path, e),
+        })
+    }
+
+    /// Write to a file descriptor
+    pub fn fd_write(
+        &self,
+        fd_manager: &mut WasiFileDescriptorManager,
+        fd: u32,
+        buffer: &[u8],
+    ) -> WasmtimeResult<usize> {
+        let file_desc = fd_manager.get_file_mut(fd)
+            .ok_or_else(|| WasmtimeError::Wasi {
+                message: format!("Invalid file descriptor: {}", fd),
+            })?;
+
+        // Check write permissions
+        if (file_desc.rights & 0x40) == 0 { // FD_WRITE
+            return Err(WasmtimeError::Wasi {
+                message: format!("File descriptor {} does not have write permissions", fd),
+            });
+        }
+
+        // Write to file
+        file_desc.file.write(buffer).map_err(|e| WasmtimeError::Wasi {
+            message: format!("Failed to write to file {}: {}", file_desc.path, e),
+        })
+    }
+
+    /// Flush a file descriptor
+    pub fn fd_sync(
+        &self,
+        fd_manager: &mut WasiFileDescriptorManager,
+        fd: u32,
+    ) -> WasmtimeResult<()> {
+        let file_desc = fd_manager.get_file_mut(fd)
+            .ok_or_else(|| WasmtimeError::Wasi {
+                message: format!("Invalid file descriptor: {}", fd),
+            })?;
+
+        file_desc.file.flush().map_err(|e| WasmtimeError::Wasi {
+            message: format!("Failed to sync file {}: {}", file_desc.path, e),
+        })
+    }
+
+    /// Seek in a file descriptor
+    pub fn fd_seek(
+        &self,
+        fd_manager: &mut WasiFileDescriptorManager,
+        fd: u32,
+        offset: i64,
+        whence: u8,
+    ) -> WasmtimeResult<u64> {
+        let file_desc = fd_manager.get_file_mut(fd)
+            .ok_or_else(|| WasmtimeError::Wasi {
+                message: format!("Invalid file descriptor: {}", fd),
+            })?;
+
+        // Check seek permissions
+        if (file_desc.rights & 0x08) == 0 { // FD_SEEK
+            return Err(WasmtimeError::Wasi {
+                message: format!("File descriptor {} does not have seek permissions", fd),
+            });
+        }
+
+        let seek_from = match whence {
+            0 => SeekFrom::Start(offset as u64), // SEEK_SET
+            1 => SeekFrom::Current(offset),      // SEEK_CUR
+            2 => SeekFrom::End(offset),          // SEEK_END
+            _ => return Err(WasmtimeError::Wasi {
+                message: format!("Invalid seek whence value: {}", whence),
+            }),
+        };
+
+        file_desc.file.seek(seek_from).map_err(|e| WasmtimeError::Wasi {
+            message: format!("Failed to seek in file {}: {}", file_desc.path, e),
+        })
+    }
+
+    /// Close a file descriptor
+    pub fn fd_close(
+        &self,
+        fd_manager: &mut WasiFileDescriptorManager,
+        fd: u32,
+    ) -> WasmtimeResult<()> {
+        // Standard streams cannot be closed
+        if fd < 3 {
+            return Err(WasmtimeError::Wasi {
+                message: format!("Cannot close standard file descriptor: {}", fd),
+            });
+        }
+
+        // Remove from file manager (file is automatically closed when dropped)
+        fd_manager.close_file(fd)
+            .ok_or_else(|| WasmtimeError::Wasi {
+                message: format!("Invalid file descriptor: {}", fd),
+            })?;
+
+        Ok(())
+    }
+
+    /// Get file statistics for a file descriptor
+    pub fn fd_filestat_get(
+        &self,
+        fd_manager: &WasiFileDescriptorManager,
+        fd: u32,
+    ) -> WasmtimeResult<WasiFilestat> {
+        let file_desc = fd_manager.open_files.get(&fd)
+            .ok_or_else(|| WasmtimeError::Wasi {
+                message: format!("Invalid file descriptor: {}", fd),
+            })?;
+
+        let metadata = file_desc.file.metadata().map_err(|e| WasmtimeError::Wasi {
+            message: format!("Failed to get metadata for file {}: {}", file_desc.path, e),
+        })?;
+
+        let (access_time, modification_time, creation_time) =
+            WasiDirectoryDescriptor::extract_times(&metadata);
+
+        let filetype = if metadata.is_dir() {
+            3 // Directory
+        } else if metadata.is_file() {
+            4 // Regular file
+        } else {
+            7 // Symbolic link or other
+        };
+
+        Ok(WasiFilestat {
+            device: 0, // Device ID not available on all platforms
+            inode: 0,  // Inode not available on all platforms
+            filetype,
+            nlink: 1,
+            size: metadata.len(),
+            atim: access_time,
+            mtim: modification_time,
+            ctim: creation_time,
+        })
+    }
+
     /// Open a directory with the specified rights
-    pub fn open_directory(&mut self, path: &str, rights: u64) -> WasmtimeResult<u32> {
+    pub fn open_directory(
+        &mut self,
+        fd_manager: &mut WasiFileDescriptorManager,
+        path: &str,
+        rights: u64,
+    ) -> WasmtimeResult<u32> {
         // Validate path is allowed
         if !self.is_path_allowed(path) {
             return Err(WasmtimeError::Wasi {
@@ -1474,22 +1675,352 @@ impl WasiContext {
         }
 
         // Create directory descriptor
-        let fd = self.allocate_fd();
+        let fd = fd_manager.allocate_fd();
         let dir_desc = WasiDirectoryDescriptor::new(path.to_string(), rights)?;
 
-        // Store in descriptor manager (we'll need to add this to WasiContext)
-        // For now, return the fd
+        // Store in descriptor manager
+        fd_manager.add_directory(fd, dir_desc);
         Ok(fd)
     }
 
-    /// Allocate a new file descriptor
-    fn allocate_fd(&self) -> u32 {
-        // This is a simplified implementation
-        // In a real implementation, we'd track allocated FDs
-        use std::sync::atomic::{AtomicU32, Ordering};
-        static NEXT_FD: AtomicU32 = AtomicU32::new(3);
-        NEXT_FD.fetch_add(1, Ordering::SeqCst)
+    /// Read directory entries
+    pub fn fd_readdir(
+        &self,
+        fd_manager: &mut WasiFileDescriptorManager,
+        fd: u32,
+        cookie: u64,
+    ) -> WasmtimeResult<Vec<WasiDirectoryEntry>> {
+        let dir_desc = fd_manager.get_directory_mut(fd)
+            .ok_or_else(|| WasmtimeError::Wasi {
+                message: format!("Invalid directory descriptor: {}", fd),
+            })?;
+
+        // Check read permissions
+        if (dir_desc.rights & 0x02) == 0 { // FD_READ
+            return Err(WasmtimeError::Wasi {
+                message: format!("Directory descriptor {} does not have read permissions", fd),
+            });
+        }
+
+        // Start from cookie position
+        let start_pos = cookie as usize;
+        if start_pos >= dir_desc.entries.len() {
+            return Ok(Vec::new()); // No more entries
+        }
+
+        // Return remaining entries starting from cookie
+        Ok(dir_desc.entries[start_pos..].to_vec())
     }
+
+    /// Create a directory
+    pub fn path_create_directory(
+        &self,
+        _dir_fd: u32,
+        path: &str,
+    ) -> WasmtimeResult<()> {
+        // Validate path is allowed
+        if !self.is_path_allowed(path) {
+            return Err(WasmtimeError::Wasi {
+                message: format!("Path not allowed: {}", path),
+            });
+        }
+
+        fs::create_dir(path).map_err(|e| WasmtimeError::Wasi {
+            message: format!("Failed to create directory {}: {}", path, e),
+        })
+    }
+
+    /// Remove a directory
+    pub fn path_remove_directory(
+        &self,
+        _dir_fd: u32,
+        path: &str,
+    ) -> WasmtimeResult<()> {
+        // Validate path is allowed
+        if !self.is_path_allowed(path) {
+            return Err(WasmtimeError::Wasi {
+                message: format!("Path not allowed: {}", path),
+            });
+        }
+
+        fs::remove_dir(path).map_err(|e| WasmtimeError::Wasi {
+            message: format!("Failed to remove directory {}: {}", path, e),
+        })
+    }
+
+    /// Get file statistics by path
+    pub fn path_filestat_get(
+        &self,
+        _dir_fd: u32,
+        _flags: u32,
+        path: &str,
+    ) -> WasmtimeResult<WasiFilestat> {
+        // Validate path is allowed
+        if !self.is_path_allowed(path) {
+            return Err(WasmtimeError::Wasi {
+                message: format!("Path not allowed: {}", path),
+            });
+        }
+
+        let metadata = fs::metadata(path).map_err(|e| WasmtimeError::Wasi {
+            message: format!("Failed to get metadata for {}: {}", path, e),
+        })?;
+
+        let (access_time, modification_time, creation_time) =
+            WasiDirectoryDescriptor::extract_times(&metadata);
+
+        let filetype = if metadata.is_dir() {
+            3 // Directory
+        } else if metadata.is_file() {
+            4 // Regular file
+        } else {
+            7 // Symbolic link or other
+        };
+
+        Ok(WasiFilestat {
+            device: 0, // Device ID not available on all platforms
+            inode: 0,  // Inode not available on all platforms
+            filetype,
+            nlink: 1,
+            size: metadata.len(),
+            atim: access_time,
+            mtim: modification_time,
+            ctim: creation_time,
+        })
+    }
+
+    /// Rename a file or directory
+    pub fn path_rename(
+        &self,
+        _old_dir_fd: u32,
+        old_path: &str,
+        _new_dir_fd: u32,
+        new_path: &str,
+    ) -> WasmtimeResult<()> {
+        // Validate paths are allowed
+        if !self.is_path_allowed(old_path) {
+            return Err(WasmtimeError::Wasi {
+                message: format!("Old path not allowed: {}", old_path),
+            });
+        }
+        if !self.is_path_allowed(new_path) {
+            return Err(WasmtimeError::Wasi {
+                message: format!("New path not allowed: {}", new_path),
+            });
+        }
+
+        fs::rename(old_path, new_path).map_err(|e| WasmtimeError::Wasi {
+            message: format!("Failed to rename {} to {}: {}", old_path, new_path, e),
+        })
+    }
+
+    /// Unlink a file
+    pub fn path_unlink_file(
+        &self,
+        _dir_fd: u32,
+        path: &str,
+    ) -> WasmtimeResult<()> {
+        // Validate path is allowed
+        if !self.is_path_allowed(path) {
+            return Err(WasmtimeError::Wasi {
+                message: format!("Path not allowed: {}", path),
+            });
+        }
+
+        fs::remove_file(path).map_err(|e| WasmtimeError::Wasi {
+            message: format!("Failed to unlink file {}: {}", path, e),
+        })
+    }
+
+    /// Process and environment operations
+
+    /// Get an environment variable value
+    pub fn environ_get(&self, key: &str) -> Option<String> {
+        match &self.config.env_policy {
+            EnvironmentPolicy::Inherit => std::env::var(key).ok(),
+            EnvironmentPolicy::AllowList(allowed) => {
+                if allowed.contains(&key.to_string()) {
+                    std::env::var(key).ok()
+                } else {
+                    None
+                }
+            }
+            EnvironmentPolicy::DenyList(denied) => {
+                if denied.contains(&key.to_string()) {
+                    None
+                } else {
+                    std::env::var(key).ok()
+                }
+            }
+            EnvironmentPolicy::Custom => {
+                self.environment.get(key).cloned()
+            }
+        }
+    }
+
+    /// Get all environment variables as key=value pairs
+    pub fn environ_sizes_get(&self) -> (usize, usize) {
+        let env_vars = match &self.config.env_policy {
+            EnvironmentPolicy::Inherit => {
+                std::env::vars().collect::<Vec<_>>()
+            }
+            EnvironmentPolicy::AllowList(allowed) => {
+                std::env::vars()
+                    .filter(|(k, _)| allowed.contains(k))
+                    .collect()
+            }
+            EnvironmentPolicy::DenyList(denied) => {
+                std::env::vars()
+                    .filter(|(k, _)| !denied.contains(k))
+                    .collect()
+            }
+            EnvironmentPolicy::Custom => {
+                self.environment.iter()
+                    .map(|(k, v)| (k.clone(), v.clone()))
+                    .collect()
+            }
+        };
+
+        let environ_count = env_vars.len();
+        let environ_size: usize = env_vars.iter()
+            .map(|(k, v)| k.len() + v.len() + 2) // key=value\0
+            .sum();
+
+        (environ_count, environ_size)
+    }
+
+    /// Get command line arguments count and total size
+    pub fn args_sizes_get(&self) -> (usize, usize) {
+        let args_count = self.arguments.len();
+        let args_size: usize = self.arguments.iter()
+            .map(|arg| arg.len() + 1) // arg\0
+            .sum();
+
+        (args_count, args_size)
+    }
+
+    /// Exit the process with given exit code
+    pub fn proc_exit(&self, exit_code: u32) -> ! {
+        std::process::exit(exit_code as i32);
+    }
+
+    /// Get process ID (always returns 42 for security/portability)
+    pub fn sched_yield(&self) -> WasmtimeResult<()> {
+        // Yield CPU to other processes/threads
+        std::thread::yield_now();
+        Ok(())
+    }
+
+    /// Time operations
+
+    /// Get clock resolution for specified clock
+    pub fn clock_res_get(&self, clock_id: u32) -> WasmtimeResult<u64> {
+        match clock_id {
+            0 => Ok(1), // REALTIME - nanosecond resolution
+            1 => Ok(1), // MONOTONIC - nanosecond resolution
+            2 => Ok(1000), // PROCESS_CPUTIME - microsecond resolution
+            3 => Ok(1000), // THREAD_CPUTIME - microsecond resolution
+            _ => Err(WasmtimeError::Wasi {
+                message: format!("Invalid clock ID: {}", clock_id),
+            }),
+        }
+    }
+
+    /// Get current time for specified clock
+    pub fn clock_time_get(&self, clock_id: u32, _precision: u64) -> WasmtimeResult<u64> {
+        use std::time::{SystemTime, UNIX_EPOCH};
+
+        match clock_id {
+            0 => {
+                // REALTIME - wall clock time
+                SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .map(|d| d.as_nanos() as u64)
+                    .map_err(|e| WasmtimeError::Wasi {
+                        message: format!("Failed to get system time: {}", e),
+                    })
+            }
+            1 => {
+                // MONOTONIC - monotonic time
+                // Use a static start time for monotonic clock
+                use std::sync::OnceLock;
+                static START_TIME: OnceLock<std::time::Instant> = OnceLock::new();
+                let start = START_TIME.get_or_init(std::time::Instant::now);
+                Ok(start.elapsed().as_nanos() as u64)
+            }
+            2 | 3 => {
+                // PROCESS_CPUTIME / THREAD_CPUTIME - CPU time
+                // Approximate with wall clock time
+                SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .map(|d| d.as_nanos() as u64)
+                    .map_err(|e| WasmtimeError::Wasi {
+                        message: format!("Failed to get CPU time: {}", e),
+                    })
+            }
+            _ => Err(WasmtimeError::Wasi {
+                message: format!("Invalid clock ID: {}", clock_id),
+            }),
+        }
+    }
+
+    /// Random operations
+
+    /// Generate random bytes
+    pub fn random_get(&self, buffer: &mut [u8]) -> WasmtimeResult<()> {
+        use std::fs::File;
+        use std::io::Read;
+
+        // Try to use system random number generator
+        #[cfg(unix)]
+        {
+            let mut urandom = File::open("/dev/urandom").map_err(|e| WasmtimeError::Wasi {
+                message: format!("Failed to open /dev/urandom: {}", e),
+            })?;
+
+            urandom.read_exact(buffer).map_err(|e| WasmtimeError::Wasi {
+                message: format!("Failed to read random bytes: {}", e),
+            })?;
+        }
+
+        #[cfg(windows)]
+        {
+            // On Windows, use a simple fallback with current time-based seed
+            use std::time::{SystemTime, UNIX_EPOCH};
+
+            let seed = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_nanos() as u64;
+
+            // Simple linear congruential generator for fallback
+            let mut rng_state = seed;
+            for byte in buffer.iter_mut() {
+                rng_state = rng_state.wrapping_mul(1103515245).wrapping_add(12345);
+                *byte = (rng_state >> 24) as u8;
+            }
+        }
+
+        #[cfg(not(any(unix, windows)))]
+        {
+            // Fallback for other platforms
+            use std::time::{SystemTime, UNIX_EPOCH};
+
+            let seed = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_nanos() as u64;
+
+            let mut rng_state = seed;
+            for byte in buffer.iter_mut() {
+                rng_state = rng_state.wrapping_mul(1103515245).wrapping_add(12345);
+                *byte = (rng_state >> 24) as u8;
+            }
+        }
+
+        Ok(())
+    }
+
 }
 
 /// Native FFI functions for WASI filesystem operations

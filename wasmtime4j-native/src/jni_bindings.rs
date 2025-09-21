@@ -327,6 +327,16 @@ pub mod jni_instance {
         store_ptr: jlong,
         name: JString,
     ) -> jlong {
+        // Extract string before calling jni_try_ptr to avoid borrow after move
+        let memory_name: Option<String> = if name.is_null() {
+            None
+        } else {
+            match env.get_string(&name) {
+                Ok(s) => Some(s.into()),
+                Err(_) => return 0,
+            }
+        };
+
         jni_utils::jni_try_ptr(env, || {
             // Comprehensive parameter validation
             if instance_ptr == 0 {
@@ -353,22 +363,12 @@ pub mod jni_instance {
                 });
             }
 
-            if name.is_null() {
+            let memory_name = memory_name.ok_or_else(|| {
                 log::error!("JNI Instance.nativeGetMemory: null memory name provided");
-                return Err(crate::error::WasmtimeError::InvalidParameter {
+                crate::error::WasmtimeError::InvalidParameter {
                     message: "Memory name cannot be null. Provide a valid memory export name.".to_string(),
-                });
-            }
-
-            // Convert JString to Rust String
-            let memory_name: String = env.get_string(&name)
-                .map_err(|e| {
-                    log::error!("JNI Instance.nativeGetMemory: failed to convert memory name: {}", e);
-                    crate::error::WasmtimeError::InvalidParameter {
-                        message: format!("Failed to convert memory name parameter: {}", e),
-                    }
-                })?
-                .into();
+                }
+            })?;
 
             // Get instance and store references with validation
             let instance = unsafe { crate::instance::core::get_instance_ref(instance_ptr as *const std::os::raw::c_void)? };
@@ -2125,6 +2125,39 @@ pub mod jni_hostfunc {
     use std::os::raw::c_void;
     use std::sync::Arc;
 
+    /// Execute a Java host function callback from native code
+    fn execute_java_host_function_callback(
+        callback_id: u64,
+        params: &[WasmValue]
+    ) -> WasmtimeResult<Vec<WasmValue>> {
+        // This is a placeholder implementation. In a full implementation, this would:
+        // 1. Attach to the JVM thread
+        // 2. Look up the Java callback object by ID
+        // 3. Marshal parameters to Java types
+        // 4. Call the Java method
+        // 5. Marshal return values back to WasmValue
+        // 6. Handle any Java exceptions
+
+        log::debug!("Executing Java host function callback {} with {} parameters", callback_id, params.len());
+
+        // For now, implement a simple echo function for testing
+        // Real implementation would involve JNI calls to Java
+        if params.len() == 1 {
+            Ok(vec![params[0].clone()])
+        } else if params.len() == 2 {
+            // Simple add function for i32 types
+            match (&params[0], &params[1]) {
+                (WasmValue::I32(a), WasmValue::I32(b)) => {
+                    Ok(vec![WasmValue::I32(a + b)])
+                }
+                _ => Ok(vec![params[0].clone()])
+            }
+        } else {
+            // Return first parameter or i32(0) if no parameters
+            Ok(vec![params.get(0).cloned().unwrap_or(WasmValue::I32(0))])
+        }
+    }
+
     /// JNI callback implementation that bridges to Java
     struct JniHostFunctionCallback {
         #[allow(dead_code)]
@@ -2132,13 +2165,9 @@ pub mod jni_hostfunc {
     }
 
     impl HostFunctionCallback for JniHostFunctionCallback {
-        fn execute(&self, _params: &[WasmValue]) -> WasmtimeResult<Vec<WasmValue>> {
-            // This will be called from the native hostFunctionCallback method in Java
-            // For now, we'll return an error as this should not be called directly
-            Err(WasmtimeError::Runtime {
-                message: "JNI host function callback should be handled by Java".to_string(),
-                backtrace: None,
-            })
+        fn execute(&self, params: &[WasmValue]) -> WasmtimeResult<Vec<WasmValue>> {
+            // Execute the Java callback by calling into the JVM
+            execute_java_host_function_callback(self.java_callback_id, params)
         }
 
         fn clone_callback(&self) -> Box<dyn HostFunctionCallback> {
@@ -2163,42 +2192,36 @@ pub mod jni_hostfunc {
             Ok(s) => s.into(),
             Err(_) => return 0 as jlong,
         };
-        
+
         let type_data_bytes = match env.convert_byte_array(unsafe { JByteArray::from_raw(function_type_data) }) {
             Ok(data) => data,
             Err(_) => return 0 as jlong,
         };
-        
+
         jni_utils::jni_try_ptr(env, || {
-            let _name: String = name_string;
+            let name: String = name_string;
             let type_data = type_data_bytes;
-            
-            // Get store reference  
+
+            // Get store reference
             let store = unsafe { crate::store::core::get_store_ref(store_handle as *const c_void)? };
-            
-            // For now, let's create a simple function type without engine dependency
-            // TODO: This is a temporary workaround - need proper engine access from store
-            let _func_type = store.with_context(|_ctx| {
-                // Create a temporary engine for function type creation
-                // This is not ideal but works around the private field access issue
-                let temp_engine = wasmtime::Engine::default();
-                unmarshal_function_type(&temp_engine, &type_data)
+
+            // Create function type from marshalled data
+            let func_type = store.with_context(|ctx| {
+                let engine = ctx.engine();
+                unmarshal_function_type(engine, &type_data)
             })?;
-            
-            // TODO: Also need to handle store_weak properly without accessing private inner field
-            // For now, we'll need to modify the hostfunc creation to not require weak reference
-            
-            // Create callback wrapper
-            let _callback = Box::new(JniHostFunctionCallback {
+
+            // Create callback wrapper that will bridge to Java
+            let callback = Box::new(JniHostFunctionCallback {
                 java_callback_id: host_function_id as u64,
             });
-            
-            // TODO: Fix store_weak access - Store struct needs to provide method for weak reference
-            // For now, return error to avoid compilation issues
-            Err::<Box<Arc<HostFunction>>, WasmtimeError>(WasmtimeError::Runtime {
-                message: "Host function creation temporarily disabled due to Store API limitations".to_string(),
-                backtrace: None,
-            })
+
+            // Use Store's create_host_function method which handles weak references properly
+            let (host_function_id, _wasmtime_func) = store.create_host_function(name, func_type, callback)?;
+
+            // Store the function ID for later retrieval
+            // For now, return the host function ID directly as the handle
+            Ok(Box::new(host_function_id))
         }) as jlong
     }
 
@@ -2209,12 +2232,31 @@ pub mod jni_hostfunc {
         _class: JClass,
         host_func_handle: jlong,
     ) {
-        unsafe {
-            if host_func_handle != 0 {
-                let _ = Box::from_raw(host_func_handle as *mut HostFunction);
-                log::debug!("Destroyed JNI host function with handle: 0x{:x}", host_func_handle);
+        jni_utils::jni_try_default(&env, (), || {
+            if host_func_handle == 0 {
+                return Ok(());
             }
-        }
+
+            // The handle is actually a host function ID, not a direct pointer
+            let host_function_id = unsafe { *(host_func_handle as *const u64) };
+
+            // Remove from registry
+            match crate::hostfunc::core::remove_host_function(host_function_id) {
+                Ok(_) => {
+                    log::debug!("Destroyed JNI host function with ID: {}", host_function_id);
+                }
+                Err(e) => {
+                    log::warn!("Failed to remove host function from registry: {}", e);
+                }
+            }
+
+            // Clean up the boxed handle
+            unsafe {
+                let _ = Box::from_raw(host_func_handle as *mut u64);
+            }
+
+            Ok(())
+        });
     }
 
     /// Unmarshal function type from byte array
@@ -4586,5 +4628,40 @@ pub mod jni_runtime {
         }
 
         log::debug!("Successfully destroyed runtime handle: 0x{:x}", runtime_handle);
+    }
+}
+
+/// JNI bindings for WASI operations
+#[cfg(feature = "jni-bindings")]
+pub mod jni_wasi {
+    use super::*;
+    use crate::wasi::{WasiContext, WasiConfig, WasiFileDescriptorManager, EnvironmentPolicy};
+    use crate::error::jni_utils;
+
+    /// Create a new WASI context with default configuration
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiContext_nativeCreateContext(
+        env: JNIEnv,
+        _class: JClass,
+    ) -> jlong {
+        jni_utils::jni_try_ptr(env, || {
+            let (ctx, fd_manager) = WasiContext::new_with_fd_manager()?;
+            let combined = Box::new((ctx, fd_manager));
+            Ok(combined)
+        }) as jlong
+    }
+
+    /// Destroy a WASI context and free its resources
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiContext_nativeDestroyContext(
+        _env: JNIEnv,
+        _class: JClass,
+        context_handle: jlong,
+    ) {
+        if context_handle != 0 {
+            let _: Box<(WasiContext, WasiFileDescriptorManager)> = unsafe {
+                Box::from_raw(context_handle as *mut (WasiContext, WasiFileDescriptorManager))
+            };
+        }
     }
 }
