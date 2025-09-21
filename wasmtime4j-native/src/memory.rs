@@ -555,6 +555,45 @@ impl Memory {
         &self.inner
     }
 
+    /// Create Memory wrapper from existing Wasmtime memory (for memory exports)
+    /// Note: This creates a wrapper with default metadata since we don't have store context
+    pub fn from_wasmtime_memory(wasmtime_memory: WasmtimeMemory) -> Self {
+        // Since we don't have store context here, use defaults for metadata
+        // The actual memory type information will be accessed when store is available
+        let initial_pages = 1; // Default - will be updated when store is available
+        let maximum_pages = None;
+
+        // Create configuration based on memory type
+        let config = MemoryConfig {
+            initial_pages,
+            maximum_pages,
+            is_shared: false, // Default - will be updated when store is available
+            memory_index: 0, // Default index for exported memory
+            name: Some("exported_memory".to_string()),
+        };
+
+        // Initialize metadata for exported memory
+        let metadata = MemoryMetadata {
+            created_at: Instant::now(),
+            current_pages: initial_pages,
+            maximum_pages,
+            read_operations: 0,
+            write_operations: 0,
+            bytes_read: 0,
+            bytes_written: 0,
+            growth_operations: 0,
+            peak_pages: initial_pages,
+            last_access: None,
+            bounds_violations_prevented: 0,
+        };
+
+        Self {
+            inner: wasmtime_memory,
+            metadata: Arc::new(RwLock::new(metadata)),
+            config,
+        }
+    }
+
     // Helper functions for type conversion
     
     fn get_type_size(data_type: MemoryDataType) -> usize {
