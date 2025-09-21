@@ -60,7 +60,33 @@ public interface PerformanceProfiler extends AutoCloseable {
    * @throws IllegalArgumentException if engine is null
    */
   static PerformanceProfiler create(final ai.tegmentum.wasmtime4j.Engine engine) {
-    throw new UnsupportedOperationException("Implementation must be provided by runtime factory");
+    if (engine == null) {
+      throw new IllegalArgumentException("Engine cannot be null");
+    }
+
+    // Use runtime-specific profiler implementation
+    try {
+      // First try Panama implementation
+      final Class<?> panamaClass = Class.forName("ai.tegmentum.wasmtime4j.panama.PanamaPerformanceProfiler");
+      return (PerformanceProfiler) panamaClass.getDeclaredMethod("create", ai.tegmentum.wasmtime4j.Engine.class)
+          .invoke(null, engine);
+    } catch (final ClassNotFoundException e) {
+      // Panama not available, try JNI implementation
+      try {
+        final Class<?> jniClass = Class.forName("ai.tegmentum.wasmtime4j.jni.JniPerformanceProfiler");
+        return (PerformanceProfiler) jniClass.getDeclaredMethod("create", ai.tegmentum.wasmtime4j.Engine.class)
+            .invoke(null, engine);
+      } catch (final ClassNotFoundException e2) {
+        // No specific implementation found
+        throw new RuntimeException(
+            "No PerformanceProfiler implementation available. "
+                + "Ensure wasmtime4j-panama or wasmtime4j-jni is on the classpath.");
+      } catch (final Exception e2) {
+        throw new RuntimeException("Failed to create JNI PerformanceProfiler instance", e2);
+      }
+    } catch (final Exception e) {
+      throw new RuntimeException("Failed to create Panama PerformanceProfiler instance", e);
+    }
   }
 
   /**
@@ -73,7 +99,38 @@ public interface PerformanceProfiler extends AutoCloseable {
    */
   static PerformanceProfiler create(
       final ai.tegmentum.wasmtime4j.Engine engine, final ProfilerConfig config) {
-    throw new UnsupportedOperationException("Implementation must be provided by runtime factory");
+    if (engine == null) {
+      throw new IllegalArgumentException("Engine cannot be null");
+    }
+    if (config == null) {
+      throw new IllegalArgumentException("Config cannot be null");
+    }
+
+    // Use runtime-specific profiler implementation
+    try {
+      // First try Panama implementation
+      final Class<?> panamaClass = Class.forName("ai.tegmentum.wasmtime4j.panama.PanamaPerformanceProfiler");
+      return (PerformanceProfiler) panamaClass.getDeclaredMethod("create",
+          ai.tegmentum.wasmtime4j.Engine.class, ProfilerConfig.class)
+          .invoke(null, engine, config);
+    } catch (final ClassNotFoundException e) {
+      // Panama not available, try JNI implementation
+      try {
+        final Class<?> jniClass = Class.forName("ai.tegmentum.wasmtime4j.jni.JniPerformanceProfiler");
+        return (PerformanceProfiler) jniClass.getDeclaredMethod("create",
+            ai.tegmentum.wasmtime4j.Engine.class, ProfilerConfig.class)
+            .invoke(null, engine, config);
+      } catch (final ClassNotFoundException e2) {
+        // No specific implementation found
+        throw new RuntimeException(
+            "No PerformanceProfiler implementation available. "
+                + "Ensure wasmtime4j-panama or wasmtime4j-jni is on the classpath.");
+      } catch (final Exception e2) {
+        throw new RuntimeException("Failed to create JNI PerformanceProfiler instance", e2);
+      }
+    } catch (final Exception e) {
+      throw new RuntimeException("Failed to create Panama PerformanceProfiler instance", e);
+    }
   }
 
   /**

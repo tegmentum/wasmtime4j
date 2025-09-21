@@ -50,7 +50,7 @@ public interface WasiConfig {
             Class.forName("ai.tegmentum.wasmtime4j.jni.wasi.JniWasiConfigBuilder");
         return (WasiConfigBuilder) builderClass.getDeclaredConstructor().newInstance();
       } catch (final ClassNotFoundException e2) {
-        throw new UnsupportedOperationException(
+        throw new RuntimeException(
             "No WasiConfigBuilder implementation available. "
                 + "Ensure wasmtime4j-panama or wasmtime4j-jni is on the classpath.");
       } catch (final Exception e2) {

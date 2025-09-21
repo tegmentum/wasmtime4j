@@ -35,7 +35,33 @@ public interface EngineStatistics {
    * @throws IllegalArgumentException if engine is null
    */
   static EngineStatistics capture(final ai.tegmentum.wasmtime4j.Engine engine) {
-    throw new UnsupportedOperationException("Implementation must be provided by runtime factory");
+    if (engine == null) {
+      throw new IllegalArgumentException("Engine cannot be null");
+    }
+
+    // Use runtime-specific engine statistics implementation
+    try {
+      // First try Panama implementation
+      final Class<?> panamaClass = Class.forName("ai.tegmentum.wasmtime4j.panama.PanamaEngineStatistics");
+      return (EngineStatistics) panamaClass.getDeclaredMethod("capture", ai.tegmentum.wasmtime4j.Engine.class)
+          .invoke(null, engine);
+    } catch (final ClassNotFoundException e) {
+      // Panama not available, try JNI implementation
+      try {
+        final Class<?> jniClass = Class.forName("ai.tegmentum.wasmtime4j.jni.JniEngineStatistics");
+        return (EngineStatistics) jniClass.getDeclaredMethod("capture", ai.tegmentum.wasmtime4j.Engine.class)
+            .invoke(null, engine);
+      } catch (final ClassNotFoundException e2) {
+        // No specific implementation found
+        throw new RuntimeException(
+            "No EngineStatistics implementation available. "
+                + "Ensure wasmtime4j-panama or wasmtime4j-jni is on the classpath.");
+      } catch (final Exception e2) {
+        throw new RuntimeException("Failed to create JNI EngineStatistics instance", e2);
+      }
+    } catch (final Exception e) {
+      throw new RuntimeException("Failed to create Panama EngineStatistics instance", e);
+    }
   }
 
   /**
@@ -48,7 +74,33 @@ public interface EngineStatistics {
    * @throws IllegalArgumentException if engine is null
    */
   static EngineStatistics captureAndReset(final ai.tegmentum.wasmtime4j.Engine engine) {
-    throw new UnsupportedOperationException("Implementation must be provided by runtime factory");
+    if (engine == null) {
+      throw new IllegalArgumentException("Engine cannot be null");
+    }
+
+    // Use runtime-specific engine statistics implementation
+    try {
+      // First try Panama implementation
+      final Class<?> panamaClass = Class.forName("ai.tegmentum.wasmtime4j.panama.PanamaEngineStatistics");
+      return (EngineStatistics) panamaClass.getDeclaredMethod("captureAndReset", ai.tegmentum.wasmtime4j.Engine.class)
+          .invoke(null, engine);
+    } catch (final ClassNotFoundException e) {
+      // Panama not available, try JNI implementation
+      try {
+        final Class<?> jniClass = Class.forName("ai.tegmentum.wasmtime4j.jni.JniEngineStatistics");
+        return (EngineStatistics) jniClass.getDeclaredMethod("captureAndReset", ai.tegmentum.wasmtime4j.Engine.class)
+            .invoke(null, engine);
+      } catch (final ClassNotFoundException e2) {
+        // No specific implementation found
+        throw new RuntimeException(
+            "No EngineStatistics implementation available. "
+                + "Ensure wasmtime4j-panama or wasmtime4j-jni is on the classpath.");
+      } catch (final Exception e2) {
+        throw new RuntimeException("Failed to create JNI EngineStatistics instance", e2);
+      }
+    } catch (final Exception e) {
+      throw new RuntimeException("Failed to create Panama EngineStatistics instance", e);
+    }
   }
 
   // Compilation metrics
