@@ -17,8 +17,6 @@
 package ai.tegmentum.wasmtime4j.testing;
 
 import ai.tegmentum.wasmtime4j.*;
-import ai.tegmentum.wasmtime4j.jni.*;
-import ai.tegmentum.wasmtime4j.panama.*;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.time.Duration;

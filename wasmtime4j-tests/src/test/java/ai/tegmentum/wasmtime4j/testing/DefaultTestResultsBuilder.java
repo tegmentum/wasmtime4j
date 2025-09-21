@@ -36,7 +36,7 @@ final class DefaultTestResultsBuilder implements TestResultsBuilder {
   private int totalTests = 0;
   private int passedTests = 0;
   private int failedTests = 0;
-  private int skippedTests = 0;
+  private int skippedTestsCount = 0;
   private Duration totalExecutionTime = Duration.ZERO;
   private TestStatistics statistics;
 
@@ -49,7 +49,7 @@ final class DefaultTestResultsBuilder implements TestResultsBuilder {
     this.totalTests += results.getTotalTests();
     this.passedTests += results.getPassedTests();
     this.failedTests += results.getFailedTests();
-    this.skippedTests += results.getSkippedTests();
+    this.skippedTestsCount += results.getSkippedTests();
     this.totalExecutionTime = this.totalExecutionTime.plus(results.getTotalExecutionTime());
 
     this.failures.addAll(results.getFailures());
@@ -104,7 +104,7 @@ final class DefaultTestResultsBuilder implements TestResultsBuilder {
     Objects.requireNonNull(testName, "Test name cannot be null");
 
     this.totalTests++;
-    this.skippedTests++;
+    this.skippedTestsCount++;
     this.skippedTests.add(testName + (reason != null ? ": " + reason : ""));
 
     return this;
@@ -127,7 +127,7 @@ final class DefaultTestResultsBuilder implements TestResultsBuilder {
         totalTests,
         passedTests,
         failedTests,
-        skippedTests,
+        skippedTestsCount,
         new ArrayList<>(failures),
         totalExecutionTime,
         statistics != null ? statistics : createEmptyStatistics());
