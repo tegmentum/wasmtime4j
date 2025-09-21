@@ -3866,133 +3866,38 @@ pub mod jni_memory {
         env: JNIEnv,
         _class: JClass,
         memory_ptr: jlong,
+        store_ptr: jlong,
     ) -> jlong {
         jni_utils::jni_try_default(&env, -1, || {
-            // Comprehensive parameter validation with detailed error context
+            // Validate both memory and store handles
             if memory_ptr == 0 {
-                log::error!("JNI Memory.nativeGetSize: null memory handle provided");
                 return Err(crate::error::WasmtimeError::InvalidParameter {
-                    message: "Memory handle cannot be null. Ensure memory is properly initialized before calling size operations.".to_string(),
+                    message: "Memory handle cannot be null".to_string(),
                 });
             }
 
-            // Check for obviously invalid pointers (basic sanity check)
-            if memory_ptr < 0x1000 || memory_ptr == -1 {
-                log::error!("JNI Memory.nativeGetSize: invalid memory handle 0x{:x}", memory_ptr);
+            if store_ptr == 0 {
                 return Err(crate::error::WasmtimeError::InvalidParameter {
-                    message: format!(
-                        "Invalid memory handle (0x{:x}): Handle appears to be corrupted or uninitialized. Expected a valid native pointer.", 
-                        memory_ptr
-                    ),
+                    message: "Store handle cannot be null".to_string(),
                 });
             }
 
-            // Validate memory handle with detailed error context
+            // Validate handles and get references
             unsafe {
-                core::validate_memory_handle(memory_ptr as *const std::os::raw::c_void)
-                    .map_err(|e| {
-                        log::error!("Memory handle validation failed for handle 0x{:x}: {}", memory_ptr, e);
-                        match e {
-                            crate::error::WasmtimeError::InvalidParameter { message } if message.contains("not registered") => {
-                                crate::error::WasmtimeError::Memory {
-                                    message: format!(
-                                        "Memory handle (0x{:x}) is not registered or has been freed. \
-                                         This typically indicates use-after-free or double-free. \
-                                         Ensure memory lifetime is properly managed.", 
-                                        memory_ptr
-                                    ),
-                                }
-                            },
-                            crate::error::WasmtimeError::InvalidParameter { message } if message.contains("corrupted") => {
-                                crate::error::WasmtimeError::Memory {
-                                    message: format!(
-                                        "Memory handle (0x{:x}) is corrupted (invalid magic number). \
-                                         This indicates memory corruption or buffer overflow. \
-                                         Check for memory safety violations.", 
-                                        memory_ptr
-                                    ),
-                                }
-                            },
-                            crate::error::WasmtimeError::InvalidParameter { message } if message.contains("destroyed") => {
-                                crate::error::WasmtimeError::Memory {
-                                    message: format!(
-                                        "Memory handle (0x{:x}) has been destroyed (use-after-free detected). \
-                                         Avoid accessing memory after calling close() or destroy().", 
-                                        memory_ptr
-                                    ),
-                                }
-                            },
-                            _ => {
-                                crate::error::WasmtimeError::Memory {
-                                    message: format!(
-                                        "Memory handle validation failed (0x{:x}): {}. \
-                                         Verify that memory was created properly and has not been freed.", 
-                                        memory_ptr, e
-                                    ),
-                                }
-                            }
-                        }
-                    })?
-            };
-            
-            // Get memory reference for metadata access
-            let memory = unsafe { 
-                core::get_memory_ref(memory_ptr as *const std::os::raw::c_void)
-                    .map_err(|e| {
-                        log::error!("Failed to get memory reference for handle 0x{:x}: {}", memory_ptr, e);
-                        crate::error::WasmtimeError::Memory {
-                            message: format!(
-                                "Unable to access memory (handle: 0x{:x}): {}. \
-                                 Memory may be in an invalid state.", 
-                                memory_ptr, e
-                            ),
-                        }
-                    })?
-            };
-            
-            // Get metadata with error handling
-            let metadata = memory.get_metadata()
-                .map_err(|e| {
-                    log::error!("Failed to get memory metadata for handle 0x{:x}: {}", memory_ptr, e);
-                    crate::error::WasmtimeError::Memory {
-                        message: format!(
-                            "Unable to retrieve memory metadata (handle: 0x{:x}): {}. \
-                             Memory statistics may be corrupted.", 
-                            memory_ptr, e
-                        ),
-                    }
-                })?;
-            
-            // Calculate size with overflow protection
-            let pages = metadata.current_pages;
-            let size_bytes = pages.checked_mul(65536)
-                .ok_or_else(|| {
-                    log::error!("Memory size overflow: {} pages exceeds maximum addressable size", pages);
-                    crate::error::WasmtimeError::Memory {
-                        message: format!(
-                            "Memory size calculation overflow: {} pages would exceed maximum addressable memory. \
-                             This indicates corrupted memory metadata.", 
-                            pages
-                        ),
-                    }
-                })?;
-            
-            // Check that size fits in jlong (i64)
-            if size_bytes > i64::MAX as u64 {
-                log::error!("Memory size {} exceeds maximum jlong value", size_bytes);
-                return Err(crate::error::WasmtimeError::Memory {
-                    message: format!(
-                        "Memory size ({} bytes) exceeds maximum representable value for Java long. \
-                         This indicates an extremely large memory allocation that cannot be handled.", 
-                        size_bytes
-                    ),
-                });
+                core::validate_memory_handle(memory_ptr as *const std::os::raw::c_void)?;
+                core::validate_store_handle(store_ptr as *const std::os::raw::c_void)?;
+
+                let memory = core::get_memory_ref(memory_ptr as *const std::os::raw::c_void)?;
+                let store = core::get_store_ref(store_ptr as *const std::os::raw::c_void)?;
+
+                // Use core function that requires both memory and store
+                let size_bytes = core::get_memory_size(memory, store)? as jlong;
+
+                log::debug!("Memory size retrieved: {} bytes for memory=0x{:x}, store=0x{:x}",
+                           size_bytes, memory_ptr, store_ptr);
+
+                Ok(size_bytes)
             }
-            
-            log::debug!("Memory size retrieved: {} bytes ({} pages) for handle 0x{:x}", 
-                       size_bytes, pages, memory_ptr);
-            
-            Ok(size_bytes as jlong)
         })
     }
 
@@ -4002,69 +3907,45 @@ pub mod jni_memory {
         env: JNIEnv,
         _class: JClass,
         memory_ptr: jlong,
+        store_ptr: jlong,
         pages: jlong,
     ) -> jlong {
         jni_utils::jni_try_default(&env, -1, || {
-            // Comprehensive parameter validation
+            // Validate handles
             if memory_ptr == 0 {
-                log::error!("JNI Memory.nativeGrow: null memory handle provided");
                 return Err(crate::error::WasmtimeError::InvalidParameter {
-                    message: "Memory handle cannot be null for growth operations. Ensure memory is properly initialized.".to_string(),
+                    message: "Memory handle cannot be null".to_string(),
                 });
             }
 
-            if memory_ptr < 0x1000 || memory_ptr == -1 {
-                log::error!("JNI Memory.nativeGrow: invalid memory handle 0x{:x}", memory_ptr);
+            if store_ptr == 0 {
                 return Err(crate::error::WasmtimeError::InvalidParameter {
-                    message: format!(
-                        "Invalid memory handle (0x{:x}) for growth operation. Handle appears corrupted or uninitialized.", 
-                        memory_ptr
-                    ),
+                    message: "Store handle cannot be null".to_string(),
                 });
             }
 
             if pages < 0 {
-                log::error!("JNI Memory.nativeGrow: negative page count {} provided for handle 0x{:x}", pages, memory_ptr);
                 return Err(crate::error::WasmtimeError::InvalidParameter {
-                    message: format!(
-                        "Page count for memory growth cannot be negative (received: {}). Specify a non-negative number of pages to grow.", 
-                        pages
-                    ),
+                    message: format!("Page count cannot be negative: {}", pages),
                 });
             }
 
-            // Validate memory handle before reporting architectural limitation
+            // Validate handles and get references
             unsafe {
-                core::validate_memory_handle(memory_ptr as *const std::os::raw::c_void)
-                    .map_err(|e| {
-                        log::error!("Memory handle validation failed for growth operation on handle 0x{:x}: {}", memory_ptr, e);
-                        crate::error::WasmtimeError::Memory {
-                            message: format!(
-                                "Cannot grow memory with invalid handle (0x{:x}): {}. \
-                                 Ensure memory is valid before attempting growth operations.", 
-                                memory_ptr, e
-                            ),
-                        }
-                    })?
-            };
-            
-            log::warn!("Memory growth operation attempted without store context (handle: 0x{:x}, pages: {})", memory_ptr, pages);
-            
-            // This method requires architectural changes to support store context
-            Err(crate::error::WasmtimeError::Memory {
-                message: format!(
-                    "Memory growth operation requires WebAssembly store context (handle: 0x{:x}, requested pages: {}). \n\
-                     Current architecture limitation: Memory operations need both memory and store handles. \n\
-                     Workaround: Use instance-based memory growth through WebAssembly instance interface, \n\
-                     or wait for architectural update to support store context in memory operations. \n\
-                     \n\
-                     Technical details: \n\
-                     - WebAssembly memory growth requires access to the execution store \n\
-                     - Store context is needed for proper memory lifecycle management \n\
-                     - Direct memory handle operations are limited without store context", 
-                    memory_ptr, pages
-                ),
-            })
+                core::validate_memory_handle(memory_ptr as *const std::os::raw::c_void)?;
+                core::validate_store_handle(store_ptr as *const std::os::raw::c_void)?;
+
+                let memory = core::get_memory_ref(memory_ptr as *const std::os::raw::c_void)?;
+                let store = core::get_store_mut(store_ptr as *mut std::os::raw::c_void)?;
+
+                // Use core function to grow memory
+                let previous_pages = core::grow_memory(memory, store, pages as u64)? as jlong;
+
+                log::debug!("Memory grown by {} pages, previous size was {} pages for memory=0x{:x}, store=0x{:x}",
+                           pages, previous_pages, memory_ptr, store_ptr);
+
+                Ok(previous_pages)
+            }
         })
     }
 
@@ -4074,97 +3955,45 @@ pub mod jni_memory {
         env: JNIEnv,
         _class: JClass,
         memory_ptr: jlong,
+        store_ptr: jlong,
         offset: jlong,
     ) -> jint {
         jni_utils::jni_try_default(&env, -1, || {
-            // Comprehensive parameter validation with bounds checking
+            // Validate handles
             if memory_ptr == 0 {
-                log::error!("JNI Memory.nativeReadByte: null memory handle provided");
                 return Err(crate::error::WasmtimeError::InvalidParameter {
-                    message: "Memory handle cannot be null for read operations. Ensure memory is properly initialized.".to_string(),
+                    message: "Memory handle cannot be null".to_string(),
                 });
             }
 
-            if memory_ptr < 0x1000 || memory_ptr == -1 {
-                log::error!("JNI Memory.nativeReadByte: invalid memory handle 0x{:x}", memory_ptr);
+            if store_ptr == 0 {
                 return Err(crate::error::WasmtimeError::InvalidParameter {
-                    message: format!(
-                        "Invalid memory handle (0x{:x}) for read operation. Handle appears corrupted or uninitialized.", 
-                        memory_ptr
-                    ),
+                    message: "Store handle cannot be null".to_string(),
                 });
             }
 
             if offset < 0 {
-                log::error!("JNI Memory.nativeReadByte: negative offset {} for handle 0x{:x}", offset, memory_ptr);
-                return Err(crate::error::WasmtimeError::Memory {
-                    message: format!(
-                        "Memory read offset cannot be negative (received: {}). \
-                         Specify a non-negative byte offset within memory bounds.", 
-                        offset
-                    ),
+                return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: format!("Offset cannot be negative: {}", offset),
                 });
             }
 
-            // Validate memory handle before reporting architectural limitation
+            // Validate handles and get references
             unsafe {
-                core::validate_memory_handle(memory_ptr as *const std::os::raw::c_void)
-                    .map_err(|e| {
-                        log::error!("Memory handle validation failed for read operation on handle 0x{:x}: {}", memory_ptr, e);
-                        crate::error::WasmtimeError::Memory {
-                            message: format!(
-                                "Cannot read from memory with invalid handle (0x{:x}): {}. \
-                                 Ensure memory is valid before attempting read operations.", 
-                                memory_ptr, e
-                            ),
-                        }
-                    })?
-            };
+                core::validate_memory_handle(memory_ptr as *const std::os::raw::c_void)?;
+                core::validate_store_handle(store_ptr as *const std::os::raw::c_void)?;
 
-            // Additional bounds checking based on memory metadata
-            let memory = unsafe { core::get_memory_ref(memory_ptr as *const std::os::raw::c_void)? };
-            let metadata = memory.get_metadata()
-                .map_err(|e| {
-                    log::error!("Failed to get memory metadata for bounds checking (handle 0x{:x}): {}", memory_ptr, e);
-                    crate::error::WasmtimeError::Memory {
-                        message: format!(
-                            "Cannot perform bounds checking for read operation (handle: 0x{:x}): {}. \
-                             Memory metadata may be corrupted.", 
-                            memory_ptr, e
-                        ),
-                    }
-                })?;
+                let memory = core::get_memory_ref(memory_ptr as *const std::os::raw::c_void)?;
+                let store = core::get_store_ref(store_ptr as *const std::os::raw::c_void)?;
 
-            let memory_size = metadata.current_pages * 65536; // 64KB per page
-            if offset as u64 >= memory_size {
-                log::error!("Memory read bounds violation: offset {} >= memory size {} for handle 0x{:x}", 
-                           offset, memory_size, memory_ptr);
-                return Err(crate::error::WasmtimeError::Memory {
-                    message: format!(
-                        "Memory read bounds violation: offset {} is beyond memory size {} bytes. \
-                         Current memory has {} pages ({} bytes). Ensure offset is within valid range.", 
-                        offset, memory_size, metadata.current_pages, memory_size
-                    ),
-                });
+                // Use core function to read byte
+                let byte_value = core::read_memory_byte(memory, store, offset as usize)? as jint;
+
+                log::debug!("Read byte value {} at offset {} for memory=0x{:x}, store=0x{:x}",
+                           byte_value, offset, memory_ptr, store_ptr);
+
+                Ok(byte_value)
             }
-            
-            log::warn!("Memory read operation attempted without store context (handle: 0x{:x}, offset: {})", memory_ptr, offset);
-            
-            // This method requires architectural changes to support store context
-            Err(crate::error::WasmtimeError::Memory {
-                message: format!(
-                    "Memory read operation requires WebAssembly store context (handle: 0x{:x}, offset: {}). \n\
-                     Current architecture limitation: Memory read operations need both memory and store handles. \n\
-                     Workaround: Use instance-based memory access through WebAssembly instance interface, \n\
-                     or use direct ByteBuffer access after getting buffer from memory. \n\
-                     \n\
-                     Technical details: \n\
-                     - WebAssembly memory access requires the execution store for thread safety \n\
-                     - Store context provides proper memory synchronization and bounds checking \n\
-                     - Direct memory operations are limited without store context for safety reasons", 
-                    memory_ptr, offset
-                ),
-            })
         })
     }
 
@@ -4174,6 +4003,7 @@ pub mod jni_memory {
         env: JNIEnv,
         _class: JClass,
         memory_ptr: jlong,
+        store_ptr: jlong,
         offset: jlong,
         value: jint,
     ) {
@@ -4286,6 +4116,7 @@ pub mod jni_memory {
         env: JNIEnv,
         _class: JClass,
         memory_ptr: jlong,
+        store_ptr: jlong,
         offset: jlong,
         buffer: JByteArray,
     ) -> jint {
