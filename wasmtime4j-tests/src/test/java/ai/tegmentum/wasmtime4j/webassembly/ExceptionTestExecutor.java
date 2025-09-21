@@ -32,44 +32,36 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 /**
- * Specialized test executor for WebAssembly Exception handling operations.
- * Provides comprehensive testing of try/catch/throw operations, exception type validation,
- * and cross-module exception propagation to achieve 70-80% exception handling coverage.
+ * Specialized test executor for WebAssembly Exception handling operations. Provides comprehensive
+ * testing of try/catch/throw operations, exception type validation, and cross-module exception
+ * propagation to achieve 70-80% exception handling coverage.
  *
- * <p>This executor focuses on:
- * - Try/catch/throw exception flow testing
- * - Exception type validation and propagation
- * - Nested exception handling scenarios
- * - Cross-module exception propagation testing
- * - Exception performance and overhead analysis
+ * <p>This executor focuses on: - Try/catch/throw exception flow testing - Exception type validation
+ * and propagation - Nested exception handling scenarios - Cross-module exception propagation
+ * testing - Exception performance and overhead analysis
  */
 public final class ExceptionTestExecutor {
   private static final Logger LOGGER = Logger.getLogger(ExceptionTestExecutor.class.getName());
 
   /** Exception test file patterns to identify relevant test cases. */
-  private static final List<String> EXCEPTION_TEST_PATTERNS = Arrays.asList(
-      "exception", "try", "catch", "throw", "rethrow", "tag", "eh"
-  );
+  private static final List<String> EXCEPTION_TEST_PATTERNS =
+      Arrays.asList("exception", "try", "catch", "throw", "rethrow", "tag", "eh");
 
   /** Exception operation patterns for detailed testing. */
-  private static final List<String> EXCEPTION_OPERATION_PATTERNS = Arrays.asList(
-      "try", "catch", "throw", "rethrow", "tag.new", "throw_ref", "br_on_exn"
-  );
+  private static final List<String> EXCEPTION_OPERATION_PATTERNS =
+      Arrays.asList("try", "catch", "throw", "rethrow", "tag.new", "throw_ref", "br_on_exn");
 
   /** Exception type patterns for type system testing. */
-  private static final List<String> EXCEPTION_TYPE_PATTERNS = Arrays.asList(
-      "tag", "exception.type", "exn.ref", "type.exception"
-  );
+  private static final List<String> EXCEPTION_TYPE_PATTERNS =
+      Arrays.asList("tag", "exception.type", "exn.ref", "type.exception");
 
   /** Nested exception patterns for complex testing. */
-  private static final List<String> NESTED_EXCEPTION_PATTERNS = Arrays.asList(
-      "nested", "inner", "outer", "chain", "propagate"
-  );
+  private static final List<String> NESTED_EXCEPTION_PATTERNS =
+      Arrays.asList("nested", "inner", "outer", "chain", "propagate");
 
   /** Cross-module exception patterns. */
-  private static final List<String> CROSS_MODULE_PATTERNS = Arrays.asList(
-      "import", "export", "cross", "module", "link"
-  );
+  private static final List<String> CROSS_MODULE_PATTERNS =
+      Arrays.asList("import", "export", "cross", "module", "link");
 
   private final AdvancedFeatureTestConfig config;
 
@@ -82,7 +74,8 @@ public final class ExceptionTestExecutor {
     this.config = Objects.requireNonNull(config, "config cannot be null");
 
     if (!config.isExceptionHandlingEnabled()) {
-      throw new IllegalArgumentException("Exception handling features must be enabled in configuration");
+      throw new IllegalArgumentException(
+          "Exception handling features must be enabled in configuration");
     }
   }
 
@@ -128,8 +121,8 @@ public final class ExceptionTestExecutor {
     }
 
     // Execute performance benchmarking if enabled
-    if (config.isPerformanceBenchmarkingEnabled() &&
-        config.isFeatureEnabled(AdvancedWasmFeature.EXCEPTION_PERFORMANCE)) {
+    if (config.isPerformanceBenchmarkingEnabled()
+        && config.isFeatureEnabled(AdvancedWasmFeature.EXCEPTION_PERFORMANCE)) {
       executeExceptionPerformanceBenchmarks(exceptionTestCases, resultsBuilder);
     }
 
@@ -138,12 +131,14 @@ public final class ExceptionTestExecutor {
 
     final ExceptionTestResults results = resultsBuilder.build();
 
-    LOGGER.info(String.format(
-        "Exception test execution completed in %d seconds. Executed %d tests, %d successful, %d failed",
-        totalDuration.toSeconds(),
-        results.getTotalTestsExecuted(),
-        results.getSuccessfulTests(),
-        results.getFailedTests()));
+    LOGGER.info(
+        String.format(
+            "Exception test execution completed in %d seconds. Executed %d tests, %d successful, %d"
+                + " failed",
+            totalDuration.toSeconds(),
+            results.getTotalTestsExecuted(),
+            results.getSuccessfulTests(),
+            results.getFailedTests()));
 
     return results;
   }
@@ -177,9 +172,7 @@ public final class ExceptionTestExecutor {
    * @return filtered exception test cases
    */
   private List<WasmTestCase> filterExceptionTests(final List<WasmTestCase> testCases) {
-    return testCases.stream()
-        .filter(this::isExceptionTest)
-        .collect(Collectors.toList());
+    return testCases.stream().filter(this::isExceptionTest).collect(Collectors.toList());
   }
 
   /**
@@ -203,15 +196,17 @@ public final class ExceptionTestExecutor {
    * @param resultsBuilder the results builder
    */
   private void executeBasicExceptionTests(
-      final List<WasmTestCase> testCases,
-      final ExceptionTestResults.Builder resultsBuilder) {
+      final List<WasmTestCase> testCases, final ExceptionTestResults.Builder resultsBuilder) {
 
     LOGGER.info("Executing basic exception operations tests");
 
-    final List<WasmTestCase> basicTests = testCases.stream()
-        .filter(test -> EXCEPTION_OPERATION_PATTERNS.stream()
-            .anyMatch(pattern -> test.getTestName().toLowerCase().contains(pattern)))
-        .collect(Collectors.toList());
+    final List<WasmTestCase> basicTests =
+        testCases.stream()
+            .filter(
+                test ->
+                    EXCEPTION_OPERATION_PATTERNS.stream()
+                        .anyMatch(pattern -> test.getTestName().toLowerCase().contains(pattern)))
+            .collect(Collectors.toList());
 
     LOGGER.info("Found " + basicTests.size() + " basic exception tests");
 
@@ -227,15 +222,17 @@ public final class ExceptionTestExecutor {
    * @param resultsBuilder the results builder
    */
   private void executeExceptionTypeTests(
-      final List<WasmTestCase> testCases,
-      final ExceptionTestResults.Builder resultsBuilder) {
+      final List<WasmTestCase> testCases, final ExceptionTestResults.Builder resultsBuilder) {
 
     LOGGER.info("Executing exception type validation tests");
 
-    final List<WasmTestCase> typeTests = testCases.stream()
-        .filter(test -> EXCEPTION_TYPE_PATTERNS.stream()
-            .anyMatch(pattern -> test.getTestName().toLowerCase().contains(pattern)))
-        .collect(Collectors.toList());
+    final List<WasmTestCase> typeTests =
+        testCases.stream()
+            .filter(
+                test ->
+                    EXCEPTION_TYPE_PATTERNS.stream()
+                        .anyMatch(pattern -> test.getTestName().toLowerCase().contains(pattern)))
+            .collect(Collectors.toList());
 
     LOGGER.info("Found " + typeTests.size() + " exception type tests");
 
@@ -251,15 +248,17 @@ public final class ExceptionTestExecutor {
    * @param resultsBuilder the results builder
    */
   private void executeNestedExceptionTests(
-      final List<WasmTestCase> testCases,
-      final ExceptionTestResults.Builder resultsBuilder) {
+      final List<WasmTestCase> testCases, final ExceptionTestResults.Builder resultsBuilder) {
 
     LOGGER.info("Executing nested exception handling tests");
 
-    final List<WasmTestCase> nestedTests = testCases.stream()
-        .filter(test -> NESTED_EXCEPTION_PATTERNS.stream()
-            .anyMatch(pattern -> test.getTestName().toLowerCase().contains(pattern)))
-        .collect(Collectors.toList());
+    final List<WasmTestCase> nestedTests =
+        testCases.stream()
+            .filter(
+                test ->
+                    NESTED_EXCEPTION_PATTERNS.stream()
+                        .anyMatch(pattern -> test.getTestName().toLowerCase().contains(pattern)))
+            .collect(Collectors.toList());
 
     LOGGER.info("Found " + nestedTests.size() + " nested exception tests");
 
@@ -275,15 +274,17 @@ public final class ExceptionTestExecutor {
    * @param resultsBuilder the results builder
    */
   private void executeCrossModuleExceptionTests(
-      final List<WasmTestCase> testCases,
-      final ExceptionTestResults.Builder resultsBuilder) {
+      final List<WasmTestCase> testCases, final ExceptionTestResults.Builder resultsBuilder) {
 
     LOGGER.info("Executing cross-module exception tests");
 
-    final List<WasmTestCase> crossModuleTests = testCases.stream()
-        .filter(test -> CROSS_MODULE_PATTERNS.stream()
-            .anyMatch(pattern -> test.getTestName().toLowerCase().contains(pattern)))
-        .collect(Collectors.toList());
+    final List<WasmTestCase> crossModuleTests =
+        testCases.stream()
+            .filter(
+                test ->
+                    CROSS_MODULE_PATTERNS.stream()
+                        .anyMatch(pattern -> test.getTestName().toLowerCase().contains(pattern)))
+            .collect(Collectors.toList());
 
     LOGGER.info("Found " + crossModuleTests.size() + " cross-module exception tests");
 
@@ -305,7 +306,12 @@ public final class ExceptionTestExecutor {
       final ExceptionTestResults.Builder resultsBuilder) {
 
     if (config.isVerboseLoggingEnabled()) {
-      LOGGER.info("Executing exception test: " + testCase.getDisplayName() + " (category: " + category + ")");
+      LOGGER.info(
+          "Executing exception test: "
+              + testCase.getDisplayName()
+              + " (category: "
+              + category
+              + ")");
     }
 
     final Instant testStartTime = Instant.now();
@@ -319,8 +325,11 @@ public final class ExceptionTestExecutor {
       } else {
         resultsBuilder.incrementFailed();
         if (config.isVerboseLoggingEnabled()) {
-          LOGGER.warning("Exception test failed: " + testCase.getDisplayName() +
-              " - " + result.getFailureReason().orElse("Unknown error"));
+          LOGGER.warning(
+              "Exception test failed: "
+                  + testCase.getDisplayName()
+                  + " - "
+                  + result.getFailureReason().orElse("Unknown error"));
         }
       }
 
@@ -328,8 +337,9 @@ public final class ExceptionTestExecutor {
       LOGGER.log(Level.WARNING, "Exception test execution error: " + testCase.getDisplayName(), e);
 
       final Duration testDuration = Duration.between(testStartTime, Instant.now());
-      final ExceptionTestResult failedResult = ExceptionTestResult.failed(
-          testCase, category, "Execution exception: " + e.getMessage(), testDuration);
+      final ExceptionTestResult failedResult =
+          ExceptionTestResult.failed(
+              testCase, category, "Execution exception: " + e.getMessage(), testDuration);
 
       resultsBuilder.addResult(failedResult);
       resultsBuilder.incrementFailed();
@@ -349,26 +359,32 @@ public final class ExceptionTestExecutor {
   private ExceptionTestResult executeWithTimeout(final WasmTestCase testCase, final String category)
       throws Exception {
 
-    final CompletableFuture<ExceptionTestResult> future = CompletableFuture.supplyAsync(() -> {
-      try {
-        return executeSingleExceptionTest(testCase, category);
-      } catch (final Exception e) {
-        throw new RuntimeException(e);
-      }
-    });
+    final CompletableFuture<ExceptionTestResult> future =
+        CompletableFuture.supplyAsync(
+            () -> {
+              try {
+                return executeSingleExceptionTest(testCase, category);
+              } catch (final Exception e) {
+                throw new RuntimeException(e);
+              }
+            });
 
     try {
       return future.get(config.getTestTimeout().toMillis(), TimeUnit.MILLISECONDS);
     } catch (final TimeoutException e) {
       future.cancel(true);
       final Duration testDuration = config.getTestTimeout();
-      return ExceptionTestResult.failed(testCase, category, "Test timeout after " +
-          testDuration.toSeconds() + " seconds", testDuration);
+      return ExceptionTestResult.failed(
+          testCase,
+          category,
+          "Test timeout after " + testDuration.toSeconds() + " seconds",
+          testDuration);
     } catch (final ExecutionException e) {
       final Throwable cause = e.getCause();
-      final Duration testDuration = Duration.between(Instant.now().minus(config.getTestTimeout()), Instant.now());
-      return ExceptionTestResult.failed(testCase, category, "Execution error: " +
-          cause.getMessage(), testDuration);
+      final Duration testDuration =
+          Duration.between(Instant.now().minus(config.getTestTimeout()), Instant.now());
+      return ExceptionTestResult.failed(
+          testCase, category, "Execution error: " + cause.getMessage(), testDuration);
     }
   }
 
@@ -380,8 +396,8 @@ public final class ExceptionTestExecutor {
    * @return the test execution result
    * @throws Exception if test execution fails
    */
-  private ExceptionTestResult executeSingleExceptionTest(final WasmTestCase testCase, final String category)
-      throws Exception {
+  private ExceptionTestResult executeSingleExceptionTest(
+      final WasmTestCase testCase, final String category) throws Exception {
 
     final Instant testStartTime = Instant.now();
 
@@ -391,9 +407,11 @@ public final class ExceptionTestExecutor {
 
     try {
       // Create engine with exception handling enabled
-      final EngineConfig engineConfig = runtime.createEngineConfig()
-          .feature(WasmFeature.EXCEPTIONS, true)
-          .feature(WasmFeature.REFERENCE_TYPES, true); // Required for exception handling
+      final EngineConfig engineConfig =
+          runtime
+              .createEngineConfig()
+              .feature(WasmFeature.EXCEPTIONS, true)
+              .feature(WasmFeature.REFERENCE_TYPES, true); // Required for exception handling
 
       final Engine engine = runtime.createEngine(engineConfig);
       final Store store = runtime.createStore(engine);
@@ -410,7 +428,8 @@ public final class ExceptionTestExecutor {
       if (testPassed) {
         return ExceptionTestResult.successful(testCase, category, testDuration, runtimeType);
       } else {
-        return ExceptionTestResult.failed(testCase, category, "Exception validation failed", testDuration);
+        return ExceptionTestResult.failed(
+            testCase, category, "Exception validation failed", testDuration);
       }
 
     } catch (final CompilationException e) {
@@ -420,7 +439,8 @@ public final class ExceptionTestExecutor {
       if (testCase.isNegativeTest()) {
         return ExceptionTestResult.successful(testCase, category, testDuration, runtimeType);
       } else {
-        return ExceptionTestResult.failed(testCase, category, "Compilation failed: " + e.getMessage(), testDuration);
+        return ExceptionTestResult.failed(
+            testCase, category, "Compilation failed: " + e.getMessage(), testDuration);
       }
 
     } catch (final ValidationException e) {
@@ -430,7 +450,8 @@ public final class ExceptionTestExecutor {
       if (testCase.isNegativeTest()) {
         return ExceptionTestResult.successful(testCase, category, testDuration, runtimeType);
       } else {
-        return ExceptionTestResult.failed(testCase, category, "Validation failed: " + e.getMessage(), testDuration);
+        return ExceptionTestResult.failed(
+            testCase, category, "Validation failed: " + e.getMessage(), testDuration);
       }
 
     } catch (final RuntimeException e) {
@@ -441,27 +462,30 @@ public final class ExceptionTestExecutor {
         // Runtime exception during exception test might be normal
         return ExceptionTestResult.successful(testCase, category, testDuration, runtimeType);
       } else {
-        return ExceptionTestResult.failed(testCase, category, "Runtime error: " + e.getMessage(), testDuration);
+        return ExceptionTestResult.failed(
+            testCase, category, "Runtime error: " + e.getMessage(), testDuration);
       }
     }
   }
 
   /**
-   * Validates exception execution by attempting to call exported functions and verify exception handling.
+   * Validates exception execution by attempting to call exported functions and verify exception
+   * handling.
    *
    * @param instance the WebAssembly instance
    * @param testCase the test case being executed
    * @param category the test category
    * @return true if validation passes
    */
-  private boolean validateExceptionExecution(final Instance instance, final WasmTestCase testCase, final String category) {
+  private boolean validateExceptionExecution(
+      final Instance instance, final WasmTestCase testCase, final String category) {
     try {
       // Try to execute exported functions if available
-      final List<String> exportedFunctions = instance.getExportNames()
-          .stream()
-          .filter(name -> instance.getExport(name).isPresent())
-          .filter(name -> instance.getExport(name).get() instanceof Function)
-          .collect(Collectors.toList());
+      final List<String> exportedFunctions =
+          instance.getExportNames().stream()
+              .filter(name -> instance.getExport(name).isPresent())
+              .filter(name -> instance.getExport(name).get() instanceof Function)
+              .collect(Collectors.toList());
 
       if (exportedFunctions.isEmpty()) {
         // No exported functions to test, consider successful if module loads
@@ -481,15 +505,22 @@ public final class ExceptionTestExecutor {
             final WasmValue[] results = function.call();
 
             if (config.isVerboseLoggingEnabled()) {
-              LOGGER.fine("Successfully executed exception function: " + functionName +
-                  " with " + results.length + " results");
+              LOGGER.fine(
+                  "Successfully executed exception function: "
+                      + functionName
+                      + " with "
+                      + results.length
+                      + " results");
             }
 
           } catch (final RuntimeException e) {
             // Runtime exceptions during exception tests are often expected
             if (config.isVerboseLoggingEnabled()) {
-              LOGGER.fine("Exception function execution threw exception (possibly expected): " +
-                  functionName + " - " + e.getMessage());
+              LOGGER.fine(
+                  "Exception function execution threw exception (possibly expected): "
+                      + functionName
+                      + " - "
+                      + e.getMessage());
             }
             // This is actually a successful test for exception handling
             return true;
@@ -497,8 +528,11 @@ public final class ExceptionTestExecutor {
           } catch (final Exception e) {
             // Other exceptions might be expected for some tests
             if (config.isVerboseLoggingEnabled()) {
-              LOGGER.fine("Exception function execution failed (possibly expected): " +
-                  functionName + " - " + e.getMessage());
+              LOGGER.fine(
+                  "Exception function execution failed (possibly expected): "
+                      + functionName
+                      + " - "
+                      + e.getMessage());
             }
           }
         }
@@ -508,7 +542,8 @@ public final class ExceptionTestExecutor {
 
     } catch (final Exception e) {
       if (config.isVerboseLoggingEnabled()) {
-        LOGGER.warning("Exception validation error for " + testCase.getDisplayName() + ": " + e.getMessage());
+        LOGGER.warning(
+            "Exception validation error for " + testCase.getDisplayName() + ": " + e.getMessage());
       }
       return false;
     }
@@ -536,8 +571,7 @@ public final class ExceptionTestExecutor {
    * @param resultsBuilder the results builder
    */
   private void executeCrossRuntimeValidation(
-      final List<WasmTestCase> testCases,
-      final ExceptionTestResults.Builder resultsBuilder) {
+      final List<WasmTestCase> testCases, final ExceptionTestResults.Builder resultsBuilder) {
 
     LOGGER.info("Executing cross-runtime exception validation");
 
@@ -555,8 +589,7 @@ public final class ExceptionTestExecutor {
    * @param resultsBuilder the results builder
    */
   private void executeExceptionPerformanceBenchmarks(
-      final List<WasmTestCase> testCases,
-      final ExceptionTestResults.Builder resultsBuilder) {
+      final List<WasmTestCase> testCases, final ExceptionTestResults.Builder resultsBuilder) {
 
     LOGGER.info("Executing exception handling performance benchmarks");
 

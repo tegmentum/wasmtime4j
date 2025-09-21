@@ -2,12 +2,12 @@ package ai.tegmentum.wasmtime4j.performance.insights;
 
 import ai.tegmentum.wasmtime4j.performance.GcImpactMetrics;
 import ai.tegmentum.wasmtime4j.performance.ProfileSnapshot;
-import ai.tegmentum.wasmtime4j.performance.memory.MemoryAnalysisResult;
-import ai.tegmentum.wasmtime4j.performance.microbench.BenchmarkSuite;
 import ai.tegmentum.wasmtime4j.performance.insights.PerformanceInsights.OptimizationOpportunity;
 import ai.tegmentum.wasmtime4j.performance.insights.PerformanceInsights.PerformanceIssue;
 import ai.tegmentum.wasmtime4j.performance.insights.PerformanceInsights.PerformanceRecommendation;
 import ai.tegmentum.wasmtime4j.performance.insights.PerformanceInsights.PerformanceSummary;
+import ai.tegmentum.wasmtime4j.performance.memory.MemoryAnalysisResult;
+import ai.tegmentum.wasmtime4j.performance.microbench.BenchmarkSuite;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;

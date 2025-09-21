@@ -7,8 +7,8 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * Represents the result of executing a single Exception handling test case,
- * including execution details, exception flow validation, and performance metrics.
+ * Represents the result of executing a single Exception handling test case, including execution
+ * details, exception flow validation, and performance metrics.
  *
  * <p>This class provides comprehensive information about exception test execution to support
  * detailed analysis and reporting of try/catch/throw operation testing results.
@@ -38,9 +38,11 @@ public final class ExceptionTestResult {
     this.successful = successful;
     this.failureReason = Objects.requireNonNull(failureReason, "failureReason cannot be null");
     this.executionTime = Objects.requireNonNull(executionTime, "executionTime cannot be null");
-    this.executionTimestamp = Objects.requireNonNull(executionTimestamp, "executionTimestamp cannot be null");
+    this.executionTimestamp =
+        Objects.requireNonNull(executionTimestamp, "executionTimestamp cannot be null");
     this.runtimeType = Objects.requireNonNull(runtimeType, "runtimeType cannot be null");
-    this.performanceMetrics = Objects.requireNonNull(performanceMetrics, "performanceMetrics cannot be null");
+    this.performanceMetrics =
+        Objects.requireNonNull(performanceMetrics, "performanceMetrics cannot be null");
   }
 
   /**
@@ -304,9 +306,7 @@ public final class ExceptionTestResult {
     return sb.toString();
   }
 
-  /**
-   * Performance metrics specific to exception handling operations for detailed analysis.
-   */
+  /** Performance metrics specific to exception handling operations for detailed analysis. */
   public static final class ExceptionPerformanceMetrics {
     private final long exceptionsPerSecond;
     private final long averageThrowLatencyNanos;
@@ -393,13 +393,21 @@ public final class ExceptionTestResult {
 
     @Override
     public String toString() {
-      return "ExceptionPerformanceMetrics{" +
-          "exceptions/sec=" + exceptionsPerSecond +
-          ", throwLatency=" + (averageThrowLatencyNanos / 1000) + "μs" +
-          ", catchLatency=" + (averageCatchLatencyNanos / 1000) + "μs" +
-          ", overhead=" + String.format("%.1f", exceptionOverheadPercent) + "%" +
-          ", maxDepth=" + maxNestingDepth +
-          '}';
+      return "ExceptionPerformanceMetrics{"
+          + "exceptions/sec="
+          + exceptionsPerSecond
+          + ", throwLatency="
+          + (averageThrowLatencyNanos / 1000)
+          + "μs"
+          + ", catchLatency="
+          + (averageCatchLatencyNanos / 1000)
+          + "μs"
+          + ", overhead="
+          + String.format("%.1f", exceptionOverheadPercent)
+          + "%"
+          + ", maxDepth="
+          + maxNestingDepth
+          + '}';
     }
   }
 }

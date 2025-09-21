@@ -418,8 +418,8 @@ run_benchmarks() {
         -f "$FORKS"
         -t "$THREADS"
         -to "${TIMEOUT}s"
-        -bm thrpt,avgt
-        -tu s,ns
+        -bm thrpt
+        -tu s
     )
 
     # Add filter if specified

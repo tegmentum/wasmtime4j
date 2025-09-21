@@ -284,7 +284,8 @@ public final class ResultComparator {
     return resultBuilder
         .equivalent(withinTolerance)
         .exactMatch(exactMatch)
-        .details(String.format("Difference: %s, Tolerance: %s, Mode: %s", difference, tolerance, mode))
+        .details(
+            String.format("Difference: %s, Tolerance: %s, Mode: %s", difference, tolerance, mode))
         .build();
   }
 
@@ -322,7 +323,8 @@ public final class ResultComparator {
   }
 
   /** Gets the appropriate numeric tolerance for comparison with mode-specific tolerances. */
-  private BigDecimal getNumericToleranceWithMode(final Object value1, final Object value2, final ComparisonMode mode) {
+  private BigDecimal getNumericToleranceWithMode(
+      final Object value1, final Object value2, final ComparisonMode mode) {
     if (value1 instanceof Float || value2 instanceof Float) {
       switch (mode) {
         case STRICT_CROSS_RUNTIME:
@@ -477,7 +479,8 @@ public final class ResultComparator {
       final Object element1 = Array.get(array1, i);
       final Object element2 = Array.get(array2, i);
 
-      final ValueComparisonResult elementResult = compareValuesWithMode(element1, element2, depth + 1, mode);
+      final ValueComparisonResult elementResult =
+          compareValuesWithMode(element1, element2, depth + 1, mode);
       if (!elementResult.isExactMatch()) {
         allExactMatch = false;
       }

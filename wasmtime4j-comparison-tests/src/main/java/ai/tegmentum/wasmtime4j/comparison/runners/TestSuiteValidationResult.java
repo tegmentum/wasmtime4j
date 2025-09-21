@@ -50,8 +50,9 @@ public final class TestSuiteValidationResult {
    * @return true if suite meets production requirements
    */
   public boolean meetsProductionRequirements() {
-    return executionSuccessful && suiteAnalysis != null &&
-           suiteAnalysis.getProductionReadinessRate() >= 0.98;
+    return executionSuccessful
+        && suiteAnalysis != null
+        && suiteAnalysis.getProductionReadinessRate() >= 0.98;
   }
 
   /**

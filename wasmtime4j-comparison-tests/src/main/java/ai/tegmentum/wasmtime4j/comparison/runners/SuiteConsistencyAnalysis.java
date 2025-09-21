@@ -3,8 +3,8 @@ package ai.tegmentum.wasmtime4j.comparison.runners;
 import java.util.Objects;
 
 /**
- * Analysis of consistency metrics across all tests within a test suite, providing
- * suite-level behavioral assessment and production readiness evaluation.
+ * Analysis of consistency metrics across all tests within a test suite, providing suite-level
+ * behavioral assessment and production readiness evaluation.
  *
  * @since 1.0.0
  */
@@ -95,14 +95,19 @@ public final class SuiteConsistencyAnalysis {
 
   @Override
   public int hashCode() {
-    return Objects.hash(averageConsistencyScore, productionReadinessRate, totalTests, productionReadyTests, grade);
+    return Objects.hash(
+        averageConsistencyScore, productionReadinessRate, totalTests, productionReadyTests, grade);
   }
 
   @Override
   public String toString() {
     return String.format(
         "SuiteConsistencyAnalysis{grade=%s, avgConsistency=%.2f, productionReady=%d/%d (%.1f%%)}",
-        grade, averageConsistencyScore, productionReadyTests, totalTests, productionReadinessRate * 100);
+        grade,
+        averageConsistencyScore,
+        productionReadyTests,
+        totalTests,
+        productionReadinessRate * 100);
   }
 
   /** Consistency grades for suite-level assessment. */
