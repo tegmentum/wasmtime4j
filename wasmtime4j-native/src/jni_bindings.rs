@@ -4645,7 +4645,7 @@ pub mod jni_wasi {
         _class: JClass,
     ) -> jlong {
         jni_utils::jni_try_ptr(env, || {
-            let (ctx, fd_manager) = WasiContext::new_with_fd_manager()?;
+            let ctx = WasiContext::new()?; let fd_manager = WasiFileDescriptorManager::new();
             let combined = Box::new((ctx, fd_manager));
             Ok(combined)
         }) as jlong
