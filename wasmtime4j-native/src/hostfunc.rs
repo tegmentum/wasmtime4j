@@ -451,7 +451,7 @@ mod tests {
                     message: "Expected 2 parameters".to_string(),
                 });
             }
-            
+
             match (&params[0], &params[1]) {
                 (WasmValue::I32(a), WasmValue::I32(b)) => {
                     Ok(vec![WasmValue::I32(a + b)])
@@ -461,21 +461,35 @@ mod tests {
                 }),
             }
         }
+
+        fn clone_callback(&self) -> Box<dyn HostFunctionCallback> {
+            Box::new(TestCallback)
+        }
     }
 
     #[test]
-    fn test_host_function_builder() {
+    fn test_host_function_creation() {
         let engine = Engine::new().expect("Failed to create engine");
         let store = Store::new(&engine).expect("Failed to create store");
-        let store_weak = Arc::downgrade(&store.inner);
-        
-        let host_func = HostFunctionBuilder::new("test_add")
-            .param(ValType::I32)
-            .param(ValType::I32)
-            .result(ValType::I32)
-            .callback(Box::new(TestCallback))
-            .build(&engine, store_weak)
-            .expect("Failed to build host function");
+
+        // Create function type
+        let func_type = wasmtime::FuncType::new(
+            &engine.inner(),
+            vec![ValType::I32, ValType::I32],
+            vec![ValType::I32]
+        );
+
+        // Create host function using Store's method
+        let callback = Box::new(TestCallback);
+        let (host_func_id, _wasmtime_func) = store.create_host_function(
+            "test_add".to_string(),
+            func_type,
+            callback
+        ).expect("Failed to create host function");
+
+        // Verify function is in registry
+        let host_func = core::get_host_function(host_func_id)
+            .expect("Failed to retrieve host function from registry");
 
         assert_eq!(host_func.name(), "test_add");
         assert_eq!(host_func.func_type().params().len(), 2);
@@ -525,37 +539,161 @@ mod tests {
     #[test]
     fn test_registry_operations() {
         let (initial_count, _) = core::get_registry_stats().unwrap();
-        
+
         let engine = Engine::new().expect("Failed to create engine");
         let store = Store::new(&engine).expect("Failed to create store");
-        let store_weak = Arc::downgrade(&store.inner);
-        
-        // Create host function - should register automatically
-        let host_func = HostFunctionBuilder::new("test")
-            .param(ValType::I32)
-            .result(ValType::I32)
-            .callback(Box::new(TestCallback))
-            .build(&engine, store_weak)
-            .expect("Failed to build host function");
-        
-        let host_func_id = host_func.id();
-        
+
+        // Create function type
+        let func_type = wasmtime::FuncType::new(
+            &engine.inner(),
+            vec![ValType::I32],
+            vec![ValType::I32]
+        );
+
+        // Create host function using Store's method
+        let callback = Box::new(TestCallback);
+        let (host_func_id, _wasmtime_func) = store.create_host_function(
+            "test".to_string(),
+            func_type,
+            callback
+        ).expect("Failed to create host function");
+
         // Check registry count increased
         let (count_after_create, _) = core::get_registry_stats().unwrap();
         assert_eq!(count_after_create, initial_count + 1);
-        
+
         // Retrieve from registry
         let retrieved = core::get_host_function(host_func_id);
         assert!(retrieved.is_ok());
-        
-        // Drop should remove from registry
-        drop(host_func);
-        
-        // Give a moment for Drop to execute
-        std::thread::sleep(std::time::Duration::from_millis(10));
-        
+
+        // Remove from registry manually
+        assert!(core::remove_host_function(host_func_id).is_ok());
+
         // Check registry count decreased
         let (final_count, _) = core::get_registry_stats().unwrap();
         assert_eq!(final_count, initial_count);
+    }
+
+    #[test]
+    fn test_host_function_callback_execution() {
+        let engine = Engine::new().expect("Failed to create engine");
+        let store = Store::new(&engine).expect("Failed to create store");
+
+        // Create function type for add function
+        let func_type = wasmtime::FuncType::new(
+            &engine.inner(),
+            vec![ValType::I32, ValType::I32],
+            vec![ValType::I32]
+        );
+
+        // Create host function
+        let callback = Box::new(TestCallback);
+        let (host_func_id, _wasmtime_func) = store.create_host_function(
+            "test_add".to_string(),
+            func_type,
+            callback
+        ).expect("Failed to create host function");
+
+        // Get the host function and test callback execution
+        let host_func = core::get_host_function(host_func_id)
+            .expect("Failed to retrieve host function");
+
+        // Test callback execution
+        let params = vec![WasmValue::I32(10), WasmValue::I32(20)];
+        let results = host_func.callback.execute(&params)
+            .expect("Failed to execute callback");
+
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0], WasmValue::I32(30));
+
+        // Clean up
+        core::remove_host_function(host_func_id).unwrap();
+    }
+
+    #[test]
+    fn test_host_function_error_handling() {
+        let engine = Engine::new().expect("Failed to create engine");
+        let store = Store::new(&engine).expect("Failed to create store");
+
+        // Create function type
+        let func_type = wasmtime::FuncType::new(
+            &engine.inner(),
+            vec![ValType::I32, ValType::I32],
+            vec![ValType::I32]
+        );
+
+        // Create host function
+        let callback = Box::new(TestCallback);
+        let (host_func_id, _wasmtime_func) = store.create_host_function(
+            "test_add".to_string(),
+            func_type,
+            callback
+        ).expect("Failed to create host function");
+
+        let host_func = core::get_host_function(host_func_id)
+            .expect("Failed to retrieve host function");
+
+        // Test with wrong parameter count
+        let params = vec![WasmValue::I32(10)]; // Only one parameter
+        let result = host_func.callback.execute(&params);
+        assert!(result.is_err());
+
+        // Test with wrong parameter types
+        let params = vec![WasmValue::F32(10.0), WasmValue::I32(20)];
+        let result = host_func.callback.execute(&params);
+        assert!(result.is_err());
+
+        // Clean up
+        core::remove_host_function(host_func_id).unwrap();
+    }
+
+    #[test]
+    fn test_multiple_host_functions() {
+        let engine = Engine::new().expect("Failed to create engine");
+        let store = Store::new(&engine).expect("Failed to create store");
+
+        // Create multiple host functions with different signatures
+        let func_type1 = wasmtime::FuncType::new(
+            &engine.inner(),
+            vec![ValType::I32, ValType::I32],
+            vec![ValType::I32]
+        );
+
+        let func_type2 = wasmtime::FuncType::new(
+            &engine.inner(),
+            vec![ValType::I32],
+            vec![ValType::I32]
+        );
+
+        // Create first host function
+        let callback1 = Box::new(TestCallback);
+        let (host_func_id1, _) = store.create_host_function(
+            "add_function".to_string(),
+            func_type1,
+            callback1
+        ).expect("Failed to create first host function");
+
+        // Create second host function
+        let callback2 = Box::new(TestCallback);
+        let (host_func_id2, _) = store.create_host_function(
+            "echo_function".to_string(),
+            func_type2,
+            callback2
+        ).expect("Failed to create second host function");
+
+        // Verify both functions exist and have different IDs
+        assert_ne!(host_func_id1, host_func_id2);
+
+        let host_func1 = core::get_host_function(host_func_id1).unwrap();
+        let host_func2 = core::get_host_function(host_func_id2).unwrap();
+
+        assert_eq!(host_func1.name(), "add_function");
+        assert_eq!(host_func2.name(), "echo_function");
+        assert_eq!(host_func1.func_type().params().len(), 2);
+        assert_eq!(host_func2.func_type().params().len(), 1);
+
+        // Clean up
+        core::remove_host_function(host_func_id1).unwrap();
+        core::remove_host_function(host_func_id2).unwrap();
     }
 }
