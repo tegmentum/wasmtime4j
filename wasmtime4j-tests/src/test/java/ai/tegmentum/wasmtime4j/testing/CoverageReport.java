@@ -27,91 +27,90 @@ import java.util.Map;
  */
 public interface CoverageReport {
 
-    /**
-     * Gets the total API coverage percentage across all modules.
-     *
-     * @return coverage percentage from 0.0 to 100.0
-     */
-    double getTotalCoveragePercentage();
+  /**
+   * Gets the total API coverage percentage across all modules.
+   *
+   * @return coverage percentage from 0.0 to 100.0
+   */
+  double getTotalCoveragePercentage();
 
-    /**
-     * Gets coverage percentage broken down by module.
-     *
-     * @return map of module names to their coverage percentages
-     */
-    Map<String, Double> getCoverageByModule();
+  /**
+   * Gets coverage percentage broken down by module.
+   *
+   * @return map of module names to their coverage percentages
+   */
+  Map<String, Double> getCoverageByModule();
 
-    /**
-     * Gets list of all implemented APIs.
-     *
-     * @return list of implemented API names
-     */
-    List<String> getImplementedApis();
+  /**
+   * Gets list of all implemented APIs.
+   *
+   * @return list of implemented API names
+   */
+  List<String> getImplementedApis();
 
-    /**
-     * Gets list of APIs that are completely missing.
-     *
-     * @return list of missing API names
-     */
-    List<String> getMissingApis();
+  /**
+   * Gets list of APIs that are completely missing.
+   *
+   * @return list of missing API names
+   */
+  List<String> getMissingApis();
 
-    /**
-     * Gets list of APIs that are partially implemented.
-     *
-     * @return list of partially implemented API names
-     */
-    List<String> getPartiallyImplementedApis();
+  /**
+   * Gets list of APIs that are partially implemented.
+   *
+   * @return list of partially implemented API names
+   */
+  List<String> getPartiallyImplementedApis();
 
-    /**
-     * Gets detailed coverage information for each API.
-     *
-     * @return map of API names to their detailed coverage information
-     */
-    Map<String, ApiCoverageDetail> getDetailedCoverage();
+  /**
+   * Gets detailed coverage information for each API.
+   *
+   * @return map of API names to their detailed coverage information
+   */
+  Map<String, ApiCoverageDetail> getDetailedCoverage();
 
-    /**
-     * Gets the total number of APIs that should be implemented.
-     *
-     * @return total API count
-     */
-    int getTotalApiCount();
+  /**
+   * Gets the total number of APIs that should be implemented.
+   *
+   * @return total API count
+   */
+  int getTotalApiCount();
 
-    /**
-     * Gets the number of implemented APIs.
-     *
-     * @return implemented API count
-     */
-    int getImplementedApiCount();
+  /**
+   * Gets the number of implemented APIs.
+   *
+   * @return implemented API count
+   */
+  int getImplementedApiCount();
 
-    /**
-     * Gets the number of missing APIs.
-     *
-     * @return missing API count
-     */
-    int getMissingApiCount();
+  /**
+   * Gets the number of missing APIs.
+   *
+   * @return missing API count
+   */
+  int getMissingApiCount();
 
-    /**
-     * Checks if coverage meets production readiness threshold (95%+).
-     *
-     * @return true if coverage is sufficient for production
-     */
-    default boolean isProductionReady() {
-        return getTotalCoveragePercentage() >= 95.0 && getMissingApis().isEmpty();
-    }
+  /**
+   * Checks if coverage meets production readiness threshold (95%+).
+   *
+   * @return true if coverage is sufficient for production
+   */
+  default boolean isProductionReady() {
+    return getTotalCoveragePercentage() >= 95.0 && getMissingApis().isEmpty();
+  }
 
-    /**
-     * Gets coverage summary as formatted string.
-     *
-     * @return human-readable coverage summary
-     */
-    default String getSummary() {
-        return String.format(
-            "API Coverage: %.2f%% (%d/%d APIs implemented, %d missing, %d partial)",
-            getTotalCoveragePercentage(),
-            getImplementedApiCount(),
-            getTotalApiCount(),
-            getMissingApiCount(),
-            getPartiallyImplementedApis().size()
-        );
-    }
+  /**
+   * Gets coverage summary as formatted string.
+   *
+   * @return human-readable coverage summary
+   */
+  default String getSummary() {
+    return String.format(
+        "API Coverage: %.2f%% (%d/%d APIs implemented, %d missing, %d partial)",
+        getTotalCoveragePercentage(),
+        getImplementedApiCount(),
+        getTotalApiCount(),
+        getMissingApiCount(),
+        getPartiallyImplementedApis().size());
+  }
 }

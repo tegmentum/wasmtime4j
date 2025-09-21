@@ -61,6 +61,7 @@ public final class PanamaConcurrencyManager implements AutoCloseable {
 
   /** Statistics. */
   private final AtomicLong totalOperations = new AtomicLong(0);
+
   private final AtomicLong timeoutOperations = new AtomicLong(0);
   private final AtomicLong failedOperations = new AtomicLong(0);
 
@@ -74,9 +75,11 @@ public final class PanamaConcurrencyManager implements AutoCloseable {
    *
    * @param maxConcurrentOperations maximum concurrent operations per resource
    * @param operationTimeoutMs operation timeout in milliseconds
-   * @throws IllegalArgumentException if maxConcurrentOperations is less than 1 or timeout is negative
+   * @throws IllegalArgumentException if maxConcurrentOperations is less than 1 or timeout is
+   *     negative
    */
-  public PanamaConcurrencyManager(final int maxConcurrentOperations, final long operationTimeoutMs) {
+  public PanamaConcurrencyManager(
+      final int maxConcurrentOperations, final long operationTimeoutMs) {
     PanamaValidation.requirePositive(maxConcurrentOperations, "maxConcurrentOperations");
     PanamaValidation.requireNonNegative(operationTimeoutMs, "operationTimeoutMs");
 
@@ -227,7 +230,8 @@ public final class PanamaConcurrencyManager implements AutoCloseable {
     if (closed.compareAndSet(false, true)) {
       LOGGER.info(
           String.format(
-              "Closing PanamaConcurrencyManager: resources=%d, totalOps=%d, timeouts=%d, failures=%d",
+              "Closing PanamaConcurrencyManager: resources=%d, totalOps=%d, timeouts=%d,"
+                  + " failures=%d",
               resourceControls.size(),
               totalOperations.get(),
               timeoutOperations.get(),

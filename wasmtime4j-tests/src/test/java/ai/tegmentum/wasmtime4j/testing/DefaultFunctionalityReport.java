@@ -27,63 +27,62 @@ import java.util.Map;
  */
 final class DefaultFunctionalityReport implements FunctionalityReport {
 
-    private final double functionalityScore;
-    private final Map<String, Double> functionalityByCategory;
-    private final List<String> validatedApis;
-    private final List<String> failedApis;
-    private final Map<String, TestResults> detailedResults;
-    private final List<FunctionalityViolation> violations;
+  private final double functionalityScore;
+  private final Map<String, Double> functionalityByCategory;
+  private final List<String> validatedApis;
+  private final List<String> failedApis;
+  private final Map<String, TestResults> detailedResults;
+  private final List<FunctionalityViolation> violations;
 
-    DefaultFunctionalityReport(
-            final double functionalityScore,
-            final Map<String, Double> functionalityByCategory,
-            final List<String> validatedApis,
-            final List<String> failedApis,
-            final Map<String, TestResults> detailedResults,
-            final List<FunctionalityViolation> violations) {
-        this.functionalityScore = functionalityScore;
-        this.functionalityByCategory = new java.util.HashMap<>(functionalityByCategory);
-        this.validatedApis = new java.util.ArrayList<>(validatedApis);
-        this.failedApis = new java.util.ArrayList<>(failedApis);
-        this.detailedResults = new java.util.HashMap<>(detailedResults);
-        this.violations = new java.util.ArrayList<>(violations);
-    }
+  DefaultFunctionalityReport(
+      final double functionalityScore,
+      final Map<String, Double> functionalityByCategory,
+      final List<String> validatedApis,
+      final List<String> failedApis,
+      final Map<String, TestResults> detailedResults,
+      final List<FunctionalityViolation> violations) {
+    this.functionalityScore = functionalityScore;
+    this.functionalityByCategory = new java.util.HashMap<>(functionalityByCategory);
+    this.validatedApis = new java.util.ArrayList<>(validatedApis);
+    this.failedApis = new java.util.ArrayList<>(failedApis);
+    this.detailedResults = new java.util.HashMap<>(detailedResults);
+    this.violations = new java.util.ArrayList<>(violations);
+  }
 
-    @Override
-    public double getFunctionalityScore() {
-        return functionalityScore;
-    }
+  @Override
+  public double getFunctionalityScore() {
+    return functionalityScore;
+  }
 
-    @Override
-    public Map<String, Double> getFunctionalityByCategory() {
-        return new java.util.HashMap<>(functionalityByCategory);
-    }
+  @Override
+  public Map<String, Double> getFunctionalityByCategory() {
+    return new java.util.HashMap<>(functionalityByCategory);
+  }
 
-    @Override
-    public List<String> getValidatedApis() {
-        return new java.util.ArrayList<>(validatedApis);
-    }
+  @Override
+  public List<String> getValidatedApis() {
+    return new java.util.ArrayList<>(validatedApis);
+  }
 
-    @Override
-    public List<String> getFailedApis() {
-        return new java.util.ArrayList<>(failedApis);
-    }
+  @Override
+  public List<String> getFailedApis() {
+    return new java.util.ArrayList<>(failedApis);
+  }
 
-    @Override
-    public Map<String, TestResults> getDetailedResults() {
-        return new java.util.HashMap<>(detailedResults);
-    }
+  @Override
+  public Map<String, TestResults> getDetailedResults() {
+    return new java.util.HashMap<>(detailedResults);
+  }
 
-    @Override
-    public List<FunctionalityViolation> getViolations() {
-        return new java.util.ArrayList<>(violations);
-    }
+  @Override
+  public List<FunctionalityViolation> getViolations() {
+    return new java.util.ArrayList<>(violations);
+  }
 
-    @Override
-    public String toString() {
-        return String.format(
-            "FunctionalityReport{score=%.2f%%, validatedApis=%d, failedApis=%d, violations=%d}",
-            functionalityScore, validatedApis.size(), failedApis.size(), violations.size()
-        );
-    }
+  @Override
+  public String toString() {
+    return String.format(
+        "FunctionalityReport{score=%.2f%%, validatedApis=%d, failedApis=%d, violations=%d}",
+        functionalityScore, validatedApis.size(), failedApis.size(), violations.size());
+  }
 }

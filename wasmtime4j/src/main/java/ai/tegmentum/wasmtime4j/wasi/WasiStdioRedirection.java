@@ -10,9 +10,7 @@ package ai.tegmentum.wasmtime4j.wasi;
  */
 public final class WasiStdioRedirection {
 
-  /**
-   * Type of stdio redirection.
-   */
+  /** Type of stdio redirection. */
   public enum Type {
     /** Inherit the stream from the parent process. */
     INHERIT,

@@ -47,9 +47,9 @@ public interface WasiFilesystem {
   /**
    * Opens a file at the specified path with the given flags and rights.
    *
-   * <p>This method opens a file for subsequent I/O operations. The flags parameter controls how
-   * the file is opened (read, write, create, truncate, etc.), while the rights parameter
-   * specifies what operations are allowed on the resulting file descriptor.
+   * <p>This method opens a file for subsequent I/O operations. The flags parameter controls how the
+   * file is opened (read, write, create, truncate, etc.), while the rights parameter specifies what
+   * operations are allowed on the resulting file descriptor.
    *
    * @param path the path to the file relative to a pre-opened directory
    * @param flags flags controlling how the file is opened
@@ -77,8 +77,8 @@ public interface WasiFilesystem {
   /**
    * Reads data from a file into the provided buffer.
    *
-   * <p>This method reads data from the file at the current position (or specified offset) into
-   * the provided ByteBuffer. The buffer's position and limit determine how much data is read.
+   * <p>This method reads data from the file at the current position (or specified offset) into the
+   * provided ByteBuffer. The buffer's position and limit determine how much data is read.
    *
    * @param handle the file handle to read from
    * @param buffer the buffer to read data into
@@ -94,8 +94,8 @@ public interface WasiFilesystem {
   /**
    * Writes data from the buffer to a file.
    *
-   * <p>This method writes data from the provided ByteBuffer to the file at the current position
-   * (or specified offset). The buffer's position and limit determine how much data is written.
+   * <p>This method writes data from the provided ByteBuffer to the file at the current position (or
+   * specified offset). The buffer's position and limit determine how much data is written.
    *
    * @param handle the file handle to write to
    * @param buffer the buffer containing data to write
@@ -111,8 +111,8 @@ public interface WasiFilesystem {
   /**
    * Opens a directory for reading its contents.
    *
-   * <p>This method opens a directory to allow reading its contents with readDirectory. The
-   * returned handle can be used to iterate through directory entries.
+   * <p>This method opens a directory to allow reading its contents with readDirectory. The returned
+   * handle can be used to iterate through directory entries.
    *
    * @param path the path to the directory relative to a pre-opened directory
    * @param rights rights that will be available on the returned directory handle
@@ -126,8 +126,8 @@ public interface WasiFilesystem {
   /**
    * Reads the contents of a directory.
    *
-   * <p>This method returns a list of directory entries (files and subdirectories) contained in
-   * the specified directory. Each entry includes name, type, and basic metadata.
+   * <p>This method returns a list of directory entries (files and subdirectories) contained in the
+   * specified directory. Each entry includes name, type, and basic metadata.
    *
    * @param handle the directory handle to read from
    * @return a list of directory entries
@@ -153,8 +153,8 @@ public interface WasiFilesystem {
   /**
    * Removes an empty directory at the specified path.
    *
-   * <p>This method removes a directory that must be empty. To remove a directory with contents,
-   * all files and subdirectories must be removed first.
+   * <p>This method removes a directory that must be empty. To remove a directory with contents, all
+   * files and subdirectories must be removed first.
    *
    * @param path the path to the directory to remove
    * @throws WasmException if directory removal fails or permission is denied
@@ -192,8 +192,8 @@ public interface WasiFilesystem {
   /**
    * Sets file or directory permissions.
    *
-   * <p>This method updates the permissions of a file or directory. The exact meaning of
-   * permissions may vary by filesystem and platform.
+   * <p>This method updates the permissions of a file or directory. The exact meaning of permissions
+   * may vary by filesystem and platform.
    *
    * @param path the path to the file or directory
    * @param permissions the new permissions to set
@@ -206,8 +206,8 @@ public interface WasiFilesystem {
   /**
    * Canonicalizes a path by resolving symbolic links and relative components.
    *
-   * <p>This method returns the canonical (absolute) path for the given path, resolving any
-   * symbolic links, "." and ".." components along the way.
+   * <p>This method returns the canonical (absolute) path for the given path, resolving any symbolic
+   * links, "." and ".." components along the way.
    *
    * @param path the path to canonicalize
    * @return the canonical absolute path
@@ -232,8 +232,8 @@ public interface WasiFilesystem {
   /**
    * Reads the target of a symbolic link.
    *
-   * <p>This method returns the target path that a symbolic link points to. The returned path may
-   * be relative or absolute depending on how the link was created.
+   * <p>This method returns the target path that a symbolic link points to. The returned path may be
+   * relative or absolute depending on how the link was created.
    *
    * @param path the path to the symbolic link
    * @return the target path the symbolic link points to
@@ -246,8 +246,8 @@ public interface WasiFilesystem {
   /**
    * Renames or moves a file or directory from oldPath to newPath.
    *
-   * <p>This method moves a file or directory from one location to another, potentially renaming
-   * it in the process. The operation is atomic if both paths are on the same filesystem.
+   * <p>This method moves a file or directory from one location to another, potentially renaming it
+   * in the process. The operation is atomic if both paths are on the same filesystem.
    *
    * @param oldPath the current path of the file or directory
    * @param newPath the new path for the file or directory

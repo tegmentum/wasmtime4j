@@ -3,8 +3,8 @@ package ai.tegmentum.wasmtime4j.wasi;
 /**
  * Represents a process identifier in the WASI environment.
  *
- * <p>A WasiProcessId uniquely identifies a process within the WASI context. It can be used to
- * wait for process completion, send signals, or perform other process management operations.
+ * <p>A WasiProcessId uniquely identifies a process within the WASI context. It can be used to wait
+ * for process completion, send signals, or perform other process management operations.
  *
  * <p>Process IDs are opaque identifiers that should not be interpreted as having any particular
  * format or meaning beyond identity comparison.
@@ -39,8 +39,8 @@ public final class WasiProcessId {
   /**
    * Gets the numeric process identifier.
    *
-   * <p>This is the primary identifier for the process. The exact meaning and format depend on
-   * the host system and WASI implementation.
+   * <p>This is the primary identifier for the process. The exact meaning and format depend on the
+   * host system and WASI implementation.
    *
    * @return the numeric process ID
    */
@@ -51,8 +51,8 @@ public final class WasiProcessId {
   /**
    * Gets the process name if available.
    *
-   * <p>This is an optional human-readable name for the process, which might be the command name
-   * or executable path. May be null if not available.
+   * <p>This is an optional human-readable name for the process, which might be the command name or
+   * executable path. May be null if not available.
    *
    * @return the process name, or null if not available
    */
@@ -63,8 +63,8 @@ public final class WasiProcessId {
   /**
    * Checks if this process ID represents a valid, active process.
    *
-   * <p>This method can be used to determine if the process is still running or has been
-   * terminated. The exact semantics depend on the WASI implementation.
+   * <p>This method can be used to determine if the process is still running or has been terminated.
+   * The exact semantics depend on the WASI implementation.
    *
    * @return true if the process is valid and active, false otherwise
    */

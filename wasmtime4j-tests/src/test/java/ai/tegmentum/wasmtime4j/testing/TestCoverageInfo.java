@@ -21,91 +21,90 @@ import java.util.List;
 /**
  * Test coverage information for an API.
  *
- * <p>This interface provides detailed information about test coverage for a specific API,
- * including unit tests, integration tests, and functional validation.
+ * <p>This interface provides detailed information about test coverage for a specific API, including
+ * unit tests, integration tests, and functional validation.
  */
 public interface TestCoverageInfo {
 
-    /**
-     * Gets the test coverage percentage for this API.
-     *
-     * @return coverage percentage from 0.0 to 100.0
-     */
-    double getCoveragePercentage();
+  /**
+   * Gets the test coverage percentage for this API.
+   *
+   * @return coverage percentage from 0.0 to 100.0
+   */
+  double getCoveragePercentage();
 
-    /**
-     * Gets the number of unit tests covering this API.
-     *
-     * @return unit test count
-     */
-    int getUnitTestCount();
+  /**
+   * Gets the number of unit tests covering this API.
+   *
+   * @return unit test count
+   */
+  int getUnitTestCount();
 
-    /**
-     * Gets the number of integration tests covering this API.
-     *
-     * @return integration test count
-     */
-    int getIntegrationTestCount();
+  /**
+   * Gets the number of integration tests covering this API.
+   *
+   * @return integration test count
+   */
+  int getIntegrationTestCount();
 
-    /**
-     * Gets the number of functional tests covering this API.
-     *
-     * @return functional test count
-     */
-    int getFunctionalTestCount();
+  /**
+   * Gets the number of functional tests covering this API.
+   *
+   * @return functional test count
+   */
+  int getFunctionalTestCount();
 
-    /**
-     * Gets list of test methods that cover this API.
-     *
-     * @return list of test method names
-     */
-    List<String> getTestMethods();
+  /**
+   * Gets list of test methods that cover this API.
+   *
+   * @return list of test method names
+   */
+  List<String> getTestMethods();
 
-    /**
-     * Gets list of uncovered scenarios for this API.
-     *
-     * @return list of uncovered scenario descriptions
-     */
-    List<String> getUncoveredScenarios();
+  /**
+   * Gets list of uncovered scenarios for this API.
+   *
+   * @return list of uncovered scenario descriptions
+   */
+  List<String> getUncoveredScenarios();
 
-    /**
-     * Checks if this API has adequate test coverage.
-     *
-     * @return true if test coverage meets quality standards
-     */
-    boolean hasAdequateCoverage();
+  /**
+   * Checks if this API has adequate test coverage.
+   *
+   * @return true if test coverage meets quality standards
+   */
+  boolean hasAdequateCoverage();
 
-    /**
-     * Gets the total number of test cases for this API.
-     *
-     * @return total test case count
-     */
-    default int getTotalTestCount() {
-        return getUnitTestCount() + getIntegrationTestCount() + getFunctionalTestCount();
-    }
+  /**
+   * Gets the total number of test cases for this API.
+   *
+   * @return total test case count
+   */
+  default int getTotalTestCount() {
+    return getUnitTestCount() + getIntegrationTestCount() + getFunctionalTestCount();
+  }
 
-    /**
-     * Checks if this API has any tests.
-     *
-     * @return true if at least one test exists
-     */
-    default boolean hasTests() {
-        return getTotalTestCount() > 0;
-    }
+  /**
+   * Checks if this API has any tests.
+   *
+   * @return true if at least one test exists
+   */
+  default boolean hasTests() {
+    return getTotalTestCount() > 0;
+  }
 
-    /**
-     * Gets test coverage summary as formatted string.
-     *
-     * @return human-readable test coverage summary
-     */
-    default String getSummary() {
-        return String.format(
-            "Test Coverage: %.2f%% (%d tests: %d unit, %d integration, %d functional)",
-            getCoveragePercentage(),
-            getTotalTestCount(),
-            getUnitTestCount(),
-            getIntegrationTestCount(),
-            getFunctionalTestCount()
-        );
-    }
+  /**
+   * Gets test coverage summary as formatted string.
+   *
+   * @return human-readable test coverage summary
+   */
+  default String getSummary() {
+    return String.format(
+        "Test Coverage: %.2f%% (%d tests: %d unit, %d integration, %d functional)",
+        getCoveragePercentage(),
+        getTotalTestCount(),
+        getUnitTestCount(),
+        getIntegrationTestCount(),
+        getFunctionalTestCount());
+  }
 }

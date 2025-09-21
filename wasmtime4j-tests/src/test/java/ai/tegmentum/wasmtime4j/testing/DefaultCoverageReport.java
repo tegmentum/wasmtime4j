@@ -27,78 +27,80 @@ import java.util.Map;
  */
 final class DefaultCoverageReport implements CoverageReport {
 
-    private final double totalCoveragePercentage;
-    private final Map<String, Double> coverageByModule;
-    private final List<String> implementedApis;
-    private final List<String> missingApis;
-    private final List<String> partiallyImplementedApis;
-    private final Map<String, ApiCoverageDetail> detailedCoverage;
+  private final double totalCoveragePercentage;
+  private final Map<String, Double> coverageByModule;
+  private final List<String> implementedApis;
+  private final List<String> missingApis;
+  private final List<String> partiallyImplementedApis;
+  private final Map<String, ApiCoverageDetail> detailedCoverage;
 
-    DefaultCoverageReport(
-            final double totalCoveragePercentage,
-            final Map<String, Double> coverageByModule,
-            final List<String> implementedApis,
-            final List<String> missingApis,
-            final List<String> partiallyImplementedApis,
-            final Map<String, ApiCoverageDetail> detailedCoverage) {
-        this.totalCoveragePercentage = totalCoveragePercentage;
-        this.coverageByModule = new java.util.HashMap<>(coverageByModule);
-        this.implementedApis = new java.util.ArrayList<>(implementedApis);
-        this.missingApis = new java.util.ArrayList<>(missingApis);
-        this.partiallyImplementedApis = new java.util.ArrayList<>(partiallyImplementedApis);
-        this.detailedCoverage = new java.util.HashMap<>(detailedCoverage);
-    }
+  DefaultCoverageReport(
+      final double totalCoveragePercentage,
+      final Map<String, Double> coverageByModule,
+      final List<String> implementedApis,
+      final List<String> missingApis,
+      final List<String> partiallyImplementedApis,
+      final Map<String, ApiCoverageDetail> detailedCoverage) {
+    this.totalCoveragePercentage = totalCoveragePercentage;
+    this.coverageByModule = new java.util.HashMap<>(coverageByModule);
+    this.implementedApis = new java.util.ArrayList<>(implementedApis);
+    this.missingApis = new java.util.ArrayList<>(missingApis);
+    this.partiallyImplementedApis = new java.util.ArrayList<>(partiallyImplementedApis);
+    this.detailedCoverage = new java.util.HashMap<>(detailedCoverage);
+  }
 
-    @Override
-    public double getTotalCoveragePercentage() {
-        return totalCoveragePercentage;
-    }
+  @Override
+  public double getTotalCoveragePercentage() {
+    return totalCoveragePercentage;
+  }
 
-    @Override
-    public Map<String, Double> getCoverageByModule() {
-        return new java.util.HashMap<>(coverageByModule);
-    }
+  @Override
+  public Map<String, Double> getCoverageByModule() {
+    return new java.util.HashMap<>(coverageByModule);
+  }
 
-    @Override
-    public List<String> getImplementedApis() {
-        return new java.util.ArrayList<>(implementedApis);
-    }
+  @Override
+  public List<String> getImplementedApis() {
+    return new java.util.ArrayList<>(implementedApis);
+  }
 
-    @Override
-    public List<String> getMissingApis() {
-        return new java.util.ArrayList<>(missingApis);
-    }
+  @Override
+  public List<String> getMissingApis() {
+    return new java.util.ArrayList<>(missingApis);
+  }
 
-    @Override
-    public List<String> getPartiallyImplementedApis() {
-        return new java.util.ArrayList<>(partiallyImplementedApis);
-    }
+  @Override
+  public List<String> getPartiallyImplementedApis() {
+    return new java.util.ArrayList<>(partiallyImplementedApis);
+  }
 
-    @Override
-    public Map<String, ApiCoverageDetail> getDetailedCoverage() {
-        return new java.util.HashMap<>(detailedCoverage);
-    }
+  @Override
+  public Map<String, ApiCoverageDetail> getDetailedCoverage() {
+    return new java.util.HashMap<>(detailedCoverage);
+  }
 
-    @Override
-    public int getTotalApiCount() {
-        return implementedApis.size() + missingApis.size() + partiallyImplementedApis.size();
-    }
+  @Override
+  public int getTotalApiCount() {
+    return implementedApis.size() + missingApis.size() + partiallyImplementedApis.size();
+  }
 
-    @Override
-    public int getImplementedApiCount() {
-        return implementedApis.size();
-    }
+  @Override
+  public int getImplementedApiCount() {
+    return implementedApis.size();
+  }
 
-    @Override
-    public int getMissingApiCount() {
-        return missingApis.size();
-    }
+  @Override
+  public int getMissingApiCount() {
+    return missingApis.size();
+  }
 
-    @Override
-    public String toString() {
-        return String.format(
-            "CoverageReport{totalCoverage=%.2f%%, implementedApis=%d, missingApis=%d, partialApis=%d}",
-            totalCoveragePercentage, implementedApis.size(), missingApis.size(), partiallyImplementedApis.size()
-        );
-    }
+  @Override
+  public String toString() {
+    return String.format(
+        "CoverageReport{totalCoverage=%.2f%%, implementedApis=%d, missingApis=%d, partialApis=%d}",
+        totalCoveragePercentage,
+        implementedApis.size(),
+        missingApis.size(),
+        partiallyImplementedApis.size());
+  }
 }

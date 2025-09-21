@@ -19,52 +19,51 @@ package ai.tegmentum.wasmtime4j.testing;
 /**
  * Default implementation of TestCoverageInfo.
  *
- * <p>Provides information about test coverage for a specific API including
- * unit tests, integration tests, and code coverage metrics.
+ * <p>Provides information about test coverage for a specific API including unit tests, integration
+ * tests, and code coverage metrics.
  */
 final class DefaultTestCoverageInfo implements TestCoverageInfo {
 
-    private final boolean hasUnitTests;
-    private final boolean hasIntegrationTests;
-    private final double codeCoverage;
-    private final int testCount;
+  private final boolean hasUnitTests;
+  private final boolean hasIntegrationTests;
+  private final double codeCoverage;
+  private final int testCount;
 
-    DefaultTestCoverageInfo(
-            final boolean hasUnitTests,
-            final boolean hasIntegrationTests,
-            final double codeCoverage,
-            final int testCount) {
-        this.hasUnitTests = hasUnitTests;
-        this.hasIntegrationTests = hasIntegrationTests;
-        this.codeCoverage = codeCoverage;
-        this.testCount = testCount;
-    }
+  DefaultTestCoverageInfo(
+      final boolean hasUnitTests,
+      final boolean hasIntegrationTests,
+      final double codeCoverage,
+      final int testCount) {
+    this.hasUnitTests = hasUnitTests;
+    this.hasIntegrationTests = hasIntegrationTests;
+    this.codeCoverage = codeCoverage;
+    this.testCount = testCount;
+  }
 
-    @Override
-    public boolean hasUnitTests() {
-        return hasUnitTests;
-    }
+  @Override
+  public boolean hasUnitTests() {
+    return hasUnitTests;
+  }
 
-    @Override
-    public boolean hasIntegrationTests() {
-        return hasIntegrationTests;
-    }
+  @Override
+  public boolean hasIntegrationTests() {
+    return hasIntegrationTests;
+  }
 
-    @Override
-    public double getCodeCoverage() {
-        return codeCoverage;
-    }
+  @Override
+  public double getCodeCoverage() {
+    return codeCoverage;
+  }
 
-    @Override
-    public int getTestCount() {
-        return testCount;
-    }
+  @Override
+  public int getTestCount() {
+    return testCount;
+  }
 
-    @Override
-    public String toString() {
-        return String.format(
-            "TestCoverageInfo{unitTests=%s, integrationTests=%s, codeCoverage=%.2f%%, testCount=%d}",
-            hasUnitTests, hasIntegrationTests, codeCoverage, testCount
-        );
-    }
+  @Override
+  public String toString() {
+    return String.format(
+        "TestCoverageInfo{unitTests=%s, integrationTests=%s, codeCoverage=%.2f%%, testCount=%d}",
+        hasUnitTests, hasIntegrationTests, codeCoverage, testCount);
+  }
 }

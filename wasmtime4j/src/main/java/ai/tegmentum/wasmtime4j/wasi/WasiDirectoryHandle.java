@@ -6,8 +6,8 @@ import java.io.Closeable;
  * Handle representing an open directory in the WASI filesystem.
  *
  * <p>A WasiDirectoryHandle represents an open directory descriptor that can be used for directory
- * operations such as reading directory contents. Handles are obtained by calling
- * {@link WasiFilesystem#openDirectory} and should be closed when no longer needed.
+ * operations such as reading directory contents. Handles are obtained by calling {@link
+ * WasiFilesystem#openDirectory} and should be closed when no longer needed.
  *
  * <p>Directory handles are not thread-safe and should not be shared between threads without
  * external synchronization.
@@ -19,8 +19,8 @@ public interface WasiDirectoryHandle extends Closeable {
   /**
    * Gets the unique identifier for this directory handle.
    *
-   * <p>The file descriptor is a unique integer that identifies this open directory within the
-   * WASI context. It can be used for debugging and logging purposes.
+   * <p>The file descriptor is a unique integer that identifies this open directory within the WASI
+   * context. It can be used for debugging and logging purposes.
    *
    * @return the file descriptor number
    */
@@ -68,8 +68,8 @@ public interface WasiDirectoryHandle extends Closeable {
   /**
    * Resets the directory reading position to the beginning.
    *
-   * <p>This method resets the internal position so that the next call to
-   * {@link WasiFilesystem#readDirectory} will start from the beginning of the directory.
+   * <p>This method resets the internal position so that the next call to {@link
+   * WasiFilesystem#readDirectory} will start from the beginning of the directory.
    *
    * @throws IllegalStateException if the handle is closed
    */

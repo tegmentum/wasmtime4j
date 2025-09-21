@@ -49,8 +49,8 @@ public interface WasiFileHandle extends Closeable {
   /**
    * Sets the current file position for read/write operations.
    *
-   * <p>This method changes the file position where the next read or write operation will occur.
-   * The position must be non-negative and within the bounds of the file.
+   * <p>This method changes the file position where the next read or write operation will occur. The
+   * position must be non-negative and within the bounds of the file.
    *
    * @param position the new file position in bytes from the start of the file
    * @throws IllegalArgumentException if position is negative
@@ -100,8 +100,8 @@ public interface WasiFileHandle extends Closeable {
   /**
    * Checks if this file handle supports seeking (changing position).
    *
-   * <p>Seek capability depends on the rights that were specified when the file was opened and
-   * the underlying file type (regular files typically support seeking, pipes do not).
+   * <p>Seek capability depends on the rights that were specified when the file was opened and the
+   * underlying file type (regular files typically support seeking, pipes do not).
    *
    * @return true if seeking is supported, false otherwise
    */
@@ -110,8 +110,8 @@ public interface WasiFileHandle extends Closeable {
   /**
    * Flushes any buffered data to the underlying storage.
    *
-   * <p>This method ensures that any data written to the file is actually stored on the
-   * underlying storage device. This is important for data durability and consistency.
+   * <p>This method ensures that any data written to the file is actually stored on the underlying
+   * storage device. This is important for data durability and consistency.
    *
    * @throws IllegalStateException if the handle is closed or does not support writing
    */
@@ -120,8 +120,8 @@ public interface WasiFileHandle extends Closeable {
   /**
    * Truncates the file to the specified size.
    *
-   * <p>If the file is larger than the specified size, the excess data is discarded. If the file
-   * is smaller, it is extended with zero bytes (behavior may be filesystem-dependent).
+   * <p>If the file is larger than the specified size, the excess data is discarded. If the file is
+   * smaller, it is extended with zero bytes (behavior may be filesystem-dependent).
    *
    * @param size the new size for the file in bytes
    * @throws IllegalArgumentException if size is negative

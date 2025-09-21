@@ -1,5 +1,7 @@
 package ai.tegmentum.wasmtime4j.concurrency;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import ai.tegmentum.wasmtime4j.utils.BaseIntegrationTest;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
@@ -14,13 +16,11 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 /**
  * Performance and stress tests for WebAssembly concurrency features.
  *
- * <p>This test suite validates the performance characteristics and scalability
- * of concurrent WebAssembly operations under high load conditions.
+ * <p>This test suite validates the performance characteristics and scalability of concurrent
+ * WebAssembly operations under high load conditions.
  */
 @DisplayName("Concurrency Performance Tests")
 @Timeout(60) // Global timeout for all tests
@@ -52,8 +52,8 @@ public final class ConcurrencyPerformanceIT extends BaseIntegrationTest {
   @DisplayName("High concurrent load should not cause resource exhaustion")
   void testHighConcurrentLoad() throws Exception {
     // Skip test until implementation is available
-    org.junit.jupiter.api.Assumptions.assumeTrue(false,
-        "Concurrency implementation not yet available");
+    org.junit.jupiter.api.Assumptions.assumeTrue(
+        false, "Concurrency implementation not yet available");
 
     final int threadCount = 50;
     final int operationsPerThread = 20;
@@ -65,29 +65,30 @@ public final class ConcurrencyPerformanceIT extends BaseIntegrationTest {
 
     // Create many concurrent operations
     for (int i = 0; i < threadCount; i++) {
-      testExecutor.submit(() -> {
-        try {
-          startLatch.await();
-          long threadStartTime = System.nanoTime();
-
-          for (int j = 0; j < operationsPerThread; j++) {
+      testExecutor.submit(
+          () -> {
             try {
-              // Simulate concurrent WebAssembly operations
-              performConcurrentOperation();
-              successCount.incrementAndGet();
-            } catch (Exception e) {
-              errorCount.incrementAndGet();
-            }
-          }
+              startLatch.await();
+              long threadStartTime = System.nanoTime();
 
-          long threadEndTime = System.nanoTime();
-          totalExecutionTime.addAndGet(threadEndTime - threadStartTime);
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-        } finally {
-          completeLatch.countDown();
-        }
-      });
+              for (int j = 0; j < operationsPerThread; j++) {
+                try {
+                  // Simulate concurrent WebAssembly operations
+                  performConcurrentOperation();
+                  successCount.incrementAndGet();
+                } catch (Exception e) {
+                  errorCount.incrementAndGet();
+                }
+              }
+
+              long threadEndTime = System.nanoTime();
+              totalExecutionTime.addAndGet(threadEndTime - threadStartTime);
+            } catch (InterruptedException e) {
+              Thread.currentThread().interrupt();
+            } finally {
+              completeLatch.countDown();
+            }
+          });
     }
 
     // Start all threads simultaneously
@@ -120,8 +121,8 @@ public final class ConcurrencyPerformanceIT extends BaseIntegrationTest {
   @DisplayName("Concurrent memory access should scale linearly")
   void testConcurrentMemoryAccessScaling() throws Exception {
     // Skip test until implementation is available
-    org.junit.jupiter.api.Assumptions.assumeTrue(false,
-        "Concurrency implementation not yet available");
+    org.junit.jupiter.api.Assumptions.assumeTrue(
+        false, "Concurrency implementation not yet available");
 
     int[] threadCounts = {1, 2, 4, 8, 16};
     double[] throughputs = new double[threadCounts.length];
@@ -133,12 +134,15 @@ public final class ConcurrencyPerformanceIT extends BaseIntegrationTest {
       // Run concurrent memory operations
       CompletableFuture<Void>[] futures = new CompletableFuture[threadCount];
       for (int j = 0; j < threadCount; j++) {
-        futures[j] = CompletableFuture.runAsync(() -> {
-          for (int k = 0; k < 1000; k++) {
-            // Simulate memory operations
-            performMemoryOperation();
-          }
-        }, testExecutor);
+        futures[j] =
+            CompletableFuture.runAsync(
+                () -> {
+                  for (int k = 0; k < 1000; k++) {
+                    // Simulate memory operations
+                    performMemoryOperation();
+                  }
+                },
+                testExecutor);
       }
 
       CompletableFuture.allOf(futures).get(30, TimeUnit.SECONDS);
@@ -153,9 +157,11 @@ public final class ConcurrencyPerformanceIT extends BaseIntegrationTest {
     // Verify scaling characteristics
     // With good concurrency, throughput should increase with thread count
     for (int i = 1; i < throughputs.length; i++) {
-      assertTrue(throughputs[i] >= throughputs[i-1] * 0.8,
-          String.format("Throughput should scale reasonably: %d threads (%.2f) vs %d threads (%.2f)",
-              threadCounts[i-1], throughputs[i-1], threadCounts[i], throughputs[i]));
+      assertTrue(
+          throughputs[i] >= throughputs[i - 1] * 0.8,
+          String.format(
+              "Throughput should scale reasonably: %d threads (%.2f) vs %d threads (%.2f)",
+              threadCounts[i - 1], throughputs[i - 1], threadCounts[i], throughputs[i]));
     }
   }
 
@@ -163,8 +169,8 @@ public final class ConcurrencyPerformanceIT extends BaseIntegrationTest {
   @DisplayName("Lock contention should be minimized under concurrent load")
   void testLockContentionMinimization() throws Exception {
     // Skip test until implementation is available
-    org.junit.jupiter.api.Assumptions.assumeTrue(false,
-        "Concurrency implementation not yet available");
+    org.junit.jupiter.api.Assumptions.assumeTrue(
+        false, "Concurrency implementation not yet available");
 
     final int readerThreads = 10;
     final int writerThreads = 2;
@@ -176,52 +182,54 @@ public final class ConcurrencyPerformanceIT extends BaseIntegrationTest {
 
     // Start reader threads
     for (int i = 0; i < readerThreads; i++) {
-      testExecutor.submit(() -> {
-        try {
-          startLatch.await();
-          long threadStartTime = System.nanoTime();
+      testExecutor.submit(
+          () -> {
+            try {
+              startLatch.await();
+              long threadStartTime = System.nanoTime();
 
-          for (int j = 0; j < operationsPerThread; j++) {
-            performReadOperation();
-          }
+              for (int j = 0; j < operationsPerThread; j++) {
+                performReadOperation();
+              }
 
-          long threadEndTime = System.nanoTime();
-          readTime.addAndGet(threadEndTime - threadStartTime);
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-        } finally {
-          completeLatch.countDown();
-        }
-      });
+              long threadEndTime = System.nanoTime();
+              readTime.addAndGet(threadEndTime - threadStartTime);
+            } catch (InterruptedException e) {
+              Thread.currentThread().interrupt();
+            } finally {
+              completeLatch.countDown();
+            }
+          });
     }
 
     // Start writer threads
     for (int i = 0; i < writerThreads; i++) {
-      testExecutor.submit(() -> {
-        try {
-          startLatch.await();
-          long threadStartTime = System.nanoTime();
+      testExecutor.submit(
+          () -> {
+            try {
+              startLatch.await();
+              long threadStartTime = System.nanoTime();
 
-          for (int j = 0; j < operationsPerThread; j++) {
-            performWriteOperation();
-          }
+              for (int j = 0; j < operationsPerThread; j++) {
+                performWriteOperation();
+              }
 
-          long threadEndTime = System.nanoTime();
-          writeTime.addAndGet(threadEndTime - threadStartTime);
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-        } finally {
-          completeLatch.countDown();
-        }
-      });
+              long threadEndTime = System.nanoTime();
+              writeTime.addAndGet(threadEndTime - threadStartTime);
+            } catch (InterruptedException e) {
+              Thread.currentThread().interrupt();
+            } finally {
+              completeLatch.countDown();
+            }
+          });
     }
 
     // Start all operations
     startLatch.countDown();
     assertTrue(completeLatch.await(30, TimeUnit.SECONDS), "All operations should complete");
 
-    double avgReadTime = readTime.get() / (double)(readerThreads * operationsPerThread);
-    double avgWriteTime = writeTime.get() / (double)(writerThreads * operationsPerThread);
+    double avgReadTime = readTime.get() / (double) (readerThreads * operationsPerThread);
+    double avgWriteTime = writeTime.get() / (double) (writerThreads * operationsPerThread);
 
     System.out.printf("Average read time: %.2f ns%n", avgReadTime);
     System.out.printf("Average write time: %.2f ns%n", avgWriteTime);
@@ -235,8 +243,8 @@ public final class ConcurrencyPerformanceIT extends BaseIntegrationTest {
   @DisplayName("Memory usage should remain stable under concurrent load")
   void testMemoryStabilityUnderLoad() throws Exception {
     // Skip test until implementation is available
-    org.junit.jupiter.api.Assumptions.assumeTrue(false,
-        "Concurrency implementation not yet available");
+    org.junit.jupiter.api.Assumptions.assumeTrue(
+        false, "Concurrency implementation not yet available");
 
     Runtime runtime = Runtime.getRuntime();
     long initialMemory = runtime.totalMemory() - runtime.freeMemory();
@@ -250,15 +258,16 @@ public final class ConcurrencyPerformanceIT extends BaseIntegrationTest {
       CountDownLatch roundLatch = new CountDownLatch(threadsPerRound);
 
       for (int t = 0; t < threadsPerRound; t++) {
-        testExecutor.submit(() -> {
-          try {
-            for (int op = 0; op < operationsPerThread; op++) {
-              performMemoryIntensiveOperation();
-            }
-          } finally {
-            roundLatch.countDown();
-          }
-        });
+        testExecutor.submit(
+            () -> {
+              try {
+                for (int op = 0; op < operationsPerThread; op++) {
+                  performMemoryIntensiveOperation();
+                }
+              } finally {
+                roundLatch.countDown();
+              }
+            });
       }
 
       assertTrue(roundLatch.await(15, TimeUnit.SECONDS), "Round should complete");
@@ -270,11 +279,12 @@ public final class ConcurrencyPerformanceIT extends BaseIntegrationTest {
       long currentMemory = runtime.totalMemory() - runtime.freeMemory();
       long memoryIncrease = currentMemory - initialMemory;
 
-      System.out.printf("Round %d - Memory increase: %.2f MB%n",
-          round + 1, memoryIncrease / (1024.0 * 1024.0));
+      System.out.printf(
+          "Round %d - Memory increase: %.2f MB%n", round + 1, memoryIncrease / (1024.0 * 1024.0));
 
       // Memory should not grow excessively (threshold is a placeholder)
-      assertTrue(memoryIncrease < 100 * 1024 * 1024,
+      assertTrue(
+          memoryIncrease < 100 * 1024 * 1024,
           "Memory usage should not increase by more than 100MB");
     }
   }

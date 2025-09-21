@@ -3,9 +3,9 @@ package ai.tegmentum.wasmtime4j.wasi;
 /**
  * File and directory permissions for WASI filesystem operations.
  *
- * <p>This class represents Unix-style file permissions using a standard rwx (read, write,
- * execute) model for owner, group, and others. The permissions are stored as a standard Unix
- * permission mode integer.
+ * <p>This class represents Unix-style file permissions using a standard rwx (read, write, execute)
+ * model for owner, group, and others. The permissions are stored as a standard Unix permission mode
+ * integer.
  *
  * <p>Example usage:
  *
@@ -254,9 +254,7 @@ public final class WasiPermissions {
     return String.format("WasiPermissions{mode=%s (%s)}", getOctal(), getSymbolic());
   }
 
-  /**
-   * Builder for creating WasiPermissions instances.
-   */
+  /** Builder for creating WasiPermissions instances. */
   public static final class Builder {
     private int mode = 0;
 

@@ -23,8 +23,6 @@ import java.lang.management.OperatingSystemMXBean;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
@@ -39,10 +37,11 @@ import java.util.logging.Logger;
  * Advanced platform feature detection for cross-platform optimization.
  *
  * <p>This class provides comprehensive detection of platform-specific features, capabilities, and
- * performance characteristics. It extends the basic platform detection with detailed feature analysis
- * for optimal WebAssembly runtime configuration.
+ * performance characteristics. It extends the basic platform detection with detailed feature
+ * analysis for optimal WebAssembly runtime configuration.
  *
  * <p>Features detected include:
+ *
  * <ul>
  *   <li>CPU architecture features (SIMD, vector extensions, cache sizes)
  *   <li>Memory management capabilities (huge pages, memory compression)
@@ -51,7 +50,8 @@ import java.util.logging.Logger;
  *   <li>Performance characteristics (core count, memory bandwidth)
  * </ul>
  *
- * <p>This information enables platform-specific optimizations in WebAssembly compilation and execution.
+ * <p>This information enables platform-specific optimizations in WebAssembly compilation and
+ * execution.
  */
 public final class PlatformFeatureDetector {
 
@@ -446,7 +446,8 @@ public final class PlatformFeatureDetector {
     @Override
     public String toString() {
       return String.format(
-          "PlatformFeatures{platform=%s, cores=%d/%d, memory=%dMB/%dMB, features=[CPU:%d,MEM:%d,OS:%d,JVM:%d]}",
+          "PlatformFeatures{platform=%s, cores=%d/%d, memory=%dMB/%dMB,"
+              + " features=[CPU:%d,MEM:%d,OS:%d,JVM:%d]}",
           platformInfo.getPlatformId(),
           physicalCores,
           logicalCores,
@@ -561,7 +562,8 @@ public final class PlatformFeatureDetector {
    * @param logicalCores the logical core count
    * @return the physical core count
    */
-  private static int detectPhysicalCores(final OperatingSystemMXBean osMxBean, final int logicalCores) {
+  private static int detectPhysicalCores(
+      final OperatingSystemMXBean osMxBean, final int logicalCores) {
     try {
       // Try to use reflection to get more detailed CPU info
       if (osMxBean.getClass().getName().contains("UnixOperatingSystem")) {
@@ -587,11 +589,12 @@ public final class PlatformFeatureDetector {
       final Path cpuinfo = Paths.get("/proc/cpuinfo");
       if (Files.exists(cpuinfo)) {
         final List<String> lines = Files.readAllLines(cpuinfo);
-        final long physicalIds = lines.stream()
-            .filter(line -> line.startsWith("physical id"))
-            .map(line -> line.substring(line.indexOf(':') + 1).trim())
-            .distinct()
-            .count();
+        final long physicalIds =
+            lines.stream()
+                .filter(line -> line.startsWith("physical id"))
+                .map(line -> line.substring(line.indexOf(':') + 1).trim())
+                .distinct()
+                .count();
         return physicalIds > 0 ? Optional.of((int) physicalIds) : Optional.empty();
       }
     } catch (final IOException e) {
@@ -609,7 +612,8 @@ public final class PlatformFeatureDetector {
   private static long getTotalMemory(final OperatingSystemMXBean osMxBean) {
     try {
       // Try to get total physical memory size via reflection
-      final java.lang.reflect.Method method = osMxBean.getClass().getMethod("getTotalPhysicalMemorySize");
+      final java.lang.reflect.Method method =
+          osMxBean.getClass().getMethod("getTotalPhysicalMemorySize");
       method.setAccessible(true);
       return (Long) method.invoke(osMxBean);
     } catch (final Exception e) {
@@ -625,7 +629,8 @@ public final class PlatformFeatureDetector {
    * @param platformInfo the platform information
    * @return set of detected CPU features
    */
-  private static Set<CpuFeature> detectCpuFeatures(final PlatformDetector.PlatformInfo platformInfo) {
+  private static Set<CpuFeature> detectCpuFeatures(
+      final PlatformDetector.PlatformInfo platformInfo) {
     final Set<CpuFeature> features = EnumSet.noneOf(CpuFeature.class);
 
     if (platformInfo.getArchitecture() == PlatformDetector.Architecture.X86_64) {
@@ -683,7 +688,8 @@ public final class PlatformFeatureDetector {
    * @param platformInfo the platform information
    * @return set of detected memory features
    */
-  private static Set<MemoryFeature> detectMemoryFeatures(final PlatformDetector.PlatformInfo platformInfo) {
+  private static Set<MemoryFeature> detectMemoryFeatures(
+      final PlatformDetector.PlatformInfo platformInfo) {
     final Set<MemoryFeature> features = EnumSet.noneOf(MemoryFeature.class);
 
     if (platformInfo.getOperatingSystem() == PlatformDetector.OperatingSystem.LINUX) {
@@ -757,8 +763,9 @@ public final class PlatformFeatureDetector {
   private static boolean isNumaAvailable() {
     try {
       final Path numaNodes = Paths.get("/sys/devices/system/node");
-      return Files.exists(numaNodes) && Files.list(numaNodes)
-          .anyMatch(path -> path.getFileName().toString().startsWith("node"));
+      return Files.exists(numaNodes)
+          && Files.list(numaNodes)
+              .anyMatch(path -> path.getFileName().toString().startsWith("node"));
     } catch (final IOException e) {
       LOGGER.log(Level.FINE, "Could not check NUMA availability", e);
     }
@@ -999,7 +1006,8 @@ public final class PlatformFeatureDetector {
    * @param platformInfo the platform information
    * @return optional L1 cache size in KB
    */
-  private static Optional<Integer> detectL1CacheSize(final PlatformDetector.PlatformInfo platformInfo) {
+  private static Optional<Integer> detectL1CacheSize(
+      final PlatformDetector.PlatformInfo platformInfo) {
     // This would typically require native code or reading from /proc/cpuinfo
     // Providing typical values for common architectures
     if (platformInfo.getArchitecture() == PlatformDetector.Architecture.X86_64) {
@@ -1016,7 +1024,8 @@ public final class PlatformFeatureDetector {
    * @param platformInfo the platform information
    * @return optional L2 cache size in KB
    */
-  private static Optional<Integer> detectL2CacheSize(final PlatformDetector.PlatformInfo platformInfo) {
+  private static Optional<Integer> detectL2CacheSize(
+      final PlatformDetector.PlatformInfo platformInfo) {
     if (platformInfo.getArchitecture() == PlatformDetector.Architecture.X86_64) {
       return Optional.of(256); // Typical L2 cache size for modern x86_64
     } else if (platformInfo.getArchitecture() == PlatformDetector.Architecture.AARCH64) {
@@ -1031,7 +1040,8 @@ public final class PlatformFeatureDetector {
    * @param platformInfo the platform information
    * @return optional L3 cache size in KB
    */
-  private static Optional<Integer> detectL3CacheSize(final PlatformDetector.PlatformInfo platformInfo) {
+  private static Optional<Integer> detectL3CacheSize(
+      final PlatformDetector.PlatformInfo platformInfo) {
     if (platformInfo.getArchitecture() == PlatformDetector.Architecture.X86_64) {
       return Optional.of(8192); // Typical L3 cache size for modern x86_64 (8MB)
     } else if (platformInfo.getArchitecture() == PlatformDetector.Architecture.AARCH64) {

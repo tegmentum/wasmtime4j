@@ -85,8 +85,8 @@ public interface WasiProcess {
   /**
    * Gets all environment variables available to the current process.
    *
-   * <p>This method returns a map of all environment variables that are accessible within the
-   * WASI sandbox. The available variables depend on the security policy and configuration.
+   * <p>This method returns a map of all environment variables that are accessible within the WASI
+   * sandbox. The available variables depend on the security policy and configuration.
    *
    * @return a map of environment variable names to values
    * @throws WasmException if environment access fails or permission is denied
@@ -96,8 +96,8 @@ public interface WasiProcess {
   /**
    * Gets the value of a specific environment variable.
    *
-   * <p>This method retrieves the value of a single environment variable by name. Returns null
-   * if the variable is not set or not accessible.
+   * <p>This method retrieves the value of a single environment variable by name. Returns null if
+   * the variable is not set or not accessible.
    *
    * @param key the name of the environment variable
    * @return the value of the environment variable, or null if not found
@@ -122,8 +122,8 @@ public interface WasiProcess {
   /**
    * Gets the process ID of the current process.
    *
-   * <p>This method returns an identifier for the current WASI process. The exact meaning and
-   * format of the process ID depends on the host system.
+   * <p>This method returns an identifier for the current WASI process. The exact meaning and format
+   * of the process ID depends on the host system.
    *
    * @return the current process ID
    * @throws WasmException if getting the process ID fails
@@ -133,8 +133,8 @@ public interface WasiProcess {
   /**
    * Gets the current working directory path.
    *
-   * <p>This method returns the current working directory as seen by the WASI process. The path
-   * is relative to the WASI filesystem namespace.
+   * <p>This method returns the current working directory as seen by the WASI process. The path is
+   * relative to the WASI filesystem namespace.
    *
    * @return the current working directory path
    * @throws WasmException if getting the working directory fails or permission is denied
@@ -144,8 +144,8 @@ public interface WasiProcess {
   /**
    * Sets the current working directory.
    *
-   * <p>This method changes the current working directory for the WASI process. Relative paths
-   * in filesystem operations will be resolved relative to this directory.
+   * <p>This method changes the current working directory for the WASI process. Relative paths in
+   * filesystem operations will be resolved relative to this directory.
    *
    * @param path the new working directory path
    * @throws WasmException if changing the directory fails or permission is denied
@@ -156,8 +156,8 @@ public interface WasiProcess {
   /**
    * Gets the command-line arguments passed to the current process.
    *
-   * <p>This method returns the command-line arguments that were passed when the WASI process
-   * was started. The first argument is typically the program name.
+   * <p>This method returns the command-line arguments that were passed when the WASI process was
+   * started. The first argument is typically the program name.
    *
    * @return a list of command-line arguments
    * @throws WasmException if getting arguments fails
@@ -167,9 +167,8 @@ public interface WasiProcess {
   /**
    * Terminates the current process with the specified exit code.
    *
-   * <p>This method immediately terminates the current WASI process with the given exit code.
-   * The exit code is typically 0 for success and non-zero for errors. This method does not
-   * return.
+   * <p>This method immediately terminates the current WASI process with the given exit code. The
+   * exit code is typically 0 for success and non-zero for errors. This method does not return.
    *
    * @param exitCode the exit code to return to the parent process
    */
@@ -187,8 +186,8 @@ public interface WasiProcess {
   /**
    * Checks if process spawning is supported and enabled.
    *
-   * <p>This method can be used to determine if the current WASI environment supports spawning
-   * child processes. Support depends on the host implementation and security policy.
+   * <p>This method can be used to determine if the current WASI environment supports spawning child
+   * processes. Support depends on the host implementation and security policy.
    *
    * @return true if process spawning is available, false otherwise
    */

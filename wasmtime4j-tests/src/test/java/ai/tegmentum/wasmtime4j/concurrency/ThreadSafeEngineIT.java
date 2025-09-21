@@ -1,8 +1,7 @@
 package ai.tegmentum.wasmtime4j.concurrency;
 
-import ai.tegmentum.wasmtime4j.concurrency.ThreadSafeEngine;
-import ai.tegmentum.wasmtime4j.concurrency.ConcurrentModule;
-import ai.tegmentum.wasmtime4j.concurrency.ThreadSafeStore;
+import static org.junit.jupiter.api.Assertions.*;
+
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.utils.BaseIntegrationTest;
 import java.util.concurrent.CompletableFuture;
@@ -18,14 +17,11 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 /**
  * Integration tests for ThreadSafeEngine concurrent operations.
  *
- * <p>This test suite validates the thread safety and concurrent execution
- * capabilities of ThreadSafeEngine implementations across both JNI and Panama
- * runtime implementations.
+ * <p>This test suite validates the thread safety and concurrent execution capabilities of
+ * ThreadSafeEngine implementations across both JNI and Panama runtime implementations.
  */
 @DisplayName("ThreadSafeEngine Concurrency Integration Tests")
 @Timeout(30) // Global timeout for all tests
@@ -66,22 +62,23 @@ public final class ThreadSafeEngineIT extends BaseIntegrationTest {
 
     // Create multiple threads that create stores concurrently
     for (int i = 0; i < threadCount; i++) {
-      testExecutor.submit(() -> {
-        try {
-          startLatch.await();
-          for (int j = 0; j < storesPerThread; j++) {
-            try (ThreadSafeStore store = threadSafeEngine.createStore()) {
-              assertNotNull(store, "Store should not be null");
-              assertTrue(store.isThreadSafe(), "Store should be thread-safe");
-              successCount.incrementAndGet();
+      testExecutor.submit(
+          () -> {
+            try {
+              startLatch.await();
+              for (int j = 0; j < storesPerThread; j++) {
+                try (ThreadSafeStore store = threadSafeEngine.createStore()) {
+                  assertNotNull(store, "Store should not be null");
+                  assertTrue(store.isThreadSafe(), "Store should be thread-safe");
+                  successCount.incrementAndGet();
+                }
+              }
+            } catch (Exception e) {
+              firstException.compareAndSet(null, e);
+            } finally {
+              completeLatch.countDown();
             }
-          }
-        } catch (Exception e) {
-          firstException.compareAndSet(null, e);
-        } finally {
-          completeLatch.countDown();
-        }
-      });
+          });
     }
 
     // Start all threads simultaneously
@@ -90,7 +87,9 @@ public final class ThreadSafeEngineIT extends BaseIntegrationTest {
 
     // Verify results
     assertNull(firstException.get(), "No exceptions should occur during concurrent store creation");
-    assertEquals(threadCount * storesPerThread, successCount.get(),
+    assertEquals(
+        threadCount * storesPerThread,
+        successCount.get(),
         "All store creation operations should succeed");
   }
 
@@ -108,21 +107,23 @@ public final class ThreadSafeEngineIT extends BaseIntegrationTest {
 
     // Create multiple threads that compile modules concurrently
     for (int i = 0; i < threadCount; i++) {
-      testExecutor.submit(() -> {
-        try {
-          startLatch.await();
-          try (ConcurrentModule module = threadSafeEngine.compileModule(wasmBytes)) {
-            assertNotNull(module, "Module should not be null");
-            assertTrue(module.supportsConcurrentInstantiation(),
-                "Module should support concurrent instantiation");
-            successCount.incrementAndGet();
-          }
-        } catch (Exception e) {
-          firstException.compareAndSet(null, e);
-        } finally {
-          completeLatch.countDown();
-        }
-      });
+      testExecutor.submit(
+          () -> {
+            try {
+              startLatch.await();
+              try (ConcurrentModule module = threadSafeEngine.compileModule(wasmBytes)) {
+                assertNotNull(module, "Module should not be null");
+                assertTrue(
+                    module.supportsConcurrentInstantiation(),
+                    "Module should support concurrent instantiation");
+                successCount.incrementAndGet();
+              }
+            } catch (Exception e) {
+              firstException.compareAndSet(null, e);
+            } finally {
+              completeLatch.countDown();
+            }
+          });
     }
 
     // Start all threads simultaneously
@@ -205,11 +206,14 @@ public final class ThreadSafeEngineIT extends BaseIntegrationTest {
     // Test configuration change
     int newMax = initialMax + 2;
     threadSafeEngine.setMaxConcurrentCompilations(newMax);
-    assertEquals(newMax, threadSafeEngine.getMaxConcurrentCompilations(),
+    assertEquals(
+        newMax,
+        threadSafeEngine.getMaxConcurrentCompilations(),
         "Max concurrent compilations should be updated");
 
     // Test validation
-    assertTrue(threadSafeEngine.validateConcurrencyConfiguration(),
+    assertTrue(
+        threadSafeEngine.validateConcurrencyConfiguration(),
         "Concurrency configuration should be valid");
 
     // Test statistics
@@ -238,7 +242,7 @@ public final class ThreadSafeEngineIT extends BaseIntegrationTest {
 
     // Clean up
     try (ConcurrentModule module1 = future1.get();
-         ConcurrentModule module2 = future2.get()) {
+        ConcurrentModule module2 = future2.get()) {
       assertNotNull(module1, "First module should not be null");
       assertNotNull(module2, "Second module should not be null");
     }
@@ -259,16 +263,16 @@ public final class ThreadSafeEngineIT extends BaseIntegrationTest {
   private void assumeThreadSafeEngineAvailable() {
     // This method would check if ThreadSafeEngine is available
     // For now, skip these tests until the implementation is complete
-    org.junit.jupiter.api.Assumptions.assumeTrue(false,
-        "ThreadSafeEngine implementation not yet available");
+    org.junit.jupiter.api.Assumptions.assumeTrue(
+        false, "ThreadSafeEngine implementation not yet available");
   }
 
   private byte[] getSimpleWasmModule() {
     // Return a simple WASM module for testing
     // This is a minimal WASM module that does nothing but is valid
-    return new byte[]{
-        0x00, 0x61, 0x73, 0x6d, // WASM magic
-        0x01, 0x00, 0x00, 0x00  // WASM version
+    return new byte[] {
+      0x00, 0x61, 0x73, 0x6d, // WASM magic
+      0x01, 0x00, 0x00, 0x00 // WASM version
     };
   }
 }

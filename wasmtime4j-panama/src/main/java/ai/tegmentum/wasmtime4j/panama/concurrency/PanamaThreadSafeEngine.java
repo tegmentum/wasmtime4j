@@ -56,8 +56,8 @@ public final class PanamaThreadSafeEngine implements ThreadSafeEngine {
   public PanamaThreadSafeEngine(final PanamaEngine delegate) {
     this.delegate = PanamaValidation.requireNonNull(delegate, "delegate");
     this.concurrencyManager = new PanamaConcurrencyManager();
-    this.maxConcurrentCompilations = new AtomicInteger(
-        Runtime.getRuntime().availableProcessors() * 2);
+    this.maxConcurrentCompilations =
+        new AtomicInteger(Runtime.getRuntime().availableProcessors() * 2);
     this.activeCompilations = new AtomicInteger(0);
     this.totalCompilations = new AtomicLong(0);
     this.compilationSemaphore = new Semaphore(maxConcurrentCompilations.get(), true);
@@ -65,8 +65,9 @@ public final class PanamaThreadSafeEngine implements ThreadSafeEngine {
     this.executorService = createDefaultExecutorService();
     this.closed = false;
 
-    LOGGER.info("Created PanamaThreadSafeEngine with max concurrent compilations: "
-        + maxConcurrentCompilations.get());
+    LOGGER.info(
+        "Created PanamaThreadSafeEngine with max concurrent compilations: "
+            + maxConcurrentCompilations.get());
   }
 
   @Override
@@ -111,24 +112,26 @@ public final class PanamaThreadSafeEngine implements ThreadSafeEngine {
     PanamaValidation.requireNonNull(executor, "executor");
     validateNotClosed();
 
-    return CompletableFuture.supplyAsync(() -> {
-      try {
-        compilationSemaphore.acquire();
-        activeCompilations.incrementAndGet();
+    return CompletableFuture.supplyAsync(
+        () -> {
+          try {
+            compilationSemaphore.acquire();
+            activeCompilations.incrementAndGet();
 
-        try {
-          return compileModule(wasmBytes);
-        } finally {
-          activeCompilations.decrementAndGet();
-          compilationSemaphore.release();
-        }
-      } catch (final InterruptedException e) {
-        Thread.currentThread().interrupt();
-        throw new RuntimeException("Compilation interrupted", e);
-      } catch (final WasmException e) {
-        throw new RuntimeException("Compilation failed", e);
-      }
-    }, executor);
+            try {
+              return compileModule(wasmBytes);
+            } finally {
+              activeCompilations.decrementAndGet();
+              compilationSemaphore.release();
+            }
+          } catch (final InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Compilation interrupted", e);
+          } catch (final WasmException e) {
+            throw new RuntimeException("Compilation failed", e);
+          }
+        },
+        executor);
   }
 
   @Override
@@ -142,7 +145,8 @@ public final class PanamaThreadSafeEngine implements ThreadSafeEngine {
 
     // Create individual compilation futures
     @SuppressWarnings("unchecked")
-    final CompletableFuture<ConcurrentModule>[] futures = new CompletableFuture[wasmBytesArray.length];
+    final CompletableFuture<ConcurrentModule>[] futures =
+        new CompletableFuture[wasmBytesArray.length];
 
     for (int i = 0; i < wasmBytesArray.length; i++) {
       futures[i] = compileModuleAsync(wasmBytesArray[i]);
@@ -150,13 +154,14 @@ public final class PanamaThreadSafeEngine implements ThreadSafeEngine {
 
     // Combine all futures into a single result
     return CompletableFuture.allOf(futures)
-        .thenApply(ignored -> {
-          final ConcurrentModule[] results = new ConcurrentModule[futures.length];
-          for (int i = 0; i < futures.length; i++) {
-            results[i] = futures[i].join();
-          }
-          return results;
-        });
+        .thenApply(
+            ignored -> {
+              final ConcurrentModule[] results = new ConcurrentModule[futures.length];
+              for (int i = 0; i < futures.length; i++) {
+                results[i] = futures[i].join();
+              }
+              return results;
+            });
   }
 
   @Override
@@ -180,7 +185,11 @@ public final class PanamaThreadSafeEngine implements ThreadSafeEngine {
         }
       }
 
-      LOGGER.info("Updated max concurrent compilations from " + oldMax + " to " + maxConcurrentCompilations);
+      LOGGER.info(
+          "Updated max concurrent compilations from "
+              + oldMax
+              + " to "
+              + maxConcurrentCompilations);
     }
   }
 
@@ -208,16 +217,18 @@ public final class PanamaThreadSafeEngine implements ThreadSafeEngine {
 
   @Override
   public Future<Void> awaitPendingCompilations() {
-    return CompletableFuture.runAsync(() -> {
-      while (activeCompilations.get() > 0) {
-        try {
-          Thread.sleep(10);
-        } catch (final InterruptedException e) {
-          Thread.currentThread().interrupt();
-          break;
-        }
-      }
-    }, executorService);
+    return CompletableFuture.runAsync(
+        () -> {
+          while (activeCompilations.get() > 0) {
+            try {
+              Thread.sleep(10);
+            } catch (final InterruptedException e) {
+              Thread.currentThread().interrupt();
+              break;
+            }
+          }
+        },
+        executorService);
   }
 
   @Override
@@ -235,8 +246,11 @@ public final class PanamaThreadSafeEngine implements ThreadSafeEngine {
 
   @Override
   public ConcurrencyStatistics getConcurrencyStatistics() {
-    return new PanamaConcurrencyStatistics(concurrencyManager, totalCompilations.get(),
-        activeCompilations.get(), maxConcurrentCompilations.get());
+    return new PanamaConcurrencyStatistics(
+        concurrencyManager,
+        totalCompilations.get(),
+        activeCompilations.get(),
+        maxConcurrentCompilations.get());
   }
 
   @Override

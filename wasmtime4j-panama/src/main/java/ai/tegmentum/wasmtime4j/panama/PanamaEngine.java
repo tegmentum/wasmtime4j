@@ -603,17 +603,23 @@ public final class PanamaEngine implements Engine, AutoCloseable {
    * @return the native engine handle
    * @throws WasmException if the engine cannot be created
    */
-  private MemorySegment createNativeEngineWithConfig(final EngineConfig config) throws WasmException {
+  private MemorySegment createNativeEngineWithConfig(final EngineConfig config)
+      throws WasmException {
     return createNativeEngineWithConfigAndRetry(config, 2); // Try twice: original attempt + 1 retry
   }
 
-  private MemorySegment createNativeEngineWithConfigAndRetry(final EngineConfig config, int maxAttempts) throws WasmException {
+  private MemorySegment createNativeEngineWithConfigAndRetry(
+      final EngineConfig config, int maxAttempts) throws WasmException {
     WasmException lastException = null;
 
     for (int attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
         LOGGER.fine(
-            "Attempting native engine creation with config (attempt " + attempt + "/" + maxAttempts + ")");
+            "Attempting native engine creation with config (attempt "
+                + attempt
+                + "/"
+                + maxAttempts
+                + ")");
 
         // Clear any previous error state before attempting creation
         if (attempt > 1) {
@@ -638,7 +644,10 @@ public final class PanamaEngine implements Engine, AutoCloseable {
 
           if (attempt < maxAttempts) {
             LOGGER.warning(
-                "Engine creation with config attempt " + attempt + " failed, retrying: " + errorMessage);
+                "Engine creation with config attempt "
+                    + attempt
+                    + " failed, retrying: "
+                    + errorMessage);
             // Add a small delay before retry to allow system state to settle
             try {
               Thread.sleep(10); // 10ms delay
@@ -688,7 +697,8 @@ public final class PanamaEngine implements Engine, AutoCloseable {
     // If we get here, all attempts failed
     throw lastException != null
         ? lastException
-        : new WasmException("Engine creation with config failed after " + maxAttempts + " attempts");
+        : new WasmException(
+            "Engine creation with config failed after " + maxAttempts + " attempts");
   }
 
   /**

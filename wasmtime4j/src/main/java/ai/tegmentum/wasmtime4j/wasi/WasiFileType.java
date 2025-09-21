@@ -3,14 +3,17 @@ package ai.tegmentum.wasmtime4j.wasi;
 /**
  * Enumeration of WASI file types corresponding to the WASI Preview 1 filetype enum.
  *
- * <p>These types classify different kinds of filesystem entries and are used in directory
- * listings and file metadata operations.
+ * <p>These types classify different kinds of filesystem entries and are used in directory listings
+ * and file metadata operations.
  *
  * @since 1.0.0
  */
 public enum WasiFileType {
 
-  /** The type of the file descriptor or file is unknown or is different from any of the other types specified. */
+  /**
+   * The type of the file descriptor or file is unknown or is different from any of the other types
+   * specified.
+   */
   UNKNOWN(0),
 
   /** The file descriptor or file refers to a block device inode. */

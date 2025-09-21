@@ -46,8 +46,8 @@ public final class WasiDirEntry {
   /**
    * Gets the type of this directory entry.
    *
-   * <p>The type indicates whether this entry is a regular file, directory, symbolic link, or
-   * other special file type.
+   * <p>The type indicates whether this entry is a regular file, directory, symbolic link, or other
+   * special file type.
    *
    * @return the entry type
    */

@@ -21,76 +21,81 @@ import java.util.List;
 /**
  * Default implementation of ApiCoverageDetail.
  *
- * <p>Provides detailed information about API coverage including implementation status,
- * native backing, and test coverage for a specific API.
+ * <p>Provides detailed information about API coverage including implementation status, native
+ * backing, and test coverage for a specific API.
  */
 final class DefaultApiCoverageDetail implements ApiCoverageDetail {
 
-    private final String apiName;
-    private final boolean isImplemented;
-    private final boolean hasNativeBacking;
-    private final boolean hasJniImplementation;
-    private final boolean hasPanamaImplementation;
-    private final List<String> missingMethods;
-    private final TestCoverageInfo testCoverage;
+  private final String apiName;
+  private final boolean isImplemented;
+  private final boolean hasNativeBacking;
+  private final boolean hasJniImplementation;
+  private final boolean hasPanamaImplementation;
+  private final List<String> missingMethods;
+  private final TestCoverageInfo testCoverage;
 
-    DefaultApiCoverageDetail(
-            final String apiName,
-            final boolean isImplemented,
-            final boolean hasNativeBacking,
-            final boolean hasJniImplementation,
-            final boolean hasPanamaImplementation,
-            final List<String> missingMethods,
-            final TestCoverageInfo testCoverage) {
-        this.apiName = apiName;
-        this.isImplemented = isImplemented;
-        this.hasNativeBacking = hasNativeBacking;
-        this.hasJniImplementation = hasJniImplementation;
-        this.hasPanamaImplementation = hasPanamaImplementation;
-        this.missingMethods = new java.util.ArrayList<>(missingMethods);
-        this.testCoverage = testCoverage;
-    }
+  DefaultApiCoverageDetail(
+      final String apiName,
+      final boolean isImplemented,
+      final boolean hasNativeBacking,
+      final boolean hasJniImplementation,
+      final boolean hasPanamaImplementation,
+      final List<String> missingMethods,
+      final TestCoverageInfo testCoverage) {
+    this.apiName = apiName;
+    this.isImplemented = isImplemented;
+    this.hasNativeBacking = hasNativeBacking;
+    this.hasJniImplementation = hasJniImplementation;
+    this.hasPanamaImplementation = hasPanamaImplementation;
+    this.missingMethods = new java.util.ArrayList<>(missingMethods);
+    this.testCoverage = testCoverage;
+  }
 
-    @Override
-    public String getApiName() {
-        return apiName;
-    }
+  @Override
+  public String getApiName() {
+    return apiName;
+  }
 
-    @Override
-    public boolean isImplemented() {
-        return isImplemented;
-    }
+  @Override
+  public boolean isImplemented() {
+    return isImplemented;
+  }
 
-    @Override
-    public boolean hasNativeBacking() {
-        return hasNativeBacking;
-    }
+  @Override
+  public boolean hasNativeBacking() {
+    return hasNativeBacking;
+  }
 
-    @Override
-    public boolean hasJniImplementation() {
-        return hasJniImplementation;
-    }
+  @Override
+  public boolean hasJniImplementation() {
+    return hasJniImplementation;
+  }
 
-    @Override
-    public boolean hasPanamaImplementation() {
-        return hasPanamaImplementation;
-    }
+  @Override
+  public boolean hasPanamaImplementation() {
+    return hasPanamaImplementation;
+  }
 
-    @Override
-    public List<String> getMissingMethods() {
-        return new java.util.ArrayList<>(missingMethods);
-    }
+  @Override
+  public List<String> getMissingMethods() {
+    return new java.util.ArrayList<>(missingMethods);
+  }
 
-    @Override
-    public TestCoverageInfo getTestCoverage() {
-        return testCoverage;
-    }
+  @Override
+  public TestCoverageInfo getTestCoverage() {
+    return testCoverage;
+  }
 
-    @Override
-    public String toString() {
-        return String.format(
-            "ApiCoverageDetail{api='%s', implemented=%s, nativeBacking=%s, jni=%s, panama=%s, missingMethods=%d}",
-            apiName, isImplemented, hasNativeBacking, hasJniImplementation, hasPanamaImplementation, missingMethods.size()
-        );
-    }
+  @Override
+  public String toString() {
+    return String.format(
+        "ApiCoverageDetail{api='%s', implemented=%s, nativeBacking=%s, jni=%s, panama=%s,"
+            + " missingMethods=%d}",
+        apiName,
+        isImplemented,
+        hasNativeBacking,
+        hasJniImplementation,
+        hasPanamaImplementation,
+        missingMethods.size());
+  }
 }

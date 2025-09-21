@@ -17,72 +17,71 @@
 package ai.tegmentum.wasmtime4j.testing;
 
 import java.time.Duration;
-import java.util.List;
 
 /**
  * Builder interface for creating TestResults instances.
  *
- * <p>This builder allows for incremental construction of test results by aggregating
- * individual test outcomes and statistics.
+ * <p>This builder allows for incremental construction of test results by aggregating individual
+ * test outcomes and statistics.
  */
 public interface TestResultsBuilder {
 
-    /**
-     * Adds results from another test execution.
-     *
-     * @param results the test results to add
-     * @return this builder
-     */
-    TestResultsBuilder addResults(TestResults results);
+  /**
+   * Adds results from another test execution.
+   *
+   * @param results the test results to add
+   * @return this builder
+   */
+  TestResultsBuilder addResults(TestResults results);
 
-    /**
-     * Adds a successful test.
-     *
-     * @param testName the test name
-     * @param executionTime the execution time
-     * @return this builder
-     */
-    TestResultsBuilder addSuccess(String testName, Duration executionTime);
+  /**
+   * Adds a successful test.
+   *
+   * @param testName the test name
+   * @param executionTime the execution time
+   * @return this builder
+   */
+  TestResultsBuilder addSuccess(String testName, Duration executionTime);
 
-    /**
-     * Adds a failed test.
-     *
-     * @param failure the test failure
-     * @return this builder
-     */
-    TestResultsBuilder addFailure(TestFailure failure);
+  /**
+   * Adds a failed test.
+   *
+   * @param failure the test failure
+   * @return this builder
+   */
+  TestResultsBuilder addFailure(TestFailure failure);
 
-    /**
-     * Adds a failed test with basic information.
-     *
-     * @param testName the test name
-     * @param errorMessage the error message
-     * @param executionTime the execution time
-     * @return this builder
-     */
-    TestResultsBuilder addFailure(String testName, String errorMessage, Duration executionTime);
+  /**
+   * Adds a failed test with basic information.
+   *
+   * @param testName the test name
+   * @param errorMessage the error message
+   * @param executionTime the execution time
+   * @return this builder
+   */
+  TestResultsBuilder addFailure(String testName, String errorMessage, Duration executionTime);
 
-    /**
-     * Adds a skipped test.
-     *
-     * @param testName the test name
-     * @param reason the reason for skipping
-     * @return this builder
-     */
-    TestResultsBuilder addSkipped(String testName, String reason);
+  /**
+   * Adds a skipped test.
+   *
+   * @param testName the test name
+   * @param reason the reason for skipping
+   * @return this builder
+   */
+  TestResultsBuilder addSkipped(String testName, String reason);
 
-    /**
-     * Sets the test statistics.
-     *
-     * @param statistics the test statistics
-     * @return this builder
-     */
-    TestResultsBuilder withStatistics(TestStatistics statistics);
+  /**
+   * Sets the test statistics.
+   *
+   * @param statistics the test statistics
+   * @return this builder
+   */
+  TestResultsBuilder withStatistics(TestStatistics statistics);
 
-    /**
-     * Builds the final TestResults instance.
-     *
-     * @return the test results
-     */
-    TestResults build();
+  /**
+   * Builds the final TestResults instance.
+   *
+   * @return the test results
+   */
+  TestResults build();
 }

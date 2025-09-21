@@ -21,108 +21,106 @@ import java.util.List;
 /**
  * Detailed coverage information for a specific API.
  *
- * <p>This interface provides comprehensive analysis of an individual API's implementation
- * status, including backing implementation details and test coverage information.
+ * <p>This interface provides comprehensive analysis of an individual API's implementation status,
+ * including backing implementation details and test coverage information.
  */
 public interface ApiCoverageDetail {
 
-    /**
-     * Gets the name of the API.
-     *
-     * @return API name
-     */
-    String getApiName();
+  /**
+   * Gets the name of the API.
+   *
+   * @return API name
+   */
+  String getApiName();
 
-    /**
-     * Checks if the API is fully implemented.
-     *
-     * @return true if API is completely implemented
-     */
-    boolean isImplemented();
+  /**
+   * Checks if the API is fully implemented.
+   *
+   * @return true if API is completely implemented
+   */
+  boolean isImplemented();
 
-    /**
-     * Checks if the API has native backing implementation.
-     *
-     * @return true if native implementation exists
-     */
-    boolean hasNativeBacking();
+  /**
+   * Checks if the API has native backing implementation.
+   *
+   * @return true if native implementation exists
+   */
+  boolean hasNativeBacking();
 
-    /**
-     * Checks if the API has JNI implementation.
-     *
-     * @return true if JNI implementation exists
-     */
-    boolean hasJniImplementation();
+  /**
+   * Checks if the API has JNI implementation.
+   *
+   * @return true if JNI implementation exists
+   */
+  boolean hasJniImplementation();
 
-    /**
-     * Checks if the API has Panama implementation.
-     *
-     * @return true if Panama implementation exists
-     */
-    boolean hasPanamaImplementation();
+  /**
+   * Checks if the API has Panama implementation.
+   *
+   * @return true if Panama implementation exists
+   */
+  boolean hasPanamaImplementation();
 
-    /**
-     * Gets list of methods that are missing from this API.
-     *
-     * @return list of missing method names
-     */
-    List<String> getMissingMethods();
+  /**
+   * Gets list of methods that are missing from this API.
+   *
+   * @return list of missing method names
+   */
+  List<String> getMissingMethods();
 
-    /**
-     * Gets test coverage information for this API.
-     *
-     * @return test coverage details
-     */
-    TestCoverageInfo getTestCoverage();
+  /**
+   * Gets test coverage information for this API.
+   *
+   * @return test coverage details
+   */
+  TestCoverageInfo getTestCoverage();
 
-    /**
-     * Gets the implementation completeness percentage for this API.
-     *
-     * @return completeness percentage from 0.0 to 100.0
-     */
-    double getCompletenessPercentage();
+  /**
+   * Gets the implementation completeness percentage for this API.
+   *
+   * @return completeness percentage from 0.0 to 100.0
+   */
+  double getCompletenessPercentage();
 
-    /**
-     * Gets the module this API belongs to.
-     *
-     * @return module name
-     */
-    String getModule();
+  /**
+   * Gets the module this API belongs to.
+   *
+   * @return module name
+   */
+  String getModule();
 
-    /**
-     * Gets any implementation notes or warnings for this API.
-     *
-     * @return list of notes or empty list if none
-     */
-    List<String> getImplementationNotes();
+  /**
+   * Gets any implementation notes or warnings for this API.
+   *
+   * @return list of notes or empty list if none
+   */
+  List<String> getImplementationNotes();
 
-    /**
-     * Checks if this API is critical for basic functionality.
-     *
-     * @return true if API is considered critical
-     */
-    boolean isCritical();
+  /**
+   * Checks if this API is critical for basic functionality.
+   *
+   * @return true if API is considered critical
+   */
+  boolean isCritical();
 
-    /**
-     * Gets the current implementation status.
-     *
-     * @return implementation status
-     */
-    ImplementationStatus getStatus();
+  /**
+   * Gets the current implementation status.
+   *
+   * @return implementation status
+   */
+  ImplementationStatus getStatus();
 
-    /**
-     * Implementation status enumeration.
-     */
-    enum ImplementationStatus {
-        /** API is fully implemented and tested */
-        COMPLETE,
-        /** API is partially implemented */
-        PARTIAL,
-        /** API is declared but not implemented */
-        STUB,
-        /** API is completely missing */
-        MISSING,
-        /** API implementation is broken */
-        BROKEN
-    }
+  /** Implementation status enumeration. */
+  enum ImplementationStatus {
+    /** API is fully implemented and tested */
+    COMPLETE,
+    /** API is partially implemented */
+    PARTIAL,
+    /** API is declared but not implemented */
+    STUB,
+    /** API is completely missing */
+    MISSING,
+    /** API implementation is broken */
+    BROKEN
+  }
 }

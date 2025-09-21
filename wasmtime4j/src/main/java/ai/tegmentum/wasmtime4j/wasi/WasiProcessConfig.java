@@ -63,8 +63,8 @@ public final class WasiProcessConfig {
   /**
    * Gets the command-line arguments for the process.
    *
-   * <p>This list does not include the executable name itself (argv[0]), only the arguments
-   * that follow it.
+   * <p>This list does not include the executable name itself (argv[0]), only the arguments that
+   * follow it.
    *
    * @return an immutable list of command-line arguments
    */
@@ -138,9 +138,7 @@ public final class WasiProcessConfig {
         executable, arguments, environment, workingDirectory, stdin, stdout, stderr);
   }
 
-  /**
-   * Builder for creating WasiProcessConfig instances.
-   */
+  /** Builder for creating WasiProcessConfig instances. */
   public static final class Builder {
     private final String executable;
     private List<String> arguments = Collections.emptyList();

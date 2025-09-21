@@ -6,8 +6,8 @@ import java.time.Instant;
  * File statistics and metadata information corresponding to WASI Preview 1 filestat.
  *
  * <p>This class contains comprehensive metadata about a file or directory, including size,
- * timestamps, permissions, and type information. It is returned by file metadata operations
- * and can be used to set file metadata.
+ * timestamps, permissions, and type information. It is returned by file metadata operations and can
+ * be used to set file metadata.
  *
  * @since 1.0.0
  */
@@ -56,8 +56,8 @@ public final class WasiFileStats {
   /**
    * Gets the device ID of the device containing the file.
    *
-   * <p>This identifies the device (filesystem) where the file is stored. Files on the same
-   * device will have the same device ID.
+   * <p>This identifies the device (filesystem) where the file is stored. Files on the same device
+   * will have the same device ID.
    *
    * @return the device ID
    */
@@ -68,8 +68,8 @@ public final class WasiFileStats {
   /**
    * Gets the inode number of the file.
    *
-   * <p>The inode number uniquely identifies the file within its device/filesystem. Files with
-   * the same device ID and inode number are the same file (hard links).
+   * <p>The inode number uniquely identifies the file within its device/filesystem. Files with the
+   * same device ID and inode number are the same file (hard links).
    *
    * @return the inode number
    */
@@ -93,8 +93,7 @@ public final class WasiFileStats {
    * Gets the number of hard links to the file.
    *
    * <p>This is the number of directory entries that point to this file. Regular files typically
-   * have a link count of 1, while directories have at least 2 (the entry itself and the "."
-   * entry).
+   * have a link count of 1, while directories have at least 2 (the entry itself and the "." entry).
    *
    * @return the hard link count
    */
@@ -105,8 +104,8 @@ public final class WasiFileStats {
   /**
    * Gets the size of the file in bytes.
    *
-   * <p>For regular files, this is the number of bytes in the file. For directories, the meaning
-   * is filesystem-dependent. For other file types, the size may be 0 or have special meaning.
+   * <p>For regular files, this is the number of bytes in the file. For directories, the meaning is
+   * filesystem-dependent. For other file types, the size may be 0 or have special meaning.
    *
    * @return the file size in bytes
    */
@@ -117,8 +116,8 @@ public final class WasiFileStats {
   /**
    * Gets the time of last access.
    *
-   * <p>This is the timestamp when the file was last accessed (read). Some filesystems may not
-   * track access times or may update them infrequently for performance reasons.
+   * <p>This is the timestamp when the file was last accessed (read). Some filesystems may not track
+   * access times or may update them infrequently for performance reasons.
    *
    * @return the last access time
    */
@@ -141,8 +140,8 @@ public final class WasiFileStats {
   /**
    * Gets the time of last status change.
    *
-   * <p>This is the timestamp when the file's metadata (permissions, owner, link count, etc.)
-   * was last changed. On many systems, this is also updated when the file content is modified.
+   * <p>This is the timestamp when the file's metadata (permissions, owner, link count, etc.) was
+   * last changed. On many systems, this is also updated when the file content is modified.
    *
    * @return the last status change time
    */
@@ -244,9 +243,7 @@ public final class WasiFileStats {
         device, inode, type, linkCount, size, accessTime, modifyTime, changeTime);
   }
 
-  /**
-   * Builder for creating WasiFileStats instances.
-   */
+  /** Builder for creating WasiFileStats instances. */
   public static final class Builder {
     private long device = 0;
     private long inode = 0;

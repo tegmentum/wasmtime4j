@@ -55,16 +55,7 @@ public final class WasiOpenFlags {
 
   /** All defined flags combined (for validation). */
   public static final int ALL_FLAGS =
-      CREATE
-          | DIRECTORY
-          | EXCLUSIVE
-          | TRUNCATE
-          | SYNC
-          | DSYNC
-          | RSYNC
-          | APPEND
-          | NONBLOCK
-          | FOLLOW
+      CREATE | DIRECTORY | EXCLUSIVE | TRUNCATE | SYNC | DSYNC | RSYNC | APPEND | NONBLOCK | FOLLOW
           | NOFOLLOW;
 
   private WasiOpenFlags() {
