@@ -123,7 +123,7 @@ public final class JniLinker extends JniResource implements Linker {
               name,
               paramTypesArray,
               returnTypesArray,
-              0L); // Pass 0 for now, implementation will be handled differently
+              implementation); // Pass the Java implementation directly
 
       if (!success) {
         throw new WasmException("Failed to define host function: " + moduleName + "::" + name);
@@ -432,7 +432,7 @@ public final class JniLinker extends JniResource implements Linker {
    * @param functionName the function name for the import
    * @param paramTypes array of parameter type constants
    * @param returnTypes array of return type constants
-   * @param hostFunctionHandle the native host function handle
+   * @param implementation the Java host function implementation
    * @return true if successful, false otherwise
    */
   private static native boolean nativeDefineHostFunction(
@@ -441,7 +441,7 @@ public final class JniLinker extends JniResource implements Linker {
       final String functionName,
       final int[] paramTypes,
       final int[] returnTypes,
-      final long hostFunctionHandle);
+      final HostFunction implementation);
 
   /**
    * Defines a memory in the native linker.

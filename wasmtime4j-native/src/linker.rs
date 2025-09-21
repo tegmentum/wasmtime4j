@@ -216,18 +216,10 @@ impl Linker {
                 backtrace: None
             })?;
 
-        // Simple implementation - define a basic function with minimal signature
-        // This is a simplified version that would need to be expanded with proper host function wrapping
-        linker.func_wrap(
-            module_name,
-            function_name,
-            move || {
-                // Simplified - just return nothing for a () -> () function
-            }
-        ).map_err(|e| WasmtimeError::Runtime {
-                message: format!("Failed to define host function: {}", e),
-                backtrace: None
-            })?;
+        // Use the host function to create a proper Wasmtime function
+        // This will be handled through the HostFunction callback system
+        // For now, we just register the metadata and defer actual function creation
+        log::debug!("Registering host function for later instantiation: {}::{}", module_name, function_name);
 
         // Record the host function definition
         let key = format!("{}::{}", module_name, function_name);
@@ -253,6 +245,52 @@ impl Linker {
         self.metadata.import_count += 1;
 
         log::debug!("Defined host function {}::{}", module_name, function_name);
+        Ok(())
+    }
+
+    /// Instantiate all registered host functions with the given store
+    ///
+    /// # Arguments
+    /// * `store` - The store to use for host function instantiation
+    ///
+    /// # Errors
+    /// Returns WasmtimeError if host function instantiation fails
+    pub fn instantiate_host_functions(&mut self, store: &mut Store) -> WasmtimeResult<()> {
+        if self.metadata.disposed {
+            return Err(WasmtimeError::Runtime {
+                message: "Linker has been disposed".to_string(),
+                backtrace: None
+            });
+        }
+
+        let mut linker = self.inner.lock()
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Failed to lock linker: {}", e),
+                backtrace: None
+            })?;
+
+        // Instantiate all registered host functions
+        for (key, definition) in &self.host_functions {
+            log::debug!("Instantiating host function: {}", key);
+
+            // Create the Wasmtime function using the host function
+            store.with_context_mut(|ctx| {
+                let wasmtime_func = definition.host_function.create_wasmtime_func(ctx)?;
+
+                // Define the function in the linker
+                linker.define(
+                    ctx,
+                    &definition.module_name,
+                    &definition.function_name,
+                    wasmtime::Extern::Func(wasmtime_func)
+                ).map_err(|e| WasmtimeError::Runtime {
+                    message: format!("Failed to define host function in linker: {}", e),
+                    backtrace: None
+                })
+            })?;
+        }
+
+        log::debug!("Successfully instantiated {} host functions", self.host_functions.len());
         Ok(())
     }
 
