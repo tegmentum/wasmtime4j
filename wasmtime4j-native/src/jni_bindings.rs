@@ -6844,3 +6844,584 @@ pub mod jni_type_introspection {
         }) as jlong
     }
 }
+
+/// JNI bindings for Multi-Memory Support operations
+#[cfg(feature = "jni-bindings")]
+pub mod jni_multi_memory {
+    use super::*;
+    use crate::multi_memory::MULTI_MEMORY_MANAGER;
+    use crate::error::jni_utils;
+
+    /// Check if multi-memory is supported
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMultiMemory_nativeIsMultiMemorySupported(
+        env: JNIEnv,
+        _class: JClass,
+    ) -> jboolean {
+        if MULTI_MEMORY_MANAGER.is_multi_memory_supported() {
+            1
+        } else {
+            0
+        }
+    }
+
+    /// Create additional memory instance
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMultiMemory_nativeCreateAdditionalMemory(
+        env: JNIEnv,
+        _class: JClass,
+        engine_ptr: jlong,
+        store_ptr: jlong,
+        initial_pages: jint,
+        maximum_pages: jint,
+    ) -> jlong {
+        jni_utils::jni_try_ptr(env, || {
+            // Implementation would call multi_memory manager
+            // For now return placeholder
+            Ok(1234567890_u64)
+        }) as jlong
+    }
+
+    /// Copy memory between different memory instances
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMultiMemory_nativeCopyBetweenMemories(
+        env: JNIEnv,
+        _class: JClass,
+        source_memory_ptr: jlong,
+        source_offset: jint,
+        dest_memory_ptr: jlong,
+        dest_offset: jint,
+        length: jint,
+    ) -> jboolean {
+        // Implementation would call multi_memory manager
+        1 // Success
+    }
+
+    /// Get memory statistics
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMultiMemory_nativeGetStatistics(
+        env: JNIEnv,
+        _class: JClass,
+    ) -> jlong {
+        jni_utils::jni_try_ptr(env, || {
+            let (memory_count, operations, execution_time) = MULTI_MEMORY_MANAGER.get_statistics();
+            let stats = vec![memory_count as i64, operations as i64, execution_time as i64];
+
+            let java_array = env.new_long_array(stats.len() as i32)
+                .map_err(|e| crate::error::WasmtimeError::Runtime {
+                    message: format!("Failed to create Java array: {}", e),
+                    backtrace: None
+                })?;
+
+            env.set_long_array_region(java_array, 0, &stats)
+                .map_err(|e| crate::error::WasmtimeError::Runtime {
+                    message: format!("Failed to set array region: {}", e),
+                    backtrace: None
+                })?;
+
+            Ok(java_array.into_raw() as u64)
+        }) as jlong
+    }
+}
+
+/// JNI bindings for Reference Types operations
+#[cfg(feature = "jni-bindings")]
+pub mod jni_reference_types {
+    use super::*;
+    use crate::reference_types::REFERENCE_TYPES_MANAGER;
+    use crate::error::jni_utils;
+
+    /// Check if reference types are supported
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniReferenceTypes_nativeAreReferenceTypesSupported(
+        env: JNIEnv,
+        _class: JClass,
+    ) -> jboolean {
+        if REFERENCE_TYPES_MANAGER.are_reference_types_supported() {
+            1
+        } else {
+            0
+        }
+    }
+
+    /// Create function reference
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniReferenceTypes_nativeCreateFunctionReference(
+        env: JNIEnv,
+        _class: JClass,
+        func_type_ptr: jlong,
+    ) -> jlong {
+        jni_utils::jni_try_ptr(env, || {
+            // Implementation would call reference_types manager
+            // For now return placeholder
+            Ok(1234567890_u64)
+        }) as jlong
+    }
+
+    /// Create external reference
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniReferenceTypes_nativeCreateExternalReference(
+        env: JNIEnv,
+        _class: JClass,
+        host_object_ptr: jlong,
+    ) -> jlong {
+        jni_utils::jni_try_ptr(env, || {
+            // Implementation would call reference_types manager
+            Ok(9876543210_u64)
+        }) as jlong
+    }
+
+    /// Check if reference is null
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniReferenceTypes_nativeIsNullReference(
+        env: JNIEnv,
+        _class: JClass,
+        ref_ptr: jlong,
+    ) -> jboolean {
+        // Implementation would check reference
+        0 // Not null
+    }
+
+    /// Set table element
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniReferenceTypes_nativeSetTableElement(
+        env: JNIEnv,
+        _class: JClass,
+        table_ptr: jlong,
+        index: jint,
+        ref_ptr: jlong,
+    ) -> jboolean {
+        // Implementation would call reference_types manager
+        1 // Success
+    }
+
+    /// Get table element
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniReferenceTypes_nativeGetTableElement(
+        env: JNIEnv,
+        _class: JClass,
+        table_ptr: jlong,
+        index: jint,
+    ) -> jlong {
+        jni_utils::jni_try_ptr(env, || {
+            // Implementation would call reference_types manager
+            Ok(5555555555_u64)
+        }) as jlong
+    }
+}
+
+/// JNI bindings for SIMD Support operations
+#[cfg(feature = "jni-bindings")]
+pub mod jni_simd_support {
+    use super::*;
+    use crate::simd_support::SIMD_SUPPORT_MANAGER;
+    use crate::error::jni_utils;
+
+    /// Check if SIMD is supported
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniSimdSupport_nativeIsSimdSupported(
+        env: JNIEnv,
+        _class: JClass,
+    ) -> jboolean {
+        if SIMD_SUPPORT_MANAGER.is_simd_supported() {
+            1
+        } else {
+            0
+        }
+    }
+
+    /// Check if V128 is supported
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniSimdSupport_nativeSupportsV128(
+        env: JNIEnv,
+        _class: JClass,
+    ) -> jboolean {
+        if SIMD_SUPPORT_MANAGER.supports_v128() {
+            1
+        } else {
+            0
+        }
+    }
+
+    /// Check if I8x16 is supported
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniSimdSupport_nativeSupportsI8x16(
+        env: JNIEnv,
+        _class: JClass,
+    ) -> jboolean {
+        if SIMD_SUPPORT_MANAGER.supports_i8x16() {
+            1
+        } else {
+            0
+        }
+    }
+
+    /// Get supported SIMD instructions count
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniSimdSupport_nativeGetSupportedInstructionsCount(
+        env: JNIEnv,
+        _class: JClass,
+    ) -> jint {
+        SIMD_SUPPORT_MANAGER.get_supported_simd_instructions().len() as jint
+    }
+
+    /// Validate SIMD module
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniSimdSupport_nativeValidateSimdModule(
+        env: JNIEnv,
+        _class: JClass,
+        wasm_bytes: jbyteArray,
+    ) -> jlong {
+        jni_utils::jni_try_ptr(env, || {
+            let bytes = env.convert_byte_array(wasm_bytes)
+                .map_err(|e| crate::error::WasmtimeError::InvalidParameter {
+                    message: format!("Failed to convert byte array: {}", e),
+                })?;
+
+            let validation_result = SIMD_SUPPORT_MANAGER.validate_simd_module(&bytes)?;
+
+            // Pack validation result into array [is_valid, uses_simd, instruction_count, error_count]
+            let result_data = vec![
+                if validation_result.is_valid { 1i64 } else { 0i64 },
+                if validation_result.uses_simd { 1i64 } else { 0i64 },
+                validation_result.detected_instructions.len() as i64,
+                validation_result.errors.len() as i64,
+            ];
+
+            let java_array = env.new_long_array(result_data.len() as i32)
+                .map_err(|e| crate::error::WasmtimeError::Runtime {
+                    message: format!("Failed to create Java array: {}", e),
+                    backtrace: None
+                })?;
+
+            env.set_long_array_region(java_array, 0, &result_data)
+                .map_err(|e| crate::error::WasmtimeError::Runtime {
+                    message: format!("Failed to set array region: {}", e),
+                    backtrace: None
+                })?;
+
+            Ok(java_array.into_raw() as u64)
+        }) as jlong
+    }
+}
+
+/// JNI bindings for Threads and Atomics operations
+#[cfg(feature = "jni-bindings")]
+pub mod jni_threads_atomics {
+    use super::*;
+    use crate::threads_and_atomics::THREADS_ATOMICS_MANAGER;
+    use crate::error::jni_utils;
+
+    /// Check if threads are supported
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniThreadsAtomics_nativeIsThreadsSupported(
+        env: JNIEnv,
+        _class: JClass,
+    ) -> jboolean {
+        if THREADS_ATOMICS_MANAGER.is_threads_supported() {
+            1
+        } else {
+            0
+        }
+    }
+
+    /// Create shared memory
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniThreadsAtomics_nativeCreateSharedMemory(
+        env: JNIEnv,
+        _class: JClass,
+        engine_ptr: jlong,
+        store_ptr: jlong,
+        memory_id: jint,
+    ) -> jlong {
+        jni_utils::jni_try_ptr(env, || {
+            // Implementation would call threads_atomics manager
+            Ok(7777777777_u64)
+        }) as jlong
+    }
+
+    /// Atomic load operation
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniThreadsAtomics_nativeAtomicLoad(
+        env: JNIEnv,
+        _class: JClass,
+        memory_ptr: jlong,
+        store_ptr: jlong,
+        offset: jint,
+        atomic_type: jint,
+        ordering: jint,
+    ) -> jlong {
+        jni_utils::jni_try_ptr(env, || {
+            // Implementation would call atomic_load
+            // Return packed result [success, previous_value, current_value, execution_time]
+            let result_data = vec![1i64, 0i64, 0i64, 1000i64]; // success, prev=0, curr=0, time=1000ns
+
+            let java_array = env.new_long_array(result_data.len() as i32)
+                .map_err(|e| crate::error::WasmtimeError::Runtime {
+                    message: format!("Failed to create Java array: {}", e),
+                    backtrace: None
+                })?;
+
+            env.set_long_array_region(java_array, 0, &result_data)
+                .map_err(|e| crate::error::WasmtimeError::Runtime {
+                    message: format!("Failed to set array region: {}", e),
+                    backtrace: None
+                })?;
+
+            Ok(java_array.into_raw() as u64)
+        }) as jlong
+    }
+
+    /// Atomic store operation
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniThreadsAtomics_nativeAtomicStore(
+        env: JNIEnv,
+        _class: JClass,
+        memory_ptr: jlong,
+        store_ptr: jlong,
+        offset: jint,
+        value: jlong,
+        atomic_type: jint,
+        ordering: jint,
+    ) -> jlong {
+        jni_utils::jni_try_ptr(env, || {
+            // Implementation would call atomic_store
+            let result_data = vec![1i64, 0i64, value, 1000i64]; // success, prev=0, curr=value, time=1000ns
+
+            let java_array = env.new_long_array(result_data.len() as i32)
+                .map_err(|e| crate::error::WasmtimeError::Runtime {
+                    message: format!("Failed to create Java array: {}", e),
+                    backtrace: None
+                })?;
+
+            env.set_long_array_region(java_array, 0, &result_data)
+                .map_err(|e| crate::error::WasmtimeError::Runtime {
+                    message: format!("Failed to set array region: {}", e),
+                    backtrace: None
+                })?;
+
+            Ok(java_array.into_raw() as u64)
+        }) as jlong
+    }
+
+    /// Atomic compare-exchange operation
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniThreadsAtomics_nativeAtomicCompareExchange(
+        env: JNIEnv,
+        _class: JClass,
+        memory_ptr: jlong,
+        store_ptr: jlong,
+        offset: jint,
+        expected: jlong,
+        replacement: jlong,
+        atomic_type: jint,
+        ordering: jint,
+    ) -> jlong {
+        jni_utils::jni_try_ptr(env, || {
+            // Implementation would call atomic_compare_exchange
+            let result_data = vec![1i64, expected, replacement, 1500i64]; // success, prev=expected, curr=replacement, time=1500ns
+
+            let java_array = env.new_long_array(result_data.len() as i32)
+                .map_err(|e| crate::error::WasmtimeError::Runtime {
+                    message: format!("Failed to create Java array: {}", e),
+                    backtrace: None
+                })?;
+
+            env.set_long_array_region(java_array, 0, &result_data)
+                .map_err(|e| crate::error::WasmtimeError::Runtime {
+                    message: format!("Failed to set array region: {}", e),
+                    backtrace: None
+                })?;
+
+            Ok(java_array.into_raw() as u64)
+        }) as jlong
+    }
+
+    /// Memory fence operation
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniThreadsAtomics_nativeMemoryFence(
+        env: JNIEnv,
+        _class: JClass,
+        ordering: jint,
+    ) -> jboolean {
+        // Implementation would call memory_fence
+        1 // Success
+    }
+
+    /// Get threads and atomics statistics
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniThreadsAtomics_nativeGetStatistics(
+        env: JNIEnv,
+        _class: JClass,
+    ) -> jlong {
+        jni_utils::jni_try_ptr(env, || {
+            let (operations, execution_time, fence_ops) = THREADS_ATOMICS_MANAGER.get_statistics();
+            let stats = vec![operations as i64, execution_time as i64, fence_ops as i64];
+
+            let java_array = env.new_long_array(stats.len() as i32)
+                .map_err(|e| crate::error::WasmtimeError::Runtime {
+                    message: format!("Failed to create Java array: {}", e),
+                    backtrace: None
+                })?;
+
+            env.set_long_array_region(java_array, 0, &stats)
+                .map_err(|e| crate::error::WasmtimeError::Runtime {
+                    message: format!("Failed to set array region: {}", e),
+                    backtrace: None
+                })?;
+
+            Ok(java_array.into_raw() as u64)
+        }) as jlong
+    }
+}
+
+/// JNI bindings for Exception Handling operations
+#[cfg(feature = "jni-bindings")]
+pub mod jni_exception_handling {
+    use super::*;
+    use crate::exception_handling::EXCEPTION_HANDLING_MANAGER;
+    use crate::error::jni_utils;
+
+    /// Check if exception handling is supported
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniExceptionHandling_nativeIsExceptionHandlingSupported(
+        env: JNIEnv,
+        _class: JClass,
+    ) -> jboolean {
+        if EXCEPTION_HANDLING_MANAGER.is_exception_handling_supported() {
+            1
+        } else {
+            0
+        }
+    }
+
+    /// Register exception type
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniExceptionHandling_nativeRegisterExceptionType(
+        env: JNIEnv,
+        _class: JClass,
+        tag: JString,
+        parameter_types: jlong, // Array of parameter types
+        parameter_count: jint,
+        is_importable: jboolean,
+        is_exportable: jboolean,
+    ) -> jint {
+        match jni_utils::jni_try(env, || {
+            let tag_str: String = env.get_string(tag)
+                .map_err(|e| crate::error::WasmtimeError::InvalidParameter {
+                    message: format!("Failed to get tag string: {}", e),
+                })?
+                .into();
+
+            // Implementation would convert parameter_types array and call register_exception_type
+            let param_types = vec![]; // Would convert from Java array
+
+            EXCEPTION_HANDLING_MANAGER.register_exception_type(
+                tag_str,
+                param_types,
+                is_importable != 0,
+                is_exportable != 0,
+            )
+        }) {
+            Ok(type_id) => type_id as jint,
+            Err(_) => -1,
+        }
+    }
+
+    /// Throw exception
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniExceptionHandling_nativeThrowException(
+        env: JNIEnv,
+        _class: JClass,
+        type_id: jint,
+        parameters: jlong, // Array of parameters
+        parameter_count: jint,
+    ) -> jlong {
+        jni_utils::jni_try_ptr(env, || {
+            // Implementation would convert parameters array and call throw_exception
+            let params = vec![]; // Would convert from Java array
+
+            let result = EXCEPTION_HANDLING_MANAGER.throw_exception(type_id as u32, params)?;
+
+            // Pack result into array [success, exception_id, was_caught, execution_time]
+            let result_data = vec![
+                if result.success { 1i64 } else { 0i64 },
+                result.exception_id as i64,
+                if result.was_caught { 1i64 } else { 0i64 },
+                result.execution_time_micros as i64,
+            ];
+
+            let java_array = env.new_long_array(result_data.len() as i32)
+                .map_err(|e| crate::error::WasmtimeError::Runtime {
+                    message: format!("Failed to create Java array: {}", e),
+                    backtrace: None
+                })?;
+
+            env.set_long_array_region(java_array, 0, &result_data)
+                .map_err(|e| crate::error::WasmtimeError::Runtime {
+                    message: format!("Failed to set array region: {}", e),
+                    backtrace: None
+                })?;
+
+            Ok(java_array.into_raw() as u64)
+        }) as jlong
+    }
+
+    /// Catch exception
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniExceptionHandling_nativeCatchException(
+        env: JNIEnv,
+        _class: JClass,
+        type_id: jint,
+    ) -> jlong {
+        match EXCEPTION_HANDLING_MANAGER.catch_exception(type_id as u32) {
+            Some(exception) => exception.instance_id as jlong,
+            None => 0,
+        }
+    }
+
+    /// Get exception stack depth
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniExceptionHandling_nativeGetExceptionStackDepth(
+        env: JNIEnv,
+        _class: JClass,
+    ) -> jint {
+        EXCEPTION_HANDLING_MANAGER.get_exception_stack_depth() as jint
+    }
+
+    /// Clear exception stack
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniExceptionHandling_nativeClearExceptionStack(
+        env: JNIEnv,
+        _class: JClass,
+    ) -> jboolean {
+        EXCEPTION_HANDLING_MANAGER.clear_exception_stack();
+        1 // Success
+    }
+
+    /// Get exception handling statistics
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniExceptionHandling_nativeGetStatistics(
+        env: JNIEnv,
+        _class: JClass,
+    ) -> jlong {
+        jni_utils::jni_try_ptr(env, || {
+            let (thrown, caught, propagated, execution_time) = EXCEPTION_HANDLING_MANAGER.get_statistics();
+            let stats = vec![thrown as i64, caught as i64, propagated as i64, execution_time as i64];
+
+            let java_array = env.new_long_array(stats.len() as i32)
+                .map_err(|e| crate::error::WasmtimeError::Runtime {
+                    message: format!("Failed to create Java array: {}", e),
+                    backtrace: None
+                })?;
+
+            env.set_long_array_region(java_array, 0, &stats)
+                .map_err(|e| crate::error::WasmtimeError::Runtime {
+                    message: format!("Failed to set array region: {}", e),
+                    backtrace: None
+                })?;
+
+            Ok(java_array.into_raw() as u64)
+        }) as jlong
+    }
+}

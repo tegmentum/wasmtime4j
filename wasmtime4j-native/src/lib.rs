@@ -60,6 +60,13 @@ pub mod bulk_operations;
 // Advanced memory management
 pub mod advanced_memory;
 
+// Advanced WebAssembly features
+pub mod multi_memory;
+pub mod reference_types;
+pub mod simd_support;
+pub mod threads_and_atomics;
+pub mod exception_handling;
+
 // Async runtime support
 pub mod async_runtime;
 

@@ -144,8 +144,8 @@ public interface BulkMemoryOperations {
   /**
    * Initializes a memory region with data from a data segment (memory.init instruction).
    *
-   * <p>This operation copies data from a passive data segment into linear memory. The data
-   * segment must be in a passive state and is identified by its index.
+   * <p>This operation copies data from a passive data segment into linear memory. The data segment
+   * must be in a passive state and is identified by its index.
    *
    * @param memory the target memory instance
    * @param memoryIndex the memory index (for multi-memory support)
@@ -180,8 +180,8 @@ public interface BulkMemoryOperations {
   /**
    * Copies data within the same memory instance (memory.copy instruction).
    *
-   * <p>This operation provides the standard WebAssembly memory.copy semantics with proper
-   * handling of overlapping regions using memmove semantics.
+   * <p>This operation provides the standard WebAssembly memory.copy semantics with proper handling
+   * of overlapping regions using memmove semantics.
    *
    * @param memory the memory instance
    * @param destOffset the destination offset
@@ -191,13 +191,14 @@ public interface BulkMemoryOperations {
    * @throws IndexOutOfBoundsException if any offset or size exceeds memory bounds
    * @throws RuntimeException if the copy operation fails
    */
-  void memoryCopy(final WasmMemory memory, final int destOffset, final int sourceOffset, final int size);
+  void memoryCopy(
+      final WasmMemory memory, final int destOffset, final int sourceOffset, final int size);
 
   /**
    * Fills a memory region with a byte value (memory.fill instruction).
    *
-   * <p>This operation implements the standard WebAssembly memory.fill instruction semantics
-   * for efficient memory initialization.
+   * <p>This operation implements the standard WebAssembly memory.fill instruction semantics for
+   * efficient memory initialization.
    *
    * @param memory the memory instance
    * @param offset the starting offset in memory
@@ -248,8 +249,8 @@ public interface BulkMemoryOperations {
   /**
    * Copies elements between tables or within the same table (table.copy instruction).
    *
-   * <p>This operation implements the standard WebAssembly table.copy instruction semantics
-   * with proper handling of overlapping regions.
+   * <p>This operation implements the standard WebAssembly table.copy instruction semantics with
+   * proper handling of overlapping regions.
    *
    * @param destTable the destination table
    * @param destIndex the destination index in the table
@@ -270,8 +271,8 @@ public interface BulkMemoryOperations {
   /**
    * Fills table elements with a value (table.fill instruction).
    *
-   * <p>This operation implements the standard WebAssembly table.fill instruction semantics
-   * for efficient table initialization.
+   * <p>This operation implements the standard WebAssembly table.fill instruction semantics for
+   * efficient table initialization.
    *
    * @param table the table to fill
    * @param index the starting index in the table
@@ -286,8 +287,8 @@ public interface BulkMemoryOperations {
   /**
    * Grows a table by a specified number of elements (table.grow instruction).
    *
-   * <p>This operation implements the standard WebAssembly table.grow instruction semantics,
-   * growing the table and initializing new elements with the specified value.
+   * <p>This operation implements the standard WebAssembly table.grow instruction semantics, growing
+   * the table and initializing new elements with the specified value.
    *
    * @param table the table to grow
    * @param delta the number of elements to add

@@ -9,27 +9,35 @@ import java.util.Set;
  */
 public final class SecurityPolicyModifier {
 
-    private final Set<Capability> capabilitiesToRevoke;
-    private final ResourceLimits additionalLimits;
-    private final EnforcementLevel enforcementLevel;
+  private final Set<Capability> capabilitiesToRevoke;
+  private final ResourceLimits additionalLimits;
+  private final EnforcementLevel enforcementLevel;
 
-    public SecurityPolicyModifier(final Set<Capability> capabilitiesToRevoke,
-                                 final ResourceLimits additionalLimits,
-                                 final EnforcementLevel enforcementLevel) {
-        this.capabilitiesToRevoke = Set.copyOf(capabilitiesToRevoke);
-        this.additionalLimits = additionalLimits;
-        this.enforcementLevel = enforcementLevel;
-    }
+  public SecurityPolicyModifier(
+      final Set<Capability> capabilitiesToRevoke,
+      final ResourceLimits additionalLimits,
+      final EnforcementLevel enforcementLevel) {
+    this.capabilitiesToRevoke = Set.copyOf(capabilitiesToRevoke);
+    this.additionalLimits = additionalLimits;
+    this.enforcementLevel = enforcementLevel;
+  }
 
-    public static SecurityPolicyModifier restrictive() {
-        return new SecurityPolicyModifier(
-            Set.of(Capability.HOST_NATIVE_ACCESS, Capability.FILESYSTEM_DELETE),
-            ResourceLimits.minimal(),
-            EnforcementLevel.STRICT
-        );
-    }
+  public static SecurityPolicyModifier restrictive() {
+    return new SecurityPolicyModifier(
+        Set.of(Capability.HOST_NATIVE_ACCESS, Capability.FILESYSTEM_DELETE),
+        ResourceLimits.minimal(),
+        EnforcementLevel.STRICT);
+  }
 
-    public Set<Capability> getCapabilitiesToRevoke() { return capabilitiesToRevoke; }
-    public ResourceLimits getAdditionalLimits() { return additionalLimits; }
-    public EnforcementLevel getEnforcementLevel() { return enforcementLevel; }
+  public Set<Capability> getCapabilitiesToRevoke() {
+    return capabilitiesToRevoke;
+  }
+
+  public ResourceLimits getAdditionalLimits() {
+    return additionalLimits;
+  }
+
+  public EnforcementLevel getEnforcementLevel() {
+    return enforcementLevel;
+  }
 }

@@ -5,8 +5,8 @@ import java.time.Duration;
 /**
  * Threads and atomic operations support for WebAssembly shared memory scenarios.
  *
- * <p>This interface provides access to WebAssembly threads and atomic operations that enable
- * shared memory programming patterns. These features are essential for multi-threaded WebAssembly
+ * <p>This interface provides access to WebAssembly threads and atomic operations that enable shared
+ * memory programming patterns. These features are essential for multi-threaded WebAssembly
  * applications that require synchronization primitives and atomic memory operations.
  *
  * <p>All operations include comprehensive validation and defensive programming to ensure thread
@@ -73,7 +73,8 @@ public interface ThreadsAndAtomics {
    * @throws IndexOutOfBoundsException if offset exceeds memory bounds
    * @throws RuntimeException if the atomic store fails
    */
-  void atomicStore(final WasmMemory memory, final int offset, final long value, final AtomicType type);
+  void atomicStore(
+      final WasmMemory memory, final int offset, final long value, final AtomicType type);
 
   /**
    * Performs an atomic read-modify-write add operation.
@@ -87,7 +88,8 @@ public interface ThreadsAndAtomics {
    * @throws IndexOutOfBoundsException if offset exceeds memory bounds
    * @throws RuntimeException if the atomic operation fails
    */
-  long atomicRmwAdd(final WasmMemory memory, final int offset, final long value, final AtomicType type);
+  long atomicRmwAdd(
+      final WasmMemory memory, final int offset, final long value, final AtomicType type);
 
   /**
    * Performs an atomic read-modify-write subtract operation.
@@ -101,7 +103,8 @@ public interface ThreadsAndAtomics {
    * @throws IndexOutOfBoundsException if offset exceeds memory bounds
    * @throws RuntimeException if the atomic operation fails
    */
-  long atomicRmwSub(final WasmMemory memory, final int offset, final long value, final AtomicType type);
+  long atomicRmwSub(
+      final WasmMemory memory, final int offset, final long value, final AtomicType type);
 
   /**
    * Performs an atomic read-modify-write bitwise AND operation.
@@ -115,7 +118,8 @@ public interface ThreadsAndAtomics {
    * @throws IndexOutOfBoundsException if offset exceeds memory bounds
    * @throws RuntimeException if the atomic operation fails
    */
-  long atomicRmwAnd(final WasmMemory memory, final int offset, final long value, final AtomicType type);
+  long atomicRmwAnd(
+      final WasmMemory memory, final int offset, final long value, final AtomicType type);
 
   /**
    * Performs an atomic read-modify-write bitwise OR operation.
@@ -129,7 +133,8 @@ public interface ThreadsAndAtomics {
    * @throws IndexOutOfBoundsException if offset exceeds memory bounds
    * @throws RuntimeException if the atomic operation fails
    */
-  long atomicRmwOr(final WasmMemory memory, final int offset, final long value, final AtomicType type);
+  long atomicRmwOr(
+      final WasmMemory memory, final int offset, final long value, final AtomicType type);
 
   /**
    * Performs an atomic read-modify-write bitwise XOR operation.
@@ -143,7 +148,8 @@ public interface ThreadsAndAtomics {
    * @throws IndexOutOfBoundsException if offset exceeds memory bounds
    * @throws RuntimeException if the atomic operation fails
    */
-  long atomicRmwXor(final WasmMemory memory, final int offset, final long value, final AtomicType type);
+  long atomicRmwXor(
+      final WasmMemory memory, final int offset, final long value, final AtomicType type);
 
   /**
    * Performs an atomic read-modify-write exchange operation.
@@ -157,7 +163,8 @@ public interface ThreadsAndAtomics {
    * @throws IndexOutOfBoundsException if offset exceeds memory bounds
    * @throws RuntimeException if the atomic operation fails
    */
-  long atomicRmwExchange(final WasmMemory memory, final int offset, final long value, final AtomicType type);
+  long atomicRmwExchange(
+      final WasmMemory memory, final int offset, final long value, final AtomicType type);
 
   /**
    * Performs an atomic compare-and-exchange operation.
@@ -173,7 +180,11 @@ public interface ThreadsAndAtomics {
    * @throws RuntimeException if the atomic operation fails
    */
   long atomicRmwCompareExchange(
-      final WasmMemory memory, final int offset, final long expected, final long replacement, final AtomicType type);
+      final WasmMemory memory,
+      final int offset,
+      final long expected,
+      final long replacement,
+      final AtomicType type);
 
   /**
    * Waits for a 32-bit value at the specified memory location to change or timeout.
@@ -187,7 +198,8 @@ public interface ThreadsAndAtomics {
    * @throws IndexOutOfBoundsException if offset exceeds memory bounds
    * @throws RuntimeException if the wait operation fails
    */
-  WaitResult memoryAtomicWait32(final WasmMemory memory, final int offset, final int expected, final Duration timeout);
+  WaitResult memoryAtomicWait32(
+      final WasmMemory memory, final int offset, final int expected, final Duration timeout);
 
   /**
    * Waits for a 64-bit value at the specified memory location to change or timeout.
@@ -201,7 +213,8 @@ public interface ThreadsAndAtomics {
    * @throws IndexOutOfBoundsException if offset exceeds memory bounds
    * @throws RuntimeException if the wait operation fails
    */
-  WaitResult memoryAtomicWait64(final WasmMemory memory, final int offset, final long expected, final Duration timeout);
+  WaitResult memoryAtomicWait64(
+      final WasmMemory memory, final int offset, final long expected, final Duration timeout);
 
   /**
    * Notifies waiting threads that a memory location has changed.
@@ -230,9 +243,7 @@ public interface ThreadsAndAtomics {
    */
   boolean canPerformAtomicOperations();
 
-  /**
-   * Enum representing atomic operation types.
-   */
+  /** Enum representing atomic operation types. */
   enum AtomicType {
     /** 32-bit integer atomic operations. */
     I32,
@@ -244,9 +255,7 @@ public interface ThreadsAndAtomics {
     I16
   }
 
-  /**
-   * Enum representing wait operation results.
-   */
+  /** Enum representing wait operation results. */
   enum WaitResult {
     /** The wait completed successfully (value changed). */
     OK,

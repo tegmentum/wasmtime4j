@@ -30,7 +30,8 @@ public final class WasmException extends Exception {
    * @throws IllegalArgumentException if exceptionType is null, values is null, or parameter count
    *     mismatch
    */
-  public WasmException(final ExceptionHandling.ExceptionType exceptionType, final Object... values) {
+  public WasmException(
+      final ExceptionHandling.ExceptionType exceptionType, final Object... values) {
     this(exceptionType, null, null, values);
   }
 
@@ -44,7 +45,9 @@ public final class WasmException extends Exception {
    *     mismatch
    */
   public WasmException(
-      final ExceptionHandling.ExceptionType exceptionType, final String message, final Object... values) {
+      final ExceptionHandling.ExceptionType exceptionType,
+      final String message,
+      final Object... values) {
     this(exceptionType, message, null, values);
   }
 
@@ -129,7 +132,8 @@ public final class WasmException extends Exception {
    */
   public Object getValue(final int index) {
     if (index < 0 || index >= values.length) {
-      throw new IndexOutOfBoundsException("Index " + index + " out of bounds for length " + values.length);
+      throw new IndexOutOfBoundsException(
+          "Index " + index + " out of bounds for length " + values.length);
     }
     return values[index];
   }
@@ -150,7 +154,8 @@ public final class WasmException extends Exception {
    * @param message the optional custom message
    * @return a formatted exception message
    */
-  private static String buildMessage(final ExceptionHandling.ExceptionType exceptionType, final String message) {
+  private static String buildMessage(
+      final ExceptionHandling.ExceptionType exceptionType, final String message) {
     final StringBuilder sb = new StringBuilder();
 
     if (message != null && !message.trim().isEmpty()) {

@@ -140,9 +140,7 @@ public interface SimdSupport {
    */
   Set<String> getNativeSimdFeatures();
 
-  /**
-   * Enum representing SIMD optimization levels.
-   */
+  /** Enum representing SIMD optimization levels. */
   enum SimdOptimizationLevel {
     /** No SIMD optimization. */
     NONE,
@@ -154,9 +152,7 @@ public interface SimdSupport {
     NATIVE
   }
 
-  /**
-   * Validation result for SIMD module validation.
-   */
+  /** Validation result for SIMD module validation. */
   final class ValidationResult {
     private final boolean isValid;
     private final boolean usesSimd;

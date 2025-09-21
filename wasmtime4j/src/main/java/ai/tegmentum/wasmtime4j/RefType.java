@@ -104,9 +104,7 @@ public final class RefType {
     return "RefType{" + "heapType=" + heapType + ", nullable=" + nullable + '}';
   }
 
-  /**
-   * Enum representing the different heap types for reference types.
-   */
+  /** Enum representing the different heap types for reference types. */
   public enum HeapType {
     /** Function reference heap type. */
     FUNC,

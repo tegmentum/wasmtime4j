@@ -7,11 +7,11 @@ import java.util.Map;
  * Exception handling support for WebAssembly exception proposal.
  *
  * <p>This interface provides access to WebAssembly exception handling features that enable
- * structured exception handling within WebAssembly modules. Exception handling allows for
- * more sophisticated error management and control flow patterns in WebAssembly applications.
+ * structured exception handling within WebAssembly modules. Exception handling allows for more
+ * sophisticated error management and control flow patterns in WebAssembly applications.
  *
- * <p>All operations include comprehensive validation and defensive programming to ensure
- * exception safety and prevent runtime errors during exception handling operations.
+ * <p>All operations include comprehensive validation and defensive programming to ensure exception
+ * safety and prevent runtime errors during exception handling operations.
  *
  * @since 1.0.0
  */
@@ -151,9 +151,7 @@ public interface ExceptionHandling {
    */
   boolean isExceptionHandlingEnabled();
 
-  /**
-   * Represents a WebAssembly exception type.
-   */
+  /** Represents a WebAssembly exception type. */
   final class ExceptionType {
     private final List<WasmValueType> parameters;
     private final String tag;
@@ -212,9 +210,7 @@ public interface ExceptionHandling {
     }
   }
 
-  /**
-   * Functional interface for exception handlers.
-   */
+  /** Functional interface for exception handlers. */
   @FunctionalInterface
   interface ExceptionHandler {
     /**
