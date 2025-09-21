@@ -8,6 +8,12 @@ tasks:
   - 280: Factory Method and Runtime Selection Implementation
   - 281: Panama FFI Implementation Foundation
   - 282: Production Readiness and API Polish
+  - 283: Complete WASI Filesystem Operations
+  - 284: Engine API Completion (Precompilation & Epochs)
+  - 285: Component Model Type System Implementation
+  - 286: Module Serialization and Caching Support
+  - 287: Advanced Memory Management Features
+  - 288: Async Execution and Performance Optimization
 ---
 
 # Epic: API Coverage Completion
@@ -48,33 +54,27 @@ Provide comprehensive documentation, examples, and tooling for seamless adoption
 
 ## Epic Architecture
 
-### Phase 1: Foundation Validation (Week 1)
-**Task 279: Walking Skeleton End-to-End Validation**
-- Validate complete Engine → Module → Instance → Function execution path
-- Fix any remaining implementation gaps in core functionality
-- Ensure zero UnsupportedOperationException in critical paths
-- Establish performance baselines for optimization
+### Phase 1: Foundation Validation (Weeks 1-2)
+**Tasks 279-282: Core Infrastructure** (existing foundation tasks)
+- Task 279: Walking Skeleton End-to-End Validation
+- Task 280: Factory Method and Runtime Selection Implementation
+- Task 281: Panama FFI Implementation Foundation
+- Task 282: Production Readiness and API Polish
 
-### Phase 2: Runtime Integration (Week 2)
-**Task 280: Factory Method and Runtime Selection Implementation**
-- Complete Panama → JNI fallback logic in all factory methods
-- Eliminate ClassNotFoundException scenarios
-- Provide clear error messages and resolution guidance
-- Create missing concrete implementation classes
+### Phase 2: Immediate API Gaps (Weeks 3-6)
+**Tasks 283-284: Critical Missing Features**
+- Task 283: Complete WASI Filesystem Operations (1.5 weeks)
+- Task 284: Engine API Completion (Precompilation & Epochs) (1 week)
 
-### Phase 3: Performance and Compatibility (Week 3)
-**Task 281: Panama FFI Implementation Foundation**
-- Implement core WebAssembly operations via Panama FFI
-- Achieve performance improvements over JNI for Java 23+
-- Provide memory management via MemorySegment
-- Enable factory methods to select Panama when available
+### Phase 3: Component Model Foundation (Weeks 7-10)
+**Tasks 285-286: Advanced WebAssembly Standards**
+- Task 285: Component Model Type System Implementation (2 weeks)
+- Task 286: Module Serialization and Caching Support (1 week)
 
-### Phase 4: Production Deployment (Week 4)
-**Task 282: Production Readiness and API Polish**
-- Implement caching and pooling for performance
-- Add monitoring and observability features
-- Complete documentation and operational guides
-- Finalize security hardening and edge case handling
+### Phase 4: Advanced Features (Weeks 11-14)
+**Tasks 287-288: Performance and Scalability**
+- Task 287: Advanced Memory Management Features (2 weeks)
+- Task 288: Async Execution and Performance Optimization (2 weeks)
 
 ## Technical Strategy
 
@@ -146,12 +146,23 @@ No Runtime Available        → Clear Error Message
 
 ## Estimated Timeline
 
-**Total Duration**: 4 weeks
+**Total Duration**: 14 weeks
 
+### Phase 1: Foundation (Weeks 1-2)
 - **Week 1**: Walking Skeleton Validation and Core Gap Fixing
 - **Week 2**: Factory Method Implementation and Runtime Selection
-- **Week 3**: Panama FFI Foundation and Performance Optimization
-- **Week 4**: Production Readiness and Documentation
+
+### Phase 2: Critical API Gaps (Weeks 3-6)
+- **Week 3-4.5**: Complete WASI Filesystem Operations
+- **Week 4.5-6**: Engine API Completion (Precompilation & Epochs)
+
+### Phase 3: Component Model (Weeks 7-10)
+- **Week 7-8**: Component Model Type System Implementation
+- **Week 9-10**: Module Serialization and Caching Support
+
+### Phase 4: Advanced Features (Weeks 11-14)
+- **Week 11-12**: Advanced Memory Management Features
+- **Week 13-14**: Async Execution and Performance Optimization
 
 ## Resource Requirements
 
