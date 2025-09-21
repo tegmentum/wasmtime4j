@@ -60,7 +60,10 @@ public interface PerformanceProfiler extends AutoCloseable {
    * @throws IllegalArgumentException if engine is null
    */
   static PerformanceProfiler create(final ai.tegmentum.wasmtime4j.Engine engine) {
-    throw new UnsupportedOperationException("Implementation must be provided by runtime factory");
+    if (engine == null) {
+      throw new IllegalArgumentException("Engine cannot be null");
+    }
+    return new DefaultPerformanceProfiler(engine, ProfilerConfig.defaultConfig());
   }
 
   /**
@@ -73,7 +76,13 @@ public interface PerformanceProfiler extends AutoCloseable {
    */
   static PerformanceProfiler create(
       final ai.tegmentum.wasmtime4j.Engine engine, final ProfilerConfig config) {
-    throw new UnsupportedOperationException("Implementation must be provided by runtime factory");
+    if (engine == null) {
+      throw new IllegalArgumentException("Engine cannot be null");
+    }
+    if (config == null) {
+      throw new IllegalArgumentException("Config cannot be null");
+    }
+    return new DefaultPerformanceProfiler(engine, config);
   }
 
   /**

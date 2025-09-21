@@ -37,7 +37,10 @@ public interface CompilationStatistics {
    * @throws IllegalArgumentException if module is null or not compiled
    */
   static CompilationStatistics forModule(final ai.tegmentum.wasmtime4j.Module module) {
-    throw new UnsupportedOperationException("Implementation must be provided by runtime factory");
+    if (module == null) {
+      throw new IllegalArgumentException("Module cannot be null");
+    }
+    return new DefaultCompilationStatistics(module);
   }
 
   /**
