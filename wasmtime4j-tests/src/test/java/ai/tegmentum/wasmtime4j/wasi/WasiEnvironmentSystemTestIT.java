@@ -5,9 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.utils.TestCategories;
-import ai.tegmentum.wasmtime4j.wasi.WasiContext;
-import ai.tegmentum.wasmtime4j.wasi.WasiFactory;
-import ai.tegmentum.wasmtime4j.wasi.WasiRuntimeType;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;

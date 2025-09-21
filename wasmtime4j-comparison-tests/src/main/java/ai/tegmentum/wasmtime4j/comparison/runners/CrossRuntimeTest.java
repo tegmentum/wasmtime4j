@@ -106,8 +106,8 @@ public interface CrossRuntimeTest {
 
     @Override
     public String toString() {
-      return String.format("CrossRuntimeTest{name='%s', category=%s, critical=%s}",
-          name, category, critical);
+      return String.format(
+          "CrossRuntimeTest{name='%s', category=%s, critical=%s}", name, category, critical);
     }
   }
 }

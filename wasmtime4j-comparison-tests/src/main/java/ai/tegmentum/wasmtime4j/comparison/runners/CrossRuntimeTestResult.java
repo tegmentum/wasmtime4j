@@ -35,8 +35,10 @@ public final class CrossRuntimeTestResult {
       final double consistencyScore,
       final boolean meetsProductionRequirements) {
     this.testName = Objects.requireNonNull(testName, "testName cannot be null");
-    this.executionResults = Map.copyOf(Objects.requireNonNull(executionResults, "executionResults cannot be null"));
-    this.behavioralAnalysis = Objects.requireNonNull(behavioralAnalysis, "behavioralAnalysis cannot be null");
+    this.executionResults =
+        Map.copyOf(Objects.requireNonNull(executionResults, "executionResults cannot be null"));
+    this.behavioralAnalysis =
+        Objects.requireNonNull(behavioralAnalysis, "behavioralAnalysis cannot be null");
     this.consistencyScore = consistencyScore;
     this.meetsProductionRequirements = meetsProductionRequirements;
   }
@@ -67,7 +69,8 @@ public final class CrossRuntimeTestResult {
    * @return true if all runtimes executed successfully
    */
   public boolean allRuntimesSucceeded() {
-    return executionResults.values().stream().allMatch(BehavioralAnalyzer.TestExecutionResult::isSuccessful);
+    return executionResults.values().stream()
+        .allMatch(BehavioralAnalyzer.TestExecutionResult::isSuccessful);
   }
 
   /**
@@ -76,7 +79,8 @@ public final class CrossRuntimeTestResult {
    * @return true if all runtimes failed
    */
   public boolean allRuntimesFailed() {
-    return executionResults.values().stream().noneMatch(BehavioralAnalyzer.TestExecutionResult::isSuccessful);
+    return executionResults.values().stream()
+        .noneMatch(BehavioralAnalyzer.TestExecutionResult::isSuccessful);
   }
 
   /**
@@ -127,13 +131,23 @@ public final class CrossRuntimeTestResult {
 
   @Override
   public int hashCode() {
-    return Objects.hash(testName, executionResults, behavioralAnalysis, consistencyScore, meetsProductionRequirements);
+    return Objects.hash(
+        testName,
+        executionResults,
+        behavioralAnalysis,
+        consistencyScore,
+        meetsProductionRequirements);
   }
 
   @Override
   public String toString() {
     return String.format(
-        "CrossRuntimeTestResult{testName='%s', consistencyScore=%.2f, productionReady=%s, runtimesSucceeded=%d/%d}",
-        testName, consistencyScore, meetsProductionRequirements, getSuccessfulRuntimeCount(), executionResults.size());
+        "CrossRuntimeTestResult{testName='%s', consistencyScore=%.2f, productionReady=%s,"
+            + " runtimesSucceeded=%d/%d}",
+        testName,
+        consistencyScore,
+        meetsProductionRequirements,
+        getSuccessfulRuntimeCount(),
+        executionResults.size());
   }
 }

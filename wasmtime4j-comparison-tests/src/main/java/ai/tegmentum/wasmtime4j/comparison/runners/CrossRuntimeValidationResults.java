@@ -6,8 +6,8 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Comprehensive results of cross-runtime validation execution, containing detailed analysis
- * of behavioral consistency, production readiness metrics, and overall validation outcomes.
+ * Comprehensive results of cross-runtime validation execution, containing detailed analysis of
+ * behavioral consistency, production readiness metrics, and overall validation outcomes.
  *
  * @since 1.0.0
  */
@@ -91,20 +91,21 @@ public final class CrossRuntimeValidationResults {
     }
 
     return String.format(
-        "Cross-Runtime Validation Summary:%n" +
-        "Overall Consistency: %.2f%%%n" +
-        "Total Tests: %d across %d suites%n" +
-        "Production Ready: %d/%d tests (%.1f%%)%n" +
-        "Zero Discrepancy: %s%n" +
-        "Execution Time: %d seconds%n" +
-        "Status: %s",
+        "Cross-Runtime Validation Summary:%n"
+            + "Overall Consistency: %.2f%%%n"
+            + "Total Tests: %d across %d suites%n"
+            + "Production Ready: %d/%d tests (%.1f%%)%n"
+            + "Zero Discrepancy: %s%n"
+            + "Execution Time: %d seconds%n"
+            + "Status: %s",
         overallResult.getOverallConsistencyScore() * 100,
         overallResult.getTotalTests(),
         overallResult.getTotalSuites(),
         overallResult.getProductionReadyTests(),
         overallResult.getTotalTests(),
-        overallResult.getTotalTests() > 0 ?
-            (double) overallResult.getProductionReadyTests() / overallResult.getTotalTests() * 100 : 0,
+        overallResult.getTotalTests() > 0
+            ? (double) overallResult.getProductionReadyTests() / overallResult.getTotalTests() * 100
+            : 0,
         overallResult.achievesZeroDiscrepancy() ? "ACHIEVED" : "NOT ACHIEVED",
         executionDuration.getSeconds(),
         isValidationSuccessful() ? "PASSED" : "FAILED");
@@ -131,7 +132,14 @@ public final class CrossRuntimeValidationResults {
 
   @Override
   public int hashCode() {
-    return Objects.hash(suiteResults, overallResult, executionDuration, startTime, endTime, executionFailed, failureReason);
+    return Objects.hash(
+        suiteResults,
+        overallResult,
+        executionDuration,
+        startTime,
+        endTime,
+        executionFailed,
+        failureReason);
   }
 
   @Override
@@ -162,7 +170,8 @@ public final class CrossRuntimeValidationResults {
     }
 
     public Builder executionDuration(final Duration executionDuration) {
-      this.executionDuration = Objects.requireNonNull(executionDuration, "executionDuration cannot be null");
+      this.executionDuration =
+          Objects.requireNonNull(executionDuration, "executionDuration cannot be null");
       return this;
     }
 

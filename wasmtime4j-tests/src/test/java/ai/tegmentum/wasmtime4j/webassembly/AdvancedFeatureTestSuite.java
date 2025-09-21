@@ -1,6 +1,5 @@
 package ai.tegmentum.wasmtime4j.webassembly;
 
-import ai.tegmentum.wasmtime4j.AdvancedWasmFeature;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
@@ -8,16 +7,14 @@ import java.util.Objects;
 import java.util.logging.Logger;
 
 /**
- * Comprehensive test suite for advanced WebAssembly features including SIMD, Threading,
- * and Exception handling. This class orchestrates the execution of all advanced feature
- * testing to achieve the target 8-12% overall coverage improvement.
+ * Comprehensive test suite for advanced WebAssembly features including SIMD, Threading, and
+ * Exception handling. This class orchestrates the execution of all advanced feature testing to
+ * achieve the target 8-12% overall coverage improvement.
  *
- * <p>This test suite is designed to:
- * - Execute SIMD tests targeting 60-70% coverage
- * - Execute Threading tests targeting 50-60% coverage
- * - Execute Exception tests targeting 70-80% coverage
- * - Provide unified reporting and analysis across all advanced features
- * - Support cross-runtime validation and performance benchmarking
+ * <p>This test suite is designed to: - Execute SIMD tests targeting 60-70% coverage - Execute
+ * Threading tests targeting 50-60% coverage - Execute Exception tests targeting 70-80% coverage -
+ * Provide unified reporting and analysis across all advanced features - Support cross-runtime
+ * validation and performance benchmarking
  */
 public final class AdvancedFeatureTestSuite {
   private static final Logger LOGGER = Logger.getLogger(AdvancedFeatureTestSuite.class.getName());
@@ -43,7 +40,8 @@ public final class AdvancedFeatureTestSuite {
     LOGGER.info("Starting comprehensive advanced WebAssembly feature testing");
     final Instant startTime = Instant.now();
 
-    final AdvancedFeatureTestResults.Builder resultsBuilder = new AdvancedFeatureTestResults.Builder();
+    final AdvancedFeatureTestResults.Builder resultsBuilder =
+        new AdvancedFeatureTestResults.Builder();
     resultsBuilder.startTime(startTime);
 
     // Execute SIMD tests if enabled
@@ -101,12 +99,13 @@ public final class AdvancedFeatureTestSuite {
   public SimdTestResults executeSimdOnly() throws IOException {
     LOGGER.info("Executing SIMD-only test suite");
 
-    final AdvancedFeatureTestConfig simdConfig = AdvancedFeatureTestConfig.simdOnlyConfig()
-        .builder()
-        .crossRuntimeValidation(config.isCrossRuntimeValidationEnabled())
-        .performanceBenchmarking(config.isPerformanceBenchmarkingEnabled())
-        .verboseLogging(config.isVerboseLoggingEnabled())
-        .build();
+    final AdvancedFeatureTestConfig simdConfig =
+        AdvancedFeatureTestConfig.simdOnlyConfig()
+            .builder()
+            .crossRuntimeValidation(config.isCrossRuntimeValidationEnabled())
+            .performanceBenchmarking(config.isPerformanceBenchmarkingEnabled())
+            .verboseLogging(config.isVerboseLoggingEnabled())
+            .build();
 
     final SimdTestExecutor simdExecutor = new SimdTestExecutor(simdConfig);
     return simdExecutor.executeSimdTests();
@@ -121,12 +120,13 @@ public final class AdvancedFeatureTestSuite {
   public ThreadingTestResults executeThreadingOnly() throws IOException {
     LOGGER.info("Executing Threading-only test suite");
 
-    final AdvancedFeatureTestConfig threadingConfig = AdvancedFeatureTestConfig.threadingOnlyConfig()
-        .builder()
-        .crossRuntimeValidation(config.isCrossRuntimeValidationEnabled())
-        .performanceBenchmarking(config.isPerformanceBenchmarkingEnabled())
-        .verboseLogging(config.isVerboseLoggingEnabled())
-        .build();
+    final AdvancedFeatureTestConfig threadingConfig =
+        AdvancedFeatureTestConfig.threadingOnlyConfig()
+            .builder()
+            .crossRuntimeValidation(config.isCrossRuntimeValidationEnabled())
+            .performanceBenchmarking(config.isPerformanceBenchmarkingEnabled())
+            .verboseLogging(config.isVerboseLoggingEnabled())
+            .build();
 
     final ThreadingTestExecutor threadingExecutor = new ThreadingTestExecutor(threadingConfig);
     try {
@@ -145,12 +145,13 @@ public final class AdvancedFeatureTestSuite {
   public ExceptionTestResults executeExceptionOnly() throws IOException {
     LOGGER.info("Executing Exception-only test suite");
 
-    final AdvancedFeatureTestConfig exceptionConfig = AdvancedFeatureTestConfig.exceptionOnlyConfig()
-        .builder()
-        .crossRuntimeValidation(config.isCrossRuntimeValidationEnabled())
-        .performanceBenchmarking(config.isPerformanceBenchmarkingEnabled())
-        .verboseLogging(config.isVerboseLoggingEnabled())
-        .build();
+    final AdvancedFeatureTestConfig exceptionConfig =
+        AdvancedFeatureTestConfig.exceptionOnlyConfig()
+            .builder()
+            .crossRuntimeValidation(config.isCrossRuntimeValidationEnabled())
+            .performanceBenchmarking(config.isPerformanceBenchmarkingEnabled())
+            .verboseLogging(config.isVerboseLoggingEnabled())
+            .build();
 
     final ExceptionTestExecutor exceptionExecutor = new ExceptionTestExecutor(exceptionConfig);
     return exceptionExecutor.executeExceptionTests();
@@ -171,12 +172,13 @@ public final class AdvancedFeatureTestSuite {
    * @return test suite with performance benchmarking
    */
   public static AdvancedFeatureTestSuite createWithBenchmarking() {
-    final AdvancedFeatureTestConfig config = AdvancedFeatureTestConfig.builder()
-        .enableAllFeatures()
-        .performanceBenchmarking(true)
-        .crossRuntimeValidation(true)
-        .verboseLogging(true)
-        .build();
+    final AdvancedFeatureTestConfig config =
+        AdvancedFeatureTestConfig.builder()
+            .enableAllFeatures()
+            .performanceBenchmarking(true)
+            .crossRuntimeValidation(true)
+            .verboseLogging(true)
+            .build();
 
     return new AdvancedFeatureTestSuite(config);
   }
@@ -187,15 +189,16 @@ public final class AdvancedFeatureTestSuite {
    * @return test suite optimized for CI/CD execution
    */
   public static AdvancedFeatureTestSuite createForCiCd() {
-    final AdvancedFeatureTestConfig config = AdvancedFeatureTestConfig.builder()
-        .enableAllFeatures()
-        .timeout(Duration.ofMinutes(45)) // CI/CD friendly timeout
-        .performanceBenchmarking(false) // Skip performance tests in CI
-        .crossRuntimeValidation(true)
-        .skipKnownFailures(true) // Skip known issues in CI
-        .verboseLogging(false) // Reduce log noise
-        .maxRetryAttempts(2) // Reduce retries for faster feedback
-        .build();
+    final AdvancedFeatureTestConfig config =
+        AdvancedFeatureTestConfig.builder()
+            .enableAllFeatures()
+            .timeout(Duration.ofMinutes(45)) // CI/CD friendly timeout
+            .performanceBenchmarking(false) // Skip performance tests in CI
+            .crossRuntimeValidation(true)
+            .skipKnownFailures(true) // Skip known issues in CI
+            .verboseLogging(false) // Reduce log noise
+            .maxRetryAttempts(2) // Reduce retries for faster feedback
+            .build();
 
     return new AdvancedFeatureTestSuite(config);
   }
@@ -207,7 +210,8 @@ public final class AdvancedFeatureTestSuite {
    */
   private void logExecutionSummary(final AdvancedFeatureTestResults results) {
     LOGGER.info("=== Advanced WebAssembly Feature Testing Summary ===");
-    LOGGER.info(String.format("Total execution time: %d seconds", results.getTotalDuration().toSeconds()));
+    LOGGER.info(
+        String.format("Total execution time: %d seconds", results.getTotalDuration().toSeconds()));
     LOGGER.info(String.format("Total tests executed: %d", results.getTotalTestsExecuted()));
     LOGGER.info(String.format("Total successful: %d", results.getTotalSuccessfulTests()));
     LOGGER.info(String.format("Total failed: %d", results.getTotalFailedTests()));
@@ -216,31 +220,62 @@ public final class AdvancedFeatureTestSuite {
     // SIMD summary
     if (results.hasSimdResults()) {
       final SimdTestResults simdResults = results.getSimdResults().get();
-      LOGGER.info(String.format("SIMD Coverage: %.1f%% (Target: 60-70%%)",
-          simdResults.getCoverageMetrics().getOverallCoverage()));
-      LOGGER.info(String.format("  - Arithmetic: %.1f%%", simdResults.getCoverageMetrics().getArithmeticCoverage()));
-      LOGGER.info(String.format("  - Memory: %.1f%%", simdResults.getCoverageMetrics().getMemoryCoverage()));
-      LOGGER.info(String.format("  - Manipulation: %.1f%%", simdResults.getCoverageMetrics().getManipulationCoverage()));
+      LOGGER.info(
+          String.format(
+              "SIMD Coverage: %.1f%% (Target: 60-70%%)",
+              simdResults.getCoverageMetrics().getOverallCoverage()));
+      LOGGER.info(
+          String.format(
+              "  - Arithmetic: %.1f%%", simdResults.getCoverageMetrics().getArithmeticCoverage()));
+      LOGGER.info(
+          String.format(
+              "  - Memory: %.1f%%", simdResults.getCoverageMetrics().getMemoryCoverage()));
+      LOGGER.info(
+          String.format(
+              "  - Manipulation: %.1f%%",
+              simdResults.getCoverageMetrics().getManipulationCoverage()));
     }
 
     // Threading summary
     if (results.hasThreadingResults()) {
       final ThreadingTestResults threadingResults = results.getThreadingResults().get();
-      LOGGER.info(String.format("Threading Coverage: %.1f%% (Target: 50-60%%)",
-          threadingResults.getCoverageMetrics().getOverallCoverage()));
-      LOGGER.info(String.format("  - Atomic Operations: %.1f%%", threadingResults.getCoverageMetrics().getAtomicCoverage()));
-      LOGGER.info(String.format("  - Shared Memory: %.1f%%", threadingResults.getCoverageMetrics().getSharedMemoryCoverage()));
-      LOGGER.info(String.format("  - Thread Safety: %.1f%%", threadingResults.getCoverageMetrics().getThreadSafetyCoverage()));
+      LOGGER.info(
+          String.format(
+              "Threading Coverage: %.1f%% (Target: 50-60%%)",
+              threadingResults.getCoverageMetrics().getOverallCoverage()));
+      LOGGER.info(
+          String.format(
+              "  - Atomic Operations: %.1f%%",
+              threadingResults.getCoverageMetrics().getAtomicCoverage()));
+      LOGGER.info(
+          String.format(
+              "  - Shared Memory: %.1f%%",
+              threadingResults.getCoverageMetrics().getSharedMemoryCoverage()));
+      LOGGER.info(
+          String.format(
+              "  - Thread Safety: %.1f%%",
+              threadingResults.getCoverageMetrics().getThreadSafetyCoverage()));
     }
 
     // Exception summary
     if (results.hasExceptionResults()) {
       final ExceptionTestResults exceptionResults = results.getExceptionResults().get();
-      LOGGER.info(String.format("Exception Coverage: %.1f%% (Target: 70-80%%)",
-          exceptionResults.getCoverageMetrics().getOverallCoverage()));
-      LOGGER.info(String.format("  - Basic Operations: %.1f%%", exceptionResults.getCoverageMetrics().getBasicCoverage()));
-      LOGGER.info(String.format("  - Exception Types: %.1f%%", exceptionResults.getCoverageMetrics().getTypeCoverage()));
-      LOGGER.info(String.format("  - Nested Handling: %.1f%%", exceptionResults.getCoverageMetrics().getNestedCoverage()));
+      LOGGER.info(
+          String.format(
+              "Exception Coverage: %.1f%% (Target: 70-80%%)",
+              exceptionResults.getCoverageMetrics().getOverallCoverage()));
+      LOGGER.info(
+          String.format(
+              "  - Basic Operations: %.1f%%",
+              exceptionResults.getCoverageMetrics().getBasicCoverage()));
+      LOGGER.info(
+          String.format(
+              "  - Exception Types: %.1f%%",
+              exceptionResults.getCoverageMetrics().getTypeCoverage()));
+      LOGGER.info(
+          String.format(
+              "  - Nested Handling: %.1f%%",
+              exceptionResults.getCoverageMetrics().getNestedCoverage()));
     }
 
     // Overall assessment

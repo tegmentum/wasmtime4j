@@ -46,9 +46,7 @@ public final class CrossRuntimeTestSuite {
    * @param tests the tests in this suite
    */
   public CrossRuntimeTestSuite(
-      final String name,
-      final String description,
-      final List<CrossRuntimeTest> tests) {
+      final String name, final String description, final List<CrossRuntimeTest> tests) {
     this(name, description, tests, TestSuiteCategory.FUNCTIONAL, true);
   }
 

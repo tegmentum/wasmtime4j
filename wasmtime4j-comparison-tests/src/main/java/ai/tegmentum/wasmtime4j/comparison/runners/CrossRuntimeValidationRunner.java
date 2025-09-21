@@ -22,16 +22,17 @@ import java.util.stream.Collectors;
 
 /**
  * Comprehensive cross-runtime validation test runner that executes tests across multiple
- * WebAssembly runtime implementations (JNI and Panama) and performs detailed behavioral
- * analysis to ensure >98% consistency and zero functional discrepancies.
+ * WebAssembly runtime implementations (JNI and Panama) and performs detailed behavioral analysis to
+ * ensure >98% consistency and zero functional discrepancies.
  *
- * <p>This runner implements parallel test execution, comprehensive result comparison,
- * and detailed reporting to validate runtime equivalence for production readiness.
+ * <p>This runner implements parallel test execution, comprehensive result comparison, and detailed
+ * reporting to validate runtime equivalence for production readiness.
  *
  * @since 1.0.0
  */
 public final class CrossRuntimeValidationRunner {
-  private static final Logger LOGGER = Logger.getLogger(CrossRuntimeValidationRunner.class.getName());
+  private static final Logger LOGGER =
+      Logger.getLogger(CrossRuntimeValidationRunner.class.getName());
 
   // Validation execution parameters
   private static final int DEFAULT_THREAD_POOL_SIZE = Runtime.getRuntime().availableProcessors();
@@ -53,7 +54,8 @@ public final class CrossRuntimeValidationRunner {
    * @param validationConfig the validation configuration to use
    */
   public CrossRuntimeValidationRunner(final ValidationConfiguration validationConfig) {
-    this.validationConfig = Objects.requireNonNull(validationConfig, "validationConfig cannot be null");
+    this.validationConfig =
+        Objects.requireNonNull(validationConfig, "validationConfig cannot be null");
     this.behavioralAnalyzer = new BehavioralAnalyzer(validationConfig.getToleranceConfiguration());
     this.executorService = Executors.newFixedThreadPool(validationConfig.getThreadPoolSize());
     this.testResults = new ConcurrentHashMap<>();
@@ -65,7 +67,8 @@ public final class CrossRuntimeValidationRunner {
    * @param testSuites the test suites to execute
    * @return comprehensive validation results
    */
-  public CrossRuntimeValidationResults executeValidation(final List<CrossRuntimeTestSuite> testSuites) {
+  public CrossRuntimeValidationResults executeValidation(
+      final List<CrossRuntimeTestSuite> testSuites) {
     Objects.requireNonNull(testSuites, "testSuites cannot be null");
 
     LOGGER.info("Starting cross-runtime validation with " + testSuites.size() + " test suites");
@@ -76,21 +79,28 @@ public final class CrossRuntimeValidationRunner {
 
     try {
       // Execute test suites in parallel
-      final List<CompletableFuture<TestSuiteValidationResult>> futures = testSuites.stream()
-          .map(testSuite -> CompletableFuture.supplyAsync(() -> executeTestSuite(testSuite), executorService))
-          .collect(Collectors.toList());
+      final List<CompletableFuture<TestSuiteValidationResult>> futures =
+          testSuites.stream()
+              .map(
+                  testSuite ->
+                      CompletableFuture.supplyAsync(
+                          () -> executeTestSuite(testSuite), executorService))
+              .collect(Collectors.toList());
 
       // Wait for all test suites to complete
-      final List<TestSuiteValidationResult> suiteResults = futures.stream()
-          .map(future -> {
-            try {
-              return future.get(validationConfig.getRunnerTimeout().toMillis(), TimeUnit.MILLISECONDS);
-            } catch (final Exception e) {
-              LOGGER.severe("Test suite execution failed: " + e.getMessage());
-              return createFailedSuiteResult(e);
-            }
-          })
-          .collect(Collectors.toList());
+      final List<TestSuiteValidationResult> suiteResults =
+          futures.stream()
+              .map(
+                  future -> {
+                    try {
+                      return future.get(
+                          validationConfig.getRunnerTimeout().toMillis(), TimeUnit.MILLISECONDS);
+                    } catch (final Exception e) {
+                      LOGGER.severe("Test suite execution failed: " + e.getMessage());
+                      return createFailedSuiteResult(e);
+                    }
+                  })
+              .collect(Collectors.toList());
 
       // Aggregate results and perform overall analysis
       final OverallValidationResult overallResult = aggregateValidationResults(suiteResults);
@@ -107,10 +117,7 @@ public final class CrossRuntimeValidationRunner {
 
     } catch (final Exception e) {
       LOGGER.severe("Cross-runtime validation failed: " + e.getMessage());
-      return resultsBuilder
-          .executionFailed(true)
-          .failureReason(e.getMessage())
-          .build();
+      return resultsBuilder.executionFailed(true).failureReason(e.getMessage()).build();
     }
   }
 
@@ -141,7 +148,8 @@ public final class CrossRuntimeValidationRunner {
           .build();
 
     } catch (final Exception e) {
-      LOGGER.warning("Test suite execution failed: " + testSuite.getName() + " - " + e.getMessage());
+      LOGGER.warning(
+          "Test suite execution failed: " + testSuite.getName() + " - " + e.getMessage());
       return resultBuilder
           .executionSuccessful(false)
           .failureReason(e.getMessage())
@@ -223,20 +231,23 @@ public final class CrossRuntimeValidationRunner {
   }
 
   /** Analyzes consistency across all tests in a test suite. */
-  private SuiteConsistencyAnalysis analyzeSuiteConsistency(final List<CrossRuntimeTestResult> testResults) {
+  private SuiteConsistencyAnalysis analyzeSuiteConsistency(
+      final List<CrossRuntimeTestResult> testResults) {
     final SuiteConsistencyAnalysis.Builder analysisBuilder = new SuiteConsistencyAnalysis.Builder();
 
-    final double averageConsistency = testResults.stream()
-        .mapToDouble(CrossRuntimeTestResult::getConsistencyScore)
-        .average()
-        .orElse(0.0);
+    final double averageConsistency =
+        testResults.stream()
+            .mapToDouble(CrossRuntimeTestResult::getConsistencyScore)
+            .average()
+            .orElse(0.0);
 
-    final long productionReadyTests = testResults.stream()
-        .mapToLong(result -> result.meetsProductionRequirements() ? 1 : 0)
-        .sum();
+    final long productionReadyTests =
+        testResults.stream()
+            .mapToLong(result -> result.meetsProductionRequirements() ? 1 : 0)
+            .sum();
 
-    final double productionReadinessRate = testResults.isEmpty() ? 0.0 :
-        (double) productionReadyTests / testResults.size();
+    final double productionReadinessRate =
+        testResults.isEmpty() ? 0.0 : (double) productionReadyTests / testResults.size();
 
     return analysisBuilder
         .averageConsistencyScore(averageConsistency)
@@ -251,30 +262,31 @@ public final class CrossRuntimeValidationRunner {
       final List<TestSuiteValidationResult> suiteResults) {
     final OverallValidationResult.Builder resultBuilder = new OverallValidationResult.Builder();
 
-    final int totalTests = suiteResults.stream()
-        .mapToInt(suite -> suite.getTestResults().size())
-        .sum();
+    final int totalTests =
+        suiteResults.stream().mapToInt(suite -> suite.getTestResults().size()).sum();
 
     final int totalSuites = suiteResults.size();
 
-    final double overallConsistencyScore = suiteResults.stream()
-        .flatMap(suite -> suite.getTestResults().stream())
-        .mapToDouble(CrossRuntimeTestResult::getConsistencyScore)
-        .average()
-        .orElse(0.0);
+    final double overallConsistencyScore =
+        suiteResults.stream()
+            .flatMap(suite -> suite.getTestResults().stream())
+            .mapToDouble(CrossRuntimeTestResult::getConsistencyScore)
+            .average()
+            .orElse(0.0);
 
-    final long productionReadyTests = suiteResults.stream()
-        .flatMap(suite -> suite.getTestResults().stream())
-        .mapToLong(result -> result.meetsProductionRequirements() ? 1 : 0)
-        .sum();
+    final long productionReadyTests =
+        suiteResults.stream()
+            .flatMap(suite -> suite.getTestResults().stream())
+            .mapToLong(result -> result.meetsProductionRequirements() ? 1 : 0)
+            .sum();
 
     final boolean meetsProductionRequirements =
-        overallConsistencyScore >= PRODUCTION_CONSISTENCY_THRESHOLD &&
-        (totalTests == 0 || (double) productionReadyTests / totalTests >= PRODUCTION_CONSISTENCY_THRESHOLD);
+        overallConsistencyScore >= PRODUCTION_CONSISTENCY_THRESHOLD
+            && (totalTests == 0
+                || (double) productionReadyTests / totalTests >= PRODUCTION_CONSISTENCY_THRESHOLD);
 
     final boolean achievesZeroDiscrepancy =
-        overallConsistencyScore >= ZERO_DISCREPANCY_THRESHOLD &&
-        productionReadyTests == totalTests;
+        overallConsistencyScore >= ZERO_DISCREPANCY_THRESHOLD && productionReadyTests == totalTests;
 
     return resultBuilder
         .totalTests(totalTests)
@@ -364,7 +376,8 @@ public final class CrossRuntimeValidationRunner {
 
     /** Builder for ValidationConfiguration. */
     public static final class Builder {
-      private ToleranceConfiguration toleranceConfiguration = ToleranceConfiguration.defaultConfiguration();
+      private ToleranceConfiguration toleranceConfiguration =
+          ToleranceConfiguration.defaultConfiguration();
       private Set<RuntimeType> targetRuntimes = EnumSet.of(RuntimeType.JNI, RuntimeType.PANAMA);
       private int threadPoolSize = DEFAULT_THREAD_POOL_SIZE;
       private Duration testTimeout = DEFAULT_TEST_TIMEOUT;

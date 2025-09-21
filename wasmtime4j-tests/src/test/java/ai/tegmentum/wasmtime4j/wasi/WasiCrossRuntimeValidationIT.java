@@ -5,9 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.utils.TestCategories;
-import ai.tegmentum.wasmtime4j.wasi.WasiContext;
-import ai.tegmentum.wasmtime4j.wasi.WasiFactory;
-import ai.tegmentum.wasmtime4j.wasi.WasiRuntimeType;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -49,8 +46,10 @@ public class WasiCrossRuntimeValidationIT {
   public static final class CrossRuntimeTestResult {
     private final String testName;
     private final Map<WasiRuntimeType, Boolean> runtimeSuccessResults;
+
     /** Runtime execution times map. */
     private final Map<WasiRuntimeType, Duration> runtimeExecutionTimes;
+
     private final Map<WasiRuntimeType, String> runtimeErrorMessages;
     private final boolean allRuntimesConsistent;
     private final double consistencyScore;

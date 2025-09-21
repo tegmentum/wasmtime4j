@@ -10,11 +10,11 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
- * Comprehensive results container for Exception handling test execution,
- * providing detailed statistics, exception flow analysis, and performance metrics.
+ * Comprehensive results container for Exception handling test execution, providing detailed
+ * statistics, exception flow analysis, and performance metrics.
  *
- * <p>This class aggregates individual exception test results to provide insights into overall
- * test coverage, exception handling reliability, and performance characteristics across different
+ * <p>This class aggregates individual exception test results to provide insights into overall test
+ * coverage, exception handling reliability, and performance characteristics across different
  * exception operation categories.
  */
 public final class ExceptionTestResults {
@@ -143,9 +143,8 @@ public final class ExceptionTestResults {
       return Duration.ZERO;
     }
 
-    final long totalMillis = results.stream()
-        .mapToLong(result -> result.getExecutionTime().toMillis())
-        .sum();
+    final long totalMillis =
+        results.stream().mapToLong(result -> result.getExecutionTime().toMillis()).sum();
 
     return Duration.ofMillis(totalMillis / totalTestsExecuted);
   }
@@ -168,9 +167,7 @@ public final class ExceptionTestResults {
    * @return list of failed results
    */
   public List<ExceptionTestResult> getFailedResults() {
-    return results.stream()
-        .filter(result -> !result.isSuccessful())
-        .collect(Collectors.toList());
+    return results.stream().filter(result -> !result.isSuccessful()).collect(Collectors.toList());
   }
 
   /**
@@ -235,17 +232,20 @@ public final class ExceptionTestResults {
    */
   public Map<String, CategorySummary> getCategorySummary() {
     return results.stream()
-        .collect(Collectors.groupingBy(
-            ExceptionTestResult::getCategory,
-            Collectors.collectingAndThen(
-                Collectors.toList(),
-                categoryResults -> new CategorySummary(
-                    categoryResults.size(),
-                    (int) categoryResults.stream().filter(ExceptionTestResult::isSuccessful).count(),
-                    (int) categoryResults.stream().filter(r -> !r.isSuccessful()).count()
-                )
-            )
-        ));
+        .collect(
+            Collectors.groupingBy(
+                ExceptionTestResult::getCategory,
+                Collectors.collectingAndThen(
+                    Collectors.toList(),
+                    categoryResults ->
+                        new CategorySummary(
+                            categoryResults.size(),
+                            (int)
+                                categoryResults.stream()
+                                    .filter(ExceptionTestResult::isSuccessful)
+                                    .count(),
+                            (int)
+                                categoryResults.stream().filter(r -> !r.isSuccessful()).count()))));
   }
 
   /**
@@ -256,28 +256,47 @@ public final class ExceptionTestResults {
   private ExceptionCoverageMetrics calculateCoverageMetrics() {
     final Map<String, CategorySummary> categorySummary = getCategorySummary();
 
-    final int basicTests = categorySummary.getOrDefault("basic-exceptions", CategorySummary.EMPTY).total;
-    final int typeTests = categorySummary.getOrDefault("exception-types", CategorySummary.EMPTY).total;
-    final int nestedTests = categorySummary.getOrDefault("nested-exceptions", CategorySummary.EMPTY).total;
-    final int crossModuleTests = categorySummary.getOrDefault("cross-module-exceptions", CategorySummary.EMPTY).total;
+    final int basicTests =
+        categorySummary.getOrDefault("basic-exceptions", CategorySummary.EMPTY).total;
+    final int typeTests =
+        categorySummary.getOrDefault("exception-types", CategorySummary.EMPTY).total;
+    final int nestedTests =
+        categorySummary.getOrDefault("nested-exceptions", CategorySummary.EMPTY).total;
+    final int crossModuleTests =
+        categorySummary.getOrDefault("cross-module-exceptions", CategorySummary.EMPTY).total;
 
-    final int basicSuccessful = categorySummary.getOrDefault("basic-exceptions", CategorySummary.EMPTY).successful;
-    final int typeSuccessful = categorySummary.getOrDefault("exception-types", CategorySummary.EMPTY).successful;
-    final int nestedSuccessful = categorySummary.getOrDefault("nested-exceptions", CategorySummary.EMPTY).successful;
-    final int crossModuleSuccessful = categorySummary.getOrDefault("cross-module-exceptions", CategorySummary.EMPTY).successful;
+    final int basicSuccessful =
+        categorySummary.getOrDefault("basic-exceptions", CategorySummary.EMPTY).successful;
+    final int typeSuccessful =
+        categorySummary.getOrDefault("exception-types", CategorySummary.EMPTY).successful;
+    final int nestedSuccessful =
+        categorySummary.getOrDefault("nested-exceptions", CategorySummary.EMPTY).successful;
+    final int crossModuleSuccessful =
+        categorySummary.getOrDefault("cross-module-exceptions", CategorySummary.EMPTY).successful;
 
     // Calculate coverage percentages based on successful tests
-    final double basicCoverage = calculateCoveragePercentage(basicSuccessful, 8); // 8 basic exception operations
-    final double typeCoverage = calculateCoveragePercentage(typeSuccessful, 4); // 4 exception type operations
-    final double nestedCoverage = calculateCoveragePercentage(nestedSuccessful, 6); // 6 nested scenarios
-    final double crossModuleCoverage = calculateCoveragePercentage(crossModuleSuccessful, 4); // 4 cross-module scenarios
+    final double basicCoverage =
+        calculateCoveragePercentage(basicSuccessful, 8); // 8 basic exception operations
+    final double typeCoverage =
+        calculateCoveragePercentage(typeSuccessful, 4); // 4 exception type operations
+    final double nestedCoverage =
+        calculateCoveragePercentage(nestedSuccessful, 6); // 6 nested scenarios
+    final double crossModuleCoverage =
+        calculateCoveragePercentage(crossModuleSuccessful, 4); // 4 cross-module scenarios
 
     return new ExceptionCoverageMetrics(
-        basicTests, basicSuccessful, basicCoverage,
-        typeTests, typeSuccessful, typeCoverage,
-        nestedTests, nestedSuccessful, nestedCoverage,
-        crossModuleTests, crossModuleSuccessful, crossModuleCoverage
-    );
+        basicTests,
+        basicSuccessful,
+        basicCoverage,
+        typeTests,
+        typeSuccessful,
+        typeCoverage,
+        nestedTests,
+        nestedSuccessful,
+        nestedCoverage,
+        crossModuleTests,
+        crossModuleSuccessful,
+        crossModuleCoverage);
   }
 
   /**
@@ -307,21 +326,18 @@ public final class ExceptionTestResults {
   @Override
   public String toString() {
     return String.format(
-        "ExceptionTestResults{totalTests=%d, successful=%d, failed=%d, successRate=%.1f%%, " +
-        "duration=%ds, overallCoverage=%.1f%%, performanceTests=%d}",
+        "ExceptionTestResults{totalTests=%d, successful=%d, failed=%d, successRate=%.1f%%, "
+            + "duration=%ds, overallCoverage=%.1f%%, performanceTests=%d}",
         totalTestsExecuted,
         successfulTests,
         failedTests,
         getSuccessRate(),
         totalDuration.toSeconds(),
         coverageMetrics.getOverallCoverage(),
-        getResultsWithPerformanceMetrics().size()
-    );
+        getResultsWithPerformanceMetrics().size());
   }
 
-  /**
-   * Builder class for creating ExceptionTestResults instances.
-   */
+  /** Builder class for creating ExceptionTestResults instances. */
   public static final class Builder {
     private final List<ExceptionTestResult> results = new ArrayList<>();
     private Instant startTime = Instant.now();
@@ -427,9 +443,7 @@ public final class ExceptionTestResults {
     }
   }
 
-  /**
-   * Summary statistics for a specific test category.
-   */
+  /** Summary statistics for a specific test category. */
   public static final class CategorySummary {
     public static final CategorySummary EMPTY = new CategorySummary(0, 0, 0);
 
@@ -461,14 +475,13 @@ public final class ExceptionTestResults {
 
     @Override
     public String toString() {
-      return String.format("CategorySummary{total=%d, successful=%d, failed=%d, rate=%.1f%%}",
+      return String.format(
+          "CategorySummary{total=%d, successful=%d, failed=%d, rate=%.1f%%}",
           total, successful, failed, getSuccessRate());
     }
   }
 
-  /**
-   * Detailed coverage metrics for exception handling operations.
-   */
+  /** Detailed coverage metrics for exception handling operations. */
   public static final class ExceptionCoverageMetrics {
     private final int basicTests;
     private final int basicSuccessful;
@@ -484,10 +497,18 @@ public final class ExceptionTestResults {
     private final double crossModuleCoverage;
 
     public ExceptionCoverageMetrics(
-        final int basicTests, final int basicSuccessful, final double basicCoverage,
-        final int typeTests, final int typeSuccessful, final double typeCoverage,
-        final int nestedTests, final int nestedSuccessful, final double nestedCoverage,
-        final int crossModuleTests, final int crossModuleSuccessful, final double crossModuleCoverage) {
+        final int basicTests,
+        final int basicSuccessful,
+        final double basicCoverage,
+        final int typeTests,
+        final int typeSuccessful,
+        final double typeCoverage,
+        final int nestedTests,
+        final int nestedSuccessful,
+        final double nestedCoverage,
+        final int crossModuleTests,
+        final int crossModuleSuccessful,
+        final double crossModuleCoverage) {
 
       this.basicTests = basicTests;
       this.basicSuccessful = basicSuccessful;
@@ -526,7 +547,8 @@ public final class ExceptionTestResults {
     @Override
     public String toString() {
       return String.format(
-          "ExceptionCoverageMetrics{basic=%.1f%%, types=%.1f%%, nested=%.1f%%, crossModule=%.1f%%, overall=%.1f%%}",
+          "ExceptionCoverageMetrics{basic=%.1f%%, types=%.1f%%, nested=%.1f%%, crossModule=%.1f%%,"
+              + " overall=%.1f%%}",
           basicCoverage, typeCoverage, nestedCoverage, crossModuleCoverage, getOverallCoverage());
     }
   }
