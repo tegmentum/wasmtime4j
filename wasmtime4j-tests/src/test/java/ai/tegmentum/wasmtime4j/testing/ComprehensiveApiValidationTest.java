@@ -503,28 +503,23 @@ public class ComprehensiveApiValidationTest {
   // Helper methods to create test suite instances
 
   private ParityTestSuite createParityTestSuite() {
-    // This would create a real parity test suite
-    return new MockParityTestSuite();
+    return ParityTestSuite.create();
   }
 
   private RealWorldTestSuite createRealWorldTestSuite() {
-    // This would create a real world test suite
-    return new MockRealWorldTestSuite();
+    return RealWorldTestSuite.create();
   }
 
   private PerformanceTestSuite createPerformanceTestSuite() {
-    // This would create a performance test suite
-    return new MockPerformanceTestSuite();
+    return PerformanceTestSuite.create();
   }
 
   private MemoryLeakDetector createMemoryLeakDetector() {
-    // This would create a memory leak detector
-    return new MockMemoryLeakDetector();
+    return MemoryLeakDetector.create();
   }
 
   private CrossPlatformTestSuite createCrossPlatformTestSuite() {
-    // This would create a cross-platform test suite
-    return new MockCrossPlatformTestSuite();
+    return CrossPlatformTestSuite.create();
   }
 
   // Mock implementations for interfaces that need to be implemented
