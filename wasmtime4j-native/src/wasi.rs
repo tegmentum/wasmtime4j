@@ -1215,7 +1215,6 @@ mod tests {
 /// WASI Preview 1 filesystem operations implementation
 use std::fs::{self, File, OpenOptions, Metadata};
 use std::io::{Read, Write, Seek, SeekFrom};
-use std::collections::HashMap;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::time::SystemTime;
 
@@ -1367,16 +1366,19 @@ impl WasiDirectoryDescriptor {
 
     fn extract_times(metadata: &Metadata) -> (u64, u64, u64) {
         let access_time = metadata.accessed()
+            .ok()
             .and_then(|t| t.duration_since(SystemTime::UNIX_EPOCH).ok())
             .map(|d| d.as_nanos() as u64)
             .unwrap_or(0);
 
         let modification_time = metadata.modified()
+            .ok()
             .and_then(|t| t.duration_since(SystemTime::UNIX_EPOCH).ok())
             .map(|d| d.as_nanos() as u64)
             .unwrap_or(0);
 
         let creation_time = metadata.created()
+            .ok()
             .and_then(|t| t.duration_since(SystemTime::UNIX_EPOCH).ok())
             .map(|d| d.as_nanos() as u64)
             .unwrap_or(0);
