@@ -1,8 +1,9 @@
 ---
 name: full-comparison-test-coverage
-status: completed
+status: merged
 created: 2025-09-18T10:55:27Z
 completed: 2025-09-21T12:12:25Z
+merged: 2025-09-21T12:15:30Z
 progress: 100%
 prd: .claude/prds/full-comparison-test-coverage.md
 github: "https://github.com/tegmentum/wasmtime4j/issues/259"
