@@ -209,6 +209,174 @@
             </build>
         </profile>
 
+        <!-- Profile for comprehensive testing framework (Issue #277) -->
+        <profile>
+            <id>comprehensive-tests</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-failsafe-plugin</artifactId>
+                        <configuration>
+                            <includes>
+                                <include>**/comprehensive/*IT.java</include>
+                                <include>**/ComprehensiveValidationIT.java</include>
+                                <include>**/RealWorldWebAssemblyTestSuiteIT.java</include>
+                            </includes>
+                            <systemPropertyVariables>
+                                <wasmtime4j.test.comprehensive>true</wasmtime4j.test.comprehensive>
+                                <wasmtime4j.test.extended>true</wasmtime4j.test.extended>
+                                <wasmtime4j.test.performance>true</wasmtime4j.test.performance>
+                                <wasmtime4j.test.timeout>60</wasmtime4j.test.timeout>
+                            </systemPropertyVariables>
+                            <argLine>-Xmx4g -XX:+HeapDumpOnOutOfMemoryError</argLine>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Profile for stress testing -->
+        <profile>
+            <id>stress-tests</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-failsafe-plugin</artifactId>
+                        <configuration>
+                            <includes>
+                                <include>**/stress/*IT.java</include>
+                                <include>**/*StressIT.java</include>
+                            </includes>
+                            <systemPropertyVariables>
+                                <wasmtime4j.test.stress>true</wasmtime4j.test.stress>
+                                <wasmtime4j.stress.duration>5</wasmtime4j.stress.duration>
+                                <wasmtime4j.stress.threads>4</wasmtime4j.stress.threads>
+                                <wasmtime4j.stress.batch.size>50</wasmtime4j.stress.batch.size>
+                            </systemPropertyVariables>
+                            <argLine>-Xmx6g -XX:+HeapDumpOnOutOfMemoryError</argLine>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Profile for performance baseline establishment -->
+        <profile>
+            <id>performance-baseline</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-failsafe-plugin</artifactId>
+                        <configuration>
+                            <includes>
+                                <include>**/performance/*BaselineIT.java</include>
+                                <include>**/*PerformanceIT.java</include>
+                            </includes>
+                            <systemPropertyVariables>
+                                <wasmtime4j.test.performance>true</wasmtime4j.test.performance>
+                                <wasmtime4j.perf.warmup>500</wasmtime4j.perf.warmup>
+                                <wasmtime4j.perf.iterations>5000</wasmtime4j.perf.iterations>
+                                <wasmtime4j.perf.runs>3</wasmtime4j.perf.runs>
+                                <wasmtime4j.perf.baseline.dir>target/performance-baselines</wasmtime4j.perf.baseline.dir>
+                            </systemPropertyVariables>
+                            <argLine>-Xmx4g -XX:+HeapDumpOnOutOfMemoryError</argLine>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Profile for cross-platform validation -->
+        <profile>
+            <id>cross-platform-tests</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-failsafe-plugin</artifactId>
+                        <configuration>
+                            <includes>
+                                <include>**/platform/*IT.java</include>
+                                <include>**/*CrossPlatformIT.java</include>
+                            </includes>
+                            <systemPropertyVariables>
+                                <wasmtime4j.test.platform.enabled>true</wasmtime4j.test.platform.enabled>
+                                <wasmtime4j.test.cross.platform>true</wasmtime4j.test.cross.platform>
+                            </systemPropertyVariables>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Profile for memory leak detection -->
+        <profile>
+            <id>memory-leak-tests</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-failsafe-plugin</artifactId>
+                        <configuration>
+                            <includes>
+                                <include>**/memory/*LeakIT.java</include>
+                                <include>**/*MemoryLeakIT.java</include>
+                            </includes>
+                            <systemPropertyVariables>
+                                <wasmtime4j.test.memory.leak>true</wasmtime4j.test.memory.leak>
+                                <wasmtime4j.valgrind.enabled>false</wasmtime4j.valgrind.enabled>
+                                <wasmtime4j.asan.enabled>false</wasmtime4j.asan.enabled>
+                            </systemPropertyVariables>
+                            <argLine>-Xmx8g -XX:+HeapDumpOnOutOfMemoryError -XX:NativeMemoryTracking=summary</argLine>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Profile for all comprehensive testing (Issue #277 validation) -->
+        <profile>
+            <id>issue-277-validation</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-failsafe-plugin</artifactId>
+                        <configuration>
+                            <includes>
+                                <include>**/comprehensive/*IT.java</include>
+                                <include>**/stress/*IT.java</include>
+                                <include>**/performance/*IT.java</include>
+                                <include>**/platform/*IT.java</include>
+                                <include>**/memory/*IT.java</include>
+                            </includes>
+                            <systemPropertyVariables>
+                                <wasmtime4j.test.comprehensive>true</wasmtime4j.test.comprehensive>
+                                <wasmtime4j.test.extended>true</wasmtime4j.test.extended>
+                                <wasmtime4j.test.performance>true</wasmtime4j.test.performance>
+                                <wasmtime4j.test.stress>true</wasmtime4j.test.stress>
+                                <wasmtime4j.test.platform.enabled>true</wasmtime4j.test.platform.enabled>
+                                <wasmtime4j.test.memory.leak>true</wasmtime4j.test.memory.leak>
+                                <wasmtime4j.test.timeout>120</wasmtime4j.test.timeout>
+                                <!-- Stress test configuration -->
+                                <wasmtime4j.stress.duration>3</wasmtime4j.stress.duration>
+                                <wasmtime4j.stress.threads>4</wasmtime4j.stress.threads>
+                                <wasmtime4j.stress.batch.size>25</wasmtime4j.stress.batch.size>
+                                <!-- Performance test configuration -->
+                                <wasmtime4j.perf.warmup>100</wasmtime4j.perf.warmup>
+                                <wasmtime4j.perf.iterations>1000</wasmtime4j.perf.iterations>
+                                <wasmtime4j.perf.runs>2</wasmtime4j.perf.runs>
+                            </systemPropertyVariables>
+                            <argLine>-Xmx8g -XX:+HeapDumpOnOutOfMemoryError -XX:NativeMemoryTracking=summary</argLine>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
         <!-- Profile for native library tests -->
         <profile>
             <id>native-tests</id>
