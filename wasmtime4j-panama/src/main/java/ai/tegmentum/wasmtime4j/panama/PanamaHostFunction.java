@@ -133,7 +133,7 @@ public final class PanamaHostFunction implements WasmFunction {
 
     // Host functions are called FROM WebAssembly, not TO WebAssembly
     // This method shouldn't be used directly for host functions
-    throw new UnsupportedOperationException(
+    throw new ai.tegmentum.wasmtime4j.exception.ValidationException(
         "Host functions are called from WebAssembly, not directly from Java. "
             + "Use the callback mechanism instead.");
   }
