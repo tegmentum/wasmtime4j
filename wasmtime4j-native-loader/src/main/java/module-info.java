@@ -7,6 +7,7 @@
  */
 module ai.tegmentum.wasmtime4j.nativeloader {
   requires java.logging;
+  requires java.management;
 
   exports ai.tegmentum.wasmtime4j.nativeloader;
 }
