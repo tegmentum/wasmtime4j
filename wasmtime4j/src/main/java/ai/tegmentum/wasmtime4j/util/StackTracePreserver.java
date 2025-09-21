@@ -307,7 +307,7 @@ public final class StackTracePreserver {
 
     // Format 2: "at function_name (module.wasm:line:column)"
     if (line.startsWith("at ")) {
-      return parseAtFormat(line.substring(3));
+      return parseParenthesesFormat(line.substring(3));
     }
 
     // Format 3: "function_name@module.wasm:line:column"
