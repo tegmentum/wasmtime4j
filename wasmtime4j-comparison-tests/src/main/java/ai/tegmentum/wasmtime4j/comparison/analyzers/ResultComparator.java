@@ -49,7 +49,24 @@ public final class ResultComparator {
   private static final Set<Class<?>> REFERENCE_COMPARISON_TYPES =
       Set.of(Class.class, Thread.class, ThreadGroup.class);
 
+  // Enhanced tolerances for cross-runtime validation
+  private static final double STRICT_DOUBLE_TOLERANCE = 1e-12;
+  private static final float STRICT_FLOAT_TOLERANCE = 1e-9f;
+  private static final BigDecimal STRICT_BIGDECIMAL_TOLERANCE = new BigDecimal("1e-18");
+
+  // Zero tolerance for Wasmtime equivalence validation
+  private static final double WASMTIME_ZERO_TOLERANCE = 1e-15;
+  private static final float WASMTIME_ZERO_FLOAT_TOLERANCE = 1e-12f;
+  private static final BigDecimal WASMTIME_ZERO_BIGDECIMAL_TOLERANCE = new BigDecimal("1e-20");
+
   private final ToleranceConfiguration toleranceConfig;
+
+  /** Comparison modes for different validation requirements. */
+  public enum ComparisonMode {
+    STANDARD,
+    STRICT_CROSS_RUNTIME,
+    WASMTIME_ZERO_TOLERANCE
+  }
 
   /**
    * Creates a new ResultComparator with the specified tolerance configuration.
@@ -72,19 +89,54 @@ public final class ResultComparator {
     return compareValues(value1, value2, 0);
   }
 
+  /**
+   * Performs strict cross-runtime comparison with enhanced tolerances for zero discrepancy
+   * requirement.
+   *
+   * @param value1 the first value to compare
+   * @param value2 the second value to compare
+   * @return detailed value comparison result with strict equivalence checking
+   */
+  public ValueComparisonResult compareValuesStrict(final Object value1, final Object value2) {
+    return compareValuesWithMode(value1, value2, 0, ComparisonMode.STRICT_CROSS_RUNTIME);
+  }
+
+  /**
+   * Performs Wasmtime-specific comparison with zero tolerance for functional equivalence.
+   *
+   * @param value1 the first value to compare
+   * @param value2 the second value to compare
+   * @return detailed value comparison result with zero tolerance validation
+   */
+  public ValueComparisonResult compareValuesWasmtimeStrict(
+      final Object value1, final Object value2) {
+    return compareValuesWithMode(value1, value2, 0, ComparisonMode.WASMTIME_ZERO_TOLERANCE);
+  }
+
   /** Performs comparison with explicit recursion depth tracking. */
   private ValueComparisonResult compareValues(
       final Object value1, final Object value2, final int depth) {
-    // Check cache first for performance
-    final String cacheKey = createComparisonCacheKey(value1, value2);
-    final ValueComparisonResult cached = comparisonCache.get(cacheKey);
-    if (cached != null) {
-      return cached;
+    return compareValuesWithMode(value1, value2, depth, ComparisonMode.STANDARD);
+  }
+
+  /** Performs comparison with specified comparison mode for enhanced validation. */
+  private ValueComparisonResult compareValuesWithMode(
+      final Object value1, final Object value2, final int depth, final ComparisonMode mode) {
+    // Check cache first for performance (only for standard mode to avoid cache pollution)
+    final String cacheKey =
+        mode == ComparisonMode.STANDARD ? createComparisonCacheKey(value1, value2) : null;
+    if (cacheKey != null) {
+      final ValueComparisonResult cached = comparisonCache.get(cacheKey);
+      if (cached != null) {
+        return cached;
+      }
     }
 
     LOGGER.finest(
         "Comparing values at depth "
             + depth
+            + " with mode "
+            + mode
             + ": "
             + getValueTypeDescription(value1)
             + " vs "
@@ -123,11 +175,12 @@ public final class ResultComparator {
       return createTypeMismatchResult(type1, type2);
     }
 
-    // Perform type-specific comparison
-    final ValueComparisonResult result = performTypedComparison(value1, value2, depth);
+    // Perform type-specific comparison with mode-specific logic
+    final ValueComparisonResult result =
+        performTypedComparisonWithMode(value1, value2, depth, mode);
 
-    // Cache result for performance (only cache leaf comparisons to avoid memory issues)
-    if (depth == 0) {
+    // Cache result for performance (only cache standard mode leaf comparisons)
+    if (depth == 0 && cacheKey != null) {
       comparisonCache.put(cacheKey, result);
     }
 
@@ -137,11 +190,17 @@ public final class ResultComparator {
   /** Performs type-specific comparison based on the value types. */
   private ValueComparisonResult performTypedComparison(
       final Object value1, final Object value2, final int depth) {
+    return performTypedComparisonWithMode(value1, value2, depth, ComparisonMode.STANDARD);
+  }
+
+  /** Performs type-specific comparison with specified comparison mode. */
+  private ValueComparisonResult performTypedComparisonWithMode(
+      final Object value1, final Object value2, final int depth, final ComparisonMode mode) {
     final Class<?> type = value1.getClass();
 
     // Handle primitive and wrapper types
     if (isNumericType(type)) {
-      return compareNumericValues(value1, value2);
+      return compareNumericValuesWithMode(value1, value2, mode);
     }
 
     // Handle strings
@@ -156,17 +215,18 @@ public final class ResultComparator {
 
     // Handle arrays
     if (type.isArray()) {
-      return compareArrays(value1, value2, depth);
+      return compareArraysWithMode(value1, value2, depth, mode);
     }
 
     // Handle collections
     if (Collection.class.isAssignableFrom(type)) {
-      return compareCollections((Collection<?>) value1, (Collection<?>) value2, depth);
+      return compareCollectionsWithMode(
+          (Collection<?>) value1, (Collection<?>) value2, depth, mode);
     }
 
     // Handle maps
     if (Map.class.isAssignableFrom(type)) {
-      return compareMaps((Map<?, ?>) value1, (Map<?, ?>) value2, depth);
+      return compareMapsWithMode((Map<?, ?>) value1, (Map<?, ?>) value2, depth, mode);
     }
 
     // Handle enums
@@ -185,11 +245,17 @@ public final class ResultComparator {
     }
 
     // Handle complex objects using reflection
-    return compareObjectsReflectively(value1, value2, depth);
+    return compareObjectsReflectivelyWithMode(value1, value2, depth, mode);
   }
 
   /** Compares numeric values with appropriate tolerance levels. */
   private ValueComparisonResult compareNumericValues(final Object value1, final Object value2) {
+    return compareNumericValuesWithMode(value1, value2, ComparisonMode.STANDARD);
+  }
+
+  /** Enhanced numeric comparison with mode-specific tolerance levels. */
+  private ValueComparisonResult compareNumericValuesWithMode(
+      final Object value1, final Object value2, final ComparisonMode mode) {
     final ValueComparisonResult.Builder resultBuilder =
         new ValueComparisonResult.Builder().comparisonType(ComparisonType.NUMERIC);
 
@@ -210,7 +276,7 @@ public final class ResultComparator {
     }
 
     final BigDecimal difference = decimal1.subtract(decimal2).abs();
-    final BigDecimal tolerance = getNumericTolerance(value1, value2);
+    final BigDecimal tolerance = getNumericToleranceWithMode(value1, value2, mode);
 
     final boolean withinTolerance = difference.compareTo(tolerance) <= 0;
     final boolean exactMatch = difference.compareTo(BigDecimal.ZERO) == 0;
@@ -218,7 +284,7 @@ public final class ResultComparator {
     return resultBuilder
         .equivalent(withinTolerance)
         .exactMatch(exactMatch)
-        .details(String.format("Difference: %s, Tolerance: %s", difference, tolerance))
+        .details(String.format("Difference: %s, Tolerance: %s, Mode: %s", difference, tolerance, mode))
         .build();
   }
 
@@ -252,14 +318,40 @@ public final class ResultComparator {
 
   /** Gets the appropriate numeric tolerance for comparison. */
   private BigDecimal getNumericTolerance(final Object value1, final Object value2) {
+    return getNumericToleranceWithMode(value1, value2, ComparisonMode.STANDARD);
+  }
+
+  /** Gets the appropriate numeric tolerance for comparison with mode-specific tolerances. */
+  private BigDecimal getNumericToleranceWithMode(final Object value1, final Object value2, final ComparisonMode mode) {
     if (value1 instanceof Float || value2 instanceof Float) {
-      return BigDecimal.valueOf(toleranceConfig.getFloatTolerance());
+      switch (mode) {
+        case STRICT_CROSS_RUNTIME:
+          return BigDecimal.valueOf(STRICT_FLOAT_TOLERANCE);
+        case WASMTIME_ZERO_TOLERANCE:
+          return BigDecimal.valueOf(WASMTIME_ZERO_FLOAT_TOLERANCE);
+        default:
+          return BigDecimal.valueOf(toleranceConfig.getFloatTolerance());
+      }
     } else if (value1 instanceof Double || value2 instanceof Double) {
-      return BigDecimal.valueOf(toleranceConfig.getDoubleTolerance());
+      switch (mode) {
+        case STRICT_CROSS_RUNTIME:
+          return BigDecimal.valueOf(STRICT_DOUBLE_TOLERANCE);
+        case WASMTIME_ZERO_TOLERANCE:
+          return BigDecimal.valueOf(WASMTIME_ZERO_TOLERANCE);
+        default:
+          return BigDecimal.valueOf(toleranceConfig.getDoubleTolerance());
+      }
     } else if (value1 instanceof BigDecimal || value2 instanceof BigDecimal) {
-      return toleranceConfig.getBigDecimalTolerance();
+      switch (mode) {
+        case STRICT_CROSS_RUNTIME:
+          return STRICT_BIGDECIMAL_TOLERANCE;
+        case WASMTIME_ZERO_TOLERANCE:
+          return WASMTIME_ZERO_BIGDECIMAL_TOLERANCE;
+        default:
+          return toleranceConfig.getBigDecimalTolerance();
+      }
     } else {
-      // For integer types, use exact comparison (tolerance = 0)
+      // For integer types, use exact comparison (tolerance = 0) for all modes
       return BigDecimal.ZERO;
     }
   }
@@ -357,6 +449,12 @@ public final class ResultComparator {
   /** Compares arrays with element-by-element analysis. */
   private ValueComparisonResult compareArrays(
       final Object array1, final Object array2, final int depth) {
+    return compareArraysWithMode(array1, array2, depth, ComparisonMode.STANDARD);
+  }
+
+  /** Enhanced array comparison with mode-specific element comparison. */
+  private ValueComparisonResult compareArraysWithMode(
+      final Object array1, final Object array2, final int depth, final ComparisonMode mode) {
     final ValueComparisonResult.Builder resultBuilder =
         new ValueComparisonResult.Builder().comparisonType(ComparisonType.ARRAY);
 
@@ -379,7 +477,7 @@ public final class ResultComparator {
       final Object element1 = Array.get(array1, i);
       final Object element2 = Array.get(array2, i);
 
-      final ValueComparisonResult elementResult = compareValues(element1, element2, depth + 1);
+      final ValueComparisonResult elementResult = compareValuesWithMode(element1, element2, depth + 1, mode);
       if (!elementResult.isExactMatch()) {
         allExactMatch = false;
       }

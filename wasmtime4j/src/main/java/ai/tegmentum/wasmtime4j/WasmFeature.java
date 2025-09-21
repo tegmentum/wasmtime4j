@@ -34,5 +34,8 @@ public enum WasmFeature {
   MULTI_MEMORY,
 
   /** WebAssembly 64-bit memory support. */
-  MEMORY64
+  MEMORY64,
+
+  /** WebAssembly exception handling proposal support. */
+  EXCEPTIONS
 }

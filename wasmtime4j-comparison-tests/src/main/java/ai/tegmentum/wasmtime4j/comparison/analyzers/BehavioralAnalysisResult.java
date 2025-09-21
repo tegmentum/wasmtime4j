@@ -6,8 +6,9 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Comprehensive result of behavioral analysis across multiple WebAssembly runtime implementations.
- * Contains detailed comparison results, discrepancy analysis, and overall behavioral assessment.
+ * Comprehensive result of enhanced behavioral analysis across multiple WebAssembly runtime
+ * implementations. Contains detailed comparison results, discrepancy analysis, cross-runtime
+ * validation, execution path analysis, side effect detection, and overall behavioral assessment.
  *
  * @since 1.0.0
  */
@@ -16,6 +17,9 @@ public final class BehavioralAnalysisResult {
   private final List<RuntimeComparison> pairwiseComparisons;
   private final List<BehavioralDiscrepancy> discrepancies;
   private final ExecutionPattern executionPattern;
+  private final CrossRuntimeValidationResult crossRuntimeValidation;
+  private final ExecutionPathValidationResult executionPathValidation;
+  private final SideEffectAnalysisResult sideEffectAnalysis;
   private final double consistencyScore;
   private final BehavioralVerdict verdict;
   private final Instant analysisTime;
@@ -25,6 +29,9 @@ public final class BehavioralAnalysisResult {
     this.pairwiseComparisons = Collections.unmodifiableList(builder.pairwiseComparisons);
     this.discrepancies = Collections.unmodifiableList(builder.discrepancies);
     this.executionPattern = builder.executionPattern;
+    this.crossRuntimeValidation = builder.crossRuntimeValidation;
+    this.executionPathValidation = builder.executionPathValidation;
+    this.sideEffectAnalysis = builder.sideEffectAnalysis;
     this.consistencyScore = builder.consistencyScore;
     this.verdict = builder.verdict;
     this.analysisTime = Instant.now();
@@ -58,6 +65,18 @@ public final class BehavioralAnalysisResult {
     return analysisTime;
   }
 
+  public CrossRuntimeValidationResult getCrossRuntimeValidation() {
+    return crossRuntimeValidation;
+  }
+
+  public ExecutionPathValidationResult getExecutionPathValidation() {
+    return executionPathValidation;
+  }
+
+  public SideEffectAnalysisResult getSideEffectAnalysis() {
+    return sideEffectAnalysis;
+  }
+
   /**
    * Gets the number of critical discrepancies.
    *
@@ -75,6 +94,29 @@ public final class BehavioralAnalysisResult {
   public boolean isCompatible() {
     return verdict == BehavioralVerdict.CONSISTENT
         || verdict == BehavioralVerdict.MOSTLY_CONSISTENT;
+  }
+
+  /**
+   * Checks if the analysis meets production readiness requirements (>98% consistency).
+   *
+   * @return true if analysis meets production requirements
+   */
+  public boolean meetsProductionRequirements() {
+    return consistencyScore >= 0.98
+        && verdict == BehavioralVerdict.CONSISTENT
+        && (crossRuntimeValidation == null || crossRuntimeValidation.meetsProductionRequirements())
+        && (executionPathValidation == null
+            || executionPathValidation.meetsZeroDivergenceRequirement())
+        && (sideEffectAnalysis == null || sideEffectAnalysis.meetsZeroDiscrepancyRequirement());
+  }
+
+  /**
+   * Checks if zero discrepancy requirement is met across all validation dimensions.
+   *
+   * @return true if zero discrepancy requirement is satisfied
+   */
+  public boolean meetsZeroDiscrepancyRequirement() {
+    return getCriticalDiscrepancyCount() == 0 && meetsProductionRequirements();
   }
 
   /**
@@ -144,6 +186,9 @@ public final class BehavioralAnalysisResult {
     private List<RuntimeComparison> pairwiseComparisons = Collections.emptyList();
     private List<BehavioralDiscrepancy> discrepancies = Collections.emptyList();
     private ExecutionPattern executionPattern;
+    private CrossRuntimeValidationResult crossRuntimeValidation;
+    private ExecutionPathValidationResult executionPathValidation;
+    private SideEffectAnalysisResult sideEffectAnalysis;
     private double consistencyScore = 0.0;
     private BehavioralVerdict verdict = BehavioralVerdict.UNKNOWN;
 
@@ -196,6 +241,41 @@ public final class BehavioralAnalysisResult {
 
     public Builder verdict(final BehavioralVerdict verdict) {
       this.verdict = Objects.requireNonNull(verdict, "verdict cannot be null");
+      return this;
+    }
+
+    /**
+     * Sets the cross-runtime validation result.
+     *
+     * @param crossRuntimeValidation the cross-runtime validation result
+     * @return this builder
+     */
+    public Builder crossRuntimeValidation(
+        final CrossRuntimeValidationResult crossRuntimeValidation) {
+      this.crossRuntimeValidation = crossRuntimeValidation;
+      return this;
+    }
+
+    /**
+     * Sets the execution path validation result.
+     *
+     * @param executionPathValidation the execution path validation result
+     * @return this builder
+     */
+    public Builder executionPathValidation(
+        final ExecutionPathValidationResult executionPathValidation) {
+      this.executionPathValidation = executionPathValidation;
+      return this;
+    }
+
+    /**
+     * Sets the side effect analysis result.
+     *
+     * @param sideEffectAnalysis the side effect analysis result
+     * @return this builder
+     */
+    public Builder sideEffectAnalysis(final SideEffectAnalysisResult sideEffectAnalysis) {
+      this.sideEffectAnalysis = sideEffectAnalysis;
       return this;
     }
 

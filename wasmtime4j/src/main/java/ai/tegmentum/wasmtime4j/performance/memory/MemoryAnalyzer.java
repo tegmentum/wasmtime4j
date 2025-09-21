@@ -430,7 +430,10 @@ public final class MemoryAnalyzer {
 
     // Simple linear regression slope calculation
     final double n = values.size();
-    double sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+    double sumX = 0;
+    double sumY = 0;
+    double sumXY = 0;
+    double sumXX = 0;
 
     for (int i = 0; i < values.size(); i++) {
       final double x = i;

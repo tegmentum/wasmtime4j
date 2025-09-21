@@ -9,8 +9,7 @@ import java.util.Map;
  *
  * <p>Provides comprehensive process management capabilities within the WASI sandbox, including
  * process spawning, environment variable access, working directory management, and process control.
- * All operations are subject to the capability-based security model configured in the WASI
- * context.
+ * All operations are subject to the capability-based security model configured in the WASI context.
  *
  * <p>Example usage:
  *
@@ -65,8 +64,8 @@ public interface WasiProcess {
   /**
    * Sends a signal to a process.
    *
-   * <p>Signals are used for inter-process communication and process control. Not all signals may
-   * be supported depending on the underlying platform and WASI implementation.
+   * <p>Signals are used for inter-process communication and process control. Not all signals may be
+   * supported depending on the underlying platform and WASI implementation.
    *
    * @param pid the process ID to signal
    * @param signal the signal to send

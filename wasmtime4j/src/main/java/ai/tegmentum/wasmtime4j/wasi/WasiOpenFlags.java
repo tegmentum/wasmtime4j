@@ -3,9 +3,9 @@ package ai.tegmentum.wasmtime4j.wasi;
 /**
  * Flags for opening files in the WASI filesystem.
  *
- * <p>WasiOpenFlags define how a file should be opened and what operations are intended. These
- * flags control the behavior of file opening operations and must be compatible with the rights
- * requested for the file handle.
+ * <p>WasiOpenFlags define how a file should be opened and what operations are intended. These flags
+ * control the behavior of file opening operations and must be compatible with the rights requested
+ * for the file handle.
  *
  * <p>Example usage:
  *
@@ -117,9 +117,7 @@ public enum WasiOpenFlags {
     return (flags & this.value) != 0;
   }
 
-  /**
-   * A set of combined open flags.
-   */
+  /** A set of combined open flags. */
   public static final class WasiOpenFlagsSet {
     private final int value;
 

@@ -103,9 +103,7 @@ final class WasiPermissionsImpl implements WasiPermissions {
     return "WasiPermissions{mode=" + Integer.toOctalString(mode) + "}";
   }
 
-  /**
-   * Builder implementation for WasiPermissions.
-   */
+  /** Builder implementation for WasiPermissions. */
   static final class BuilderImpl implements WasiPermissions.Builder {
     private int mode = 0;
 
@@ -232,7 +230,8 @@ final class WasiPermissionsImpl implements WasiPermissions {
     @Override
     public Builder mode(final int mode) {
       if (mode < 0 || mode > 07777) {
-        throw new IllegalArgumentException("Invalid permission mode: " + Integer.toOctalString(mode));
+        throw new IllegalArgumentException(
+            "Invalid permission mode: " + Integer.toOctalString(mode));
       }
       this.mode = mode;
       return this;

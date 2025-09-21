@@ -186,9 +186,9 @@ public final class WasmTestSuiteLoader {
         wasmTestsRoot.resolve(TestSuiteType.WASMTIME_TESTS.getDirectoryName());
     if (!Files.exists(wasmtimeTestsDir) || isDirectoryEmpty(wasmtimeTestsDir)) {
       LOGGER.info(
-          "Wasmtime tests not found. "
-              + "To download automatically, use: -Dwasmtime4j.test.download-suites=true "
-              + "Or manually download from https://github.com/bytecodealliance/wasmtime/tree/main/tests");
+          "Wasmtime tests not found. To download automatically, use:"
+              + " -Dwasmtime4j.test.download-suites=true Or manually download from"
+              + " https://github.com/bytecodealliance/wasmtime/tree/main/tests");
       Files.createDirectories(wasmtimeTestsDir);
     } else {
       final long testFileCount = countTestFiles(wasmtimeTestsDir, ".wasm");
@@ -282,7 +282,8 @@ public final class WasmTestSuiteLoader {
    * @return the number of files with the extension
    * @throws IOException if directory cannot be read
    */
-  private static long countTestFiles(final Path directory, final String extension) throws IOException {
+  private static long countTestFiles(final Path directory, final String extension)
+      throws IOException {
     if (!Files.exists(directory)) {
       return 0;
     }

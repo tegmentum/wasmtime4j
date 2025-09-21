@@ -103,9 +103,7 @@ public final class WasiProcessConfig {
     return new Builder(this);
   }
 
-  /**
-   * Builder for WasiProcessConfig.
-   */
+  /** Builder for WasiProcessConfig. */
   public static final class Builder {
     private String program;
     private final List<String> arguments = new ArrayList<>();

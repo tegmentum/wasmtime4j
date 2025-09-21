@@ -56,13 +56,13 @@ public final class JvmProfilerIntegration {
 
   private final boolean asyncProfilerAvailable;
   private final boolean jfrAvailable;
-  private final MBeanServer mBeanServer;
+  private final MBeanServer mBeanServerInstance;
   private final List<ActiveSession> activeSessions;
 
   private JvmProfilerIntegration() {
     this.asyncProfilerAvailable = checkAsyncProfilerAvailability();
     this.jfrAvailable = checkJfrAvailability();
-    this.mBeanServer = ManagementFactory.getPlatformMBeanServer();
+    this.mBeanServerInstance = ManagementFactory.getPlatformMBeanServer();
     this.activeSessions = new ArrayList<>();
   }
 
@@ -213,7 +213,7 @@ public final class JvmProfilerIntegration {
   private boolean checkJfrEnabled() {
     try {
       final ObjectName jfrMBean = new ObjectName("jdk.management.jfr:type=FlightRecorder");
-      return mBeanServer.isRegistered(jfrMBean);
+      return mBeanServerInstance.isRegistered(jfrMBean);
     } catch (final Exception e) {
       return false;
     }
