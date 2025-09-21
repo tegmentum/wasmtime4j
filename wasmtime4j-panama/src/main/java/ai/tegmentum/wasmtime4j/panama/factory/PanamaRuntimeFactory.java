@@ -49,7 +49,7 @@ public final class PanamaRuntimeFactory {
    *
    * @return a new Panama WebAssembly runtime instance
    * @throws WasmException if the runtime cannot be created
-   * @throws UnsupportedOperationException if Panama FFI is not available
+   * @throws ai.tegmentum.wasmtime4j.exception.ResourceException if Panama FFI is not available
    */
   public static WasmRuntime createRuntime() throws WasmException {
     logger.info("Creating Panama WebAssembly runtime");
@@ -103,12 +103,12 @@ public final class PanamaRuntimeFactory {
   /**
    * Validates that Panama FFI is supported in the current environment.
    *
-   * @throws UnsupportedOperationException if Panama FFI is not available
+   * @throws ai.tegmentum.wasmtime4j.exception.ResourceException if Panama FFI is not available
    */
   private static void validatePanamaSupport() {
     if (!isPanamaAvailable()) {
       final String status = getPanamaStatus();
-      throw new UnsupportedOperationException("Panama FFI is not available: " + status);
+      throw new ai.tegmentum.wasmtime4j.exception.ResourceException("Panama FFI is not available: " + status);
     }
   }
 

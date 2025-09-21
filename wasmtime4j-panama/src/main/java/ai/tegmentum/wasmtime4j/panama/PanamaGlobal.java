@@ -136,7 +136,7 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
 
     // Check mutability
     if (!isMutable()) {
-      throw new UnsupportedOperationException("Cannot set value of immutable global");
+      throw new ai.tegmentum.wasmtime4j.exception.ValidationException("Cannot set value of immutable global");
     }
 
     // Parameter validation
@@ -163,8 +163,8 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
       globalSet.invoke(globalResource.getNativePointer(), valueSegment);
 
     } catch (Throwable e) {
-      if (e instanceof UnsupportedOperationException) {
-        throw (UnsupportedOperationException) e;
+      if (e instanceof ai.tegmentum.wasmtime4j.exception.ValidationException) {
+        throw (ai.tegmentum.wasmtime4j.exception.ValidationException) e;
       }
       LOGGER.warning("Global value set failed: " + e.getMessage());
     }
@@ -411,7 +411,7 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
     ensureNotClosed();
 
     if (!isMutable()) {
-      throw new UnsupportedOperationException("Cannot set value of immutable global");
+      throw new ai.tegmentum.wasmtime4j.exception.ValidationException("Cannot set value of immutable global");
     }
 
     try (DirectGlobalAccess directAccess = getDirectAccess()) {
@@ -483,7 +483,7 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
         throw new IllegalArgumentException(
             "Expected Double for f64 global, got " + rawValue.getClass());
       }
-      default -> throw new UnsupportedOperationException(
+      default -> throw new ai.tegmentum.wasmtime4j.exception.ValidationException(
           "Zero-copy not supported for type: " + type);
     };
   }
@@ -1176,7 +1176,7 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
         case MemoryLayouts.WASM_F32 -> (Float) ValueLayout.JAVA_FLOAT.varHandle().get(directPtr, 0);
         case MemoryLayouts.WASM_F64 -> (Double)
             ValueLayout.JAVA_DOUBLE.varHandle().get(directPtr, 0);
-        default -> throw new UnsupportedOperationException(
+        default -> throw new ai.tegmentum.wasmtime4j.exception.ValidationException(
             "Direct access not supported for type: " + wasmType);
       };
     }
@@ -1192,7 +1192,7 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
       ensureNotClosed();
 
       if (!parentGlobal.isMutable()) {
-        throw new UnsupportedOperationException("Cannot write to immutable global");
+        throw new ai.tegmentum.wasmtime4j.exception.ValidationException("Cannot write to immutable global");
       }
 
       switch (wasmType) {
@@ -1221,7 +1221,7 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
           ValueLayout.JAVA_DOUBLE.varHandle().set(directPtr, 0, (Double) rawValue);
           break;
         default:
-          throw new UnsupportedOperationException(
+          throw new ai.tegmentum.wasmtime4j.exception.ValidationException(
               "Direct access not supported for type: " + wasmType);
       }
     }
