@@ -9,8 +9,8 @@ import java.time.Instant;
  * operations. It provides essential metadata to identify and categorize filesystem entries within
  * the WASI sandbox.
  *
- * <p>Directory entries are returned by {@link WasiFilesystem#readDirectory} operations and
- * provide a snapshot of the directory contents at the time of the read operation.
+ * <p>Directory entries are returned by {@link WasiFilesystem#readDirectory} operations and provide
+ * a snapshot of the directory contents at the time of the read operation.
  *
  * <p>Example usage:
  *

@@ -4,6 +4,10 @@ import ai.tegmentum.wasmtime4j.performance.GcImpactMetrics;
 import ai.tegmentum.wasmtime4j.performance.ProfileSnapshot;
 import ai.tegmentum.wasmtime4j.performance.memory.MemoryAnalysisResult;
 import ai.tegmentum.wasmtime4j.performance.microbench.BenchmarkSuite;
+import ai.tegmentum.wasmtime4j.performance.insights.PerformanceInsights.OptimizationOpportunity;
+import ai.tegmentum.wasmtime4j.performance.insights.PerformanceInsights.PerformanceIssue;
+import ai.tegmentum.wasmtime4j.performance.insights.PerformanceInsights.PerformanceRecommendation;
+import ai.tegmentum.wasmtime4j.performance.insights.PerformanceInsights.PerformanceSummary;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -479,6 +483,18 @@ public final class PerformanceInsightsEngine {
                 "Analyze runtime performance differences",
                 "Compare performance characteristics across different runtime implementations",
                 List.of("Run comparative benchmarks", "Analyze runtime-specific optimizations"),
+                EstimatedImpact.LOW));
+        break;
+
+      default:
+        // For unknown issue categories, provide general performance guidance
+        recommendations.add(
+            new PerformanceRecommendation(
+                RecommendationPriority.LOW,
+                RecommendationType.ANALYSIS,
+                "General performance analysis",
+                "Perform comprehensive performance analysis to identify optimization opportunities",
+                List.of("Run performance profiling", "Review resource usage patterns"),
                 EstimatedImpact.LOW));
         break;
     }

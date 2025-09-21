@@ -4,11 +4,11 @@ package ai.tegmentum.wasmtime4j.wasi;
  * File and directory permissions in the WASI filesystem.
  *
  * <p>WasiPermissions represents the standard POSIX-style permission bits for files and directories
- * within the WASI sandbox. These permissions control read, write, and execute access for the
- * owner, group, and other users.
+ * within the WASI sandbox. These permissions control read, write, and execute access for the owner,
+ * group, and other users.
  *
- * <p>Permissions are used when creating files and directories, and can be modified using
- * {@link WasiFilesystem#setFilePermissions} operations where the WASI context allows.
+ * <p>Permissions are used when creating files and directories, and can be modified using {@link
+ * WasiFilesystem#setFilePermissions} operations where the WASI context allows.
  *
  * <p>Example usage:
  *
@@ -156,9 +156,7 @@ public interface WasiPermissions {
     return of(0755);
   }
 
-  /**
-   * Builder for creating WasiPermissions instances.
-   */
+  /** Builder for creating WasiPermissions instances. */
   interface Builder {
 
     /**

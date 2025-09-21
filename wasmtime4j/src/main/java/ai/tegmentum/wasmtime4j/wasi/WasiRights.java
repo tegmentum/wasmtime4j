@@ -176,9 +176,7 @@ public enum WasiRights {
     return (rights & this.value) != 0;
   }
 
-  /**
-   * A set of combined rights.
-   */
+  /** A set of combined rights. */
   public static final class WasiRightsSet {
     private final long value;
 

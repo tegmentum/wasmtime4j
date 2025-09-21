@@ -1,11 +1,8 @@
 package ai.tegmentum.wasmtime4j.wasi;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import java.io.Closeable;
 import java.nio.ByteBuffer;
-import java.nio.file.Path;
 import java.util.List;
-import java.util.Map;
 
 /**
  * WASI Preview 1 filesystem operations interface.

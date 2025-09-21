@@ -61,7 +61,9 @@ public final class WasmSpecTestDownloader {
       LOGGER.info("Automatic test suite download enabled");
       downloadAllTestSuites(targetDirectory);
     } else {
-      LOGGER.info("Automatic test suite download disabled (use -Dwasmtime4j.test.download-suites=true to enable)");
+      LOGGER.info(
+          "Automatic test suite download disabled (use -Dwasmtime4j.test.download-suites=true to"
+              + " enable)");
     }
   }
 
@@ -154,8 +156,10 @@ public final class WasmSpecTestDownloader {
     // Check system properties for selective downloading
     final String suiteTypesProperty = System.getProperty("wasmtime4j.test.suite-types", "all");
     final boolean downloadAll = "all".equals(suiteTypesProperty);
-    final boolean downloadWebAssemblySpec = downloadAll || suiteTypesProperty.contains("webassembly-spec");
-    final boolean downloadWasmtimeTests = downloadAll || suiteTypesProperty.contains("wasmtime-tests");
+    final boolean downloadWebAssemblySpec =
+        downloadAll || suiteTypesProperty.contains("webassembly-spec");
+    final boolean downloadWasmtimeTests =
+        downloadAll || suiteTypesProperty.contains("wasmtime-tests");
 
     // Download WebAssembly spec tests
     if (downloadWebAssemblySpec) {
@@ -254,7 +258,9 @@ public final class WasmSpecTestDownloader {
 
         // Extract test files from test/core directory (main spec tests)
         if (entryName.contains("/test/core/")
-            && (entryName.endsWith(".wast") || entryName.endsWith(".wasm") || entryName.endsWith(".wat"))) {
+            && (entryName.endsWith(".wast")
+                || entryName.endsWith(".wasm")
+                || entryName.endsWith(".wat"))) {
           final String fileName = getFileName(entryName);
           final Path outputFile = targetDirectory.resolve(fileName);
           Files.createDirectories(outputFile.getParent());
@@ -281,9 +287,10 @@ public final class WasmSpecTestDownloader {
           }
 
           if ((extractedWastFiles + extractedWasmFiles + convertedWatFiles) % 50 == 0) {
-            LOGGER.info("Extracted "
-                + (extractedWastFiles + extractedWasmFiles + convertedWatFiles)
-                + " test files...");
+            LOGGER.info(
+                "Extracted "
+                    + (extractedWastFiles + extractedWasmFiles + convertedWatFiles)
+                    + " test files...");
           }
         }
 
@@ -291,8 +298,14 @@ public final class WasmSpecTestDownloader {
       }
     }
 
-    LOGGER.info("Extracted " + extractedWastFiles + " WAST files, " + extractedWasmFiles + " WASM files, "
-        + convertedWatFiles + " WAT files from WebAssembly spec tests");
+    LOGGER.info(
+        "Extracted "
+            + extractedWastFiles
+            + " WAST files, "
+            + extractedWasmFiles
+            + " WASM files, "
+            + convertedWatFiles
+            + " WAT files from WebAssembly spec tests");
 
     // Convert any extracted WAT/WAST files to WASM format
     convertExtractedFilesToWasm(targetDirectory);

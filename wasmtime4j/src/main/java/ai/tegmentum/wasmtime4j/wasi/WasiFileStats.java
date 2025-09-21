@@ -8,8 +8,8 @@ import java.time.Instant;
  * <p>WasiFileStats provides comprehensive metadata information about files and directories within
  * the WASI sandbox. This includes size, timestamps, permissions, and other filesystem attributes.
  *
- * <p>File statistics are obtained through {@link WasiFilesystem#getFileStats} operations and can
- * be modified using {@link WasiFilesystem#setFileStats} where permissions allow.
+ * <p>File statistics are obtained through {@link WasiFilesystem#getFileStats} operations and can be
+ * modified using {@link WasiFilesystem#setFileStats} where permissions allow.
  *
  * <p>Example usage:
  *
@@ -130,9 +130,7 @@ public interface WasiFileStats {
     return getFileType().isSpecialFile();
   }
 
-  /**
-   * Builder for creating WasiFileStats instances.
-   */
+  /** Builder for creating WasiFileStats instances. */
   interface Builder {
 
     /**

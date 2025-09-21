@@ -1,6 +1,5 @@
 package ai.tegmentum.wasmtime4j.webassembly;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
@@ -10,8 +9,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Validates that the official WebAssembly and Wasmtime test suites have been properly populated
- * and are accessible through the WasmTestSuiteLoader infrastructure.
+ * Validates that the official WebAssembly and Wasmtime test suites have been properly populated and
+ * are accessible through the WasmTestSuiteLoader infrastructure.
  *
  * <p>This test verifies the critical foundation task of populating official test suites to achieve
  * 60-70% baseline coverage from the current &lt;5%.
@@ -47,8 +46,7 @@ final class TestSuitePopulationValidationTest {
 
     assertTrue(
         validPercentage >= 95.0,
-        String.format(
-            "Expected at least 95%% valid WASM modules, found %.1f%%", validPercentage));
+        String.format("Expected at least 95%% valid WASM modules, found %.1f%%", validPercentage));
   }
 
   @Test
@@ -95,8 +93,7 @@ final class TestSuitePopulationValidationTest {
 
     // Custom tests should exist (basic add.wat test should be converted)
     assertTrue(
-        customTests.size() >= 1,
-        "Expected at least 1 custom test, found: " + customTests.size());
+        customTests.size() >= 1, "Expected at least 1 custom test, found: " + customTests.size());
 
     // Validate that all custom tests are valid WebAssembly modules
     if (customTests.size() > 0) {
@@ -170,8 +167,7 @@ final class TestSuitePopulationValidationTest {
       final var suiteDirectory = WasmTestSuiteLoader.getTestSuiteDirectory(suiteType);
 
       assertTrue(
-          suiteDirectory.toFile().exists(),
-          "Test suite directory should exist: " + suiteDirectory);
+          suiteDirectory.toFile().exists(), "Test suite directory should exist: " + suiteDirectory);
 
       assertTrue(
           suiteDirectory.toFile().isDirectory(),

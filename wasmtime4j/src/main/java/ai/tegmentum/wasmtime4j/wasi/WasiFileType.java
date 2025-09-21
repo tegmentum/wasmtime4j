@@ -117,8 +117,8 @@ public enum WasiFileType {
   /**
    * Checks if this file type represents a special file.
    *
-   * <p>Special files include devices and sockets - anything that is not a regular file,
-   * directory, or symbolic link.
+   * <p>Special files include devices and sockets - anything that is not a regular file, directory,
+   * or symbolic link.
    *
    * @return true if this is a special file
    */

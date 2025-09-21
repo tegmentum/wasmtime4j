@@ -11,8 +11,7 @@ import java.io.Closeable;
  * Directory handles should be properly closed when no longer needed to free system resources.
  *
  * <p>Directory handles are automatically managed by the WASI runtime and should not be created
- * directly by user code. They are obtained through {@link WasiFilesystem#openDirectory}
- * operations.
+ * directly by user code. They are obtained through {@link WasiFilesystem#openDirectory} operations.
  *
  * <p>Example usage:
  *
@@ -87,8 +86,8 @@ public interface WasiDirectoryHandle extends Closeable {
   /**
    * Closes this directory handle and releases its resources.
    *
-   * <p>After calling this method, the handle becomes invalid and should not be used. Any attempt
-   * to use the handle after closing may result in exceptions.
+   * <p>After calling this method, the handle becomes invalid and should not be used. Any attempt to
+   * use the handle after closing may result in exceptions.
    *
    * @throws WasmException if the directory cannot be closed
    */

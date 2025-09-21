@@ -5,9 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.junit.jupiter.api.Test;
 
-/**
- * Test suite for WASI file permissions functionality.
- */
+/** Test suite for WASI file permissions functionality. */
 final class WasiPermissionsTest {
 
   @Test
@@ -65,17 +63,18 @@ final class WasiPermissionsTest {
 
   @Test
   void testBuilderPattern() {
-    final WasiPermissions perms = WasiPermissions.builder()
-        .ownerRead(true)
-        .ownerWrite(true)
-        .ownerExecute(false)
-        .groupRead(true)
-        .groupWrite(false)
-        .groupExecute(false)
-        .otherRead(true)
-        .otherWrite(false)
-        .otherExecute(false)
-        .build();
+    final WasiPermissions perms =
+        WasiPermissions.builder()
+            .ownerRead(true)
+            .ownerWrite(true)
+            .ownerExecute(false)
+            .groupRead(true)
+            .groupWrite(false)
+            .groupExecute(false)
+            .otherRead(true)
+            .otherWrite(false)
+            .otherExecute(false)
+            .build();
 
     assertThat(perms.getMode()).isEqualTo(0644);
     assertThat(perms.isOwnerRead()).isTrue();
@@ -85,11 +84,8 @@ final class WasiPermissionsTest {
 
   @Test
   void testBuilderWithSpecialBits() {
-    final WasiPermissions perms = WasiPermissions.builder()
-        .mode(0755)
-        .setuid(true)
-        .setgid(true)
-        .build();
+    final WasiPermissions perms =
+        WasiPermissions.builder().mode(0755).setuid(true).setgid(true).build();
 
     assertThat(perms.getMode()).isEqualTo(06755);
     assertThat(perms.isSetuid()).isTrue();

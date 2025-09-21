@@ -226,7 +226,7 @@ public final class JniStore extends JniResource implements Store {
    * @throws JniException if the fuel amount cannot be retrieved
    * @throws JniResourceException if this store has been closed
    */
-  public long getRemainingFuel() {
+  public long getFuelRemaining() {
     ensureNotClosed();
 
     try {

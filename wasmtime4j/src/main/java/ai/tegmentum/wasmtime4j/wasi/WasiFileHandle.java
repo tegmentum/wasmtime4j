@@ -10,8 +10,8 @@ import java.io.Closeable;
  * access to file operations while enforcing the capability-based security model. File handles
  * should be properly closed when no longer needed to free system resources.
  *
- * <p>File handles are automatically managed by the WASI runtime and should not be created
- * directly by user code. They are obtained through {@link WasiFilesystem#openFile} operations.
+ * <p>File handles are automatically managed by the WASI runtime and should not be created directly
+ * by user code. They are obtained through {@link WasiFilesystem#openFile} operations.
  *
  * <p>Example usage:
  *
@@ -102,8 +102,8 @@ public interface WasiFileHandle extends Closeable {
   /**
    * Closes this file handle and releases its resources.
    *
-   * <p>After calling this method, the handle becomes invalid and should not be used. Any attempt
-   * to use the handle after closing may result in exceptions.
+   * <p>After calling this method, the handle becomes invalid and should not be used. Any attempt to
+   * use the handle after closing may result in exceptions.
    *
    * @throws WasmException if the file cannot be closed
    */

@@ -133,22 +133,30 @@ final class WasiFileStatsImpl implements WasiFileStats {
   @Override
   public String toString() {
     return "WasiFileStats{"
-        + "device=" + device
-        + ", inode=" + inode
-        + ", fileType=" + fileType
-        + ", linkCount=" + linkCount
-        + ", size=" + size
-        + ", accessTime=" + accessTime
-        + ", modificationTime=" + modificationTime
-        + ", statusChangeTime=" + statusChangeTime
-        + ", creationTime=" + creationTime
-        + ", permissions=" + permissions
+        + "device="
+        + device
+        + ", inode="
+        + inode
+        + ", fileType="
+        + fileType
+        + ", linkCount="
+        + linkCount
+        + ", size="
+        + size
+        + ", accessTime="
+        + accessTime
+        + ", modificationTime="
+        + modificationTime
+        + ", statusChangeTime="
+        + statusChangeTime
+        + ", creationTime="
+        + creationTime
+        + ", permissions="
+        + permissions
         + "}";
   }
 
-  /**
-   * Builder implementation for WasiFileStats.
-   */
+  /** Builder implementation for WasiFileStats. */
   static final class BuilderImpl implements WasiFileStats.Builder {
     private long device;
     private long inode;
@@ -233,9 +241,10 @@ final class WasiFileStatsImpl implements WasiFileStats {
         throw new IllegalStateException("File type must be set");
       }
       if (permissions == null) {
-        permissions = fileType.isDirectory()
-            ? WasiPermissions.defaultDirectoryPermissions()
-            : WasiPermissions.defaultFilePermissions();
+        permissions =
+            fileType.isDirectory()
+                ? WasiPermissions.defaultDirectoryPermissions()
+                : WasiPermissions.defaultFilePermissions();
       }
 
       return new WasiFileStatsImpl(

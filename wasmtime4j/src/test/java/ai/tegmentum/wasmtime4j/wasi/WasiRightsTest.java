@@ -5,9 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.junit.jupiter.api.Test;
 
-/**
- * Test suite for WASI rights functionality.
- */
+/** Test suite for WASI rights functionality. */
 final class WasiRightsTest {
 
   @Test
@@ -31,12 +29,9 @@ final class WasiRightsTest {
 
   @Test
   void testMultipleRightsCreation() {
-    final WasiRights.WasiRightsSet fileRights = WasiRights.of(
-        WasiRights.FD_READ,
-        WasiRights.FD_WRITE,
-        WasiRights.FD_SEEK,
-        WasiRights.FD_TRUNCATE
-    );
+    final WasiRights.WasiRightsSet fileRights =
+        WasiRights.of(
+            WasiRights.FD_READ, WasiRights.FD_WRITE, WasiRights.FD_SEEK, WasiRights.FD_TRUNCATE);
 
     assertThat(fileRights.contains(WasiRights.FD_READ)).isTrue();
     assertThat(fileRights.contains(WasiRights.FD_WRITE)).isTrue();
@@ -47,10 +42,7 @@ final class WasiRightsTest {
 
   @Test
   void testRightsSetCombination() {
-    final WasiRights.WasiRightsSet readSeek = WasiRights.of(
-        WasiRights.FD_READ,
-        WasiRights.FD_SEEK
-    );
+    final WasiRights.WasiRightsSet readSeek = WasiRights.of(WasiRights.FD_READ, WasiRights.FD_SEEK);
 
     final WasiRights.WasiRightsSet readSeekWrite = readSeek.combine(WasiRights.FD_WRITE);
 
@@ -61,17 +53,12 @@ final class WasiRightsTest {
 
   @Test
   void testContainsAll() {
-    final WasiRights.WasiRightsSet allFileRights = WasiRights.of(
-        WasiRights.FD_READ,
-        WasiRights.FD_WRITE,
-        WasiRights.FD_SEEK
-    );
+    final WasiRights.WasiRightsSet allFileRights =
+        WasiRights.of(WasiRights.FD_READ, WasiRights.FD_WRITE, WasiRights.FD_SEEK);
 
     final WasiRights.WasiRightsSet readOnly = WasiRights.of(WasiRights.FD_READ);
-    final WasiRights.WasiRightsSet readWrite = WasiRights.of(
-        WasiRights.FD_READ,
-        WasiRights.FD_WRITE
-    );
+    final WasiRights.WasiRightsSet readWrite =
+        WasiRights.of(WasiRights.FD_READ, WasiRights.FD_WRITE);
 
     assertThat(allFileRights.containsAll(readOnly)).isTrue();
     assertThat(allFileRights.containsAll(readWrite)).isTrue();
@@ -122,18 +109,9 @@ final class WasiRightsTest {
 
   @Test
   void testRightsSetEqualsAndHashCode() {
-    final WasiRights.WasiRightsSet set1 = WasiRights.of(
-        WasiRights.FD_READ,
-        WasiRights.FD_WRITE
-    );
-    final WasiRights.WasiRightsSet set2 = WasiRights.of(
-        WasiRights.FD_READ,
-        WasiRights.FD_WRITE
-    );
-    final WasiRights.WasiRightsSet set3 = WasiRights.of(
-        WasiRights.FD_READ,
-        WasiRights.FD_SEEK
-    );
+    final WasiRights.WasiRightsSet set1 = WasiRights.of(WasiRights.FD_READ, WasiRights.FD_WRITE);
+    final WasiRights.WasiRightsSet set2 = WasiRights.of(WasiRights.FD_READ, WasiRights.FD_WRITE);
+    final WasiRights.WasiRightsSet set3 = WasiRights.of(WasiRights.FD_READ, WasiRights.FD_SEEK);
 
     assertThat(set1).isEqualTo(set2);
     assertThat(set1).isNotEqualTo(set3);
@@ -143,10 +121,8 @@ final class WasiRightsTest {
 
   @Test
   void testRightsSetToString() {
-    final WasiRights.WasiRightsSet readWrite = WasiRights.of(
-        WasiRights.FD_READ,
-        WasiRights.FD_WRITE
-    );
+    final WasiRights.WasiRightsSet readWrite =
+        WasiRights.of(WasiRights.FD_READ, WasiRights.FD_WRITE);
 
     final String str = readWrite.toString();
 
@@ -164,12 +140,12 @@ final class WasiRightsTest {
 
   @Test
   void testDirectoryRights() {
-    final WasiRights.WasiRightsSet dirRights = WasiRights.of(
-        WasiRights.PATH_OPEN,
-        WasiRights.FD_READDIR,
-        WasiRights.PATH_CREATE_DIRECTORY,
-        WasiRights.PATH_REMOVE_DIRECTORY
-    );
+    final WasiRights.WasiRightsSet dirRights =
+        WasiRights.of(
+            WasiRights.PATH_OPEN,
+            WasiRights.FD_READDIR,
+            WasiRights.PATH_CREATE_DIRECTORY,
+            WasiRights.PATH_REMOVE_DIRECTORY);
 
     assertThat(dirRights.contains(WasiRights.PATH_OPEN)).isTrue();
     assertThat(dirRights.contains(WasiRights.FD_READDIR)).isTrue();
@@ -180,12 +156,12 @@ final class WasiRightsTest {
 
   @Test
   void testFileStatRights() {
-    final WasiRights.WasiRightsSet statRights = WasiRights.of(
-        WasiRights.PATH_FILESTAT_GET,
-        WasiRights.FD_FILESTAT_GET,
-        WasiRights.FD_FILESTAT_SET_SIZE,
-        WasiRights.FD_FILESTAT_SET_TIMES
-    );
+    final WasiRights.WasiRightsSet statRights =
+        WasiRights.of(
+            WasiRights.PATH_FILESTAT_GET,
+            WasiRights.FD_FILESTAT_GET,
+            WasiRights.FD_FILESTAT_SET_SIZE,
+            WasiRights.FD_FILESTAT_SET_TIMES);
 
     assertThat(statRights.contains(WasiRights.PATH_FILESTAT_GET)).isTrue();
     assertThat(statRights.contains(WasiRights.FD_FILESTAT_GET)).isTrue();

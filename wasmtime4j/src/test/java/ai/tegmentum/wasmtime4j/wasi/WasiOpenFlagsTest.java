@@ -5,9 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.junit.jupiter.api.Test;
 
-/**
- * Test suite for WASI open flags functionality.
- */
+/** Test suite for WASI open flags functionality. */
 final class WasiOpenFlagsTest {
 
   @Test
@@ -22,7 +20,8 @@ final class WasiOpenFlagsTest {
 
   @Test
   void testFlagCombination() {
-    final WasiOpenFlags.WasiOpenFlagsSet readWrite = WasiOpenFlags.READ.combine(WasiOpenFlags.WRITE);
+    final WasiOpenFlags.WasiOpenFlagsSet readWrite =
+        WasiOpenFlags.READ.combine(WasiOpenFlags.WRITE);
 
     assertThat(readWrite.getValue()).isEqualTo(0x03);
     assertThat(readWrite.contains(WasiOpenFlags.READ)).isTrue();
@@ -32,11 +31,8 @@ final class WasiOpenFlagsTest {
 
   @Test
   void testMultipleFlagCreation() {
-    final WasiOpenFlags.WasiOpenFlagsSet writeCreateTruncate = WasiOpenFlags.of(
-        WasiOpenFlags.WRITE,
-        WasiOpenFlags.CREATE,
-        WasiOpenFlags.TRUNCATE
-    );
+    final WasiOpenFlags.WasiOpenFlagsSet writeCreateTruncate =
+        WasiOpenFlags.of(WasiOpenFlags.WRITE, WasiOpenFlags.CREATE, WasiOpenFlags.TRUNCATE);
 
     assertThat(writeCreateTruncate.getValue()).isEqualTo(0x16);
     assertThat(writeCreateTruncate.contains(WasiOpenFlags.WRITE)).isTrue();
@@ -47,10 +43,8 @@ final class WasiOpenFlagsTest {
 
   @Test
   void testFlagsSetCombination() {
-    final WasiOpenFlags.WasiOpenFlagsSet readWrite = WasiOpenFlags.of(
-        WasiOpenFlags.READ,
-        WasiOpenFlags.WRITE
-    );
+    final WasiOpenFlags.WasiOpenFlagsSet readWrite =
+        WasiOpenFlags.of(WasiOpenFlags.READ, WasiOpenFlags.WRITE);
 
     final WasiOpenFlags.WasiOpenFlagsSet readWriteCreate = readWrite.combine(WasiOpenFlags.CREATE);
 
@@ -94,18 +88,12 @@ final class WasiOpenFlagsTest {
 
   @Test
   void testFlagsSetEqualsAndHashCode() {
-    final WasiOpenFlags.WasiOpenFlagsSet set1 = WasiOpenFlags.of(
-        WasiOpenFlags.READ,
-        WasiOpenFlags.WRITE
-    );
-    final WasiOpenFlags.WasiOpenFlagsSet set2 = WasiOpenFlags.of(
-        WasiOpenFlags.READ,
-        WasiOpenFlags.WRITE
-    );
-    final WasiOpenFlags.WasiOpenFlagsSet set3 = WasiOpenFlags.of(
-        WasiOpenFlags.READ,
-        WasiOpenFlags.CREATE
-    );
+    final WasiOpenFlags.WasiOpenFlagsSet set1 =
+        WasiOpenFlags.of(WasiOpenFlags.READ, WasiOpenFlags.WRITE);
+    final WasiOpenFlags.WasiOpenFlagsSet set2 =
+        WasiOpenFlags.of(WasiOpenFlags.READ, WasiOpenFlags.WRITE);
+    final WasiOpenFlags.WasiOpenFlagsSet set3 =
+        WasiOpenFlags.of(WasiOpenFlags.READ, WasiOpenFlags.CREATE);
 
     assertThat(set1).isEqualTo(set2);
     assertThat(set1).isNotEqualTo(set3);
@@ -115,10 +103,8 @@ final class WasiOpenFlagsTest {
 
   @Test
   void testFlagsSetToString() {
-    final WasiOpenFlags.WasiOpenFlagsSet readWrite = WasiOpenFlags.of(
-        WasiOpenFlags.READ,
-        WasiOpenFlags.WRITE
-    );
+    final WasiOpenFlags.WasiOpenFlagsSet readWrite =
+        WasiOpenFlags.of(WasiOpenFlags.READ, WasiOpenFlags.WRITE);
 
     final String str = readWrite.toString();
 
