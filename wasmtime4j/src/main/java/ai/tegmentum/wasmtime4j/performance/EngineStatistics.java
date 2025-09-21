@@ -35,7 +35,10 @@ public interface EngineStatistics {
    * @throws IllegalArgumentException if engine is null
    */
   static EngineStatistics capture(final ai.tegmentum.wasmtime4j.Engine engine) {
-    throw new UnsupportedOperationException("Implementation must be provided by runtime factory");
+    if (engine == null) {
+      throw new IllegalArgumentException("Engine cannot be null");
+    }
+    return new DefaultEngineStatistics(engine);
   }
 
   /**
@@ -48,7 +51,10 @@ public interface EngineStatistics {
    * @throws IllegalArgumentException if engine is null
    */
   static EngineStatistics captureAndReset(final ai.tegmentum.wasmtime4j.Engine engine) {
-    throw new UnsupportedOperationException("Implementation must be provided by runtime factory");
+    if (engine == null) {
+      throw new IllegalArgumentException("Engine cannot be null");
+    }
+    return new DefaultEngineStatistics(engine);
   }
 
   // Compilation metrics

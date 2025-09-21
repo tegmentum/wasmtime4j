@@ -34,7 +34,7 @@ public interface ResourceUsage {
    * @return current resource usage snapshot
    */
   static ResourceUsage capture() {
-    throw new UnsupportedOperationException("Implementation must be provided by runtime factory");
+    return new DefaultResourceUsage();
   }
 
   /**
@@ -48,7 +48,13 @@ public interface ResourceUsage {
    * @throws IllegalArgumentException if window is null or negative
    */
   static ResourceUsage capture(final Duration window) {
-    throw new UnsupportedOperationException("Implementation must be provided by runtime factory");
+    if (window == null) {
+      throw new IllegalArgumentException("Window cannot be null");
+    }
+    if (window.isNegative()) {
+      throw new IllegalArgumentException("Window cannot be negative");
+    }
+    return new DefaultResourceUsage();
   }
 
   /**
