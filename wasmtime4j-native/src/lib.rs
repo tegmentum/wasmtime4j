@@ -57,6 +57,9 @@ pub mod performance;
 pub mod performance_enhanced;
 pub mod bulk_operations;
 
+// Security and sandboxing infrastructure
+pub mod security;
+
 // Advanced memory management
 pub mod advanced_memory;
 

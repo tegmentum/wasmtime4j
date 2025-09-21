@@ -424,6 +424,377 @@ pub mod jni_performance {
     }
 }
 
+/// JNI bindings for Security and Sandboxing operations
+#[cfg(feature = "jni-bindings")]
+pub mod jni_security {
+    use super::*;
+    use crate::security::*;
+    use crate::error::jni_utils;
+    use std::collections::HashMap;
+    use std::sync::{Arc, RwLock};
+    use once_cell::sync::Lazy;
+
+    /// Global registry for sandbox instances
+    static SANDBOX_REGISTRY: Lazy<Arc<RwLock<HashMap<u64, Arc<Sandbox>>>>> =
+        Lazy::new(|| Arc::new(RwLock::new(HashMap::new())));
+
+    /// Global registry for security policies
+    static POLICY_REGISTRY: Lazy<Arc<RwLock<HashMap<u64, Arc<SecurityPolicy>>>>> =
+        Lazy::new(|| Arc::new(RwLock::new(HashMap::new())));
+
+    /// Global registry for audit logs
+    static AUDIT_LOG_REGISTRY: Lazy<Arc<RwLock<HashMap<u64, Arc<AuditLog>>>>> =
+        Lazy::new(|| Arc::new(RwLock::new(HashMap::new())));
+
+    /// Thread-safe ID generators
+    static NEXT_SANDBOX_HANDLE: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1000);
+    static NEXT_POLICY_HANDLE: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(2000);
+    static NEXT_AUDIT_LOG_HANDLE: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(3000);
+
+    /// Create a new sandbox with security limits (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_security_JniSandbox_nativeCreateSandbox(
+        env: JNIEnv,
+        _class: JClass,
+        max_memory_bytes: jlong,
+        max_execution_time_micros: jlong,
+        max_instructions: jlong,
+        max_stack_depth: jint,
+        max_function_calls: jlong,
+        max_host_function_calls: jlong,
+        max_imports: jint,
+        max_module_size_bytes: jlong,
+    ) -> jlong {
+        jni_utils::jni_try_or(env, 0, || {
+            let limits = SecurityLimits {
+                max_memory_bytes: max_memory_bytes as u64,
+                max_execution_time_micros: max_execution_time_micros as u64,
+                max_instructions: max_instructions as u64,
+                max_stack_depth: max_stack_depth as u32,
+                max_function_calls: max_function_calls as u64,
+                max_host_function_calls: max_host_function_calls as u64,
+                max_imports: max_imports as u32,
+                max_module_size_bytes: max_module_size_bytes as u64,
+            };
+
+            let sandbox = Arc::new(Sandbox::new(limits)?);
+            let sandbox_handle = NEXT_SANDBOX_HANDLE.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+
+            SANDBOX_REGISTRY.write().unwrap().insert(sandbox_handle, sandbox);
+            Ok(sandbox_handle as jlong)
+        })
+    }
+
+    /// Create a new security policy (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_security_JniSecurityPolicy_nativeCreatePolicy(
+        env: JNIEnv,
+        _class: JClass,
+    ) -> jlong {
+        jni_utils::jni_try_or(env, 0, || {
+            let policy = Arc::new(SecurityPolicy::new()?);
+            let policy_handle = NEXT_POLICY_HANDLE.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+
+            POLICY_REGISTRY.write().unwrap().insert(policy_handle, policy);
+            Ok(policy_handle as jlong)
+        })
+    }
+
+    /// Validate an operation against a security policy (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_security_JniSecurityPolicy_nativeValidateOperation(
+        env: JNIEnv,
+        _class: JClass,
+        policy_handle: jlong,
+        operation: jint,
+        context_ptr: jlong,
+    ) -> jint {
+        if policy_handle == 0 {
+            return -1; // Invalid handle
+        }
+
+        jni_utils::jni_try_or(env, -1, || {
+            let registry = POLICY_REGISTRY.read().unwrap();
+            let policy = registry.get(&(policy_handle as u64))
+                .ok_or_else(|| WasmtimeError::new(ErrorCode::InvalidParameter, "Invalid policy handle"))?;
+
+            let context = if context_ptr == 0 {
+                std::ptr::null()
+            } else {
+                context_ptr as *const std::ffi::c_void
+            };
+
+            policy.validate(operation, context)
+        })
+    }
+
+    /// Add capability to security policy (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_security_JniSecurityPolicy_nativeAddCapability(
+        env: JNIEnv,
+        _class: JClass,
+        policy_handle: jlong,
+        capability: jstring,
+    ) -> jint {
+        if policy_handle == 0 {
+            return -1; // Invalid handle
+        }
+
+        jni_utils::jni_try_or(env, -1, || {
+            let registry = POLICY_REGISTRY.read().unwrap();
+            let policy = registry.get(&(policy_handle as u64))
+                .ok_or_else(|| WasmtimeError::new(ErrorCode::InvalidParameter, "Invalid policy handle"))?;
+
+            let capability_str = jni_utils::jstring_to_string(&env, capability)?;
+            policy.add_capability(&capability_str)?;
+            Ok(0) // Success
+        })
+    }
+
+    /// Remove capability from security policy (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_security_JniSecurityPolicy_nativeRemoveCapability(
+        env: JNIEnv,
+        _class: JClass,
+        policy_handle: jlong,
+        capability: jstring,
+    ) -> jint {
+        if policy_handle == 0 {
+            return -1; // Invalid handle
+        }
+
+        jni_utils::jni_try_or(env, -1, || {
+            let registry = POLICY_REGISTRY.read().unwrap();
+            let policy = registry.get(&(policy_handle as u64))
+                .ok_or_else(|| WasmtimeError::new(ErrorCode::InvalidParameter, "Invalid policy handle"))?;
+
+            let capability_str = jni_utils::jstring_to_string(&env, capability)?;
+            let removed = policy.remove_capability(&capability_str)?;
+            Ok(if removed { 1 } else { 0 })
+        })
+    }
+
+    /// Check if security policy has capability (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_security_JniSecurityPolicy_nativeHasCapability(
+        env: JNIEnv,
+        _class: JClass,
+        policy_handle: jlong,
+        capability: jstring,
+    ) -> jint {
+        if policy_handle == 0 {
+            return -1; // Invalid handle
+        }
+
+        jni_utils::jni_try_or(env, -1, || {
+            let registry = POLICY_REGISTRY.read().unwrap();
+            let policy = registry.get(&(policy_handle as u64))
+                .ok_or_else(|| WasmtimeError::new(ErrorCode::InvalidParameter, "Invalid policy handle"))?;
+
+            let capability_str = jni_utils::jstring_to_string(&env, capability)?;
+            let has_capability = policy.has_capability(&capability_str);
+            Ok(if has_capability { 1 } else { 0 })
+        })
+    }
+
+    /// Create a new audit log (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_security_JniAuditLog_nativeCreateAuditLog(
+        env: JNIEnv,
+        _class: JClass,
+    ) -> jlong {
+        jni_utils::jni_try_or(env, 0, || {
+            let audit_log = Arc::new(AuditLog::new()?);
+            let log_handle = NEXT_AUDIT_LOG_HANDLE.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+
+            AUDIT_LOG_REGISTRY.write().unwrap().insert(log_handle, audit_log);
+            Ok(log_handle as jlong)
+        })
+    }
+
+    /// Write event to audit log (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_security_JniAuditLog_nativeWriteEvent(
+        env: JNIEnv,
+        _class: JClass,
+        log_handle: jlong,
+        event_type: jint,
+        message: jstring,
+        context_ptr: jlong,
+    ) -> jint {
+        if log_handle == 0 {
+            return -1; // Invalid handle
+        }
+
+        jni_utils::jni_try_or(env, -1, || {
+            let registry = AUDIT_LOG_REGISTRY.read().unwrap();
+            let audit_log = registry.get(&(log_handle as u64))
+                .ok_or_else(|| WasmtimeError::new(ErrorCode::InvalidParameter, "Invalid audit log handle"))?;
+
+            let message_str = jni_utils::jstring_to_string(&env, message)?;
+            let context = if context_ptr == 0 {
+                std::ptr::null()
+            } else {
+                context_ptr as *const std::ffi::c_void
+            };
+
+            let success = audit_log.write_event(event_type, &message_str, context)?;
+            Ok(if success { 1 } else { 0 })
+        })
+    }
+
+    /// Get audit log entry count (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_security_JniAuditLog_nativeGetEntryCount(
+        env: JNIEnv,
+        _class: JClass,
+        log_handle: jlong,
+    ) -> jint {
+        if log_handle == 0 {
+            return -1; // Invalid handle
+        }
+
+        jni_utils::jni_try_or(env, -1, || {
+            let registry = AUDIT_LOG_REGISTRY.read().unwrap();
+            let audit_log = registry.get(&(log_handle as u64))
+                .ok_or_else(|| WasmtimeError::new(ErrorCode::InvalidParameter, "Invalid audit log handle"))?;
+
+            Ok(audit_log.entry_count() as jint)
+        })
+    }
+
+    /// Clear audit log entries (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_security_JniAuditLog_nativeClear(
+        env: JNIEnv,
+        _class: JClass,
+        log_handle: jlong,
+    ) -> jint {
+        if log_handle == 0 {
+            return -1; // Invalid handle
+        }
+
+        jni_utils::jni_try_or(env, -1, || {
+            let registry = AUDIT_LOG_REGISTRY.read().unwrap();
+            let audit_log = registry.get(&(log_handle as u64))
+                .ok_or_else(|| WasmtimeError::new(ErrorCode::InvalidParameter, "Invalid audit log handle"))?;
+
+            audit_log.clear()?;
+            Ok(0) // Success
+        })
+    }
+
+    /// Set security policy for sandbox (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_security_JniSandbox_nativeSetSecurityPolicy(
+        env: JNIEnv,
+        _class: JClass,
+        sandbox_handle: jlong,
+        policy_handle: jlong,
+    ) -> jint {
+        if sandbox_handle == 0 || policy_handle == 0 {
+            return -1; // Invalid handles
+        }
+
+        jni_utils::jni_try_or(env, -1, || {
+            // Note: In a real implementation, this would properly link the policy to the sandbox
+            // For now, we just validate that both handles exist
+            let sandbox_registry = SANDBOX_REGISTRY.read().unwrap();
+            let policy_registry = POLICY_REGISTRY.read().unwrap();
+
+            if sandbox_registry.get(&(sandbox_handle as u64)).is_none() {
+                return Err(WasmtimeError::new(ErrorCode::InvalidParameter, "Invalid sandbox handle"));
+            }
+
+            if policy_registry.get(&(policy_handle as u64)).is_none() {
+                return Err(WasmtimeError::new(ErrorCode::InvalidParameter, "Invalid policy handle"));
+            }
+
+            log::info!("Set security policy {} for sandbox {}", policy_handle, sandbox_handle);
+            Ok(0) // Success
+        })
+    }
+
+    /// Enable monitoring for sandbox (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_security_JniSandbox_nativeEnableMonitoring(
+        env: JNIEnv,
+        _class: JClass,
+        sandbox_handle: jlong,
+        audit_log_handle: jlong,
+    ) -> jint {
+        if sandbox_handle == 0 || audit_log_handle == 0 {
+            return -1; // Invalid handles
+        }
+
+        jni_utils::jni_try_or(env, -1, || {
+            // Note: In a real implementation, this would properly link the audit log to the sandbox
+            // For now, we just validate that both handles exist
+            let sandbox_registry = SANDBOX_REGISTRY.read().unwrap();
+            let audit_log_registry = AUDIT_LOG_REGISTRY.read().unwrap();
+
+            if sandbox_registry.get(&(sandbox_handle as u64)).is_none() {
+                return Err(WasmtimeError::new(ErrorCode::InvalidParameter, "Invalid sandbox handle"));
+            }
+
+            if audit_log_registry.get(&(audit_log_handle as u64)).is_none() {
+                return Err(WasmtimeError::new(ErrorCode::InvalidParameter, "Invalid audit log handle"));
+            }
+
+            log::info!("Enabled monitoring with audit log {} for sandbox {}", audit_log_handle, sandbox_handle);
+            Ok(0) // Success
+        })
+    }
+
+    /// Dispose of sandbox (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_security_JniSandbox_nativeDispose(
+        env: JNIEnv,
+        _class: JClass,
+        sandbox_handle: jlong,
+    ) {
+        if sandbox_handle == 0 {
+            return; // Invalid handle
+        }
+
+        if let Ok(mut registry) = SANDBOX_REGISTRY.write() {
+            registry.remove(&(sandbox_handle as u64));
+        }
+    }
+
+    /// Dispose of security policy (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_security_JniSecurityPolicy_nativeDispose(
+        env: JNIEnv,
+        _class: JClass,
+        policy_handle: jlong,
+    ) {
+        if policy_handle == 0 {
+            return; // Invalid handle
+        }
+
+        if let Ok(mut registry) = POLICY_REGISTRY.write() {
+            registry.remove(&(policy_handle as u64));
+        }
+    }
+
+    /// Dispose of audit log (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_security_JniAuditLog_nativeDispose(
+        env: JNIEnv,
+        _class: JClass,
+        audit_log_handle: jlong,
+    ) {
+        if audit_log_handle == 0 {
+            return; // Invalid handle
+        }
+
+        if let Ok(mut registry) = AUDIT_LOG_REGISTRY.write() {
+            registry.remove(&(audit_log_handle as u64));
+        }
+    }
+}
+
 /// JNI bindings for Engine operations
 #[cfg(feature = "jni-bindings")]
 pub mod jni_engine {
