@@ -455,6 +455,103 @@ pub mod jni_function {
     }
     
     
+    /// Helper function to convert Wasmtime values to Java objects
+    fn convert_wasmtime_vals_to_java_objects(env: &mut JNIEnv, results: &[wasmtime::Val]) -> WasmtimeResult<jobjectArray> {
+        let object_class = env.find_class("java/lang/Object")
+            .map_err(|e| WasmtimeError::Function { message: format!("Failed to find Object class: {}", e) })?;
+        let array = env.new_object_array(results.len() as i32, &object_class, JObject::null())
+            .map_err(|e| WasmtimeError::Function { message: format!("Failed to create result array: {}", e) })?;
+
+        for (i, val) in results.iter().enumerate() {
+            let java_object = convert_wasmtime_val_to_java_object(env, val)?;
+            env.set_object_array_element(&array, i as i32, &java_object)
+                .map_err(|e| WasmtimeError::Function { message: format!("Failed to set array element {}: {}", i, e) })?;
+        }
+
+        Ok(array.into_raw())
+    }
+
+    /// Convert a single Wasmtime Val to a Java Object
+    fn convert_wasmtime_val_to_java_object<'local>(env: &mut JNIEnv<'local>, val: &wasmtime::Val) -> WasmtimeResult<JObject<'local>> {
+        match val {
+            wasmtime::Val::I32(i) => {
+                // Create Integer wrapper object
+                let integer_class = env.find_class("java/lang/Integer")
+                    .map_err(|e| WasmtimeError::Function { message: format!("Failed to find Integer class: {}", e) })?;
+                let integer_obj = env.new_object(integer_class, "(I)V", &[jni::objects::JValueGen::Int(*i)])
+                    .map_err(|e| WasmtimeError::Function { message: format!("Failed to create Integer object: {}", e) })?;
+                Ok(integer_obj)
+            },
+
+            wasmtime::Val::I64(l) => {
+                // Create Long wrapper object
+                let long_class = env.find_class("java/lang/Long")
+                    .map_err(|e| WasmtimeError::Function { message: format!("Failed to find Long class: {}", e) })?;
+                let long_obj = env.new_object(long_class, "(J)V", &[jni::objects::JValueGen::Long(*l)])
+                    .map_err(|e| WasmtimeError::Function { message: format!("Failed to create Long object: {}", e) })?;
+                Ok(long_obj)
+            },
+
+            wasmtime::Val::F32(f) => {
+                // Create Float wrapper object
+                let float_class = env.find_class("java/lang/Float")
+                    .map_err(|e| WasmtimeError::Function { message: format!("Failed to find Float class: {}", e) })?;
+                let float_val = f32::from_bits(*f);
+                let float_obj = env.new_object(float_class, "(F)V", &[jni::objects::JValueGen::Float(float_val)])
+                    .map_err(|e| WasmtimeError::Function { message: format!("Failed to create Float object: {}", e) })?;
+                Ok(float_obj)
+            },
+
+            wasmtime::Val::F64(d) => {
+                // Create Double wrapper object
+                let double_class = env.find_class("java/lang/Double")
+                    .map_err(|e| WasmtimeError::Function { message: format!("Failed to find Double class: {}", e) })?;
+                let double_val = f64::from_bits(*d);
+                let double_obj = env.new_object(double_class, "(D)V", &[jni::objects::JValueGen::Double(double_val)])
+                    .map_err(|e| WasmtimeError::Function { message: format!("Failed to create Double object: {}", e) })?;
+                Ok(double_obj)
+            },
+
+            wasmtime::Val::V128(v) => {
+                // Convert V128 to byte array
+                let v128_bytes = v.as_u128().to_le_bytes();
+                let byte_array = env.new_byte_array(16)
+                    .map_err(|e| WasmtimeError::Function { message: format!("Failed to create byte array: {}", e) })?;
+
+                env.set_byte_array_region(&byte_array, 0, unsafe {
+                    std::slice::from_raw_parts(v128_bytes.as_ptr() as *const i8, 16)
+                })
+                .map_err(|e| WasmtimeError::Function { message: format!("Failed to set byte array region: {}", e) })?;
+
+                Ok(JObject::from(byte_array))
+            },
+
+            wasmtime::Val::FuncRef(_) => {
+                // For now, return null for function references
+                // TODO: Implement proper function reference handling
+                Ok(JObject::null())
+            },
+
+            wasmtime::Val::ExternRef(_) => {
+                // For now, return null for external references
+                // TODO: Implement proper external reference handling
+                Ok(JObject::null())
+            },
+
+            wasmtime::Val::AnyRef(_) => {
+                // For now, return null for any references
+                // TODO: Implement proper any reference handling
+                Ok(JObject::null())
+            },
+
+            wasmtime::Val::ExnRef(_) => {
+                // For now, return null for exception references
+                // TODO: Implement proper exception reference handling
+                Ok(JObject::null())
+            },
+        }
+    }
+
     /// Helper function to create Java String array from Vec<String>
     fn create_java_string_array(env: &mut JNIEnv, strings: &[String]) -> WasmtimeResult<jobjectArray> {
         let string_class = env.find_class("java/lang/String")
@@ -473,38 +570,197 @@ pub mod jni_function {
         Ok(array.into_raw())
     }
     
+    /// Validate function call parameters before conversion
+    fn validate_function_call_parameters(
+        func_handle: &FunctionHandle,
+        param_count: usize,
+    ) -> WasmtimeResult<()> {
+        let expected_param_count = func_handle.func_type.params().len();
+
+        // Check parameter count matches function signature
+        if param_count != expected_param_count {
+            return Err(WasmtimeError::Function {
+                message: format!(
+                    "Parameter count mismatch: function '{}' expects {} parameters, got {}",
+                    "<function>",
+                    expected_param_count,
+                    param_count
+                )
+            });
+        }
+
+        // Check for maximum parameter limit to prevent memory issues
+        const MAX_PARAMS: usize = 1000;
+        if param_count > MAX_PARAMS {
+            return Err(WasmtimeError::Function {
+                message: format!(
+                    "Too many parameters: {} exceeds maximum allowed ({})",
+                    param_count, MAX_PARAMS
+                )
+            });
+        }
+
+        Ok(())
+    }
+
     /// Convert Java Object array to Wasmtime Val array for function parameters
     fn convert_java_params_to_wasmtime_vals(
-        env: &mut JNIEnv, 
-        params: jobjectArray, 
+        env: &mut JNIEnv,
+        params: jobjectArray,
         expected_types: &[ValType]
     ) -> WasmtimeResult<Vec<Val>> {
         if params.is_null() {
+            if !expected_types.is_empty() {
+                return Err(WasmtimeError::Function {
+                    message: format!("Expected {} parameters, but null array provided", expected_types.len())
+                });
+            }
             return Ok(Vec::new());
         }
-        
+
         let params_array = JObjectArray::from(unsafe { JObject::from_raw(params) });
         let param_count = env.get_array_length(&params_array)
             .map_err(|e| WasmtimeError::Function { message: format!("Failed to get parameter array length: {}", e) })?;
-            
+
+        // Enhanced parameter count validation
         if param_count as usize != expected_types.len() {
-            return Err(WasmtimeError::Function { 
-                message: format!("Parameter count mismatch: expected {}, got {}", expected_types.len(), param_count) 
+            return Err(WasmtimeError::Function {
+                message: format!(
+                    "Parameter count mismatch: expected {} parameters, got {}. Expected types: [{}]",
+                    expected_types.len(),
+                    param_count,
+                    expected_types.iter()
+                        .map(|t| format!("{:?}", t))
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
             });
         }
-        
+
+        // Check for reasonable parameter limits
+        const MAX_PARAMS: usize = 1000;
+        if param_count as usize > MAX_PARAMS {
+            return Err(WasmtimeError::Function {
+                message: format!("Too many parameters: {} exceeds maximum allowed ({})", param_count, MAX_PARAMS)
+            });
+        }
+
         let mut vals = Vec::new();
-        
+
         for i in 0..param_count {
             let param_obj = env.get_object_array_element(&params_array, i)
-                .map_err(|e| WasmtimeError::Function { message: format!("Failed to get parameter {}: {}", i, e) })?;
-                
+                .map_err(|e| WasmtimeError::Function { message: format!("Failed to get parameter {} of {}: {}", i, param_count, e) })?;
+
             let expected_type = &expected_types[i as usize];
-            let val = convert_java_object_to_wasmtime_val(env, param_obj.into_raw(), expected_type)?;
+            let param_raw = param_obj.into_raw();
+
+            // Validate parameter type before conversion
+            if let Err(validation_error) = validate_parameter_type(env, param_raw, expected_type, i as usize) {
+                return Err(validation_error);
+            }
+
+            let val = convert_java_object_to_wasmtime_val(env, param_raw, expected_type)?;
             vals.push(val);
         }
-        
+
         Ok(vals)
+    }
+
+    /// Validate a single parameter type before conversion
+    fn validate_parameter_type(
+        env: &mut JNIEnv,
+        param_obj: jobject,
+        expected_type: &ValType,
+        param_index: usize,
+    ) -> WasmtimeResult<()> {
+        if param_obj.is_null() {
+            return match expected_type {
+                ValType::Ref(_) => Ok(()), // Null is valid for reference types
+                _ => Err(WasmtimeError::Function {
+                    message: format!(
+                        "Parameter {} is null, but expected type {:?} does not allow null values",
+                        param_index, expected_type
+                    )
+                }),
+            };
+        }
+
+        let param_jobject = unsafe { JObject::from_raw(param_obj) };
+
+        // Type-specific validation
+        match expected_type {
+            ValType::I32 => {
+                let integer_class = env.find_class("java/lang/Integer")
+                    .map_err(|e| WasmtimeError::Function { message: format!("Failed to find Integer class: {}", e) })?;
+                if !env.is_instance_of(&param_jobject, integer_class)
+                    .map_err(|e| WasmtimeError::Function { message: format!("Failed to check Integer instance: {}", e) })? {
+                    return Err(WasmtimeError::Function {
+                        message: format!("Parameter {} must be Integer for i32 type, but got different type", param_index)
+                    });
+                }
+            },
+
+            ValType::I64 => {
+                let long_class = env.find_class("java/lang/Long")
+                    .map_err(|e| WasmtimeError::Function { message: format!("Failed to find Long class: {}", e) })?;
+                if !env.is_instance_of(&param_jobject, long_class)
+                    .map_err(|e| WasmtimeError::Function { message: format!("Failed to check Long instance: {}", e) })? {
+                    return Err(WasmtimeError::Function {
+                        message: format!("Parameter {} must be Long for i64 type, but got different type", param_index)
+                    });
+                }
+            },
+
+            ValType::F32 => {
+                let float_class = env.find_class("java/lang/Float")
+                    .map_err(|e| WasmtimeError::Function { message: format!("Failed to find Float class: {}", e) })?;
+                if !env.is_instance_of(&param_jobject, float_class)
+                    .map_err(|e| WasmtimeError::Function { message: format!("Failed to check Float instance: {}", e) })? {
+                    return Err(WasmtimeError::Function {
+                        message: format!("Parameter {} must be Float for f32 type, but got different type", param_index)
+                    });
+                }
+            },
+
+            ValType::F64 => {
+                let double_class = env.find_class("java/lang/Double")
+                    .map_err(|e| WasmtimeError::Function { message: format!("Failed to find Double class: {}", e) })?;
+                if !env.is_instance_of(&param_jobject, double_class)
+                    .map_err(|e| WasmtimeError::Function { message: format!("Failed to check Double instance: {}", e) })? {
+                    return Err(WasmtimeError::Function {
+                        message: format!("Parameter {} must be Double for f64 type, but got different type", param_index)
+                    });
+                }
+            },
+
+            ValType::V128 => {
+                let byte_array_class = env.find_class("[B")
+                    .map_err(|e| WasmtimeError::Function { message: format!("Failed to find byte array class: {}", e) })?;
+                if !env.is_instance_of(&param_jobject, byte_array_class)
+                    .map_err(|e| WasmtimeError::Function { message: format!("Failed to check byte array instance: {}", e) })? {
+                    return Err(WasmtimeError::Function {
+                        message: format!("Parameter {} must be byte[] for V128 type, but got different type", param_index)
+                    });
+                }
+
+                // Validate V128 byte array length
+                let byte_array: jni::objects::JPrimitiveArray<i8> = param_jobject.into();
+                let array_length = env.get_array_length(&byte_array)
+                    .map_err(|e| WasmtimeError::Function { message: format!("Failed to get byte array length: {}", e) })?;
+                if array_length != 16 {
+                    return Err(WasmtimeError::Function {
+                        message: format!("Parameter {} V128 byte array must be exactly 16 bytes, got {}", param_index, array_length)
+                    });
+                }
+            },
+
+            ValType::Ref(_) => {
+                // Reference types are more permissive for now
+                // TODO: Add more specific reference type validation when implemented
+            },
+        }
+
+        Ok(())
     }
     
     /// Convert a single Java Object to a Wasmtime Val based on expected type
@@ -703,48 +959,75 @@ pub mod jni_function {
     }
     
     /// Call a function with generic parameters (JNI version)
-    /// TODO: This implementation requires Store context integration
-    /// Current blocker: Wasmtime functions need Store context to be invoked,
-    /// but our FunctionHandle doesn't include it. Need architectural solution.
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCall(
         mut env: JNIEnv,
         _class: JClass,
         function_ptr: jlong,
+        store_ptr: jlong,
         params: jobjectArray,
     ) -> jobjectArray {
-        // Defensive programming: validate function pointer
+        // Defensive programming: validate pointers
         if function_ptr == 0 {
             jni_utils::throw_jni_exception(&mut env, &WasmtimeError::invalid_parameter("function_ptr cannot be null"));
             return std::ptr::null_mut();
         }
 
-        match memory_utils::safe_deref(function_ptr as *const FunctionHandle, "function_ptr") {
-            Ok(func_handle) => {
+        if store_ptr == 0 {
+            jni_utils::throw_jni_exception(&mut env, &WasmtimeError::invalid_parameter("store_ptr cannot be null"));
+            return std::ptr::null_mut();
+        }
+
+        let function_result = memory_utils::safe_deref(function_ptr as *const FunctionHandle, "function_ptr");
+        let store_result = unsafe { crate::store::core::get_store_mut(store_ptr as *mut std::os::raw::c_void) };
+
+        match (function_result, store_result) {
+            (Ok(func_handle), Ok(store)) => {
+                // Validate function call parameters
+                let param_count = if params.is_null() {
+                    0
+                } else {
+                    env.get_array_length(&unsafe { jni::objects::JObjectArray::from(jni::objects::JObject::from_raw(params)) })
+                        .unwrap_or(0) as usize
+                };
+
+                if let Err(validation_error) = validate_function_call_parameters(func_handle, param_count) {
+                    jni_utils::throw_jni_exception(&mut env, &validation_error);
+                    return std::ptr::null_mut();
+                }
+
                 // Convert Java parameters to Wasmtime values
                 let param_types = func_handle.func_type.params().collect::<Vec<_>>();
                 match convert_java_params_to_wasmtime_vals(&mut env, params, &param_types) {
                     Ok(wasmtime_params) => {
-                        // TODO: CRITICAL - Need Store context to call function
-                        // Options:
-                        // 1. Modify FunctionHandle to include Store ID + registry lookup
-                        // 2. Pass Store context through JNI interface
-                        // 3. Use thread-local Store context
-                        //
-                        // For now, return error indicating missing implementation
-                        let error = WasmtimeError::Function { 
-                            message: "Function calls require Store context integration - not yet implemented".to_string() 
-                        };
-                        jni_utils::throw_jni_exception(&mut env, &error);
-                        std::ptr::null_mut()
-                        
-                        // Future implementation would be:
-                        // let mut store = get_store_by_id(func_handle.store_id)?;
-                        // let mut results = vec![Val::I32(0); func_handle.func_type.results().len()];
-                        // match func_handle.func.call(&mut store, &wasmtime_params, &mut results) {
-                        //     Ok(()) => convert_wasmtime_vals_to_java_objects(&mut env, &results)?,
-                        //     Err(trap) => handle_wasmtime_trap(&mut env, trap),
-                        // }
+                        // Execute function with Store context
+                        let result_count = func_handle.func_type.results().len();
+                        let call_result = store.with_context(|mut ctx| {
+                            let mut results = vec![wasmtime::Val::I32(0); result_count];
+                            match func_handle.func.call(&mut ctx, &wasmtime_params, &mut results) {
+                                Ok(()) => Ok(results),
+                                Err(trap) => Err(WasmtimeError::Runtime {
+                                    message: format!("Function call failed: {}", trap),
+                                    backtrace: None,
+                                })
+                            }
+                        });
+
+                        match call_result {
+                            Ok(results) => {
+                                match convert_wasmtime_vals_to_java_objects(&mut env, &results) {
+                                    Ok(java_array) => java_array,
+                                    Err(error) => {
+                                        jni_utils::throw_jni_exception(&mut env, &error);
+                                        std::ptr::null_mut()
+                                    }
+                                }
+                            },
+                            Err(error) => {
+                                jni_utils::throw_jni_exception(&mut env, &error);
+                                std::ptr::null_mut()
+                            }
+                        }
                     },
                     Err(error) => {
                         jni_utils::throw_jni_exception(&mut env, &error);
@@ -752,44 +1035,88 @@ pub mod jni_function {
                     }
                 }
             },
-            Err(memory_error) => {
-                let wasmtime_error = memory_error.to_wasmtime_error();
+            (Err(mem_error), _) => {
+                let wasmtime_error = mem_error.to_wasmtime_error();
                 jni_utils::throw_jni_exception(&mut env, &wasmtime_error);
+                std::ptr::null_mut()
+            },
+            (_, Err(error)) => {
+                jni_utils::throw_jni_exception(&mut env, &error);
                 std::ptr::null_mut()
             }
         }
     }
-    
+
     /// Call a function with multiple return values (JNI version)
-    /// TODO: This implementation requires Store context integration (same as nativeCall)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallMultiValue(
         mut env: JNIEnv,
         _class: JClass,
         function_ptr: jlong,
+        store_ptr: jlong,
         params: jobjectArray,
     ) -> jobjectArray {
-        // Defensive programming: validate function pointer
+        // Defensive programming: validate pointers
         if function_ptr == 0 {
             jni_utils::throw_jni_exception(&mut env, &WasmtimeError::invalid_parameter("function_ptr cannot be null"));
             return std::ptr::null_mut();
         }
 
-        match memory_utils::safe_deref(function_ptr as *const FunctionHandle, "function_ptr") {
-            Ok(func_handle) => {
+        if store_ptr == 0 {
+            jni_utils::throw_jni_exception(&mut env, &WasmtimeError::invalid_parameter("store_ptr cannot be null"));
+            return std::ptr::null_mut();
+        }
+
+        let function_result = memory_utils::safe_deref(function_ptr as *const FunctionHandle, "function_ptr");
+        let store_result = unsafe { crate::store::core::get_store_mut(store_ptr as *mut std::os::raw::c_void) };
+
+        match (function_result, store_result) {
+            (Ok(func_handle), Ok(store)) => {
+                // Validate function call parameters
+                let param_count = if params.is_null() {
+                    0
+                } else {
+                    env.get_array_length(&unsafe { jni::objects::JObjectArray::from(jni::objects::JObject::from_raw(params)) })
+                        .unwrap_or(0) as usize
+                };
+
+                if let Err(validation_error) = validate_function_call_parameters(func_handle, param_count) {
+                    jni_utils::throw_jni_exception(&mut env, &validation_error);
+                    return std::ptr::null_mut();
+                }
+
                 // Convert Java parameters to Wasmtime values
                 let param_types = func_handle.func_type.params().collect::<Vec<_>>();
                 match convert_java_params_to_wasmtime_vals(&mut env, params, &param_types) {
                     Ok(wasmtime_params) => {
-                        // TODO: CRITICAL - Need Store context to call function (same issue as nativeCall)
-                        let error = WasmtimeError::Function { 
-                            message: "Function calls require Store context integration - not yet implemented".to_string() 
-                        };
-                        jni_utils::throw_jni_exception(&mut env, &error);
-                        std::ptr::null_mut()
-                        
-                        // Future implementation would be identical to nativeCall
-                        // but this method explicitly supports multi-value returns
+                        // Execute function with Store context (identical to nativeCall)
+                        let result_count = func_handle.func_type.results().len();
+                        let call_result = store.with_context(|mut ctx| {
+                            let mut results = vec![wasmtime::Val::I32(0); result_count];
+                            match func_handle.func.call(&mut ctx, &wasmtime_params, &mut results) {
+                                Ok(()) => Ok(results),
+                                Err(trap) => Err(WasmtimeError::Runtime {
+                                    message: format!("Function call failed: {}", trap),
+                                    backtrace: None,
+                                })
+                            }
+                        });
+
+                        match call_result {
+                            Ok(results) => {
+                                match convert_wasmtime_vals_to_java_objects(&mut env, &results) {
+                                    Ok(java_array) => java_array,
+                                    Err(error) => {
+                                        jni_utils::throw_jni_exception(&mut env, &error);
+                                        std::ptr::null_mut()
+                                    }
+                                }
+                            },
+                            Err(error) => {
+                                jni_utils::throw_jni_exception(&mut env, &error);
+                                std::ptr::null_mut()
+                            }
+                        }
                     },
                     Err(error) => {
                         jni_utils::throw_jni_exception(&mut env, &error);
@@ -797,60 +1124,352 @@ pub mod jni_function {
                     }
                 }
             },
-            Err(memory_error) => {
-                let wasmtime_error = memory_error.to_wasmtime_error();
+            (Err(mem_error), _) => {
+                let wasmtime_error = mem_error.to_wasmtime_error();
                 jni_utils::throw_jni_exception(&mut env, &wasmtime_error);
+                std::ptr::null_mut()
+            },
+            (_, Err(error)) => {
+                jni_utils::throw_jni_exception(&mut env, &error);
                 std::ptr::null_mut()
             }
         }
     }
     
-    /// Call a function with int parameters (JNI version) - PLACEHOLDER
+    /// Call a function with int parameters (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallInt(
-        env: JNIEnv,
+        mut env: JNIEnv,
         _class: JClass,
         function_ptr: jlong,
+        store_ptr: jlong,
         params: jintArray,
     ) -> jint {
-        // Placeholder implementation - return 0
-        0
+        // Defensive programming: validate pointers
+        if function_ptr == 0 {
+            jni_utils::throw_jni_exception(&mut env, &WasmtimeError::invalid_parameter("function_ptr cannot be null"));
+            return 0;
+        }
+        if store_ptr == 0 {
+            jni_utils::throw_jni_exception(&mut env, &WasmtimeError::invalid_parameter("store_ptr cannot be null"));
+            return 0;
+        }
+
+        let function_result = memory_utils::safe_deref(function_ptr as *const FunctionHandle, "function_ptr");
+        let store_result = unsafe { crate::store::core::get_store_mut(store_ptr as *mut std::os::raw::c_void) };
+
+        match (function_result, store_result) {
+            (Ok(func_handle), Ok(store)) => {
+                // Convert int array to Wasmtime parameters (simplified for now)
+                let params_result = if params.is_null() {
+                    Ok(Vec::new())
+                } else {
+                    // TODO: Implement proper int array parameter conversion
+                    // For now, return error to indicate not implemented
+                    Err(WasmtimeError::Function {
+                        message: "Int array parameter conversion not yet implemented".to_string()
+                    })
+                };
+
+                match params_result {
+                    Ok(wasmtime_params) => {
+                        // Execute function with Store context
+                        let call_result = store.with_context(|mut ctx| {
+                            let mut results = vec![wasmtime::Val::I32(0); 1]; // Expect single i32 return
+                            match func_handle.func.call(&mut ctx, &wasmtime_params, &mut results) {
+                                Ok(()) => {
+                                    // Extract the first result as i32
+                                    match results.get(0) {
+                                        Some(wasmtime::Val::I32(result)) => Ok(*result),
+                                        Some(_) => Err(WasmtimeError::Function {
+                                            message: "Function returned non-i32 value".to_string()
+                                        }),
+                                        None => Ok(0), // No return value, default to 0
+                                    }
+                                },
+                                Err(trap) => Err(WasmtimeError::Runtime {
+                                    message: format!("Function call failed: {}", trap),
+                                    backtrace: None,
+                                })
+                            }
+                        });
+
+                        match call_result {
+                            Ok(result) => result,
+                            Err(error) => {
+                                jni_utils::throw_jni_exception(&mut env, &error);
+                                0
+                            }
+                        }
+                    },
+                    Err(error) => {
+                        jni_utils::throw_jni_exception(&mut env, &error);
+                        0
+                    }
+                }
+            },
+            (Err(mem_error), _) => {
+                let wasmtime_error = mem_error.to_wasmtime_error();
+                jni_utils::throw_jni_exception(&mut env, &wasmtime_error);
+                0
+            },
+            (_, Err(error)) => {
+                jni_utils::throw_jni_exception(&mut env, &error);
+                0
+            }
+        }
     }
     
-    /// Call a function with long parameters (JNI version) - PLACEHOLDER
+    /// Call a function with long parameters (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallLong(
-        env: JNIEnv,
+        mut env: JNIEnv,
         _class: JClass,
         function_ptr: jlong,
+        store_ptr: jlong,
         params: jlongArray,
     ) -> jlong {
-        // Placeholder implementation - return 0
-        0
+        // Defensive programming: validate pointers
+        if function_ptr == 0 {
+            jni_utils::throw_jni_exception(&mut env, &WasmtimeError::invalid_parameter("function_ptr cannot be null"));
+            return 0;
+        }
+        if store_ptr == 0 {
+            jni_utils::throw_jni_exception(&mut env, &WasmtimeError::invalid_parameter("store_ptr cannot be null"));
+            return 0;
+        }
+
+        let function_result = memory_utils::safe_deref(function_ptr as *const FunctionHandle, "function_ptr");
+        let store_result = unsafe { crate::store::core::get_store_mut(store_ptr as *mut std::os::raw::c_void) };
+
+        match (function_result, store_result) {
+            (Ok(func_handle), Ok(store)) => {
+                // Convert long array to Wasmtime parameters (simplified for now)
+                let params_result = if params.is_null() {
+                    Ok(Vec::new())
+                } else {
+                    // TODO: Implement proper long array parameter conversion
+                    // For now, return error to indicate not implemented
+                    Err(WasmtimeError::Function {
+                        message: "Long array parameter conversion not yet implemented".to_string()
+                    })
+                };
+
+                match params_result {
+                    Ok(wasmtime_params) => {
+                        // Execute function with Store context
+                        let call_result = store.with_context(|mut ctx| {
+                            let mut results = vec![wasmtime::Val::I64(0); 1]; // Expect single i64 return
+                            match func_handle.func.call(&mut ctx, &wasmtime_params, &mut results) {
+                                Ok(()) => {
+                                    // Extract the first result as i64
+                                    match results.get(0) {
+                                        Some(wasmtime::Val::I64(result)) => Ok(*result),
+                                        Some(_) => Err(WasmtimeError::Function {
+                                            message: "Function returned non-i64 value".to_string()
+                                        }),
+                                        None => Ok(0), // No return value, default to 0
+                                    }
+                                },
+                                Err(trap) => Err(WasmtimeError::Runtime {
+                                    message: format!("Function call failed: {}", trap),
+                                    backtrace: None,
+                                })
+                            }
+                        });
+
+                        match call_result {
+                            Ok(result) => result,
+                            Err(error) => {
+                                jni_utils::throw_jni_exception(&mut env, &error);
+                                0
+                            }
+                        }
+                    },
+                    Err(error) => {
+                        jni_utils::throw_jni_exception(&mut env, &error);
+                        0
+                    }
+                }
+            },
+            (Err(mem_error), _) => {
+                let wasmtime_error = mem_error.to_wasmtime_error();
+                jni_utils::throw_jni_exception(&mut env, &wasmtime_error);
+                0
+            },
+            (_, Err(error)) => {
+                jni_utils::throw_jni_exception(&mut env, &error);
+                0
+            }
+        }
     }
     
-    /// Call a function with float parameters (JNI version) - PLACEHOLDER
+    /// Call a function with float parameters (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallFloat(
-        env: JNIEnv,
+        mut env: JNIEnv,
         _class: JClass,
         function_ptr: jlong,
+        store_ptr: jlong,
         params: jfloatArray,
     ) -> f32 {
-        // Placeholder implementation - return 0.0
-        0.0
+        // Defensive programming: validate pointers
+        if function_ptr == 0 {
+            jni_utils::throw_jni_exception(&mut env, &WasmtimeError::invalid_parameter("function_ptr cannot be null"));
+            return 0.0;
+        }
+        if store_ptr == 0 {
+            jni_utils::throw_jni_exception(&mut env, &WasmtimeError::invalid_parameter("store_ptr cannot be null"));
+            return 0.0;
+        }
+
+        let function_result = memory_utils::safe_deref(function_ptr as *const FunctionHandle, "function_ptr");
+        let store_result = unsafe { crate::store::core::get_store_mut(store_ptr as *mut std::os::raw::c_void) };
+
+        match (function_result, store_result) {
+            (Ok(func_handle), Ok(store)) => {
+                // Convert float array to Wasmtime parameters (simplified for now)
+                let params_result = if params.is_null() {
+                    Ok(Vec::new())
+                } else {
+                    // TODO: Implement proper float array parameter conversion
+                    // For now, return error to indicate not implemented
+                    Err(WasmtimeError::Function {
+                        message: "Float array parameter conversion not yet implemented".to_string()
+                    })
+                };
+
+                match params_result {
+                    Ok(wasmtime_params) => {
+                        // Execute function with Store context
+                        let call_result = store.with_context(|mut ctx| {
+                            let mut results = vec![wasmtime::Val::F32(0)]; // Expect single f32 return
+                            match func_handle.func.call(&mut ctx, &wasmtime_params, &mut results) {
+                                Ok(()) => {
+                                    // Extract the first result as f32
+                                    match results.get(0) {
+                                        Some(wasmtime::Val::F32(result)) => Ok(f32::from_bits(*result)),
+                                        Some(_) => Err(WasmtimeError::Function {
+                                            message: "Function returned non-f32 value".to_string()
+                                        }),
+                                        None => Ok(0.0), // No return value, default to 0.0
+                                    }
+                                },
+                                Err(trap) => Err(WasmtimeError::Runtime {
+                                    message: format!("Function call failed: {}", trap),
+                                    backtrace: None,
+                                })
+                            }
+                        });
+
+                        match call_result {
+                            Ok(result) => result,
+                            Err(error) => {
+                                jni_utils::throw_jni_exception(&mut env, &error);
+                                0.0
+                            }
+                        }
+                    },
+                    Err(error) => {
+                        jni_utils::throw_jni_exception(&mut env, &error);
+                        0.0
+                    }
+                }
+            },
+            (Err(mem_error), _) => {
+                let wasmtime_error = mem_error.to_wasmtime_error();
+                jni_utils::throw_jni_exception(&mut env, &wasmtime_error);
+                0.0
+            },
+            (_, Err(error)) => {
+                jni_utils::throw_jni_exception(&mut env, &error);
+                0.0
+            }
+        }
     }
     
-    /// Call a function with double parameters (JNI version) - PLACEHOLDER
+    /// Call a function with double parameters (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallDouble(
-        env: JNIEnv,
+        mut env: JNIEnv,
         _class: JClass,
         function_ptr: jlong,
+        store_ptr: jlong,
         params: jdoubleArray,
     ) -> f64 {
-        // Placeholder implementation - return 0.0
-        0.0
+        // Defensive programming: validate pointers
+        if function_ptr == 0 {
+            jni_utils::throw_jni_exception(&mut env, &WasmtimeError::invalid_parameter("function_ptr cannot be null"));
+            return 0.0;
+        }
+        if store_ptr == 0 {
+            jni_utils::throw_jni_exception(&mut env, &WasmtimeError::invalid_parameter("store_ptr cannot be null"));
+            return 0.0;
+        }
+
+        let function_result = memory_utils::safe_deref(function_ptr as *const FunctionHandle, "function_ptr");
+        let store_result = unsafe { crate::store::core::get_store_mut(store_ptr as *mut std::os::raw::c_void) };
+
+        match (function_result, store_result) {
+            (Ok(func_handle), Ok(store)) => {
+                // Convert double array to Wasmtime parameters (simplified for now)
+                let params_result = if params.is_null() {
+                    Ok(Vec::new())
+                } else {
+                    // TODO: Implement proper double array parameter conversion
+                    // For now, return error to indicate not implemented
+                    Err(WasmtimeError::Function {
+                        message: "Double array parameter conversion not yet implemented".to_string()
+                    })
+                };
+
+                match params_result {
+                    Ok(wasmtime_params) => {
+                        // Execute function with Store context
+                        let call_result = store.with_context(|mut ctx| {
+                            let mut results = vec![wasmtime::Val::F64(0)]; // Expect single f64 return
+                            match func_handle.func.call(&mut ctx, &wasmtime_params, &mut results) {
+                                Ok(()) => {
+                                    // Extract the first result as f64
+                                    match results.get(0) {
+                                        Some(wasmtime::Val::F64(result)) => Ok(f64::from_bits(*result)),
+                                        Some(_) => Err(WasmtimeError::Function {
+                                            message: "Function returned non-f64 value".to_string()
+                                        }),
+                                        None => Ok(0.0), // No return value, default to 0.0
+                                    }
+                                },
+                                Err(trap) => Err(WasmtimeError::Runtime {
+                                    message: format!("Function call failed: {}", trap),
+                                    backtrace: None,
+                                })
+                            }
+                        });
+
+                        match call_result {
+                            Ok(result) => result,
+                            Err(error) => {
+                                jni_utils::throw_jni_exception(&mut env, &error);
+                                0.0
+                            }
+                        }
+                    },
+                    Err(error) => {
+                        jni_utils::throw_jni_exception(&mut env, &error);
+                        0.0
+                    }
+                }
+            },
+            (Err(mem_error), _) => {
+                let wasmtime_error = mem_error.to_wasmtime_error();
+                jni_utils::throw_jni_exception(&mut env, &wasmtime_error);
+                0.0
+            },
+            (_, Err(error)) => {
+                jni_utils::throw_jni_exception(&mut env, &error);
+                0.0
+            }
+        }
     }
     
     /// Destroy a function (JNI version)
