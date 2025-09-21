@@ -180,8 +180,22 @@ public interface Module extends Closeable {
     if (wasmBytes == null) {
       throw new IllegalArgumentException("WebAssembly bytes cannot be null");
     }
-    // Implementation will be provided with native backing
-    throw new UnsupportedOperationException("Module validation not yet implemented");
+    if (wasmBytes.length == 0) {
+      throw new IllegalArgumentException("WebAssembly bytes cannot be empty");
+    }
+
+    try {
+      // Attempt to compile the module as a validation check
+      engine.compileModule(wasmBytes);
+
+      // If compilation succeeds, validation passed
+      return ModuleValidationResult.success();
+    } catch (final Exception e) {
+      // If compilation fails, validation failed
+      return ModuleValidationResult.failure(
+        java.util.Collections.singletonList("Module validation failed: " + e.getMessage())
+      );
+    }
   }
 
   /**

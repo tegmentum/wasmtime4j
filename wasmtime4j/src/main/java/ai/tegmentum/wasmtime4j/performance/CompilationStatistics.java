@@ -37,7 +37,33 @@ public interface CompilationStatistics {
    * @throws IllegalArgumentException if module is null or not compiled
    */
   static CompilationStatistics forModule(final ai.tegmentum.wasmtime4j.Module module) {
-    throw new UnsupportedOperationException("Implementation must be provided by runtime factory");
+    if (module == null) {
+      throw new IllegalArgumentException("Module cannot be null");
+    }
+
+    // Use runtime-specific compilation statistics implementation
+    try {
+      // First try Panama implementation
+      final Class<?> panamaClass = Class.forName("ai.tegmentum.wasmtime4j.panama.PanamaCompilationStatistics");
+      return (CompilationStatistics) panamaClass.getDeclaredMethod("forModule", ai.tegmentum.wasmtime4j.Module.class)
+          .invoke(null, module);
+    } catch (final ClassNotFoundException e) {
+      // Panama not available, try JNI implementation
+      try {
+        final Class<?> jniClass = Class.forName("ai.tegmentum.wasmtime4j.jni.JniCompilationStatistics");
+        return (CompilationStatistics) jniClass.getDeclaredMethod("forModule", ai.tegmentum.wasmtime4j.Module.class)
+            .invoke(null, module);
+      } catch (final ClassNotFoundException e2) {
+        // No specific implementation found
+        throw new RuntimeException(
+            "No CompilationStatistics implementation available. "
+                + "Ensure wasmtime4j-panama or wasmtime4j-jni is on the classpath.");
+      } catch (final Exception e2) {
+        throw new RuntimeException("Failed to create JNI CompilationStatistics instance", e2);
+      }
+    } catch (final Exception e) {
+      throw new RuntimeException("Failed to create Panama CompilationStatistics instance", e);
+    }
   }
 
   /**
