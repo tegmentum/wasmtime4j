@@ -1,0 +1,117 @@
+# Production Dockerfile for wasmtime4j applications
+# Multi-stage build for optimal image size and security
+
+# Build stage
+FROM eclipse-temurin:23-jdk-alpine AS builder
+
+# Install build dependencies
+RUN apk add --no-cache \
+    git \
+    maven \
+    curl \
+    glibc-dev \
+    musl-dev \
+    gcc \
+    make
+
+# Set up build environment
+WORKDIR /build
+
+# Copy Maven wrapper and configuration
+COPY mvnw ./
+COPY .mvn .mvn
+COPY pom.xml ./
+COPY */pom.xml ./*/
+
+# Download dependencies (cached layer)
+RUN ./mvnw dependency:go-offline -B
+
+# Copy source code
+COPY . .
+
+# Build application with production profile
+RUN ./mvnw clean package -Pproduction -DskipTests -B
+
+# Runtime stage
+FROM eclipse-temurin:23-jre-alpine AS runtime
+
+# Install runtime dependencies
+RUN apk add --no-cache \
+    glibc \
+    libstdc++ \
+    curl \
+    dumb-init \
+    && rm -rf /var/cache/apk/*
+
+# Create application user for security
+RUN addgroup -g 1000 wasmtime && \
+    adduser -D -s /bin/sh -u 1000 -G wasmtime wasmtime
+
+# Set up application directory
+WORKDIR /app
+
+# Copy application artifacts from builder
+COPY --from=builder /build/target/wasmtime4j-app.jar app.jar
+COPY --from=builder /build/target/lib/ lib/
+COPY --from=builder /build/native/lib/ native/lib/
+
+# Copy configuration files
+COPY docker/config/production.properties config/
+COPY docker/scripts/entrypoint.sh entrypoint.sh
+COPY docker/scripts/healthcheck.sh healthcheck.sh
+
+# Make scripts executable
+RUN chmod +x entrypoint.sh healthcheck.sh
+
+# Set proper ownership
+RUN chown -R wasmtime:wasmtime /app
+
+# Configure JVM for container environment
+ENV JAVA_OPTS="-XX:+UseContainerSupport \
+               -XX:MaxRAMPercentage=75.0 \
+               -XX:+UseG1GC \
+               -XX:+UseStringDeduplication \
+               -XX:MaxGCPauseMillis=200 \
+               -XX:+ParallelRefProcEnabled \
+               -XX:+UseCompressedOops \
+               -Djava.security.egd=file:/dev/./urandom"
+
+# Configure wasmtime4j for production
+ENV WASMTIME_ENVIRONMENT=production \
+    WASMTIME_NATIVE_LIBRARY_PATH=/app/native/lib \
+    WASMTIME_CONFIG_PATH=/app/config/production.properties \
+    WASMTIME_LOGGING_LEVEL=INFO
+
+# Security configurations
+ENV JAVA_SECURITY_POLICY=/app/config/security.policy \
+    WASMTIME_SECURITY_LEVEL=STRICT \
+    WASMTIME_ENABLE_SANDBOXING=true
+
+# Performance tuning
+ENV WASMTIME_ENGINE_POOL_SIZE=10 \
+    WASMTIME_ENGINE_PARALLEL_COMPILATION=true \
+    WASMTIME_ENGINE_OPTIMIZATION_LEVEL=SPEED_AND_SIZE
+
+# Switch to non-root user
+USER wasmtime
+
+# Expose application port
+EXPOSE 8080
+
+# Health check configuration
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD ./healthcheck.sh
+
+# Set entrypoint
+ENTRYPOINT ["dumb-init", "--", "./entrypoint.sh"]
+
+# Default command
+CMD ["java", "-jar", "app.jar"]
+
+# Labels for metadata
+LABEL org.opencontainers.image.title="Wasmtime4j Production Application" \
+      org.opencontainers.image.description="Production-ready WebAssembly runtime for Java" \
+      org.opencontainers.image.version="1.0.0" \
+      org.opencontainers.image.vendor="Tegmentum AI Inc." \
+      org.opencontainers.image.licenses="Apache-2.0" \
+      org.opencontainers.image.source="https://github.com/tegmentum-ai/wasmtime4j"

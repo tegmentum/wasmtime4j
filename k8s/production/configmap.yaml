@@ -1,0 +1,135 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: wasmtime4j-config
+  namespace: wasmtime4j
+  labels:
+    app: wasmtime4j-app
+    component: configuration
+data:
+  # Engine configuration
+  engine.pool.size: "10"
+  engine.parallel.compilation: "true"
+  engine.optimization.level: "SPEED_AND_SIZE"
+  engine.cranelift.opt.level: "2"
+
+  # Security configuration
+  security.level: "MAXIMUM"
+  security.enable.sandboxing: "true"
+  security.max.execution.time: "30000"
+  security.max.memory.limit: "536870912"
+
+  # Monitoring configuration
+  monitoring.enable.metrics: "true"
+  monitoring.enable.health.checks: "true"
+  monitoring.enable.alerting: "true"
+  monitoring.alert.threshold.error.rate: "5.0"
+
+  # Production properties file
+  production.properties: |
+    # Production configuration for wasmtime4j in Kubernetes
+    wasmtime.environment=production
+
+    # Engine Configuration
+    wasmtime.engine.optimizationLevel=SPEED_AND_SIZE
+    wasmtime.engine.parallelCompilation=true
+    wasmtime.engine.craneliftOptLevel=2
+    wasmtime.engine.enableProfiling=false
+    wasmtime.engine.compilationTimeout=300000
+    wasmtime.engine.maxMemorySize=1073741824
+
+    # Pool Configuration
+    wasmtime.pool.maxEngines=20
+    wasmtime.pool.minEngines=5
+    wasmtime.pool.maxIdleTime=600000
+    wasmtime.pool.acquireTimeout=30000
+    wasmtime.pool.enableHealthChecks=true
+    wasmtime.pool.healthCheckInterval=300000
+
+    # Security Configuration
+    wasmtime.security.enableSandboxing=true
+    wasmtime.security.securityLevel=MAXIMUM
+    wasmtime.security.maxExecutionTime=30000
+    wasmtime.security.enableResourceLimits=true
+    wasmtime.security.maxMemoryLimit=536870912
+    wasmtime.security.maxFunctionCalls=10000
+
+    # Monitoring Configuration
+    wasmtime.monitoring.enableMetrics=true
+    wasmtime.monitoring.enableTracing=false
+    wasmtime.monitoring.enableHealthChecks=true
+    wasmtime.monitoring.healthCheckInterval=60000
+    wasmtime.monitoring.enableAlerting=true
+    wasmtime.monitoring.alertThresholdErrorRate=5.0
+    wasmtime.monitoring.alertThresholdResponseTime=5000
+
+    # Kubernetes-specific settings
+    wasmtime.kubernetes.enabled=true
+    wasmtime.kubernetes.namespace=${POD_NAMESPACE}
+    wasmtime.kubernetes.podName=${POD_NAME}
+    wasmtime.kubernetes.podIp=${POD_IP}
+    wasmtime.kubernetes.nodeName=${NODE_NAME}
+
+    # Application Configuration
+    app.server.port=8080
+    app.server.address=0.0.0.0
+    app.health.enableEndpoint=true
+    app.health.endpoint=/health
+    app.health.enableReadinessCheck=true
+    app.health.readinessEndpoint=/ready
+    app.metrics.enableEndpoint=true
+    app.metrics.endpoint=/metrics
+
+  # Logging configuration
+  logging.properties: |
+    # Java Util Logging Configuration for Production
+    .level=INFO
+    .handlers=java.util.logging.ConsoleHandler,java.util.logging.FileHandler
+
+    # Console Handler
+    java.util.logging.ConsoleHandler.level=INFO
+    java.util.logging.ConsoleHandler.formatter=java.util.logging.SimpleFormatter
+    java.util.logging.SimpleFormatter.format=%1$tY-%1$tm-%1$td %1$tH:%1$tM:%1$tS [%4$s] %3$s: %5$s%6$s%n
+
+    # File Handler
+    java.util.logging.FileHandler.level=INFO
+    java.util.logging.FileHandler.pattern=/app/logs/wasmtime4j-%u.log
+    java.util.logging.FileHandler.limit=10485760
+    java.util.logging.FileHandler.count=10
+    java.util.logging.FileHandler.formatter=java.util.logging.SimpleFormatter
+    java.util.logging.FileHandler.append=true
+
+    # Application-specific loggers
+    ai.tegmentum.wasmtime4j.level=INFO
+    ai.tegmentum.wasmtime4j.production.level=INFO
+    ai.tegmentum.wasmtime4j.jni.level=WARN
+    ai.tegmentum.wasmtime4j.panama.level=WARN
+
+    # Third-party loggers
+    com.sun.level=WARN
+    javax.level=WARN
+    org.level=WARN
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: wasmtime-native-libs
+  namespace: wasmtime4j
+  labels:
+    app: wasmtime4j-app
+    component: native-libraries
+data:
+  # This would contain the native library files in base64 format
+  # In practice, these would be generated during the build process
+  README.md: |
+    # Native Libraries
+
+    This ConfigMap contains the native libraries required for wasmtime4j.
+    The libraries are platform-specific and include:
+
+    - libwasmtime4j_native.so (Linux x86_64)
+    - libwasmtime4j_native.dylib (macOS)
+    - wasmtime4j_native.dll (Windows)
+
+    Libraries are loaded based on the detected platform at runtime.
