@@ -681,8 +681,15 @@ pub mod jni_function {
             
             ValType::V128 => {
                 // For V128, expect a byte array
-                let byte_array_class = env.find_class("[B").unwrap();
-                if env.is_instance_of(&jobject_ref, byte_array_class).unwrap() {
+                let byte_array_class = env.find_class("[B")
+                    .map_err(|e| WasmtimeError::Function {
+                        message: format!("Failed to find byte array class: {}", e)
+                    })?;
+                let is_byte_array = env.is_instance_of(&jobject_ref, byte_array_class)
+                    .map_err(|e| WasmtimeError::Function {
+                        message: format!("Failed to check instance type: {}", e)
+                    })?;
+                if is_byte_array {
                     let byte_array: jni::objects::JPrimitiveArray<i8> = jobject_ref.into();
                     let bytes = env.convert_byte_array(byte_array)
                         .map_err(|e| WasmtimeError::Function { message: format!("Failed to convert byte array: {}", e) })?;

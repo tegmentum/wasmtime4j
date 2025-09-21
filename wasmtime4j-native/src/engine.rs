@@ -498,7 +498,30 @@ pub enum WasmFeature {
 
 impl Default for Engine {
     fn default() -> Self {
-        Self::new().expect("Failed to create default engine")
+        // Create a minimal, guaranteed-to-succeed engine configuration
+        match Self::new() {
+            Ok(engine) => engine,
+            Err(_) => {
+                // Fallback to absolute minimal configuration that should always work
+                let mut config = Config::new();
+                config.strategy(Strategy::Cranelift);
+
+                match WasmtimeEngine::new(&config) {
+                    Ok(wasmtime_engine) => Engine {
+                        engine: Arc::new(wasmtime_engine),
+                    },
+                    Err(_) => {
+                        // Last resort: create engine with completely default wasmtime config
+                        // This should virtually never fail unless the system is severely broken
+                        let default_config = Config::default();
+                        Engine {
+                            engine: Arc::new(WasmtimeEngine::new(&default_config)
+                                .unwrap_or_else(|_| panic!("Critical: Cannot create fallback engine - system unusable"))),
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 

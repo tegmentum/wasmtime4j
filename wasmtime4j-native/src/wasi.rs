@@ -487,7 +487,24 @@ impl WasiContext {
 
 impl Default for WasiContext {
     fn default() -> Self {
-        Self::new().expect("Failed to create default WASI context")
+        // Try to create with default configuration
+        match Self::new() {
+            Ok(context) => context,
+            Err(_) => {
+                // Fallback to minimal WASI context that should always work
+                let builder = WasiCtxBuilder::new();
+                let wasi_ctx = builder.build();
+
+                WasiContext {
+                    inner: Arc::new(Mutex::new(wasi_ctx)),
+                    config: WasiConfig::default(),
+                    directory_mappings: HashMap::new(),
+                    environment: HashMap::new(),
+                    arguments: vec!["wasmtime4j".to_string()],
+                    stdio_config: StdioConfig::default(),
+                }
+            }
+        }
     }
 }
 

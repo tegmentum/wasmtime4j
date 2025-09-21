@@ -40,16 +40,43 @@ use crate::store::Store;
 static ASYNC_RUNTIME: Lazy<Arc<Runtime>> = Lazy::new(|| {
     info!("Initializing global Tokio async runtime for wasmtime4j");
 
-    let runtime = tokio::runtime::Builder::new_multi_thread()
+    // Try optimal configuration first
+    match tokio::runtime::Builder::new_multi_thread()
         .worker_threads(4)
         .thread_name("wasmtime4j-async")
         .thread_stack_size(2 * 1024 * 1024) // 2MB stack size
         .enable_all()
         .build()
-        .expect("Failed to create Tokio runtime");
+    {
+        Ok(runtime) => {
+            info!("Global Tokio async runtime initialized successfully with optimal configuration");
+            Arc::new(runtime)
+        }
+        Err(e) => {
+            warn!("Failed to create optimal async runtime ({}), trying fallback configuration", e);
 
-    info!("Global Tokio async runtime initialized successfully");
-    Arc::new(runtime)
+            // Fallback to simpler configuration
+            match tokio::runtime::Builder::new_multi_thread()
+                .worker_threads(2)
+                .build()
+            {
+                Ok(runtime) => {
+                    warn!("Using fallback async runtime with reduced configuration");
+                    Arc::new(runtime)
+                }
+                Err(e2) => {
+                    error!("Failed to create fallback async runtime ({}), using current thread runtime", e2);
+
+                    // Last resort: current thread runtime
+                    let runtime = tokio::runtime::Builder::new_current_thread()
+                        .build()
+                        .unwrap_or_else(|e3| panic!("Critical: Cannot create any async runtime - {}", e3));
+
+                    Arc::new(runtime)
+                }
+            }
+        }
+    }
 });
 
 /// Callback function type for async operation completion
@@ -256,10 +283,19 @@ pub fn cancel_async_operation(operation: &mut AsyncOperation) -> WasmtimeResult<
 
     if let Some(cancel_tx) = operation.cancel_tx.take() {
         if cancel_tx.send(()).is_ok() {
-            let mut status = operation.status.lock().unwrap();
-            *status = AsyncOperationStatus::Cancelled;
-            info!("Successfully cancelled async operation {}", operation.id);
-            Ok(())
+            match operation.status.lock() {
+                Ok(mut status) => {
+                    *status = AsyncOperationStatus::Cancelled;
+                    info!("Successfully cancelled async operation {}", operation.id);
+                    Ok(())
+                }
+                Err(_) => {
+                    error!("Failed to acquire status lock for operation {}", operation.id);
+                    Err(WasmtimeError::Concurrency {
+                        message: "Failed to update operation status due to lock poisoning".to_string()
+                    })
+                }
+            }
         } else {
             warn!("Failed to send cancellation signal for operation {}", operation.id);
             Err(WasmtimeError::Internal {
@@ -282,8 +318,14 @@ pub fn cancel_async_operation(operation: &mut AsyncOperation) -> WasmtimeResult<
 ///
 /// Current status of the operation
 pub fn get_operation_status(operation: &AsyncOperation) -> AsyncOperationStatus {
-    let status = operation.status.lock().unwrap();
-    status.clone()
+    match operation.status.lock() {
+        Ok(status) => status.clone(),
+        Err(_) => {
+            error!("Failed to acquire status lock for operation {}", operation.id);
+            // Return error status if we can't read the lock
+            AsyncOperationStatus::Error("Lock poisoning detected".to_string())
+        }
+    }
 }
 
 /// Block and wait for an async operation to complete
@@ -304,7 +346,15 @@ pub fn wait_for_operation(operation: &AsyncOperation, timeout_ms: u64) -> Wasmti
 
     loop {
         let status = {
-            let status_guard = operation.status.lock().unwrap();
+            let status_guard = match operation.status.lock() {
+                Ok(guard) => guard,
+                Err(_) => {
+                    error!("Failed to acquire status lock for operation {}", operation.id);
+                    return Err(WasmtimeError::Concurrency {
+                        message: "Failed to check operation status due to lock poisoning".to_string()
+                    });
+                }
+            };
             status_guard.clone()
         };
 
