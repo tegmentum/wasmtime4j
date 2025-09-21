@@ -34,6 +34,11 @@ public final class WasmRuntimeFactory {
   /** Runtime type value for Panama implementation. */
   public static final String RUNTIME_PANAMA = "panama";
 
+  // Performance optimization: cache runtime availability checks
+  private static volatile Boolean jniAvailable;
+  private static volatile Boolean panamaAvailable;
+  private static volatile RuntimeType selectedRuntimeType;
+
   private WasmRuntimeFactory() {
     // Utility class - no instantiation
   }
@@ -164,35 +169,67 @@ public final class WasmRuntimeFactory {
     }
   }
 
+  /**
+   * Clears cached runtime availability and selection information.
+   * This method is primarily intended for testing purposes.
+   */
+  public static void clearCache() {
+    synchronized (WasmRuntimeFactory.class) {
+      jniAvailable = null;
+      panamaAvailable = null;
+      selectedRuntimeType = null;
+    }
+  }
+
   private static RuntimeType selectRuntimeType() {
-    // Check for manual override
+    // Use cached result if no system property override
     final String override = System.getProperty(RUNTIME_PROPERTY);
-    if (override != null) {
-      if (RUNTIME_JNI.equalsIgnoreCase(override)) {
-        logger.info("Runtime manually set to JNI via system property");
-        return RuntimeType.JNI;
-      } else if (RUNTIME_PANAMA.equalsIgnoreCase(override)) {
-        logger.info("Runtime manually set to Panama via system property");
-        return RuntimeType.PANAMA;
-      } else {
-        logger.warning(
-            "Unknown runtime type in system property: "
-                + sanitizeForLog(override)
-                + ", using automatic selection");
-      }
+    if (override == null && selectedRuntimeType != null) {
+      return selectedRuntimeType;
     }
 
-    // Automatic selection based on Java version
-    final int javaVersion = getJavaVersion();
+    synchronized (WasmRuntimeFactory.class) {
+      // Double-check pattern for cache
+      if (override == null && selectedRuntimeType != null) {
+        return selectedRuntimeType;
+      }
 
-    if (javaVersion >= 23 && isPanamaRuntimeAvailable()) {
-      logger.info(
-          "Auto-selected Panama runtime for Java " + sanitizeForLog(String.valueOf(javaVersion)));
-      return RuntimeType.PANAMA;
-    } else {
-      logger.info(
-          "Auto-selected JNI runtime for Java " + sanitizeForLog(String.valueOf(javaVersion)));
-      return RuntimeType.JNI;
+      // Check for manual override
+      if (override != null) {
+        if (RUNTIME_JNI.equalsIgnoreCase(override)) {
+          logger.info("Runtime manually set to JNI via system property");
+          return RuntimeType.JNI;
+        } else if (RUNTIME_PANAMA.equalsIgnoreCase(override)) {
+          logger.info("Runtime manually set to Panama via system property");
+          return RuntimeType.PANAMA;
+        } else {
+          logger.warning(
+              "Unknown runtime type in system property: "
+                  + sanitizeForLog(override)
+                  + ", using automatic selection");
+        }
+      }
+
+      // Automatic selection based on Java version
+      final int javaVersion = getJavaVersion();
+      final RuntimeType selected;
+
+      if (javaVersion >= 23 && isPanamaRuntimeAvailable()) {
+        logger.info(
+            "Auto-selected Panama runtime for Java " + sanitizeForLog(String.valueOf(javaVersion)));
+        selected = RuntimeType.PANAMA;
+      } else {
+        logger.info(
+            "Auto-selected JNI runtime for Java " + sanitizeForLog(String.valueOf(javaVersion)));
+        selected = RuntimeType.JNI;
+      }
+
+      // Cache the result only if no override property was set
+      if (override == null) {
+        selectedRuntimeType = selected;
+      }
+
+      return selected;
     }
   }
 
@@ -218,37 +255,69 @@ public final class WasmRuntimeFactory {
   }
 
   private static boolean isJniRuntimeAvailable() {
-    try {
-      Class.forName("ai.tegmentum.wasmtime4j.jni.JniWasmRuntime");
-      return true;
-    } catch (final ClassNotFoundException e) {
-      logger.fine("JNI runtime class not found: " + sanitizeForLog(e.getMessage()));
-      return false;
-    } catch (final ExceptionInInitializerError e) {
-      logger.warning("JNI runtime initialization failed: " + sanitizeForLog(e.getMessage()));
-      return false;
-    } catch (final Exception e) {
-      logger.warning(
-          "Unexpected error checking JNI runtime availability: " + sanitizeForLog(e.getMessage()));
-      return false;
+    // Use cached result if available
+    if (jniAvailable != null) {
+      return jniAvailable;
+    }
+
+    synchronized (WasmRuntimeFactory.class) {
+      // Double-check pattern
+      if (jniAvailable != null) {
+        return jniAvailable;
+      }
+
+      try {
+        Class.forName("ai.tegmentum.wasmtime4j.jni.JniWasmRuntime");
+        jniAvailable = Boolean.TRUE;
+        return true;
+      } catch (final ClassNotFoundException e) {
+        logger.fine("JNI runtime class not found: " + sanitizeForLog(e.getMessage()));
+        jniAvailable = Boolean.FALSE;
+        return false;
+      } catch (final ExceptionInInitializerError e) {
+        logger.warning("JNI runtime initialization failed: " + sanitizeForLog(e.getMessage()));
+        jniAvailable = Boolean.FALSE;
+        return false;
+      } catch (final Exception e) {
+        logger.warning(
+            "Unexpected error checking JNI runtime availability: " + sanitizeForLog(e.getMessage()));
+        jniAvailable = Boolean.FALSE;
+        return false;
+      }
     }
   }
 
   private static boolean isPanamaRuntimeAvailable() {
-    try {
-      Class.forName("ai.tegmentum.wasmtime4j.panama.PanamaWasmRuntime");
-      return true;
-    } catch (final ClassNotFoundException e) {
-      logger.fine("Panama runtime class not found: " + sanitizeForLog(e.getMessage()));
-      return false;
-    } catch (final ExceptionInInitializerError e) {
-      logger.warning("Panama runtime initialization failed: " + sanitizeForLog(e.getMessage()));
-      return false;
-    } catch (final Exception e) {
-      logger.warning(
-          "Unexpected error checking Panama runtime availability: "
-              + sanitizeForLog(e.getMessage()));
-      return false;
+    // Use cached result if available
+    if (panamaAvailable != null) {
+      return panamaAvailable;
+    }
+
+    synchronized (WasmRuntimeFactory.class) {
+      // Double-check pattern
+      if (panamaAvailable != null) {
+        return panamaAvailable;
+      }
+
+      try {
+        Class.forName("ai.tegmentum.wasmtime4j.panama.PanamaWasmRuntime");
+        panamaAvailable = Boolean.TRUE;
+        return true;
+      } catch (final ClassNotFoundException e) {
+        logger.fine("Panama runtime class not found: " + sanitizeForLog(e.getMessage()));
+        panamaAvailable = Boolean.FALSE;
+        return false;
+      } catch (final ExceptionInInitializerError e) {
+        logger.warning("Panama runtime initialization failed: " + sanitizeForLog(e.getMessage()));
+        panamaAvailable = Boolean.FALSE;
+        return false;
+      } catch (final Exception e) {
+        logger.warning(
+            "Unexpected error checking Panama runtime availability: "
+                + sanitizeForLog(e.getMessage()));
+        panamaAvailable = Boolean.FALSE;
+        return false;
+      }
     }
   }
 }
