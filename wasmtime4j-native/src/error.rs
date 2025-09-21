@@ -165,9 +165,18 @@ pub enum WasmtimeError {
 
     /// Export not found errors
     #[error("Export not found: {name}")]
-    ExportNotFound { 
+    ExportNotFound {
         /// Name of the export that was not found
-        name: String 
+        name: String
+    },
+
+    /// Multiple errors that occurred during complex operations
+    #[error("Multiple errors occurred: {summary}")]
+    Multiple {
+        /// Summary of the aggregated errors
+        summary: String,
+        /// List of individual errors
+        errors: Vec<WasmtimeError>,
     },
 }
 
@@ -264,6 +273,7 @@ impl WasmtimeError {
             WasmtimeError::Internal { .. } => ErrorCode::InternalError,
             WasmtimeError::Execution { .. } => ErrorCode::FunctionError,
             WasmtimeError::ExportNotFound { .. } => ErrorCode::ImportExportError,
+            WasmtimeError::Multiple { .. } => ErrorCode::InternalError,
         }
     }
 
@@ -300,6 +310,143 @@ impl WasmtimeError {
     pub fn resource_error<S: Into<String>>(message: S) -> Self {
         WasmtimeError::Resource {
             message: message.into(),
+        }
+    }
+
+    /// Create aggregated error from multiple errors
+    pub fn multiple<I>(errors: I) -> Self
+    where
+        I: IntoIterator<Item = WasmtimeError>,
+    {
+        let error_vec: Vec<WasmtimeError> = errors.into_iter().collect();
+        let summary = if error_vec.is_empty() {
+            "No errors".to_string()
+        } else if error_vec.len() == 1 {
+            error_vec[0].to_string()
+        } else {
+            format!("{} errors: {}", error_vec.len(),
+                error_vec.iter()
+                    .take(3)
+                    .map(|e| e.to_string())
+                    .collect::<Vec<_>>()
+                    .join("; ")
+                + if error_vec.len() > 3 { "..." } else { "" }
+            )
+        };
+
+        WasmtimeError::Multiple {
+            summary,
+            errors: error_vec,
+        }
+    }
+
+    /// Get individual errors from aggregated error
+    pub fn get_individual_errors(&self) -> Vec<&WasmtimeError> {
+        match self {
+            WasmtimeError::Multiple { errors, .. } => errors.iter().collect(),
+            _ => vec![self],
+        }
+    }
+
+    /// Check if this is an aggregated error
+    pub fn is_multiple(&self) -> bool {
+        matches!(self, WasmtimeError::Multiple { .. })
+    }
+
+    /// Get the count of individual errors
+    pub fn error_count(&self) -> usize {
+        match self {
+            WasmtimeError::Multiple { errors, .. } => errors.len(),
+            _ => 1,
+        }
+    }
+
+    /// Log the error with appropriate level based on error type
+    pub fn log_error(&self) {
+        match self {
+            WasmtimeError::Security { message } => {
+                log::error!("SECURITY VIOLATION: {}", message);
+            }
+            WasmtimeError::Resource { message } => {
+                log::warn!("Resource management error: {}", message);
+            }
+            WasmtimeError::Concurrency { message } => {
+                log::error!("Concurrency error: {}", message);
+            }
+            WasmtimeError::Internal { message } => {
+                log::error!("Internal error: {}", message);
+            }
+            WasmtimeError::Multiple { summary, errors } => {
+                log::error!("Multiple errors occurred: {}", summary);
+                for (i, error) in errors.iter().enumerate() {
+                    log::error!("  Error {}: {}", i + 1, error);
+                }
+            }
+            WasmtimeError::Compilation { message } => {
+                log::warn!("WebAssembly compilation failed: {}", message);
+            }
+            WasmtimeError::Validation { message } => {
+                log::warn!("WebAssembly validation failed: {}", message);
+            }
+            WasmtimeError::Runtime { message, .. } => {
+                log::info!("WebAssembly runtime error: {}", message);
+            }
+            _ => {
+                log::info!("Operation error: {}", self);
+            }
+        }
+    }
+
+    /// Log the error with custom context
+    pub fn log_error_with_context(&self, operation: &str, context: &str) {
+        match self {
+            WasmtimeError::Security { .. } => {
+                log::error!("SECURITY VIOLATION in '{}' [{}]: {}", operation, context, self);
+            }
+            WasmtimeError::Internal { .. } | WasmtimeError::Concurrency { .. } => {
+                log::error!("Critical error in '{}' [{}]: {}", operation, context, self);
+            }
+            WasmtimeError::Multiple { summary, errors } => {
+                log::error!("Multiple errors in '{}' [{}]: {}", operation, context, summary);
+                for (i, error) in errors.iter().enumerate() {
+                    log::error!("  {} Error {}: {}", context, i + 1, error);
+                }
+            }
+            _ => {
+                log::warn!("Error in '{}' [{}]: {}", operation, context, self);
+            }
+        }
+    }
+
+    /// Get performance metrics for the error (how long it might take to recover)
+    pub fn get_recovery_time_estimate(&self) -> std::time::Duration {
+        match self {
+            WasmtimeError::Compilation { .. } | WasmtimeError::Validation { .. } => {
+                // Compilation/validation errors require module reload - significant time
+                std::time::Duration::from_millis(100)
+            }
+            WasmtimeError::Runtime { .. } | WasmtimeError::Function { .. } => {
+                // Runtime errors often recoverable quickly
+                std::time::Duration::from_millis(10)
+            }
+            WasmtimeError::Memory { .. } | WasmtimeError::Resource { .. } => {
+                // Memory/resource errors may require GC - moderate time
+                std::time::Duration::from_millis(50)
+            }
+            WasmtimeError::Security { .. } => {
+                // Security errors require careful recovery - significant time
+                std::time::Duration::from_millis(200)
+            }
+            WasmtimeError::Multiple { errors, .. } => {
+                // Multiple errors - sum of individual recovery times
+                errors.iter()
+                    .map(|e| e.get_recovery_time_estimate())
+                    .fold(std::time::Duration::ZERO, |acc, time| acc + time)
+            }
+            _ => {
+                // Default recovery time
+                std::time::Duration::from_millis(25)
+            }
         }
     }
 }
@@ -537,6 +684,109 @@ pub mod ffi_utils {
         Ok(())
     }
 
+    /// Enhanced logging utility for performance monitoring
+    pub struct PerformanceLogger {
+        operation: String,
+        start_time: std::time::Instant,
+        context: String,
+    }
+
+    impl PerformanceLogger {
+        /// Start monitoring an operation
+        pub fn start(operation: String) -> Self {
+            log::debug!("Starting operation: {}", operation);
+            Self {
+                operation,
+                start_time: std::time::Instant::now(),
+                context: String::new(),
+            }
+        }
+
+        /// Start monitoring an operation with context
+        pub fn start_with_context(operation: String, context: String) -> Self {
+            log::debug!("Starting operation: {} [{}]", operation, context);
+            Self {
+                operation,
+                start_time: std::time::Instant::now(),
+                context,
+            }
+        }
+
+        /// Finish the operation with success
+        pub fn finish_success(self) {
+            let duration = self.start_time.elapsed();
+            if self.context.is_empty() {
+                log::info!("Operation '{}' completed successfully in {:?}", self.operation, duration);
+            } else {
+                log::info!("Operation '{}' [{}] completed successfully in {:?}",
+                    self.operation, self.context, duration);
+            }
+        }
+
+        /// Finish the operation with error
+        pub fn finish_error(self, error: &WasmtimeError) {
+            let duration = self.start_time.elapsed();
+            if self.context.is_empty() {
+                log::warn!("Operation '{}' failed after {:?}: {}", self.operation, duration, error);
+            } else {
+                log::warn!("Operation '{}' [{}] failed after {:?}: {}",
+                    self.operation, self.context, duration, error);
+            }
+
+            // Log the error with appropriate level
+            error.log_error_with_context(&self.operation, &self.context);
+        }
+
+        /// Add checkpoint logging during operation
+        pub fn checkpoint(&self, message: &str) {
+            let duration = self.start_time.elapsed();
+            if self.context.is_empty() {
+                log::debug!("Operation '{}' checkpoint at {:?}: {}", self.operation, duration, message);
+            } else {
+                log::debug!("Operation '{}' [{}] checkpoint at {:?}: {}",
+                    self.operation, self.context, duration, message);
+            }
+        }
+
+        /// Check if operation is taking too long and log warning
+        pub fn check_timeout(&self, warning_threshold: std::time::Duration) {
+            let duration = self.start_time.elapsed();
+            if duration > warning_threshold {
+                if self.context.is_empty() {
+                    log::warn!("Operation '{}' is taking longer than expected: {:?} > {:?}",
+                        self.operation, duration, warning_threshold);
+                } else {
+                    log::warn!("Operation '{}' [{}] is taking longer than expected: {:?} > {:?}",
+                        self.operation, self.context, duration, warning_threshold);
+                }
+            }
+        }
+    }
+
+    /// Macro to automatically time and log operations
+    #[macro_export]
+    macro_rules! timed_operation {
+        ($operation:expr, $body:expr) => {{
+            let logger = crate::error::ffi_utils::PerformanceLogger::start($operation.to_string());
+            let result = $body;
+            match &result {
+                Ok(_) => logger.finish_success(),
+                Err(error) => logger.finish_error(error),
+            }
+            result
+        }};
+        ($operation:expr, $context:expr, $body:expr) => {{
+            let logger = crate::error::ffi_utils::PerformanceLogger::start_with_context(
+                $operation.to_string(), $context.to_string());
+            let result = $body;
+            match &result {
+                Ok(_) => logger.finish_success(),
+                Err(error) => logger.finish_error(error),
+            }
+            result
+        }};
+    }
+
     /// Set last error for FFI retrieval with defensive error handling
     pub fn set_last_error(error: WasmtimeError) {
         // Use panic-safe error setting to prevent issues in multi-threaded contexts
@@ -693,6 +943,154 @@ pub mod ffi_utils {
         if result.is_err() {
             log::error!("Panic occurred while setting error context - prevented JVM crash");
         }
+    }
+
+    /// Error aggregation utility for collecting multiple errors
+    pub struct ErrorCollector {
+        errors: Vec<WasmtimeError>,
+        operation_name: Option<String>,
+    }
+
+    impl ErrorCollector {
+        /// Create a new error collector
+        pub fn new() -> Self {
+            Self {
+                errors: Vec::new(),
+                operation_name: None,
+            }
+        }
+
+        /// Create a new error collector with operation name
+        pub fn with_operation(operation: String) -> Self {
+            Self {
+                errors: Vec::new(),
+                operation_name: Some(operation),
+            }
+        }
+
+        /// Add an error to the collection
+        pub fn add_error(&mut self, error: WasmtimeError) {
+            self.errors.push(error);
+        }
+
+        /// Add multiple errors to the collection
+        pub fn add_errors<I>(&mut self, errors: I)
+        where
+            I: IntoIterator<Item = WasmtimeError>,
+        {
+            self.errors.extend(errors);
+        }
+
+        /// Add a result to the collection, collecting the error if it's an Err
+        pub fn add_result<T>(&mut self, result: WasmtimeResult<T>) -> Option<T> {
+            match result {
+                Ok(value) => Some(value),
+                Err(error) => {
+                    self.add_error(error);
+                    None
+                }
+            }
+        }
+
+        /// Check if any errors have been collected
+        pub fn has_errors(&self) -> bool {
+            !self.errors.is_empty()
+        }
+
+        /// Get the number of collected errors
+        pub fn error_count(&self) -> usize {
+            self.errors.len()
+        }
+
+        /// Convert to result, returning aggregated error if any errors were collected
+        pub fn into_result(self) -> WasmtimeResult<()> {
+            if self.errors.is_empty() {
+                Ok(())
+            } else {
+                let summary = match &self.operation_name {
+                    Some(op) => format!("Operation '{}' failed", op),
+                    None => "Multiple operations failed".to_string(),
+                };
+
+                Err(WasmtimeError::Multiple {
+                    summary,
+                    errors: self.errors,
+                })
+            }
+        }
+
+        /// Convert to result with value, returning aggregated error if any errors were collected
+        pub fn into_result_with_value<T>(self, value: T) -> WasmtimeResult<T> {
+            if self.errors.is_empty() {
+                Ok(value)
+            } else {
+                let summary = match &self.operation_name {
+                    Some(op) => format!("Operation '{}' failed", op),
+                    None => "Multiple operations failed".to_string(),
+                };
+
+                Err(WasmtimeError::Multiple {
+                    summary,
+                    errors: self.errors,
+                })
+            }
+        }
+
+        /// Get all collected errors
+        pub fn get_errors(&self) -> &[WasmtimeError] {
+            &self.errors
+        }
+    }
+
+    impl Default for ErrorCollector {
+        fn default() -> Self {
+            Self::new()
+        }
+    }
+
+    /// Execute multiple operations and collect any errors
+    pub fn try_all<F, T>(operations: Vec<F>) -> WasmtimeResult<Vec<T>>
+    where
+        F: FnOnce() -> WasmtimeResult<T>,
+    {
+        let mut collector = ErrorCollector::new();
+        let mut results = Vec::new();
+
+        for operation in operations {
+            match operation() {
+                Ok(result) => results.push(result),
+                Err(error) => collector.add_error(error),
+            }
+        }
+
+        if collector.has_errors() {
+            Err(WasmtimeError::multiple(collector.errors))
+        } else {
+            Ok(results)
+        }
+    }
+
+    /// Execute multiple operations and collect any errors, continuing even if some fail
+    pub fn try_all_continue<F, T>(operations: Vec<F>) -> (Vec<T>, Option<WasmtimeError>)
+    where
+        F: FnOnce() -> WasmtimeResult<T>,
+    {
+        let mut collector = ErrorCollector::new();
+        let mut results = Vec::new();
+
+        for operation in operations {
+            if let Some(result) = collector.add_result(operation()) {
+                results.push(result);
+            }
+        }
+
+        let error = if collector.has_errors() {
+            Some(WasmtimeError::multiple(collector.errors))
+        } else {
+            None
+        };
+
+        (results, error)
     }
 
     /// Get the enhanced error context if available
@@ -954,6 +1352,7 @@ pub mod jni_utils {
             WasmtimeError::Internal { .. } => "ai/tegmentum/wasmtime4j/WasmInternalException",
             WasmtimeError::Execution { .. } => "ai/tegmentum/wasmtime4j/WasmExecutionException",
             WasmtimeError::ExportNotFound { .. } => "ai/tegmentum/wasmtime4j/WasmExportNotFoundException",
+            WasmtimeError::Multiple { .. } => "ai/tegmentum/wasmtime4j/WasmMultipleException",
             _ => "ai/tegmentum/wasmtime4j/WasmException",
         }
     }
@@ -1295,6 +1694,135 @@ mod tests {
 
         for handle in handles {
             handle.join().unwrap();
+        }
+    }
+
+    #[test]
+    fn test_error_aggregation() {
+        use ffi_utils::*;
+
+        // Test ErrorCollector functionality
+        let mut collector = ErrorCollector::with_operation("test_batch_operation".to_string());
+
+        // Add multiple errors
+        collector.add_error(WasmtimeError::Compilation {
+            message: "Compilation failed".to_string()
+        });
+        collector.add_error(WasmtimeError::Validation {
+            message: "Validation failed".to_string()
+        });
+
+        assert!(collector.has_errors());
+        assert_eq!(collector.error_count(), 2);
+
+        // Convert to result
+        let result = collector.into_result();
+        assert!(result.is_err());
+
+        if let Err(WasmtimeError::Multiple { summary, errors }) = result {
+            assert!(summary.contains("test_batch_operation"));
+            assert_eq!(errors.len(), 2);
+        } else {
+            panic!("Expected Multiple error");
+        }
+    }
+
+    #[test]
+    fn test_error_aggregation_single_error() {
+        let error = WasmtimeError::Runtime {
+            message: "Single error".to_string(),
+            backtrace: None,
+        };
+
+        let multiple = WasmtimeError::multiple(vec![error.clone()]);
+        assert!(multiple.is_multiple());
+        assert_eq!(multiple.error_count(), 1);
+
+        let individual_errors = multiple.get_individual_errors();
+        assert_eq!(individual_errors.len(), 1);
+    }
+
+    #[test]
+    fn test_error_recovery_time_estimates() {
+        let compilation_error = WasmtimeError::Compilation {
+            message: "Test".to_string()
+        };
+        let runtime_error = WasmtimeError::Runtime {
+            message: "Test".to_string(),
+            backtrace: None,
+        };
+
+        // Compilation errors should take longer to recover
+        assert!(compilation_error.get_recovery_time_estimate() > runtime_error.get_recovery_time_estimate());
+
+        // Multiple errors should sum recovery times
+        let multiple = WasmtimeError::multiple(vec![compilation_error.clone(), runtime_error.clone()]);
+        let expected_time = compilation_error.get_recovery_time_estimate() + runtime_error.get_recovery_time_estimate();
+        assert_eq!(multiple.get_recovery_time_estimate(), expected_time);
+    }
+
+    #[test]
+    fn test_try_all_operations() {
+        use ffi_utils::*;
+
+        // Test successful operations
+        let operations = vec![
+            || -> WasmtimeResult<i32> { Ok(1) },
+            || -> WasmtimeResult<i32> { Ok(2) },
+            || -> WasmtimeResult<i32> { Ok(3) },
+        ];
+
+        let result = try_all(operations);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), vec![1, 2, 3]);
+
+        // Test operations with failures
+        let operations_with_failures = vec![
+            || -> WasmtimeResult<i32> { Ok(1) },
+            || -> WasmtimeResult<i32> { Err(WasmtimeError::Runtime {
+                message: "Error 1".to_string(),
+                backtrace: None,
+            }) },
+            || -> WasmtimeResult<i32> { Ok(3) },
+            || -> WasmtimeResult<i32> { Err(WasmtimeError::Validation {
+                message: "Error 2".to_string(),
+            }) },
+        ];
+
+        let result = try_all(operations_with_failures);
+        assert!(result.is_err());
+
+        if let Err(WasmtimeError::Multiple { errors, .. }) = result {
+            assert_eq!(errors.len(), 2);
+        } else {
+            panic!("Expected Multiple error");
+        }
+    }
+
+    #[test]
+    fn test_try_all_continue_operations() {
+        use ffi_utils::*;
+
+        let operations = vec![
+            || -> WasmtimeResult<i32> { Ok(1) },
+            || -> WasmtimeResult<i32> { Err(WasmtimeError::Runtime {
+                message: "Error 1".to_string(),
+                backtrace: None,
+            }) },
+            || -> WasmtimeResult<i32> { Ok(3) },
+            || -> WasmtimeResult<i32> { Err(WasmtimeError::Validation {
+                message: "Error 2".to_string(),
+            }) },
+        ];
+
+        let (results, error) = try_all_continue(operations);
+        assert_eq!(results, vec![1, 3]); // Only successful results
+        assert!(error.is_some());
+
+        if let Some(WasmtimeError::Multiple { errors, .. }) = error {
+            assert_eq!(errors.len(), 2);
+        } else {
+            panic!("Expected Multiple error");
         }
     }
 
