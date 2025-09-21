@@ -1,10 +1,35 @@
 package ai.tegmentum.wasmtime4j;
 
 /**
- * Represents a WebAssembly value.
+ * Represents a WebAssembly value that can be passed to and from WebAssembly functions.
  *
- * <p>This class encapsulates values that can be passed to and from WebAssembly functions.
- * WebAssembly values can be integers, floating-point numbers, or references.
+ * <p>This class encapsulates all WebAssembly value types including 32-bit and 64-bit integers,
+ * 32-bit and 64-bit floating-point numbers, 128-bit vectors, and reference types (funcref and
+ * externref). Each value maintains its type information for proper validation and conversion.
+ *
+ * <p>WebAssembly values are immutable and type-safe. Once created, a value's type and content
+ * cannot be changed. Type conversions must be explicit and will throw exceptions if attempted
+ * with incompatible types.
+ *
+ * <p>Example usage:
+ *
+ * <pre>{@code
+ * // Create values for different WebAssembly types
+ * WasmValue intValue = WasmValue.i32(42);
+ * WasmValue longValue = WasmValue.i64(1000L);
+ * WasmValue floatValue = WasmValue.f32(3.14f);
+ * WasmValue doubleValue = WasmValue.f64(2.718);
+ *
+ * // Pass values to a WebAssembly function
+ * WasmValue[] results = function.call(intValue, floatValue);
+ *
+ * // Extract results with type checking
+ * int resultInt = results[0].asI32();
+ * float resultFloat = results[1].asF32();
+ * }</pre>
+ *
+ * <p>All value creation methods perform validation to ensure type safety and correctness
+ * according to WebAssembly specifications.
  *
  * @since 1.0.0
  */
