@@ -14,6 +14,25 @@ tasks:
   - 276: Error Handling and Diagnostics
   - 277: Comprehensive Testing Framework
   - 278: Performance Optimization and Documentation
+  - 279: WebAssembly GC Proposal Implementation
+  - 280: Component Model Core Implementation
+  - 281: Advanced WebAssembly Proposals Implementation
+  - 282: WASI Preview 2 Completion
+  - 283: Advanced Runtime Features Implementation
+  - 284: Configuration and Optimization Completion
+  - 285: Utility APIs and Developer Experience
+  - 286: Core WebAssembly Operations Completion
+  - 287: WebAssembly Component Model Implementation
+  - 288: Complete Configuration API Coverage
+  - 289: Enterprise Runtime Features Completion
+  - 290: WebAssembly GC Proposal Implementation
+  - 291: WASI Preview 2 and Async Operations
+  - 292: Critical Build System Integration
+  - 293: Core WebAssembly Execution Implementation
+  - 294: WASI Operations Implementation
+  - 295: Production Readiness and Enterprise Features
+  - 296: Advanced WebAssembly Features Implementation
+  - 297: Complete Configuration and Tooling
 ---
 
 # Epic: Wasmtime API Implementation
