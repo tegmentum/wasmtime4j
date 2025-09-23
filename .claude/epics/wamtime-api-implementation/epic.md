@@ -33,204 +33,181 @@ tasks:
   - 295: Production Readiness and Enterprise Features
   - 296: Advanced WebAssembly Features Implementation
   - 297: Complete Configuration and Tooling
+  - 298: Advanced Security and Enterprise Features
+  - 299: Performance Monitoring and Analytics
+  - 300: Complete WASI and Async Operations Implementation
+  - 301: Build System and Compilation Issues Resolution
+  - 302: WebAssembly GC Experimental API Completion
+  - 303: Component Model Advanced Features Completion
+  - 304: Performance Validation and Optimization Completion
+  - 305: Native Library Foundation Implementation
+  - 306: Core WebAssembly Operations Implementation
+  - 307: WASI System Implementation
+  - 308: WebAssembly GC Runtime Implementation
+  - 309: Component Model Runtime Implementation
+  - 310: Enterprise Features and Performance Implementation
+  - 311: Comprehensive Testing and Validation Framework
+  - 312: Production Deployment and Documentation
 ---
 
 # Epic: Wasmtime API Implementation
 
 ## Overview
 
-This epic transforms wasmtime4j from an architectural framework with excellent Java interfaces (~95% coverage) into a functional WebAssembly runtime with working core operations (~95% functional coverage). The focus is on implementing the native Rust layer to support critical WebAssembly execution paths while maintaining the existing Java interface architecture.
+This epic transforms wasmtime4j from an excellent architectural framework with comprehensive interface definitions (95% API coverage) into a fully functional WebAssembly runtime with working implementations (targeting 100% functional coverage). After honest analysis revealing 15-25% actual implementation, this epic provides the complete foundation-to-production roadmap.
 
-## Architecture Decisions
+## Critical Reality Assessment
 
-### Core Runtime Strategy
-- **Fix-in-Place Approach**: Repair existing Store context integration rather than rebuilding
-- **Native Layer Focus**: Concentrate implementation efforts in wasmtime4j-native Rust code
-- **Interface Preservation**: Maintain all existing Java public APIs to preserve architectural investment
+### Current State Analysis
+- **Exceptional Architecture**: World-class interface design and enterprise-grade architectural planning
+- **Implementation Gap**: Comprehensive interfaces but minimal functional WebAssembly execution capability
+- **No Native Libraries**: Zero compiled native libraries despite extensive Rust source code
+- **UnsupportedOperationException**: 162 occurrences across 60 files indicating placeholder implementations
 
-### Implementation Priorities
-- **Store Context Integration**: Critical foundation for all WebAssembly operations
-- **JNI-First Strategy**: Complete JNI implementations before Panama FFI optimization
-- **Error Mapping Strategy**: Comprehensive Rust error handling with meaningful Java exceptions
-- **Resource Management**: Proper cleanup patterns to prevent native memory leaks
+### True Implementation Strategy
+- **Foundation-First**: Build native library compilation and basic WebAssembly execution (Tasks 305-306)
+- **System Integration**: Implement actual WASI and system interfaces (Task 307)
+- **Advanced Features**: Build working GC, Component Model, and enterprise features (Tasks 308-310)
+- **Production Readiness**: Comprehensive testing, validation, and deployment (Tasks 311-312)
 
-### Technology Choices
-- **Wasmtime 36.0.2**: Maintain current version for stability during implementation
-- **Incremental Validation**: Test each component independently before integration
-- **Native Testing**: Direct Rust unit tests alongside Java integration tests
+### Implementation Phases
+**Phase 1: Foundation (Tasks 305-306)** - 10 weeks
+- Native library compilation and basic WebAssembly execution capability
 
-## Technical Approach
+**Phase 2: System Integration (Task 307)** - 5 weeks
+- Complete WASI implementation with actual system integration
 
-### Native Layer Implementation
-The core work focuses on wasmtime4j-native/src/ modules:
+**Phase 3: Advanced Runtime (Tasks 308-309)** - 11 weeks
+- WebAssembly GC and Component Model working implementations
 
-#### Store Context Management
-- Fix Store context threading and lifecycle in store.rs
-- Implement proper context isolation between instances
-- Add Store-scoped resource tracking for cleanup
+**Phase 4: Enterprise Production (Tasks 310-312)** - 9 weeks
+- Enterprise features, comprehensive testing, and production deployment
 
-#### Function Invocation Pipeline
-- Complete function calling mechanism in jni_bindings.rs
-- Implement parameter marshalling for all WebAssembly types
-- Add return value handling with proper error propagation
-
-#### Memory Management
-- Implement linear memory operations in memory.rs
-- Add bounds checking and security validation
-- Complete memory import/export functionality
-
-#### WASI Native Integration
-- Implement core WASI operations in wasi.rs
-- Add filesystem operations (open, read, write, close)
-- Complete directory and process operations
-
-### Java Layer Integration
-Minimal changes to existing interfaces, focus on:
-
-#### Error Handling Enhancement
-- Replace UnsupportedOperationException with meaningful exceptions
-- Add detailed error messages from native layer
-- Implement proper exception mapping from Rust errors
-
-#### Resource Lifecycle
-- Ensure proper AutoCloseable implementations
-- Add native resource tracking and cleanup
-- Implement finalizer safety for leaked resources
-
-### Testing Infrastructure
-- Add integration test scenarios for core operations
-- Implement native memory leak detection
-- Create comprehensive WebAssembly module test suite
+**Total Estimated Timeline: 35 weeks (8-9 months)**
 
 ## Implementation Strategy
 
-### Development Phases
+### Foundation-First Approach (Tasks 305-312)
+The implementation follows a systematic build-up from fundamental capabilities to full enterprise functionality:
 
-#### Phase 1: Core Runtime Foundation (Tasks 1-3)
-**Timeline**: 3 weeks
-**Focus**: Make basic WebAssembly function calls work
+#### Phase 1: Native Foundation (Tasks 305-306)
+**Objective**: Establish working WebAssembly execution capability
+- **Task 305**: Fix build system and create actual compiled native libraries
+- **Task 306**: Implement core WebAssembly operations with real execution
 
-1. **Store Context Integration** - Fix the fundamental Store context issues
-2. **Function Invocation Implementation** - Complete the calling mechanism
-3. **Memory Management Completion** - Implement linear memory operations
+**Critical Success Criteria**:
+- Native libraries compile and load on all platforms
+- Basic WebAssembly modules can be loaded and executed
+- Function calling works with parameter marshalling
+- Memory operations work with proper bounds checking
 
-#### Phase 2: WASI and Host Functions (Tasks 4-6)
-**Timeline**: 3 weeks
-**Focus**: Enable WebAssembly modules to interact with system and Java
+#### Phase 2: System Integration (Task 307)
+**Objective**: Provide actual system interface capabilities
+- **Task 307**: Replace WASI interface definitions with working host implementations
 
-4. **WASI Operations Implementation** - Complete filesystem and process operations
-5. **Host Function Integration** - Enable bidirectional Java-WebAssembly calls
-6. **Error Handling and Diagnostics** - Replace all UnsupportedOperationException instances
+**Critical Success Criteria**:
+- File system operations work with real files
+- Network operations provide actual TCP/UDP/HTTP
+- Process operations enable system integration
+- WASI Preview 1 and 2 compliance validated
 
-#### Phase 3: Validation and Production Readiness (Tasks 7-8)
-**Timeline**: 2 weeks
-**Focus**: Ensure reliability and production quality
+#### Phase 3: Advanced Runtime (Tasks 308-309)
+**Objective**: Enable advanced WebAssembly features
+- **Task 308**: Implement working WebAssembly GC runtime
+- **Task 309**: Build functional Component Model runtime
 
-7. **Comprehensive Testing Framework** - Integration tests and validation
-8. **Performance Optimization and Documentation** - Polish for production use
+**Critical Success Criteria**:
+- GC operations work with Wasmtime's garbage collector
+- Component instantiation and linking functional
+- WIT interfaces provide working method dispatch
+- Advanced features integrate with core functionality
 
-### Risk Mitigation
-- **Incremental Testing**: Validate each fix independently
-- **Fallback Strategy**: Maintain current interfaces during implementation
-- **Performance Monitoring**: Track performance impact of correctness fixes
+#### Phase 4: Enterprise Production (Tasks 310-312)
+**Objective**: Achieve enterprise production readiness
+- **Task 310**: Validate performance claims and implement enterprise features
+- **Task 311**: Comprehensive testing with real WebAssembly modules
+- **Task 312**: Production deployment and documentation
 
-## Task Breakdown Complete
+**Critical Success Criteria**:
+- Performance claims validated with actual benchmarks
+- Official WebAssembly test suites pass
+- Production deployment infrastructure working
+- Enterprise documentation and examples complete
 
-Detailed implementation tasks have been created:
+### Architecture Preservation Strategy
+- **Interface Compatibility**: Maintain all existing Java public APIs
+- **Implementation Replacement**: Replace UnsupportedOperationException with working implementations
+- **Quality Standards**: Maintain existing quality tools and practices
+- **Enterprise Features**: Preserve architectural vision while implementing functionality
 
-- [x] **Task 1: Store Context Integration** - Fix Store lifecycle and threading issues in native code
-- [x] **Task 2: Function Invocation Implementation** - Complete WebAssembly function calling mechanism
-- [x] **Task 3: Memory Management Completion** - Implement linear memory operations and bounds checking
-- [x] **Task 4: WASI Operations Implementation** - Complete filesystem, directory, and process operations
-- [x] **Task 5: Host Function Integration** - Enable bidirectional calling between Java and WebAssembly
-- [x] **Task 6: Error Handling and Diagnostics** - Replace UnsupportedOperationException with working implementations
-- [x] **Task 7: Comprehensive Testing Framework** - Integration tests and memory leak detection
-- [x] **Task 8: Performance Optimization and Documentation** - Production readiness and performance baselines
+## Success Criteria and Definition of Done
 
-### Task Creation Summary
+### Functional Completeness Criteria
+- **Native Library Foundation**: All platforms have working compiled native libraries
+- **Core WebAssembly Execution**: Modules load, instantiate, and execute successfully
+- **WASI System Integration**: File system, networking, and process operations work
+- **Advanced Features**: GC and Component Model provide working implementations
+- **Enterprise Readiness**: Performance validated, testing comprehensive, deployment ready
 
-All 8 implementation tasks have been created with detailed specifications including:
-- Specific technical objectives and implementation details
-- Comprehensive acceptance criteria and testing requirements
-- Proper dependency mapping and priority assignment
-- Realistic time estimates and complexity assessments
-- Technical notes covering Wasmtime integration, JNI considerations, and performance requirements
+### Performance Validation Criteria
+- **Pooling Allocator**: Actual >10x improvement demonstrated with benchmarks
+- **Module Caching**: Actual >50% compilation time reduction measured
+- **Monitoring Overhead**: Actual <5% performance impact validated
+- **Production Benchmarks**: Official WebAssembly test suites pass
+- **Regression Testing**: Continuous performance validation infrastructure
 
-### Task Dependencies and Critical Path
+### Quality Assurance Criteria
+- **Zero UnsupportedOperationException**: All operations provide working implementations
+- **Cross-Platform Consistency**: Identical behavior across Linux/macOS/Windows
+- **Memory Safety**: Comprehensive leak detection and resource cleanup
+- **Security Validation**: Sandbox enforcement and capability-based access control
+- **Enterprise Standards**: Comprehensive documentation, monitoring, and operational guides
 
-**Foundation Phase (Weeks 1-3):**
-- Task 1 (Store Context Integration) - Critical foundation, no dependencies
-- Task 2 (Function Invocation Implementation) - Depends on Task 1
-- Task 3 (Memory Management Completion) - Depends on Task 1
+## Task Summary
 
-**Integration Phase (Weeks 4-6):**
-- Task 4 (WASI Operations Implementation) - Depends on Tasks 1, 2, 3
-- Task 5 (Host Function Integration) - Depends on Tasks 1, 2, 3
-- Task 6 (Error Handling and Diagnostics) - Depends on Tasks 1, 2, 3, 4, 5
+**Total Tasks**: 312 (271-297 previous + 298-312 completion tasks)
+**Completion Tasks**: 305-312 provide foundation-to-production implementation
+**Implementation Scope**: Transform interface framework into functional WebAssembly runtime
+**Timeline**: 35 weeks (8-9 months) for complete functional implementation
 
-**Validation Phase (Weeks 7-8):**
-- Task 7 (Comprehensive Testing Framework) - Depends on all previous tasks
-- Task 8 (Performance Optimization and Documentation) - Depends on all previous tasks
+## Critical Path and Dependencies
 
-## Dependencies
+### Foundation Phase Dependencies (Tasks 305-306)
+- **Task 305** (Native Library Foundation): No dependencies - critical blocker resolution
+- **Task 306** (Core WebAssembly Operations): Depends on Task 305
 
-### External Dependencies
-- **Wasmtime 36.0.2**: Stable Rust API for native implementation
-- **Java 8+ and 23+**: Support both JNI and Panama FFI execution paths
-- **Rust Toolchain**: Cargo and platform-specific compilation tools
+### System Integration Dependencies (Task 307)
+- **Task 307** (WASI System Implementation): Depends on Task 306
 
-### Internal Dependencies
-- **wasmtime4j-native**: Core implementation module requiring most changes
-- **wasmtime4j-tests**: Integration test framework for validation
-- **Build Pipeline**: Maven integration for cross-platform native compilation
+### Advanced Runtime Dependencies (Tasks 308-309)
+- **Task 308** (WebAssembly GC Runtime): Depends on Task 307
+- **Task 309** (Component Model Runtime): Depends on Task 308
 
-### Critical Path Items
-1. Store context integration must complete before function calls work
-2. Function invocation enables WASI and host function testing
-3. Error handling improvements needed for meaningful debugging
-4. Testing framework required for validation and regression prevention
+### Enterprise Production Dependencies (Tasks 310-312)
+- **Task 310** (Enterprise Features): Depends on Task 309
+- **Task 311** (Testing and Validation): Depends on Task 310
+- **Task 312** (Production Deployment): Depends on Task 311
 
-## Success Criteria (Technical)
+## Risk Assessment and Mitigation
 
-### Functional Completeness
-- **Zero UnsupportedOperationException**: All core API paths must have working implementations
-- **WebAssembly Execution**: Simple function calls complete successfully with correct results
-- **WASI Operations**: File I/O operations work in test scenarios
-- **Host Functions**: Bidirectional calls between Java and WebAssembly function correctly
+### High-Risk Areas
+- **Native Compilation**: Build system must produce working libraries across all platforms
+- **Wasmtime Integration**: Must successfully integrate with Wasmtime 36.0.2 APIs
+- **Performance Validation**: Claims must be proven with actual benchmark measurements
+- **Cross-Platform Compatibility**: Consistent behavior required across all targets
 
-### Performance Benchmarks
-- **Function Call Latency**: <100μs for simple operations (measured via JMH)
-- **Module Compilation**: Within 10x of Wasmtime CLI performance
-- **Memory Operations**: <10% overhead vs native WebAssembly execution
-- **Memory Safety**: Zero leaks under 1-hour stress testing
+### Mitigation Strategies
+- **Incremental Validation**: Test each task completion independently
+- **Fallback Planning**: Maintain interface compatibility during implementation
+- **Performance Monitoring**: Continuous benchmark validation during development
+- **Quality Assurance**: Comprehensive testing at each phase completion
 
-### Quality Gates
-- **Test Coverage**: >90% line coverage for critical native code paths
-- **Integration Testing**: 100% pass rate for core WebAssembly execution scenarios
-- **Cross-Platform**: All tests pass on Linux, macOS, Windows (x86_64, ARM64)
-- **Error Handling**: All error conditions provide actionable diagnostic information
+## Expected Outcomes
 
-## Estimated Effort
+Upon completion, wasmtime4j will transform from an excellent architectural framework into a fully functional, enterprise-ready WebAssembly runtime with:
 
-### Overall Timeline
-**8 weeks total** with 3 development phases:
-- **Weeks 1-3**: Core runtime foundation (Store, Functions, Memory)
-- **Weeks 4-6**: WASI and host function integration
-- **Weeks 7-8**: Testing, validation, and production readiness
-
-### Resource Requirements
-- **Primary Focus**: Native Rust development (70% of effort)
-- **Secondary**: Java integration and testing (25% of effort)
-- **Documentation**: API examples and migration guides (5% of effort)
-
-### Critical Path Items
-1. **Store Context Integration** (Week 1): Highest risk, enables all other work
-2. **Function Invocation** (Week 2): Core functionality requirement
-3. **Integration Testing** (Week 7): Validation of all implementations
-4. **Performance Baseline** (Week 8): Production readiness validation
-
-### Success Dependencies
-- Existing Java interfaces provide solid foundation (minimal API changes needed)
-- Wasmtime 36.0.2 API stability during implementation period
-- Cross-platform native compilation infrastructure already established
-- Test framework can be extended rather than rebuilt
+- **Working native libraries** across all supported platforms
+- **Actual WebAssembly execution** capability with comprehensive feature support
+- **Validated performance** with benchmarked enterprise improvements
+- **Production readiness** with comprehensive documentation and deployment guides
+- **True 100% API coverage** with working implementations replacing all interface stubs
