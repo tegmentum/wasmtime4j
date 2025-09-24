@@ -361,13 +361,19 @@ impl Memory {
             }.into());
         }
 
-        // Perform the growth operation
-        let previous_pages = store.with_context(|ctx| {
-            self.inner.grow(ctx, additional_pages)
-                .map_err(|e| WasmtimeError::Memory {
-                    message: format!("Memory growth failed: {}", e),
-                })
-        })?;
+        // Perform the growth operation with shared memory considerations
+        let previous_pages = if self.config.is_shared {
+            // For shared memory, we need to coordinate growth across threads
+            self.grow_shared_memory(store, additional_pages, current_pages, requested_pages)?
+        } else {
+            // Regular memory growth
+            store.with_context(|ctx| {
+                self.inner.grow(ctx, additional_pages)
+                    .map_err(|e| WasmtimeError::Memory {
+                        message: format!("Memory growth failed: {}", e),
+                    })
+            })?
+        };
 
         // Update metadata
         if let Ok(mut metadata) = self.metadata.write() {
@@ -379,13 +385,55 @@ impl Memory {
         }
 
         log::debug!(
-            "Memory grown from {} to {} pages ({} bytes)",
+            "Memory grown from {} to {} pages ({} bytes) [shared: {}]",
             previous_pages,
             requested_pages,
-            requested_pages * 65536
+            requested_pages * 65536,
+            self.config.is_shared
         );
 
         Ok(previous_pages)
+    }
+
+    /// Thread-safe growth for shared memory
+    fn grow_shared_memory(
+        &self,
+        store: &mut Store,
+        additional_pages: u64,
+        current_pages: u64,
+        requested_pages: u64
+    ) -> WasmtimeResult<u64> {
+        // For shared memory, we need to ensure thread-safe growth
+        // This is a simplified implementation - a real implementation would
+        // need more sophisticated synchronization
+
+        store.with_context(|ctx| {
+            // Use atomic operations or locks to ensure only one thread can grow at a time
+            // For now, we'll use the same growth mechanism as regular memory
+            // but with additional logging for shared memory
+            log::debug!(
+                "Growing shared memory from {} to {} pages (adding {})",
+                current_pages, requested_pages, additional_pages
+            );
+
+            let result = self.inner.grow(ctx, additional_pages)
+                .map_err(|e| WasmtimeError::Memory {
+                    message: format!("Shared memory growth failed: {}", e),
+                });
+
+            // In a real implementation, we would:
+            // 1. Notify all threads that memory has grown
+            // 2. Update any cached memory pointers in other threads
+            // 3. Ensure memory barriers are in place
+
+            if result.is_ok() {
+                log::info!("Shared memory successfully grown to {} pages", requested_pages);
+                // Emit memory fence to ensure growth is visible to all threads
+                std::sync::atomic::fence(std::sync::atomic::Ordering::SeqCst);
+            }
+
+            result
+        })
     }
 
     /// Read data with comprehensive bounds checking
@@ -1079,19 +1127,19 @@ pub mod core {
             log::warn!("Attempted to destroy null memory pointer");
             return;
         }
-        
+
         // First try to validate the handle (this might fail if already destroyed)
         match validate_memory_handle(ptr) {
             Ok(_) => {
                 // Mark as destroyed first to prevent further access
                 let validated_memory = &*(ptr as *const ValidatedMemory);
                 validated_memory.mark_destroyed();
-                
+
                 // Unregister the handle
                 if let Err(e) = unregister_memory_handle(ptr) {
                     log::error!("Failed to unregister memory handle {:p}: {}", ptr, e);
                 }
-                
+
                 // Finally, deallocate the memory
                 let _ = Box::from_raw(ptr as *mut ValidatedMemory);
                 log::debug!("Destroyed validated memory handle: {:p}", ptr);
@@ -1104,6 +1152,704 @@ pub mod core {
                 }
             }
         }
+    }
+
+    // Shared Memory Operations
+
+    /// Core function to check if memory is shared
+    pub fn memory_is_shared(memory: &Memory, store: &Store) -> WasmtimeResult<bool> {
+        store.with_context_ro(|ctx| {
+            let memory_type = memory.inner.ty(ctx);
+            Ok(memory_type.is_shared())
+        })
+    }
+
+    /// Core function for atomic compare-and-swap on 32-bit value
+    pub fn atomic_compare_and_swap_i32(memory: &Memory, store: &mut Store, offset: usize, expected: i32, new_value: i32) -> WasmtimeResult<i32> {
+        // Validate memory is shared
+        if !memory_is_shared(memory, store)? {
+            return Err(WasmtimeError::Memory {
+                message: "Atomic operations require shared memory".to_string(),
+            });
+        }
+
+        // Validate alignment
+        if offset % 4 != 0 {
+            return Err(WasmtimeError::Memory {
+                message: format!("Offset {} is not aligned to 4-byte boundary", offset),
+            });
+        }
+
+        // Bounds checking
+        let memory_size = memory.size_bytes(store)?;
+        if offset + 4 > memory_size {
+            return Err(MemoryError::BoundsViolation {
+                offset,
+                length: 4,
+                memory_size,
+            }.into());
+        }
+
+        store.with_context(|ctx| {
+            // Use Rust's atomic operations on the memory data
+            let memory_data = memory.inner.data_mut(ctx);
+            let ptr = &memory_data[offset..offset + 4];
+            let atomic_ptr = ptr.as_ptr() as *const std::sync::atomic::AtomicI32;
+
+            unsafe {
+                let atomic_ref = &*atomic_ptr;
+                let result = atomic_ref.compare_exchange(
+                    expected,
+                    new_value,
+                    std::sync::atomic::Ordering::SeqCst,
+                    std::sync::atomic::Ordering::SeqCst
+                );
+
+                match result {
+                    Ok(old_value) => Ok(old_value),
+                    Err(actual_value) => Ok(actual_value),
+                }
+            }
+        })
+    }
+
+    /// Core function for atomic compare-and-swap on 64-bit value
+    pub fn atomic_compare_and_swap_i64(memory: &Memory, store: &mut Store, offset: usize, expected: i64, new_value: i64) -> WasmtimeResult<i64> {
+        // Validate memory is shared
+        if !memory_is_shared(memory, store)? {
+            return Err(WasmtimeError::Memory {
+                message: "Atomic operations require shared memory".to_string(),
+            });
+        }
+
+        // Validate alignment
+        if offset % 8 != 0 {
+            return Err(WasmtimeError::Memory {
+                message: format!("Offset {} is not aligned to 8-byte boundary", offset),
+            });
+        }
+
+        // Bounds checking
+        let memory_size = memory.size_bytes(store)?;
+        if offset + 8 > memory_size {
+            return Err(MemoryError::BoundsViolation {
+                offset,
+                length: 8,
+                memory_size,
+            }.into());
+        }
+
+        store.with_context(|ctx| {
+            let memory_data = memory.inner.data_mut(ctx);
+            let ptr = &memory_data[offset..offset + 8];
+            let atomic_ptr = ptr.as_ptr() as *const std::sync::atomic::AtomicI64;
+
+            unsafe {
+                let atomic_ref = &*atomic_ptr;
+                let result = atomic_ref.compare_exchange(
+                    expected,
+                    new_value,
+                    std::sync::atomic::Ordering::SeqCst,
+                    std::sync::atomic::Ordering::SeqCst
+                );
+
+                match result {
+                    Ok(old_value) => Ok(old_value),
+                    Err(actual_value) => Ok(actual_value),
+                }
+            }
+        })
+    }
+
+    /// Core function for atomic load on 32-bit value
+    pub fn atomic_load_i32(memory: &Memory, store: &Store, offset: usize) -> WasmtimeResult<i32> {
+        // Validate memory is shared
+        if !memory_is_shared(memory, store)? {
+            return Err(WasmtimeError::Memory {
+                message: "Atomic operations require shared memory".to_string(),
+            });
+        }
+
+        // Validate alignment
+        if offset % 4 != 0 {
+            return Err(WasmtimeError::Memory {
+                message: format!("Offset {} is not aligned to 4-byte boundary", offset),
+            });
+        }
+
+        // Bounds checking
+        let memory_size = memory.size_bytes(store)?;
+        if offset + 4 > memory_size {
+            return Err(MemoryError::BoundsViolation {
+                offset,
+                length: 4,
+                memory_size,
+            }.into());
+        }
+
+        store.with_context_ro(|ctx| {
+            let memory_data = memory.inner.data(ctx);
+            let ptr = &memory_data[offset..offset + 4];
+            let atomic_ptr = ptr.as_ptr() as *const std::sync::atomic::AtomicI32;
+
+            unsafe {
+                let atomic_ref = &*atomic_ptr;
+                Ok(atomic_ref.load(std::sync::atomic::Ordering::Acquire))
+            }
+        })
+    }
+
+    /// Core function for atomic load on 64-bit value
+    pub fn atomic_load_i64(memory: &Memory, store: &Store, offset: usize) -> WasmtimeResult<i64> {
+        // Validate memory is shared
+        if !memory_is_shared(memory, store)? {
+            return Err(WasmtimeError::Memory {
+                message: "Atomic operations require shared memory".to_string(),
+            });
+        }
+
+        // Validate alignment
+        if offset % 8 != 0 {
+            return Err(WasmtimeError::Memory {
+                message: format!("Offset {} is not aligned to 8-byte boundary", offset),
+            });
+        }
+
+        // Bounds checking
+        let memory_size = memory.size_bytes(store)?;
+        if offset + 8 > memory_size {
+            return Err(MemoryError::BoundsViolation {
+                offset,
+                length: 8,
+                memory_size,
+            }.into());
+        }
+
+        store.with_context_ro(|ctx| {
+            let memory_data = memory.inner.data(ctx);
+            let ptr = &memory_data[offset..offset + 8];
+            let atomic_ptr = ptr.as_ptr() as *const std::sync::atomic::AtomicI64;
+
+            unsafe {
+                let atomic_ref = &*atomic_ptr;
+                Ok(atomic_ref.load(std::sync::atomic::Ordering::Acquire))
+            }
+        })
+    }
+
+    /// Core function for atomic store on 32-bit value
+    pub fn atomic_store_i32(memory: &Memory, store: &mut Store, offset: usize, value: i32) -> WasmtimeResult<()> {
+        // Validate memory is shared
+        if !memory_is_shared(memory, store)? {
+            return Err(WasmtimeError::Memory {
+                message: "Atomic operations require shared memory".to_string(),
+            });
+        }
+
+        // Validate alignment
+        if offset % 4 != 0 {
+            return Err(WasmtimeError::Memory {
+                message: format!("Offset {} is not aligned to 4-byte boundary", offset),
+            });
+        }
+
+        // Bounds checking
+        let memory_size = memory.size_bytes(store)?;
+        if offset + 4 > memory_size {
+            return Err(MemoryError::BoundsViolation {
+                offset,
+                length: 4,
+                memory_size,
+            }.into());
+        }
+
+        store.with_context(|ctx| {
+            let memory_data = memory.inner.data_mut(ctx);
+            let ptr = &memory_data[offset..offset + 4];
+            let atomic_ptr = ptr.as_ptr() as *const std::sync::atomic::AtomicI32;
+
+            unsafe {
+                let atomic_ref = &*atomic_ptr;
+                atomic_ref.store(value, std::sync::atomic::Ordering::Release);
+                Ok(())
+            }
+        })
+    }
+
+    /// Core function for atomic store on 64-bit value
+    pub fn atomic_store_i64(memory: &Memory, store: &mut Store, offset: usize, value: i64) -> WasmtimeResult<()> {
+        // Validate memory is shared
+        if !memory_is_shared(memory, store)? {
+            return Err(WasmtimeError::Memory {
+                message: "Atomic operations require shared memory".to_string(),
+            });
+        }
+
+        // Validate alignment
+        if offset % 8 != 0 {
+            return Err(WasmtimeError::Memory {
+                message: format!("Offset {} is not aligned to 8-byte boundary", offset),
+            });
+        }
+
+        // Bounds checking
+        let memory_size = memory.size_bytes(store)?;
+        if offset + 8 > memory_size {
+            return Err(MemoryError::BoundsViolation {
+                offset,
+                length: 8,
+                memory_size,
+            }.into());
+        }
+
+        store.with_context(|ctx| {
+            let memory_data = memory.inner.data_mut(ctx);
+            let ptr = &memory_data[offset..offset + 8];
+            let atomic_ptr = ptr.as_ptr() as *const std::sync::atomic::AtomicI64;
+
+            unsafe {
+                let atomic_ref = &*atomic_ptr;
+                atomic_ref.store(value, std::sync::atomic::Ordering::Release);
+                Ok(())
+            }
+        })
+    }
+
+    /// Core function for atomic add on 32-bit value
+    pub fn atomic_add_i32(memory: &Memory, store: &mut Store, offset: usize, value: i32) -> WasmtimeResult<i32> {
+        // Validate memory is shared
+        if !memory_is_shared(memory, store)? {
+            return Err(WasmtimeError::Memory {
+                message: "Atomic operations require shared memory".to_string(),
+            });
+        }
+
+        // Validate alignment
+        if offset % 4 != 0 {
+            return Err(WasmtimeError::Memory {
+                message: format!("Offset {} is not aligned to 4-byte boundary", offset),
+            });
+        }
+
+        // Bounds checking
+        let memory_size = memory.size_bytes(store)?;
+        if offset + 4 > memory_size {
+            return Err(MemoryError::BoundsViolation {
+                offset,
+                length: 4,
+                memory_size,
+            }.into());
+        }
+
+        store.with_context(|ctx| {
+            let memory_data = memory.inner.data_mut(ctx);
+            let ptr = &memory_data[offset..offset + 4];
+            let atomic_ptr = ptr.as_ptr() as *const std::sync::atomic::AtomicI32;
+
+            unsafe {
+                let atomic_ref = &*atomic_ptr;
+                Ok(atomic_ref.fetch_add(value, std::sync::atomic::Ordering::SeqCst))
+            }
+        })
+    }
+
+    /// Core function for atomic add on 64-bit value
+    pub fn atomic_add_i64(memory: &Memory, store: &mut Store, offset: usize, value: i64) -> WasmtimeResult<i64> {
+        // Validate memory is shared
+        if !memory_is_shared(memory, store)? {
+            return Err(WasmtimeError::Memory {
+                message: "Atomic operations require shared memory".to_string(),
+            });
+        }
+
+        // Validate alignment
+        if offset % 8 != 0 {
+            return Err(WasmtimeError::Memory {
+                message: format!("Offset {} is not aligned to 8-byte boundary", offset),
+            });
+        }
+
+        // Bounds checking
+        let memory_size = memory.size_bytes(store)?;
+        if offset + 8 > memory_size {
+            return Err(MemoryError::BoundsViolation {
+                offset,
+                length: 8,
+                memory_size,
+            }.into());
+        }
+
+        store.with_context(|ctx| {
+            let memory_data = memory.inner.data_mut(ctx);
+            let ptr = &memory_data[offset..offset + 8];
+            let atomic_ptr = ptr.as_ptr() as *const std::sync::atomic::AtomicI64;
+
+            unsafe {
+                let atomic_ref = &*atomic_ptr;
+                Ok(atomic_ref.fetch_add(value, std::sync::atomic::Ordering::SeqCst))
+            }
+        })
+    }
+
+    /// Core function for atomic bitwise AND on 32-bit value
+    pub fn atomic_and_i32(memory: &Memory, store: &mut Store, offset: usize, value: i32) -> WasmtimeResult<i32> {
+        // Validate memory is shared
+        if !memory_is_shared(memory, store)? {
+            return Err(WasmtimeError::Memory {
+                message: "Atomic operations require shared memory".to_string(),
+            });
+        }
+
+        // Validate alignment
+        if offset % 4 != 0 {
+            return Err(WasmtimeError::Memory {
+                message: format!("Offset {} is not aligned to 4-byte boundary", offset),
+            });
+        }
+
+        // Bounds checking
+        let memory_size = memory.size_bytes(store)?;
+        if offset + 4 > memory_size {
+            return Err(MemoryError::BoundsViolation {
+                offset,
+                length: 4,
+                memory_size,
+            }.into());
+        }
+
+        store.with_context(|ctx| {
+            let memory_data = memory.inner.data_mut(ctx);
+            let ptr = &memory_data[offset..offset + 4];
+            let atomic_ptr = ptr.as_ptr() as *const std::sync::atomic::AtomicI32;
+
+            unsafe {
+                let atomic_ref = &*atomic_ptr;
+                Ok(atomic_ref.fetch_and(value, std::sync::atomic::Ordering::SeqCst))
+            }
+        })
+    }
+
+    /// Core function for atomic bitwise OR on 32-bit value
+    pub fn atomic_or_i32(memory: &Memory, store: &mut Store, offset: usize, value: i32) -> WasmtimeResult<i32> {
+        // Validate memory is shared
+        if !memory_is_shared(memory, store)? {
+            return Err(WasmtimeError::Memory {
+                message: "Atomic operations require shared memory".to_string(),
+            });
+        }
+
+        // Validate alignment
+        if offset % 4 != 0 {
+            return Err(WasmtimeError::Memory {
+                message: format!("Offset {} is not aligned to 4-byte boundary", offset),
+            });
+        }
+
+        // Bounds checking
+        let memory_size = memory.size_bytes(store)?;
+        if offset + 4 > memory_size {
+            return Err(MemoryError::BoundsViolation {
+                offset,
+                length: 4,
+                memory_size,
+            }.into());
+        }
+
+        store.with_context(|ctx| {
+            let memory_data = memory.inner.data_mut(ctx);
+            let ptr = &memory_data[offset..offset + 4];
+            let atomic_ptr = ptr.as_ptr() as *const std::sync::atomic::AtomicI32;
+
+            unsafe {
+                let atomic_ref = &*atomic_ptr;
+                Ok(atomic_ref.fetch_or(value, std::sync::atomic::Ordering::SeqCst))
+            }
+        })
+    }
+
+    /// Core function for atomic bitwise XOR on 32-bit value
+    pub fn atomic_xor_i32(memory: &Memory, store: &mut Store, offset: usize, value: i32) -> WasmtimeResult<i32> {
+        // Validate memory is shared
+        if !memory_is_shared(memory, store)? {
+            return Err(WasmtimeError::Memory {
+                message: "Atomic operations require shared memory".to_string(),
+            });
+        }
+
+        // Validate alignment
+        if offset % 4 != 0 {
+            return Err(WasmtimeError::Memory {
+                message: format!("Offset {} is not aligned to 4-byte boundary", offset),
+            });
+        }
+
+        // Bounds checking
+        let memory_size = memory.size_bytes(store)?;
+        if offset + 4 > memory_size {
+            return Err(MemoryError::BoundsViolation {
+                offset,
+                length: 4,
+                memory_size,
+            }.into());
+        }
+
+        store.with_context(|ctx| {
+            let memory_data = memory.inner.data_mut(ctx);
+            let ptr = &memory_data[offset..offset + 4];
+            let atomic_ptr = ptr.as_ptr() as *const std::sync::atomic::AtomicI32;
+
+            unsafe {
+                let atomic_ref = &*atomic_ptr;
+                Ok(atomic_ref.fetch_xor(value, std::sync::atomic::Ordering::SeqCst))
+            }
+        })
+    }
+
+    /// Core function for atomic memory fence
+    pub fn atomic_fence(_memory: &Memory, store: &Store) -> WasmtimeResult<()> {
+        // Validate memory is shared
+        if !memory_is_shared(_memory, store)? {
+            return Err(WasmtimeError::Memory {
+                message: "Atomic operations require shared memory".to_string(),
+            });
+        }
+
+        // Memory fence - ensures ordering of memory operations
+        std::sync::atomic::fence(std::sync::atomic::Ordering::SeqCst);
+        Ok(())
+    }
+
+    /// Core function for atomic notify (wake threads waiting on a memory location)
+    pub fn atomic_notify(memory: &Memory, store: &Store, offset: usize, count: i32) -> WasmtimeResult<i32> {
+        // Validate memory is shared
+        if !memory_is_shared(memory, store)? {
+            return Err(WasmtimeError::Memory {
+                message: "Atomic operations require shared memory".to_string(),
+            });
+        }
+
+        // Validate alignment
+        if offset % 4 != 0 {
+            return Err(WasmtimeError::Memory {
+                message: format!("Offset {} is not aligned to 4-byte boundary", offset),
+            });
+        }
+
+        // Bounds checking
+        let memory_size = memory.size_bytes(store)?;
+        if offset + 4 > memory_size {
+            return Err(MemoryError::BoundsViolation {
+                offset,
+                length: 4,
+                memory_size,
+            }.into());
+        }
+
+        // Note: This is a simplified implementation. A real implementation would
+        // maintain a thread wait queue for each memory location and notify
+        // the specified number of waiting threads.
+
+        // For now, we'll return 0 (no threads notified) since we don't have
+        // a full wait/notify infrastructure implemented
+        log::debug!("Atomic notify at offset {} with count {} (simplified implementation)", offset, count);
+        Ok(0)
+    }
+
+    /// Core function for atomic wait on 32-bit value
+    pub fn atomic_wait32(memory: &Memory, store: &Store, offset: usize, expected: i32, timeout_nanos: i64) -> WasmtimeResult<i32> {
+        // Validate memory is shared
+        if !memory_is_shared(memory, store)? {
+            return Err(WasmtimeError::Memory {
+                message: "Atomic operations require shared memory".to_string(),
+            });
+        }
+
+        // Validate alignment
+        if offset % 4 != 0 {
+            return Err(WasmtimeError::Memory {
+                message: format!("Offset {} is not aligned to 4-byte boundary", offset),
+            });
+        }
+
+        // Bounds checking
+        let memory_size = memory.size_bytes(store)?;
+        if offset + 4 > memory_size {
+            return Err(MemoryError::BoundsViolation {
+                offset,
+                length: 4,
+                memory_size,
+            }.into());
+        }
+
+        store.with_context_ro(|ctx| {
+            let memory_data = memory.inner.data(ctx);
+            let ptr = &memory_data[offset..offset + 4];
+            let atomic_ptr = ptr.as_ptr() as *const std::sync::atomic::AtomicI32;
+
+            unsafe {
+                let atomic_ref = &*atomic_ptr;
+                let current_value = atomic_ref.load(std::sync::atomic::Ordering::Acquire);
+
+                if current_value != expected {
+                    // Value mismatch - return immediately
+                    Ok(1)
+                } else {
+                    // Note: This is a simplified implementation. A real implementation would
+                    // block the thread until notified or timeout occurs.
+                    // For now, we'll simulate a timeout
+                    log::debug!("Atomic wait32 at offset {} with expected {} and timeout {} ns (simplified implementation)",
+                               offset, expected, timeout_nanos);
+
+                    if timeout_nanos == 0 {
+                        Ok(2) // Immediate timeout
+                    } else {
+                        // Simulate a short wait
+                        std::thread::sleep(std::time::Duration::from_millis(1));
+                        Ok(2) // Timeout
+                    }
+                }
+            }
+        })
+    }
+
+    /// Core function for atomic wait on 64-bit value
+    pub fn atomic_wait64(memory: &Memory, store: &Store, offset: usize, expected: i64, timeout_nanos: i64) -> WasmtimeResult<i32> {
+        // Validate memory is shared
+        if !memory_is_shared(memory, store)? {
+            return Err(WasmtimeError::Memory {
+                message: "Atomic operations require shared memory".to_string(),
+            });
+        }
+
+        // Validate alignment
+        if offset % 8 != 0 {
+            return Err(WasmtimeError::Memory {
+                message: format!("Offset {} is not aligned to 8-byte boundary", offset),
+            });
+        }
+
+        // Bounds checking
+        let memory_size = memory.size_bytes(store)?;
+        if offset + 8 > memory_size {
+            return Err(MemoryError::BoundsViolation {
+                offset,
+                length: 8,
+                memory_size,
+            }.into());
+        }
+
+        store.with_context_ro(|ctx| {
+            let memory_data = memory.inner.data(ctx);
+            let ptr = &memory_data[offset..offset + 8];
+            let atomic_ptr = ptr.as_ptr() as *const std::sync::atomic::AtomicI64;
+
+            unsafe {
+                let atomic_ref = &*atomic_ptr;
+                let current_value = atomic_ref.load(std::sync::atomic::Ordering::Acquire);
+
+                if current_value != expected {
+                    // Value mismatch - return immediately
+                    Ok(1)
+                } else {
+                    // Note: This is a simplified implementation. A real implementation would
+                    // block the thread until notified or timeout occurs.
+                    log::debug!("Atomic wait64 at offset {} with expected {} and timeout {} ns (simplified implementation)",
+                               offset, expected, timeout_nanos);
+
+                    if timeout_nanos == 0 {
+                        Ok(2) // Immediate timeout
+                    } else {
+                        // Simulate a short wait
+                        std::thread::sleep(std::time::Duration::from_millis(1));
+                        Ok(2) // Timeout
+                    }
+                }
+            }
+        })
+    }
+
+    // Bulk Memory Operations
+
+    /// Core function to copy memory within the same memory instance
+    pub fn memory_copy(memory: &Memory, store: &mut Store, dest_offset: usize, src_offset: usize, len: usize) -> WasmtimeResult<()> {
+        // Bounds checking
+        let memory_size = memory.size_bytes(store)?;
+        if dest_offset.saturating_add(len) > memory_size || src_offset.saturating_add(len) > memory_size {
+            return Err(MemoryError::BoundsViolation {
+                offset: std::cmp::max(dest_offset, src_offset),
+                length: len,
+                memory_size,
+            }.into());
+        }
+
+        // Perform memory copy within the store lock
+        store.with_context(|ctx| {
+            let memory_data = memory.inner.data_mut(ctx);
+
+            // Handle overlapping memory regions correctly
+            if dest_offset < src_offset && dest_offset + len > src_offset {
+                // Forward overlap - copy from end to beginning
+                for i in (0..len).rev() {
+                    memory_data[dest_offset + i] = memory_data[src_offset + i];
+                }
+            } else if src_offset < dest_offset && src_offset + len > dest_offset {
+                // Backward overlap - copy from beginning to end
+                for i in 0..len {
+                    memory_data[dest_offset + i] = memory_data[src_offset + i];
+                }
+            } else {
+                // No overlap - use efficient copy
+                memory_data.copy_within(src_offset..src_offset + len, dest_offset);
+            }
+            Ok(())
+        })
+    }
+
+    /// Core function to fill memory with a specific byte value
+    pub fn memory_fill(memory: &Memory, store: &mut Store, offset: usize, value: u8, len: usize) -> WasmtimeResult<()> {
+        // Bounds checking
+        let memory_size = memory.size_bytes(store)?;
+        if offset.saturating_add(len) > memory_size {
+            return Err(MemoryError::BoundsViolation {
+                offset,
+                length: len,
+                memory_size,
+            }.into());
+        }
+
+        // Perform memory fill within the store lock
+        store.with_context(|ctx| {
+            let memory_data = memory.inner.data_mut(ctx);
+            memory_data[offset..offset + len].fill(value);
+            Ok(())
+        })
+    }
+
+    /// Core function to initialize memory from a data segment
+    pub fn memory_init(memory: &Memory, store: &mut Store, dest_offset: usize, data_segment_index: u32, src_offset: usize, len: usize) -> WasmtimeResult<()> {
+        // Note: This is a simplified implementation. In a real implementation, you would:
+        // 1. Get the data segment from the module/instance
+        // 2. Check if the segment has been dropped
+        // 3. Perform bounds checking on both memory and data segment
+        // 4. Copy data from segment to memory
+
+        // For now, return an error indicating this needs module context
+        Err(WasmtimeError::InvalidParameter {
+            message: "memory.init requires module/instance context for data segment access".to_string(),
+        })
+    }
+
+    /// Core function to drop a data segment
+    pub fn data_drop(store: &mut Store, data_segment_index: u32) -> WasmtimeResult<()> {
+        // Note: This is a simplified implementation. In a real implementation, you would:
+        // 1. Get the data segment from the module/instance
+        // 2. Mark it as dropped
+        // 3. Free any associated memory
+
+        // For now, return an error indicating this needs module context
+        Err(WasmtimeError::InvalidParameter {
+            message: "data.drop requires module/instance context for data segment management".to_string(),
+        })
     }
     
     /// Get diagnostic information about memory handle validation

@@ -730,24 +730,26 @@ pub unsafe extern "C" fn wasi_ctx_add_to_store(
     ffi_utils::ffi_try_code(|| {
         let _wasi_ctx = ffi_utils::deref_ptr::<WasiContext>(ctx_ptr, "WASI context")?;
         
-        // Store the WASI context reference in the store's user data
-        // This is a placeholder implementation - the actual Store integration 
-        // would depend on how the Store is structured
-        
-        // For now, just validate that both pointers are valid
+        // Validate store pointer
         if store_ptr.is_null() {
             return Err(WasmtimeError::InvalidParameter {
                 message: "Store handle cannot be null".to_string(),
             });
         }
-        
-        // TODO: Implement proper Store-WASI context integration
-        // This would involve:
-        // 1. Getting mutable access to the Store
-        // 2. Adding WASI context to Store's StoreData
-        // 3. Setting up WASI imports in the Store's linker
-        
-        log::debug!("WASI context integration with Store - placeholder implementation");
+
+        // Get store reference and integrate WASI context
+        let store = ffi_utils::deref_ptr_mut::<crate::store::Store>(store_ptr, "store")?;
+
+        // Store the WASI context pointer in the store's user data
+        // We use Box to manage the lifetime properly
+        let ctx_box = Box::new(ctx_ptr as usize);
+
+        store.with_context(|mut store_ctx| {
+            store_ctx.data_mut().user_data = Some(ctx_box);
+            Ok(())
+        })?;
+
+        log::debug!("WASI context successfully integrated with Store");
         Ok(())
     })
 }
@@ -764,16 +766,24 @@ pub unsafe extern "C" fn wasi_ctx_get_from_store(
             });
         }
         
-        // TODO: Implement proper Store-WASI context retrieval
-        // This would involve:
-        // 1. Getting access to the Store
-        // 2. Retrieving WASI context from Store's StoreData
-        // 3. Returning a pointer to the WASI context
-        
-        log::debug!("Retrieving WASI context from Store - placeholder implementation");
-        
-        // For now, return null to indicate no WASI context attached
-        Ok(Box::new(std::ptr::null_mut::<WasiContext>()))
+        // Get store reference and retrieve WASI context
+        let store = ffi_utils::deref_ptr::<crate::store::Store>(store_ptr, "store")?;
+
+        // Retrieve WASI context pointer from store's user data
+        let ctx_ptr = store.with_context_ro(|store_ctx| {
+            if let Some(user_data) = &store_ctx.data().user_data {
+                if let Some(ctx_addr) = user_data.downcast_ref::<usize>() {
+                    Ok(*ctx_addr as *mut c_void)
+                } else {
+                    Ok(std::ptr::null_mut())
+                }
+            } else {
+                Ok(std::ptr::null_mut())
+            }
+        })?;
+
+        log::debug!("Retrieved WASI context from Store: {:p}", ctx_ptr);
+        Ok(Box::new(ctx_ptr))
     });
     result
 }
@@ -790,10 +800,24 @@ pub unsafe extern "C" fn wasi_ctx_store_has_wasi(
             });
         }
         
-        // TODO: Implement proper Store-WASI context checking
-        // For now, return false (0) to indicate no WASI context
-        log::debug!("Checking for WASI context in Store - placeholder implementation");
-        Ok(0) // No WASI context attached
+        // Get store reference and check for WASI context
+        let store = ffi_utils::deref_ptr::<crate::store::Store>(store_ptr, "store")?;
+
+        // Check if WASI context exists in store's user data
+        let has_wasi = store.with_context_ro(|store_ctx| {
+            if let Some(user_data) = &store_ctx.data().user_data {
+                if let Some(ctx_addr) = user_data.downcast_ref::<usize>() {
+                    Ok(if *ctx_addr != 0 { 1 } else { 0 })
+                } else {
+                    Ok(0)
+                }
+            } else {
+                Ok(0)
+            }
+        })?;
+
+        log::debug!("Store WASI context check result: {}", has_wasi);
+        Ok(has_wasi)
     });
     result.1
 }

@@ -1,7 +1,6 @@
 package ai.tegmentum.wasmtime4j.wasi;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import java.io.Closeable;
 
 /**
  * Handle for an open directory in the WASI filesystem.
@@ -29,7 +28,7 @@ import java.io.Closeable;
  *
  * @since 1.0.0
  */
-public interface WasiDirectoryHandle extends Closeable {
+public interface WasiDirectoryHandle {
 
   /**
    * Gets the unique identifier for this directory handle.
@@ -91,6 +90,5 @@ public interface WasiDirectoryHandle extends Closeable {
    *
    * @throws WasmException if the directory cannot be closed
    */
-  @Override
   void close() throws WasmException;
 }

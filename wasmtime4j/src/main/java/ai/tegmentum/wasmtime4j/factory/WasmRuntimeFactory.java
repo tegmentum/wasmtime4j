@@ -170,8 +170,8 @@ public final class WasmRuntimeFactory {
   }
 
   /**
-   * Clears cached runtime availability and selection information.
-   * This method is primarily intended for testing purposes.
+   * Clears cached runtime availability and selection information. This method is primarily intended
+   * for testing purposes.
    */
   public static void clearCache() {
     synchronized (WasmRuntimeFactory.class) {
@@ -280,7 +280,8 @@ public final class WasmRuntimeFactory {
         return false;
       } catch (final Exception e) {
         logger.warning(
-            "Unexpected error checking JNI runtime availability: " + sanitizeForLog(e.getMessage()));
+            "Unexpected error checking JNI runtime availability: "
+                + sanitizeForLog(e.getMessage()));
         jniAvailable = Boolean.FALSE;
         return false;
       }

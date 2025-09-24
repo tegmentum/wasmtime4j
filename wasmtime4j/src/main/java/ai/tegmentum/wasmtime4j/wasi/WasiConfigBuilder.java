@@ -300,6 +300,68 @@ public interface WasiConfigBuilder {
   WasiConfigBuilder withStrictMode(final boolean strict);
 
   /**
+   * Sets the WASI version to use for the component.
+   *
+   * <p>This determines which WASI interface version is used for component execution. Preview 1
+   * provides traditional POSIX-like operations, while Preview 2 offers component model features and
+   * async operations.
+   *
+   * @param version the WASI version to use
+   * @return this builder for method chaining
+   * @throws IllegalArgumentException if version is null
+   */
+  WasiConfigBuilder withWasiVersion(final WasiVersion version);
+
+  /**
+   * Enables or disables async operations (WASI Preview 2 only).
+   *
+   * <p>When enabled, async operations use non-blocking I/O and return CompletableFuture instances.
+   * This is only available with WASI Preview 2.
+   *
+   * @param asyncOperations true to enable async operations, false for synchronous mode
+   * @return this builder for method chaining
+   */
+  WasiConfigBuilder withAsyncOperations(final boolean asyncOperations);
+
+  /**
+   * Sets the maximum number of concurrent async operations (WASI Preview 2 only).
+   *
+   * <p>This limits the number of async operations that can be running concurrently to prevent
+   * resource exhaustion. Only applies when async operations are enabled.
+   *
+   * @param maxOperations maximum concurrent async operations
+   * @return this builder for method chaining
+   * @throws IllegalArgumentException if maxOperations is negative or zero
+   */
+  WasiConfigBuilder withMaxAsyncOperations(final int maxOperations);
+
+  /**
+   * Removes the limit on concurrent async operations.
+   *
+   * @return this builder for method chaining
+   */
+  WasiConfigBuilder withoutMaxAsyncOperations();
+
+  /**
+   * Sets the default timeout for async operations (WASI Preview 2 only).
+   *
+   * <p>Async operations that exceed this timeout will be cancelled. This provides protection
+   * against hanging operations.
+   *
+   * @param timeout default timeout for async operations
+   * @return this builder for method chaining
+   * @throws IllegalArgumentException if timeout is null or negative
+   */
+  WasiConfigBuilder withAsyncOperationTimeout(final Duration timeout);
+
+  /**
+   * Removes the timeout for async operations, allowing unlimited execution time.
+   *
+   * @return this builder for method chaining
+   */
+  WasiConfigBuilder withoutAsyncOperationTimeout();
+
+  /**
    * Creates the configured WASI configuration.
    *
    * <p>This method creates an immutable WasiConfig instance with all the configured settings. The

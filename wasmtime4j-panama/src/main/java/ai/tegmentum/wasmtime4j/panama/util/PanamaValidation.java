@@ -197,4 +197,16 @@ public final class PanamaValidation {
     }
     return value;
   }
+
+  /**
+   * Validates that a port number is valid (between 1 and 65535).
+   *
+   * @param port the port number to validate
+   * @throws IllegalArgumentException if the port is not valid
+   */
+  public static void requireValidPort(final int port) {
+    if (port < 1 || port > 65535) {
+      throw new IllegalArgumentException("Port number must be between 1 and 65535, got: " + port);
+    }
+  }
 }

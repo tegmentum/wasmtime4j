@@ -33,7 +33,6 @@
             <groupId>ai.tegmentum</groupId>
             <artifactId>wasmtime4j</artifactId>
             <version>${project.version}</version>
-            <scope>test</scope>
         </dependency>
         <!-- Temporarily commented out due to POM issues
         <dependency>

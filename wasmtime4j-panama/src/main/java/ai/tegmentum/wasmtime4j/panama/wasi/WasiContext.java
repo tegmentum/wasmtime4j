@@ -3,6 +3,7 @@ package ai.tegmentum.wasmtime4j.panama.wasi;
 import ai.tegmentum.wasmtime4j.panama.ArenaResourceManager;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaResourceTracker;
 import ai.tegmentum.wasmtime4j.panama.wasi.permission.WasiPermissionManager;
+import ai.tegmentum.wasmtime4j.panama.wasi.security.WasiSecurityValidator;
 import java.lang.foreign.MemorySegment;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -48,6 +49,8 @@ public final class WasiContext implements AutoCloseable {
   /** Permission manager for controlling WASI capabilities. */
   private final WasiPermissionManager permissionManager;
 
+  /** Security validator for preventing unauthorized access. */
+  private final WasiSecurityValidator securityValidator;
 
   /** Environment variables for the WASI context. */
   private final Map<String, String> environment;
@@ -90,6 +93,7 @@ public final class WasiContext implements AutoCloseable {
     this.resourceManager = resourceManager;
     this.resourceTracker = new PanamaResourceTracker();
     this.permissionManager = builder.getPermissionManager();
+    this.securityValidator = builder.getSecurityValidator();
     this.environment = new ConcurrentHashMap<>(builder.getEnvironment());
     this.arguments = builder.getArguments().toArray(new String[0]);
     this.preopenedDirectories = new ConcurrentHashMap<>(builder.getPreopenedDirectories());
@@ -127,6 +131,16 @@ public final class WasiContext implements AutoCloseable {
     return permissionManager;
   }
 
+  /**
+   * Gets the security validator for this WASI context.
+   *
+   * @return the security validator
+   * @throws IllegalStateException if the context is closed
+   */
+  public WasiSecurityValidator getSecurityValidator() {
+    ensureNotClosed();
+    return securityValidator;
+  }
 
   /**
    * Gets an environment variable value.

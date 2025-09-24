@@ -16,6 +16,8 @@
 
 package ai.tegmentum.wasmtime4j.panama;
 
+import ai.tegmentum.wasmtime4j.Memory64Instruction;
+import ai.tegmentum.wasmtime4j.Memory64InstructionHandler;
 import ai.tegmentum.wasmtime4j.WasmMemory;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.lang.foreign.FunctionDescriptor;
@@ -51,6 +53,9 @@ public final class PanamaMemory implements WasmMemory {
 
   // Memory state
   private volatile boolean closed = false;
+
+  // Memory64 instruction support
+  private final Memory64InstructionHandler instructionHandler = new Memory64InstructionHandler();
 
   /**
    * Creates a new Panama memory instance using Stream 1 & 2 infrastructure.
@@ -114,8 +119,27 @@ public final class PanamaMemory implements WasmMemory {
 
   @Override
   public int getMaxSize() {
-    // TODO: Implement max size query - return -1 for unlimited for now
-    return -1;
+    ensureNotClosed();
+
+    try {
+      // Get maximum memory size through optimized FFI call
+      MethodHandle memoryMaxSize =
+          nativeFunctions.getFunction(
+              "wasmtime_memory_max_size",
+              FunctionDescriptor.of(
+                  ValueLayout.JAVA_LONG, ValueLayout.ADDRESS // memory
+                  ));
+
+      long maxSizePages = (long) memoryMaxSize.invoke(memoryResource.getNativePointer());
+      if (maxSizePages == -1 || maxSizePages > Integer.MAX_VALUE) {
+        return -1; // Unlimited or exceeds 32-bit range
+      }
+      return (int) maxSizePages;
+
+    } catch (Throwable e) {
+      // Return -1 for unlimited if query fails
+      return -1;
+    }
   }
 
   @Override
@@ -477,5 +501,1104 @@ public final class PanamaMemory implements WasmMemory {
     if (closed) {
       throw new IllegalStateException("Memory has been closed");
     }
+  }
+
+  // Bulk Memory Operations Implementation
+
+  @Override
+  public void copy(final int destOffset, final int srcOffset, final int length) {
+    ensureNotClosed();
+
+    if (destOffset < 0) {
+      throw new IndexOutOfBoundsException("destOffset cannot be negative: " + destOffset);
+    }
+    if (srcOffset < 0) {
+      throw new IndexOutOfBoundsException("srcOffset cannot be negative: " + srcOffset);
+    }
+    if (length < 0) {
+      throw new IndexOutOfBoundsException("length cannot be negative: " + length);
+    }
+
+    try {
+      // Get direct memory access for zero-copy bulk operations
+      MemorySegment memoryData = getDirectMemoryAccess();
+
+      // Bounds checking for memory safety
+      int currentSizePages = getSize();
+      long memorySize = currentSizePages * 65536L;
+      if (destOffset + length > memorySize || srcOffset + length > memorySize) {
+        throw new IndexOutOfBoundsException(
+            "Copy operation exceeds memory bounds: dest="
+                + destOffset
+                + ", src="
+                + srcOffset
+                + ", length="
+                + length
+                + ", memory size="
+                + memorySize);
+      }
+
+      // Perform efficient memory copy using MemorySegment
+      MemorySegment sourceSegment = memoryData.asSlice(srcOffset, length);
+      MemorySegment destSegment = memoryData.asSlice(destOffset, length);
+      destSegment.copyFrom(sourceSegment);
+
+    } catch (IndexOutOfBoundsException e) {
+      throw e;
+    } catch (Throwable e) {
+      throw new RuntimeException("Memory copy failed", e);
+    }
+  }
+
+  @Override
+  public void fill(final int offset, final byte value, final int length) {
+    ensureNotClosed();
+
+    if (offset < 0) {
+      throw new IndexOutOfBoundsException("offset cannot be negative: " + offset);
+    }
+    if (length < 0) {
+      throw new IndexOutOfBoundsException("length cannot be negative: " + length);
+    }
+
+    try {
+      // Get direct memory access
+      MemorySegment memoryData = getDirectMemoryAccess();
+
+      // Bounds checking for memory safety
+      int currentSizePages = getSize();
+      long memorySize = currentSizePages * 65536L;
+      if (offset + length > memorySize) {
+        throw new IndexOutOfBoundsException(
+            "Fill operation exceeds memory bounds: offset="
+                + offset
+                + ", length="
+                + length
+                + ", memory size="
+                + memorySize);
+      }
+
+      // Perform efficient memory fill using MemorySegment
+      MemorySegment fillSegment = memoryData.asSlice(offset, length);
+      fillSegment.fill(value);
+
+    } catch (IndexOutOfBoundsException e) {
+      throw e;
+    } catch (Throwable e) {
+      throw new RuntimeException("Memory fill failed", e);
+    }
+  }
+
+  @Override
+  public void init(
+      final int destOffset, final int dataSegmentIndex, final int srcOffset, final int length) {
+    ensureNotClosed();
+
+    if (destOffset < 0) {
+      throw new IndexOutOfBoundsException("destOffset cannot be negative: " + destOffset);
+    }
+    if (dataSegmentIndex < 0) {
+      throw new IndexOutOfBoundsException(
+          "dataSegmentIndex cannot be negative: " + dataSegmentIndex);
+    }
+    if (srcOffset < 0) {
+      throw new IndexOutOfBoundsException("srcOffset cannot be negative: " + srcOffset);
+    }
+    if (length < 0) {
+      throw new IndexOutOfBoundsException("length cannot be negative: " + length);
+    }
+
+    try {
+      // Call memory init through FFI
+      MethodHandle memoryInit =
+          nativeFunctions.getFunction(
+              "wasmtime_memory_init",
+              FunctionDescriptor.ofVoid(
+                  ValueLayout.ADDRESS, // memory
+                  ValueLayout.JAVA_INT, // dest_offset
+                  ValueLayout.JAVA_INT, // data_segment_index
+                  ValueLayout.JAVA_INT, // src_offset
+                  ValueLayout.JAVA_INT // length
+                  ));
+
+      memoryInit.invoke(
+          memoryResource.getNativePointer(), destOffset, dataSegmentIndex, srcOffset, length);
+
+    } catch (IndexOutOfBoundsException e) {
+      throw e;
+    } catch (Throwable e) {
+      throw new RuntimeException("Memory init failed", e);
+    }
+  }
+
+  @Override
+  public void dropDataSegment(final int dataSegmentIndex) {
+    ensureNotClosed();
+
+    if (dataSegmentIndex < 0) {
+      throw new IndexOutOfBoundsException(
+          "dataSegmentIndex cannot be negative: " + dataSegmentIndex);
+    }
+
+    try {
+      // Call data drop through FFI
+      MethodHandle dataDrop =
+          nativeFunctions.getFunction(
+              "wasmtime_data_drop",
+              FunctionDescriptor.ofVoid(
+                  ValueLayout.ADDRESS, // memory (or store context)
+                  ValueLayout.JAVA_INT // data_segment_index
+                  ));
+
+      dataDrop.invoke(memoryResource.getNativePointer(), dataSegmentIndex);
+
+    } catch (IndexOutOfBoundsException e) {
+      throw e;
+    } catch (Throwable e) {
+      throw new RuntimeException("Data segment drop failed", e);
+    }
+  }
+
+  // Shared Memory Operations Implementation
+
+  @Override
+  public boolean isShared() {
+    ensureNotClosed();
+
+    try {
+      // Call wasmtime_memory_is_shared through FFI
+      MethodHandle isSharedHandle =
+          nativeFunctions.getFunction(
+              "wasmtime_memory_is_shared",
+              FunctionDescriptor.of(
+                  ValueLayout.JAVA_BOOLEAN, ValueLayout.ADDRESS // memory
+                  ));
+
+      return (boolean) isSharedHandle.invoke(memoryResource.getNativePointer());
+
+    } catch (Throwable e) {
+      // Default to non-shared if query fails
+      return false;
+    }
+  }
+
+  @Override
+  public int atomicCompareAndSwapInt(final int offset, final int expected, final int newValue) {
+    ensureNotClosed();
+    checkSharedMemory();
+    checkAligned(offset, 4);
+    validateMemoryBounds(offset, 4);
+
+    try {
+      MethodHandle casHandle =
+          nativeFunctions.getFunction(
+              "wasmtime_memory_atomic_cas_i32",
+              FunctionDescriptor.of(
+                  ValueLayout.JAVA_INT,
+                  ValueLayout.ADDRESS, // memory
+                  ValueLayout.JAVA_INT, // offset
+                  ValueLayout.JAVA_INT, // expected
+                  ValueLayout.JAVA_INT // new_value
+                  ));
+
+      return (int) casHandle.invoke(memoryResource.getNativePointer(), offset, expected, newValue);
+
+    } catch (Throwable e) {
+      throw new RuntimeException("Atomic compare-and-swap failed", e);
+    }
+  }
+
+  @Override
+  public long atomicCompareAndSwapLong(final int offset, final long expected, final long newValue) {
+    ensureNotClosed();
+    checkSharedMemory();
+    checkAligned(offset, 8);
+    validateMemoryBounds(offset, 8);
+
+    try {
+      MethodHandle casHandle =
+          nativeFunctions.getFunction(
+              "wasmtime_memory_atomic_cas_i64",
+              FunctionDescriptor.of(
+                  ValueLayout.JAVA_LONG,
+                  ValueLayout.ADDRESS, // memory
+                  ValueLayout.JAVA_INT, // offset
+                  ValueLayout.JAVA_LONG, // expected
+                  ValueLayout.JAVA_LONG // new_value
+                  ));
+
+      return (long) casHandle.invoke(memoryResource.getNativePointer(), offset, expected, newValue);
+
+    } catch (Throwable e) {
+      throw new RuntimeException("Atomic compare-and-swap failed", e);
+    }
+  }
+
+  @Override
+  public int atomicLoadInt(final int offset) {
+    ensureNotClosed();
+    checkSharedMemory();
+    checkAligned(offset, 4);
+    validateMemoryBounds(offset, 4);
+
+    try {
+      MethodHandle loadHandle =
+          nativeFunctions.getFunction(
+              "wasmtime_memory_atomic_load_i32",
+              FunctionDescriptor.of(
+                  ValueLayout.JAVA_INT,
+                  ValueLayout.ADDRESS, // memory
+                  ValueLayout.JAVA_INT // offset
+                  ));
+
+      return (int) loadHandle.invoke(memoryResource.getNativePointer(), offset);
+
+    } catch (Throwable e) {
+      throw new RuntimeException("Atomic load failed", e);
+    }
+  }
+
+  @Override
+  public long atomicLoadLong(final int offset) {
+    ensureNotClosed();
+    checkSharedMemory();
+    checkAligned(offset, 8);
+    validateMemoryBounds(offset, 8);
+
+    try {
+      MethodHandle loadHandle =
+          nativeFunctions.getFunction(
+              "wasmtime_memory_atomic_load_i64",
+              FunctionDescriptor.of(
+                  ValueLayout.JAVA_LONG,
+                  ValueLayout.ADDRESS, // memory
+                  ValueLayout.JAVA_INT // offset
+                  ));
+
+      return (long) loadHandle.invoke(memoryResource.getNativePointer(), offset);
+
+    } catch (Throwable e) {
+      throw new RuntimeException("Atomic load failed", e);
+    }
+  }
+
+  @Override
+  public void atomicStoreInt(final int offset, final int value) {
+    ensureNotClosed();
+    checkSharedMemory();
+    checkAligned(offset, 4);
+    validateMemoryBounds(offset, 4);
+
+    try {
+      MethodHandle storeHandle =
+          nativeFunctions.getFunction(
+              "wasmtime_memory_atomic_store_i32",
+              FunctionDescriptor.ofVoid(
+                  ValueLayout.ADDRESS, // memory
+                  ValueLayout.JAVA_INT, // offset
+                  ValueLayout.JAVA_INT // value
+                  ));
+
+      storeHandle.invoke(memoryResource.getNativePointer(), offset, value);
+
+    } catch (Throwable e) {
+      throw new RuntimeException("Atomic store failed", e);
+    }
+  }
+
+  @Override
+  public void atomicStoreLong(final int offset, final long value) {
+    ensureNotClosed();
+    checkSharedMemory();
+    checkAligned(offset, 8);
+    validateMemoryBounds(offset, 8);
+
+    try {
+      MethodHandle storeHandle =
+          nativeFunctions.getFunction(
+              "wasmtime_memory_atomic_store_i64",
+              FunctionDescriptor.ofVoid(
+                  ValueLayout.ADDRESS, // memory
+                  ValueLayout.JAVA_INT, // offset
+                  ValueLayout.JAVA_LONG // value
+                  ));
+
+      storeHandle.invoke(memoryResource.getNativePointer(), offset, value);
+
+    } catch (Throwable e) {
+      throw new RuntimeException("Atomic store failed", e);
+    }
+  }
+
+  @Override
+  public int atomicAddInt(final int offset, final int value) {
+    ensureNotClosed();
+    checkSharedMemory();
+    checkAligned(offset, 4);
+    validateMemoryBounds(offset, 4);
+
+    try {
+      MethodHandle addHandle =
+          nativeFunctions.getFunction(
+              "wasmtime_memory_atomic_add_i32",
+              FunctionDescriptor.of(
+                  ValueLayout.JAVA_INT,
+                  ValueLayout.ADDRESS, // memory
+                  ValueLayout.JAVA_INT, // offset
+                  ValueLayout.JAVA_INT // value
+                  ));
+
+      return (int) addHandle.invoke(memoryResource.getNativePointer(), offset, value);
+
+    } catch (Throwable e) {
+      throw new RuntimeException("Atomic add failed", e);
+    }
+  }
+
+  @Override
+  public long atomicAddLong(final int offset, final long value) {
+    ensureNotClosed();
+    checkSharedMemory();
+    checkAligned(offset, 8);
+    validateMemoryBounds(offset, 8);
+
+    try {
+      MethodHandle addHandle =
+          nativeFunctions.getFunction(
+              "wasmtime_memory_atomic_add_i64",
+              FunctionDescriptor.of(
+                  ValueLayout.JAVA_LONG,
+                  ValueLayout.ADDRESS, // memory
+                  ValueLayout.JAVA_INT, // offset
+                  ValueLayout.JAVA_LONG // value
+                  ));
+
+      return (long) addHandle.invoke(memoryResource.getNativePointer(), offset, value);
+
+    } catch (Throwable e) {
+      throw new RuntimeException("Atomic add failed", e);
+    }
+  }
+
+  @Override
+  public int atomicAndInt(final int offset, final int value) {
+    ensureNotClosed();
+    checkSharedMemory();
+    checkAligned(offset, 4);
+    validateMemoryBounds(offset, 4);
+
+    try {
+      MethodHandle andHandle =
+          nativeFunctions.getFunction(
+              "wasmtime_memory_atomic_and_i32",
+              FunctionDescriptor.of(
+                  ValueLayout.JAVA_INT,
+                  ValueLayout.ADDRESS, // memory
+                  ValueLayout.JAVA_INT, // offset
+                  ValueLayout.JAVA_INT // value
+                  ));
+
+      return (int) andHandle.invoke(memoryResource.getNativePointer(), offset, value);
+
+    } catch (Throwable e) {
+      throw new RuntimeException("Atomic AND failed", e);
+    }
+  }
+
+  @Override
+  public int atomicOrInt(final int offset, final int value) {
+    ensureNotClosed();
+    checkSharedMemory();
+    checkAligned(offset, 4);
+    validateMemoryBounds(offset, 4);
+
+    try {
+      MethodHandle orHandle =
+          nativeFunctions.getFunction(
+              "wasmtime_memory_atomic_or_i32",
+              FunctionDescriptor.of(
+                  ValueLayout.JAVA_INT,
+                  ValueLayout.ADDRESS, // memory
+                  ValueLayout.JAVA_INT, // offset
+                  ValueLayout.JAVA_INT // value
+                  ));
+
+      return (int) orHandle.invoke(memoryResource.getNativePointer(), offset, value);
+
+    } catch (Throwable e) {
+      throw new RuntimeException("Atomic OR failed", e);
+    }
+  }
+
+  @Override
+  public int atomicXorInt(final int offset, final int value) {
+    ensureNotClosed();
+    checkSharedMemory();
+    checkAligned(offset, 4);
+    validateMemoryBounds(offset, 4);
+
+    try {
+      MethodHandle xorHandle =
+          nativeFunctions.getFunction(
+              "wasmtime_memory_atomic_xor_i32",
+              FunctionDescriptor.of(
+                  ValueLayout.JAVA_INT,
+                  ValueLayout.ADDRESS, // memory
+                  ValueLayout.JAVA_INT, // offset
+                  ValueLayout.JAVA_INT // value
+                  ));
+
+      return (int) xorHandle.invoke(memoryResource.getNativePointer(), offset, value);
+
+    } catch (Throwable e) {
+      throw new RuntimeException("Atomic XOR failed", e);
+    }
+  }
+
+  @Override
+  public void atomicFence() {
+    ensureNotClosed();
+    checkSharedMemory();
+
+    try {
+      MethodHandle fenceHandle =
+          nativeFunctions.getFunction(
+              "wasmtime_memory_atomic_fence",
+              FunctionDescriptor.ofVoid(
+                  ValueLayout.ADDRESS // memory
+                  ));
+
+      fenceHandle.invoke(memoryResource.getNativePointer());
+
+    } catch (Throwable e) {
+      throw new RuntimeException("Atomic fence failed", e);
+    }
+  }
+
+  @Override
+  public int atomicNotify(final int offset, final int count) {
+    ensureNotClosed();
+    checkSharedMemory();
+    checkAligned(offset, 4);
+    validateMemoryBounds(offset, 4);
+
+    if (count < 0) {
+      throw new IllegalArgumentException("Count cannot be negative: " + count);
+    }
+
+    try {
+      MethodHandle notifyHandle =
+          nativeFunctions.getFunction(
+              "wasmtime_memory_atomic_notify",
+              FunctionDescriptor.of(
+                  ValueLayout.JAVA_INT,
+                  ValueLayout.ADDRESS, // memory
+                  ValueLayout.JAVA_INT, // offset
+                  ValueLayout.JAVA_INT // count
+                  ));
+
+      return (int) notifyHandle.invoke(memoryResource.getNativePointer(), offset, count);
+
+    } catch (Throwable e) {
+      throw new RuntimeException("Atomic notify failed", e);
+    }
+  }
+
+  @Override
+  public int atomicWait32(final int offset, final int expected, final long timeoutNanos) {
+    ensureNotClosed();
+    checkSharedMemory();
+    checkAligned(offset, 4);
+    validateMemoryBounds(offset, 4);
+
+    try {
+      MethodHandle waitHandle =
+          nativeFunctions.getFunction(
+              "wasmtime_memory_atomic_wait32",
+              FunctionDescriptor.of(
+                  ValueLayout.JAVA_INT,
+                  ValueLayout.ADDRESS, // memory
+                  ValueLayout.JAVA_INT, // offset
+                  ValueLayout.JAVA_INT, // expected
+                  ValueLayout.JAVA_LONG // timeout_nanos
+                  ));
+
+      return (int)
+          waitHandle.invoke(memoryResource.getNativePointer(), offset, expected, timeoutNanos);
+
+    } catch (Throwable e) {
+      throw new RuntimeException("Atomic wait failed", e);
+    }
+  }
+
+  @Override
+  public int atomicWait64(final int offset, final long expected, final long timeoutNanos) {
+    ensureNotClosed();
+    checkSharedMemory();
+    checkAligned(offset, 8);
+    validateMemoryBounds(offset, 8);
+
+    try {
+      MethodHandle waitHandle =
+          nativeFunctions.getFunction(
+              "wasmtime_memory_atomic_wait64",
+              FunctionDescriptor.of(
+                  ValueLayout.JAVA_INT,
+                  ValueLayout.ADDRESS, // memory
+                  ValueLayout.JAVA_INT, // offset
+                  ValueLayout.JAVA_LONG, // expected
+                  ValueLayout.JAVA_LONG // timeout_nanos
+                  ));
+
+      return (int)
+          waitHandle.invoke(memoryResource.getNativePointer(), offset, expected, timeoutNanos);
+
+    } catch (Throwable e) {
+      throw new RuntimeException("Atomic wait failed", e);
+    }
+  }
+
+  // Helper methods for shared memory operations
+
+  /**
+   * Checks if this memory is shared, throwing an exception if not.
+   *
+   * @throws IllegalStateException if this memory is not shared
+   */
+  private void checkSharedMemory() {
+    if (!isShared()) {
+      throw new IllegalStateException("Operation requires shared memory");
+    }
+  }
+
+  /**
+   * Checks if an offset is properly aligned for the given alignment requirement.
+   *
+   * @param offset the offset to check
+   * @param alignment the required alignment (must be a power of 2)
+   * @throws IllegalArgumentException if offset is not properly aligned
+   */
+  private void checkAligned(final int offset, final int alignment) {
+    if ((offset & (alignment - 1)) != 0) {
+      throw new IllegalArgumentException(
+          String.format("Offset %d is not aligned to %d-byte boundary", offset, alignment));
+    }
+  }
+
+  /**
+   * Validates memory bounds for atomic operations.
+   *
+   * @param offset the memory offset
+   * @param size the operation size in bytes
+   * @throws IndexOutOfBoundsException if the operation would exceed memory bounds
+   */
+  private void validateMemoryBounds(final int offset, final int size) {
+    if (offset < 0) {
+      throw new IndexOutOfBoundsException("Offset cannot be negative: " + offset);
+    }
+
+    try {
+      int currentSizePages = getSize();
+      long memorySize = currentSizePages * 65536L;
+      if (offset + size > memorySize) {
+        throw new IndexOutOfBoundsException(
+            "Operation at offset "
+                + offset
+                + " with size "
+                + size
+                + " exceeds memory size "
+                + memorySize);
+      }
+    } catch (Exception e) {
+      throw new IndexOutOfBoundsException("Failed to validate memory bounds: " + e.getMessage());
+    }
+  }
+
+  // 64-bit Memory Operations Implementation
+
+  @Override
+  public long getSize64() {
+    ensureNotClosed();
+
+    try {
+      // Get memory size through optimized FFI call
+      MethodHandle memorySize =
+          nativeFunctions.getFunction(
+              "wasmtime_memory_size",
+              FunctionDescriptor.of(
+                  ValueLayout.JAVA_LONG, ValueLayout.ADDRESS // memory
+                  ));
+
+      long sizeInBytes = (long) memorySize.invoke(memoryResource.getNativePointer());
+      return sizeInBytes / 65536L; // Convert bytes to pages
+
+    } catch (Throwable e) {
+      // Return current size from 32-bit method as fallback
+      return getSize();
+    }
+  }
+
+  @Override
+  public long getMaxSize64() {
+    ensureNotClosed();
+
+    try {
+      // Get maximum memory size through optimized FFI call
+      MethodHandle memoryMaxSize =
+          nativeFunctions.getFunction(
+              "wasmtime_memory_max_size",
+              FunctionDescriptor.of(
+                  ValueLayout.JAVA_LONG, ValueLayout.ADDRESS // memory
+                  ));
+
+      return (long) memoryMaxSize.invoke(memoryResource.getNativePointer());
+
+    } catch (Throwable e) {
+      // Return -1 for unlimited if query fails
+      return -1;
+    }
+  }
+
+  @Override
+  public long grow64(final long pages) {
+    ensureNotClosed();
+
+    if (pages < 0) {
+      return -1;
+    }
+
+    try {
+      // Get current size before growth
+      long previousSize = getSize64();
+
+      // Grow memory through optimized FFI call
+      MethodHandle memoryGrow =
+          nativeFunctions.getFunction(
+              "wasmtime_memory_grow",
+              FunctionDescriptor.of(
+                  ValueLayout.JAVA_BOOLEAN,
+                  ValueLayout.ADDRESS, // memory
+                  ValueLayout.JAVA_LONG // delta_pages
+                  ));
+
+      boolean success = (boolean) memoryGrow.invoke(memoryResource.getNativePointer(), pages);
+
+      if (success) {
+        LOGGER.fine("Successfully grew memory by " + pages + " pages");
+        return previousSize;
+      } else {
+        return -1;
+      }
+
+    } catch (Throwable e) {
+      return -1;
+    }
+  }
+
+  @Override
+  public byte readByte64(final long offset) {
+    ensureNotClosed();
+
+    if (offset < 0) {
+      throw new IndexOutOfBoundsException("Offset cannot be negative: " + offset);
+    }
+
+    try {
+      // Get direct memory access through FFI
+      MemorySegment memoryData = getDirectMemoryAccess();
+
+      // Bounds checking for memory safety - get size in bytes
+      long currentSizePages = getSize64();
+      long memorySize = currentSizePages * 65536L;
+      if (offset >= memorySize) {
+        throw new IndexOutOfBoundsException(
+            "Offset " + offset + " exceeds memory size " + memorySize);
+      }
+
+      // Direct memory access with zero-copy
+      return memoryData.get(ValueLayout.JAVA_BYTE, offset);
+
+    } catch (IndexOutOfBoundsException e) {
+      throw e;
+    } catch (Throwable e) {
+      throw new RuntimeException("Memory read failed", e);
+    }
+  }
+
+  @Override
+  public void writeByte64(final long offset, final byte value) {
+    ensureNotClosed();
+
+    if (offset < 0) {
+      throw new IndexOutOfBoundsException("Offset cannot be negative: " + offset);
+    }
+
+    try {
+      // Get direct memory access through FFI
+      MemorySegment memoryData = getDirectMemoryAccess();
+
+      // Bounds checking for memory safety - get size in bytes
+      long currentSizePages = getSize64();
+      long memorySize = currentSizePages * 65536L;
+      if (offset >= memorySize) {
+        throw new IndexOutOfBoundsException(
+            "Offset " + offset + " exceeds memory size " + memorySize);
+      }
+
+      // Direct memory access with zero-copy
+      memoryData.set(ValueLayout.JAVA_BYTE, offset, value);
+
+    } catch (IndexOutOfBoundsException e) {
+      throw e;
+    } catch (Throwable e) {
+      throw new RuntimeException("Memory write failed", e);
+    }
+  }
+
+  @Override
+  public void readBytes64(
+      final long offset, final byte[] dest, final int destOffset, final int length) {
+    ensureNotClosed();
+
+    if (offset < 0) {
+      throw new IndexOutOfBoundsException("Offset cannot be negative: " + offset);
+    }
+    Objects.requireNonNull(dest, "Destination array cannot be null");
+    if (destOffset < 0) {
+      throw new IndexOutOfBoundsException("Destination offset cannot be negative: " + destOffset);
+    }
+    if (length < 0) {
+      throw new IndexOutOfBoundsException("Length cannot be negative: " + length);
+    }
+
+    if (destOffset + length > dest.length) {
+      throw new IndexOutOfBoundsException(
+          "Buffer overflow: destOffset="
+              + destOffset
+              + ", length="
+              + length
+              + ", dest.length="
+              + dest.length);
+    }
+
+    try {
+      // Get direct memory access through FFI
+      MemorySegment memoryData = getDirectMemoryAccess();
+
+      // Bounds checking for memory safety - get size in bytes
+      long currentSizePages = getSize64();
+      long memorySize = currentSizePages * 65536L;
+      if (offset + length > memorySize) {
+        throw new IndexOutOfBoundsException(
+            "Read overflow: offset="
+                + offset
+                + ", length="
+                + length
+                + ", memory size="
+                + memorySize);
+      }
+
+      // Zero-copy bulk memory read using MemorySegment
+      MemorySegment bufferSegment = MemorySegment.ofArray(dest);
+      MemorySegment sourceSegment = memoryData.asSlice(offset, length);
+      bufferSegment.asSlice(destOffset, length).copyFrom(sourceSegment);
+
+    } catch (IndexOutOfBoundsException e) {
+      throw e;
+    } catch (Throwable e) {
+      throw new RuntimeException("Memory read failed", e);
+    }
+  }
+
+  @Override
+  public void writeBytes64(
+      final long offset, final byte[] src, final int srcOffset, final int length) {
+    ensureNotClosed();
+
+    if (offset < 0) {
+      throw new IndexOutOfBoundsException("Offset cannot be negative: " + offset);
+    }
+    Objects.requireNonNull(src, "Source array cannot be null");
+    if (srcOffset < 0) {
+      throw new IndexOutOfBoundsException("Source offset cannot be negative: " + srcOffset);
+    }
+    if (length < 0) {
+      throw new IndexOutOfBoundsException("Length cannot be negative: " + length);
+    }
+
+    if (srcOffset + length > src.length) {
+      throw new IndexOutOfBoundsException(
+          "Buffer overflow: srcOffset="
+              + srcOffset
+              + ", length="
+              + length
+              + ", src.length="
+              + src.length);
+    }
+
+    try {
+      // Get direct memory access through FFI
+      MemorySegment memoryData = getDirectMemoryAccess();
+
+      // Bounds checking for memory safety - get size in bytes
+      long currentSizePages = getSize64();
+      long memorySize = currentSizePages * 65536L;
+      if (offset + length > memorySize) {
+        throw new IndexOutOfBoundsException(
+            "Write overflow: offset="
+                + offset
+                + ", length="
+                + length
+                + ", memory size="
+                + memorySize);
+      }
+
+      // Zero-copy bulk memory write using MemorySegment
+      MemorySegment bufferSegment = MemorySegment.ofArray(src);
+      MemorySegment sourceSegment = bufferSegment.asSlice(srcOffset, length);
+      MemorySegment targetSegment = memoryData.asSlice(offset, length);
+      targetSegment.copyFrom(sourceSegment);
+
+    } catch (IndexOutOfBoundsException e) {
+      throw e;
+    } catch (Throwable e) {
+      throw new RuntimeException("Memory write failed", e);
+    }
+  }
+
+  @Override
+  public void copy64(final long destOffset, final long srcOffset, final long length) {
+    ensureNotClosed();
+
+    if (destOffset < 0) {
+      throw new IndexOutOfBoundsException("destOffset cannot be negative: " + destOffset);
+    }
+    if (srcOffset < 0) {
+      throw new IndexOutOfBoundsException("srcOffset cannot be negative: " + srcOffset);
+    }
+    if (length < 0) {
+      throw new IndexOutOfBoundsException("length cannot be negative: " + length);
+    }
+
+    try {
+      // Get direct memory access for zero-copy bulk operations
+      MemorySegment memoryData = getDirectMemoryAccess();
+
+      // Bounds checking for memory safety
+      long currentSizePages = getSize64();
+      long memorySize = currentSizePages * 65536L;
+      if (destOffset + length > memorySize || srcOffset + length > memorySize) {
+        throw new IndexOutOfBoundsException(
+            "Copy operation exceeds memory bounds: dest="
+                + destOffset
+                + ", src="
+                + srcOffset
+                + ", length="
+                + length
+                + ", memory size="
+                + memorySize);
+      }
+
+      // Perform efficient memory copy using MemorySegment
+      MemorySegment sourceSegment = memoryData.asSlice(srcOffset, length);
+      MemorySegment destSegment = memoryData.asSlice(destOffset, length);
+      destSegment.copyFrom(sourceSegment);
+
+    } catch (IndexOutOfBoundsException e) {
+      throw e;
+    } catch (Throwable e) {
+      throw new RuntimeException("Memory copy failed", e);
+    }
+  }
+
+  @Override
+  public void fill64(final long offset, final byte value, final long length) {
+    ensureNotClosed();
+
+    if (offset < 0) {
+      throw new IndexOutOfBoundsException("offset cannot be negative: " + offset);
+    }
+    if (length < 0) {
+      throw new IndexOutOfBoundsException("length cannot be negative: " + length);
+    }
+
+    try {
+      // Get direct memory access
+      MemorySegment memoryData = getDirectMemoryAccess();
+
+      // Bounds checking for memory safety
+      long currentSizePages = getSize64();
+      long memorySize = currentSizePages * 65536L;
+      if (offset + length > memorySize) {
+        throw new IndexOutOfBoundsException(
+            "Fill operation exceeds memory bounds: offset="
+                + offset
+                + ", length="
+                + length
+                + ", memory size="
+                + memorySize);
+      }
+
+      // Perform efficient memory fill using MemorySegment
+      MemorySegment fillSegment = memoryData.asSlice(offset, length);
+      fillSegment.fill(value);
+
+    } catch (IndexOutOfBoundsException e) {
+      throw e;
+    } catch (Throwable e) {
+      throw new RuntimeException("Memory fill failed", e);
+    }
+  }
+
+  @Override
+  public void init64(
+      final long destOffset, final int dataSegmentIndex, final long srcOffset, final long length) {
+    ensureNotClosed();
+
+    if (destOffset < 0) {
+      throw new IndexOutOfBoundsException("destOffset cannot be negative: " + destOffset);
+    }
+    if (dataSegmentIndex < 0) {
+      throw new IndexOutOfBoundsException(
+          "dataSegmentIndex cannot be negative: " + dataSegmentIndex);
+    }
+    if (srcOffset < 0) {
+      throw new IndexOutOfBoundsException("srcOffset cannot be negative: " + srcOffset);
+    }
+    if (length < 0) {
+      throw new IndexOutOfBoundsException("length cannot be negative: " + length);
+    }
+
+    try {
+      // Call memory init through FFI with 64-bit parameters
+      MethodHandle memoryInit =
+          nativeFunctions.getFunction(
+              "wasmtime_memory_init64",
+              FunctionDescriptor.ofVoid(
+                  ValueLayout.ADDRESS, // memory
+                  ValueLayout.JAVA_LONG, // dest_offset
+                  ValueLayout.JAVA_INT, // data_segment_index
+                  ValueLayout.JAVA_LONG, // src_offset
+                  ValueLayout.JAVA_LONG // length
+                  ));
+
+      memoryInit.invoke(
+          memoryResource.getNativePointer(), destOffset, dataSegmentIndex, srcOffset, length);
+
+    } catch (IndexOutOfBoundsException e) {
+      throw e;
+    } catch (Throwable e) {
+      throw new RuntimeException("Memory init failed", e);
+    }
+  }
+
+  @Override
+  public boolean supports64BitAddressing() {
+    ensureNotClosed();
+
+    try {
+      // Check if this memory supports 64-bit addressing through FFI
+      MethodHandle supports64Bit =
+          nativeFunctions.getFunction(
+              "wasmtime_memory_supports_64bit",
+              FunctionDescriptor.of(
+                  ValueLayout.JAVA_BOOLEAN, ValueLayout.ADDRESS // memory
+                  ));
+
+      return (boolean) supports64Bit.invoke(memoryResource.getNativePointer());
+
+    } catch (Throwable e) {
+      // Default to 32-bit if query fails
+      return false;
+    }
+  }
+
+  @Override
+  public long getSizeInBytes64() {
+    return getSize64() * 65536L;
+  }
+
+  @Override
+  public long getMaxSizeInBytes64() {
+    final long maxPages = getMaxSize64();
+    return maxPages == -1 ? -1 : maxPages * 65536L;
+  }
+
+  // Memory64 Instruction Support
+
+  /**
+   * Executes a Memory64 instruction by opcode.
+   *
+   * @param opcode the instruction opcode
+   * @param offset the memory offset (64-bit)
+   * @param value the value for store operations (ignored for loads)
+   * @return the result value for load operations, or 0 for store/control operations
+   * @throws UnsupportedOperationException if the instruction or memory doesn't support 64-bit
+   * @throws IndexOutOfBoundsException if the operation is out of bounds
+   * @throws IllegalArgumentException if parameters are invalid
+   */
+  public long executeMemory64Instruction(final int opcode, final long offset, final long value) {
+    return instructionHandler.executeByOpcode(opcode, this, offset, value);
+  }
+
+  /**
+   * Executes a Memory64 instruction by mnemonic.
+   *
+   * @param mnemonic the instruction mnemonic
+   * @param offset the memory offset (64-bit)
+   * @param value the value for store operations (ignored for loads)
+   * @return the result value for load operations, or 0 for store/control operations
+   * @throws UnsupportedOperationException if the instruction or memory doesn't support 64-bit
+   * @throws IndexOutOfBoundsException if the operation is out of bounds
+   * @throws IllegalArgumentException if parameters are invalid
+   */
+  public long executeMemory64Instruction(
+      final String mnemonic, final long offset, final long value) {
+    return instructionHandler.executeByMnemonic(mnemonic, this, offset, value);
+  }
+
+  /**
+   * Executes a Memory64 instruction directly.
+   *
+   * @param instruction the instruction to execute
+   * @param offset the memory offset (64-bit)
+   * @param value the value for store operations (ignored for loads)
+   * @return the result value for load operations, or 0 for store/control operations
+   * @throws UnsupportedOperationException if the instruction or memory doesn't support 64-bit
+   * @throws IndexOutOfBoundsException if the operation is out of bounds
+   * @throws IllegalArgumentException if parameters are invalid
+   */
+  public long executeMemory64Instruction(
+      final Memory64Instruction instruction, final long offset, final long value) {
+    return instructionHandler.executeInstruction(instruction, this, offset, value);
+  }
+
+  /**
+   * Checks if a Memory64 instruction is supported by this memory implementation.
+   *
+   * @param opcode the instruction opcode
+   * @return true if the instruction is supported
+   */
+  public boolean isMemory64InstructionSupported(final int opcode) {
+    return supports64BitAddressing() && instructionHandler.isInstructionSupported(opcode);
+  }
+
+  /**
+   * Checks if a Memory64 instruction is supported by this memory implementation.
+   *
+   * @param mnemonic the instruction mnemonic
+   * @return true if the instruction is supported
+   */
+  public boolean isMemory64InstructionSupported(final String mnemonic) {
+    return supports64BitAddressing() && instructionHandler.isInstructionSupported(mnemonic);
+  }
+
+  /**
+   * Gets execution statistics for Memory64 instructions.
+   *
+   * @return the execution statistics
+   */
+  public Memory64InstructionHandler.ExecutionStatistics getMemory64InstructionStatistics() {
+    return instructionHandler.getStatistics();
   }
 }

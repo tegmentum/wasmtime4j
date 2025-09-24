@@ -511,6 +511,282 @@ public final class PanamaTable implements WasmTable, AutoCloseable {
   }
 
   /**
+   * Fills a range of the table with the specified value.
+   *
+   * @param start the starting index
+   * @param count the number of elements to fill
+   * @param value the value to fill with
+   * @throws IllegalArgumentException if start or count is negative
+   * @throws IndexOutOfBoundsException if the range exceeds table bounds
+   * @throws RuntimeException if the fill operation fails
+   */
+  @Override
+  public void fill(final int start, final int count, final Object value) {
+    ensureNotClosed();
+
+    if (start < 0) {
+      throw new IllegalArgumentException("Table start index cannot be negative: " + start);
+    }
+    if (count < 0) {
+      throw new IllegalArgumentException("Table count cannot be negative: " + count);
+    }
+
+    try {
+      final MethodHandle fillHandle = nativeBindings.getTableFill();
+      if (fillHandle == null) {
+        throw new RuntimeException("Table fill function not available in native library");
+      }
+
+      // Bounds check
+      final long tableSize = getSize();
+      if (start + count > tableSize) {
+        throw new IndexOutOfBoundsException(
+            "Fill range [" + start + ", " + (start + count) + ") exceeds table size " + tableSize);
+      }
+
+      // Get table element type for validation
+      final WasmValueType tableElementType = getElementType();
+
+      // Get store handle from parent instance
+      final PanamaStore store = (PanamaStore) parentInstance.getStore();
+      final MemorySegment storePtr = store.getStorePointer();
+
+      // Validate and convert value to native parameters
+      int elementType;
+      int refIdPresent;
+      long refId;
+
+      if (value == null) {
+        elementType = (tableElementType == WasmValueType.FUNCREF) ? 5 : 6;
+        refIdPresent = 0;
+        refId = 0;
+      } else {
+        if (tableElementType == WasmValueType.FUNCREF) {
+          if (value instanceof PanamaFunction panamaFunction) {
+            elementType = 5;
+            refIdPresent = 1;
+            refId = extractFunctionRefId(panamaFunction);
+          } else if (value instanceof WasmFunction) {
+            throw new IllegalArgumentException(
+                "Cannot fill with non-Panama function. Value must be null or a PanamaFunction"
+                    + " instance.");
+          } else {
+            throw new IllegalArgumentException(
+                "Table with FUNCREF element type requires WebAssembly function or null. Got: "
+                    + value.getClass().getName());
+          }
+        } else if (tableElementType == WasmValueType.EXTERNREF) {
+          elementType = 6;
+          refIdPresent = 1;
+          refId = extractExternalRefId(value);
+        } else {
+          throw new RuntimeException("Unsupported table element type: " + tableElementType);
+        }
+      }
+
+      final int result =
+          (int)
+              fillHandle.invokeExact(
+                  tableHandle, storePtr, start, count, elementType, refIdPresent, refId);
+
+      if (result != 0) {
+        throw new RuntimeException("Failed to fill table range, error code: " + result);
+      }
+
+      if (logger.isLoggable(Level.FINE)) {
+        logger.fine(
+            "Filled table range ["
+                + start
+                + ", "
+                + (start + count)
+                + ") with "
+                + (value == null ? "null" : value.getClass().getSimpleName()));
+      }
+    } catch (Throwable t) {
+      if (t instanceof IndexOutOfBoundsException || t instanceof IllegalArgumentException) {
+        throw t;
+      }
+      logger.warning("Failed to fill table range: " + t.getMessage());
+      throw new RuntimeException("Failed to fill table range", t);
+    }
+  }
+
+  /**
+   * Copies elements from one region of the table to another.
+   *
+   * @param dst the destination starting index
+   * @param src the source starting index
+   * @param count the number of elements to copy
+   * @throws IllegalArgumentException if dst, src, or count is negative
+   * @throws IndexOutOfBoundsException if source or destination range exceeds table bounds
+   * @throws RuntimeException if the copy operation fails
+   */
+  @Override
+  public void copy(final int dst, final int src, final int count) {
+    ensureNotClosed();
+
+    if (dst < 0) {
+      throw new IllegalArgumentException("Table destination index cannot be negative: " + dst);
+    }
+    if (src < 0) {
+      throw new IllegalArgumentException("Table source index cannot be negative: " + src);
+    }
+    if (count < 0) {
+      throw new IllegalArgumentException("Table count cannot be negative: " + count);
+    }
+
+    try {
+      final MethodHandle copyHandle = nativeBindings.getTableCopy();
+      if (copyHandle == null) {
+        throw new RuntimeException("Table copy function not available in native library");
+      }
+
+      // Bounds check
+      final long tableSize = getSize();
+      if (dst + count > tableSize) {
+        throw new IndexOutOfBoundsException(
+            "Destination range ["
+                + dst
+                + ", "
+                + (dst + count)
+                + ") exceeds table size "
+                + tableSize);
+      }
+      if (src + count > tableSize) {
+        throw new IndexOutOfBoundsException(
+            "Source range [" + src + ", " + (src + count) + ") exceeds table size " + tableSize);
+      }
+
+      // Get store handle from parent instance
+      final PanamaStore store = (PanamaStore) parentInstance.getStore();
+      final MemorySegment storePtr = store.getStorePointer();
+
+      final int result = (int) copyHandle.invokeExact(tableHandle, storePtr, dst, src, count);
+
+      if (result != 0) {
+        throw new RuntimeException("Failed to copy table elements, error code: " + result);
+      }
+
+      if (logger.isLoggable(Level.FINE)) {
+        logger.fine("Copied " + count + " elements from index " + src + " to index " + dst);
+      }
+    } catch (Throwable t) {
+      if (t instanceof IndexOutOfBoundsException || t instanceof IllegalArgumentException) {
+        throw t;
+      }
+      logger.warning("Failed to copy table elements: " + t.getMessage());
+      throw new RuntimeException("Failed to copy table elements", t);
+    }
+  }
+
+  /**
+   * Copies elements from another table to this table.
+   *
+   * @param dst the destination starting index in this table
+   * @param src the source table to copy from
+   * @param srcIndex the source starting index in the source table
+   * @param count the number of elements to copy
+   * @throws IllegalArgumentException if dst, srcIndex, or count is negative, or if src is null
+   * @throws IndexOutOfBoundsException if source or destination range exceeds table bounds
+   * @throws RuntimeException if the copy operation fails
+   */
+  @Override
+  public void copy(final int dst, final WasmTable src, final int srcIndex, final int count) {
+    ensureNotClosed();
+
+    if (src == null) {
+      throw new IllegalArgumentException("Source table cannot be null");
+    }
+    if (dst < 0) {
+      throw new IllegalArgumentException("Table destination index cannot be negative: " + dst);
+    }
+    if (srcIndex < 0) {
+      throw new IllegalArgumentException("Table source index cannot be negative: " + srcIndex);
+    }
+    if (count < 0) {
+      throw new IllegalArgumentException("Table count cannot be negative: " + count);
+    }
+
+    if (!(src instanceof PanamaTable)) {
+      throw new IllegalArgumentException(
+          "Source table must be PanamaTable instance for cross-table copy");
+    }
+
+    final PanamaTable srcTable = (PanamaTable) src;
+    srcTable.ensureNotClosed();
+
+    try {
+      final MethodHandle copyFromTableHandle = nativeBindings.getTableCopyFromTable();
+      if (copyFromTableHandle == null) {
+        throw new RuntimeException(
+            "Table copy from table function not available in native library");
+      }
+
+      // Bounds check
+      final long dstTableSize = getSize();
+      if (dst + count > dstTableSize) {
+        throw new IndexOutOfBoundsException(
+            "Destination range ["
+                + dst
+                + ", "
+                + (dst + count)
+                + ") exceeds destination table size "
+                + dstTableSize);
+      }
+
+      final long srcTableSize = srcTable.getSize();
+      if (srcIndex + count > srcTableSize) {
+        throw new IndexOutOfBoundsException(
+            "Source range ["
+                + srcIndex
+                + ", "
+                + (srcIndex + count)
+                + ") exceeds source table size "
+                + srcTableSize);
+      }
+
+      // Validate type compatibility
+      if (!getElementType().equals(srcTable.getElementType())) {
+        throw new IllegalArgumentException(
+            "Table element types must match: this="
+                + getElementType()
+                + ", src="
+                + srcTable.getElementType());
+      }
+
+      // Get store handle from parent instance
+      final PanamaStore store = (PanamaStore) parentInstance.getStore();
+      final MemorySegment storePtr = store.getStorePointer();
+
+      final int result =
+          (int)
+              copyFromTableHandle.invokeExact(
+                  tableHandle, storePtr, dst, srcTable.getTableHandle(), srcIndex, count);
+
+      if (result != 0) {
+        throw new RuntimeException(
+            "Failed to copy elements from source table, error code: " + result);
+      }
+
+      if (logger.isLoggable(Level.FINE)) {
+        logger.fine(
+            "Copied "
+                + count
+                + " elements from source table index "
+                + srcIndex
+                + " to index "
+                + dst);
+      }
+    } catch (Throwable t) {
+      if (t instanceof IndexOutOfBoundsException || t instanceof IllegalArgumentException) {
+        throw t;
+      }
+      logger.warning("Failed to copy from source table: " + t.getMessage());
+      throw new RuntimeException("Failed to copy from source table", t);
+    }
+  }
+
+  /**
    * Gets the maximum size of this table.
    *
    * @return the maximum size, or -1 if unlimited

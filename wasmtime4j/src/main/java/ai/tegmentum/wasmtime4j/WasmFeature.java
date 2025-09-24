@@ -37,5 +37,23 @@ public enum WasmFeature {
   MEMORY64,
 
   /** WebAssembly exception handling proposal support. */
-  EXCEPTIONS
+  EXCEPTIONS,
+
+  /** WebAssembly Component Model support with WIT interfaces. */
+  COMPONENT_MODEL,
+
+  /** WebAssembly garbage collection proposal support. */
+  GC,
+
+  /** WebAssembly typed function references proposal support. */
+  TYPED_FUNCTION_REFERENCES,
+
+  /** WebAssembly branch hinting proposal support. */
+  BRANCH_HINTING,
+
+  /** WebAssembly extended reference types proposal support. */
+  EXTENDED_REFERENCE_TYPES,
+
+  /** WebAssembly function subtyping proposal support. */
+  FUNCTION_SUBTYPING
 }

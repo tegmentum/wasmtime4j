@@ -81,6 +81,22 @@ public final class CompilationCache {
   private static final AtomicLong CACHE_STORES = new AtomicLong(0);
   private static final AtomicLong CACHE_EVICTIONS = new AtomicLong(0);
 
+  /** Performance monitoring. */
+  private static final AtomicLong TOTAL_CACHE_LOAD_TIME_NS = new AtomicLong(0);
+
+  private static final AtomicLong TOTAL_CACHE_STORE_TIME_NS = new AtomicLong(0);
+  private static final AtomicLong COMPILATION_TIME_SAVED_NS = new AtomicLong(0);
+  private static final AtomicLong CACHE_SIZE_BYTES = new AtomicLong(0);
+
+  /** Advanced caching features. */
+  private static final AtomicInteger CACHE_GENERATIONS = new AtomicInteger(1);
+
+  private static final ConcurrentHashMap<String, Long> COMPILATION_TIMES =
+      new ConcurrentHashMap<>();
+  private static final AtomicLong LAST_MAINTENANCE_TIME =
+      new AtomicLong(System.currentTimeMillis());
+  private static final long MAINTENANCE_INTERVAL_MS = 300_000; // 5 minutes
+
   /** Cache initialization flag. */
   private static volatile boolean initialized = false;
 
@@ -91,18 +107,49 @@ public final class CompilationCache {
     final long createdTime;
     volatile long lastAccessTime;
     volatile int accessCount;
+    final long originalCompilationTimeNs;
+    final int generation;
+    volatile boolean verified;
+    volatile long verificationTime;
 
     CacheEntry(final String hash, final long size, final long createdTime) {
+      this(hash, size, createdTime, 0, CACHE_GENERATIONS.get());
+    }
+
+    CacheEntry(
+        final String hash,
+        final long size,
+        final long createdTime,
+        final long compilationTimeNs,
+        final int generation) {
       this.hash = hash;
       this.size = size;
       this.createdTime = createdTime;
       this.lastAccessTime = createdTime;
       this.accessCount = 0;
+      this.originalCompilationTimeNs = compilationTimeNs;
+      this.generation = generation;
+      this.verified = false;
+      this.verificationTime = 0;
     }
 
     void recordAccess() {
       lastAccessTime = System.currentTimeMillis();
       accessCount++;
+    }
+
+    void markVerified() {
+      verified = true;
+      verificationTime = System.currentTimeMillis();
+    }
+
+    boolean isCurrentGeneration() {
+      return generation == CACHE_GENERATIONS.get();
+    }
+
+    double getAccessFrequency() {
+      final long age = System.currentTimeMillis() - createdTime;
+      return age > 0 ? (accessCount * 86400000.0) / age : 0.0; // accesses per day
     }
   }
 
@@ -149,6 +196,19 @@ public final class CompilationCache {
    * @return cached compiled module data or null if not found
    */
   public static byte[] loadFromCache(final byte[] wasmBytes, final String engineOptions) {
+    return loadFromCache(wasmBytes, engineOptions, 0);
+  }
+
+  /**
+   * Attempts to load a compiled module from cache with compilation time tracking.
+   *
+   * @param wasmBytes the WebAssembly bytecode
+   * @param engineOptions engine compilation options (affects cache key)
+   * @param expectedCompilationTimeNs expected compilation time for performance measurement
+   * @return cached compiled module data or null if not found
+   */
+  public static byte[] loadFromCache(
+      final byte[] wasmBytes, final String engineOptions, final long expectedCompilationTimeNs) {
     if (!enabled) {
       return null;
     }
@@ -161,7 +221,10 @@ public final class CompilationCache {
       return null;
     }
 
-    final long startTime = PerformanceMonitor.startOperation("cache_load");
+    performMaintenanceIfNeeded();
+
+    final long startTime = System.nanoTime();
+    final long startTimeForPerf = PerformanceMonitor.startOperation("cache_load");
     try {
       // Generate cache key
       final String cacheKey = generateCacheKey(wasmBytes, engineOptions);
@@ -173,6 +236,12 @@ public final class CompilationCache {
         return null;
       }
 
+      // Verify cache integrity if needed
+      if (!verifyCacheIntegrity(cacheKey, wasmBytes)) {
+        CACHE_MISSES.incrementAndGet();
+        return null;
+      }
+
       // Load cached module
       final byte[] cachedModule = Files.readAllBytes(cacheFile);
 
@@ -180,10 +249,25 @@ public final class CompilationCache {
       final CacheEntry entry = MODULE_CACHE.get(cacheKey);
       if (entry != null) {
         entry.recordAccess();
+
+        // Track compilation time saved
+        final long timeSaved =
+            entry.originalCompilationTimeNs > 0
+                ? entry.originalCompilationTimeNs
+                : expectedCompilationTimeNs;
+        if (timeSaved > 0) {
+          COMPILATION_TIME_SAVED_NS.addAndGet(timeSaved);
+        }
       }
 
       CACHE_HITS.incrementAndGet();
-      LOGGER.fine("Cache hit for module: " + cacheKey.substring(0, 8) + "...");
+      LOGGER.fine(
+          "Cache hit for module: "
+              + cacheKey.substring(0, 8)
+              + "... "
+              + "(saved "
+              + (expectedCompilationTimeNs / 1_000_000)
+              + "ms compilation time)");
 
       return cachedModule;
 
@@ -192,7 +276,9 @@ public final class CompilationCache {
       CACHE_MISSES.incrementAndGet();
       return null;
     } finally {
-      PerformanceMonitor.endOperation("cache_load", startTime);
+      final long loadTime = System.nanoTime() - startTime;
+      TOTAL_CACHE_LOAD_TIME_NS.addAndGet(loadTime);
+      PerformanceMonitor.endOperation("cache_load", startTimeForPerf);
     }
   }
 
@@ -206,6 +292,23 @@ public final class CompilationCache {
    */
   public static boolean storeInCache(
       final byte[] wasmBytes, final byte[] compiledModule, final String engineOptions) {
+    return storeInCache(wasmBytes, compiledModule, engineOptions, 0);
+  }
+
+  /**
+   * Stores a compiled module in the cache with compilation time tracking.
+   *
+   * @param wasmBytes the original WebAssembly bytecode
+   * @param compiledModule the compiled module data
+   * @param engineOptions engine compilation options
+   * @param compilationTimeNs compilation time in nanoseconds
+   * @return true if successfully cached
+   */
+  public static boolean storeInCache(
+      final byte[] wasmBytes,
+      final byte[] compiledModule,
+      final String engineOptions,
+      final long compilationTimeNs) {
     if (!enabled) {
       return false;
     }
@@ -218,7 +321,8 @@ public final class CompilationCache {
       return false;
     }
 
-    final long startTime = PerformanceMonitor.startOperation("cache_store");
+    final long startTime = System.nanoTime();
+    final long startTimeForPerf = PerformanceMonitor.startOperation("cache_store");
     try {
       // Check cache size limits
       if (MODULE_CACHE.size() >= MAX_CACHED_MODULES) {
@@ -236,10 +340,23 @@ public final class CompilationCache {
       // Store original bytecode for verification
       Files.write(wasmFile, wasmBytes, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
 
-      // Update metadata
+      // Update metadata with compilation time
       final CacheEntry entry =
-          new CacheEntry(cacheKey, compiledModule.length, System.currentTimeMillis());
+          new CacheEntry(
+              cacheKey,
+              compiledModule.length,
+              System.currentTimeMillis(),
+              compilationTimeNs,
+              CACHE_GENERATIONS.get());
       MODULE_CACHE.put(cacheKey, entry);
+
+      // Track compilation time for future optimizations
+      if (compilationTimeNs > 0) {
+        COMPILATION_TIMES.put(cacheKey, compilationTimeNs);
+      }
+
+      // Update cache size tracking
+      CACHE_SIZE_BYTES.addAndGet(compiledModule.length + wasmBytes.length);
 
       CACHE_STORES.incrementAndGet();
       LOGGER.fine(
@@ -247,7 +364,9 @@ public final class CompilationCache {
               + cacheKey.substring(0, 8)
               + "... ("
               + compiledModule.length
-              + " bytes)");
+              + " bytes, "
+              + (compilationTimeNs / 1_000_000)
+              + "ms compilation time)");
 
       return true;
 
@@ -255,7 +374,9 @@ public final class CompilationCache {
       LOGGER.warning("Failed to store in cache: " + e.getMessage());
       return false;
     } finally {
-      PerformanceMonitor.endOperation("cache_store", startTime);
+      final long storeTime = System.nanoTime() - startTime;
+      TOTAL_CACHE_STORE_TIME_NS.addAndGet(storeTime);
+      PerformanceMonitor.endOperation("cache_store", startTimeForPerf);
     }
   }
 
@@ -541,5 +662,150 @@ public final class CompilationCache {
     } finally {
       PerformanceMonitor.endOperation("cache_maintenance", startTime);
     }
+  }
+
+  /** Performs maintenance if needed based on time interval. */
+  private static void performMaintenanceIfNeeded() {
+    final long currentTime = System.currentTimeMillis();
+    final long lastMaintenance = LAST_MAINTENANCE_TIME.get();
+
+    if (currentTime - lastMaintenance > MAINTENANCE_INTERVAL_MS) {
+      if (LAST_MAINTENANCE_TIME.compareAndSet(lastMaintenance, currentTime)) {
+        performMaintenance();
+      }
+    }
+  }
+
+  /**
+   * Verifies cache integrity for a given cache key.
+   *
+   * @param cacheKey the cache key to verify
+   * @param originalWasmBytes the original WebAssembly bytes for verification
+   * @return true if cache entry is valid
+   */
+  private static boolean verifyCacheIntegrity(
+      final String cacheKey, final byte[] originalWasmBytes) {
+    try {
+      final CacheEntry entry = MODULE_CACHE.get(cacheKey);
+      if (entry == null) {
+        return false;
+      }
+
+      // Skip verification if recently verified
+      if (entry.verified
+          && (System.currentTimeMillis() - entry.verificationTime) < 300_000) { // 5 minutes
+        return true;
+      }
+
+      final Path wasmFile = getWasmFilePath(cacheKey);
+      if (!Files.exists(wasmFile)) {
+        LOGGER.warning("Cache integrity check failed: missing WASM file for " + cacheKey);
+        MODULE_CACHE.remove(cacheKey);
+        return false;
+      }
+
+      // Verify original bytes match
+      final byte[] cachedWasmBytes = Files.readAllBytes(wasmFile);
+      if (!java.util.Arrays.equals(originalWasmBytes, cachedWasmBytes)) {
+        LOGGER.warning("Cache integrity check failed: WASM bytes mismatch for " + cacheKey);
+        MODULE_CACHE.remove(cacheKey);
+        Files.deleteIfExists(wasmFile);
+        Files.deleteIfExists(getCacheFilePath(cacheKey));
+        return false;
+      }
+
+      entry.markVerified();
+      return true;
+
+    } catch (final IOException e) {
+      LOGGER.warning("Cache integrity verification failed for " + cacheKey + ": " + e.getMessage());
+      return false;
+    }
+  }
+
+  /**
+   * Gets the average cache load time in nanoseconds.
+   *
+   * @return average load time
+   */
+  public static double getAverageCacheLoadTimeNs() {
+    final long hits = CACHE_HITS.get();
+    return hits > 0 ? (double) TOTAL_CACHE_LOAD_TIME_NS.get() / hits : 0.0;
+  }
+
+  /**
+   * Gets the average cache store time in nanoseconds.
+   *
+   * @return average store time
+   */
+  public static double getAverageCacheStoreTimeNs() {
+    final long stores = CACHE_STORES.get();
+    return stores > 0 ? (double) TOTAL_CACHE_STORE_TIME_NS.get() / stores : 0.0;
+  }
+
+  /**
+   * Gets the total compilation time saved by caching in nanoseconds.
+   *
+   * @return total time saved
+   */
+  public static long getTotalCompilationTimeSavedNs() {
+    return COMPILATION_TIME_SAVED_NS.get();
+  }
+
+  /**
+   * Gets the compilation time savings percentage.
+   *
+   * @return savings percentage (0.0 to 100.0)
+   */
+  public static double getCompilationTimeSavingsPercentage() {
+    final long totalSaved = COMPILATION_TIME_SAVED_NS.get();
+    final long totalCompilationTime =
+        COMPILATION_TIMES.values().stream().mapToLong(Long::longValue).sum();
+
+    if (totalCompilationTime > 0) {
+      return (totalSaved * 100.0) / (totalSaved + totalCompilationTime);
+    }
+    return 0.0;
+  }
+
+  /**
+   * Gets the current cache size in bytes.
+   *
+   * @return cache size in bytes
+   */
+  public static long getCacheSizeBytes() {
+    return CACHE_SIZE_BYTES.get();
+  }
+
+  /** Increments the cache generation to invalidate old entries. */
+  public static void incrementGeneration() {
+    final int newGeneration = CACHE_GENERATIONS.incrementAndGet();
+    LOGGER.info("Cache generation incremented to " + newGeneration);
+  }
+
+  /**
+   * Gets comprehensive performance metrics for the cache.
+   *
+   * @return performance metrics string
+   */
+  public static String getPerformanceMetrics() {
+    final long hits = CACHE_HITS.get();
+    final long misses = CACHE_MISSES.get();
+    final long total = hits + misses;
+    final double hitRate = total > 0 ? (hits * 100.0) / total : 0.0;
+    final double avgLoadTime = getAverageCacheLoadTimeNs();
+    final double avgStoreTime = getAverageCacheStoreTimeNs();
+    final long timeSaved = getTotalCompilationTimeSavedNs();
+    final double savingsPercentage = getCompilationTimeSavingsPercentage();
+
+    return String.format(
+        "Cache Performance: hit_rate=%.1f%%, avg_load=%.0fns, avg_store=%.0fns, "
+            + "time_saved=%dms (%.1f%% reduction), cache_size=%d bytes",
+        hitRate,
+        avgLoadTime,
+        avgStoreTime,
+        timeSaved / 1_000_000,
+        savingsPercentage,
+        getCacheSizeBytes());
   }
 }

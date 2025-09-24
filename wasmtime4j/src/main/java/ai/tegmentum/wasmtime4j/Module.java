@@ -193,8 +193,7 @@ public interface Module extends Closeable {
     } catch (final Exception e) {
       // If compilation fails, validation failed
       return ModuleValidationResult.failure(
-        java.util.Collections.singletonList("Module validation failed: " + e.getMessage())
-      );
+          java.util.Collections.singletonList("Module validation failed: " + e.getMessage()));
     }
   }
 
@@ -262,11 +261,25 @@ public interface Module extends Closeable {
    * metadata or debugging purposes.
    *
    * @return a map of custom section names to their data
+   * @deprecated Use {@link #getCustomSectionMetadata()} for comprehensive custom section access
    */
+  @Deprecated
   java.util.Map<String, String> getCustomSections();
 
   /**
+   * Gets comprehensive custom section metadata for this module.
+   *
+   * <p>This provides access to all custom sections including standard sections like "name",
+   * "producers", and "target_features", as well as arbitrary custom sections.
+   *
+   * @return custom section metadata interface
+   */
+  CustomSectionMetadata getCustomSectionMetadata();
+
+  /**
    * Gets the name of this module if it has one.
+   *
+   * <p>This method checks both the name section and module-level naming for the module name.
    *
    * @return the module name, or null if unnamed
    */

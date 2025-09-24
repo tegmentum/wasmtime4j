@@ -268,6 +268,16 @@ public final class JniValidation {
   }
 
   /**
+   * Validates that a port number is valid (1-65535).
+   *
+   * @param port the port number to validate
+   * @throws JniValidationException if the port is invalid
+   */
+  public static void requireValidPort(final int port) {
+    requireInRange(port, 1, 65535, "port");
+  }
+
+  /**
    * Creates a defensive copy of a byte array to prevent external modification.
    *
    * @param original the original array

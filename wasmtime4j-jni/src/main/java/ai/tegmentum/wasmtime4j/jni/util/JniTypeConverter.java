@@ -609,4 +609,72 @@ public final class JniTypeConverter {
     final long high = readInt(buffer, offset + 4) & 0xFFFFFFFFL;
     return low | (high << 32);
   }
+
+  /**
+   * Marshals parameters to native byte array format.
+   *
+   * <p>The marshalling format is: [param_count: 4 bytes][param_data: variable]
+   *
+   * @param params the parameters to marshal
+   * @return byte array containing marshalled parameters
+   * @throws JniValidationException if marshalling fails
+   */
+  public static byte[] marshalParameters(final WasmValue[] params) {
+    JniValidation.requireNonNull(params, "params");
+
+    // Calculate total size needed
+    int totalSize = 4; // 4 bytes for parameter count
+    for (final WasmValue param : params) {
+      totalSize += getValueSize(param.getType());
+    }
+
+    final byte[] buffer = new byte[totalSize];
+    int offset = 0;
+
+    // Write parameter count
+    writeInt(buffer, offset, params.length);
+    offset += 4;
+
+    // Write parameter values
+    for (final WasmValue param : params) {
+      offset = marshalValue(param, buffer, offset);
+    }
+
+    return buffer;
+  }
+
+  /**
+   * Unmarshals results from native byte array.
+   *
+   * @param resultBuffer the marshalled result data
+   * @param expectedTypes the expected result types for validation
+   * @return array of WasmValue results
+   * @throws JniValidationException if unmarshalling fails or types don't match
+   */
+  public static WasmValue[] unmarshalResults(
+      final byte[] resultBuffer, final ai.tegmentum.wasmtime4j.WasmValueType[] expectedTypes) {
+    JniValidation.requireNonNull(resultBuffer, "resultBuffer");
+    JniValidation.requireNonNull(expectedTypes, "expectedTypes");
+
+    if (resultBuffer.length < 4) {
+      throw new JniValidationException("Result buffer too short");
+    }
+
+    final int resultCount = readInt(resultBuffer, 0);
+    if (resultCount != expectedTypes.length) {
+      throw new JniValidationException(
+          "Result count mismatch: got " + resultCount + ", expected " + expectedTypes.length);
+    }
+
+    final WasmValue[] results = new WasmValue[resultCount];
+    int offset = 4;
+
+    for (int i = 0; i < resultCount; i++) {
+      final ai.tegmentum.wasmtime4j.WasmValueType expectedType = expectedTypes[i];
+      results[i] = unmarshalValue(resultBuffer, offset, expectedType);
+      offset += getValueSize(expectedType);
+    }
+
+    return results;
+  }
 }

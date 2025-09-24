@@ -6,7 +6,8 @@
 //! and type validation.
 
 use std::sync::{Arc, Mutex};
-use wasmtime::{Table as WasmtimeTable, TableType, Val, ValType, RefType, Ref};
+use std::collections::HashMap;
+use wasmtime::{Table as WasmtimeTable, TableType, Val, ValType, RefType, Ref, Func, Extern};
 use crate::store::Store;
 use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::global::ReferenceType;
@@ -28,6 +29,60 @@ pub struct TableMetadata {
     pub maximum_size: Option<u32>,
     /// Optional name for debugging purposes
     pub name: Option<String>,
+}
+
+/// Global reference registry for managing references across table operations
+use once_cell::sync::Lazy;
+static REFERENCE_REGISTRY: Lazy<Arc<Mutex<ReferenceRegistry>>> = Lazy::new(|| {
+    Arc::new(Mutex::new(ReferenceRegistry::new()))
+});
+
+/// Registry for managing WebAssembly references by ID
+#[derive(Debug)]
+struct ReferenceRegistry {
+    functions: HashMap<u64, Func>,
+    externals: HashMap<u64, Extern>,
+    next_id: u64,
+}
+
+impl ReferenceRegistry {
+    fn new() -> Self {
+        Self {
+            functions: HashMap::new(),
+            externals: HashMap::new(),
+            next_id: 1, // Start from 1, 0 reserved for null
+        }
+    }
+
+    fn register_function(&mut self, func: Func) -> u64 {
+        let id = self.next_id;
+        self.next_id += 1;
+        self.functions.insert(id, func);
+        id
+    }
+
+    fn register_external(&mut self, external: Extern) -> u64 {
+        let id = self.next_id;
+        self.next_id += 1;
+        self.externals.insert(id, external);
+        id
+    }
+
+    fn get_function(&self, id: u64) -> Option<&Func> {
+        self.functions.get(&id)
+    }
+
+    fn get_external(&self, id: u64) -> Option<&Extern> {
+        self.externals.get(&id)
+    }
+
+    fn remove_function(&mut self, id: u64) -> Option<Func> {
+        self.functions.remove(&id)
+    }
+
+    fn remove_external(&mut self, id: u64) -> Option<Extern> {
+        self.externals.remove(&id)
+    }
 }
 
 /// Type-safe reference container for table elements
@@ -246,6 +301,128 @@ impl Table {
         })
     }
 
+    /// Copy elements within the table
+    pub fn copy_within(
+        &self,
+        store: &Store,
+        dst: u32,
+        src: u32,
+        len: u32,
+    ) -> WasmtimeResult<()> {
+        let table = self.inner.lock().map_err(|e| WasmtimeError::Concurrency {
+            message: format!("Failed to acquire table lock: {}", e),
+        })?;
+
+        let table_size = store.with_context_ro(|ctx| {
+            Ok(table.size(&ctx))
+        })?;
+
+        // Bounds check
+        if (dst as u64).saturating_add(len as u64) > table_size {
+            return Err(WasmtimeError::Runtime {
+                message: format!(
+                    "Table copy destination would exceed bounds: dst={}, len={}, table_size={}",
+                    dst, len, table_size
+                ),
+                backtrace: None,
+            });
+        }
+        if (src as u64).saturating_add(len as u64) > table_size {
+            return Err(WasmtimeError::Runtime {
+                message: format!(
+                    "Table copy source would exceed bounds: src={}, len={}, table_size={}",
+                    src, len, table_size
+                ),
+                backtrace: None,
+            });
+        }
+
+        store.with_context(|mut ctx| {
+            // Use Wasmtime's table.copy function for safe, efficient copying
+            table.copy(&mut ctx, dst as u64, src as u64, len as u64)
+                .map_err(|e| WasmtimeError::Runtime {
+                    message: format!("Failed to copy within table: {}", e),
+                    backtrace: None,
+                })
+        })
+    }
+
+    /// Copy elements from another table to this table
+    pub fn copy_from(
+        &self,
+        store: &Store,
+        dst: u32,
+        src_table: &Table,
+        src: u32,
+        len: u32,
+    ) -> WasmtimeResult<()> {
+        // Validate type compatibility
+        if self.metadata.element_type != src_table.metadata.element_type {
+            return Err(WasmtimeError::Type {
+                message: format!(
+                    "Table element types must match: dst={:?}, src={:?}",
+                    self.metadata.element_type, src_table.metadata.element_type
+                ),
+            });
+        }
+
+        let dst_table = self.inner.lock().map_err(|e| WasmtimeError::Concurrency {
+            message: format!("Failed to acquire destination table lock: {}", e),
+        })?;
+
+        let src_table_inner = src_table.inner.lock().map_err(|e| WasmtimeError::Concurrency {
+            message: format!("Failed to acquire source table lock: {}", e),
+        })?;
+
+        let (dst_table_size, src_table_size) = store.with_context_ro(|ctx| {
+            Ok((dst_table.size(&ctx), src_table_inner.size(&ctx)))
+        })?;
+
+        // Bounds check
+        if (dst as u64).saturating_add(len as u64) > dst_table_size {
+            return Err(WasmtimeError::Runtime {
+                message: format!(
+                    "Table copy destination would exceed bounds: dst={}, len={}, dst_table_size={}",
+                    dst, len, dst_table_size
+                ),
+                backtrace: None,
+            });
+        }
+        if (src as u64).saturating_add(len as u64) > src_table_size {
+            return Err(WasmtimeError::Runtime {
+                message: format!(
+                    "Table copy source would exceed bounds: src={}, len={}, src_table_size={}",
+                    src, len, src_table_size
+                ),
+                backtrace: None,
+            });
+        }
+
+        store.with_context(|mut ctx| {
+            // Use Wasmtime's table_copy instruction for safe cross-table copying
+            let dst_index = dst as u64;
+            let src_index = src as u64;
+            let count = len as u64;
+
+            // Manually copy elements since wasmtime doesn't have direct cross-table copy API
+            for i in 0..count {
+                let element = src_table_inner.get(&ctx, src_index + i)
+                    .ok_or_else(|| WasmtimeError::Runtime {
+                        message: format!("Failed to get source element at index {}", src_index + i),
+                        backtrace: None,
+                    })?;
+
+                dst_table.set(&mut ctx, dst_index + i, element)
+                    .map_err(|e| WasmtimeError::Runtime {
+                        message: format!("Failed to set destination element at index {}: {}", dst_index + i, e),
+                        backtrace: None,
+                    })?;
+            }
+
+            Ok(())
+        })
+    }
+
     /// Get table metadata
     pub fn metadata(&self) -> &TableMetadata {
         &self.metadata
@@ -383,19 +560,65 @@ impl Table {
     /// Convert TableElement to wasmtime::Ref for table operations
     fn table_element_to_wasmtime_ref(element: TableElement) -> WasmtimeResult<Ref> {
         let wasmtime_ref = match element {
-            TableElement::FuncRef(_) => {
-                // For now, we only support null function references
-                // TODO: Implement proper function reference handling
-                Ref::null(&RefType::FUNCREF.heap_type())
+            TableElement::FuncRef(ref_id) => {
+                if let Some(id) = ref_id {
+                    // Look up function reference in the registry
+                    let registry = REFERENCE_REGISTRY.lock().map_err(|e| WasmtimeError::Concurrency {
+                        message: format!("Failed to lock reference registry: {}", e),
+                    })?;
+
+                    if let Some(func) = registry.get_function(id) {
+                        Ref::from(func.clone())
+                    } else {
+                        // Function not found, use null reference
+                        Ref::null(&RefType::FUNCREF.heap_type())
+                    }
+                } else {
+                    Ref::null(&RefType::FUNCREF.heap_type())
+                }
             },
-            TableElement::ExternRef(_) => {
-                // For now, we only support null external references
-                // TODO: Implement proper external reference handling  
-                Ref::null(&RefType::EXTERNREF.heap_type())
+            TableElement::ExternRef(ref_id) => {
+                if let Some(id) = ref_id {
+                    // Look up external reference in the registry
+                    let registry = REFERENCE_REGISTRY.lock().map_err(|e| WasmtimeError::Concurrency {
+                        message: format!("Failed to lock reference registry: {}", e),
+                    })?;
+
+                    if let Some(external) = registry.get_external(id) {
+                        // Convert Extern to Ref - this might need specific handling based on Extern type
+                        match external {
+                            Extern::Func(func) => Ref::from(func.clone()),
+                            _ => Ref::null(&RefType::EXTERNREF.heap_type()), // For other external types, use null for now
+                        }
+                    } else {
+                        // External not found, use null reference
+                        Ref::null(&RefType::EXTERNREF.heap_type())
+                    }
+                } else {
+                    Ref::null(&RefType::EXTERNREF.heap_type())
+                }
             },
-            TableElement::AnyRef(_) => {
-                // AnyRef defaults to null function reference for now
-                Ref::null(&RefType::FUNCREF.heap_type())
+            TableElement::AnyRef(ref_id) => {
+                if let Some(id) = ref_id {
+                    // Try to resolve as function first, then external
+                    let registry = REFERENCE_REGISTRY.lock().map_err(|e| WasmtimeError::Concurrency {
+                        message: format!("Failed to lock reference registry: {}", e),
+                    })?;
+
+                    if let Some(func) = registry.get_function(id) {
+                        Ref::from(func.clone())
+                    } else if let Some(external) = registry.get_external(id) {
+                        match external {
+                            Extern::Func(func) => Ref::from(func.clone()),
+                            _ => Ref::null(&RefType::EXTERNREF.heap_type()),
+                        }
+                    } else {
+                        // Reference not found, use null
+                        Ref::null(&RefType::FUNCREF.heap_type())
+                    }
+                } else {
+                    Ref::null(&RefType::FUNCREF.heap_type())
+                }
             },
         };
 
@@ -412,18 +635,41 @@ impl Table {
                         if val.is_null() {
                             TableElement::FuncRef(None)
                         } else {
-                            // TODO: Implement proper function reference ID extraction
-                            // For now, use a placeholder ID
-                            TableElement::FuncRef(Some(1))
+                            // Try to extract function and register it
+                            match val.as_func() {
+                                Some(func) => {
+                                    let mut registry = REFERENCE_REGISTRY.lock().map_err(|e| WasmtimeError::Concurrency {
+                                        message: format!("Failed to lock reference registry: {}", e),
+                                    })?;
+                                    let id = registry.register_function(func.clone());
+                                    TableElement::FuncRef(Some(id))
+                                },
+                                None => {
+                                    // Could not extract function, use null
+                                    TableElement::FuncRef(None)
+                                }
+                            }
                         }
                     },
                     wasmtime::HeapType::Extern => {
                         if val.is_null() {
                             TableElement::ExternRef(None)
                         } else {
-                            // TODO: Implement proper external reference ID extraction
-                            // For now, use a placeholder ID
-                            TableElement::ExternRef(Some(1))
+                            // For external references, we create a generic Extern::Func if possible
+                            match val.as_func() {
+                                Some(func) => {
+                                    let mut registry = REFERENCE_REGISTRY.lock().map_err(|e| WasmtimeError::Concurrency {
+                                        message: format!("Failed to lock reference registry: {}", e),
+                                    })?;
+                                    let external = Extern::Func(func.clone());
+                                    let id = registry.register_external(external);
+                                    TableElement::ExternRef(Some(id))
+                                },
+                                None => {
+                                    // Could not extract function, use null
+                                    TableElement::ExternRef(None)
+                                }
+                            }
                         }
                     },
                     _ => {
@@ -431,7 +677,20 @@ impl Table {
                         if val.is_null() {
                             TableElement::AnyRef(None)
                         } else {
-                            TableElement::AnyRef(Some(1))
+                            // Try to register as function first, then as external
+                            match val.as_func() {
+                                Some(func) => {
+                                    let mut registry = REFERENCE_REGISTRY.lock().map_err(|e| WasmtimeError::Concurrency {
+                                        message: format!("Failed to lock reference registry: {}", e),
+                                    })?;
+                                    let id = registry.register_function(func.clone());
+                                    TableElement::AnyRef(Some(id))
+                                },
+                                None => {
+                                    // Could not extract, use null
+                                    TableElement::AnyRef(None)
+                                }
+                            }
                         }
                     }
                 }
@@ -550,6 +809,29 @@ pub mod core {
         table.fill(store, dst, value, len)
     }
 
+    /// Core function to copy within table
+    pub fn copy_table_within(
+        table: &Table,
+        store: &Store,
+        dst: u32,
+        src: u32,
+        len: u32,
+    ) -> WasmtimeResult<()> {
+        table.copy_within(store, dst, src, len)
+    }
+
+    /// Core function to copy from another table
+    pub fn copy_table_from(
+        dst_table: &Table,
+        store: &Store,
+        dst: u32,
+        src_table: &Table,
+        src: u32,
+        len: u32,
+    ) -> WasmtimeResult<()> {
+        dst_table.copy_from(store, dst, src_table, src, len)
+    }
+
     /// Core function to get table metadata
     pub fn get_table_metadata(table: &Table) -> &TableMetadata {
         table.metadata()
@@ -659,7 +941,7 @@ pub mod core {
     
     /// Create a TableElement from ValType and optional reference ID
     pub fn create_typed_table_element(
-        val_type: &ValType, 
+        val_type: &ValType,
         ref_id: Option<u64>
     ) -> WasmtimeResult<TableElement> {
         match val_type {
@@ -674,6 +956,64 @@ pub mod core {
                 message: format!("Cannot create TableElement from non-reference type: {:?}", val_type),
             }),
         }
+    }
+
+    /// Register a function reference and return its ID
+    pub fn register_function_reference(func: Func) -> WasmtimeResult<u64> {
+        let mut registry = REFERENCE_REGISTRY.lock().map_err(|e| WasmtimeError::Concurrency {
+            message: format!("Failed to lock reference registry: {}", e),
+        })?;
+        Ok(registry.register_function(func))
+    }
+
+    /// Register an external reference and return its ID
+    pub fn register_external_reference(external: Extern) -> WasmtimeResult<u64> {
+        let mut registry = REFERENCE_REGISTRY.lock().map_err(|e| WasmtimeError::Concurrency {
+            message: format!("Failed to lock reference registry: {}", e),
+        })?;
+        Ok(registry.register_external(external))
+    }
+
+    /// Get a function reference by ID
+    pub fn get_function_reference(id: u64) -> WasmtimeResult<Option<Func>> {
+        let registry = REFERENCE_REGISTRY.lock().map_err(|e| WasmtimeError::Concurrency {
+            message: format!("Failed to lock reference registry: {}", e),
+        })?;
+        Ok(registry.get_function(id).cloned())
+    }
+
+    /// Get an external reference by ID
+    pub fn get_external_reference(id: u64) -> WasmtimeResult<Option<Extern>> {
+        let registry = REFERENCE_REGISTRY.lock().map_err(|e| WasmtimeError::Concurrency {
+            message: format!("Failed to lock reference registry: {}", e),
+        })?;
+        Ok(registry.get_external(id).cloned())
+    }
+
+    /// Remove a function reference from the registry
+    pub fn remove_function_reference(id: u64) -> WasmtimeResult<Option<Func>> {
+        let mut registry = REFERENCE_REGISTRY.lock().map_err(|e| WasmtimeError::Concurrency {
+            message: format!("Failed to lock reference registry: {}", e),
+        })?;
+        Ok(registry.remove_function(id))
+    }
+
+    /// Remove an external reference from the registry
+    pub fn remove_external_reference(id: u64) -> WasmtimeResult<Option<Extern>> {
+        let mut registry = REFERENCE_REGISTRY.lock().map_err(|e| WasmtimeError::Concurrency {
+            message: format!("Failed to lock reference registry: {}", e),
+        })?;
+        Ok(registry.remove_external(id))
+    }
+
+    /// Clear all references (useful for cleanup)
+    pub fn clear_references() -> WasmtimeResult<()> {
+        let mut registry = REFERENCE_REGISTRY.lock().map_err(|e| WasmtimeError::Concurrency {
+            message: format!("Failed to lock reference registry: {}", e),
+        })?;
+        registry.functions.clear();
+        registry.externals.clear();
+        Ok(())
     }
 }
 

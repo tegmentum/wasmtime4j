@@ -1,0 +1,155 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wasmtime4j
+  labels:
+    app: wasmtime4j
+    component: runtime
+    version: v1.0.0
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: wasmtime4j
+      component: runtime
+  template:
+    metadata:
+      labels:
+        app: wasmtime4j
+        component: runtime
+        version: v1.0.0
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+      - name: wasmtime4j
+        image: wasmtime4j:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        - containerPort: 8443
+          name: https
+          protocol: TCP
+        - containerPort: 9090
+          name: metrics
+          protocol: TCP
+        env:
+        - name: JAVA_OPTS
+          value: "-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -XX:+UseG1GC"
+        - name: WASMTIME4J_LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: wasmtime4j-config
+              key: log.level
+        - name: WASMTIME4J_CACHE_SIZE
+          valueFrom:
+            configMapKeyRef:
+              name: wasmtime4j-config
+              key: cache.size
+        - name: WASMTIME4J_METRICS_ENABLED
+          value: "true"
+        - name: WASMTIME4J_HEALTH_CHECK_ENABLED
+          value: "true"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "2000m"
+        livenessProbe:
+          httpGet:
+            path: /health/live
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        startupProbe:
+          httpGet:
+            path: /health/startup
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 30
+        volumeMounts:
+        - name: config
+          mountPath: /opt/wasmtime4j/config
+          readOnly: true
+        - name: wasm-modules
+          mountPath: /opt/wasmtime4j/wasm
+          readOnly: true
+        - name: cache
+          mountPath: /opt/wasmtime4j/cache
+        - name: logs
+          mountPath: /opt/wasmtime4j/logs
+        - name: tmp
+          mountPath: /tmp
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 1000
+          capabilities:
+            drop:
+            - ALL
+      volumes:
+      - name: config
+        configMap:
+          name: wasmtime4j-config
+      - name: wasm-modules
+        configMap:
+          name: wasmtime4j-wasm-modules
+          optional: true
+      - name: cache
+        emptyDir:
+          sizeLimit: 1Gi
+      - name: logs
+        emptyDir:
+          sizeLimit: 2Gi
+      - name: tmp
+        emptyDir:
+          sizeLimit: 500Mi
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  app: wasmtime4j
+                  component: runtime
+              topologyKey: kubernetes.io/hostname
+      tolerations:
+      - key: "wasmtime4j.ai.tegmentum/dedicated"
+        operator: "Equal"
+        value: "true"
+        effect: "NoSchedule"
+      nodeSelector:
+        kubernetes.io/arch: amd64
