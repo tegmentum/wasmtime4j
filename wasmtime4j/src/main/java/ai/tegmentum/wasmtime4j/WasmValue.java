@@ -208,6 +208,23 @@ public final class WasmValue {
   }
 
   /**
+   * Creates a 128-bit vector value from two 64-bit values.
+   *
+   * @param high the high 64 bits
+   * @param low the low 64 bits
+   * @return a new WasmValue
+   */
+  public static WasmValue v128(final long high, final long low) {
+    final byte[] bytes = new byte[16];
+    // Store in little-endian order
+    for (int i = 0; i < 8; i++) {
+      bytes[i] = (byte) ((low >>> (i * 8)) & 0xFF);
+      bytes[i + 8] = (byte) ((high >>> (i * 8)) & 0xFF);
+    }
+    return new WasmValue(WasmValueType.V128, bytes);
+  }
+
+  /**
    * Creates a function reference value.
    *
    * @param value the function reference (nullable)
@@ -218,6 +235,16 @@ public final class WasmValue {
   }
 
   /**
+   * Creates a function reference value from a FunctionReference.
+   *
+   * @param functionReference the function reference
+   * @return a new WasmValue
+   */
+  public static WasmValue funcref(final FunctionReference functionReference) {
+    return new WasmValue(WasmValueType.FUNCREF, functionReference);
+  }
+
+  /**
    * Creates an external reference value.
    *
    * @param value the external reference (nullable)
@@ -225,6 +252,16 @@ public final class WasmValue {
    */
   public static WasmValue externref(final Object value) {
     return new WasmValue(WasmValueType.EXTERNREF, value);
+  }
+
+  /**
+   * Creates an external reference value (camelCase alias for externref).
+   *
+   * @param value the external reference (nullable)
+   * @return a new WasmValue
+   */
+  public static WasmValue externRef(final Object value) {
+    return externref(value);
   }
 
   /**
@@ -311,6 +348,184 @@ public final class WasmValue {
       throw new IllegalArgumentException(
           "Type mismatch: expected " + expectedType + ", got " + type);
     }
+  }
+
+  /**
+   * Creates an array of values from individual WasmValues.
+   *
+   * @param values the values to combine into an array
+   * @return array of WasmValues
+   * @throws IllegalArgumentException if values is null
+   */
+  public static WasmValue[] multiValue(final WasmValue... values) {
+    if (values == null) {
+      throw new IllegalArgumentException("Values array cannot be null");
+    }
+    return values.clone();
+  }
+
+  /**
+   * Validates an array of WasmValues against expected types.
+   *
+   * @param values the values to validate
+   * @param expectedTypes the expected types
+   * @throws IllegalArgumentException if validation fails
+   */
+  public static void validateMultiValue(
+      final WasmValue[] values, final WasmValueType[] expectedTypes) {
+    if (values == null) {
+      throw new IllegalArgumentException("Values array cannot be null");
+    }
+    if (expectedTypes == null) {
+      throw new IllegalArgumentException("Expected types array cannot be null");
+    }
+    if (values.length != expectedTypes.length) {
+      throw new IllegalArgumentException(
+          "Value count mismatch: expected " + expectedTypes.length + ", got " + values.length);
+    }
+
+    for (int i = 0; i < values.length; i++) {
+      if (values[i] == null) {
+        throw new IllegalArgumentException("Value at index " + i + " is null");
+      }
+      values[i].validateType(expectedTypes[i]);
+    }
+  }
+
+  /**
+   * Validates an array of WasmValues against expected types with enhanced error reporting.
+   *
+   * @param values the values to validate
+   * @param expectedTypes the expected types
+   * @param operation the operation being performed (for error context)
+   * @throws ai.tegmentum.wasmtime4j.exception.MultiValueException if validation fails
+   */
+  public static void validateMultiValueWithContext(
+      final WasmValue[] values, final WasmValueType[] expectedTypes, final String operation) {
+    if (values == null) {
+      throw ai.tegmentum.wasmtime4j.exception.MultiValueException.invalidValueArray(
+          operation != null ? operation : "validation");
+    }
+    if (expectedTypes == null) {
+      throw new IllegalArgumentException("Expected types array cannot be null");
+    }
+    if (values.length != expectedTypes.length) {
+      throw ai.tegmentum.wasmtime4j.exception.MultiValueException.countMismatch(
+          expectedTypes.length, values.length, operation);
+    }
+
+    for (int i = 0; i < values.length; i++) {
+      if (values[i] == null) {
+        throw new IllegalArgumentException("Value at index " + i + " is null");
+      }
+      try {
+        values[i].validateType(expectedTypes[i]);
+      } catch (IllegalArgumentException e) {
+        throw ai.tegmentum.wasmtime4j.exception.MultiValueException.typeValidationError(
+            i, expectedTypes[i].toString(), values[i].getType().toString());
+      }
+    }
+  }
+
+  /**
+   * Validates that a multi-value array doesn't exceed WebAssembly limits.
+   *
+   * @param values the values to check
+   * @throws ai.tegmentum.wasmtime4j.exception.MultiValueException if limits are exceeded
+   */
+  public static void validateMultiValueLimits(final WasmValue[] values) {
+    if (values != null && values.length > 16) {
+      throw ai.tegmentum.wasmtime4j.exception.MultiValueException.limitExceeded(values.length, 16);
+    }
+  }
+
+  /**
+   * Checks if an array of values represents a multi-value result (more than one value).
+   *
+   * @param values the values to check
+   * @return true if the array contains multiple values, false otherwise
+   */
+  public static boolean isMultiValue(final WasmValue[] values) {
+    return values != null && values.length > 1;
+  }
+
+  /**
+   * Gets the first value from a multi-value result, or null if empty.
+   *
+   * @param values the values array
+   * @return the first value, or null if empty
+   */
+  public static WasmValue getFirstValue(final WasmValue[] values) {
+    return (values != null && values.length > 0) ? values[0] : null;
+  }
+
+  /**
+   * Gets the last value from a multi-value result, or null if empty.
+   *
+   * @param values the values array
+   * @return the last value, or null if empty
+   */
+  public static WasmValue getLastValue(final WasmValue[] values) {
+    return (values != null && values.length > 0) ? values[values.length - 1] : null;
+  }
+
+  /**
+   * Extracts values of a specific type from a multi-value result.
+   *
+   * @param values the values array
+   * @param targetType the type to extract
+   * @return array of values matching the target type
+   */
+  public static WasmValue[] extractByType(
+      final WasmValue[] values, final WasmValueType targetType) {
+    if (values == null || targetType == null) {
+      return new WasmValue[0];
+    }
+
+    return java.util.Arrays.stream(values)
+        .filter(v -> v != null && v.getType() == targetType)
+        .toArray(WasmValue[]::new);
+  }
+
+  /**
+   * Converts a multi-value result to a string representation.
+   *
+   * @param values the values array
+   * @return string representation of the multi-value result
+   */
+  public static String multiValueToString(final WasmValue[] values) {
+    if (values == null) {
+      return "null";
+    }
+    if (values.length == 0) {
+      return "[]";
+    }
+    if (values.length == 1) {
+      return "[" + values[0].toString() + "]";
+    }
+
+    final StringBuilder sb = new StringBuilder("[");
+    for (int i = 0; i < values.length; i++) {
+      if (i > 0) {
+        sb.append(", ");
+      }
+      sb.append(values[i] != null ? values[i].toString() : "null");
+    }
+    sb.append("]");
+    return sb.toString();
+  }
+
+  /**
+   * Creates a deep copy of a multi-value result.
+   *
+   * @param values the values to copy
+   * @return deep copy of the values array
+   */
+  public static WasmValue[] copyMultiValue(final WasmValue[] values) {
+    if (values == null) {
+      return null;
+    }
+    return values.clone();
   }
 
   @Override

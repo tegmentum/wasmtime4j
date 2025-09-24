@@ -144,6 +144,92 @@ public interface Store extends Closeable {
       throws WasmException;
 
   /**
+   * Creates a new WebAssembly global variable with the specified type and initial value.
+   *
+   * <p>Global variables can store values that persist across function calls and can be either
+   * mutable or immutable. The created global will be bound to this store.
+   *
+   * @param valueType the type of values this global will store
+   * @param isMutable true if the global should be mutable, false for immutable
+   * @param initialValue the initial value to store in the global
+   * @return a new WasmGlobal that can be used in import maps or accessed directly
+   * @throws WasmException if global creation fails
+   * @throws IllegalArgumentException if any parameter is null or invalid
+   */
+  WasmGlobal createGlobal(
+      final WasmValueType valueType, final boolean isMutable, final WasmValue initialValue)
+      throws WasmException;
+
+  /**
+   * Creates a new immutable WebAssembly global variable with the specified type and initial value.
+   *
+   * <p>This is a convenience method equivalent to calling {@link #createGlobal(WasmValueType,
+   * boolean, WasmValue)} with {@code isMutable} set to {@code false}.
+   *
+   * @param valueType the type of values this global will store
+   * @param initialValue the initial value to store in the global
+   * @return a new immutable WasmGlobal
+   * @throws WasmException if global creation fails
+   * @throws IllegalArgumentException if any parameter is null or invalid
+   */
+  default WasmGlobal createImmutableGlobal(
+      final WasmValueType valueType, final WasmValue initialValue) throws WasmException {
+    return createGlobal(valueType, false, initialValue);
+  }
+
+  /**
+   * Creates a new mutable WebAssembly global variable with the specified type and initial value.
+   *
+   * <p>This is a convenience method equivalent to calling {@link #createGlobal(WasmValueType,
+   * boolean, WasmValue)} with {@code isMutable} set to {@code true}.
+   *
+   * @param valueType the type of values this global will store
+   * @param initialValue the initial value to store in the global
+   * @return a new mutable WasmGlobal
+   * @throws WasmException if global creation fails
+   * @throws IllegalArgumentException if any parameter is null or invalid
+   */
+  default WasmGlobal createMutableGlobal(
+      final WasmValueType valueType, final WasmValue initialValue) throws WasmException {
+    return createGlobal(valueType, true, initialValue);
+  }
+
+  /**
+   * Creates a function reference from a host function.
+   *
+   * <p>Function references enable dynamic function dispatch and callbacks in WebAssembly programs.
+   * They can be passed as parameters, stored in tables, and called indirectly.
+   *
+   * @param implementation the Java implementation of the function
+   * @param functionType the WebAssembly function type signature
+   * @return a FunctionReference that can be used as a WebAssembly value
+   * @throws WasmException if function reference creation fails
+   * @throws IllegalArgumentException if any parameter is null
+   */
+  FunctionReference createFunctionReference(
+      final HostFunction implementation, final FunctionType functionType) throws WasmException;
+
+  /**
+   * Creates a function reference from an existing WebAssembly function.
+   *
+   * @param function the WebAssembly function to create a reference for
+   * @return a FunctionReference for the given function
+   * @throws WasmException if function reference creation fails
+   * @throws IllegalArgumentException if function is null
+   */
+  FunctionReference createFunctionReference(final WasmFunction function) throws WasmException;
+
+  /**
+   * Gets the callback registry for this store.
+   *
+   * <p>The callback registry provides centralized management of callbacks and asynchronous
+   * operations between Java and WebAssembly.
+   *
+   * @return the callback registry
+   */
+  CallbackRegistry getCallbackRegistry();
+
+  /**
    * Creates an instance of a WebAssembly module in this store.
    *
    * <p>This method instantiates a compiled module within this store's execution context, making its

@@ -19,6 +19,7 @@ package ai.tegmentum.wasmtime4j.panama;
 import ai.tegmentum.wasmtime4j.FunctionType;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmValue;
+import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.MemorySegment;
@@ -252,12 +253,57 @@ public final class PanamaFunction implements WasmFunction, AutoCloseable {
     try {
       List<Integer> paramTypes = getParameterTypes();
       List<Integer> resultTypes = getResultTypes();
-      // For now, return a simple placeholder implementation
-      // TODO: Create proper FunctionType from parameter and result types
-      return null;
+
+      // Convert integer type constants to WasmValueType arrays
+      WasmValueType[] paramTypeArray = convertIntegerTypesToWasmTypes(paramTypes);
+      WasmValueType[] resultTypeArray = convertIntegerTypesToWasmTypes(resultTypes);
+
+      // Create and return proper FunctionType supporting multi-value
+      return new FunctionType(paramTypeArray, resultTypeArray);
     } catch (Exception e) {
       LOGGER.warning("Failed to get function type: " + e.getMessage());
       return null;
+    }
+  }
+
+  /**
+   * Converts integer type constants to WasmValueType array.
+   *
+   * @param integerTypes list of integer type constants
+   * @return array of WasmValueType
+   */
+  private WasmValueType[] convertIntegerTypesToWasmTypes(List<Integer> integerTypes) {
+    WasmValueType[] types = new WasmValueType[integerTypes.size()];
+    for (int i = 0; i < integerTypes.size(); i++) {
+      types[i] = convertIntegerTypeToWasmType(integerTypes.get(i));
+    }
+    return types;
+  }
+
+  /**
+   * Converts a single integer type constant to WasmValueType.
+   *
+   * @param integerType the integer type constant
+   * @return corresponding WasmValueType
+   */
+  private WasmValueType convertIntegerTypeToWasmType(int integerType) {
+    switch (integerType) {
+      case MemoryLayouts.WASM_I32:
+        return WasmValueType.I32;
+      case MemoryLayouts.WASM_I64:
+        return WasmValueType.I64;
+      case MemoryLayouts.WASM_F32:
+        return WasmValueType.F32;
+      case MemoryLayouts.WASM_F64:
+        return WasmValueType.F64;
+      case MemoryLayouts.WASM_V128:
+        return WasmValueType.V128;
+      case MemoryLayouts.WASM_FUNCREF:
+        return WasmValueType.FUNCREF;
+      case MemoryLayouts.WASM_ANYREF:
+        return WasmValueType.EXTERNREF;
+      default:
+        throw new IllegalArgumentException("Unknown WebAssembly type constant: " + integerType);
     }
   }
 

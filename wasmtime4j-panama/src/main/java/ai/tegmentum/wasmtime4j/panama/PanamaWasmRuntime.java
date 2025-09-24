@@ -188,6 +188,36 @@ public final class PanamaWasmRuntime implements WasmRuntime {
   }
 
   @Override
+  public ai.tegmentum.wasmtime4j.gc.GcRuntime createGcRuntime(final Engine engine)
+      throws WasmException {
+    ensureNotClosed();
+
+    if (engine == null) {
+      throw new IllegalArgumentException("Engine cannot be null");
+    }
+
+    try {
+      if (!(engine instanceof PanamaEngine)) {
+        throw new IllegalArgumentException(
+            "Engine must be a PanamaEngine instance for Panama runtime");
+      }
+
+      final PanamaEngine panamaEngine = (PanamaEngine) engine;
+      final long engineHandle = panamaEngine.getNativeHandle();
+
+      final PanamaGcRuntime gcRuntime = new PanamaGcRuntime(engineHandle);
+
+      // Track the GC runtime for cleanup
+      resourceTracker.track(gcRuntime, "PanamaGcRuntime");
+
+      LOGGER.fine("Created GC runtime for engine: 0x" + Long.toHexString(engineHandle));
+      return gcRuntime;
+    } catch (final Exception e) {
+      throw exceptionMapper.mapException(e);
+    }
+  }
+
+  @Override
   public Module compileModule(final Engine engine, final byte[] wasmBytes) throws WasmException {
     ensureNotClosed();
 

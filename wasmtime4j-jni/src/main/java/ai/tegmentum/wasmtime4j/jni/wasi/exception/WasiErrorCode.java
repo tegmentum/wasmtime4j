@@ -51,6 +51,7 @@ public enum WasiErrorCode {
   ECONNRESET(54, "Connection reset by peer", false, true, false, false, true),
   EADDRINUSE(48, "Address already in use", false, true, false, true, false),
   EADDRNOTAVAIL(49, "Address not available", false, true, false, false, true),
+  ENOTCONN(57, "Socket is not connected", false, true, false, false, false),
 
   // Permission and security errors
   EPERM(1, "Operation not permitted", false, false, true, false, false),

@@ -4,6 +4,7 @@ import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import ai.tegmentum.wasmtime4j.jni.wasi.permission.WasiPermissionManager;
+import ai.tegmentum.wasmtime4j.jni.wasi.security.WasiSecurityValidator;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
@@ -36,6 +37,8 @@ public final class WasiContext extends JniResource {
   /** Permission manager for controlling WASI capabilities. */
   private final WasiPermissionManager permissionManager;
 
+  /** Security validator for preventing unauthorized access. */
+  private final WasiSecurityValidator securityValidator;
 
   /** Environment variables for the WASI context. */
   private final Map<String, String> environment;
@@ -62,6 +65,7 @@ public final class WasiContext extends JniResource {
     JniValidation.requireNonNull(builder, "builder");
 
     this.permissionManager = builder.getPermissionManager();
+    this.securityValidator = builder.getSecurityValidator();
     this.environment = new ConcurrentHashMap<>(builder.getEnvironment());
     this.arguments = builder.getArguments().toArray(new String[0]);
     this.preopenedDirectories = new ConcurrentHashMap<>(builder.getPreopenedDirectories());
@@ -84,6 +88,15 @@ public final class WasiContext extends JniResource {
     return permissionManager;
   }
 
+  /**
+   * Gets the security validator for this WASI context.
+   *
+   * @return the security validator
+   */
+  public WasiSecurityValidator getSecurityValidator() {
+    ensureNotClosed();
+    return securityValidator;
+  }
 
   /**
    * Gets an environment variable value.

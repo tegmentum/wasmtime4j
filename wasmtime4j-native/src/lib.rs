@@ -36,6 +36,10 @@ pub mod memory;
 pub mod global;
 pub mod table;
 pub mod linker;
+pub mod threading;
+
+// Advanced execution control with fuel and epoch management
+pub mod execution_control;
 
 // Shared FFI architecture with trait-based conversions
 pub mod shared_ffi;
@@ -43,22 +47,103 @@ pub mod shared_ffi;
 // Common FFI utilities shared between JNI and Panama implementations
 pub mod ffi_common;
 
+// Test modules for runtime completion validation
+#[cfg(test)]
+pub mod test_runtime_completion;
+
 // Interface modules - will be implemented in later streams
+#[cfg(feature = "jni-bindings")]
 pub mod jni_bindings;
+#[cfg(feature = "jni-bindings")]
 pub mod jni_wasi_bindings;
+#[cfg(feature = "jni-bindings")]
+pub mod jni_gc_bindings;
+#[cfg(feature = "panama-ffi")]
 pub mod panama_ffi;
+#[cfg(feature = "panama-ffi")]
+pub mod panama_gc_ffi;
 
 // Advanced modules - will be implemented in later tasks
+#[cfg(feature = "wasi")]
 pub mod wasi;
+
+// Advanced configuration modules for comprehensive optimization control
+// pub mod config_cranelift;
+// pub mod platform_config;
+// pub mod engine_config;
+
+// Security module for enterprise features
+pub mod security;
+
+// Sandbox module for advanced isolation
+pub mod sandbox;
+
+// Access control module for authorization
+pub mod access_control;
+
+// Audit module for compliance and logging
+pub mod audit;
+
+// Production-ready enterprise features
+pub mod pooling_allocator;
+pub mod module_cache;
+pub mod profiler;
+pub mod resource_manager;
+pub mod error_recovery;
 
 // Async runtime for async WebAssembly operations
 pub mod async_runtime;
+
+// Real async operations implementation
+pub mod async_ops;
+
+// Enhanced WASI Preview 2 implementation
+pub mod wasi_preview2;
+
+// Real networking operations
+pub mod networking;
+
+// Enhanced filesystem operations
+pub mod filesystem;
+
+// Full process integration
+pub mod process;
+
+// WASI security and capabilities
+pub mod wasi_security;
 
 // Type introspection system
 pub mod type_introspection;
 
 // Component model support for WASI Preview 2
+#[cfg(feature = "component-model")]
 pub mod component;
+#[cfg(feature = "component-model")]
+pub mod component_core;
+#[cfg(feature = "component-model")]
+pub mod wit_interfaces;
+#[cfg(feature = "component-model")]
+pub mod component_orchestration;
+#[cfg(feature = "component-model")]
+pub mod component_resources;
+#[cfg(feature = "component-model")]
+pub mod distributed_components;
+
+// Experimental modules for cutting-edge WebAssembly proposals
+// pub mod exceptions;
+// pub mod simd;
+// pub mod multi_value;
+
+// Development tooling modules for developer experience
+// pub mod module_analyzer;
+// pub mod hot_reload;
+// pub mod debug_server;
+
+// WebAssembly GC implementation
+pub mod gc_types;
+pub mod gc_heap;
+pub mod gc_operations;
+pub mod gc;
 
 // Re-export core types for convenience
 pub use engine::{Engine, EngineBuilder, WasmFeature};
@@ -72,7 +157,65 @@ pub use global::{Global, GlobalValue, GlobalMetadata, ReferenceType as GlobalRef
 pub use table::{Table, TableElement, TableMetadata};
 pub use linker::{Linker, LinkerMetadata, LinkerConfig, LinkerInstantiationResult, HostFunctionDefinition, ImportDefinition, ImportType};
 
-// Re-export component model types for WASI Preview 2 support
+// Optional re-exports based on features
+#[cfg(feature = "wasi")]
+pub use wasi::{
+    WasiContext, WasiConfig, EnvironmentPolicy, DirectoryMapping,
+    WasiDirPermissions, WasiFilePermissions, StdioConfig, StdioSource, StdioSink,
+    WasiExecutionResult
+};
+
+// Re-export async runtime functionality
+pub use async_runtime::{
+    AsyncOperation, AsyncOperationType, AsyncOperationStatus,
+    AsyncFunctionCallContext, AsyncCompilationContext, CompilationOptions,
+    AsyncCallback, ProgressCallback,
+    get_async_runtime, get_runtime_handle
+};
+
+// Re-export async operations functionality
+pub use async_ops::{
+    AsyncOperationsManager, AsyncFileIOOperation, AsyncFileIOType,
+    AsyncNetworkConnection, AsyncTimer, AsyncTimerType, AsyncOperationResult
+};
+
+// Re-export WASI Preview 2 functionality
+pub use wasi_preview2::{
+    WasiPreview2Context, WasiPreview2Config, WasiStream, WasiStreamType,
+    WasiFuture, WasiFutureType, AsyncWasiOperation, AsyncWasiOperationType
+};
+
+// Re-export networking functionality
+pub use networking::{
+    NetworkManager, NetworkConfig, TcpConnection, UdpSocketWrapper,
+    TcpListenerWrapper, HttpConnection, ConnectionStatus, HttpVersion,
+    NetworkStats, HttpRequest, HttpResponse
+};
+
+// Re-export filesystem functionality
+pub use filesystem::{
+    FileSystemManager, FileSystemConfig, FileHandle, DirectoryHandle,
+    EnhancedFileMetadata, FileBasicMetadata, FileExtendedMetadata,
+    FileSecurityMetadata, FileType, DirectoryEntry, FileSystemStats
+};
+
+// Re-export process functionality
+pub use process::{
+    ProcessManager, ProcessConfig, ProcessHandle, ProcessStatus,
+    ProcessResourceUsage, ProcessStdioConfig, EnvironmentInheritance,
+    ProcessPriority, ProcessSignal, ProcessSpawnOptions, EnvironmentOperation,
+    ProcessStats
+};
+
+// Re-export WASI security functionality
+pub use wasi_security::{
+    WasiSecurityManager, WasiSecurityConfig, WasiCapability, WasiCapabilitySet,
+    WasiSecurityPolicy, WasiSecuritySession, SecurityAction, PathPattern,
+    NetworkPattern, EnvironmentPattern, ProcessPattern, WasiSecurityStats
+};
+
+// Component model re-exports
+#[cfg(feature = "component-model")]
 pub use component::{
     ComponentEngine, Component, ComponentMetadata, ComponentStoreData,
     InterfaceDefinition, FunctionDefinition, Parameter, TypeDefinition, ResourceDefinition,
@@ -80,39 +223,148 @@ pub use component::{
     ResourceManager, HostInterface, InstanceInfo
 };
 
-// Re-export WASI types for system interface support
-pub use wasi::{
-    WasiContext, WasiConfig, EnvironmentPolicy, DirectoryMapping,
-    WasiDirPermissions, WasiFilePermissions, StdioConfig, StdioSource, StdioSink,
-    WasiExecutionResult
+#[cfg(feature = "component-model")]
+pub use component_core::{
+    EnhancedComponentEngine, ComponentInstanceInfo, ComponentMetrics,
+    ComponentInterface, ComponentFunction
 };
 
-// Re-export type introspection types
-pub use type_introspection::{
-    IntrospectionValueType, MemoryTypeInfo, TableTypeInfo, GlobalTypeInfo, FuncTypeInfo,
-    TypeKind, ImportDescriptorInfo, ExportDescriptorInfo,
-    ModuleTypeIntrospector, InstanceTypeIntrospector
+#[cfg(feature = "component-model")]
+pub use wit_interfaces::{
+    WitInterfaceManager, WitInterface, WitMethod, WitParameter, WitType,
+    WitTypeKind, PrimitiveType, CompositeType, ValidationResult, ValidationStatus
 };
 
-// Re-export async runtime types for async WebAssembly operations
-pub use async_runtime::{
-    AsyncOperation, AsyncOperationType, AsyncOperationStatus,
-    AsyncFunctionCallContext, AsyncCompilationContext, CompilationOptions,
-    AsyncCallback, ProgressCallback,
-    get_async_runtime, get_runtime_handle,
-    execute_async_function_call, compile_module_async,
-    cancel_async_operation, get_operation_status, wait_for_operation
+#[cfg(feature = "component-model")]
+pub use component_orchestration::{
+    ComponentOrchestrator, ComponentGraph, ComponentNode, ComponentConfiguration,
+    ManagedComponent, ComponentState, HealthStatus, ComponentChannel,
+    ComponentMessage, MessagePayload, LoadBalancingStrategy
+};
+
+#[cfg(feature = "component-model")]
+pub use component_resources::{
+    ComponentResourceManager, ManagedResource, ResourceHandle, ResourcePermissions,
+    ResourceState, AccessType, ResourceQuotas, UsageTracking
+};
+
+#[cfg(feature = "component-model")]
+pub use distributed_components::{
+    DistributedComponentManager, ComponentDiscoveryService, ComponentAdvertisement,
+    NodeInfo, NodeCapabilities, SecureCommunicationManager, DistributedSyncService,
+    ComponentBackupService, NetworkTopologyManager
+};
+//
+// pub use type_introspection::{
+//     IntrospectionValueType, MemoryTypeInfo, TableTypeInfo, GlobalTypeInfo, FuncTypeInfo,
+//     TypeKind, ImportDescriptorInfo, ExportDescriptorInfo,
+//     ModuleTypeIntrospector, InstanceTypeIntrospector
+// };
+//
+// pub use async_runtime::{
+//     AsyncOperation, AsyncOperationType, AsyncOperationStatus,
+//     AsyncFunctionCallContext, AsyncCompilationContext, CompilationOptions,
+//     AsyncCallback, ProgressCallback,
+//     get_async_runtime, get_runtime_handle,
+//     execute_async_function_call, compile_module_async,
+//     cancel_async_operation, get_operation_status, wait_for_operation
+// };
+//
+// pub use security::{
+//     ModuleSigner, ModuleVerifier, ModuleSignature, SignatureAlgorithm,
+//     TrustStore, CertificateInfo, SecurityPolicy
+// };
+//
+// pub use sandbox::{
+//     SandboxManager, SandboxConfig, SandboxConfigBuilder, SecurityContext,
+//     SandboxedInstance, Capability, FilePermissions, ResourceLimits as SandboxResourceLimits,
+//     ResourceUsage, CapabilityAuditor, AuditEntry
+// };
+
+// Disabled re-exports for modules not currently compiling
+// pub use access_control::{
+//     AuthorizationEngine, RbacEngine, AbacEngine, UserIdentity, Role, Permission,
+//     AccessRequest, AuthorizationDecision, SessionToken, SessionManager,
+//     AbacPolicy, AbacCondition, CombiningAlgorithm
+// };
+//
+// pub use audit::{
+//     AuditLogger, AuditLoggerConfig, AuditEvent, AuditEventType, AuditSeverity,
+//     ComplianceReport, ComplianceReportConfig, ComplianceFramework,
+//     EventCorrelator, AlertManager, Alert
+// };
+//
+// pub use exceptions::{
+//     ExceptionHandler, ExceptionTag, ExceptionPayload, ExceptionHandlingConfig,
+//     UnwindContext
+// };
+//
+// pub use simd::{
+//     SIMDOperations, SIMDConfig, V128 as SIMDVector
+// };
+//
+// pub use multi_value::{
+//     MultiValueFunction, MultiValueSignature, MultiValueResult, MultiValueConfig,
+//     MultiValueHostFunction, ClosureHostFunction
+// };
+
+// Re-export WebAssembly GC types for garbage collection support
+pub use gc::{
+    WasmGcRuntime, StructOperationResult, ArrayOperationResult, RefOperationResult, WasmtimeGcRef
+};
+pub use gc_types::{
+    GcReferenceType, StructTypeDefinition, ArrayTypeDefinition, FieldDefinition, FieldType as GcFieldType,
+    GcObject, GcValue, GcTypeRegistry, GcTypeConverter
+};
+pub use gc_heap::{
+    GcHeap, GcHeapConfig, GcHeapStats, GcObjectEntry, ObjectId, Generation,
+    GcCollectionResult, GcWeakReference
 };
 
 // Re-export shared FFI utilities for interface implementations
 pub use shared_ffi::{
-    ParameterConverter, ReturnValueConverter, 
+    ParameterConverter, ReturnValueConverter,
     FFI_SUCCESS, FFI_ERROR,
     FfiStrategy, FfiOptLevel, FfiWasmFeature,
     BooleanReturnConverter, IntegerReturnConverter, PointerReturnConverter,
     convert_wasm_features, validate_wasm_features,
     validation, error_mapping
 };
+
+// Re-export enterprise features for production use
+pub use pooling_allocator::{
+    PoolingAllocator, PoolingAllocatorConfig, PoolStatistics
+};
+pub use module_cache::{
+    ModuleCache, ModuleCacheConfig, CacheStatistics, CacheEntryMetadata
+};
+pub use profiler::{
+    PerformanceProfiler, ProfilerConfig, FunctionProfile, RealTimeMetrics,
+    CompilationMetrics, PerformanceDashboard, RegressionDetection, RegressionSeverity
+};
+pub use resource_manager::{
+    ResourceManager as ProductionResourceManager, ResourceQuota, ResourceUsage, ResourceViolation,
+    ResourceViolationType, ResourceAction, ResourceManagerStatistics
+};
+pub use error_recovery::{
+    ErrorRecoverySystem, ErrorCategory, ErrorSeverity, ErrorEvent,
+    RecoveryAction, RetryStrategy, RecoveryStatistics, ChaosConfig
+};
+
+// Disabled development tooling re-exports
+// pub use module_analyzer::{
+//     ModuleAnalyzer, FunctionInfo, ImportInfo, ExportInfo, MemoryInfo, TableInfo, GlobalInfo,
+//     SecurityAnalysis, PerformanceAnalysis, SizeAnalysis
+// };
+//
+// pub use hot_reload::{
+//     HotReloader, ReloadConfiguration, ReloadResult, ModuleState, ReloadStatistics
+// };
+//
+// pub use debug_server::{
+//     DebugServer, DebugSession, Breakpoint, ExecutionContext, StackFrame,
+//     VariableValue, WatchResult, ExecutionState as DebugExecutionState, DebugEvent
+// };
 
 /// Library version information
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");

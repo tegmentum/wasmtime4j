@@ -13,11 +13,11 @@ import java.util.Map;
 import java.util.logging.Logger;
 
 /**
- * Comprehensive performance target validation framework for establishing and validating
- * performance achievements against defined targets.
+ * Comprehensive performance target validation framework for establishing and validating performance
+ * achievements against defined targets.
  *
- * <p>This validator analyzes actual benchmark results to determine if performance targets
- * are achieved and provides detailed analysis of performance characteristics.
+ * <p>This validator analyzes actual benchmark results to determine if performance targets are
+ * achieved and provides detailed analysis of performance characteristics.
  *
  * <p>Key features:
  *
@@ -32,8 +32,7 @@ import java.util.logging.Logger;
 public final class PerformanceTargetValidator {
 
   /** Logger for performance target validation. */
-  private static final Logger LOGGER =
-      Logger.getLogger(PerformanceTargetValidator.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(PerformanceTargetValidator.class.getName());
 
   /** Performance targets based on specification requirements. */
   public static final class PerformanceTargets {
@@ -133,7 +132,12 @@ public final class PerformanceTargetValidator {
       return String.format(
           "CategoryValidationResult{category='%s', runtime='%s', performance=%.0f ops/s, "
               + "target=%.0f ops/s, ratio=%.1f%%, meetsTarget=%s}",
-          category, runtime, actualPerformance, targetPerformance, achievementRatio * 100, meetsTarget);
+          category,
+          runtime,
+          actualPerformance,
+          targetPerformance,
+          achievementRatio * 100,
+          meetsTarget);
     }
   }
 
@@ -251,24 +255,31 @@ public final class PerformanceTargetValidator {
     final Map<String, Double> runtimeComparison = calculateRuntimeComparison(results);
 
     // Determine overall success
-    final boolean allTargetsAchieved = categoryResults.stream().allMatch(CategoryValidationResult::meetsTarget);
-    final boolean allMinimumsAchieved = categoryResults.stream().allMatch(CategoryValidationResult::meetsMinimum);
+    final boolean allTargetsAchieved =
+        categoryResults.stream().allMatch(CategoryValidationResult::meetsTarget);
+    final boolean allMinimumsAchieved =
+        categoryResults.stream().allMatch(CategoryValidationResult::meetsMinimum);
 
     // Generate summary report
     final String summaryReport = generateSummaryReport(categoryResults, runtimeComparison);
 
-    final ComprehensiveValidationResult result = new ComprehensiveValidationResult(
-        categoryResults,
-        runtimeComparison,
-        allTargetsAchieved,
-        allMinimumsAchieved,
-        grouped.size(),
-        (int) categoryResults.stream().mapToLong(r -> r.meetsTarget() ? 1 : 0).sum(),
-        summaryReport,
-        LocalDateTime.now());
+    final ComprehensiveValidationResult result =
+        new ComprehensiveValidationResult(
+            categoryResults,
+            runtimeComparison,
+            allTargetsAchieved,
+            allMinimumsAchieved,
+            grouped.size(),
+            (int) categoryResults.stream().mapToLong(r -> r.meetsTarget() ? 1 : 0).sum(),
+            summaryReport,
+            LocalDateTime.now());
 
-    LOGGER.info("Performance validation completed: " + result.getSuccessfulCategories()
-        + "/" + result.getTotalCategories() + " targets achieved");
+    LOGGER.info(
+        "Performance validation completed: "
+            + result.getSuccessfulCategories()
+            + "/"
+            + result.getTotalCategories()
+            + " targets achieved");
 
     return result;
   }
@@ -285,13 +296,18 @@ public final class PerformanceTargetValidator {
 
     final StringBuilder analysis = new StringBuilder();
     analysis.append("Performance Achievement Analysis\n");
-    analysis.append("Generated: ").append(LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)).append("\n");
+    analysis
+        .append("Generated: ")
+        .append(LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))
+        .append("\n");
     analysis.append("=================================\n\n");
 
     // Runtime comparison analysis
     analysis.append("Runtime Performance Comparison:\n");
     for (final Map.Entry<String, Double> entry : validation.getRuntimeComparison().entrySet()) {
-      analysis.append(String.format("  %s: %.1f%% of JNI performance\n", entry.getKey(), entry.getValue() * 100));
+      analysis.append(
+          String.format(
+              "  %s: %.1f%% of JNI performance\n", entry.getKey(), entry.getValue() * 100));
     }
     analysis.append("\n");
 
@@ -299,39 +315,55 @@ public final class PerformanceTargetValidator {
     analysis.append("Category Performance Analysis:\n");
     for (final CategoryValidationResult result : validation.getCategoryResults()) {
       final String status = result.meetsTarget() ? "✅ ACHIEVED" : "❌ MISSED";
-      analysis.append(String.format("  %s %s: %.0f ops/s (%.1f%% of target)\n",
-          status, result.getCategory() + "/" + result.getRuntime(),
-          result.getActualPerformance(), result.getAchievementRatio() * 100));
+      analysis.append(
+          String.format(
+              "  %s %s: %.0f ops/s (%.1f%% of target)\n",
+              status,
+              result.getCategory() + "/" + result.getRuntime(),
+              result.getActualPerformance(),
+              result.getAchievementRatio() * 100));
     }
 
     // Performance targets vs achievements
     analysis.append("\nPerformance Targets vs Achievements:\n");
     analysis.append("JNI Runtime:\n");
-    final List<CategoryValidationResult> jniResults = validation.getCategoryResults().stream()
-        .filter(r -> "JNI".equals(r.getRuntime()))
-        .collect(ArrayList::new, (list, item) -> list.add(item), ArrayList::addAll);
+    final List<CategoryValidationResult> jniResults =
+        validation.getCategoryResults().stream()
+            .filter(r -> "JNI".equals(r.getRuntime()))
+            .collect(ArrayList::new, (list, item) -> list.add(item), ArrayList::addAll);
 
     if (!jniResults.isEmpty()) {
-      final double avgJniAchievement = jniResults.stream()
-          .mapToDouble(CategoryValidationResult::getAchievementRatio)
-          .average().orElse(0.0);
-      analysis.append(String.format("  Average achievement: %.1f%% of targets\n", avgJniAchievement * 100));
-      analysis.append(String.format("  Target: 85%% of native performance - %s\n",
-          avgJniAchievement >= 0.85 ? "ACHIEVED" : "MISSED"));
+      final double avgJniAchievement =
+          jniResults.stream()
+              .mapToDouble(CategoryValidationResult::getAchievementRatio)
+              .average()
+              .orElse(0.0);
+      analysis.append(
+          String.format("  Average achievement: %.1f%% of targets\n", avgJniAchievement * 100));
+      analysis.append(
+          String.format(
+              "  Target: 85%% of native performance - %s\n",
+              avgJniAchievement >= 0.85 ? "ACHIEVED" : "MISSED"));
     }
 
     analysis.append("\nPanama Runtime:\n");
-    final List<CategoryValidationResult> panamaResults = validation.getCategoryResults().stream()
-        .filter(r -> "PANAMA".equals(r.getRuntime()))
-        .collect(ArrayList::new, (list, item) -> list.add(item), ArrayList::addAll);
+    final List<CategoryValidationResult> panamaResults =
+        validation.getCategoryResults().stream()
+            .filter(r -> "PANAMA".equals(r.getRuntime()))
+            .collect(ArrayList::new, (list, item) -> list.add(item), ArrayList::addAll);
 
     if (!panamaResults.isEmpty()) {
-      final double avgPanamaAchievement = panamaResults.stream()
-          .mapToDouble(CategoryValidationResult::getAchievementRatio)
-          .average().orElse(0.0);
-      analysis.append(String.format("  Average achievement: %.1f%% of targets\n", avgPanamaAchievement * 100));
-      analysis.append(String.format("  Target: 80%% of native performance - %s\n",
-          avgPanamaAchievement >= 0.80 ? "ACHIEVED" : "MISSED"));
+      final double avgPanamaAchievement =
+          panamaResults.stream()
+              .mapToDouble(CategoryValidationResult::getAchievementRatio)
+              .average()
+              .orElse(0.0);
+      analysis.append(
+          String.format("  Average achievement: %.1f%% of targets\n", avgPanamaAchievement * 100));
+      analysis.append(
+          String.format(
+              "  Target: 80%% of native performance - %s\n",
+              avgPanamaAchievement >= 0.80 ? "ACHIEVED" : "MISSED"));
     }
 
     return analysis.toString();
@@ -394,14 +426,17 @@ public final class PerformanceTargetValidator {
         final Map<String, String> params = new HashMap<>();
         if (benchmarkNode.has("params")) {
           final JsonNode paramsNode = benchmarkNode.get("params");
-          paramsNode.fields().forEachRemaining(entry -> {
-            final String key = entry.getKey();
-            final String value = entry.getValue().asText();
-            params.put(key, value);
-            if ("runtimeTypeName".equals(key)) {
-              runtimeHolder[0] = value;
-            }
-          });
+          paramsNode
+              .fields()
+              .forEachRemaining(
+                  entry -> {
+                    final String key = entry.getKey();
+                    final String value = entry.getValue().asText();
+                    params.put(key, value);
+                    if ("runtimeTypeName".equals(key)) {
+                      runtimeHolder[0] = value;
+                    }
+                  });
         }
         final String runtime = runtimeHolder[0];
 
@@ -412,7 +447,8 @@ public final class PerformanceTargetValidator {
     return results;
   }
 
-  private Map<String, List<BenchmarkResult>> groupResultsByCategory(final List<BenchmarkResult> results) {
+  private Map<String, List<BenchmarkResult>> groupResultsByCategory(
+      final List<BenchmarkResult> results) {
     final Map<String, List<BenchmarkResult>> grouped = new HashMap<>();
 
     for (final BenchmarkResult result : results) {
@@ -444,16 +480,15 @@ public final class PerformanceTargetValidator {
     }
   }
 
-  private CategoryValidationResult validateCategory(final String categoryKey, final List<BenchmarkResult> results) {
+  private CategoryValidationResult validateCategory(
+      final String categoryKey, final List<BenchmarkResult> results) {
     final String[] parts = categoryKey.split(":");
     final String category = parts[0];
     final String runtime = parts[1];
 
     // Calculate average performance
-    final double avgPerformance = results.stream()
-        .mapToDouble(BenchmarkResult::getScore)
-        .average()
-        .orElse(0.0);
+    final double avgPerformance =
+        results.stream().mapToDouble(BenchmarkResult::getScore).average().orElse(0.0);
 
     // Get target performance for this category and runtime
     final double targetPerformance = getTargetPerformance(category, runtime);
@@ -466,9 +501,10 @@ public final class PerformanceTargetValidator {
     final boolean meetsTarget = avgPerformance >= targetPerformance;
     final boolean meetsMinimum = avgPerformance >= minimumPerformance;
 
-    final String analysis = String.format(
-        "Category %s with %s runtime: actual=%.0f ops/s, target=%.0f ops/s, minimum=%.0f ops/s",
-        category, runtime, avgPerformance, targetPerformance, minimumPerformance);
+    final String analysis =
+        String.format(
+            "Category %s with %s runtime: actual=%.0f ops/s, target=%.0f ops/s, minimum=%.0f ops/s",
+            category, runtime, avgPerformance, targetPerformance, minimumPerformance);
 
     return new CategoryValidationResult(
         category,
@@ -569,10 +605,8 @@ public final class PerformanceTargetValidator {
     // Calculate average performance for each runtime
     final Map<String, Double> runtimeAverages = new HashMap<>();
     for (final Map.Entry<String, List<BenchmarkResult>> entry : runtimeGroups.entrySet()) {
-      final double avg = entry.getValue().stream()
-          .mapToDouble(BenchmarkResult::getScore)
-          .average()
-          .orElse(0.0);
+      final double avg =
+          entry.getValue().stream().mapToDouble(BenchmarkResult::getScore).average().orElse(0.0);
       runtimeAverages.put(entry.getKey(), avg);
     }
 
@@ -593,22 +627,33 @@ public final class PerformanceTargetValidator {
       final Map<String, Double> runtimeComparison) {
     final StringBuilder report = new StringBuilder();
     report.append("Performance Target Validation Summary\n");
-    report.append("Generated: ").append(LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)).append("\n");
+    report
+        .append("Generated: ")
+        .append(LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))
+        .append("\n");
     report.append("=====================================\n\n");
 
     // Overall statistics
-    final long targetsAchieved = categoryResults.stream().mapToLong(r -> r.meetsTarget() ? 1 : 0).sum();
-    final long minimumsAchieved = categoryResults.stream().mapToLong(r -> r.meetsMinimum() ? 1 : 0).sum();
+    final long targetsAchieved =
+        categoryResults.stream().mapToLong(r -> r.meetsTarget() ? 1 : 0).sum();
+    final long minimumsAchieved =
+        categoryResults.stream().mapToLong(r -> r.meetsMinimum() ? 1 : 0).sum();
 
     report.append("Overall Results:\n");
-    report.append(String.format("  Performance targets achieved: %d/%d\n", targetsAchieved, categoryResults.size()));
-    report.append(String.format("  Minimum thresholds achieved: %d/%d\n", minimumsAchieved, categoryResults.size()));
+    report.append(
+        String.format(
+            "  Performance targets achieved: %d/%d\n", targetsAchieved, categoryResults.size()));
+    report.append(
+        String.format(
+            "  Minimum thresholds achieved: %d/%d\n", minimumsAchieved, categoryResults.size()));
     report.append("\n");
 
     // Runtime comparison
     report.append("Runtime Performance Comparison:\n");
     for (final Map.Entry<String, Double> entry : runtimeComparison.entrySet()) {
-      report.append(String.format("  %s: %.1f%% of JNI performance\n", entry.getKey(), entry.getValue() * 100));
+      report.append(
+          String.format(
+              "  %s: %.1f%% of JNI performance\n", entry.getKey(), entry.getValue() * 100));
     }
     report.append("\n");
 
@@ -638,7 +683,8 @@ public final class PerformanceTargetValidator {
       final Path resultsFile = Path.of(args[0]);
 
       System.out.println("Validating performance targets from: " + resultsFile);
-      final ComprehensiveValidationResult result = validator.validatePerformanceTargets(resultsFile);
+      final ComprehensiveValidationResult result =
+          validator.validatePerformanceTargets(resultsFile);
 
       System.out.println(result.getSummaryReport());
 

@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: wasmtime4j-prod
+  labels:
+    name: wasmtime4j-prod
+    environment: production
+    app: wasmtime4j
+  annotations:
+    scheduler.alpha.kubernetes.io/node-selector: "environment=production"

@@ -1,0 +1,13 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: wasmtime4j-pdb
+  labels:
+    app: wasmtime4j
+    component: availability
+spec:
+  minAvailable: 60%
+  selector:
+    matchLabels:
+      app: wasmtime4j
+      component: runtime

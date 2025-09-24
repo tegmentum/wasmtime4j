@@ -150,6 +150,69 @@ public final class OptimizedMarshalling {
   }
 
   /**
+   * Marshals multiple sets of WebAssembly parameters in a batch for improved performance. Useful
+   * for calling the same function multiple times with different parameters.
+   *
+   * @param parameterSets array of parameter sets to marshal
+   * @return array of native parameter representations
+   * @throws IllegalArgumentException if parameters are invalid
+   */
+  public static Object[][] marshalParametersBatch(final WasmValue[]... parameterSets) {
+    if (parameterSets == null) {
+      throw new IllegalArgumentException("parameterSets cannot be null");
+    }
+
+    final long startTime = PerformanceMonitor.startOperation("batch_parameter_marshalling");
+    try {
+      final Object[][] results = new Object[parameterSets.length][];
+
+      // Process each parameter set
+      for (int i = 0; i < parameterSets.length; i++) {
+        results[i] = marshalParameters(parameterSets[i]);
+      }
+
+      return results;
+
+    } finally {
+      PerformanceMonitor.endOperation("batch_parameter_marshalling", startTime);
+    }
+  }
+
+  /**
+   * Optimized marshalling specifically for multi-value function results. Handles the common case
+   * where functions return multiple values efficiently.
+   *
+   * @param values the multi-value result to marshal
+   * @return native representation optimized for multi-value returns
+   * @throws IllegalArgumentException if values are invalid
+   */
+  public static Object[] marshalMultiValueResults(final WasmValue[] values) {
+    if (values == null) {
+      return new Object[0];
+    }
+
+    final long startTime = PerformanceMonitor.startOperation("multivalue_result_marshalling");
+    try {
+      // For multi-value results, we optimize for the common patterns
+      switch (values.length) {
+        case 0:
+          return new Object[0];
+        case 1:
+          return new Object[] {marshalSingleValue(values[0])};
+        case 2:
+          // Dual return values are very common in multi-value functions
+          return new Object[] {marshalSingleValue(values[0]), marshalSingleValue(values[1])};
+        default:
+          // For larger multi-value returns, use the standard marshalling
+          return marshalParameters(values);
+      }
+
+    } finally {
+      PerformanceMonitor.endOperation("multivalue_result_marshalling", startTime);
+    }
+  }
+
+  /**
    * Unmarshals native results back to WebAssembly values.
    *
    * @param nativeResults the native results to unmarshal

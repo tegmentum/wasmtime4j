@@ -209,6 +209,65 @@ public final class EngineConfig {
   }
 
   /**
+   * Adds a WebAssembly feature to the enabled features set.
+   *
+   * @param feature the WebAssembly feature to add
+   * @return this configuration for method chaining
+   * @throws IllegalArgumentException if feature is null
+   */
+  public EngineConfig addWasmFeature(final WasmFeature feature) {
+    if (feature == null) {
+      throw new IllegalArgumentException("WebAssembly feature cannot be null");
+    }
+    this.wasmFeatures.add(feature);
+
+    // Update individual feature flags based on the feature
+    switch (feature) {
+      case REFERENCE_TYPES:
+        this.wasmReferenceTypes = true;
+        break;
+      case SIMD:
+        this.wasmSimd = true;
+        break;
+      case RELAXED_SIMD:
+        this.wasmRelaxedSimd = true;
+        break;
+      case MULTI_VALUE:
+        this.wasmMultiValue = true;
+        break;
+      case BULK_MEMORY:
+        this.wasmBulkMemory = true;
+        break;
+      case THREADS:
+        this.wasmThreads = true;
+        break;
+      case TAIL_CALL:
+        this.wasmTailCall = true;
+        break;
+      case MULTI_MEMORY:
+        this.wasmMultiMemory = true;
+        break;
+      case MEMORY64:
+        this.wasmMemory64 = true;
+        break;
+      case COMPONENT_MODEL:
+        // Component Model is handled at the runtime level
+        break;
+      case GC:
+        // GC is handled at the runtime level
+        break;
+      case EXCEPTIONS:
+        // Exceptions are handled at the runtime level
+        break;
+      default:
+        // Unknown feature, just add to the set
+        break;
+    }
+
+    return this;
+  }
+
+  /**
    * Enables or disables fuel consumption tracking.
    *
    * @param enabled true to enable fuel consumption

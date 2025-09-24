@@ -265,11 +265,76 @@ impl WasmtimeError {
         }
     }
 
-    /// Create from Wasmtime compilation error
+    /// Create from Wasmtime compilation error with enhanced context
     pub fn from_compilation_error(error: wasmtime::Error) -> Self {
+        let error_string = error.to_string();
+        let enhanced_message = Self::enhance_compilation_error_message(&error_string);
+
         WasmtimeError::Compilation {
-            message: error.to_string(),
+            message: enhanced_message,
         }
+    }
+
+    /// Create from Wasmtime runtime error with backtrace preservation
+    pub fn from_runtime_error(error: wasmtime::Error) -> Self {
+        let error_string = error.to_string();
+        let enhanced_message = Self::enhance_runtime_error_message(&error_string);
+
+        // Extract backtrace if available
+        let backtrace = if let Some(trap) = error.downcast_ref::<Trap>() {
+            trap.wasm_trace().cloned()
+        } else {
+            None
+        };
+
+        WasmtimeError::Runtime {
+            message: enhanced_message,
+            backtrace,
+        }
+    }
+
+    /// Enhance compilation error messages with context and suggestions
+    fn enhance_compilation_error_message(original: &str) -> String {
+        let lowercase = original.to_lowercase();
+
+        let suggestion = if lowercase.contains("invalid magic number") {
+            " (Suggestion: Ensure the input is valid WebAssembly bytecode, not WAT text format)"
+        } else if lowercase.contains("unsupported feature") || lowercase.contains("feature") {
+            " (Suggestion: Check if the required WebAssembly features are enabled in the engine configuration)"
+        } else if lowercase.contains("memory") && lowercase.contains("limit") {
+            " (Suggestion: Reduce memory requirements or increase engine memory limits)"
+        } else if lowercase.contains("too many") {
+            " (Suggestion: The module exceeds Wasmtime resource limits - consider splitting into smaller modules)"
+        } else if lowercase.contains("validation") {
+            " (Suggestion: The WebAssembly module failed validation - check for binary corruption or incompatible features)"
+        } else {
+            ""
+        };
+
+        format!("{}{}", original, suggestion)
+    }
+
+    /// Enhance runtime error messages with context and suggestions
+    fn enhance_runtime_error_message(original: &str) -> String {
+        let lowercase = original.to_lowercase();
+
+        let suggestion = if lowercase.contains("out of bounds") {
+            " (Suggestion: Check array indices and memory access patterns in your WebAssembly code)"
+        } else if lowercase.contains("stack overflow") {
+            " (Suggestion: Reduce recursion depth or increase stack size limits)"
+        } else if lowercase.contains("fuel") {
+            " (Suggestion: Increase fuel limit or optimize WebAssembly code for better performance)"
+        } else if lowercase.contains("trap") {
+            " (Suggestion: This is a WebAssembly trap - check the wasm code for unreachable instructions or invalid operations)"
+        } else if lowercase.contains("timeout") {
+            " (Suggestion: Increase execution timeout or optimize the WebAssembly code)"
+        } else if lowercase.contains("memory") {
+            " (Suggestion: Check memory allocation patterns and ensure sufficient memory is available)"
+        } else {
+            ""
+        };
+
+        format!("{}{}", original, suggestion)
     }
 
     /// Create invalid parameter error with defensive checks
@@ -790,29 +855,32 @@ pub mod jni_utils {
     }
 
     /// Convert WasmtimeError to JNI exception class name
+    ///
+    /// Maps native WasmtimeError types to specific Java exception classes for
+    /// fine-grained error handling and improved debugging experience.
     pub fn error_to_exception_class(error: &WasmtimeError) -> &'static str {
         match error {
-            WasmtimeError::Compilation { .. } => "ai/tegmentum/wasmtime4j/WasmCompilationException",
-            WasmtimeError::Validation { .. } => "ai/tegmentum/wasmtime4j/WasmValidationException",
-            WasmtimeError::Runtime { .. } => "ai/tegmentum/wasmtime4j/WasmRuntimeException",
-            WasmtimeError::Memory { .. } => "ai/tegmentum/wasmtime4j/WasmMemoryException",
-            WasmtimeError::Function { .. } => "ai/tegmentum/wasmtime4j/WasmFunctionException",
-            WasmtimeError::Type { .. } => "ai/tegmentum/wasmtime4j/WasmTypeException",
+            WasmtimeError::Compilation { .. } => "ai/tegmentum/wasmtime4j/exception/ModuleCompilationException",
+            WasmtimeError::Validation { .. } => "ai/tegmentum/wasmtime4j/exception/ModuleValidationException",
+            WasmtimeError::Module { .. } => "ai/tegmentum/wasmtime4j/exception/ModuleValidationException",
+            WasmtimeError::Runtime { .. } => "ai/tegmentum/wasmtime4j/exception/TrapException",
+            WasmtimeError::EngineConfig { .. } => "ai/tegmentum/wasmtime4j/exception/CompilationException",
+            WasmtimeError::Store { .. } => "ai/tegmentum/wasmtime4j/exception/ModuleInstantiationException",
+            WasmtimeError::Instance { .. } => "ai/tegmentum/wasmtime4j/exception/ModuleInstantiationException",
+            WasmtimeError::Memory { .. } => "ai/tegmentum/wasmtime4j/exception/RuntimeException",
+            WasmtimeError::Function { .. } => "ai/tegmentum/wasmtime4j/exception/RuntimeException",
+            WasmtimeError::ImportExport { .. } => "ai/tegmentum/wasmtime4j/exception/LinkingException",
+            WasmtimeError::Type { .. } => "ai/tegmentum/wasmtime4j/exception/ValidationException",
+            WasmtimeError::Resource { .. } => "ai/tegmentum/wasmtime4j/exception/RuntimeException",
+            WasmtimeError::Io { .. } => "ai/tegmentum/wasmtime4j/exception/WasiFileSystemException",
             WasmtimeError::InvalidParameter { .. } => "java/lang/IllegalArgumentException",
-            WasmtimeError::Io { .. } => "java/io/IOException",
-            WasmtimeError::Component { .. } => "ai/tegmentum/wasmtime4j/WasmComponentException",
-            WasmtimeError::Interface { .. } => "ai/tegmentum/wasmtime4j/WasmInterfaceException",
-            WasmtimeError::EngineConfig { .. } => "ai/tegmentum/wasmtime4j/WasmEngineException",
-            WasmtimeError::Store { .. } => "ai/tegmentum/wasmtime4j/WasmStoreException",
-            WasmtimeError::Instance { .. } => "ai/tegmentum/wasmtime4j/WasmInstanceException",
-            WasmtimeError::ImportExport { .. } => "ai/tegmentum/wasmtime4j/WasmImportExportException",
-            WasmtimeError::Resource { .. } => "ai/tegmentum/wasmtime4j/WasmResourceException",
-            WasmtimeError::Concurrency { .. } => "ai/tegmentum/wasmtime4j/WasmConcurrencyException",
-            WasmtimeError::Wasi { .. } => "ai/tegmentum/wasmtime4j/WasiException",
-            WasmtimeError::Internal { .. } => "ai/tegmentum/wasmtime4j/WasmInternalException",
-            WasmtimeError::Execution { .. } => "ai/tegmentum/wasmtime4j/WasmExecutionException",
-            WasmtimeError::ExportNotFound { .. } => "ai/tegmentum/wasmtime4j/WasmExportNotFoundException",
-            _ => "ai/tegmentum/wasmtime4j/WasmException",
+            WasmtimeError::Concurrency { .. } => "ai/tegmentum/wasmtime4j/exception/RuntimeException",
+            WasmtimeError::Wasi { .. } => "ai/tegmentum/wasmtime4j/exception/WasiException",
+            WasmtimeError::Component { .. } => "ai/tegmentum/wasmtime4j/exception/WasiException",
+            WasmtimeError::Interface { .. } => "ai/tegmentum/wasmtime4j/exception/LinkingException",
+            WasmtimeError::Internal { .. } => "ai/tegmentum/wasmtime4j/exception/WasmException",
+            WasmtimeError::Execution { .. } => "ai/tegmentum/wasmtime4j/exception/RuntimeException",
+            WasmtimeError::ExportNotFound { .. } => "ai/tegmentum/wasmtime4j/exception/LinkingException",
         }
     }
 

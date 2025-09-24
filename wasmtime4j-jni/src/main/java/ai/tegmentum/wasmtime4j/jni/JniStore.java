@@ -1,12 +1,17 @@
 package ai.tegmentum.wasmtime4j.jni;
 
+import ai.tegmentum.wasmtime4j.CallbackRegistry;
 import ai.tegmentum.wasmtime4j.Engine;
+import ai.tegmentum.wasmtime4j.FunctionReference;
 import ai.tegmentum.wasmtime4j.FunctionType;
 import ai.tegmentum.wasmtime4j.HostFunction;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFunction;
+import ai.tegmentum.wasmtime4j.WasmGlobal;
+import ai.tegmentum.wasmtime4j.WasmValue;
+import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
@@ -86,6 +91,9 @@ public final class JniStore extends JniResource implements Store {
   /** The engine that created this store. */
   private final Engine engine;
 
+  /** Callback registry for managing callbacks and asynchronous operations. */
+  private final CallbackRegistry callbackRegistry;
+
   /**
    * Creates a new JNI store with the given native handle.
    *
@@ -99,6 +107,7 @@ public final class JniStore extends JniResource implements Store {
   JniStore(final long nativeHandle, final Engine engine) {
     super(nativeHandle);
     this.engine = engine;
+    this.callbackRegistry = new JniCallbackRegistry(this);
     LOGGER.fine("Created JNI store with handle: 0x" + Long.toHexString(nativeHandle));
   }
 
@@ -456,6 +465,93 @@ public final class JniStore extends JniResource implements Store {
   }
 
   @Override
+  public WasmGlobal createGlobal(
+      final WasmValueType valueType, final boolean isMutable, final WasmValue initialValue)
+      throws WasmException {
+    JniValidation.requireNonNull(valueType, "valueType");
+    JniValidation.requireNonNull(initialValue, "initialValue");
+    ensureNotClosed();
+
+    // Validate that the initial value matches the specified type
+    if (initialValue.getType() != valueType) {
+      throw new IllegalArgumentException(
+          "Initial value type "
+              + initialValue.getType()
+              + " does not match global type "
+              + valueType);
+    }
+
+    try {
+      // Call native method to create global
+      final long globalHandle =
+          nativeCreateGlobal(
+              getNativeHandle(),
+              valueType.toNativeTypeCode(),
+              isMutable ? 1 : 0,
+              extractValueComponents(initialValue));
+
+      if (globalHandle == 0) {
+        throw new JniException("Native global creation returned null handle");
+      }
+
+      // Create JniGlobal wrapper
+      final JniGlobal global = new JniGlobal(globalHandle, this);
+      LOGGER.fine(
+          "Created global with type "
+              + valueType
+              + ", mutable="
+              + isMutable
+              + ", handle=0x"
+              + Long.toHexString(globalHandle));
+      return global;
+
+    } catch (final Exception e) {
+      if (e instanceof WasmException) {
+        throw e;
+      }
+      throw new WasmException("Failed to create global variable", e);
+    }
+  }
+
+  @Override
+  public FunctionReference createFunctionReference(
+      final HostFunction implementation, final FunctionType functionType) throws WasmException {
+    Objects.requireNonNull(implementation, "Host function implementation cannot be null");
+    Objects.requireNonNull(functionType, "Function type cannot be null");
+    ensureNotClosed();
+
+    try {
+      return new JniFunctionReference(implementation, functionType, this);
+    } catch (final Exception e) {
+      if (e instanceof WasmException) {
+        throw e;
+      }
+      throw new WasmException("Failed to create function reference from host function", e);
+    }
+  }
+
+  @Override
+  public FunctionReference createFunctionReference(final WasmFunction function)
+      throws WasmException {
+    Objects.requireNonNull(function, "WebAssembly function cannot be null");
+    ensureNotClosed();
+
+    try {
+      return new JniFunctionReference(function, this);
+    } catch (final Exception e) {
+      if (e instanceof WasmException) {
+        throw e;
+      }
+      throw new WasmException("Failed to create function reference from WebAssembly function", e);
+    }
+  }
+
+  @Override
+  public CallbackRegistry getCallbackRegistry() {
+    return callbackRegistry;
+  }
+
+  @Override
   public Instance createInstance(final Module module) throws WasmException {
     Objects.requireNonNull(module, "Module cannot be null");
     ensureNotClosed();
@@ -491,6 +587,13 @@ public final class JniStore extends JniResource implements Store {
 
   @Override
   protected void doClose() throws Exception {
+    try {
+      // Close the callback registry first
+      callbackRegistry.close();
+    } catch (Exception e) {
+      LOGGER.warning("Error closing callback registry: " + e.getMessage());
+    }
+
     if (getNativeHandle() != 0) {
       nativeDestroyStore(getNativeHandle());
       LOGGER.fine("Destroyed JNI store with handle: 0x" + Long.toHexString(getNativeHandle()));
@@ -1002,9 +1105,82 @@ public final class JniStore extends JniResource implements Store {
   private static native boolean nativeSetInstanceLimit(long storeHandle, int count);
 
   /**
+   * Creates a new global variable.
+   *
+   * @param storeHandle the native store handle
+   * @param valueType the WebAssembly value type code
+   * @param isMutable 1 if mutable, 0 if immutable
+   * @param valueComponents array containing value components [i32, i64, f32, f64, refId]
+   * @return the native global handle, or 0 on failure
+   */
+  private static native long nativeCreateGlobal(
+      long storeHandle, int valueType, int isMutable, Object[] valueComponents);
+
+  /**
    * Destroys a native store and releases all associated resources.
    *
    * @param storeHandle the native store handle
    */
   private static native void nativeDestroyStore(long storeHandle);
+
+  /**
+   * Extracts value components from WasmValue for passing to native code.
+   *
+   * @param value the WasmValue to extract components from
+   * @return array containing [i32Value, i64Value, f32Value, f64Value, refValue]
+   */
+  private Object[] extractValueComponents(final WasmValue value) {
+    final Object[] components = new Object[5];
+
+    switch (value.getType()) {
+      case I32:
+        components[0] = value.asI32();
+        components[1] = 0L;
+        components[2] = 0.0f;
+        components[3] = 0.0;
+        components[4] = null;
+        break;
+      case I64:
+        components[0] = 0;
+        components[1] = value.asI64();
+        components[2] = 0.0f;
+        components[3] = 0.0;
+        components[4] = null;
+        break;
+      case F32:
+        components[0] = 0;
+        components[1] = 0L;
+        components[2] = value.asF32();
+        components[3] = 0.0;
+        components[4] = null;
+        break;
+      case F64:
+        components[0] = 0;
+        components[1] = 0L;
+        components[2] = 0.0f;
+        components[3] = value.asF64();
+        components[4] = null;
+        break;
+      case V128:
+        // For V128, we'll store as byte array in the reference slot
+        components[0] = 0;
+        components[1] = 0L;
+        components[2] = 0.0f;
+        components[3] = 0.0;
+        components[4] = value.asV128();
+        break;
+      case FUNCREF:
+      case EXTERNREF:
+        components[0] = 0;
+        components[1] = 0L;
+        components[2] = 0.0f;
+        components[3] = 0.0;
+        components[4] = value.getValue();
+        break;
+      default:
+        throw new IllegalArgumentException("Unsupported value type: " + value.getType());
+    }
+
+    return components;
+  }
 }

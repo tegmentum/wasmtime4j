@@ -765,8 +765,14 @@ pub mod store {
 /// 
 /// This module provides C-compatible functions for creating, instantiating,
 /// and managing WebAssembly components through the Panama Foreign Function Interface.
+#[cfg(feature = "component-model")]
 pub mod component {
     use super::*;
+    use crate::component_core::{EnhancedComponentEngine, ComponentInstanceInfo};
+    use crate::wit_interfaces::WitInterfaceManager;
+    use crate::component_orchestration::ComponentOrchestrator;
+    use crate::component_resources::ComponentResourceManager;
+    use crate::distributed_components::DistributedComponentManager;
     
     /// Create a new component engine (Panama FFI version)
     #[no_mangle]
@@ -991,6 +997,245 @@ pub mod component {
         }
     }
     
+    /// Create an enhanced component engine (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_enhanced_component_engine_create() -> *mut c_void {
+        use crate::error::ffi_utils;
+        ffi_utils::ffi_try_ptr(|| crate::component_core::core::create_enhanced_component_engine())
+    }
+
+    /// Create a WIT interface manager (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_wit_interface_manager_create() -> *mut c_void {
+        use crate::error::ffi_utils;
+        ffi_utils::ffi_try_ptr(|| Ok(Box::new(WitInterfaceManager::new())))
+    }
+
+    /// Create a component orchestrator (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_component_orchestrator_create(
+        enhanced_engine_ptr: *mut c_void,
+    ) -> *mut c_void {
+        use crate::error::ffi_utils;
+
+        ffi_utils::ffi_try_ptr(|| {
+            let engine = unsafe {
+                crate::component_core::core::get_enhanced_component_engine_ref(enhanced_engine_ptr as *const c_void)?
+            };
+            // Simplified Arc creation - would need proper Arc management in production
+            let engine_arc = std::sync::Arc::new(engine.clone());
+            ComponentOrchestrator::new(engine_arc).map(Box::new)
+        })
+    }
+
+    /// Create a component resource manager (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_component_resource_manager_create() -> *mut c_void {
+        use crate::error::ffi_utils;
+        ffi_utils::ffi_try_ptr(|| Ok(Box::new(ComponentResourceManager::new())))
+    }
+
+    /// Create a distributed component manager (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_distributed_component_manager_create(
+        node_id: *const c_char,
+        node_name: *const c_char,
+    ) -> *mut c_void {
+        use crate::error::ffi_utils;
+        use std::ffi::CStr;
+
+        ffi_utils::ffi_try_ptr(|| {
+            let node_id_str = unsafe {
+                CStr::from_ptr(node_id).to_str()
+                    .map_err(|e| crate::error::WasmtimeError::InvalidParameter {
+                        message: format!("Invalid node ID: {}", e),
+                    })?
+                    .to_string()
+            };
+
+            let node_name_str = unsafe {
+                CStr::from_ptr(node_name).to_str()
+                    .map_err(|e| crate::error::WasmtimeError::InvalidParameter {
+                        message: format!("Invalid node name: {}", e),
+                    })?
+                    .to_string()
+            };
+
+            let node_info = crate::distributed_components::NodeInfo {
+                id: node_id_str,
+                name: node_name_str,
+                addresses: Vec::new(),
+                capabilities: crate::distributed_components::NodeCapabilities {
+                    supported_types: std::collections::HashSet::new(),
+                    available_resources: crate::distributed_components::ResourceCapabilities {
+                        cpu_cores: 4,
+                        memory_bytes: 8 * 1024 * 1024 * 1024,
+                        storage_bytes: 100 * 1024 * 1024 * 1024,
+                        network_bandwidth: 1000 * 1024 * 1024,
+                        hardware_features: std::collections::HashSet::new(),
+                    },
+                    security_features: crate::distributed_components::SecurityCapabilities {
+                        encryption_algorithms: std::collections::HashSet::new(),
+                        auth_methods: std::collections::HashSet::new(),
+                        trusted_cas: std::collections::HashSet::new(),
+                        security_level: crate::distributed_components::SecurityLevel::Standard,
+                    },
+                    performance: crate::distributed_components::PerformanceCapabilities {
+                        cpu_score: 1000.0,
+                        memory_bandwidth: 1000 * 1024 * 1024,
+                        storage_iops: 1000,
+                        network_latency: 1.0,
+                        reliability_score: 0.99,
+                    },
+                },
+                status: crate::distributed_components::NodeStatus::Active,
+                last_seen: std::time::Instant::now(),
+                metadata: std::collections::HashMap::new(),
+            };
+
+            DistributedComponentManager::new(node_info).map(Box::new)
+        })
+    }
+
+    /// Load component using enhanced engine (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_enhanced_component_load_from_bytes(
+        enhanced_engine_ptr: *mut c_void,
+        wasm_bytes: *const u8,
+        wasm_size: usize,
+        component_ptr: *mut *mut c_void,
+    ) -> c_int {
+        use crate::error::ffi_utils;
+
+        ffi_utils::ffi_try_code(|| {
+            let engine = unsafe {
+                crate::component_core::core::get_enhanced_component_engine_ref(enhanced_engine_ptr as *const c_void)?
+            };
+            let wasm_data = unsafe {
+                ffi_utils::slice_from_raw_parts(wasm_bytes, wasm_size, "component_bytes")?
+            };
+
+            let component = crate::component_core::core::load_component_from_bytes_enhanced(engine, wasm_data)?;
+
+            unsafe {
+                *component_ptr = Box::into_raw(component) as *mut c_void;
+            }
+
+            Ok(())
+        })
+    }
+
+    /// Get component metrics from enhanced engine (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_enhanced_component_get_metrics(
+        enhanced_engine_ptr: *mut c_void,
+        metrics_ptr: *mut *mut c_void,
+    ) -> c_int {
+        use crate::error::ffi_utils;
+
+        ffi_utils::ffi_try_code(|| {
+            let engine = unsafe {
+                crate::component_core::core::get_enhanced_component_engine_ref(enhanced_engine_ptr as *const c_void)?
+            };
+
+            let metrics = crate::component_core::core::get_component_metrics(engine)?;
+
+            unsafe {
+                *metrics_ptr = Box::into_raw(Box::new(metrics)) as *mut c_void;
+            }
+
+            Ok(())
+        })
+    }
+
+    /// Register interface with WIT interface manager (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_wit_interface_manager_register(
+        manager_ptr: *mut c_void,
+        interface_name: *const c_char,
+    ) -> c_int {
+        use crate::error::ffi_utils;
+        use std::ffi::CStr;
+
+        ffi_utils::ffi_try_code(|| {
+            let manager = unsafe {
+                &*(manager_ptr as *const WitInterfaceManager)
+            };
+
+            let interface_str = unsafe {
+                CStr::from_ptr(interface_name).to_str()
+                    .map_err(|e| crate::error::WasmtimeError::InvalidParameter {
+                        message: format!("Invalid interface name: {}", e),
+                    })?
+                    .to_string()
+            };
+
+            // Create minimal interface definition for testing
+            let interface_def = crate::component::InterfaceDefinition {
+                name: interface_str,
+                namespace: None,
+                version: None,
+                functions: Vec::new(),
+                types: Vec::new(),
+                resources: Vec::new(),
+            };
+
+            manager.register_interface(interface_def)
+        })
+    }
+
+    /// Create resource with resource manager (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_component_resource_manager_create_resource(
+        manager_ptr: *mut c_void,
+        resource_type: *const c_char,
+        owner: *const c_char,
+        resource_handle_out: *mut u64,
+    ) -> c_int {
+        use crate::error::ffi_utils;
+        use std::ffi::CStr;
+
+        ffi_utils::ffi_try_code(|| {
+            let manager = unsafe {
+                &*(manager_ptr as *const ComponentResourceManager)
+            };
+
+            let resource_type_str = unsafe {
+                CStr::from_ptr(resource_type).to_str()
+                    .map_err(|e| crate::error::WasmtimeError::InvalidParameter {
+                        message: format!("Invalid resource type: {}", e),
+                    })?
+                    .to_string()
+            };
+
+            let owner_str = unsafe {
+                CStr::from_ptr(owner).to_str()
+                    .map_err(|e| crate::error::WasmtimeError::InvalidParameter {
+                        message: format!("Invalid owner: {}", e),
+                    })?
+                    .to_string()
+            };
+
+            // Create minimal resource for testing (simplified implementation)
+            let wasmtime_resource = wasmtime::component::ResourceAny::new(); // This would need proper resource creation
+            let metadata = crate::component_resources::ResourceMetadata {
+                size_bytes: Some(1024),
+                description: Some("Test resource".to_string()),
+                tags: std::collections::HashMap::new(),
+                version: None,
+                properties: std::collections::HashMap::new(),
+            };
+
+            let handle = manager.create_resource(resource_type_str, owner_str, wasmtime_resource, metadata)?;
+
+            unsafe {
+                *resource_handle_out = handle;
+            }
+
+            Ok(())
+        })
+    }
+
     /// Destroy a component engine (Panama FFI version)
     #[no_mangle]
     pub extern "C" fn wasmtime4j_component_engine_destroy(engine_ptr: *mut c_void) {

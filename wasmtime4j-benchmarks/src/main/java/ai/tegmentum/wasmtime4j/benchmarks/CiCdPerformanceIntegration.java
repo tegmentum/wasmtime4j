@@ -33,8 +33,7 @@ import java.util.logging.Logger;
 public final class CiCdPerformanceIntegration {
 
   /** Logger for CI/CD performance integration. */
-  private static final Logger LOGGER =
-      Logger.getLogger(CiCdPerformanceIntegration.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(CiCdPerformanceIntegration.class.getName());
 
   /** CI/CD execution modes. */
   public enum ExecutionMode {
@@ -135,11 +134,10 @@ public final class CiCdPerformanceIntegration {
   private final AdvancedRegressionDetector regressionDetector;
   private final ObjectMapper objectMapper;
 
-  /**
-   * Creates a CI/CD performance integration with default configuration.
-   */
+  /** Creates a CI/CD performance integration with default configuration. */
   public CiCdPerformanceIntegration() {
-    this.benchmarkExecutor = new ComprehensiveBenchmarkExecutor(Paths.get(System.getProperty("user.dir")));
+    this.benchmarkExecutor =
+        new ComprehensiveBenchmarkExecutor(Paths.get(System.getProperty("user.dir")));
     this.targetValidator = new PerformanceTargetValidator();
     this.regressionDetector = new AdvancedRegressionDetector();
     this.objectMapper = createObjectMapper();
@@ -152,7 +150,8 @@ public final class CiCdPerformanceIntegration {
    * @param outputDirectory directory for output files
    * @return CI/CD execution result
    */
-  public CiCdExecutionResult executeCiCdValidation(final ExecutionMode mode, final Path outputDirectory) {
+  public CiCdExecutionResult executeCiCdValidation(
+      final ExecutionMode mode, final Path outputDirectory) {
     LOGGER.info("Starting CI/CD performance validation with mode: " + mode);
 
     try {
@@ -188,7 +187,8 @@ public final class CiCdPerformanceIntegration {
   public CiCdExecutionResult executeForGitHubActions(final Path outputDirectory) {
     LOGGER.info("Executing performance validation for GitHub Actions");
 
-    final CiCdExecutionResult result = executeCiCdValidation(ExecutionMode.VALIDATION, outputDirectory);
+    final CiCdExecutionResult result =
+        executeCiCdValidation(ExecutionMode.VALIDATION, outputDirectory);
 
     // Generate GitHub Actions output
     generateGitHubActionsOutput(result, outputDirectory);
@@ -205,7 +205,8 @@ public final class CiCdPerformanceIntegration {
   public CiCdExecutionResult executeForJenkins(final Path outputDirectory) {
     LOGGER.info("Executing performance validation for Jenkins");
 
-    final CiCdExecutionResult result = executeCiCdValidation(ExecutionMode.FULL_VALIDATION, outputDirectory);
+    final CiCdExecutionResult result =
+        executeCiCdValidation(ExecutionMode.FULL_VALIDATION, outputDirectory);
 
     // Generate Jenkins output
     generateJenkinsOutput(result, outputDirectory);
@@ -230,7 +231,8 @@ public final class CiCdPerformanceIntegration {
           benchmarkExecutor.establishPerformanceBaselines();
 
       if (!benchmarkResult.isSuccess()) {
-        return createErrorResult(ExecutionMode.BASELINE_ESTABLISHMENT,
+        return createErrorResult(
+            ExecutionMode.BASELINE_ESTABLISHMENT,
             "Benchmark execution failed: " + benchmarkResult.getExecutionLog());
       }
 
@@ -240,7 +242,8 @@ public final class CiCdPerformanceIntegration {
       metrics.put("executionTimeMs", benchmarkResult.getExecutionTimeMillis());
 
       if (benchmarkResult.getBaselineResult() != null) {
-        metrics.put("baselinesEstablished", benchmarkResult.getBaselineResult().getSuccessfulBaselines());
+        metrics.put(
+            "baselinesEstablished", benchmarkResult.getBaselineResult().getSuccessfulBaselines());
         metrics.put("targetsAchieved", benchmarkResult.getBaselineResult().getTargetsAchieved());
       }
 
@@ -258,8 +261,8 @@ public final class CiCdPerformanceIntegration {
           0);
 
     } catch (final Exception e) {
-      return createErrorResult(ExecutionMode.BASELINE_ESTABLISHMENT,
-          "Baseline establishment failed: " + e.getMessage());
+      return createErrorResult(
+          ExecutionMode.BASELINE_ESTABLISHMENT, "Baseline establishment failed: " + e.getMessage());
     }
   }
 
@@ -270,7 +273,8 @@ public final class CiCdPerformanceIntegration {
           benchmarkExecutor.executeCiCdValidation();
 
       if (!benchmarkResult.isSuccess()) {
-        return createErrorResult(ExecutionMode.VALIDATION,
+        return createErrorResult(
+            ExecutionMode.VALIDATION,
             "Benchmark execution failed: " + benchmarkResult.getExecutionLog());
       }
 
@@ -289,7 +293,8 @@ public final class CiCdPerformanceIntegration {
       final String jsonReport = generateValidationJsonReport(validationResult, metrics);
       saveReportToFile(jsonReport, outputDirectory.resolve("validation-report.json"));
 
-      final boolean success = validationResult.areAllTargetsAchieved() && validationResult.areAllMinimumsAchieved();
+      final boolean success =
+          validationResult.areAllTargetsAchieved() && validationResult.areAllMinimumsAchieved();
 
       return new CiCdExecutionResult(
           success,
@@ -302,8 +307,7 @@ public final class CiCdPerformanceIntegration {
           success ? 0 : 1);
 
     } catch (final Exception e) {
-      return createErrorResult(ExecutionMode.VALIDATION,
-          "Validation failed: " + e.getMessage());
+      return createErrorResult(ExecutionMode.VALIDATION, "Validation failed: " + e.getMessage());
     }
   }
 
@@ -314,13 +318,15 @@ public final class CiCdPerformanceIntegration {
           benchmarkExecutor.executeQuickPerformanceCheck();
 
       if (!benchmarkResult.isSuccess()) {
-        return createErrorResult(ExecutionMode.REGRESSION_CHECK,
+        return createErrorResult(
+            ExecutionMode.REGRESSION_CHECK,
             "Benchmark execution failed: " + benchmarkResult.getExecutionLog());
       }
 
       // Check for regressions
-      final boolean hasRegressions = benchmarkResult.getValidationResult() != null
-          && !benchmarkResult.getValidationResult().isValid();
+      final boolean hasRegressions =
+          benchmarkResult.getValidationResult() != null
+              && !benchmarkResult.getValidationResult().isValid();
 
       final Map<String, Object> metrics = new HashMap<>();
       metrics.put("measurementCount", benchmarkResult.getMeasurements().size());
@@ -333,7 +339,9 @@ public final class CiCdPerformanceIntegration {
       return new CiCdExecutionResult(
           !hasRegressions,
           ExecutionMode.REGRESSION_CHECK,
-          hasRegressions ? "Performance regressions detected" : "No performance regressions detected",
+          hasRegressions
+              ? "Performance regressions detected"
+              : "No performance regressions detected",
           metrics,
           hasRegressions ? List.of("Performance regressions found") : List.of(),
           List.of(),
@@ -341,8 +349,8 @@ public final class CiCdPerformanceIntegration {
           hasRegressions ? 1 : 0);
 
     } catch (final Exception e) {
-      return createErrorResult(ExecutionMode.REGRESSION_CHECK,
-          "Regression check failed: " + e.getMessage());
+      return createErrorResult(
+          ExecutionMode.REGRESSION_CHECK, "Regression check failed: " + e.getMessage());
     }
   }
 
@@ -368,8 +376,8 @@ public final class CiCdPerformanceIntegration {
           0);
 
     } catch (final Exception e) {
-      return createErrorResult(ExecutionMode.TREND_ANALYSIS,
-          "Trend analysis failed: " + e.getMessage());
+      return createErrorResult(
+          ExecutionMode.TREND_ANALYSIS, "Trend analysis failed: " + e.getMessage());
     }
   }
 
@@ -383,7 +391,8 @@ public final class CiCdPerformanceIntegration {
       final Map<String, Object> combinedMetrics = new HashMap<>(validationResult.getMetrics());
       combinedMetrics.putAll(regressionResult.getMetrics());
 
-      final String jsonReport = generateFullValidationJsonReport(validationResult, regressionResult, combinedMetrics);
+      final String jsonReport =
+          generateFullValidationJsonReport(validationResult, regressionResult, combinedMetrics);
       saveReportToFile(jsonReport, outputDirectory.resolve("full-validation-report.json"));
 
       return new CiCdExecutionResult(
@@ -397,25 +406,35 @@ public final class CiCdPerformanceIntegration {
           success ? 0 : 1);
 
     } catch (final Exception e) {
-      return createErrorResult(ExecutionMode.FULL_VALIDATION,
-          "Full validation failed: " + e.getMessage());
+      return createErrorResult(
+          ExecutionMode.FULL_VALIDATION, "Full validation failed: " + e.getMessage());
     }
   }
 
-  private void generateGitHubActionsOutput(final CiCdExecutionResult result, final Path outputDirectory) {
+  private void generateGitHubActionsOutput(
+      final CiCdExecutionResult result, final Path outputDirectory) {
     try {
       // Generate GitHub Actions step outputs
       final StringBuilder output = new StringBuilder();
       output.append("performance_success=").append(result.isSuccess()).append("\n");
       output.append("performance_exit_code=").append(result.getExitCode()).append("\n");
-      output.append("performance_summary=\"").append(result.getResultSummary().replace("\"", "\\\"")).append("\"\n");
+      output
+          .append("performance_summary=\"")
+          .append(result.getResultSummary().replace("\"", "\\\""))
+          .append("\"\n");
 
       // Add metrics as outputs
       for (final Map.Entry<String, Object> entry : result.getMetrics().entrySet()) {
-        output.append("performance_").append(entry.getKey()).append("=").append(entry.getValue()).append("\n");
+        output
+            .append("performance_")
+            .append(entry.getKey())
+            .append("=")
+            .append(entry.getValue())
+            .append("\n");
       }
 
-      Files.write(outputDirectory.resolve("github-actions-output.txt"), output.toString().getBytes());
+      Files.write(
+          outputDirectory.resolve("github-actions-output.txt"), output.toString().getBytes());
 
     } catch (final IOException e) {
       LOGGER.warning("Failed to generate GitHub Actions output: " + e.getMessage());
@@ -434,8 +453,11 @@ public final class CiCdPerformanceIntegration {
       xml.append("  <metrics>\n");
 
       for (final Map.Entry<String, Object> entry : result.getMetrics().entrySet()) {
-        xml.append("    <metric name=\"").append(entry.getKey()).append("\" value=\"")
-            .append(entry.getValue()).append("\"/>\n");
+        xml.append("    <metric name=\"")
+            .append(entry.getKey())
+            .append("\" value=\"")
+            .append(entry.getValue())
+            .append("\"/>\n");
       }
 
       xml.append("  </metrics>\n");
@@ -539,7 +561,8 @@ public final class CiCdPerformanceIntegration {
     }
   }
 
-  private CiCdExecutionResult createErrorResult(final ExecutionMode mode, final String errorMessage) {
+  private CiCdExecutionResult createErrorResult(
+      final ExecutionMode mode, final String errorMessage) {
     return new CiCdExecutionResult(
         false,
         mode,
@@ -555,7 +578,8 @@ public final class CiCdPerformanceIntegration {
     if (input == null) {
       return "";
     }
-    return input.replace("&", "&amp;")
+    return input
+        .replace("&", "&amp;")
         .replace("<", "&lt;")
         .replace(">", "&gt;")
         .replace("\"", "&quot;")

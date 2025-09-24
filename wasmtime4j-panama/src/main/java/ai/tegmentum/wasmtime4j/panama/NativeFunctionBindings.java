@@ -16,6 +16,7 @@
 
 package ai.tegmentum.wasmtime4j.panama;
 
+import ai.tegmentum.wasmtime4j.WasmValue;
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
@@ -424,6 +425,39 @@ public final class NativeFunctionBindings {
     validatePointer(storePtr, "storePtr");
     validatePointer(fuelOutPtr, "fuelOutPtr");
     return callNativeFunction("wasmtime4j_store_get_fuel", Integer.class, storePtr, fuelOutPtr);
+  }
+
+  /**
+   * Creates a new WebAssembly global variable.
+   *
+   * @param storePtr pointer to the store
+   * @param valueType the WebAssembly value type code
+   * @param isMutable 1 if mutable, 0 if immutable
+   * @param initialValue the initial value for the global
+   * @return pointer to the created global, or null on failure
+   */
+  public MemorySegment globalCreate(
+      final MemorySegment storePtr,
+      final int valueType,
+      final int isMutable,
+      final WasmValue initialValue) {
+    validatePointer(storePtr, "storePtr");
+
+    // Extract value components for native call
+    Object[] valueComponents = extractValueForNative(initialValue);
+
+    return callNativeFunction(
+        "wasmtime4j_global_create",
+        MemorySegment.class,
+        storePtr,
+        valueType,
+        isMutable,
+        valueComponents[0], // i32
+        valueComponents[1], // i64
+        valueComponents[2], // f32
+        valueComponents[3], // f64
+        valueComponents[4] // ref
+        );
   }
 
   /**
@@ -1782,5 +1816,66 @@ public final class NativeFunctionBindings {
         LOGGER.warning("Failed to initialize method handle for function: " + functionName);
       }
     }
+  }
+
+  /**
+   * Extracts value components from WasmValue for passing to native code.
+   *
+   * @param value the WasmValue to extract components from
+   * @return array containing [i32Value, i64Value, f32Value, f64Value, refValue]
+   */
+  private Object[] extractValueForNative(final WasmValue value) {
+    final Object[] components = new Object[5];
+
+    switch (value.getType()) {
+      case I32:
+        components[0] = value.asI32();
+        components[1] = 0L;
+        components[2] = 0.0f;
+        components[3] = 0.0;
+        components[4] = null;
+        break;
+      case I64:
+        components[0] = 0;
+        components[1] = value.asI64();
+        components[2] = 0.0f;
+        components[3] = 0.0;
+        components[4] = null;
+        break;
+      case F32:
+        components[0] = 0;
+        components[1] = 0L;
+        components[2] = value.asF32();
+        components[3] = 0.0;
+        components[4] = null;
+        break;
+      case F64:
+        components[0] = 0;
+        components[1] = 0L;
+        components[2] = 0.0f;
+        components[3] = value.asF64();
+        components[4] = null;
+        break;
+      case V128:
+        // For V128, we'll store as byte array in the reference slot
+        components[0] = 0;
+        components[1] = 0L;
+        components[2] = 0.0f;
+        components[3] = 0.0;
+        components[4] = value.asV128();
+        break;
+      case FUNCREF:
+      case EXTERNREF:
+        components[0] = 0;
+        components[1] = 0L;
+        components[2] = 0.0f;
+        components[3] = 0.0;
+        components[4] = value.getValue();
+        break;
+      default:
+        throw new IllegalArgumentException("Unsupported value type: " + value.getType());
+    }
+
+    return components;
   }
 }

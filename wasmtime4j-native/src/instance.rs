@@ -343,8 +343,8 @@ impl Instance {
             message: format!("Failed to acquire instance lock: {}", e),
         })?;
         
-        // TODO: Implement fuel tracking when available in store context
-        let fuel_before = None;
+        // Get fuel before execution for tracking
+        let fuel_before = store.fuel_remaining().ok().flatten();
         
         let result = store.with_context(|mut ctx| {
             let export = instance.get_export(&mut ctx, name)
@@ -354,12 +354,23 @@ impl Instance {
                 
             match export {
                 Extern::Func(func) => {
-                    let mut results = vec![Val::I32(0); function_sig.returns.len()];
+                    // Initialize results with proper default values based on return types
+                    let mut results = Vec::with_capacity(function_sig.returns.len());
+                    for return_type in &function_sig.returns {
+                        let default_val = match return_type {
+                            ModuleValueType::I32 => Val::I32(0),
+                            ModuleValueType::I64 => Val::I64(0),
+                            ModuleValueType::F32 => Val::F32(0.0_f32.to_bits()),
+                            ModuleValueType::F64 => Val::F64(0.0_f64.to_bits()),
+                            ModuleValueType::V128 => Val::V128(wasmtime::V128::from(0u128)),
+                            ModuleValueType::ExternRef => Val::ExternRef(None),
+                            ModuleValueType::FuncRef => Val::FuncRef(None),
+                        };
+                        results.push(default_val);
+                    }
+
                     func.call(&mut ctx, &wasm_params, &mut results)
-                        .map_err(|e| WasmtimeError::Runtime {
-                            message: format!("Function execution failed: {}", e),
-                            backtrace: None,
-                        })?;
+                        .map_err(|e| WasmtimeError::from_runtime_error(e))?;
                     Ok(results)
                 }
                 _ => Err(WasmtimeError::Function {
@@ -370,8 +381,8 @@ impl Instance {
         
         let execution_time_ns = start_time.elapsed().as_nanos() as u64;
         
-        // TODO: Implement fuel tracking when available in store context
-        let fuel_after: Option<u64> = None;
+        // Get fuel after execution for tracking
+        let fuel_after = store.fuel_remaining().ok().flatten();
         
         let fuel_consumed = match (fuel_before, fuel_after) {
             (Some(before), Some(after)) => Some(after.saturating_sub(before)),

@@ -95,6 +95,24 @@ public final class NativeObjectPool<T> {
   /** Whether this pool is closed. */
   private volatile boolean closed = false;
 
+  /** Performance optimization statistics. */
+  private final AtomicLong totalBorrowTimeNs = new AtomicLong(0);
+
+  private final AtomicLong totalReturnTimeNs = new AtomicLong(0);
+  private final AtomicLong poolMisses = new AtomicLong(0);
+  private final AtomicLong poolContention = new AtomicLong(0);
+
+  /** Pool size optimization. */
+  private final AtomicInteger optimalSize = new AtomicInteger(minPoolSize);
+
+  private volatile long lastOptimizationTime = System.currentTimeMillis();
+  private static final long OPTIMIZATION_INTERVAL_MS = 10_000; // 10 seconds
+
+  /** Pool prewarming. */
+  private final AtomicLong prewarmCount = new AtomicLong(0);
+
+  private volatile boolean prewarmingEnabled = true;
+
   /**
    * Factory interface for creating pooled objects.
    *
@@ -249,30 +267,47 @@ public final class NativeObjectPool<T> {
       throw new IllegalStateException("Pool is closed");
     }
 
+    final long startTime = System.nanoTime();
     totalBorrows.incrementAndGet();
     borrowedCount.incrementAndGet();
 
-    // Try to get object from pool first
-    T obj = availableObjects.poll();
-    if (obj != null) {
-      return obj;
-    }
-
-    // Pool is empty, create new object
     try {
-      obj = factory.create();
+      // Try to get object from pool first
+      T obj = availableObjects.poll();
       if (obj != null) {
-        totalCreated.incrementAndGet();
+        // Pool hit - optimal case
+        optimizePoolSizeIfNeeded();
         return obj;
       }
-    } catch (final Exception e) {
-      LOGGER.warning(
-          "Failed to create new " + objectType.getSimpleName() + " object: " + e.getMessage());
-    }
 
-    // Fallback - return null (caller should handle)
-    borrowedCount.decrementAndGet();
-    return null;
+      // Pool miss - track for optimization
+      poolMisses.incrementAndGet();
+
+      // Check for contention
+      if (borrowedCount.get() > maxPoolSize * 0.8) {
+        poolContention.incrementAndGet();
+      }
+
+      // Pool is empty, create new object
+      try {
+        obj = factory.create();
+        if (obj != null) {
+          totalCreated.incrementAndGet();
+          prewarmPoolIfNeeded();
+          return obj;
+        }
+      } catch (final Exception e) {
+        LOGGER.warning(
+            "Failed to create new " + objectType.getSimpleName() + " object: " + e.getMessage());
+      }
+
+      // Fallback - return null (caller should handle)
+      borrowedCount.decrementAndGet();
+      return null;
+
+    } finally {
+      totalBorrowTimeNs.addAndGet(System.nanoTime() - startTime);
+    }
   }
 
   /**
@@ -294,17 +329,22 @@ public final class NativeObjectPool<T> {
       return;
     }
 
+    final long startTime = System.nanoTime();
     totalReturns.incrementAndGet();
     borrowedCount.decrementAndGet();
 
-    // Try to return object to pool
-    if (currentSize.get() < maxPoolSize && availableObjects.offer(obj)) {
-      // Successfully returned to pool
-      return;
-    }
+    try {
+      // Try to return object to pool
+      if (currentSize.get() < maxPoolSize && availableObjects.offer(obj)) {
+        // Successfully returned to pool
+        return;
+      }
 
-    // Pool is full, object will be garbage collected
-    // This is intentional to prevent unbounded memory growth
+      // Pool is full, object will be garbage collected
+      // This is intentional to prevent unbounded memory growth
+    } finally {
+      totalReturnTimeNs.addAndGet(System.nanoTime() - startTime);
+    }
   }
 
   /**
@@ -492,5 +532,188 @@ public final class NativeObjectPool<T> {
     }
     POOLS.clear();
     LOGGER.info("Cleared all native object pools");
+  }
+
+  /** Optimizes pool size based on usage patterns. */
+  private void optimizePoolSizeIfNeeded() {
+    final long currentTime = System.currentTimeMillis();
+    if (currentTime - lastOptimizationTime < OPTIMIZATION_INTERVAL_MS) {
+      return;
+    }
+
+    lastOptimizationTime = currentTime;
+
+    final long borrows = totalBorrows.get();
+    final long misses = poolMisses.get();
+    final double missRate = borrows > 0 ? (misses * 100.0) / borrows : 0.0;
+
+    // Adjust optimal size based on miss rate
+    final int currentOptimalSize = optimalSize.get();
+    if (missRate > 20.0 && currentOptimalSize < maxPoolSize) {
+      // High miss rate - increase pool size
+      final int newOptimalSize = Math.min(maxPoolSize, currentOptimalSize + 2);
+      optimalSize.set(newOptimalSize);
+      prewarmToOptimalSize();
+      LOGGER.fine(
+          String.format(
+              "Increased optimal pool size for %s to %d (miss rate: %.1f%%)",
+              objectType.getSimpleName(), newOptimalSize, missRate));
+    } else if (missRate < 5.0 && currentOptimalSize > minPoolSize) {
+      // Low miss rate - decrease pool size
+      final int newOptimalSize = Math.max(minPoolSize, currentOptimalSize - 1);
+      optimalSize.set(newOptimalSize);
+      LOGGER.fine(
+          String.format(
+              "Decreased optimal pool size for %s to %d (miss rate: %.1f%%)",
+              objectType.getSimpleName(), newOptimalSize, missRate));
+    }
+  }
+
+  /** Prewarns the pool if needed based on usage patterns. */
+  private void prewarmPoolIfNeeded() {
+    if (!prewarmingEnabled || closed) {
+      return;
+    }
+
+    final int available = getAvailableCount();
+    final int optimal = optimalSize.get();
+
+    if (available < optimal / 2) {
+      // Pool is below half capacity - prewarm
+      prewarmToOptimalSize();
+    }
+  }
+
+  /** Prewarns the pool to optimal size. */
+  private void prewarmToOptimalSize() {
+    if (!prewarmingEnabled || closed) {
+      return;
+    }
+
+    final int available = getAvailableCount();
+    final int optimal = optimalSize.get();
+    final int toCreate = Math.min(optimal - available, maxPoolSize - currentSize.get());
+
+    for (int i = 0; i < toCreate; i++) {
+      try {
+        final T obj = factory.create();
+        if (obj != null && availableObjects.offer(obj)) {
+          currentSize.incrementAndGet();
+          totalCreated.incrementAndGet();
+          prewarmCount.incrementAndGet();
+        } else {
+          break; // Pool full or creation failed
+        }
+      } catch (final Exception e) {
+        LOGGER.warning(
+            "Failed to prewarm " + objectType.getSimpleName() + " pool: " + e.getMessage());
+        break;
+      }
+    }
+
+    if (toCreate > 0) {
+      LOGGER.fine(
+          String.format(
+              "Prewarmed %s pool with %d objects (now %d/%d)",
+              objectType.getSimpleName(), toCreate, getAvailableCount(), optimal));
+    }
+  }
+
+  /**
+   * Gets the average borrow time in nanoseconds.
+   *
+   * @return average borrow time
+   */
+  public double getAverageBorrowTimeNs() {
+    final long borrows = totalBorrows.get();
+    return borrows > 0 ? (double) totalBorrowTimeNs.get() / borrows : 0.0;
+  }
+
+  /**
+   * Gets the average return time in nanoseconds.
+   *
+   * @return average return time
+   */
+  public double getAverageReturnTimeNs() {
+    final long returns = totalReturns.get();
+    return returns > 0 ? (double) totalReturnTimeNs.get() / returns : 0.0;
+  }
+
+  /**
+   * Gets the pool miss rate as a percentage.
+   *
+   * @return miss rate percentage (0.0 to 100.0)
+   */
+  public double getMissRate() {
+    final long borrows = totalBorrows.get();
+    final long misses = poolMisses.get();
+    return borrows > 0 ? (misses * 100.0) / borrows : 0.0;
+  }
+
+  /**
+   * Gets the pool contention rate as a percentage.
+   *
+   * @return contention rate percentage (0.0 to 100.0)
+   */
+  public double getContentionRate() {
+    final long borrows = totalBorrows.get();
+    final long contention = poolContention.get();
+    return borrows > 0 ? (contention * 100.0) / borrows : 0.0;
+  }
+
+  /**
+   * Gets the current optimal pool size.
+   *
+   * @return optimal pool size
+   */
+  public int getOptimalSize() {
+    return optimalSize.get();
+  }
+
+  /**
+   * Gets the number of prewarmed objects.
+   *
+   * @return prewarmed object count
+   */
+  public long getPrewarmCount() {
+    return prewarmCount.get();
+  }
+
+  /**
+   * Enables or disables pool prewarming.
+   *
+   * @param enabled true to enable prewarming
+   */
+  public void setPrewarmingEnabled(final boolean enabled) {
+    this.prewarmingEnabled = enabled;
+    LOGGER.fine(
+        "Pool prewarming "
+            + (enabled ? "enabled" : "disabled")
+            + " for "
+            + objectType.getSimpleName());
+  }
+
+  /** Manually triggers pool optimization. */
+  public void optimize() {
+    lastOptimizationTime = 0; // Force optimization
+    optimizePoolSizeIfNeeded();
+  }
+
+  /**
+   * Gets comprehensive performance statistics for this pool.
+   *
+   * @return performance statistics
+   */
+  public String getPerformanceStats() {
+    return String.format(
+        "%s performance: avg_borrow=%.0fns, avg_return=%.0fns, miss_rate=%.1f%%, "
+            + "contention=%.1f%%, optimal_size=%d, prewarmed=%d",
+        objectType.getSimpleName(),
+        getAverageBorrowTimeNs(),
+        getAverageReturnTimeNs(),
+        getMissRate(),
+        getContentionRate(),
+        getOptimalSize(),
+        getPrewarmCount());
   }
 }

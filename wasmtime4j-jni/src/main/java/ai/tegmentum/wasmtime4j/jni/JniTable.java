@@ -216,6 +216,101 @@ public final class JniTable extends JniResource implements WasmTable {
   }
 
   /**
+   * Copies elements from one region of the table to another.
+   *
+   * @param dst the destination starting index
+   * @param src the source starting index
+   * @param count the number of elements to copy
+   * @throws IllegalArgumentException if dst, src, or count is negative
+   * @throws JniResourceException if this table is closed
+   * @throws IndexOutOfBoundsException if source or destination range exceeds table bounds
+   * @throws RuntimeException if the copy operation fails
+   */
+  public void copy(final int dst, final int src, final int count) {
+    JniValidation.requireNonNegative(dst, "dst");
+    JniValidation.requireNonNegative(src, "src");
+    JniValidation.requireNonNegative(count, "count");
+
+    final long handle = getNativeHandle(); // This validates not closed
+    validateRange(dst, count);
+    validateRange(src, count);
+
+    try {
+      final boolean success = nativeCopy(handle, dst, src, count);
+      if (!success) {
+        throw new RuntimeException("Failed to copy table elements");
+      }
+    } catch (final JniResourceException | IllegalArgumentException | IndexOutOfBoundsException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error copying table elements", e);
+    }
+  }
+
+  /**
+   * Copies elements from another table to this table.
+   *
+   * @param dst the destination starting index in this table
+   * @param src the source table to copy from
+   * @param srcIndex the source starting index in the source table
+   * @param count the number of elements to copy
+   * @throws IllegalArgumentException if dst, srcIndex, or count is negative, or if src is null
+   * @throws JniResourceException if this table or source table is closed
+   * @throws IndexOutOfBoundsException if source or destination range exceeds table bounds
+   * @throws RuntimeException if the copy operation fails
+   */
+  public void copy(final int dst, final WasmTable src, final int srcIndex, final int count) {
+    JniValidation.requireNonNull(src, "src");
+    JniValidation.requireNonNegative(dst, "dst");
+    JniValidation.requireNonNegative(srcIndex, "srcIndex");
+    JniValidation.requireNonNegative(count, "count");
+
+    if (!(src instanceof JniTable)) {
+      throw new IllegalArgumentException(
+          "Source table must be JniTable instance for cross-table copy");
+    }
+
+    final JniTable srcTable = (JniTable) src;
+    final long dstHandle = getNativeHandle(); // This validates not closed
+    final long srcHandle = srcTable.getNativeHandle(); // This validates source not closed
+
+    // Validate destination range
+    validateRange(dst, count);
+
+    // Validate source range
+    final int srcTableSize = srcTable.getSize();
+    if (srcIndex + count > srcTableSize) {
+      throw new IndexOutOfBoundsException(
+          "Source range ["
+              + srcIndex
+              + ", "
+              + (srcIndex + count)
+              + ") exceeds source table size "
+              + srcTableSize);
+    }
+
+    // Validate type compatibility
+    if (!getElementType().equals(srcTable.getElementType())) {
+      throw new IllegalArgumentException(
+          "Table element types must match: this="
+              + getElementType()
+              + ", src="
+              + srcTable.getElementType());
+    }
+
+    try {
+      final boolean success = nativeCopyFromTable(dstHandle, dst, srcHandle, srcIndex, count);
+      if (!success) {
+        throw new RuntimeException("Failed to copy elements from source table");
+      }
+    } catch (final JniResourceException | IllegalArgumentException | IndexOutOfBoundsException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error copying from source table", e);
+    }
+  }
+
+  /**
    * Validates that an index is within table bounds.
    *
    * @param index the index to validate
@@ -318,6 +413,30 @@ public final class JniTable extends JniResource implements WasmTable {
    * @return true on success, false on failure
    */
   private static native boolean nativeFill(long tableHandle, int start, int count, Object value);
+
+  /**
+   * Copies elements within a table.
+   *
+   * @param tableHandle the native table handle
+   * @param dst the destination starting index
+   * @param src the source starting index
+   * @param count the number of elements to copy
+   * @return true on success, false on failure
+   */
+  private static native boolean nativeCopy(long tableHandle, int dst, int src, int count);
+
+  /**
+   * Copies elements from another table to this table.
+   *
+   * @param dstTableHandle the destination table handle
+   * @param dst the destination starting index
+   * @param srcTableHandle the source table handle
+   * @param src the source starting index
+   * @param count the number of elements to copy
+   * @return true on success, false on failure
+   */
+  private static native boolean nativeCopyFromTable(
+      long dstTableHandle, int dst, long srcTableHandle, int src, int count);
 
   /**
    * Destroys a native table.

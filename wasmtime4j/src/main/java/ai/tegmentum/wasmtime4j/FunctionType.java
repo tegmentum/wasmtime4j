@@ -121,6 +121,133 @@ public final class FunctionType implements WasmType {
   }
 
   /**
+   * Validates that the provided return values match this function's signature.
+   *
+   * @param returnValues the return values to validate
+   * @throws IllegalArgumentException if return values don't match the signature
+   */
+  public void validateReturnValues(final WasmValue[] returnValues) {
+    if (returnValues == null) {
+      if (returnTypes.length > 0) {
+        throw new IllegalArgumentException(
+            "Expected " + returnTypes.length + " return values, got null");
+      }
+      return;
+    }
+
+    if (returnValues.length != returnTypes.length) {
+      throw new IllegalArgumentException(
+          "Return value count mismatch: expected "
+              + returnTypes.length
+              + ", got "
+              + returnValues.length);
+    }
+
+    for (int i = 0; i < returnValues.length; i++) {
+      if (returnValues[i] == null) {
+        throw new IllegalArgumentException("Return value at index " + i + " is null");
+      }
+      returnValues[i].validateType(returnTypes[i]);
+    }
+  }
+
+  /**
+   * Creates a multi-value function type with multiple parameters and return values.
+   *
+   * @param paramTypes the parameter types
+   * @param returnTypes the return types (may be multiple)
+   * @return a new FunctionType supporting multi-value
+   * @throws IllegalArgumentException if paramTypes or returnTypes is null
+   */
+  public static FunctionType multiValue(
+      final WasmValueType[] paramTypes, final WasmValueType[] returnTypes) {
+    return new FunctionType(paramTypes, returnTypes);
+  }
+
+  /**
+   * Creates a function type with no parameters and multiple return values.
+   *
+   * @param returnTypes the return types
+   * @return a new FunctionType
+   * @throws IllegalArgumentException if returnTypes is null
+   */
+  public static FunctionType multiValueNoParams(final WasmValueType... returnTypes) {
+    return new FunctionType(new WasmValueType[0], returnTypes);
+  }
+
+  /**
+   * Creates a function type with multiple parameters and no return values.
+   *
+   * @param paramTypes the parameter types
+   * @return a new FunctionType
+   * @throws IllegalArgumentException if paramTypes is null
+   */
+  public static FunctionType multiValueNoReturns(final WasmValueType... paramTypes) {
+    return new FunctionType(paramTypes, new WasmValueType[0]);
+  }
+
+  /**
+   * Checks if this function type matches a multi-value pattern.
+   *
+   * @param expectedParamTypes expected parameter types
+   * @param expectedReturnTypes expected return types
+   * @return true if the pattern matches
+   */
+  public boolean matchesMultiValuePattern(
+      final WasmValueType[] expectedParamTypes, final WasmValueType[] expectedReturnTypes) {
+    if (expectedParamTypes == null || expectedReturnTypes == null) {
+      return false;
+    }
+
+    if (paramTypes.length != expectedParamTypes.length
+        || returnTypes.length != expectedReturnTypes.length) {
+      return false;
+    }
+
+    for (int i = 0; i < paramTypes.length; i++) {
+      if (paramTypes[i] != expectedParamTypes[i]) {
+        return false;
+      }
+    }
+
+    for (int i = 0; i < returnTypes.length; i++) {
+      if (returnTypes[i] != expectedReturnTypes[i]) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  /**
+   * Gets the maximum number of values (parameters or returns) supported.
+   *
+   * @return the maximum value count
+   */
+  public static int getMaxValueCount() {
+    return 16; // WebAssembly multi-value limit
+  }
+
+  /**
+   * Validates that the function type doesn't exceed multi-value limits.
+   *
+   * @throws IllegalArgumentException if limits are exceeded
+   */
+  public void validateMultiValueLimits() {
+    final int maxValues = getMaxValueCount();
+
+    if (paramTypes.length > maxValues) {
+      throw new IllegalArgumentException(
+          "Too many parameters: " + paramTypes.length + " (max allowed: " + maxValues + ")");
+    }
+
+    if (returnTypes.length > maxValues) {
+      throw new IllegalArgumentException(
+          "Too many return values: " + returnTypes.length + " (max allowed: " + maxValues + ")");
+    }
+  }
+
+  /**
    * Checks if this function type is compatible with another function type. Two function types are
    * compatible if they have the same parameter and return types.
    *

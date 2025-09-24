@@ -148,6 +148,34 @@ public interface WasiConfig {
   boolean isStrictModeEnabled();
 
   /**
+   * Gets the WASI version to use.
+   *
+   * @return the WASI version for this configuration
+   */
+  WasiVersion getWasiVersion();
+
+  /**
+   * Gets whether async operations are enabled (WASI Preview 2 only).
+   *
+   * @return true if async operations are enabled, false otherwise
+   */
+  boolean isAsyncOperationsEnabled();
+
+  /**
+   * Gets the maximum number of concurrent async operations (WASI Preview 2 only).
+   *
+   * @return the maximum number of concurrent async operations, or empty if not specified
+   */
+  Optional<Integer> getMaxAsyncOperations();
+
+  /**
+   * Gets the default timeout for async operations (WASI Preview 2 only).
+   *
+   * @return the default timeout for async operations, or empty if not specified
+   */
+  Optional<Duration> getAsyncOperationTimeout();
+
+  /**
    * Creates a new configuration builder based on this configuration.
    *
    * <p>This allows creating modified versions of existing configurations while preserving the

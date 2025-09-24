@@ -64,6 +64,25 @@ public final class PerformanceMonitor {
   /** Threshold for slow operation logging in milliseconds. */
   private static final long SLOW_OPERATION_THRESHOLD_MS = 10;
 
+  /** Ultra-low overhead monitoring. */
+  private static volatile boolean lowOverheadMode =
+      Boolean.parseBoolean(System.getProperty("wasmtime4j.performance.lowOverhead", "true"));
+
+  /** Sampling rate for low overhead mode (1 in N operations). */
+  private static final int LOW_OVERHEAD_SAMPLING_RATE = 100;
+
+  /** Performance monitoring overhead tracking. */
+  private static final AtomicLong MONITORING_OVERHEAD_NS = new AtomicLong(0);
+
+  private static final AtomicLong MONITORED_OPERATIONS = new AtomicLong(0);
+
+  /** Performance regression detection. */
+  private static final ConcurrentHashMap<String, PerformanceBaseline> BASELINES =
+      new ConcurrentHashMap<>();
+
+  private static volatile long lastRegressionCheck = System.currentTimeMillis();
+  private static final long REGRESSION_CHECK_INTERVAL_MS = 60_000; // 1 minute
+
   /** Operation statistics by category. */
   private static final ConcurrentHashMap<String, OperationStats> OPERATION_STATS =
       new ConcurrentHashMap<>();
@@ -86,6 +105,43 @@ public final class PerformanceMonitor {
 
   /** Monitor start time. */
   private static final long MONITOR_START_TIME = System.currentTimeMillis();
+
+  /** Performance baseline for regression detection. */
+  private static final class PerformanceBaseline {
+    final String category;
+    final double baselineAvgNs;
+    final double baselineStdDevNs;
+    final long baselineCount;
+    final long establishedTime;
+    volatile boolean stable;
+
+    PerformanceBaseline(
+        final String category, final double avgNs, final double stdDevNs, final long count) {
+      this.category = category;
+      this.baselineAvgNs = avgNs;
+      this.baselineStdDevNs = stdDevNs;
+      this.baselineCount = count;
+      this.establishedTime = System.currentTimeMillis();
+      this.stable = count >= 1000; // Stable if we have enough samples
+    }
+
+    boolean isRegression(final double currentAvgNs) {
+      if (!stable) {
+        return false;
+      }
+      // Consider it a regression if current average is 20% slower than baseline + 2 std dev
+      final double threshold = baselineAvgNs + (2 * baselineStdDevNs);
+      return currentAvgNs > threshold * 1.2;
+    }
+
+    boolean isImprovement(final double currentAvgNs) {
+      if (!stable) {
+        return false;
+      }
+      // Consider it an improvement if current average is 10% faster than baseline
+      return currentAvgNs < baselineAvgNs * 0.9;
+    }
+  }
 
   /** Statistics for a specific operation category. */
   private static final class OperationStats {
@@ -201,13 +257,28 @@ public final class PerformanceMonitor {
       return 0;
     }
 
+    final long monitoringStartTime = System.nanoTime();
+
+    // Apply sampling in low overhead mode
+    if (lowOverheadMode) {
+      final long opCount = MONITORED_OPERATIONS.incrementAndGet();
+      if (opCount % LOW_OVERHEAD_SAMPLING_RATE != 0) {
+        // Not sampled - return special marker
+        return -1;
+      }
+    }
+
     TOTAL_JNI_CALLS.incrementAndGet();
 
     if (profilingEnabled && details != null) {
       LOGGER.fine("Starting " + category + ": " + details);
     }
 
-    return System.nanoTime();
+    final long operationStartTime = System.nanoTime();
+    final long monitoringOverhead = operationStartTime - monitoringStartTime;
+    MONITORING_OVERHEAD_NS.addAndGet(monitoringOverhead);
+
+    return operationStartTime;
   }
 
   /**
@@ -231,6 +302,13 @@ public final class PerformanceMonitor {
       return;
     }
 
+    // Check for sampling marker
+    if (startTimeNs == -1) {
+      // This operation was not sampled in low overhead mode
+      return;
+    }
+
+    final long monitoringStartTime = System.nanoTime();
     final long endTimeNs = System.nanoTime();
     final long durationNs = endTimeNs - startTimeNs;
 
@@ -240,6 +318,9 @@ public final class PerformanceMonitor {
     // Update operation statistics
     final OperationStats stats = OPERATION_STATS.computeIfAbsent(category, OperationStats::new);
     stats.recordOperation(durationNs);
+
+    // Check for performance regressions
+    checkPerformanceRegression(category, stats);
 
     // Log slow operations
     final double durationMs = durationNs / 1_000_000.0;
@@ -251,6 +332,10 @@ public final class PerformanceMonitor {
     if (profilingEnabled) {
       LOGGER.fine(String.format("Completed %s in %.2fms", category, durationMs));
     }
+
+    // Track monitoring overhead
+    final long monitoringOverhead = System.nanoTime() - monitoringStartTime;
+    MONITORING_OVERHEAD_NS.addAndGet(monitoringOverhead);
   }
 
   /**
@@ -535,5 +620,187 @@ public final class PerformanceMonitor {
     }
 
     return issues.length() > 0 ? "Performance Issues Detected:\n" + issues.toString() : null;
+  }
+
+  /**
+   * Checks for performance regression and updates baselines.
+   *
+   * @param category operation category
+   * @param stats current operation statistics
+   */
+  private static void checkPerformanceRegression(
+      final String category, final OperationStats stats) {
+    final long currentTime = System.currentTimeMillis();
+    if (currentTime - lastRegressionCheck < REGRESSION_CHECK_INTERVAL_MS) {
+      return;
+    }
+
+    // Update check time atomically
+    synchronized (PerformanceMonitor.class) {
+      if (currentTime - lastRegressionCheck < REGRESSION_CHECK_INTERVAL_MS) {
+        return;
+      }
+      lastRegressionCheck = currentTime;
+    }
+
+    final long totalCalls = stats.getTotalCalls();
+    if (totalCalls < 100) {
+      return; // Not enough data yet
+    }
+
+    final double currentAvg = stats.getAverageTimeNs();
+    final PerformanceBaseline baseline = BASELINES.get(category);
+
+    if (baseline == null) {
+      // Establish new baseline
+      final double stdDev = calculateStandardDeviation(stats);
+      final PerformanceBaseline newBaseline =
+          new PerformanceBaseline(category, currentAvg, stdDev, totalCalls);
+      BASELINES.put(category, newBaseline);
+      LOGGER.info(
+          String.format(
+              "Established performance baseline for %s: %.0fns ± %.0fns",
+              category, currentAvg, stdDev));
+    } else {
+      // Check for regression or improvement
+      if (baseline.isRegression(currentAvg)) {
+        LOGGER.warning(
+            String.format(
+                "Performance regression detected for %s: %.0fns vs baseline %.0fns",
+                category, currentAvg, baseline.baselineAvgNs));
+      } else if (baseline.isImprovement(currentAvg)) {
+        LOGGER.info(
+            String.format(
+                "Performance improvement detected for %s: %.0fns vs baseline %.0fns",
+                category, currentAvg, baseline.baselineAvgNs));
+      }
+    }
+  }
+
+  /** Calculates standard deviation for operation statistics. */
+  private static double calculateStandardDeviation(final OperationStats stats) {
+    // Simplified standard deviation calculation
+    // In a real implementation, we'd track all individual measurements
+    final double avg = stats.getAverageTimeNs();
+    final double min = stats.getMinTimeNs();
+    final double max = stats.getMaxTimeNs();
+
+    // Rough estimate: assume normal distribution, use range/4 as std dev approximation
+    return Math.max((max - min) / 4.0, avg * 0.1); // At least 10% of average
+  }
+
+  /**
+   * Gets the monitoring overhead as a percentage of total operation time.
+   *
+   * @return overhead percentage (0.0 to 100.0)
+   */
+  public static double getMonitoringOverheadPercentage() {
+    final long totalMonitoringOverhead = MONITORING_OVERHEAD_NS.get();
+    final long totalOperationTime = TOTAL_JNI_TIME_NS.get();
+
+    if (totalOperationTime > 0) {
+      return (totalMonitoringOverhead * 100.0) / totalOperationTime;
+    }
+    return 0.0;
+  }
+
+  /**
+   * Gets the average monitoring overhead per operation in nanoseconds.
+   *
+   * @return average overhead per operation
+   */
+  public static double getAverageMonitoringOverheadNs() {
+    final long totalCalls = TOTAL_JNI_CALLS.get();
+    final long totalOverhead = MONITORING_OVERHEAD_NS.get();
+
+    return totalCalls > 0 ? (double) totalOverhead / totalCalls : 0.0;
+  }
+
+  /**
+   * Checks if monitoring overhead meets the target (<5%).
+   *
+   * @return true if overhead is below 5%
+   */
+  public static boolean meetsOverheadTarget() {
+    return getMonitoringOverheadPercentage() < 5.0;
+  }
+
+  /**
+   * Enables or disables low overhead monitoring mode.
+   *
+   * @param enabled true to enable low overhead mode
+   */
+  public static void setLowOverheadMode(final boolean enabled) {
+    lowOverheadMode = enabled;
+    LOGGER.info("Low overhead monitoring mode " + (enabled ? "enabled" : "disabled"));
+  }
+
+  /**
+   * Checks if low overhead mode is enabled.
+   *
+   * @return true if low overhead mode is enabled
+   */
+  public static boolean isLowOverheadMode() {
+    return lowOverheadMode;
+  }
+
+  /**
+   * Gets comprehensive overhead statistics.
+   *
+   * @return overhead statistics string
+   */
+  public static String getOverheadStatistics() {
+    final double overheadPercentage = getMonitoringOverheadPercentage();
+    final double avgOverheadNs = getAverageMonitoringOverheadNs();
+    final boolean meetsTarget = meetsOverheadTarget();
+    final long samplingRate = lowOverheadMode ? LOW_OVERHEAD_SAMPLING_RATE : 1;
+
+    return String.format(
+        "Monitoring Overhead: %.2f%% %s, avg_overhead=%.0fns/op, sampling_rate=1/%d,"
+            + " low_overhead=%b",
+        overheadPercentage,
+        meetsTarget ? "(✓ meets <5% target)" : "(⚠ exceeds 5% target)",
+        avgOverheadNs,
+        samplingRate,
+        lowOverheadMode);
+  }
+
+  /**
+   * Gets performance baseline information.
+   *
+   * @return baseline information string
+   */
+  public static String getBaselineInformation() {
+    if (BASELINES.isEmpty()) {
+      return "No performance baselines established yet";
+    }
+
+    final StringBuilder sb = new StringBuilder("Performance Baselines:\n");
+    for (final PerformanceBaseline baseline : BASELINES.values()) {
+      sb.append(
+          String.format(
+              "  %-20s: %.0fns ± %.0fns (%s, %d samples)\n",
+              baseline.category,
+              baseline.baselineAvgNs,
+              baseline.baselineStdDevNs,
+              baseline.stable ? "stable" : "establishing",
+              baseline.baselineCount));
+    }
+    return sb.toString();
+  }
+
+  /** Forces a performance regression check. */
+  public static void forceRegressionCheck() {
+    lastRegressionCheck = 0; // Force next check
+    for (final OperationStats stats : OPERATION_STATS.values()) {
+      checkPerformanceRegression(stats.category, stats);
+    }
+  }
+
+  /** Resets performance baselines. */
+  public static void resetBaselines() {
+    BASELINES.clear();
+    lastRegressionCheck = System.currentTimeMillis();
+    LOGGER.info("Performance baselines reset");
   }
 }

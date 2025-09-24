@@ -28,6 +28,15 @@ import java.io.Closeable;
 public interface WasmRuntime extends Closeable {
 
   /**
+   * Creates a new WasmRuntime builder for advanced configuration.
+   *
+   * @return a new WasmRuntimeBuilder
+   */
+  static WasmRuntimeBuilder builder() {
+    return new WasmRuntimeBuilder();
+  }
+
+  /**
    * Creates a new WebAssembly engine with default configuration.
    *
    * <p>The engine is responsible for compilation and execution of WebAssembly modules. Multiple
@@ -115,6 +124,40 @@ public interface WasmRuntime extends Closeable {
   Instance instantiate(final Module module, final ImportMap imports) throws WasmException;
 
   /**
+   * Creates a new WebAssembly component engine with default configuration.
+   *
+   * <p>The component engine provides support for the WebAssembly Component Model, enabling
+   * composition, linking, and advanced orchestration of WebAssembly components.
+   *
+   * @return a new ComponentEngine instance
+   * @throws WasmException if the component engine cannot be created
+   */
+  ComponentEngine createComponentEngine() throws WasmException;
+
+  /**
+   * Creates a new WebAssembly component engine with the specified configuration.
+   *
+   * @param config the component engine configuration
+   * @return a new ComponentEngine instance
+   * @throws WasmException if the component engine cannot be created
+   * @throws IllegalArgumentException if config is null
+   */
+  ComponentEngine createComponentEngine(final ComponentEngineConfig config) throws WasmException;
+
+  /**
+   * Creates a new WebAssembly GC runtime for managing garbage-collected objects.
+   *
+   * <p>The GC runtime provides support for the WebAssembly Garbage Collection proposal, enabling
+   * the creation and manipulation of GC-managed structs, arrays, and reference types.
+   *
+   * @param engine the engine to use for GC operations
+   * @return a new GcRuntime instance
+   * @throws WasmException if the GC runtime cannot be created
+   * @throws IllegalArgumentException if engine is null
+   */
+  ai.tegmentum.wasmtime4j.gc.GcRuntime createGcRuntime(final Engine engine) throws WasmException;
+
+  /**
    * Gets information about the runtime implementation.
    *
    * @return runtime information including version and implementation type
@@ -127,6 +170,283 @@ public interface WasmRuntime extends Closeable {
    * @return true if the runtime is valid, false otherwise
    */
   boolean isValid();
+
+  // ===== SIMD OPERATIONS =====
+
+  /**
+   * Checks if SIMD operations are supported by this runtime.
+   *
+   * @return true if SIMD is supported
+   */
+  boolean isSimdSupported();
+
+  /**
+   * Gets information about SIMD capabilities.
+   *
+   * @return string describing SIMD capabilities
+   */
+  String getSimdCapabilities();
+
+  /**
+   * Performs SIMD vector addition.
+   *
+   * @param a first vector
+   * @param b second vector
+   * @return result vector
+   * @throws WasmException if operation fails
+   */
+  SimdOperations.V128 simdAdd(final SimdOperations.V128 a, final SimdOperations.V128 b)
+      throws WasmException;
+
+  /**
+   * Performs SIMD vector subtraction.
+   *
+   * @param a first vector
+   * @param b second vector
+   * @return result vector
+   * @throws WasmException if operation fails
+   */
+  SimdOperations.V128 simdSubtract(final SimdOperations.V128 a, final SimdOperations.V128 b)
+      throws WasmException;
+
+  /**
+   * Performs SIMD vector multiplication.
+   *
+   * @param a first vector
+   * @param b second vector
+   * @return result vector
+   * @throws WasmException if operation fails
+   */
+  SimdOperations.V128 simdMultiply(final SimdOperations.V128 a, final SimdOperations.V128 b)
+      throws WasmException;
+
+  /**
+   * Performs SIMD vector division.
+   *
+   * @param a first vector
+   * @param b second vector
+   * @return result vector
+   * @throws WasmException if operation fails
+   */
+  SimdOperations.V128 simdDivide(final SimdOperations.V128 a, final SimdOperations.V128 b)
+      throws WasmException;
+
+  /**
+   * Performs saturated SIMD vector addition.
+   *
+   * @param a first vector
+   * @param b second vector
+   * @return result vector
+   * @throws WasmException if operation fails
+   */
+  SimdOperations.V128 simdAddSaturated(final SimdOperations.V128 a, final SimdOperations.V128 b)
+      throws WasmException;
+
+  /**
+   * Performs SIMD vector bitwise AND.
+   *
+   * @param a first vector
+   * @param b second vector
+   * @return result vector
+   * @throws WasmException if operation fails
+   */
+  SimdOperations.V128 simdAnd(final SimdOperations.V128 a, final SimdOperations.V128 b)
+      throws WasmException;
+
+  /**
+   * Performs SIMD vector bitwise OR.
+   *
+   * @param a first vector
+   * @param b second vector
+   * @return result vector
+   * @throws WasmException if operation fails
+   */
+  SimdOperations.V128 simdOr(final SimdOperations.V128 a, final SimdOperations.V128 b)
+      throws WasmException;
+
+  /**
+   * Performs SIMD vector bitwise XOR.
+   *
+   * @param a first vector
+   * @param b second vector
+   * @return result vector
+   * @throws WasmException if operation fails
+   */
+  SimdOperations.V128 simdXor(final SimdOperations.V128 a, final SimdOperations.V128 b)
+      throws WasmException;
+
+  /**
+   * Performs SIMD vector bitwise NOT.
+   *
+   * @param a vector
+   * @return result vector
+   * @throws WasmException if operation fails
+   */
+  SimdOperations.V128 simdNot(final SimdOperations.V128 a) throws WasmException;
+
+  /**
+   * Performs SIMD vector equality comparison.
+   *
+   * @param a first vector
+   * @param b second vector
+   * @return result vector
+   * @throws WasmException if operation fails
+   */
+  SimdOperations.V128 simdEquals(final SimdOperations.V128 a, final SimdOperations.V128 b)
+      throws WasmException;
+
+  /**
+   * Performs SIMD vector less-than comparison.
+   *
+   * @param a first vector
+   * @param b second vector
+   * @return result vector
+   * @throws WasmException if operation fails
+   */
+  SimdOperations.V128 simdLessThan(final SimdOperations.V128 a, final SimdOperations.V128 b)
+      throws WasmException;
+
+  /**
+   * Performs SIMD vector greater-than comparison.
+   *
+   * @param a first vector
+   * @param b second vector
+   * @return result vector
+   * @throws WasmException if operation fails
+   */
+  SimdOperations.V128 simdGreaterThan(final SimdOperations.V128 a, final SimdOperations.V128 b)
+      throws WasmException;
+
+  /**
+   * Loads a SIMD vector from memory.
+   *
+   * @param memory WebAssembly memory
+   * @param offset memory offset
+   * @return loaded vector
+   * @throws WasmException if operation fails
+   */
+  SimdOperations.V128 simdLoad(final WasmMemory memory, final int offset) throws WasmException;
+
+  /**
+   * Loads a SIMD vector from memory with alignment.
+   *
+   * @param memory WebAssembly memory
+   * @param offset memory offset
+   * @param alignment required alignment
+   * @return loaded vector
+   * @throws WasmException if operation fails
+   */
+  SimdOperations.V128 simdLoadAligned(
+      final WasmMemory memory, final int offset, final int alignment) throws WasmException;
+
+  /**
+   * Stores a SIMD vector to memory.
+   *
+   * @param memory WebAssembly memory
+   * @param offset memory offset
+   * @param vector vector to store
+   * @throws WasmException if operation fails
+   */
+  void simdStore(final WasmMemory memory, final int offset, final SimdOperations.V128 vector)
+      throws WasmException;
+
+  /**
+   * Stores a SIMD vector to memory with alignment.
+   *
+   * @param memory WebAssembly memory
+   * @param offset memory offset
+   * @param vector vector to store
+   * @param alignment required alignment
+   * @throws WasmException if operation fails
+   */
+  void simdStoreAligned(
+      final WasmMemory memory,
+      final int offset,
+      final SimdOperations.V128 vector,
+      final int alignment)
+      throws WasmException;
+
+  /**
+   * Converts integer vector to float vector.
+   *
+   * @param vector integer vector
+   * @return float vector
+   * @throws WasmException if operation fails
+   */
+  SimdOperations.V128 simdConvertI32ToF32(final SimdOperations.V128 vector) throws WasmException;
+
+  /**
+   * Converts float vector to integer vector.
+   *
+   * @param vector float vector
+   * @return integer vector
+   * @throws WasmException if operation fails
+   */
+  SimdOperations.V128 simdConvertF32ToI32(final SimdOperations.V128 vector) throws WasmException;
+
+  /**
+   * Extracts 32-bit integer lane from vector.
+   *
+   * @param vector source vector
+   * @param lane lane index (0-3)
+   * @return extracted value
+   * @throws WasmException if operation fails
+   */
+  int simdExtractLaneI32(final SimdOperations.V128 vector, final int lane) throws WasmException;
+
+  /**
+   * Replaces 32-bit integer lane in vector.
+   *
+   * @param vector source vector
+   * @param lane lane index (0-3)
+   * @param value new value
+   * @return modified vector
+   * @throws WasmException if operation fails
+   */
+  SimdOperations.V128 simdReplaceLaneI32(
+      final SimdOperations.V128 vector, final int lane, final int value) throws WasmException;
+
+  /**
+   * Splats 32-bit integer to all lanes.
+   *
+   * @param value value to splat
+   * @return vector with all lanes set to value
+   * @throws WasmException if operation fails
+   */
+  SimdOperations.V128 simdSplatI32(final int value) throws WasmException;
+
+  /**
+   * Splats 32-bit float to all lanes.
+   *
+   * @param value value to splat
+   * @return vector with all lanes set to value
+   * @throws WasmException if operation fails
+   */
+  SimdOperations.V128 simdSplatF32(final float value) throws WasmException;
+
+  /**
+   * Performs vector shuffle operation.
+   *
+   * @param a first vector
+   * @param b second vector
+   * @param indices shuffle indices
+   * @return shuffled vector
+   * @throws WasmException if operation fails
+   */
+  SimdOperations.V128 simdShuffle(
+      final SimdOperations.V128 a, final SimdOperations.V128 b, final byte[] indices)
+      throws WasmException;
+
+  /**
+   * Performs relaxed SIMD addition.
+   *
+   * @param a first vector
+   * @param b second vector
+   * @return result vector
+   * @throws WasmException if operation fails
+   */
+  SimdOperations.V128 simdRelaxedAdd(final SimdOperations.V128 a, final SimdOperations.V128 b)
+      throws WasmException;
 
   /**
    * Closes the runtime and releases associated resources.

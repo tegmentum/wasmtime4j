@@ -1,0 +1,142 @@
+groups:
+  - name: wasmtime4j.rules
+    interval: 30s
+    rules:
+      # Recording rules for aggregated metrics
+      - record: wasmtime4j:error_rate
+        expr: rate(wasmtime4j_errors_total[5m])
+
+      - record: wasmtime4j:request_rate
+        expr: rate(wasmtime4j_requests_total[5m])
+
+      - record: wasmtime4j:compilation_latency_p95
+        expr: histogram_quantile(0.95, rate(wasmtime4j_compilation_duration_seconds_bucket[5m]))
+
+      - record: wasmtime4j:execution_latency_p95
+        expr: histogram_quantile(0.95, rate(wasmtime4j_execution_duration_seconds_bucket[5m]))
+
+      - record: wasmtime4j:memory_utilization
+        expr: wasmtime4j_memory_used_bytes / wasmtime4j_memory_max_bytes
+
+      - record: wasmtime4j:jvm_memory_utilization
+        expr: jvm_memory_used_bytes{area="heap"} / jvm_memory_max_bytes{area="heap"}
+
+      - record: wasmtime4j:active_instances_per_pod
+        expr: wasmtime4j_active_instances by (pod, namespace)
+
+      - record: wasmtime4j:compilation_queue_depth
+        expr: wasmtime4j_compilation_queue_length
+
+  - name: wasmtime4j.alerts
+    rules:
+      # Critical alerts
+      - alert: Wasmtime4jDown
+        expr: up{job="wasmtime4j"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Wasmtime4j service is down"
+          description: "Wasmtime4j service has been down for more than 1 minute on {{ $labels.instance }}"
+
+      - alert: Wasmtime4jHighErrorRate
+        expr: wasmtime4j:error_rate > 0.1
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High error rate in Wasmtime4j"
+          description: "Wasmtime4j error rate is {{ $value }} errors per second on {{ $labels.instance }}"
+
+      # Warning alerts
+      - alert: Wasmtime4jHighMemoryUsage
+        expr: wasmtime4j:memory_utilization > 0.8
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage in Wasmtime4j"
+          description: "Wasmtime4j memory usage is {{ $value | humanizePercentage }} on {{ $labels.instance }}"
+
+      - alert: Wasmtime4jHighJVMMemoryUsage
+        expr: wasmtime4j:jvm_memory_utilization > 0.85
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High JVM memory usage in Wasmtime4j"
+          description: "JVM heap memory usage is {{ $value | humanizePercentage }} on {{ $labels.instance }}"
+
+      - alert: Wasmtime4jCompilationLatencyHigh
+        expr: wasmtime4j:compilation_latency_p95 > 1.0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High WebAssembly compilation latency"
+          description: "95th percentile compilation latency is {{ $value }}s on {{ $labels.instance }}"
+
+      - alert: Wasmtime4jExecutionLatencyHigh
+        expr: wasmtime4j:execution_latency_p95 > 0.5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High WebAssembly execution latency"
+          description: "95th percentile execution latency is {{ $value }}s on {{ $labels.instance }}"
+
+      - alert: Wasmtime4jCompilationQueueGrowing
+        expr: increase(wasmtime4j:compilation_queue_depth[10m]) > 50
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "WebAssembly compilation queue growing"
+          description: "Compilation queue depth has increased by {{ $value }} in the last 10 minutes on {{ $labels.instance }}"
+
+      - alert: Wasmtime4jTooManyActiveInstances
+        expr: wasmtime4j:active_instances_per_pod > 1000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Too many active WebAssembly instances"
+          description: "{{ $value }} active instances on {{ $labels.pod }} in namespace {{ $labels.namespace }}"
+
+      # Performance alerts
+      - alert: Wasmtime4jGCPressure
+        expr: rate(jvm_gc_collection_seconds_sum[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High garbage collection pressure"
+          description: "GC is consuming {{ $value | humanizePercentage }} of CPU time on {{ $labels.instance }}"
+
+      - alert: Wasmtime4jFileDescriptorUsage
+        expr: process_open_fds / process_max_fds > 0.8
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High file descriptor usage"
+          description: "File descriptor usage is {{ $value | humanizePercentage }} on {{ $labels.instance }}"
+
+      # Security alerts
+      - alert: Wasmtime4jSandboxEscape
+        expr: increase(wasmtime4j_sandbox_violations_total[5m]) > 0
+        for: 0m
+        labels:
+          severity: critical
+        annotations:
+          summary: "WebAssembly sandbox violation detected"
+          description: "{{ $value }} sandbox violations detected in the last 5 minutes on {{ $labels.instance }}"
+
+      - alert: Wasmtime4jUnauthorizedAccess
+        expr: increase(wasmtime4j_unauthorized_requests_total[5m]) > 10
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High number of unauthorized access attempts"
+          description: "{{ $value }} unauthorized requests in the last 5 minutes on {{ $labels.instance }}"

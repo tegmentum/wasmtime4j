@@ -16,13 +16,18 @@
 
 package ai.tegmentum.wasmtime4j.panama;
 
+import ai.tegmentum.wasmtime4j.CallbackRegistry;
 import ai.tegmentum.wasmtime4j.Engine;
+import ai.tegmentum.wasmtime4j.FunctionReference;
 import ai.tegmentum.wasmtime4j.FunctionType;
 import ai.tegmentum.wasmtime4j.HostFunction;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFunction;
+import ai.tegmentum.wasmtime4j.WasmGlobal;
+import ai.tegmentum.wasmtime4j.WasmValue;
+import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.lang.foreign.MemorySegment;
 import java.util.Objects;
@@ -51,6 +56,7 @@ public final class PanamaStore implements Store, AutoCloseable {
 
   // Store state
   private final AtomicReference<Object> userData = new AtomicReference<>();
+  private final CallbackRegistry callbackRegistry;
   private volatile boolean closed = false;
 
   /**
@@ -77,6 +83,10 @@ public final class PanamaStore implements Store, AutoCloseable {
       this.storeResource =
           resourceManager.manageNativeResource(
               storePtr, () -> destroyNativeStoreInternal(storePtr), "Wasmtime Store");
+
+      // Initialize callback registry
+      this.callbackRegistry =
+          new PanamaCallbackRegistry(this, resourceManager, new PanamaErrorHandler());
 
       LOGGER.fine("Created Panama store instance with managed resource");
 
@@ -131,6 +141,10 @@ public final class PanamaStore implements Store, AutoCloseable {
       this.storeResource =
           resourceManager.manageNativeResource(
               storePtr, () -> destroyNativeStoreInternal(storePtr), "Wasmtime Store");
+
+      // Initialize callback registry
+      this.callbackRegistry =
+          new PanamaCallbackRegistry(this, resourceManager, new PanamaErrorHandler());
 
       LOGGER.fine("Created Panama store instance with custom configuration");
 
@@ -858,6 +872,205 @@ public final class PanamaStore implements Store, AutoCloseable {
     }
   }
 
+  // Store interface methods for callbacks and function references
+
+  @Override
+  public WasmFunction createHostFunction(
+      final String name, final FunctionType functionType, final HostFunction implementation)
+      throws WasmException {
+    Objects.requireNonNull(name, "name cannot be null");
+    Objects.requireNonNull(functionType, "functionType cannot be null");
+    Objects.requireNonNull(implementation, "implementation cannot be null");
+    ensureNotClosed();
+
+    try {
+      // Create the Panama host function wrapper
+      return new PanamaHostFunction(
+          name,
+          functionType,
+          params -> implementation.execute(params),
+          resourceManager,
+          new PanamaErrorHandler());
+    } catch (final Exception e) {
+      if (e instanceof WasmException) {
+        throw e;
+      }
+      throw new WasmException("Failed to create host function: " + name, e);
+    }
+  }
+
+  @Override
+  public WasmGlobal createGlobal(
+      final WasmValueType valueType, final boolean isMutable, final WasmValue initialValue)
+      throws WasmException {
+    Objects.requireNonNull(valueType, "valueType cannot be null");
+    Objects.requireNonNull(initialValue, "initialValue cannot be null");
+    ensureNotClosed();
+
+    try {
+      // TODO: Implement Panama global creation
+      throw new WasmException("Panama global creation not yet implemented");
+    } catch (final Exception e) {
+      if (e instanceof WasmException) {
+        throw e;
+      }
+      throw new WasmException("Failed to create global variable", e);
+    }
+  }
+
+  @Override
+  public FunctionReference createFunctionReference(
+      final HostFunction implementation, final FunctionType functionType) throws WasmException {
+    Objects.requireNonNull(implementation, "Host function implementation cannot be null");
+    Objects.requireNonNull(functionType, "Function type cannot be null");
+    ensureNotClosed();
+
+    try {
+      return new PanamaFunctionReference(
+          implementation, functionType, this, resourceManager, new PanamaErrorHandler());
+    } catch (final Exception e) {
+      if (e instanceof WasmException) {
+        throw e;
+      }
+      throw new WasmException("Failed to create function reference from host function", e);
+    }
+  }
+
+  @Override
+  public FunctionReference createFunctionReference(final WasmFunction function)
+      throws WasmException {
+    Objects.requireNonNull(function, "WebAssembly function cannot be null");
+    ensureNotClosed();
+
+    try {
+      return new PanamaFunctionReference(function, this, resourceManager, new PanamaErrorHandler());
+    } catch (final Exception e) {
+      if (e instanceof WasmException) {
+        throw e;
+      }
+      throw new WasmException("Failed to create function reference from WebAssembly function", e);
+    }
+  }
+
+  @Override
+  public CallbackRegistry getCallbackRegistry() {
+    return callbackRegistry;
+  }
+
+  @Override
+  public Instance createInstance(final Module module) throws WasmException {
+    Objects.requireNonNull(module, "Module cannot be null");
+    ensureNotClosed();
+
+    try {
+      if (!(module instanceof PanamaModule)) {
+        throw new IllegalArgumentException(
+            "Module must be a PanamaModule instance for Panama store");
+      }
+
+      PanamaModule panamaModule = (PanamaModule) module;
+      return panamaModule.instantiate(this);
+    } catch (final Exception e) {
+      if (e instanceof WasmException) {
+        throw e;
+      }
+      throw new WasmException("Failed to create instance from module", e);
+    }
+  }
+
+  @Override
+  public boolean isValid() {
+    return validate();
+  }
+
+  // Store interface methods for fuel and epoch management (simplified implementations)
+
+  @Override
+  public void setFuel(final long fuel) throws WasmException {
+    if (fuel < 0) {
+      throw new IllegalArgumentException("Fuel cannot be negative");
+    }
+    ensureNotClosed();
+    // TODO: Implement fuel setting through native calls
+    LOGGER.fine("Setting fuel to: " + fuel);
+  }
+
+  @Override
+  public long getFuel() throws WasmException {
+    ensureNotClosed();
+    return getFuelLimit(); // Use existing method for now
+  }
+
+  @Override
+  public void addFuel(final long fuel) throws WasmException {
+    if (fuel < 0) {
+      throw new IllegalArgumentException("Fuel cannot be negative");
+    }
+    ensureNotClosed();
+    // TODO: Implement fuel addition through native calls
+    LOGGER.fine("Adding fuel: " + fuel);
+  }
+
+  @Override
+  public void setEpochDeadline(final long ticks) throws WasmException {
+    ensureNotClosed();
+    // TODO: Implement epoch deadline setting
+    LOGGER.fine("Setting epoch deadline to: " + ticks);
+  }
+
+  @Override
+  public long consumeFuel(final long fuel) throws WasmException {
+    if (fuel < 0) {
+      throw new IllegalArgumentException("Fuel cannot be negative");
+    }
+    ensureNotClosed();
+    // TODO: Implement fuel consumption
+    LOGGER.fine("Consuming fuel: " + fuel);
+    return getFuel() - fuel; // Simplified implementation
+  }
+
+  @Override
+  public long getRemainingFuel() throws WasmException {
+    return getFuel();
+  }
+
+  @Override
+  public void incrementEpoch() throws WasmException {
+    ensureNotClosed();
+    // TODO: Implement epoch increment
+    LOGGER.fine("Incrementing epoch");
+  }
+
+  @Override
+  public void setMemoryLimit(final long bytes) throws WasmException {
+    if (bytes < 0) {
+      throw new IllegalArgumentException("Memory limit cannot be negative");
+    }
+    ensureNotClosed();
+    // TODO: Implement memory limit setting
+    LOGGER.fine("Setting memory limit to: " + bytes);
+  }
+
+  @Override
+  public void setTableElementLimit(final long elements) throws WasmException {
+    if (elements < 0) {
+      throw new IllegalArgumentException("Table element limit cannot be negative");
+    }
+    ensureNotClosed();
+    // TODO: Implement table element limit setting
+    LOGGER.fine("Setting table element limit to: " + elements);
+  }
+
+  @Override
+  public void setInstanceLimit(final int count) throws WasmException {
+    if (count < 0) {
+      throw new IllegalArgumentException("Instance limit cannot be negative");
+    }
+    ensureNotClosed();
+    // TODO: Implement instance limit setting
+    LOGGER.fine("Setting instance limit to: " + count);
+  }
+
   /**
    * Gets the native handle for this store.
    *
@@ -884,6 +1097,13 @@ public final class PanamaStore implements Store, AutoCloseable {
       }
 
       try {
+        // Close the callback registry first
+        try {
+          callbackRegistry.close();
+        } catch (Exception e) {
+          LOGGER.warning("Error closing callback registry: " + e.getMessage());
+        }
+
         // Close the managed native resource - this triggers automatic cleanup
         storeResource.close();
 
@@ -951,6 +1171,58 @@ public final class PanamaStore implements Store, AutoCloseable {
       String detailedMessage =
           PanamaErrorHandler.createDetailedErrorMessage(
               "Module instantiation", "module=" + module.getModulePointer(), e.getMessage());
+      throw new WasmException(detailedMessage, e);
+    }
+  }
+
+  @Override
+  public WasmGlobal createGlobal(
+      final WasmValueType valueType, final boolean isMutable, final WasmValue initialValue)
+      throws WasmException {
+    Objects.requireNonNull(valueType, "valueType cannot be null");
+    Objects.requireNonNull(initialValue, "initialValue cannot be null");
+    ensureNotClosed();
+
+    // Validate that the initial value matches the specified type
+    if (initialValue.getType() != valueType) {
+      throw new IllegalArgumentException(
+          "Initial value type "
+              + initialValue.getType()
+              + " does not match global type "
+              + valueType);
+    }
+
+    try {
+      // Create global using native function
+      MemorySegment globalPtr =
+          nativeFunctions.globalCreate(
+              storeResource.getNativePointer(),
+              valueType.toNativeTypeCode(),
+              isMutable ? 1 : 0,
+              initialValue);
+
+      if (globalPtr == null || globalPtr.equals(MemorySegment.NULL)) {
+        throw new WasmException("Failed to create global variable - native call returned null");
+      }
+
+      // Create PanamaGlobal wrapper
+      PanamaGlobal global = new PanamaGlobal(globalPtr, resourceManager, null);
+      LOGGER.fine(
+          "Created global with type "
+              + valueType
+              + ", mutable="
+              + isMutable
+              + ", handle="
+              + globalPtr);
+      return global;
+
+    } catch (Exception e) {
+      if (e instanceof WasmException) {
+        throw e;
+      }
+      String detailedMessage =
+          PanamaErrorHandler.createDetailedErrorMessage(
+              "Failed to create global variable", e, "valueType", valueType.toString());
       throw new WasmException(detailedMessage, e);
     }
   }

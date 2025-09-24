@@ -65,7 +65,22 @@ public enum WasiFileOperation {
   OPEN("open", "Opening files or directories"),
 
   /** Closing files or directories. */
-  CLOSE("close", "Closing files or directories");
+  CLOSE("close", "Closing files or directories"),
+
+  /** Read-only file access. */
+  READ_ONLY("read_only", "Read-only file access"),
+
+  /** Write-only file access. */
+  WRITE_ONLY("write_only", "Write-only file access"),
+
+  /** Read and write file access. */
+  READ_WRITE("read_write", "Read and write file access"),
+
+  /** Setting file permissions. */
+  SET_PERMISSIONS("set_permissions", "Setting file permissions"),
+
+  /** Reading symbolic links. */
+  READ_LINK("read_link", "Reading symbolic links");
 
   /** The operation identifier used in native code. */
   private final String operationId;
@@ -114,6 +129,9 @@ public enum WasiFileOperation {
       case LIST_DIRECTORY:
       case FOLLOW_SYMLINKS:
       case POLL:
+      case READ_ONLY:
+      case READ_WRITE:
+      case READ_LINK:
         return true;
       default:
         return false;
@@ -136,6 +154,9 @@ public enum WasiFileOperation {
       case SET_TIMES:
       case TRUNCATE:
       case SYNC:
+      case WRITE_ONLY:
+      case READ_WRITE:
+      case SET_PERMISSIONS:
         return true;
       default:
         return false;

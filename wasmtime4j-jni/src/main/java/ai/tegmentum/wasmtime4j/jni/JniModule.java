@@ -1,5 +1,11 @@
 package ai.tegmentum.wasmtime4j.jni;
 
+import ai.tegmentum.wasmtime4j.CustomSection;
+import ai.tegmentum.wasmtime4j.CustomSectionMetadata;
+import ai.tegmentum.wasmtime4j.CustomSectionParser;
+import ai.tegmentum.wasmtime4j.CustomSectionType;
+import ai.tegmentum.wasmtime4j.DefaultCustomSectionMetadata;
+import ai.tegmentum.wasmtime4j.DefaultCustomSectionParser;
 import ai.tegmentum.wasmtime4j.ExportDescriptor;
 import ai.tegmentum.wasmtime4j.ExportType;
 import ai.tegmentum.wasmtime4j.FuncType;
@@ -10,6 +16,8 @@ import ai.tegmentum.wasmtime4j.ImportType;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.MemoryType;
 import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.ModuleExport;
+import ai.tegmentum.wasmtime4j.ModuleImport;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.TableType;
 import ai.tegmentum.wasmtime4j.WasmType;
@@ -687,6 +695,196 @@ public final class JniModule extends JniResource implements Module {
   }
 
   /**
+   * Gets custom sections from this module.
+   *
+   * <p>Custom sections contain arbitrary data that can be embedded in WebAssembly modules for
+   * metadata or debugging purposes.
+   *
+   * @return a map of custom section names to their data
+   * @deprecated Use {@link #getCustomSectionMetadata()} for comprehensive custom section access
+   * @throws JniException if custom sections cannot be retrieved
+   * @throws JniResourceException if this module has been closed
+   */
+  @Override
+  @Deprecated
+  public java.util.Map<String, String> getCustomSections() {
+    ensureNotClosed();
+
+    try {
+      final String[] customSectionData = nativeGetCustomSections(getNativeHandle());
+      final Map<String, String> customSections = new HashMap<>();
+
+      if (customSectionData != null) {
+        // Parse custom section data format: name|data_as_base64
+        for (final String entry : customSectionData) {
+          if (entry != null && !entry.trim().isEmpty()) {
+            final String[] parts = entry.split("\\|", 2);
+            if (parts.length == 2) {
+              customSections.put(parts[0], parts[1]);
+            }
+          }
+        }
+      }
+
+      return Collections.unmodifiableMap(customSections);
+    } catch (final Exception e) {
+      throw new JniException("Failed to get custom sections", e);
+    }
+  }
+
+  /**
+   * Gets comprehensive custom section metadata for this module.
+   *
+   * <p>This provides access to all custom sections including standard sections like "name",
+   * "producers", and "target_features", as well as arbitrary custom sections.
+   *
+   * @return custom section metadata interface
+   * @throws JniException if custom section metadata cannot be retrieved
+   * @throws JniResourceException if this module has been closed
+   */
+  @Override
+  public CustomSectionMetadata getCustomSectionMetadata() {
+    ensureNotClosed();
+
+    try {
+      final List<CustomSection> customSections = parseCustomSectionsFromNative();
+      final CustomSectionParser parser = new DefaultCustomSectionParser();
+      return new DefaultCustomSectionMetadata(customSections, parser);
+    } catch (final Exception e) {
+      throw new JniException("Failed to get custom section metadata", e);
+    }
+  }
+
+  /**
+   * Gets the imports required by this module as ModuleImport objects.
+   *
+   * <p>This method provides enhanced import information compared to {@link #getImports()},
+   * including complete type details for each import.
+   *
+   * @return an immutable list of module imports with complete type information
+   * @throws JniException if module imports cannot be retrieved
+   * @throws JniResourceException if this module has been closed
+   */
+  @Override
+  public java.util.List<ModuleImport> getModuleImports() {
+    ensureNotClosed();
+
+    try {
+      final String[] moduleImportData = nativeGetModuleImports(getNativeHandle());
+      return parseModuleImports(moduleImportData);
+    } catch (final Exception e) {
+      throw new JniException("Failed to get module imports", e);
+    }
+  }
+
+  /**
+   * Gets the exports defined by this module as ModuleExport objects.
+   *
+   * <p>This method provides enhanced export information compared to {@link #getExports()},
+   * including complete type details for each export.
+   *
+   * @return an immutable list of module exports with complete type information
+   * @throws JniException if module exports cannot be retrieved
+   * @throws JniResourceException if this module has been closed
+   */
+  @Override
+  public java.util.List<ModuleExport> getModuleExports() {
+    ensureNotClosed();
+
+    try {
+      final String[] moduleExportData = nativeGetModuleExports(getNativeHandle());
+      return parseModuleExports(moduleExportData);
+    } catch (final Exception e) {
+      throw new JniException("Failed to get module exports", e);
+    }
+  }
+
+  /**
+   * Gets all function types defined in this module.
+   *
+   * <p>This includes function types for both imported and exported functions, as well as internal
+   * functions.
+   *
+   * @return an immutable list of function types
+   * @throws JniException if function types cannot be retrieved
+   * @throws JniResourceException if this module has been closed
+   */
+  @Override
+  public java.util.List<FuncType> getFunctionTypes() {
+    ensureNotClosed();
+
+    try {
+      final String[] functionTypeData = nativeGetFunctionTypes(getNativeHandle());
+      return parseFunctionTypes(functionTypeData);
+    } catch (final Exception e) {
+      throw new JniException("Failed to get function types", e);
+    }
+  }
+
+  /**
+   * Gets all memory types defined in this module.
+   *
+   * <p>This includes memory types for both imported and exported memories.
+   *
+   * @return an immutable list of memory types
+   * @throws JniException if memory types cannot be retrieved
+   * @throws JniResourceException if this module has been closed
+   */
+  @Override
+  public java.util.List<MemoryType> getMemoryTypes() {
+    ensureNotClosed();
+
+    try {
+      final String[] memoryTypeData = nativeGetMemoryTypes(getNativeHandle());
+      return parseMemoryTypes(memoryTypeData);
+    } catch (final Exception e) {
+      throw new JniException("Failed to get memory types", e);
+    }
+  }
+
+  /**
+   * Gets all table types defined in this module.
+   *
+   * <p>This includes table types for both imported and exported tables.
+   *
+   * @return an immutable list of table types
+   * @throws JniException if table types cannot be retrieved
+   * @throws JniResourceException if this module has been closed
+   */
+  @Override
+  public java.util.List<TableType> getTableTypes() {
+    ensureNotClosed();
+
+    try {
+      final String[] tableTypeData = nativeGetTableTypes(getNativeHandle());
+      return parseTableTypes(tableTypeData);
+    } catch (final Exception e) {
+      throw new JniException("Failed to get table types", e);
+    }
+  }
+
+  /**
+   * Gets all global types defined in this module.
+   *
+   * <p>This includes global types for both imported and exported globals.
+   *
+   * @return an immutable list of global types
+   * @throws JniException if global types cannot be retrieved
+   * @throws JniResourceException if this module has been closed
+   */
+  @Override
+  public java.util.List<GlobalType> getGlobalTypes() {
+    ensureNotClosed();
+
+    try {
+      final String[] globalTypeData = nativeGetGlobalTypes(getNativeHandle());
+      return parseGlobalTypes(globalTypeData);
+    } catch (final Exception e) {
+      throw new JniException("Failed to get global types", e);
+    }
+  }
+
+  /**
    * Checks if the module is still valid and usable.
    *
    * @return true if the module is valid and not closed, false otherwise
@@ -855,6 +1053,306 @@ public final class JniModule extends JniResource implements Module {
       }
       throw new JniException("Failed to get module size", e);
     }
+  }
+
+  /**
+   * Parses custom sections from native data.
+   *
+   * @return list of custom sections
+   * @throws JniException if parsing fails
+   */
+  private List<CustomSection> parseCustomSectionsFromNative() {
+    final List<CustomSection> customSections = new ArrayList<>();
+
+    try {
+      final byte[][] rawCustomSections = nativeGetRawCustomSections(getNativeHandle());
+      if (rawCustomSections != null) {
+        for (final byte[] sectionData : rawCustomSections) {
+          if (sectionData != null && sectionData.length > 0) {
+            // Parse section header to get name and type
+            final String sectionName = parseCustomSectionName(sectionData);
+            final CustomSectionType sectionType = CustomSectionType.fromName(sectionName);
+            final byte[] sectionContent = parseCustomSectionContent(sectionData);
+
+            customSections.add(new CustomSection(sectionName, sectionContent, sectionType));
+          }
+        }
+      }
+    } catch (final Exception e) {
+      throw new JniException("Failed to parse custom sections", e);
+    }
+
+    return customSections;
+  }
+
+  /**
+   * Parses custom section name from raw section data.
+   *
+   * @param sectionData raw section data
+   * @return section name
+   */
+  private String parseCustomSectionName(final byte[] sectionData) {
+    // Custom sections start with: [name_length] [name_bytes] [content_bytes]
+    // This is a simplified implementation
+    if (sectionData.length < 1) {
+      return "unknown";
+    }
+
+    final int nameLength = sectionData[0] & 0xFF;
+    if (sectionData.length < 1 + nameLength) {
+      return "unknown";
+    }
+
+    return new String(sectionData, 1, nameLength, java.nio.charset.StandardCharsets.UTF_8);
+  }
+
+  /**
+   * Parses custom section content from raw section data.
+   *
+   * @param sectionData raw section data
+   * @return section content
+   */
+  private byte[] parseCustomSectionContent(final byte[] sectionData) {
+    if (sectionData.length < 1) {
+      return new byte[0];
+    }
+
+    final int nameLength = sectionData[0] & 0xFF;
+    final int contentStart = 1 + nameLength;
+
+    if (sectionData.length <= contentStart) {
+      return new byte[0];
+    }
+
+    final byte[] content = new byte[sectionData.length - contentStart];
+    System.arraycopy(sectionData, contentStart, content, 0, content.length);
+    return content;
+  }
+
+  /**
+   * Parses module imports from native string array format.
+   *
+   * @param moduleImportData array of module import metadata strings
+   * @return list of parsed module imports
+   */
+  private List<ModuleImport> parseModuleImports(final String[] moduleImportData) {
+    if (moduleImportData == null || moduleImportData.length == 0) {
+      return Collections.emptyList();
+    }
+
+    final List<ModuleImport> moduleImports = new ArrayList<>();
+
+    // Parse module import data format: module|name|type|signature|description
+    for (final String entry : moduleImportData) {
+      if (entry != null && !entry.trim().isEmpty()) {
+        final String[] parts = entry.split("\\|");
+        if (parts.length >= 4) {
+          final String moduleName = parts[0];
+          final String name = parts[1];
+          final String typeString = parts[2];
+          final String signature = parts[3];
+          final String description = parts.length > 4 ? parts[4] : "";
+
+          final WasmType type = createWasmType(typeString, signature);
+          // ModuleImport constructor would need to be available
+          // This is a placeholder implementation
+          moduleImports.add(createModuleImport(moduleName, name, type, signature, description));
+        }
+      }
+    }
+
+    return Collections.unmodifiableList(moduleImports);
+  }
+
+  /**
+   * Parses module exports from native string array format.
+   *
+   * @param moduleExportData array of module export metadata strings
+   * @return list of parsed module exports
+   */
+  private List<ModuleExport> parseModuleExports(final String[] moduleExportData) {
+    if (moduleExportData == null || moduleExportData.length == 0) {
+      return Collections.emptyList();
+    }
+
+    final List<ModuleExport> moduleExports = new ArrayList<>();
+
+    // Parse module export data format: name|type|signature|description
+    for (final String entry : moduleExportData) {
+      if (entry != null && !entry.trim().isEmpty()) {
+        final String[] parts = entry.split("\\|");
+        if (parts.length >= 3) {
+          final String name = parts[0];
+          final String typeString = parts[1];
+          final String signature = parts[2];
+          final String description = parts.length > 3 ? parts[3] : "";
+
+          final WasmType type = createWasmType(typeString, signature);
+          // ModuleExport constructor would need to be available
+          // This is a placeholder implementation
+          moduleExports.add(createModuleExport(name, type, signature, description));
+        }
+      }
+    }
+
+    return Collections.unmodifiableList(moduleExports);
+  }
+
+  /**
+   * Parses function types from native string array format.
+   *
+   * @param functionTypeData array of function type strings
+   * @return list of parsed function types
+   */
+  private List<FuncType> parseFunctionTypes(final String[] functionTypeData) {
+    if (functionTypeData == null || functionTypeData.length == 0) {
+      return Collections.emptyList();
+    }
+
+    final List<FuncType> functionTypes = new ArrayList<>();
+
+    for (final String entry : functionTypeData) {
+      if (entry != null && !entry.trim().isEmpty()) {
+        // Parse function type format: params|returns
+        final String[] parts = entry.split("\\|");
+        if (parts.length >= 2) {
+          // This would need proper FuncType implementation
+          // This is a placeholder
+          functionTypes.add(createFuncType(parts[0], parts[1]));
+        }
+      }
+    }
+
+    return Collections.unmodifiableList(functionTypes);
+  }
+
+  /**
+   * Parses memory types from native string array format.
+   *
+   * @param memoryTypeData array of memory type strings
+   * @return list of parsed memory types
+   */
+  private List<MemoryType> parseMemoryTypes(final String[] memoryTypeData) {
+    if (memoryTypeData == null || memoryTypeData.length == 0) {
+      return Collections.emptyList();
+    }
+
+    final List<MemoryType> memoryTypes = new ArrayList<>();
+
+    for (final String entry : memoryTypeData) {
+      if (entry != null && !entry.trim().isEmpty()) {
+        // Parse memory type format: min|max
+        final String[] parts = entry.split("\\|");
+        if (parts.length >= 1) {
+          // This would need proper MemoryType implementation
+          // This is a placeholder
+          memoryTypes.add(createMemoryType(parts[0], parts.length > 1 ? parts[1] : null));
+        }
+      }
+    }
+
+    return Collections.unmodifiableList(memoryTypes);
+  }
+
+  /**
+   * Parses table types from native string array format.
+   *
+   * @param tableTypeData array of table type strings
+   * @return list of parsed table types
+   */
+  private List<TableType> parseTableTypes(final String[] tableTypeData) {
+    if (tableTypeData == null || tableTypeData.length == 0) {
+      return Collections.emptyList();
+    }
+
+    final List<TableType> tableTypes = new ArrayList<>();
+
+    for (final String entry : tableTypeData) {
+      if (entry != null && !entry.trim().isEmpty()) {
+        // Parse table type format: element_type|min|max
+        final String[] parts = entry.split("\\|");
+        if (parts.length >= 2) {
+          // This would need proper TableType implementation
+          // This is a placeholder
+          tableTypes.add(createTableType(parts[0], parts[1], parts.length > 2 ? parts[2] : null));
+        }
+      }
+    }
+
+    return Collections.unmodifiableList(tableTypes);
+  }
+
+  /**
+   * Parses global types from native string array format.
+   *
+   * @param globalTypeData array of global type strings
+   * @return list of parsed global types
+   */
+  private List<GlobalType> parseGlobalTypes(final String[] globalTypeData) {
+    if (globalTypeData == null || globalTypeData.length == 0) {
+      return Collections.emptyList();
+    }
+
+    final List<GlobalType> globalTypes = new ArrayList<>();
+
+    for (final String entry : globalTypeData) {
+      if (entry != null && !entry.trim().isEmpty()) {
+        // Parse global type format: value_type|mutability
+        final String[] parts = entry.split("\\|");
+        if (parts.length >= 2) {
+          // This would need proper GlobalType implementation
+          // This is a placeholder
+          globalTypes.add(createGlobalType(parts[0], parts[1]));
+        }
+      }
+    }
+
+    return Collections.unmodifiableList(globalTypes);
+  }
+
+  // Placeholder factory methods - these would need proper implementations
+  private ModuleImport createModuleImport(final String moduleName, final String name,
+                                          final WasmType type, final String signature, final String description) {
+    // This is a placeholder - ModuleImport would need to be properly implemented
+    return new ModuleImport(moduleName, name, type, signature, description);
+  }
+
+  private ModuleExport createModuleExport(final String name, final WasmType type,
+                                          final String signature, final String description) {
+    // This is a placeholder - ModuleExport would need to be properly implemented
+    return new ModuleExport(name, type, signature, description);
+  }
+
+  private FuncType createFuncType(final String params, final String returns) {
+    // This is a placeholder - FuncType would need proper parsing
+    return new FuncType() {
+      @Override
+      public WasmTypeKind getKind() { return WasmTypeKind.FUNCTION; }
+    };
+  }
+
+  private MemoryType createMemoryType(final String min, final String max) {
+    // This is a placeholder - MemoryType would need proper parsing
+    return new MemoryType() {
+      @Override
+      public WasmTypeKind getKind() { return WasmTypeKind.MEMORY; }
+    };
+  }
+
+  private TableType createTableType(final String elementType, final String min, final String max) {
+    // This is a placeholder - TableType would need proper parsing
+    return new TableType() {
+      @Override
+      public WasmTypeKind getKind() { return WasmTypeKind.TABLE; }
+    };
+  }
+
+  private GlobalType createGlobalType(final String valueType, final String mutability) {
+    // This is a placeholder - GlobalType would need proper parsing
+    return new GlobalType() {
+      @Override
+      public WasmTypeKind getKind() { return WasmTypeKind.GLOBAL; }
+    };
   }
 
   /**
@@ -1199,4 +1697,68 @@ public final class JniModule extends JniResource implements Module {
    * @param moduleHandle the native module handle
    */
   private static native void nativeDestroyModule(long moduleHandle);
+
+  /**
+   * Gets custom sections from a module as string data.
+   *
+   * @param moduleHandle the native module handle
+   * @return array of custom section entries in "name|data" format or null on error
+   */
+  private static native String[] nativeGetCustomSections(long moduleHandle);
+
+  /**
+   * Gets raw custom sections from a module as binary data.
+   *
+   * @param moduleHandle the native module handle
+   * @return array of raw custom section data or null on error
+   */
+  private static native byte[][] nativeGetRawCustomSections(long moduleHandle);
+
+  /**
+   * Gets module imports with complete type information.
+   *
+   * @param moduleHandle the native module handle
+   * @return array of module import metadata strings or null on error
+   */
+  private static native String[] nativeGetModuleImports(long moduleHandle);
+
+  /**
+   * Gets module exports with complete type information.
+   *
+   * @param moduleHandle the native module handle
+   * @return array of module export metadata strings or null on error
+   */
+  private static native String[] nativeGetModuleExports(long moduleHandle);
+
+  /**
+   * Gets all function types from a module.
+   *
+   * @param moduleHandle the native module handle
+   * @return array of function type strings or null on error
+   */
+  private static native String[] nativeGetFunctionTypes(long moduleHandle);
+
+  /**
+   * Gets all memory types from a module.
+   *
+   * @param moduleHandle the native module handle
+   * @return array of memory type strings or null on error
+   */
+  private static native String[] nativeGetMemoryTypes(long moduleHandle);
+
+  /**
+   * Gets all table types from a module.
+   *
+   * @param moduleHandle the native module handle
+   * @return array of table type strings or null on error
+   */
+  private static native String[] nativeGetTableTypes(long moduleHandle);
+
+  /**
+   * Gets all global types from a module.
+   *
+   * @param moduleHandle the native module handle
+   * @return array of global type strings or null on error
+   */
+  private static native String[] nativeGetGlobalTypes(long moduleHandle);
 }

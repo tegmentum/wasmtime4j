@@ -209,6 +209,45 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
   }
 
   @Override
+  public ai.tegmentum.wasmtime4j.gc.GcRuntime createGcRuntime(final Engine engine)
+      throws WasmException {
+    JniValidation.requireNonNull(engine, "engine");
+    if (!isValid()) {
+      throw new IllegalStateException("JNI runtime is not valid or has been closed");
+    }
+
+    try {
+      if (!(engine instanceof JniEngine)) {
+        throw new IllegalArgumentException("Engine must be a JniEngine instance for JNI runtime");
+      }
+
+      final JniEngine jniEngine = (JniEngine) engine;
+      final long engineHandle = jniEngine.getNativeHandle();
+
+      return concurrencyManager.executeWithReadLock(
+          getNativeHandle(),
+          () -> {
+            try {
+              final JniGcRuntime gcRuntime = new JniGcRuntime(engineHandle);
+
+              // Cache the GC runtime
+              resourceCache.put("gc-runtime-" + engineHandle, gcRuntime);
+
+              LOGGER.fine("Created GC runtime for engine: 0x" + Long.toHexString(engineHandle));
+              return gcRuntime;
+            } catch (final Exception e) {
+              throw new RuntimeException(new WasmException("Failed to create GC runtime", e));
+            }
+          });
+    } catch (final RuntimeException e) {
+      if (e.getCause() instanceof WasmException) {
+        throw (WasmException) e.getCause();
+      }
+      throw new WasmException("Unexpected error creating GC runtime", e);
+    }
+  }
+
+  @Override
   public Module compileModule(final Engine engine, final byte[] wasmBytes) throws WasmException {
     JniValidation.requireNonNull(engine, "engine");
     JniValidation.requireNonNull(wasmBytes, "wasmBytes");
