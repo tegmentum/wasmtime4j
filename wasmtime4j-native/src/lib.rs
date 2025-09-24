@@ -70,7 +70,10 @@ pub mod wasi;
 // Advanced configuration modules for comprehensive optimization control
 // pub mod config_cranelift;
 // pub mod platform_config;
-// pub mod engine_config;
+pub mod engine_config;
+
+// Experimental WebAssembly features (committee-stage proposals)
+pub mod experimental_features;
 
 // Security module for enterprise features
 pub mod security;
