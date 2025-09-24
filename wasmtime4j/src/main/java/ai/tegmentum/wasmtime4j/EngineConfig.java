@@ -29,6 +29,20 @@ public final class EngineConfig {
   private long asyncStackSize = 0; // 0 means unlimited
   private boolean generateDebugInfo = false;
   private boolean epochInterruption = false;
+
+  // Committee-stage experimental features (disabled by default)
+  private boolean wasmStackSwitching = false;
+  private boolean wasmCallCc = false;
+  private boolean wasmExtendedConstExpressions = false;
+  private boolean wasmMemory64Extended = false;
+  private boolean wasmCustomPageSizes = false;
+  private boolean wasmSharedEverythingThreads = false;
+  private boolean wasmTypeImports = false;
+  private boolean wasmStringImports = false;
+  private boolean wasmResourceTypes = false;
+  private boolean wasmInterfaceTypes = false;
+  private boolean wasmFlexibleVectors = false;
+
   private java.util.Map<String, String> craneliftSettings = new java.util.HashMap<>();
   private java.util.Set<WasmFeature> wasmFeatures = new java.util.HashSet<>();
 
@@ -205,6 +219,19 @@ public final class EngineConfig {
     this.wasmMultiMemory = features.contains(WasmFeature.MULTI_MEMORY);
     this.wasmMemory64 = features.contains(WasmFeature.MEMORY64);
 
+    // Update experimental feature flags
+    this.wasmStackSwitching = features.contains(WasmFeature.STACK_SWITCHING);
+    this.wasmCallCc = features.contains(WasmFeature.CALL_CC);
+    this.wasmExtendedConstExpressions = features.contains(WasmFeature.EXTENDED_CONST_EXPRESSIONS);
+    this.wasmMemory64Extended = features.contains(WasmFeature.MEMORY64_EXTENDED);
+    this.wasmCustomPageSizes = features.contains(WasmFeature.CUSTOM_PAGE_SIZES);
+    this.wasmSharedEverythingThreads = features.contains(WasmFeature.SHARED_EVERYTHING_THREADS);
+    this.wasmTypeImports = features.contains(WasmFeature.TYPE_IMPORTS);
+    this.wasmStringImports = features.contains(WasmFeature.STRING_IMPORTS);
+    this.wasmResourceTypes = features.contains(WasmFeature.RESOURCE_TYPES);
+    this.wasmInterfaceTypes = features.contains(WasmFeature.INTERFACE_TYPES);
+    this.wasmFlexibleVectors = features.contains(WasmFeature.FLEXIBLE_VECTORS);
+
     return this;
   }
 
@@ -258,6 +285,39 @@ public final class EngineConfig {
         break;
       case EXCEPTIONS:
         // Exceptions are handled at the runtime level
+        break;
+      case STACK_SWITCHING:
+        this.wasmStackSwitching = true;
+        break;
+      case CALL_CC:
+        this.wasmCallCc = true;
+        break;
+      case EXTENDED_CONST_EXPRESSIONS:
+        this.wasmExtendedConstExpressions = true;
+        break;
+      case MEMORY64_EXTENDED:
+        this.wasmMemory64Extended = true;
+        break;
+      case CUSTOM_PAGE_SIZES:
+        this.wasmCustomPageSizes = true;
+        break;
+      case SHARED_EVERYTHING_THREADS:
+        this.wasmSharedEverythingThreads = true;
+        break;
+      case TYPE_IMPORTS:
+        this.wasmTypeImports = true;
+        break;
+      case STRING_IMPORTS:
+        this.wasmStringImports = true;
+        break;
+      case RESOURCE_TYPES:
+        this.wasmResourceTypes = true;
+        break;
+      case INTERFACE_TYPES:
+        this.wasmInterfaceTypes = true;
+        break;
+      case FLEXIBLE_VECTORS:
+        this.wasmFlexibleVectors = true;
         break;
       default:
         // Unknown feature, just add to the set
@@ -374,6 +434,52 @@ public final class EngineConfig {
     return new java.util.HashSet<>(wasmFeatures);
   }
 
+  // Experimental feature getters
+
+  public boolean isWasmStackSwitching() {
+    return wasmStackSwitching;
+  }
+
+  public boolean isWasmCallCc() {
+    return wasmCallCc;
+  }
+
+  public boolean isWasmExtendedConstExpressions() {
+    return wasmExtendedConstExpressions;
+  }
+
+  public boolean isWasmMemory64Extended() {
+    return wasmMemory64Extended;
+  }
+
+  public boolean isWasmCustomPageSizes() {
+    return wasmCustomPageSizes;
+  }
+
+  public boolean isWasmSharedEverythingThreads() {
+    return wasmSharedEverythingThreads;
+  }
+
+  public boolean isWasmTypeImports() {
+    return wasmTypeImports;
+  }
+
+  public boolean isWasmStringImports() {
+    return wasmStringImports;
+  }
+
+  public boolean isWasmResourceTypes() {
+    return wasmResourceTypes;
+  }
+
+  public boolean isWasmInterfaceTypes() {
+    return wasmInterfaceTypes;
+  }
+
+  public boolean isWasmFlexibleVectors() {
+    return wasmFlexibleVectors;
+  }
+
   /**
    * Creates a new configuration with default settings optimized for speed.
    *
@@ -402,5 +508,55 @@ public final class EngineConfig {
         .debugInfo(true)
         .optimizationLevel(OptimizationLevel.NONE)
         .craneliftDebugVerifier(true);
+  }
+
+  /**
+   * Creates a new configuration with experimental WebAssembly proposals enabled.
+   * <p>
+   * <b>WARNING:</b> Experimental features are unstable and may change or be removed
+   * in future versions. Use only for testing and development.
+   *
+   * @return a new configuration with experimental features enabled
+   */
+  public static EngineConfig forExperimentalFeatures() {
+    return new EngineConfig()
+        .addWasmFeature(WasmFeature.STACK_SWITCHING)
+        .addWasmFeature(WasmFeature.CALL_CC)
+        .addWasmFeature(WasmFeature.EXTENDED_CONST_EXPRESSIONS)
+        .addWasmFeature(WasmFeature.MEMORY64_EXTENDED)
+        .addWasmFeature(WasmFeature.CUSTOM_PAGE_SIZES)
+        .addWasmFeature(WasmFeature.FLEXIBLE_VECTORS);
+  }
+
+  /**
+   * Creates a new configuration with cutting-edge thread-related proposals enabled.
+   * <p>
+   * <b>WARNING:</b> Experimental features are unstable and may change or be removed
+   * in future versions. Use only for testing and development.
+   *
+   * @return a new configuration with threading experimental features enabled
+   */
+  public static EngineConfig forExperimentalThreading() {
+    return new EngineConfig()
+        .addWasmFeature(WasmFeature.THREADS)
+        .addWasmFeature(WasmFeature.SHARED_EVERYTHING_THREADS)
+        .addWasmFeature(WasmFeature.STACK_SWITCHING);
+  }
+
+  /**
+   * Creates a new configuration with component model and interface proposals enabled.
+   * <p>
+   * <b>WARNING:</b> Experimental features are unstable and may change or be removed
+   * in future versions. Use only for testing and development.
+   *
+   * @return a new configuration with component model experimental features enabled
+   */
+  public static EngineConfig forExperimentalComponents() {
+    return new EngineConfig()
+        .addWasmFeature(WasmFeature.COMPONENT_MODEL)
+        .addWasmFeature(WasmFeature.INTERFACE_TYPES)
+        .addWasmFeature(WasmFeature.RESOURCE_TYPES)
+        .addWasmFeature(WasmFeature.TYPE_IMPORTS)
+        .addWasmFeature(WasmFeature.STRING_IMPORTS);
   }
 }

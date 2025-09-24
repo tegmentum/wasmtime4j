@@ -52,6 +52,18 @@ public interface Engine extends Closeable {
   Module compileModule(final byte[] wasmBytes) throws WasmException;
 
   /**
+   * Creates a streaming compiler for progressive WebAssembly module compilation.
+   *
+   * <p>This method creates a StreamingCompiler that can compile WebAssembly modules
+   * progressively as data arrives, enabling efficient processing of large modules and
+   * network-delivered content.
+   *
+   * @return a new StreamingCompiler instance
+   * @throws WasmException if the streaming compiler cannot be created
+   */
+  StreamingCompiler createStreamingCompiler() throws WasmException;
+
+  /**
    * Gets the configuration used by this engine.
    *
    * @return the engine configuration

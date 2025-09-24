@@ -959,3 +959,438 @@ pub extern "C" fn wasmtime4j_profiler_destroy(profiler: *mut PerformanceProfiler
         unsafe { drop(Box::from_raw(profiler)) };
     }
 }
+
+// ============================================================================
+// Flame Graph Data Collection Extensions
+// ============================================================================
+
+/// Stack trace entry for flame graph generation
+#[derive(Debug, Clone)]
+pub struct StackTraceEntry {
+    pub function_name: String,
+    pub file_name: String,
+    pub line_number: u32,
+    pub instruction_pointer: u64,
+    pub duration_nanos: u64,
+    pub self_time_nanos: u64,
+    pub sample_count: u64,
+}
+
+/// Flame graph node for hierarchical visualization
+#[derive(Debug, Clone)]
+pub struct FlameGraphNode {
+    pub function_name: String,
+    pub total_samples: u64,
+    pub self_samples: u64,
+    pub total_time_nanos: u64,
+    pub self_time_nanos: u64,
+    pub children: Vec<FlameGraphNode>,
+    pub category: String,
+    pub metadata: std::collections::HashMap<String, String>,
+}
+
+impl FlameGraphNode {
+    /// Creates a new flame graph node
+    pub fn new(function_name: String, category: String) -> Self {
+        Self {
+            function_name,
+            total_samples: 0,
+            self_samples: 0,
+            total_time_nanos: 0,
+            self_time_nanos: 0,
+            children: Vec::new(),
+            category,
+            metadata: std::collections::HashMap::new(),
+        }
+    }
+
+    /// Adds a child node to this flame graph node
+    pub fn add_child(&mut self, child: FlameGraphNode) {
+        self.children.push(child);
+    }
+
+    /// Records a sample at this node
+    pub fn record_sample(&mut self, duration_nanos: u64, is_leaf: bool) {
+        self.total_samples += 1;
+        self.total_time_nanos += duration_nanos;
+
+        if is_leaf {
+            self.self_samples += 1;
+            self.self_time_nanos += duration_nanos;
+        }
+    }
+
+    /// Calculates the percentage of total time this node represents
+    pub fn get_time_percentage(&self, total_profile_time: u64) -> f64 {
+        if total_profile_time == 0 {
+            0.0
+        } else {
+            (self.total_time_nanos as f64 / total_profile_time as f64) * 100.0
+        }
+    }
+}
+
+/// Flame graph data collector with real-time aggregation
+pub struct FlameGraphCollector {
+    root_node: RwLock<FlameGraphNode>,
+    stack_samples: RwLock<VecDeque<Vec<StackTraceEntry>>>,
+    collection_active: RwLock<bool>,
+    sample_count: std::sync::atomic::AtomicU64,
+    max_samples: usize,
+    sampling_rate: Duration,
+}
+
+impl FlameGraphCollector {
+    /// Creates a new flame graph collector
+    pub fn new(max_samples: usize, sampling_rate: Duration) -> Self {
+        Self {
+            root_node: RwLock::new(FlameGraphNode::new("(root)".to_string(), "system".to_string())),
+            stack_samples: RwLock::new(VecDeque::new()),
+            collection_active: RwLock::new(false),
+            sample_count: std::sync::atomic::AtomicU64::new(0),
+            max_samples,
+            sampling_rate,
+        }
+    }
+
+    /// Starts collecting flame graph data
+    pub fn start_collection(&self) -> Result<(), String> {
+        let mut active = self.collection_active.write()
+            .map_err(|e| format!("Lock error: {}", e))?;
+
+        if *active {
+            return Err("Collection is already active".to_string());
+        }
+
+        *active = true;
+        Ok(())
+    }
+
+    /// Stops collecting flame graph data
+    pub fn stop_collection(&self) -> Result<(), String> {
+        let mut active = self.collection_active.write()
+            .map_err(|e| format!("Lock error: {}", e))?;
+
+        *active = false;
+        Ok(())
+    }
+
+    /// Records a stack trace sample for flame graph generation
+    pub fn record_stack_sample(&self, stack_trace: Vec<StackTraceEntry>) -> Result<(), String> {
+        let active = self.collection_active.read()
+            .map_err(|e| format!("Lock error: {}", e))?;
+
+        if !*active {
+            return Ok(()); // Silently ignore if not collecting
+        }
+
+        let mut samples = self.stack_samples.write()
+            .map_err(|e| format!("Lock error: {}", e))?;
+
+        samples.push_back(stack_trace);
+        self.sample_count.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+
+        // Remove old samples if we exceed the limit
+        while samples.len() > self.max_samples {
+            samples.pop_front();
+        }
+
+        Ok(())
+    }
+
+    /// Builds the flame graph tree from collected samples
+    pub fn build_flame_graph(&self) -> Result<FlameGraphNode, String> {
+        let samples = self.stack_samples.read()
+            .map_err(|e| format!("Lock error: {}", e))?;
+
+        let mut root = FlameGraphNode::new("(root)".to_string(), "system".to_string());
+        let mut function_map: std::collections::HashMap<String, FlameGraphNode> = std::collections::HashMap::new();
+
+        // Process each stack trace sample
+        for stack_trace in samples.iter() {
+            self.process_stack_trace(&mut root, &mut function_map, stack_trace)?;
+        }
+
+        // Calculate total time for percentage calculations
+        let total_time: u64 = samples.iter()
+            .flat_map(|trace| trace.iter())
+            .map(|entry| entry.duration_nanos)
+            .sum();
+
+        root.total_time_nanos = total_time;
+
+        Ok(root)
+    }
+
+    /// Processes a single stack trace and updates the flame graph
+    fn process_stack_trace(
+        &self,
+        root: &mut FlameGraphNode,
+        function_map: &mut std::collections::HashMap<String, FlameGraphNode>,
+        stack_trace: &[StackTraceEntry]
+    ) -> Result<(), String> {
+        if stack_trace.is_empty() {
+            return Ok(());
+        }
+
+        // Process stack from bottom to top (reverse order for flame graph)
+        let mut current_node = root;
+
+        for (depth, entry) in stack_trace.iter().rev().enumerate() {
+            let function_key = format!("{}:{}:{}", entry.function_name, entry.file_name, entry.line_number);
+            let is_leaf = depth == stack_trace.len() - 1;
+
+            // Find or create child node
+            let child_index = current_node.children.iter().position(|child| {
+                child.function_name == entry.function_name
+            });
+
+            if let Some(index) = child_index {
+                current_node.children[index].record_sample(entry.duration_nanos, is_leaf);
+                current_node = &mut current_node.children[index];
+            } else {
+                let category = self.categorize_function(&entry.function_name);
+                let mut new_node = FlameGraphNode::new(entry.function_name.clone(), category);
+                new_node.record_sample(entry.duration_nanos, is_leaf);
+
+                // Add metadata
+                new_node.metadata.insert("file".to_string(), entry.file_name.clone());
+                new_node.metadata.insert("line".to_string(), entry.line_number.to_string());
+                new_node.metadata.insert("ip".to_string(), format!("0x{:x}", entry.instruction_pointer));
+
+                current_node.add_child(new_node);
+                let last_index = current_node.children.len() - 1;
+                current_node = &mut current_node.children[last_index];
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Categorizes a function for color coding in flame graphs
+    fn categorize_function(&self, function_name: &str) -> String {
+        if function_name.contains("wasmtime") || function_name.contains("wasm_") {
+            "wasm".to_string()
+        } else if function_name.contains("jni") || function_name.contains("JNI") {
+            "jni".to_string()
+        } else if function_name.contains("panama") || function_name.contains("Panama") {
+            "panama".to_string()
+        } else if function_name.contains("host_") || function_name.starts_with("host") {
+            "host".to_string()
+        } else if function_name.contains("alloc") || function_name.contains("memory") {
+            "memory".to_string()
+        } else if function_name.starts_with("java.") || function_name.starts_with("sun.") {
+            "system".to_string()
+        } else {
+            "unknown".to_string()
+        }
+    }
+
+    /// Exports flame graph data in SVG format
+    pub fn export_svg(&self, width: u32, height: u32) -> Result<String, String> {
+        let flame_graph = self.build_flame_graph()?;
+
+        let mut svg = String::new();
+        svg.push_str(&format!(r#"<?xml version="1.0" encoding="UTF-8"?>
+<svg width="{}" height="{}" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<style>
+.frame {{ stroke: #000; stroke-width: 0.5; cursor: pointer; }}
+.frame:hover {{ stroke: #ff0000; stroke-width: 2; }}
+.frame-text {{ font-family: Verdana, sans-serif; font-size: 12px; fill: #000; }}
+</style>
+</defs>
+"#, width, height));
+
+        self.render_flame_graph_node(&flame_graph, &mut svg, 0.0, 0.0, width as f64, height as f64)?;
+
+        svg.push_str("</svg>");
+        Ok(svg)
+    }
+
+    /// Recursively renders flame graph nodes as SVG rectangles
+    fn render_flame_graph_node(
+        &self,
+        node: &FlameGraphNode,
+        svg: &mut String,
+        x: f64,
+        y: f64,
+        width: f64,
+        total_height: f64
+    ) -> Result<(), String> {
+        if width < 1.0 {
+            return Ok(()); // Skip very thin frames
+        }
+
+        let color = match node.category.as_str() {
+            "wasm" => "#e74c3c",      // Red
+            "jni" => "#3498db",       // Blue
+            "panama" => "#2ecc71",    // Green
+            "host" => "#f39c12",      // Orange
+            "memory" => "#9b59b6",    // Purple
+            "system" => "#95a5a6",    // Gray
+            _ => "#34495e",           // Dark gray
+        };
+
+        // Draw rectangle
+        svg.push_str(&format!(
+            r#"<rect class="frame" x="{}" y="{}" width="{}" height="20" fill="{}" title="{}&#10;Samples: {}&#10;Time: {}ns"/>"#,
+            x, y, width, color, node.function_name, node.total_samples, node.total_time_nanos
+        ));
+
+        // Add text label if frame is wide enough
+        if width > 30.0 {
+            let mut display_name = node.function_name.clone();
+            if display_name.len() * 8 > width as usize {
+                display_name = format!("{}...", &display_name[..((width as usize / 8).max(3) - 3)]);
+            }
+
+            svg.push_str(&format!(
+                r#"<text class="frame-text" x="{}" y="{}">{}</text>"#,
+                x + 5.0, y + 15.0, display_name
+            ));
+        }
+
+        // Render children
+        let mut child_x = x;
+        let total_child_time: u64 = node.children.iter().map(|c| c.total_time_nanos).sum();
+
+        if total_child_time > 0 {
+            for child in &node.children {
+                let child_width = (child.total_time_nanos as f64 / total_child_time as f64) * width;
+                self.render_flame_graph_node(child, svg, child_x, y + 22.0, child_width, total_height)?;
+                child_x += child_width;
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Gets collection statistics
+    pub fn get_stats(&self) -> Result<(u64, usize), String> {
+        let samples = self.stack_samples.read()
+            .map_err(|e| format!("Lock error: {}", e))?;
+
+        let sample_count = self.sample_count.load(std::sync::atomic::Ordering::Relaxed);
+        Ok((sample_count, samples.len()))
+    }
+}
+
+/// Integration with existing PerformanceProfiler
+impl PerformanceProfiler {
+    /// Adds flame graph collection capability to the existing profiler
+    pub fn with_flame_graph_collection(mut config: ProfilerConfig) -> Result<(Self, Arc<FlameGraphCollector>), String> {
+        let flame_collector = Arc::new(FlameGraphCollector::new(
+            config.max_memory_allocations, // Reuse memory limit for stack samples
+            config.sampling_interval
+        ));
+
+        let mut profiler = Self::new(config)?;
+        Ok((profiler, flame_collector))
+    }
+}
+
+// C FFI exports for flame graph functionality
+
+/// Creates a new flame graph collector
+#[no_mangle]
+pub extern "C" fn wasmtime4j_flame_graph_collector_create(
+    max_samples: usize,
+    sampling_interval_ms: u64
+) -> *mut FlameGraphCollector {
+    let collector = FlameGraphCollector::new(
+        max_samples,
+        Duration::from_millis(sampling_interval_ms)
+    );
+    Box::into_raw(Box::new(collector))
+}
+
+/// Starts flame graph collection
+#[no_mangle]
+pub extern "C" fn wasmtime4j_flame_graph_collector_start(
+    collector: *mut FlameGraphCollector
+) -> bool {
+    if collector.is_null() {
+        return false;
+    }
+
+    let collector = unsafe { &*collector };
+    collector.start_collection().is_ok()
+}
+
+/// Records a stack trace sample
+#[no_mangle]
+pub extern "C" fn wasmtime4j_flame_graph_collector_record_sample(
+    collector: *mut FlameGraphCollector,
+    function_name: *const c_char,
+    file_name: *const c_char,
+    line_number: u32,
+    duration_nanos: u64
+) -> bool {
+    if collector.is_null() || function_name.is_null() || file_name.is_null() {
+        return false;
+    }
+
+    let collector = unsafe { &*collector };
+    let function_name = unsafe {
+        std::ffi::CStr::from_ptr(function_name).to_string_lossy().to_string()
+    };
+    let file_name = unsafe {
+        std::ffi::CStr::from_ptr(file_name).to_string_lossy().to_string()
+    };
+
+    let stack_entry = StackTraceEntry {
+        function_name,
+        file_name,
+        line_number,
+        instruction_pointer: 0, // Would be populated by actual profiler
+        duration_nanos,
+        self_time_nanos: duration_nanos,
+        sample_count: 1,
+    };
+
+    collector.record_stack_sample(vec![stack_entry]).is_ok()
+}
+
+/// Exports flame graph as SVG
+#[no_mangle]
+pub extern "C" fn wasmtime4j_flame_graph_collector_export_svg(
+    collector: *mut FlameGraphCollector,
+    width: u32,
+    height: u32,
+    output_buffer: *mut c_char,
+    buffer_size: usize
+) -> bool {
+    if collector.is_null() || output_buffer.is_null() {
+        return false;
+    }
+
+    let collector = unsafe { &*collector };
+    match collector.export_svg(width, height) {
+        Ok(svg) => {
+            let svg_bytes = svg.as_bytes();
+            if svg_bytes.len() >= buffer_size {
+                return false; // Buffer too small
+            }
+
+            unsafe {
+                std::ptr::copy_nonoverlapping(
+                    svg_bytes.as_ptr() as *const c_char,
+                    output_buffer,
+                    svg_bytes.len()
+                );
+                *output_buffer.add(svg_bytes.len()) = 0; // Null terminate
+            }
+            true
+        }
+        Err(_) => false
+    }
+}
+
+/// Destroys a flame graph collector
+#[no_mangle]
+pub extern "C" fn wasmtime4j_flame_graph_collector_destroy(collector: *mut FlameGraphCollector) {
+    if !collector.is_null() {
+        unsafe { drop(Box::from_raw(collector)) };
+    }
+}

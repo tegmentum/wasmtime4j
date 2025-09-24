@@ -2320,3 +2320,98 @@ pub mod function {
         }
     }
 }
+
+/// Panama FFI bindings for experimental WebAssembly features
+pub mod experimental_features {
+    use super::*;
+    use crate::experimental_features::core;
+    use crate::error::ffi_utils;
+
+    /// Create experimental features configuration (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_experimental_create_config() -> *mut c_void {
+        ffi_utils::ffi_try_ptr(|| core::create_experimental_features_config())
+    }
+
+    /// Create experimental features configuration with all features enabled (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_experimental_create_all_config() -> *mut c_void {
+        ffi_utils::ffi_try_ptr(|| core::create_all_experimental_config())
+    }
+
+    /// Enable stack switching in experimental configuration (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_experimental_enable_stack_switching(
+        config_ptr: *mut c_void,
+        stack_size: c_ulong,
+        max_stacks: c_uint,
+    ) -> c_int {
+        ffi_utils::ffi_try_bool_to_int(|| {
+            unsafe { core::enable_stack_switching(config_ptr, stack_size as u64, max_stacks as u32) }
+        })
+    }
+
+    /// Enable call/cc in experimental configuration (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_experimental_enable_call_cc(
+        config_ptr: *mut c_void,
+        max_continuations: c_uint,
+        storage_strategy: c_int,
+    ) -> c_int {
+        ffi_utils::ffi_try_bool_to_int(|| {
+            unsafe {
+                core::enable_call_cc(
+                    config_ptr,
+                    max_continuations as u32,
+                    storage_strategy
+                )
+            }
+        })
+    }
+
+    /// Enable extended constant expressions in experimental configuration (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_experimental_enable_extended_const_expressions(
+        config_ptr: *mut c_void,
+        import_based: c_int,
+        global_deps: c_int,
+        folding_level: c_int,
+    ) -> c_int {
+        ffi_utils::ffi_try_bool_to_int(|| {
+            unsafe {
+                core::enable_extended_const_expressions(
+                    config_ptr,
+                    import_based,
+                    global_deps,
+                    folding_level
+                )
+            }
+        })
+    }
+
+    /// Apply experimental features to Wasmtime config (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_experimental_apply_features(
+        experimental_config_ptr: *const c_void,
+        wasmtime_config_ptr: *mut c_void,
+    ) -> c_int {
+        ffi_utils::ffi_try_bool_to_int(|| {
+            unsafe {
+                // Get mutable reference to Wasmtime Config
+                let wasmtime_config = &mut *(wasmtime_config_ptr as *mut wasmtime::Config);
+                core::apply_experimental_features(
+                    experimental_config_ptr,
+                    wasmtime_config
+                )
+            }
+        })
+    }
+
+    /// Destroy experimental features configuration (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_experimental_destroy_config(config_ptr: *mut c_void) {
+        if !config_ptr.is_null() {
+            unsafe { core::destroy_experimental_features_config(config_ptr) }
+        }
+    }
+}

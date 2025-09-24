@@ -6133,3 +6133,118 @@ pub mod jni_linker {
         Ok(&*(ptr as *const Linker))
     }
 }
+
+/// JNI bindings for experimental WebAssembly features
+#[cfg(feature = "jni-bindings")]
+pub mod jni_experimental_features {
+    use super::*;
+    use crate::experimental_features::core;
+    use crate::error::jni_utils;
+    use std::os::raw::c_void;
+
+    /// Create experimental features configuration
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniExperimentalFeatures_nativeCreateExperimentalConfig(
+        env: JNIEnv,
+        _class: JClass,
+    ) -> jlong {
+        jni_utils::jni_try_ptr(env, || core::create_experimental_features_config()) as jlong
+    }
+
+    /// Create experimental features configuration with all features enabled
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniExperimentalFeatures_nativeCreateAllExperimentalConfig(
+        env: JNIEnv,
+        _class: JClass,
+    ) -> jlong {
+        jni_utils::jni_try_ptr(env, || core::create_all_experimental_config()) as jlong
+    }
+
+    /// Enable stack switching in experimental configuration
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniExperimentalFeatures_nativeEnableStackSwitching(
+        env: JNIEnv,
+        _class: JClass,
+        config_ptr: jlong,
+        stack_size: jlong,
+        max_stacks: jint,
+    ) -> jboolean {
+        jni_utils::jni_try_bool(env, || {
+            unsafe { core::enable_stack_switching(config_ptr as *mut c_void, stack_size as u64, max_stacks as u32) }
+        })
+    }
+
+    /// Enable call/cc in experimental configuration
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniExperimentalFeatures_nativeEnableCallCc(
+        env: JNIEnv,
+        _class: JClass,
+        config_ptr: jlong,
+        max_continuations: jint,
+        storage_strategy: jint,
+    ) -> jboolean {
+        jni_utils::jni_try_bool(env, || {
+            unsafe {
+                core::enable_call_cc(
+                    config_ptr as *mut c_void,
+                    max_continuations as u32,
+                    storage_strategy
+                )
+            }
+        })
+    }
+
+    /// Enable extended constant expressions in experimental configuration
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniExperimentalFeatures_nativeEnableExtendedConstExpressions(
+        env: JNIEnv,
+        _class: JClass,
+        config_ptr: jlong,
+        import_based: jboolean,
+        global_deps: jboolean,
+        folding_level: jint,
+    ) -> jboolean {
+        jni_utils::jni_try_bool(env, || {
+            unsafe {
+                core::enable_extended_const_expressions(
+                    config_ptr as *mut c_void,
+                    if import_based != 0 { 1 } else { 0 },
+                    if global_deps != 0 { 1 } else { 0 },
+                    folding_level
+                )
+            }
+        })
+    }
+
+    /// Apply experimental features to Wasmtime config
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniExperimentalFeatures_nativeApplyExperimentalFeatures(
+        env: JNIEnv,
+        _class: JClass,
+        experimental_config_ptr: jlong,
+        wasmtime_config_ptr: jlong,
+    ) -> jboolean {
+        jni_utils::jni_try_bool(env, || {
+            unsafe {
+                // Get mutable reference to Wasmtime Config
+                let wasmtime_config = &mut *(wasmtime_config_ptr as *mut wasmtime::Config);
+                core::apply_experimental_features(
+                    experimental_config_ptr as *const c_void,
+                    wasmtime_config
+                )
+            }
+        })
+    }
+
+    /// Destroy experimental features configuration
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniExperimentalFeatures_nativeDestroyExperimentalConfig(
+        _env: JNIEnv,
+        _class: JClass,
+        config_ptr: jlong,
+    ) {
+        if config_ptr != 0 {
+            unsafe { core::destroy_experimental_features_config(config_ptr as *mut c_void) }
+        }
+    }
+}
