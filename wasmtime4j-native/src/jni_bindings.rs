@@ -5,9 +5,14 @@
 #[cfg(feature = "jni-bindings")]
 use jni::JNIEnv;
 #[cfg(feature = "jni-bindings")]
-use jni::objects::{JClass, JByteArray, JString};
+use jni::objects::{JClass, JByteArray, JString, JObject};
 #[cfg(feature = "jni-bindings")]
 use jni::sys::{jlong, jint, jboolean, jbyteArray, jstring, jobject};
+
+use crate::hot_reload::{HotReloadManager, HotReloadConfig, SwapStrategy, LoadRequest, LoadPriority, ValidationConfig};
+use crate::component_orchestration::dependency_resolution::SemanticVersion;
+use std::time::Duration;
+use std::ffi::{CStr, CString};
 
 // Instance is imported locally in each module that needs it
 
@@ -6236,6 +6241,168 @@ pub mod jni_experimental_features {
         })
     }
 
+    /// Enable flexible vectors in experimental configuration
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniExperimentalFeatures_nativeEnableFlexibleVectors(
+        env: JNIEnv,
+        _class: JClass,
+        config_ptr: jlong,
+        dynamic_sizing: jboolean,
+        auto_vectorization: jboolean,
+        simd_integration: jboolean,
+    ) -> jboolean {
+        jni_utils::jni_try_bool(env, || {
+            unsafe {
+                core::enable_flexible_vectors(
+                    config_ptr as *mut c_void,
+                    if dynamic_sizing != 0 { 1 } else { 0 },
+                    if auto_vectorization != 0 { 1 } else { 0 },
+                    if simd_integration != 0 { 1 } else { 0 }
+                )
+            }
+        })
+    }
+
+    /// Enable string imports in experimental configuration
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniExperimentalFeatures_nativeEnableStringImports(
+        env: JNIEnv,
+        _class: JClass,
+        config_ptr: jlong,
+        encoding_format: jint,
+        string_interning: jboolean,
+        lazy_decoding: jboolean,
+        js_interop: jboolean,
+    ) -> jboolean {
+        jni_utils::jni_try_bool(env, || {
+            unsafe {
+                core::enable_string_imports(
+                    config_ptr as *mut c_void,
+                    encoding_format,
+                    if string_interning != 0 { 1 } else { 0 },
+                    if lazy_decoding != 0 { 1 } else { 0 },
+                    if js_interop != 0 { 1 } else { 0 }
+                )
+            }
+        })
+    }
+
+    /// Enable resource types in experimental configuration
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniExperimentalFeatures_nativeEnableResourceTypes(
+        env: JNIEnv,
+        _class: JClass,
+        config_ptr: jlong,
+        automatic_cleanup: jboolean,
+        reference_counting: jboolean,
+        cleanup_strategy: jint,
+    ) -> jboolean {
+        jni_utils::jni_try_bool(env, || {
+            unsafe {
+                core::enable_resource_types(
+                    config_ptr as *mut c_void,
+                    if automatic_cleanup != 0 { 1 } else { 0 },
+                    if reference_counting != 0 { 1 } else { 0 },
+                    cleanup_strategy
+                )
+            }
+        })
+    }
+
+    /// Enable type imports in experimental configuration
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniExperimentalFeatures_nativeEnableTypeImports(
+        env: JNIEnv,
+        _class: JClass,
+        config_ptr: jlong,
+        validation_strategy: jint,
+        resolution_mechanism: jint,
+        structural_compatibility: jboolean,
+    ) -> jboolean {
+        jni_utils::jni_try_bool(env, || {
+            unsafe {
+                core::enable_type_imports(
+                    config_ptr as *mut c_void,
+                    validation_strategy,
+                    resolution_mechanism,
+                    if structural_compatibility != 0 { 1 } else { 0 }
+                )
+            }
+        })
+    }
+
+    /// Enable shared-everything threads in experimental configuration
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniExperimentalFeatures_nativeEnableSharedEverythingThreads(
+        env: JNIEnv,
+        _class: JClass,
+        config_ptr: jlong,
+        min_threads: jint,
+        max_threads: jint,
+        global_state_sharing: jboolean,
+        atomic_operations: jboolean,
+    ) -> jboolean {
+        jni_utils::jni_try_bool(env, || {
+            unsafe {
+                core::enable_shared_everything_threads(
+                    config_ptr as *mut c_void,
+                    min_threads as u32,
+                    max_threads as u32,
+                    if global_state_sharing != 0 { 1 } else { 0 },
+                    if atomic_operations != 0 { 1 } else { 0 }
+                )
+            }
+        })
+    }
+
+    /// Enable custom page sizes in experimental configuration
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniExperimentalFeatures_nativeEnableCustomPageSizes(
+        env: JNIEnv,
+        _class: JClass,
+        config_ptr: jlong,
+        page_size: jint,
+        strategy: jint,
+        strict_alignment: jboolean,
+    ) -> jboolean {
+        jni_utils::jni_try_bool(env, || {
+            unsafe {
+                core::enable_custom_page_sizes(
+                    config_ptr as *mut c_void,
+                    page_size as u32,
+                    strategy,
+                    if strict_alignment != 0 { 1 } else { 0 }
+                )
+            }
+        })
+    }
+
+    /// Get feature detection capabilities
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniExperimentalFeatures_nativeGetFeatureSupport(
+        env: JNIEnv,
+        _class: JClass,
+        feature_id: jint,
+    ) -> jboolean {
+        jni_utils::jni_try_bool(env, || {
+            // Feature detection based on Wasmtime capabilities
+            match feature_id {
+                0 => Ok(true),  // Stack switching (experimental support)
+                1 => Ok(false), // Call/CC (not yet supported)
+                2 => Ok(true),  // Extended const expressions (partial support)
+                3 => Ok(true),  // Memory64 extended (partial support)
+                4 => Ok(false), // Custom page sizes (not yet supported)
+                5 => Ok(false), // Shared-everything threads (not yet supported)
+                6 => Ok(false), // Type imports (not yet supported)
+                7 => Ok(false), // String imports (not yet supported)
+                8 => Ok(false), // Resource types (not yet supported)
+                9 => Ok(false), // Interface types (not yet supported)
+                10 => Ok(false), // Flexible vectors (not yet supported)
+                _ => Ok(false)
+            }
+        })
+    }
+
     /// Destroy experimental features configuration
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniExperimentalFeatures_nativeDestroyExperimentalConfig(
@@ -6245,6 +6412,137 @@ pub mod jni_experimental_features {
     ) {
         if config_ptr != 0 {
             unsafe { core::destroy_experimental_features_config(config_ptr as *mut c_void) }
+        }
+    }
+}
+
+/// JNI bindings for source map and debugging operations
+#[cfg(feature = "jni-bindings")]
+pub mod jni_sourcemap {
+    use super::*;
+    use crate::sourcemap::*;
+    use crate::error::jni_utils;
+    use std::ffi::CString;
+    use std::os::raw::c_void;
+
+    /// Create a new source map integration system
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_debug_JniSourceMapIntegration_nativeCreate(
+        env: JNIEnv,
+        _class: JClass,
+    ) -> jlong {
+        jni_utils::jni_try_ptr(env, || {
+            let integration = SourceMapIntegration::new();
+            Box::into_raw(Box::new(integration)) as *mut c_void
+        }) as jlong
+    }
+
+    /// Create a source map integration system with custom cache size
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_debug_JniSourceMapIntegration_nativeCreateWithCacheSize(
+        env: JNIEnv,
+        _class: JClass,
+        cache_size: jint,
+    ) -> jlong {
+        jni_utils::jni_try_ptr(env, || {
+            let integration = SourceMapIntegration::with_cache_size(cache_size as usize);
+            Box::into_raw(Box::new(integration)) as *mut c_void
+        }) as jlong
+    }
+
+    /// Load and parse a source map from JSON data
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_debug_JniSourceMapIntegration_nativeLoadSourceMap(
+        env: JNIEnv,
+        _class: JClass,
+        integration_ptr: jlong,
+        json_data: JString,
+    ) -> jlong {
+        jni_utils::jni_try_ptr(env, || {
+            if integration_ptr == 0 {
+                return Err(crate::error::WasmtimeError::new(
+                    crate::error::ErrorCode::InvalidArgument,
+                    "Integration pointer cannot be null".to_string(),
+                ));
+            }
+
+            let integration = unsafe { &*(integration_ptr as *const SourceMapIntegration) };
+            let json_str = jni_utils::jstring_to_string(&env, json_data)?;
+
+            let source_map = integration.load_source_map(&json_str)?;
+            Box::into_raw(Box::new(source_map)) as *mut c_void
+        }) as jlong
+    }
+
+    /// Load source file content
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_debug_JniSourceMapIntegration_nativeLoadSourceFile(
+        env: JNIEnv,
+        _class: JClass,
+        integration_ptr: jlong,
+        path: JString,
+    ) -> jstring {
+        jni_utils::jni_try_string(env, || {
+            if integration_ptr == 0 {
+                return Err(crate::error::WasmtimeError::new(
+                    crate::error::ErrorCode::InvalidArgument,
+                    "Integration pointer cannot be null".to_string(),
+                ));
+            }
+
+            let integration = unsafe { &*(integration_ptr as *const SourceMapIntegration) };
+            let path_str = jni_utils::jstring_to_string(&env, path)?;
+
+            let content = integration.load_source_file(&path_str)?;
+            Ok((*content).clone())
+        })
+        .map(|s| env.new_string(s).unwrap_or_else(|_| env.new_string("").unwrap()))
+        .unwrap_or_else(|_| env.new_string("").unwrap())
+        .into_inner()
+    }
+
+    /// Clear all caches
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_debug_JniSourceMapIntegration_nativeClearCaches(
+        _env: JNIEnv,
+        _class: JClass,
+        integration_ptr: jlong,
+    ) {
+        if integration_ptr != 0 {
+            let integration = unsafe { &*(integration_ptr as *const SourceMapIntegration) };
+            integration.clear_caches();
+        }
+    }
+
+    /// Check if source map support is available
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_debug_JniSourceMapIntegration_nativeIsSourceMapSupported(
+        _env: JNIEnv,
+        _class: JClass,
+    ) -> jboolean {
+        1 // Always supported in our implementation
+    }
+
+    /// Check if DWARF support is available
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_debug_JniSourceMapIntegration_nativeIsDwarfSupported(
+        _env: JNIEnv,
+        _class: JClass,
+    ) -> jboolean {
+        1 // Always supported in our implementation
+    }
+
+    /// Destroy source map integration
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_debug_JniSourceMapIntegration_nativeDestroy(
+        _env: JNIEnv,
+        _class: JClass,
+        integration_ptr: jlong,
+    ) {
+        if integration_ptr != 0 {
+            unsafe {
+                let _ = Box::from_raw(integration_ptr as *mut SourceMapIntegration);
+            }
         }
     }
 }

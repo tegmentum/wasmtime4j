@@ -1,0 +1,395 @@
+{
+    "name": "wasmtime4j-vscode",
+    "displayName": "WebAssembly for Java (Wasmtime4j)",
+    "description": "WebAssembly development support with Wasmtime4j integration",
+    "version": "1.0.0",
+    "publisher": "tegmentum-ai",
+    "license": "Apache-2.0",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/tegmentum/wasmtime4j"
+    },
+    "bugs": {
+        "url": "https://github.com/tegmentum/wasmtime4j/issues"
+    },
+    "engines": {
+        "vscode": "^1.74.0"
+    },
+    "categories": [
+        "Programming Languages",
+        "Debuggers",
+        "Linters",
+        "Formatters",
+        "Other"
+    ],
+    "keywords": [
+        "webassembly",
+        "wasm",
+        "wasmtime",
+        "java",
+        "wat",
+        "binary"
+    ],
+    "activationEvents": [
+        "onLanguage:wat",
+        "onLanguage:wasm",
+        "onCommand:wasmtime4j.validate.module",
+        "onCommand:wasmtime4j.debug.start",
+        "workspaceContains:**/*.wasm",
+        "workspaceContains:**/*.wat"
+    ],
+    "main": "./out/extension.js",
+    "contributes": {
+        "languages": [
+            {
+                "id": "wat",
+                "aliases": ["WebAssembly Text", "wat"],
+                "extensions": [".wat"],
+                "configuration": "./language-configuration.json"
+            },
+            {
+                "id": "wasm",
+                "aliases": ["WebAssembly Binary", "wasm"],
+                "extensions": [".wasm"],
+                "configuration": "./language-configuration.json"
+            }
+        ],
+        "grammars": [
+            {
+                "language": "wat",
+                "scopeName": "source.wat",
+                "path": "./syntaxes/wat.tmLanguage.json"
+            }
+        ],
+        "themes": [
+            {
+                "label": "WebAssembly Dark",
+                "uiTheme": "vs-dark",
+                "path": "./themes/webassembly-dark-color-theme.json"
+            },
+            {
+                "label": "WebAssembly Light",
+                "uiTheme": "vs",
+                "path": "./themes/webassembly-light-color-theme.json"
+            }
+        ],
+        "configuration": {
+            "type": "object",
+            "title": "WebAssembly (Wasmtime4j)",
+            "properties": {
+                "wasmtime4j.languageServer.enabled": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Enable/disable the WebAssembly language server"
+                },
+                "wasmtime4j.languageServer.path": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Path to the Wasmtime4j language server JAR file (leave empty for auto-detection)"
+                },
+                "wasmtime4j.validation.enabled": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Enable WebAssembly module validation"
+                },
+                "wasmtime4j.validation.onSave": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Validate WebAssembly modules on save"
+                },
+                "wasmtime4j.validation.onType": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Validate WebAssembly modules while typing"
+                },
+                "wasmtime4j.debugging.enabled": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Enable WebAssembly debugging support"
+                },
+                "wasmtime4j.debugging.showInstructions": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Show WebAssembly instructions in debug view"
+                },
+                "wasmtime4j.debugging.showMemory": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Show memory contents in debug view"
+                },
+                "wasmtime4j.formatting.enabled": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Enable WebAssembly text format formatting"
+                },
+                "wasmtime4j.formatting.indentSize": {
+                    "type": "number",
+                    "default": 2,
+                    "description": "Number of spaces for indentation"
+                },
+                "wasmtime4j.completion.enabled": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Enable code completion for WebAssembly"
+                },
+                "wasmtime4j.hover.enabled": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Enable hover information for WebAssembly"
+                }
+            }
+        },
+        "commands": [
+            {
+                "command": "wasmtime4j.validate.module",
+                "title": "Validate WebAssembly Module",
+                "category": "WebAssembly"
+            },
+            {
+                "command": "wasmtime4j.debug.start",
+                "title": "Start WebAssembly Debug Session",
+                "category": "WebAssembly"
+            },
+            {
+                "command": "wasmtime4j.debug.stop",
+                "title": "Stop WebAssembly Debug Session",
+                "category": "WebAssembly"
+            },
+            {
+                "command": "wasmtime4j.analyze.performance",
+                "title": "Analyze WebAssembly Performance",
+                "category": "WebAssembly"
+            },
+            {
+                "command": "wasmtime4j.generate.bindings",
+                "title": "Generate Language Bindings",
+                "category": "WebAssembly"
+            },
+            {
+                "command": "wasmtime4j.convert.wat2wasm",
+                "title": "Convert WAT to WASM",
+                "category": "WebAssembly"
+            },
+            {
+                "command": "wasmtime4j.convert.wasm2wat",
+                "title": "Convert WASM to WAT",
+                "category": "WebAssembly"
+            },
+            {
+                "command": "wasmtime4j.inspect.module",
+                "title": "Inspect WebAssembly Module",
+                "category": "WebAssembly"
+            }
+        ],
+        "menus": {
+            "explorer/context": [
+                {
+                    "when": "resourceExtname == .wasm",
+                    "command": "wasmtime4j.validate.module",
+                    "group": "wasmtime4j@1"
+                },
+                {
+                    "when": "resourceExtname == .wat",
+                    "command": "wasmtime4j.validate.module",
+                    "group": "wasmtime4j@1"
+                },
+                {
+                    "when": "resourceExtname == .wasm",
+                    "command": "wasmtime4j.inspect.module",
+                    "group": "wasmtime4j@2"
+                },
+                {
+                    "when": "resourceExtname == .wat",
+                    "command": "wasmtime4j.convert.wat2wasm",
+                    "group": "wasmtime4j@3"
+                },
+                {
+                    "when": "resourceExtname == .wasm",
+                    "command": "wasmtime4j.convert.wasm2wat",
+                    "group": "wasmtime4j@3"
+                }
+            ],
+            "editor/context": [
+                {
+                    "when": "resourceExtname == .wasm || resourceExtname == .wat",
+                    "command": "wasmtime4j.validate.module",
+                    "group": "wasmtime4j@1"
+                },
+                {
+                    "when": "resourceExtname == .wasm || resourceExtname == .wat",
+                    "command": "wasmtime4j.debug.start",
+                    "group": "wasmtime4j@2"
+                }
+            ],
+            "commandPalette": [
+                {
+                    "when": "resourceExtname == .wasm || resourceExtname == .wat",
+                    "command": "wasmtime4j.validate.module"
+                },
+                {
+                    "when": "resourceExtname == .wasm || resourceExtname == .wat",
+                    "command": "wasmtime4j.debug.start"
+                },
+                {
+                    "command": "wasmtime4j.debug.stop"
+                },
+                {
+                    "when": "resourceExtname == .wasm || resourceExtname == .wat",
+                    "command": "wasmtime4j.analyze.performance"
+                },
+                {
+                    "when": "resourceExtname == .wasm || resourceExtname == .wat",
+                    "command": "wasmtime4j.generate.bindings"
+                },
+                {
+                    "when": "resourceExtname == .wat",
+                    "command": "wasmtime4j.convert.wat2wasm"
+                },
+                {
+                    "when": "resourceExtname == .wasm",
+                    "command": "wasmtime4j.convert.wasm2wat"
+                },
+                {
+                    "when": "resourceExtname == .wasm || resourceExtname == .wat",
+                    "command": "wasmtime4j.inspect.module"
+                }
+            ]
+        },
+        "keybindings": [
+            {
+                "command": "wasmtime4j.validate.module",
+                "key": "ctrl+shift+v",
+                "mac": "cmd+shift+v",
+                "when": "resourceExtname == .wasm || resourceExtname == .wat"
+            },
+            {
+                "command": "wasmtime4j.debug.start",
+                "key": "f5",
+                "when": "resourceExtname == .wasm || resourceExtname == .wat"
+            },
+            {
+                "command": "wasmtime4j.debug.stop",
+                "key": "shift+f5"
+            }
+        ],
+        "breakpoints": [
+            {
+                "language": "wat"
+            }
+        ],
+        "debuggers": [
+            {
+                "type": "wasmtime4j",
+                "label": "WebAssembly (Wasmtime4j)",
+                "languages": ["wat", "wasm"],
+                "configurationAttributes": {
+                    "launch": {
+                        "required": ["program"],
+                        "properties": {
+                            "program": {
+                                "type": "string",
+                                "description": "Path to the WebAssembly module (.wasm or .wat file)",
+                                "default": "${workspaceFolder}/${fileBasenameNoExtension}.wasm"
+                            },
+                            "args": {
+                                "type": "array",
+                                "description": "Command line arguments passed to the WebAssembly module",
+                                "default": []
+                            },
+                            "env": {
+                                "type": "object",
+                                "description": "Environment variables",
+                                "default": {}
+                            },
+                            "cwd": {
+                                "type": "string",
+                                "description": "Working directory",
+                                "default": "${workspaceFolder}"
+                            },
+                            "stopOnEntry": {
+                                "type": "boolean",
+                                "description": "Stop at the entry point of the module",
+                                "default": false
+                            },
+                            "enableInstructionTracing": {
+                                "type": "boolean",
+                                "description": "Enable instruction-level tracing",
+                                "default": false
+                            },
+                            "enableMemoryWatching": {
+                                "type": "boolean",
+                                "description": "Enable memory watching",
+                                "default": true
+                            }
+                        }
+                    },
+                    "attach": {
+                        "required": ["port"],
+                        "properties": {
+                            "port": {
+                                "type": "number",
+                                "description": "Port to attach to",
+                                "default": 9229
+                            },
+                            "host": {
+                                "type": "string",
+                                "description": "Host to attach to",
+                                "default": "localhost"
+                            }
+                        }
+                    }
+                },
+                "initialConfigurations": [
+                    {
+                        "type": "wasmtime4j",
+                        "request": "launch",
+                        "name": "Launch WebAssembly Module",
+                        "program": "${workspaceFolder}/${fileBasenameNoExtension}.wasm",
+                        "stopOnEntry": false,
+                        "enableInstructionTracing": false,
+                        "enableMemoryWatching": true
+                    }
+                ],
+                "configurationSnippets": [
+                    {
+                        "label": "WebAssembly: Launch",
+                        "description": "Launch a WebAssembly module",
+                        "body": {
+                            "type": "wasmtime4j",
+                            "request": "launch",
+                            "name": "Launch WebAssembly Module",
+                            "program": "^\"\\${workspaceFolder}/\\${fileBasenameNoExtension}.wasm\"",
+                            "stopOnEntry": false,
+                            "enableInstructionTracing": false,
+                            "enableMemoryWatching": true
+                        }
+                    },
+                    {
+                        "label": "WebAssembly: Attach",
+                        "description": "Attach to a running WebAssembly process",
+                        "body": {
+                            "type": "wasmtime4j",
+                            "request": "attach",
+                            "name": "Attach to WebAssembly Process",
+                            "port": 9229,
+                            "host": "localhost"
+                        }
+                    }
+                ]
+            }
+        ]
+    },
+    "scripts": {
+        "vscode:prepublish": "npm run compile",
+        "compile": "tsc -p ./",
+        "watch": "tsc -watch -p ./"
+    },
+    "devDependencies": {
+        "@types/vscode": "^1.74.0",
+        "@types/node": "16.x",
+        "typescript": "^4.9.4"
+    },
+    "dependencies": {
+        "vscode-languageclient": "^8.0.2"
+    }
+}

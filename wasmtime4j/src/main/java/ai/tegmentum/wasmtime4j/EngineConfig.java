@@ -1,5 +1,7 @@
 package ai.tegmentum.wasmtime4j;
 
+import ai.tegmentum.wasmtime4j.experimental.ExperimentalFeatureConfig;
+
 /**
  * Configuration options for WebAssembly engine creation.
  *
@@ -45,6 +47,9 @@ public final class EngineConfig {
 
   private java.util.Map<String, String> craneliftSettings = new java.util.HashMap<>();
   private java.util.Set<WasmFeature> wasmFeatures = new java.util.HashSet<>();
+
+  // Experimental features configuration
+  private ExperimentalFeatureConfig experimentalFeatures;
 
   /** Creates a new engine configuration with default settings. */
   public EngineConfig() {
@@ -558,5 +563,34 @@ public final class EngineConfig {
         .addWasmFeature(WasmFeature.RESOURCE_TYPES)
         .addWasmFeature(WasmFeature.TYPE_IMPORTS)
         .addWasmFeature(WasmFeature.STRING_IMPORTS);
+  }
+
+  /**
+   * Sets the experimental features configuration.
+   *
+   * @param experimentalFeatures the experimental features configuration
+   * @return this configuration for method chaining
+   */
+  public EngineConfig setExperimentalFeatures(final ExperimentalFeatureConfig experimentalFeatures) {
+    this.experimentalFeatures = experimentalFeatures;
+    return this;
+  }
+
+  /**
+   * Gets the experimental features configuration.
+   *
+   * @return the experimental features configuration, or null if not set
+   */
+  public ExperimentalFeatureConfig getExperimentalFeatures() {
+    return experimentalFeatures;
+  }
+
+  /**
+   * Checks if experimental features are configured.
+   *
+   * @return true if experimental features are configured, false otherwise
+   */
+  public boolean hasExperimentalFeatures() {
+    return experimentalFeatures != null;
   }
 }

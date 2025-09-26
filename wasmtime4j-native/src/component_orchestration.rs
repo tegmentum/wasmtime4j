@@ -29,6 +29,652 @@ use crate::component_core::{
 };
 use crate::wit_interfaces::{WitInterfaceManager, WitInterface, ValidationResult};
 
+/// Advanced dependency resolution system
+pub mod dependency_resolution {
+    use super::*;
+    use std::collections::{BTreeMap, BTreeSet};
+    use std::cmp::Ordering;
+
+    /// Semantic version for component dependencies
+    #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+    pub struct SemanticVersion {
+        pub major: u32,
+        pub minor: u32,
+        pub patch: u32,
+        pub pre_release: Option<String>,
+        pub build_metadata: Option<String>,
+    }
+
+    /// Version constraint for dependency resolution
+    #[derive(Debug, Clone, PartialEq)]
+    pub enum VersionConstraint {
+        Exact(SemanticVersion),
+        GreaterThan(SemanticVersion),
+        GreaterThanOrEqual(SemanticVersion),
+        LessThan(SemanticVersion),
+        LessThanOrEqual(SemanticVersion),
+        Compatible(SemanticVersion), // ^1.2.3
+        ApproximatelyEqual(SemanticVersion), // ~1.2.3
+        Range(SemanticVersion, SemanticVersion),
+        Wildcard(u32, Option<u32>), // 1.*.* or 1.2.*
+    }
+
+    /// Component dependency specification
+    #[derive(Debug, Clone)]
+    pub struct ComponentDependency {
+        pub name: String,
+        pub namespace: Option<String>,
+        pub version_constraint: VersionConstraint,
+        pub optional: bool,
+        pub features: HashSet<String>,
+        pub interface_requirements: HashMap<String, VersionConstraint>,
+    }
+
+    /// Component version registry
+    pub struct ComponentVersionRegistry {
+        /// Available component versions indexed by name and namespace
+        components: BTreeMap<(String, Option<String>), BTreeMap<SemanticVersion, ComponentVersionInfo>>,
+        /// Interface compatibility matrix
+        interface_compatibility: HashMap<String, Vec<InterfaceCompatibilityRule>>,
+        /// Dependency resolution cache
+        resolution_cache: Arc<RwLock<HashMap<String, DependencyResolutionResult>>>,
+    }
+
+    /// Information about a specific component version
+    #[derive(Debug, Clone)]
+    pub struct ComponentVersionInfo {
+        pub version: SemanticVersion,
+        pub component: Arc<Component>,
+        pub metadata: ComponentVersionMetadata,
+        pub dependencies: Vec<ComponentDependency>,
+        pub provided_interfaces: HashMap<String, SemanticVersion>,
+        pub required_interfaces: HashMap<String, VersionConstraint>,
+        pub features: HashSet<String>,
+        pub compatibility_info: CompatibilityInfo,
+    }
+
+    /// Extended metadata for component versions
+    #[derive(Debug, Clone)]
+    pub struct ComponentVersionMetadata {
+        pub name: String,
+        pub namespace: Option<String>,
+        pub description: Option<String>,
+        pub authors: Vec<String>,
+        pub license: Option<String>,
+        pub repository: Option<String>,
+        pub documentation: Option<String>,
+        pub keywords: Vec<String>,
+        pub categories: Vec<String>,
+        pub build_timestamp: Option<Instant>,
+        pub checksum: String,
+    }
+
+    /// Compatibility information for a component version
+    #[derive(Debug, Clone, Default)]
+    pub struct CompatibilityInfo {
+        /// Minimum required runtime version
+        pub min_runtime_version: Option<SemanticVersion>,
+        /// Maximum supported runtime version
+        pub max_runtime_version: Option<SemanticVersion>,
+        /// Platform compatibility
+        pub supported_platforms: HashSet<String>,
+        /// Feature flags affecting compatibility
+        pub compatibility_features: HashMap<String, bool>,
+        /// Breaking changes from previous versions
+        pub breaking_changes: Vec<String>,
+    }
+
+    /// Interface compatibility rule
+    #[derive(Debug, Clone)]
+    pub struct InterfaceCompatibilityRule {
+        pub interface_name: String,
+        pub from_version: SemanticVersion,
+        pub to_version: SemanticVersion,
+        pub compatibility_type: InterfaceCompatibilityType,
+        pub migration_hints: Vec<String>,
+    }
+
+    /// Types of interface compatibility
+    #[derive(Debug, Clone, PartialEq)]
+    pub enum InterfaceCompatibilityType {
+        FullyCompatible,
+        BackwardCompatible,
+        ForwardCompatible,
+        BreakingChange,
+        RequiresMigration,
+    }
+
+    /// Result of dependency resolution
+    #[derive(Debug, Clone)]
+    pub struct DependencyResolutionResult {
+        pub resolved_components: BTreeMap<String, ComponentVersionInfo>,
+        pub resolution_graph: DependencyGraph,
+        pub conflicts: Vec<DependencyConflict>,
+        pub warnings: Vec<String>,
+        pub resolution_time: Duration,
+    }
+
+    /// Dependency conflict information
+    #[derive(Debug, Clone)]
+    pub struct DependencyConflict {
+        pub component_name: String,
+        pub conflicting_versions: Vec<SemanticVersion>,
+        pub conflict_type: ConflictType,
+        pub affected_components: HashSet<String>,
+        pub suggested_resolution: Option<String>,
+    }
+
+    /// Types of dependency conflicts
+    #[derive(Debug, Clone, PartialEq)]
+    pub enum ConflictType {
+        VersionMismatch,
+        InterfaceIncompatibility,
+        FeatureConflict,
+        CircularDependency,
+        MissingDependency,
+    }
+
+    /// Dependency resolution graph
+    #[derive(Debug, Clone)]
+    pub struct DependencyGraph {
+        pub nodes: HashMap<String, DependencyNode>,
+        pub edges: Vec<DependencyEdge>,
+        pub resolution_order: Vec<String>,
+    }
+
+    /// Node in the dependency graph
+    #[derive(Debug, Clone)]
+    pub struct DependencyNode {
+        pub component_name: String,
+        pub version: SemanticVersion,
+        pub depth: u32,
+        pub is_root: bool,
+        pub is_optional: bool,
+    }
+
+    /// Edge in the dependency graph
+    #[derive(Debug, Clone)]
+    pub struct DependencyEdge {
+        pub from: String,
+        pub to: String,
+        pub constraint: VersionConstraint,
+        pub edge_type: DependencyEdgeType,
+    }
+
+    /// Types of dependency edges
+    #[derive(Debug, Clone, PartialEq)]
+    pub enum DependencyEdgeType {
+        Required,
+        Optional,
+        DevDependency,
+        PeerDependency,
+        ConditionalDependency(String), // Condition for activation
+    }
+
+    impl SemanticVersion {
+        pub fn new(major: u32, minor: u32, patch: u32) -> Self {
+            SemanticVersion {
+                major,
+                minor,
+                patch,
+                pre_release: None,
+                build_metadata: None,
+            }
+        }
+
+        pub fn with_pre_release(mut self, pre_release: String) -> Self {
+            self.pre_release = Some(pre_release);
+            self
+        }
+
+        pub fn parse(version_str: &str) -> WasmtimeResult<Self> {
+            let parts: Vec<&str> = version_str.split('.').collect();
+            if parts.len() < 3 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: format!("Invalid semantic version format: {}", version_str),
+                });
+            }
+
+            let major = parts[0].parse().map_err(|_| WasmtimeError::InvalidParameter {
+                message: "Invalid major version number".to_string(),
+            })?;
+
+            let minor = parts[1].parse().map_err(|_| WasmtimeError::InvalidParameter {
+                message: "Invalid minor version number".to_string(),
+            })?;
+
+            let patch_and_pre: Vec<&str> = parts[2].split('-').collect();
+            let patch = patch_and_pre[0].parse().map_err(|_| WasmtimeError::InvalidParameter {
+                message: "Invalid patch version number".to_string(),
+            })?;
+
+            let pre_release = if patch_and_pre.len() > 1 {
+                Some(patch_and_pre[1..].join("-"))
+            } else {
+                None
+            };
+
+            Ok(SemanticVersion {
+                major,
+                minor,
+                patch,
+                pre_release,
+                build_metadata: None,
+            })
+        }
+
+        pub fn is_compatible_with(&self, other: &SemanticVersion) -> bool {
+            // Compatible if major versions match and this version is >= other
+            self.major == other.major && self >= other
+        }
+
+        pub fn is_breaking_change_from(&self, other: &SemanticVersion) -> bool {
+            self.major > other.major
+        }
+    }
+
+    impl PartialOrd for SemanticVersion {
+        fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+            Some(self.cmp(other))
+        }
+    }
+
+    impl Ord for SemanticVersion {
+        fn cmp(&self, other: &Self) -> Ordering {
+            match self.major.cmp(&other.major) {
+                Ordering::Equal => match self.minor.cmp(&other.minor) {
+                    Ordering::Equal => match self.patch.cmp(&other.patch) {
+                        Ordering::Equal => {
+                            match (&self.pre_release, &other.pre_release) {
+                                (None, None) => Ordering::Equal,
+                                (None, Some(_)) => Ordering::Greater, // Release > pre-release
+                                (Some(_), None) => Ordering::Less,
+                                (Some(a), Some(b)) => a.cmp(b),
+                            }
+                        }
+                        other => other,
+                    }
+                }
+                other => other,
+            }
+        }
+    }
+
+    impl VersionConstraint {
+        pub fn satisfies(&self, version: &SemanticVersion) -> bool {
+            match self {
+                VersionConstraint::Exact(v) => version == v,
+                VersionConstraint::GreaterThan(v) => version > v,
+                VersionConstraint::GreaterThanOrEqual(v) => version >= v,
+                VersionConstraint::LessThan(v) => version < v,
+                VersionConstraint::LessThanOrEqual(v) => version <= v,
+                VersionConstraint::Compatible(v) => {
+                    version.major == v.major && version >= v
+                }
+                VersionConstraint::ApproximatelyEqual(v) => {
+                    version.major == v.major && version.minor == v.minor && version >= v
+                }
+                VersionConstraint::Range(min, max) => version >= min && version <= max,
+                VersionConstraint::Wildcard(major, minor) => {
+                    match minor {
+                        Some(m) => version.major == *major && version.minor == *m,
+                        None => version.major == *major,
+                    }
+                }
+            }
+        }
+
+        pub fn parse(constraint_str: &str) -> WasmtimeResult<Self> {
+            if constraint_str.starts_with("^") {
+                let version = SemanticVersion::parse(&constraint_str[1..])?;
+                Ok(VersionConstraint::Compatible(version))
+            } else if constraint_str.starts_with("~") {
+                let version = SemanticVersion::parse(&constraint_str[1..])?;
+                Ok(VersionConstraint::ApproximatelyEqual(version))
+            } else if constraint_str.starts_with(">=") {
+                let version = SemanticVersion::parse(&constraint_str[2..])?;
+                Ok(VersionConstraint::GreaterThanOrEqual(version))
+            } else if constraint_str.starts_with(">") {
+                let version = SemanticVersion::parse(&constraint_str[1..])?;
+                Ok(VersionConstraint::GreaterThan(version))
+            } else if constraint_str.starts_with("<=") {
+                let version = SemanticVersion::parse(&constraint_str[2..])?;
+                Ok(VersionConstraint::LessThanOrEqual(version))
+            } else if constraint_str.starts_with("<") {
+                let version = SemanticVersion::parse(&constraint_str[1..])?;
+                Ok(VersionConstraint::LessThan(version))
+            } else if constraint_str.contains(" - ") {
+                let parts: Vec<&str> = constraint_str.split(" - ").collect();
+                if parts.len() == 2 {
+                    let min = SemanticVersion::parse(parts[0])?;
+                    let max = SemanticVersion::parse(parts[1])?;
+                    Ok(VersionConstraint::Range(min, max))
+                } else {
+                    Err(WasmtimeError::InvalidParameter {
+                        message: "Invalid range constraint format".to_string(),
+                    })
+                }
+            } else {
+                let version = SemanticVersion::parse(constraint_str)?;
+                Ok(VersionConstraint::Exact(version))
+            }
+        }
+    }
+
+    impl ComponentVersionRegistry {
+        pub fn new() -> Self {
+            ComponentVersionRegistry {
+                components: BTreeMap::new(),
+                interface_compatibility: HashMap::new(),
+                resolution_cache: Arc::new(RwLock::new(HashMap::new())),
+            }
+        }
+
+        pub fn register_component_version(
+            &mut self,
+            component_info: ComponentVersionInfo,
+        ) -> WasmtimeResult<()> {
+            let key = (component_info.metadata.name.clone(), component_info.metadata.namespace.clone());
+
+            self.components
+                .entry(key)
+                .or_insert_with(BTreeMap::new)
+                .insert(component_info.version.clone(), component_info);
+
+            // Clear resolution cache since new component might affect resolutions
+            if let Ok(mut cache) = self.resolution_cache.write() {
+                cache.clear();
+            }
+
+            Ok(())
+        }
+
+        pub fn find_compatible_versions(
+            &self,
+            name: &str,
+            namespace: Option<&str>,
+            constraint: &VersionConstraint,
+        ) -> Vec<&ComponentVersionInfo> {
+            let key = (name.to_string(), namespace.map(|s| s.to_string()));
+
+            if let Some(versions) = self.components.get(&key) {
+                versions
+                    .values()
+                    .filter(|info| constraint.satisfies(&info.version))
+                    .collect()
+            } else {
+                Vec::new()
+            }
+        }
+
+        pub fn resolve_dependencies(
+            &self,
+            root_dependencies: &[ComponentDependency],
+        ) -> WasmtimeResult<DependencyResolutionResult> {
+            let start_time = Instant::now();
+
+            // Generate cache key
+            let cache_key = self.generate_cache_key(root_dependencies);
+
+            // Check cache first
+            if let Ok(cache) = self.resolution_cache.read() {
+                if let Some(cached_result) = cache.get(&cache_key) {
+                    return Ok(cached_result.clone());
+                }
+            }
+
+            // Perform actual resolution
+            let result = self.resolve_dependencies_impl(root_dependencies, start_time)?;
+
+            // Cache the result
+            if let Ok(mut cache) = self.resolution_cache.write() {
+                cache.insert(cache_key, result.clone());
+            }
+
+            Ok(result)
+        }
+
+        fn resolve_dependencies_impl(
+            &self,
+            root_dependencies: &[ComponentDependency],
+            start_time: Instant,
+        ) -> WasmtimeResult<DependencyResolutionResult> {
+            let mut resolved_components = BTreeMap::new();
+            let mut conflicts = Vec::new();
+            let mut warnings = Vec::new();
+            let mut dependency_graph = DependencyGraph {
+                nodes: HashMap::new(),
+                edges: Vec::new(),
+                resolution_order: Vec::new(),
+            };
+
+            // Use a work queue for breadth-first dependency resolution
+            let mut work_queue: VecDeque<(ComponentDependency, u32, bool)> = VecDeque::new();
+
+            // Add root dependencies to work queue
+            for dep in root_dependencies {
+                work_queue.push_back((dep.clone(), 0, false));
+            }
+
+            while let Some((dependency, depth, is_root)) = work_queue.pop_front() {
+                // Find compatible versions
+                let compatible_versions = self.find_compatible_versions(
+                    &dependency.name,
+                    dependency.namespace.as_deref(),
+                    &dependency.version_constraint,
+                );
+
+                if compatible_versions.is_empty() {
+                    if !dependency.optional {
+                        conflicts.push(DependencyConflict {
+                            component_name: dependency.name.clone(),
+                            conflicting_versions: Vec::new(),
+                            conflict_type: ConflictType::MissingDependency,
+                            affected_components: HashSet::new(),
+                            suggested_resolution: Some("Consider adding the required component to the registry".to_string()),
+                        });
+                    }
+                    continue;
+                }
+
+                // Select the best version (typically the latest compatible one)
+                let selected_version = compatible_versions
+                    .into_iter()
+                    .max_by_key(|info| &info.version)
+                    .unwrap();
+
+                // Check for version conflicts
+                if let Some(existing) = resolved_components.get(&dependency.name) {
+                    if existing.version != selected_version.version {
+                        conflicts.push(DependencyConflict {
+                            component_name: dependency.name.clone(),
+                            conflicting_versions: vec![existing.version.clone(), selected_version.version.clone()],
+                            conflict_type: ConflictType::VersionMismatch,
+                            affected_components: HashSet::new(),
+                            suggested_resolution: Some("Consider using a version constraint that allows both requirements".to_string()),
+                        });
+                        continue;
+                    }
+                } else {
+                    // Add to resolved components
+                    resolved_components.insert(dependency.name.clone(), selected_version.clone());
+
+                    // Add to dependency graph
+                    dependency_graph.nodes.insert(dependency.name.clone(), DependencyNode {
+                        component_name: dependency.name.clone(),
+                        version: selected_version.version.clone(),
+                        depth,
+                        is_root,
+                        is_optional: dependency.optional,
+                    });
+
+                    // Add transitive dependencies to work queue
+                    for transitive_dep in &selected_version.dependencies {
+                        work_queue.push_back((transitive_dep.clone(), depth + 1, false));
+
+                        // Add edge to dependency graph
+                        dependency_graph.edges.push(DependencyEdge {
+                            from: dependency.name.clone(),
+                            to: transitive_dep.name.clone(),
+                            constraint: transitive_dep.version_constraint.clone(),
+                            edge_type: if transitive_dep.optional {
+                                DependencyEdgeType::Optional
+                            } else {
+                                DependencyEdgeType::Required
+                            },
+                        });
+                    }
+                }
+            }
+
+            // Calculate resolution order
+            dependency_graph.resolution_order = self.calculate_resolution_order(&dependency_graph)?;
+
+            // Validate interface compatibility
+            self.validate_interface_compatibility(&resolved_components, &mut conflicts, &mut warnings)?;
+
+            Ok(DependencyResolutionResult {
+                resolved_components,
+                resolution_graph: dependency_graph,
+                conflicts,
+                warnings,
+                resolution_time: start_time.elapsed(),
+            })
+        }
+
+        fn generate_cache_key(&self, dependencies: &[ComponentDependency]) -> String {
+            use std::collections::hash_map::DefaultHasher;
+            use std::hash::{Hash, Hasher};
+
+            let mut hasher = DefaultHasher::new();
+            for dep in dependencies {
+                dep.name.hash(&mut hasher);
+                dep.namespace.hash(&mut hasher);
+                // Note: Would need to implement Hash for VersionConstraint in a real implementation
+            }
+            format!("deps_{}", hasher.finish())
+        }
+
+        fn calculate_resolution_order(&self, graph: &DependencyGraph) -> WasmtimeResult<Vec<String>> {
+            let mut order = Vec::new();
+            let mut visited = HashSet::new();
+            let mut temp_visited = HashSet::new();
+
+            // Topological sort to determine resolution order
+            for node_name in graph.nodes.keys() {
+                if !visited.contains(node_name) {
+                    self.topological_sort_dependencies(
+                        node_name,
+                        &graph.nodes,
+                        &graph.edges,
+                        &mut order,
+                        &mut visited,
+                        &mut temp_visited,
+                    )?;
+                }
+            }
+
+            order.reverse();
+            Ok(order)
+        }
+
+        fn topological_sort_dependencies(
+            &self,
+            node_name: &str,
+            nodes: &HashMap<String, DependencyNode>,
+            edges: &[DependencyEdge],
+            order: &mut Vec<String>,
+            visited: &mut HashSet<String>,
+            temp_visited: &mut HashSet<String>,
+        ) -> WasmtimeResult<()> {
+            if temp_visited.contains(node_name) {
+                return Err(WasmtimeError::ValidationError {
+                    message: format!("Circular dependency detected involving component '{}'.", node_name),
+                });
+            }
+
+            if visited.contains(node_name) {
+                return Ok(());
+            }
+
+            temp_visited.insert(node_name.to_string());
+
+            // Visit all dependencies first
+            for edge in edges {
+                if edge.from == node_name {
+                    self.topological_sort_dependencies(
+                        &edge.to,
+                        nodes,
+                        edges,
+                        order,
+                        visited,
+                        temp_visited,
+                    )?;
+                }
+            }
+
+            temp_visited.remove(node_name);
+            visited.insert(node_name.to_string());
+            order.push(node_name.to_string());
+
+            Ok(())
+        }
+
+        fn validate_interface_compatibility(
+            &self,
+            resolved_components: &BTreeMap<String, ComponentVersionInfo>,
+            conflicts: &mut Vec<DependencyConflict>,
+            warnings: &mut Vec<String>,
+        ) -> WasmtimeResult<()> {
+            // Check interface compatibility between resolved components
+            for (component_name, component_info) in resolved_components {
+                for (interface_name, required_constraint) in &component_info.required_interfaces {
+                    let mut satisfied = false;
+
+                    // Find providers of this interface
+                    for (provider_name, provider_info) in resolved_components {
+                        if provider_name == component_name {
+                            continue;
+                        }
+
+                        if let Some(provided_version) = provider_info.provided_interfaces.get(interface_name) {
+                            if required_constraint.satisfies(provided_version) {
+                                satisfied = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    if !satisfied {
+                        conflicts.push(DependencyConflict {
+                            component_name: component_name.clone(),
+                            conflicting_versions: Vec::new(),
+                            conflict_type: ConflictType::InterfaceIncompatibility,
+                            affected_components: [component_name.clone()].iter().cloned().collect(),
+                            suggested_resolution: Some(format!(
+                                "Ensure a component providing interface '{}' is included",
+                                interface_name
+                            )),
+                        });
+                    }
+                }
+            }
+
+            Ok(())
+        }
+
+        pub fn get_component_info(
+            &self,
+            name: &str,
+            namespace: Option<&str>,
+            version: &SemanticVersion,
+        ) -> Option<&ComponentVersionInfo> {
+            let key = (name.to_string(), namespace.map(|s| s.to_string()));
+            self.components.get(&key)?.get(version)
+        }
+    }
+}
+
 /// Component orchestrator for managing component graphs and lifecycle
 pub struct ComponentOrchestrator {
     /// Enhanced component engine

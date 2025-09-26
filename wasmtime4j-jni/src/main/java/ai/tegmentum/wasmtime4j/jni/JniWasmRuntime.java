@@ -379,6 +379,36 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
     return !isClosed() && nativeHandle != 0;
   }
 
+  // ===== DEBUGGING OPERATIONS =====
+
+  @Override
+  public ai.tegmentum.wasmtime4j.debug.Debugger createDebugger(final Engine engine) throws WasmException {
+    JniValidation.validateNotNull(engine, "engine");
+    validateRuntimeState();
+
+    try {
+      return new JniDebugger(engine);
+    } catch (final Exception e) {
+      throw JniExceptionMapper.mapException(e, "Failed to create debugger");
+    }
+  }
+
+  @Override
+  public boolean isDebuggingSupported() {
+    return true; // JNI implementation supports debugging
+  }
+
+  @Override
+  public String getDebuggingCapabilities() {
+    try {
+      return "JNI debugging with breakpoints, step execution, variable inspection, " +
+             "memory inspection, call stack analysis, profiling integration";
+    } catch (final Exception e) {
+      LOGGER.warning("Failed to get debugging capabilities: " + e.getMessage());
+      return "Basic debugging support";
+    }
+  }
+
   @Override
   protected void doClose() throws Exception {
     // Close utility managers first

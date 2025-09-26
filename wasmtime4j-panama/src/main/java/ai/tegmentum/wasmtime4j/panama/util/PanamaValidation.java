@@ -209,4 +209,35 @@ public final class PanamaValidation {
       throw new IllegalArgumentException("Port number must be between 1 and 65535, got: " + port);
     }
   }
+
+  /**
+   * Validates that a connection ID is valid and exists in the provided map.
+   *
+   * @param connectionId the connection ID to validate
+   * @param activeConnections the map of active connections
+   * @throws IllegalArgumentException if the connection ID is invalid or not found
+   */
+  public static void requireValidConnectionId(final long connectionId, final java.util.Map<Long, ?> activeConnections) {
+    requireNonNull(activeConnections, "activeConnections");
+    if (connectionId <= 0) {
+      throw new IllegalArgumentException("Connection ID must be positive, got: " + connectionId);
+    }
+    if (!activeConnections.containsKey(connectionId)) {
+      throw new IllegalArgumentException("Connection not found for ID: " + connectionId);
+    }
+  }
+
+  /**
+   * Validates that a string is non-null and non-empty.
+   *
+   * @param str the string to validate
+   * @param parameterName the parameter name for error messages
+   * @throws IllegalArgumentException if the string is null or empty
+   */
+  public static void requireValidString(final String str, final String parameterName) {
+    requireNonNull(str, parameterName);
+    if (str.trim().isEmpty()) {
+      throw new IllegalArgumentException("Parameter '" + parameterName + "' cannot be empty");
+    }
+  }
 }

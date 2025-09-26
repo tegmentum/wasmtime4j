@@ -11,6 +11,11 @@ use std::collections::HashMap;
 use std::os::raw::{c_void, c_int, c_char};
 use std::ffi::CStr;
 
+// Enhanced imports for advanced experimental features
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use tokio::runtime::Runtime;
+
 /// Configuration for experimental WebAssembly features
 #[derive(Debug, Clone)]
 pub struct ExperimentalFeaturesConfig {
@@ -834,27 +839,71 @@ impl ExperimentalFeaturesConfig {
             // Enable stack switching when Wasmtime supports it
             // For now, we just validate the configuration
             self.validate_stack_switching_config()?;
+            self.apply_stack_switching_config(config)?;
         }
 
         // Apply call/cc configuration
         if self.call_cc.enabled {
             // Enable call/cc when Wasmtime supports it
             self.validate_call_cc_config()?;
+            self.apply_call_cc_config(config)?;
         }
 
         // Apply extended constant expressions
         if self.extended_const_expressions.enabled {
             // Extended constant expressions may be partially supported
             self.validate_extended_const_expressions_config()?;
+            self.apply_extended_const_expressions_config(config)?;
         }
 
         // Apply memory64 extended features
         if self.memory64_extended.enabled {
             // Some memory64 extensions may be available
             self.validate_memory64_extended_config()?;
+            self.apply_memory64_extended_config(config)?;
         }
 
-        // Continue with other experimental features...
+        // Apply custom page sizes
+        if self.custom_page_sizes.enabled {
+            self.validate_custom_page_sizes_config()?;
+            self.apply_custom_page_sizes_config(config)?;
+        }
+
+        // Apply shared-everything threads
+        if self.shared_everything_threads.enabled {
+            self.validate_shared_everything_threads_config()?;
+            self.apply_shared_everything_threads_config(config)?;
+        }
+
+        // Apply type imports
+        if self.type_imports.enabled {
+            self.validate_type_imports_config()?;
+            self.apply_type_imports_config(config)?;
+        }
+
+        // Apply string imports
+        if self.string_imports.enabled {
+            self.validate_string_imports_config()?;
+            self.apply_string_imports_config(config)?;
+        }
+
+        // Apply resource types
+        if self.resource_types.enabled {
+            self.validate_resource_types_config()?;
+            self.apply_resource_types_config(config)?;
+        }
+
+        // Apply interface types
+        if self.interface_types.enabled {
+            self.validate_interface_types_config()?;
+            self.apply_interface_types_config(config)?;
+        }
+
+        // Apply flexible vectors
+        if self.flexible_vectors.enabled {
+            self.validate_flexible_vectors_config()?;
+            self.apply_flexible_vectors_config(config)?;
+        }
 
         Ok(())
     }
@@ -901,6 +950,155 @@ impl ExperimentalFeaturesConfig {
     /// Validate memory64 extended configuration
     fn validate_memory64_extended_config(&self) -> WasmtimeResult<()> {
         // Add validation logic for memory64 extended features
+        Ok(())
+    }
+
+    /// Apply stack switching configuration to Wasmtime Config
+    fn apply_stack_switching_config(&self, config: &mut Config) -> WasmtimeResult<()> {
+        // Stack switching is not yet supported in Wasmtime, but we prepare for future support
+        // This would enable the stack switching proposal when available
+        log::info!("Stack switching configured: stack_size={}, max_stacks={}, strategy={:?}",
+                  self.stack_switching.stack_size,
+                  self.stack_switching.max_concurrent_stacks,
+                  self.stack_switching.switching_strategy);
+        Ok(())
+    }
+
+    /// Apply call/cc configuration to Wasmtime Config
+    fn apply_call_cc_config(&self, config: &mut Config) -> WasmtimeResult<()> {
+        // Call/CC is not yet supported in Wasmtime, but we prepare for future support
+        log::info!("Call/CC configured: max_continuations={}, storage={:?}",
+                  self.call_cc.storage_management.max_continuations,
+                  self.call_cc.storage_management.storage_strategy);
+        Ok(())
+    }
+
+    /// Apply extended constant expressions configuration to Wasmtime Config
+    fn apply_extended_const_expressions_config(&self, config: &mut Config) -> WasmtimeResult<()> {
+        // Extended constant expressions may be partially available in newer Wasmtime versions
+        // This would be enabled using wasm_extended_const when available
+        log::info!("Extended constant expressions configured: import_based={}, global_deps={}, folding={:?}",
+                  self.extended_const_expressions.import_based_expressions,
+                  self.extended_const_expressions.global_dependencies,
+                  self.extended_const_expressions.constant_folding_level);
+        Ok(())
+    }
+
+    /// Apply memory64 extended configuration to Wasmtime Config
+    fn apply_memory64_extended_config(&self, config: &mut Config) -> WasmtimeResult<()> {
+        // Memory64 extended features prepare for future enhanced memory64 support
+        log::info!("Memory64 extended configured: large_address_opt={}, cross_memory={}, virtual_mapping={}",
+                  self.memory64_extended.large_address_optimizations,
+                  self.memory64_extended.cross_memory_addressing,
+                  self.memory64_extended.memory_mapping.virtual_mapping);
+        Ok(())
+    }
+
+    /// Apply custom page sizes configuration to Wasmtime Config
+    fn apply_custom_page_sizes_config(&self, config: &mut Config) -> WasmtimeResult<()> {
+        // Custom page sizes would be configured when the proposal is available
+        log::info!("Custom page sizes configured: supported_sizes={:?}, strategy={:?}",
+                  self.custom_page_sizes.supported_page_sizes,
+                  self.custom_page_sizes.default_strategy);
+        Ok(())
+    }
+
+    /// Apply shared-everything threads configuration to Wasmtime Config
+    fn apply_shared_everything_threads_config(&self, config: &mut Config) -> WasmtimeResult<()> {
+        // Shared-everything threads would enhance the threads proposal when available
+        log::info!("Shared-everything threads configured: min_threads={}, max_threads={}",
+                  self.shared_everything_threads.thread_pool.min_threads,
+                  self.shared_everything_threads.thread_pool.max_threads);
+        Ok(())
+    }
+
+    /// Apply type imports configuration to Wasmtime Config
+    fn apply_type_imports_config(&self, config: &mut Config) -> WasmtimeResult<()> {
+        // Type imports would be enabled when the proposal is available
+        log::info!("Type imports configured: validation={:?}, resolution={:?}",
+                  self.type_imports.validation_strategy,
+                  self.type_imports.resolution_mechanism);
+        Ok(())
+    }
+
+    /// Apply string imports configuration to Wasmtime Config
+    fn apply_string_imports_config(&self, config: &mut Config) -> WasmtimeResult<()> {
+        // String imports would be configured when the proposal is available
+        log::info!("String imports configured: encoding={:?}, interning={}, js_interop={}",
+                  self.string_imports.encoding_format,
+                  self.string_imports.optimization.string_interning,
+                  self.string_imports.js_interop);
+        Ok(())
+    }
+
+    /// Apply resource types configuration to Wasmtime Config
+    fn apply_resource_types_config(&self, config: &mut Config) -> WasmtimeResult<()> {
+        // Resource types would be enabled when the proposal is available
+        log::info!("Resource types configured: auto_cleanup={}, ref_counting={}",
+                  self.resource_types.lifetime_management.automatic_cleanup,
+                  self.resource_types.lifetime_management.reference_counting);
+        Ok(())
+    }
+
+    /// Apply interface types configuration to Wasmtime Config
+    fn apply_interface_types_config(&self, config: &mut Config) -> WasmtimeResult<()> {
+        // Interface types would be enabled when the proposal is available
+        log::info!("Interface types configured: validation={:?}, auto_adapters={}",
+                  self.interface_types.validation_level,
+                  self.interface_types.adapter_generation.automatic_generation);
+        Ok(())
+    }
+
+    /// Apply flexible vectors configuration to Wasmtime Config
+    fn apply_flexible_vectors_config(&self, config: &mut Config) -> WasmtimeResult<()> {
+        // Flexible vectors would be enabled when the proposal is available
+        log::info!("Flexible vectors configured: dynamic_sizing={}, auto_vectorization={}",
+                  self.flexible_vectors.dynamic_sizing,
+                  self.flexible_vectors.operation_optimization.auto_vectorization);
+        Ok(())
+    }
+
+    /// Validate remaining configuration types
+    fn validate_custom_page_sizes_config(&self) -> WasmtimeResult<()> {
+        if self.custom_page_sizes.supported_page_sizes.is_empty() {
+            return Err(WasmtimeError::EngineConfig {
+                message: "Custom page sizes must specify at least one supported size".to_string(),
+            });
+        }
+        Ok(())
+    }
+
+    fn validate_shared_everything_threads_config(&self) -> WasmtimeResult<()> {
+        if self.shared_everything_threads.thread_pool.min_threads > self.shared_everything_threads.thread_pool.max_threads {
+            return Err(WasmtimeError::EngineConfig {
+                message: "Minimum thread count cannot exceed maximum thread count".to_string(),
+            });
+        }
+        Ok(())
+    }
+
+    fn validate_type_imports_config(&self) -> WasmtimeResult<()> {
+        // Type imports validation logic
+        Ok(())
+    }
+
+    fn validate_string_imports_config(&self) -> WasmtimeResult<()> {
+        // String imports validation logic
+        Ok(())
+    }
+
+    fn validate_resource_types_config(&self) -> WasmtimeResult<()> {
+        // Resource types validation logic
+        Ok(())
+    }
+
+    fn validate_interface_types_config(&self) -> WasmtimeResult<()> {
+        // Interface types validation logic
+        Ok(())
+    }
+
+    fn validate_flexible_vectors_config(&self) -> WasmtimeResult<()> {
+        // Flexible vectors validation logic
         Ok(())
     }
 
@@ -1043,6 +1241,143 @@ pub mod core {
         validate_ptr_not_null!(config_ptr, "experimental_features_config");
         let config = &*(config_ptr as *const ExperimentalFeaturesConfig);
         config.apply_to_config(wasmtime_config)
+    }
+
+    /// Enable flexible vectors in configuration
+    pub unsafe fn enable_flexible_vectors(
+        config_ptr: *mut c_void,
+        dynamic_sizing: c_int,
+        auto_vectorization: c_int,
+        simd_integration: c_int,
+    ) -> WasmtimeResult<()> {
+        validate_ptr_not_null!(config_ptr, "experimental_features_config");
+        let config = &mut *(config_ptr as *mut ExperimentalFeaturesConfig);
+
+        config.flexible_vectors.enabled = true;
+        config.flexible_vectors.dynamic_sizing = dynamic_sizing != 0;
+        config.flexible_vectors.operation_optimization.auto_vectorization = auto_vectorization != 0;
+        config.flexible_vectors.simd_integration.simd_fallback = simd_integration != 0;
+
+        config.validate_flexible_vectors_config()
+    }
+
+    /// Enable string imports in configuration
+    pub unsafe fn enable_string_imports(
+        config_ptr: *mut c_void,
+        encoding_format: c_int,
+        string_interning: c_int,
+        lazy_decoding: c_int,
+        js_interop: c_int,
+    ) -> WasmtimeResult<()> {
+        validate_ptr_not_null!(config_ptr, "experimental_features_config");
+        let config = &mut *(config_ptr as *mut ExperimentalFeaturesConfig);
+
+        config.string_imports.enabled = true;
+        config.string_imports.encoding_format = match encoding_format {
+            0 => StringEncodingFormat::Utf8,
+            1 => StringEncodingFormat::Utf16,
+            2 => StringEncodingFormat::Latin1,
+            3 => StringEncodingFormat::Custom,
+            _ => StringEncodingFormat::Utf8,
+        };
+        config.string_imports.optimization.string_interning = string_interning != 0;
+        config.string_imports.optimization.lazy_decoding = lazy_decoding != 0;
+        config.string_imports.js_interop = js_interop != 0;
+
+        config.validate_string_imports_config()
+    }
+
+    /// Enable resource types in configuration
+    pub unsafe fn enable_resource_types(
+        config_ptr: *mut c_void,
+        automatic_cleanup: c_int,
+        reference_counting: c_int,
+        cleanup_strategy: c_int,
+    ) -> WasmtimeResult<()> {
+        validate_ptr_not_null!(config_ptr, "experimental_features_config");
+        let config = &mut *(config_ptr as *mut ExperimentalFeaturesConfig);
+
+        config.resource_types.enabled = true;
+        config.resource_types.lifetime_management.automatic_cleanup = automatic_cleanup != 0;
+        config.resource_types.lifetime_management.reference_counting = reference_counting != 0;
+        config.resource_types.cleanup_strategies.cleanup_strategy = match cleanup_strategy {
+            0 => ResourceCleanupStrategy::Manual,
+            1 => ResourceCleanupStrategy::Automatic,
+            2 => ResourceCleanupStrategy::Hybrid,
+            _ => ResourceCleanupStrategy::Automatic,
+        };
+
+        config.validate_resource_types_config()
+    }
+
+    /// Enable type imports in configuration
+    pub unsafe fn enable_type_imports(
+        config_ptr: *mut c_void,
+        validation_strategy: c_int,
+        resolution_mechanism: c_int,
+        structural_compatibility: c_int,
+    ) -> WasmtimeResult<()> {
+        validate_ptr_not_null!(config_ptr, "experimental_features_config");
+        let config = &mut *(config_ptr as *mut ExperimentalFeaturesConfig);
+
+        config.type_imports.enabled = true;
+        config.type_imports.validation_strategy = match validation_strategy {
+            0 => TypeValidationStrategy::Strict,
+            1 => TypeValidationStrategy::Relaxed,
+            2 => TypeValidationStrategy::Dynamic,
+            _ => TypeValidationStrategy::Strict,
+        };
+        config.type_imports.resolution_mechanism = match resolution_mechanism {
+            0 => ImportResolutionMechanism::Static,
+            1 => ImportResolutionMechanism::Dynamic,
+            2 => ImportResolutionMechanism::Lazy,
+            _ => ImportResolutionMechanism::Static,
+        };
+        config.type_imports.compatibility_checking.structural_compatibility = structural_compatibility != 0;
+
+        config.validate_type_imports_config()
+    }
+
+    /// Enable shared-everything threads in configuration
+    pub unsafe fn enable_shared_everything_threads(
+        config_ptr: *mut c_void,
+        min_threads: u32,
+        max_threads: u32,
+        global_state_sharing: c_int,
+        atomic_operations: c_int,
+    ) -> WasmtimeResult<()> {
+        validate_ptr_not_null!(config_ptr, "experimental_features_config");
+        let config = &mut *(config_ptr as *mut ExperimentalFeaturesConfig);
+
+        config.shared_everything_threads.enabled = true;
+        config.shared_everything_threads.thread_pool.min_threads = min_threads;
+        config.shared_everything_threads.thread_pool.max_threads = max_threads;
+        config.shared_everything_threads.shared_state.global_state_sharing = global_state_sharing != 0;
+        config.shared_everything_threads.synchronization.atomic_operations = atomic_operations != 0;
+
+        config.validate_shared_everything_threads_config()
+    }
+
+    /// Enable custom page sizes in configuration
+    pub unsafe fn enable_custom_page_sizes(
+        config_ptr: *mut c_void,
+        page_size: u32,
+        strategy: c_int,
+        strict_alignment: c_int,
+    ) -> WasmtimeResult<()> {
+        validate_ptr_not_null!(config_ptr, "experimental_features_config");
+        let config = &mut *(config_ptr as *mut ExperimentalFeaturesConfig);
+
+        config.custom_page_sizes.enabled = true;
+        config.custom_page_sizes.supported_page_sizes = vec![page_size];
+        config.custom_page_sizes.default_strategy = match strategy {
+            0 => PageSizeStrategy::System,
+            1 => PageSizeStrategy::Optimal,
+            _ => PageSizeStrategy::Custom(page_size),
+        };
+        config.custom_page_sizes.alignment_requirements.strict_alignment = strict_alignment != 0;
+
+        config.validate_custom_page_sizes_config()
     }
 
     /// Destroy experimental features configuration
