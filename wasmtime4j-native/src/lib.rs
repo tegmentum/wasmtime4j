@@ -38,6 +38,20 @@ pub mod table;
 pub mod linker;
 pub mod threading;
 
+// Advanced threading optimizations and work-stealing refinements
+pub mod work_stealing;
+pub mod thread_affinity;
+pub mod lockfree_structures;
+pub mod adaptive_scaling;
+pub mod sync_primitives;
+pub mod thread_profiler;
+pub mod memory_coordination;
+pub mod deadlock_prevention;
+
+// Comprehensive integration tests for threading optimizations
+#[cfg(test)]
+pub mod threading_integration_tests;
+
 // Advanced execution control with fuel and epoch management
 pub mod execution_control;
 
@@ -58,10 +72,22 @@ pub mod jni_bindings;
 pub mod jni_wasi_bindings;
 #[cfg(feature = "jni-bindings")]
 pub mod jni_gc_bindings;
+#[cfg(feature = "jni-bindings")]
+pub mod jni_snapshot_bindings;
+#[cfg(feature = "jni-bindings")]
+pub mod jni_hot_reload_bindings;
+#[cfg(feature = "jni-bindings")]
+pub mod platform_memory_jni;
+#[cfg(feature = "jni-bindings")]
+pub mod jni_experimental_bindings;
 #[cfg(feature = "panama-ffi")]
 pub mod panama_ffi;
 #[cfg(feature = "panama-ffi")]
 pub mod panama_gc_ffi;
+#[cfg(feature = "panama-ffi")]
+pub mod panama_hot_reload_ffi;
+#[cfg(feature = "panama-ffi")]
+pub mod panama_experimental_ffi;
 
 // Advanced modules - will be implemented in later tasks
 #[cfg(feature = "wasi")]
@@ -74,6 +100,9 @@ pub mod engine_config;
 
 // Experimental WebAssembly features (committee-stage proposals)
 pub mod experimental_features;
+
+// Advanced experimental features for cutting-edge capabilities
+pub mod advanced_experimental;
 
 // Security module for enterprise features
 pub mod security;
@@ -106,8 +135,22 @@ pub mod wasi_preview2;
 // Real networking operations
 pub mod networking;
 
+// Platform-specific optimizations for maximum performance
+pub mod numa_topology;
+pub mod cpu_cache_management;
+pub mod memory_bandwidth_optimization;
+pub mod cpu_microarchitecture_detection;
+pub mod platform_config;
+
+// Advanced networking protocols (WebSocket, HTTP/2, gRPC)
+#[cfg(feature = "advanced-networking")]
+pub mod advanced_networking;
+
 // Enhanced filesystem operations
 pub mod filesystem;
+
+// Advanced filesystem snapshot operations with versioning and rollback
+pub mod filesystem_snapshots;
 
 // Full process integration
 pub mod process;
@@ -117,6 +160,9 @@ pub mod wasi_security;
 
 // Type introspection system
 pub mod type_introspection;
+
+// Source map integration for debugging
+pub mod sourcemap;
 
 // Component model support for WASI Preview 2
 #[cfg(feature = "component-model")]
@@ -131,16 +177,24 @@ pub mod component_orchestration;
 pub mod component_resources;
 #[cfg(feature = "component-model")]
 pub mod distributed_components;
+#[cfg(feature = "component-model")]
+pub mod component_composition;
 
 // Experimental modules for cutting-edge WebAssembly proposals
 // pub mod exceptions;
-// pub mod simd;
+pub mod simd;
+pub mod simd_crypto;
+pub mod simd_ml;
+pub mod simd_domain;
 // pub mod multi_value;
 
 // Development tooling modules for developer experience
 // pub mod module_analyzer;
-// pub mod hot_reload;
+pub mod hot_reload;
 // pub mod debug_server;
+
+// Debugging support module
+pub mod debug;
 
 // WebAssembly GC implementation
 pub mod gc_types;
@@ -160,6 +214,35 @@ pub use global::{Global, GlobalValue, GlobalMetadata, ReferenceType as GlobalRef
 pub use table::{Table, TableElement, TableMetadata};
 pub use linker::{Linker, LinkerMetadata, LinkerConfig, LinkerInstantiationResult, HostFunctionDefinition, ImportDefinition, ImportType};
 
+// Re-export advanced threading functionality
+pub use work_stealing::{
+    WorkStealingScheduler, WorkStealingConfig, WorkStealingTask, TaskId, TaskPriority,
+    CpuAffinityHint, MemoryLocalityHint, WorkStealingStatistics, LoadBalancer, PerformanceMonitor
+};
+pub use thread_affinity::{
+    ThreadAffinityManager, AffinityConfig, CoreAssignment, ThreadPriority,
+    PerformanceHint, CoreAssignmentStrategy, PerformanceCounters
+};
+pub use lockfree_structures::{
+    LockFreeQueue, LockFreeHashTable, WaitFreeRingBuffer, AtomicRefCounter,
+    HazardPointerManager, MemoryOrderingOptimizer, AtomicBatch
+};
+pub use adaptive_scaling::{
+    AdaptiveScalingManager, ScalingConfig, WorkloadPredictor, ScalingDecision, ScalingAction
+};
+pub use sync_primitives::{
+    AdvancedRwLock, AdvancedCondvar, AdvancedSemaphore, AdvancedBarrier,
+    FairnessPolicy, ThreadPriority as SyncThreadPriority, MemoryOrderingOptimizer as SyncMemoryOptimizer
+};
+pub use thread_profiler::{
+    ThreadProfiler, ProfilerConfig, ThreadMonitor, FunctionExecutionTracker,
+    MemoryAccessAnalyzer, ContentionAnalyzer, PerformanceDashboard, PerformanceReport
+};
+pub use memory_coordination::{
+    MemoryCoordinator, CoordinatorConfig, SharedMemoryManager, ThreadSafeAllocator,
+    AtomicOperationManager, MemoryBarrierManager, GcCoordinator, MemoryAccessTracker
+};
+
 // Optional re-exports based on features
 #[cfg(feature = "wasi")]
 pub use wasi::{
@@ -170,10 +253,14 @@ pub use wasi::{
 
 // Re-export async runtime functionality
 pub use async_runtime::{
-    AsyncOperation, AsyncOperationType, AsyncOperationStatus,
-    AsyncFunctionCallContext, AsyncCompilationContext, CompilationOptions,
+    MultiRuntimeSystem, WorkStealingPool, AsyncOperationManager,
+    AsyncOperationHandle, AsyncOperationType, AsyncOperationStatus,
+    ExecutionTask, TaskType, TaskPayload, ExecutionContext, Priority,
+    CompilationOptions, GCType, ProgressInfo,
     AsyncCallback, ProgressCallback,
-    get_async_runtime, get_runtime_handle
+    get_multi_runtime_system, get_work_stealing_pool, get_async_operation_manager,
+    get_runtime_handle, compile_module_async, execute_function_parallel,
+    instantiate_module_concurrent, execute_parallel_gc
 };
 
 // Re-export async operations functionality
@@ -195,11 +282,27 @@ pub use networking::{
     NetworkStats, HttpRequest, HttpResponse
 };
 
+// Re-export advanced networking functionality
+#[cfg(feature = "advanced-networking")]
+pub use advanced_networking::{
+    AdvancedNetworkManager, AdvancedNetworkConfig, WebSocketConnection, WebSocketConnectionType,
+    Http2Connection, Http2ConnectionType, GrpcConnection, ProtocolNegotiator, SupportedProtocol,
+    NetworkPerformanceMonitor, ProtocolMetrics, ConnectionMetrics, ThroughputMetrics,
+    AdvancedConnectionPool, TlsConfiguration
+};
+
 // Re-export filesystem functionality
 pub use filesystem::{
     FileSystemManager, FileSystemConfig, FileHandle, DirectoryHandle,
     EnhancedFileMetadata, FileBasicMetadata, FileExtendedMetadata,
     FileSecurityMetadata, FileType, DirectoryEntry, FileSystemStats
+};
+
+// Re-export filesystem snapshot functionality
+pub use filesystem_snapshots::{
+    FilesystemSnapshotManager, SnapshotConfig, SnapshotOptions, RestoreOptions,
+    ValidationOptions, Snapshot, SnapshotType, SnapshotMetadata, SnapshotEntry,
+    SnapshotStatus, ValidationResult as SnapshotValidationResult, SnapshotMetrics, PerformanceMetrics
 };
 
 // Re-export process functionality
@@ -256,6 +359,15 @@ pub use distributed_components::{
     DistributedComponentManager, ComponentDiscoveryService, ComponentAdvertisement,
     NodeInfo, NodeCapabilities, SecureCommunicationManager, DistributedSyncService,
     ComponentBackupService, NetworkTopologyManager
+};
+
+#[cfg(feature = "component-model")]
+pub use component_composition::{
+    ComponentCompositionManager, ComponentDependencyGraph, GraphNode, GraphEdge,
+    CompositionEngine, DependencyInjectionContainer, DependencyGraphAnalyzer,
+    ComponentHierarchyManager, RuntimeComposer, CompositionOptimizer,
+    CompositionSpecification, CompositionResult, ComposedApplication,
+    GraphAnalysisResult, OptimizationGoals, OptimizationResults
 };
 //
 // pub use type_introspection::{
@@ -315,6 +427,13 @@ pub use distributed_components::{
 pub use gc::{
     WasmGcRuntime, StructOperationResult, ArrayOperationResult, RefOperationResult, WasmtimeGcRef
 };
+
+// Re-export source map integration functionality
+pub use sourcemap::{
+    SourceMapIntegration, SourceMapParser, DwarfParser, SymbolResolver, StackTraceMapper,
+    SourceFileCache, ValidationEngine, SourcePosition, WasmAddress, FunctionSymbol,
+    VariableSymbol, SourceMappedFrame, SourceMap, DwarfInfo, ValidationResult as SourceMapValidationResult
+};
 pub use gc_types::{
     GcReferenceType, StructTypeDefinition, ArrayTypeDefinition, FieldDefinition, FieldType as GcFieldType,
     GcObject, GcValue, GcTypeRegistry, GcTypeConverter
@@ -332,6 +451,15 @@ pub use shared_ffi::{
     BooleanReturnConverter, IntegerReturnConverter, PointerReturnConverter,
     convert_wasm_features, validate_wasm_features,
     validation, error_mapping
+};
+
+// Re-export debugging functionality
+pub use debug::{
+    DebugSession, DebugSessionId, Breakpoint, BreakpointId, BreakpointType,
+    ExecutionState as DebugExecutionState, ExecutionStateType, StackFrame, Variable, VariableValue, VariableScope,
+    MemoryInspector, MemoryInfo, VariableInspector, ProfilingData, FunctionProfile,
+    DebugEventHandler, ExecutionResult, StepType, EvaluationResult,
+    create_debug_session, get_debug_session, close_debug_session, get_active_debug_sessions
 };
 
 // Re-export enterprise features for production use
@@ -359,11 +487,36 @@ pub use error_recovery::{
 //     ModuleAnalyzer, FunctionInfo, ImportInfo, ExportInfo, MemoryInfo, TableInfo, GlobalInfo,
 //     SecurityAnalysis, PerformanceAnalysis, SizeAnalysis
 // };
-//
-// pub use hot_reload::{
-//     HotReloader, ReloadConfiguration, ReloadResult, ModuleState, ReloadStatistics
-// };
-//
+
+// Re-export hot-reload functionality
+pub use hot_reload::{
+    HotReloadManager, HotReloadConfig, SwapStrategy, LoadRequest, LoadPriority, ValidationConfig,
+    ComponentVersion, SwapOperation, SwapStatus, TrafficStats, RollbackPlan, RollbackTrigger,
+    HealthCheckResult, ComponentStateSnapshot, HotReloadMetrics, BackgroundComponentLoader
+};
+
+// Re-export platform optimization functionality
+pub use numa_topology::{
+    AdvancedNumaTopology, NumaBindingStrategy, WorkloadType, MemoryAllocationPolicy,
+    CpuAffinityPolicy, NumaLoadBalancing, MigrationPolicies
+};
+pub use cpu_cache_management::{
+    CachePartitioningManager, CachePartition, CacheAffinityPolicy, PartitionType,
+    AffinityStrategy, CacheTopology, InterferenceDetectionAlgorithm
+};
+pub use memory_bandwidth_optimization::{
+    MemoryBandwidthOptimizer, BandwidthAllocationPolicy, CacheAwareAllocationStrategy,
+    MemoryTopology, BandwidthOptimizationReport, OptimizationRecommendation
+};
+pub use cpu_microarchitecture_detection::{
+    CpuMicroarchitectureDetector, ArchitectureInfo, FeatureDetectionResults,
+    PerformanceCharacteristics, X86FeatureSet, ArmFeatureSet, RiscVFeatureSet
+};
+pub use platform_config::{
+    PlatformConfig, PlatformInfo, CpuOptimization, MemoryHierarchyConfig, NumaConfig,
+    ThreadAffinityConfig, PowerManagementConfig, Architecture, OsType
+};
+
 // pub use debug_server::{
 //     DebugServer, DebugSession, Breakpoint, ExecutionContext, StackFrame,
 //     VariableValue, WatchResult, ExecutionState as DebugExecutionState, DebugEvent

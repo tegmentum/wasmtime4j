@@ -42,11 +42,14 @@ public final class WasiFilesystemSnapshot {
 
   private static final Logger LOGGER = Logger.getLogger(WasiFilesystemSnapshot.class.getName());
 
-  /** Maximum snapshot size in bytes (1GB). */
-  private static final long MAX_SNAPSHOT_SIZE = 1024L * 1024L * 1024L;
+  /** Maximum snapshot size in bytes (10GB). */
+  private static final long MAX_SNAPSHOT_SIZE = 10L * 1024L * 1024L * 1024L;
 
   /** Maximum number of snapshots that can be active simultaneously. */
   private static final int MAX_ACTIVE_SNAPSHOTS = 100;
+
+  /** Maximum incremental snapshot chain depth. */
+  private static final int MAX_INCREMENTAL_CHAIN_DEPTH = 10;
 
   /** The WASI context this snapshot handler belongs to. */
   private final WasiContext wasiContext;
@@ -63,6 +66,19 @@ public final class WasiFilesystemSnapshot {
   /** Snapshot metadata cache. */
   private final Map<Long, SnapshotMetadata> snapshotMetadata = new ConcurrentHashMap<>();
 
+  /** Snapshot performance metrics. */
+  private final Map<Long, SnapshotPerformanceMetrics> performanceMetrics = new ConcurrentHashMap<>();
+
+  /** Cleanup scheduler for background maintenance. */
+  private final java.util.concurrent.ScheduledExecutorService cleanupScheduler =
+      java.util.concurrent.Executors.newScheduledThreadPool(1);
+
+  /** Deduplication statistics. */
+  private volatile DeduplicationStatistics dedupStats = new DeduplicationStatistics();
+
+  /** Compression statistics. */
+  private volatile CompressionStatistics compressionStats = new CompressionStatistics();
+
   /**
    * Creates a new WASI filesystem snapshot handler.
    *
@@ -78,7 +94,20 @@ public final class WasiFilesystemSnapshot {
     this.wasiContext = wasiContext;
     this.asyncExecutor = asyncExecutor;
 
-    LOGGER.info("Created WASI filesystem snapshot handler");
+    // Initialize native snapshot manager
+    final int initResult = nativeInitSnapshotManager();
+    if (initResult != 0) {
+      throw new JniException("Failed to initialize native snapshot manager");
+    }
+
+    // Schedule periodic cleanup
+    cleanupScheduler.scheduleAtFixedRate(
+        this::performPeriodicCleanup,
+        1, // initial delay (hours)
+        1, // period (hours)
+        java.util.concurrent.TimeUnit.HOURS);
+
+    LOGGER.info("Created WASI filesystem snapshot handler with advanced features");
   }
 
   /**
@@ -109,7 +138,7 @@ public final class WasiFilesystemSnapshot {
           try {
             final long snapshotHandle = snapshotHandleGenerator.getAndIncrement();
 
-            // Create snapshot metadata
+            // Create comprehensive snapshot metadata
             final SnapshotMetadata metadata =
                 new SnapshotMetadata(
                     snapshotHandle,
@@ -121,20 +150,35 @@ public final class WasiFilesystemSnapshot {
                     options.encryptionEnabled,
                     null);
 
+            // Add advanced metadata fields
+            metadata.creationContext = new CreationContext(
+                System.getProperty("user.name"),
+                ProcessHandle.current().pid(),
+                createHostInfo(),
+                "Programmatic snapshot creation");
+
+            metadata.version = new SnapshotVersion(1, 0, 0);
+            metadata.tags = new ArrayList<>();
+            metadata.properties = new HashMap<>();
+
             snapshotMetadata.put(snapshotHandle, metadata);
 
-            // Create native snapshot
+            // Create native snapshot with advanced options
             final SnapshotCreateResult result =
-                nativeCreateSnapshot(
+                nativeCreateAdvancedSnapshot(
                     wasiContext.getNativeHandle(),
                     snapshotHandle,
                     rootPath,
-                    true, // full snapshot
+                    0, // snapshot type: FULL
                     0, // no base snapshot for full
                     options.includeHiddenFiles,
                     options.compressionLevel,
                     options.encryptionEnabled,
-                    options.encryptionKey);
+                    options.encryptionKey,
+                    true, // enable deduplication
+                    true, // enable integrity checking
+                    metadata.name != null ? metadata.name : "",
+                    metadata.description != null ? metadata.description : "");
 
             if (result.errorCode != 0) {
               snapshotMetadata.remove(snapshotHandle);
@@ -224,18 +268,22 @@ public final class WasiFilesystemSnapshot {
 
             snapshotMetadata.put(snapshotHandle, metadata);
 
-            // Create native incremental snapshot
+            // Create native incremental snapshot with advanced options
             final SnapshotCreateResult result =
-                nativeCreateSnapshot(
+                nativeCreateAdvancedSnapshot(
                     wasiContext.getNativeHandle(),
                     snapshotHandle,
                     rootPath,
-                    false, // incremental snapshot
+                    1, // snapshot type: INCREMENTAL
                     baseSnapshotHandle,
                     options.includeHiddenFiles,
                     options.compressionLevel,
                     options.encryptionEnabled,
-                    options.encryptionKey);
+                    options.encryptionKey,
+                    true, // enable deduplication
+                    true, // enable integrity checking
+                    metadata.name != null ? metadata.name : "",
+                    metadata.description != null ? metadata.description : "");
 
             if (result.errorCode != 0) {
               snapshotMetadata.remove(snapshotHandle);
@@ -453,6 +501,17 @@ public final class WasiFilesystemSnapshot {
   public void close() {
     LOGGER.info("Closing filesystem snapshot handler");
 
+    // Shutdown cleanup scheduler
+    cleanupScheduler.shutdown();
+    try {
+      if (!cleanupScheduler.awaitTermination(5, java.util.concurrent.TimeUnit.SECONDS)) {
+        cleanupScheduler.shutdownNow();
+      }
+    } catch (InterruptedException e) {
+      cleanupScheduler.shutdownNow();
+      Thread.currentThread().interrupt();
+    }
+
     // Delete all active snapshots
     for (final Long snapshotHandle : activeSnapshots.keySet()) {
       try {
@@ -464,8 +523,109 @@ public final class WasiFilesystemSnapshot {
 
     activeSnapshots.clear();
     snapshotMetadata.clear();
+    performanceMetrics.clear();
+
+    // Cleanup native resources
+    nativeCleanupSnapshotManager();
 
     LOGGER.info("Filesystem snapshot handler closed successfully");
+  }
+
+  /**
+   * Creates a differential snapshot (changes since last full snapshot).
+   */
+  public CompletableFuture<Long> createDifferentialSnapshotAsync(
+      final String rootPath, final SnapshotOptions options) {
+    JniValidation.requireNonEmpty(rootPath, "rootPath");
+    JniValidation.requireNonNull(options, "options");
+
+    if (activeSnapshots.size() >= MAX_ACTIVE_SNAPSHOTS) {
+      throw new WasiException(
+          "Maximum number of active snapshots exceeded", WasiErrorCode.ENOMEM);
+    }
+
+    // Find last full snapshot for this path
+    final Optional<Long> lastFullSnapshot = findLastFullSnapshot(rootPath);
+    if (!lastFullSnapshot.isPresent()) {
+      throw new WasiException(
+          "No full snapshot found for differential", WasiErrorCode.ENOENT);
+    }
+
+    LOGGER.info(
+        () ->
+            String.format(
+                "Creating differential snapshot: rootPath=%s, baseSnapshot=%d",
+                rootPath, lastFullSnapshot.get()));
+
+    return CompletableFuture.supplyAsync(
+        () -> {
+          try {
+            final long snapshotHandle = snapshotHandleGenerator.getAndIncrement();
+
+            final SnapshotMetadata metadata =
+                new SnapshotMetadata(
+                    snapshotHandle,
+                    rootPath,
+                    SnapshotType.DIFFERENTIAL,
+                    Instant.now(),
+                    options.includeHiddenFiles,
+                    options.compressionLevel,
+                    options.encryptionEnabled,
+                    lastFullSnapshot.get());
+
+            snapshotMetadata.put(snapshotHandle, metadata);
+
+            final SnapshotCreateResult result =
+                nativeCreateAdvancedSnapshot(
+                    wasiContext.getNativeHandle(),
+                    snapshotHandle,
+                    rootPath,
+                    2, // DIFFERENTIAL type
+                    lastFullSnapshot.get(),
+                    options.includeHiddenFiles,
+                    options.compressionLevel,
+                    options.encryptionEnabled,
+                    options.encryptionKey,
+                    true, // enable deduplication
+                    true, // enable integrity checking
+                    metadata.name != null ? metadata.name : "",
+                    metadata.description != null ? metadata.description : "");
+
+            if (result.errorCode != 0) {
+              snapshotMetadata.remove(snapshotHandle);
+              final WasiErrorCode errorCode = WasiErrorCode.fromErrnoOrNull(result.errorCode);
+              throw new WasiException(
+                  "Failed to create differential snapshot: "
+                      + (errorCode != null ? errorCode.getDescription() : "Unknown error"),
+                  errorCode != null ? errorCode : WasiErrorCode.EIO);
+            }
+
+            final SnapshotInfo snapshotInfo =
+                new SnapshotInfo(
+                    snapshotHandle,
+                    rootPath,
+                    SnapshotType.DIFFERENTIAL,
+                    result.snapshotSize,
+                    metadata);
+            activeSnapshots.put(snapshotHandle, snapshotInfo);
+
+            metadata.snapshotSize = result.snapshotSize;
+            metadata.fileCount = result.fileCount;
+
+            LOGGER.info(
+                () ->
+                    String.format(
+                        "Created differential snapshot: handle=%d, size=%d bytes, files=%d",
+                        snapshotHandle, result.snapshotSize, result.fileCount));
+
+            return snapshotHandle;
+
+          } catch (final Exception e) {
+            LOGGER.log(Level.SEVERE, "Failed to create differential snapshot", e);
+            throw new RuntimeException("Differential snapshot creation failed: " + e.getMessage(), e);
+          }
+        },
+        asyncExecutor);
   }
 
   // Native method declarations

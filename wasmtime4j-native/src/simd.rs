@@ -339,6 +339,34 @@ impl V128 {
     }
 }
 
+/// SIMD instruction scheduling strategy
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum SchedulingStrategy {
+    /// In-order execution (default)
+    InOrder,
+    /// Out-of-order execution with dependency tracking
+    OutOfOrder,
+    /// Pipeline optimization with instruction fusion
+    Pipelined,
+    /// Adaptive scheduling based on workload
+    Adaptive,
+}
+
+/// Memory alignment requirements
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum AlignmentRequirement {
+    /// No alignment requirement
+    None,
+    /// 16-byte alignment for V128
+    Align16,
+    /// 32-byte alignment for V256
+    Align32,
+    /// 64-byte alignment for V512
+    Align64,
+    /// Cache line alignment (typically 64 bytes)
+    CacheLine,
+}
+
 /// SIMD operation configuration
 #[derive(Debug, Clone)]
 pub struct SIMDConfig {
@@ -358,6 +386,16 @@ pub struct SIMDConfig {
     pub enable_vector_reductions: bool,
     /// Debug mode for SIMD operations
     pub debug_mode: bool,
+    /// Instruction scheduling strategy
+    pub scheduling_strategy: SchedulingStrategy,
+    /// Memory alignment requirement
+    pub alignment_requirement: AlignmentRequirement,
+    /// Enable instruction fusion optimizations
+    pub enable_instruction_fusion: bool,
+    /// Maximum pipeline depth for scheduling
+    pub max_pipeline_depth: u32,
+    /// Enable prefetching for memory operations
+    pub enable_prefetching: bool,
 }
 
 impl Default for SIMDConfig {
@@ -371,6 +409,11 @@ impl Default for SIMDConfig {
             enable_gather_scatter: false,
             enable_vector_reductions: true,
             debug_mode: false,
+            scheduling_strategy: SchedulingStrategy::InOrder,
+            alignment_requirement: AlignmentRequirement::Align16,
+            enable_instruction_fusion: true,
+            max_pipeline_depth: 4,
+            enable_prefetching: true,
         }
     }
 }
@@ -386,7 +429,7 @@ pub struct SIMDOperations {
 impl PlatformCapabilities {
     /// Detects platform SIMD capabilities
     pub fn detect() -> Self {
-        Self {
+        let capabilities = Self {
             has_sse41: Self::detect_sse41(),
             has_avx: Self::detect_avx(),
             has_avx2: Self::detect_avx2(),
@@ -396,7 +439,25 @@ impl PlatformCapabilities {
             has_neon: Self::detect_neon(),
             has_sve: Self::detect_sve(),
             max_vector_width: Self::detect_max_vector_width(),
-        }
+        };
+
+        // Log detected capabilities for debugging
+        Self::log_capabilities(&capabilities);
+        capabilities
+    }
+
+    /// Logs detected capabilities
+    fn log_capabilities(caps: &PlatformCapabilities) {
+        log::info!("SIMD Capabilities detected:");
+        log::info!("  SSE4.1: {}", caps.has_sse41);
+        log::info!("  AVX: {}", caps.has_avx);
+        log::info!("  AVX2: {}", caps.has_avx2);
+        log::info!("  AVX-512F: {}", caps.has_avx512f);
+        log::info!("  AVX-512BW: {}", caps.has_avx512bw);
+        log::info!("  FMA: {}", caps.has_fma);
+        log::info!("  NEON: {}", caps.has_neon);
+        log::info!("  SVE: {}", caps.has_sve);
+        log::info!("  Max vector width: {} bits", caps.max_vector_width);
     }
 
     /// Detects SSE4.1 support
@@ -506,12 +567,345 @@ impl SIMDOperations {
     pub fn new(config: SIMDConfig) -> WasmtimeResult<Self> {
         let capabilities = PlatformCapabilities::detect();
 
+        // Validate configuration against detected capabilities
+        if config.max_vector_width > capabilities.max_vector_width {
+            log::warn!(
+                "Requested vector width {} exceeds platform maximum {}",
+                config.max_vector_width,
+                capabilities.max_vector_width
+            );
+        }
+
         Ok(Self {
             config,
             capabilities,
         })
     }
 
+    /// Performs vector addition with V256
+    pub fn add_v256(&self, a: &V256, b: &V256) -> WasmtimeResult<V256> {
+        if self.config.max_vector_width < 256 {
+            return Err(WasmtimeError::UnsupportedOperation(
+                "V256 operations not supported with current configuration".to_string(),
+            ));
+        }
+
+        if self.config.enable_platform_optimizations && self.capabilities.has_avx2 {
+            self.add_v256_avx2(a, b)
+        } else {
+            self.add_v256_scalar(a, b)
+        }
+    }
+
+    /// Performs vector addition with V512
+    pub fn add_v512(&self, a: &V512, b: &V512) -> WasmtimeResult<V512> {
+        if self.config.max_vector_width < 512 {
+            return Err(WasmtimeError::UnsupportedOperation(
+                "V512 operations not supported with current configuration".to_string(),
+            ));
+        }
+
+        if self.config.enable_platform_optimizations && self.capabilities.has_avx512f {
+            self.add_v512_avx512(a, b)
+        } else {
+            self.add_v512_scalar(a, b)
+        }
+    }
+
+    /// V256 addition using AVX2
+    #[cfg(target_arch = "x86_64")]
+    fn add_v256_avx2(&self, a: &V256, b: &V256) -> WasmtimeResult<V256> {
+        unsafe {
+            let va = _mm256_loadu_si256(a.data.as_ptr() as *const __m256i);
+            let vb = _mm256_loadu_si256(b.data.as_ptr() as *const __m256i);
+            let result = _mm256_add_epi32(va, vb);
+
+            let mut data = [0u8; 32];
+            _mm256_storeu_si256(data.as_mut_ptr() as *mut __m256i, result);
+
+            Ok(V256 { data })
+        }
+    }
+
+    #[cfg(not(target_arch = "x86_64"))]
+    fn add_v256_avx2(&self, a: &V256, b: &V256) -> WasmtimeResult<V256> {
+        self.add_v256_scalar(a, b)
+    }
+
+    /// V512 addition using AVX-512
+    #[cfg(target_arch = "x86_64")]
+    fn add_v512_avx512(&self, a: &V512, b: &V512) -> WasmtimeResult<V512> {
+        unsafe {
+            let va = _mm512_loadu_si512(a.data.as_ptr() as *const __m512i);
+            let vb = _mm512_loadu_si512(b.data.as_ptr() as *const __m512i);
+            let result = _mm512_add_epi32(va, vb);
+
+            let mut data = [0u8; 64];
+            _mm512_storeu_si512(data.as_mut_ptr() as *mut __m512i, result);
+
+            Ok(V512 { data })
+        }
+    }
+
+    #[cfg(not(target_arch = "x86_64"))]
+    fn add_v512_avx512(&self, a: &V512, b: &V512) -> WasmtimeResult<V512> {
+        self.add_v512_scalar(a, b)
+    }
+
+    /// Scalar V256 addition fallback
+    fn add_v256_scalar(&self, a: &V256, b: &V256) -> WasmtimeResult<V256> {
+        let a_ints = a.as_i32s();
+        let b_ints = b.as_i32s();
+
+        let mut result = [0i32; 8];
+        for i in 0..8 {
+            result[i] = a_ints[i].wrapping_add(b_ints[i]);
+        }
+
+        Ok(V256::from_i32s(result))
+    }
+
+    /// Scalar V512 addition fallback
+    fn add_v512_scalar(&self, a: &V512, b: &V512) -> WasmtimeResult<V512> {
+        let a_ints = a.as_i32s();
+        let b_ints = b.as_i32s();
+
+        let mut result = [0i32; 16];
+        for i in 0..16 {
+            result[i] = a_ints[i].wrapping_add(b_ints[i]);
+        }
+
+        Ok(V512::from_i32s(result))
+    }
+
+
+    /// Performs gather operation - load vector from scattered memory locations
+    pub fn gather_v128(&self, memory: &Memory, store: &mut Store<()>, indices: &V128, scale: u32) -> WasmtimeResult<V128> {
+        if !self.config.enable_gather_scatter {
+            return Err(WasmtimeError::UnsupportedOperation(
+                "Gather/scatter operations are not enabled".to_string(),
+            ));
+        }
+
+        let indices_array = indices.as_i32s();
+        let mut result_data = [0u8; 16];
+
+        for (i, &index) in indices_array.iter().enumerate() {
+            let offset = (index as u32).wrapping_mul(scale);
+            if offset as u64 + 4 <= memory.data_size(store) {
+                unsafe {
+                    let src_ptr = memory.data_ptr(store).add(offset as usize) as *const i32;
+                    let value = std::ptr::read_unaligned(src_ptr);
+                    let bytes = value.to_le_bytes();
+                    result_data[i * 4..(i + 1) * 4].copy_from_slice(&bytes);
+                }
+            }
+        }
+
+        Ok(V128 { data: result_data })
+    }
+
+    /// Performs scatter operation - store vector to scattered memory locations
+    pub fn scatter_v128(&self, memory: &Memory, store: &mut Store<()>, indices: &V128, data: &V128, scale: u32) -> WasmtimeResult<()> {
+        if !self.config.enable_gather_scatter {
+            return Err(WasmtimeError::UnsupportedOperation(
+                "Gather/scatter operations are not enabled".to_string(),
+            ));
+        }
+
+        let indices_array = indices.as_i32s();
+        let data_array = data.as_i32s();
+
+        for (i, &index) in indices_array.iter().enumerate() {
+            let offset = (index as u32).wrapping_mul(scale);
+            if offset as u64 + 4 <= memory.data_size(store) {
+                unsafe {
+                    let dst_ptr = memory.data_mut_ptr(store).add(offset as usize) as *mut i32;
+                    std::ptr::write_unaligned(dst_ptr, data_array[i]);
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Vector reduction - sum all elements
+    pub fn reduce_sum_i32(&self, a: &V128) -> WasmtimeResult<i32> {
+        if !self.config.enable_vector_reductions {
+            return Err(WasmtimeError::UnsupportedOperation(
+                "Vector reduction operations are not enabled".to_string(),
+            ));
+        }
+
+        self.validate_single_operand(a)?;
+
+        if self.config.enable_platform_optimizations && self.capabilities.has_sse41 {
+            self.reduce_sum_i32_optimized(a)
+        } else {
+            self.reduce_sum_i32_scalar(a)
+        }
+    }
+
+    /// Optimized reduction sum for x86_64
+    #[cfg(target_arch = "x86_64")]
+    fn reduce_sum_i32_optimized(&self, a: &V128) -> WasmtimeResult<i32> {
+        unsafe {
+            let va = _mm_loadu_si128(a.data.as_ptr() as *const __m128i);
+            let hi = _mm_unpackhi_epi32(va, _mm_setzero_si128());
+            let lo = _mm_unpacklo_epi32(va, _mm_setzero_si128());
+            let sum = _mm_add_epi32(hi, lo);
+            let hi2 = _mm_shuffle_epi32(sum, 0x4E);
+            let result = _mm_add_epi32(sum, hi2);
+
+            Ok(_mm_cvtsi128_si32(result))
+        }
+    }
+
+    /// Optimized reduction sum for ARM64
+    #[cfg(target_arch = "aarch64")]
+    fn reduce_sum_i32_optimized(&self, a: &V128) -> WasmtimeResult<i32> {
+        unsafe {
+            let va = vld1q_s32(a.data.as_ptr() as *const i32);
+            let sum = vaddvq_s32(va);
+            Ok(sum)
+        }
+    }
+
+    #[cfg(not(any(target_arch = "x86_64", target_arch = "aarch64")))]
+    fn reduce_sum_i32_optimized(&self, a: &V128) -> WasmtimeResult<i32> {
+        self.reduce_sum_i32_scalar(a)
+    }
+
+    /// Scalar reduction sum fallback
+    fn reduce_sum_i32_scalar(&self, a: &V128) -> WasmtimeResult<i32> {
+        let a_ints = a.as_i32s();
+        Ok(a_ints[0].wrapping_add(a_ints[1]).wrapping_add(a_ints[2]).wrapping_add(a_ints[3]))
+    }
+
+    /// Vector reduction - find minimum element
+    pub fn reduce_min_i32(&self, a: &V128) -> WasmtimeResult<i32> {
+        if !self.config.enable_vector_reductions {
+            return Err(WasmtimeError::UnsupportedOperation(
+                "Vector reduction operations are not enabled".to_string(),
+            ));
+        }
+
+        self.validate_single_operand(a)?;
+        let a_ints = a.as_i32s();
+        Ok(*a_ints.iter().min().unwrap())
+    }
+
+    /// Vector reduction - find maximum element
+    pub fn reduce_max_i32(&self, a: &V128) -> WasmtimeResult<i32> {
+        if !self.config.enable_vector_reductions {
+            return Err(WasmtimeError::UnsupportedOperation(
+                "Vector reduction operations are not enabled".to_string(),
+            ));
+        }
+
+        self.validate_single_operand(a)?;
+        let a_ints = a.as_i32s();
+        Ok(*a_ints.iter().max().unwrap())
+    }
+
+    /// Advanced dot product operation
+    pub fn dot_product_i32(&self, a: &V128, b: &V128) -> WasmtimeResult<i32> {
+        self.validate_operands(a, b)?;
+
+        if self.config.enable_platform_optimizations && self.capabilities.has_sse41 {
+            self.dot_product_i32_optimized(a, b)
+        } else {
+            self.dot_product_i32_scalar(a, b)
+        }
+    }
+
+    /// Optimized dot product for x86_64
+    #[cfg(target_arch = "x86_64")]
+    fn dot_product_i32_optimized(&self, a: &V128, b: &V128) -> WasmtimeResult<i32> {
+        unsafe {
+            let va = _mm_loadu_si128(a.data.as_ptr() as *const __m128i);
+            let vb = _mm_loadu_si128(b.data.as_ptr() as *const __m128i);
+            let product = _mm_mullo_epi32(va, vb);
+
+            // Horizontal add for dot product
+            let hi = _mm_unpackhi_epi32(product, _mm_setzero_si128());
+            let lo = _mm_unpacklo_epi32(product, _mm_setzero_si128());
+            let sum = _mm_add_epi32(hi, lo);
+            let hi2 = _mm_shuffle_epi32(sum, 0x4E);
+            let result = _mm_add_epi32(sum, hi2);
+
+            Ok(_mm_cvtsi128_si32(result))
+        }
+    }
+
+    /// Optimized dot product for ARM64
+    #[cfg(target_arch = "aarch64")]
+    fn dot_product_i32_optimized(&self, a: &V128, b: &V128) -> WasmtimeResult<i32> {
+        unsafe {
+            let va = vld1q_s32(a.data.as_ptr() as *const i32);
+            let vb = vld1q_s32(b.data.as_ptr() as *const i32);
+            let product = vmulq_s32(va, vb);
+            let sum = vaddvq_s32(product);
+            Ok(sum)
+        }
+    }
+
+    #[cfg(not(any(target_arch = "x86_64", target_arch = "aarch64")))]
+    fn dot_product_i32_optimized(&self, a: &V128, b: &V128) -> WasmtimeResult<i32> {
+        self.dot_product_i32_scalar(a, b)
+    }
+
+    /// Scalar dot product fallback
+    fn dot_product_i32_scalar(&self, a: &V128, b: &V128) -> WasmtimeResult<i32> {
+        let a_ints = a.as_i32s();
+        let b_ints = b.as_i32s();
+
+        let mut sum = 0i32;
+        for i in 0..4 {
+            sum = sum.wrapping_add(a_ints[i].wrapping_mul(b_ints[i]));
+        }
+
+        Ok(sum)
+    }
+
+    /// Complex number multiplication (treating V128 as two complex numbers)
+    pub fn complex_multiply(&self, a: &V128, b: &V128) -> WasmtimeResult<V128> {
+        self.validate_operands(a, b)?;
+
+        let a_floats = a.as_f32s();
+        let b_floats = b.as_f32s();
+
+        // First complex number: (a[0] + a[1]i) * (b[0] + b[1]i)
+        let real1 = a_floats[0] * b_floats[0] - a_floats[1] * b_floats[1];
+        let imag1 = a_floats[0] * b_floats[1] + a_floats[1] * b_floats[0];
+
+        // Second complex number: (a[2] + a[3]i) * (b[2] + b[3]i)
+        let real2 = a_floats[2] * b_floats[2] - a_floats[3] * b_floats[3];
+        let imag2 = a_floats[2] * b_floats[3] + a_floats[3] * b_floats[2];
+
+        Ok(V128::from_f32s(real1, imag1, real2, imag2))
+    }
+
+    /// Polynomial evaluation using Horner's method
+    pub fn polynomial_evaluate(&self, x: &V128, coefficients: &[f32]) -> WasmtimeResult<V128> {
+        if coefficients.is_empty() {
+            return Ok(V128::zero());
+        }
+
+        self.validate_single_operand(x)?;
+        let x_floats = x.as_f32s();
+        let mut result = [0.0f32; 4];
+
+        for (lane, &x_val) in x_floats.iter().enumerate() {
+            let mut poly_result = coefficients[coefficients.len() - 1];
+            for &coeff in coefficients.iter().rev().skip(1) {
+                poly_result = poly_result * x_val + coeff;
+            }
+            result[lane] = poly_result;
+        }
+
+        Ok(V128::from_f32s(result[0], result[1], result[2], result[3]))
+    }
 
     /// Loads a V128 vector from memory
     pub fn load(&self, memory: &Memory, store: &mut Store<()>, offset: u32) -> WasmtimeResult<V128> {
@@ -649,7 +1043,32 @@ impl SIMDOperations {
         }
     }
 
-    #[cfg(not(target_arch = "x86_64"))]
+    /// Vector addition using ARM64 NEON
+    #[cfg(target_arch = "aarch64")]
+    fn add_sse41(&self, a: &V128, b: &V128) -> WasmtimeResult<V128> {
+        if self.capabilities.has_neon {
+            self.add_neon(a, b)
+        } else {
+            self.add_scalar(a, b)
+        }
+    }
+
+    /// Vector addition using NEON
+    #[cfg(target_arch = "aarch64")]
+    fn add_neon(&self, a: &V128, b: &V128) -> WasmtimeResult<V128> {
+        unsafe {
+            let va = vld1q_s32(a.data.as_ptr() as *const i32);
+            let vb = vld1q_s32(b.data.as_ptr() as *const i32);
+            let result = vaddq_s32(va, vb);
+
+            let mut data = [0u8; 16];
+            vst1q_s32(data.as_mut_ptr() as *mut i32, result);
+
+            Ok(V128 { data })
+        }
+    }
+
+    #[cfg(not(any(target_arch = "x86_64", target_arch = "aarch64")))]
     fn add_sse41(&self, a: &V128, b: &V128) -> WasmtimeResult<V128> {
         self.add_scalar(a, b)
     }
@@ -1400,9 +1819,79 @@ impl SIMDOperations {
         }
     }
 
+    /// Checks if a memory offset meets alignment requirements
+    pub fn check_alignment(&self, offset: u32, vector_type: VectorType) -> WasmtimeResult<()> {
+        let required_alignment = match self.config.alignment_requirement {
+            AlignmentRequirement::None => 1,
+            AlignmentRequirement::Align16 => 16,
+            AlignmentRequirement::Align32 => 32,
+            AlignmentRequirement::Align64 => 64,
+            AlignmentRequirement::CacheLine => 64,
+        };
+
+        let vector_size = match vector_type {
+            VectorType::V128 => 16,
+            VectorType::V256 => 32,
+            VectorType::V512 => 64,
+        };
+
+        let alignment = std::cmp::max(required_alignment, vector_size);
+
+        if offset % alignment != 0 {
+            return Err(WasmtimeError::ValidationError(
+                format!("Memory offset {} is not aligned to {} bytes (required: {})",
+                        offset, alignment, required_alignment)
+            ));
+        }
+
+        Ok(())
+    }
+
+    /// Performs prefetching for memory operations
+    pub fn prefetch_memory(&self, memory: &Memory, store: &Store<()>, offset: u32, size: u32) -> WasmtimeResult<()> {
+        if !self.config.enable_prefetching {
+            return Ok(());
+        }
+
+        if offset as u64 + size as u64 > memory.data_size(store) {
+            return Err(WasmtimeError::Runtime(
+                "Prefetch range exceeds memory bounds".to_string(),
+            ));
+        }
+
+        unsafe {
+            let data_ptr = memory.data_ptr(store).add(offset as usize);
+
+            // Prefetch data into cache (platform-specific hints)
+            #[cfg(target_arch = "x86_64")]
+            {
+                // Use prefetch instructions for x86_64
+                let mut ptr = data_ptr;
+                let end_ptr = data_ptr.add(size as usize);
+                while ptr < end_ptr {
+                    std::arch::x86_64::_mm_prefetch(ptr as *const i8, std::arch::x86_64::_MM_HINT_T0);
+                    ptr = ptr.add(64); // Cache line size
+                }
+            }
+
+            #[cfg(target_arch = "aarch64")]
+            {
+                // Use prefetch instructions for ARM64
+                let mut ptr = data_ptr;
+                let end_ptr = data_ptr.add(size as usize);
+                while ptr < end_ptr {
+                    std::arch::asm!("prfm pldl1keep, [{}]", in(reg) ptr);
+                    ptr = ptr.add(64); // Cache line size
+                }
+            }
+        }
+
+        Ok(())
+    }
+
     /// Loads a V128 vector from memory with alignment
     pub fn load_aligned(&self, memory: &Memory, store: &mut Store<()>, offset: u32, alignment: u32) -> WasmtimeResult<V128> {
-        // Validate alignment
+        // Check custom alignment
         if !alignment.is_power_of_two() || alignment > 16 {
             return Err(WasmtimeError::ValidationError(
                 format!("Invalid alignment: {}. Must be power of 2 and <= 16", alignment)
@@ -1415,7 +1904,65 @@ impl SIMDOperations {
             ));
         }
 
+        // Check configuration alignment requirements
+        self.check_alignment(offset, VectorType::V128)?;
+
+        // Prefetch if enabled
+        if self.config.enable_prefetching {
+            self.prefetch_memory(memory, store, offset, 16)?;
+        }
+
         self.load(memory, store, offset)
+    }
+
+    /// Loads a V256 vector from memory with alignment optimization
+    pub fn load_v256_aligned(&self, memory: &Memory, store: &mut Store<()>, offset: u32) -> WasmtimeResult<V256> {
+        self.check_alignment(offset, VectorType::V256)?;
+
+        if offset as u64 + 32 > memory.data_size(store) {
+            return Err(WasmtimeError::Runtime(
+                "Memory access out of bounds".to_string(),
+            ));
+        }
+
+        // Prefetch if enabled
+        if self.config.enable_prefetching {
+            self.prefetch_memory(memory, store, offset, 32)?;
+        }
+
+        let data_ptr = memory.data_ptr(store);
+        let mut data = [0u8; 32];
+
+        unsafe {
+            std::ptr::copy_nonoverlapping(data_ptr.add(offset as usize), data.as_mut_ptr(), 32);
+        }
+
+        Ok(V256 { data })
+    }
+
+    /// Loads a V512 vector from memory with alignment optimization
+    pub fn load_v512_aligned(&self, memory: &Memory, store: &mut Store<()>, offset: u32) -> WasmtimeResult<V512> {
+        self.check_alignment(offset, VectorType::V512)?;
+
+        if offset as u64 + 64 > memory.data_size(store) {
+            return Err(WasmtimeError::Runtime(
+                "Memory access out of bounds".to_string(),
+            ));
+        }
+
+        // Prefetch if enabled
+        if self.config.enable_prefetching {
+            self.prefetch_memory(memory, store, offset, 64)?;
+        }
+
+        let data_ptr = memory.data_ptr(store);
+        let mut data = [0u8; 64];
+
+        unsafe {
+            std::ptr::copy_nonoverlapping(data_ptr.add(offset as usize), data.as_mut_ptr(), 64);
+        }
+
+        Ok(V512 { data })
     }
 
     /// Stores a V128 vector to memory with alignment
@@ -1566,17 +2113,206 @@ impl SIMDOperations {
 
     /// Checks if AVX is supported
     pub fn has_avx(&self) -> bool {
-        self.has_avx
+        self.capabilities.has_avx
     }
 
     /// Checks if AVX2 is supported
     pub fn has_avx2(&self) -> bool {
-        self.has_avx2
+        self.capabilities.has_avx2
     }
 
     /// Checks if SSE4.1 is supported
     pub fn has_sse41(&self) -> bool {
-        self.has_sse41
+        self.capabilities.has_sse41
+    }
+
+    /// Checks if NEON is supported
+    pub fn has_neon(&self) -> bool {
+        self.capabilities.has_neon
+    }
+
+    /// Gets platform capabilities
+    pub fn capabilities(&self) -> &PlatformCapabilities {
+        &self.capabilities
+    }
+
+    /// Validates that the platform supports required SIMD features
+    pub fn validate_simd_support(&self, required_features: &[&str]) -> WasmtimeResult<()> {
+        for &feature in required_features {
+            let supported = match feature {
+                "sse41" => self.capabilities.has_sse41,
+                "avx" => self.capabilities.has_avx,
+                "avx2" => self.capabilities.has_avx2,
+                "avx512f" => self.capabilities.has_avx512f,
+                "avx512bw" => self.capabilities.has_avx512bw,
+                "fma" => self.capabilities.has_fma,
+                "neon" => self.capabilities.has_neon,
+                "sve" => self.capabilities.has_sve,
+                _ => {
+                    return Err(WasmtimeError::UnsupportedOperation(
+                        format!("Unknown SIMD feature: {}", feature)
+                    ));
+                }
+            };
+
+            if !supported {
+                log::warn!("Required SIMD feature '{}' is not supported, falling back to scalar implementation", feature);
+                if self.config.debug_mode {
+                    return Err(WasmtimeError::UnsupportedOperation(
+                        format!("SIMD feature '{}' is not supported on this platform", feature)
+                    ));
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Tests SIMD functionality with platform detection
+    pub fn test_simd_operations(&self) -> WasmtimeResult<()> {
+        log::info!("Testing SIMD operations on platform...");
+
+        // Test basic V128 operations
+        let a = V128::from_i32s(1, 2, 3, 4);
+        let b = V128::from_i32s(5, 6, 7, 8);
+
+        let result = self.add(&a, &b)?;
+        let expected = [6, 8, 10, 12];
+        let actual = result.as_i32s();
+
+        if actual != expected {
+            return Err(WasmtimeError::Runtime(
+                format!("SIMD test failed: expected {:?}, got {:?}", expected, actual)
+            ));
+        }
+
+        // Test floating-point operations
+        let fa = V128::from_f32s(1.0, 2.0, 3.0, 4.0);
+        let fb = V128::from_f32s(2.0, 3.0, 4.0, 5.0);
+
+        let fresult = self.multiply(&fa, &fb)?;
+        let fexpected = [2.0, 6.0, 12.0, 20.0];
+        let factual = fresult.as_f32s();
+
+        for i in 0..4 {
+            if (factual[i] - fexpected[i]).abs() > f32::EPSILON {
+                return Err(WasmtimeError::Runtime(
+                    format!("SIMD float test failed at index {}: expected {}, got {}",
+                           i, fexpected[i], factual[i])
+                ));
+            }
+        }
+
+        // Test V256 operations if supported
+        if self.capabilities.max_vector_width >= 256 {
+            let va256 = V256::from_i32s([1, 2, 3, 4, 5, 6, 7, 8]);
+            let vb256 = V256::from_i32s([8, 7, 6, 5, 4, 3, 2, 1]);
+
+            match self.add_v256(&va256, &vb256) {
+                Ok(result256) => {
+                    let expected256 = [9, 9, 9, 9, 9, 9, 9, 9];
+                    let actual256 = result256.as_i32s();
+                    if actual256 != expected256 {
+                        return Err(WasmtimeError::Runtime(
+                            format!("V256 test failed: expected {:?}, got {:?}", expected256, actual256)
+                        ));
+                    }
+                }
+                Err(_) => log::warn!("V256 operations not supported or failed"),
+            }
+        }
+
+        // Test V512 operations if supported
+        if self.capabilities.max_vector_width >= 512 {
+            let va512 = V512::from_i32s([1; 16]);
+            let vb512 = V512::from_i32s([2; 16]);
+
+            match self.add_v512(&va512, &vb512) {
+                Ok(result512) => {
+                    let expected512 = [3; 16];
+                    let actual512 = result512.as_i32s();
+                    if actual512 != expected512 {
+                        return Err(WasmtimeError::Runtime(
+                            format!("V512 test failed: first element expected {}, got {}", expected512[0], actual512[0])
+                        ));
+                    }
+                }
+                Err(_) => log::warn!("V512 operations not supported or failed"),
+            }
+        }
+
+        log::info!("SIMD operations test completed successfully");
+        Ok(())
+    }
+
+    /// Gets recommended configuration based on platform capabilities
+    pub fn get_recommended_config(&self) -> SIMDConfig {
+        let mut config = SIMDConfig::default();
+
+        // Adjust vector width based on capabilities
+        config.max_vector_width = self.capabilities.max_vector_width;
+
+        // Enable advanced features if supported
+        config.enable_fma_operations = self.capabilities.has_fma;
+        config.enable_gather_scatter = self.capabilities.has_avx2 || self.capabilities.has_neon;
+
+        // Set alignment requirements
+        config.alignment_requirement = if self.capabilities.max_vector_width >= 512 {
+            AlignmentRequirement::Align64
+        } else if self.capabilities.max_vector_width >= 256 {
+            AlignmentRequirement::Align32
+        } else {
+            AlignmentRequirement::Align16
+        };
+
+        // Enable platform optimizations if any SIMD is available
+        config.enable_platform_optimizations = self.capabilities.max_vector_width > 0;
+
+        // Set scheduling strategy based on capabilities
+        config.scheduling_strategy = if self.capabilities.has_avx512f {
+            SchedulingStrategy::Pipelined
+        } else if self.capabilities.has_avx2 || self.capabilities.has_neon {
+            SchedulingStrategy::OutOfOrder
+        } else {
+            SchedulingStrategy::InOrder
+        };
+
+        config
+    }
+
+    /// Fallback operation selector - chooses best available implementation
+    pub fn select_best_operation<T, F1, F2, F3>(&self,
+                                               optimized_impl: F1,
+                                               fallback_impl: F2,
+                                               scalar_impl: F3) -> WasmtimeResult<T>
+    where
+        F1: FnOnce() -> WasmtimeResult<T>,
+        F2: FnOnce() -> WasmtimeResult<T>,
+        F3: FnOnce() -> WasmtimeResult<T>,
+    {
+        if self.config.enable_platform_optimizations && self.capabilities.max_vector_width > 0 {
+            match optimized_impl() {
+                Ok(result) => return Ok(result),
+                Err(e) => {
+                    log::warn!("Optimized SIMD implementation failed: {}, trying fallback", e);
+                    if self.config.debug_mode {
+                        return Err(e);
+                    }
+                }
+            }
+        }
+
+        // Try fallback implementation
+        match fallback_impl() {
+            Ok(result) => Ok(result),
+            Err(e) => {
+                log::warn!("Fallback SIMD implementation failed: {}, using scalar", e);
+                if self.config.debug_mode {
+                    return Err(e);
+                }
+                scalar_impl()
+            }
+        }
     }
 }
 

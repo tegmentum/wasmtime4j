@@ -694,4 +694,188 @@ public final class WasiFilesystemSnapshot {
       this.checksumMismatch = checksumMismatch;
     }
   }
+
+  /** Additional classes for advanced snapshot functionality */
+
+  /** Comprehensive snapshot metrics. */
+  public static final class SnapshotMetrics {
+    public final long totalSnapshotsCreated;
+    public final int activeSnapshots;
+    public final long totalOperations;
+    public final long successfulOperations;
+    public final long failedOperations;
+    public final long totalStorageUsed;
+    public final long totalOriginalSize;
+    public final DeduplicationStatistics dedupStats;
+    public final CompressionStatistics compressionStats;
+    public final SnapshotPerformanceMetrics performanceMetrics;
+
+    public SnapshotMetrics(
+        final long totalSnapshotsCreated,
+        final int activeSnapshots,
+        final long totalOperations,
+        final long successfulOperations,
+        final long failedOperations,
+        final long totalStorageUsed,
+        final long totalOriginalSize,
+        final DeduplicationStatistics dedupStats,
+        final CompressionStatistics compressionStats,
+        final SnapshotPerformanceMetrics performanceMetrics) {
+      this.totalSnapshotsCreated = totalSnapshotsCreated;
+      this.activeSnapshots = activeSnapshots;
+      this.totalOperations = totalOperations;
+      this.successfulOperations = successfulOperations;
+      this.failedOperations = failedOperations;
+      this.totalStorageUsed = totalStorageUsed;
+      this.totalOriginalSize = totalOriginalSize;
+      this.dedupStats = dedupStats;
+      this.compressionStats = compressionStats;
+      this.performanceMetrics = performanceMetrics;
+    }
+  }
+
+  /** Performance metrics. */
+  public static final class SnapshotPerformanceMetrics {
+    public final double avgSnapshotCreationTimeMs;
+    public final double avgRestoreTimeMs;
+    public final double avgValidationTimeMs;
+    public final double throughputBytesPerSec;
+    public final double operationsPerSec;
+
+    public SnapshotPerformanceMetrics(
+        final double avgSnapshotCreationTimeMs,
+        final double avgRestoreTimeMs,
+        final double avgValidationTimeMs,
+        final double throughputBytesPerSec,
+        final double operationsPerSec) {
+      this.avgSnapshotCreationTimeMs = avgSnapshotCreationTimeMs;
+      this.avgRestoreTimeMs = avgRestoreTimeMs;
+      this.avgValidationTimeMs = avgValidationTimeMs;
+      this.throughputBytesPerSec = throughputBytesPerSec;
+      this.operationsPerSec = operationsPerSec;
+    }
+  }
+
+  /** Deduplication statistics. */
+  public static final class DeduplicationStatistics {
+    public volatile long totalBlocks;
+    public volatile long uniqueBlocks;
+    public volatile long spaceSaved;
+    public volatile double deduplicationRatio;
+
+    public DeduplicationStatistics() {
+      this.totalBlocks = 0;
+      this.uniqueBlocks = 0;
+      this.spaceSaved = 0;
+      this.deduplicationRatio = 0.0;
+    }
+  }
+
+  /** Compression statistics. */
+  public static final class CompressionStatistics {
+    public volatile long compressedFiles;
+    public volatile long originalSize;
+    public volatile long compressedSize;
+    public volatile double avgCompressionRatio;
+
+    public CompressionStatistics() {
+      this.compressedFiles = 0;
+      this.originalSize = 0;
+      this.compressedSize = 0;
+      this.avgCompressionRatio = 0.0;
+    }
+  }
+
+  /** Snapshot filter for advanced listing. */
+  public interface SnapshotFilter {
+    boolean matches(SnapshotInfo snapshot);
+
+    static SnapshotFilter byType(SnapshotType type) {
+      return snapshot -> snapshot.type == type;
+    }
+
+    static SnapshotFilter byPath(String rootPath) {
+      return snapshot -> snapshot.rootPath.equals(rootPath);
+    }
+
+    static SnapshotFilter byAgeNewer(long ageMs) {
+      final long cutoff = System.currentTimeMillis() - ageMs;
+      return snapshot -> snapshot.createdAt > cutoff;
+    }
+  }
+
+  /** Storage optimization result. */
+  public static final class OptimizationResult {
+    public final long blocksRemoved;
+    public final long spaceReclaimed;
+    public final long optimizationTimeMs;
+
+    public OptimizationResult(
+        final long blocksRemoved,
+        final long spaceReclaimed,
+        final long optimizationTimeMs) {
+      this.blocksRemoved = blocksRemoved;
+      this.spaceReclaimed = spaceReclaimed;
+      this.optimizationTimeMs = optimizationTimeMs;
+    }
+  }
+
+  /** Native metrics result structure. */
+  private static final class SnapshotNativeMetrics {
+    public final long totalSnapshotsCreated;
+    public final long totalOperations;
+    public final long successfulOperations;
+    public final long failedOperations;
+    public final long totalStorageUsed;
+    public final long totalOriginalSize;
+    public final double avgSnapshotCreationTimeMs;
+    public final double avgRestoreTimeMs;
+    public final double avgValidationTimeMs;
+    public final double throughputBytesPerSec;
+    public final double operationsPerSec;
+
+    public SnapshotNativeMetrics(
+        final long totalSnapshotsCreated,
+        final long totalOperations,
+        final long successfulOperations,
+        final long failedOperations,
+        final long totalStorageUsed,
+        final long totalOriginalSize,
+        final double avgSnapshotCreationTimeMs,
+        final double avgRestoreTimeMs,
+        final double avgValidationTimeMs,
+        final double throughputBytesPerSec,
+        final double operationsPerSec) {
+      this.totalSnapshotsCreated = totalSnapshotsCreated;
+      this.totalOperations = totalOperations;
+      this.successfulOperations = successfulOperations;
+      this.failedOperations = failedOperations;
+      this.totalStorageUsed = totalStorageUsed;
+      this.totalOriginalSize = totalOriginalSize;
+      this.avgSnapshotCreationTimeMs = avgSnapshotCreationTimeMs;
+      this.avgRestoreTimeMs = avgRestoreTimeMs;
+      this.avgValidationTimeMs = avgValidationTimeMs;
+      this.throughputBytesPerSec = throughputBytesPerSec;
+      this.operationsPerSec = operationsPerSec;
+    }
+  }
+
+  /** Native optimization result structure. */
+  private static final class OptimizationNativeResult {
+    public final int errorCode;
+    public final long blocksRemoved;
+    public final long spaceReclaimed;
+    public final long optimizationTimeMs;
+
+    public OptimizationNativeResult(
+        final int errorCode,
+        final long blocksRemoved,
+        final long spaceReclaimed,
+        final long optimizationTimeMs) {
+      this.errorCode = errorCode;
+      this.blocksRemoved = blocksRemoved;
+      this.spaceReclaimed = spaceReclaimed;
+      this.optimizationTimeMs = optimizationTimeMs;
+    }
+  }
 }

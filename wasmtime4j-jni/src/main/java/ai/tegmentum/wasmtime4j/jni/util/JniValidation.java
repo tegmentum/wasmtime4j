@@ -278,6 +278,31 @@ public final class JniValidation {
   }
 
   /**
+   * Validates that a connection ID is valid and exists in the provided map.
+   *
+   * @param connectionId the connection ID to validate
+   * @param activeConnections the map of active connections
+   * @throws JniValidationException if the connection ID is invalid or not found
+   */
+  public static void requireValidConnectionId(final long connectionId, final java.util.Map<Long, ?> activeConnections) {
+    requireNonNull(activeConnections, "activeConnections");
+    require(connectionId > 0, "Connection ID must be positive", "connectionId", connectionId);
+    require(activeConnections.containsKey(connectionId), "Connection not found", "connectionId", connectionId);
+  }
+
+  /**
+   * Validates that a string is non-null and non-empty.
+   *
+   * @param str the string to validate
+   * @param parameterName the parameter name for error messages
+   * @throws JniValidationException if the string is null or empty
+   */
+  public static void requireValidString(final String str, final String parameterName) {
+    requireNonNull(str, parameterName);
+    require(!str.trim().isEmpty(), "String cannot be empty", parameterName, str);
+  }
+
+  /**
    * Creates a defensive copy of a byte array to prevent external modification.
    *
    * @param original the original array

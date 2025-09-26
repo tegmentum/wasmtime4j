@@ -448,6 +448,32 @@ public interface WasmRuntime extends Closeable {
   SimdOperations.V128 simdRelaxedAdd(final SimdOperations.V128 a, final SimdOperations.V128 b)
       throws WasmException;
 
+  // ===== DEBUGGING OPERATIONS =====
+
+  /**
+   * Creates a debugger for the specified engine.
+   *
+   * @param engine the engine to create debugger for
+   * @return a new Debugger instance
+   * @throws WasmException if debugger cannot be created
+   * @throws IllegalArgumentException if engine is null
+   */
+  ai.tegmentum.wasmtime4j.debug.Debugger createDebugger(final Engine engine) throws WasmException;
+
+  /**
+   * Checks if debugging is supported by this runtime.
+   *
+   * @return true if debugging is supported
+   */
+  boolean isDebuggingSupported();
+
+  /**
+   * Gets debugging capabilities of this runtime.
+   *
+   * @return debugging capabilities information
+   */
+  String getDebuggingCapabilities();
+
   /**
    * Closes the runtime and releases associated resources.
    *

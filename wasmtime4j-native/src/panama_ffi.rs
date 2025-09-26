@@ -2407,11 +2407,274 @@ pub mod experimental_features {
         })
     }
 
+    /// Enable flexible vectors in experimental configuration (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_experimental_enable_flexible_vectors(
+        config_ptr: *mut c_void,
+        dynamic_sizing: c_int,
+        auto_vectorization: c_int,
+        simd_integration: c_int,
+    ) -> c_int {
+        ffi_utils::ffi_try_bool_to_int(|| {
+            unsafe {
+                core::enable_flexible_vectors(
+                    config_ptr,
+                    dynamic_sizing,
+                    auto_vectorization,
+                    simd_integration
+                )
+            }
+        })
+    }
+
+    /// Enable string imports in experimental configuration (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_experimental_enable_string_imports(
+        config_ptr: *mut c_void,
+        encoding_format: c_int,
+        string_interning: c_int,
+        lazy_decoding: c_int,
+        js_interop: c_int,
+    ) -> c_int {
+        ffi_utils::ffi_try_bool_to_int(|| {
+            unsafe {
+                core::enable_string_imports(
+                    config_ptr,
+                    encoding_format,
+                    string_interning,
+                    lazy_decoding,
+                    js_interop
+                )
+            }
+        })
+    }
+
+    /// Enable resource types in experimental configuration (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_experimental_enable_resource_types(
+        config_ptr: *mut c_void,
+        automatic_cleanup: c_int,
+        reference_counting: c_int,
+        cleanup_strategy: c_int,
+    ) -> c_int {
+        ffi_utils::ffi_try_bool_to_int(|| {
+            unsafe {
+                core::enable_resource_types(
+                    config_ptr,
+                    automatic_cleanup,
+                    reference_counting,
+                    cleanup_strategy
+                )
+            }
+        })
+    }
+
+    /// Enable type imports in experimental configuration (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_experimental_enable_type_imports(
+        config_ptr: *mut c_void,
+        validation_strategy: c_int,
+        resolution_mechanism: c_int,
+        structural_compatibility: c_int,
+    ) -> c_int {
+        ffi_utils::ffi_try_bool_to_int(|| {
+            unsafe {
+                core::enable_type_imports(
+                    config_ptr,
+                    validation_strategy,
+                    resolution_mechanism,
+                    structural_compatibility
+                )
+            }
+        })
+    }
+
+    /// Enable shared-everything threads in experimental configuration (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_experimental_enable_shared_everything_threads(
+        config_ptr: *mut c_void,
+        min_threads: c_uint,
+        max_threads: c_uint,
+        global_state_sharing: c_int,
+        atomic_operations: c_int,
+    ) -> c_int {
+        ffi_utils::ffi_try_bool_to_int(|| {
+            unsafe {
+                core::enable_shared_everything_threads(
+                    config_ptr,
+                    min_threads as u32,
+                    max_threads as u32,
+                    global_state_sharing,
+                    atomic_operations
+                )
+            }
+        })
+    }
+
+    /// Enable custom page sizes in experimental configuration (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_experimental_enable_custom_page_sizes(
+        config_ptr: *mut c_void,
+        page_size: c_uint,
+        strategy: c_int,
+        strict_alignment: c_int,
+    ) -> c_int {
+        ffi_utils::ffi_try_bool_to_int(|| {
+            unsafe {
+                core::enable_custom_page_sizes(
+                    config_ptr,
+                    page_size as u32,
+                    strategy,
+                    strict_alignment
+                )
+            }
+        })
+    }
+
+    /// Get feature detection capabilities (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_experimental_get_feature_support(feature_id: c_int) -> c_int {
+        // Feature detection based on Wasmtime capabilities
+        match feature_id {
+            0 => 1,  // Stack switching (experimental support)
+            1 => 0,  // Call/CC (not yet supported)
+            2 => 1,  // Extended const expressions (partial support)
+            3 => 1,  // Memory64 extended (partial support)
+            4 => 0,  // Custom page sizes (not yet supported)
+            5 => 0,  // Shared-everything threads (not yet supported)
+            6 => 0,  // Type imports (not yet supported)
+            7 => 0,  // String imports (not yet supported)
+            8 => 0,  // Resource types (not yet supported)
+            9 => 0,  // Interface types (not yet supported)
+            10 => 0, // Flexible vectors (not yet supported)
+            _ => 0
+        }
+    }
+
     /// Destroy experimental features configuration (Panama FFI version)
     #[no_mangle]
     pub extern "C" fn wasmtime4j_experimental_destroy_config(config_ptr: *mut c_void) {
         if !config_ptr.is_null() {
             unsafe { core::destroy_experimental_features_config(config_ptr) }
+        }
+    }
+}
+
+/// Panama FFI bindings for source map and debugging operations
+pub mod sourcemap {
+    use super::*;
+    use crate::sourcemap::*;
+    use crate::error::ffi_utils;
+    use std::ffi::{CStr, CString};
+
+    /// Create a new source map integration system (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_sourcemap_integration_create() -> *mut c_void {
+        ffi_utils::ffi_try_ptr(|| {
+            let integration = SourceMapIntegration::new();
+            Box::into_raw(Box::new(integration)) as *mut c_void
+        })
+    }
+
+    /// Create a source map integration system with custom cache size (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_sourcemap_integration_create_with_cache_size(cache_size: c_uint) -> *mut c_void {
+        ffi_utils::ffi_try_ptr(|| {
+            let integration = SourceMapIntegration::with_cache_size(cache_size as usize);
+            Box::into_raw(Box::new(integration)) as *mut c_void
+        })
+    }
+
+    /// Load and parse a source map from JSON data (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_sourcemap_integration_load_source_map(
+        integration_ptr: *const c_void,
+        json_data: *const c_char,
+    ) -> *mut c_void {
+        if integration_ptr.is_null() || json_data.is_null() {
+            return std::ptr::null_mut();
+        }
+
+        ffi_utils::ffi_try_ptr(|| {
+            let integration = unsafe { &*(integration_ptr as *const SourceMapIntegration) };
+            let json_str = unsafe { CStr::from_ptr(json_data) }.to_str().map_err(|e| {
+                crate::error::WasmtimeError::new(
+                    crate::error::ErrorCode::InvalidData,
+                    format!("Invalid UTF-8 in JSON data: {}", e),
+                )
+            })?;
+
+            let source_map = integration.load_source_map(json_str)?;
+            Box::into_raw(Box::new(source_map)) as *mut c_void
+        })
+    }
+
+    /// Load source file content (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_sourcemap_integration_load_source_file(
+        integration_ptr: *const c_void,
+        path: *const c_char,
+    ) -> *mut c_char {
+        if integration_ptr.is_null() || path.is_null() {
+            return std::ptr::null_mut();
+        }
+
+        match ffi_utils::ffi_try_result(|| {
+            let integration = unsafe { &*(integration_ptr as *const SourceMapIntegration) };
+            let path_str = unsafe { CStr::from_ptr(path) }.to_str().map_err(|e| {
+                crate::error::WasmtimeError::new(
+                    crate::error::ErrorCode::InvalidData,
+                    format!("Invalid UTF-8 in path: {}", e),
+                )
+            })?;
+
+            let content = integration.load_source_file(path_str)?;
+            let content_cstr = CString::new(content.as_str())?;
+            Ok(content_cstr.into_raw())
+        }) {
+            Ok(result) => result,
+            Err(_) => std::ptr::null_mut(),
+        }
+    }
+
+    /// Clear all caches (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_sourcemap_integration_clear_caches(integration_ptr: *const c_void) {
+        if !integration_ptr.is_null() {
+            let integration = unsafe { &*(integration_ptr as *const SourceMapIntegration) };
+            integration.clear_caches();
+        }
+    }
+
+    /// Check if source map support is available (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_sourcemap_integration_is_source_map_supported() -> c_int {
+        1 // Always supported in our implementation
+    }
+
+    /// Check if DWARF support is available (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_sourcemap_integration_is_dwarf_supported() -> c_int {
+        1 // Always supported in our implementation
+    }
+
+    /// Free a C string allocated by this library (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_sourcemap_free_string(str_ptr: *mut c_char) {
+        if !str_ptr.is_null() {
+            unsafe {
+                let _ = CString::from_raw(str_ptr);
+            }
+        }
+    }
+
+    /// Destroy source map integration (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_sourcemap_integration_destroy(integration_ptr: *mut c_void) {
+        if !integration_ptr.is_null() {
+            unsafe {
+                let _ = Box::from_raw(integration_ptr as *mut SourceMapIntegration);
+            }
         }
     }
 }

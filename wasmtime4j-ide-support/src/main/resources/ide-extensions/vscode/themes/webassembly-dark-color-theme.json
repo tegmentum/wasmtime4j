@@ -1,0 +1,155 @@
+{
+    "name": "WebAssembly Dark",
+    "type": "dark",
+    "colors": {
+        "editor.background": "#1e1e1e",
+        "editor.foreground": "#d4d4d4",
+        "editor.selectionBackground": "#264f78",
+        "editor.lineHighlightBackground": "#2d2d30",
+        "editor.findMatchBackground": "#515c6a",
+        "editor.findMatchHighlightBackground": "#ea5c004d",
+        "editor.findRangeHighlightBackground": "#3a3d4166",
+        "editorCursor.foreground": "#aeafad",
+        "editorWhitespace.foreground": "#404040",
+        "editorIndentGuide.background": "#404040",
+        "editorIndentGuide.activeBackground": "#707070",
+        "editorLineNumber.foreground": "#858585",
+        "editorLineNumber.activeForeground": "#c6c6c6"
+    },
+    "tokenColors": [
+        {
+            "name": "Comments",
+            "scope": [
+                "comment",
+                "punctuation.definition.comment"
+            ],
+            "settings": {
+                "fontStyle": "italic",
+                "foreground": "#6A9955"
+            }
+        },
+        {
+            "name": "WebAssembly Keywords",
+            "scope": [
+                "keyword.control.wat",
+                "keyword.other.wat"
+            ],
+            "settings": {
+                "foreground": "#C586C0"
+            }
+        },
+        {
+            "name": "WebAssembly Types",
+            "scope": [
+                "storage.type.wat"
+            ],
+            "settings": {
+                "foreground": "#4EC9B0"
+            }
+        },
+        {
+            "name": "WebAssembly Instructions - Arithmetic",
+            "scope": [
+                "support.function.arithmetic.wat"
+            ],
+            "settings": {
+                "foreground": "#DCDCAA"
+            }
+        },
+        {
+            "name": "WebAssembly Instructions - Memory",
+            "scope": [
+                "support.function.memory.wat",
+                "support.function.memory-size.wat"
+            ],
+            "settings": {
+                "foreground": "#569CD6"
+            }
+        },
+        {
+            "name": "WebAssembly Instructions - Conversion",
+            "scope": [
+                "support.function.conversion.wat"
+            ],
+            "settings": {
+                "foreground": "#CE9178"
+            }
+        },
+        {
+            "name": "WebAssembly Instructions - SIMD",
+            "scope": [
+                "support.function.simd.wat"
+            ],
+            "settings": {
+                "foreground": "#FF6B6B"
+            }
+        },
+        {
+            "name": "WebAssembly Instructions - Table",
+            "scope": [
+                "support.function.table.wat"
+            ],
+            "settings": {
+                "foreground": "#4ECDC4"
+            }
+        },
+        {
+            "name": "WebAssembly Instructions - Reference",
+            "scope": [
+                "support.function.reference.wat"
+            ],
+            "settings": {
+                "foreground": "#FFE66D"
+            }
+        },
+        {
+            "name": "WebAssembly Numbers",
+            "scope": [
+                "constant.numeric.integer.wat",
+                "constant.numeric.integer.hexadecimal.wat",
+                "constant.numeric.float.wat",
+                "constant.numeric.float.hexadecimal.wat",
+                "constant.numeric.float.special.wat"
+            ],
+            "settings": {
+                "foreground": "#B5CEA8"
+            }
+        },
+        {
+            "name": "WebAssembly Identifiers",
+            "scope": [
+                "variable.other.identifier.wat"
+            ],
+            "settings": {
+                "foreground": "#9CDCFE"
+            }
+        },
+        {
+            "name": "WebAssembly Strings",
+            "scope": [
+                "string.quoted.double.wat"
+            ],
+            "settings": {
+                "foreground": "#CE9178"
+            }
+        },
+        {
+            "name": "WebAssembly String Escapes",
+            "scope": [
+                "constant.character.escape.wat"
+            ],
+            "settings": {
+                "foreground": "#D7BA7D"
+            }
+        },
+        {
+            "name": "WebAssembly Parentheses",
+            "scope": [
+                "punctuation.section.parens.wat"
+            ],
+            "settings": {
+                "foreground": "#DA70D6"
+            }
+        }
+    ]
+}
