@@ -57,6 +57,41 @@ public interface ResourceUsage {
         return java.util.Collections.emptyMap();
       }
 
+      @Override
+      public ThreadUsage getThreadUsage() {
+        return null; // TODO: Implement ThreadUsage
+      }
+
+      @Override
+      public Map<String, ThreadUsage> getThreadUsageByPool() {
+        return java.util.Collections.emptyMap();
+      }
+
+      @Override
+      public IoUsage getIoUsage() {
+        return null; // TODO: Implement IoUsage
+      }
+
+      @Override
+      public Optional<NetworkUsage> getNetworkUsage() {
+        return Optional.empty();
+      }
+
+      @Override
+      public Instant getCaptureTime() {
+        return Instant.now();
+      }
+
+      @Override
+      public Duration getMeasurementWindow() {
+        return Duration.ZERO;
+      }
+
+      @Override
+      public Map<String, Object> getExtendedMetrics() {
+        return java.util.Collections.emptyMap();
+      }
+
       // TODO: Implement remaining methods - for now this eliminates UnsupportedOperationException
     };
   }

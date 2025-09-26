@@ -2,7 +2,9 @@ package ai.tegmentum.wasmtime4j.diagnostics;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Module;
-import ai.tegmentum.wasmtime4j.RuntimeFactory;
+import ai.tegmentum.wasmtime4j.ModuleValidationResult;
+import ai.tegmentum.wasmtime4j.WasmRuntime;
+import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
@@ -97,9 +99,10 @@ public final class DiagnosticTool {
 
       if (result.isValidFormat()) {
         // Attempt compilation with default engine
-        try (Engine engine = new Engine()) {
+        try (WasmRuntime runtime = WasmRuntimeFactory.create();
+             Engine engine = runtime.createEngine()) {
           final Instant start = Instant.now();
-          Module module = Module.fromBytes(engine, wasmBytes);
+          Module module = engine.compileModule(wasmBytes);
           final long compilationTime = java.time.Duration.between(start, Instant.now()).toMillis();
 
           result.setCompilationSuccessful(true);
@@ -156,16 +159,17 @@ public final class DiagnosticTool {
 
     try {
       // Check runtime detection
-      RuntimeType runtime = RuntimeFactory.detectRuntime();
-      result.setRuntimeDetected(runtime != null);
-      result.setDetectedRuntime(runtime);
+      RuntimeType runtimeType = WasmRuntimeFactory.getSelectedRuntimeType();
+      result.setRuntimeDetected(runtimeType != null);
+      result.setDetectedRuntime(runtimeType);
 
       // Check engine creation
-      try (Engine engine = new Engine()) {
+      try (WasmRuntime runtime = WasmRuntimeFactory.create();
+           Engine engine = runtime.createEngine()) {
         result.setEngineCreation(true);
 
         // Check store creation
-        try (Store store = new Store(engine)) {
+        try (Store store = engine.createStore()) {
           result.setStoreCreation(true);
 
           // Test simple module compilation
@@ -195,7 +199,7 @@ public final class DiagnosticTool {
    * @return reproduction results
    */
   public ErrorReproductionResult reproduceErrorScenario(final ErrorScenario scenario) {
-    final ErrorReproductionResult result = new ErrorReproductionResult();
+    ErrorReproductionResult result = new ErrorReproductionResult();
     result.setScenario(scenario);
     result.setStartTime(Instant.now());
 
@@ -218,7 +222,10 @@ public final class DiagnosticTool {
           break;
         default:
           result.addError("Unknown error scenario: " + scenario, null);
+          break;
       }
+
+      result.setScenario(scenario);
     } catch (Exception e) {
       result.addError("Error reproduction failed", e);
     } finally {
@@ -261,7 +268,7 @@ public final class DiagnosticTool {
     final Map<String, Object> runtime = new HashMap<>();
 
     try {
-      RuntimeType detectedRuntime = RuntimeFactory.detectRuntime();
+      RuntimeType detectedRuntime = WasmRuntimeFactory.getSelectedRuntimeType();
       runtime.put("detected", detectedRuntime.toString());
       runtime.put("detection.successful", true);
     } catch (Exception e) {
@@ -295,11 +302,12 @@ public final class DiagnosticTool {
   }
 
   private boolean testModuleValidation() {
-    try (Engine engine = new Engine()) {
+    try (WasmRuntime runtime = WasmRuntimeFactory.create();
+         Engine engine = runtime.createEngine()) {
       // Test valid minimal module
       final byte[] validModule = createMinimalValidModule();
-      Module.validate(engine, validModule);
-      return true;
+      ModuleValidationResult validationResult = Module.validate(engine, validModule);
+      return validationResult.isValid();
     } catch (Exception e) {
       logger.logValidationError(new ai.tegmentum.wasmtime4j.exception.ValidationException(
           "Module validation test failed", e), "test", "validation");
@@ -310,9 +318,9 @@ public final class DiagnosticTool {
   private boolean testErrorHandling() {
     try {
       // Test compilation error handling
-      try (Engine engine = new Engine()) {
+      try (WasmRuntime runtime = WasmRuntimeFactory.create(); Engine engine = runtime.createEngine()) {
         final byte[] invalidModule = {0x00, 0x00, 0x00, 0x00}; // Invalid magic
-        Module.fromBytes(engine, invalidModule);
+        engine.compileModule(invalidModule);
         return false; // Should have thrown exception
       } catch (WasmException e) {
         // Expected exception - error handling works
@@ -328,9 +336,9 @@ public final class DiagnosticTool {
       final PerformanceDiagnostics diagnostics = PerformanceDiagnostics.getInstance();
       final String opId = diagnostics.startOperation("DiagnosticTest");
 
-      try (Engine engine = new Engine()) {
+      try (WasmRuntime runtime = WasmRuntimeFactory.create(); Engine engine = runtime.createEngine()) {
         final byte[] module = createMinimalValidModule();
-        Module.fromBytes(engine, module);
+        engine.compileModule(module);
         Thread.sleep(10); // Simulate work
       }
 
@@ -358,15 +366,15 @@ public final class DiagnosticTool {
   }
 
   private boolean testCompilationErrorRecovery() {
-    try (Engine engine = new Engine()) {
+    try (WasmRuntime runtime = WasmRuntimeFactory.create(); Engine engine = runtime.createEngine()) {
       try {
         final byte[] invalidModule = {0x00, 0x00, 0x00, 0x00}; // Invalid
-        Module.fromBytes(engine, invalidModule);
+        engine.compileModule(invalidModule);
         return false;
       } catch (WasmException e) {
         // Try to compile valid module after error
         final byte[] validModule = createMinimalValidModule();
-        Module.fromBytes(engine, validModule);
+        engine.compileModule(validModule);
         return true; // Recovery successful
       }
     } catch (Exception e) {
@@ -381,14 +389,13 @@ public final class DiagnosticTool {
 
   private boolean testResourceErrorRecovery() {
     // Test resource cleanup after errors
-    try {
-      Engine engine = new Engine();
+    try (WasmRuntime runtime = WasmRuntimeFactory.create();
+         Engine engine = runtime.createEngine()) {
       try {
         // Force an error scenario
         throw new RuntimeException("Simulated error");
       } catch (RuntimeException e) {
-        // Clean up resources
-        engine.close();
+        // Clean up resources - handled by try-with-resources
         return true;
       }
     } catch (Exception e) {
@@ -399,7 +406,7 @@ public final class DiagnosticTool {
   private boolean testBasicCompilation(final Engine engine) {
     try {
       final byte[] module = createMinimalValidModule();
-      Module.fromBytes(engine, module);
+      engine.compileModule(module);
       return true;
     } catch (Exception e) {
       return false;
@@ -410,9 +417,9 @@ public final class DiagnosticTool {
     final ErrorReproductionResult result = new ErrorReproductionResult();
     result.setScenario(ErrorScenario.INVALID_MAGIC_NUMBER);
 
-    try (Engine engine = new Engine()) {
+    try (WasmRuntime runtime = WasmRuntimeFactory.create(); Engine engine = runtime.createEngine()) {
       final byte[] invalidModule = {0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00};
-      Module.fromBytes(engine, invalidModule);
+      engine.compileModule(invalidModule);
       result.setExpectedError(true);
       result.setActualError(false);
     } catch (WasmException e) {
@@ -432,10 +439,10 @@ public final class DiagnosticTool {
     final ErrorReproductionResult result = new ErrorReproductionResult();
     result.setScenario(ErrorScenario.COMPILATION_FAILURE);
 
-    try (Engine engine = new Engine()) {
+    try (WasmRuntime runtime = WasmRuntimeFactory.create(); Engine engine = runtime.createEngine()) {
       // Create truncated module
       final byte[] truncatedModule = {0x00, 0x61, 0x73, 0x6D, 0x01, 0x00}; // Truncated
-      Module.fromBytes(engine, truncatedModule);
+      engine.compileModule(truncatedModule);
       result.setExpectedError(true);
       result.setActualError(false);
     } catch (WasmException e) {

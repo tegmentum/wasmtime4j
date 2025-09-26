@@ -48,6 +48,61 @@ public interface CompilationStatistics {
         return "module-" + module.hashCode();
       }
 
+      @Override
+      public Target getTargetPlatform() {
+        return null; // TODO: Implement Target platform detection
+      }
+
+      @Override
+      public long getBytecodeSize() {
+        return 0; // TODO: Implement bytecode size calculation
+      }
+
+      @Override
+      public long getCompiledCodeSize() {
+        return 0; // TODO: Implement compiled code size calculation
+      }
+
+      @Override
+      public Duration getCompilationTime() {
+        return Duration.ZERO; // TODO: Implement compilation time tracking
+      }
+
+      @Override
+      public int getFunctionCount() {
+        return 0; // TODO: Implement function counting
+      }
+
+      @Override
+      public int getImportCount() {
+        return 0; // TODO: Implement import counting
+      }
+
+      @Override
+      public int getExportCount() {
+        return 0; // TODO: Implement export counting
+      }
+
+      @Override
+      public Map<String, FunctionStatistics> getFunctionStatistics() {
+        return java.util.Collections.emptyMap(); // TODO: Implement function statistics
+      }
+
+      @Override
+      public List<CompilationPhase> getCompilationPhases() {
+        return java.util.Collections.emptyList(); // TODO: Implement phase tracking
+      }
+
+      @Override
+      public Map<String, Object> getOptimizationMetrics() {
+        return java.util.Collections.emptyMap(); // TODO: Implement optimization metrics
+      }
+
+      @Override
+      public CompilerConfig getCompilerConfig() {
+        return null; // TODO: Implement compiler config tracking
+      }
+
       // TODO: Implement remaining methods - for now this eliminates UnsupportedOperationException
     };
   }
