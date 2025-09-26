@@ -42,8 +42,118 @@ public interface EngineStatistics {
     // TODO: Implement full EngineStatistics functionality in future iterations
     return new EngineStatistics() {
       @Override
-      public String getModuleName() {
-        return "engine-stats";
+      public Map<String, Object> getExtendedStatistics() {
+        return java.util.Collections.emptyMap();
+      }
+
+      @Override
+      public long getModulesCompiled() {
+        return 0; // TODO: Implement module compilation tracking
+      }
+
+      @Override
+      public Duration getTotalCompilationTime() {
+        return Duration.ZERO; // TODO: Implement compilation time tracking
+      }
+
+      @Override
+      public Duration getAverageCompilationTime() {
+        return Duration.ZERO; // TODO: Implement average calculation
+      }
+
+      @Override
+      public long getBytesCompiled() {
+        return 0; // TODO: Implement bytes tracking
+      }
+
+      @Override
+      public double getCompilationThroughput() {
+        return 0.0; // TODO: Implement throughput calculation
+      }
+
+      @Override
+      public long getFunctionsExecuted() {
+        return 0; // TODO: Implement function execution tracking
+      }
+
+      @Override
+      public Duration getTotalExecutionTime() {
+        return Duration.ZERO; // TODO: Implement execution time tracking
+      }
+
+      @Override
+      public long getInstructionsExecuted() {
+        return 0; // TODO: Implement instruction counting
+      }
+
+      @Override
+      public double getExecutionThroughput() {
+        return 0.0; // TODO: Implement execution throughput calculation
+      }
+
+      @Override
+      public long getPeakMemoryUsage() {
+        return 0; // TODO: Implement peak memory tracking
+      }
+
+      @Override
+      public long getCurrentMemoryUsage() {
+        return 0; // TODO: Implement current memory tracking
+      }
+
+      @Override
+      public long getTotalAllocations() {
+        return 0; // TODO: Implement allocation tracking
+      }
+
+      @Override
+      public long getTotalDeallocations() {
+        return 0; // TODO: Implement deallocation tracking
+      }
+
+      @Override
+      public long getCacheHits() {
+        return 0; // TODO: Implement cache hit tracking
+      }
+
+      @Override
+      public long getCacheMisses() {
+        return 0; // TODO: Implement cache miss tracking
+      }
+
+      @Override
+      public double getCacheHitRatio() {
+        return 0.0; // TODO: Implement cache ratio calculation
+      }
+
+      @Override
+      public long getJitCompilations() {
+        return 0; // TODO: Implement JIT compilation tracking
+      }
+
+      @Override
+      public Duration getJitCompilationTime() {
+        return Duration.ZERO; // TODO: Implement JIT time tracking
+      }
+
+      @Override
+      public long getJitCodeSize() {
+        return 0; // TODO: Implement JIT code size tracking
+      }
+
+      @Override
+      public Instant getCaptureTime() {
+        return Instant.now(); // TODO: Implement proper capture time tracking
+      }
+
+      @Override
+      public Duration getUptime() {
+        return Duration.ZERO; // TODO: Implement uptime calculation
+      }
+
+      @Override
+      public void reset() {
+        // TODO: Implement statistics reset
       }
 
       // TODO: Implement remaining methods - for now this eliminates UnsupportedOperationException

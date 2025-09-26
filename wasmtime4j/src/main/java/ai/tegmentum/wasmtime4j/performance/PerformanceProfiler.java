@@ -103,6 +103,61 @@ public interface PerformanceProfiler extends AutoCloseable {
         profiling = false;
       }
 
+      @Override
+      public String exportData(ExportFormat format) {
+        return ""; // TODO: Implement actual export functionality
+      }
+
+      @Override
+      public ProfileSnapshot captureSnapshot() {
+        return null; // TODO: Implement ProfileSnapshot capture
+      }
+
+      @Override
+      public List<ProfileSnapshot> getSnapshots() {
+        return java.util.Collections.emptyList(); // TODO: Implement snapshot storage
+      }
+
+      @Override
+      public void clearSnapshots() {
+        // TODO: Implement snapshot clearing
+      }
+
+      @Override
+      public void addPerformanceListener(PerformanceListener listener) {
+        // TODO: Implement listener management
+      }
+
+      @Override
+      public boolean removePerformanceListener(PerformanceListener listener) {
+        return false; // TODO: Implement listener removal
+      }
+
+      @Override
+      public ProfilerConfig getConfig() {
+        return null; // TODO: Implement config management
+      }
+
+      @Override
+      public void updateConfig(ProfilerConfig config) {
+        // TODO: Implement config updates
+      }
+
+      @Override
+      public PerformanceMetrics getCurrentMetrics() {
+        return null; // TODO: Implement metrics collection
+      }
+
+      @Override
+      public GcImpactMetrics measureGcImpact() {
+        return null; // TODO: Implement GC impact measurement
+      }
+
+      @Override
+      public double getProfilerOverhead() {
+        return 0.0; // TODO: Implement overhead calculation
+      }
+
       // TODO: Implement remaining methods - for now this eliminates UnsupportedOperationException
     };
   }
