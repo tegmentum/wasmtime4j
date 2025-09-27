@@ -36,6 +36,8 @@ pub mod memory;
 pub mod global;
 pub mod table;
 pub mod linker;
+pub mod caller;
+pub mod serialization;
 pub mod threading;
 
 // Advanced threading optimizations and work-stealing refinements
