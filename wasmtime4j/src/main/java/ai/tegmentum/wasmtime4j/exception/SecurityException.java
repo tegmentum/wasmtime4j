@@ -1,18 +1,21 @@
 package ai.tegmentum.wasmtime4j.exception;
 
 /**
- * Exception thrown when security operations fail or security violations are detected.
+ * Exception thrown when security violations occur in WebAssembly operations.
  *
- * <p>This exception is thrown in various security-related scenarios:
+ * <p>This exception is thrown when WebAssembly security policies are violated, including:
  *
  * <ul>
- *   <li>Module signature verification failures
- *   <li>Authorization denials
- *   <li>Sandbox security violations
- *   <li>Capability access violations
- *   <li>Trust store operations failures
- *   <li>Cryptographic operation failures
+ *   <li>Unauthorized access to host functions or resources
+ *   <li>Sandbox escape attempts or policy violations
+ *   <li>Permission denied errors for system operations
+ *   <li>Host function security validation failures
+ *   <li>Module import/export security checks
+ *   <li>WASI capability and permission violations
  * </ul>
+ *
+ * <p>SecurityException provides detailed context about security violations to help developers
+ * understand and address security policy compliance issues while maintaining system security.
  *
  * @since 1.0.0
  */
@@ -20,179 +23,243 @@ public class SecurityException extends WasmException {
 
   private static final long serialVersionUID = 1L;
 
-  /** Security violation types for classification. */
-  public enum ViolationType {
-    /** Signature verification failed */
-    SIGNATURE_VERIFICATION_FAILED,
-    /** Authorization denied */
-    AUTHORIZATION_DENIED,
-    /** Capability access violation */
-    CAPABILITY_VIOLATION,
-    /** Trust store operation failed */
-    TRUST_STORE_ERROR,
-    /** Cryptographic operation failed */
-    CRYPTOGRAPHIC_ERROR,
-    /** Sandbox security violation */
-    SANDBOX_VIOLATION,
-    /** Session or token error */
-    SESSION_ERROR,
-    /** Configuration error */
-    CONFIGURATION_ERROR,
-    /** Resource access violation */
-    RESOURCE_ACCESS_VIOLATION,
-    /** Audit or compliance violation */
-    AUDIT_VIOLATION
+  /** The security policy that was violated. */
+  private final String violatedPolicy;
+
+  /** The attempted action that triggered the security violation. */
+  private final String attemptedAction;
+
+  /** The resource or permission that was denied. */
+  private final String deniedResource;
+
+  /** The security context in which the violation occurred. */
+  private final SecurityContext securityContext;
+
+  /** Security contexts for better error categorization and handling. */
+  public enum SecurityContext {
+    /** Host function security context. */
+    HOST_FUNCTION,
+    /** WASI capability and permission context. */
+    WASI_CAPABILITY,
+    /** Module import/export security context. */
+    MODULE_IMPORT_EXPORT,
+    /** Memory access security context. */
+    MEMORY_ACCESS,
+    /** File system access security context. */
+    FILE_SYSTEM_ACCESS,
+    /** Network access security context. */
+    NETWORK_ACCESS,
+    /** System resource access security context. */
+    SYSTEM_RESOURCE,
+    /** General sandbox security context. */
+    SANDBOX_POLICY
   }
 
-  private final ViolationType violationType;
-
   /**
-   * Creates a new SecurityException with a message.
+   * Creates a new security exception with the specified message.
    *
-   * @param message the exception message
+   * @param message the error message describing the security violation
    */
   public SecurityException(final String message) {
     super(message);
-    this.violationType = ViolationType.CONFIGURATION_ERROR;
+    this.violatedPolicy = null;
+    this.attemptedAction = null;
+    this.deniedResource = null;
+    this.securityContext = SecurityContext.SANDBOX_POLICY;
   }
 
   /**
-   * Creates a new SecurityException with a message and cause.
+   * Creates a new security exception with the specified message and cause.
    *
-   * @param message the exception message
+   * @param message the error message describing the security violation
    * @param cause the underlying cause
    */
   public SecurityException(final String message, final Throwable cause) {
     super(message, cause);
-    this.violationType = ViolationType.CONFIGURATION_ERROR;
+    this.violatedPolicy = null;
+    this.attemptedAction = null;
+    this.deniedResource = null;
+    this.securityContext = SecurityContext.SANDBOX_POLICY;
   }
 
   /**
-   * Creates a new SecurityException with a message and violation type.
+   * Creates a new security exception with security-specific details.
    *
-   * @param message the exception message
-   * @param violationType the type of security violation
-   */
-  public SecurityException(final String message, final ViolationType violationType) {
-    super(message);
-    this.violationType = violationType;
-  }
-
-  /**
-   * Creates a new SecurityException with a message, cause, and violation type.
-   *
-   * @param message the exception message
-   * @param cause the underlying cause
-   * @param violationType the type of security violation
+   * @param message the error message describing the security violation
+   * @param violatedPolicy the security policy that was violated
+   * @param attemptedAction the action that was attempted
+   * @param securityContext the security context
    */
   public SecurityException(
-      final String message, final Throwable cause, final ViolationType violationType) {
-    super(message, cause);
-    this.violationType = violationType;
+      final String message,
+      final String violatedPolicy,
+      final String attemptedAction,
+      final SecurityContext securityContext) {
+    super(message);
+    this.violatedPolicy = violatedPolicy;
+    this.attemptedAction = attemptedAction;
+    this.deniedResource = null;
+    this.securityContext = securityContext;
   }
 
   /**
-   * Gets the type of security violation.
+   * Creates a new security exception with full security details.
    *
-   * @return the violation type
+   * @param message the error message describing the security violation
+   * @param violatedPolicy the security policy that was violated
+   * @param attemptedAction the action that was attempted
+   * @param deniedResource the resource that was denied access
+   * @param securityContext the security context
    */
-  public ViolationType getViolationType() {
-    return violationType;
+  public SecurityException(
+      final String message,
+      final String violatedPolicy,
+      final String attemptedAction,
+      final String deniedResource,
+      final SecurityContext securityContext) {
+    super(message);
+    this.violatedPolicy = violatedPolicy;
+    this.attemptedAction = attemptedAction;
+    this.deniedResource = deniedResource;
+    this.securityContext = securityContext;
   }
 
   /**
-   * Checks if this is a critical security violation.
+   * Creates a new security exception with full details and cause.
    *
-   * <p>Critical violations include signature verification failures, sandbox violations, and
-   * cryptographic errors.
-   *
-   * @return true if this is a critical violation, false otherwise
-   */
-  public boolean isCritical() {
-    switch (violationType) {
-      case SIGNATURE_VERIFICATION_FAILED:
-      case SANDBOX_VIOLATION:
-      case CRYPTOGRAPHIC_ERROR:
-      case RESOURCE_ACCESS_VIOLATION:
-        return true;
-      default:
-        return false;
-    }
-  }
-
-  /**
-   * Creates a signature verification failure exception.
-   *
-   * @param message the failure message
-   * @return a new SecurityException
-   */
-  public static SecurityException signatureVerificationFailed(final String message) {
-    return new SecurityException(message, ViolationType.SIGNATURE_VERIFICATION_FAILED);
-  }
-
-  /**
-   * Creates an authorization denied exception.
-   *
-   * @param message the denial message
-   * @return a new SecurityException
-   */
-  public static SecurityException authorizationDenied(final String message) {
-    return new SecurityException(message, ViolationType.AUTHORIZATION_DENIED);
-  }
-
-  /**
-   * Creates a capability violation exception.
-   *
-   * @param message the violation message
-   * @return a new SecurityException
-   */
-  public static SecurityException capabilityViolation(final String message) {
-    return new SecurityException(message, ViolationType.CAPABILITY_VIOLATION);
-  }
-
-  /**
-   * Creates a sandbox violation exception.
-   *
-   * @param message the violation message
-   * @return a new SecurityException
-   */
-  public static SecurityException sandboxViolation(final String message) {
-    return new SecurityException(message, ViolationType.SANDBOX_VIOLATION);
-  }
-
-  /**
-   * Creates a cryptographic error exception.
-   *
-   * @param message the error message
+   * @param message the error message describing the security violation
+   * @param violatedPolicy the security policy that was violated
+   * @param attemptedAction the action that was attempted
+   * @param deniedResource the resource that was denied access
+   * @param securityContext the security context
    * @param cause the underlying cause
-   * @return a new SecurityException
    */
-  public static SecurityException cryptographicError(final String message, final Throwable cause) {
-    return new SecurityException(message, cause, ViolationType.CRYPTOGRAPHIC_ERROR);
+  public SecurityException(
+      final String message,
+      final String violatedPolicy,
+      final String attemptedAction,
+      final String deniedResource,
+      final SecurityContext securityContext,
+      final Throwable cause) {
+    super(message, cause);
+    this.violatedPolicy = violatedPolicy;
+    this.attemptedAction = attemptedAction;
+    this.deniedResource = deniedResource;
+    this.securityContext = securityContext;
   }
 
   /**
-   * Creates a trust store error exception.
+   * Gets the security policy that was violated.
    *
-   * @param message the error message
-   * @return a new SecurityException
+   * @return the violated policy, or null if not specified
    */
-  public static SecurityException trustStoreError(final String message) {
-    return new SecurityException(message, ViolationType.TRUST_STORE_ERROR);
+  public String getViolatedPolicy() {
+    return violatedPolicy;
   }
 
   /**
-   * Creates a session error exception.
+   * Gets the attempted action that triggered the security violation.
    *
-   * @param message the error message
-   * @return a new SecurityException
+   * @return the attempted action, or null if not specified
    */
-  public static SecurityException sessionError(final String message) {
-    return new SecurityException(message, ViolationType.SESSION_ERROR);
+  public String getAttemptedAction() {
+    return attemptedAction;
   }
 
-  @Override
-  public String toString() {
-    return String.format("SecurityException[%s]: %s", violationType, getMessage());
+  /**
+   * Gets the resource that was denied access.
+   *
+   * @return the denied resource, or null if not specified
+   */
+  public String getDeniedResource() {
+    return deniedResource;
+  }
+
+  /**
+   * Gets the security context in which the violation occurred.
+   *
+   * @return the security context
+   */
+  public SecurityContext getSecurityContext() {
+    return securityContext;
+  }
+
+  /**
+   * Checks if this is a host function security violation.
+   *
+   * @return true if this is a host function security error, false otherwise
+   */
+  public boolean isHostFunctionViolation() {
+    return securityContext == SecurityContext.HOST_FUNCTION;
+  }
+
+  /**
+   * Checks if this is a WASI capability violation.
+   *
+   * @return true if this is a WASI capability error, false otherwise
+   */
+  public boolean isWasiCapabilityViolation() {
+    return securityContext == SecurityContext.WASI_CAPABILITY;
+  }
+
+  /**
+   * Checks if this is a file system access violation.
+   *
+   * @return true if this is a file system access error, false otherwise
+   */
+  public boolean isFileSystemViolation() {
+    return securityContext == SecurityContext.FILE_SYSTEM_ACCESS;
+  }
+
+  /**
+   * Checks if this is a network access violation.
+   *
+   * @return true if this is a network access error, false otherwise
+   */
+  public boolean isNetworkViolation() {
+    return securityContext == SecurityContext.NETWORK_ACCESS;
+  }
+
+  /**
+   * Checks if this is a memory access violation.
+   *
+   * @return true if this is a memory access error, false otherwise
+   */
+  public boolean isMemoryViolation() {
+    return securityContext == SecurityContext.MEMORY_ACCESS;
+  }
+
+  /**
+   * Checks if this is a sandbox policy violation.
+   *
+   * @return true if this is a sandbox policy error, false otherwise
+   */
+  public boolean isSandboxViolation() {
+    return securityContext == SecurityContext.SANDBOX_POLICY;
+  }
+
+  /**
+   * Provides a formatted description of the security violation for logging and debugging.
+   *
+   * @return formatted security violation description
+   */
+  public String getSecurityViolationDescription() {
+    final StringBuilder desc = new StringBuilder("Security violation");
+
+    desc.append(" [context: ").append(securityContext.name().toLowerCase().replace('_', ' ')).append("]");
+
+    if (violatedPolicy != null) {
+      desc.append(" [policy: ").append(violatedPolicy).append("]");
+    }
+
+    if (attemptedAction != null) {
+      desc.append(" [action: ").append(attemptedAction).append("]");
+    }
+
+    if (deniedResource != null) {
+      desc.append(" [resource: ").append(deniedResource).append("]");
+    }
+
+    return desc.toString();
   }
 }

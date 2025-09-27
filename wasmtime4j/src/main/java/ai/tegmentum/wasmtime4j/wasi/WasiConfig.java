@@ -50,7 +50,7 @@ public interface WasiConfig {
             Class.forName("ai.tegmentum.wasmtime4j.jni.wasi.JniWasiConfigBuilder");
         return (WasiConfigBuilder) builderClass.getDeclaredConstructor().newInstance();
       } catch (final ClassNotFoundException e2) {
-        throw new RuntimeException(
+        throw new ai.tegmentum.wasmtime4j.exception.ResourceException(
             "No WasiConfigBuilder implementation available. "
                 + "Ensure wasmtime4j-panama or wasmtime4j-jni is on the classpath.");
       } catch (final Exception e2) {
@@ -146,34 +146,6 @@ public interface WasiConfig {
    * @return true if strict mode is enabled, false otherwise
    */
   boolean isStrictModeEnabled();
-
-  /**
-   * Gets the WASI version to use.
-   *
-   * @return the WASI version for this configuration
-   */
-  WasiVersion getWasiVersion();
-
-  /**
-   * Gets whether async operations are enabled (WASI Preview 2 only).
-   *
-   * @return true if async operations are enabled, false otherwise
-   */
-  boolean isAsyncOperationsEnabled();
-
-  /**
-   * Gets the maximum number of concurrent async operations (WASI Preview 2 only).
-   *
-   * @return the maximum number of concurrent async operations, or empty if not specified
-   */
-  Optional<Integer> getMaxAsyncOperations();
-
-  /**
-   * Gets the default timeout for async operations (WASI Preview 2 only).
-   *
-   * @return the default timeout for async operations, or empty if not specified
-   */
-  Optional<Duration> getAsyncOperationTimeout();
 
   /**
    * Creates a new configuration builder based on this configuration.

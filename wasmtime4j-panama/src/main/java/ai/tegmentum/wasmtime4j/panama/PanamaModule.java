@@ -207,12 +207,12 @@ public final class PanamaModule implements Module, AutoCloseable {
     try {
       // For this implementation, we need a Store to create instances
       // The Store will be created by the caller and passed to a different instantiate method
-      throw new UnsupportedOperationException(
+      throw new ai.tegmentum.wasmtime4j.exception.ValidationException(
           "Module instantiation requires a Store context - use PanamaStore.instantiateModule()"
               + " instead");
 
     } catch (Exception e) {
-      if (e instanceof UnsupportedOperationException) {
+      if (e instanceof ai.tegmentum.wasmtime4j.exception.ValidationException) {
         throw e;
       }
       String detailedMessage =

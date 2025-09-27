@@ -1,6 +1,7 @@
 package ai.tegmentum.wasmtime4j.wasi;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import java.io.Closeable;
 
 /**
  * Handle for an open file in the WASI filesystem.
@@ -27,7 +28,7 @@ import ai.tegmentum.wasmtime4j.exception.WasmException;
  *
  * @since 1.0.0
  */
-public interface WasiFileHandle {
+public interface WasiFileHandle extends Closeable {
 
   /**
    * Gets the unique identifier for this file handle.
@@ -104,7 +105,7 @@ public interface WasiFileHandle {
    * <p>After calling this method, the handle becomes invalid and should not be used. Any attempt to
    * use the handle after closing may result in exceptions.
    *
-   * @throws WasmException if the file cannot be closed
    */
-  void close() throws WasmException;
+  @Override
+  void close();
 }

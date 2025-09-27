@@ -99,7 +99,7 @@ public final class SharedGlobalReference implements WasmGlobal, AutoCloseable {
     Objects.requireNonNull(value, "value cannot be null");
 
     if (!mutable) {
-      throw new UnsupportedOperationException("Cannot set value of immutable global reference");
+      throw new ai.tegmentum.wasmtime4j.exception.ValidationException("Cannot set value of immutable global reference");
     }
 
     PanamaGlobal global = globalRef.get();
@@ -202,7 +202,7 @@ public final class SharedGlobalReference implements WasmGlobal, AutoCloseable {
     ensureNotClosed();
 
     if (!mutable) {
-      throw new UnsupportedOperationException("Cannot set value of immutable global reference");
+      throw new ai.tegmentum.wasmtime4j.exception.ValidationException("Cannot set value of immutable global reference");
     }
 
     PanamaGlobal global = globalRef.get();

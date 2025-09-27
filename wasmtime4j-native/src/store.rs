@@ -47,6 +47,8 @@ pub struct StoreData {
     pub resource_limits: ResourceLimits,
     /// Current execution state and statistics
     pub execution_state: ExecutionState,
+    /// Optional WASI context for WASI-enabled WebAssembly modules
+    pub wasi_context: Option<Arc<Mutex<(crate::wasi::WasiContext, crate::wasi::WasiFileDescriptorManager)>>>,
 }
 
 impl Clone for StoreData {
@@ -55,6 +57,7 @@ impl Clone for StoreData {
             user_data: None, // Can't clone arbitrary Any type, set to None
             resource_limits: self.resource_limits.clone(),
             execution_state: self.execution_state.clone(),
+            wasi_context: self.wasi_context.clone(), // Arc can be cloned
         }
     }
 }
@@ -285,6 +288,69 @@ impl Store {
         
         Ok((host_function_id, wasmtime_func))
     }
+
+    /// Set WASI context for this store
+    pub fn set_wasi_context(
+        &self,
+        wasi_context: crate::wasi::WasiContext,
+        fd_manager: crate::wasi::WasiFileDescriptorManager,
+    ) -> WasmtimeResult<()> {
+        let mut store = self.inner.lock().map_err(|e| WasmtimeError::Concurrency {
+            message: format!("Failed to acquire store lock: {}", e),
+        })?;
+
+        let wasi_data = Arc::new(Mutex::new((wasi_context, fd_manager)));
+        store.data_mut().wasi_context = Some(wasi_data);
+
+        Ok(())
+    }
+
+    /// Get WASI context from this store
+    pub fn get_wasi_context(
+        &self,
+    ) -> WasmtimeResult<Option<Arc<Mutex<(crate::wasi::WasiContext, crate::wasi::WasiFileDescriptorManager)>>>> {
+        let store = self.inner.lock().map_err(|e| WasmtimeError::Concurrency {
+            message: format!("Failed to acquire store lock: {}", e),
+        })?;
+
+        Ok(store.data().wasi_context.clone())
+    }
+
+    /// Check if this store has WASI context
+    pub fn has_wasi_context(&self) -> bool {
+        if let Ok(store) = self.inner.lock() {
+            store.data().wasi_context.is_some()
+        } else {
+            false
+        }
+    }
+
+    /// Execute WASI operation with context
+    pub fn with_wasi_context<T, F>(&self, func: F) -> WasmtimeResult<T>
+    where
+        F: FnOnce(&mut (crate::wasi::WasiContext, crate::wasi::WasiFileDescriptorManager)) -> WasmtimeResult<T>,
+    {
+        let wasi_arc = self.get_wasi_context()?
+            .ok_or_else(|| WasmtimeError::Wasi {
+                message: "No WASI context available in this store".to_string(),
+            })?;
+
+        let mut wasi_context = wasi_arc.lock().map_err(|e| WasmtimeError::Concurrency {
+            message: format!("Failed to acquire WASI context lock: {}", e),
+        })?;
+
+        func(&mut *wasi_context)
+    }
+
+    /// Remove WASI context from this store
+    pub fn remove_wasi_context(&self) -> WasmtimeResult<()> {
+        let mut store = self.inner.lock().map_err(|e| WasmtimeError::Concurrency {
+            message: format!("Failed to acquire store lock: {}", e),
+        })?;
+
+        store.data_mut().wasi_context = None;
+        Ok(())
+    }
 }
 
 impl StoreBuilder {
@@ -363,6 +429,7 @@ impl StoreBuilder {
                 total_execution_time: Duration::new(0, 0),
                 fuel_consumed: 0,
             },
+            wasi_context: None, // No WASI context by default
         };
 
         let mut wasmtime_store = WasmtimeStore::new(engine.inner(), store_data);

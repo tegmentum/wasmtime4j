@@ -1,0 +1,4 @@
+rootProject.name = 'wasmtime4j-basic-example'
+
+// Enable Gradle features
+enableFeaturePreview('TYPESAFE_PROJECT_ACCESSORS')

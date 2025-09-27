@@ -29,6 +29,8 @@ pub struct Instance {
     metadata: InstanceMetadata,
     imports_map: HashMap<String, ImportBinding>,
     exports_map: HashMap<String, ExportBinding>,
+    /// Weak reference to the Store that created this instance
+    store_weak: std::sync::Weak<std::sync::Mutex<Store>>,
 }
 
 /// Instance metadata and resource tracking
@@ -144,6 +146,7 @@ impl Instance {
             metadata,
             imports_map,
             exports_map,
+            store_weak: std::sync::Weak::new(), // Will be set later if needed
         })
     }
     
