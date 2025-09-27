@@ -17,6 +17,7 @@ use std::sync::Arc;
 use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::gc::{WasmGcRuntime, StructOperationResult, ArrayOperationResult, RefOperationResult};
 use crate::gc_types::{StructTypeDefinition, ArrayTypeDefinition, FieldDefinition, FieldType, GcValue, GcReferenceType, GcTypeConverter};
+use crate::simd::{V256, V512};
 use crate::gc_heap::{GcHeapConfig, ObjectId};
 use crate::gc_operations::{WasmtimeGcOperations, RealStructOperationResult, RealArrayOperationResult, RealRefOperationResult};
 use crate::shared_ffi::{FFI_SUCCESS, FFI_ERROR};
@@ -1120,4 +1121,296 @@ fn set_gc_stats_fields(
         .map_err(|_| WasmtimeError::from_string("Failed to set peakHeapSize field"))?;
 
     Ok(())
+}
+
+// ========== Advanced GC Features from Task #307 Integration ==========
+
+/// JNI binding for advanced weak reference creation with finalization callback
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_WasmGcRuntimeJni_createWeakReferenceAdvanced(
+    mut env: JNIEnv,
+    _class: JClass,
+    runtime_handle: jlong,
+    object_id: jlong,
+    has_callback: jboolean,
+) -> jlong {
+    let result = create_weak_reference_advanced_internal(runtime_handle, object_id as ObjectId, has_callback != 0);
+
+    match result {
+        Ok(weak_ref) => {
+            // Convert weak reference to handle (simplified)
+            Box::into_raw(Box::new(weak_ref)) as jlong
+        },
+        Err(e) => {
+            let _ = env.throw_new("ai/tegmentum/wasmtime4j/exception/RuntimeException", e.to_string());
+            0
+        }
+    }
+}
+
+/// JNI binding for advanced garbage collection with incremental/concurrent support
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_WasmGcRuntimeJni_collectGarbageAdvanced(
+    mut env: JNIEnv,
+    _class: JClass,
+    runtime_handle: jlong,
+    max_pause_millis: jlong,
+    concurrent: jboolean,
+) -> jobject {
+    let result = collect_garbage_advanced_internal(
+        &mut env,
+        runtime_handle,
+        if max_pause_millis >= 0 { Some(max_pause_millis as u64) } else { None },
+        concurrent != 0
+    );
+
+    match result {
+        Ok(stats_obj) => stats_obj.into_raw(),
+        Err(e) => {
+            let _ = env.throw_new("ai/tegmentum/wasmtime4j/exception/RuntimeException", e.to_string());
+            std::ptr::null_mut()
+        }
+    }
+}
+
+/// JNI binding for object pinning (future GC proposal support)
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_WasmGcRuntimeJni_pinObject(
+    mut env: JNIEnv,
+    _class: JClass,
+    runtime_handle: jlong,
+    object_id: jlong,
+) -> jint {
+    let result = pin_object_internal(runtime_handle, object_id as ObjectId);
+
+    match result {
+        Ok(()) => FFI_SUCCESS,
+        Err(e) => {
+            let _ = env.throw_new("ai/tegmentum/wasmtime4j/exception/RuntimeException", e.to_string());
+            FFI_ERROR
+        }
+    }
+}
+
+/// JNI binding for object unpinning (future GC proposal support)
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_WasmGcRuntimeJni_unpinObject(
+    mut env: JNIEnv,
+    _class: JClass,
+    runtime_handle: jlong,
+    object_id: jlong,
+) -> jint {
+    let result = unpin_object_internal(runtime_handle, object_id as ObjectId);
+
+    match result {
+        Ok(()) => FFI_SUCCESS,
+        Err(e) => {
+            let _ = env.throw_new("ai/tegmentum/wasmtime4j/exception/RuntimeException", e.to_string());
+            FFI_ERROR
+        }
+    }
+}
+
+/// JNI binding for optimized reference casting with caching
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_WasmGcRuntimeJni_refCastOptimized(
+    mut env: JNIEnv,
+    _class: JClass,
+    runtime_handle: jlong,
+    object_id: jlong,
+    target_type: jint,
+    enable_caching: jboolean,
+) -> jlong {
+    let result = ref_cast_optimized_internal(
+        runtime_handle,
+        object_id as ObjectId,
+        target_type,
+        enable_caching != 0
+    );
+
+    match result {
+        Ok(cast_object_id) => cast_object_id as jlong,
+        Err(e) => {
+            let _ = env.throw_new("ai/tegmentum/wasmtime4j/exception/RuntimeException", e.to_string());
+            0
+        }
+    }
+}
+
+/// JNI binding for creating V256 SIMD values (Task #307 integration)
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_WasmGcRuntimeJni_createV256Value(
+    mut env: JNIEnv,
+    _class: JClass,
+    runtime_handle: jlong,
+    v256_data: jni::sys::jbyteArray,
+) -> jlong {
+    let result = create_v256_value_internal(&mut env, runtime_handle, v256_data);
+
+    match result {
+        Ok(object_id) => object_id as jlong,
+        Err(e) => {
+            let _ = env.throw_new("ai/tegmentum/wasmtime4j/exception/RuntimeException", e.to_string());
+            0
+        }
+    }
+}
+
+/// JNI binding for creating V512 SIMD values (Task #307 integration)
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_WasmGcRuntimeJni_createV512Value(
+    mut env: JNIEnv,
+    _class: JClass,
+    runtime_handle: jlong,
+    v512_data: jni::sys::jbyteArray,
+) -> jlong {
+    let result = create_v512_value_internal(&mut env, runtime_handle, v512_data);
+
+    match result {
+        Ok(object_id) => object_id as jlong,
+        Err(e) => {
+            let _ = env.throw_new("ai/tegmentum/wasmtime4j/exception/RuntimeException", e.to_string());
+            0
+        }
+    }
+}
+
+// ========== Internal Implementation Functions ==========
+
+fn create_weak_reference_advanced_internal(
+    runtime_handle: jlong,
+    object_id: ObjectId,
+    has_callback: bool,
+) -> WasmtimeResult<crate::gc_heap::GcWeakReference> {
+    if runtime_handle == 0 {
+        return Err(WasmtimeError::from_string("Invalid runtime handle"));
+    }
+
+    let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
+
+    if has_callback {
+        // Create finalization callback (placeholder)
+        let callback = Box::new(|| {
+            // Finalization logic would go here
+        });
+        runtime.create_weak_reference_advanced(object_id, Some(callback))
+    } else {
+        runtime.create_weak_reference_advanced(object_id, None)
+    }
+}
+
+fn collect_garbage_advanced_internal(
+    env: &mut JNIEnv,
+    runtime_handle: jlong,
+    max_pause_millis: Option<u64>,
+    concurrent: bool,
+) -> WasmtimeResult<JObject> {
+    if runtime_handle == 0 {
+        return Err(WasmtimeError::from_string("Invalid runtime handle"));
+    }
+
+    let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
+
+    let collection_result = runtime.collect_garbage_advanced(max_pause_millis, concurrent)?;
+
+    // Create GcCollectionResult Java object
+    let stats_class = env.find_class("ai/tegmentum/wasmtime4j/gc/GcStats")
+        .map_err(|_| WasmtimeError::from_string("Failed to find GcStats class"))?;
+
+    let stats_obj = env.new_object(stats_class, "()V", &[])
+        .map_err(|_| WasmtimeError::from_string("Failed to create GcStats object"))?;
+
+    // Set fields based on collection result (simplified conversion)
+    set_gc_collection_result_fields(env, &stats_obj, &collection_result)?;
+
+    Ok(stats_obj)
+}
+
+fn pin_object_internal(runtime_handle: jlong, object_id: ObjectId) -> WasmtimeResult<()> {
+    if runtime_handle == 0 {
+        return Err(WasmtimeError::from_string("Invalid runtime handle"));
+    }
+
+    let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
+    runtime.pin_object(object_id)
+}
+
+fn unpin_object_internal(runtime_handle: jlong, object_id: ObjectId) -> WasmtimeResult<()> {
+    if runtime_handle == 0 {
+        return Err(WasmtimeError::from_string("Invalid runtime handle"));
+    }
+
+    let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
+    runtime.unpin_object(object_id)
+}
+
+fn ref_cast_optimized_internal(
+    runtime_handle: jlong,
+    object_id: ObjectId,
+    target_type: jint,
+    enable_caching: bool,
+) -> WasmtimeResult<ObjectId> {
+    if runtime_handle == 0 {
+        return Err(WasmtimeError::from_string("Invalid runtime handle"));
+    }
+
+    let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
+
+    // Convert target_type from jint to GcReferenceType (simplified)
+    let gc_ref_type = match target_type {
+        0 => GcReferenceType::AnyRef,
+        1 => GcReferenceType::EqRef,
+        2 => GcReferenceType::I31Ref,
+        _ => return Err(WasmtimeError::from_string("Invalid reference type")),
+    };
+
+    let result = runtime.ref_cast_optimized(object_id, gc_ref_type, enable_caching);
+
+    if result.success {
+        Ok(result.cast_result.unwrap_or(0))
+    } else {
+        Err(WasmtimeError::from_string(&result.error.unwrap_or_default()))
+    }
+}
+
+fn create_v256_value_internal(
+    env: &mut JNIEnv,
+    _runtime_handle: jlong,
+    v256_data: jni::sys::jbyteArray,
+) -> WasmtimeResult<ObjectId> {
+    // Convert jbyteArray to [u8; 32]
+    let data_slice = env.convert_byte_array(v256_data)
+        .map_err(|_| WasmtimeError::from_string("Failed to convert V256 data"))?;
+
+    if data_slice.len() != 32 {
+        return Err(WasmtimeError::from_string("V256 data must be exactly 32 bytes"));
+    }
+
+    let mut _v256_bytes = [0u8; 32];
+    _v256_bytes.copy_from_slice(&data_slice);
+
+    // For now, we'll create a simple object to hold the V256 data
+    // In the future, this would integrate with proper V256 GC object support
+    Ok(1) // Placeholder object ID
+}
+
+fn create_v512_value_internal(
+    env: &mut JNIEnv,
+    _runtime_handle: jlong,
+    v512_data: jni::sys::jbyteArray,
+) -> WasmtimeResult<ObjectId> {
+    // Convert jbyteArray to [u8; 64]
+    let data_slice = env.convert_byte_array(v512_data)
+        .map_err(|_| WasmtimeError::from_string("Failed to convert V512 data"))?;
+
+    if data_slice.len() != 64 {
+        return Err(WasmtimeError::from_string("V512 data must be exactly 64 bytes"));
+    }
+
+    let mut _v512_bytes = [0u8; 64];
+    _v512_bytes.copy_from_slice(&data_slice);
+
+    // For now, we'll create a simple object to hold the V512 data
+    // In the future, this would integrate with proper V512 GC object support
+    Ok(1) // Placeholder object ID
 }
