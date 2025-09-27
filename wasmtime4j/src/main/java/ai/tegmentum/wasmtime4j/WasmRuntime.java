@@ -437,6 +437,152 @@ public interface WasmRuntime extends Closeable {
       final SimdOperations.V128 a, final SimdOperations.V128 b, final byte[] indices)
       throws WasmException;
 
+  // ===== ADVANCED ARITHMETIC OPERATIONS =====
+
+  /**
+   * Performs fused multiply-add operation (a * b + c).
+   *
+   * @param a the first vector
+   * @param b the second vector
+   * @param c the third vector
+   * @return the result vector
+   * @throws WasmException if the operation fails
+   */
+  SimdOperations.V128 simdFma(
+      final SimdOperations.V128 a, final SimdOperations.V128 b, final SimdOperations.V128 c)
+      throws WasmException;
+
+  /**
+   * Performs fused multiply-subtract operation (a * b - c).
+   *
+   * @param a the first vector
+   * @param b the second vector
+   * @param c the third vector
+   * @return the result vector
+   * @throws WasmException if the operation fails
+   */
+  SimdOperations.V128 simdFms(
+      final SimdOperations.V128 a, final SimdOperations.V128 b, final SimdOperations.V128 c)
+      throws WasmException;
+
+  /**
+   * Performs vector reciprocal approximation.
+   *
+   * @param a the vector
+   * @return the result vector
+   * @throws WasmException if the operation fails
+   */
+  SimdOperations.V128 simdReciprocal(final SimdOperations.V128 a) throws WasmException;
+
+  /**
+   * Performs vector square root.
+   *
+   * @param a the vector
+   * @return the result vector
+   * @throws WasmException if the operation fails
+   */
+  SimdOperations.V128 simdSqrt(final SimdOperations.V128 a) throws WasmException;
+
+  /**
+   * Performs reciprocal square root approximation.
+   *
+   * @param a the vector
+   * @return the result vector
+   * @throws WasmException if the operation fails
+   */
+  SimdOperations.V128 simdRsqrt(final SimdOperations.V128 a) throws WasmException;
+
+  // ===== ADVANCED LOGICAL OPERATIONS =====
+
+  /**
+   * Performs bit population count (popcount) on vector.
+   *
+   * @param a the vector
+   * @return the result vector with popcount for each lane
+   * @throws WasmException if the operation fails
+   */
+  SimdOperations.V128 simdPopcount(final SimdOperations.V128 a) throws WasmException;
+
+  /**
+   * Performs variable bit shift left on vector lanes.
+   *
+   * @param a the vector to shift
+   * @param b the shift amounts vector
+   * @return the result vector
+   * @throws WasmException if the operation fails
+   */
+  SimdOperations.V128 simdShlVariable(final SimdOperations.V128 a, final SimdOperations.V128 b)
+      throws WasmException;
+
+  /**
+   * Performs variable bit shift right on vector lanes.
+   *
+   * @param a the vector to shift
+   * @param b the shift amounts vector
+   * @return the result vector
+   * @throws WasmException if the operation fails
+   */
+  SimdOperations.V128 simdShrVariable(final SimdOperations.V128 a, final SimdOperations.V128 b)
+      throws WasmException;
+
+  // ===== VECTOR REDUCTION OPERATIONS =====
+
+  /**
+   * Performs horizontal sum reduction on vector.
+   *
+   * @param a the vector
+   * @return the sum of all lanes as a scalar value
+   * @throws WasmException if the operation fails
+   */
+  float simdHorizontalSum(final SimdOperations.V128 a) throws WasmException;
+
+  /**
+   * Performs horizontal minimum reduction on vector.
+   *
+   * @param a the vector
+   * @return the minimum of all lanes as a scalar value
+   * @throws WasmException if the operation fails
+   */
+  float simdHorizontalMin(final SimdOperations.V128 a) throws WasmException;
+
+  /**
+   * Performs horizontal maximum reduction on vector.
+   *
+   * @param a the vector
+   * @return the maximum of all lanes as a scalar value
+   * @throws WasmException if the operation fails
+   */
+  float simdHorizontalMax(final SimdOperations.V128 a) throws WasmException;
+
+  // ===== ADVANCED COMPARISON AND SELECTION =====
+
+  /**
+   * Performs vector conditional selection based on mask.
+   *
+   * @param mask the mask vector (0 = select from b, non-zero = select from a)
+   * @param a the first source vector
+   * @param b the second source vector
+   * @return the result vector
+   * @throws WasmException if the operation fails
+   */
+  SimdOperations.V128 simdSelect(
+      final SimdOperations.V128 mask, final SimdOperations.V128 a, final SimdOperations.V128 b)
+      throws WasmException;
+
+  /**
+   * Performs vector blending with immediate mask.
+   *
+   * @param a the first vector
+   * @param b the second vector
+   * @param mask the immediate mask (8 bits for 4 lanes, 2 bits per lane)
+   * @return the result vector
+   * @throws WasmException if the operation fails
+   */
+  SimdOperations.V128 simdBlend(final SimdOperations.V128 a, final SimdOperations.V128 b, final int mask)
+      throws WasmException;
+
+  // ===== RELAXED OPERATIONS =====
+
   /**
    * Performs relaxed SIMD addition.
    *
