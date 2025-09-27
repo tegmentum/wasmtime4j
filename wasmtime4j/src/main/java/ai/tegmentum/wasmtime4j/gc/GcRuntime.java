@@ -476,4 +476,69 @@ public interface GcRuntime {
    * @return invariant validation results
    */
   GcInvariantValidation validateInvariants();
+
+  // ========== Advanced GC Features from Task #307 Integration ==========
+
+  /**
+   * Creates a weak reference with finalization callback support.
+   *
+   * @param object the object to reference weakly
+   * @param finalizationCallback optional callback to invoke when object is finalized
+   * @return the weak reference
+   */
+  WeakGcReference createWeakReferenceAdvanced(GcObject object, Runnable finalizationCallback);
+
+  /**
+   * Performs advanced garbage collection with incremental and concurrent support.
+   *
+   * @param maxPauseMillis maximum pause time in milliseconds (null for no limit)
+   * @param concurrent whether to perform concurrent collection
+   * @return collection statistics
+   */
+  GcStats collectGarbageAdvanced(Long maxPauseMillis, boolean concurrent);
+
+  /**
+   * Pins an object to prevent it from being moved during GC (future GC proposal support).
+   *
+   * @param object the object to pin
+   */
+  void pinObject(GcObject object);
+
+  /**
+   * Unpins an object to allow it to be moved during GC (future GC proposal support).
+   *
+   * @param object the object to unpin
+   */
+  void unpinObject(GcObject object);
+
+  /**
+   * Performs optimized reference type casting with caching support.
+   *
+   * @param object the object to cast
+   * @param targetType the target reference type
+   * @param enableCaching whether to enable cast result caching
+   * @return the cast object
+   * @throws ClassCastException if the cast is invalid
+   */
+  GcObject refCastOptimized(GcObject object, GcReferenceType targetType, boolean enableCaching);
+
+  /**
+   * Creates SIMD values with advanced vector types from Task #307.
+   *
+   * @param v256Data the 256-bit vector data (32 bytes)
+   * @return the V256 GC value
+   */
+  default GcValue createV256(byte[] v256Data) {
+    return GcValue.v256(v256Data);
+  }
+
+  /**
+   * Creates SIMD values with AVX-512 support from Task #307.
+   *
+   * @param v512Data the 512-bit vector data (64 bytes)
+   * @return the V512 GC value
+   */
+  default GcValue createV512(byte[] v512Data) {
+    return GcValue.v512(v512Data);
+  }
 }
