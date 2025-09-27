@@ -3,11 +3,33 @@ package ai.tegmentum.wasmtime4j;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 
 /**
- * Represents a WebAssembly function.
+ * Represents a WebAssembly function that can be called from Java code.
  *
  * <p>This interface provides access to both exported functions from WebAssembly modules and host
- * functions that can be imported by WebAssembly modules. Supports the WebAssembly multi-value
- * proposal for functions that return multiple values.
+ * functions that can be imported by WebAssembly modules. Functions maintain their WebAssembly
+ * semantics including parameter and return value types.
+ *
+ * <p>WebAssembly functions are strongly typed with a specific signature defined by their
+ * {@link FunctionType}. All parameters and return values must match the expected types at
+ * runtime.
+ *
+ * <p>Example usage for calling an exported function:
+ *
+ * <pre>{@code
+ * // Get an exported function from an instance
+ * Optional<WasmFunction> addFunction = instance.getFunction("add");
+ * if (addFunction.isPresent()) {
+ *     // Call the function with two i32 parameters
+ *     WasmValue[] results = addFunction.get().call(
+ *         WasmValue.i32(10),
+ *         WasmValue.i32(20)
+ *     );
+ *     int sum = results[0].i32(); // Result: 30
+ * }
+ * }</pre>
+ *
+ * <p>Functions are thread-safe when called from the same store context, but should not be
+ * called concurrently from different stores or engines.
  *
  * @since 1.0.0
  */
@@ -16,94 +38,42 @@ public interface WasmFunction {
   /**
    * Calls this function with the given parameters.
    *
-   * @param params the parameters to pass to the function
-   * @return the results returned by the function (may be multiple values)
-   * @throws WasmException if function execution fails
+   * <p>This method executes the WebAssembly function with the provided parameters. The number
+   * and types of parameters must match the function's signature as defined by its
+   * {@link FunctionType}.
+   *
+   * <p>The function execution follows WebAssembly semantics including proper stack management,
+   * memory isolation, and error handling. Any WebAssembly traps will be converted to
+   * {@link WasmException}.
+   *
+   * @param params the parameters to pass to the function; must match the function signature
+   * @return an array of result values; empty array if the function returns no values
+   * @throws WasmException if function execution fails, including WebAssembly traps,
+   *         type mismatches, or runtime errors
+   * @throws IllegalArgumentException if the number or types of parameters don't match
+   *         the function signature
    */
   WasmValue[] call(final WasmValue... params) throws WasmException;
 
   /**
-   * Calls this function with no parameters.
-   *
-   * @return the results returned by the function (may be multiple values)
-   * @throws WasmException if function execution fails
-   */
-  default WasmValue[] call() throws WasmException {
-    return call(new WasmValue[0]);
-  }
-
-  /**
-   * Calls this function and returns the first result, or null if no results. Convenient method for
-   * functions that return a single value.
-   *
-   * @param params the parameters to pass to the function
-   * @return the first result, or null if no results
-   * @throws WasmException if function execution fails
-   */
-  default WasmValue callSingle(final WasmValue... params) throws WasmException {
-    final WasmValue[] results = call(params);
-    return WasmValue.getFirstValue(results);
-  }
-
-  /**
-   * Calls this function and validates that it returns the expected number of values.
-   *
-   * @param expectedResultCount the expected number of return values
-   * @param params the parameters to pass to the function
-   * @return the results returned by the function
-   * @throws WasmException if function execution fails or result count is wrong
-   */
-  default WasmValue[] callWithResultCount(final int expectedResultCount, final WasmValue... params)
-      throws WasmException {
-    final WasmValue[] results = call(params);
-    if (results.length != expectedResultCount) {
-      throw new WasmException(
-          String.format("Expected %d return values, got %d", expectedResultCount, results.length));
-    }
-    return results;
-  }
-
-  /**
-   * Checks if this function supports multi-value returns.
-   *
-   * @return true if the function can return multiple values
-   */
-  default boolean supportsMultiValue() {
-    final FunctionType type = getFunctionType();
-    return type != null && type.hasMultipleReturns();
-  }
-
-  /**
-   * Gets the expected number of return values for this function.
-   *
-   * @return the number of return values, or 0 if unknown
-   */
-  default int getReturnValueCount() {
-    final FunctionType type = getFunctionType();
-    return type != null ? type.getReturnCount() : 0;
-  }
-
-  /**
-   * Gets the expected number of parameters for this function.
-   *
-   * @return the number of parameters, or 0 if unknown
-   */
-  default int getParameterCount() {
-    final FunctionType type = getFunctionType();
-    return type != null ? type.getParamCount() : 0;
-  }
-
-  /**
    * Gets the function type signature.
    *
-   * @return the function type
+   * <p>The function type describes the parameter types and return types of this function.
+   * This information can be used to validate calls and understand the function's interface.
+   *
+   * @return the function type containing parameter and return type information
    */
   FunctionType getFunctionType();
 
   /**
    * Gets the name of this function, if available.
    *
-   * @return the function name, or null if not available
+   * <p>The function name is typically available for exported functions and may include
+   * debugging information. Host functions may also have names depending on how they
+   * were defined.
+   *
+   * @return the function name if available, or null if the function has no name or
+   *         name information is not accessible
    */
   String getName();
 }

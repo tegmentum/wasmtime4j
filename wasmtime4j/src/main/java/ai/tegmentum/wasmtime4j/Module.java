@@ -181,19 +181,39 @@ public interface Module extends Closeable {
       throw new IllegalArgumentException("WebAssembly bytes cannot be null");
     }
     if (wasmBytes.length == 0) {
-      throw new IllegalArgumentException("WebAssembly bytes cannot be empty");
+      return ModuleValidationResult.failure(List.of("WebAssembly bytecode cannot be empty"));
     }
 
     try {
-      // Attempt to compile the module as a validation check
-      engine.compileModule(wasmBytes);
+      // Basic WebAssembly magic number validation
+      if (wasmBytes.length < 8) {
+        return ModuleValidationResult.failure(List.of("WebAssembly bytecode too short (minimum 8 bytes required)"));
+      }
 
-      // If compilation succeeds, validation passed
-      return ModuleValidationResult.success();
-    } catch (final Exception e) {
-      // If compilation fails, validation failed
-      return ModuleValidationResult.failure(
-          java.util.Collections.singletonList("Module validation failed: " + e.getMessage()));
+      // Check WebAssembly magic number (0x00 0x61 0x73 0x6D)
+      if (wasmBytes[0] != 0x00 || wasmBytes[1] != 0x61 || wasmBytes[2] != 0x73 || wasmBytes[3] != 0x6D) {
+        return ModuleValidationResult.failure(List.of("Invalid WebAssembly magic number"));
+      }
+
+      // Check WebAssembly version (0x01 0x00 0x00 0x00 for version 1)
+      if (wasmBytes[4] != 0x01 || wasmBytes[5] != 0x00 || wasmBytes[6] != 0x00 || wasmBytes[7] != 0x00) {
+        return ModuleValidationResult.failure(List.of("Unsupported WebAssembly version"));
+      }
+
+      // Basic structural validation - try to compile with engine
+      // This delegates to the actual engine implementation for deeper validation
+      try {
+        WasmRuntime runtime = WasmRuntimeFactory.create();
+        Module testModule = runtime.compileModule(engine, wasmBytes);
+        testModule.close();
+        return ModuleValidationResult.success();
+      } catch (Exception e) {
+        // If compilation fails, return validation failure with the error message
+        return ModuleValidationResult.failure(List.of("Compilation validation failed: " + e.getMessage()));
+      }
+
+    } catch (Exception e) {
+      return ModuleValidationResult.failure(List.of("Validation error: " + e.getMessage()));
     }
   }
 
@@ -261,25 +281,11 @@ public interface Module extends Closeable {
    * metadata or debugging purposes.
    *
    * @return a map of custom section names to their data
-   * @deprecated Use {@link #getCustomSectionMetadata()} for comprehensive custom section access
    */
-  @Deprecated
   java.util.Map<String, String> getCustomSections();
 
   /**
-   * Gets comprehensive custom section metadata for this module.
-   *
-   * <p>This provides access to all custom sections including standard sections like "name",
-   * "producers", and "target_features", as well as arbitrary custom sections.
-   *
-   * @return custom section metadata interface
-   */
-  CustomSectionMetadata getCustomSectionMetadata();
-
-  /**
    * Gets the name of this module if it has one.
-   *
-   * <p>This method checks both the name section and module-level naming for the module name.
    *
    * @return the module name, or null if unnamed
    */

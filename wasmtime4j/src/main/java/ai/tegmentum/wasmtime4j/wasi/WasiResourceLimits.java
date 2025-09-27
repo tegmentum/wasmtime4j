@@ -47,7 +47,7 @@ public interface WasiResourceLimits {
             Class.forName("ai.tegmentum.wasmtime4j.jni.wasi.JniWasiResourceLimitsBuilder");
         return (WasiResourceLimitsBuilder) builderClass.getDeclaredConstructor().newInstance();
       } catch (final ClassNotFoundException e2) {
-        throw new RuntimeException(
+        throw new ai.tegmentum.wasmtime4j.exception.ResourceException(
             "No WasiResourceLimitsBuilder implementation available. "
                 + "Ensure wasmtime4j-panama or wasmtime4j-jni is on the classpath.");
       } catch (final Exception e2) {

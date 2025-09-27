@@ -96,7 +96,7 @@ public interface ImportMap {
         return (ImportMap) jniClass.getDeclaredConstructor().newInstance();
       } catch (final ClassNotFoundException e2) {
         // No specific implementation found, use Panama as fallback since it's more universal
-        throw new RuntimeException(
+        throw new ai.tegmentum.wasmtime4j.exception.ResourceException(
             "No ImportMap implementation available. Ensure wasmtime4j-panama or wasmtime4j-jni is"
                 + " on the classpath.");
       } catch (final Exception e2) {
