@@ -4,6 +4,8 @@ import ai.tegmentum.wasmtime4j.ExportDescriptor;
 import ai.tegmentum.wasmtime4j.FuncType;
 import ai.tegmentum.wasmtime4j.GlobalType;
 import ai.tegmentum.wasmtime4j.Instance;
+import ai.tegmentum.wasmtime4j.InstanceState;
+import ai.tegmentum.wasmtime4j.InstanceStatistics;
 import ai.tegmentum.wasmtime4j.MemoryType;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
@@ -49,11 +51,17 @@ public final class JniInstance extends JniResource implements Instance {
   /** Flag to track if this instance has been closed. */
   private final AtomicBoolean closed = new AtomicBoolean(false);
 
+  /** Flag to track if this instance has been cleaned up. */
+  private final AtomicBoolean cleanedUp = new AtomicBoolean(false);
+
   /** Reference to the module used to create this instance. */
   private final Module module;
 
   /** Reference to the store this instance belongs to. */
   private final Store store;
+
+  /** Creation timestamp for tracking instance lifecycle. */
+  private final long createdAtMicros;
 
   /**
    * Creates a new JNI instance with the given native handle, module, and store.
@@ -70,6 +78,7 @@ public final class JniInstance extends JniResource implements Instance {
     JniValidation.requireNonNull(store, "store");
     this.module = module;
     this.store = store;
+    this.createdAtMicros = System.currentTimeMillis() * 1000; // Convert to microseconds
     LOGGER.fine("Created JNI instance with handle: " + nativeHandle);
   }
 
@@ -372,6 +381,339 @@ public final class JniInstance extends JniResource implements Instance {
     return function.get().call(params);
   }
 
+  @Override
+  public InstanceState getState() {
+    ensureNotClosed();
+    try {
+      final int stateValue = nativeGetState(getNativeHandle());
+      return convertIntToInstanceState(stateValue);
+    } catch (final RuntimeException e) {
+      LOGGER.warning("Failed to get instance state: " + e.getMessage());
+      return InstanceState.ERROR;
+    }
+  }
+
+  @Override
+  public boolean cleanup() throws WasmException {
+    if (cleanedUp.get()) {
+      return false; // Already cleaned up
+    }
+
+    ensureNotClosed();
+
+    try {
+      final boolean result = nativeCleanupResources(getNativeHandle());
+      if (result) {
+        cleanedUp.set(true);
+        LOGGER.fine("Instance resources cleaned up successfully");
+      }
+      return result;
+    } catch (final RuntimeException e) {
+      throw new WasmException("Failed to cleanup instance resources", e);
+    }
+  }
+
+  @Override
+  public boolean dispose() throws WasmException {
+    if (closed.get()) {
+      return false; // Already disposed
+    }
+
+    try {
+      // Perform cleanup first if not already done
+      if (!cleanedUp.get()) {
+        cleanup();
+      }
+
+      // Close the resource
+      close();
+      return true;
+    } catch (final Exception e) {
+      throw new WasmException("Failed to dispose instance", e);
+    }
+  }
+
+  @Override
+  public boolean isDisposed() {
+    return closed.get();
+  }
+
+  @Override
+  public long getCreatedAtMicros() {
+    return createdAtMicros;
+  }
+
+  @Override
+  public int getMetadataExportCount() {
+    ensureNotClosed();
+    try {
+      final String[] exports = getExportNames();
+      return exports != null ? exports.length : 0;
+    } catch (final RuntimeException e) {
+      LOGGER.warning("Failed to get metadata export count: " + e.getMessage());
+      return 0;
+    }
+  }
+
+  @Override
+  public int callI32Function(final String functionName, final int... params) throws WasmException {
+    ensureNotClosed();
+
+    // Convert int parameters to WasmValue array
+    final WasmValue[] wasmParams = new WasmValue[params.length];
+    for (int i = 0; i < params.length; i++) {
+      wasmParams[i] = WasmValue.i32(params[i]);
+    }
+
+    // Call function and get result
+    final WasmValue[] results = callFunction(functionName, wasmParams);
+    if (results.length != 1) {
+      throw new WasmException("Expected single i32 result, got " + results.length + " results");
+    }
+
+    if (results[0].getType() != WasmValue.Type.I32) {
+      throw new WasmException("Expected i32 result, got " + results[0].getType());
+    }
+
+    return results[0].asI32();
+  }
+
+  @Override
+  public int callI32Function(final String functionName) throws WasmException {
+    return callI32Function(functionName, new int[0]);
+  }
+
+  @Override
+  public InstanceStatistics getStatistics() throws WasmException {
+    ensureNotClosed();
+
+    try {
+      // For now, return basic statistics
+      // In a full implementation, these would come from native code
+      return new InstanceStatistics(
+          0, // functionCallCount - would need tracking
+          0, // totalExecutionTime - would need tracking
+          0, // memoryBytesAllocated - would need tracking
+          0, // peakMemoryUsage - would need tracking
+          0, // activeTableElements - would need tracking
+          0, // activeGlobals - would need tracking
+          0, // fuelConsumed - would need tracking
+          0  // epochTicks - would need tracking
+      );
+    } catch (final RuntimeException e) {
+      throw new WasmException("Failed to get instance statistics", e);
+    }
+  }
+
+  @Override
+  public Optional<WasmFunction> getFunction(final int index) {
+    ensureNotClosed();
+    if (index < 0) {
+      throw new IllegalArgumentException("Index cannot be negative: " + index);
+    }
+
+    try {
+      final String[] exportNames = getExportNames();
+      if (index >= exportNames.length) {
+        return Optional.empty();
+      }
+
+      // Find the index-th function export
+      int functionIndex = 0;
+      for (final String exportName : exportNames) {
+        final Optional<WasmFunction> function = getFunction(exportName);
+        if (function.isPresent()) {
+          if (functionIndex == index) {
+            return function;
+          }
+          functionIndex++;
+        }
+      }
+
+      return Optional.empty();
+    } catch (final RuntimeException e) {
+      LOGGER.warning("Failed to get function by index " + index + ": " + e.getMessage());
+      return Optional.empty();
+    }
+  }
+
+  @Override
+  public Optional<WasmMemory> getMemory(final int index) {
+    ensureNotClosed();
+    if (index < 0) {
+      throw new IllegalArgumentException("Index cannot be negative: " + index);
+    }
+
+    try {
+      final String[] exportNames = getExportNames();
+      if (index >= exportNames.length) {
+        return Optional.empty();
+      }
+
+      // Find the index-th memory export
+      int memoryIndex = 0;
+      for (final String exportName : exportNames) {
+        final Optional<WasmMemory> memory = getMemory(exportName);
+        if (memory.isPresent()) {
+          if (memoryIndex == index) {
+            return memory;
+          }
+          memoryIndex++;
+        }
+      }
+
+      return Optional.empty();
+    } catch (final RuntimeException e) {
+      LOGGER.warning("Failed to get memory by index " + index + ": " + e.getMessage());
+      return Optional.empty();
+    }
+  }
+
+  @Override
+  public Optional<WasmTable> getTable(final int index) {
+    ensureNotClosed();
+    if (index < 0) {
+      throw new IllegalArgumentException("Index cannot be negative: " + index);
+    }
+
+    try {
+      final String[] exportNames = getExportNames();
+      if (index >= exportNames.length) {
+        return Optional.empty();
+      }
+
+      // Find the index-th table export
+      int tableIndex = 0;
+      for (final String exportName : exportNames) {
+        final Optional<WasmTable> table = getTable(exportName);
+        if (table.isPresent()) {
+          if (tableIndex == index) {
+            return table;
+          }
+          tableIndex++;
+        }
+      }
+
+      return Optional.empty();
+    } catch (final RuntimeException e) {
+      LOGGER.warning("Failed to get table by index " + index + ": " + e.getMessage());
+      return Optional.empty();
+    }
+  }
+
+  @Override
+  public Optional<WasmGlobal> getGlobal(final int index) {
+    ensureNotClosed();
+    if (index < 0) {
+      throw new IllegalArgumentException("Index cannot be negative: " + index);
+    }
+
+    try {
+      final String[] exportNames = getExportNames();
+      if (index >= exportNames.length) {
+        return Optional.empty();
+      }
+
+      // Find the index-th global export
+      int globalIndex = 0;
+      for (final String exportName : exportNames) {
+        final Optional<WasmGlobal> global = getGlobal(exportName);
+        if (global.isPresent()) {
+          if (globalIndex == index) {
+            return global;
+          }
+          globalIndex++;
+        }
+      }
+
+      return Optional.empty();
+    } catch (final RuntimeException e) {
+      LOGGER.warning("Failed to get global by index " + index + ": " + e.getMessage());
+      return Optional.empty();
+    }
+  }
+
+  @Override
+  public java.util.Map<String, Object> getAllExports() {
+    ensureNotClosed();
+
+    try {
+      final java.util.Map<String, Object> exports = new java.util.HashMap<>();
+      final String[] exportNames = getExportNames();
+
+      for (final String exportName : exportNames) {
+        // Try to get each type of export
+        Optional<WasmFunction> function = getFunction(exportName);
+        if (function.isPresent()) {
+          exports.put(exportName, function.get());
+          continue;
+        }
+
+        Optional<WasmMemory> memory = getMemory(exportName);
+        if (memory.isPresent()) {
+          exports.put(exportName, memory.get());
+          continue;
+        }
+
+        Optional<WasmTable> table = getTable(exportName);
+        if (table.isPresent()) {
+          exports.put(exportName, table.get());
+          continue;
+        }
+
+        Optional<WasmGlobal> global = getGlobal(exportName);
+        if (global.isPresent()) {
+          exports.put(exportName, global.get());
+        }
+      }
+
+      return java.util.Collections.unmodifiableMap(exports);
+    } catch (final RuntimeException e) {
+      LOGGER.warning("Failed to get all exports: " + e.getMessage());
+      return java.util.Collections.emptyMap();
+    }
+  }
+
+  @Override
+  public void setImports(final java.util.Map<String, Object> imports) throws WasmException {
+    throw new UnsupportedOperationException("Setting imports is not supported for instantiated instances");
+  }
+
+  /**
+   * Validates thread access for this instance.
+   *
+   * @return true if access is valid, false otherwise
+   */
+  public boolean validateThreadAccess() {
+    try {
+      return nativeValidateThreadAccess(getNativeHandle());
+    } catch (final RuntimeException e) {
+      LOGGER.warning("Thread access validation failed: " + e.getMessage());
+      return false;
+    }
+  }
+
+  /**
+   * Converts integer state value to InstanceState enum.
+   *
+   * @param stateValue the integer state value from native code
+   * @return the corresponding InstanceState
+   */
+  private static InstanceState convertIntToInstanceState(final int stateValue) {
+    switch (stateValue) {
+      case 0: return InstanceState.CREATING;
+      case 1: return InstanceState.CREATED;
+      case 2: return InstanceState.RUNNING;
+      case 3: return InstanceState.SUSPENDED;
+      case 4: return InstanceState.ERROR;
+      case 5: return InstanceState.DISPOSED;
+      case 6: return InstanceState.DESTROYING;
+      default:
+        LOGGER.warning("Unknown instance state value: " + stateValue);
+        return InstanceState.ERROR;
+    }
+  }
+
   // Native method declarations
 
   /**
@@ -433,4 +775,28 @@ public final class JniInstance extends JniResource implements Instance {
    * @param instanceHandle the native instance handle
    */
   private static native void nativeDestroyInstance(long instanceHandle);
+
+  /**
+   * Gets the current lifecycle state of an instance.
+   *
+   * @param instanceHandle the native instance handle
+   * @return the instance state as an integer value
+   */
+  private static native int nativeGetState(long instanceHandle);
+
+  /**
+   * Performs comprehensive resource cleanup for an instance.
+   *
+   * @param instanceHandle the native instance handle
+   * @return true if cleanup was performed, false if already cleaned up
+   */
+  private static native boolean nativeCleanupResources(long instanceHandle);
+
+  /**
+   * Validates cross-thread instance access.
+   *
+   * @param instanceHandle the native instance handle
+   * @return true if access is valid, false otherwise
+   */
+  private static native boolean nativeValidateThreadAccess(long instanceHandle);
 }

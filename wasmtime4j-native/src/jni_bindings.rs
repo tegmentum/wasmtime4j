@@ -16,6 +16,99 @@ use jni::sys::{jlong, jint, jboolean, jbyteArray, jstring, jobject};
 /// This module provides JNI-compatible functions for use by the wasmtime4j-jni module.
 /// All functions follow JNI naming conventions and handle Java/native type conversions.
 
+/// JNI bindings for Instance operations
+#[cfg(feature = "jni-bindings")]
+pub mod jni_instance {
+    use super::*;
+    use crate::instance::{core, InstanceState};
+    use crate::error::jni_utils;
+    use crate::ffi_common::parameter_conversion;
+    use std::os::raw::c_void;
+
+    /// Get the current lifecycle state of an instance (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeGetState(
+        env: JNIEnv,
+        _obj: jobject,
+        instance_ptr: jlong,
+    ) -> jint {
+        jni_utils::jni_try(env, || {
+            let instance = unsafe { core::get_instance_ref(instance_ptr as *const c_void)? };
+            let state = core::get_instance_state(instance);
+            Ok(state as i32)
+        })
+    }
+
+    /// Perform comprehensive resource cleanup for an instance (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeCleanupResources(
+        env: JNIEnv,
+        _obj: jobject,
+        instance_ptr: jlong,
+    ) -> jboolean {
+        jni_utils::jni_try(env, || {
+            let instance = unsafe { core::get_instance_mut(instance_ptr as *mut c_void)? };
+            let cleaned_up = core::cleanup_instance_resources(instance)?;
+            Ok(if cleaned_up { 1 } else { 0 })
+        }) != 0
+    }
+
+    /// Check if instance has been cleaned up (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeIsCleanedUp(
+        env: JNIEnv,
+        _obj: jobject,
+        instance_ptr: jlong,
+    ) -> jboolean {
+        jni_utils::jni_try(env, || {
+            let instance = unsafe { core::get_instance_ref(instance_ptr as *const c_void)? };
+            let is_cleaned = core::is_instance_cleaned_up(instance);
+            Ok(if is_cleaned { 1 } else { 0 })
+        }) != 0
+    }
+
+    /// Validate cross-thread instance access (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeValidateThreadAccess(
+        env: JNIEnv,
+        _obj: jobject,
+        instance_ptr: jlong,
+    ) -> jboolean {
+        jni_utils::jni_try(env, || {
+            let instance = unsafe { core::get_instance_ref(instance_ptr as *const c_void)? };
+            match core::validate_instance_thread_access(instance) {
+                Ok(_) => Ok(1),
+                Err(_) => Ok(0),
+            }
+        }) != 0
+    }
+
+    /// Set the lifecycle state of an instance (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeSetState(
+        env: JNIEnv,
+        _obj: jobject,
+        instance_ptr: jlong,
+        state: jint,
+    ) -> jboolean {
+        jni_utils::jni_try(env, || {
+            let instance = unsafe { core::get_instance_mut(instance_ptr as *mut c_void)? };
+            let instance_state = match state {
+                0 => InstanceState::Creating,
+                1 => InstanceState::Created,
+                2 => InstanceState::Running,
+                3 => InstanceState::Suspended,
+                4 => InstanceState::Error,
+                5 => InstanceState::Disposed,
+                6 => InstanceState::Destroying,
+                _ => return Ok(0), // Invalid state
+            };
+            core::set_instance_state(instance, instance_state);
+            Ok(1)
+        }) != 0
+    }
+}
+
 /// JNI bindings for Engine operations
 #[cfg(feature = "jni-bindings")]
 pub mod jni_engine {

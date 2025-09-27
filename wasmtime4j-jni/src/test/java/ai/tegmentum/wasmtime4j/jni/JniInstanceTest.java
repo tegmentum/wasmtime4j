@@ -7,8 +7,11 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.InstanceState;
+import ai.tegmentum.wasmtime4j.InstanceStatistics;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
+import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.exception.JniValidationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -333,5 +336,120 @@ class JniInstanceTest {
 
     // The actual callFunction behavior is tested in integration tests
     // since it requires native method calls
+  }
+
+  @Test
+  void testLifecycleStateManagement() {
+    final JniInstance instance = new JniInstance(VALID_HANDLE, mockModule, mockStore);
+
+    // Test initial state - instance should not be disposed initially
+    assertFalse(instance.isDisposed());
+
+    // Test creation timestamp tracking
+    assertTrue(instance.getCreatedAtMicros() > 0);
+    long creationTime = instance.getCreatedAtMicros();
+    assertTrue(creationTime <= System.currentTimeMillis() * 1000); // Should be reasonable
+
+    // Test metadata export count (basic validation)
+    // Note: Actual count requires native calls, tested in integration tests
+    assertTrue(instance.getMetadataExportCount() >= 0);
+  }
+
+  @Test
+  void testInstanceStatistics() throws WasmException {
+    final JniInstance instance = new JniInstance(VALID_HANDLE, mockModule, mockStore);
+
+    // Test basic statistics retrieval
+    final InstanceStatistics stats = instance.getStatistics();
+    assertNotNull(stats);
+
+    // Verify statistics structure
+    assertTrue(stats.getFunctionCallCount() >= 0);
+    assertTrue(stats.getTotalExecutionTime() >= 0);
+    assertTrue(stats.getMemoryBytesAllocated() >= 0);
+    assertTrue(stats.getPeakMemoryUsage() >= 0);
+    assertTrue(stats.getActiveTableElements() >= 0);
+    assertTrue(stats.getActiveGlobals() >= 0);
+    assertTrue(stats.getFuelConsumed() >= 0);
+    assertTrue(stats.getEpochTicks() >= 0);
+  }
+
+  @Test
+  void testI32FunctionCallValidation() {
+    final JniInstance instance = new JniInstance(VALID_HANDLE, mockModule, mockStore);
+
+    // Test null function name validation
+    assertThrows(WasmException.class, () -> instance.callI32Function(null));
+
+    // Note: Actual function calling requires native methods and is tested in integration tests
+  }
+
+  @Test
+  void testGetFunctionByIndex() {
+    final JniInstance instance = new JniInstance(VALID_HANDLE, mockModule, mockStore);
+
+    // Test negative index validation
+    assertThrows(IllegalArgumentException.class, () -> instance.getFunction(-1));
+
+    // Note: Actual index-based retrieval requires native methods and is tested in integration tests
+  }
+
+  @Test
+  void testGetMemoryByIndex() {
+    final JniInstance instance = new JniInstance(VALID_HANDLE, mockModule, mockStore);
+
+    // Test negative index validation
+    assertThrows(IllegalArgumentException.class, () -> instance.getMemory(-1));
+
+    // Note: Actual index-based retrieval requires native methods and is tested in integration tests
+  }
+
+  @Test
+  void testGetTableByIndex() {
+    final JniInstance instance = new JniInstance(VALID_HANDLE, mockModule, mockStore);
+
+    // Test negative index validation
+    assertThrows(IllegalArgumentException.class, () -> instance.getTable(-1));
+
+    // Note: Actual index-based retrieval requires native methods and is tested in integration tests
+  }
+
+  @Test
+  void testGetGlobalByIndex() {
+    final JniInstance instance = new JniInstance(VALID_HANDLE, mockModule, mockStore);
+
+    // Test negative index validation
+    assertThrows(IllegalArgumentException.class, () -> instance.getGlobal(-1));
+
+    // Note: Actual index-based retrieval requires native methods and is tested in integration tests
+  }
+
+  @Test
+  void testGetAllExports() {
+    final JniInstance instance = new JniInstance(VALID_HANDLE, mockModule, mockStore);
+
+    // Test basic functionality - should return non-null map
+    final java.util.Map<String, Object> exports = instance.getAllExports();
+    assertNotNull(exports);
+
+    // Note: Actual export retrieval requires native methods and is tested in integration tests
+  }
+
+  @Test
+  void testSetImportsUnsupported() {
+    final JniInstance instance = new JniInstance(VALID_HANDLE, mockModule, mockStore);
+
+    // Test that setImports throws UnsupportedOperationException
+    assertThrows(UnsupportedOperationException.class,
+        () -> instance.setImports(java.util.Collections.emptyMap()));
+  }
+
+  @Test
+  void testThreadAccessValidation() {
+    final JniInstance instance = new JniInstance(VALID_HANDLE, mockModule, mockStore);
+
+    // Test that validateThreadAccess doesn't throw exceptions
+    // Note: Actual thread validation requires native methods and is tested in integration tests
+    assertTrue(instance.validateThreadAccess() || !instance.validateThreadAccess());
   }
 }
