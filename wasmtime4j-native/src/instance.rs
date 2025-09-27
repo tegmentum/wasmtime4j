@@ -33,6 +33,25 @@ pub struct Instance {
     store_weak: std::sync::Weak<std::sync::Mutex<Store>>,
 }
 
+/// Lifecycle state of a WebAssembly instance
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum InstanceState {
+    /// Instance is being created but not yet ready for use
+    Creating = 0,
+    /// Instance has been successfully created and is ready for use
+    Created = 1,
+    /// Instance is currently executing WebAssembly code
+    Running = 2,
+    /// Instance execution has been suspended or paused
+    Suspended = 3,
+    /// Instance is in an error state due to execution failure
+    Error = 4,
+    /// Instance has been explicitly disposed and resources cleaned up
+    Disposed = 5,
+    /// Instance is being destroyed (cleanup in progress)
+    Destroying = 6,
+}
+
 /// Instance metadata and resource tracking
 #[derive(Debug, Clone)]
 pub struct InstanceMetadata {
@@ -50,6 +69,12 @@ pub struct InstanceMetadata {
     pub function_calls: u64,
     /// Whether this instance has been disposed
     pub disposed: bool,
+    /// Current lifecycle state
+    pub state: InstanceState,
+    /// Thread ID that created this instance
+    pub creator_thread_id: std::thread::ThreadId,
+    /// Whether cleanup has been performed
+    pub cleaned_up: bool,
 }
 
 /// Import binding information for validation and resolution
@@ -230,6 +255,9 @@ impl Instance {
             memory_bytes: 0, // Will be calculated when memory is accessed
             function_calls: 0,
             disposed: false,
+            state: InstanceState::Created,
+            creator_thread_id: std::thread::current().id(),
+            cleaned_up: false,
         };
         
         Ok((metadata, imports_map, exports_map))
@@ -290,17 +318,24 @@ impl Instance {
     
     /// Call exported function with comprehensive type checking and parameter conversion
     pub fn call_export_function(
-        &self,
+        &mut self,
         store: &mut Store,
         name: &str,
         params: &[WasmValue],
     ) -> WasmtimeResult<ExecutionResult> {
-        // Check if instance is disposed
-        if self.metadata.disposed {
+        // Check if instance is disposed or cleaned up
+        if self.metadata.disposed || self.metadata.cleaned_up {
             return Err(WasmtimeError::Instance {
-                message: "Cannot call function on disposed instance".to_string(),
+                message: "Cannot call function on disposed or cleaned up instance".to_string(),
             });
         }
+
+        // Validate cross-thread access
+        self.validate_thread_access()?;
+
+        // Set state to running during execution
+        let previous_state = self.metadata.state;
+        self.metadata.state = InstanceState::Running;
         
         // Validate export exists and is a function
         let export_binding = self.exports_map.get(name)
@@ -342,13 +377,17 @@ impl Instance {
         
         // Get function and execute with timing
         let start_time = Instant::now();
-        let instance = self.inner.lock().map_err(|e| WasmtimeError::Concurrency {
-            message: format!("Failed to acquire instance lock: {}", e),
+        let instance = self.inner.lock().map_err(|e| {
+            // Restore state on error
+            self.metadata.state = previous_state;
+            WasmtimeError::Concurrency {
+                message: format!("Failed to acquire instance lock: {}", e),
+            }
         })?;
-        
+
         // Get fuel before execution for tracking
         let fuel_before = store.fuel_remaining().ok().flatten();
-        
+
         let result = store.with_context(|mut ctx| {
             let export = instance.get_export(&mut ctx, name)
                 .ok_or_else(|| WasmtimeError::ImportExport {
@@ -380,6 +419,10 @@ impl Instance {
                     message: format!("Export '{}' is not a function", name),
                 })
             }
+        }).map_err(|e| {
+            // Set error state on execution failure
+            self.metadata.state = InstanceState::Error;
+            e
         })?;
         
         let execution_time_ns = start_time.elapsed().as_nanos() as u64;
@@ -396,7 +439,13 @@ impl Instance {
         let values = result.into_iter()
             .map(|val| Self::val_to_wasm_value(val))
             .collect::<WasmtimeResult<Vec<_>>>()?;
-        
+
+        // Increment function call count
+        self.metadata.function_calls += 1;
+
+        // Restore previous state
+        self.metadata.state = previous_state;
+
         Ok(ExecutionResult {
             values,
             fuel_consumed,
@@ -482,12 +531,63 @@ impl Instance {
     pub fn dispose(&mut self) -> WasmtimeResult<()> {
         // Mark as disposed to prevent further operations
         self.metadata.disposed = true;
-        
-        // Clear export and import maps 
+        self.metadata.state = InstanceState::Disposed;
+
+        // Clear export and import maps
         self.exports_map.clear();
         self.imports_map.clear();
-        
+
         // The Arc<Mutex<WasmtimeInstance>> will be cleaned up when the last reference is dropped
+        Ok(())
+    }
+
+    /// Get the current lifecycle state of this instance
+    pub fn get_state(&self) -> InstanceState {
+        self.metadata.state
+    }
+
+    /// Set the lifecycle state of this instance
+    pub fn set_state(&mut self, state: InstanceState) {
+        self.metadata.state = state;
+    }
+
+    /// Perform comprehensive resource cleanup
+    pub fn cleanup(&mut self) -> WasmtimeResult<bool> {
+        if self.metadata.cleaned_up {
+            return Ok(false); // Already cleaned up
+        }
+
+        // Set state to destroying during cleanup
+        self.metadata.state = InstanceState::Destroying;
+
+        // Clear all maps and references
+        self.exports_map.clear();
+        self.imports_map.clear();
+
+        // Mark as disposed and cleaned up
+        self.metadata.disposed = true;
+        self.metadata.cleaned_up = true;
+        self.metadata.state = InstanceState::Disposed;
+
+        Ok(true)
+    }
+
+    /// Check if instance has been cleaned up
+    pub fn is_cleaned_up(&self) -> bool {
+        self.metadata.cleaned_up
+    }
+
+    /// Validate cross-thread access
+    pub fn validate_thread_access(&self) -> WasmtimeResult<()> {
+        let current_thread = std::thread::current().id();
+        if current_thread != self.metadata.creator_thread_id {
+            log::warn!(
+                "Cross-thread access detected: instance created on thread {:?}, accessed from thread {:?}",
+                self.metadata.creator_thread_id,
+                current_thread
+            );
+            // For now, just log a warning. In a stricter implementation, this could return an error
+        }
         Ok(())
     }
     
@@ -883,6 +983,36 @@ pub mod core {
     /// Core function to get instance creation timestamp
     pub fn get_creation_time(instance: &Instance) -> Instant {
         instance.metadata().created_at
+    }
+
+    /// Core function to get instance state
+    pub fn get_instance_state(instance: &Instance) -> InstanceState {
+        instance.get_state()
+    }
+
+    /// Core function to set instance state
+    pub fn set_instance_state(instance: &mut Instance, state: InstanceState) {
+        instance.set_state(state);
+    }
+
+    /// Core function to cleanup instance resources
+    pub fn cleanup_instance_resources(instance: &mut Instance) -> WasmtimeResult<bool> {
+        instance.cleanup()
+    }
+
+    /// Core function to check if instance has been cleaned up
+    pub fn is_instance_cleaned_up(instance: &Instance) -> bool {
+        instance.is_cleaned_up()
+    }
+
+    /// Core function to validate thread access
+    pub fn validate_instance_thread_access(instance: &Instance) -> WasmtimeResult<()> {
+        instance.validate_thread_access()
+    }
+
+    /// Core function to get instance creator thread ID
+    pub fn get_instance_creator_thread_id(instance: &Instance) -> std::thread::ThreadId {
+        instance.metadata().creator_thread_id
     }
     
     /// Helper function to create WasmValue from primitive types for JNI/Panama bindings

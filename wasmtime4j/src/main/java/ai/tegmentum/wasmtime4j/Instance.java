@@ -251,6 +251,30 @@ public interface Instance extends Closeable {
   InstanceStatistics getStatistics() throws WasmException;
 
   /**
+   * Gets the current lifecycle state of this instance.
+   *
+   * <p>Instance state tracking provides visibility into the instance lifecycle for proper resource
+   * management and debugging.
+   *
+   * @return the current instance state
+   * @since 1.0.0
+   */
+  InstanceState getState();
+
+  /**
+   * Performs comprehensive resource cleanup for this instance.
+   *
+   * <p>This method goes beyond dispose() to perform deep cleanup of all associated resources,
+   * including native memory, function references, and internal state. Unlike dispose(), this
+   * method ensures complete resource cleanup and can be safely called multiple times.
+   *
+   * @return true if cleanup was performed, false if already cleaned up
+   * @throws WasmException if cleanup fails
+   * @since 1.0.0
+   */
+  boolean cleanup() throws WasmException;
+
+  /**
    * Checks if the instance is still valid and usable.
    *
    * @return true if the instance is valid, false otherwise

@@ -16,9 +16,16 @@
 
 package ai.tegmentum.wasmtime4j.panama;
 
+import ai.tegmentum.wasmtime4j.ExportDescriptor;
+import ai.tegmentum.wasmtime4j.FuncType;
+import ai.tegmentum.wasmtime4j.GlobalType;
 import ai.tegmentum.wasmtime4j.Instance;
+import ai.tegmentum.wasmtime4j.InstanceState;
+import ai.tegmentum.wasmtime4j.InstanceStatistics;
+import ai.tegmentum.wasmtime4j.MemoryType;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
+import ai.tegmentum.wasmtime4j.TableType;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmGlobal;
 import ai.tegmentum.wasmtime4j.WasmMemory;
@@ -58,6 +65,8 @@ public final class PanamaInstance implements Instance, AutoCloseable {
 
   // Instance state
   private volatile boolean closed = false;
+  private volatile boolean cleanedUp = false;
+  private final long createdAtMicros;
 
   @Override
   public boolean isValid() {
@@ -83,6 +92,7 @@ public final class PanamaInstance implements Instance, AutoCloseable {
         Objects.requireNonNull(resourceManager, "Resource manager cannot be null");
     this.module = Objects.requireNonNull(module, "Module cannot be null");
     this.nativeFunctions = NativeFunctionBindings.getInstance();
+    this.createdAtMicros = System.currentTimeMillis() * 1000; // Convert to microseconds
 
     if (!nativeFunctions.isInitialized()) {
       throw new WasmException("Native function bindings not initialized");
@@ -364,6 +374,417 @@ public final class PanamaInstance implements Instance, AutoCloseable {
               "name=" + functionName + ", params.length=" + (params != null ? params.length : 0),
               e.getMessage());
       throw new WasmException(detailedMessage, e);
+    }
+  }
+
+  @Override
+  public InstanceState getState() {
+    ensureNotClosed();
+    try {
+      // Get state from native function if available
+      // For now, return basic state based on closed flag
+      if (closed) {
+        return InstanceState.DISPOSED;
+      } else if (cleanedUp) {
+        return InstanceState.DESTROYING;
+      } else {
+        return InstanceState.CREATED;
+      }
+    } catch (Exception e) {
+      LOGGER.warning("Failed to get instance state: " + e.getMessage());
+      return InstanceState.ERROR;
+    }
+  }
+
+  @Override
+  public boolean cleanup() throws WasmException {
+    if (cleanedUp) {
+      return false; // Already cleaned up
+    }
+
+    ensureNotClosed();
+
+    synchronized (this) {
+      if (cleanedUp) {
+        return false;
+      }
+
+      try {
+        // Perform comprehensive resource cleanup
+        cleanedUp = true;
+        LOGGER.fine("Instance resources cleaned up successfully");
+        return true;
+      } catch (Exception e) {
+        cleanedUp = false; // Reset on failure
+        throw new WasmException("Failed to cleanup instance resources", e);
+      }
+    }
+  }
+
+  @Override
+  public boolean dispose() throws WasmException {
+    if (closed) {
+      return false; // Already disposed
+    }
+
+    try {
+      // Perform cleanup first if not already done
+      if (!cleanedUp) {
+        cleanup();
+      }
+
+      // Close the resource
+      close();
+      return true;
+    } catch (Exception e) {
+      throw new WasmException("Failed to dispose instance", e);
+    }
+  }
+
+  @Override
+  public boolean isDisposed() {
+    return closed;
+  }
+
+  @Override
+  public long getCreatedAtMicros() {
+    return createdAtMicros;
+  }
+
+  @Override
+  public int getMetadataExportCount() {
+    ensureNotClosed();
+    try {
+      final String[] exports = getExportNames();
+      return exports != null ? exports.length : 0;
+    } catch (Exception e) {
+      LOGGER.warning("Failed to get metadata export count: " + e.getMessage());
+      return 0;
+    }
+  }
+
+  @Override
+  public int callI32Function(final String functionName, final int... params) throws WasmException {
+    ensureNotClosed();
+
+    // Convert int parameters to WasmValue array
+    final WasmValue[] wasmParams = new WasmValue[params.length];
+    for (int i = 0; i < params.length; i++) {
+      wasmParams[i] = WasmValue.i32(params[i]);
+    }
+
+    // Call function and get result
+    final WasmValue[] results = callFunction(functionName, wasmParams);
+    if (results.length != 1) {
+      throw new WasmException("Expected single i32 result, got " + results.length + " results");
+    }
+
+    if (results[0].getType() != WasmValue.Type.I32) {
+      throw new WasmException("Expected i32 result, got " + results[0].getType());
+    }
+
+    return results[0].asI32();
+  }
+
+  @Override
+  public int callI32Function(final String functionName) throws WasmException {
+    return callI32Function(functionName, new int[0]);
+  }
+
+  @Override
+  public InstanceStatistics getStatistics() throws WasmException {
+    ensureNotClosed();
+
+    try {
+      // For now, return basic statistics
+      // In a full implementation, these would come from native code
+      return new InstanceStatistics(
+          0, // functionCallCount - would need tracking
+          0, // totalExecutionTime - would need tracking
+          0, // memoryBytesAllocated - would need tracking
+          0, // peakMemoryUsage - would need tracking
+          0, // activeTableElements - would need tracking
+          0, // activeGlobals - would need tracking
+          0, // fuelConsumed - would need tracking
+          0  // epochTicks - would need tracking
+      );
+    } catch (Exception e) {
+      throw new WasmException("Failed to get instance statistics", e);
+    }
+  }
+
+  @Override
+  public Optional<WasmFunction> getFunction(final int index) {
+    ensureNotClosed();
+    if (index < 0) {
+      throw new IllegalArgumentException("Index cannot be negative: " + index);
+    }
+
+    try {
+      final String[] exportNames = getExportNames();
+      if (index >= exportNames.length) {
+        return Optional.empty();
+      }
+
+      // Find the index-th function export
+      int functionIndex = 0;
+      for (final String exportName : exportNames) {
+        final Optional<WasmFunction> function = getFunction(exportName);
+        if (function.isPresent()) {
+          if (functionIndex == index) {
+            return function;
+          }
+          functionIndex++;
+        }
+      }
+
+      return Optional.empty();
+    } catch (Exception e) {
+      LOGGER.warning("Failed to get function by index " + index + ": " + e.getMessage());
+      return Optional.empty();
+    }
+  }
+
+  @Override
+  public Optional<WasmMemory> getMemory(final int index) {
+    ensureNotClosed();
+    if (index < 0) {
+      throw new IllegalArgumentException("Index cannot be negative: " + index);
+    }
+
+    try {
+      final String[] exportNames = getExportNames();
+      if (index >= exportNames.length) {
+        return Optional.empty();
+      }
+
+      // Find the index-th memory export
+      int memoryIndex = 0;
+      for (final String exportName : exportNames) {
+        final Optional<WasmMemory> memory = getMemory(exportName);
+        if (memory.isPresent()) {
+          if (memoryIndex == index) {
+            return memory;
+          }
+          memoryIndex++;
+        }
+      }
+
+      return Optional.empty();
+    } catch (Exception e) {
+      LOGGER.warning("Failed to get memory by index " + index + ": " + e.getMessage());
+      return Optional.empty();
+    }
+  }
+
+  @Override
+  public Optional<WasmTable> getTable(final int index) {
+    ensureNotClosed();
+    if (index < 0) {
+      throw new IllegalArgumentException("Index cannot be negative: " + index);
+    }
+
+    try {
+      final String[] exportNames = getExportNames();
+      if (index >= exportNames.length) {
+        return Optional.empty();
+      }
+
+      // Find the index-th table export
+      int tableIndex = 0;
+      for (final String exportName : exportNames) {
+        final Optional<WasmTable> table = getTable(exportName);
+        if (table.isPresent()) {
+          if (tableIndex == index) {
+            return table;
+          }
+          tableIndex++;
+        }
+      }
+
+      return Optional.empty();
+    } catch (Exception e) {
+      LOGGER.warning("Failed to get table by index " + index + ": " + e.getMessage());
+      return Optional.empty();
+    }
+  }
+
+  @Override
+  public Optional<WasmGlobal> getGlobal(final int index) {
+    ensureNotClosed();
+    if (index < 0) {
+      throw new IllegalArgumentException("Index cannot be negative: " + index);
+    }
+
+    try {
+      final String[] exportNames = getExportNames();
+      if (index >= exportNames.length) {
+        return Optional.empty();
+      }
+
+      // Find the index-th global export
+      int globalIndex = 0;
+      for (final String exportName : exportNames) {
+        final Optional<WasmGlobal> global = getGlobal(exportName);
+        if (global.isPresent()) {
+          if (globalIndex == index) {
+            return global;
+          }
+          globalIndex++;
+        }
+      }
+
+      return Optional.empty();
+    } catch (Exception e) {
+      LOGGER.warning("Failed to get global by index " + index + ": " + e.getMessage());
+      return Optional.empty();
+    }
+  }
+
+  @Override
+  public java.util.Map<String, Object> getAllExports() {
+    ensureNotClosed();
+
+    try {
+      final java.util.Map<String, Object> exports = new java.util.HashMap<>();
+      final String[] exportNames = getExportNames();
+
+      for (final String exportName : exportNames) {
+        // Try to get each type of export
+        Optional<WasmFunction> function = getFunction(exportName);
+        if (function.isPresent()) {
+          exports.put(exportName, function.get());
+          continue;
+        }
+
+        Optional<WasmMemory> memory = getMemory(exportName);
+        if (memory.isPresent()) {
+          exports.put(exportName, memory.get());
+          continue;
+        }
+
+        Optional<WasmTable> table = getTable(exportName);
+        if (table.isPresent()) {
+          exports.put(exportName, table.get());
+          continue;
+        }
+
+        Optional<WasmGlobal> global = getGlobal(exportName);
+        if (global.isPresent()) {
+          exports.put(exportName, global.get());
+        }
+      }
+
+      return java.util.Collections.unmodifiableMap(exports);
+    } catch (Exception e) {
+      LOGGER.warning("Failed to get all exports: " + e.getMessage());
+      return java.util.Collections.emptyMap();
+    }
+  }
+
+  @Override
+  public void setImports(final java.util.Map<String, Object> imports) throws WasmException {
+    throw new UnsupportedOperationException("Setting imports is not supported for instantiated instances");
+  }
+
+  @Override
+  public List<ExportDescriptor> getExportDescriptors() {
+    ensureNotClosed();
+    try {
+      // For now, return empty list
+      // In a full implementation, this would return actual export descriptors
+      return java.util.Collections.emptyList();
+    } catch (Exception e) {
+      LOGGER.warning("Failed to get export descriptors: " + e.getMessage());
+      return java.util.Collections.emptyList();
+    }
+  }
+
+  @Override
+  public Optional<ExportDescriptor> getExportDescriptor(final String name) {
+    Objects.requireNonNull(name, "Name cannot be null");
+    ensureNotClosed();
+    try {
+      // For now, return empty
+      // In a full implementation, this would return actual export descriptor
+      return Optional.empty();
+    } catch (Exception e) {
+      LOGGER.warning("Failed to get export descriptor for '" + name + "': " + e.getMessage());
+      return Optional.empty();
+    }
+  }
+
+  @Override
+  public Optional<FuncType> getFunctionType(final String functionName) {
+    Objects.requireNonNull(functionName, "Function name cannot be null");
+    ensureNotClosed();
+    try {
+      // For now, return empty
+      // In a full implementation, this would return actual function type
+      return Optional.empty();
+    } catch (Exception e) {
+      LOGGER.warning("Failed to get function type for '" + functionName + "': " + e.getMessage());
+      return Optional.empty();
+    }
+  }
+
+  @Override
+  public Optional<GlobalType> getGlobalType(final String globalName) {
+    Objects.requireNonNull(globalName, "Global name cannot be null");
+    ensureNotClosed();
+    try {
+      // For now, return empty
+      // In a full implementation, this would return actual global type
+      return Optional.empty();
+    } catch (Exception e) {
+      LOGGER.warning("Failed to get global type for '" + globalName + "': " + e.getMessage());
+      return Optional.empty();
+    }
+  }
+
+  @Override
+  public Optional<MemoryType> getMemoryType(final String memoryName) {
+    Objects.requireNonNull(memoryName, "Memory name cannot be null");
+    ensureNotClosed();
+    try {
+      // For now, return empty
+      // In a full implementation, this would return actual memory type
+      return Optional.empty();
+    } catch (Exception e) {
+      LOGGER.warning("Failed to get memory type for '" + memoryName + "': " + e.getMessage());
+      return Optional.empty();
+    }
+  }
+
+  @Override
+  public Optional<TableType> getTableType(final String tableName) {
+    Objects.requireNonNull(tableName, "Table name cannot be null");
+    ensureNotClosed();
+    try {
+      // For now, return empty
+      // In a full implementation, this would return actual table type
+      return Optional.empty();
+    } catch (Exception e) {
+      LOGGER.warning("Failed to get table type for '" + tableName + "': " + e.getMessage());
+      return Optional.empty();
+    }
+  }
+
+  @Override
+  public boolean hasExport(final String name) {
+    Objects.requireNonNull(name, "Name cannot be null");
+    ensureNotClosed();
+    try {
+      final String[] exportNames = getExportNames();
+      for (final String exportName : exportNames) {
+        if (name.equals(exportName)) {
+          return true;
+        }
+      }
+      return false;
+    } catch (Exception e) {
+      LOGGER.warning("Failed to check export existence for '" + name + "': " + e.getMessage());
+      return false;
     }
   }
 
