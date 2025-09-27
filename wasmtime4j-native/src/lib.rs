@@ -38,6 +38,10 @@ pub mod table;
 pub mod linker;
 pub mod threading;
 
+// Additional core functionality for comprehensive API coverage
+pub mod caller;
+pub mod serialization;
+
 // Advanced threading optimizations and work-stealing refinements
 pub mod work_stealing;
 pub mod thread_affinity;
@@ -214,6 +218,12 @@ pub use global::{Global, GlobalValue, GlobalMetadata, ReferenceType as GlobalRef
 pub use table::{Table, TableElement, TableMetadata};
 pub use linker::{Linker, LinkerMetadata, LinkerConfig, LinkerInstantiationResult, HostFunctionDefinition, ImportDefinition, ImportType};
 
+// Re-export additional core functionality
+pub use caller::{CallerContext, CallableWithContext, CallerContextCallback, create_host_function_with_context};
+pub use serialization::{
+    ModuleSerializer, SerializationConfig, SerializedModule, SerializedModuleMetadata, CacheStatistics
+};
+
 // Re-export advanced threading functionality
 pub use work_stealing::{
     WorkStealingScheduler, WorkStealingConfig, WorkStealingTask, TaskId, TaskPriority,
@@ -248,7 +258,8 @@ pub use memory_coordination::{
 pub use wasi::{
     WasiContext, WasiConfig, EnvironmentPolicy, DirectoryMapping,
     WasiDirPermissions, WasiFilePermissions, StdioConfig, StdioSource, StdioSink,
-    WasiExecutionResult
+    WasiExecutionResult, WasiCapabilitiesSummary, WasiFileDescriptorManager,
+    WasiFileDescriptor, WasiDirectoryDescriptor, WasiDirectoryEntry, WasiFilestat
 };
 
 // Re-export async runtime functionality

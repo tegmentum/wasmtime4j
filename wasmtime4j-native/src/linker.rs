@@ -414,6 +414,318 @@ impl Linker {
         }
     }
 
+    /// Instantiates a WebAssembly module using this linker
+    ///
+    /// # Arguments
+    /// * `store` - The store to use for instantiation
+    /// * `module` - The module to instantiate
+    ///
+    /// # Returns
+    /// The instantiation result with the created instance and metadata
+    ///
+    /// # Errors
+    /// Returns WasmtimeError if instantiation fails
+    pub fn instantiate(
+        &mut self,
+        store: &mut Store,
+        module: &Module,
+    ) -> WasmtimeResult<LinkerInstantiationResult> {
+        let start_time = std::time::Instant::now();
+
+        if self.metadata.disposed {
+            return Err(WasmtimeError::Runtime {
+                message: "Linker has been disposed".to_string(),
+                backtrace: None
+            });
+        }
+
+        // First, instantiate all registered host functions
+        self.instantiate_host_functions(store)?;
+
+        let mut linker = self.inner.lock()
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Failed to lock linker: {}", e),
+                backtrace: None
+            })?;
+
+        let wasmtime_instance = store.with_context_mut(|ctx| {
+            linker.instantiate(ctx, module.inner())
+                .map_err(|e| WasmtimeError::Runtime {
+                    message: format!("Failed to instantiate module: {}", e),
+                    backtrace: None
+                })
+        })?;
+
+        let instance = Instance::from_wasmtime_instance(wasmtime_instance, store)?;
+
+        let instantiation_time = start_time.elapsed();
+        self.metadata.instantiation_count += 1;
+
+        log::debug!("Instantiated module successfully in {:?}", instantiation_time);
+
+        Ok(LinkerInstantiationResult {
+            instance,
+            resolved_imports: self.metadata.import_count,
+            instantiation_time,
+        })
+    }
+
+    /// Defines a table that can be imported by WebAssembly modules
+    ///
+    /// # Arguments
+    /// * `store` - The store to use for table definition
+    /// * `module_name` - The module name for the import
+    /// * `table_name` - The table name for the import
+    /// * `table` - The WebAssembly table to provide
+    ///
+    /// # Errors
+    /// Returns WasmtimeError if the table cannot be defined
+    pub fn define_table(
+        &mut self,
+        store: &Store,
+        module_name: &str,
+        table_name: &str,
+        table: &WasmTable,
+    ) -> WasmtimeResult<()> {
+        if self.metadata.disposed {
+            return Err(WasmtimeError::Runtime {
+                message: "Linker has been disposed".to_string(),
+                backtrace: None
+            });
+        }
+
+        let mut linker = self.inner.lock()
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Failed to lock linker: {}", e),
+                backtrace: None
+            })?;
+
+        let wasmtime_table = table.inner();
+
+        store.with_context(|ctx| {
+            linker.define(ctx, module_name, table_name, wasmtime::Extern::Table(*wasmtime_table))
+                .map_err(|e| WasmtimeError::Runtime {
+                    message: format!("Failed to define table: {}", e),
+                    backtrace: None
+                })
+        })?;
+
+        // Record in imports registry
+        let key = format!("{}::{}", module_name, table_name);
+        let import_def = ImportDefinition {
+            module_name: module_name.to_string(),
+            import_name: table_name.to_string(),
+            import_type: ImportType::Table,
+            defined_at: Instant::now(),
+        };
+        self.imports_registry.insert(key, import_def);
+        self.metadata.import_count += 1;
+
+        log::debug!("Defined table {}::{}", module_name, table_name);
+        Ok(())
+    }
+
+    /// Defines a global that can be imported by WebAssembly modules
+    ///
+    /// # Arguments
+    /// * `store` - The store to use for global definition
+    /// * `module_name` - The module name for the import
+    /// * `global_name` - The global name for the import
+    /// * `global` - The WebAssembly global to provide
+    ///
+    /// # Errors
+    /// Returns WasmtimeError if the global cannot be defined
+    pub fn define_global(
+        &mut self,
+        store: &Store,
+        module_name: &str,
+        global_name: &str,
+        global: &WasmGlobal,
+    ) -> WasmtimeResult<()> {
+        if self.metadata.disposed {
+            return Err(WasmtimeError::Runtime {
+                message: "Linker has been disposed".to_string(),
+                backtrace: None
+            });
+        }
+
+        let mut linker = self.inner.lock()
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Failed to lock linker: {}", e),
+                backtrace: None
+            })?;
+
+        let wasmtime_global = global.inner();
+
+        store.with_context(|ctx| {
+            linker.define(ctx, module_name, global_name, wasmtime::Extern::Global(*wasmtime_global))
+                .map_err(|e| WasmtimeError::Runtime {
+                    message: format!("Failed to define global: {}", e),
+                    backtrace: None
+                })
+        })?;
+
+        // Record in imports registry
+        let key = format!("{}::{}", module_name, global_name);
+        let import_def = ImportDefinition {
+            module_name: module_name.to_string(),
+            import_name: global_name.to_string(),
+            import_type: ImportType::Global,
+            defined_at: Instant::now(),
+        };
+        self.imports_registry.insert(key, import_def);
+        self.metadata.import_count += 1;
+
+        log::debug!("Defined global {}::{}", module_name, global_name);
+        Ok(())
+    }
+
+    /// Defines an instance (all exports from another instance) that can be imported
+    ///
+    /// # Arguments
+    /// * `store` - The store to use for instance definition
+    /// * `module_name` - The module name for the import
+    /// * `instance_name` - The instance name for the import
+    /// * `instance` - The WebAssembly instance to provide exports from
+    ///
+    /// # Errors
+    /// Returns WasmtimeError if the instance cannot be defined
+    pub fn define_instance(
+        &mut self,
+        store: &Store,
+        module_name: &str,
+        instance_name: &str,
+        instance: &Instance,
+    ) -> WasmtimeResult<()> {
+        if self.metadata.disposed {
+            return Err(WasmtimeError::Runtime {
+                message: "Linker has been disposed".to_string(),
+                backtrace: None
+            });
+        }
+
+        let mut linker = self.inner.lock()
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Failed to lock linker: {}", e),
+                backtrace: None
+            })?;
+
+        let wasmtime_instance = instance.inner();
+
+        store.with_context(|ctx| {
+            linker.instance(ctx, module_name, &wasmtime_instance)
+                .map_err(|e| WasmtimeError::Runtime {
+                    message: format!("Failed to define instance: {}", e),
+                    backtrace: None
+                })
+        })?;
+
+        // Record in imports registry
+        let key = format!("{}::{}", module_name, instance_name);
+        let import_def = ImportDefinition {
+            module_name: module_name.to_string(),
+            import_name: instance_name.to_string(),
+            import_type: ImportType::Instance,
+            defined_at: Instant::now(),
+        };
+        self.imports_registry.insert(key, import_def);
+        self.metadata.import_count += 1;
+
+        log::debug!("Defined instance {}::{}", module_name, instance_name);
+        Ok(())
+    }
+
+    /// Defines a module in the linker for later instantiation
+    ///
+    /// # Arguments
+    /// * `module_name` - The name to register the module under
+    /// * `module` - The module to register
+    ///
+    /// # Errors
+    /// Returns WasmtimeError if the module cannot be defined
+    pub fn define_module(
+        &mut self,
+        module_name: &str,
+        module: &Module,
+    ) -> WasmtimeResult<()> {
+        if self.metadata.disposed {
+            return Err(WasmtimeError::Runtime {
+                message: "Linker has been disposed".to_string(),
+                backtrace: None
+            });
+        }
+
+        let mut linker = self.inner.lock()
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Failed to lock linker: {}", e),
+                backtrace: None
+            })?;
+
+        linker.module(module_name, module.inner())
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Failed to define module: {}", e),
+                backtrace: None
+            })?;
+
+        log::debug!("Defined module: {}", module_name);
+        Ok(())
+    }
+
+    /// Checks if a specific import is satisfied by the linker
+    ///
+    /// # Arguments
+    /// * `module_name` - The module name of the import
+    /// * `import_name` - The import name to check
+    ///
+    /// # Returns
+    /// True if the import is satisfied, false otherwise
+    pub fn can_satisfy_import(&self, module_name: &str, import_name: &str) -> bool {
+        let key = format!("{}::{}", module_name, import_name);
+        self.imports_registry.contains_key(&key)
+    }
+
+    /// Gets a list of all unsatisfied imports for a given module
+    ///
+    /// # Arguments
+    /// * `module` - The module to check imports for
+    ///
+    /// # Returns
+    /// A vector of unsatisfied import names
+    pub fn get_unsatisfied_imports(&self, module: &Module) -> Vec<String> {
+        let mut unsatisfied = Vec::new();
+
+        for import in module.imports() {
+            if !self.can_satisfy_import(&import.module_name, &import.import_name) {
+                unsatisfied.push(format!("{}::{}", import.module_name, import.import_name));
+            }
+        }
+
+        unsatisfied
+    }
+
+    /// Validates that all imports of a module can be satisfied by this linker
+    ///
+    /// # Arguments
+    /// * `module` - The module to validate imports for
+    ///
+    /// # Returns
+    /// Ok if all imports can be satisfied, error with details otherwise
+    pub fn validate_module_imports(&self, module: &Module) -> WasmtimeResult<()> {
+        let unsatisfied = self.get_unsatisfied_imports(module);
+
+        if !unsatisfied.is_empty() {
+            return Err(WasmtimeError::Runtime {
+                message: format!(
+                    "Module has unsatisfied imports: {}",
+                    unsatisfied.join(", ")
+                ),
+                backtrace: None
+            });
+        }
+
+        Ok(())
+    }
+
     /// Gets access to the inner wasmtime linker (for advanced use cases)
     ///
     /// # Safety
