@@ -39,6 +39,7 @@ pub mod linker;
 pub mod caller;
 pub mod serialization;
 pub mod threading;
+pub mod streaming_compiler;
 
 // Advanced threading optimizations and work-stealing refinements
 pub mod work_stealing;

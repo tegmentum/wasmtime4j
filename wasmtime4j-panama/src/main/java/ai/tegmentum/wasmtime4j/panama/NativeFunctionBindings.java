@@ -1429,6 +1429,142 @@ public final class NativeFunctionBindings {
     }
   }
 
+  // === Caller Context Functions ===
+
+  /**
+   * Gets the fuel consumed by the caller if fuel metering is enabled.
+   *
+   * @param callerPtr pointer to the caller context
+   * @param fuelOut pointer to store the fuel value
+   * @return 1 if fuel is available, 0 if fuel metering not enabled, negative error code on failure
+   */
+  public int callerGetFuel(final MemorySegment callerPtr, final MemorySegment fuelOut) {
+    validatePointer(callerPtr, "callerPtr");
+    validatePointer(fuelOut, "fuelOut");
+    return callNativeFunction("wasmtime4j_caller_get_fuel", Integer.class, callerPtr, fuelOut);
+  }
+
+  /**
+   * Gets the fuel remaining in the caller if fuel metering is enabled.
+   *
+   * @param callerPtr pointer to the caller context
+   * @param fuelOut pointer to store the fuel value
+   * @return 1 if fuel is available, 0 if fuel metering not enabled, negative error code on failure
+   */
+  public int callerGetFuelRemaining(final MemorySegment callerPtr, final MemorySegment fuelOut) {
+    validatePointer(callerPtr, "callerPtr");
+    validatePointer(fuelOut, "fuelOut");
+    return callNativeFunction("wasmtime4j_caller_get_fuel_remaining", Integer.class, callerPtr, fuelOut);
+  }
+
+  /**
+   * Adds fuel to the caller.
+   *
+   * @param callerPtr pointer to the caller context
+   * @param fuel amount of fuel to add
+   * @return 0 on success, negative error code on failure
+   */
+  public int callerAddFuel(final MemorySegment callerPtr, final long fuel) {
+    validatePointer(callerPtr, "callerPtr");
+    return callNativeFunction("wasmtime4j_caller_add_fuel", Integer.class, callerPtr, fuel);
+  }
+
+  /**
+   * Sets an epoch deadline for the caller.
+   *
+   * @param callerPtr pointer to the caller context
+   * @param deadline the epoch deadline to set
+   * @return 0 on success, negative error code on failure
+   */
+  public int callerSetEpochDeadline(final MemorySegment callerPtr, final long deadline) {
+    validatePointer(callerPtr, "callerPtr");
+    return callNativeFunction("wasmtime4j_caller_set_epoch_deadline", Integer.class, callerPtr, deadline);
+  }
+
+  /**
+   * Checks if the caller has an active epoch deadline.
+   *
+   * @param callerPtr pointer to the caller context
+   * @return 1 if deadline is active, 0 if no deadline, negative error code on failure
+   */
+  public int callerHasEpochDeadline(final MemorySegment callerPtr) {
+    validatePointer(callerPtr, "callerPtr");
+    return callNativeFunction("wasmtime4j_caller_has_epoch_deadline", Integer.class, callerPtr);
+  }
+
+  /**
+   * Checks if caller has an export with the given name.
+   *
+   * @param callerPtr pointer to the caller context
+   * @param name name of the export to check
+   * @return 1 if export exists, 0 if not found, negative error code on failure
+   */
+  public int callerHasExport(final MemorySegment callerPtr, final MemorySegment name) {
+    validatePointer(callerPtr, "callerPtr");
+    validatePointer(name, "name");
+    return callNativeFunction("wasmtime4j_caller_has_export", Integer.class, callerPtr, name);
+  }
+
+  /**
+   * Gets memory export from caller by name.
+   *
+   * @param callerPtr pointer to the caller context
+   * @param name name of the memory export
+   * @param memoryOut pointer to store the memory pointer
+   * @return 1 if memory found, 0 if not found, negative error code on failure
+   */
+  public int callerGetMemory(final MemorySegment callerPtr, final MemorySegment name, final MemorySegment memoryOut) {
+    validatePointer(callerPtr, "callerPtr");
+    validatePointer(name, "name");
+    validatePointer(memoryOut, "memoryOut");
+    return callNativeFunction("wasmtime4j_caller_get_memory", Integer.class, callerPtr, name, memoryOut);
+  }
+
+  /**
+   * Gets function export from caller by name.
+   *
+   * @param callerPtr pointer to the caller context
+   * @param name name of the function export
+   * @param functionOut pointer to store the function pointer
+   * @return 1 if function found, 0 if not found, negative error code on failure
+   */
+  public int callerGetFunction(final MemorySegment callerPtr, final MemorySegment name, final MemorySegment functionOut) {
+    validatePointer(callerPtr, "callerPtr");
+    validatePointer(name, "name");
+    validatePointer(functionOut, "functionOut");
+    return callNativeFunction("wasmtime4j_caller_get_function", Integer.class, callerPtr, name, functionOut);
+  }
+
+  /**
+   * Gets global export from caller by name.
+   *
+   * @param callerPtr pointer to the caller context
+   * @param name name of the global export
+   * @param globalOut pointer to store the global pointer
+   * @return 1 if global found, 0 if not found, negative error code on failure
+   */
+  public int callerGetGlobal(final MemorySegment callerPtr, final MemorySegment name, final MemorySegment globalOut) {
+    validatePointer(callerPtr, "callerPtr");
+    validatePointer(name, "name");
+    validatePointer(globalOut, "globalOut");
+    return callNativeFunction("wasmtime4j_caller_get_global", Integer.class, callerPtr, name, globalOut);
+  }
+
+  /**
+   * Gets table export from caller by name.
+   *
+   * @param callerPtr pointer to the caller context
+   * @param name name of the table export
+   * @param tableOut pointer to store the table pointer
+   * @return 1 if table found, 0 if not found, negative error code on failure
+   */
+  public int callerGetTable(final MemorySegment callerPtr, final MemorySegment name, final MemorySegment tableOut) {
+    validatePointer(callerPtr, "callerPtr");
+    validatePointer(name, "name");
+    validatePointer(tableOut, "tableOut");
+    return callNativeFunction("wasmtime4j_caller_get_table", Integer.class, callerPtr, name, tableOut);
+  }
+
   /** Initializes all function bindings. */
   private void initializeFunctionBindings() {
     // Engine functions

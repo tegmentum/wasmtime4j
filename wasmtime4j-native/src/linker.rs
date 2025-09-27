@@ -4,13 +4,15 @@
 //! binding imports, and resolving module dependencies before instantiation.
 
 use std::sync::{Arc, Mutex};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::time::Instant;
 use wasmtime::{
     Linker as WasmtimeLinker,
     FuncType,
     Val,
     Caller,
+    ImportType as WasmtimeImportType,
+    ExternType,
 };
 use crate::engine::Engine;
 use crate::store::{Store, StoreData};
@@ -118,6 +120,145 @@ impl Default for LinkerConfig {
             validate_signatures: true,
         }
     }
+}
+
+/// Dependency graph for module resolution
+#[derive(Debug, Clone)]
+pub struct DependencyGraph {
+    /// Nodes in the graph (modules)
+    pub nodes: Vec<DependencyNode>,
+    /// Edges in the graph (dependencies)
+    pub edges: Vec<DependencyEdge>,
+    /// Whether the graph has been validated
+    pub validated: bool,
+    /// Topological sort order (if valid)
+    pub topological_order: Vec<usize>,
+    /// Circular dependency chains detected
+    pub circular_chains: Vec<String>,
+}
+
+/// Node in the dependency graph representing a module
+#[derive(Debug, Clone)]
+pub struct DependencyNode {
+    /// Index of this node
+    pub index: usize,
+    /// Module reference
+    pub module: Module,
+    /// Imports required by this module
+    pub imports: Vec<ModuleImport>,
+    /// Exports provided by this module
+    pub exports: Vec<ModuleExport>,
+    /// Whether this node has been visited during traversal
+    pub visited: bool,
+    /// Whether this node is currently being processed (for cycle detection)
+    pub processing: bool,
+}
+
+/// Edge in the dependency graph representing a dependency relationship
+#[derive(Debug, Clone)]
+pub struct DependencyEdge {
+    /// Index of the dependent node
+    pub from_node: usize,
+    /// Index of the dependency node
+    pub to_node: usize,
+    /// Import module name
+    pub import_module: String,
+    /// Import name
+    pub import_name: String,
+    /// Type of dependency
+    pub dependency_type: DependencyType,
+    /// Whether this dependency has been resolved
+    pub resolved: bool,
+}
+
+/// Import required by a module
+#[derive(Debug, Clone)]
+pub struct ModuleImport {
+    /// Module name for the import
+    pub module_name: String,
+    /// Import name
+    pub import_name: String,
+    /// Expected import type
+    pub import_type: WasmtimeImportType,
+    /// Whether this import is optional
+    pub optional: bool,
+}
+
+/// Export provided by a module
+#[derive(Debug, Clone)]
+pub struct ModuleExport {
+    /// Export name
+    pub name: String,
+    /// Export type
+    pub export_type: ExternType,
+}
+
+/// Type of dependency between modules
+#[derive(Debug, Clone, PartialEq)]
+pub enum DependencyType {
+    /// Function dependency
+    Function,
+    /// Memory dependency
+    Memory,
+    /// Table dependency
+    Table,
+    /// Global dependency
+    Global,
+    /// Instance dependency (all exports)
+    Instance,
+}
+
+/// Issue found during import validation
+#[derive(Debug, Clone)]
+pub struct ImportValidationIssue {
+    /// Severity of the issue
+    pub severity: ImportIssueSeverity,
+    /// Type of issue
+    pub issue_type: ImportIssueType,
+    /// Module name where the issue occurred
+    pub module_name: String,
+    /// Import name that has the issue
+    pub import_name: String,
+    /// Detailed description of the issue
+    pub message: String,
+    /// Expected type (if applicable)
+    pub expected_type: Option<String>,
+    /// Actual type found (if applicable)
+    pub actual_type: Option<String>,
+}
+
+/// Severity levels for import validation issues
+#[derive(Debug, Clone, PartialEq)]
+pub enum ImportIssueSeverity {
+    /// Informational issue
+    Info,
+    /// Warning that might cause issues
+    Warning,
+    /// Error that will prevent instantiation
+    Error,
+    /// Critical error
+    Critical,
+}
+
+/// Types of import validation issues
+#[derive(Debug, Clone, PartialEq)]
+pub enum ImportIssueType {
+    /// Import is missing from the linker
+    MissingImport,
+    /// Import type doesn't match
+    TypeMismatch,
+    /// Circular dependency detected
+    CircularDependency,
+    /// Import signature is incompatible
+    SignatureMismatch,
+    /// Module not found
+    ModuleNotFound,
+    /// Export not found
+    ExportNotFound,
+    /// Ambiguous import resolution
+    AmbiguousImport,
+    /// Validation failed for unknown reasons
+    ValidationFailed,
 }
 
 /// Result from linker instantiation operations
@@ -414,6 +555,346 @@ impl Linker {
         }
     }
 
+    /// Resolves dependencies for a set of modules
+    ///
+    /// # Arguments
+    /// * `modules` - The modules to analyze for dependencies
+    ///
+    /// # Returns
+    /// A dependency graph with resolution information
+    ///
+    /// # Errors
+    /// Returns WasmtimeError if dependency analysis fails
+    pub fn resolve_dependencies(&self, modules: &[Module]) -> WasmtimeResult<DependencyGraph> {
+        if self.metadata.disposed {
+            return Err(WasmtimeError::Runtime {
+                message: "Linker has been disposed".to_string(),
+                backtrace: None
+            });
+        }
+
+        let start_time = Instant::now();
+        log::debug!("Starting dependency resolution for {} modules", modules.len());
+
+        // Build dependency graph
+        let mut graph = self.build_dependency_graph(modules)?;
+
+        // Detect circular dependencies
+        let circular_chains = self.detect_circular_dependencies(&mut graph)?;
+        graph.circular_chains = circular_chains;
+
+        // Compute topological order if no circular dependencies
+        if graph.circular_chains.is_empty() {
+            graph.topological_order = self.compute_topological_order(&graph)?;
+            graph.validated = true;
+        }
+
+        let elapsed = start_time.elapsed();
+        log::debug!("Dependency resolution completed in {:?}", elapsed);
+
+        Ok(graph)
+    }
+
+    /// Validates imports for a set of modules
+    ///
+    /// # Arguments
+    /// * `modules` - The modules to validate imports for
+    ///
+    /// # Returns
+    /// A list of validation issues found
+    ///
+    /// # Errors
+    /// Returns WasmtimeError if validation fails
+    pub fn validate_imports(&self, modules: &[Module]) -> WasmtimeResult<Vec<ImportValidationIssue>> {
+        if self.metadata.disposed {
+            return Err(WasmtimeError::Runtime {
+                message: "Linker has been disposed".to_string(),
+                backtrace: None
+            });
+        }
+
+        let start_time = Instant::now();
+        log::debug!("Starting import validation for {} modules", modules.len());
+
+        let mut issues = Vec::new();
+
+        // Check each module's imports
+        for module in modules {
+            let module_issues = self.validate_module_imports(module)?;
+            issues.extend(module_issues);
+        }
+
+        let elapsed = start_time.elapsed();
+        log::debug!("Import validation completed in {:?}, found {} issues", elapsed, issues.len());
+
+        Ok(issues)
+    }
+
+    /// Checks if a specific import is defined in this linker
+    ///
+    /// # Arguments
+    /// * `module_name` - The module name for the import
+    /// * `import_name` - The import name
+    ///
+    /// # Returns
+    /// True if the import is defined, false otherwise
+    pub fn has_import(&self, module_name: &str, import_name: &str) -> bool {
+        let key = format!("{}::{}", module_name, import_name);
+        self.imports_registry.contains_key(&key)
+    }
+
+    /// Builds a dependency graph for the given modules
+    fn build_dependency_graph(&self, modules: &[Module]) -> WasmtimeResult<DependencyGraph> {
+        let mut graph = DependencyGraph {
+            nodes: Vec::new(),
+            edges: Vec::new(),
+            validated: false,
+            topological_order: Vec::new(),
+            circular_chains: Vec::new(),
+        };
+
+        // Create nodes for each module
+        for (index, module) in modules.iter().enumerate() {
+            let imports = self.extract_module_imports(module)?;
+            let exports = self.extract_module_exports(module)?;
+
+            let node = DependencyNode {
+                index,
+                module: module.clone(),
+                imports,
+                exports,
+                visited: false,
+                processing: false,
+            };
+
+            graph.nodes.push(node);
+        }
+
+        // Create edges based on import/export relationships
+        for (from_idx, from_node) in graph.nodes.iter().enumerate() {
+            for import in &from_node.imports {
+                // Find which node exports this import
+                for (to_idx, to_node) in graph.nodes.iter().enumerate() {
+                    if from_idx == to_idx {
+                        continue; // Skip self-references
+                    }
+
+                    if self.node_exports_import(&to_node, &import.module_name, &import.import_name) {
+                        let edge = DependencyEdge {
+                            from_node: from_idx,
+                            to_node: to_idx,
+                            import_module: import.module_name.clone(),
+                            import_name: import.import_name.clone(),
+                            dependency_type: self.wasmtime_type_to_dependency_type(&import.import_type),
+                            resolved: true,
+                        };
+                        graph.edges.push(edge);
+                    }
+                }
+            }
+        }
+
+        Ok(graph)
+    }
+
+    /// Detects circular dependencies in the graph
+    fn detect_circular_dependencies(&self, graph: &mut DependencyGraph) -> WasmtimeResult<Vec<String>> {
+        let mut circular_chains = Vec::new();
+        let mut stack = Vec::new();
+
+        // Reset visit state
+        for node in &mut graph.nodes {
+            node.visited = false;
+            node.processing = false;
+        }
+
+        // DFS from each unvisited node
+        for i in 0..graph.nodes.len() {
+            if !graph.nodes[i].visited {
+                if let Some(cycle) = self.dfs_detect_cycle(graph, i, &mut stack)? {
+                    circular_chains.push(cycle);
+                }
+            }
+        }
+
+        Ok(circular_chains)
+    }
+
+    /// Performs DFS to detect cycles
+    fn dfs_detect_cycle(&self, graph: &mut DependencyGraph, node_idx: usize, stack: &mut Vec<usize>) -> WasmtimeResult<Option<String>> {
+        graph.nodes[node_idx].visited = true;
+        graph.nodes[node_idx].processing = true;
+        stack.push(node_idx);
+
+        // Check all outgoing edges
+        for edge in &graph.edges {
+            if edge.from_node == node_idx {
+                let next_idx = edge.to_node;
+
+                if graph.nodes[next_idx].processing {
+                    // Found a cycle
+                    let cycle_start = stack.iter().position(|&x| x == next_idx).unwrap();
+                    let cycle_nodes: Vec<String> = stack[cycle_start..]
+                        .iter()
+                        .map(|&idx| graph.nodes[idx].module.name().unwrap_or_else(|| format!("module_{}", idx)))
+                        .collect();
+
+                    // Add the first node again to complete the cycle
+                    let mut cycle_description = cycle_nodes.join(" -> ");
+                    cycle_description.push_str(" -> ");
+                    cycle_description.push_str(&cycle_nodes[0]);
+
+                    stack.pop();
+                    graph.nodes[node_idx].processing = false;
+                    return Ok(Some(cycle_description));
+                }
+
+                if !graph.nodes[next_idx].visited {
+                    if let Some(cycle) = self.dfs_detect_cycle(graph, next_idx, stack)? {
+                        stack.pop();
+                        graph.nodes[node_idx].processing = false;
+                        return Ok(Some(cycle));
+                    }
+                }
+            }
+        }
+
+        stack.pop();
+        graph.nodes[node_idx].processing = false;
+        Ok(None)
+    }
+
+    /// Computes topological order for the dependency graph
+    fn compute_topological_order(&self, graph: &DependencyGraph) -> WasmtimeResult<Vec<usize>> {
+        let mut in_degree = vec![0; graph.nodes.len()];
+
+        // Calculate in-degrees
+        for edge in &graph.edges {
+            in_degree[edge.to_node] += 1;
+        }
+
+        // Find nodes with no incoming edges
+        let mut queue = VecDeque::new();
+        for (i, &degree) in in_degree.iter().enumerate() {
+            if degree == 0 {
+                queue.push_back(i);
+            }
+        }
+
+        let mut result = Vec::new();
+
+        // Process nodes in topological order
+        while let Some(node_idx) = queue.pop_front() {
+            result.push(node_idx);
+
+            // Remove edges from this node
+            for edge in &graph.edges {
+                if edge.from_node == node_idx {
+                    in_degree[edge.to_node] -= 1;
+                    if in_degree[edge.to_node] == 0 {
+                        queue.push_back(edge.to_node);
+                    }
+                }
+            }
+        }
+
+        if result.len() != graph.nodes.len() {
+            return Err(WasmtimeError::Runtime {
+                message: "Cannot compute topological order: circular dependencies detected".to_string(),
+                backtrace: None
+            });
+        }
+
+        Ok(result)
+    }
+
+    /// Extracts imports from a module
+    fn extract_module_imports(&self, module: &Module) -> WasmtimeResult<Vec<ModuleImport>> {
+        let wasmtime_module = module.inner();
+        let mut imports = Vec::new();
+
+        for import in wasmtime_module.imports() {
+            let module_import = ModuleImport {
+                module_name: import.module().to_string(),
+                import_name: import.name().to_string(),
+                import_type: import.ty().clone(),
+                optional: false, // WebAssembly imports are generally not optional
+            };
+            imports.push(module_import);
+        }
+
+        Ok(imports)
+    }
+
+    /// Extracts exports from a module
+    fn extract_module_exports(&self, module: &Module) -> WasmtimeResult<Vec<ModuleExport>> {
+        let wasmtime_module = module.inner();
+        let mut exports = Vec::new();
+
+        for export in wasmtime_module.exports() {
+            let module_export = ModuleExport {
+                name: export.name().to_string(),
+                export_type: export.ty().clone(),
+            };
+            exports.push(module_export);
+        }
+
+        Ok(exports)
+    }
+
+    /// Checks if a node exports a specific import
+    fn node_exports_import(&self, node: &DependencyNode, module_name: &str, import_name: &str) -> bool {
+        // For now, assume the module name matches the node's module name
+        // In a more sophisticated implementation, this would handle module aliasing
+        if let Some(node_module_name) = node.module.name() {
+            if node_module_name == module_name {
+                return node.exports.iter().any(|export| export.name == import_name);
+            }
+        }
+
+        false
+    }
+
+    /// Converts Wasmtime import type to dependency type
+    fn wasmtime_type_to_dependency_type(&self, import_type: &WasmtimeImportType) -> DependencyType {
+        match import_type {
+            WasmtimeImportType::Func(_) => DependencyType::Function,
+            WasmtimeImportType::Memory(_) => DependencyType::Memory,
+            WasmtimeImportType::Table(_) => DependencyType::Table,
+            WasmtimeImportType::Global(_) => DependencyType::Global,
+        }
+    }
+
+    /// Validates imports for a single module
+    fn validate_module_imports(&self, module: &Module) -> WasmtimeResult<Vec<ImportValidationIssue>> {
+        let mut issues = Vec::new();
+        let wasmtime_module = module.inner();
+
+        for import in wasmtime_module.imports() {
+            let module_name = import.module();
+            let import_name = import.name();
+
+            // Check if the import is available in the linker
+            if !self.has_import(module_name, import_name) {
+                issues.push(ImportValidationIssue {
+                    severity: ImportIssueSeverity::Error,
+                    issue_type: ImportIssueType::MissingImport,
+                    module_name: module_name.to_string(),
+                    import_name: import_name.to_string(),
+                    message: format!("Import {}::{} is not available in the linker", module_name, import_name),
+                    expected_type: Some(format!("{:?}", import.ty())),
+                    actual_type: None,
+                });
+                continue;
+            }
+
+            // Type compatibility check would go here
+            // For now, we assume types are compatible if the import exists
+        }
+
+        Ok(issues)
+    }
+
     /// Gets access to the inner wasmtime linker (for advanced use cases)
     ///
     /// # Safety
@@ -703,5 +1184,149 @@ pub unsafe extern "C" fn wasmtime4j_linker_created_at_micros(linker_ptr: *const 
                 .as_micros() as u64
         },
         Err(_) => 0,
+    }
+}
+/// Resolve dependencies for a set of modules
+///
+/// # Safety
+///
+/// All pointers must be valid
+/// Returns pointer to dependency graph that must be freed with wasmtime4j_dependency_graph_destroy
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_linker_resolve_dependencies(
+    linker_ptr: *const c_void,
+    module_ptrs: *const *const c_void,
+    module_count: usize,
+) -> *mut c_void {
+    if linker_ptr.is_null() || module_ptrs.is_null() || module_count == 0 {
+        return std::ptr::null_mut();
+    }
+
+    match ffi_core::get_linker_ref(linker_ptr) {
+        Ok(linker) => {
+            // Convert module pointers to Module references
+            let mut modules = Vec::new();
+            for i in 0..module_count {
+                let module_ptr = *module_ptrs.add(i);
+                if let Ok(module) = crate::module::ffi_core::get_module_ref(module_ptr) {
+                    modules.push(module.clone());
+                }
+            }
+
+            match linker.resolve_dependencies(&modules) {
+                Ok(graph) => Box::into_raw(Box::new(graph)) as *mut c_void,
+                Err(_) => std::ptr::null_mut(),
+            }
+        },
+        Err(_) => std::ptr::null_mut(),
+    }
+}
+
+/// Validate imports for a set of modules
+///
+/// # Safety
+///
+/// All pointers must be valid
+/// Returns pointer to validation issues array that must be freed with wasmtime4j_validation_issues_destroy
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_linker_validate_imports(
+    linker_ptr: *const c_void,
+    module_ptrs: *const *const c_void,
+    module_count: usize,
+    issue_count_out: *mut usize,
+) -> *mut c_void {
+    if linker_ptr.is_null() || module_ptrs.is_null() || module_count == 0 {
+        if !issue_count_out.is_null() {
+            *issue_count_out = 0;
+        }
+        return std::ptr::null_mut();
+    }
+
+    match ffi_core::get_linker_ref(linker_ptr) {
+        Ok(linker) => {
+            // Convert module pointers to Module references
+            let mut modules = Vec::new();
+            for i in 0..module_count {
+                let module_ptr = *module_ptrs.add(i);
+                if let Ok(module) = crate::module::ffi_core::get_module_ref(module_ptr) {
+                    modules.push(module.clone());
+                }
+            }
+
+            match linker.validate_imports(&modules) {
+                Ok(issues) => {
+                    if !issue_count_out.is_null() {
+                        *issue_count_out = issues.len();
+                    }
+                    Box::into_raw(Box::new(issues)) as *mut c_void
+                },
+                Err(_) => {
+                    if !issue_count_out.is_null() {
+                        *issue_count_out = 0;
+                    }
+                    std::ptr::null_mut()
+                }
+            }
+        },
+        Err(_) => {
+            if !issue_count_out.is_null() {
+                *issue_count_out = 0;
+            }
+            std::ptr::null_mut()
+        }
+    }
+}
+
+/// Check if linker has a specific import
+///
+/// # Safety
+///
+/// linker_ptr must be valid, module_name and import_name must be valid C strings
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_linker_has_import(
+    linker_ptr: *const c_void,
+    module_name: *const c_char,
+    import_name: *const c_char,
+) -> c_int {
+    if linker_ptr.is_null() || module_name.is_null() || import_name.is_null() {
+        return FFI_ERROR;
+    }
+
+    match ffi_core::get_linker_ref(linker_ptr) {
+        Ok(linker) => {
+            if let (Ok(mod_name), Ok(imp_name)) = (
+                CStr::from_ptr(module_name).to_str(),
+                CStr::from_ptr(import_name).to_str()
+            ) {
+                if linker.has_import(mod_name, imp_name) { 1 } else { 0 }
+            } else {
+                FFI_ERROR
+            }
+        },
+        Err(_) => FFI_ERROR,
+    }
+}
+
+/// Destroy dependency graph
+///
+/// # Safety
+///
+/// graph_ptr must be a valid pointer from wasmtime4j_linker_resolve_dependencies
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_dependency_graph_destroy(graph_ptr: *mut c_void) {
+    if !graph_ptr.is_null() {
+        let _ = Box::from_raw(graph_ptr as *mut DependencyGraph);
+    }
+}
+
+/// Destroy validation issues array
+///
+/// # Safety
+///
+/// issues_ptr must be a valid pointer from wasmtime4j_linker_validate_imports
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_validation_issues_destroy(issues_ptr: *mut c_void) {
+    if !issues_ptr.is_null() {
+        let _ = Box::from_raw(issues_ptr as *mut Vec<ImportValidationIssue>);
     }
 }

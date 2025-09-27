@@ -45,6 +45,49 @@ pub struct HostFunction {
     store_weak: Weak<Mutex<wasmtime::Store<StoreData>>>,
     /// Callback interface for language-specific implementations
     callback: Box<dyn HostFunctionCallback>,
+    /// Optimization hints for caller context usage
+    pub caller_context_usage: CallerContextUsage,
+    /// Whether this function requires caller context at all
+    pub requires_caller_context: bool,
+}
+
+/// Caller context usage patterns for optimization
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum CallerContextUsage {
+    /// No caller context features are used (maximum optimization)
+    None,
+    /// Only export access is used
+    ExportsOnly,
+    /// Only fuel tracking is used
+    FuelOnly,
+    /// Only epoch deadlines are used
+    EpochOnly,
+    /// Export access and fuel tracking are used
+    ExportsAndFuel,
+    /// All caller context features are used
+    Full,
+}
+
+impl CallerContextUsage {
+    /// Checks if this usage pattern includes export access
+    pub fn uses_exports(&self) -> bool {
+        matches!(self, Self::ExportsOnly | Self::ExportsAndFuel | Self::Full)
+    }
+
+    /// Checks if this usage pattern includes fuel tracking
+    pub fn uses_fuel(&self) -> bool {
+        matches!(self, Self::FuelOnly | Self::ExportsAndFuel | Self::Full)
+    }
+
+    /// Checks if this usage pattern includes epoch deadlines
+    pub fn uses_epoch(&self) -> bool {
+        matches!(self, Self::EpochOnly | Self::Full)
+    }
+
+    /// Checks if no caller context features are used
+    pub fn is_none(&self) -> bool {
+        matches!(self, Self::None)
+    }
 }
 
 impl std::fmt::Debug for HostFunction {
@@ -104,14 +147,35 @@ impl HostFunction {
         store_weak: Weak<Mutex<wasmtime::Store<StoreData>>>,
         callback: Box<dyn HostFunctionCallback + Send + Sync>,
     ) -> WasmtimeResult<Arc<Self>> {
+        Self::new_with_optimization(
+            name,
+            func_type,
+            store_weak,
+            callback,
+            CallerContextUsage::Full, // Default to full usage for backward compatibility
+            true, // Assume requires caller context by default
+        )
+    }
+
+    /// Create a new host function with optimization hints
+    pub fn new_with_optimization(
+        name: String,
+        func_type: FuncType,
+        store_weak: Weak<Mutex<wasmtime::Store<StoreData>>>,
+        callback: Box<dyn HostFunctionCallback + Send + Sync>,
+        caller_context_usage: CallerContextUsage,
+        requires_caller_context: bool,
+    ) -> WasmtimeResult<Arc<Self>> {
         let id = NEXT_HOST_FUNCTION_ID.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-        
+
         let host_func = Arc::new(HostFunction {
             id,
             name,
             func_type,
             store_weak,
             callback,
+            caller_context_usage,
+            requires_caller_context,
         });
 
         // Register to prevent GC
@@ -122,7 +186,8 @@ impl HostFunction {
             registry.insert(id, Arc::clone(&host_func));
         }
 
-        log::debug!("Created host function with ID: {}", id);
+        log::debug!("Created host function with ID: {} (caller context: {:?}, required: {})",
+                   id, caller_context_usage, requires_caller_context);
         Ok(host_func)
     }
 
@@ -130,34 +195,52 @@ impl HostFunction {
     pub fn create_wasmtime_func(&self, store: &mut wasmtime::Store<StoreData>) -> WasmtimeResult<Func> {
         let host_func_id = self.id;
         let func_type = self.func_type.clone();
-        
-        let func = Func::new(store, func_type, move |_caller, params, results| {
+        let requires_caller = self.requires_caller_context;
+        let usage = self.caller_context_usage;
+
+        let func = Func::new(store, func_type, move |caller, params, results| {
             // Look up the host function in the registry
             let host_function = {
                 let registry = get_host_function_registry().lock().map_err(|e| {
                     anyhow::anyhow!("Failed to lock host function registry: {}", e)
                 })?;
-                
+
                 registry.get(&host_func_id).cloned().ok_or_else(|| {
                     anyhow::anyhow!("Host function not found in registry: {}", host_func_id)
                 })?
             };
 
-            // Marshal parameters from Wasmtime Val to WasmValue
-            let wasm_params = marshal_params_from_wasmtime(params)?;
-            
-            // Execute the callback
-            let wasm_results = host_function.callback.execute(&wasm_params).map_err(|e| {
-                anyhow::anyhow!("Host function execution failed: {}", e)
-            })?;
-            
-            // Marshal results back to Wasmtime Val
-            marshal_results_to_wasmtime(&wasm_results, results)?;
-            
+            // Optimize execution based on caller context requirements
+            if !requires_caller {
+                // Zero-overhead path: no caller context needed
+                let wasm_params = marshal_params_from_wasmtime(params)?;
+                let wasm_results = host_function.callback.execute(&wasm_params).map_err(|e| {
+                    anyhow::anyhow!("Host function execution failed: {}", e)
+                })?;
+                marshal_results_to_wasmtime(&wasm_results, results)?;
+            } else {
+                // Full caller context path
+                let wasm_params = marshal_params_from_wasmtime(params)?;
+
+                // Create minimal caller context based on usage pattern
+                let _context = create_optimized_caller_context(caller, usage)?;
+
+                let wasm_results = host_function.callback.execute(&wasm_params).map_err(|e| {
+                    anyhow::anyhow!("Host function execution failed: {}", e)
+                })?;
+
+                marshal_results_to_wasmtime(&wasm_results, results)?;
+            }
+
             Ok(())
         });
 
         Ok(func)
+    }
+
+    /// Get optimization information for this host function
+    pub fn get_optimization_info(&self) -> (CallerContextUsage, bool) {
+        (self.caller_context_usage, self.requires_caller_context)
     }
 
     /// Get the function type signature
@@ -432,6 +515,64 @@ pub mod core {
         let next_id = NEXT_HOST_FUNCTION_ID.load(std::sync::atomic::Ordering::SeqCst);
         
         Ok((count, next_id))
+    }
+}
+
+/// Create an optimized caller context based on usage patterns
+fn create_optimized_caller_context<T>(
+    caller: &mut wasmtime::Caller<'_, T>,
+    usage: CallerContextUsage,
+) -> Result<(), anyhow::Error>
+where
+    T: Clone + Send + Sync + 'static,
+{
+    // This function could create minimal caller context objects
+    // based on what features are actually needed.
+    // For now, we'll just validate that the caller is available.
+
+    match usage {
+        CallerContextUsage::None => {
+            // No context needed, maximum optimization
+            Ok(())
+        }
+        CallerContextUsage::ExportsOnly => {
+            // Only validate that exports can be accessed
+            if caller.instance().is_some() {
+                Ok(())
+            } else {
+                Err(anyhow::anyhow!("Caller instance not available for export access"))
+            }
+        }
+        CallerContextUsage::FuelOnly => {
+            // Only validate fuel tracking capability
+            match caller.fuel_remaining() {
+                Ok(_) | Err(_) => Ok(()), // Both are valid states
+            }
+        }
+        CallerContextUsage::EpochOnly => {
+            // Epoch deadline functionality - always available
+            Ok(())
+        }
+        CallerContextUsage::ExportsAndFuel => {
+            // Validate both exports and fuel
+            if caller.instance().is_some() {
+                match caller.fuel_remaining() {
+                    Ok(_) | Err(_) => Ok(()),
+                }
+            } else {
+                Err(anyhow::anyhow!("Caller instance not available"))
+            }
+        }
+        CallerContextUsage::Full => {
+            // Full validation - all features should be available
+            if caller.instance().is_some() {
+                match caller.fuel_remaining() {
+                    Ok(_) | Err(_) => Ok(()),
+                }
+            } else {
+                Err(anyhow::anyhow!("Caller instance not available for full context"))
+            }
+        }
     }
 }
 

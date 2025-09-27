@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package ai.tegmentum.wasmtime4j.panama;
+package ai.tegmentum.wasmtime4j.jni;
 
 import ai.tegmentum.wasmtime4j.Caller;
 import ai.tegmentum.wasmtime4j.Export;
@@ -23,15 +23,14 @@ import ai.tegmentum.wasmtime4j.Global;
 import ai.tegmentum.wasmtime4j.Memory;
 import ai.tegmentum.wasmtime4j.Table;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import java.lang.foreign.MemorySegment;
 import java.util.Optional;
 import java.util.logging.Logger;
 
 /**
- * Panama FFI implementation of the WebAssembly caller interface.
+ * JNI implementation of the WebAssembly caller interface.
  *
  * <p>This implementation provides access to the calling WebAssembly instance context
- * within host functions. It uses Panama FFI for direct native access to exports,
+ * within host functions. It uses JNI for direct native access to exports,
  * fuel management, and execution state.
  *
  * <p>The caller interface enables host functions to:
@@ -45,51 +44,30 @@ import java.util.logging.Logger;
  * @param <T> the type of user data associated with the store
  * @since 1.0.0
  */
-public final class PanamaCaller<T> implements Caller<T>, AutoCloseable {
-  private static final Logger LOGGER = Logger.getLogger(PanamaCaller.class.getName());
+public final class JniCaller<T> implements Caller<T>, AutoCloseable {
+  private static final Logger LOGGER = Logger.getLogger(JniCaller.class.getName());
 
   // Core infrastructure
-  private final ArenaResourceManager resourceManager;
-  private final NativeFunctionBindings nativeFunctions;
-  private final MemorySegment callerPtr;
-  private final MemorySegment instancePtr;
-  private final MemorySegment storePtr;
+  private final long callerHandle;
   private final T userData;
-
-  // Instance state
-  private final PanamaInstance callingInstance;
+  private final JniInstance callingInstance;
 
   // Status
   private volatile boolean closed = false;
 
   /**
-   * Creates a new Panama caller implementation.
+   * Creates a new JNI caller implementation.
    *
-   * @param resourceManager the arena resource manager for memory management
-   * @param nativeFunctions the native function bindings
-   * @param callerPtr pointer to the native caller context
-   * @param instancePtr pointer to the calling instance
-   * @param storePtr pointer to the store
+   * @param callerHandle native handle to the caller context
    * @param userData the store's user data
    * @param callingInstance the calling instance wrapper
    */
-  public PanamaCaller(
-      final ArenaResourceManager resourceManager,
-      final NativeFunctionBindings nativeFunctions,
-      final MemorySegment callerPtr,
-      final MemorySegment instancePtr,
-      final MemorySegment storePtr,
-      final T userData,
-      final PanamaInstance callingInstance) {
-    this.resourceManager = resourceManager;
-    this.nativeFunctions = nativeFunctions;
-    this.callerPtr = callerPtr;
-    this.instancePtr = instancePtr;
-    this.storePtr = storePtr;
+  public JniCaller(final long callerHandle, final T userData, final JniInstance callingInstance) {
+    this.callerHandle = callerHandle;
     this.userData = userData;
     this.callingInstance = callingInstance;
 
-    LOGGER.fine("Created PanamaCaller with caller=" + callerPtr);
+    LOGGER.fine("Created JniCaller with handle=" + callerHandle);
   }
 
   @Override
@@ -124,11 +102,11 @@ public final class PanamaCaller<T> implements Caller<T>, AutoCloseable {
     }
 
     try {
-      Optional<Export> export = getExport(name);
-      if (export.isPresent() && export.get().getType() == Export.Type.FUNCTION) {
-        return Optional.of((Function) export.get().getValue());
+      long functionHandle = nativeGetFunction(callerHandle, name);
+      if (functionHandle == 0) {
+        return Optional.empty();
       }
-      return Optional.empty();
+      return Optional.of(new JniFunction(functionHandle));
     } catch (Exception e) {
       LOGGER.warning("Failed to get function '" + name + "': " + e.getMessage());
       return Optional.empty();
@@ -144,11 +122,11 @@ public final class PanamaCaller<T> implements Caller<T>, AutoCloseable {
     }
 
     try {
-      Optional<Export> export = getExport(name);
-      if (export.isPresent() && export.get().getType() == Export.Type.MEMORY) {
-        return Optional.of((Memory) export.get().getValue());
+      long memoryHandle = nativeGetMemory(callerHandle, name);
+      if (memoryHandle == 0) {
+        return Optional.empty();
       }
-      return Optional.empty();
+      return Optional.of(new JniMemory(memoryHandle));
     } catch (Exception e) {
       LOGGER.warning("Failed to get memory '" + name + "': " + e.getMessage());
       return Optional.empty();
@@ -164,11 +142,11 @@ public final class PanamaCaller<T> implements Caller<T>, AutoCloseable {
     }
 
     try {
-      Optional<Export> export = getExport(name);
-      if (export.isPresent() && export.get().getType() == Export.Type.TABLE) {
-        return Optional.of((Table) export.get().getValue());
+      long tableHandle = nativeGetTable(callerHandle, name);
+      if (tableHandle == 0) {
+        return Optional.empty();
       }
-      return Optional.empty();
+      return Optional.of(new JniTable(tableHandle));
     } catch (Exception e) {
       LOGGER.warning("Failed to get table '" + name + "': " + e.getMessage());
       return Optional.empty();
@@ -184,11 +162,11 @@ public final class PanamaCaller<T> implements Caller<T>, AutoCloseable {
     }
 
     try {
-      Optional<Export> export = getExport(name);
-      if (export.isPresent() && export.get().getType() == Export.Type.GLOBAL) {
-        return Optional.of((Global) export.get().getValue());
+      long globalHandle = nativeGetGlobal(callerHandle, name);
+      if (globalHandle == 0) {
+        return Optional.empty();
       }
-      return Optional.empty();
+      return Optional.of(new JniGlobal(globalHandle));
     } catch (Exception e) {
       LOGGER.warning("Failed to get global '" + name + "': " + e.getMessage());
       return Optional.empty();
@@ -204,7 +182,7 @@ public final class PanamaCaller<T> implements Caller<T>, AutoCloseable {
     }
 
     try {
-      return getExport(name).isPresent();
+      return nativeHasExport(callerHandle, name);
     } catch (Exception e) {
       LOGGER.warning("Failed to check export '" + name + "': " + e.getMessage());
       return false;
@@ -216,23 +194,12 @@ public final class PanamaCaller<T> implements Caller<T>, AutoCloseable {
     ensureNotClosed();
 
     try {
-      // Allocate memory for fuel output
-      ArenaResourceManager.ManagedMemorySegment fuelPtr =
-          resourceManager.allocate(MemoryLayouts.C_SIZE_T);
-
-      // Get consumed fuel from the caller
-      int result = nativeFunctions.callerGetFuel(callerPtr, fuelPtr.getSegment());
-      if (result < 0) {
-        LOGGER.warning("Failed to get fuel consumption, error code: " + result);
-        return Optional.empty();
-      } else if (result == 0) {
-        return Optional.empty(); // Fuel metering not enabled
+      long[] fuelArray = new long[1];
+      boolean success = nativeGetFuel(callerHandle, fuelArray);
+      if (success) {
+        return Optional.of(fuelArray[0]);
       }
-
-      // Extract fuel value
-      long consumedFuel = (Long) MemoryLayouts.C_SIZE_T.varHandle().get(fuelPtr.getSegment(), 0);
-      return Optional.of(consumedFuel);
-
+      return Optional.empty();
     } catch (Exception e) {
       LOGGER.warning("Failed to get fuel consumption: " + e.getMessage());
       return Optional.empty();
@@ -244,23 +211,12 @@ public final class PanamaCaller<T> implements Caller<T>, AutoCloseable {
     ensureNotClosed();
 
     try {
-      // Allocate memory for fuel output
-      ArenaResourceManager.ManagedMemorySegment fuelPtr =
-          resourceManager.allocate(MemoryLayouts.C_SIZE_T);
-
-      // Get remaining fuel from the caller
-      int result = nativeFunctions.callerGetFuelRemaining(callerPtr, fuelPtr.getSegment());
-      if (result < 0) {
-        LOGGER.warning("Failed to get fuel remaining, error code: " + result);
-        return Optional.empty();
-      } else if (result == 0) {
-        return Optional.empty(); // Fuel metering not enabled
+      long[] fuelArray = new long[1];
+      boolean success = nativeGetFuelRemaining(callerHandle, fuelArray);
+      if (success) {
+        return Optional.of(fuelArray[0]);
       }
-
-      // Extract fuel value
-      long remainingFuel = (Long) MemoryLayouts.C_SIZE_T.varHandle().get(fuelPtr.getSegment(), 0);
-      return Optional.of(remainingFuel);
-
+      return Optional.empty();
     } catch (Exception e) {
       LOGGER.warning("Failed to get fuel remaining: " + e.getMessage());
       return Optional.empty();
@@ -276,9 +232,9 @@ public final class PanamaCaller<T> implements Caller<T>, AutoCloseable {
     }
 
     try {
-      int result = nativeFunctions.callerAddFuel(callerPtr, fuel);
-      if (result != 0) {
-        throw new WasmException("Failed to add fuel to caller, error code: " + result);
+      boolean success = nativeAddFuel(callerHandle, fuel);
+      if (!success) {
+        throw new WasmException("Failed to add fuel to caller");
       }
     } catch (Exception e) {
       throw new WasmException("Failed to add fuel: " + e.getMessage(), e);
@@ -290,12 +246,7 @@ public final class PanamaCaller<T> implements Caller<T>, AutoCloseable {
     ensureNotClosed();
 
     try {
-      int result = nativeFunctions.callerHasEpochDeadline(callerPtr);
-      if (result < 0) {
-        LOGGER.warning("Failed to check epoch deadline, error code: " + result);
-        return false;
-      }
-      return result == 1;
+      return nativeHasEpochDeadline(callerHandle);
     } catch (Exception e) {
       LOGGER.warning("Failed to check epoch deadline: " + e.getMessage());
       return false;
@@ -326,9 +277,9 @@ public final class PanamaCaller<T> implements Caller<T>, AutoCloseable {
     ensureNotClosed();
 
     try {
-      int result = nativeFunctions.callerSetEpochDeadline(callerPtr, deadline);
-      if (result != 0) {
-        throw new WasmException("Failed to set epoch deadline, error code: " + result);
+      boolean success = nativeSetEpochDeadline(callerHandle, deadline);
+      if (!success) {
+        throw new WasmException("Failed to set epoch deadline");
       }
     } catch (Exception e) {
       throw new WasmException("Failed to set epoch deadline: " + e.getMessage(), e);
@@ -336,13 +287,13 @@ public final class PanamaCaller<T> implements Caller<T>, AutoCloseable {
   }
 
   /**
-   * Gets the native caller pointer.
+   * Gets the native caller handle.
    *
-   * @return the native caller pointer
+   * @return the native caller handle
    */
-  public MemorySegment getCallerPointer() {
+  public long getCallerHandle() {
     ensureNotClosed();
-    return callerPtr;
+    return callerHandle;
   }
 
   /**
@@ -350,7 +301,7 @@ public final class PanamaCaller<T> implements Caller<T>, AutoCloseable {
    *
    * @return the calling instance
    */
-  public PanamaInstance getCallingInstance() {
+  public JniInstance getCallingInstance() {
     ensureNotClosed();
     return callingInstance;
   }
@@ -366,12 +317,12 @@ public final class PanamaCaller<T> implements Caller<T>, AutoCloseable {
         return;
       }
 
-      // Note: We don't actually destroy the caller pointer here because
+      // Note: We don't actually destroy the caller handle here because
       // it's managed by the native runtime and will be cleaned up automatically
       // when the host function call completes.
 
       closed = true;
-      LOGGER.fine("Closed PanamaCaller");
+      LOGGER.fine("Closed JniCaller");
     }
   }
 
@@ -388,11 +339,21 @@ public final class PanamaCaller<T> implements Caller<T>, AutoCloseable {
 
   @Override
   public String toString() {
-    return "PanamaCaller{" +
-           "callerPtr=" + callerPtr +
-           ", instancePtr=" + instancePtr +
-           ", storePtr=" + storePtr +
+    return "JniCaller{" +
+           "callerHandle=" + callerHandle +
            ", closed=" + closed +
            '}';
   }
+
+  // Native method declarations
+  private static native boolean nativeGetFuel(long callerHandle, long[] fuelOut);
+  private static native boolean nativeGetFuelRemaining(long callerHandle, long[] fuelOut);
+  private static native boolean nativeAddFuel(long callerHandle, long fuel);
+  private static native boolean nativeSetEpochDeadline(long callerHandle, long deadline);
+  private static native boolean nativeHasEpochDeadline(long callerHandle);
+  private static native boolean nativeHasExport(long callerHandle, String name);
+  private static native long nativeGetMemory(long callerHandle, String name);
+  private static native long nativeGetFunction(long callerHandle, String name);
+  private static native long nativeGetGlobal(long callerHandle, String name);
+  private static native long nativeGetTable(long callerHandle, String name);
 }
