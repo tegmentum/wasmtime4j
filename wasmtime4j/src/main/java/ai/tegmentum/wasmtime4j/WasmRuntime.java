@@ -448,6 +448,50 @@ public interface WasmRuntime extends Closeable {
   SimdOperations.V128 simdRelaxedAdd(final SimdOperations.V128 a, final SimdOperations.V128 b)
       throws WasmException;
 
+  /**
+   * Deserializes a previously serialized Module using the provided engine.
+   *
+   * <p>The serialized data must have been created by a module compiled with an engine
+   * that has the same configuration as the provided engine. Deserialization is typically
+   * much faster than compilation from WebAssembly bytecode.
+   *
+   * @param engine the engine to use for deserialization (must match original engine config)
+   * @param serializedBytes the serialized module data
+   * @return a deserialized Module ready for instantiation
+   * @throws WasmException if deserialization fails
+   * @throws IllegalArgumentException if engine or serializedBytes is null
+   * @since 1.0.0
+   */
+  Module deserializeModule(final Engine engine, final byte[] serializedBytes) throws WasmException;
+
+  /**
+   * Creates a new WASI linker for the given engine.
+   *
+   * <p>A WASI linker extends the standard linker functionality with WASI-specific capabilities,
+   * providing fine-grained control over system interface access, filesystem permissions,
+   * environment variables, and network access.
+   *
+   * @param engine the engine to create the WASI linker for
+   * @return a new WasiLinker instance
+   * @throws WasmException if WASI linker creation fails
+   * @throws IllegalArgumentException if engine is null
+   * @since 1.0.0
+   */
+  ai.tegmentum.wasmtime4j.wasi.WasiLinker createWasiLinker(final Engine engine) throws WasmException;
+
+  /**
+   * Creates a new WASI linker with the specified configuration.
+   *
+   * @param engine the engine to create the WASI linker for
+   * @param config the WASI configuration to use
+   * @return a new WasiLinker instance with the specified configuration
+   * @throws WasmException if WASI linker creation fails
+   * @throws IllegalArgumentException if engine or config is null
+   * @since 1.0.0
+   */
+  ai.tegmentum.wasmtime4j.wasi.WasiLinker createWasiLinker(
+      final Engine engine, final ai.tegmentum.wasmtime4j.wasi.WasiConfig config) throws WasmException;
+
   // ===== DEBUGGING OPERATIONS =====
 
   /**
