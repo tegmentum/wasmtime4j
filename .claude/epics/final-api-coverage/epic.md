@@ -1,8 +1,9 @@
 ---
 name: final-api-coverage
-status: backlog
+status: completed
 created: 2025-09-27T01:07:27Z
-progress: 0%
+completed: 2025-09-27T18:54:28Z
+progress: 100%
 prd: .claude/prds/final-api-coverage.md
 github: https://github.com/tegmentum/wasmtime4j/issues/286
 ---
