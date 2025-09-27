@@ -299,6 +299,34 @@ public interface Module extends Closeable {
   boolean isValid();
 
   /**
+   * Serializes this compiled module to bytes for caching or distribution.
+   *
+   * <p>The serialized data contains the compiled module in a format that can be stored
+   * to disk, transmitted over network, or cached for later deserialization. The exact
+   * format is implementation-specific and tied to the engine configuration.
+   *
+   * <p>Serialized modules can only be deserialized with an engine that has the same
+   * configuration as the original engine used for compilation.
+   *
+   * @return the serialized module data
+   * @throws WasmException if serialization fails
+   * @throws UnsupportedOperationException if the module cannot be serialized
+   * @since 1.0.0
+   */
+  byte[] serialize() throws WasmException;
+
+  /**
+   * Checks if this module can be serialized.
+   *
+   * <p>Some modules may not support serialization due to engine configuration
+   * or module characteristics.
+   *
+   * @return true if the module can be serialized, false otherwise
+   * @since 1.0.0
+   */
+  boolean isSerializable();
+
+  /**
    * Closes the module and releases associated resources.
    *
    * <p>After closing, the module becomes invalid and should not be used.
@@ -317,5 +345,27 @@ public interface Module extends Closeable {
    */
   static Module compile(final Engine engine, final byte[] wasmBytes) throws WasmException {
     return WasmRuntimeFactory.create().compileModule(engine, wasmBytes);
+  }
+
+  /**
+   * Deserializes a previously serialized Module using the provided engine.
+   *
+   * <p>The serialized data must have been created by a module compiled with an engine
+   * that has the same configuration as the provided engine. Deserialization is typically
+   * much faster than compilation from WebAssembly bytecode.
+   *
+   * <p>This method enables efficient caching and distribution of compiled modules,
+   * allowing applications to avoid recompilation overhead when loading previously
+   * compiled modules.
+   *
+   * @param engine the engine to use for deserialization (must match original engine config)
+   * @param serializedBytes the serialized module data
+   * @return a deserialized Module ready for instantiation
+   * @throws WasmException if deserialization fails
+   * @throws IllegalArgumentException if engine or serializedBytes is null
+   * @since 1.0.0
+   */
+  static Module deserialize(final Engine engine, final byte[] serializedBytes) throws WasmException {
+    return WasmRuntimeFactory.create().deserializeModule(engine, serializedBytes);
   }
 }
