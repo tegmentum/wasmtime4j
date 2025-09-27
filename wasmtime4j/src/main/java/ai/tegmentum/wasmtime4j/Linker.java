@@ -23,9 +23,10 @@ import java.io.Closeable;
  * <p>Linkers are thread-safe and can be reused across multiple module instantiations. They are
  * associated with a specific Engine and inherit its configuration.
  *
+ * @param <T> the type of user data associated with stores used with this linker
  * @since 1.0.0
  */
-public interface Linker extends Closeable {
+public interface Linker<T> extends Closeable {
 
   /**
    * Defines a host function that can be imported by WebAssembly modules.
@@ -177,6 +178,20 @@ public interface Linker extends Closeable {
   boolean isValid();
 
   /**
+   * Checks if a specific import has been defined in this linker.
+   *
+   * <p>This method can be used to verify that required imports have been
+   * registered before attempting module instantiation.
+   *
+   * @param moduleName the module name of the import
+   * @param name the name of the import
+   * @return true if the import is defined, false otherwise
+   * @throws IllegalArgumentException if moduleName or name is null
+   * @since 1.0.0
+   */
+  boolean hasImport(String moduleName, String name);
+
+  /**
    * Closes the linker and releases associated resources.
    *
    * <p>After closing, the linker becomes invalid and should not be used.
@@ -187,12 +202,13 @@ public interface Linker extends Closeable {
   /**
    * Creates a new Linker for the given engine.
    *
+   * @param <T> the type of user data associated with stores used with this linker
    * @param engine the engine to create the linker for
    * @return a new Linker instance
    * @throws WasmException if linker creation fails
    * @throws IllegalArgumentException if engine is null
    */
-  static Linker create(final Engine engine) throws WasmException {
+  static <T> Linker<T> create(final Engine engine) throws WasmException {
     return WasmRuntimeFactory.create().createLinker(engine);
   }
 }

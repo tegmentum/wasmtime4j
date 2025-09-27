@@ -134,4 +134,153 @@ public interface HostFunction {
   interface MultiValueHostFunction {
     WasmValue[] execute(WasmValue[] params) throws WasmException;
   }
+
+  /**
+   * Creates a void host function that receives caller context.
+   *
+   * <p>Caller-aware host functions can access the calling WebAssembly instance's
+   * exports, memory, and other resources through the provided Caller interface.
+   *
+   * @param <T> the type of user data associated with the store
+   * @param impl the implementation that receives caller context
+   * @return a new HostFunction
+   * @since 1.0.0
+   */
+  static <T> HostFunction voidFunctionWithCaller(final VoidHostFunctionWithCaller<T> impl) {
+    return new CallerAwareHostFunction<>(impl);
+  }
+
+  /**
+   * Creates a single-value host function that receives caller context.
+   *
+   * @param <T> the type of user data associated with the store
+   * @param impl the implementation that receives caller context
+   * @return a new HostFunction
+   * @since 1.0.0
+   */
+  static <T> HostFunction singleValueWithCaller(final SingleValueHostFunctionWithCaller<T> impl) {
+    return new CallerAwareHostFunction<>((caller, params) -> {
+      final WasmValue result = impl.execute(caller, params);
+      return result != null ? new WasmValue[] {result} : new WasmValue[0];
+    });
+  }
+
+  /**
+   * Creates a multi-value host function that receives caller context.
+   *
+   * @param <T> the type of user data associated with the store
+   * @param impl the implementation that receives caller context
+   * @return a new HostFunction
+   * @since 1.0.0
+   */
+  static <T> HostFunction multiValueWithCaller(final MultiValueHostFunctionWithCaller<T> impl) {
+    return new CallerAwareHostFunction<>(impl);
+  }
+
+  /** Functional interface for void host functions with caller context. */
+  @FunctionalInterface
+  interface VoidHostFunctionWithCaller<T> {
+    /**
+     * Executes the host function with access to the calling instance context.
+     *
+     * @param caller the calling instance context
+     * @param params the function parameters
+     * @throws WasmException if execution fails
+     */
+    void execute(Caller<T> caller, WasmValue[] params) throws WasmException;
+  }
+
+  /** Functional interface for single-value host functions with caller context. */
+  @FunctionalInterface
+  interface SingleValueHostFunctionWithCaller<T> {
+    /**
+     * Executes the host function with access to the calling instance context.
+     *
+     * @param caller the calling instance context
+     * @param params the function parameters
+     * @return the result value
+     * @throws WasmException if execution fails
+     */
+    WasmValue execute(Caller<T> caller, WasmValue[] params) throws WasmException;
+  }
+
+  /** Functional interface for multi-value host functions with caller context. */
+  @FunctionalInterface
+  interface MultiValueHostFunctionWithCaller<T> {
+    /**
+     * Executes the host function with access to the calling instance context.
+     *
+     * @param caller the calling instance context
+     * @param params the function parameters
+     * @return the result values
+     * @throws WasmException if execution fails
+     */
+    WasmValue[] execute(Caller<T> caller, WasmValue[] params) throws WasmException;
+  }
+
+  /**
+   * Wrapper class for host functions that need caller context.
+   *
+   * <p>This class adapts caller-aware host functions to the standard HostFunction
+   * interface by managing the caller context internally.
+   *
+   * @param <T> the type of user data associated with the store
+   * @since 1.0.0
+   */
+  class CallerAwareHostFunction<T> implements HostFunction {
+    private final MultiValueHostFunctionWithCaller<T> implementation;
+
+    /**
+     * Creates a caller-aware host function from a void implementation.
+     *
+     * @param voidImpl the void implementation
+     */
+    public CallerAwareHostFunction(VoidHostFunctionWithCaller<T> voidImpl) {
+      this.implementation = (caller, params) -> {
+        voidImpl.execute(caller, params);
+        return new WasmValue[0];
+      };
+    }
+
+    /**
+     * Creates a caller-aware host function from a multi-value implementation.
+     *
+     * @param multiValueImpl the multi-value implementation
+     */
+    public CallerAwareHostFunction(MultiValueHostFunctionWithCaller<T> multiValueImpl) {
+      this.implementation = multiValueImpl;
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public WasmValue[] execute(WasmValue[] params) throws WasmException {
+      // The actual caller context will be provided by the runtime implementation
+      // This is a placeholder that will be replaced during execution
+      Caller<T> caller = getCurrentCaller();
+      return implementation.execute(caller, params);
+    }
+
+    /**
+     * Gets the current caller context.
+     *
+     * <p>This method is implemented by the runtime to provide access to the
+     * actual calling instance context during execution.
+     *
+     * @return the current caller context
+     */
+    @SuppressWarnings("unchecked")
+    private Caller<T> getCurrentCaller() {
+      // This will be implemented by the runtime to provide the actual caller
+      throw new UnsupportedOperationException("Caller context not available - this should be provided by the runtime");
+    }
+
+    /**
+     * Gets the underlying implementation.
+     *
+     * @return the caller-aware implementation
+     */
+    public MultiValueHostFunctionWithCaller<T> getImplementation() {
+      return implementation;
+    }
+  }
 }

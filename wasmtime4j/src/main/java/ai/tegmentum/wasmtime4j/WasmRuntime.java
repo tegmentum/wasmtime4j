@@ -475,6 +475,75 @@ public interface WasmRuntime extends Closeable {
   String getDebuggingCapabilities();
 
   /**
+   * Creates a new WASI context with default settings.
+   *
+   * <p>The WASI context provides configuration for WebAssembly System Interface
+   * functionality, including file system access, environment variables, and
+   * command-line arguments.
+   *
+   * @return a new WasiContext instance
+   * @throws WasmException if the context cannot be created
+   * @since 1.0.0
+   */
+  WasiContext createWasiContext() throws WasmException;
+
+  /**
+   * Creates a new linker for the specified engine.
+   *
+   * <p>A linker manages imports and exports for WebAssembly modules, allowing
+   * host functions and other modules to be linked together.
+   *
+   * @param <T> the type of user data associated with the store
+   * @param engine the engine to create the linker for
+   * @return a new Linker instance
+   * @throws WasmException if the linker cannot be created
+   * @throws IllegalArgumentException if engine is null
+   * @since 1.0.0
+   */
+  <T> Linker<T> createLinker(Engine engine) throws WasmException;
+
+  /**
+   * Adds WASI imports to the specified linker.
+   *
+   * <p>This method configures the linker with all necessary WASI functions
+   * using the provided WASI context for configuration.
+   *
+   * @param linker the linker to add WASI imports to
+   * @param context the WASI context containing configuration
+   * @throws WasmException if adding WASI imports fails
+   * @throws IllegalArgumentException if linker or context is null
+   * @since 1.0.0
+   */
+  void addWasiToLinker(Linker<WasiContext> linker, WasiContext context) throws WasmException;
+
+  /**
+   * Deserializes a module from previously serialized bytes.
+   *
+   * <p>This method provides fast module loading by deserializing compiled
+   * module data instead of recompiling from WebAssembly bytecode.
+   *
+   * @param engine the engine to use for deserialization
+   * @param bytes the serialized module data
+   * @return the deserialized Module
+   * @throws WasmException if deserialization fails or data is invalid
+   * @throws IllegalArgumentException if engine or bytes is null
+   * @since 1.0.0
+   */
+  Module deserializeModule(Engine engine, byte[] bytes) throws WasmException;
+
+  /**
+   * Deserializes a module from a file containing serialized module data.
+   *
+   * @param engine the engine to use for deserialization
+   * @param path the path to the serialized module file
+   * @return the deserialized Module
+   * @throws WasmException if deserialization fails or file cannot be read
+   * @throws IllegalArgumentException if engine or path is null
+   * @since 1.0.0
+   */
+  Module deserializeModuleFile(Engine engine, java.nio.file.Path path) throws WasmException;
+
+  /**
    * Closes the runtime and releases associated resources.
    *
    * <p>After calling this method, the runtime becomes invalid and should not be used. Any attempt
