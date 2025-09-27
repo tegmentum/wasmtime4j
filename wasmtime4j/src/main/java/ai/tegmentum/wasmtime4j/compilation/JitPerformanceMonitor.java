@@ -28,13 +28,13 @@ public final class JitPerformanceMonitor {
   private static final Logger LOGGER = Logger.getLogger(JitPerformanceMonitor.class.getName());
 
   private final JitPerformanceMonitorConfig config;
-  private final Map&lt;String, CompilationMetrics&gt; moduleMetrics;
-  private final Map&lt;String, FunctionMetrics&gt; functionMetrics;
+  private final Map<String, CompilationMetrics> moduleMetrics;
+  private final Map<String, FunctionMetrics> functionMetrics;
   private final SystemResourceMonitor systemResourceMonitor;
   private final PerformanceAggregator performanceAggregator;
   private final AlertManager alertManager;
   private final ScheduledExecutorService scheduler;
-  private final AtomicReference&lt;MonitoringState&gt; state;
+  private final AtomicReference<MonitoringState> state;
   private final AtomicLong totalCompilations;
   private final AtomicLong totalCompilationTimeMs;
 
@@ -49,13 +49,13 @@ public final class JitPerformanceMonitor {
       throw new IllegalArgumentException("JIT performance monitor configuration cannot be null");
     }
     this.config = config;
-    this.moduleMetrics = new ConcurrentHashMap&lt;&gt;();
-    this.functionMetrics = new ConcurrentHashMap&lt;&gt;();
+    this.moduleMetrics = new ConcurrentHashMap<>();
+    this.functionMetrics = new ConcurrentHashMap<>();
     this.systemResourceMonitor = new SystemResourceMonitor(config);
     this.performanceAggregator = new PerformanceAggregator(config);
     this.alertManager = new AlertManager(config);
     this.scheduler = Executors.newScheduledThreadPool(2);
-    this.state = new AtomicReference&lt;&gt;(MonitoringState.STOPPED);
+    this.state = new AtomicReference<>(MonitoringState.STOPPED);
     this.totalCompilations = new AtomicLong(0);
     this.totalCompilationTimeMs = new AtomicLong(0);
   }
@@ -205,7 +205,7 @@ public final class JitPerformanceMonitor {
     }
 
     final String functionKey = moduleId + "::" + functionName;
-    functionMetrics.compute(functionKey, (key, existing) -&gt; {
+    functionMetrics.compute(functionKey, (key, existing) -> {
       if (existing == null) {
         existing = new FunctionMetrics(moduleId, functionName);
       }
@@ -228,7 +228,7 @@ public final class JitPerformanceMonitor {
   public void recordDeoptimization(final String moduleId,
                                    final String functionName,
                                    final String reason,
-                                   final Map&lt;String, Object&gt; context) {
+                                   final Map<String, Object> context) {
     if (moduleId == null) {
       throw new IllegalArgumentException("Module ID cannot be null");
     }
@@ -240,7 +240,7 @@ public final class JitPerformanceMonitor {
     }
 
     final String functionKey = moduleId + "::" + functionName;
-    functionMetrics.compute(functionKey, (key, existing) -&gt; {
+    functionMetrics.compute(functionKey, (key, existing) -> {
       if (existing == null) {
         existing = new FunctionMetrics(moduleId, functionName);
       }
@@ -335,7 +335,7 @@ public final class JitPerformanceMonitor {
   private void recordModuleMetrics(final CompilationSession session,
                                    final CompilationResult result,
                                    final long compilationTimeMs) {
-    moduleMetrics.compute(session.getModuleId(), (moduleId, existing) -&gt; {
+    moduleMetrics.compute(session.getModuleId(), (moduleId, existing) -> {
       if (existing == null) {
         existing = new CompilationMetrics(moduleId);
       }
@@ -350,7 +350,7 @@ public final class JitPerformanceMonitor {
                                      final long compilationTimeMs) {
     if (session.getFunctionName() != null) {
       final String functionKey = session.getModuleId() + "::" + session.getFunctionName();
-      functionMetrics.compute(functionKey, (key, existing) -&gt; {
+      functionMetrics.compute(functionKey, (key, existing) -> {
         if (existing == null) {
           existing = new FunctionMetrics(session.getModuleId(), session.getFunctionName());
         }
@@ -550,30 +550,30 @@ final class CompilationResult {
   private final boolean success;
   private final String errorMessage;
   private final int codeSizeBytes;
-  private final Map&lt;String, Object&gt; additionalMetrics;
+  private final Map<String, Object> additionalMetrics;
 
   public CompilationResult(final boolean success,
                            final String errorMessage,
                            final int codeSizeBytes,
-                           final Map&lt;String, Object&gt; additionalMetrics) {
+                           final Map<String, Object> additionalMetrics) {
     this.success = success;
     this.errorMessage = errorMessage;
     this.codeSizeBytes = codeSizeBytes;
     this.additionalMetrics = additionalMetrics != null ?
-        Collections.unmodifiableMap(new HashMap&lt;&gt;(additionalMetrics)) : Collections.emptyMap();
+        Collections.unmodifiableMap(new HashMap<>(additionalMetrics)) : Collections.emptyMap();
   }
 
   public boolean isSuccess() { return success; }
   public String getErrorMessage() { return errorMessage; }
   public int getCodeSizeBytes() { return codeSizeBytes; }
-  public Map&lt;String, Object&gt; getAdditionalMetrics() { return additionalMetrics; }
+  public Map<String, Object> getAdditionalMetrics() { return additionalMetrics; }
 
   public static CompilationResult success(final int codeSizeBytes) {
     return new CompilationResult(true, null, codeSizeBytes, null);
   }
 
   public static CompilationResult success(final int codeSizeBytes,
-                                          final Map&lt;String, Object&gt; additionalMetrics) {
+                                          final Map<String, Object> additionalMetrics) {
     return new CompilationResult(true, null, codeSizeBytes, additionalMetrics);
   }
 
@@ -591,8 +591,8 @@ final class CompilationMetrics {
   private final AtomicLong successfulCompilations;
   private final AtomicLong totalCompilationTimeMs;
   private final AtomicLong totalCodeSizeBytes;
-  private final Map&lt;CompilationType, AtomicLong&gt; compilationsByType;
-  private final Map&lt;CompilationTier, AtomicLong&gt; compilationsByTier;
+  private final Map<CompilationType, AtomicLong> compilationsByType;
+  private final Map<CompilationTier, AtomicLong> compilationsByTier;
 
   public CompilationMetrics(final String moduleId) {
     this.moduleId = Objects.requireNonNull(moduleId);
@@ -600,8 +600,8 @@ final class CompilationMetrics {
     this.successfulCompilations = new AtomicLong(0);
     this.totalCompilationTimeMs = new AtomicLong(0);
     this.totalCodeSizeBytes = new AtomicLong(0);
-    this.compilationsByType = new ConcurrentHashMap&lt;&gt;();
-    this.compilationsByTier = new ConcurrentHashMap&lt;&gt;();
+    this.compilationsByType = new ConcurrentHashMap<>();
+    this.compilationsByTier = new ConcurrentHashMap<>();
   }
 
   public void recordCompilation(final CompilationType type,
@@ -616,8 +616,8 @@ final class CompilationMetrics {
     }
     totalCompilationTimeMs.addAndGet(compilationTimeMs);
 
-    compilationsByType.computeIfAbsent(type, k -&gt; new AtomicLong(0)).incrementAndGet();
-    compilationsByTier.computeIfAbsent(tier, k -&gt; new AtomicLong(0)).incrementAndGet();
+    compilationsByType.computeIfAbsent(type, k -> new AtomicLong(0)).incrementAndGet();
+    compilationsByTier.computeIfAbsent(tier, k -> new AtomicLong(0)).incrementAndGet();
   }
 
   public String getModuleId() { return moduleId; }
@@ -644,15 +644,15 @@ final class FunctionMetrics {
   private final String moduleId;
   private final String functionName;
   private final CompilationMetrics compilationMetrics;
-  private final Map&lt;String, OptimizationMetrics&gt; optimizationMetrics;
-  private final List&lt;DeoptimizationEvent&gt; deoptimizationEvents;
+  private final Map<String, OptimizationMetrics> optimizationMetrics;
+  private final List<DeoptimizationEvent> deoptimizationEvents;
 
   public FunctionMetrics(final String moduleId, final String functionName) {
     this.moduleId = Objects.requireNonNull(moduleId);
     this.functionName = Objects.requireNonNull(functionName);
     this.compilationMetrics = new CompilationMetrics(moduleId + "::" + functionName);
-    this.optimizationMetrics = new ConcurrentHashMap&lt;&gt;();
-    this.deoptimizationEvents = Collections.synchronizedList(new ArrayList&lt;&gt;());
+    this.optimizationMetrics = new ConcurrentHashMap<>();
+    this.deoptimizationEvents = Collections.synchronizedList(new ArrayList<>());
   }
 
   public void recordCompilation(final CompilationType type,
@@ -667,15 +667,15 @@ final class FunctionMetrics {
     optimizationMetrics.put(optimizationType, metrics);
   }
 
-  public void recordDeoptimization(final String reason, final Map&lt;String, Object&gt; context) {
+  public void recordDeoptimization(final String reason, final Map<String, Object> context) {
     deoptimizationEvents.add(new DeoptimizationEvent(reason, context, System.currentTimeMillis()));
   }
 
   public String getModuleId() { return moduleId; }
   public String getFunctionName() { return functionName; }
   public CompilationMetrics getCompilationMetrics() { return compilationMetrics; }
-  public Map&lt;String, OptimizationMetrics&gt; getOptimizationMetrics() { return Collections.unmodifiableMap(optimizationMetrics); }
-  public List&lt;DeoptimizationEvent&gt; getDeoptimizationEvents() { return Collections.unmodifiableList(deoptimizationEvents); }
+  public Map<String, OptimizationMetrics> getOptimizationMetrics() { return Collections.unmodifiableMap(optimizationMetrics); }
+  public List<DeoptimizationEvent> getDeoptimizationEvents() { return Collections.unmodifiableList(deoptimizationEvents); }
 }
 
 /**
@@ -687,21 +687,21 @@ final class OptimizationMetrics {
   private final double performanceImprovement;
   private final int codeSizeChange;
   private final boolean successful;
-  private final Map&lt;String, Object&gt; additionalMetrics;
+  private final Map<String, Object> additionalMetrics;
 
   public OptimizationMetrics(final String optimizationType,
                              final long optimizationTimeMs,
                              final double performanceImprovement,
                              final int codeSizeChange,
                              final boolean successful,
-                             final Map&lt;String, Object&gt; additionalMetrics) {
+                             final Map<String, Object> additionalMetrics) {
     this.optimizationType = Objects.requireNonNull(optimizationType);
     this.optimizationTimeMs = optimizationTimeMs;
     this.performanceImprovement = performanceImprovement;
     this.codeSizeChange = codeSizeChange;
     this.successful = successful;
     this.additionalMetrics = additionalMetrics != null ?
-        Collections.unmodifiableMap(new HashMap&lt;&gt;(additionalMetrics)) : Collections.emptyMap();
+        Collections.unmodifiableMap(new HashMap<>(additionalMetrics)) : Collections.emptyMap();
   }
 
   public String getOptimizationType() { return optimizationType; }
@@ -709,41 +709,20 @@ final class OptimizationMetrics {
   public double getPerformanceImprovement() { return performanceImprovement; }
   public int getCodeSizeChange() { return codeSizeChange; }
   public boolean isSuccessful() { return successful; }
-  public Map&lt;String, Object&gt; getAdditionalMetrics() { return additionalMetrics; }
+  public Map<String, Object> getAdditionalMetrics() { return additionalMetrics; }
 }
 
-/**
- * Deoptimization event record.
- */
-final class DeoptimizationEvent {
-  private final String reason;
-  private final Map&lt;String, Object&gt; context;
-  private final long timestamp;
-
-  public DeoptimizationEvent(final String reason,
-                             final Map&lt;String, Object&gt; context,
-                             final long timestamp) {
-    this.reason = Objects.requireNonNull(reason);
-    this.context = context != null ?
-        Collections.unmodifiableMap(new HashMap&lt;&gt;(context)) : Collections.emptyMap();
-    this.timestamp = timestamp;
-  }
-
-  public String getReason() { return reason; }
-  public Map&lt;String, Object&gt; getContext() { return context; }
-  public long getTimestamp() { return timestamp; }
-}
 
 /**
  * System resource monitoring.
  */
 final class SystemResourceMonitor {
   private final JitPerformanceMonitorConfig config;
-  private final AtomicReference&lt;ResourceUsage&gt; currentUsage;
+  private final AtomicReference<ResourceUsage> currentUsage;
 
   public SystemResourceMonitor(final JitPerformanceMonitorConfig config) {
     this.config = Objects.requireNonNull(config);
-    this.currentUsage = new AtomicReference&lt;&gt;(new ResourceUsage(0.0, 0.0, 0L));
+    this.currentUsage = new AtomicReference<>(new ResourceUsage(0.0, 0.0, 0L));
   }
 
   public void start() {
@@ -800,11 +779,11 @@ final class ResourceUsage {
  */
 final class PerformanceAggregator {
   private final JitPerformanceMonitorConfig config;
-  private final Map&lt;String, Object&gt; aggregatedMetrics;
+  private final Map<String, Object> aggregatedMetrics;
 
   public PerformanceAggregator(final JitPerformanceMonitorConfig config) {
     this.config = Objects.requireNonNull(config);
-    this.aggregatedMetrics = new ConcurrentHashMap&lt;&gt;();
+    this.aggregatedMetrics = new ConcurrentHashMap<>();
   }
 
   public void recordCompilation(final CompilationSession session,
@@ -824,7 +803,7 @@ final class PerformanceAggregator {
     // Perform periodic aggregation of collected data
   }
 
-  public Map&lt;String, Object&gt; getAggregatedMetrics() {
+  public Map<String, Object> getAggregatedMetrics() {
     return Collections.unmodifiableMap(aggregatedMetrics);
   }
 
@@ -838,18 +817,18 @@ final class PerformanceAggregator {
  */
 final class AlertManager {
   private final JitPerformanceMonitorConfig config;
-  private final List&lt;Alert&gt; activeAlerts;
+  private final List<Alert> activeAlerts;
 
   public AlertManager(final JitPerformanceMonitorConfig config) {
     this.config = Objects.requireNonNull(config);
-    this.activeAlerts = Collections.synchronizedList(new ArrayList&lt;&gt;());
+    this.activeAlerts = Collections.synchronizedList(new ArrayList<>());
   }
 
   public void checkCompilationAlerts(final CompilationSession session,
                                      final CompilationResult result,
                                      final long compilationTimeMs) {
     if (config.isEnableAlerts()) {
-      if (compilationTimeMs &gt; config.getCompilationTimeAlertThresholdMs()) {
+      if (compilationTimeMs > config.getCompilationTimeAlertThresholdMs()) {
         addAlert(Alert.compilationTimeAlert(session, compilationTimeMs));
       }
       if (!result.isSuccess()) {
@@ -868,16 +847,16 @@ final class AlertManager {
 
   public void checkSystemHealthAlerts(final ResourceUsage resourceUsage) {
     if (config.isEnableAlerts()) {
-      if (resourceUsage.getMemoryUsage() &gt; config.getMemoryUsageAlertThreshold()) {
+      if (resourceUsage.getMemoryUsage() > config.getMemoryUsageAlertThreshold()) {
         addAlert(Alert.memoryUsageAlert(resourceUsage.getMemoryUsage()));
       }
-      if (resourceUsage.getCpuUsage() &gt; config.getCpuUsageAlertThreshold()) {
+      if (resourceUsage.getCpuUsage() > config.getCpuUsageAlertThreshold()) {
         addAlert(Alert.cpuUsageAlert(resourceUsage.getCpuUsage()));
       }
     }
   }
 
-  public List&lt;Alert&gt; getActiveAlerts() {
+  public List<Alert> getActiveAlerts() {
     return Collections.unmodifiableList(activeAlerts);
   }
 
@@ -888,7 +867,7 @@ final class AlertManager {
   private void addAlert(final Alert alert) {
     activeAlerts.add(alert);
     // Limit the number of active alerts
-    while (activeAlerts.size() &gt; 100) {
+    while (activeAlerts.size() > 100) {
       activeAlerts.remove(0);
     }
   }
@@ -901,25 +880,25 @@ final class Alert {
   private final AlertType type;
   private final String message;
   private final long timestamp;
-  private final Map&lt;String, Object&gt; context;
+  private final Map<String, Object> context;
 
   private Alert(final AlertType type,
                 final String message,
-                final Map&lt;String, Object&gt; context) {
+                final Map<String, Object> context) {
     this.type = Objects.requireNonNull(type);
     this.message = Objects.requireNonNull(message);
     this.timestamp = System.currentTimeMillis();
     this.context = context != null ?
-        Collections.unmodifiableMap(new HashMap&lt;&gt;(context)) : Collections.emptyMap();
+        Collections.unmodifiableMap(new HashMap<>(context)) : Collections.emptyMap();
   }
 
   public AlertType getType() { return type; }
   public String getMessage() { return message; }
   public long getTimestamp() { return timestamp; }
-  public Map&lt;String, Object&gt; getContext() { return context; }
+  public Map<String, Object> getContext() { return context; }
 
   public static Alert compilationTimeAlert(final CompilationSession session, final long timeMs) {
-    final Map&lt;String, Object&gt; context = new HashMap&lt;&gt;();
+    final Map<String, Object> context = new HashMap<>();
     context.put("module_id", session.getModuleId());
     context.put("function_name", session.getFunctionName());
     context.put("compilation_time_ms", timeMs);
@@ -929,7 +908,7 @@ final class Alert {
   }
 
   public static Alert compilationFailureAlert(final CompilationSession session, final CompilationResult result) {
-    final Map&lt;String, Object&gt; context = new HashMap&lt;&gt;();
+    final Map<String, Object> context = new HashMap<>();
     context.put("module_id", session.getModuleId());
     context.put("function_name", session.getFunctionName());
     context.put("error_message", result.getErrorMessage());
@@ -941,7 +920,7 @@ final class Alert {
   public static Alert deoptimizationAlert(final String moduleId,
                                           final String functionName,
                                           final String reason) {
-    final Map&lt;String, Object&gt; context = new HashMap&lt;&gt;();
+    final Map<String, Object> context = new HashMap<>();
     context.put("module_id", moduleId);
     context.put("function_name", functionName);
     context.put("reason", reason);
@@ -951,7 +930,7 @@ final class Alert {
   }
 
   public static Alert memoryUsageAlert(final double usage) {
-    final Map&lt;String, Object&gt; context = new HashMap&lt;&gt;();
+    final Map<String, Object> context = new HashMap<>();
     context.put("memory_usage", usage);
     return new Alert(AlertType.MEMORY_USAGE,
         String.format("High memory usage: %.2f%%", usage * 100),
@@ -959,7 +938,7 @@ final class Alert {
   }
 
   public static Alert cpuUsageAlert(final double usage) {
-    final Map&lt;String, Object&gt; context = new HashMap&lt;&gt;();
+    final Map<String, Object> context = new HashMap<>();
     context.put("cpu_usage", usage);
     return new Alert(AlertType.CPU_USAGE,
         String.format("High CPU usage: %.2f%%", usage * 100),
@@ -987,33 +966,33 @@ final class JitPerformanceMetrics {
   private final long totalCompilationTimeMs;
   private final int trackedModules;
   private final int trackedFunctions;
-  private final Map&lt;String, Object&gt; aggregatedMetrics;
+  private final Map<String, Object> aggregatedMetrics;
   private final ResourceUsage currentResourceUsage;
-  private final List&lt;Alert&gt; activeAlerts;
+  private final List<Alert> activeAlerts;
 
   public JitPerformanceMetrics(final long totalCompilations,
                                final long totalCompilationTimeMs,
                                final int trackedModules,
                                final int trackedFunctions,
-                               final Map&lt;String, Object&gt; aggregatedMetrics,
+                               final Map<String, Object> aggregatedMetrics,
                                final ResourceUsage currentResourceUsage,
-                               final List&lt;Alert&gt; activeAlerts) {
+                               final List<Alert> activeAlerts) {
     this.totalCompilations = totalCompilations;
     this.totalCompilationTimeMs = totalCompilationTimeMs;
     this.trackedModules = trackedModules;
     this.trackedFunctions = trackedFunctions;
-    this.aggregatedMetrics = Collections.unmodifiableMap(new HashMap&lt;&gt;(aggregatedMetrics));
+    this.aggregatedMetrics = Collections.unmodifiableMap(new HashMap<>(aggregatedMetrics));
     this.currentResourceUsage = currentResourceUsage;
-    this.activeAlerts = Collections.unmodifiableList(new ArrayList&lt;&gt;(activeAlerts));
+    this.activeAlerts = Collections.unmodifiableList(new ArrayList<>(activeAlerts));
   }
 
   public long getTotalCompilations() { return totalCompilations; }
   public long getTotalCompilationTimeMs() { return totalCompilationTimeMs; }
   public int getTrackedModules() { return trackedModules; }
   public int getTrackedFunctions() { return trackedFunctions; }
-  public Map&lt;String, Object&gt; getAggregatedMetrics() { return aggregatedMetrics; }
+  public Map<String, Object> getAggregatedMetrics() { return aggregatedMetrics; }
   public ResourceUsage getCurrentResourceUsage() { return currentResourceUsage; }
-  public List&lt;Alert&gt; getActiveAlerts() { return activeAlerts; }
+  public List<Alert> getActiveAlerts() { return activeAlerts; }
 
   public double getAverageCompilationTimeMs() {
     return totalCompilations == 0 ? 0.0 : (double) totalCompilationTimeMs / totalCompilations;

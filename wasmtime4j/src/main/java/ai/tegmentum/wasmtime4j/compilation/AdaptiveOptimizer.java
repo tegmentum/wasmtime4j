@@ -25,9 +25,9 @@ public final class AdaptiveOptimizer {
   private static final Logger LOGGER = Logger.getLogger(AdaptiveOptimizer.class.getName());
 
   private final AdaptiveOptimizerConfig config;
-  private final Map&lt;String, FunctionProfile&gt; functionProfiles;
-  private final Map&lt;String, ModuleProfile&gt; moduleProfiles;
-  private final AtomicReference&lt;SystemProfile&gt; systemProfile;
+  private final Map<String, FunctionProfile> functionProfiles;
+  private final Map<String, ModuleProfile> moduleProfiles;
+  private final AtomicReference<SystemProfile> systemProfile;
   private final OptimizationDecisionEngine decisionEngine;
   private final AtomicLong totalOptimizations;
   private final AtomicLong successfulOptimizations;
@@ -43,9 +43,9 @@ public final class AdaptiveOptimizer {
       throw new IllegalArgumentException("Adaptive optimizer configuration cannot be null");
     }
     this.config = config;
-    this.functionProfiles = new ConcurrentHashMap&lt;&gt;();
-    this.moduleProfiles = new ConcurrentHashMap&lt;&gt;();
-    this.systemProfile = new AtomicReference&lt;&gt;(new SystemProfile());
+    this.functionProfiles = new ConcurrentHashMap<>();
+    this.moduleProfiles = new ConcurrentHashMap<>();
+    this.systemProfile = new AtomicReference<>(new SystemProfile());
     this.decisionEngine = new OptimizationDecisionEngine(config);
     this.totalOptimizations = new AtomicLong(0);
     this.successfulOptimizations = new AtomicLong(0);
@@ -73,7 +73,7 @@ public final class AdaptiveOptimizer {
     }
 
     final String functionKey = moduleId + "::" + functionName;
-    functionProfiles.compute(functionKey, (key, profile) -&gt; {
+    functionProfiles.compute(functionKey, (key, profile) -> {
       if (profile == null) {
         profile = new FunctionProfile(moduleId, functionName);
       }
@@ -81,7 +81,7 @@ public final class AdaptiveOptimizer {
       return profile;
     });
 
-    moduleProfiles.compute(moduleId, (key, profile) -&gt; {
+    moduleProfiles.compute(moduleId, (key, profile) -> {
       if (profile == null) {
         profile = new ModuleProfile(moduleId);
       }
@@ -227,7 +227,7 @@ public final class AdaptiveOptimizer {
   }
 
   private void updateSystemProfile(final ExecutionData executionData) {
-    systemProfile.updateAndGet(profile -&gt; profile.addExecutionData(executionData));
+    systemProfile.updateAndGet(profile -> profile.addExecutionData(executionData));
   }
 }
 
@@ -346,25 +346,25 @@ final class ExecutionData {
   private final long memoryUsed;
   private final double cpuUtilization;
   private final long timestamp;
-  private final Map&lt;String, Object&gt; additionalMetrics;
+  private final Map<String, Object> additionalMetrics;
 
   public ExecutionData(final long executionTimeNs,
                        final long memoryUsed,
                        final double cpuUtilization,
-                       final Map&lt;String, Object&gt; additionalMetrics) {
+                       final Map<String, Object> additionalMetrics) {
     this.executionTimeNs = executionTimeNs;
     this.memoryUsed = memoryUsed;
     this.cpuUtilization = cpuUtilization;
     this.timestamp = System.currentTimeMillis();
     this.additionalMetrics = additionalMetrics != null ?
-        Collections.unmodifiableMap(new HashMap&lt;&gt;(additionalMetrics)) : Collections.emptyMap();
+        Collections.unmodifiableMap(new HashMap<>(additionalMetrics)) : Collections.emptyMap();
   }
 
   public long getExecutionTimeNs() { return executionTimeNs; }
   public long getMemoryUsed() { return memoryUsed; }
   public double getCpuUtilization() { return cpuUtilization; }
   public long getTimestamp() { return timestamp; }
-  public Map&lt;String, Object&gt; getAdditionalMetrics() { return additionalMetrics; }
+  public Map<String, Object> getAdditionalMetrics() { return additionalMetrics; }
 
   public double getExecutionTimeMs() {
     return executionTimeNs / 1_000_000.0;
@@ -377,20 +377,20 @@ final class ExecutionData {
 final class FunctionProfile {
   private final String moduleId;
   private final String functionName;
-  private final List&lt;ExecutionData&gt; executionHistory;
+  private final List<ExecutionData> executionHistory;
   private final AtomicLong totalExecutions;
   private final AtomicLong totalExecutionTimeNs;
-  private final List&lt;OptimizationResult&gt; optimizationHistory;
+  private final List<OptimizationResult> optimizationHistory;
   private volatile double averageExecutionTimeNs;
   private volatile boolean isHot;
 
   public FunctionProfile(final String moduleId, final String functionName) {
     this.moduleId = Objects.requireNonNull(moduleId);
     this.functionName = Objects.requireNonNull(functionName);
-    this.executionHistory = Collections.synchronizedList(new ArrayList&lt;&gt;());
+    this.executionHistory = Collections.synchronizedList(new ArrayList<>());
     this.totalExecutions = new AtomicLong(0);
     this.totalExecutionTimeNs = new AtomicLong(0);
-    this.optimizationHistory = Collections.synchronizedList(new ArrayList&lt;&gt;());
+    this.optimizationHistory = Collections.synchronizedList(new ArrayList<>());
     this.averageExecutionTimeNs = 0.0;
     this.isHot = false;
   }
@@ -404,7 +404,7 @@ final class FunctionProfile {
     averageExecutionTimeNs = (double) totalExecutionTimeNs.get() / totalExecutions.get();
 
     // Simple hot function detection
-    isHot = totalExecutions.get() &gt; 1000 && averageExecutionTimeNs &gt; 5_000_000; // 5ms average
+    isHot = totalExecutions.get() > 1000 && averageExecutionTimeNs > 5_000_000; // 5ms average
   }
 
   public void recordOptimizationResult(final OptimizationResult result) {
@@ -416,8 +416,8 @@ final class FunctionProfile {
   public long getTotalExecutions() { return totalExecutions.get(); }
   public double getAverageExecutionTimeNs() { return averageExecutionTimeNs; }
   public boolean isHot() { return isHot; }
-  public List&lt;ExecutionData&gt; getExecutionHistory() { return Collections.unmodifiableList(executionHistory); }
-  public List&lt;OptimizationResult&gt; getOptimizationHistory() { return Collections.unmodifiableList(optimizationHistory); }
+  public List<ExecutionData> getExecutionHistory() { return Collections.unmodifiableList(executionHistory); }
+  public List<OptimizationResult> getOptimizationHistory() { return Collections.unmodifiableList(optimizationHistory); }
 
   public double getExecutionTimePercentage(final double totalSystemExecutionTime) {
     return totalSystemExecutionTime == 0.0 ? 0.0 :
@@ -430,13 +430,13 @@ final class FunctionProfile {
  */
 final class ModuleProfile {
   private final String moduleId;
-  private final Map&lt;String, FunctionProfile&gt; functionProfiles;
+  private final Map<String, FunctionProfile> functionProfiles;
   private final AtomicLong totalModuleExecutions;
   private final AtomicLong totalModuleExecutionTimeNs;
 
   public ModuleProfile(final String moduleId) {
     this.moduleId = Objects.requireNonNull(moduleId);
-    this.functionProfiles = new ConcurrentHashMap&lt;&gt;();
+    this.functionProfiles = new ConcurrentHashMap<>();
     this.totalModuleExecutions = new AtomicLong(0);
     this.totalModuleExecutionTimeNs = new AtomicLong(0);
   }
@@ -462,12 +462,12 @@ final class ModuleProfile {
 final class SystemProfile {
   private final AtomicLong totalSystemExecutions;
   private final AtomicLong totalSystemExecutionTimeNs;
-  private final AtomicReference&lt;Double&gt; currentLoad;
+  private final AtomicReference<Double> currentLoad;
 
   public SystemProfile() {
     this.totalSystemExecutions = new AtomicLong(0);
     this.totalSystemExecutionTimeNs = new AtomicLong(0);
-    this.currentLoad = new AtomicReference&lt;&gt;(0.0);
+    this.currentLoad = new AtomicReference<>(0.0);
   }
 
   public SystemProfile addExecutionData(final ExecutionData data) {
@@ -487,11 +487,11 @@ final class SystemProfile {
  */
 final class OptimizationDecisionEngine {
   private final AdaptiveOptimizerConfig config;
-  private final Map&lt;String, Double&gt; optimizationWeights;
+  private final Map<String, Double> optimizationWeights;
 
   public OptimizationDecisionEngine(final AdaptiveOptimizerConfig config) {
     this.config = Objects.requireNonNull(config);
-    this.optimizationWeights = new ConcurrentHashMap&lt;&gt;();
+    this.optimizationWeights = new ConcurrentHashMap<>();
     initializeWeights();
   }
 
@@ -503,12 +503,12 @@ final class OptimizationDecisionEngine {
     }
 
     // Check minimum execution threshold
-    if (functionProfile.getTotalExecutions() &lt; config.getMinExecutionCount()) {
+    if (functionProfile.getTotalExecutions() < config.getMinExecutionCount()) {
       return OptimizationDecision.noOptimization("Insufficient execution count");
     }
 
     // Check if system is under load
-    if (systemProfile.getCurrentLoad() &gt; config.getCpuUtilizationThreshold()) {
+    if (systemProfile.getCurrentLoad() > config.getCpuUtilizationThreshold()) {
       return OptimizationDecision.noOptimization("System under high load");
     }
 
@@ -521,10 +521,10 @@ final class OptimizationDecisionEngine {
     // Calculate optimization score
     final double score = calculateOptimizationScore(functionProfile, moduleProfile, systemProfile);
 
-    if (score &gt; 0.8) {
+    if (score > 0.8) {
       return OptimizationDecision.optimize(CompilationTier.HIGHLY_OPTIMIZED,
           "High optimization score: " + score);
-    } else if (score &gt; 0.5) {
+    } else if (score > 0.5) {
       return OptimizationDecision.optimize(CompilationTier.OPTIMIZED,
           "Medium optimization score: " + score);
     } else {
@@ -616,44 +616,6 @@ final class OptimizationDecision {
   }
 }
 
-/**
- * Result of an optimization attempt.
- */
-final class OptimizationResult {
-  private final boolean successful;
-  private final String description;
-  private final long compilationTimeMs;
-  private final double performanceImprovement;
-  private final String errorMessage;
-
-  public OptimizationResult(final boolean successful,
-                            final String description,
-                            final long compilationTimeMs,
-                            final double performanceImprovement,
-                            final String errorMessage) {
-    this.successful = successful;
-    this.description = Objects.requireNonNull(description);
-    this.compilationTimeMs = compilationTimeMs;
-    this.performanceImprovement = performanceImprovement;
-    this.errorMessage = errorMessage;
-  }
-
-  public boolean isSuccessful() { return successful; }
-  public String getDescription() { return description; }
-  public long getCompilationTimeMs() { return compilationTimeMs; }
-  public double getPerformanceImprovement() { return performanceImprovement; }
-  public String getErrorMessage() { return errorMessage; }
-
-  public static OptimizationResult success(final String description,
-                                           final long compilationTimeMs,
-                                           final double performanceImprovement) {
-    return new OptimizationResult(true, description, compilationTimeMs, performanceImprovement, null);
-  }
-
-  public static OptimizationResult failure(final String description, final String errorMessage) {
-    return new OptimizationResult(false, description, 0, 0.0, errorMessage);
-  }
-}
 
 /**
  * Statistics about optimization activities.

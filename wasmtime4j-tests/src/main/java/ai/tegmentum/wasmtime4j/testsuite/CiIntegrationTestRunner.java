@@ -262,8 +262,8 @@ public final class CiIntegrationTestRunner {
             return "";
         }
         return text.replace("&", "&amp;")
-                   .replace("<", "&lt;")
-                   .replace(">", "&gt;")
+                   .replace("<", "<")
+                   .replace(">", ">")
                    .replace("\"", "&quot;")
                    .replace("'", "&apos;");
     }

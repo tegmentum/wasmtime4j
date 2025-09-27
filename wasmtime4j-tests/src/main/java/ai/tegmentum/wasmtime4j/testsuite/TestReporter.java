@@ -380,8 +380,8 @@ public final class TestReporter {
     private String escapeHtml(final String text) {
         if (text == null) return "";
         return text.replace("&", "&amp;")
-                   .replace("<", "&lt;")
-                   .replace(">", "&gt;")
+                   .replace("<", "<")
+                   .replace(">", ">")
                    .replace("\"", "&quot;")
                    .replace("'", "&#39;");
     }
@@ -389,8 +389,8 @@ public final class TestReporter {
     private String escapeXml(final String text) {
         if (text == null) return "";
         return text.replace("&", "&amp;")
-                   .replace("<", "&lt;")
-                   .replace(">", "&gt;")
+                   .replace("<", "<")
+                   .replace(">", ">")
                    .replace("\"", "&quot;")
                    .replace("'", "&apos;");
     }

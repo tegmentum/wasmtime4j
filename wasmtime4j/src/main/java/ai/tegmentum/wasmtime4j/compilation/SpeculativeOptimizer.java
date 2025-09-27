@@ -26,7 +26,7 @@ public final class SpeculativeOptimizer {
   private static final Logger LOGGER = Logger.getLogger(SpeculativeOptimizer.class.getName());
 
   private final SpeculativeOptimizerConfig config;
-  private final Map&lt;String, SpeculationProfile&gt; speculationProfiles;
+  private final Map<String, SpeculationProfile> speculationProfiles;
   private final DeoptimizationManager deoptimizationManager;
   private final SpeculationDecisionEngine decisionEngine;
   private final AtomicLong totalSpeculations;
@@ -44,7 +44,7 @@ public final class SpeculativeOptimizer {
       throw new IllegalArgumentException("Speculative optimizer configuration cannot be null");
     }
     this.config = config;
-    this.speculationProfiles = new ConcurrentHashMap&lt;&gt;();
+    this.speculationProfiles = new ConcurrentHashMap<>();
     this.deoptimizationManager = new DeoptimizationManager(config);
     this.decisionEngine = new SpeculationDecisionEngine(config);
     this.totalSpeculations = new AtomicLong(0);
@@ -61,7 +61,7 @@ public final class SpeculativeOptimizer {
    * @return list of speculative optimizations to apply
    * @throws IllegalArgumentException if any parameter is null
    */
-  public List&lt;SpeculativeOptimization&gt; determineSpeculations(final String moduleId,
+  public List<SpeculativeOptimization> determineSpeculations(final String moduleId,
                                                              final String functionName,
                                                              final ExecutionProfile executionProfile) {
     if (moduleId == null) {
@@ -76,7 +76,7 @@ public final class SpeculativeOptimizer {
 
     final String functionKey = moduleId + "::" + functionName;
     final SpeculationProfile profile = speculationProfiles.computeIfAbsent(
-        functionKey, k -&gt; new SpeculationProfile(moduleId, functionName));
+        functionKey, k -> new SpeculationProfile(moduleId, functionName));
 
     return decisionEngine.determineSpeculations(profile, executionProfile);
   }
@@ -141,7 +141,7 @@ public final class SpeculativeOptimizer {
   public void recordDeoptimization(final String moduleId,
                                    final String functionName,
                                    final DeoptimizationReason reason,
-                                   final Map&lt;String, Object&gt; context) {
+                                   final Map<String, Object> context) {
     if (moduleId == null) {
       throw new IllegalArgumentException("Module ID cannot be null");
     }
@@ -362,29 +362,29 @@ final class SpeculativeOptimizerConfig {
 final class SpeculativeOptimization {
   private final SpeculationType type;
   private final String description;
-  private final Map&lt;String, Object&gt; parameters;
+  private final Map<String, Object> parameters;
   private final double confidence;
-  private final List&lt;String&gt; assumptions;
+  private final List<String> assumptions;
 
   public SpeculativeOptimization(final SpeculationType type,
                                  final String description,
-                                 final Map&lt;String, Object&gt; parameters,
+                                 final Map<String, Object> parameters,
                                  final double confidence,
-                                 final List&lt;String&gt; assumptions) {
+                                 final List<String> assumptions) {
     this.type = Objects.requireNonNull(type);
     this.description = Objects.requireNonNull(description);
     this.parameters = parameters != null ?
-        Collections.unmodifiableMap(new HashMap&lt;&gt;(parameters)) : Collections.emptyMap();
+        Collections.unmodifiableMap(new HashMap<>(parameters)) : Collections.emptyMap();
     this.confidence = confidence;
     this.assumptions = assumptions != null ?
-        Collections.unmodifiableList(new ArrayList&lt;&gt;(assumptions)) : Collections.emptyList();
+        Collections.unmodifiableList(new ArrayList<>(assumptions)) : Collections.emptyList();
   }
 
   public SpeculationType getType() { return type; }
   public String getDescription() { return description; }
-  public Map&lt;String, Object&gt; getParameters() { return parameters; }
+  public Map<String, Object> getParameters() { return parameters; }
   public double getConfidence() { return confidence; }
-  public List&lt;String&gt; getAssumptions() { return assumptions; }
+  public List<String> getAssumptions() { return assumptions; }
 
   @Override
   public String toString() {
@@ -414,26 +414,26 @@ final class SpeculationResult {
   private final String description;
   private final long compilationTimeMs;
   private final double performanceImprovement;
-  private final List&lt;String&gt; violatedAssumptions;
+  private final List<String> violatedAssumptions;
 
   public SpeculationResult(final boolean successful,
                            final String description,
                            final long compilationTimeMs,
                            final double performanceImprovement,
-                           final List&lt;String&gt; violatedAssumptions) {
+                           final List<String> violatedAssumptions) {
     this.successful = successful;
     this.description = Objects.requireNonNull(description);
     this.compilationTimeMs = compilationTimeMs;
     this.performanceImprovement = performanceImprovement;
     this.violatedAssumptions = violatedAssumptions != null ?
-        Collections.unmodifiableList(new ArrayList&lt;&gt;(violatedAssumptions)) : Collections.emptyList();
+        Collections.unmodifiableList(new ArrayList<>(violatedAssumptions)) : Collections.emptyList();
   }
 
   public boolean isSuccessful() { return successful; }
   public String getDescription() { return description; }
   public long getCompilationTimeMs() { return compilationTimeMs; }
   public double getPerformanceImprovement() { return performanceImprovement; }
-  public List&lt;String&gt; getViolatedAssumptions() { return violatedAssumptions; }
+  public List<String> getViolatedAssumptions() { return violatedAssumptions; }
 
   public static SpeculationResult success(final String description,
                                           final long compilationTimeMs,
@@ -442,7 +442,7 @@ final class SpeculationResult {
   }
 
   public static SpeculationResult failure(final String description,
-                                          final List&lt;String&gt; violatedAssumptions) {
+                                          final List<String> violatedAssumptions) {
     return new SpeculationResult(false, description, 0, 0.0, violatedAssumptions);
   }
 }
@@ -453,21 +453,21 @@ final class SpeculationResult {
 final class SpeculationProfile {
   private final String moduleId;
   private final String functionName;
-  private final Map&lt;SpeculationType, SpeculationTypeStats&gt; typeStats;
-  private final List&lt;DeoptimizationEvent&gt; deoptimizationHistory;
+  private final Map<SpeculationType, SpeculationTypeStats> typeStats;
+  private final List<DeoptimizationEvent> deoptimizationHistory;
   private final AtomicLong lastDeoptimizationTime;
 
   public SpeculationProfile(final String moduleId, final String functionName) {
     this.moduleId = Objects.requireNonNull(moduleId);
     this.functionName = Objects.requireNonNull(functionName);
-    this.typeStats = new ConcurrentHashMap&lt;&gt;();
-    this.deoptimizationHistory = Collections.synchronizedList(new ArrayList&lt;&gt;());
+    this.typeStats = new ConcurrentHashMap<>();
+    this.deoptimizationHistory = Collections.synchronizedList(new ArrayList<>());
     this.lastDeoptimizationTime = new AtomicLong(0);
   }
 
   public void recordSpeculationResult(final SpeculativeOptimization speculation,
                                       final SpeculationResult result) {
-    typeStats.compute(speculation.getType(), (type, stats) -&gt; {
+    typeStats.compute(speculation.getType(), (type, stats) -> {
       if (stats == null) {
         stats = new SpeculationTypeStats();
       }
@@ -484,8 +484,8 @@ final class SpeculationProfile {
 
   public String getModuleId() { return moduleId; }
   public String getFunctionName() { return functionName; }
-  public Map&lt;SpeculationType, SpeculationTypeStats&gt; getTypeStats() { return Collections.unmodifiableMap(typeStats); }
-  public List&lt;DeoptimizationEvent&gt; getDeoptimizationHistory() { return Collections.unmodifiableList(deoptimizationHistory); }
+  public Map<SpeculationType, SpeculationTypeStats> getTypeStats() { return Collections.unmodifiableMap(typeStats); }
+  public List<DeoptimizationEvent> getDeoptimizationHistory() { return Collections.unmodifiableList(deoptimizationHistory); }
   public long getLastDeoptimizationTime() { return lastDeoptimizationTime.get(); }
 
   public double getSuccessRateForType(final SpeculationType type) {
@@ -500,12 +500,12 @@ final class SpeculationProfile {
 final class SpeculationTypeStats {
   private final AtomicLong totalAttempts;
   private final AtomicLong successfulAttempts;
-  private final AtomicReference&lt;Double&gt; averagePerformanceGain;
+  private final AtomicReference<Double> averagePerformanceGain;
 
   public SpeculationTypeStats() {
     this.totalAttempts = new AtomicLong(0);
     this.successfulAttempts = new AtomicLong(0);
-    this.averagePerformanceGain = new AtomicReference&lt;&gt;(0.0);
+    this.averagePerformanceGain = new AtomicReference<>(0.0);
   }
 
   public void recordResult(final SpeculationResult result) {
@@ -513,7 +513,7 @@ final class SpeculationTypeStats {
     if (result.isSuccessful()) {
       successfulAttempts.incrementAndGet();
       // Update rolling average of performance gain
-      averagePerformanceGain.updateAndGet(currentAvg -&gt; {
+      averagePerformanceGain.updateAndGet(currentAvg -> {
         final long successful = successfulAttempts.get();
         return ((currentAvg * (successful - 1)) + result.getPerformanceImprovement()) / successful;
       });
@@ -562,25 +562,25 @@ final class DeoptimizationEvent {
  * Current runtime conditions for deoptimization decisions.
  */
 final class RuntimeConditions {
-  private final Map&lt;String, Object&gt; typeObservations;
-  private final Map&lt;String, Object&gt; branchPatterns;
+  private final Map<String, Object> typeObservations;
+  private final Map<String, Object> branchPatterns;
   private final double currentPerformance;
   private final long memoryUsage;
 
-  public RuntimeConditions(final Map&lt;String, Object&gt; typeObservations,
-                           final Map&lt;String, Object&gt; branchPatterns,
+  public RuntimeConditions(final Map<String, Object> typeObservations,
+                           final Map<String, Object> branchPatterns,
                            final double currentPerformance,
                            final long memoryUsage) {
     this.typeObservations = typeObservations != null ?
-        Collections.unmodifiableMap(new HashMap&lt;&gt;(typeObservations)) : Collections.emptyMap();
+        Collections.unmodifiableMap(new HashMap<>(typeObservations)) : Collections.emptyMap();
     this.branchPatterns = branchPatterns != null ?
-        Collections.unmodifiableMap(new HashMap&lt;&gt;(branchPatterns)) : Collections.emptyMap();
+        Collections.unmodifiableMap(new HashMap<>(branchPatterns)) : Collections.emptyMap();
     this.currentPerformance = currentPerformance;
     this.memoryUsage = memoryUsage;
   }
 
-  public Map&lt;String, Object&gt; getTypeObservations() { return typeObservations; }
-  public Map&lt;String, Object&gt; getBranchPatterns() { return branchPatterns; }
+  public Map<String, Object> getTypeObservations() { return typeObservations; }
+  public Map<String, Object> getBranchPatterns() { return branchPatterns; }
   public double getCurrentPerformance() { return currentPerformance; }
   public long getMemoryUsage() { return memoryUsage; }
 }
@@ -595,13 +595,13 @@ final class SpeculationDecisionEngine {
     this.config = Objects.requireNonNull(config);
   }
 
-  public List&lt;SpeculativeOptimization&gt; determineSpeculations(final SpeculationProfile profile,
+  public List<SpeculativeOptimization> determineSpeculations(final SpeculationProfile profile,
                                                              final ExecutionProfile executionProfile) {
-    final List&lt;SpeculativeOptimization&gt; speculations = new ArrayList&lt;&gt;();
+    final List<SpeculativeOptimization> speculations = new ArrayList<>();
 
     // Check if we're in cooldown period after deoptimization
     final long timeSinceLastDeopt = System.currentTimeMillis() - profile.getLastDeoptimizationTime();
-    if (timeSinceLastDeopt &lt; config.getDeoptimizationCooldownMs()) {
+    if (timeSinceLastDeopt < config.getDeoptimizationCooldownMs()) {
       return speculations; // No speculations during cooldown
     }
 
@@ -640,33 +640,33 @@ final class SpeculationDecisionEngine {
   private boolean shouldSpeculateTypeSpecialization(final SpeculationProfile profile,
                                                     final ExecutionProfile executionProfile) {
     final double successRate = profile.getSuccessRateForType(SpeculationType.TYPE_SPECIALIZATION);
-    return successRate &gt; config.getSpeculationThreshold() || successRate == 0.0; // Try once if no history
+    return successRate > config.getSpeculationThreshold() || successRate == 0.0; // Try once if no history
   }
 
   private boolean shouldSpeculateConstantFolding(final SpeculationProfile profile,
                                                  final ExecutionProfile executionProfile) {
     final double successRate = profile.getSuccessRateForType(SpeculationType.CONSTANT_FOLDING);
-    return successRate &gt; config.getSpeculationThreshold() || successRate == 0.0;
+    return successRate > config.getSpeculationThreshold() || successRate == 0.0;
   }
 
   private boolean shouldSpeculateBranchElimination(final SpeculationProfile profile,
                                                    final ExecutionProfile executionProfile) {
     final double successRate = profile.getSuccessRateForType(SpeculationType.BRANCH_ELIMINATION);
-    return successRate &gt; config.getSpeculationThreshold() || successRate == 0.0;
+    return successRate > config.getSpeculationThreshold() || successRate == 0.0;
   }
 
   private boolean shouldSpeculateInlining(final SpeculationProfile profile,
                                           final ExecutionProfile executionProfile) {
     final double successRate = profile.getSuccessRateForType(SpeculationType.FUNCTION_INLINING);
-    return (successRate &gt; config.getSpeculationThreshold() || successRate == 0.0) &&
-           executionProfile.getFunctionCount() &lt; 100; // Don't inline in very large modules
+    return (successRate > config.getSpeculationThreshold() || successRate == 0.0) &&
+           executionProfile.getFunctionCount() < 100; // Don't inline in very large modules
   }
 
   private SpeculativeOptimization createTypeSpecializationOptimization(final ExecutionProfile executionProfile) {
-    final Map&lt;String, Object&gt; parameters = new HashMap&lt;&gt;();
+    final Map<String, Object> parameters = new HashMap<>();
     parameters.put("target_types", List.of("i32", "i64", "f32", "f64"));
 
-    final List&lt;String&gt; assumptions = List.of(
+    final List<String> assumptions = List.of(
         "Function parameters maintain observed types",
         "Return values maintain observed types"
     );
@@ -681,11 +681,11 @@ final class SpeculationDecisionEngine {
   }
 
   private SpeculativeOptimization createConstantFoldingOptimization(final ExecutionProfile executionProfile) {
-    final Map&lt;String, Object&gt; parameters = new HashMap&lt;&gt;();
+    final Map<String, Object> parameters = new HashMap<>();
     parameters.put("fold_arithmetic", true);
     parameters.put("fold_comparisons", true);
 
-    final List&lt;String&gt; assumptions = List.of(
+    final List<String> assumptions = List.of(
         "Constant values remain constant across executions",
         "No side effects in constant expressions"
     );
@@ -700,11 +700,11 @@ final class SpeculationDecisionEngine {
   }
 
   private SpeculativeOptimization createBranchEliminationOptimization(final ExecutionProfile executionProfile) {
-    final Map&lt;String, Object&gt; parameters = new HashMap&lt;&gt;();
+    final Map<String, Object> parameters = new HashMap<>();
     parameters.put("eliminate_unlikely_branches", true);
     parameters.put("min_branch_probability", 0.95);
 
-    final List&lt;String&gt; assumptions = List.of(
+    final List<String> assumptions = List.of(
         "Branch patterns remain stable",
         "Unlikely branches continue to be unlikely"
     );
@@ -719,11 +719,11 @@ final class SpeculationDecisionEngine {
   }
 
   private SpeculativeOptimization createInliningOptimization(final ExecutionProfile executionProfile) {
-    final Map&lt;String, Object&gt; parameters = new HashMap&lt;&gt;();
+    final Map<String, Object> parameters = new HashMap<>();
     parameters.put("max_inline_size", 100);
     parameters.put("max_inline_depth", 3);
 
-    final List&lt;String&gt; assumptions = List.of(
+    final List<String> assumptions = List.of(
         "Hot functions benefit from inlining",
         "Code size increase is acceptable"
     );
@@ -743,11 +743,11 @@ final class SpeculationDecisionEngine {
  */
 final class DeoptimizationManager {
   private final SpeculativeOptimizerConfig config;
-  private final Map&lt;String, Integer&gt; activeSpeculations;
+  private final Map<String, Integer> activeSpeculations;
 
   public DeoptimizationManager(final SpeculativeOptimizerConfig config) {
     this.config = Objects.requireNonNull(config);
-    this.activeSpeculations = new ConcurrentHashMap&lt;&gt;();
+    this.activeSpeculations = new ConcurrentHashMap<>();
   }
 
   public DeoptimizationDecision shouldDeoptimize(final String moduleId,
@@ -757,13 +757,13 @@ final class DeoptimizationManager {
     final Integer activeCount = activeSpeculations.get(functionKey);
 
     // Check if we have too many active speculations
-    if (activeCount != null && activeCount &gt; config.getMaxActiveSpeculations()) {
+    if (activeCount != null && activeCount > config.getMaxActiveSpeculations()) {
       return DeoptimizationDecision.deoptimize(DeoptimizationReason.SPECULATION_LIMIT_EXCEEDED,
           "Too many active speculations: " + activeCount);
     }
 
     // Check performance regression
-    if (currentConditions.getCurrentPerformance() &lt; 0.8) { // 20% performance loss
+    if (currentConditions.getCurrentPerformance() < 0.8) { // 20% performance loss
       return DeoptimizationDecision.deoptimize(DeoptimizationReason.PERFORMANCE_REGRESSION,
           "Performance regression detected: " + currentConditions.getCurrentPerformance());
     }
@@ -774,9 +774,9 @@ final class DeoptimizationManager {
   public void recordDeoptimization(final String moduleId,
                                    final String functionName,
                                    final DeoptimizationReason reason,
-                                   final Map&lt;String, Object&gt; context) {
+                                   final Map<String, Object> context) {
     final String functionKey = moduleId + "::" + functionName;
-    activeSpeculations.compute(functionKey, (key, count) -&gt; Math.max(0, (count != null ? count : 0) - 1));
+    activeSpeculations.compute(functionKey, (key, count) -> Math.max(0, (count != null ? count : 0) - 1));
   }
 
   public int getActiveSpeculations() {

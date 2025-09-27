@@ -235,21 +235,11 @@
                 <artifactId>opentelemetry-instrumentation-api</artifactId>
                 <version>${opentelemetry.instrumentation.version}</version>
             </dependency>
-            <dependency>
-                <groupId>io.opentelemetry.instrumentation</groupId>
-                <artifactId>opentelemetry-runtime-telemetry-java8</artifactId>
-                <version>${opentelemetry.instrumentation.version}</version>
-            </dependency>
 
             <!-- OpenTelemetry Exporters -->
             <dependency>
                 <groupId>io.opentelemetry</groupId>
                 <artifactId>opentelemetry-exporter-otlp</artifactId>
-                <version>${opentelemetry.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.opentelemetry</groupId>
-                <artifactId>opentelemetry-exporter-jaeger</artifactId>
                 <version>${opentelemetry.version}</version>
             </dependency>
             <dependency>
@@ -266,13 +256,6 @@
                 <groupId>io.opentelemetry</groupId>
                 <artifactId>opentelemetry-exporter-logging</artifactId>
                 <version>${opentelemetry.version}</version>
-            </dependency>
-
-            <!-- OpenTelemetry Resource Detection -->
-            <dependency>
-                <groupId>io.opentelemetry.instrumentation</groupId>
-                <artifactId>opentelemetry-resources</artifactId>
-                <version>${opentelemetry.instrumentation.version}</version>
             </dependency>
 
             <!-- OpenTelemetry Semantic Conventions -->

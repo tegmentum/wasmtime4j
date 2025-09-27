@@ -8,9 +8,9 @@
  * <h2>Performance Targets</h2>
  *
  * <ul>
- *   <li><strong>Native Call Overhead:</strong> &lt;100 nanoseconds for simple operations
- *   <li><strong>Memory Efficiency:</strong> &gt;50% reduction in GC pressure through pooling
- *   <li><strong>Bulk Operations:</strong> &gt;3x performance improvement via call batching
+ *   <li><strong>Native Call Overhead:</strong> <100 nanoseconds for simple operations
+ *   <li><strong>Memory Efficiency:</strong> >50% reduction in GC pressure through pooling
+ *   <li><strong>Bulk Operations:</strong> >3x performance improvement via call batching
  *   <li><strong>Startup Time:</strong> Significant improvement through compilation caching
  * </ul>
  *

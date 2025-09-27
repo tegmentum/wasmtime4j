@@ -91,7 +91,7 @@ class AdvancedJitCompilationTest {
     @Test
     @DisplayName("Should reject invalid tier configurations")
     void shouldRejectInvalidTierConfigurations() {
-      assertThrows(IllegalStateException.class, () -&gt; {
+      assertThrows(IllegalStateException.class, () -> {
         TieredCompilationConfig.builder()
             .enabled(true)
             .build(); // No tiers configured
@@ -228,15 +228,15 @@ class AdvancedJitCompilationTest {
     @Test
     @DisplayName("Should validate input parameters")
     void shouldValidateInputParameters() {
-      assertThrows(IllegalArgumentException.class, () -&gt; {
+      assertThrows(IllegalArgumentException.class, () -> {
         optimizer.recordExecution(null, TEST_FUNCTION_NAME, testExecutionData);
       });
 
-      assertThrows(IllegalArgumentException.class, () -&gt; {
+      assertThrows(IllegalArgumentException.class, () -> {
         optimizer.recordExecution(TEST_MODULE_ID, null, testExecutionData);
       });
 
-      assertThrows(IllegalArgumentException.class, () -&gt; {
+      assertThrows(IllegalArgumentException.class, () -> {
         optimizer.recordExecution(TEST_MODULE_ID, TEST_FUNCTION_NAME, null);
       });
     }
@@ -269,7 +269,7 @@ class AdvancedJitCompilationTest {
           1024 * 100 // module size
       );
 
-      final List&lt;SpeculativeOptimization&gt; speculations = optimizer.determineSpeculations(
+      final List<SpeculativeOptimization> speculations = optimizer.determineSpeculations(
           TEST_MODULE_ID, TEST_FUNCTION_NAME, profile);
 
       assertNotNull(speculations);
@@ -284,7 +284,7 @@ class AdvancedJitCompilationTest {
           true, false, false, 5, 1024 * 100
       );
 
-      final List&lt;SpeculativeOptimization&gt; speculations = optimizer.determineSpeculations(
+      final List<SpeculativeOptimization> speculations = optimizer.determineSpeculations(
           TEST_MODULE_ID, TEST_FUNCTION_NAME, profile);
 
       if (!speculations.isEmpty()) {
@@ -306,7 +306,7 @@ class AdvancedJitCompilationTest {
     @DisplayName("Should handle deoptimization events")
     void shouldHandleDeoptimization() {
       final DeoptimizationReason reason = DeoptimizationReason.TYPE_ASSUMPTION_VIOLATED;
-      final Map&lt;String, Object&gt; context = Map.of(
+      final Map<String, Object> context = Map.of(
           "expected_type", "i32",
           "actual_type", "f64"
       );
@@ -356,15 +356,15 @@ class AdvancedJitCompilationTest {
           true, false, false, 5, 1024 * 100
       );
 
-      assertThrows(IllegalArgumentException.class, () -&gt; {
+      assertThrows(IllegalArgumentException.class, () -> {
         optimizer.determineSpeculations(null, TEST_FUNCTION_NAME, validProfile);
       });
 
-      assertThrows(IllegalArgumentException.class, () -&gt; {
+      assertThrows(IllegalArgumentException.class, () -> {
         optimizer.determineSpeculations(TEST_MODULE_ID, null, validProfile);
       });
 
-      assertThrows(IllegalArgumentException.class, () -&gt; {
+      assertThrows(IllegalArgumentException.class, () -> {
         optimizer.determineSpeculations(TEST_MODULE_ID, TEST_FUNCTION_NAME, null);
       });
     }
@@ -472,11 +472,11 @@ class AdvancedJitCompilationTest {
     @Test
     @DisplayName("Should validate PGO input parameters")
     void shouldValidatePgoInputParameters() {
-      assertThrows(IllegalArgumentException.class, () -&gt; {
+      assertThrows(IllegalArgumentException.class, () -> {
         optimizer.startInstrumentationPhase(null, SIMPLE_WASM_MODULE);
       });
 
-      assertThrows(IllegalArgumentException.class, () -&gt; {
+      assertThrows(IllegalArgumentException.class, () -> {
         optimizer.startInstrumentationPhase(TEST_MODULE_ID, null);
       });
     }
@@ -491,7 +491,7 @@ class AdvancedJitCompilationTest {
           TEST_FUNCTION_NAME, 1, 1000000, Map.of(), Map.of());
       optimizer.recordProfileData(TEST_MODULE_ID, TEST_FUNCTION_NAME, profileData);
 
-      assertThrows(PgoException.class, () -&gt; {
+      assertThrows(PgoException.class, () -> {
         optimizer.generateOptimizationPlan(TEST_MODULE_ID);
       });
     }
@@ -615,15 +615,15 @@ class AdvancedJitCompilationTest {
     @Test
     @DisplayName("Should validate monitor input parameters")
     void shouldValidateMonitorInputParameters() {
-      assertThrows(IllegalArgumentException.class, () -&gt; {
+      assertThrows(IllegalArgumentException.class, () -> {
         monitor.startCompilation(null, TEST_FUNCTION_NAME, CompilationType.TIERED, CompilationTier.BASELINE);
       });
 
-      assertThrows(IllegalArgumentException.class, () -&gt; {
+      assertThrows(IllegalArgumentException.class, () -> {
         monitor.startCompilation(TEST_MODULE_ID, TEST_FUNCTION_NAME, null, CompilationTier.BASELINE);
       });
 
-      assertThrows(IllegalArgumentException.class, () -&gt; {
+      assertThrows(IllegalArgumentException.class, () -> {
         monitor.startCompilation(TEST_MODULE_ID, TEST_FUNCTION_NAME, CompilationType.TIERED, null);
       });
     }
@@ -724,7 +724,7 @@ class AdvancedJitCompilationTest {
       );
 
       // Determine speculations
-      final List&lt;SpeculativeOptimization&gt; speculations = speculativeOptimizer.determineSpeculations(
+      final List<SpeculativeOptimization> speculations = speculativeOptimizer.determineSpeculations(
           TEST_MODULE_ID, TEST_FUNCTION_NAME, profile);
 
       if (!speculations.isEmpty()) {
@@ -742,7 +742,7 @@ class AdvancedJitCompilationTest {
 
         // Later, trigger deoptimization due to assumption violation
         final DeoptimizationReason reason = DeoptimizationReason.TYPE_ASSUMPTION_VIOLATED;
-        final Map&lt;String, Object&gt; context = Map.of("violation_count", 10);
+        final Map<String, Object> context = Map.of("violation_count", 10);
 
         speculativeOptimizer.recordDeoptimization(TEST_MODULE_ID, TEST_FUNCTION_NAME, reason, context);
 
@@ -815,7 +815,7 @@ class AdvancedJitCompilationTest {
 
       for (int i = 0; i < numThreads; i++) {
         final int threadId = i;
-        executor.submit(() -&gt; {
+        executor.submit(() -> {
           try {
             for (int j = 0; j < operationsPerThread; j++) {
               final String moduleId = TEST_MODULE_ID + "_" + threadId;
@@ -885,7 +885,7 @@ class AdvancedJitCompilationTest {
           Map.of("extreme_test", true)
       );
 
-      assertDoesNotThrow(() -&gt; {
+      assertDoesNotThrow(() -> {
         optimizer.recordExecution(TEST_MODULE_ID, TEST_FUNCTION_NAME, extremeData);
       });
     }
@@ -896,12 +896,12 @@ class AdvancedJitCompilationTest {
       final ProfileGuidedOptimizer optimizer = ProfileGuidedOptimizer.createDefault();
 
       // Try to generate plan without instrumentation
-      assertThrows(PgoException.class, () -&gt; {
+      assertThrows(PgoException.class, () -> {
         optimizer.generateOptimizationPlan("nonexistent_module");
       });
 
       // Try to apply optimizations without profile data
-      assertThrows(PgoException.class, () -&gt; {
+      assertThrows(PgoException.class, () -> {
         optimizer.applyOptimizations("nonexistent_module", SIMPLE_WASM_MODULE,
             new OptimizationPlan("nonexistent_module", List.of(), Map.of(), 1.0));
       });
@@ -932,32 +932,32 @@ class AdvancedJitCompilationTest {
       final ProfileGuidedOptimizer pgoOptimizer = ProfileGuidedOptimizer.createDefault();
 
       // Test adaptive optimizer null validation
-      assertThrows(IllegalArgumentException.class, () -&gt; {
+      assertThrows(IllegalArgumentException.class, () -> {
         adaptiveOptimizer.shouldOptimize(null, TEST_FUNCTION_NAME);
       });
 
-      assertThrows(IllegalArgumentException.class, () -&gt; {
+      assertThrows(IllegalArgumentException.class, () -> {
         adaptiveOptimizer.shouldOptimize(TEST_MODULE_ID, null);
       });
 
       // Test speculative optimizer null validation
-      assertThrows(IllegalArgumentException.class, () -&gt; {
+      assertThrows(IllegalArgumentException.class, () -> {
         speculativeOptimizer.recordDeoptimization(null, TEST_FUNCTION_NAME,
             DeoptimizationReason.TYPE_ASSUMPTION_VIOLATED, Map.of());
       });
 
-      assertThrows(IllegalArgumentException.class, () -&gt; {
+      assertThrows(IllegalArgumentException.class, () -> {
         speculativeOptimizer.recordDeoptimization(TEST_MODULE_ID, null,
             DeoptimizationReason.TYPE_ASSUMPTION_VIOLATED, Map.of());
       });
 
-      assertThrows(IllegalArgumentException.class, () -&gt; {
+      assertThrows(IllegalArgumentException.class, () -> {
         speculativeOptimizer.recordDeoptimization(TEST_MODULE_ID, TEST_FUNCTION_NAME,
             null, Map.of());
       });
 
       // Test PGO optimizer null validation
-      assertThrows(IllegalArgumentException.class, () -&gt; {
+      assertThrows(IllegalArgumentException.class, () -> {
         pgoOptimizer.recordProfileData(null, TEST_FUNCTION_NAME,
             new ProfileDataPoint(TEST_FUNCTION_NAME, 1, 1000, Map.of(), Map.of()));
       });

@@ -3,6 +3,7 @@ package ai.tegmentum.wasmtime4j.gc;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Results of memory corruption detection analysis for WebAssembly GC objects.

@@ -177,8 +177,8 @@ public final class TemplateUtilities {
     }
 
     return text.replace("&", "&amp;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;")
+        .replace("<", "<")
+        .replace(">", ">")
         .replace("\"", "&quot;")
         .replace("'", "&#39;");
   }

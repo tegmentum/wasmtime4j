@@ -801,8 +801,8 @@ public final class FlameGraphGenerator {
 
     private String escapeXml(final String text) {
         return text.replace("&", "&amp;")
-                  .replace("<", "&lt;")
-                  .replace(">", "&gt;")
+                  .replace("<", "<")
+                  .replace(">", ">")
                   .replace("\"", "&quot;")
                   .replace("'", "&apos;");
     }

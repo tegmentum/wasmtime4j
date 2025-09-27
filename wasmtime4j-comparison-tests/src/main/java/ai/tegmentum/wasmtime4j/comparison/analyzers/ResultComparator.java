@@ -25,7 +25,7 @@ import java.util.logging.Logger;
  *
  * <p>The comparator implements sophisticated tolerance mechanisms for floating-point numbers,
  * timing-sensitive results, and nested object structures while maintaining high accuracy
- * requirements (false positive rate &lt; 5%, false negative rate &lt; 1%).
+ * requirements (false positive rate < 5%, false negative rate < 1%).
  *
  * @since 1.0.0
  */

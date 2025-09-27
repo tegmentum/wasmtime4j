@@ -43,7 +43,7 @@ public final class TieredCompilationConfig {
     this.deoptimizationConfig = builder.deoptimizationConfig;
 
     this.tierConfigs = new EnumMap<>(CompilationTier.class);
-    for (final Map.Entry&lt;CompilationTier, TierConfig&gt; entry : builder.tierConfigs.entrySet()) {
+    for (final Map.Entry<CompilationTier, TierConfig> entry : builder.tierConfigs.entrySet()) {
       this.tierConfigs.put(entry.getKey(), new TierConfig(entry.getValue()));
     }
   }
@@ -139,8 +139,8 @@ public final class TieredCompilationConfig {
    *
    * @return list of compilation tiers
    */
-  public List&lt;CompilationTier&gt; getConfiguredTiers() {
-    final List&lt;CompilationTier&gt; tiers = new ArrayList&lt;&gt;(tierConfigs.keySet());
+  public List<CompilationTier> getConfiguredTiers() {
+    final List<CompilationTier> tiers = new ArrayList<>(tierConfigs.keySet());
     Collections.sort(tiers);
     return Collections.unmodifiableList(tiers);
   }
@@ -190,7 +190,7 @@ public final class TieredCompilationConfig {
    * Builder for TieredCompilationConfig.
    */
   public static final class Builder {
-    private final Map&lt;CompilationTier, TierConfig&gt; tierConfigs = new EnumMap&lt;&gt;(CompilationTier.class);
+    private final Map<CompilationTier, TierConfig> tierConfigs = new EnumMap<>(CompilationTier.class);
     private boolean enabled = true;
     private long initialCompilationTimeoutMs = TimeUnit.SECONDS.toMillis(30);
     private long recompilationTimeoutMs = TimeUnit.MINUTES.toMillis(5);
@@ -344,37 +344,6 @@ public final class TieredCompilationConfig {
   }
 }
 
-/**
- * Compilation tiers for tiered compilation.
- */
-enum CompilationTier {
-  /** Baseline compilation with minimal optimization for fast startup. */
-  BASELINE(0),
-
-  /** Standard optimized compilation with moderate optimization. */
-  OPTIMIZED(1),
-
-  /** Highly optimized compilation with aggressive optimization. */
-  HIGHLY_OPTIMIZED(2),
-
-  /** Maximum optimization level with all available optimizations. */
-  MAXIMUM_OPTIMIZATION(3);
-
-  private final int level;
-
-  CompilationTier(final int level) {
-    this.level = level;
-  }
-
-  /**
-   * Gets the optimization level for this tier.
-   *
-   * @return optimization level
-   */
-  public int getLevel() {
-    return level;
-  }
-}
 
 /**
  * Configuration for a specific compilation tier.
@@ -384,8 +353,8 @@ final class TierConfig {
   private final long executionThreshold;
   private final long timeThresholdMs;
   private final double cpuUtilizationThreshold;
-  private final List&lt;String&gt; enabledOptimizations;
-  private final Map&lt;String, String&gt; craneliftFlags;
+  private final List<String> enabledOptimizations;
+  private final Map<String, String> craneliftFlags;
   private final boolean enableSpeculativeOptimization;
   private final boolean enableVectorization;
   private final boolean enableInlining;
@@ -395,8 +364,8 @@ final class TierConfig {
     this.executionThreshold = builder.executionThreshold;
     this.timeThresholdMs = builder.timeThresholdMs;
     this.cpuUtilizationThreshold = builder.cpuUtilizationThreshold;
-    this.enabledOptimizations = Collections.unmodifiableList(new ArrayList&lt;&gt;(builder.enabledOptimizations));
-    this.craneliftFlags = Collections.unmodifiableMap(new HashMap&lt;&gt;(builder.craneliftFlags));
+    this.enabledOptimizations = Collections.unmodifiableList(new ArrayList<>(builder.enabledOptimizations));
+    this.craneliftFlags = Collections.unmodifiableMap(new HashMap<>(builder.craneliftFlags));
     this.enableSpeculativeOptimization = builder.enableSpeculativeOptimization;
     this.enableVectorization = builder.enableVectorization;
     this.enableInlining = builder.enableInlining;
@@ -418,8 +387,8 @@ final class TierConfig {
   public long getExecutionThreshold() { return executionThreshold; }
   public long getTimeThresholdMs() { return timeThresholdMs; }
   public double getCpuUtilizationThreshold() { return cpuUtilizationThreshold; }
-  public List&lt;String&gt; getEnabledOptimizations() { return enabledOptimizations; }
-  public Map&lt;String, String&gt; getCraneliftFlags() { return craneliftFlags; }
+  public List<String> getEnabledOptimizations() { return enabledOptimizations; }
+  public Map<String, String> getCraneliftFlags() { return craneliftFlags; }
   public boolean isEnableSpeculativeOptimization() { return enableSpeculativeOptimization; }
   public boolean isEnableVectorization() { return enableVectorization; }
   public boolean isEnableInlining() { return enableInlining; }
@@ -494,8 +463,8 @@ final class TierConfig {
     private long executionThreshold = 100;
     private long timeThresholdMs = 1000;
     private double cpuUtilizationThreshold = 0.1;
-    private final List&lt;String&gt; enabledOptimizations = new ArrayList&lt;&gt;();
-    private final Map&lt;String, String&gt; craneliftFlags = new HashMap&lt;&gt;();
+    private final List<String> enabledOptimizations = new ArrayList<>();
+    private final Map<String, String> craneliftFlags = new HashMap<>();
     private boolean enableSpeculativeOptimization = false;
     private boolean enableVectorization = false;
     private boolean enableInlining = false;

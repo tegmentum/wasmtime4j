@@ -9,7 +9,7 @@ package ai.tegmentum.wasmtime4j;
  *
  * @since 1.1.0
  */
-public class TypedFunctionReferenceType implements WasmValueType {
+public class TypedFunctionReferenceType {
     private final FunctionType functionType;
 
     /**

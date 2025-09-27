@@ -580,8 +580,8 @@ public final class CiCdPerformanceIntegration {
     }
     return input
         .replace("&", "&amp;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;")
+        .replace("<", "<")
+        .replace(">", ">")
         .replace("\"", "&quot;")
         .replace("'", "&apos;");
   }
