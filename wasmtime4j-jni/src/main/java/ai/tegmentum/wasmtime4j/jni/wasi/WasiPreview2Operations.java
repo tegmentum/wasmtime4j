@@ -512,6 +512,154 @@ public final class WasiPreview2Operations {
    */
   private static native int[] nativePoll(long contextHandle, long[] pollables, long timeoutNanos);
 
+  /**
+   * Native method to compile a WebAssembly component.
+   *
+   * @param contextHandle the WASI Preview 2 context handle
+   * @param componentBytes the component bytecode
+   * @param componentSize the size of the component data
+   * @return component ID on success, -1 on failure
+   */
+  private static native long nativeCompileComponent(
+      long contextHandle, ByteBuffer componentBytes, int componentSize);
+
+  /**
+   * Native method to instantiate a compiled component.
+   *
+   * @param contextHandle the WASI Preview 2 context handle
+   * @param componentId the compiled component ID
+   * @return instance ID on success, -1 on failure
+   */
+  private static native long nativeInstantiateComponent(long contextHandle, long componentId);
+
+  /**
+   * Native method to create an input stream.
+   *
+   * @param contextHandle the WASI Preview 2 context handle
+   * @param instanceId the component instance ID
+   * @return stream ID on success, -1 on failure
+   */
+  private static native long nativeCreateInputStream(long contextHandle, long instanceId);
+
+  /**
+   * Native method to create an output stream.
+   *
+   * @param contextHandle the WASI Preview 2 context handle
+   * @param instanceId the component instance ID
+   * @return stream ID on success, -1 on failure
+   */
+  private static native long nativeCreateOutputStream(long contextHandle, long instanceId);
+
+  /**
+   * Native method to read from a stream.
+   *
+   * @param contextHandle the WASI Preview 2 context handle
+   * @param instanceId the component instance ID
+   * @param streamId the stream ID
+   * @param buffer the buffer to read into
+   * @param bufferSize the size of the buffer
+   * @return number of bytes read on success, -1 on failure
+   */
+  private static native int nativeStreamRead(
+      long contextHandle, long instanceId, long streamId, ByteBuffer buffer, int bufferSize);
+
+  /**
+   * Native method to write to a stream.
+   *
+   * @param contextHandle the WASI Preview 2 context handle
+   * @param instanceId the component instance ID
+   * @param streamId the stream ID
+   * @param buffer the buffer to write from
+   * @param bufferSize the size of the buffer
+   * @return number of bytes written on success, -1 on failure
+   */
+  private static native int nativeStreamWrite(
+      long contextHandle, long instanceId, long streamId, ByteBuffer buffer, int bufferSize);
+
+  /**
+   * Native method to close a stream.
+   *
+   * @param contextHandle the WASI Preview 2 context handle
+   * @param instanceId the component instance ID
+   * @param streamId the stream ID
+   * @return 0 on success, error code on failure
+   */
+  private static native int nativeCloseStream(long contextHandle, long instanceId, long streamId);
+
+  /**
+   * Native method to get the status of an async operation.
+   *
+   * @param contextHandle the WASI Preview 2 context handle
+   * @param operationId the operation ID
+   * @return operation status (0=running, 1=completed, 2=failed, 3=cancelled, -1=not found)
+   */
+  private static native int nativeGetOperationStatus(long contextHandle, long operationId);
+
+  /**
+   * Native method to cancel an async operation.
+   *
+   * @param contextHandle the WASI Preview 2 context handle
+   * @param operationId the operation ID
+   * @return 0 on success, error code on failure
+   */
+  private static native int nativeCancelOperation(long contextHandle, long operationId);
+
+  /**
+   * Native method to cleanup completed operations.
+   *
+   * @param contextHandle the WASI Preview 2 context handle
+   * @return 0 on success, error code on failure
+   */
+  private static native int nativeCleanupOperations(long contextHandle);
+
+  /**
+   * Native method to get the number of active async operations.
+   *
+   * @param contextHandle the WASI Preview 2 context handle
+   * @return number of active operations
+   */
+  private static native int nativeGetOperationCount(long contextHandle);
+
+  /**
+   * Native method to check if networking is enabled.
+   *
+   * @param contextHandle the WASI Preview 2 context handle
+   * @return 1 if enabled, 0 if disabled, -1 on error
+   */
+  private static native int nativeNetworkingEnabled(long contextHandle);
+
+  /**
+   * Native method to check if filesystem is enabled.
+   *
+   * @param contextHandle the WASI Preview 2 context handle
+   * @return 1 if enabled, 0 if disabled, -1 on error
+   */
+  private static native int nativeFilesystemEnabled(long contextHandle);
+
+  /**
+   * Native method to check if process spawning is enabled.
+   *
+   * @param contextHandle the WASI Preview 2 context handle
+   * @return 1 if enabled, 0 if disabled, -1 on error
+   */
+  private static native int nativeProcessEnabled(long contextHandle);
+
+  /**
+   * Native method to get the number of compiled components.
+   *
+   * @param contextHandle the WASI Preview 2 context handle
+   * @return number of compiled components
+   */
+  private static native int nativeGetComponentCount(long contextHandle);
+
+  /**
+   * Native method to get the number of active component instances.
+   *
+   * @param contextHandle the WASI Preview 2 context handle
+   * @return number of active instances
+   */
+  private static native int nativeGetInstanceCount(long contextHandle);
+
   /** Represents an HTTP response in WASI Preview 2. */
   public static final class WasiHttpResponse {
     private final int statusCode;
