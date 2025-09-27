@@ -172,6 +172,96 @@ public interface WasiContext {
     WasiContext setMaxOpenFiles(int maxFds);
 
     /**
+     * Enables or disables async I/O operations for WASI Preview 2.
+     *
+     * <p>When enabled, I/O operations can be performed asynchronously with proper
+     * cancellation and timeout support. This is a Preview 2 specific feature.
+     *
+     * @param enabled true to enable async I/O, false to disable
+     * @return this WasiContext for method chaining
+     * @since 1.0.0
+     */
+    WasiContext setAsyncIoEnabled(boolean enabled);
+
+    /**
+     * Sets the maximum number of concurrent async operations allowed.
+     *
+     * <p>This provides resource limiting for async operations in WASI Preview 2.
+     *
+     * @param maxOps the maximum number of concurrent async operations, or -1 for unlimited
+     * @return this WasiContext for method chaining
+     * @throws IllegalArgumentException if maxOps is less than -1
+     * @since 1.0.0
+     */
+    WasiContext setMaxAsyncOperations(int maxOps);
+
+    /**
+     * Sets the default timeout for async operations in milliseconds.
+     *
+     * <p>This timeout applies to async I/O operations in WASI Preview 2 when
+     * no specific timeout is provided.
+     *
+     * @param timeoutMs the timeout in milliseconds, or -1 for no timeout
+     * @return this WasiContext for method chaining
+     * @throws IllegalArgumentException if timeoutMs is less than -1
+     * @since 1.0.0
+     */
+    WasiContext setAsyncTimeout(long timeoutMs);
+
+    /**
+     * Enables or disables Component Model support for WASI Preview 2.
+     *
+     * <p>When enabled, the WASI context can work with WebAssembly components
+     * and provide enhanced resource management through the Component Model.
+     *
+     * @param enabled true to enable Component Model support, false to disable
+     * @return this WasiContext for method chaining
+     * @since 1.0.0
+     */
+    WasiContext setComponentModelEnabled(boolean enabled);
+
+    /**
+     * Enables or disables process operations for WASI.
+     *
+     * <p>When enabled, the WebAssembly module can spawn processes, get process
+     * information, and perform other process-related operations.
+     *
+     * @param enabled true to enable process operations, false to disable
+     * @return this WasiContext for method chaining
+     * @since 1.0.0
+     */
+    WasiContext setProcessEnabled(boolean enabled);
+
+    /**
+     * Sets the working directory for WASI filesystem operations.
+     *
+     * <p>This affects relative path resolution and is used as the base directory
+     * for filesystem operations within the WebAssembly module.
+     *
+     * @param workingDir the working directory path
+     * @return this WasiContext for method chaining
+     * @throws IllegalArgumentException if workingDir is null
+     * @since 1.0.0
+     */
+    WasiContext setFilesystemWorkingDir(Path workingDir);
+
+    /**
+     * Grants the WASI module access to a directory with specific permissions.
+     *
+     * <p>This is an enhanced version of preopenedDir that allows fine-grained
+     * permission control for WASI Preview 2.
+     *
+     * @param hostPath the path on the host file system to grant access to
+     * @param guestPath the path that the WebAssembly module will use to access the directory
+     * @param permissions the permissions to grant (read, write, create, etc.)
+     * @return this WasiContext for method chaining
+     * @throws WasmException if the directory cannot be accessed or mapped
+     * @throws IllegalArgumentException if any parameter is null
+     * @since 1.0.0
+     */
+    WasiContext preopenedDirWithPermissions(Path hostPath, String guestPath, WasiDirectoryPermissions permissions) throws WasmException;
+
+    /**
      * Creates a new WasiContext with default settings.
      *
      * <p>The default context has no environment variables, no command-line arguments,
