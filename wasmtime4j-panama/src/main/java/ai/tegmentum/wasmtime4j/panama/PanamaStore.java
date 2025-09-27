@@ -884,18 +884,103 @@ public final class PanamaStore implements Store, AutoCloseable {
     ensureNotClosed();
 
     try {
-      // Create the Panama host function wrapper
-      return new PanamaHostFunction(
-          name,
-          functionType,
-          params -> implementation.execute(params),
-          resourceManager,
-          new PanamaErrorHandler());
+      // Check if this is a caller-aware host function
+      if (implementation instanceof HostFunction.CallerAwareHostFunction) {
+        @SuppressWarnings("unchecked")
+        HostFunction.CallerAwareHostFunction<T> callerAwareFunction =
+            (HostFunction.CallerAwareHostFunction<T>) implementation;
+
+        // Create a caller-aware Panama host function wrapper
+        return new PanamaHostFunction(
+            name,
+            functionType,
+            new CallerAwareCallbackWrapper<>(callerAwareFunction, this, resourceManager),
+            resourceManager,
+            new PanamaErrorHandler());
+      } else {
+        // Create the standard Panama host function wrapper
+        return new PanamaHostFunction(
+            name,
+            functionType,
+            params -> implementation.execute(params),
+            resourceManager,
+            new PanamaErrorHandler());
+      }
     } catch (final Exception e) {
       if (e instanceof WasmException) {
         throw e;
       }
       throw new WasmException("Failed to create host function: " + name, e);
+    }
+  }
+
+  /**
+   * Wrapper that adapts caller-aware host functions to the standard callback interface.
+   *
+   * @param <T> the type of user data associated with the store
+   */
+  private static class CallerAwareCallbackWrapper<T> implements PanamaHostFunction.HostFunctionCallback {
+    private final HostFunction.CallerAwareHostFunction<T> callerAwareFunction;
+    private final PanamaStore<T> store;
+    private final ArenaResourceManager resourceManager;
+
+    public CallerAwareCallbackWrapper(
+        final HostFunction.CallerAwareHostFunction<T> callerAwareFunction,
+        final PanamaStore<T> store,
+        final ArenaResourceManager resourceManager) {
+      this.callerAwareFunction = callerAwareFunction;
+      this.store = store;
+      this.resourceManager = resourceManager;
+    }
+
+    @Override
+    public WasmValue[] execute(final WasmValue[] params) throws WasmException {
+      try {
+        // Create a caller context for this invocation
+        // In a complete implementation, we would extract the actual caller context
+        // from the native runtime. For now, we create a basic caller context.
+        PanamaCaller<T> caller = createCallerContext();
+
+        try {
+          // Execute the caller-aware function
+          return callerAwareFunction.execute(caller, params);
+        } finally {
+          // Clean up the caller context
+          caller.close();
+        }
+      } catch (Exception e) {
+        if (e instanceof WasmException) {
+          throw e;
+        }
+        throw new WasmException("Caller-aware host function execution failed", e);
+      }
+    }
+
+    /**
+     * Creates a caller context for the current invocation.
+     *
+     * @return a new caller context
+     */
+    private PanamaCaller<T> createCallerContext() {
+      // In a complete implementation, we would:
+      // 1. Extract the actual caller context from the native runtime
+      // 2. Get the calling instance pointer
+      // 3. Create proper instance wrapper
+
+      // For now, create a minimal caller context
+      // This is a limitation of the current implementation - we don't have
+      // access to the actual caller context in the callback
+      MemorySegment nullPtr = MemorySegment.NULL;
+
+      return new PanamaCaller<>(
+          resourceManager,
+          NativeFunctionBindings.getInstance(),
+          nullPtr, // caller_ptr - not available in current implementation
+          nullPtr, // instance_ptr - not available in current implementation
+          store.getStorePointer(),
+          store.getUserData(),
+          null // calling instance - not available in current implementation
+      );
     }
   }
 

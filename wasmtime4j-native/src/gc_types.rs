@@ -21,6 +21,7 @@ use wasmtime::*;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, RwLock};
 use crate::error::{WasmtimeError, WasmtimeResult};
+use crate::simd::{V256, V512};
 
 /// WebAssembly GC reference type enumeration
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -76,7 +77,7 @@ pub struct FieldDefinition {
     pub index: u32,
 }
 
-/// Field type enumeration supporting all WebAssembly value types
+/// Field type enumeration supporting all WebAssembly value types including advanced SIMD
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum FieldType {
     /// 32-bit integer
@@ -87,8 +88,12 @@ pub enum FieldType {
     F32,
     /// 64-bit float
     F64,
-    /// 128-bit SIMD vector
+    /// 128-bit SIMD vector (standard WebAssembly)
     V128,
+    /// 256-bit SIMD vector (advanced SIMD from Task #307)
+    V256,
+    /// 512-bit SIMD vector (AVX-512 support from Task #307)
+    V512,
     /// 8-bit packed integer (storage type)
     PackedI8,
     /// 16-bit packed integer (storage type)
@@ -115,7 +120,7 @@ pub enum GcObject {
     I31(i32),
 }
 
-/// GC value enumeration supporting all GC types
+/// GC value enumeration supporting all GC types including advanced SIMD from Task #307
 #[derive(Debug, Clone)]
 pub enum GcValue {
     /// 32-bit integer value
@@ -126,8 +131,12 @@ pub enum GcValue {
     F32(f32),
     /// 64-bit float value
     F64(f64),
-    /// 128-bit SIMD vector value
+    /// 128-bit SIMD vector value (standard WebAssembly)
     V128([u8; 16]),
+    /// 256-bit SIMD vector value (advanced SIMD from Task #307)
+    V256([u8; 32]),
+    /// 512-bit SIMD vector value (AVX-512 support from Task #307)
+    V512([u8; 64]),
     /// Reference to a GC object
     Reference(Option<Arc<GcObject>>),
     /// Null reference
@@ -268,7 +277,7 @@ impl GcTypeRegistry {
         Ok(array_def.element_type.clone())
     }
 
-    /// Validate that a value is compatible with a field type
+    /// Validate that a value is compatible with a field type including advanced SIMD from Task #307
     pub fn validate_value_type(&self, value: &GcValue, expected_type: &FieldType) -> WasmtimeResult<()> {
         match (value, expected_type) {
             (GcValue::I32(_), FieldType::I32) => Ok(()),
@@ -276,6 +285,8 @@ impl GcTypeRegistry {
             (GcValue::F32(_), FieldType::F32) => Ok(()),
             (GcValue::F64(_), FieldType::F64) => Ok(()),
             (GcValue::V128(_), FieldType::V128) => Ok(()),
+            (GcValue::V256(_), FieldType::V256) => Ok(()),
+            (GcValue::V512(_), FieldType::V512) => Ok(()),
             (GcValue::I32(i), FieldType::PackedI8) if *i >= -128 && *i <= 127 => Ok(()),
             (GcValue::I32(i), FieldType::PackedI16) if *i >= -32768 && *i <= 32767 => Ok(()),
             (GcValue::Reference(_), FieldType::Reference(_)) => {

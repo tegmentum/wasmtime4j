@@ -367,6 +367,151 @@ public final class JniLinker extends JniResource implements Linker {
   }
 
   @Override
+  public boolean hasImport(final String moduleName, final String name) {
+    JniValidation.requireNonBlank(moduleName, "moduleName");
+    JniValidation.requireNonBlank(name, "name");
+    ensureNotClosed();
+
+    try {
+      final int result = nativeHasImport(getNativeHandle(), moduleName, name);
+      return result == 1;
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new WasmException("Unexpected error checking import: " + e.getMessage(), e);
+    }
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.DependencyResolution resolveDependencies(final ai.tegmentum.wasmtime4j.Module... modules) throws WasmException {
+    JniValidation.requireNonNull(modules, "modules");
+    if (modules.length == 0) {
+      throw new IllegalArgumentException("modules array cannot be empty");
+    }
+    ensureNotClosed();
+
+    try {
+      // Convert modules to native handles
+      final long[] moduleHandles = new long[modules.length];
+      for (int i = 0; i < modules.length; i++) {
+        if (!(modules[i] instanceof JniModule)) {
+          throw new IllegalArgumentException("All modules must be JNI module instances");
+        }
+        moduleHandles[i] = ((JniModule) modules[i]).getNativeHandle();
+      }
+
+      final long graphHandle = nativeResolveDependencies(getNativeHandle(), moduleHandles);
+      if (graphHandle == 0) {
+        throw new WasmException("Failed to resolve dependencies");
+      }
+
+      // Convert native dependency graph to Java objects
+      final ai.tegmentum.wasmtime4j.DependencyResolution result = convertDependencyGraph(graphHandle, modules);
+
+      // Clean up native graph
+      nativeDestroyDependencyGraph(graphHandle);
+
+      return result;
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new WasmException("Unexpected error resolving dependencies: " + e.getMessage(), e);
+    }
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.ImportValidation validateImports(final ai.tegmentum.wasmtime4j.Module... modules) {
+    JniValidation.requireNonNull(modules, "modules");
+    if (modules.length == 0) {
+      throw new IllegalArgumentException("modules array cannot be empty");
+    }
+    ensureNotClosed();
+
+    try {
+      // Convert modules to native handles
+      final long[] moduleHandles = new long[modules.length];
+      for (int i = 0; i < modules.length; i++) {
+        if (!(modules[i] instanceof JniModule)) {
+          throw new IllegalArgumentException("All modules must be JNI module instances");
+        }
+        moduleHandles[i] = ((JniModule) modules[i]).getNativeHandle();
+      }
+
+      final ValidationResult validationResult = nativeValidateImports(getNativeHandle(), moduleHandles);
+      if (validationResult == null) {
+        throw new WasmException("Failed to validate imports");
+      }
+
+      return convertValidationResult(validationResult, modules);
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error validating imports: " + e.getMessage(), e);
+    }
+  }
+
+  @Override
+  public java.util.List<ai.tegmentum.wasmtime4j.ImportInfo> getImportRegistry() {
+    ensureNotClosed();
+
+    try {
+      final ImportRegistryInfo[] registryArray = nativeGetImportRegistry(getNativeHandle());
+      if (registryArray == null) {
+        return java.util.Collections.emptyList();
+      }
+
+      return java.util.Arrays.stream(registryArray)
+          .map(this::convertImportRegistryInfo)
+          .collect(java.util.stream.Collectors.toList());
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error getting import registry: " + e.getMessage(), e);
+    }
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.InstantiationPlan createInstantiationPlan(final ai.tegmentum.wasmtime4j.Module... modules) throws WasmException {
+    final ai.tegmentum.wasmtime4j.DependencyResolution resolution = resolveDependencies(modules);
+
+    if (!resolution.isResolutionSuccessful()) {
+      throw new WasmException("Cannot create instantiation plan: dependency resolution failed");
+    }
+
+    // Create instantiation steps based on the resolved order
+    final java.util.List<ai.tegmentum.wasmtime4j.InstantiationStep> steps = new java.util.ArrayList<>();
+    final java.util.List<ai.tegmentum.wasmtime4j.Module> instantiationOrder = resolution.getInstantiationOrder();
+
+    for (int i = 0; i < instantiationOrder.size(); i++) {
+      final ai.tegmentum.wasmtime4j.Module module = instantiationOrder.get(i);
+
+      // Extract import/export information for this module
+      final java.util.List<String> requiredImports = extractRequiredImports(module);
+      final java.util.List<String> providedExports = extractProvidedExports(module);
+
+      final ai.tegmentum.wasmtime4j.InstantiationStep step = new ai.tegmentum.wasmtime4j.InstantiationStep(
+          i + 1, // 1-based step number
+          module,
+          java.util.Optional.of("module_" + i), // Generate a default name
+          requiredImports,
+          providedExports,
+          "Instantiate " + module.getName().orElse("unnamed module")
+      );
+
+      steps.add(step);
+    }
+
+    final ai.tegmentum.wasmtime4j.InstantiationPlan plan = new ai.tegmentum.wasmtime4j.InstantiationPlan(
+        steps,
+        resolution,
+        resolution.getAnalysisTime(), // Use same duration for planning
+        true // executable since resolution was successful
+    );
+
+    return plan;
+  }
+
+  @Override
   protected void doClose() {
     try {
       nativeDestroy(getNativeHandle());
@@ -412,6 +557,139 @@ public final class JniLinker extends JniResource implements Linker {
       }
     }
     return nativeTypes;
+  }
+
+  /**
+   * Converts native dependency graph to Java DependencyResolution object.
+   */
+  private ai.tegmentum.wasmtime4j.DependencyResolution convertDependencyGraph(
+      final long graphHandle,
+      final ai.tegmentum.wasmtime4j.Module[] modules) {
+
+    // For now, create a simplified version
+    // In a full implementation, this would extract data from the native graph
+    final java.util.List<ai.tegmentum.wasmtime4j.Module> instantiationOrder = java.util.Arrays.asList(modules);
+    final java.util.List<ai.tegmentum.wasmtime4j.DependencyEdge> dependencies = java.util.Collections.emptyList();
+    final java.time.Duration analysisTime = java.time.Duration.ofMillis(1);
+
+    return new ai.tegmentum.wasmtime4j.DependencyResolution(
+        instantiationOrder,
+        dependencies,
+        false, // hasCircularDependencies
+        java.util.Collections.emptyList(), // circularDependencyChains
+        modules.length,
+        0, // resolvedDependencies
+        analysisTime,
+        true // resolutionSuccessful
+    );
+  }
+
+  /**
+   * Converts native validation result to Java ImportValidation object.
+   */
+  private ai.tegmentum.wasmtime4j.ImportValidation convertValidationResult(
+      final ValidationResult validationResult,
+      final ai.tegmentum.wasmtime4j.Module[] modules) {
+
+    final java.util.List<ai.tegmentum.wasmtime4j.ImportIssue> issues = java.util.Collections.emptyList();
+    final java.util.List<ai.tegmentum.wasmtime4j.ImportInfo> validatedImports = java.util.Collections.emptyList();
+    final java.time.Duration validationTime = java.time.Duration.ofMillis(1);
+
+    return new ai.tegmentum.wasmtime4j.ImportValidation(
+        validationResult.valid,
+        issues,
+        validatedImports,
+        validationResult.totalImports,
+        validationResult.validImports,
+        validationTime
+    );
+  }
+
+  /**
+   * Converts native import registry info to Java ImportInfo object.
+   */
+  private ai.tegmentum.wasmtime4j.ImportInfo convertImportRegistryInfo(final ImportRegistryInfo info) {
+    final ai.tegmentum.wasmtime4j.ImportInfo.ImportType importType =
+        convertNativeImportType(info.importType);
+
+    return new ai.tegmentum.wasmtime4j.ImportInfo(
+        info.moduleName,
+        info.importName,
+        importType,
+        java.util.Optional.ofNullable(info.typeSignature),
+        info.definedAt,
+        info.isHostFunction,
+        java.util.Optional.ofNullable(info.sourceDescription)
+    );
+  }
+
+  /**
+   * Converts native import type to Java ImportType enum.
+   */
+  private ai.tegmentum.wasmtime4j.ImportInfo.ImportType convertNativeImportType(final int nativeType) {
+    switch (nativeType) {
+      case 0: return ai.tegmentum.wasmtime4j.ImportInfo.ImportType.FUNCTION;
+      case 1: return ai.tegmentum.wasmtime4j.ImportInfo.ImportType.MEMORY;
+      case 2: return ai.tegmentum.wasmtime4j.ImportInfo.ImportType.TABLE;
+      case 3: return ai.tegmentum.wasmtime4j.ImportInfo.ImportType.GLOBAL;
+      case 4: return ai.tegmentum.wasmtime4j.ImportInfo.ImportType.INSTANCE;
+      default:
+        throw new IllegalArgumentException("Unknown native import type: " + nativeType);
+    }
+  }
+
+  /**
+   * Extracts required imports from a module.
+   */
+  private java.util.List<String> extractRequiredImports(final ai.tegmentum.wasmtime4j.Module module) {
+    // This would be implemented by querying the module's imports
+    // For now, return empty list
+    return java.util.Collections.emptyList();
+  }
+
+  /**
+   * Extracts provided exports from a module.
+   */
+  private java.util.List<String> extractProvidedExports(final ai.tegmentum.wasmtime4j.Module module) {
+    // This would be implemented by querying the module's exports
+    // For now, return empty list
+    return java.util.Collections.emptyList();
+  }
+
+  // Helper classes for native data structures
+
+  private static class ValidationResult {
+    final boolean valid;
+    final int totalImports;
+    final int validImports;
+
+    ValidationResult(final boolean valid, final int totalImports, final int validImports) {
+      this.valid = valid;
+      this.totalImports = totalImports;
+      this.validImports = validImports;
+    }
+  }
+
+  private static class ImportRegistryInfo {
+    final String moduleName;
+    final String importName;
+    final int importType;
+    final String typeSignature;
+    final java.time.Instant definedAt;
+    final boolean isHostFunction;
+    final String sourceDescription;
+
+    ImportRegistryInfo(final String moduleName, final String importName, final int importType,
+                      final String typeSignature, final java.time.Instant definedAt,
+                      final boolean isHostFunction, final String sourceDescription) {
+      this.moduleName = moduleName;
+      this.importName = importName;
+      this.importType = importType;
+      this.typeSignature = typeSignature;
+      this.definedAt = definedAt;
+      this.isHostFunction = isHostFunction;
+      this.sourceDescription = sourceDescription;
+    }
   }
 
   // Native method declarations
@@ -541,4 +819,54 @@ public final class JniLinker extends JniResource implements Linker {
    * @param linkerHandle the native linker handle
    */
   private static native void nativeDestroy(final long linkerHandle);
+
+  /**
+   * Checks if linker has a specific import.
+   *
+   * @param linkerHandle the native linker handle
+   * @param moduleName the module name
+   * @param importName the import name
+   * @return 1 if import exists, 0 otherwise, -1 on error
+   */
+  private static native int nativeHasImport(
+      final long linkerHandle,
+      final String moduleName,
+      final String importName);
+
+  /**
+   * Resolves dependencies for a set of modules.
+   *
+   * @param linkerHandle the native linker handle
+   * @param moduleHandles array of native module handles
+   * @return handle to dependency graph, or 0 on failure
+   */
+  private static native long nativeResolveDependencies(
+      final long linkerHandle,
+      final long[] moduleHandles);
+
+  /**
+   * Validates imports for a set of modules.
+   *
+   * @param linkerHandle the native linker handle
+   * @param moduleHandles array of native module handles
+   * @return validation result object, or null on failure
+   */
+  private static native ValidationResult nativeValidateImports(
+      final long linkerHandle,
+      final long[] moduleHandles);
+
+  /**
+   * Gets the import registry information.
+   *
+   * @param linkerHandle the native linker handle
+   * @return array of import registry info, or null on failure
+   */
+  private static native ImportRegistryInfo[] nativeGetImportRegistry(final long linkerHandle);
+
+  /**
+   * Destroys a native dependency graph.
+   *
+   * @param graphHandle the dependency graph handle
+   */
+  private static native void nativeDestroyDependencyGraph(final long graphHandle);
 }

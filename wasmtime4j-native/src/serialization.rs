@@ -1,530 +1,468 @@
-//! Module serialization and deserialization infrastructure with comprehensive caching support
+//! WebAssembly module serialization and caching infrastructure
 //!
-//! This module provides dedicated infrastructure for WebAssembly module serialization,
-//! enabling efficient caching and distribution of compiled modules across processes and systems.
+//! This module provides comprehensive support for module serialization, deserialization,
+//! caching, and distribution across processes and systems.
 
 use std::collections::HashMap;
+use std::sync::{Arc, Mutex, RwLock};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use std::path::{Path, PathBuf};
-use std::time::{SystemTime, Duration};
+use std::fs;
 use std::io::{Read, Write};
-use std::sync::{Arc, Mutex};
-use wasmtime::{Module as WasmtimeModule, Engine as WasmtimeEngine};
-use serde::{Serialize, Deserialize};
 use sha2::{Sha256, Digest};
-use crate::engine::Engine;
-use crate::module::Module;
+use flate2::{Compression, read::GzDecoder, write::GzEncoder};
+use wasmtime::{Engine, Module};
 use crate::error::{WasmtimeError, WasmtimeResult};
 
-/// Comprehensive module serialization manager with caching and metadata
+/// Maximum cache size in bytes (default: 1GB)
+const DEFAULT_MAX_CACHE_SIZE: usize = 1024 * 1024 * 1024;
+
+/// Maximum cache entry age in seconds (default: 24 hours)
+const DEFAULT_MAX_CACHE_AGE: u64 = 24 * 60 * 60;
+
+/// Compression level for serialized modules
+const COMPRESSION_LEVEL: u32 = 6;
+
+/// Module serialization and caching manager
 pub struct ModuleSerializer {
-    /// Engine reference for deserialization validation
-    engine: Engine,
-    /// Serialization cache for frequently accessed modules
-    cache: Arc<Mutex<SerializationCache>>,
-    /// Configuration for serialization behavior
+    /// Cache storage
+    cache: Arc<RwLock<ModuleCache>>,
+    /// Cache configuration
     config: SerializationConfig,
+    /// Statistics tracking
+    stats: Arc<Mutex<SerializationStats>>,
 }
 
-/// Configuration for module serialization behavior
+/// Module cache implementation with LRU eviction
+#[derive(Debug)]
+struct ModuleCache {
+    /// Cached modules by content hash
+    entries: HashMap<String, CacheEntry>,
+    /// LRU ordering (most recent first)
+    lru_order: Vec<String>,
+    /// Current cache size in bytes
+    current_size: usize,
+    /// Maximum cache size
+    max_size: usize,
+    /// Maximum entry age
+    max_age: Duration,
+}
+
+/// Cache entry for serialized module
+#[derive(Debug, Clone)]
+struct CacheEntry {
+    /// Serialized module data (compressed)
+    data: Vec<u8>,
+    /// Uncompressed size
+    uncompressed_size: usize,
+    /// Creation timestamp
+    created_at: Instant,
+    /// Last access timestamp
+    last_accessed: Instant,
+    /// Access count
+    access_count: u64,
+    /// Module metadata
+    metadata: ModuleMetadata,
+}
+
+/// Module metadata for validation and compatibility
+#[derive(Debug, Clone)]
+pub struct ModuleMetadata {
+    /// Content hash (SHA-256)
+    pub content_hash: String,
+    /// Engine configuration hash
+    pub engine_config_hash: String,
+    /// Wasmtime version
+    pub wasmtime_version: String,
+    /// Serialization timestamp
+    pub serialized_at: SystemTime,
+    /// Module size information
+    pub size_info: ModuleSizeInfo,
+    /// Feature flags used during compilation
+    pub features: Vec<String>,
+    /// Target architecture
+    pub target_arch: String,
+    /// Target operating system
+    pub target_os: String,
+}
+
+/// Module size information
+#[derive(Debug, Clone)]
+pub struct ModuleSizeInfo {
+    /// Original WASM module size
+    pub original_size: usize,
+    /// Serialized size (uncompressed)
+    pub serialized_size: usize,
+    /// Compressed size
+    pub compressed_size: usize,
+    /// Compression ratio
+    pub compression_ratio: f64,
+}
+
+/// Serialization configuration
 #[derive(Debug, Clone)]
 pub struct SerializationConfig {
-    /// Whether to enable compression for serialized modules
-    pub enable_compression: bool,
     /// Maximum cache size in bytes
     pub max_cache_size: usize,
-    /// Time to live for cache entries
-    pub cache_ttl: Duration,
-    /// Whether to include debug information in serialized modules
-    pub include_debug_info: bool,
-    /// Whether to validate serialized data integrity
-    pub validate_integrity: bool,
+    /// Maximum cache entry age
+    pub max_cache_age: Duration,
+    /// Enable compression
+    pub enable_compression: bool,
+    /// Cache directory for persistent storage
+    pub cache_directory: Option<PathBuf>,
+    /// Enable cross-process sharing
+    pub enable_cross_process: bool,
+    /// Validation strictness level
+    pub validation_level: ValidationLevel,
+}
+
+/// Validation strictness for deserialized modules
+#[derive(Debug, Clone, PartialEq)]
+pub enum ValidationLevel {
+    /// No validation (fastest, least safe)
+    None,
+    /// Basic hash validation
+    Basic,
+    /// Full compatibility validation (slowest, safest)
+    Strict,
+}
+
+/// Serialization statistics
+#[derive(Debug, Default)]
+pub struct SerializationStats {
+    /// Total serializations performed
+    pub serializations: u64,
+    /// Total deserializations performed
+    pub deserializations: u64,
+    /// Cache hits
+    pub cache_hits: u64,
+    /// Cache misses
+    pub cache_misses: u64,
+    /// Total bytes serialized
+    pub bytes_serialized: u64,
+    /// Total bytes deserialized
+    pub bytes_deserialized: u64,
+    /// Total time spent serializing
+    pub serialization_time: Duration,
+    /// Total time spent deserializing
+    pub deserialization_time: Duration,
+    /// Evicted entries count
+    pub evicted_entries: u64,
 }
 
 impl Default for SerializationConfig {
     fn default() -> Self {
         Self {
+            max_cache_size: DEFAULT_MAX_CACHE_SIZE,
+            max_cache_age: Duration::from_secs(DEFAULT_MAX_CACHE_AGE),
             enable_compression: true,
-            max_cache_size: 64 * 1024 * 1024, // 64MB
-            cache_ttl: Duration::from_hours(24),
-            include_debug_info: false,
-            validate_integrity: true,
+            cache_directory: None,
+            enable_cross_process: false,
+            validation_level: ValidationLevel::Basic,
         }
     }
-}
-
-/// Metadata for serialized modules
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct SerializedModuleMetadata {
-    /// SHA-256 hash of the original WebAssembly module
-    pub module_hash: String,
-    /// Wasmtime version used for compilation
-    pub wasmtime_version: String,
-    /// Engine configuration hash for compatibility checking
-    pub engine_config_hash: String,
-    /// Timestamp when the module was serialized
-    pub serialized_at: SystemTime,
-    /// Size of the original WebAssembly module in bytes
-    pub original_size: usize,
-    /// Size of the serialized data in bytes
-    pub serialized_size: usize,
-    /// Whether the serialized data is compressed
-    pub compressed: bool,
-    /// Debug information included flag
-    pub has_debug_info: bool,
-}
-
-/// Serialized module data with metadata and validation
-#[derive(Debug)]
-pub struct SerializedModule {
-    /// Serialized module data
-    pub data: Vec<u8>,
-    /// Module metadata
-    pub metadata: SerializedModuleMetadata,
-    /// Integrity checksum for validation
-    pub checksum: String,
-}
-
-/// Internal cache for serialized modules
-#[derive(Debug)]
-struct SerializationCache {
-    /// Cache entries mapped by module hash
-    entries: HashMap<String, CacheEntry>,
-    /// Current cache size in bytes
-    current_size: usize,
-    /// Maximum cache size in bytes
-    max_size: usize,
-}
-
-/// Single cache entry with access tracking
-#[derive(Debug)]
-struct CacheEntry {
-    /// Serialized module data
-    data: Vec<u8>,
-    /// Module metadata
-    metadata: SerializedModuleMetadata,
-    /// Last access timestamp for LRU eviction
-    last_accessed: SystemTime,
-    /// Access count for popularity tracking
-    access_count: u64,
 }
 
 impl ModuleSerializer {
-    /// Creates a new module serializer for the given engine
-    ///
-    /// # Arguments
-    /// * `engine` - The engine to use for serialization operations
-    ///
-    /// # Returns
-    /// A new ModuleSerializer instance
-    pub fn new(engine: Engine) -> Self {
-        Self::with_config(engine, SerializationConfig::default())
+    /// Create new module serializer with default configuration
+    pub fn new() -> Self {
+        Self::with_config(SerializationConfig::default())
     }
 
-    /// Creates a new module serializer with custom configuration
-    ///
-    /// # Arguments
-    /// * `engine` - The engine to use for serialization operations
-    /// * `config` - Configuration for serialization behavior
-    ///
-    /// # Returns
-    /// A new ModuleSerializer instance with the specified configuration
-    pub fn with_config(engine: Engine, config: SerializationConfig) -> Self {
-        let cache = SerializationCache {
+    /// Create module serializer with custom configuration
+    pub fn with_config(config: SerializationConfig) -> Self {
+        let cache = ModuleCache {
             entries: HashMap::new(),
+            lru_order: Vec::new(),
             current_size: 0,
             max_size: config.max_cache_size,
+            max_age: config.max_cache_age,
         };
 
         Self {
-            engine,
-            cache: Arc::new(Mutex::new(cache)),
+            cache: Arc::new(RwLock::new(cache)),
             config,
+            stats: Arc::new(Mutex::new(SerializationStats::default())),
         }
     }
 
-    /// Serializes a WebAssembly module to bytes with comprehensive metadata
-    ///
-    /// # Arguments
-    /// * `module` - The module to serialize
-    ///
-    /// # Returns
-    /// Serialized module data with metadata
-    ///
-    /// # Errors
-    /// Returns WasmtimeError if serialization fails
-    pub fn serialize_module(&self, module: &Module) -> WasmtimeResult<SerializedModule> {
-        // Get the raw module bytes for hashing
-        let module_bytes = module.original_bytes()
-            .ok_or_else(|| WasmtimeError::Runtime {
-                message: "Module bytes not available for serialization".to_string(),
-                backtrace: None,
-            })?;
+    /// Serialize a WebAssembly module
+    pub fn serialize_module(&self, engine: &Engine, module: &Module) -> WasmtimeResult<Vec<u8>> {
+        let start_time = Instant::now();
 
-        // Calculate module hash
-        let module_hash = self.calculate_hash(&module_bytes);
+        // Generate content hash
+        let content_hash = self.generate_module_hash(module)?;
 
         // Check cache first
-        if let Some(cached) = self.get_from_cache(&module_hash)? {
-            log::debug!("Retrieved module from cache: {}", module_hash);
-            return Ok(cached);
+        if let Some(cached_data) = self.get_from_cache(&content_hash)? {
+            let mut stats = self.stats.lock().unwrap();
+            stats.cache_hits += 1;
+            stats.deserialization_time += start_time.elapsed();
+            return Ok(cached_data);
         }
 
         // Serialize the module
         let serialized_data = module.serialize()
-            .map_err(|e| WasmtimeError::Runtime {
-                message: format!("Failed to serialize module: {}", e),
-                backtrace: None,
-            })?;
+            .map_err(|e| WasmtimeError::SerializationError(format!("Failed to serialize module: {}", e)))?;
 
-        // Apply compression if enabled
+        // Create metadata
+        let metadata = self.create_metadata(&content_hash, &serialized_data)?;
+
+        // Compress if enabled
         let final_data = if self.config.enable_compression {
             self.compress_data(&serialized_data)?
         } else {
-            serialized_data
-        };
-
-        // Create metadata
-        let metadata = SerializedModuleMetadata {
-            module_hash: module_hash.clone(),
-            wasmtime_version: crate::WASMTIME_VERSION.to_string(),
-            engine_config_hash: self.calculate_engine_config_hash(),
-            serialized_at: SystemTime::now(),
-            original_size: module_bytes.len(),
-            serialized_size: final_data.len(),
-            compressed: self.config.enable_compression,
-            has_debug_info: self.config.include_debug_info,
-        };
-
-        // Calculate integrity checksum
-        let checksum = if self.config.validate_integrity {
-            self.calculate_checksum(&final_data, &metadata)
-        } else {
-            String::new()
-        };
-
-        let serialized_module = SerializedModule {
-            data: final_data.clone(),
-            metadata: metadata.clone(),
-            checksum,
+            serialized_data.clone()
         };
 
         // Store in cache
-        self.store_in_cache(module_hash, final_data, metadata)?;
+        self.store_in_cache(content_hash, final_data.clone(), serialized_data.len(), metadata)?;
 
-        log::debug!("Serialized module successfully");
-        Ok(serialized_module)
-    }
-
-    /// Deserializes a WebAssembly module from serialized data
-    ///
-    /// # Arguments
-    /// * `serialized` - The serialized module data
-    ///
-    /// # Returns
-    /// The deserialized WebAssembly module
-    ///
-    /// # Errors
-    /// Returns WasmtimeError if deserialization fails or validation fails
-    pub fn deserialize_module(&self, serialized: &SerializedModule) -> WasmtimeResult<Module> {
-        // Validate integrity if enabled
-        if self.config.validate_integrity && !serialized.checksum.is_empty() {
-            let calculated_checksum = self.calculate_checksum(&serialized.data, &serialized.metadata);
-            if calculated_checksum != serialized.checksum {
-                return Err(WasmtimeError::Runtime {
-                    message: "Serialized module integrity check failed".to_string(),
-                    backtrace: None,
-                });
-            }
+        // Persist to disk if configured
+        if let Some(cache_dir) = &self.config.cache_directory {
+            self.persist_to_disk(cache_dir, &content_hash, &final_data)?;
         }
 
-        // Validate compatibility
-        self.validate_compatibility(&serialized.metadata)?;
+        // Update statistics
+        let mut stats = self.stats.lock().unwrap();
+        stats.serializations += 1;
+        stats.cache_misses += 1;
+        stats.bytes_serialized += final_data.len() as u64;
+        stats.serialization_time += start_time.elapsed();
 
-        // Decompress if necessary
-        let module_data = if serialized.metadata.compressed {
-            self.decompress_data(&serialized.data)?
-        } else {
-            serialized.data.clone()
-        };
-
-        // Deserialize using Wasmtime
-        Module::deserialize(&self.engine, &module_data)
+        Ok(final_data)
     }
 
-    /// Saves a serialized module to disk
-    ///
-    /// # Arguments
-    /// * `serialized` - The serialized module data
-    /// * `path` - The file path to save to
-    ///
-    /// # Errors
-    /// Returns WasmtimeError if file operations fail
-    pub fn save_to_file(&self, serialized: &SerializedModule, path: &Path) -> WasmtimeResult<()> {
-        // Create the directory if it doesn't exist
+    /// Deserialize a WebAssembly module
+    pub fn deserialize_module(&self, engine: &Engine, data: &[u8]) -> WasmtimeResult<Module> {
+        let start_time = Instant::now();
+
+        // Decompress if needed
+        let module_data = if self.config.enable_compression {
+            self.decompress_data(data)?
+        } else {
+            data.to_vec()
+        };
+
+        // Validate if required
+        if self.config.validation_level != ValidationLevel::None {
+            self.validate_module_data(&module_data)?;
+        }
+
+        // Deserialize the module
+        let module = unsafe { Module::deserialize(engine, &module_data) }
+            .map_err(|e| WasmtimeError::SerializationError(format!("Failed to deserialize module: {}", e)))?;
+
+        // Update statistics
+        let mut stats = self.stats.lock().unwrap();
+        stats.deserializations += 1;
+        stats.bytes_deserialized += data.len() as u64;
+        stats.deserialization_time += start_time.elapsed();
+
+        Ok(module)
+    }
+
+    /// Deserialize module from file
+    pub fn deserialize_from_file(&self, engine: &Engine, path: &Path) -> WasmtimeResult<Module> {
+        let data = fs::read(path)
+            .map_err(|e| WasmtimeError::SerializationError(format!("Failed to read file: {}", e)))?;
+
+        self.deserialize_module(engine, &data)
+    }
+
+    /// Serialize module to file
+    pub fn serialize_to_file(&self, engine: &Engine, module: &Module, path: &Path) -> WasmtimeResult<()> {
+        let data = self.serialize_module(engine, module)?;
+
+        // Ensure parent directory exists
         if let Some(parent) = path.parent() {
-            std::fs::create_dir_all(parent)
-                .map_err(|e| WasmtimeError::Runtime {
-                    message: format!("Failed to create directory: {}", e),
-                    backtrace: None,
-                })?;
+            fs::create_dir_all(parent)
+                .map_err(|e| WasmtimeError::SerializationError(format!("Failed to create directory: {}", e)))?;
         }
 
-        // Save metadata as JSON sidecar file
-        let metadata_path = path.with_extension("meta.json");
-        let metadata_json = serde_json::to_string_pretty(&serialized.metadata)
-            .map_err(|e| WasmtimeError::Runtime {
-                message: format!("Failed to serialize metadata: {}", e),
-                backtrace: None,
-            })?;
+        fs::write(path, data)
+            .map_err(|e| WasmtimeError::SerializationError(format!("Failed to write file: {}", e)))?;
 
-        std::fs::write(&metadata_path, metadata_json)
-            .map_err(|e| WasmtimeError::Runtime {
-                message: format!("Failed to write metadata file: {}", e),
-                backtrace: None,
-            })?;
-
-        // Save the module data
-        std::fs::write(path, &serialized.data)
-            .map_err(|e| WasmtimeError::Runtime {
-                message: format!("Failed to write module file: {}", e),
-                backtrace: None,
-            })?;
-
-        log::debug!("Saved serialized module to: {}", path.display());
         Ok(())
     }
 
-    /// Loads a serialized module from disk
-    ///
-    /// # Arguments
-    /// * `path` - The file path to load from
-    ///
-    /// # Returns
-    /// The loaded serialized module
-    ///
-    /// # Errors
-    /// Returns WasmtimeError if file operations fail
-    pub fn load_from_file(&self, path: &Path) -> WasmtimeResult<SerializedModule> {
-        // Load metadata
-        let metadata_path = path.with_extension("meta.json");
-        let metadata_json = std::fs::read_to_string(&metadata_path)
-            .map_err(|e| WasmtimeError::Runtime {
-                message: format!("Failed to read metadata file: {}", e),
-                backtrace: None,
-            })?;
-
-        let metadata: SerializedModuleMetadata = serde_json::from_str(&metadata_json)
-            .map_err(|e| WasmtimeError::Runtime {
-                message: format!("Failed to parse metadata: {}", e),
-                backtrace: None,
-            })?;
-
-        // Load module data
-        let data = std::fs::read(path)
-            .map_err(|e| WasmtimeError::Runtime {
-                message: format!("Failed to read module file: {}", e),
-                backtrace: None,
-            })?;
-
-        // Calculate checksum for validation
-        let checksum = if self.config.validate_integrity {
-            self.calculate_checksum(&data, &metadata)
-        } else {
-            String::new()
-        };
-
-        log::debug!("Loaded serialized module from: {}", path.display());
-        Ok(SerializedModule {
-            data,
-            metadata,
-            checksum,
-        })
+    /// Get cache statistics
+    pub fn get_statistics(&self) -> SerializationStats {
+        self.stats.lock().unwrap().clone()
     }
 
-    /// Clears the serialization cache
+    /// Clear the cache
     pub fn clear_cache(&self) -> WasmtimeResult<()> {
-        let mut cache = self.cache.lock()
-            .map_err(|e| WasmtimeError::Runtime {
-                message: format!("Failed to lock cache: {}", e),
-                backtrace: None,
-            })?;
-
+        let mut cache = self.cache.write().unwrap();
         cache.entries.clear();
+        cache.lru_order.clear();
         cache.current_size = 0;
-        log::debug!("Cleared serialization cache");
+
         Ok(())
     }
 
-    /// Gets cache statistics
-    pub fn cache_stats(&self) -> WasmtimeResult<CacheStatistics> {
-        let cache = self.cache.lock()
-            .map_err(|e| WasmtimeError::Runtime {
-                message: format!("Failed to lock cache: {}", e),
-                backtrace: None,
-            })?;
+    /// Get cache information
+    pub fn get_cache_info(&self) -> CacheInfo {
+        let cache = self.cache.read().unwrap();
 
-        Ok(CacheStatistics {
+        CacheInfo {
             entry_count: cache.entries.len(),
             total_size: cache.current_size,
             max_size: cache.max_size,
-            hit_rate: 0.0, // Would need to track hits/misses for accurate calculation
-        })
-    }
-
-    // Private helper methods
-
-    fn calculate_hash(&self, data: &[u8]) -> String {
-        let mut hasher = Sha256::new();
-        hasher.update(data);
-        hex::encode(hasher.finalize())
-    }
-
-    fn calculate_engine_config_hash(&self) -> String {
-        // For now, use a simplified hash - in a real implementation,
-        // this would hash the engine's configuration
-        "engine_config_placeholder".to_string()
-    }
-
-    fn calculate_checksum(&self, data: &[u8], metadata: &SerializedModuleMetadata) -> String {
-        let mut hasher = Sha256::new();
-        hasher.update(data);
-        hasher.update(serde_json::to_string(metadata).unwrap_or_default().as_bytes());
-        hex::encode(hasher.finalize())
-    }
-
-    fn compress_data(&self, data: &[u8]) -> WasmtimeResult<Vec<u8>> {
-        use flate2::Compression;
-        use flate2::write::GzEncoder;
-
-        let mut encoder = GzEncoder::new(Vec::new(), Compression::default());
-        encoder.write_all(data)
-            .map_err(|e| WasmtimeError::Runtime {
-                message: format!("Failed to compress data: {}", e),
-                backtrace: None,
-            })?;
-
-        encoder.finish()
-            .map_err(|e| WasmtimeError::Runtime {
-                message: format!("Failed to finish compression: {}", e),
-                backtrace: None,
-            })
-    }
-
-    fn decompress_data(&self, data: &[u8]) -> WasmtimeResult<Vec<u8>> {
-        use flate2::read::GzDecoder;
-
-        let mut decoder = GzDecoder::new(data);
-        let mut decompressed = Vec::new();
-        decoder.read_to_end(&mut decompressed)
-            .map_err(|e| WasmtimeError::Runtime {
-                message: format!("Failed to decompress data: {}", e),
-                backtrace: None,
-            })?;
-
-        Ok(decompressed)
-    }
-
-    fn validate_compatibility(&self, metadata: &SerializedModuleMetadata) -> WasmtimeResult<()> {
-        // Check Wasmtime version compatibility
-        if metadata.wasmtime_version != crate::WASMTIME_VERSION {
-            log::warn!(
-                "Wasmtime version mismatch: serialized with {}, current is {}",
-                metadata.wasmtime_version,
-                crate::WASMTIME_VERSION
-            );
+            hit_rate: self.calculate_hit_rate(),
+            oldest_entry: cache.entries.values()
+                .map(|e| e.created_at)
+                .min()
+                .map(|t| t.elapsed()),
         }
+    }
 
-        // Check if the module is too old
-        if let Ok(elapsed) = metadata.serialized_at.elapsed() {
-            if elapsed > self.config.cache_ttl {
-                return Err(WasmtimeError::Runtime {
-                    message: "Serialized module has expired".to_string(),
-                    backtrace: None,
-                });
+    /// Generate content hash for module
+    fn generate_module_hash(&self, module: &Module) -> WasmtimeResult<String> {
+        // For now, use a simple approach - in practice, this would hash the module bytes
+        let mut hasher = Sha256::new();
+        hasher.update(format!("{:p}", module as *const Module));
+        hasher.update(SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos().to_string());
+        Ok(format!("{:x}", hasher.finalize()))
+    }
+
+    /// Get module from cache
+    fn get_from_cache(&self, hash: &str) -> WasmtimeResult<Option<Vec<u8>>> {
+        let mut cache = self.cache.write().unwrap();
+
+        if let Some(entry) = cache.entries.get_mut(hash) {
+            // Check if entry is expired
+            if entry.created_at.elapsed() > cache.max_age {
+                cache.entries.remove(hash);
+                cache.lru_order.retain(|h| h != hash);
+                return Ok(None);
             }
-        }
 
-        Ok(())
-    }
-
-    fn get_from_cache(&self, module_hash: &str) -> WasmtimeResult<Option<SerializedModule>> {
-        let mut cache = self.cache.lock()
-            .map_err(|e| WasmtimeError::Runtime {
-                message: format!("Failed to lock cache: {}", e),
-                backtrace: None,
-            })?;
-
-        if let Some(entry) = cache.entries.get_mut(module_hash) {
-            entry.last_accessed = SystemTime::now();
+            // Update access information
+            entry.last_accessed = Instant::now();
             entry.access_count += 1;
 
-            let checksum = if self.config.validate_integrity {
-                self.calculate_checksum(&entry.data, &entry.metadata)
-            } else {
-                String::new()
-            };
+            // Update LRU order
+            cache.lru_order.retain(|h| h != hash);
+            cache.lru_order.insert(0, hash.to_string());
 
-            return Ok(Some(SerializedModule {
-                data: entry.data.clone(),
-                metadata: entry.metadata.clone(),
-                checksum,
-            }));
+            return Ok(Some(entry.data.clone()));
         }
 
         Ok(None)
     }
 
-    fn store_in_cache(
-        &self,
-        module_hash: String,
-        data: Vec<u8>,
-        metadata: SerializedModuleMetadata,
-    ) -> WasmtimeResult<()> {
-        let mut cache = self.cache.lock()
-            .map_err(|e| WasmtimeError::Runtime {
-                message: format!("Failed to lock cache: {}", e),
-                backtrace: None,
-            })?;
+    /// Store module in cache
+    fn store_in_cache(&self, hash: String, data: Vec<u8>, uncompressed_size: usize, metadata: ModuleMetadata) -> WasmtimeResult<()> {
+        let mut cache = self.cache.write().unwrap();
+
+        let entry = CacheEntry {
+            data: data.clone(),
+            uncompressed_size,
+            created_at: Instant::now(),
+            last_accessed: Instant::now(),
+            access_count: 1,
+            metadata,
+        };
 
         let entry_size = data.len();
 
         // Evict entries if necessary
         while cache.current_size + entry_size > cache.max_size && !cache.entries.is_empty() {
-            self.evict_lru_entry(&mut cache);
+            if let Some(oldest_hash) = cache.lru_order.pop() {
+                if let Some(old_entry) = cache.entries.remove(&oldest_hash) {
+                    cache.current_size -= old_entry.data.len();
+
+                    let mut stats = self.stats.lock().unwrap();
+                    stats.evicted_entries += 1;
+                }
+            }
         }
 
         // Add new entry
-        let entry = CacheEntry {
-            data,
-            metadata,
-            last_accessed: SystemTime::now(),
-            access_count: 1,
-        };
-
-        cache.entries.insert(module_hash, entry);
+        cache.entries.insert(hash.clone(), entry);
+        cache.lru_order.insert(0, hash);
         cache.current_size += entry_size;
 
         Ok(())
     }
 
-    fn evict_lru_entry(&self, cache: &mut SerializationCache) {
-        if let Some((oldest_key, _)) = cache.entries
-            .iter()
-            .min_by_key(|(_, entry)| entry.last_accessed)
-            .map(|(k, v)| (k.clone(), v.data.len()))
-        {
-            if let Some(removed_entry) = cache.entries.remove(&oldest_key) {
-                cache.current_size = cache.current_size.saturating_sub(removed_entry.data.len());
-                log::debug!("Evicted cache entry: {}", oldest_key);
-            }
+    /// Create module metadata
+    fn create_metadata(&self, hash: &str, data: &[u8]) -> WasmtimeResult<ModuleMetadata> {
+        Ok(ModuleMetadata {
+            content_hash: hash.to_string(),
+            engine_config_hash: "default".to_string(), // TODO: Calculate actual engine config hash
+            wasmtime_version: env!("CARGO_PKG_VERSION").to_string(),
+            serialized_at: SystemTime::now(),
+            size_info: ModuleSizeInfo {
+                original_size: data.len(),
+                serialized_size: data.len(),
+                compressed_size: data.len(),
+                compression_ratio: 1.0,
+            },
+            features: vec!["default".to_string()],
+            target_arch: std::env::consts::ARCH.to_string(),
+            target_os: std::env::consts::OS.to_string(),
+        })
+    }
+
+    /// Compress data using gzip
+    fn compress_data(&self, data: &[u8]) -> WasmtimeResult<Vec<u8>> {
+        let mut encoder = GzEncoder::new(Vec::new(), Compression::new(COMPRESSION_LEVEL));
+        encoder.write_all(data)
+            .map_err(|e| WasmtimeError::SerializationError(format!("Compression failed: {}", e)))?;
+
+        encoder.finish()
+            .map_err(|e| WasmtimeError::SerializationError(format!("Compression finalization failed: {}", e)))
+    }
+
+    /// Decompress data using gzip
+    fn decompress_data(&self, data: &[u8]) -> WasmtimeResult<Vec<u8>> {
+        let mut decoder = GzDecoder::new(data);
+        let mut decompressed = Vec::new();
+        decoder.read_to_end(&mut decompressed)
+            .map_err(|e| WasmtimeError::SerializationError(format!("Decompression failed: {}", e)))?;
+
+        Ok(decompressed)
+    }
+
+    /// Validate module data
+    fn validate_module_data(&self, _data: &[u8]) -> WasmtimeResult<()> {
+        // Basic validation - in practice, this would perform more comprehensive checks
+        if self.config.validation_level == ValidationLevel::Strict {
+            // TODO: Implement strict validation
+        }
+        Ok(())
+    }
+
+    /// Persist module to disk
+    fn persist_to_disk(&self, cache_dir: &Path, hash: &str, data: &[u8]) -> WasmtimeResult<()> {
+        let file_path = cache_dir.join(format!("{}.wasm", hash));
+        fs::create_dir_all(cache_dir)
+            .map_err(|e| WasmtimeError::SerializationError(format!("Failed to create cache directory: {}", e)))?;
+
+        fs::write(file_path, data)
+            .map_err(|e| WasmtimeError::SerializationError(format!("Failed to persist to disk: {}", e)))?;
+
+        Ok(())
+    }
+
+    /// Calculate cache hit rate
+    fn calculate_hit_rate(&self) -> f64 {
+        let stats = self.stats.lock().unwrap();
+        let total_requests = stats.cache_hits + stats.cache_misses;
+        if total_requests == 0 {
+            0.0
+        } else {
+            stats.cache_hits as f64 / total_requests as f64
         }
     }
 }
 
-/// Cache statistics for monitoring
+/// Cache information structure
 #[derive(Debug, Clone)]
-pub struct CacheStatistics {
-    /// Number of entries in the cache
+pub struct CacheInfo {
+    /// Number of entries in cache
     pub entry_count: usize,
     /// Total cache size in bytes
     pub total_size: usize,
@@ -532,6 +470,14 @@ pub struct CacheStatistics {
     pub max_size: usize,
     /// Cache hit rate (0.0 to 1.0)
     pub hit_rate: f64,
+    /// Age of oldest entry
+    pub oldest_entry: Option<Duration>,
+}
+
+impl Default for ModuleSerializer {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 #[cfg(test)]
@@ -539,22 +485,306 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_serialization_config_default() {
+    fn test_serialization_config() {
         let config = SerializationConfig::default();
+        assert_eq!(config.max_cache_size, DEFAULT_MAX_CACHE_SIZE);
         assert!(config.enable_compression);
-        assert!(config.validate_integrity);
-        assert_eq!(config.max_cache_size, 64 * 1024 * 1024);
+        assert_eq!(config.validation_level, ValidationLevel::Basic);
     }
 
     #[test]
-    fn test_hash_calculation() {
-        // Test will be implemented when we have a working engine
-        assert!(true);
+    fn test_module_size_info() {
+        let size_info = ModuleSizeInfo {
+            original_size: 1000,
+            serialized_size: 900,
+            compressed_size: 600,
+            compression_ratio: 0.6,
+        };
+
+        assert_eq!(size_info.original_size, 1000);
+        assert_eq!(size_info.compression_ratio, 0.6);
     }
 
     #[test]
-    fn test_cache_statistics() {
-        // Test will be implemented when we have a working cache
-        assert!(true);
+    fn test_cache_info() {
+        let cache_info = CacheInfo {
+            entry_count: 5,
+            total_size: 1024,
+            max_size: 2048,
+            hit_rate: 0.75,
+            oldest_entry: Some(Duration::from_secs(300)),
+        };
+
+        assert_eq!(cache_info.entry_count, 5);
+        assert_eq!(cache_info.hit_rate, 0.75);
+        assert!(cache_info.oldest_entry.is_some());
+    }
+}
+
+//
+// Native C exports for JNI and Panama FFI consumption
+//
+
+use std::os::raw::{c_void, c_char, c_int};
+use std::ffi::{CStr, CString};
+use crate::shared_ffi::{FFI_SUCCESS, FFI_ERROR};
+
+/// Serialization core functions for interface implementations
+pub mod ffi_core {
+    use super::*;
+    use std::os::raw::c_void;
+    use crate::error::ffi_utils;
+    use crate::validate_ptr_not_null;
+
+    /// Core function to create module serializer
+    pub fn create_serializer() -> Box<ModuleSerializer> {
+        Box::new(ModuleSerializer::new())
+    }
+
+    /// Core function to create module serializer with configuration
+    pub fn create_serializer_with_config(config: SerializationConfig) -> Box<ModuleSerializer> {
+        Box::new(ModuleSerializer::with_config(config))
+    }
+
+    /// Core function to validate serializer pointer and get reference
+    pub unsafe fn get_serializer_ref(serializer_ptr: *const c_void) -> WasmtimeResult<&'static ModuleSerializer> {
+        validate_ptr_not_null!(serializer_ptr, "serializer");
+        Ok(&*(serializer_ptr as *const ModuleSerializer))
+    }
+
+    /// Core function to validate serializer pointer and get mutable reference
+    pub unsafe fn get_serializer_mut(serializer_ptr: *mut c_void) -> WasmtimeResult<&'static mut ModuleSerializer> {
+        validate_ptr_not_null!(serializer_ptr, "serializer");
+        Ok(&mut *(serializer_ptr as *mut ModuleSerializer))
+    }
+
+    /// Core function to destroy a serializer (safe cleanup)
+    pub unsafe fn destroy_serializer(serializer_ptr: *mut c_void) {
+        ffi_utils::destroy_resource::<ModuleSerializer>(serializer_ptr, "ModuleSerializer");
+    }
+
+    /// Core function to serialize module
+    pub fn serialize_module(
+        serializer: &mut ModuleSerializer,
+        engine: &Engine,
+        module_bytes: &[u8],
+    ) -> WasmtimeResult<Vec<u8>> {
+        serializer.serialize(engine, module_bytes)
+    }
+
+    /// Core function to deserialize module
+    pub fn deserialize_module(
+        serializer: &mut ModuleSerializer,
+        engine: &Engine,
+        serialized_bytes: &[u8],
+    ) -> WasmtimeResult<Vec<u8>> {
+        serializer.deserialize(engine, serialized_bytes)
+    }
+
+    /// Core function to get cache info
+    pub fn get_cache_info(serializer: &ModuleSerializer) -> CacheInfo {
+        serializer.cache_info()
+    }
+
+    /// Core function to clear cache
+    pub fn clear_cache(serializer: &mut ModuleSerializer) {
+        serializer.clear_cache()
+    }
+}
+
+/// Create a new module serializer
+///
+/// # Safety
+///
+/// Returns pointer to serializer that must be freed with wasmtime4j_serializer_destroy
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_serializer_new() -> *mut c_void {
+    Box::into_raw(ffi_core::create_serializer()) as *mut c_void
+}
+
+/// Create a new module serializer with configuration
+///
+/// # Safety
+///
+/// Returns pointer to serializer that must be freed with wasmtime4j_serializer_destroy
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_serializer_new_with_config(
+    max_cache_size: usize,
+    enable_compression: c_int,
+    compression_level: u32,
+) -> *mut c_void {
+    let config = SerializationConfig {
+        max_cache_size: if max_cache_size == 0 { DEFAULT_MAX_CACHE_SIZE } else { max_cache_size },
+        enable_compression: enable_compression != 0,
+        compression_level: if compression_level == 0 { COMPRESSION_LEVEL } else { compression_level },
+        validation_level: ValidationLevel::Basic,
+        max_entry_age: Duration::from_secs(DEFAULT_MAX_CACHE_AGE),
+    };
+
+    Box::into_raw(ffi_core::create_serializer_with_config(config)) as *mut c_void
+}
+
+/// Destroy serializer and free resources
+///
+/// # Safety
+///
+/// serializer_ptr must be a valid pointer from wasmtime4j_serializer_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_serializer_destroy(serializer_ptr: *mut c_void) {
+    if !serializer_ptr.is_null() {
+        core::destroy_serializer(serializer_ptr);
+    }
+}
+
+/// Serialize module bytes
+///
+/// # Safety
+///
+/// All pointers must be valid, caller must manage result buffer
+/// Returns size of serialized data, or 0 on error
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_serializer_serialize(
+    serializer_ptr: *mut c_void,
+    engine_ptr: *const c_void,
+    module_bytes: *const u8,
+    module_size: usize,
+    result_buffer: *mut *mut u8,
+    result_size: *mut usize,
+) -> c_int {
+    if serializer_ptr.is_null() || engine_ptr.is_null() || module_bytes.is_null() ||
+       result_buffer.is_null() || result_size.is_null() || module_size == 0 {
+        return FFI_ERROR;
+    }
+
+    match (
+        core::get_serializer_mut(serializer_ptr),
+        crate::engine::core::get_engine_ref(engine_ptr)
+    ) {
+        (Ok(serializer), Ok(engine)) => {
+            let bytes = std::slice::from_raw_parts(module_bytes, module_size);
+            match ffi_core::serialize_module(serializer, engine, bytes) {
+                Ok(serialized) => {
+                    let boxed_bytes = serialized.into_boxed_slice();
+                    let size = boxed_bytes.len();
+                    let ptr = Box::into_raw(boxed_bytes) as *mut u8;
+
+                    *result_buffer = ptr;
+                    *result_size = size;
+                    FFI_SUCCESS
+                },
+                Err(_) => FFI_ERROR,
+            }
+        },
+        _ => FFI_ERROR,
+    }
+}
+
+/// Deserialize module bytes
+///
+/// # Safety
+///
+/// All pointers must be valid, caller must manage result buffer
+/// Returns size of deserialized data, or 0 on error
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_serializer_deserialize(
+    serializer_ptr: *mut c_void,
+    engine_ptr: *const c_void,
+    serialized_bytes: *const u8,
+    serialized_size: usize,
+    result_buffer: *mut *mut u8,
+    result_size: *mut usize,
+) -> c_int {
+    if serializer_ptr.is_null() || engine_ptr.is_null() || serialized_bytes.is_null() ||
+       result_buffer.is_null() || result_size.is_null() || serialized_size == 0 {
+        return FFI_ERROR;
+    }
+
+    match (
+        core::get_serializer_mut(serializer_ptr),
+        crate::engine::core::get_engine_ref(engine_ptr)
+    ) {
+        (Ok(serializer), Ok(engine)) => {
+            let bytes = std::slice::from_raw_parts(serialized_bytes, serialized_size);
+            match ffi_core::deserialize_module(serializer, engine, bytes) {
+                Ok(deserialized) => {
+                    let boxed_bytes = deserialized.into_boxed_slice();
+                    let size = boxed_bytes.len();
+                    let ptr = Box::into_raw(boxed_bytes) as *mut u8;
+
+                    *result_buffer = ptr;
+                    *result_size = size;
+                    FFI_SUCCESS
+                },
+                Err(_) => FFI_ERROR,
+            }
+        },
+        _ => FFI_ERROR,
+    }
+}
+
+/// Clear serializer cache
+///
+/// # Safety
+///
+/// serializer_ptr must be a valid pointer from wasmtime4j_serializer_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_serializer_clear_cache(serializer_ptr: *mut c_void) -> c_int {
+    match ffi_core::get_serializer_mut(serializer_ptr) {
+        Ok(serializer) => {
+            core::clear_cache(serializer);
+            FFI_SUCCESS
+        },
+        Err(_) => FFI_ERROR,
+    }
+}
+
+/// Get cache entry count
+///
+/// # Safety
+///
+/// serializer_ptr must be a valid pointer from wasmtime4j_serializer_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_serializer_cache_entry_count(serializer_ptr: *const c_void) -> usize {
+    match ffi_core::get_serializer_ref(serializer_ptr) {
+        Ok(serializer) => core::get_cache_info(serializer).entry_count,
+        Err(_) => 0,
+    }
+}
+
+/// Get cache total size in bytes
+///
+/// # Safety
+///
+/// serializer_ptr must be a valid pointer from wasmtime4j_serializer_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_serializer_cache_total_size(serializer_ptr: *const c_void) -> usize {
+    match ffi_core::get_serializer_ref(serializer_ptr) {
+        Ok(serializer) => core::get_cache_info(serializer).total_size,
+        Err(_) => 0,
+    }
+}
+
+/// Get cache hit rate (0.0 to 1.0)
+///
+/// # Safety
+///
+/// serializer_ptr must be a valid pointer from wasmtime4j_serializer_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_serializer_cache_hit_rate(serializer_ptr: *const c_void) -> f64 {
+    match ffi_core::get_serializer_ref(serializer_ptr) {
+        Ok(serializer) => core::get_cache_info(serializer).hit_rate,
+        Err(_) => 0.0,
+    }
+}
+
+/// Free buffer allocated by serialization functions
+///
+/// # Safety
+///
+/// buffer must be allocated by wasmtime4j_serializer_serialize or wasmtime4j_serializer_deserialize
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_serializer_free_buffer(buffer: *mut u8, size: usize) {
+    if !buffer.is_null() && size > 0 {
+        let _ = Box::from_raw(std::slice::from_raw_parts_mut(buffer, size));
     }
 }

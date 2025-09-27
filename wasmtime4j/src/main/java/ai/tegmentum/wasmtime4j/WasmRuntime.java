@@ -493,6 +493,152 @@ public interface WasmRuntime extends Closeable {
       final SimdOperations.V128 a, final SimdOperations.V128 b, final byte[] indices)
       throws WasmException;
 
+  // ===== ADVANCED ARITHMETIC OPERATIONS =====
+
+  /**
+   * Performs fused multiply-add operation (a * b + c).
+   *
+   * @param a the first vector
+   * @param b the second vector
+   * @param c the third vector
+   * @return the result vector
+   * @throws WasmException if the operation fails
+   */
+  SimdOperations.V128 simdFma(
+      final SimdOperations.V128 a, final SimdOperations.V128 b, final SimdOperations.V128 c)
+      throws WasmException;
+
+  /**
+   * Performs fused multiply-subtract operation (a * b - c).
+   *
+   * @param a the first vector
+   * @param b the second vector
+   * @param c the third vector
+   * @return the result vector
+   * @throws WasmException if the operation fails
+   */
+  SimdOperations.V128 simdFms(
+      final SimdOperations.V128 a, final SimdOperations.V128 b, final SimdOperations.V128 c)
+      throws WasmException;
+
+  /**
+   * Performs vector reciprocal approximation.
+   *
+   * @param a the vector
+   * @return the result vector
+   * @throws WasmException if the operation fails
+   */
+  SimdOperations.V128 simdReciprocal(final SimdOperations.V128 a) throws WasmException;
+
+  /**
+   * Performs vector square root.
+   *
+   * @param a the vector
+   * @return the result vector
+   * @throws WasmException if the operation fails
+   */
+  SimdOperations.V128 simdSqrt(final SimdOperations.V128 a) throws WasmException;
+
+  /**
+   * Performs reciprocal square root approximation.
+   *
+   * @param a the vector
+   * @return the result vector
+   * @throws WasmException if the operation fails
+   */
+  SimdOperations.V128 simdRsqrt(final SimdOperations.V128 a) throws WasmException;
+
+  // ===== ADVANCED LOGICAL OPERATIONS =====
+
+  /**
+   * Performs bit population count (popcount) on vector.
+   *
+   * @param a the vector
+   * @return the result vector with popcount for each lane
+   * @throws WasmException if the operation fails
+   */
+  SimdOperations.V128 simdPopcount(final SimdOperations.V128 a) throws WasmException;
+
+  /**
+   * Performs variable bit shift left on vector lanes.
+   *
+   * @param a the vector to shift
+   * @param b the shift amounts vector
+   * @return the result vector
+   * @throws WasmException if the operation fails
+   */
+  SimdOperations.V128 simdShlVariable(final SimdOperations.V128 a, final SimdOperations.V128 b)
+      throws WasmException;
+
+  /**
+   * Performs variable bit shift right on vector lanes.
+   *
+   * @param a the vector to shift
+   * @param b the shift amounts vector
+   * @return the result vector
+   * @throws WasmException if the operation fails
+   */
+  SimdOperations.V128 simdShrVariable(final SimdOperations.V128 a, final SimdOperations.V128 b)
+      throws WasmException;
+
+  // ===== VECTOR REDUCTION OPERATIONS =====
+
+  /**
+   * Performs horizontal sum reduction on vector.
+   *
+   * @param a the vector
+   * @return the sum of all lanes as a scalar value
+   * @throws WasmException if the operation fails
+   */
+  float simdHorizontalSum(final SimdOperations.V128 a) throws WasmException;
+
+  /**
+   * Performs horizontal minimum reduction on vector.
+   *
+   * @param a the vector
+   * @return the minimum of all lanes as a scalar value
+   * @throws WasmException if the operation fails
+   */
+  float simdHorizontalMin(final SimdOperations.V128 a) throws WasmException;
+
+  /**
+   * Performs horizontal maximum reduction on vector.
+   *
+   * @param a the vector
+   * @return the maximum of all lanes as a scalar value
+   * @throws WasmException if the operation fails
+   */
+  float simdHorizontalMax(final SimdOperations.V128 a) throws WasmException;
+
+  // ===== ADVANCED COMPARISON AND SELECTION =====
+
+  /**
+   * Performs vector conditional selection based on mask.
+   *
+   * @param mask the mask vector (0 = select from b, non-zero = select from a)
+   * @param a the first source vector
+   * @param b the second source vector
+   * @return the result vector
+   * @throws WasmException if the operation fails
+   */
+  SimdOperations.V128 simdSelect(
+      final SimdOperations.V128 mask, final SimdOperations.V128 a, final SimdOperations.V128 b)
+      throws WasmException;
+
+  /**
+   * Performs vector blending with immediate mask.
+   *
+   * @param a the first vector
+   * @param b the second vector
+   * @param mask the immediate mask (8 bits for 4 lanes, 2 bits per lane)
+   * @return the result vector
+   * @throws WasmException if the operation fails
+   */
+  SimdOperations.V128 simdBlend(final SimdOperations.V128 a, final SimdOperations.V128 b, final int mask)
+      throws WasmException;
+
+  // ===== RELAXED OPERATIONS =====
+
   /**
    * Performs relaxed SIMD addition.
    *
@@ -605,6 +751,130 @@ public interface WasmRuntime extends Closeable {
    * @return debugging capabilities information
    */
   String getDebuggingCapabilities();
+
+  /**
+   * Creates a new WASI context with default settings.
+   *
+   * <p>The WASI context provides configuration for WebAssembly System Interface
+   * functionality, including file system access, environment variables, and
+   * command-line arguments.
+   *
+   * @return a new WasiContext instance
+   * @throws WasmException if the context cannot be created
+   * @since 1.0.0
+   */
+  WasiContext createWasiContext() throws WasmException;
+
+  /**
+   * Creates a new linker for the specified engine.
+   *
+   * <p>A linker manages imports and exports for WebAssembly modules, allowing
+   * host functions and other modules to be linked together.
+   *
+   * @param <T> the type of user data associated with the store
+   * @param engine the engine to create the linker for
+   * @return a new Linker instance
+   * @throws WasmException if the linker cannot be created
+   * @throws IllegalArgumentException if engine is null
+   * @since 1.0.0
+   */
+  <T> Linker<T> createLinker(Engine engine) throws WasmException;
+
+  /**
+   * Adds WASI imports to the specified linker.
+   *
+   * <p>This method configures the linker with all necessary WASI functions
+   * using the provided WASI context for configuration.
+   *
+   * @param linker the linker to add WASI imports to
+   * @param context the WASI context containing configuration
+   * @throws WasmException if adding WASI imports fails
+   * @throws IllegalArgumentException if linker or context is null
+   * @since 1.0.0
+   */
+  void addWasiToLinker(Linker<WasiContext> linker, WasiContext context) throws WasmException;
+
+  /**
+   * Adds WASI Preview 2 functions to the given linker.
+   *
+   * <p>This method configures the linker with WASI Preview 2 function imports, enabling
+   * WebAssembly components to access enhanced system functionality including:
+   * <ul>
+   *   <li>Component-based filesystem operations with async I/O</li>
+   *   <li>Stream-based networking with HTTP/TCP/UDP support</li>
+   *   <li>Enhanced process and environment management</li>
+   *   <li>Component model resource management</li>
+   *   <li>WIT interface definitions and type validation</li>
+   * </ul>
+   *
+   * @param linker the linker to configure with WASI Preview 2 functions
+   * @param context the WASI context containing configuration and state
+   * @throws WasmException if adding WASI Preview 2 functions fails
+   * @throws IllegalArgumentException if linker or context is null
+   * @since 1.0.0
+   */
+  void addWasiPreview2ToLinker(Linker<WasiContext> linker, WasiContext context) throws WasmException;
+
+  /**
+   * Adds Component Model functions to the given linker.
+   *
+   * <p>This method configures the linker with WebAssembly Component Model functions, enabling:
+   * <ul>
+   *   <li>Component compilation and instantiation</li>
+   *   <li>WIT interface parsing and validation</li>
+   *   <li>Component linking and composition</li>
+   *   <li>Resource management and lifecycle</li>
+   * </ul>
+   *
+   * @param linker the linker to configure with Component Model functions
+   * @throws WasmException if adding Component Model functions fails
+   * @throws IllegalArgumentException if linker is null
+   * @since 1.0.0
+   */
+  void addComponentModelToLinker(Linker<WasiContext> linker) throws WasmException;
+
+  /**
+   * Checks if this runtime supports the WebAssembly Component Model.
+   *
+   * <p>Component Model support enables advanced WebAssembly features including:
+   * <ul>
+   *   <li>WIT (WebAssembly Interface Types) interfaces</li>
+   *   <li>Component composition and linking</li>
+   *   <li>Resource management and lifecycle</li>
+   *   <li>Interface validation and type checking</li>
+   * </ul>
+   *
+   * @return true if Component Model is supported, false otherwise
+   * @since 1.0.0
+   */
+  boolean supportsComponentModel();
+
+  /**
+   * Deserializes a module from previously serialized bytes.
+   *
+   * <p>This method provides fast module loading by deserializing compiled
+   * module data instead of recompiling from WebAssembly bytecode.
+   *
+   * @param engine the engine to use for deserialization
+   * @param bytes the serialized module data
+   * @return the deserialized Module
+   * @throws WasmException if deserialization fails or data is invalid
+   * @throws IllegalArgumentException if engine or bytes is null
+   * @since 1.0.0
+   */
+  Module deserializeModule(Engine engine, byte[] bytes) throws WasmException;
+
+  /**
+   * Deserializes a module from a file containing serialized module data.
+   *
+   * @param engine the engine to use for deserialization
+   * @param path the path to the serialized module file
+   * @return the deserialized Module
+   * @throws WasmException if deserialization fails or file cannot be read
+   * @throws IllegalArgumentException if engine or path is null
+   * @since 1.0.0
+   */
+  Module deserializeModuleFile(Engine engine, java.nio.file.Path path) throws WasmException;
 
   /**
    * Closes the runtime and releases associated resources.

@@ -1161,6 +1161,38 @@ public final class JniModule extends JniResource implements Module {
   }
 
   /**
+   * Compiles WebAssembly Text (WAT) format into a Module.
+   *
+   * <p>This method compiles WebAssembly Text format directly into a module without requiring
+   * intermediate conversion to binary format. The WAT text is parsed and compiled in a single step.
+   *
+   * @param engine the engine to use for compilation
+   * @param watText the WebAssembly text format code
+   * @return a compiled Module
+   * @throws WasmException if compilation fails
+   * @throws IllegalArgumentException if engine or watText is null
+   * @since 1.0.0
+   */
+  public static JniModule compileWat(final JniEngine engine, final String watText) throws WasmException {
+    JniValidation.requireNonNull(engine, "engine");
+    JniValidation.requireNonEmpty(watText, "watText");
+    NativeMethodBindings.ensureInitialized();
+
+    engine.ensureNotClosed();
+
+    try {
+      final long moduleHandle = nativeCompileWat(engine.getNativeHandle(), watText);
+      JniValidation.requireValidHandle(moduleHandle, "moduleHandle");
+      return new JniModule(moduleHandle, engine);
+    } catch (final Exception e) {
+      if (e instanceof WasmException) {
+        throw e;
+      }
+      throw new WasmException("Failed to compile WAT text: " + e.getMessage(), e);
+    }
+  }
+
+  /**
    * Gets the size of the compiled module in bytes.
    *
    * <p>This returns the size of the internal representation of the compiled module, which may
@@ -1892,4 +1924,13 @@ public final class JniModule extends JniResource implements Module {
    * @return array of global type strings or null on error
    */
   private static native String[] nativeGetGlobalTypes(long moduleHandle);
+
+  /**
+   * Compiles WebAssembly Text (WAT) format into a module.
+   *
+   * @param engineHandle the native engine handle
+   * @param watText the WebAssembly text format code
+   * @return native module handle or 0 on failure
+   */
+  private static native long nativeCompileWat(long engineHandle, String watText);
 }

@@ -367,6 +367,283 @@ public final class WasmtimeBindings {
             ValueLayout.ADDRESS)); // initial value
   }
 
+  // WASI Preview 2 method handles
+
+  /**
+   * Gets the method handle for wasi_preview2_context_new().
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle wasiPreview2ContextNew() {
+    return getMethodHandle(
+        "wasi_preview2_context_new",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, // return context handle
+            ValueLayout.ADDRESS, // engine handle
+            ValueLayout.JAVA_INT, // enable networking
+            ValueLayout.JAVA_INT, // enable filesystem
+            ValueLayout.JAVA_INT)); // enable process
+  }
+
+  /**
+   * Gets the method handle for wasi_preview2_context_destroy().
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle wasiPreview2ContextDestroy() {
+    return getMethodHandle(
+        "wasi_preview2_context_destroy",
+        FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // context handle
+  }
+
+  /**
+   * Gets the method handle for wasi_preview2_compile_component().
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle wasiPreview2CompileComponent() {
+    return getMethodHandle(
+        "wasi_preview2_compile_component",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // context handle
+            ValueLayout.ADDRESS, // component bytes
+            ValueLayout.JAVA_LONG, // component size
+            ValueLayout.ADDRESS)); // component id out
+  }
+
+  /**
+   * Gets the method handle for wasi_preview2_instantiate_component().
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle wasiPreview2InstantiateComponent() {
+    return getMethodHandle(
+        "wasi_preview2_instantiate_component",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // context handle
+            ValueLayout.JAVA_LONG, // component id
+            ValueLayout.ADDRESS)); // instance id out
+  }
+
+  /**
+   * Gets the method handle for wasi_preview2_create_input_stream().
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle wasiPreview2CreateInputStream() {
+    return getMethodHandle(
+        "wasi_preview2_create_input_stream",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // context handle
+            ValueLayout.JAVA_LONG, // instance id
+            ValueLayout.ADDRESS)); // stream id out
+  }
+
+  /**
+   * Gets the method handle for wasi_preview2_create_output_stream().
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle wasiPreview2CreateOutputStream() {
+    return getMethodHandle(
+        "wasi_preview2_create_output_stream",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // context handle
+            ValueLayout.JAVA_LONG, // instance id
+            ValueLayout.ADDRESS)); // stream id out
+  }
+
+  /**
+   * Gets the method handle for wasi_preview2_stream_read().
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle wasiPreview2StreamRead() {
+    return getMethodHandle(
+        "wasi_preview2_stream_read",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // context handle
+            ValueLayout.JAVA_LONG, // instance id
+            ValueLayout.JAVA_LONG, // stream id
+            ValueLayout.ADDRESS, // buffer
+            ValueLayout.JAVA_LONG, // buffer size
+            ValueLayout.ADDRESS)); // bytes read out
+  }
+
+  /**
+   * Gets the method handle for wasi_preview2_stream_write().
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle wasiPreview2StreamWrite() {
+    return getMethodHandle(
+        "wasi_preview2_stream_write",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // context handle
+            ValueLayout.JAVA_LONG, // instance id
+            ValueLayout.JAVA_LONG, // stream id
+            ValueLayout.ADDRESS, // buffer
+            ValueLayout.JAVA_LONG, // buffer size
+            ValueLayout.ADDRESS)); // bytes written out
+  }
+
+  /**
+   * Gets the method handle for wasi_preview2_close_stream().
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle wasiPreview2CloseStream() {
+    return getMethodHandle(
+        "wasi_preview2_close_stream",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // context handle
+            ValueLayout.JAVA_LONG, // instance id
+            ValueLayout.JAVA_LONG)); // stream id
+  }
+
+  // Component Model method handles
+
+  /**
+   * Gets the method handle for wasmtime4j_component_engine_new().
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle wasmtime4jComponentEngineNew() {
+    return getMethodHandle(
+        "wasmtime4j_component_engine_new",
+        FunctionDescriptor.of(ValueLayout.ADDRESS)); // return engine handle
+  }
+
+  /**
+   * Gets the method handle for wasmtime4j_component_engine_destroy().
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle wasmtime4jComponentEngineDestroy() {
+    return getMethodHandle(
+        "wasmtime4j_component_engine_destroy",
+        FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // engine handle
+  }
+
+  /**
+   * Gets the method handle for wasmtime4j_component_compile().
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle wasmtime4jComponentCompile() {
+    return getMethodHandle(
+        "wasmtime4j_component_compile",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // engine handle
+            ValueLayout.ADDRESS, // component bytes
+            ValueLayout.JAVA_LONG, // component size
+            ValueLayout.ADDRESS)); // component out
+  }
+
+  /**
+   * Gets the method handle for wasmtime4j_component_compile_wat().
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle wasmtime4jComponentCompileWat() {
+    return getMethodHandle(
+        "wasmtime4j_component_compile_wat",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // engine handle
+            ValueLayout.ADDRESS, // wat text
+            ValueLayout.ADDRESS)); // component out
+  }
+
+  /**
+   * Gets the method handle for wasmtime4j_component_instantiate().
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle wasmtime4jComponentInstantiate() {
+    return getMethodHandle(
+        "wasmtime4j_component_instantiate",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // engine handle
+            ValueLayout.ADDRESS, // component handle
+            ValueLayout.ADDRESS)); // instance out
+  }
+
+  /**
+   * Gets the method handle for wasmtime4j_component_export_count().
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle wasmtime4jComponentExportCount() {
+    return getMethodHandle(
+        "wasmtime4j_component_export_count",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG, // return count
+            ValueLayout.ADDRESS)); // component handle
+  }
+
+  /**
+   * Gets the method handle for wasmtime4j_component_has_export().
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle wasmtime4jComponentHasExport() {
+    return getMethodHandle(
+        "wasmtime4j_component_has_export",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return boolean
+            ValueLayout.ADDRESS, // component handle
+            ValueLayout.ADDRESS)); // export name
+  }
+
+  /**
+   * Gets the method handle for wasmtime4j_component_validate().
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle wasmtime4jComponentValidate() {
+    return getMethodHandle(
+        "wasmtime4j_component_validate",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return boolean
+            ValueLayout.ADDRESS, // component handle
+            ValueLayout.ADDRESS)); // wit interface
+  }
+
+  /**
+   * Gets the method handle for wasmtime4j_wit_parser_new().
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle wasmtime4jWitParserNew() {
+    return getMethodHandle(
+        "wasmtime4j_wit_parser_new",
+        FunctionDescriptor.of(ValueLayout.ADDRESS)); // return parser handle
+  }
+
+  /**
+   * Gets the method handle for wasmtime4j_wit_parser_validate_syntax().
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle wasmtime4jWitParserValidateSyntax() {
+    return getMethodHandle(
+        "wasmtime4j_wit_parser_validate_syntax",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return boolean
+            ValueLayout.ADDRESS, // parser handle
+            ValueLayout.ADDRESS)); // wit text
+  }
+
   /**
    * Gets the symbol lookup instance for direct symbol access.
    *

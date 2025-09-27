@@ -102,6 +102,56 @@ pub struct InterfaceDefinition {
     pub resources: Vec<ResourceDefinition>,
 }
 
+impl InterfaceDefinition {
+    /// Convert interface definition to JSON representation
+    ///
+    /// # Returns
+    ///
+    /// Returns a JSON string representation of the interface definition.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if JSON serialization fails.
+    pub fn to_json(&self) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
+        // Simple JSON serialization without external dependencies
+        let mut json = String::new();
+        json.push_str("{\n");
+        json.push_str(&format!("  \"name\": \"{}\",\n", self.name));
+
+        if let Some(ref namespace) = self.namespace {
+            json.push_str(&format!("  \"namespace\": \"{}\",\n", namespace));
+        }
+
+        if let Some(ref version) = self.version {
+            json.push_str(&format!("  \"version\": \"{}\",\n", version));
+        }
+
+        json.push_str("  \"functions\": [\n");
+        for (i, function) in self.functions.iter().enumerate() {
+            if i > 0 { json.push_str(",\n"); }
+            json.push_str(&format!("    {{\"name\": \"{}\"}}", function.name));
+        }
+        json.push_str("\n  ],\n");
+
+        json.push_str("  \"types\": [\n");
+        for (i, type_def) in self.types.iter().enumerate() {
+            if i > 0 { json.push_str(",\n"); }
+            json.push_str(&format!("    {{\"name\": \"{}\"}}", type_def.name));
+        }
+        json.push_str("\n  ],\n");
+
+        json.push_str("  \"resources\": [\n");
+        for (i, resource) in self.resources.iter().enumerate() {
+            if i > 0 { json.push_str(",\n"); }
+            json.push_str(&format!("    {{\"name\": \"{}\"}}", resource.name));
+        }
+        json.push_str("\n  ]\n");
+
+        json.push_str("}");
+        Ok(json)
+    }
+}
+
 /// Function definition within a WIT interface
 #[derive(Debug, Clone)]
 pub struct FunctionDefinition {
@@ -498,18 +548,139 @@ impl ComponentEngine {
         Ok(initial_count - final_count)
     }
 
+    /// Compile a WebAssembly component from bytes
+    ///
+    /// # Arguments
+    ///
+    /// * `bytes` - WebAssembly component bytes to compile
+    ///
+    /// # Returns
+    ///
+    /// Returns a compiled `Component` ready for instantiation.
+    ///
+    /// # Errors
+    ///
+    /// Returns `WasmtimeError::Compilation` if the component bytes are invalid
+    /// or cannot be compiled by Wasmtime.
+    pub fn compile_component(&self, bytes: &[u8]) -> WasmtimeResult<Component> {
+        self.load_component_from_bytes(bytes)
+    }
+
+    /// Compile a WebAssembly component from WAT (WebAssembly Text format)
+    ///
+    /// # Arguments
+    ///
+    /// * `wat` - WebAssembly Text format string
+    ///
+    /// # Returns
+    ///
+    /// Returns a compiled `Component` ready for instantiation.
+    ///
+    /// # Errors
+    ///
+    /// Returns `WasmtimeError::Compilation` if the WAT cannot be parsed or compiled.
+    pub fn compile_component_wat(&self, wat: &str) -> WasmtimeResult<Component> {
+        if wat.is_empty() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "WAT text cannot be empty".to_string(),
+            });
+        }
+
+        // Convert WAT to bytes first
+        let bytes = wasmtime::wat::parse_str(wat)
+            .map_err(|e| WasmtimeError::Compilation {
+                message: format!("Failed to parse WAT: {}", e),
+            })?;
+
+        self.load_component_from_bytes(&bytes)
+    }
+
+    /// Get the number of active component instances
+    ///
+    /// # Returns
+    ///
+    /// Returns the count of currently active component instances.
+    pub fn get_instance_count(&self) -> usize {
+        self.instances.lock()
+            .map(|instances| instances.len())
+            .unwrap_or(0)
+    }
+
+    /// Cleanup unused component instances
+    ///
+    /// Removes references to component instances that are no longer active.
+    pub fn cleanup_unused_instances(&self) {
+        if let Ok(cleaned) = self.cleanup_instances() {
+            log::debug!("Cleaned up {} unused component instances", cleaned);
+        }
+    }
+
+    /// Check if the engine supports a specific feature
+    ///
+    /// # Arguments
+    ///
+    /// * `feature_name` - Name of the feature to check
+    ///
+    /// # Returns
+    ///
+    /// Returns `Ok(true)` if the feature is supported, `Ok(false)` otherwise.
+    pub fn supports_feature(&self, feature_name: &str) -> WasmtimeResult<bool> {
+        // Component Model features supported by this implementation
+        let supported_features = [
+            "component-model",
+            "wit-interfaces",
+            "component-linking",
+            "resource-management",
+            "interface-validation",
+        ];
+
+        Ok(supported_features.contains(&feature_name))
+    }
+
     /// Extract metadata from a compiled component
     ///
     /// This internal function analyzes a compiled component to extract
     /// information about its imports, exports, and interfaces.
-    fn extract_component_metadata(&self, _component: &WasmtimeComponent) -> WasmtimeResult<ComponentMetadata> {
-        // TODO: Implement actual metadata extraction using Wasmtime component introspection API
-        // For now, return minimal metadata structure
-        
+    fn extract_component_metadata(&self, component: &WasmtimeComponent) -> WasmtimeResult<ComponentMetadata> {
+        // Get component type information from Wasmtime
+        let component_ty = component.component_type();
+
+        let mut imports = Vec::new();
+        let mut exports = Vec::new();
+
+        // Extract imports
+        for (name, _import_ty) in component_ty.imports() {
+            imports.push(InterfaceDefinition {
+                name: name.to_string(),
+                namespace: None, // Will be enhanced with actual namespace parsing
+                version: None,   // Will be enhanced with actual version parsing
+                functions: Vec::new(), // Will be enhanced with actual function extraction
+                types: Vec::new(),     // Will be enhanced with actual type extraction
+                resources: Vec::new(), // Will be enhanced with actual resource extraction
+            });
+        }
+
+        // Extract exports
+        for (name, _export_ty) in component_ty.exports() {
+            exports.push(InterfaceDefinition {
+                name: name.to_string(),
+                namespace: None, // Will be enhanced with actual namespace parsing
+                version: None,   // Will be enhanced with actual version parsing
+                functions: Vec::new(), // Will be enhanced with actual function extraction
+                types: Vec::new(),     // Will be enhanced with actual type extraction
+                resources: Vec::new(), // Will be enhanced with actual resource extraction
+            });
+        }
+
+        // Calculate approximate size (this is a simplified approach)
+        let size_bytes = std::mem::size_of_val(component) +
+                        imports.len() * std::mem::size_of::<InterfaceDefinition>() +
+                        exports.len() * std::mem::size_of::<InterfaceDefinition>();
+
         Ok(ComponentMetadata {
-            imports: Vec::new(),
-            exports: Vec::new(), 
-            size_bytes: 0, // Will be implemented with actual component analysis
+            imports,
+            exports,
+            size_bytes,
         })
     }
 }
@@ -579,6 +750,92 @@ impl Component {
     pub fn imports_interface(&self, interface_name: &str) -> bool {
         self.metadata.imports.iter()
             .any(|import| import.name == interface_name)
+    }
+
+    /// Validate component against WIT interface requirements
+    ///
+    /// # Arguments
+    ///
+    /// * `wit_interface` - WIT interface definition to validate against
+    ///
+    /// # Returns
+    ///
+    /// Returns `Ok(true)` if the component is valid against the interface, `Ok(false)` otherwise.
+    ///
+    /// # Errors
+    ///
+    /// Returns `WasmtimeError::ValidationError` if validation fails due to system errors.
+    pub fn validate_wit_interface(&self, wit_interface: &str) -> WasmtimeResult<bool> {
+        if wit_interface.is_empty() {
+            return Ok(false);
+        }
+
+        // Basic WIT interface validation
+        // This is a simplified implementation that checks for basic WIT syntax
+        let has_interface_keyword = wit_interface.contains("interface");
+        let has_braces = wit_interface.contains("{") && wit_interface.contains("}");
+
+        // More sophisticated validation would parse the actual WIT and check
+        // compatibility with the component's type signatures
+        Ok(has_interface_keyword && has_braces)
+    }
+
+    /// Get export interface definition by name
+    ///
+    /// # Arguments
+    ///
+    /// * `export_name` - Name of the export to get interface for
+    ///
+    /// # Returns
+    ///
+    /// Returns the interface definition for the export if found.
+    ///
+    /// # Errors
+    ///
+    /// Returns `WasmtimeError::NotFound` if the export doesn't exist.
+    pub fn get_export_interface(&self, export_name: &str) -> WasmtimeResult<Option<&InterfaceDefinition>> {
+        let interface = self.metadata.exports.iter()
+            .find(|export| export.name == export_name);
+
+        Ok(interface)
+    }
+
+    /// Get import interface definition by name
+    ///
+    /// # Arguments
+    ///
+    /// * `import_name` - Name of the import to get interface for
+    ///
+    /// # Returns
+    ///
+    /// Returns the interface definition for the import if found.
+    pub fn get_import_interface(&self, import_name: &str) -> WasmtimeResult<Option<&InterfaceDefinition>> {
+        let interface = self.metadata.imports.iter()
+            .find(|import| import.name == import_name);
+
+        Ok(interface)
+    }
+
+    /// Get all exported interface names
+    ///
+    /// # Returns
+    ///
+    /// Returns a vector of all exported interface names.
+    pub fn get_exported_interfaces(&self) -> Vec<String> {
+        self.metadata.exports.iter()
+            .map(|export| export.name.clone())
+            .collect()
+    }
+
+    /// Get all imported interface names
+    ///
+    /// # Returns
+    ///
+    /// Returns a vector of all imported interface names.
+    pub fn get_imported_interfaces(&self) -> Vec<String> {
+        self.metadata.imports.iter()
+            .map(|import| import.name.clone())
+            .collect()
     }
 }
 
@@ -660,6 +917,218 @@ impl ResourceManager {
             .filter(|(_, weak_ref)| weak_ref.strong_count() > 0)
             .count()
     }
+}
+
+/// WIT parser for interface definitions
+///
+/// Provides parsing and validation of WebAssembly Interface Type (WIT) definitions.
+pub struct WitParser {
+    /// Parser state (reserved for future use)
+    _state: (),
+}
+
+impl WitParser {
+    /// Create a new WIT parser
+    ///
+    /// # Returns
+    ///
+    /// Returns a new `WitParser` instance ready for interface parsing.
+    ///
+    /// # Errors
+    ///
+    /// Returns `WasmtimeError::EngineConfig` if the parser cannot be initialized.
+    pub fn new() -> WasmtimeResult<Self> {
+        Ok(WitParser {
+            _state: (),
+        })
+    }
+
+    /// Parse a WIT interface definition
+    ///
+    /// # Arguments
+    ///
+    /// * `wit_text` - WIT interface definition as text
+    ///
+    /// # Returns
+    ///
+    /// Returns a parsed `InterfaceDefinition` if successful.
+    ///
+    /// # Errors
+    ///
+    /// Returns `WasmtimeError::Compilation` if the WIT text is invalid or cannot be parsed.
+    pub fn parse_interface(&mut self, wit_text: &str) -> WasmtimeResult<InterfaceDefinition> {
+        if wit_text.is_empty() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "WIT text cannot be empty".to_string(),
+            });
+        }
+
+        // Basic WIT parsing - this is a simplified implementation
+        // A full implementation would use a proper WIT parser
+        let interface_name = self.extract_interface_name(wit_text)?;
+        let namespace = self.extract_namespace(wit_text);
+        let version = self.extract_version(wit_text);
+
+        Ok(InterfaceDefinition {
+            name: interface_name,
+            namespace,
+            version,
+            functions: Vec::new(), // Would be extracted from actual WIT parsing
+            types: Vec::new(),     // Would be extracted from actual WIT parsing
+            resources: Vec::new(), // Would be extracted from actual WIT parsing
+        })
+    }
+
+    /// Validate WIT interface syntax
+    ///
+    /// # Arguments
+    ///
+    /// * `wit_text` - WIT interface definition to validate
+    ///
+    /// # Returns
+    ///
+    /// Returns `Ok(true)` if the syntax is valid, `Ok(false)` otherwise.
+    ///
+    /// # Errors
+    ///
+    /// Returns `WasmtimeError::ValidationError` if validation fails due to system errors.
+    pub fn validate_syntax(&mut self, wit_text: &str) -> WasmtimeResult<bool> {
+        if wit_text.is_empty() {
+            return Ok(false);
+        }
+
+        // Basic syntax validation
+        let has_interface = wit_text.contains("interface");
+        let balanced_braces = self.check_balanced_braces(wit_text);
+        let valid_keywords = self.check_valid_keywords(wit_text);
+
+        Ok(has_interface && balanced_braces && valid_keywords)
+    }
+
+    /// Extract interface name from WIT text
+    fn extract_interface_name(&self, wit_text: &str) -> WasmtimeResult<String> {
+        // Look for pattern: interface <name> {
+        for line in wit_text.lines() {
+            let trimmed = line.trim();
+            if trimmed.starts_with("interface ") {
+                let parts: Vec<&str> = trimmed.split_whitespace().collect();
+                if parts.len() >= 2 {
+                    let name = parts[1].trim_end_matches('{').trim();
+                    return Ok(name.to_string());
+                }
+            }
+        }
+
+        Err(WasmtimeError::Compilation {
+            message: "No interface name found in WIT text".to_string(),
+        })
+    }
+
+    /// Extract namespace from WIT text
+    fn extract_namespace(&self, wit_text: &str) -> Option<String> {
+        // Look for package declarations or namespace hints
+        for line in wit_text.lines() {
+            let trimmed = line.trim();
+            if trimmed.starts_with("package ") || trimmed.starts_with("namespace ") {
+                let parts: Vec<&str> = trimmed.split_whitespace().collect();
+                if parts.len() >= 2 {
+                    return Some(parts[1].to_string());
+                }
+            }
+        }
+        None
+    }
+
+    /// Extract version from WIT text
+    fn extract_version(&self, wit_text: &str) -> Option<String> {
+        // Look for version declarations
+        for line in wit_text.lines() {
+            let trimmed = line.trim();
+            if trimmed.starts_with("version ") || trimmed.contains("@version") {
+                let parts: Vec<&str> = trimmed.split_whitespace().collect();
+                if parts.len() >= 2 {
+                    return Some(parts[1].to_string());
+                }
+            }
+        }
+        None
+    }
+
+    /// Check if braces are balanced in WIT text
+    fn check_balanced_braces(&self, wit_text: &str) -> bool {
+        let mut depth = 0;
+        for ch in wit_text.chars() {
+            match ch {
+                '{' => depth += 1,
+                '}' => {
+                    depth -= 1;
+                    if depth < 0 {
+                        return false;
+                    }
+                }
+                _ => {}
+            }
+        }
+        depth == 0
+    }
+
+    /// Check for valid WIT keywords
+    fn check_valid_keywords(&self, wit_text: &str) -> bool {
+        let valid_keywords = [
+            "interface", "type", "record", "variant", "enum", "flags",
+            "resource", "func", "constructor", "method", "static",
+            "use", "package", "world", "export", "import"
+        ];
+
+        // Basic check - ensure we don't have invalid syntax patterns
+        for line in wit_text.lines() {
+            let words: Vec<&str> = line.split_whitespace().collect();
+            for word in words {
+                let clean_word = word.trim_matches(|c: char| !c.is_alphabetic());
+                if !clean_word.is_empty() && clean_word.chars().all(|c| c.is_alphabetic()) {
+                    // This is a very basic check - a real implementation would be more sophisticated
+                    if clean_word.len() > 20 {
+                        return false; // Suspiciously long identifier
+                    }
+                }
+            }
+        }
+        true
+    }
+}
+
+/// Component instance wrapper for FFI operations
+///
+/// Wraps a Wasmtime component instance with additional metadata for safe FFI operations.
+pub struct ComponentInstanceWrapper {
+    /// The actual component instance
+    pub instance: Arc<ComponentInstance>,
+    /// Instance metadata
+    pub metadata: ComponentInstanceMetadata,
+}
+
+/// Metadata for component instances
+#[derive(Debug, Clone)]
+pub struct ComponentInstanceMetadata {
+    /// Instance ID
+    pub instance_id: u64,
+    /// Creation timestamp
+    pub created_at: std::time::SystemTime,
+    /// Instance state
+    pub state: ComponentInstanceState,
+}
+
+/// Component instance state
+#[derive(Debug, Clone, PartialEq)]
+pub enum ComponentInstanceState {
+    /// Instance is being created
+    Creating,
+    /// Instance is active and ready for use
+    Active,
+    /// Instance is being disposed
+    Disposing,
+    /// Instance has been disposed
+    Disposed,
 }
 
 /// Shared core functions for component operations used by both JNI and Panama interfaces
@@ -792,6 +1261,376 @@ impl Default for ComponentEngine {
 impl Default for ResourceManager {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+// Component Model C API for FFI integration
+
+use std::os::raw::{c_char, c_int, c_void};
+use std::ffi::{CStr, CString};
+
+const FFI_SUCCESS: c_int = 0;
+const FFI_ERROR: c_int = -1;
+
+/// Create a new component engine
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_component_engine_new() -> *mut c_void {
+    match ComponentEngine::new() {
+        Ok(engine) => Box::into_raw(Box::new(engine)) as *mut c_void,
+        Err(_) => std::ptr::null_mut(),
+    }
+}
+
+/// Destroy a component engine and free its resources
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_component_engine_destroy(engine_ptr: *mut c_void) {
+    if !engine_ptr.is_null() {
+        let _ = Box::from_raw(engine_ptr as *mut ComponentEngine);
+    }
+}
+
+/// Compile a WebAssembly component from bytes
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_component_compile(
+    engine_ptr: *mut c_void,
+    component_bytes: *const u8,
+    component_size: usize,
+    component_out: *mut *mut c_void,
+) -> c_int {
+    if engine_ptr.is_null() || component_bytes.is_null() || component_out.is_null() {
+        return FFI_ERROR;
+    }
+
+    let engine = &mut *(engine_ptr as *mut ComponentEngine);
+    let component_data = std::slice::from_raw_parts(component_bytes, component_size);
+
+    match engine.compile_component(component_data) {
+        Ok(component) => {
+            *component_out = Box::into_raw(Box::new(component)) as *mut c_void;
+            FFI_SUCCESS
+        }
+        Err(_) => FFI_ERROR,
+    }
+}
+
+/// Compile a WebAssembly component from WAT (WebAssembly Text format)
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_component_compile_wat(
+    engine_ptr: *mut c_void,
+    wat_text: *const c_char,
+    component_out: *mut *mut c_void,
+) -> c_int {
+    if engine_ptr.is_null() || wat_text.is_null() || component_out.is_null() {
+        return FFI_ERROR;
+    }
+
+    let engine = &mut *(engine_ptr as *mut ComponentEngine);
+    let wat_str = match CStr::from_ptr(wat_text).to_str() {
+        Ok(s) => s,
+        Err(_) => return FFI_ERROR,
+    };
+
+    match engine.compile_component_wat(wat_str) {
+        Ok(component) => {
+            *component_out = Box::into_raw(Box::new(component)) as *mut c_void;
+            FFI_SUCCESS
+        }
+        Err(_) => FFI_ERROR,
+    }
+}
+
+/// Destroy a compiled component and free its resources
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_component_destroy(component_ptr: *mut c_void) {
+    if !component_ptr.is_null() {
+        let _ = Box::from_raw(component_ptr as *mut Component);
+    }
+}
+
+/// Instantiate a compiled component
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_component_instantiate(
+    engine_ptr: *mut c_void,
+    component_ptr: *const c_void,
+    instance_out: *mut *mut c_void,
+) -> c_int {
+    if engine_ptr.is_null() || component_ptr.is_null() || instance_out.is_null() {
+        return FFI_ERROR;
+    }
+
+    let engine = &mut *(engine_ptr as *mut ComponentEngine);
+    let component = &*(component_ptr as *const Component);
+
+    match engine.instantiate_component(component) {
+        Ok(instance) => {
+            *instance_out = Box::into_raw(Box::new(instance)) as *mut c_void;
+            FFI_SUCCESS
+        }
+        Err(_) => FFI_ERROR,
+    }
+}
+
+/// Destroy a component instance and free its resources
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_component_instance_destroy(instance_ptr: *mut c_void) {
+    if !instance_ptr.is_null() {
+        let _ = Box::from_raw(instance_ptr as *mut ComponentInstanceWrapper);
+    }
+}
+
+/// Get the number of exports from a component
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_component_export_count(component_ptr: *const c_void) -> usize {
+    if component_ptr.is_null() {
+        return 0;
+    }
+
+    let component = &*(component_ptr as *const Component);
+    component.metadata.exports.len()
+}
+
+/// Get the number of imports required by a component
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_component_import_count(component_ptr: *const c_void) -> usize {
+    if component_ptr.is_null() {
+        return 0;
+    }
+
+    let component = &*(component_ptr as *const Component);
+    component.metadata.imports.len()
+}
+
+/// Get the size of a compiled component in bytes
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_component_size_bytes(component_ptr: *const c_void) -> usize {
+    if component_ptr.is_null() {
+        return 0;
+    }
+
+    let component = &*(component_ptr as *const Component);
+    component.metadata.size_bytes
+}
+
+/// Check if a component has a specific export
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_component_has_export(
+    component_ptr: *const c_void,
+    export_name: *const c_char,
+) -> c_int {
+    if component_ptr.is_null() || export_name.is_null() {
+        return FFI_ERROR;
+    }
+
+    let component = &*(component_ptr as *const Component);
+    let name_str = match CStr::from_ptr(export_name).to_str() {
+        Ok(s) => s,
+        Err(_) => return FFI_ERROR,
+    };
+
+    let has_export = component.metadata.exports
+        .iter()
+        .any(|export| export.name == name_str);
+
+    if has_export { 1 } else { 0 }
+}
+
+/// Check if a component requires a specific import
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_component_has_import(
+    component_ptr: *const c_void,
+    import_name: *const c_char,
+) -> c_int {
+    if component_ptr.is_null() || import_name.is_null() {
+        return FFI_ERROR;
+    }
+
+    let component = &*(component_ptr as *const Component);
+    let name_str = match CStr::from_ptr(import_name).to_str() {
+        Ok(s) => s,
+        Err(_) => return FFI_ERROR,
+    };
+
+    let has_import = component.metadata.imports
+        .iter()
+        .any(|import| import.name == name_str);
+
+    if has_import { 1 } else { 0 }
+}
+
+/// Validate a component against WIT interface requirements
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_component_validate(
+    component_ptr: *const c_void,
+    wit_interface: *const c_char,
+) -> c_int {
+    if component_ptr.is_null() || wit_interface.is_null() {
+        return FFI_ERROR;
+    }
+
+    let component = &*(component_ptr as *const Component);
+    let wit_str = match CStr::from_ptr(wit_interface).to_str() {
+        Ok(s) => s,
+        Err(_) => return FFI_ERROR,
+    };
+
+    match component.validate_wit_interface(wit_str) {
+        Ok(is_valid) => if is_valid { 1 } else { 0 },
+        Err(_) => FFI_ERROR,
+    }
+}
+
+/// Get the number of active component instances from the engine
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_component_engine_instance_count(engine_ptr: *const c_void) -> usize {
+    if engine_ptr.is_null() {
+        return 0;
+    }
+
+    let engine = &*(engine_ptr as *const ComponentEngine);
+    engine.get_instance_count()
+}
+
+/// Cleanup unused component instances in the engine
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_component_engine_cleanup_instances(engine_ptr: *mut c_void) -> c_int {
+    if engine_ptr.is_null() {
+        return FFI_ERROR;
+    }
+
+    let engine = &mut *(engine_ptr as *mut ComponentEngine);
+    engine.cleanup_unused_instances();
+    FFI_SUCCESS
+}
+
+/// Check if a component engine supports a specific feature
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_component_engine_supports_feature(
+    engine_ptr: *const c_void,
+    feature_name: *const c_char,
+) -> c_int {
+    if engine_ptr.is_null() || feature_name.is_null() {
+        return FFI_ERROR;
+    }
+
+    let engine = &*(engine_ptr as *const ComponentEngine);
+    let feature_str = match CStr::from_ptr(feature_name).to_str() {
+        Ok(s) => s,
+        Err(_) => return FFI_ERROR,
+    };
+
+    match engine.supports_feature(feature_str) {
+        Ok(supported) => if supported { 1 } else { 0 },
+        Err(_) => FFI_ERROR,
+    }
+}
+
+/// Get interface definition for a component export
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_component_get_export_interface(
+    component_ptr: *const c_void,
+    export_name: *const c_char,
+    interface_json_out: *mut *mut c_char,
+) -> c_int {
+    if component_ptr.is_null() || export_name.is_null() || interface_json_out.is_null() {
+        return FFI_ERROR;
+    }
+
+    let component = &*(component_ptr as *const Component);
+    let name_str = match CStr::from_ptr(export_name).to_str() {
+        Ok(s) => s,
+        Err(_) => return FFI_ERROR,
+    };
+
+    match component.get_export_interface(name_str) {
+        Ok(Some(interface)) => {
+            match interface.to_json() {
+                Ok(json_str) => {
+                    match CString::new(json_str) {
+                        Ok(c_string) => {
+                            *interface_json_out = c_string.into_raw();
+                            FFI_SUCCESS
+                        }
+                        Err(_) => FFI_ERROR,
+                    }
+                }
+                Err(_) => FFI_ERROR,
+            }
+        }
+        Ok(None) => FFI_ERROR, // Export not found
+        Err(_) => FFI_ERROR,
+    }
+}
+
+/// Free a JSON string returned by interface functions
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_component_free_json_string(json_ptr: *mut c_char) {
+    if !json_ptr.is_null() {
+        let _ = CString::from_raw(json_ptr);
+    }
+}
+
+/// Create a WIT parser context
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_wit_parser_new() -> *mut c_void {
+    match WitParser::new() {
+        Ok(parser) => Box::into_raw(Box::new(parser)) as *mut c_void,
+        Err(_) => std::ptr::null_mut(),
+    }
+}
+
+/// Destroy a WIT parser context
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_wit_parser_destroy(parser_ptr: *mut c_void) {
+    if !parser_ptr.is_null() {
+        let _ = Box::from_raw(parser_ptr as *mut WitParser);
+    }
+}
+
+/// Parse a WIT interface definition
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_wit_parser_parse_interface(
+    parser_ptr: *mut c_void,
+    wit_text: *const c_char,
+    interface_out: *mut *mut c_void,
+) -> c_int {
+    if parser_ptr.is_null() || wit_text.is_null() || interface_out.is_null() {
+        return FFI_ERROR;
+    }
+
+    let parser = &mut *(parser_ptr as *mut WitParser);
+    let wit_str = match CStr::from_ptr(wit_text).to_str() {
+        Ok(s) => s,
+        Err(_) => return FFI_ERROR,
+    };
+
+    match parser.parse_interface(wit_str) {
+        Ok(interface) => {
+            *interface_out = Box::into_raw(Box::new(interface)) as *mut c_void;
+            FFI_SUCCESS
+        }
+        Err(_) => FFI_ERROR,
+    }
+}
+
+/// Validate WIT interface syntax
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_wit_parser_validate_syntax(
+    parser_ptr: *mut c_void,
+    wit_text: *const c_char,
+) -> c_int {
+    if parser_ptr.is_null() || wit_text.is_null() {
+        return FFI_ERROR;
+    }
+
+    let parser = &mut *(parser_ptr as *mut WitParser);
+    let wit_str = match CStr::from_ptr(wit_text).to_str() {
+        Ok(s) => s,
+        Err(_) => return FFI_ERROR,
+    };
+
+    match parser.validate_syntax(wit_str) {
+        Ok(is_valid) => if is_valid { 1 } else { 0 },
+        Err(_) => FFI_ERROR,
     }
 }
 

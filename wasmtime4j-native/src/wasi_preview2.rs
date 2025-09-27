@@ -666,6 +666,315 @@ pub unsafe extern "C" fn wasi_preview2_context_destroy(ctx_ptr: *mut c_void) {
     }
 }
 
+/// Compile a WebAssembly component
+#[no_mangle]
+pub unsafe extern "C" fn wasi_preview2_compile_component(
+    ctx_ptr: *mut c_void,
+    component_bytes: *const u8,
+    component_size: usize,
+    component_id_out: *mut u64,
+) -> c_int {
+    if ctx_ptr.is_null() || component_bytes.is_null() || component_id_out.is_null() {
+        return -1; // FFI_ERROR
+    }
+
+    let ctx = &*(ctx_ptr as *const WasiPreview2Context);
+    let component_data = std::slice::from_raw_parts(component_bytes, component_size);
+
+    // Use the async runtime to block on the async operation
+    match get_runtime_handle() {
+        Ok(handle) => {
+            match handle.block_on(ctx.compile_component(component_data)) {
+                Ok(component_id) => {
+                    *component_id_out = component_id;
+                    0 // FFI_SUCCESS
+                }
+                Err(_) => -1, // FFI_ERROR
+            }
+        }
+        Err(_) => -1, // FFI_ERROR
+    }
+}
+
+/// Instantiate a compiled component
+#[no_mangle]
+pub unsafe extern "C" fn wasi_preview2_instantiate_component(
+    ctx_ptr: *mut c_void,
+    component_id: u64,
+    instance_id_out: *mut u64,
+) -> c_int {
+    if ctx_ptr.is_null() || instance_id_out.is_null() {
+        return -1; // FFI_ERROR
+    }
+
+    let ctx = &*(ctx_ptr as *const WasiPreview2Context);
+
+    match get_runtime_handle() {
+        Ok(handle) => {
+            match handle.block_on(ctx.instantiate_component(component_id)) {
+                Ok(instance_id) => {
+                    *instance_id_out = instance_id;
+                    0 // FFI_SUCCESS
+                }
+                Err(_) => -1, // FFI_ERROR
+            }
+        }
+        Err(_) => -1, // FFI_ERROR
+    }
+}
+
+/// Create an input stream for a component instance
+#[no_mangle]
+pub unsafe extern "C" fn wasi_preview2_create_input_stream(
+    ctx_ptr: *mut c_void,
+    instance_id: u64,
+    stream_id_out: *mut u64,
+) -> c_int {
+    if ctx_ptr.is_null() || stream_id_out.is_null() {
+        return -1; // FFI_ERROR
+    }
+
+    let ctx = &*(ctx_ptr as *const WasiPreview2Context);
+
+    match get_runtime_handle() {
+        Ok(handle) => {
+            match handle.block_on(ctx.create_input_stream(instance_id, None)) {
+                Ok(stream_id) => {
+                    *stream_id_out = stream_id;
+                    0 // FFI_SUCCESS
+                }
+                Err(_) => -1, // FFI_ERROR
+            }
+        }
+        Err(_) => -1, // FFI_ERROR
+    }
+}
+
+/// Create an output stream for a component instance
+#[no_mangle]
+pub unsafe extern "C" fn wasi_preview2_create_output_stream(
+    ctx_ptr: *mut c_void,
+    instance_id: u64,
+    stream_id_out: *mut u64,
+) -> c_int {
+    if ctx_ptr.is_null() || stream_id_out.is_null() {
+        return -1; // FFI_ERROR
+    }
+
+    let ctx = &*(ctx_ptr as *const WasiPreview2Context);
+
+    match get_runtime_handle() {
+        Ok(handle) => {
+            match handle.block_on(ctx.create_output_stream(instance_id, None)) {
+                Ok(stream_id) => {
+                    *stream_id_out = stream_id;
+                    0 // FFI_SUCCESS
+                }
+                Err(_) => -1, // FFI_ERROR
+            }
+        }
+        Err(_) => -1, // FFI_ERROR
+    }
+}
+
+/// Read from a stream asynchronously
+#[no_mangle]
+pub unsafe extern "C" fn wasi_preview2_stream_read(
+    ctx_ptr: *mut c_void,
+    instance_id: u64,
+    stream_id: u64,
+    buffer: *mut u8,
+    buffer_size: usize,
+    bytes_read_out: *mut usize,
+) -> c_int {
+    if ctx_ptr.is_null() || buffer.is_null() || bytes_read_out.is_null() {
+        return -1; // FFI_ERROR
+    }
+
+    let ctx = &*(ctx_ptr as *const WasiPreview2Context);
+    let buffer_slice = std::slice::from_raw_parts_mut(buffer, buffer_size);
+
+    match get_runtime_handle() {
+        Ok(handle) => {
+            match handle.block_on(ctx.stream_read(instance_id, stream_id, buffer_slice)) {
+                Ok(bytes_read) => {
+                    *bytes_read_out = bytes_read;
+                    0 // FFI_SUCCESS
+                }
+                Err(_) => -1, // FFI_ERROR
+            }
+        }
+        Err(_) => -1, // FFI_ERROR
+    }
+}
+
+/// Write to a stream asynchronously
+#[no_mangle]
+pub unsafe extern "C" fn wasi_preview2_stream_write(
+    ctx_ptr: *mut c_void,
+    instance_id: u64,
+    stream_id: u64,
+    buffer: *const u8,
+    buffer_size: usize,
+    bytes_written_out: *mut usize,
+) -> c_int {
+    if ctx_ptr.is_null() || buffer.is_null() || bytes_written_out.is_null() {
+        return -1; // FFI_ERROR
+    }
+
+    let ctx = &*(ctx_ptr as *const WasiPreview2Context);
+    let buffer_slice = std::slice::from_raw_parts(buffer, buffer_size);
+
+    match get_runtime_handle() {
+        Ok(handle) => {
+            match handle.block_on(ctx.stream_write(instance_id, stream_id, buffer_slice)) {
+                Ok(bytes_written) => {
+                    *bytes_written_out = bytes_written;
+                    0 // FFI_SUCCESS
+                }
+                Err(_) => -1, // FFI_ERROR
+            }
+        }
+        Err(_) => -1, // FFI_ERROR
+    }
+}
+
+/// Close a stream
+#[no_mangle]
+pub unsafe extern "C" fn wasi_preview2_close_stream(
+    ctx_ptr: *mut c_void,
+    instance_id: u64,
+    stream_id: u64,
+) -> c_int {
+    if ctx_ptr.is_null() {
+        return -1; // FFI_ERROR
+    }
+
+    let ctx = &*(ctx_ptr as *const WasiPreview2Context);
+
+    match ctx.close_stream(instance_id, stream_id) {
+        Ok(_) => 0,   // FFI_SUCCESS
+        Err(_) => -1, // FFI_ERROR
+    }
+}
+
+/// Get the status of an async operation
+#[no_mangle]
+pub unsafe extern "C" fn wasi_preview2_get_operation_status(
+    ctx_ptr: *const c_void,
+    operation_id: u64,
+) -> c_int {
+    if ctx_ptr.is_null() {
+        return -1; // Error
+    }
+
+    let ctx = &*(ctx_ptr as *const WasiPreview2Context);
+
+    match ctx.get_operation_status(operation_id) {
+        Some(AsyncWasiOperationStatus::Running) => 0,
+        Some(AsyncWasiOperationStatus::Completed) => 1,
+        Some(AsyncWasiOperationStatus::Failed) => 2,
+        Some(AsyncWasiOperationStatus::Cancelled) => 3,
+        None => -1, // Operation not found
+    }
+}
+
+/// Cancel an async operation
+#[no_mangle]
+pub unsafe extern "C" fn wasi_preview2_cancel_operation(
+    ctx_ptr: *mut c_void,
+    operation_id: u64,
+) -> c_int {
+    if ctx_ptr.is_null() {
+        return -1; // FFI_ERROR
+    }
+
+    let ctx = &*(ctx_ptr as *const WasiPreview2Context);
+
+    match ctx.cancel_operation(operation_id) {
+        Ok(_) => 0,   // FFI_SUCCESS
+        Err(_) => -1, // FFI_ERROR
+    }
+}
+
+/// Cleanup completed operations
+#[no_mangle]
+pub unsafe extern "C" fn wasi_preview2_cleanup_operations(ctx_ptr: *mut c_void) -> c_int {
+    if ctx_ptr.is_null() {
+        return -1; // FFI_ERROR
+    }
+
+    let ctx = &*(ctx_ptr as *const WasiPreview2Context);
+    ctx.cleanup_operations();
+    0 // FFI_SUCCESS
+}
+
+/// Get the number of active async operations
+#[no_mangle]
+pub unsafe extern "C" fn wasi_preview2_get_operation_count(ctx_ptr: *const c_void) -> usize {
+    if ctx_ptr.is_null() {
+        return 0;
+    }
+
+    let ctx = &*(ctx_ptr as *const WasiPreview2Context);
+    ctx.async_operations.read().unwrap().len()
+}
+
+/// Check if networking is enabled
+#[no_mangle]
+pub unsafe extern "C" fn wasi_preview2_networking_enabled(ctx_ptr: *const c_void) -> c_int {
+    if ctx_ptr.is_null() {
+        return -1;
+    }
+
+    let ctx = &*(ctx_ptr as *const WasiPreview2Context);
+    if ctx.config.enable_networking { 1 } else { 0 }
+}
+
+/// Check if filesystem is enabled
+#[no_mangle]
+pub unsafe extern "C" fn wasi_preview2_filesystem_enabled(ctx_ptr: *const c_void) -> c_int {
+    if ctx_ptr.is_null() {
+        return -1;
+    }
+
+    let ctx = &*(ctx_ptr as *const WasiPreview2Context);
+    if ctx.config.enable_filesystem { 1 } else { 0 }
+}
+
+/// Check if process spawning is enabled
+#[no_mangle]
+pub unsafe extern "C" fn wasi_preview2_process_enabled(ctx_ptr: *const c_void) -> c_int {
+    if ctx_ptr.is_null() {
+        return -1;
+    }
+
+    let ctx = &*(ctx_ptr as *const WasiPreview2Context);
+    if ctx.config.enable_process { 1 } else { 0 }
+}
+
+/// Get the number of compiled components
+#[no_mangle]
+pub unsafe extern "C" fn wasi_preview2_get_component_count(ctx_ptr: *const c_void) -> usize {
+    if ctx_ptr.is_null() {
+        return 0;
+    }
+
+    let ctx = &*(ctx_ptr as *const WasiPreview2Context);
+    ctx.components.read().unwrap().len()
+}
+
+/// Get the number of active component instances
+#[no_mangle]
+pub unsafe extern "C" fn wasi_preview2_get_instance_count(ctx_ptr: *const c_void) -> usize {
+    if ctx_ptr.is_null() {
+        return 0;
+    }
+
+    let ctx = &*(ctx_ptr as *const WasiPreview2Context);
+    ctx.instances.read().unwrap().len()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

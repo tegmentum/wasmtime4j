@@ -23,9 +23,10 @@ import java.io.Closeable;
  * <p>Linkers are thread-safe and can be reused across multiple module instantiations. They are
  * associated with a specific Engine and inherit its configuration.
  *
+ * @param <T> the type of user data associated with stores used with this linker
  * @since 1.0.0
  */
-public interface Linker extends Closeable {
+public interface Linker<T> extends Closeable {
 
   /**
    * Defines a host function that can be imported by WebAssembly modules.
@@ -177,70 +178,77 @@ public interface Linker extends Closeable {
   boolean isValid();
 
   /**
-   * Disposes of this linker, releasing resources immediately.
+   * Checks if a specific import has been defined in this linker.
    *
-   * <p>This method provides explicit resource cleanup, allowing linkers to be disposed of before
-   * being closed. Once disposed, the linker becomes invalid and should not be used.
+   * <p>This method can be used to verify that required imports have been
+   * registered before attempting module instantiation.
    *
-   * @return true if disposal was successful, false if already disposed
-   * @throws WasmException if disposal fails
+   * @param moduleName the module name of the import
+   * @param name the name of the import
+   * @return true if the import is defined, false otherwise
+   * @throws IllegalArgumentException if moduleName or name is null
    * @since 1.0.0
    */
-  boolean dispose() throws WasmException;
+  boolean hasImport(String moduleName, String name);
 
   /**
-   * Gets the number of host functions defined in this linker.
+   * Resolves and validates dependencies for a set of modules.
    *
-   * <p>Returns the count of host functions that have been registered with this linker and are
-   * available for import by modules.
+   * <p>This method analyzes the import/export relationships between modules and
+   * determines the optimal instantiation order. It also validates that all
+   * dependencies can be satisfied and detects circular dependencies.
    *
-   * @return the number of host functions
+   * @param modules the modules to analyze for dependencies
+   * @return a dependency resolution result with instantiation order and validation details
+   * @throws WasmException if dependency resolution fails or circular dependencies are detected
+   * @throws IllegalArgumentException if modules is null or empty
    * @since 1.0.0
    */
-  int getHostFunctionCount();
+  DependencyResolution resolveDependencies(Module... modules) throws WasmException;
 
   /**
-   * Gets the number of import definitions available in this linker.
+   * Validates that all imports for the given modules can be satisfied by this linker.
    *
-   * <p>Returns the total count of all imports (functions, globals, memories, tables) that this
-   * linker can provide to modules.
+   * <p>This method performs comprehensive validation including:
+   * <ul>
+   *   <li>Type compatibility checking for all imports</li>
+   *   <li>Availability verification for all required imports</li>
+   *   <li>Cross-module dependency validation</li>
+   *   <li>Host function signature validation</li>
+   * </ul>
    *
-   * @return the number of available imports
+   * @param modules the modules to validate imports for
+   * @return a validation result with detailed information about any issues
+   * @throws IllegalArgumentException if modules is null or empty
    * @since 1.0.0
    */
-  int getImportCount();
+  ImportValidation validateImports(Module... modules);
 
   /**
-   * Gets the number of successful instantiations performed by this linker.
+   * Gets detailed information about all imports currently defined in this linker.
    *
-   * <p>This counter tracks how many times this linker has successfully instantiated modules.
+   * <p>This provides comprehensive metadata about registered functions, memories,
+   * tables, globals, and instances that are available for import resolution.
    *
-   * @return the number of successful instantiations
+   * @return an unmodifiable list of import information
    * @since 1.0.0
    */
-  long getInstantiationCount();
+  java.util.List<ImportInfo> getImportRegistry();
 
   /**
-   * Checks if WASI support is enabled for this linker.
+   * Creates an instantiation plan for multiple interdependent modules.
    *
-   * <p>Returns true if WASI functions have been made available through this linker for modules to
-   * import.
+   * <p>This method analyzes the dependency relationships and creates an optimized
+   * plan for instantiating all modules in the correct order. The plan can be
+   * executed incrementally and provides detailed progress tracking.
    *
-   * @return true if WASI is enabled, false otherwise
+   * @param modules the modules to create an instantiation plan for
+   * @return an instantiation plan with ordered steps and dependency information
+   * @throws WasmException if planning fails due to unresolvable dependencies
+   * @throws IllegalArgumentException if modules is null or empty
    * @since 1.0.0
    */
-  boolean isWasiEnabled();
-
-  /**
-   * Gets the creation timestamp of this linker in microseconds.
-   *
-   * <p>This timestamp represents when the linker was created, measured from the Unix epoch in
-   * microseconds.
-   *
-   * @return the creation timestamp in microseconds since Unix epoch
-   * @since 1.0.0
-   */
-  long getCreatedAtMicros();
+  InstantiationPlan createInstantiationPlan(Module... modules) throws WasmException;
 
   /**
    * Closes the linker and releases associated resources.
@@ -253,32 +261,13 @@ public interface Linker extends Closeable {
   /**
    * Creates a new Linker for the given engine.
    *
+   * @param <T> the type of user data associated with stores used with this linker
    * @param engine the engine to create the linker for
    * @return a new Linker instance
    * @throws WasmException if linker creation fails
    * @throws IllegalArgumentException if engine is null
    */
-  static Linker create(final Engine engine) throws WasmException {
+  static <T> Linker<T> create(final Engine engine) throws WasmException {
     return WasmRuntimeFactory.create().createLinker(engine);
-  }
-
-  /**
-   * Creates a new Linker with custom configuration.
-   *
-   * <p>This factory method allows creating a linker with specific settings such as allowing unknown
-   * exports and enabling import shadowing.
-   *
-   * @param engine the engine to create the linker for
-   * @param allowUnknownExports whether to allow modules with unknown exports
-   * @param allowShadowing whether to allow import shadowing
-   * @return a new Linker instance with the specified configuration
-   * @throws WasmException if linker creation fails
-   * @throws IllegalArgumentException if engine is null
-   * @since 1.0.0
-   */
-  static Linker create(
-      final Engine engine, final boolean allowUnknownExports, final boolean allowShadowing)
-      throws WasmException {
-    return WasmRuntimeFactory.create().createLinker(engine, allowUnknownExports, allowShadowing);
   }
 }
