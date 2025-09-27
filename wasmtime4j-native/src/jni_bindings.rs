@@ -4672,3 +4672,217 @@ pub mod jni_wasi {
         }
     }
 }
+
+/// JNI bindings for Caller context operations
+#[cfg(feature = "jni-bindings")]
+pub mod jni_caller {
+    use super::*;
+    use crate::caller::core;
+    use crate::error::jni_utils;
+    use wasmtime::Caller as WasmtimeCaller;
+    use crate::store::StoreData;
+    use jni::objects::{JLongArray, JBooleanArray};
+    use jni::sys::{jlongArray, jbooleanArray};
+
+    /// Get fuel consumed by the caller if fuel metering is enabled (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeGetFuel(
+        env: JNIEnv,
+        _class: JClass,
+        caller_handle: jlong,
+    ) -> jlong {
+        if caller_handle == 0 {
+            return -1; // Error: null pointer
+        }
+
+        jni_utils::jni_try_ptr(env, || {
+            let caller = unsafe { &mut *(caller_handle as *mut WasmtimeCaller<'_, StoreData>) };
+            match core::caller_get_fuel(caller)? {
+                Some(fuel) => Ok(Box::new(fuel)),
+                None => Err(crate::error::WasmtimeError::CallerContextError("Fuel metering not enabled".to_string())),
+            }
+        }) as jlong
+    }
+
+    /// Get fuel remaining in the caller if fuel metering is enabled (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeGetFuelRemaining(
+        env: JNIEnv,
+        _class: JClass,
+        caller_handle: jlong,
+    ) -> jlong {
+        if caller_handle == 0 {
+            return -1; // Error: null pointer
+        }
+
+        jni_utils::jni_try_ptr(env, || {
+            let caller = unsafe { &mut *(caller_handle as *mut WasmtimeCaller<'_, StoreData>) };
+            match core::caller_get_fuel_remaining(caller)? {
+                Some(fuel) => Ok(Box::new(fuel)),
+                None => Err(crate::error::WasmtimeError::CallerContextError("Fuel metering not enabled".to_string())),
+            }
+        }) as jlong
+    }
+
+    /// Add fuel to the caller (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeAddFuel(
+        env: JNIEnv,
+        _class: JClass,
+        caller_handle: jlong,
+        fuel: jlong,
+    ) -> jboolean {
+        if caller_handle == 0 {
+            return 0; // Error: null pointer
+        }
+
+        jni_utils::jni_try_boolean(env, || {
+            let caller = unsafe { &mut *(caller_handle as *mut WasmtimeCaller<'_, StoreData>) };
+            core::caller_add_fuel(caller, fuel as u64)?;
+            Ok(true) // Success
+        }) as jboolean
+    }
+
+    /// Set epoch deadline for the caller (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeSetEpochDeadline(
+        env: JNIEnv,
+        _class: JClass,
+        caller_handle: jlong,
+        deadline: jlong,
+    ) -> jboolean {
+        if caller_handle == 0 {
+            return 0; // Error: null pointer
+        }
+
+        jni_utils::jni_try_boolean(env, || {
+            let caller = unsafe { &mut *(caller_handle as *mut WasmtimeCaller<'_, StoreData>) };
+            core::caller_set_epoch_deadline(caller, deadline as u64)?;
+            Ok(true) // Success
+        }) as jboolean
+    }
+
+    /// Check if the caller has an active epoch deadline (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeHasEpochDeadline(
+        env: JNIEnv,
+        _class: JClass,
+        caller_handle: jlong,
+    ) -> jboolean {
+        if caller_handle == 0 {
+            return 0; // Error: null pointer
+        }
+
+        jni_utils::jni_try_boolean(env, || {
+            let caller = unsafe { &mut *(caller_handle as *mut WasmtimeCaller<'_, StoreData>) };
+            core::caller_has_epoch_deadline(caller)
+        }) as jboolean
+    }
+
+    /// Check if caller has an export with the given name (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeHasExport(
+        env: JNIEnv,
+        _class: JClass,
+        caller_handle: jlong,
+        name: JString,
+    ) -> jboolean {
+        if caller_handle == 0 {
+            return 0; // Error: null pointer
+        }
+
+        jni_utils::jni_try_boolean(env, || {
+            let caller = unsafe { &mut *(caller_handle as *mut WasmtimeCaller<'_, StoreData>) };
+            let name_str: String = env.get_string(name)?.into();
+            core::caller_has_export(caller, &name_str)
+        }) as jboolean
+    }
+
+    /// Get memory export from caller by name (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeGetMemory(
+        env: JNIEnv,
+        _class: JClass,
+        caller_handle: jlong,
+        name: JString,
+    ) -> jlong {
+        if caller_handle == 0 {
+            return 0; // Error: null pointer
+        }
+
+        jni_utils::jni_try_ptr(env, || {
+            let caller = unsafe { &mut *(caller_handle as *mut WasmtimeCaller<'_, StoreData>) };
+            let name_str: String = env.get_string(name)?.into();
+            match core::caller_get_memory(caller, &name_str)? {
+                Some(memory) => Ok(Box::new(memory)),
+                None => Err(crate::error::WasmtimeError::ExportNotFound { name: name_str }),
+            }
+        }) as jlong
+    }
+
+    /// Get function export from caller by name (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeGetFunction(
+        env: JNIEnv,
+        _class: JClass,
+        caller_handle: jlong,
+        name: JString,
+    ) -> jlong {
+        if caller_handle == 0 {
+            return 0; // Error: null pointer
+        }
+
+        jni_utils::jni_try_ptr(env, || {
+            let caller = unsafe { &mut *(caller_handle as *mut WasmtimeCaller<'_, StoreData>) };
+            let name_str: String = env.get_string(name)?.into();
+            match core::caller_get_function(caller, &name_str)? {
+                Some(function) => Ok(Box::new(function)),
+                None => Err(crate::error::WasmtimeError::ExportNotFound { name: name_str }),
+            }
+        }) as jlong
+    }
+
+    /// Get global export from caller by name (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeGetGlobal(
+        env: JNIEnv,
+        _class: JClass,
+        caller_handle: jlong,
+        name: JString,
+    ) -> jlong {
+        if caller_handle == 0 {
+            return 0; // Error: null pointer
+        }
+
+        jni_utils::jni_try_ptr(env, || {
+            let caller = unsafe { &mut *(caller_handle as *mut WasmtimeCaller<'_, StoreData>) };
+            let name_str: String = env.get_string(name)?.into();
+            match core::caller_get_global(caller, &name_str)? {
+                Some(global) => Ok(Box::new(global)),
+                None => Err(crate::error::WasmtimeError::ExportNotFound { name: name_str }),
+            }
+        }) as jlong
+    }
+
+    /// Get table export from caller by name (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeGetTable(
+        env: JNIEnv,
+        _class: JClass,
+        caller_handle: jlong,
+        name: JString,
+    ) -> jlong {
+        if caller_handle == 0 {
+            return 0; // Error: null pointer
+        }
+
+        jni_utils::jni_try_ptr(env, || {
+            let caller = unsafe { &mut *(caller_handle as *mut WasmtimeCaller<'_, StoreData>) };
+            let name_str: String = env.get_string(name)?.into();
+            match core::caller_get_table(caller, &name_str)? {
+                Some(table) => Ok(Box::new(table)),
+                None => Err(crate::error::WasmtimeError::ExportNotFound { name: name_str }),
+            }
+        }) as jlong
+    }
+}

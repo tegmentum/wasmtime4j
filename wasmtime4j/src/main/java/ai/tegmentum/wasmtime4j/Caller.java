@@ -117,6 +117,30 @@ public interface Caller<T> {
     Optional<Long> fuelConsumed();
 
     /**
+     * Gets the fuel remaining in the caller if fuel metering is enabled.
+     *
+     * <p>This method returns the amount of fuel remaining for the current execution.
+     * When fuel is exhausted, the WebAssembly execution will be interrupted.
+     *
+     * @return the fuel remaining, or empty if fuel metering is not enabled
+     * @since 1.0.0
+     */
+    Optional<Long> fuelRemaining();
+
+    /**
+     * Adds fuel to the caller's fuel tank.
+     *
+     * <p>This allows extending the execution time during host function calls.
+     * The added fuel becomes immediately available for continued execution.
+     *
+     * @param fuel the amount of fuel to add
+     * @throws WasmException if fuel metering is not enabled or if adding fuel fails
+     * @throws IllegalArgumentException if fuel is negative
+     * @since 1.0.0
+     */
+    void addFuel(long fuel) throws WasmException;
+
+    /**
      * Checks if an epoch deadline has been set for the current execution.
      *
      * <p>Epoch-based interruption provides another mechanism for limiting
@@ -134,4 +158,16 @@ public interface Caller<T> {
      * @since 1.0.0
      */
     Optional<Long> epochDeadline();
+
+    /**
+     * Sets an epoch deadline for the caller.
+     *
+     * <p>This allows host functions to control execution limits. When the epoch
+     * counter reaches or exceeds the deadline, execution will be interrupted.
+     *
+     * @param deadline the epoch deadline to set
+     * @throws WasmException if setting the epoch deadline fails
+     * @since 1.0.0
+     */
+    void setEpochDeadline(long deadline) throws WasmException;
 }

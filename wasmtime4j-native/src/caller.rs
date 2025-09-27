@@ -127,6 +127,38 @@ impl CallerContext {
         })
     }
 
+    /// Set fuel consumption for this caller context
+    pub fn set_fuel_consumed(&mut self, fuel: u64) {
+        self.fuel_consumed = Some(fuel);
+    }
+
+    /// Set epoch deadline for this caller context
+    pub fn set_epoch_deadline(&mut self, deadline: u64) {
+        self.epoch_deadline = Some(deadline);
+    }
+
+    /// Get fuel remaining if fuel metering is enabled
+    pub fn fuel_remaining(&self, caller: &mut WasmtimeCaller<'_, impl Clone + Send + Sync + 'static>) -> Option<u64> {
+        caller.fuel_remaining().ok()
+    }
+
+    /// Add fuel to the caller
+    pub fn add_fuel(&self, caller: &mut WasmtimeCaller<'_, impl Clone + Send + Sync + 'static>, fuel: u64) -> WasmtimeResult<()> {
+        caller.add_fuel(fuel).map_err(|e| WasmtimeError::CallerContextError(format!("Failed to add fuel: {}", e)))
+    }
+
+    /// Get export value by name and type
+    pub fn get_export_value(&self, name: &str, caller: &mut WasmtimeCaller<'_, impl Clone + Send + Sync + 'static>) -> WasmtimeResult<Option<Extern>> {
+        if let Some(instance) = caller.instance() {
+            match instance.get_export(caller, name) {
+                Some(export) => Ok(Some(export)),
+                None => Ok(None),
+            }
+        } else {
+            Err(WasmtimeError::CallerContextError("No instance available in caller".to_string()))
+        }
+    }
+
     /// Get store data associated with this caller
     pub fn data(&self) -> &StoreData {
         &self.store_data
@@ -253,8 +285,244 @@ impl ExportCounts {
     }
 }
 
+/// Native functions for caller context operations
+pub mod core {
+    use super::*;
+    use wasmtime::{Caller as WasmtimeCaller};
+
+    /// Get fuel consumed by the caller if fuel metering is enabled
+    pub fn caller_get_fuel<T>(caller: &mut WasmtimeCaller<'_, T>) -> WasmtimeResult<Option<u64>>
+    where
+        T: Clone + Send + Sync + 'static,
+    {
+        match caller.fuel_consumed() {
+            Ok(consumed) => Ok(Some(consumed)),
+            Err(_) => Ok(None), // Fuel metering not enabled
+        }
+    }
+
+    /// Get fuel remaining in the caller if fuel metering is enabled
+    pub fn caller_get_fuel_remaining<T>(caller: &mut WasmtimeCaller<'_, T>) -> WasmtimeResult<Option<u64>>
+    where
+        T: Clone + Send + Sync + 'static,
+    {
+        match caller.fuel_remaining() {
+            Ok(remaining) => Ok(Some(remaining)),
+            Err(_) => Ok(None), // Fuel metering not enabled
+        }
+    }
+
+    /// Add fuel to the caller
+    pub fn caller_add_fuel<T>(caller: &mut WasmtimeCaller<'_, T>, fuel: u64) -> WasmtimeResult<()>
+    where
+        T: Clone + Send + Sync + 'static,
+    {
+        caller.add_fuel(fuel).map_err(|e| WasmtimeError::CallerContextError(format!("Failed to add fuel: {}", e)))
+    }
+
+    /// Set epoch deadline for the caller
+    pub fn caller_set_epoch_deadline<T>(caller: &mut WasmtimeCaller<'_, T>, deadline: u64) -> WasmtimeResult<()>
+    where
+        T: Clone + Send + Sync + 'static,
+    {
+        // Set the epoch deadline on the store associated with the caller
+        caller.set_epoch_deadline(deadline);
+        Ok(())
+    }
+
+    /// Check if the caller has an active epoch deadline
+    pub fn caller_has_epoch_deadline<T>(caller: &mut WasmtimeCaller<'_, T>) -> WasmtimeResult<bool>
+    where
+        T: Clone + Send + Sync + 'static,
+    {
+        // This would require additional Wasmtime API to check epoch deadline status
+        // For now, we return false as epoch deadline checking is limited in current Wasmtime API
+        Ok(false)
+    }
+
+    /// Get export from caller by name
+    pub fn caller_get_export<T>(caller: &mut WasmtimeCaller<'_, T>, name: &str) -> WasmtimeResult<Option<Extern>>
+    where
+        T: Clone + Send + Sync + 'static,
+    {
+        if let Some(instance) = caller.instance() {
+            match instance.get_export(caller, name) {
+                Some(export) => Ok(Some(export)),
+                None => Ok(None),
+            }
+        } else {
+            Err(WasmtimeError::CallerContextError("No instance available in caller".to_string()))
+        }
+    }
+
+    /// Get memory export from caller by name
+    pub fn caller_get_memory<T>(caller: &mut WasmtimeCaller<'_, T>, name: &str) -> WasmtimeResult<Option<Memory>>
+    where
+        T: Clone + Send + Sync + 'static,
+    {
+        match caller_get_export(caller, name)? {
+            Some(Extern::Memory(memory)) => Ok(Some(memory)),
+            Some(_) => Ok(None), // Export exists but is not a memory
+            None => Ok(None), // Export does not exist
+        }
+    }
+
+    /// Get function export from caller by name
+    pub fn caller_get_function<T>(caller: &mut WasmtimeCaller<'_, T>, name: &str) -> WasmtimeResult<Option<Func>>
+    where
+        T: Clone + Send + Sync + 'static,
+    {
+        match caller_get_export(caller, name)? {
+            Some(Extern::Func(func)) => Ok(Some(func)),
+            Some(_) => Ok(None), // Export exists but is not a function
+            None => Ok(None), // Export does not exist
+        }
+    }
+
+    /// Get global export from caller by name
+    pub fn caller_get_global<T>(caller: &mut WasmtimeCaller<'_, T>, name: &str) -> WasmtimeResult<Option<Global>>
+    where
+        T: Clone + Send + Sync + 'static,
+    {
+        match caller_get_export(caller, name)? {
+            Some(Extern::Global(global)) => Ok(Some(global)),
+            Some(_) => Ok(None), // Export exists but is not a global
+            None => Ok(None), // Export does not exist
+        }
+    }
+
+    /// Get table export from caller by name
+    pub fn caller_get_table<T>(caller: &mut WasmtimeCaller<'_, T>, name: &str) -> WasmtimeResult<Option<Table>>
+    where
+        T: Clone + Send + Sync + 'static,
+    {
+        match caller_get_export(caller, name)? {
+            Some(Extern::Table(table)) => Ok(Some(table)),
+            Some(_) => Ok(None), // Export exists but is not a table
+            None => Ok(None), // Export does not exist
+        }
+    }
+
+    /// Check if caller has an export with the given name
+    pub fn caller_has_export<T>(caller: &mut WasmtimeCaller<'_, T>, name: &str) -> WasmtimeResult<bool>
+    where
+        T: Clone + Send + Sync + 'static,
+    {
+        Ok(caller_get_export(caller, name)?.is_some())
+    }
+}
+
 /// Host function with caller context support
 pub type HostFunctionWithCaller<T> = dyn Fn(&mut CallerContext, &[Val]) -> WasmtimeResult<Vec<Val>> + Send + Sync;
+
+/// Multi-value host function with caller context support
+pub type MultiValueHostFunctionWithCaller<T> = dyn Fn(&mut CallerContext, &[Val]) -> WasmtimeResult<Vec<Val>> + Send + Sync;
+
+/// Enhanced multi-value operations for caller context
+impl CallerContext {
+    /// Invoke a multi-value host function with proper type checking and caller context
+    pub fn invoke_multi_value_function<F, T>(
+        &mut self,
+        caller: &mut WasmtimeCaller<'_, T>,
+        function: F,
+        params: &[Val],
+        expected_result_types: &[wasmtime::ValType],
+    ) -> WasmtimeResult<Vec<Val>>
+    where
+        F: Fn(&mut Self, &[Val]) -> WasmtimeResult<Vec<Val>>,
+        T: Clone + Send + Sync + 'static,
+    {
+        // Validate that caller context is valid
+        self.validate()?;
+
+        // Execute the function with caller context
+        let results = function(self, params)?;
+
+        // Validate result types if specified
+        if !expected_result_types.is_empty() {
+            if results.len() != expected_result_types.len() {
+                return Err(WasmtimeError::TypeMismatch {
+                    expected: format!("{} results", expected_result_types.len()),
+                    actual: format!("{} results", results.len()),
+                });
+            }
+
+            for (i, (result, expected_type)) in results.iter().zip(expected_result_types.iter()).enumerate() {
+                if !self.val_matches_type(result, expected_type) {
+                    return Err(WasmtimeError::TypeMismatch {
+                        expected: format!("result {} of type {:?}", i, expected_type),
+                        actual: format!("result {} of type {:?}", i, self.get_val_type(result)),
+                    });
+                }
+            }
+        }
+
+        Ok(results)
+    }
+
+    /// Check if a Val matches the expected ValType
+    fn val_matches_type(&self, val: &Val, expected_type: &wasmtime::ValType) -> bool {
+        match (val, expected_type) {
+            (Val::I32(_), wasmtime::ValType::I32) => true,
+            (Val::I64(_), wasmtime::ValType::I64) => true,
+            (Val::F32(_), wasmtime::ValType::F32) => true,
+            (Val::F64(_), wasmtime::ValType::F64) => true,
+            (Val::V128(_), wasmtime::ValType::V128) => true,
+            (Val::FuncRef(_), wasmtime::ValType::Ref(ref_type)) => {
+                matches!(ref_type, wasmtime::RefType::FUNCREF)
+            }
+            (Val::ExternRef(_), wasmtime::ValType::Ref(ref_type)) => {
+                matches!(ref_type, wasmtime::RefType::EXTERNREF)
+            }
+            _ => false,
+        }
+    }
+
+    /// Get the ValType of a Val
+    fn get_val_type(&self, val: &Val) -> wasmtime::ValType {
+        match val {
+            Val::I32(_) => wasmtime::ValType::I32,
+            Val::I64(_) => wasmtime::ValType::I64,
+            Val::F32(_) => wasmtime::ValType::F32,
+            Val::F64(_) => wasmtime::ValType::F64,
+            Val::V128(_) => wasmtime::ValType::V128,
+            Val::FuncRef(_) => wasmtime::ValType::Ref(wasmtime::RefType::FUNCREF),
+            Val::ExternRef(_) => wasmtime::ValType::Ref(wasmtime::RefType::EXTERNREF),
+            Val::AnyRef(_) => wasmtime::ValType::Ref(wasmtime::RefType::ANYREF),
+            Val::ExnRef(_) => wasmtime::ValType::Ref(wasmtime::RefType::EXTERNREF), // Approximation for exception refs
+        }
+    }
+
+    /// Execute multi-value operation with automatic fuel management
+    pub fn execute_with_fuel_tracking<F, T>(
+        &mut self,
+        caller: &mut WasmtimeCaller<'_, T>,
+        operation: F,
+        max_fuel_consumed: Option<u64>,
+    ) -> WasmtimeResult<Vec<Val>>
+    where
+        F: FnOnce(&mut Self, &mut WasmtimeCaller<'_, T>) -> WasmtimeResult<Vec<Val>>,
+        T: Clone + Send + Sync + 'static,
+    {
+        let initial_fuel = core::caller_get_fuel_remaining(caller)?;
+
+        let results = operation(self, caller)?;
+
+        // Check fuel consumption if limits are set
+        if let (Some(max_consumed), Some(initial), Some(remaining)) =
+            (max_fuel_consumed, initial_fuel, core::caller_get_fuel_remaining(caller)?) {
+
+            let consumed = initial - remaining;
+            if consumed > max_consumed {
+                return Err(WasmtimeError::ExecutionError {
+                    message: format!("Function consumed {} fuel, exceeded limit of {}", consumed, max_consumed),
+                });
+            }
+        }
+
+        Ok(results)
+    }
+}
 
 /// Host function builder for functions that need caller context
 pub struct HostFunctionBuilder {

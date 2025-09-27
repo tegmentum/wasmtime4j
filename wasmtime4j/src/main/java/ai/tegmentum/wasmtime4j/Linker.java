@@ -192,6 +192,65 @@ public interface Linker<T> extends Closeable {
   boolean hasImport(String moduleName, String name);
 
   /**
+   * Resolves and validates dependencies for a set of modules.
+   *
+   * <p>This method analyzes the import/export relationships between modules and
+   * determines the optimal instantiation order. It also validates that all
+   * dependencies can be satisfied and detects circular dependencies.
+   *
+   * @param modules the modules to analyze for dependencies
+   * @return a dependency resolution result with instantiation order and validation details
+   * @throws WasmException if dependency resolution fails or circular dependencies are detected
+   * @throws IllegalArgumentException if modules is null or empty
+   * @since 1.0.0
+   */
+  DependencyResolution resolveDependencies(Module... modules) throws WasmException;
+
+  /**
+   * Validates that all imports for the given modules can be satisfied by this linker.
+   *
+   * <p>This method performs comprehensive validation including:
+   * <ul>
+   *   <li>Type compatibility checking for all imports</li>
+   *   <li>Availability verification for all required imports</li>
+   *   <li>Cross-module dependency validation</li>
+   *   <li>Host function signature validation</li>
+   * </ul>
+   *
+   * @param modules the modules to validate imports for
+   * @return a validation result with detailed information about any issues
+   * @throws IllegalArgumentException if modules is null or empty
+   * @since 1.0.0
+   */
+  ImportValidation validateImports(Module... modules);
+
+  /**
+   * Gets detailed information about all imports currently defined in this linker.
+   *
+   * <p>This provides comprehensive metadata about registered functions, memories,
+   * tables, globals, and instances that are available for import resolution.
+   *
+   * @return an unmodifiable list of import information
+   * @since 1.0.0
+   */
+  java.util.List<ImportInfo> getImportRegistry();
+
+  /**
+   * Creates an instantiation plan for multiple interdependent modules.
+   *
+   * <p>This method analyzes the dependency relationships and creates an optimized
+   * plan for instantiating all modules in the correct order. The plan can be
+   * executed incrementally and provides detailed progress tracking.
+   *
+   * @param modules the modules to create an instantiation plan for
+   * @return an instantiation plan with ordered steps and dependency information
+   * @throws WasmException if planning fails due to unresolvable dependencies
+   * @throws IllegalArgumentException if modules is null or empty
+   * @since 1.0.0
+   */
+  InstantiationPlan createInstantiationPlan(Module... modules) throws WasmException;
+
+  /**
    * Closes the linker and releases associated resources.
    *
    * <p>After closing, the linker becomes invalid and should not be used.

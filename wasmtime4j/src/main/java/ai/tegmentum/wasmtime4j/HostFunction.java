@@ -117,6 +117,69 @@ public interface HostFunction {
     };
   }
 
+  /**
+   * Creates a host function with parameter and result validation.
+   *
+   * @param impl the implementation
+   * @param expectedParamTypes the expected parameter types
+   * @param expectedResultTypes the expected return types
+   * @return a new HostFunction
+   */
+  static HostFunction withFullValidation(
+      final HostFunction impl,
+      final WasmValueType[] expectedParamTypes,
+      final WasmValueType... expectedResultTypes) {
+    return (params) -> {
+      WasmValue.validateMultiValue(params, expectedParamTypes);
+      final WasmValue[] results = impl.execute(params);
+      WasmValue.validateMultiValue(results, expectedResultTypes);
+      return results;
+    };
+  }
+
+  /**
+   * Creates a multi-value host function with caller context and validation.
+   *
+   * @param <T> the type of user data associated with the store
+   * @param impl the implementation that receives caller context
+   * @param expectedParamTypes the expected parameter types
+   * @param expectedResultTypes the expected return types
+   * @return a new HostFunction
+   * @since 1.0.0
+   */
+  static <T> HostFunction multiValueWithCallerAndValidation(
+      final MultiValueHostFunctionWithCaller<T> impl,
+      final WasmValueType[] expectedParamTypes,
+      final WasmValueType... expectedResultTypes) {
+    return new CallerAwareHostFunction<T>(impl) {
+      @Override
+      public WasmValue[] execute(WasmValue[] params) throws WasmException {
+        WasmValue.validateMultiValue(params, expectedParamTypes);
+        WasmValue[] results = super.execute(params);
+        WasmValue.validateMultiValue(results, expectedResultTypes);
+        return results;
+      }
+    };
+  }
+
+  /**
+   * Creates a streaming multi-value host function that can yield values incrementally.
+   *
+   * <p>This is useful for functions that need to return large amounts of data or
+   * perform streaming operations.
+   *
+   * @param impl the streaming implementation
+   * @return a new HostFunction
+   * @since 1.0.0
+   */
+  static HostFunction streaming(final StreamingHostFunction impl) {
+    return (params) -> {
+      StreamingContext context = new StreamingContext();
+      impl.execute(params, context);
+      return context.getResults();
+    };
+  }
+
   /** Functional interface for void host functions. */
   @FunctionalInterface
   interface VoidHostFunction {
@@ -218,6 +281,79 @@ public interface HostFunction {
     WasmValue[] execute(Caller<T> caller, WasmValue[] params) throws WasmException;
   }
 
+  /** Functional interface for streaming host functions. */
+  @FunctionalInterface
+  interface StreamingHostFunction {
+    /**
+     * Executes the streaming host function.
+     *
+     * @param params the function parameters
+     * @param context the streaming context for yielding results
+     * @throws WasmException if execution fails
+     */
+    void execute(WasmValue[] params, StreamingContext context) throws WasmException;
+  }
+
+  /**
+   * Context for streaming host functions to yield results incrementally.
+   *
+   * @since 1.0.0
+   */
+  class StreamingContext {
+    private final java.util.List<WasmValue> results = new java.util.ArrayList<>();
+
+    /**
+     * Yields a single value.
+     *
+     * @param value the value to yield
+     */
+    public void yield(final WasmValue value) {
+      if (value != null) {
+        results.add(value);
+      }
+    }
+
+    /**
+     * Yields multiple values.
+     *
+     * @param values the values to yield
+     */
+    public void yield(final WasmValue... values) {
+      if (values != null) {
+        for (WasmValue value : values) {
+          if (value != null) {
+            results.add(value);
+          }
+        }
+      }
+    }
+
+    /**
+     * Gets the accumulated results.
+     *
+     * @return the results as an array
+     */
+    public WasmValue[] getResults() {
+      return results.toArray(new WasmValue[0]);
+    }
+
+    /**
+     * Gets the number of results yielded so far.
+     *
+     * @return the result count
+     */
+    public int getResultCount() {
+      return results.size();
+    }
+
+    /**
+     * Clears all accumulated results.
+     */
+    public void clear() {
+      results.clear();
+    }
+  }
+
   /**
    * Wrapper class for host functions that need caller context.
    *
@@ -281,6 +417,168 @@ public interface HostFunction {
      */
     public MultiValueHostFunctionWithCaller<T> getImplementation() {
       return implementation;
+    }
+
+    /**
+     * Checks if this function requires caller context.
+     *
+     * @return true if caller context is required (always true for this class)
+     */
+    public boolean requiresCallerContext() {
+      return true;
+    }
+  }
+
+  /**
+   * Enumeration of caller context usage patterns for optimization.
+   *
+   * @since 1.0.0
+   */
+  enum CallerContextUsage {
+    /** No caller context features are used (maximum optimization). */
+    NONE,
+    /** Only export access is used. */
+    EXPORTS_ONLY,
+    /** Only fuel tracking is used. */
+    FUEL_ONLY,
+    /** Only epoch deadlines are used. */
+    EPOCH_ONLY,
+    /** Export access and fuel tracking are used. */
+    EXPORTS_AND_FUEL,
+    /** All caller context features are used. */
+    FULL;
+
+    /**
+     * Checks if this usage pattern includes export access.
+     *
+     * @return true if export access is used
+     */
+    public boolean usesExports() {
+      return this == EXPORTS_ONLY || this == EXPORTS_AND_FUEL || this == FULL;
+    }
+
+    /**
+     * Checks if this usage pattern includes fuel tracking.
+     *
+     * @return true if fuel tracking is used
+     */
+    public boolean usesFuel() {
+      return this == FUEL_ONLY || this == EXPORTS_AND_FUEL || this == FULL;
+    }
+
+    /**
+     * Checks if this usage pattern includes epoch deadlines.
+     *
+     * @return true if epoch deadlines are used
+     */
+    public boolean usesEpoch() {
+      return this == EPOCH_ONLY || this == FULL;
+    }
+
+    /**
+     * Checks if no caller context features are used.
+     *
+     * @return true if no features are used
+     */
+    public boolean isNone() {
+      return this == NONE;
+    }
+  }
+
+  /**
+   * Creates an optimized host function that avoids caller context overhead when not needed.
+   *
+   * @param impl the regular host function implementation
+   * @return an optimized host function
+   * @since 1.0.0
+   */
+  static HostFunction optimized(final HostFunction impl) {
+    return new OptimizedHostFunction(impl);
+  }
+
+  /**
+   * Creates an optimized caller-aware host function with usage hints.
+   *
+   * @param <T> the type of user data associated with the store
+   * @param impl the caller-aware implementation
+   * @param usage the expected usage pattern for optimization
+   * @return an optimized caller-aware host function
+   * @since 1.0.0
+   */
+  static <T> HostFunction optimizedWithCaller(
+      final MultiValueHostFunctionWithCaller<T> impl,
+      final CallerContextUsage usage) {
+    return new OptimizedCallerAwareHostFunction<>(impl, usage);
+  }
+
+  /**
+   * Optimized host function wrapper that avoids unnecessary overhead.
+   */
+  class OptimizedHostFunction implements HostFunction {
+    private final HostFunction delegate;
+    private final boolean isCallerAware;
+
+    public OptimizedHostFunction(HostFunction delegate) {
+      this.delegate = delegate;
+      this.isCallerAware = delegate instanceof CallerAwareHostFunction;
+    }
+
+    @Override
+    public WasmValue[] execute(WasmValue[] params) throws WasmException {
+      // For non-caller-aware functions, this provides zero-overhead execution
+      return delegate.execute(params);
+    }
+
+    /**
+     * Checks if this function is caller-aware.
+     *
+     * @return true if caller-aware
+     */
+    public boolean isCallerAware() {
+      return isCallerAware;
+    }
+
+    /**
+     * Gets the underlying delegate function.
+     *
+     * @return the delegate function
+     */
+    public HostFunction getDelegate() {
+      return delegate;
+    }
+  }
+
+  /**
+   * Optimized caller-aware host function with usage pattern hints.
+   *
+   * @param <T> the type of user data associated with the store
+   */
+  class OptimizedCallerAwareHostFunction<T> extends CallerAwareHostFunction<T> {
+    private final CallerContextUsage contextUsage;
+
+    public OptimizedCallerAwareHostFunction(
+        MultiValueHostFunctionWithCaller<T> impl,
+        CallerContextUsage usage) {
+      super(impl);
+      this.contextUsage = usage;
+    }
+
+    /**
+     * Gets the caller context usage pattern for optimization.
+     *
+     * @return the context usage pattern
+     */
+    public CallerContextUsage getContextUsage() {
+      return contextUsage;
+    }
+
+    /**
+     * Checks if this function can be optimized to avoid caller context overhead.
+     *
+     * @return true if optimization is possible
+     */
+    public boolean canOptimize() {
+      return contextUsage == CallerContextUsage.NONE;
     }
   }
 }
