@@ -1291,3 +1291,276 @@ mod tests {
         assert!(core::extract_f32_value(&i64_val).is_err());
     }
 }
+
+//
+// Native C exports for JNI and Panama FFI consumption
+//
+
+use std::os::raw::{c_void, c_char, c_int};
+use std::ffi::{CStr, CString};
+use crate::shared_ffi::{FFI_SUCCESS, FFI_ERROR};
+
+/// Instance core functions for interface implementations
+pub mod ffi_core {
+    use super::*;
+    use std::os::raw::c_void;
+    use crate::error::ffi_utils;
+    use crate::validate_ptr_not_null;
+
+    /// Core function to create instance without imports
+    pub fn create_instance_without_imports(
+        store: &mut Store,
+        module: &Module,
+    ) -> WasmtimeResult<Box<Instance>> {
+        Instance::new_without_imports(store, module).map(Box::new)
+    }
+
+    /// Core function to validate instance pointer and get reference
+    pub unsafe fn get_instance_ref(instance_ptr: *const c_void) -> WasmtimeResult<&'static Instance> {
+        validate_ptr_not_null!(instance_ptr, "instance");
+        Ok(&*(instance_ptr as *const Instance))
+    }
+
+    /// Core function to validate instance pointer and get mutable reference
+    pub unsafe fn get_instance_mut(instance_ptr: *mut c_void) -> WasmtimeResult<&'static mut Instance> {
+        validate_ptr_not_null!(instance_ptr, "instance");
+        Ok(&mut *(instance_ptr as *mut Instance))
+    }
+
+    /// Core function to destroy an instance (safe cleanup)
+    pub unsafe fn destroy_instance(instance_ptr: *mut c_void) {
+        ffi_utils::destroy_resource::<Instance>(instance_ptr, "Instance");
+    }
+
+    /// Core function to get instance metadata
+    pub fn get_metadata(instance: &Instance) -> &InstanceMetadata {
+        instance.metadata()
+    }
+
+    /// Core function to check if instance has export
+    pub fn has_export(instance: &Instance, name: &str) -> bool {
+        instance.has_export(name)
+    }
+
+    /// Core function to get exports
+    pub fn get_exports(instance: &Instance) -> &[ExportBinding] {
+        instance.exports()
+    }
+
+    /// Core function to dispose instance
+    pub fn dispose_instance(instance: &mut Instance) {
+        instance.dispose()
+    }
+
+    /// Core function to check if instance is disposed
+    pub fn is_disposed(instance: &Instance) -> bool {
+        instance.is_disposed()
+    }
+}
+
+/// Create a new instance without imports
+///
+/// # Safety
+///
+/// store_ptr and module_ptr must be valid pointers
+/// Returns pointer to instance that must be freed with wasmtime4j_instance_destroy
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_instance_new_without_imports(
+    store_ptr: *mut c_void,
+    module_ptr: *const c_void,
+) -> *mut c_void {
+    if store_ptr.is_null() || module_ptr.is_null() {
+        return std::ptr::null_mut();
+    }
+
+    match (crate::store::core::get_store_mut(store_ptr), crate::module::core::get_module_ref(module_ptr)) {
+        (Ok(store), Ok(module)) => {
+            match ffi_core::create_instance_without_imports(store, module) {
+                Ok(instance) => Box::into_raw(instance) as *mut c_void,
+                Err(_) => std::ptr::null_mut(),
+            }
+        },
+        _ => std::ptr::null_mut(),
+    }
+}
+
+/// Destroy instance and free resources
+///
+/// # Safety
+///
+/// instance_ptr must be a valid pointer from wasmtime4j_instance_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_instance_destroy(instance_ptr: *mut c_void) {
+    if !instance_ptr.is_null() {
+        core::destroy_instance(instance_ptr);
+    }
+}
+
+/// Check if instance has specific export
+///
+/// # Safety
+///
+/// instance_ptr must be valid, name must be a valid null-terminated C string
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_instance_has_export(
+    instance_ptr: *const c_void,
+    name: *const c_char,
+) -> c_int {
+    if instance_ptr.is_null() || name.is_null() {
+        return FFI_ERROR;
+    }
+
+    match ffi_core::get_instance_ref(instance_ptr) {
+        Ok(instance) => {
+            match CStr::from_ptr(name).to_str() {
+                Ok(name_str) => {
+                    if core::has_export(instance, name_str) { 1 } else { 0 }
+                },
+                Err(_) => FFI_ERROR,
+            }
+        },
+        Err(_) => FFI_ERROR,
+    }
+}
+
+/// Get number of exports in instance
+///
+/// # Safety
+///
+/// instance_ptr must be a valid pointer from wasmtime4j_instance_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_instance_export_count(instance_ptr: *const c_void) -> usize {
+    match ffi_core::get_instance_ref(instance_ptr) {
+        Ok(instance) => core::get_exports(instance).len(),
+        Err(_) => 0,
+    }
+}
+
+/// Dispose instance resources
+///
+/// # Safety
+///
+/// instance_ptr must be a valid pointer from wasmtime4j_instance_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_instance_dispose(instance_ptr: *mut c_void) -> c_int {
+    match ffi_core::get_instance_mut(instance_ptr) {
+        Ok(instance) => {
+            core::dispose_instance(instance);
+            FFI_SUCCESS
+        },
+        Err(_) => FFI_ERROR,
+    }
+}
+
+/// Check if instance is disposed
+///
+/// # Safety
+///
+/// instance_ptr must be a valid pointer from wasmtime4j_instance_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_instance_is_disposed(instance_ptr: *const c_void) -> c_int {
+    match ffi_core::get_instance_ref(instance_ptr) {
+        Ok(instance) => if core::is_disposed(instance) { 1 } else { 0 },
+        Err(_) => FFI_ERROR,
+    }
+}
+
+/// Call exported function with simple integer parameters
+///
+/// # Safety
+///
+/// All pointers must be valid, params array must have correct size
+/// Returns the i32 result or 0 on error
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_instance_call_i32_function(
+    instance_ptr: *const c_void,
+    store_ptr: *mut c_void,
+    function_name: *const c_char,
+    params: *const i32,
+    param_count: usize,
+) -> i32 {
+    if instance_ptr.is_null() || store_ptr.is_null() || function_name.is_null() {
+        return 0;
+    }
+
+    match (
+        core::get_instance_ref(instance_ptr),
+        crate::store::core::get_store_mut(store_ptr),
+        CStr::from_ptr(function_name).to_str()
+    ) {
+        (Ok(instance), Ok(store), Ok(name_str)) => {
+            let param_values: Vec<WasmValue> = if param_count > 0 && !params.is_null() {
+                std::slice::from_raw_parts(params, param_count)
+                    .iter()
+                    .map(|&p| WasmValue::I32(p))
+                    .collect()
+            } else {
+                Vec::new()
+            };
+
+            match instance.call_export_function(store, name_str, &param_values) {
+                Ok(results) => {
+                    if let Some(WasmValue::I32(result)) = results.into_iter().next() {
+                        result
+                    } else {
+                        0
+                    }
+                },
+                Err(_) => 0,
+            }
+        },
+        _ => 0,
+    }
+}
+
+/// Call exported function with no parameters that returns i32
+///
+/// # Safety
+///
+/// All pointers must be valid
+/// Returns the i32 result or 0 on error
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_instance_call_i32_function_no_params(
+    instance_ptr: *const c_void,
+    store_ptr: *mut c_void,
+    function_name: *const c_char,
+) -> i32 {
+    wasmtime4j_instance_call_i32_function(
+        instance_ptr,
+        store_ptr,
+        function_name,
+        std::ptr::null(),
+        0
+    )
+}
+
+/// Get instance creation timestamp in microseconds since epoch
+///
+/// # Safety
+///
+/// instance_ptr must be a valid pointer from wasmtime4j_instance_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_instance_created_at_micros(instance_ptr: *const c_void) -> u64 {
+    match ffi_core::get_instance_ref(instance_ptr) {
+        Ok(instance) => {
+            let metadata = core::get_metadata(instance);
+            metadata.created_at.duration_since(std::time::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_micros() as u64
+        },
+        Err(_) => 0,
+    }
+}
+
+/// Get instance export count
+///
+/// # Safety
+///
+/// instance_ptr must be a valid pointer from wasmtime4j_instance_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_instance_metadata_export_count(instance_ptr: *const c_void) -> usize {
+    match ffi_core::get_instance_ref(instance_ptr) {
+        Ok(instance) => core::get_metadata(instance).exports.len(),
+        Err(_) => 0,
+    }
+}
