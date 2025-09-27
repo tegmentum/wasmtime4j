@@ -72,6 +72,22 @@ public interface WasmRuntime extends Closeable {
   Module compileModule(final Engine engine, final byte[] wasmBytes) throws WasmException;
 
   /**
+   * Compiles WebAssembly Text (WAT) format into a Module.
+   *
+   * <p>This method accepts WebAssembly modules in text format and compiles them to executable
+   * bytecode. WAT compilation includes parsing, validation, and compilation to the same optimized
+   * form as binary WebAssembly.
+   *
+   * @param engine the engine to use for compilation
+   * @param watText the WebAssembly text format source
+   * @return a compiled Module
+   * @throws WasmException if compilation fails due to syntax errors or invalid WAT
+   * @throws IllegalArgumentException if engine or watText is null
+   * @since 1.0.0
+   */
+  Module compileModuleWat(final Engine engine, final String watText) throws WasmException;
+
+  /**
    * Creates a new store for the given engine.
    *
    * <p>A store represents an execution context that holds the runtime state for WebAssembly
@@ -83,6 +99,28 @@ public interface WasmRuntime extends Closeable {
    * @throws IllegalArgumentException if engine is null
    */
   Store createStore(final Engine engine) throws WasmException;
+
+  /**
+   * Creates a new store with custom configuration.
+   *
+   * <p>This method allows creating a store with specific fuel limits, memory limits, and execution
+   * timeouts configured at creation time.
+   *
+   * @param engine the engine to create the store for
+   * @param fuelLimit the initial fuel limit (0 for unlimited)
+   * @param memoryLimitBytes the memory limit in bytes (0 for unlimited)
+   * @param executionTimeoutSeconds the execution timeout in seconds (0 for unlimited)
+   * @return a new Store instance with the specified configuration
+   * @throws WasmException if store creation fails
+   * @throws IllegalArgumentException if engine is null or limits are negative
+   * @since 1.0.0
+   */
+  Store createStore(
+      final Engine engine,
+      final long fuelLimit,
+      final long memoryLimitBytes,
+      final long executionTimeoutSeconds)
+      throws WasmException;
 
   /**
    * Creates a new linker for the given engine.
@@ -97,6 +135,24 @@ public interface WasmRuntime extends Closeable {
    * @throws IllegalArgumentException if engine is null
    */
   Linker createLinker(final Engine engine) throws WasmException;
+
+  /**
+   * Creates a new linker with custom configuration.
+   *
+   * <p>This method allows creating a linker with specific settings such as allowing unknown exports
+   * and enabling import shadowing.
+   *
+   * @param engine the engine to create the linker for
+   * @param allowUnknownExports whether to allow modules with unknown exports
+   * @param allowShadowing whether to allow import shadowing
+   * @return a new Linker instance with the specified configuration
+   * @throws WasmException if linker creation fails
+   * @throws IllegalArgumentException if engine is null
+   * @since 1.0.0
+   */
+  Linker createLinker(
+      final Engine engine, final boolean allowUnknownExports, final boolean allowShadowing)
+      throws WasmException;
 
   /**
    * Creates an instance of a WebAssembly module.
@@ -451,9 +507,9 @@ public interface WasmRuntime extends Closeable {
   /**
    * Deserializes a previously serialized Module using the provided engine.
    *
-   * <p>The serialized data must have been created by a module compiled with an engine
-   * that has the same configuration as the provided engine. Deserialization is typically
-   * much faster than compilation from WebAssembly bytecode.
+   * <p>The serialized data must have been created by a module compiled with an engine that has the
+   * same configuration as the provided engine. Deserialization is typically much faster than
+   * compilation from WebAssembly bytecode.
    *
    * @param engine the engine to use for deserialization (must match original engine config)
    * @param serializedBytes the serialized module data
@@ -477,7 +533,8 @@ public interface WasmRuntime extends Closeable {
    * @throws IllegalArgumentException if engine is null
    * @since 1.0.0
    */
-  ai.tegmentum.wasmtime4j.wasi.WasiLinker createWasiLinker(final Engine engine) throws WasmException;
+  ai.tegmentum.wasmtime4j.wasi.WasiLinker createWasiLinker(final Engine engine)
+      throws WasmException;
 
   /**
    * Creates a new WASI linker with the specified configuration.
@@ -490,7 +547,38 @@ public interface WasmRuntime extends Closeable {
    * @since 1.0.0
    */
   ai.tegmentum.wasmtime4j.wasi.WasiLinker createWasiLinker(
-      final Engine engine, final ai.tegmentum.wasmtime4j.wasi.WasiConfig config) throws WasmException;
+      final Engine engine, final ai.tegmentum.wasmtime4j.wasi.WasiConfig config)
+      throws WasmException;
+
+  /**
+   * Creates a new Serializer with default configuration.
+   *
+   * <p>The default configuration provides reasonable caching and compression settings for most use
+   * cases.
+   *
+   * @return a new Serializer instance
+   * @throws WasmException if the serializer cannot be created
+   * @since 1.0.0
+   */
+  Serializer createSerializer() throws WasmException;
+
+  /**
+   * Creates a new Serializer with custom configuration.
+   *
+   * <p>This method allows customizing cache size, compression settings, and other serialization
+   * parameters for optimal performance.
+   *
+   * @param maxCacheSize the maximum cache size in bytes (0 for unlimited)
+   * @param enableCompression whether to enable compression of serialized data
+   * @param compressionLevel the compression level (0-9, higher is better compression)
+   * @return a new Serializer instance with the specified configuration
+   * @throws WasmException if the serializer cannot be created
+   * @throws IllegalArgumentException if parameters are invalid
+   * @since 1.0.0
+   */
+  Serializer createSerializer(
+      final long maxCacheSize, final boolean enableCompression, final int compressionLevel)
+      throws WasmException;
 
   // ===== DEBUGGING OPERATIONS =====
 
