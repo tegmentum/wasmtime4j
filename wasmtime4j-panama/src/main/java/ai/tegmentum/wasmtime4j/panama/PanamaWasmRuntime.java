@@ -628,6 +628,174 @@ public final class PanamaWasmRuntime implements WasmRuntime {
     }
   }
 
+  // ===== WASI OPERATIONS =====
+
+  @Override
+  public ai.tegmentum.wasmtime4j.WasiContext createWasiContext() throws WasmException {
+    ensureNotClosed();
+
+    try (Arena tempArena = Arena.ofConfined()) {
+      // Call native function to create WASI context
+      var wasiHandle = WasmtimeBindings.wasi_preview2_context_new(
+          memoryManager.getMainSegment(),
+          true,  // enable_networking
+          true,  // enable_filesystem
+          true,  // enable_process
+          32,    // max_async_operations
+          30000, // default_timeout_ms
+          true   // enable_component_model
+      );
+
+      if (wasiHandle.address() == 0) {
+        throw new WasmException("Failed to create WASI context");
+      }
+
+      return new PanamaWasiContextImpl(wasiHandle, memoryManager.createArena());
+    } catch (Exception e) {
+      throw exceptionMapper.mapException(e);
+    }
+  }
+
+  @Override
+  public <T> Linker<T> createLinker(Engine engine) throws WasmException {
+    if (engine == null) {
+      throw new IllegalArgumentException("Engine cannot be null");
+    }
+    ensureNotClosed();
+
+    try (Arena tempArena = Arena.ofConfined()) {
+      // Cast to PanamaEngine to get native handle
+      if (!(engine instanceof PanamaEngine)) {
+        throw new IllegalArgumentException("Engine must be a PanamaEngine instance for Panama runtime");
+      }
+
+      PanamaEngine panamaEngine = (PanamaEngine) engine;
+      var linkerHandle = WasmtimeBindings.wasmtime_linker_new(
+          memoryManager.getMainSegment(),
+          panamaEngine.getNativeHandle()
+      );
+
+      if (linkerHandle.address() == 0) {
+        throw new WasmException("Failed to create linker");
+      }
+
+      return new PanamaLinker<>(linkerHandle, memoryManager.createArena());
+    } catch (Exception e) {
+      throw exceptionMapper.mapException(e);
+    }
+  }
+
+  @Override
+  public void addWasiToLinker(Linker<ai.tegmentum.wasmtime4j.WasiContext> linker, ai.tegmentum.wasmtime4j.WasiContext context) throws WasmException {
+    if (linker == null) {
+      throw new IllegalArgumentException("Linker cannot be null");
+    }
+    if (context == null) {
+      throw new IllegalArgumentException("WasiContext cannot be null");
+    }
+    ensureNotClosed();
+
+    try (Arena tempArena = Arena.ofConfined()) {
+      // Cast to Panama implementations
+      if (!(linker instanceof PanamaLinker)) {
+        throw new IllegalArgumentException("Linker must be a PanamaLinker instance for Panama runtime");
+      }
+      if (!(context instanceof PanamaWasiContextImpl)) {
+        throw new IllegalArgumentException("WasiContext must be a PanamaWasiContextImpl instance for Panama runtime");
+      }
+
+      PanamaLinker<?> panamaLinker = (PanamaLinker<?>) linker;
+      PanamaWasiContextImpl panamaContext = (PanamaWasiContextImpl) context;
+
+      var result = WasmtimeBindings.wasmtime_linker_define_wasi(
+          memoryManager.getMainSegment(),
+          panamaLinker.getNativeHandle(),
+          panamaContext.getNativeHandle()
+      );
+
+      if (result != 0) {
+        throw new WasmException("Failed to add WASI imports to linker");
+      }
+    } catch (Exception e) {
+      throw exceptionMapper.mapException(e);
+    }
+  }
+
+  @Override
+  public void addWasiPreview2ToLinker(Linker<ai.tegmentum.wasmtime4j.WasiContext> linker, ai.tegmentum.wasmtime4j.WasiContext context) throws WasmException {
+    if (linker == null) {
+      throw new IllegalArgumentException("Linker cannot be null");
+    }
+    if (context == null) {
+      throw new IllegalArgumentException("WasiContext cannot be null");
+    }
+    ensureNotClosed();
+
+    try (Arena tempArena = Arena.ofConfined()) {
+      // Cast to Panama implementations
+      if (!(linker instanceof PanamaLinker)) {
+        throw new IllegalArgumentException("Linker must be a PanamaLinker instance for Panama runtime");
+      }
+      if (!(context instanceof PanamaWasiContextImpl)) {
+        throw new IllegalArgumentException("WasiContext must be a PanamaWasiContextImpl instance for Panama runtime");
+      }
+
+      PanamaLinker<?> panamaLinker = (PanamaLinker<?>) linker;
+      PanamaWasiContextImpl panamaContext = (PanamaWasiContextImpl) context;
+
+      var result = WasmtimeBindings.wasi_preview2_add_to_linker(
+          memoryManager.getMainSegment(),
+          panamaLinker.getNativeHandle(),
+          panamaContext.getNativeHandle()
+      );
+
+      if (result != 0) {
+        throw new WasmException("Failed to add WASI Preview 2 imports to linker");
+      }
+    } catch (Exception e) {
+      throw exceptionMapper.mapException(e);
+    }
+  }
+
+  @Override
+  public void addComponentModelToLinker(Linker<ai.tegmentum.wasmtime4j.WasiContext> linker) throws WasmException {
+    if (linker == null) {
+      throw new IllegalArgumentException("Linker cannot be null");
+    }
+    ensureNotClosed();
+
+    try (Arena tempArena = Arena.ofConfined()) {
+      // Cast to Panama implementation
+      if (!(linker instanceof PanamaLinker)) {
+        throw new IllegalArgumentException("Linker must be a PanamaLinker instance for Panama runtime");
+      }
+
+      PanamaLinker<?> panamaLinker = (PanamaLinker<?>) linker;
+
+      var result = WasmtimeBindings.wasmtime_linker_define_component_model(
+          memoryManager.getMainSegment(),
+          panamaLinker.getNativeHandle()
+      );
+
+      if (result != 0) {
+        throw new WasmException("Failed to add Component Model imports to linker");
+      }
+    } catch (Exception e) {
+      throw exceptionMapper.mapException(e);
+    }
+  }
+
+  @Override
+  public boolean supportsComponentModel() {
+    try {
+      ensureNotClosed();
+      // Query the native library for component model support
+      return WasmtimeBindings.wasmtime_supports_component_model(memoryManager.getMainSegment());
+    } catch (Exception e) {
+      return false;
+    }
+  }
+
   @Override
   public RuntimeInfo getRuntimeInfo() {
     return new RuntimeInfo(

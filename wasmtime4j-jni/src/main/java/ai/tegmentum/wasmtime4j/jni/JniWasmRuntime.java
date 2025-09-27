@@ -1056,15 +1056,105 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
   // ===== WASI OPERATIONS =====
 
   @Override
-  public ai.tegmentum.wasmtime4j.wasi.WasiContext createWasiContext() throws WasmException {
+  public ai.tegmentum.wasmtime4j.WasiContext createWasiContext() throws WasmException {
     validateRuntimeState();
     return concurrencyManager.executeWithWriteLock(nativeHandle, 30000, () -> {
       final long wasiHandle = nativeCreateWasiContext(nativeHandle);
       if (wasiHandle == 0) {
         throw new WasmException("Failed to create WASI context");
       }
-      return new ai.tegmentum.wasmtime4j.jni.JniWasiContext(wasiHandle);
+      return new ai.tegmentum.wasmtime4j.jni.JniWasiContextImpl(wasiHandle);
     });
+  }
+
+  @Override
+  public <T> Linker<T> createLinker(Engine engine) throws WasmException {
+    if (engine == null) {
+      throw new IllegalArgumentException("Engine cannot be null");
+    }
+    validateRuntimeState();
+    return concurrencyManager.executeWithWriteLock(nativeHandle, 30000, () -> {
+      final long engineHandle = ((ai.tegmentum.wasmtime4j.jni.JniEngine) engine).getNativeHandle();
+      final long linkerHandle = nativeCreateLinker(nativeHandle, engineHandle);
+      if (linkerHandle == 0) {
+        throw new WasmException("Failed to create linker");
+      }
+      return new ai.tegmentum.wasmtime4j.jni.JniLinker<>(linkerHandle);
+    });
+  }
+
+  @Override
+  public void addWasiToLinker(Linker<ai.tegmentum.wasmtime4j.WasiContext> linker, ai.tegmentum.wasmtime4j.WasiContext context) throws WasmException {
+    if (linker == null) {
+      throw new IllegalArgumentException("Linker cannot be null");
+    }
+    if (context == null) {
+      throw new IllegalArgumentException("WasiContext cannot be null");
+    }
+    validateRuntimeState();
+
+    concurrencyManager.executeWithWriteLock(nativeHandle, 30000, () -> {
+      final long linkerHandle = ((ai.tegmentum.wasmtime4j.jni.JniLinker<?>) linker).getNativeHandle();
+      final long contextHandle = ((ai.tegmentum.wasmtime4j.jni.JniWasiContextImpl) context).getNativeHandle();
+
+      final int result = nativeAddWasiToLinker(nativeHandle, linkerHandle, contextHandle);
+      if (result != 0) {
+        throw new WasmException("Failed to add WASI imports to linker");
+      }
+      return null;
+    });
+  }
+
+  @Override
+  public void addWasiPreview2ToLinker(Linker<ai.tegmentum.wasmtime4j.WasiContext> linker, ai.tegmentum.wasmtime4j.WasiContext context) throws WasmException {
+    if (linker == null) {
+      throw new IllegalArgumentException("Linker cannot be null");
+    }
+    if (context == null) {
+      throw new IllegalArgumentException("WasiContext cannot be null");
+    }
+    validateRuntimeState();
+
+    concurrencyManager.executeWithWriteLock(nativeHandle, 30000, () -> {
+      final long linkerHandle = ((ai.tegmentum.wasmtime4j.jni.JniLinker<?>) linker).getNativeHandle();
+      final long contextHandle = ((ai.tegmentum.wasmtime4j.jni.JniWasiContextImpl) context).getNativeHandle();
+
+      final int result = nativeAddWasiPreview2ToLinker(nativeHandle, linkerHandle, contextHandle);
+      if (result != 0) {
+        throw new WasmException("Failed to add WASI Preview 2 imports to linker");
+      }
+      return null;
+    });
+  }
+
+  @Override
+  public void addComponentModelToLinker(Linker<ai.tegmentum.wasmtime4j.WasiContext> linker) throws WasmException {
+    if (linker == null) {
+      throw new IllegalArgumentException("Linker cannot be null");
+    }
+    validateRuntimeState();
+
+    concurrencyManager.executeWithWriteLock(nativeHandle, 30000, () -> {
+      final long linkerHandle = ((ai.tegmentum.wasmtime4j.jni.JniLinker<?>) linker).getNativeHandle();
+
+      final int result = nativeAddComponentModelToLinker(nativeHandle, linkerHandle);
+      if (result != 0) {
+        throw new WasmException("Failed to add Component Model imports to linker");
+      }
+      return null;
+    });
+  }
+
+  @Override
+  public boolean supportsComponentModel() {
+    try {
+      validateRuntimeState();
+      return concurrencyManager.executeWithReadLock(nativeHandle, 5000, () -> {
+        return nativeSupportsComponentModel(nativeHandle);
+      });
+    } catch (WasmException e) {
+      return false;
+    }
   }
 
   // ===== UTILITY METHODS =====
@@ -1180,4 +1270,14 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
   // ===== WASI NATIVE METHOD DECLARATIONS =====
 
   private static native long nativeCreateWasiContext(long runtimeHandle);
+
+  private static native long nativeCreateLinker(long runtimeHandle, long engineHandle);
+
+  private static native int nativeAddWasiToLinker(long runtimeHandle, long linkerHandle, long contextHandle);
+
+  private static native int nativeAddWasiPreview2ToLinker(long runtimeHandle, long linkerHandle, long contextHandle);
+
+  private static native int nativeAddComponentModelToLinker(long runtimeHandle, long linkerHandle);
+
+  private static native boolean nativeSupportsComponentModel(long runtimeHandle);
 }
