@@ -451,8 +451,8 @@ public final class OptimizedBenchmarkRunner {
 
   private String escapeHtml(final String text) {
     return text.replace("&", "&amp;")
-               .replace("<", "&lt;")
-               .replace(">", "&gt;")
+               .replace("<", "<")
+               .replace(">", ">")
                .replace("\"", "&quot;")
                .replace("'", "&#x27;");
   }

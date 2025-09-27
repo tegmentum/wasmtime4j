@@ -4,7 +4,7 @@ status: backlog
 created: 2025-09-21T13:14:30Z
 progress: 0%
 prd: .claude/prds/remove-concurrent-access-coordinator.md
-github: [Will be updated when synced to GitHub]
+github: 280
 ---
 
 # Epic: Remove Concurrent Access Coordinator
@@ -97,14 +97,18 @@ public Result callNative() {
 - Measure FFI call overhead improvements
 - Confirm build and runtime performance improvements
 
-## Task Breakdown Preview
+## Tasks
 
-High-level task categories that will be created:
-- [ ] **Usage Audit**: Verify no current usage and identify FFI operations needing thread safety
-- [ ] **Simple Synchronization**: Implement basic thread-safe patterns for FFI operations
-- [ ] **Coordinator Removal**: Delete ConcurrentAccessCoordinator and cleanup references
-- [ ] **Thread Safety Testing**: Validate concurrent access works correctly with simple patterns
-- [ ] **Performance Validation**: Confirm FFI overhead reduction and no functional regression
+This epic has been decomposed into 5 focused tasks:
+
+- [ ] **Task #281**: Audit ConcurrentAccessCoordinator usage and identify FFI operations needing thread safety
+- [ ] **Task #282**: Implement simple thread-safe patterns for FFI operations
+- [ ] **Task #283**: Delete ConcurrentAccessCoordinator and cleanup references
+- [ ] **Task #284**: Validate thread safety with concurrent access tests
+- [ ] **Task #285**: Confirm FFI overhead reduction and performance improvements
+
+**Total Tasks**: 5
+**Estimated Duration**: 3 days total
 
 ## Dependencies
 

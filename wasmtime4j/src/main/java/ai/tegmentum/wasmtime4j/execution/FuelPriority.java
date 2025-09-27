@@ -107,7 +107,7 @@ public enum FuelPriority {
   /**
    * Gets the fuel consumption rate multiplier for this priority.
    *
-   * @return consumption multiplier (1.0 is standard rate, &lt;1.0 is reduced, &gt;1.0 is increased)
+   * @return consumption multiplier (1.0 is standard rate, <1.0 is reduced, >1.0 is increased)
    */
   public double getConsumptionMultiplier() {
     return consumptionMultiplier;

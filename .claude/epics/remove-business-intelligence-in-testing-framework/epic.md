@@ -4,7 +4,7 @@ status: backlog
 created: 2025-09-21T13:11:48Z
 progress: 0%
 prd: .claude/prds/remove-business-intelligence-in-testing-framework.md
-github: [Will be updated when synced to GitHub]
+github: https://github.com/zacharywhitley/wasmtime4j/issues/297
 ---
 
 # Epic: Remove Business Intelligence in Testing Framework
@@ -162,3 +162,18 @@ High-level task categories that will be created:
 - **Mitigation**: Careful analysis phase and incremental removal approach
 
 This epic refocuses the testing framework on its core mission: fast, reliable WebAssembly validation without enterprise BI complexity.
+
+## Tasks Created
+- [ ] [#298](https://github.com/zacharywhitley/wasmtime4j/issues/298) - Audit BI components and create safety backup (parallel: true)
+- [ ] [#299](https://github.com/zacharywhitley/wasmtime4j/issues/299) - Remove core BI engine components (parallel: false)
+- [ ] [#300](https://github.com/zacharywhitley/wasmtime4j/issues/300) - Remove visualization and dashboard components (parallel: true)
+- [ ] [#301](https://github.com/zacharywhitley/wasmtime4j/issues/301) - Remove comprehensive reporting and BI utilities (parallel: true)
+- [ ] [#302](https://github.com/zacharywhitley/wasmtime4j/issues/302) - Clean up Maven dependencies and build configuration (parallel: false)
+- [ ] [#303](https://github.com/zacharywhitley/wasmtime4j/issues/303) - Implement simple JUnit tests for WebAssembly validation (parallel: false)
+- [ ] [#304](https://github.com/zacharywhitley/wasmtime4j/issues/304) - Ensure CI/CD integration and standard reporting (parallel: false)
+- [ ] [#305](https://github.com/zacharywhitley/wasmtime4j/issues/305) - Performance validation and documentation update (parallel: false)
+
+Total tasks: 8
+Parallel tasks: 3
+Sequential tasks: 5
+Estimated total effort: 64 hours

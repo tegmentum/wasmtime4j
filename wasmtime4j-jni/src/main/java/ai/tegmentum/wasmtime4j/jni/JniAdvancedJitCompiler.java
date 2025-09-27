@@ -211,7 +211,7 @@ public final class JniAdvancedJitCompiler {
    */
   public JitSpeculativeOptimizationResult speculativeOptimize(final String moduleId,
                                                               final String functionName,
-                                                              final List&lt;JitSpeculationAssumption&gt; speculationAssumptions) {
+                                                              final List<JitSpeculationAssumption> speculationAssumptions) {
     if (moduleId == null) {
       throw new IllegalArgumentException("Module ID cannot be null");
     }
@@ -227,11 +227,11 @@ public final class JniAdvancedJitCompiler {
 
     try {
       final String[] assumptionTypes = speculationAssumptions.stream()
-          .map(assumption -&gt; assumption.getType().name())
+          .map(assumption -> assumption.getType().name())
           .toArray(String[]::new);
 
       final String[] assumptionParams = speculationAssumptions.stream()
-          .map(assumption -&gt; serializeAssumptionParams(assumption.getParameters()))
+          .map(assumption -> serializeAssumptionParams(assumption.getParameters()))
           .toArray(String[]::new);
 
       final long speculativeResult = speculativeOptimizeNative(
@@ -435,7 +435,7 @@ public final class JniAdvancedJitCompiler {
    * @throws IllegalArgumentException if any parameter is null or invalid
    * @throws IllegalStateException if compiler is closed
    */
-  public CompletableFuture&lt;JitCompilationResult&gt; compileModuleAsync(final byte[] moduleBytes,
+  public CompletableFuture<JitCompilationResult> compileModuleAsync(final byte[] moduleBytes,
                                                                    final String moduleId) {
     if (moduleBytes == null) {
       throw new IllegalArgumentException("Module bytes cannot be null");
@@ -445,7 +445,7 @@ public final class JniAdvancedJitCompiler {
     }
     checkNotClosed();
 
-    return CompletableFuture.supplyAsync(() -&gt; {
+    return CompletableFuture.supplyAsync(() -> {
       try {
         return compileModule(moduleBytes, moduleId);
       } catch (final Exception e) {
@@ -502,7 +502,7 @@ public final class JniAdvancedJitCompiler {
     return json.toString();
   }
 
-  private String serializeAssumptionParams(final Map&lt;String, String&gt; params) {
+  private String serializeAssumptionParams(final Map<String, String> params) {
     if (params == null || params.isEmpty()) {
       return "{}";
     }
@@ -510,7 +510,7 @@ public final class JniAdvancedJitCompiler {
     final StringBuilder json = new StringBuilder();
     json.append("{");
     boolean first = true;
-    for (final Map.Entry&lt;String, String&gt; entry : params.entrySet()) {
+    for (final Map.Entry<String, String> entry : params.entrySet()) {
       if (!first) {
         json.append(",");
       }
@@ -521,7 +521,7 @@ public final class JniAdvancedJitCompiler {
     return json.toString();
   }
 
-  private String serializeBranchCounts(final Map&lt;String, Integer&gt; branchCounts) {
+  private String serializeBranchCounts(final Map<String, Integer> branchCounts) {
     if (branchCounts == null || branchCounts.isEmpty()) {
       return "{}";
     }
@@ -529,7 +529,7 @@ public final class JniAdvancedJitCompiler {
     final StringBuilder json = new StringBuilder();
     json.append("{");
     boolean first = true;
-    for (final Map.Entry&lt;String, Integer&gt; entry : branchCounts.entrySet()) {
+    for (final Map.Entry<String, Integer> entry : branchCounts.entrySet()) {
       if (!first) {
         json.append(",");
       }
@@ -540,7 +540,7 @@ public final class JniAdvancedJitCompiler {
     return json.toString();
   }
 
-  private String serializeAdditionalMetrics(final Map&lt;String, Object&gt; additionalMetrics) {
+  private String serializeAdditionalMetrics(final Map<String, Object> additionalMetrics) {
     if (additionalMetrics == null || additionalMetrics.isEmpty()) {
       return "{}";
     }
@@ -548,7 +548,7 @@ public final class JniAdvancedJitCompiler {
     final StringBuilder json = new StringBuilder();
     json.append("{");
     boolean first = true;
-    for (final Map.Entry&lt;String, Object&gt; entry : additionalMetrics.entrySet()) {
+    for (final Map.Entry<String, Object> entry : additionalMetrics.entrySet()) {
       if (!first) {
         json.append(",");
       }
@@ -574,7 +574,7 @@ public final class JniAdvancedJitCompiler {
         codeSizeBytes,
         compilationTimeMs,
         null, // error message
-        new HashMap&lt;&gt;() // metadata - would extract from native result
+        new HashMap<>() // metadata - would extract from native result
     );
   }
 
@@ -590,7 +590,7 @@ public final class JniAdvancedJitCompiler {
         optimizationType,
         performanceImprovement,
         codeSizeChange,
-        new HashMap&lt;&gt;() // additional metrics
+        new HashMap<>() // additional metrics
     );
   }
 
@@ -602,7 +602,7 @@ public final class JniAdvancedJitCompiler {
     return new JitSpeculativeOptimizationResult(
         successful,
         rejectionReason,
-        new HashMap&lt;&gt;() // metadata
+        new HashMap<>() // metadata
     );
   }
 
@@ -620,7 +620,7 @@ public final class JniAdvancedJitCompiler {
   private JitInstrumentedModule createInstrumentedModule(final long nativeResult) {
     // Extract instrumented module data from native handle
     final byte[] instrumentedBytes = getInstrumentedBytesNative(nativeResult);
-    final Map&lt;String, Integer&gt; instrumentationMap = parseInstrumentationMapNative(nativeResult);
+    final Map<String, Integer> instrumentationMap = parseInstrumentationMapNative(nativeResult);
 
     return new JitInstrumentedModule(
         instrumentedBytes,
@@ -660,10 +660,10 @@ public final class JniAdvancedJitCompiler {
     );
   }
 
-  private Map&lt;String, Integer&gt; parseInstrumentationMapNative(final long nativeResult) {
+  private Map<String, Integer> parseInstrumentationMapNative(final long nativeResult) {
     // Parse instrumentation map from native result
     // This would extract the actual data from the native layer
-    return new HashMap&lt;&gt;(); // Placeholder
+    return new HashMap<>(); // Placeholder
   }
 
   // Native method declarations
@@ -883,7 +883,7 @@ final class JitCompilationResult {
   private final int codeSizeBytes;
   private final long compilationTimeMs;
   private final String errorMessage;
-  private final Map&lt;String, Object&gt; metadata;
+  private final Map<String, Object> metadata;
 
   public JitCompilationResult(final boolean successful,
                               final CompilationStrategy strategy,
@@ -891,14 +891,14 @@ final class JitCompilationResult {
                               final int codeSizeBytes,
                               final long compilationTimeMs,
                               final String errorMessage,
-                              final Map&lt;String, Object&gt; metadata) {
+                              final Map<String, Object> metadata) {
     this.successful = successful;
     this.strategy = strategy;
     this.optimizationLevel = optimizationLevel;
     this.codeSizeBytes = codeSizeBytes;
     this.compilationTimeMs = compilationTimeMs;
     this.errorMessage = errorMessage;
-    this.metadata = metadata != null ? new HashMap&lt;&gt;(metadata) : new HashMap&lt;&gt;();
+    this.metadata = metadata != null ? new HashMap<>(metadata) : new HashMap<>();
   }
 
   public boolean isSuccessful() { return successful; }
@@ -907,7 +907,7 @@ final class JitCompilationResult {
   public int getCodeSizeBytes() { return codeSizeBytes; }
   public long getCompilationTimeMs() { return compilationTimeMs; }
   public String getErrorMessage() { return errorMessage; }
-  public Map&lt;String, Object&gt; getMetadata() { return metadata; }
+  public Map<String, Object> getMetadata() { return metadata; }
 }
 
 /**
@@ -918,25 +918,25 @@ final class JitOptimizationResult {
   private final String optimizationType;
   private final double performanceImprovement;
   private final int codeSizeChange;
-  private final Map&lt;String, Object&gt; additionalMetrics;
+  private final Map<String, Object> additionalMetrics;
 
   public JitOptimizationResult(final boolean successful,
                                final String optimizationType,
                                final double performanceImprovement,
                                final int codeSizeChange,
-                               final Map&lt;String, Object&gt; additionalMetrics) {
+                               final Map<String, Object> additionalMetrics) {
     this.successful = successful;
     this.optimizationType = optimizationType;
     this.performanceImprovement = performanceImprovement;
     this.codeSizeChange = codeSizeChange;
-    this.additionalMetrics = additionalMetrics != null ? new HashMap&lt;&gt;(additionalMetrics) : new HashMap&lt;&gt;();
+    this.additionalMetrics = additionalMetrics != null ? new HashMap<>(additionalMetrics) : new HashMap<>();
   }
 
   public boolean isSuccessful() { return successful; }
   public String getOptimizationType() { return optimizationType; }
   public double getPerformanceImprovement() { return performanceImprovement; }
   public int getCodeSizeChange() { return codeSizeChange; }
-  public Map&lt;String, Object&gt; getAdditionalMetrics() { return additionalMetrics; }
+  public Map<String, Object> getAdditionalMetrics() { return additionalMetrics; }
 }
 
 /**
@@ -945,19 +945,19 @@ final class JitOptimizationResult {
 final class JitSpeculativeOptimizationResult {
   private final boolean successful;
   private final String rejectionReason;
-  private final Map&lt;String, Object&gt; metadata;
+  private final Map<String, Object> metadata;
 
   public JitSpeculativeOptimizationResult(final boolean successful,
                                           final String rejectionReason,
-                                          final Map&lt;String, Object&gt; metadata) {
+                                          final Map<String, Object> metadata) {
     this.successful = successful;
     this.rejectionReason = rejectionReason;
-    this.metadata = metadata != null ? new HashMap&lt;&gt;(metadata) : new HashMap&lt;&gt;();
+    this.metadata = metadata != null ? new HashMap<>(metadata) : new HashMap<>();
   }
 
   public boolean isSuccessful() { return successful; }
   public String getRejectionReason() { return rejectionReason; }
-  public Map&lt;String, Object&gt; getMetadata() { return metadata; }
+  public Map<String, Object> getMetadata() { return metadata; }
 }
 
 /**
@@ -981,16 +981,16 @@ final class JitDeoptimizationResult {
  */
 final class JitInstrumentedModule {
   private final byte[] instrumentedBytes;
-  private final Map&lt;String, Integer&gt; instrumentationMap;
+  private final Map<String, Integer> instrumentationMap;
 
   public JitInstrumentedModule(final byte[] instrumentedBytes,
-                               final Map&lt;String, Integer&gt; instrumentationMap) {
+                               final Map<String, Integer> instrumentationMap) {
     this.instrumentedBytes = instrumentedBytes != null ? instrumentedBytes.clone() : new byte[0];
-    this.instrumentationMap = instrumentationMap != null ? new HashMap&lt;&gt;(instrumentationMap) : new HashMap&lt;&gt;();
+    this.instrumentationMap = instrumentationMap != null ? new HashMap<>(instrumentationMap) : new HashMap<>();
   }
 
   public byte[] getInstrumentedBytes() { return instrumentedBytes.clone(); }
-  public Map&lt;String, Integer&gt; getInstrumentationMap() { return new HashMap&lt;&gt;(instrumentationMap); }
+  public Map<String, Integer> getInstrumentationMap() { return new HashMap<>(instrumentationMap); }
 }
 
 /**
@@ -1111,16 +1111,16 @@ final class JitExecutionProfile {
  */
 final class JitSpeculationAssumption {
   private final JitSpeculationAssumptionType type;
-  private final Map&lt;String, String&gt; parameters;
+  private final Map<String, String> parameters;
 
   public JitSpeculationAssumption(final JitSpeculationAssumptionType type,
-                                  final Map&lt;String, String&gt; parameters) {
+                                  final Map<String, String> parameters) {
     this.type = Objects.requireNonNull(type);
-    this.parameters = parameters != null ? new HashMap&lt;&gt;(parameters) : new HashMap&lt;&gt;();
+    this.parameters = parameters != null ? new HashMap<>(parameters) : new HashMap<>();
   }
 
   public JitSpeculationAssumptionType getType() { return type; }
-  public Map&lt;String, String&gt; getParameters() { return new HashMap&lt;&gt;(parameters); }
+  public Map<String, String> getParameters() { return new HashMap<>(parameters); }
 }
 
 /**
@@ -1160,21 +1160,21 @@ enum JitDeoptimizationReason {
 final class JitProfileDataPoint {
   private final long executionCount;
   private final long executionTimeNs;
-  private final Map&lt;String, Integer&gt; branchCounts;
-  private final Map&lt;String, Object&gt; additionalMetrics;
+  private final Map<String, Integer> branchCounts;
+  private final Map<String, Object> additionalMetrics;
 
   public JitProfileDataPoint(final long executionCount,
                              final long executionTimeNs,
-                             final Map&lt;String, Integer&gt; branchCounts,
-                             final Map&lt;String, Object&gt; additionalMetrics) {
+                             final Map<String, Integer> branchCounts,
+                             final Map<String, Object> additionalMetrics) {
     this.executionCount = executionCount;
     this.executionTimeNs = executionTimeNs;
-    this.branchCounts = branchCounts != null ? new HashMap&lt;&gt;(branchCounts) : new HashMap&lt;&gt;();
-    this.additionalMetrics = additionalMetrics != null ? new HashMap&lt;&gt;(additionalMetrics) : new HashMap&lt;&gt;();
+    this.branchCounts = branchCounts != null ? new HashMap<>(branchCounts) : new HashMap<>();
+    this.additionalMetrics = additionalMetrics != null ? new HashMap<>(additionalMetrics) : new HashMap<>();
   }
 
   public long getExecutionCount() { return executionCount; }
   public long getExecutionTimeNs() { return executionTimeNs; }
-  public Map&lt;String, Integer&gt; getBranchCounts() { return new HashMap&lt;&gt;(branchCounts); }
-  public Map&lt;String, Object&gt; getAdditionalMetrics() { return new HashMap&lt;&gt;(additionalMetrics); }
+  public Map<String, Integer> getBranchCounts() { return new HashMap<>(branchCounts); }
+  public Map<String, Object> getAdditionalMetrics() { return new HashMap<>(additionalMetrics); }
 }

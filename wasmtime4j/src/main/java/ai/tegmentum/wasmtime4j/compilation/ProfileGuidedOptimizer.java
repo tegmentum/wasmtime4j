@@ -34,7 +34,7 @@ public final class ProfileGuidedOptimizer {
   private static final int PROFILE_VERSION = 1;
 
   private final ProfileGuidedOptimizerConfig config;
-  private final Map&lt;String, ModuleProfileData&gt; moduleProfiles;
+  private final Map<String, ModuleProfileData> moduleProfiles;
   private final ProfileDataCollector profileCollector;
   private final OptimizationPlanGenerator planGenerator;
   private final AtomicLong totalProfiledExecutions;
@@ -51,7 +51,7 @@ public final class ProfileGuidedOptimizer {
       throw new IllegalArgumentException("Profile-guided optimizer configuration cannot be null");
     }
     this.config = config;
-    this.moduleProfiles = new ConcurrentHashMap&lt;&gt;();
+    this.moduleProfiles = new ConcurrentHashMap<>();
     this.profileCollector = new ProfileDataCollector(config);
     this.planGenerator = new OptimizationPlanGenerator(config);
     this.totalProfiledExecutions = new AtomicLong(0);
@@ -292,7 +292,7 @@ public final class ProfileGuidedOptimizer {
   private InstrumentationResult instrumentModule(final String moduleId, final byte[] moduleBytes) {
     // Simulate instrumentation - in real implementation, this would insert
     // profiling code into the WebAssembly module
-    final Map&lt;String, InstrumentationPoint&gt; instrumentationMap = new HashMap&lt;&gt;();
+    final Map<String, InstrumentationPoint> instrumentationMap = new HashMap<>();
 
     // Add instrumentation points for function entry/exit, basic blocks, etc.
     instrumentationMap.put("function_entry", new InstrumentationPoint("function_entry", 0));
@@ -310,7 +310,7 @@ public final class ProfileGuidedOptimizer {
                                             final OptimizationPlan plan) {
     // Simulate optimization - in real implementation, this would apply
     // the optimization plan to generate optimized WebAssembly code
-    final Map&lt;String, Object&gt; metadata = new HashMap&lt;&gt;();
+    final Map<String, Object> metadata = new HashMap<>();
     metadata.put("optimization_count", plan.getFunctionOptimizations().size());
     metadata.put("estimated_speedup", plan.getEstimatedSpeedup());
 
@@ -457,30 +457,30 @@ final class ProfileDataPoint {
   private final String functionName;
   private final long executionCount;
   private final long executionTimeNs;
-  private final Map&lt;String, Integer&gt; branchCounts;
-  private final Map&lt;String, Object&gt; additionalMetrics;
+  private final Map<String, Integer> branchCounts;
+  private final Map<String, Object> additionalMetrics;
   private final long timestamp;
 
   public ProfileDataPoint(final String functionName,
                           final long executionCount,
                           final long executionTimeNs,
-                          final Map&lt;String, Integer&gt; branchCounts,
-                          final Map&lt;String, Object&gt; additionalMetrics) {
+                          final Map<String, Integer> branchCounts,
+                          final Map<String, Object> additionalMetrics) {
     this.functionName = Objects.requireNonNull(functionName);
     this.executionCount = executionCount;
     this.executionTimeNs = executionTimeNs;
     this.branchCounts = branchCounts != null ?
-        Collections.unmodifiableMap(new HashMap&lt;&gt;(branchCounts)) : Collections.emptyMap();
+        Collections.unmodifiableMap(new HashMap<>(branchCounts)) : Collections.emptyMap();
     this.additionalMetrics = additionalMetrics != null ?
-        Collections.unmodifiableMap(new HashMap&lt;&gt;(additionalMetrics)) : Collections.emptyMap();
+        Collections.unmodifiableMap(new HashMap<>(additionalMetrics)) : Collections.emptyMap();
     this.timestamp = System.currentTimeMillis();
   }
 
   public String getFunctionName() { return functionName; }
   public long getExecutionCount() { return executionCount; }
   public long getExecutionTimeNs() { return executionTimeNs; }
-  public Map&lt;String, Integer&gt; getBranchCounts() { return branchCounts; }
-  public Map&lt;String, Object&gt; getAdditionalMetrics() { return additionalMetrics; }
+  public Map<String, Integer> getBranchCounts() { return branchCounts; }
+  public Map<String, Object> getAdditionalMetrics() { return additionalMetrics; }
   public long getTimestamp() { return timestamp; }
 
   public double getAverageExecutionTimeNs() {
@@ -493,19 +493,19 @@ final class ProfileDataPoint {
  */
 final class ModuleProfileData {
   private final String moduleId;
-  private final Map&lt;String, FunctionProfileData&gt; functionProfiles;
+  private final Map<String, FunctionProfileData> functionProfiles;
   private final AtomicLong totalExecutions;
   private final AtomicLong totalExecutionTimeNs;
 
   public ModuleProfileData(final String moduleId) {
     this.moduleId = Objects.requireNonNull(moduleId);
-    this.functionProfiles = new ConcurrentHashMap&lt;&gt;();
+    this.functionProfiles = new ConcurrentHashMap<>();
     this.totalExecutions = new AtomicLong(0);
     this.totalExecutionTimeNs = new AtomicLong(0);
   }
 
   public void recordProfileData(final String functionName, final ProfileDataPoint dataPoint) {
-    functionProfiles.compute(functionName, (name, profile) -&gt; {
+    functionProfiles.compute(functionName, (name, profile) -> {
       if (profile == null) {
         profile = new FunctionProfileData(functionName);
       }
@@ -518,12 +518,12 @@ final class ModuleProfileData {
   }
 
   public String getModuleId() { return moduleId; }
-  public Map&lt;String, FunctionProfileData&gt; getFunctionProfiles() { return Collections.unmodifiableMap(functionProfiles); }
+  public Map<String, FunctionProfileData> getFunctionProfiles() { return Collections.unmodifiableMap(functionProfiles); }
   public long getTotalExecutions() { return totalExecutions.get(); }
   public long getTotalExecutionTimeNs() { return totalExecutionTimeNs.get(); }
 
   public boolean hasSufficientData(final int minThreshold) {
-    return totalExecutions.get() &gt;= minThreshold;
+    return totalExecutions.get() >= minThreshold;
   }
 
   public double getProfileCompleteness() {
@@ -532,14 +532,14 @@ final class ModuleProfileData {
            Math.min(1.0, functionProfiles.size() / 10.0); // Assume 10 functions for completeness
   }
 
-  public List&lt;String&gt; getHotFunctions(final double threshold) {
-    final List&lt;String&gt; hotFunctions = new ArrayList&lt;&gt;();
+  public List<String> getHotFunctions(final double threshold) {
+    final List<String> hotFunctions = new ArrayList<>();
     final long totalTime = totalExecutionTimeNs.get();
 
-    if (totalTime &gt; 0) {
-      for (final Map.Entry&lt;String, FunctionProfileData&gt; entry : functionProfiles.entrySet()) {
+    if (totalTime > 0) {
+      for (final Map.Entry<String, FunctionProfileData> entry : functionProfiles.entrySet()) {
         final double percentage = (double) entry.getValue().getTotalExecutionTimeNs() / totalTime;
-        if (percentage &gt;= threshold) {
+        if (percentage >= threshold) {
           hotFunctions.add(entry.getKey());
         }
       }
@@ -548,14 +548,14 @@ final class ModuleProfileData {
     return hotFunctions;
   }
 
-  public List&lt;String&gt; getColdFunctions(final double threshold) {
-    final List&lt;String&gt; coldFunctions = new ArrayList&lt;&gt;();
+  public List<String> getColdFunctions(final double threshold) {
+    final List<String> coldFunctions = new ArrayList<>();
     final long totalTime = totalExecutionTimeNs.get();
 
-    if (totalTime &gt; 0) {
-      for (final Map.Entry&lt;String, FunctionProfileData&gt; entry : functionProfiles.entrySet()) {
+    if (totalTime > 0) {
+      for (final Map.Entry<String, FunctionProfileData> entry : functionProfiles.entrySet()) {
         final double percentage = (double) entry.getValue().getTotalExecutionTimeNs() / totalTime;
-        if (percentage &lt;= threshold) {
+        if (percentage <= threshold) {
           coldFunctions.add(entry.getKey());
         }
       }
@@ -570,17 +570,17 @@ final class ModuleProfileData {
  */
 final class FunctionProfileData {
   private final String functionName;
-  private final List&lt;ProfileDataPoint&gt; dataPoints;
+  private final List<ProfileDataPoint> dataPoints;
   private final AtomicLong totalExecutions;
   private final AtomicLong totalExecutionTimeNs;
-  private final Map&lt;String, AtomicLong&gt; branchCounts;
+  private final Map<String, AtomicLong> branchCounts;
 
   public FunctionProfileData(final String functionName) {
     this.functionName = Objects.requireNonNull(functionName);
-    this.dataPoints = Collections.synchronizedList(new ArrayList&lt;&gt;());
+    this.dataPoints = Collections.synchronizedList(new ArrayList<>());
     this.totalExecutions = new AtomicLong(0);
     this.totalExecutionTimeNs = new AtomicLong(0);
-    this.branchCounts = new ConcurrentHashMap&lt;&gt;();
+    this.branchCounts = new ConcurrentHashMap<>();
   }
 
   public void addDataPoint(final ProfileDataPoint dataPoint) {
@@ -589,32 +589,36 @@ final class FunctionProfileData {
     totalExecutionTimeNs.addAndGet(dataPoint.getExecutionTimeNs());
 
     // Aggregate branch counts
-    for (final Map.Entry&lt;String, Integer&gt; entry : dataPoint.getBranchCounts().entrySet()) {
+    for (final Map.Entry<String, Integer> entry : dataPoint.getBranchCounts().entrySet()) {
       branchCounts.compute(entry.getKey(),
-          (branch, count) -&gt; count == null ? new AtomicLong(entry.getValue()) : {
-            count.addAndGet(entry.getValue());
-            return count;
+          (branch, count) -> {
+            if (count == null) {
+              return new AtomicLong(entry.getValue());
+            } else {
+              count.addAndGet(entry.getValue());
+              return count;
+            }
           });
     }
   }
 
   public String getFunctionName() { return functionName; }
-  public List&lt;ProfileDataPoint&gt; getDataPoints() { return Collections.unmodifiableList(dataPoints); }
+  public List<ProfileDataPoint> getDataPoints() { return Collections.unmodifiableList(dataPoints); }
   public long getTotalExecutions() { return totalExecutions.get(); }
   public long getTotalExecutionTimeNs() { return totalExecutionTimeNs.get(); }
-  public Map&lt;String, AtomicLong&gt; getBranchCounts() { return Collections.unmodifiableMap(branchCounts); }
+  public Map<String, AtomicLong> getBranchCounts() { return Collections.unmodifiableMap(branchCounts); }
 
   public double getAverageExecutionTimeNs() {
     final long executions = totalExecutions.get();
     return executions == 0 ? 0.0 : (double) totalExecutionTimeNs.get() / executions;
   }
 
-  public Map&lt;String, Double&gt; getBranchProbabilities() {
-    final Map&lt;String, Double&gt; probabilities = new HashMap&lt;&gt;();
+  public Map<String, Double> getBranchProbabilities() {
+    final Map<String, Double> probabilities = new HashMap<>();
     final long totalBranches = branchCounts.values().stream().mapToLong(AtomicLong::get).sum();
 
-    if (totalBranches &gt; 0) {
-      for (final Map.Entry&lt;String, AtomicLong&gt; entry : branchCounts.entrySet()) {
+    if (totalBranches > 0) {
+      for (final Map.Entry<String, AtomicLong> entry : branchCounts.entrySet()) {
         probabilities.put(entry.getKey(), (double) entry.getValue().get() / totalBranches);
       }
     }
@@ -628,16 +632,16 @@ final class FunctionProfileData {
  */
 final class InstrumentationResult {
   private final byte[] instrumentedBytes;
-  private final Map&lt;String, InstrumentationPoint&gt; instrumentationMap;
+  private final Map<String, InstrumentationPoint> instrumentationMap;
 
   public InstrumentationResult(final byte[] instrumentedBytes,
-                               final Map&lt;String, InstrumentationPoint&gt; instrumentationMap) {
+                               final Map<String, InstrumentationPoint> instrumentationMap) {
     this.instrumentedBytes = Objects.requireNonNull(instrumentedBytes).clone();
-    this.instrumentationMap = Collections.unmodifiableMap(new HashMap&lt;&gt;(instrumentationMap));
+    this.instrumentationMap = Collections.unmodifiableMap(new HashMap<>(instrumentationMap));
   }
 
   public byte[] getInstrumentedBytes() { return instrumentedBytes.clone(); }
-  public Map&lt;String, InstrumentationPoint&gt; getInstrumentationMap() { return instrumentationMap; }
+  public Map<String, InstrumentationPoint> getInstrumentationMap() { return instrumentationMap; }
 }
 
 /**
@@ -662,22 +666,22 @@ final class InstrumentationPoint {
 final class InstrumentedModule {
   private final String moduleId;
   private final byte[] instrumentedBytes;
-  private final Map&lt;String, InstrumentationPoint&gt; instrumentationMap;
+  private final Map<String, InstrumentationPoint> instrumentationMap;
   private final ModuleProfileData profileData;
 
   public InstrumentedModule(final String moduleId,
                             final byte[] instrumentedBytes,
-                            final Map&lt;String, InstrumentationPoint&gt; instrumentationMap,
+                            final Map<String, InstrumentationPoint> instrumentationMap,
                             final ModuleProfileData profileData) {
     this.moduleId = Objects.requireNonNull(moduleId);
     this.instrumentedBytes = Objects.requireNonNull(instrumentedBytes).clone();
-    this.instrumentationMap = Collections.unmodifiableMap(new HashMap&lt;&gt;(instrumentationMap));
+    this.instrumentationMap = Collections.unmodifiableMap(new HashMap<>(instrumentationMap));
     this.profileData = Objects.requireNonNull(profileData);
   }
 
   public String getModuleId() { return moduleId; }
   public byte[] getInstrumentedBytes() { return instrumentedBytes.clone(); }
-  public Map&lt;String, InstrumentationPoint&gt; getInstrumentationMap() { return instrumentationMap; }
+  public Map<String, InstrumentationPoint> getInstrumentationMap() { return instrumentationMap; }
   public ModuleProfileData getProfileData() { return profileData; }
 }
 
@@ -686,23 +690,23 @@ final class InstrumentedModule {
  */
 final class OptimizationPlan {
   private final String moduleId;
-  private final List&lt;FunctionOptimization&gt; functionOptimizations;
-  private final Map&lt;String, Object&gt; globalOptimizations;
+  private final List<FunctionOptimization> functionOptimizations;
+  private final Map<String, Object> globalOptimizations;
   private final double estimatedSpeedup;
 
   public OptimizationPlan(final String moduleId,
-                          final List&lt;FunctionOptimization&gt; functionOptimizations,
-                          final Map&lt;String, Object&gt; globalOptimizations,
+                          final List<FunctionOptimization> functionOptimizations,
+                          final Map<String, Object> globalOptimizations,
                           final double estimatedSpeedup) {
     this.moduleId = Objects.requireNonNull(moduleId);
-    this.functionOptimizations = Collections.unmodifiableList(new ArrayList&lt;&gt;(functionOptimizations));
-    this.globalOptimizations = Collections.unmodifiableMap(new HashMap&lt;&gt;(globalOptimizations));
+    this.functionOptimizations = Collections.unmodifiableList(new ArrayList<>(functionOptimizations));
+    this.globalOptimizations = Collections.unmodifiableMap(new HashMap<>(globalOptimizations));
     this.estimatedSpeedup = estimatedSpeedup;
   }
 
   public String getModuleId() { return moduleId; }
-  public List&lt;FunctionOptimization&gt; getFunctionOptimizations() { return functionOptimizations; }
-  public Map&lt;String, Object&gt; getGlobalOptimizations() { return globalOptimizations; }
+  public List<FunctionOptimization> getFunctionOptimizations() { return functionOptimizations; }
+  public Map<String, Object> getGlobalOptimizations() { return globalOptimizations; }
   public double getEstimatedSpeedup() { return estimatedSpeedup; }
 }
 
@@ -711,23 +715,23 @@ final class OptimizationPlan {
  */
 final class FunctionOptimization {
   private final String functionName;
-  private final List&lt;String&gt; optimizationTypes;
-  private final Map&lt;String, Object&gt; parameters;
+  private final List<String> optimizationTypes;
+  private final Map<String, Object> parameters;
   private final double priorityScore;
 
   public FunctionOptimization(final String functionName,
-                              final List&lt;String&gt; optimizationTypes,
-                              final Map&lt;String, Object&gt; parameters,
+                              final List<String> optimizationTypes,
+                              final Map<String, Object> parameters,
                               final double priorityScore) {
     this.functionName = Objects.requireNonNull(functionName);
-    this.optimizationTypes = Collections.unmodifiableList(new ArrayList&lt;&gt;(optimizationTypes));
-    this.parameters = Collections.unmodifiableMap(new HashMap&lt;&gt;(parameters));
+    this.optimizationTypes = Collections.unmodifiableList(new ArrayList<>(optimizationTypes));
+    this.parameters = Collections.unmodifiableMap(new HashMap<>(parameters));
     this.priorityScore = priorityScore;
   }
 
   public String getFunctionName() { return functionName; }
-  public List&lt;String&gt; getOptimizationTypes() { return optimizationTypes; }
-  public Map&lt;String, Object&gt; getParameters() { return parameters; }
+  public List<String> getOptimizationTypes() { return optimizationTypes; }
+  public Map<String, Object> getParameters() { return parameters; }
   public double getPriorityScore() { return priorityScore; }
 }
 
@@ -736,16 +740,16 @@ final class FunctionOptimization {
  */
 final class OptimizationResult {
   private final byte[] optimizedBytes;
-  private final Map&lt;String, Object&gt; optimizationMetadata;
+  private final Map<String, Object> optimizationMetadata;
 
   public OptimizationResult(final byte[] optimizedBytes,
-                            final Map&lt;String, Object&gt; optimizationMetadata) {
+                            final Map<String, Object> optimizationMetadata) {
     this.optimizedBytes = Objects.requireNonNull(optimizedBytes).clone();
-    this.optimizationMetadata = Collections.unmodifiableMap(new HashMap&lt;&gt;(optimizationMetadata));
+    this.optimizationMetadata = Collections.unmodifiableMap(new HashMap<>(optimizationMetadata));
   }
 
   public byte[] getOptimizedBytes() { return optimizedBytes.clone(); }
-  public Map&lt;String, Object&gt; getOptimizationMetadata() { return optimizationMetadata; }
+  public Map<String, Object> getOptimizationMetadata() { return optimizationMetadata; }
 }
 
 /**
@@ -754,22 +758,22 @@ final class OptimizationResult {
 final class OptimizedModule {
   private final String moduleId;
   private final byte[] optimizedBytes;
-  private final Map&lt;String, Object&gt; optimizationMetadata;
+  private final Map<String, Object> optimizationMetadata;
   private final OptimizationPlan appliedPlan;
 
   public OptimizedModule(final String moduleId,
                          final byte[] optimizedBytes,
-                         final Map&lt;String, Object&gt; optimizationMetadata,
+                         final Map<String, Object> optimizationMetadata,
                          final OptimizationPlan appliedPlan) {
     this.moduleId = Objects.requireNonNull(moduleId);
     this.optimizedBytes = Objects.requireNonNull(optimizedBytes).clone();
-    this.optimizationMetadata = Collections.unmodifiableMap(new HashMap&lt;&gt;(optimizationMetadata));
+    this.optimizationMetadata = Collections.unmodifiableMap(new HashMap<>(optimizationMetadata));
     this.appliedPlan = Objects.requireNonNull(appliedPlan);
   }
 
   public String getModuleId() { return moduleId; }
   public byte[] getOptimizedBytes() { return optimizedBytes.clone(); }
-  public Map&lt;String, Object&gt; getOptimizationMetadata() { return optimizationMetadata; }
+  public Map<String, Object> getOptimizationMetadata() { return optimizationMetadata; }
   public OptimizationPlan getAppliedPlan() { return appliedPlan; }
 }
 
@@ -815,11 +819,11 @@ final class OptimizationPlanGenerator {
   }
 
   public OptimizationPlan generatePlan(final ModuleProfileData profileData) {
-    final List&lt;FunctionOptimization&gt; functionOptimizations = new ArrayList&lt;&gt;();
-    final Map&lt;String, Object&gt; globalOptimizations = new HashMap&lt;&gt;();
+    final List<FunctionOptimization> functionOptimizations = new ArrayList<>();
+    final Map<String, Object> globalOptimizations = new HashMap<>();
 
     // Generate function-specific optimizations
-    for (final Map.Entry&lt;String, FunctionProfileData&gt; entry : profileData.getFunctionProfiles().entrySet()) {
+    for (final Map.Entry<String, FunctionProfileData> entry : profileData.getFunctionProfiles().entrySet()) {
       final FunctionOptimization optimization = generateFunctionOptimization(entry.getValue());
       if (optimization != null) {
         functionOptimizations.add(optimization);
@@ -828,7 +832,7 @@ final class OptimizationPlanGenerator {
 
     // Generate global optimizations
     if (config.isEnableColdCodeElimination()) {
-      final List&lt;String&gt; coldFunctions = profileData.getColdFunctions(config.getColdFunctionThreshold());
+      final List<String> coldFunctions = profileData.getColdFunctions(config.getColdFunctionThreshold());
       globalOptimizations.put("cold_code_elimination", coldFunctions);
     }
 
@@ -839,21 +843,21 @@ final class OptimizationPlanGenerator {
   }
 
   private FunctionOptimization generateFunctionOptimization(final FunctionProfileData functionData) {
-    final List&lt;String&gt; optimizationTypes = new ArrayList&lt;&gt;();
-    final Map&lt;String, Object&gt; parameters = new HashMap&lt;&gt;();
+    final List<String> optimizationTypes = new ArrayList<>();
+    final Map<String, Object> parameters = new HashMap<>();
 
     // Determine optimizations based on profile data
-    if (functionData.getTotalExecutions() &gt; 1000) {
+    if (functionData.getTotalExecutions() > 1000) {
       optimizationTypes.add("hot_spot_optimization");
     }
 
-    if (config.isEnableFunctionInlining() && functionData.getAverageExecutionTimeNs() &lt; 1000000) { // 1ms
+    if (config.isEnableFunctionInlining() && functionData.getAverageExecutionTimeNs() < 1000000) { // 1ms
       optimizationTypes.add("function_inlining");
       parameters.put("max_inline_depth", config.getMaxInlineDepth());
     }
 
     if (config.isEnableBranchPredictionOptimization()) {
-      final Map&lt;String, Double&gt; branchProbabilities = functionData.getBranchProbabilities();
+      final Map<String, Double> branchProbabilities = functionData.getBranchProbabilities();
       if (!branchProbabilities.isEmpty()) {
         optimizationTypes.add("branch_prediction_optimization");
         parameters.put("branch_probabilities", branchProbabilities);
@@ -876,11 +880,11 @@ final class OptimizationPlanGenerator {
   }
 
   private double calculateEstimatedSpeedup(final ModuleProfileData profileData,
-                                           final List&lt;FunctionOptimization&gt; optimizations) {
+                                           final List<FunctionOptimization> optimizations) {
     // Simple speedup estimation based on number of hot functions optimized
-    final List&lt;String&gt; hotFunctions = profileData.getHotFunctions(config.getHotFunctionThreshold());
+    final List<String> hotFunctions = profileData.getHotFunctions(config.getHotFunctionThreshold());
     final long optimizedHotFunctions = optimizations.stream()
-        .mapToLong(opt -&gt; hotFunctions.contains(opt.getFunctionName()) ? 1 : 0)
+        .mapToLong(opt -> hotFunctions.contains(opt.getFunctionName()) ? 1 : 0)
         .sum();
 
     if (hotFunctions.isEmpty()) {
