@@ -5,6 +5,8 @@ import ai.tegmentum.wasmtime4j.EngineConfig;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.OptimizationLevel;
 import ai.tegmentum.wasmtime4j.Store;
+import ai.tegmentum.wasmtime4j.StreamingCompiler;
+import ai.tegmentum.wasmtime4j.WasmFeature;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
@@ -354,6 +356,173 @@ public final class JniEngine extends JniResource implements Engine {
     }
   }
 
+  /**
+   * Checks if the engine supports a specific WebAssembly feature.
+   *
+   * <p>This method allows checking for feature support such as threads, SIMD, reference types, and
+   * other WebAssembly proposals.
+   *
+   * @param feature the WebAssembly feature to check
+   * @return true if the feature is supported, false otherwise
+   * @throws IllegalArgumentException if feature is null
+   * @since 1.0.0
+   */
+  @Override
+  public boolean supportsFeature(final WasmFeature feature) {
+    JniValidation.requireNonNull(feature, "feature");
+    ensureNotClosed();
+
+    try {
+      return nativeSupportsFeature(getNativeHandle(), feature.ordinal());
+    } catch (final Exception e) {
+      LOGGER.warning("Failed to check feature support for " + feature + ": " + e.getMessage());
+      return false;
+    }
+  }
+
+  /**
+   * Gets the memory limit in pages for this engine.
+   *
+   * <p>Returns the maximum number of WebAssembly pages (64KB each) that can be allocated for linear
+   * memory in this engine. A value of 0 indicates no limit.
+   *
+   * @return the memory limit in pages, or 0 for unlimited
+   * @since 1.0.0
+   */
+  @Override
+  public int getMemoryLimitPages() {
+    ensureNotClosed();
+
+    try {
+      return (int) nativeGetMemoryLimitPages(getNativeHandle());
+    } catch (final Exception e) {
+      throw new JniException("Failed to get memory limit pages", e);
+    }
+  }
+
+  /**
+   * Gets the stack size limit for this engine.
+   *
+   * <p>Returns the maximum stack size in bytes for WebAssembly execution. A value of 0 indicates
+   * the default stack size is used.
+   *
+   * @return the stack size limit in bytes, or 0 for default
+   * @since 1.0.0
+   */
+  @Override
+  public long getStackSizeLimit() {
+    ensureNotClosed();
+
+    try {
+      return nativeGetStackSizeLimit(getNativeHandle());
+    } catch (final Exception e) {
+      throw new JniException("Failed to get stack size limit", e);
+    }
+  }
+
+  /**
+   * Checks if fuel consumption is enabled for this engine.
+   *
+   * <p>Fuel consumption allows limiting the amount of computation that can be performed by
+   * WebAssembly code, providing protection against infinite loops and other resource exhaustion
+   * attacks.
+   *
+   * @return true if fuel consumption is enabled, false otherwise
+   * @since 1.0.0
+   */
+  @Override
+  public boolean isFuelEnabled() {
+    ensureNotClosed();
+
+    try {
+      return nativeIsFuelEnabled(getNativeHandle());
+    } catch (final Exception e) {
+      LOGGER.warning("Failed to check fuel enabled status: " + e.getMessage());
+      return false;
+    }
+  }
+
+  /**
+   * Checks if epoch-based interruption is enabled for this engine.
+   *
+   * <p>Epoch interruption provides a way to interrupt long-running WebAssembly code at regular
+   * intervals, enabling cooperative multitasking and timeout handling.
+   *
+   * @return true if epoch interruption is enabled, false otherwise
+   * @since 1.0.0
+   */
+  @Override
+  public boolean isEpochInterruptionEnabled() {
+    ensureNotClosed();
+
+    try {
+      return nativeIsEpochInterruptionEnabled(getNativeHandle());
+    } catch (final Exception e) {
+      LOGGER.warning("Failed to check epoch interruption enabled status: " + e.getMessage());
+      return false;
+    }
+  }
+
+  /**
+   * Gets the maximum number of instances that can be created with this engine.
+   *
+   * <p>Returns the maximum number of WebAssembly instances that can be active simultaneously. A
+   * value of 0 indicates no limit.
+   *
+   * @return the maximum number of instances, or 0 for unlimited
+   * @since 1.0.0
+   */
+  @Override
+  public int getMaxInstances() {
+    ensureNotClosed();
+
+    try {
+      return (int) nativeGetMaxInstances(getNativeHandle());
+    } catch (final Exception e) {
+      throw new JniException("Failed to get max instances", e);
+    }
+  }
+
+  /**
+   * Gets the reference count for this engine.
+   *
+   * <p>Returns the number of stores and other objects that are currently holding references to this
+   * engine. This is useful for debugging and resource management.
+   *
+   * @return the current reference count
+   * @since 1.0.0
+   */
+  @Override
+  public long getReferenceCount() {
+    ensureNotClosed();
+
+    try {
+      return nativeGetReferenceCount(getNativeHandle());
+    } catch (final Exception e) {
+      throw new JniException("Failed to get reference count", e);
+    }
+  }
+
+  /**
+   * Creates a streaming compiler for progressive WebAssembly module compilation.
+   *
+   * <p>This method creates a StreamingCompiler that can compile WebAssembly modules progressively
+   * as data arrives, enabling efficient processing of large modules and network-delivered content.
+   *
+   * @return a new StreamingCompiler instance
+   * @throws WasmException if the streaming compiler cannot be created
+   */
+  @Override
+  public StreamingCompiler createStreamingCompiler() throws WasmException {
+    ensureNotClosed();
+
+    try {
+      return new JniStreamingCompiler(this);
+    } catch (final Exception e) {
+      throw new WasmException("Failed to create streaming compiler", e);
+    }
+  }
+
   @Override
   protected void doClose() throws Exception {
     if (getNativeHandle() != 0) {
@@ -499,4 +668,61 @@ public final class JniEngine extends JniResource implements Engine {
    * @param engineHandle the native engine handle
    */
   private static native void nativeDestroyEngine(long engineHandle);
+
+  /**
+   * Checks if the engine supports a specific WebAssembly feature.
+   *
+   * @param engineHandle the native engine handle
+   * @param featureOrdinal the feature ordinal value
+   * @return true if the feature is supported, false otherwise
+   */
+  private static native boolean nativeSupportsFeature(long engineHandle, int featureOrdinal);
+
+  /**
+   * Gets the memory limit in pages for the engine.
+   *
+   * @param engineHandle the native engine handle
+   * @return the memory limit in pages, or 0 for unlimited
+   */
+  private static native long nativeGetMemoryLimitPages(long engineHandle);
+
+  /**
+   * Gets the stack size limit for the engine.
+   *
+   * @param engineHandle the native engine handle
+   * @return the stack size limit in bytes, or 0 for default
+   */
+  private static native long nativeGetStackSizeLimit(long engineHandle);
+
+  /**
+   * Checks if fuel consumption is enabled for the engine.
+   *
+   * @param engineHandle the native engine handle
+   * @return true if fuel consumption is enabled, false otherwise
+   */
+  private static native boolean nativeIsFuelEnabled(long engineHandle);
+
+  /**
+   * Checks if epoch-based interruption is enabled for the engine.
+   *
+   * @param engineHandle the native engine handle
+   * @return true if epoch interruption is enabled, false otherwise
+   */
+  private static native boolean nativeIsEpochInterruptionEnabled(long engineHandle);
+
+  /**
+   * Gets the maximum number of instances for the engine.
+   *
+   * @param engineHandle the native engine handle
+   * @return the maximum number of instances, or 0 for unlimited
+   */
+  private static native long nativeGetMaxInstances(long engineHandle);
+
+  /**
+   * Gets the reference count for the engine.
+   *
+   * @param engineHandle the native engine handle
+   * @return the current reference count
+   */
+  private static native long nativeGetReferenceCount(long engineHandle);
 }

@@ -618,6 +618,7 @@ public final class JniStore extends JniResource implements Store {
    * @throws JniException if the execution count cannot be retrieved
    * @throws JniResourceException if this store has been closed
    */
+  @Override
   public long getExecutionCount() {
     ensureNotClosed();
 
@@ -649,6 +650,26 @@ public final class JniStore extends JniResource implements Store {
   }
 
   /**
+   * Gets the total execution time in microseconds for this store.
+   *
+   * <p>This includes time spent in both WebAssembly execution and host function calls made through
+   * this store.
+   *
+   * @return the total execution time in microseconds
+   * @since 1.0.0
+   */
+  @Override
+  public long getTotalExecutionTimeMicros() {
+    ensureNotClosed();
+
+    try {
+      return nativeGetExecutionTime(getNativeHandle());
+    } catch (final Exception e) {
+      throw new JniException("Failed to get total execution time", e);
+    }
+  }
+
+  /**
    * Gets the total fuel consumed by this store.
    *
    * <p>This method returns the cumulative amount of fuel consumed by all WebAssembly executions
@@ -659,6 +680,7 @@ public final class JniStore extends JniResource implements Store {
    * @throws JniException if the fuel consumption cannot be retrieved
    * @throws JniResourceException if this store has been closed
    */
+  @Override
   public long getTotalFuelConsumed() {
     ensureNotClosed();
 

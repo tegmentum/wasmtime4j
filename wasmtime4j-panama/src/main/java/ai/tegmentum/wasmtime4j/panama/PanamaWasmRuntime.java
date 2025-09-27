@@ -311,6 +311,140 @@ public final class PanamaWasmRuntime implements WasmRuntime {
     }
   }
 
+  /**
+   * Deserializes a module from serialized bytes.
+   *
+   * @param engine the engine to use for deserialization
+   * @param bytes the serialized module bytes
+   * @return the deserialized Module
+   * @throws WasmException if deserialization fails
+   */
+  @Override
+  public Module deserializeModule(final Engine engine, final byte[] bytes) throws WasmException {
+    ensureNotClosed();
+
+    if (engine == null) {
+      throw new IllegalArgumentException("Engine cannot be null");
+    }
+    if (bytes == null) {
+      throw new IllegalArgumentException("Serialized bytes cannot be null");
+    }
+    if (bytes.length == 0) {
+      throw new IllegalArgumentException("Serialized bytes cannot be empty");
+    }
+
+    try {
+      // Get NativeFunctionBindings
+      NativeFunctionBindings nativeFunctions = NativeFunctionBindings.getInstance();
+
+      // Create a temporary serializer for this operation
+      java.lang.foreign.MemorySegment serializerPtr = nativeFunctions.serializerNew();
+      if (serializerPtr == null || serializerPtr.equals(java.lang.foreign.MemorySegment.NULL)) {
+        throw new WasmException("Failed to create serializer");
+      }
+
+      try {
+        // Get engine pointer from Panama engine
+        if (!(engine instanceof PanamaEngine)) {
+          throw new IllegalArgumentException("Engine must be a PanamaEngine instance");
+        }
+        java.lang.foreign.MemorySegment enginePtr = ((PanamaEngine) engine).getEnginePointer();
+
+        // Allocate memory for the serialized bytes
+        ArenaResourceManager resourceManager = ((PanamaEngine) engine).getResourceManager();
+        ArenaResourceManager.ManagedMemorySegment serializedBytesSegment =
+            resourceManager.allocate(bytes.length);
+        serializedBytesSegment.getSegment().asByteBuffer().put(bytes);
+
+        // Allocate output pointers
+        ArenaResourceManager.ManagedMemorySegment resultBufferPtr =
+            resourceManager.allocate(MemoryLayouts.C_POINTER);
+        ArenaResourceManager.ManagedMemorySegment resultSizePtr =
+            resourceManager.allocate(MemoryLayouts.C_SIZE_T);
+
+        // Call native deserialization
+        int result = nativeFunctions.serializerDeserialize(
+            serializerPtr,
+            enginePtr,
+            serializedBytesSegment.getSegment(),
+            bytes.length,
+            resultBufferPtr.getSegment(),
+            resultSizePtr.getSegment());
+
+        if (result != 0) {
+          throw new WasmException("Module deserialization failed with error code: " + result);
+        }
+
+        // Extract result
+        java.lang.foreign.MemorySegment resultBuffer =
+            (java.lang.foreign.MemorySegment) MemoryLayouts.C_POINTER.varHandle().get(resultBufferPtr.getSegment(), 0);
+        long resultSize =
+            (Long) MemoryLayouts.C_SIZE_T.varHandle().get(resultSizePtr.getSegment(), 0);
+
+        if (resultBuffer == null || resultBuffer.equals(java.lang.foreign.MemorySegment.NULL) || resultSize == 0) {
+          throw new WasmException("Deserialization returned empty result");
+        }
+
+        try {
+          // Copy result bytes
+          byte[] moduleBytes = new byte[(int) resultSize];
+          resultBuffer.asByteBuffer().get(moduleBytes);
+
+          // Compile the deserialized bytes into a module
+          return compileModule(engine, moduleBytes);
+
+        } finally {
+          // Free the native buffer
+          nativeFunctions.serializerFreeBuffer(resultBuffer, resultSize);
+        }
+
+      } finally {
+        // Clean up the serializer
+        nativeFunctions.serializerDestroy(serializerPtr);
+      }
+
+    } catch (Exception e) {
+      if (e instanceof WasmException) {
+        throw e;
+      }
+      throw exceptionMapper.mapException(e);
+    }
+  }
+
+  /**
+   * Deserializes a module from a file.
+   *
+   * @param engine the engine to use for deserialization
+   * @param path the path to the serialized module file
+   * @return the deserialized Module
+   * @throws WasmException if deserialization fails
+   */
+  @Override
+  public Module deserializeModuleFile(final Engine engine, final java.nio.file.Path path) throws WasmException {
+    ensureNotClosed();
+
+    if (engine == null) {
+      throw new IllegalArgumentException("Engine cannot be null");
+    }
+    if (path == null) {
+      throw new IllegalArgumentException("Path cannot be null");
+    }
+
+    try {
+      // Read the file
+      byte[] bytes = java.nio.file.Files.readAllBytes(path);
+      return deserializeModule(engine, bytes);
+
+    } catch (java.io.IOException e) {
+      throw new WasmException("Failed to read serialized module file: " + path, e);
+    } catch (Exception e) {
+      if (e instanceof WasmException) {
+        throw e;
+      }
+      throw exceptionMapper.mapException(e);
+    }
+  }
+
   @Override
   public void close() {
     if (closed) {

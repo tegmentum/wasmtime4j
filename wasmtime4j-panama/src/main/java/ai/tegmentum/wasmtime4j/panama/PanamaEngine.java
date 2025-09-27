@@ -377,6 +377,149 @@ public final class PanamaEngine implements Engine, AutoCloseable {
     }
   }
 
+  /**
+   * Validates that this engine is still functional.
+   *
+   * @throws WasmException if the engine is invalid or has been corrupted
+   */
+  public void validate() throws WasmException {
+    ensureNotClosed();
+
+    try {
+      int result = nativeFunctions.engineValidate(engineResource.getNativePointer());
+      if (result != 0) {
+        throw new WasmException("Engine validation failed with error code: " + result);
+      }
+    } catch (Exception e) {
+      throw new WasmException("Failed to validate engine", e);
+    }
+  }
+
+  /**
+   * Checks if the engine supports a specific WebAssembly feature.
+   *
+   * @param feature the feature to check (0=Threads, 1=ReferenceTypes, 2=Simd, 3=BulkMemory, 4=MultiValue)
+   * @return true if the feature is supported
+   * @throws WasmException if the check fails
+   */
+  public boolean supportsFeature(final int feature) throws WasmException {
+    ensureNotClosed();
+
+    try {
+      int result = nativeFunctions.engineSupportsFeature(engineResource.getNativePointer(), feature);
+      if (result < 0) {
+        throw new WasmException("Feature check failed with error code: " + result);
+      }
+      return result == 1;
+    } catch (Exception e) {
+      throw new WasmException("Failed to check feature support", e);
+    }
+  }
+
+  /**
+   * Gets the memory limit in pages for this engine.
+   *
+   * @return the memory limit in pages, or 0 if no limit is set
+   * @throws WasmException if the query fails
+   */
+  public int getMemoryLimitPages() throws WasmException {
+    ensureNotClosed();
+
+    try {
+      return nativeFunctions.engineMemoryLimitPages(engineResource.getNativePointer());
+    } catch (Exception e) {
+      throw new WasmException("Failed to get memory limit", e);
+    }
+  }
+
+  /**
+   * Gets the stack size limit for this engine.
+   *
+   * @return the stack size limit in bytes, or 0 if no limit is set
+   * @throws WasmException if the query fails
+   */
+  public long getStackSizeLimit() throws WasmException {
+    ensureNotClosed();
+
+    try {
+      return nativeFunctions.engineStackSizeLimit(engineResource.getNativePointer());
+    } catch (Exception e) {
+      throw new WasmException("Failed to get stack size limit", e);
+    }
+  }
+
+  /**
+   * Checks if fuel consumption tracking is enabled for this engine.
+   *
+   * @return true if fuel tracking is enabled
+   * @throws WasmException if the query fails
+   */
+  public boolean isFuelEnabled() throws WasmException {
+    ensureNotClosed();
+
+    try {
+      int result = nativeFunctions.engineFuelEnabled(engineResource.getNativePointer());
+      if (result < 0) {
+        throw new WasmException("Fuel enabled check failed with error code: " + result);
+      }
+      return result == 1;
+    } catch (Exception e) {
+      throw new WasmException("Failed to check fuel enabled status", e);
+    }
+  }
+
+  /**
+   * Checks if epoch-based interruption is enabled for this engine.
+   *
+   * @return true if epoch interruption is enabled
+   * @throws WasmException if the query fails
+   */
+  public boolean isEpochInterruptionEnabled() throws WasmException {
+    ensureNotClosed();
+
+    try {
+      int result = nativeFunctions.engineEpochInterruptionEnabled(engineResource.getNativePointer());
+      if (result < 0) {
+        throw new WasmException("Epoch interruption check failed with error code: " + result);
+      }
+      return result == 1;
+    } catch (Exception e) {
+      throw new WasmException("Failed to check epoch interruption status", e);
+    }
+  }
+
+  /**
+   * Gets the maximum number of instances allowed for this engine.
+   *
+   * @return the maximum number of instances, or 0 if no limit is set
+   * @throws WasmException if the query fails
+   */
+  public int getMaxInstances() throws WasmException {
+    ensureNotClosed();
+
+    try {
+      return nativeFunctions.engineMaxInstances(engineResource.getNativePointer());
+    } catch (Exception e) {
+      throw new WasmException("Failed to get max instances", e);
+    }
+  }
+
+  /**
+   * Gets the reference count for this engine (for debugging).
+   *
+   * @return the reference count
+   * @throws WasmException if the query fails
+   */
+  public long getReferenceCount() throws WasmException {
+    ensureNotClosed();
+
+    try {
+      return nativeFunctions.engineReferenceCount(engineResource.getNativePointer());
+    } catch (Exception e) {
+      throw new WasmException("Failed to get reference count", e);
+    }
+  }
+
   @Override
   public void close() {
     if (closed) {

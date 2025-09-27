@@ -1262,6 +1262,173 @@ public final class NativeFunctionBindings {
     callNativeFunction("wasmtime4j_clear_error_state", Void.class);
   }
 
+  // Serialization Functions
+
+  /**
+   * Creates a new module serializer.
+   *
+   * @return pointer to the created serializer, or null on failure
+   */
+  public MemorySegment serializerNew() {
+    return callNativeFunction("wasmtime4j_serializer_new", MemorySegment.class);
+  }
+
+  /**
+   * Creates a new module serializer with configuration.
+   *
+   * @param maxCacheSize maximum cache size in bytes
+   * @param enableCompression whether to enable compression
+   * @param compressionLevel compression level (0-9)
+   * @return pointer to the created serializer, or null on failure
+   */
+  public MemorySegment serializerNewWithConfig(
+      final long maxCacheSize, final boolean enableCompression, final int compressionLevel) {
+    return callNativeFunction(
+        "wasmtime4j_serializer_new_with_config",
+        MemorySegment.class,
+        maxCacheSize,
+        enableCompression ? 1 : 0,
+        compressionLevel);
+  }
+
+  /**
+   * Destroys a module serializer.
+   *
+   * @param serializerPtr pointer to the serializer to destroy
+   */
+  public void serializerDestroy(final MemorySegment serializerPtr) {
+    validatePointer(serializerPtr, "serializerPtr");
+    callNativeFunction("wasmtime4j_serializer_destroy", Void.class, serializerPtr);
+  }
+
+  /**
+   * Serializes module bytes.
+   *
+   * @param serializerPtr pointer to the serializer
+   * @param enginePtr pointer to the engine
+   * @param moduleBytes pointer to the module bytecode
+   * @param moduleSize size of the module bytecode
+   * @param resultBufferPtr pointer to store the result buffer
+   * @param resultSizePtr pointer to store the result size
+   * @return 0 on success, negative error code on failure
+   */
+  public int serializerSerialize(
+      final MemorySegment serializerPtr,
+      final MemorySegment enginePtr,
+      final MemorySegment moduleBytes,
+      final long moduleSize,
+      final MemorySegment resultBufferPtr,
+      final MemorySegment resultSizePtr) {
+    validatePointer(serializerPtr, "serializerPtr");
+    validatePointer(enginePtr, "enginePtr");
+    validatePointer(moduleBytes, "moduleBytes");
+    validatePointer(resultBufferPtr, "resultBufferPtr");
+    validatePointer(resultSizePtr, "resultSizePtr");
+    validateSize(moduleSize, "moduleSize");
+
+    return callNativeFunction(
+        "wasmtime4j_serializer_serialize",
+        Integer.class,
+        serializerPtr,
+        enginePtr,
+        moduleBytes,
+        moduleSize,
+        resultBufferPtr,
+        resultSizePtr);
+  }
+
+  /**
+   * Deserializes module bytes.
+   *
+   * @param serializerPtr pointer to the serializer
+   * @param enginePtr pointer to the engine
+   * @param serializedBytes pointer to the serialized bytecode
+   * @param serializedSize size of the serialized bytecode
+   * @param resultBufferPtr pointer to store the result buffer
+   * @param resultSizePtr pointer to store the result size
+   * @return 0 on success, negative error code on failure
+   */
+  public int serializerDeserialize(
+      final MemorySegment serializerPtr,
+      final MemorySegment enginePtr,
+      final MemorySegment serializedBytes,
+      final long serializedSize,
+      final MemorySegment resultBufferPtr,
+      final MemorySegment resultSizePtr) {
+    validatePointer(serializerPtr, "serializerPtr");
+    validatePointer(enginePtr, "enginePtr");
+    validatePointer(serializedBytes, "serializedBytes");
+    validatePointer(resultBufferPtr, "resultBufferPtr");
+    validatePointer(resultSizePtr, "resultSizePtr");
+    validateSize(serializedSize, "serializedSize");
+
+    return callNativeFunction(
+        "wasmtime4j_serializer_deserialize",
+        Integer.class,
+        serializerPtr,
+        enginePtr,
+        serializedBytes,
+        serializedSize,
+        resultBufferPtr,
+        resultSizePtr);
+  }
+
+  /**
+   * Clears the serializer cache.
+   *
+   * @param serializerPtr pointer to the serializer
+   * @return 0 on success, negative error code on failure
+   */
+  public int serializerClearCache(final MemorySegment serializerPtr) {
+    validatePointer(serializerPtr, "serializerPtr");
+    return callNativeFunction("wasmtime4j_serializer_clear_cache", Integer.class, serializerPtr);
+  }
+
+  /**
+   * Gets the cache entry count.
+   *
+   * @param serializerPtr pointer to the serializer
+   * @return the number of entries in the cache
+   */
+  public long serializerCacheEntryCount(final MemorySegment serializerPtr) {
+    validatePointer(serializerPtr, "serializerPtr");
+    return callNativeFunction("wasmtime4j_serializer_cache_entry_count", Long.class, serializerPtr);
+  }
+
+  /**
+   * Gets the cache total size in bytes.
+   *
+   * @param serializerPtr pointer to the serializer
+   * @return the total cache size in bytes
+   */
+  public long serializerCacheTotalSize(final MemorySegment serializerPtr) {
+    validatePointer(serializerPtr, "serializerPtr");
+    return callNativeFunction("wasmtime4j_serializer_cache_total_size", Long.class, serializerPtr);
+  }
+
+  /**
+   * Gets the cache hit rate.
+   *
+   * @param serializerPtr pointer to the serializer
+   * @return the cache hit rate as a value between 0.0 and 1.0
+   */
+  public double serializerCacheHitRate(final MemorySegment serializerPtr) {
+    validatePointer(serializerPtr, "serializerPtr");
+    return callNativeFunction("wasmtime4j_serializer_cache_hit_rate", Double.class, serializerPtr);
+  }
+
+  /**
+   * Frees a buffer allocated by serialization functions.
+   *
+   * @param buffer pointer to the buffer to free
+   * @param size size of the buffer
+   */
+  public void serializerFreeBuffer(final MemorySegment buffer, final long size) {
+    if (buffer != null && !buffer.equals(MemorySegment.NULL) && size > 0) {
+      callNativeFunction("wasmtime4j_serializer_free_buffer", Void.class, buffer, size);
+    }
+  }
+
   /** Initializes all function bindings. */
   private void initializeFunctionBindings() {
     // Engine functions
@@ -1687,6 +1854,145 @@ public final class NativeFunctionBindings {
 
     addFunctionBinding(
         "wasmtime4j_clear_error_state", FunctionDescriptor.ofVoid()); // no parameters
+
+    // Serialization functions - from Task #288
+    addFunctionBinding(
+        "wasmtime4j_serializer_new",
+        FunctionDescriptor.of(ValueLayout.ADDRESS)); // returns serializer*
+
+    addFunctionBinding(
+        "wasmtime4j_serializer_new_with_config",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, // returns serializer*
+            ValueLayout.JAVA_LONG, // max_cache_size
+            ValueLayout.JAVA_INT, // enable_compression
+            ValueLayout.JAVA_INT)); // compression_level
+
+    addFunctionBinding(
+        "wasmtime4j_serializer_destroy",
+        FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // serializer_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_serializer_serialize",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return result code
+            ValueLayout.ADDRESS, // serializer_ptr
+            ValueLayout.ADDRESS, // engine_ptr
+            ValueLayout.ADDRESS, // module_bytes
+            ValueLayout.JAVA_LONG, // module_size
+            ValueLayout.ADDRESS, // result_buffer (out)
+            ValueLayout.ADDRESS)); // result_size (out)
+
+    addFunctionBinding(
+        "wasmtime4j_serializer_deserialize",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return result code
+            ValueLayout.ADDRESS, // serializer_ptr
+            ValueLayout.ADDRESS, // engine_ptr
+            ValueLayout.ADDRESS, // serialized_bytes
+            ValueLayout.JAVA_LONG, // serialized_size
+            ValueLayout.ADDRESS, // result_buffer (out)
+            ValueLayout.ADDRESS)); // result_size (out)
+
+    addFunctionBinding(
+        "wasmtime4j_serializer_clear_cache",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return result code
+            ValueLayout.ADDRESS)); // serializer_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_serializer_cache_entry_count",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG, // return count
+            ValueLayout.ADDRESS)); // serializer_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_serializer_cache_total_size",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG, // return size in bytes
+            ValueLayout.ADDRESS)); // serializer_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_serializer_cache_hit_rate",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_DOUBLE, // return hit rate 0.0-1.0
+            ValueLayout.ADDRESS)); // serializer_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_serializer_free_buffer",
+        FunctionDescriptor.ofVoid(
+            ValueLayout.ADDRESS, // buffer
+            ValueLayout.JAVA_LONG)); // size
+
+    // Additional Engine functions from Task #288
+    addFunctionBinding(
+        "wasmtime4j_engine_new",
+        FunctionDescriptor.of(ValueLayout.ADDRESS)); // returns engine*
+
+    addFunctionBinding(
+        "wasmtime4j_engine_new_with_config",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, // returns engine*
+            ValueLayout.JAVA_INT, // debug_info
+            ValueLayout.JAVA_INT, // wasm_threads
+            ValueLayout.JAVA_INT, // wasm_simd
+            ValueLayout.JAVA_INT, // wasm_reference_types
+            ValueLayout.JAVA_INT, // wasm_bulk_memory
+            ValueLayout.JAVA_INT, // wasm_multi_value
+            ValueLayout.JAVA_INT, // fuel_enabled
+            ValueLayout.JAVA_INT, // max_memory_pages
+            ValueLayout.JAVA_LONG, // max_stack_size
+            ValueLayout.JAVA_INT, // epoch_interruption
+            ValueLayout.JAVA_INT)); // max_instances
+
+    addFunctionBinding(
+        "wasmtime4j_engine_validate",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return result code
+            ValueLayout.ADDRESS)); // engine_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_engine_supports_feature",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return boolean as int
+            ValueLayout.ADDRESS, // engine_ptr
+            ValueLayout.JAVA_INT)); // feature
+
+    addFunctionBinding(
+        "wasmtime4j_engine_memory_limit_pages",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return pages
+            ValueLayout.ADDRESS)); // engine_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_engine_stack_size_limit",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG, // return stack size
+            ValueLayout.ADDRESS)); // engine_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_engine_fuel_enabled",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return boolean as int
+            ValueLayout.ADDRESS)); // engine_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_engine_epoch_interruption_enabled",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return boolean as int
+            ValueLayout.ADDRESS)); // engine_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_engine_max_instances",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return max instances
+            ValueLayout.ADDRESS)); // engine_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_engine_reference_count",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG, // return reference count
+            ValueLayout.ADDRESS)); // engine_ptr
   }
 
   /**
