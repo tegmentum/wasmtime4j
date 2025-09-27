@@ -517,6 +517,61 @@ public interface WasmRuntime extends Closeable {
   void addWasiToLinker(Linker<WasiContext> linker, WasiContext context) throws WasmException;
 
   /**
+   * Adds WASI Preview 2 functions to the given linker.
+   *
+   * <p>This method configures the linker with WASI Preview 2 function imports, enabling
+   * WebAssembly components to access enhanced system functionality including:
+   * <ul>
+   *   <li>Component-based filesystem operations with async I/O</li>
+   *   <li>Stream-based networking with HTTP/TCP/UDP support</li>
+   *   <li>Enhanced process and environment management</li>
+   *   <li>Component model resource management</li>
+   *   <li>WIT interface definitions and type validation</li>
+   * </ul>
+   *
+   * @param linker the linker to configure with WASI Preview 2 functions
+   * @param context the WASI context containing configuration and state
+   * @throws WasmException if adding WASI Preview 2 functions fails
+   * @throws IllegalArgumentException if linker or context is null
+   * @since 1.0.0
+   */
+  void addWasiPreview2ToLinker(Linker<WasiContext> linker, WasiContext context) throws WasmException;
+
+  /**
+   * Adds Component Model functions to the given linker.
+   *
+   * <p>This method configures the linker with WebAssembly Component Model functions, enabling:
+   * <ul>
+   *   <li>Component compilation and instantiation</li>
+   *   <li>WIT interface parsing and validation</li>
+   *   <li>Component linking and composition</li>
+   *   <li>Resource management and lifecycle</li>
+   * </ul>
+   *
+   * @param linker the linker to configure with Component Model functions
+   * @throws WasmException if adding Component Model functions fails
+   * @throws IllegalArgumentException if linker is null
+   * @since 1.0.0
+   */
+  void addComponentModelToLinker(Linker<WasiContext> linker) throws WasmException;
+
+  /**
+   * Checks if this runtime supports the WebAssembly Component Model.
+   *
+   * <p>Component Model support enables advanced WebAssembly features including:
+   * <ul>
+   *   <li>WIT (WebAssembly Interface Types) interfaces</li>
+   *   <li>Component composition and linking</li>
+   *   <li>Resource management and lifecycle</li>
+   *   <li>Interface validation and type checking</li>
+   * </ul>
+   *
+   * @return true if Component Model is supported, false otherwise
+   * @since 1.0.0
+   */
+  boolean supportsComponentModel();
+
+  /**
    * Deserializes a module from previously serialized bytes.
    *
    * <p>This method provides fast module loading by deserializing compiled
