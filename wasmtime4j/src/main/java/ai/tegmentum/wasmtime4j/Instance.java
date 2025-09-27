@@ -258,6 +258,80 @@ public interface Instance extends Closeable {
   boolean isValid();
 
   /**
+   * Disposes of this instance, releasing resources immediately.
+   *
+   * <p>This method provides explicit resource cleanup, allowing instances to be disposed of before
+   * the store is closed. Once disposed, the instance becomes invalid and should not be used.
+   *
+   * @return true if disposal was successful, false if already disposed
+   * @throws WasmException if disposal fails
+   * @since 1.0.0
+   */
+  boolean dispose() throws WasmException;
+
+  /**
+   * Checks if this instance has been disposed.
+   *
+   * <p>Disposed instances are no longer usable and will throw exceptions if operations are
+   * attempted on them.
+   *
+   * @return true if the instance has been disposed, false otherwise
+   * @since 1.0.0
+   */
+  boolean isDisposed();
+
+  /**
+   * Gets the creation timestamp of this instance in microseconds.
+   *
+   * <p>This timestamp represents when the instance was created, measured from the Unix epoch in
+   * microseconds.
+   *
+   * @return the creation timestamp in microseconds since Unix epoch
+   * @since 1.0.0
+   */
+  long getCreatedAtMicros();
+
+  /**
+   * Gets the count of metadata exports in this instance.
+   *
+   * <p>Metadata exports include debugging information, custom sections, and other non-executable
+   * exports that provide information about the module structure.
+   *
+   * @return the number of metadata exports
+   * @since 1.0.0
+   */
+  int getMetadataExportCount();
+
+  /**
+   * Calls a 32-bit integer function with parameters.
+   *
+   * <p>This is an optimized calling convention for functions that take 32-bit integer parameters
+   * and return a 32-bit integer result.
+   *
+   * @param functionName the name of the function to call
+   * @param params array of 32-bit integer parameters
+   * @return the 32-bit integer result
+   * @throws WasmException if the function call fails or function doesn't exist
+   * @throws IllegalArgumentException if functionName is null
+   * @since 1.0.0
+   */
+  int callI32Function(final String functionName, final int... params) throws WasmException;
+
+  /**
+   * Calls a 32-bit integer function with no parameters.
+   *
+   * <p>This is an optimized calling convention for functions that take no parameters and return a
+   * 32-bit integer result.
+   *
+   * @param functionName the name of the function to call
+   * @return the 32-bit integer result
+   * @throws WasmException if the function call fails or function doesn't exist
+   * @throws IllegalArgumentException if functionName is null
+   * @since 1.0.0
+   */
+  int callI32Function(final String functionName) throws WasmException;
+
+  /**
    * Closes the instance and releases associated resources.
    *
    * <p>After closing, the instance becomes invalid and should not be used.

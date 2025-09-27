@@ -177,6 +177,72 @@ public interface Linker extends Closeable {
   boolean isValid();
 
   /**
+   * Disposes of this linker, releasing resources immediately.
+   *
+   * <p>This method provides explicit resource cleanup, allowing linkers to be disposed of before
+   * being closed. Once disposed, the linker becomes invalid and should not be used.
+   *
+   * @return true if disposal was successful, false if already disposed
+   * @throws WasmException if disposal fails
+   * @since 1.0.0
+   */
+  boolean dispose() throws WasmException;
+
+  /**
+   * Gets the number of host functions defined in this linker.
+   *
+   * <p>Returns the count of host functions that have been registered with this linker and are
+   * available for import by modules.
+   *
+   * @return the number of host functions
+   * @since 1.0.0
+   */
+  int getHostFunctionCount();
+
+  /**
+   * Gets the number of import definitions available in this linker.
+   *
+   * <p>Returns the total count of all imports (functions, globals, memories, tables) that this
+   * linker can provide to modules.
+   *
+   * @return the number of available imports
+   * @since 1.0.0
+   */
+  int getImportCount();
+
+  /**
+   * Gets the number of successful instantiations performed by this linker.
+   *
+   * <p>This counter tracks how many times this linker has successfully instantiated modules.
+   *
+   * @return the number of successful instantiations
+   * @since 1.0.0
+   */
+  long getInstantiationCount();
+
+  /**
+   * Checks if WASI support is enabled for this linker.
+   *
+   * <p>Returns true if WASI functions have been made available through this linker for modules to
+   * import.
+   *
+   * @return true if WASI is enabled, false otherwise
+   * @since 1.0.0
+   */
+  boolean isWasiEnabled();
+
+  /**
+   * Gets the creation timestamp of this linker in microseconds.
+   *
+   * <p>This timestamp represents when the linker was created, measured from the Unix epoch in
+   * microseconds.
+   *
+   * @return the creation timestamp in microseconds since Unix epoch
+   * @since 1.0.0
+   */
+  long getCreatedAtMicros();
+
+  /**
    * Closes the linker and releases associated resources.
    *
    * <p>After closing, the linker becomes invalid and should not be used.
@@ -194,5 +260,25 @@ public interface Linker extends Closeable {
    */
   static Linker create(final Engine engine) throws WasmException {
     return WasmRuntimeFactory.create().createLinker(engine);
+  }
+
+  /**
+   * Creates a new Linker with custom configuration.
+   *
+   * <p>This factory method allows creating a linker with specific settings such as allowing unknown
+   * exports and enabling import shadowing.
+   *
+   * @param engine the engine to create the linker for
+   * @param allowUnknownExports whether to allow modules with unknown exports
+   * @param allowShadowing whether to allow import shadowing
+   * @return a new Linker instance with the specified configuration
+   * @throws WasmException if linker creation fails
+   * @throws IllegalArgumentException if engine is null
+   * @since 1.0.0
+   */
+  static Linker create(
+      final Engine engine, final boolean allowUnknownExports, final boolean allowShadowing)
+      throws WasmException {
+    return WasmRuntimeFactory.create().createLinker(engine, allowUnknownExports, allowShadowing);
   }
 }

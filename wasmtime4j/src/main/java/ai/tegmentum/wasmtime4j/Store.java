@@ -250,6 +250,40 @@ public interface Store extends Closeable {
   boolean isValid();
 
   /**
+   * Gets the total amount of fuel consumed by this store since creation.
+   *
+   * <p>This method provides historical fuel consumption data for monitoring and profiling
+   * WebAssembly execution patterns.
+   *
+   * @return the total fuel consumed since store creation
+   * @throws WasmException if fuel tracking is not enabled
+   * @since 1.0.0
+   */
+  long getTotalFuelConsumed() throws WasmException;
+
+  /**
+   * Gets the number of function executions performed in this store.
+   *
+   * <p>This counter includes all function calls made through this store, both host functions and
+   * WebAssembly functions.
+   *
+   * @return the total number of function executions
+   * @since 1.0.0
+   */
+  long getExecutionCount();
+
+  /**
+   * Gets the total execution time in microseconds for this store.
+   *
+   * <p>This includes time spent in both WebAssembly execution and host function calls made through
+   * this store.
+   *
+   * @return the total execution time in microseconds
+   * @since 1.0.0
+   */
+  long getTotalExecutionTimeMicros();
+
+  /**
    * Closes the store and releases associated resources.
    *
    * <p>After closing, the store becomes invalid and should not be used. All instances and other
@@ -268,5 +302,30 @@ public interface Store extends Closeable {
    */
   static Store create(final Engine engine) throws WasmException {
     return WasmRuntimeFactory.create().createStore(engine);
+  }
+
+  /**
+   * Creates a new Store with custom configuration.
+   *
+   * <p>This factory method allows creating a store with specific fuel limits, memory limits, and
+   * execution timeouts configured at creation time.
+   *
+   * @param engine the engine to create the store for
+   * @param fuelLimit the initial fuel limit (0 for unlimited)
+   * @param memoryLimitBytes the memory limit in bytes (0 for unlimited)
+   * @param executionTimeoutSeconds the execution timeout in seconds (0 for unlimited)
+   * @return a new Store instance with the specified configuration
+   * @throws WasmException if store creation fails
+   * @throws IllegalArgumentException if engine is null or limits are negative
+   * @since 1.0.0
+   */
+  static Store create(
+      final Engine engine,
+      final long fuelLimit,
+      final long memoryLimitBytes,
+      final long executionTimeoutSeconds)
+      throws WasmException {
+    return WasmRuntimeFactory.create()
+        .createStore(engine, fuelLimit, memoryLimitBytes, executionTimeoutSeconds);
   }
 }
