@@ -318,4 +318,62 @@ public interface Module extends Closeable {
   static Module compile(final Engine engine, final byte[] wasmBytes) throws WasmException {
     return WasmRuntimeFactory.create().compileModule(engine, wasmBytes);
   }
+
+  /**
+   * Serializes this compiled module to a byte array for caching or distribution.
+   *
+   * <p>Serialized modules can be stored to disk, sent over the network, or cached
+   * for faster startup times. The serialized data includes the compiled code and
+   * all necessary metadata for instantiation.
+   *
+   * @return the serialized module data
+   * @throws WasmException if serialization fails
+   * @since 1.0.0
+   */
+  byte[] serialize() throws WasmException;
+
+  /**
+   * Deserializes a module from previously serialized bytes.
+   *
+   * <p>This method can be used to quickly load a previously compiled module
+   * without going through the compilation process again. The bytes must have
+   * been created by a compatible version of the same engine.
+   *
+   * @param engine the engine to use for deserialization
+   * @param bytes the serialized module data
+   * @return the deserialized Module
+   * @throws WasmException if deserialization fails or data is invalid
+   * @throws IllegalArgumentException if engine or bytes is null
+   * @since 1.0.0
+   */
+  static Module deserialize(final Engine engine, final byte[] bytes) throws WasmException {
+    return WasmRuntimeFactory.create().deserializeModule(engine, bytes);
+  }
+
+  /**
+   * Deserializes a module from a file containing serialized module data.
+   *
+   * @param engine the engine to use for deserialization
+   * @param path the path to the serialized module file
+   * @return the deserialized Module
+   * @throws WasmException if deserialization fails or file cannot be read
+   * @throws IllegalArgumentException if engine or path is null
+   * @since 1.0.0
+   */
+  static Module deserializeFile(final Engine engine, final java.nio.file.Path path) throws WasmException {
+    return WasmRuntimeFactory.create().deserializeModuleFile(engine, path);
+  }
+
+  /**
+   * Checks if this module can be serialized.
+   *
+   * <p>Some modules may not be serializable depending on their compilation
+   * settings or the engine configuration.
+   *
+   * @return true if this module can be serialized
+   * @since 1.0.0
+   */
+  default boolean isSerializable() {
+    return true;
+  }
 }
