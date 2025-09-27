@@ -655,3 +655,199 @@ mod tests {
         assert!(config.debug_info);
     }
 }
+
+//
+// Native C exports for JNI and Panama FFI consumption
+//
+
+use std::os::raw::{c_void, c_char, c_int};
+use std::ffi::CString;
+use crate::shared_ffi::{FFI_SUCCESS, FFI_ERROR};
+
+/// Create a new engine with default configuration
+///
+/// # Safety
+///
+/// Returns pointer to engine that must be freed with wasmtime4j_engine_destroy
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_engine_new() -> *mut c_void {
+    match core::create_engine() {
+        Ok(engine) => Box::into_raw(engine) as *mut c_void,
+        Err(_) => std::ptr::null_mut(),
+    }
+}
+
+/// Create a new engine with custom configuration
+///
+/// # Safety
+///
+/// Returns pointer to engine that must be freed with wasmtime4j_engine_destroy
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_engine_new_with_config(
+    debug_info: c_int,
+    wasm_threads: c_int,
+    wasm_simd: c_int,
+    wasm_reference_types: c_int,
+    wasm_bulk_memory: c_int,
+    wasm_multi_value: c_int,
+    fuel_enabled: c_int,
+    max_memory_pages: u32,
+    max_stack_size: usize,
+    epoch_interruption: c_int,
+    max_instances: u32,
+) -> *mut c_void {
+    let opt_max_memory_pages = if max_memory_pages == 0 { None } else { Some(max_memory_pages) };
+    let opt_max_stack_size = if max_stack_size == 0 { None } else { Some(max_stack_size) };
+    let opt_max_instances = if max_instances == 0 { None } else { Some(max_instances) };
+
+    match core::create_engine_with_config(
+        Some(Strategy::Cranelift),
+        Some(OptLevel::Speed),
+        debug_info != 0,
+        wasm_threads != 0,
+        wasm_simd != 0,
+        wasm_reference_types != 0,
+        wasm_bulk_memory != 0,
+        wasm_multi_value != 0,
+        fuel_enabled != 0,
+        opt_max_memory_pages,
+        opt_max_stack_size,
+        epoch_interruption != 0,
+        opt_max_instances,
+    ) {
+        Ok(engine) => Box::into_raw(engine) as *mut c_void,
+        Err(_) => std::ptr::null_mut(),
+    }
+}
+
+/// Destroy engine and free resources
+///
+/// # Safety
+///
+/// engine_ptr must be a valid pointer from wasmtime4j_engine_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_engine_destroy(engine_ptr: *mut c_void) {
+    if !engine_ptr.is_null() {
+        core::destroy_engine(engine_ptr);
+    }
+}
+
+/// Validate engine is still functional
+///
+/// # Safety
+///
+/// engine_ptr must be a valid pointer from wasmtime4j_engine_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_engine_validate(engine_ptr: *const c_void) -> c_int {
+    match core::get_engine_ref(engine_ptr) {
+        Ok(engine) => match core::validate_engine(engine) {
+            Ok(_) => FFI_SUCCESS,
+            Err(_) => FFI_ERROR,
+        },
+        Err(_) => FFI_ERROR,
+    }
+}
+
+/// Check if engine supports specific WebAssembly feature
+///
+/// # Safety
+///
+/// engine_ptr must be a valid pointer from wasmtime4j_engine_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_engine_supports_feature(
+    engine_ptr: *const c_void,
+    feature: c_int,
+) -> c_int {
+    match core::get_engine_ref(engine_ptr) {
+        Ok(engine) => {
+            let wasm_feature = match feature {
+                0 => WasmFeature::Threads,
+                1 => WasmFeature::ReferenceTypes,
+                2 => WasmFeature::Simd,
+                3 => WasmFeature::BulkMemory,
+                4 => WasmFeature::MultiValue,
+                _ => return FFI_ERROR,
+            };
+            if core::check_feature_support(engine, wasm_feature) { 1 } else { 0 }
+        },
+        Err(_) => FFI_ERROR,
+    }
+}
+
+/// Get memory limit in pages (64KB per page)
+///
+/// # Safety
+///
+/// engine_ptr must be a valid pointer from wasmtime4j_engine_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_engine_memory_limit_pages(engine_ptr: *const c_void) -> u32 {
+    match core::get_engine_ref(engine_ptr) {
+        Ok(engine) => core::get_memory_limit(engine).unwrap_or(0),
+        Err(_) => 0,
+    }
+}
+
+/// Get stack size limit in bytes
+///
+/// # Safety
+///
+/// engine_ptr must be a valid pointer from wasmtime4j_engine_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_engine_stack_size_limit(engine_ptr: *const c_void) -> usize {
+    match core::get_engine_ref(engine_ptr) {
+        Ok(engine) => core::get_stack_limit(engine).unwrap_or(0),
+        Err(_) => 0,
+    }
+}
+
+/// Check if fuel consumption is enabled
+///
+/// # Safety
+///
+/// engine_ptr must be a valid pointer from wasmtime4j_engine_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_engine_fuel_enabled(engine_ptr: *const c_void) -> c_int {
+    match core::get_engine_ref(engine_ptr) {
+        Ok(engine) => if core::is_fuel_enabled(engine) { 1 } else { 0 },
+        Err(_) => FFI_ERROR,
+    }
+}
+
+/// Check if epoch-based interruption is enabled
+///
+/// # Safety
+///
+/// engine_ptr must be a valid pointer from wasmtime4j_engine_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_engine_epoch_interruption_enabled(engine_ptr: *const c_void) -> c_int {
+    match core::get_engine_ref(engine_ptr) {
+        Ok(engine) => if core::is_epoch_interruption_enabled(engine) { 1 } else { 0 },
+        Err(_) => FFI_ERROR,
+    }
+}
+
+/// Get maximum instances limit
+///
+/// # Safety
+///
+/// engine_ptr must be a valid pointer from wasmtime4j_engine_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_engine_max_instances(engine_ptr: *const c_void) -> u32 {
+    match core::get_engine_ref(engine_ptr) {
+        Ok(engine) => core::get_max_instances(engine).unwrap_or(0),
+        Err(_) => 0,
+    }
+}
+
+/// Get engine reference count for debugging
+///
+/// # Safety
+///
+/// engine_ptr must be a valid pointer from wasmtime4j_engine_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_engine_reference_count(engine_ptr: *const c_void) -> usize {
+    match core::get_engine_ref(engine_ptr) {
+        Ok(engine) => core::get_reference_count(engine),
+        Err(_) => 0,
+    }
+}

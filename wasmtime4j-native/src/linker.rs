@@ -440,3 +440,268 @@ impl Drop for Linker {
         self.dispose();
     }
 }
+
+//
+// Native C exports for JNI and Panama FFI consumption
+//
+
+use std::os::raw::{c_void, c_char, c_int};
+use std::ffi::{CStr, CString};
+use crate::shared_ffi::{FFI_SUCCESS, FFI_ERROR};
+
+/// Linker core functions for interface implementations
+pub mod ffi_core {
+    use super::*;
+    use std::os::raw::c_void;
+    use crate::error::ffi_utils;
+    use crate::validate_ptr_not_null;
+
+    /// Core function to create linker with engine
+    pub fn create_linker(engine: &Engine) -> WasmtimeResult<Box<Linker>> {
+        Linker::new(engine).map(Box::new)
+    }
+
+    /// Core function to create linker with configuration
+    pub fn create_linker_with_config(engine: &Engine, config: LinkerConfig) -> WasmtimeResult<Box<Linker>> {
+        Linker::with_config(engine, config).map(Box::new)
+    }
+
+    /// Core function to validate linker pointer and get reference
+    pub unsafe fn get_linker_ref(linker_ptr: *const c_void) -> WasmtimeResult<&'static Linker> {
+        validate_ptr_not_null!(linker_ptr, "linker");
+        Ok(&*(linker_ptr as *const Linker))
+    }
+
+    /// Core function to validate linker pointer and get mutable reference
+    pub unsafe fn get_linker_mut(linker_ptr: *mut c_void) -> WasmtimeResult<&'static mut Linker> {
+        validate_ptr_not_null!(linker_ptr, "linker");
+        Ok(&mut *(linker_ptr as *mut Linker))
+    }
+
+    /// Core function to destroy a linker (safe cleanup)
+    pub unsafe fn destroy_linker(linker_ptr: *mut c_void) {
+        ffi_utils::destroy_resource::<Linker>(linker_ptr, "Linker");
+    }
+
+    /// Core function to instantiate module with linker
+    pub fn instantiate_module(
+        linker: &Linker,
+        store: &mut Store,
+        module: &Module,
+    ) -> WasmtimeResult<LinkerInstantiationResult> {
+        linker.instantiate(store, module)
+    }
+
+    /// Core function to get linker metadata
+    pub fn get_metadata(linker: &Linker) -> &LinkerMetadata {
+        linker.metadata()
+    }
+
+    /// Core function to check if linker is valid
+    pub fn is_valid(linker: &Linker) -> bool {
+        linker.is_valid()
+    }
+
+    /// Core function to dispose linker
+    pub fn dispose_linker(linker: &mut Linker) {
+        linker.dispose()
+    }
+
+    /// Core function to get host function count
+    pub fn host_function_count(linker: &Linker) -> usize {
+        linker.host_functions().len()
+    }
+
+    /// Core function to get import count
+    pub fn import_count(linker: &Linker) -> usize {
+        linker.imports().len()
+    }
+}
+
+/// Create a new linker with engine
+///
+/// # Safety
+///
+/// engine_ptr must be a valid pointer from wasmtime4j_engine_new
+/// Returns pointer to linker that must be freed with wasmtime4j_linker_destroy
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_linker_new(engine_ptr: *const c_void) -> *mut c_void {
+    match crate::engine::core::get_engine_ref(engine_ptr) {
+        Ok(engine) => {
+            match ffi_core::create_linker(engine) {
+                Ok(linker) => Box::into_raw(linker) as *mut c_void,
+                Err(_) => std::ptr::null_mut(),
+            }
+        },
+        Err(_) => std::ptr::null_mut(),
+    }
+}
+
+/// Create a new linker with configuration
+///
+/// # Safety
+///
+/// engine_ptr must be a valid pointer from wasmtime4j_engine_new
+/// Returns pointer to linker that must be freed with wasmtime4j_linker_destroy
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_linker_new_with_config(
+    engine_ptr: *const c_void,
+    allow_unknown_exports: c_int,
+    allow_shadowing: c_int,
+) -> *mut c_void {
+    match crate::engine::core::get_engine_ref(engine_ptr) {
+        Ok(engine) => {
+            let config = LinkerConfig {
+                allow_unknown_exports: allow_unknown_exports != 0,
+                allow_shadowing: allow_shadowing != 0,
+            };
+            match ffi_core::create_linker_with_config(engine, config) {
+                Ok(linker) => Box::into_raw(linker) as *mut c_void,
+                Err(_) => std::ptr::null_mut(),
+            }
+        },
+        Err(_) => std::ptr::null_mut(),
+    }
+}
+
+/// Destroy linker and free resources
+///
+/// # Safety
+///
+/// linker_ptr must be a valid pointer from wasmtime4j_linker_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_linker_destroy(linker_ptr: *mut c_void) {
+    if !linker_ptr.is_null() {
+        core::destroy_linker(linker_ptr);
+    }
+}
+
+/// Instantiate module with linker
+///
+/// # Safety
+///
+/// All pointers must be valid
+/// Returns pointer to instance that must be freed with wasmtime4j_instance_destroy
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_linker_instantiate(
+    linker_ptr: *const c_void,
+    store_ptr: *mut c_void,
+    module_ptr: *const c_void,
+) -> *mut c_void {
+    if linker_ptr.is_null() || store_ptr.is_null() || module_ptr.is_null() {
+        return std::ptr::null_mut();
+    }
+
+    match (
+        core::get_linker_ref(linker_ptr),
+        crate::store::core::get_store_mut(store_ptr),
+        crate::module::core::get_module_ref(module_ptr)
+    ) {
+        (Ok(linker), Ok(store), Ok(module)) => {
+            match ffi_core::instantiate_module(linker, store, module) {
+                Ok(result) => Box::into_raw(Box::new(result.instance)) as *mut c_void,
+                Err(_) => std::ptr::null_mut(),
+            }
+        },
+        _ => std::ptr::null_mut(),
+    }
+}
+
+/// Check if linker is valid
+///
+/// # Safety
+///
+/// linker_ptr must be a valid pointer from wasmtime4j_linker_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_linker_is_valid(linker_ptr: *const c_void) -> c_int {
+    match ffi_core::get_linker_ref(linker_ptr) {
+        Ok(linker) => if core::is_valid(linker) { 1 } else { 0 },
+        Err(_) => FFI_ERROR,
+    }
+}
+
+/// Dispose linker resources
+///
+/// # Safety
+///
+/// linker_ptr must be a valid pointer from wasmtime4j_linker_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_linker_dispose(linker_ptr: *mut c_void) -> c_int {
+    match ffi_core::get_linker_mut(linker_ptr) {
+        Ok(linker) => {
+            core::dispose_linker(linker);
+            FFI_SUCCESS
+        },
+        Err(_) => FFI_ERROR,
+    }
+}
+
+/// Get number of host functions in linker
+///
+/// # Safety
+///
+/// linker_ptr must be a valid pointer from wasmtime4j_linker_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_linker_host_function_count(linker_ptr: *const c_void) -> usize {
+    match ffi_core::get_linker_ref(linker_ptr) {
+        Ok(linker) => core::host_function_count(linker),
+        Err(_) => 0,
+    }
+}
+
+/// Get number of imports in linker
+///
+/// # Safety
+///
+/// linker_ptr must be a valid pointer from wasmtime4j_linker_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_linker_import_count(linker_ptr: *const c_void) -> usize {
+    match ffi_core::get_linker_ref(linker_ptr) {
+        Ok(linker) => core::import_count(linker),
+        Err(_) => 0,
+    }
+}
+
+/// Get linker instantiation count
+///
+/// # Safety
+///
+/// linker_ptr must be a valid pointer from wasmtime4j_linker_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_linker_instantiation_count(linker_ptr: *const c_void) -> u64 {
+    match ffi_core::get_linker_ref(linker_ptr) {
+        Ok(linker) => core::get_metadata(linker).instantiation_count,
+        Err(_) => 0,
+    }
+}
+
+/// Check if WASI is enabled in linker
+///
+/// # Safety
+///
+/// linker_ptr must be a valid pointer from wasmtime4j_linker_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_linker_wasi_enabled(linker_ptr: *const c_void) -> c_int {
+    match ffi_core::get_linker_ref(linker_ptr) {
+        Ok(linker) => if core::get_metadata(linker).wasi_enabled { 1 } else { 0 },
+        Err(_) => FFI_ERROR,
+    }
+}
+
+/// Get linker creation timestamp in microseconds since epoch
+///
+/// # Safety
+///
+/// linker_ptr must be a valid pointer from wasmtime4j_linker_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_linker_created_at_micros(linker_ptr: *const c_void) -> u64 {
+    match ffi_core::get_linker_ref(linker_ptr) {
+        Ok(linker) => {
+            let metadata = core::get_metadata(linker);
+            metadata.created_at.duration_since(std::time::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_micros() as u64
+        },
+        Err(_) => 0,
+    }
+}

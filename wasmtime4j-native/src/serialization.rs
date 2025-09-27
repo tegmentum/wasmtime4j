@@ -520,3 +520,271 @@ mod tests {
         assert!(cache_info.oldest_entry.is_some());
     }
 }
+
+//
+// Native C exports for JNI and Panama FFI consumption
+//
+
+use std::os::raw::{c_void, c_char, c_int};
+use std::ffi::{CStr, CString};
+use crate::shared_ffi::{FFI_SUCCESS, FFI_ERROR};
+
+/// Serialization core functions for interface implementations
+pub mod ffi_core {
+    use super::*;
+    use std::os::raw::c_void;
+    use crate::error::ffi_utils;
+    use crate::validate_ptr_not_null;
+
+    /// Core function to create module serializer
+    pub fn create_serializer() -> Box<ModuleSerializer> {
+        Box::new(ModuleSerializer::new())
+    }
+
+    /// Core function to create module serializer with configuration
+    pub fn create_serializer_with_config(config: SerializationConfig) -> Box<ModuleSerializer> {
+        Box::new(ModuleSerializer::with_config(config))
+    }
+
+    /// Core function to validate serializer pointer and get reference
+    pub unsafe fn get_serializer_ref(serializer_ptr: *const c_void) -> WasmtimeResult<&'static ModuleSerializer> {
+        validate_ptr_not_null!(serializer_ptr, "serializer");
+        Ok(&*(serializer_ptr as *const ModuleSerializer))
+    }
+
+    /// Core function to validate serializer pointer and get mutable reference
+    pub unsafe fn get_serializer_mut(serializer_ptr: *mut c_void) -> WasmtimeResult<&'static mut ModuleSerializer> {
+        validate_ptr_not_null!(serializer_ptr, "serializer");
+        Ok(&mut *(serializer_ptr as *mut ModuleSerializer))
+    }
+
+    /// Core function to destroy a serializer (safe cleanup)
+    pub unsafe fn destroy_serializer(serializer_ptr: *mut c_void) {
+        ffi_utils::destroy_resource::<ModuleSerializer>(serializer_ptr, "ModuleSerializer");
+    }
+
+    /// Core function to serialize module
+    pub fn serialize_module(
+        serializer: &mut ModuleSerializer,
+        engine: &Engine,
+        module_bytes: &[u8],
+    ) -> WasmtimeResult<Vec<u8>> {
+        serializer.serialize(engine, module_bytes)
+    }
+
+    /// Core function to deserialize module
+    pub fn deserialize_module(
+        serializer: &mut ModuleSerializer,
+        engine: &Engine,
+        serialized_bytes: &[u8],
+    ) -> WasmtimeResult<Vec<u8>> {
+        serializer.deserialize(engine, serialized_bytes)
+    }
+
+    /// Core function to get cache info
+    pub fn get_cache_info(serializer: &ModuleSerializer) -> CacheInfo {
+        serializer.cache_info()
+    }
+
+    /// Core function to clear cache
+    pub fn clear_cache(serializer: &mut ModuleSerializer) {
+        serializer.clear_cache()
+    }
+}
+
+/// Create a new module serializer
+///
+/// # Safety
+///
+/// Returns pointer to serializer that must be freed with wasmtime4j_serializer_destroy
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_serializer_new() -> *mut c_void {
+    Box::into_raw(ffi_core::create_serializer()) as *mut c_void
+}
+
+/// Create a new module serializer with configuration
+///
+/// # Safety
+///
+/// Returns pointer to serializer that must be freed with wasmtime4j_serializer_destroy
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_serializer_new_with_config(
+    max_cache_size: usize,
+    enable_compression: c_int,
+    compression_level: u32,
+) -> *mut c_void {
+    let config = SerializationConfig {
+        max_cache_size: if max_cache_size == 0 { DEFAULT_MAX_CACHE_SIZE } else { max_cache_size },
+        enable_compression: enable_compression != 0,
+        compression_level: if compression_level == 0 { COMPRESSION_LEVEL } else { compression_level },
+        validation_level: ValidationLevel::Basic,
+        max_entry_age: Duration::from_secs(DEFAULT_MAX_CACHE_AGE),
+    };
+
+    Box::into_raw(ffi_core::create_serializer_with_config(config)) as *mut c_void
+}
+
+/// Destroy serializer and free resources
+///
+/// # Safety
+///
+/// serializer_ptr must be a valid pointer from wasmtime4j_serializer_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_serializer_destroy(serializer_ptr: *mut c_void) {
+    if !serializer_ptr.is_null() {
+        core::destroy_serializer(serializer_ptr);
+    }
+}
+
+/// Serialize module bytes
+///
+/// # Safety
+///
+/// All pointers must be valid, caller must manage result buffer
+/// Returns size of serialized data, or 0 on error
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_serializer_serialize(
+    serializer_ptr: *mut c_void,
+    engine_ptr: *const c_void,
+    module_bytes: *const u8,
+    module_size: usize,
+    result_buffer: *mut *mut u8,
+    result_size: *mut usize,
+) -> c_int {
+    if serializer_ptr.is_null() || engine_ptr.is_null() || module_bytes.is_null() ||
+       result_buffer.is_null() || result_size.is_null() || module_size == 0 {
+        return FFI_ERROR;
+    }
+
+    match (
+        core::get_serializer_mut(serializer_ptr),
+        crate::engine::core::get_engine_ref(engine_ptr)
+    ) {
+        (Ok(serializer), Ok(engine)) => {
+            let bytes = std::slice::from_raw_parts(module_bytes, module_size);
+            match ffi_core::serialize_module(serializer, engine, bytes) {
+                Ok(serialized) => {
+                    let boxed_bytes = serialized.into_boxed_slice();
+                    let size = boxed_bytes.len();
+                    let ptr = Box::into_raw(boxed_bytes) as *mut u8;
+
+                    *result_buffer = ptr;
+                    *result_size = size;
+                    FFI_SUCCESS
+                },
+                Err(_) => FFI_ERROR,
+            }
+        },
+        _ => FFI_ERROR,
+    }
+}
+
+/// Deserialize module bytes
+///
+/// # Safety
+///
+/// All pointers must be valid, caller must manage result buffer
+/// Returns size of deserialized data, or 0 on error
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_serializer_deserialize(
+    serializer_ptr: *mut c_void,
+    engine_ptr: *const c_void,
+    serialized_bytes: *const u8,
+    serialized_size: usize,
+    result_buffer: *mut *mut u8,
+    result_size: *mut usize,
+) -> c_int {
+    if serializer_ptr.is_null() || engine_ptr.is_null() || serialized_bytes.is_null() ||
+       result_buffer.is_null() || result_size.is_null() || serialized_size == 0 {
+        return FFI_ERROR;
+    }
+
+    match (
+        core::get_serializer_mut(serializer_ptr),
+        crate::engine::core::get_engine_ref(engine_ptr)
+    ) {
+        (Ok(serializer), Ok(engine)) => {
+            let bytes = std::slice::from_raw_parts(serialized_bytes, serialized_size);
+            match ffi_core::deserialize_module(serializer, engine, bytes) {
+                Ok(deserialized) => {
+                    let boxed_bytes = deserialized.into_boxed_slice();
+                    let size = boxed_bytes.len();
+                    let ptr = Box::into_raw(boxed_bytes) as *mut u8;
+
+                    *result_buffer = ptr;
+                    *result_size = size;
+                    FFI_SUCCESS
+                },
+                Err(_) => FFI_ERROR,
+            }
+        },
+        _ => FFI_ERROR,
+    }
+}
+
+/// Clear serializer cache
+///
+/// # Safety
+///
+/// serializer_ptr must be a valid pointer from wasmtime4j_serializer_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_serializer_clear_cache(serializer_ptr: *mut c_void) -> c_int {
+    match ffi_core::get_serializer_mut(serializer_ptr) {
+        Ok(serializer) => {
+            core::clear_cache(serializer);
+            FFI_SUCCESS
+        },
+        Err(_) => FFI_ERROR,
+    }
+}
+
+/// Get cache entry count
+///
+/// # Safety
+///
+/// serializer_ptr must be a valid pointer from wasmtime4j_serializer_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_serializer_cache_entry_count(serializer_ptr: *const c_void) -> usize {
+    match ffi_core::get_serializer_ref(serializer_ptr) {
+        Ok(serializer) => core::get_cache_info(serializer).entry_count,
+        Err(_) => 0,
+    }
+}
+
+/// Get cache total size in bytes
+///
+/// # Safety
+///
+/// serializer_ptr must be a valid pointer from wasmtime4j_serializer_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_serializer_cache_total_size(serializer_ptr: *const c_void) -> usize {
+    match ffi_core::get_serializer_ref(serializer_ptr) {
+        Ok(serializer) => core::get_cache_info(serializer).total_size,
+        Err(_) => 0,
+    }
+}
+
+/// Get cache hit rate (0.0 to 1.0)
+///
+/// # Safety
+///
+/// serializer_ptr must be a valid pointer from wasmtime4j_serializer_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_serializer_cache_hit_rate(serializer_ptr: *const c_void) -> f64 {
+    match ffi_core::get_serializer_ref(serializer_ptr) {
+        Ok(serializer) => core::get_cache_info(serializer).hit_rate,
+        Err(_) => 0.0,
+    }
+}
+
+/// Free buffer allocated by serialization functions
+///
+/// # Safety
+///
+/// buffer must be allocated by wasmtime4j_serializer_serialize or wasmtime4j_serializer_deserialize
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_serializer_free_buffer(buffer: *mut u8, size: usize) {
+    if !buffer.is_null() && size > 0 {
+        let _ = Box::from_raw(std::slice::from_raw_parts_mut(buffer, size));
+    }
+}
