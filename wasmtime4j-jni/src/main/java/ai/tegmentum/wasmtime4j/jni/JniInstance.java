@@ -4,8 +4,6 @@ import ai.tegmentum.wasmtime4j.ExportDescriptor;
 import ai.tegmentum.wasmtime4j.FuncType;
 import ai.tegmentum.wasmtime4j.GlobalType;
 import ai.tegmentum.wasmtime4j.Instance;
-import ai.tegmentum.wasmtime4j.InstanceState;
-import ai.tegmentum.wasmtime4j.InstanceStatistics;
 import ai.tegmentum.wasmtime4j.MemoryType;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
@@ -23,6 +21,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
+import ai.tegmentum.wasmtime4j.InstanceState;
+import ai.tegmentum.wasmtime4j.InstanceStatistics;
+import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 
 /**
  * JNI implementation of the Instance interface.
@@ -51,17 +52,17 @@ public final class JniInstance extends JniResource implements Instance {
   /** Flag to track if this instance has been closed. */
   private final AtomicBoolean closed = new AtomicBoolean(false);
 
-  /** Flag to track if this instance has been cleaned up. */
+  /** Flag to track if resources have been cleaned up. */
   private final AtomicBoolean cleanedUp = new AtomicBoolean(false);
+
+  /** Creation timestamp in microseconds. */
+  private final long createdAtMicros = System.currentTimeMillis() * 1000;
 
   /** Reference to the module used to create this instance. */
   private final Module module;
 
   /** Reference to the store this instance belongs to. */
   private final Store store;
-
-  /** Creation timestamp for tracking instance lifecycle. */
-  private final long createdAtMicros;
 
   /**
    * Creates a new JNI instance with the given native handle, module, and store.
@@ -78,7 +79,6 @@ public final class JniInstance extends JniResource implements Instance {
     JniValidation.requireNonNull(store, "store");
     this.module = module;
     this.store = store;
-    this.createdAtMicros = System.currentTimeMillis() * 1000; // Convert to microseconds
     LOGGER.fine("Created JNI instance with handle: " + nativeHandle);
   }
 
@@ -381,6 +381,145 @@ public final class JniInstance extends JniResource implements Instance {
     return function.get().call(params);
   }
 
+  /**
+   * Disposes of this instance, releasing resources immediately.
+   *
+   * <p>This method provides explicit resource cleanup, allowing instances to be disposed of before
+   * the store is closed. Once disposed, the instance becomes invalid and should not be used.
+   *
+   * @return true if disposal was successful, false if already disposed
+   * @throws WasmException if disposal fails
+   * @since 1.0.0
+   */
+  @Override
+  public boolean dispose() throws WasmException {
+    ensureNotClosed();
+
+    try {
+      final boolean result = nativeDispose(getNativeHandle());
+      if (result) {
+        // Mark as closed to prevent further use
+        try {
+          close();
+        } catch (final Exception e) {
+          LOGGER.warning("Failed to close instance after disposal: " + e.getMessage());
+        }
+      }
+      return result;
+    } catch (final Exception e) {
+      throw new WasmException("Failed to dispose instance", e);
+    }
+  }
+
+  /**
+   * Checks if this instance has been disposed.
+   *
+   * <p>Disposed instances are no longer usable and will throw exceptions if operations are
+   * attempted on them.
+   *
+   * @return true if the instance has been disposed, false otherwise
+   * @since 1.0.0
+   */
+  @Override
+  public boolean isDisposed() {
+    try {
+      return nativeIsDisposed(getNativeHandle());
+    } catch (final Exception e) {
+      LOGGER.warning("Failed to check dispose status: " + e.getMessage());
+      return true; // Assume disposed if we can't check
+    }
+  }
+
+  /**
+   * Gets the creation timestamp of this instance in microseconds.
+   *
+   * <p>This timestamp represents when the instance was created, measured from the Unix epoch in
+   * microseconds.
+   *
+   * @return the creation timestamp in microseconds since Unix epoch
+   * @since 1.0.0
+   */
+  @Override
+  public long getCreatedAtMicros() {
+    ensureNotClosed();
+
+    try {
+      return nativeGetCreatedAtMicros(getNativeHandle());
+    } catch (final Exception e) {
+      throw new JniException("Failed to get creation timestamp", e);
+    }
+  }
+
+  /**
+   * Gets the count of metadata exports in this instance.
+   *
+   * <p>Metadata exports include debugging information, custom sections, and other non-executable
+   * exports that provide information about the module structure.
+   *
+   * @return the number of metadata exports
+   * @since 1.0.0
+   */
+  @Override
+  public int getMetadataExportCount() {
+    ensureNotClosed();
+
+    try {
+      return (int) nativeGetMetadataExportCount(getNativeHandle());
+    } catch (final Exception e) {
+      throw new JniException("Failed to get metadata export count", e);
+    }
+  }
+
+  /**
+   * Calls a 32-bit integer function with parameters.
+   *
+   * <p>This is an optimized calling convention for functions that take 32-bit integer parameters
+   * and return a 32-bit integer result.
+   *
+   * @param functionName the name of the function to call
+   * @param params array of 32-bit integer parameters
+   * @return the 32-bit integer result
+   * @throws WasmException if the function call fails or function doesn't exist
+   * @throws IllegalArgumentException if functionName is null
+   * @since 1.0.0
+   */
+  @Override
+  public int callI32Function(final String functionName, final int... params) throws WasmException {
+    JniValidation.requireNonEmpty(functionName, "functionName");
+    JniValidation.requireNonNull(params, "params");
+    ensureNotClosed();
+
+    try {
+      return nativeCallI32Function(getNativeHandle(), functionName, params);
+    } catch (final Exception e) {
+      throw new WasmException("Failed to call I32 function " + functionName, e);
+    }
+  }
+
+  /**
+   * Calls a 32-bit integer function with no parameters.
+   *
+   * <p>This is an optimized calling convention for functions that take no parameters and return a
+   * 32-bit integer result.
+   *
+   * @param functionName the name of the function to call
+   * @return the 32-bit integer result
+   * @throws WasmException if the function call fails or function doesn't exist
+   * @throws IllegalArgumentException if functionName is null
+   * @since 1.0.0
+   */
+  @Override
+  public int callI32Function(final String functionName) throws WasmException {
+    JniValidation.requireNonEmpty(functionName, "functionName");
+    ensureNotClosed();
+
+    try {
+      return nativeCallI32FunctionNoParams(getNativeHandle(), functionName);
+    } catch (final Exception e) {
+      throw new WasmException("Failed to call I32 function " + functionName, e);
+    }
+  }
+
   @Override
   public InstanceState getState() {
     ensureNotClosed();
@@ -414,76 +553,6 @@ public final class JniInstance extends JniResource implements Instance {
   }
 
   @Override
-  public boolean dispose() throws WasmException {
-    if (closed.get()) {
-      return false; // Already disposed
-    }
-
-    try {
-      // Perform cleanup first if not already done
-      if (!cleanedUp.get()) {
-        cleanup();
-      }
-
-      // Close the resource
-      close();
-      return true;
-    } catch (final Exception e) {
-      throw new WasmException("Failed to dispose instance", e);
-    }
-  }
-
-  @Override
-  public boolean isDisposed() {
-    return closed.get();
-  }
-
-  @Override
-  public long getCreatedAtMicros() {
-    return createdAtMicros;
-  }
-
-  @Override
-  public int getMetadataExportCount() {
-    ensureNotClosed();
-    try {
-      final String[] exports = getExportNames();
-      return exports != null ? exports.length : 0;
-    } catch (final RuntimeException e) {
-      LOGGER.warning("Failed to get metadata export count: " + e.getMessage());
-      return 0;
-    }
-  }
-
-  @Override
-  public int callI32Function(final String functionName, final int... params) throws WasmException {
-    ensureNotClosed();
-
-    // Convert int parameters to WasmValue array
-    final WasmValue[] wasmParams = new WasmValue[params.length];
-    for (int i = 0; i < params.length; i++) {
-      wasmParams[i] = WasmValue.i32(params[i]);
-    }
-
-    // Call function and get result
-    final WasmValue[] results = callFunction(functionName, wasmParams);
-    if (results.length != 1) {
-      throw new WasmException("Expected single i32 result, got " + results.length + " results");
-    }
-
-    if (results[0].getType() != WasmValue.Type.I32) {
-      throw new WasmException("Expected i32 result, got " + results[0].getType());
-    }
-
-    return results[0].asI32();
-  }
-
-  @Override
-  public int callI32Function(final String functionName) throws WasmException {
-    return callI32Function(functionName, new int[0]);
-  }
-
-  @Override
   public InstanceStatistics getStatistics() throws WasmException {
     ensureNotClosed();
 
@@ -508,8 +577,9 @@ public final class JniInstance extends JniResource implements Instance {
   @Override
   public Optional<WasmFunction> getFunction(final int index) {
     ensureNotClosed();
+
     if (index < 0) {
-      throw new IllegalArgumentException("Index cannot be negative: " + index);
+      return Optional.empty();
     }
 
     try {
@@ -540,8 +610,9 @@ public final class JniInstance extends JniResource implements Instance {
   @Override
   public Optional<WasmMemory> getMemory(final int index) {
     ensureNotClosed();
+
     if (index < 0) {
-      throw new IllegalArgumentException("Index cannot be negative: " + index);
+      return Optional.empty();
     }
 
     try {
@@ -572,8 +643,9 @@ public final class JniInstance extends JniResource implements Instance {
   @Override
   public Optional<WasmTable> getTable(final int index) {
     ensureNotClosed();
+
     if (index < 0) {
-      throw new IllegalArgumentException("Index cannot be negative: " + index);
+      return Optional.empty();
     }
 
     try {
@@ -604,8 +676,9 @@ public final class JniInstance extends JniResource implements Instance {
   @Override
   public Optional<WasmGlobal> getGlobal(final int index) {
     ensureNotClosed();
+
     if (index < 0) {
-      throw new IllegalArgumentException("Index cannot be negative: " + index);
+      return Optional.empty();
     }
 
     try {
@@ -777,23 +850,74 @@ public final class JniInstance extends JniResource implements Instance {
   private static native void nativeDestroyInstance(long instanceHandle);
 
   /**
-   * Gets the current lifecycle state of an instance.
+   * Disposes of a native instance.
    *
    * @param instanceHandle the native instance handle
-   * @return the instance state as an integer value
+   * @return true if disposal was successful, false otherwise
+   */
+  private static native boolean nativeDispose(long instanceHandle);
+
+  /**
+   * Checks if a native instance has been disposed.
+   *
+   * @param instanceHandle the native instance handle
+   * @return true if the instance has been disposed, false otherwise
+   */
+  private static native boolean nativeIsDisposed(long instanceHandle);
+
+  /**
+   * Gets the creation timestamp of a native instance.
+   *
+   * @param instanceHandle the native instance handle
+   * @return the creation timestamp in microseconds since Unix epoch
+   */
+  private static native long nativeGetCreatedAtMicros(long instanceHandle);
+
+  /**
+   * Gets the metadata export count for a native instance.
+   *
+   * @param instanceHandle the native instance handle
+   * @return the number of metadata exports
+   */
+  private static native long nativeGetMetadataExportCount(long instanceHandle);
+
+  /**
+   * Calls a 32-bit integer function with parameters.
+   *
+   * @param instanceHandle the native instance handle
+   * @param functionName the name of the function to call
+   * @param params array of 32-bit integer parameters
+   * @return the 32-bit integer result
+   */
+  private static native int nativeCallI32Function(long instanceHandle, String functionName, int[] params);
+
+  /**
+   * Calls a 32-bit integer function with no parameters.
+   *
+   * @param instanceHandle the native instance handle
+   * @param functionName the name of the function to call
+   * @return the 32-bit integer result
+   */
+  private static native int nativeCallI32FunctionNoParams(long instanceHandle, String functionName);
+
+  /**
+   * Gets the state of a native instance.
+   *
+   * @param instanceHandle the native instance handle
+   * @return the instance state as an integer
    */
   private static native int nativeGetState(long instanceHandle);
 
   /**
-   * Performs comprehensive resource cleanup for an instance.
+   * Performs cleanup of native instance resources.
    *
    * @param instanceHandle the native instance handle
-   * @return true if cleanup was performed, false if already cleaned up
+   * @return true if cleanup was successful, false otherwise
    */
   private static native boolean nativeCleanupResources(long instanceHandle);
 
   /**
-   * Validates cross-thread instance access.
+   * Validates thread access for a native instance.
    *
    * @param instanceHandle the native instance handle
    * @return true if access is valid, false otherwise

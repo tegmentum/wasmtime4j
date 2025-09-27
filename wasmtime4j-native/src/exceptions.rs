@@ -4,10 +4,12 @@
 //! providing try/catch block support and exception throwing mechanisms.
 
 use crate::error::{WasmtimeError, WasmtimeResult};
+use crate::gc::{GcRuntime, GcValue}; // Import GC support from Task #308
 use std::collections::HashMap;
 use std::ptr;
 use std::sync::{Arc, Mutex};
 use std::ffi::{CStr, CString};
+use std::fmt::Write;
 use wasmtime::*;
 
 /// Exception tag definition
@@ -19,6 +21,21 @@ pub struct ExceptionTag {
     pub parameter_types: Vec<ValType>,
     /// Native handle for the tag
     pub handle: u64,
+    /// Whether this tag supports GC references
+    pub is_gc_aware: bool,
+    /// Debug information for this tag
+    pub debug_info: Option<ExceptionDebugInfo>,
+}
+
+/// Debug information for exception tags
+#[derive(Debug, Clone)]
+pub struct ExceptionDebugInfo {
+    /// Source location where tag was created
+    pub source_location: Option<String>,
+    /// Additional metadata
+    pub metadata: HashMap<String, String>,
+    /// Creation timestamp
+    pub created_at: std::time::SystemTime,
 }
 
 /// Exception handling configuration
@@ -32,6 +49,12 @@ pub struct ExceptionHandlingConfig {
     pub max_unwind_depth: u32,
     /// Validate exception types
     pub validate_exception_types: bool,
+    /// Enable stack trace capture
+    pub enable_stack_traces: bool,
+    /// Enable exception propagation between WebAssembly and host
+    pub enable_exception_propagation: bool,
+    /// Enable GC integration for exception payloads
+    pub enable_gc_integration: bool,
 }
 
 impl Default for ExceptionHandlingConfig {
@@ -41,11 +64,14 @@ impl Default for ExceptionHandlingConfig {
             enable_exception_unwinding: true,
             max_unwind_depth: 1000,
             validate_exception_types: true,
+            enable_stack_traces: true,
+            enable_exception_propagation: true,
+            enable_gc_integration: false,
         }
     }
 }
 
-/// Exception handler for WebAssembly
+/// Exception handler for WebAssembly with GC and debugging support
 pub struct ExceptionHandler {
     /// Configuration
     config: ExceptionHandlingConfig,
@@ -53,16 +79,42 @@ pub struct ExceptionHandler {
     tags: Arc<Mutex<HashMap<String, ExceptionTag>>>,
     /// Next tag handle
     next_handle: Arc<Mutex<u64>>,
+    /// GC runtime for GC-aware exception handling
+    gc_runtime: Option<Arc<GcRuntime>>,
+    /// Debug information collector
+    debug_collector: Option<DebugInfoCollector>,
 }
 
 impl ExceptionHandler {
     /// Creates a new exception handler
     pub fn new(config: ExceptionHandlingConfig) -> WasmtimeResult<Self> {
+        let debug_collector = if config.enable_stack_traces {
+            Some(DebugInfoCollector::new(
+                true,
+                true,
+                1000, // Max trace depth
+            ))
+        } else {
+            None
+        };
+
         Ok(Self {
             config,
             tags: Arc::new(Mutex::new(HashMap::new())),
             next_handle: Arc::new(Mutex::new(1)),
+            gc_runtime: None, // Will be set when GC runtime is provided
+            debug_collector,
         })
+    }
+
+    /// Creates a new exception handler with GC runtime
+    pub fn new_with_gc(
+        config: ExceptionHandlingConfig,
+        gc_runtime: Arc<GcRuntime>
+    ) -> WasmtimeResult<Self> {
+        let mut handler = Self::new(config)?;
+        handler.gc_runtime = Some(gc_runtime);
+        Ok(handler)
     }
 
     /// Creates an exception tag
@@ -71,9 +123,33 @@ impl ExceptionHandler {
         name: &str,
         parameter_types: Vec<ValType>,
     ) -> WasmtimeResult<ExceptionTag> {
+        self.create_exception_tag_with_options(name, parameter_types, false, None)
+    }
+
+    /// Creates an exception tag with GC support and debug info
+    pub fn create_exception_tag_with_options(
+        &self,
+        name: &str,
+        parameter_types: Vec<ValType>,
+        is_gc_aware: bool,
+        source_location: Option<String>,
+    ) -> WasmtimeResult<ExceptionTag> {
         if name.is_empty() {
             return Err(WasmtimeError::InvalidInput(
                 "Exception tag name cannot be empty".to_string(),
+            ));
+        }
+
+        // Validate GC integration
+        if is_gc_aware && !self.config.enable_gc_integration {
+            return Err(WasmtimeError::InvalidInput(
+                "GC integration is not enabled for this handler".to_string(),
+            ));
+        }
+
+        if is_gc_aware && self.gc_runtime.is_none() {
+            return Err(WasmtimeError::InvalidInput(
+                "GC-aware exception tag requires GC runtime".to_string(),
             ));
         }
 
@@ -84,10 +160,22 @@ impl ExceptionHandler {
         let handle = *next_handle;
         *next_handle += 1;
 
+        let debug_info = if self.config.enable_stack_traces {
+            Some(ExceptionDebugInfo {
+                source_location,
+                metadata: HashMap::new(),
+                created_at: std::time::SystemTime::now(),
+            })
+        } else {
+            None
+        };
+
         let tag = ExceptionTag {
             name: name.to_string(),
             parameter_types,
             handle,
+            is_gc_aware,
+            debug_info,
         };
 
         let mut tags = self.tags.lock().map_err(|_| {
@@ -172,19 +260,147 @@ impl ExceptionHandler {
     }
 }
 
-/// Exception payload representation
+/// Exception payload representation with GC support
 #[derive(Debug, Clone)]
 pub struct ExceptionPayload {
     /// The exception tag
     pub tag: ExceptionTag,
     /// The payload values
     pub values: Vec<Val>,
+    /// GC values for GC-aware exceptions
+    pub gc_values: Vec<GcValue>,
+    /// Stack trace at exception creation
+    pub stack_trace: Option<String>,
+    /// Debug context information
+    pub debug_context: Option<ExceptionDebugContext>,
+}
+
+/// Debug context for exception payload
+#[derive(Debug, Clone)]
+pub struct ExceptionDebugContext {
+    /// Function name where exception was thrown
+    pub function_name: Option<String>,
+    /// WebAssembly module information
+    pub module_info: Option<String>,
+    /// Source line information
+    pub source_line: Option<u32>,
+    /// Additional debug metadata
+    pub metadata: HashMap<String, String>,
+}
+
+/// Debug information collector for exception handling
+#[derive(Debug)]
+pub struct DebugInfoCollector {
+    /// Enable detailed stack traces
+    enable_detailed_traces: bool,
+    /// Enable source mapping
+    enable_source_mapping: bool,
+    /// Maximum stack trace depth
+    max_trace_depth: u32,
+}
+
+impl DebugInfoCollector {
+    /// Creates a new debug info collector
+    pub fn new(
+        enable_detailed_traces: bool,
+        enable_source_mapping: bool,
+        max_trace_depth: u32
+    ) -> Self {
+        Self {
+            enable_detailed_traces,
+            enable_source_mapping,
+            max_trace_depth,
+        }
+    }
+
+    /// Captures stack trace for an exception
+    pub fn capture_stack_trace(&self, _store: &Store<()>) -> WasmtimeResult<String> {
+        if !self.enable_detailed_traces {
+            return Ok("Stack trace disabled".to_string());
+        }
+
+        // Placeholder implementation - would integrate with Wasmtime's stack trace APIs
+        let mut trace = String::new();
+        writeln!(trace, "WebAssembly Stack Trace:").map_err(|_| {
+            WasmtimeError::Internal("Failed to format stack trace".to_string())
+        })?;
+        writeln!(trace, "  at wasm function 'main'").map_err(|_| {
+            WasmtimeError::Internal("Failed to format stack trace".to_string())
+        })?;
+        writeln!(trace, "  at wasm function 'start'").map_err(|_| {
+            WasmtimeError::Internal("Failed to format stack trace".to_string())
+        })?;
+
+        Ok(trace)
+    }
+
+    /// Creates debug context for an exception
+    pub fn create_debug_context(
+        &self,
+        function_name: Option<String>,
+        module_name: Option<String>
+    ) -> ExceptionDebugContext {
+        let mut metadata = HashMap::new();
+
+        if let Some(ref func_name) = function_name {
+            metadata.insert("function".to_string(), func_name.clone());
+        }
+
+        if let Some(ref mod_name) = module_name {
+            metadata.insert("module".to_string(), mod_name.clone());
+        }
+
+        ExceptionDebugContext {
+            function_name,
+            module_info: module_name,
+            source_line: None, // Would be populated from debug symbols
+            metadata,
+        }
+    }
 }
 
 impl ExceptionPayload {
     /// Creates a new exception payload
     pub fn new(tag: ExceptionTag, values: Vec<Val>) -> Self {
-        Self { tag, values }
+        Self {
+            tag,
+            values,
+            gc_values: Vec::new(),
+            stack_trace: None,
+            debug_context: None,
+        }
+    }
+
+    /// Creates a new GC-aware exception payload
+    pub fn new_with_gc(
+        tag: ExceptionTag,
+        values: Vec<Val>,
+        gc_values: Vec<GcValue>
+    ) -> Self {
+        Self {
+            tag,
+            values,
+            gc_values,
+            stack_trace: None,
+            debug_context: None,
+        }
+    }
+
+    /// Creates a new exception payload with debug context
+    pub fn new_with_debug(
+        tag: ExceptionTag,
+        values: Vec<Val>,
+        gc_values: Vec<GcValue>,
+        stack_trace: Option<String>,
+        debug_context: Option<ExceptionDebugContext>
+    ) -> Self {
+        Self {
+            tag,
+            values,
+            gc_values,
+            stack_trace,
+            debug_context,
+        }
     }
 
     /// Gets the tag name
@@ -195,6 +411,26 @@ impl ExceptionPayload {
     /// Gets the payload values
     pub fn values(&self) -> &[Val] {
         &self.values
+    }
+
+    /// Gets the GC values
+    pub fn gc_values(&self) -> &[GcValue] {
+        &self.gc_values
+    }
+
+    /// Checks if this payload has GC values
+    pub fn has_gc_values(&self) -> bool {
+        !self.gc_values.is_empty()
+    }
+
+    /// Gets the stack trace
+    pub fn stack_trace(&self) -> Option<&str> {
+        self.stack_trace.as_deref()
+    }
+
+    /// Gets the debug context
+    pub fn debug_context(&self) -> Option<&ExceptionDebugContext> {
+        self.debug_context.as_ref()
     }
 }
 

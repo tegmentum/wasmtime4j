@@ -36,7 +36,10 @@ pub mod memory;
 pub mod global;
 pub mod table;
 pub mod linker;
+pub mod caller;
+pub mod serialization;
 pub mod threading;
+pub mod streaming_compiler;
 
 // Additional core functionality for comprehensive API coverage
 pub mod caller;

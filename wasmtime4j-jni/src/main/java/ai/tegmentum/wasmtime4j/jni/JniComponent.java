@@ -169,6 +169,116 @@ public final class JniComponent {
   static native void nativeDestroyComponentInstance(long instanceHandle);
 
   /**
+   * Compiles a WebAssembly component from WAT (WebAssembly Text format).
+   *
+   * @param engineHandle the native component engine handle
+   * @param watText the WAT text to compile
+   * @return component handle on success, 0 on failure
+   */
+  static native long nativeCompileComponentWat(long engineHandle, String watText);
+
+  /**
+   * Gets the number of exports from a component.
+   *
+   * @param componentHandle the native component handle
+   * @return number of exports
+   */
+  static native int nativeGetComponentExportCount(long componentHandle);
+
+  /**
+   * Gets the number of imports required by a component.
+   *
+   * @param componentHandle the native component handle
+   * @return number of imports
+   */
+  static native int nativeGetComponentImportCount(long componentHandle);
+
+  /**
+   * Checks if a component has a specific export.
+   *
+   * @param componentHandle the native component handle
+   * @param exportName the export name to check
+   * @return true if export exists, false otherwise
+   */
+  static native boolean nativeComponentHasExport(long componentHandle, String exportName);
+
+  /**
+   * Checks if a component requires a specific import.
+   *
+   * @param componentHandle the native component handle
+   * @param importName the import name to check
+   * @return true if import is required, false otherwise
+   */
+  static native boolean nativeComponentHasImport(long componentHandle, String importName);
+
+  /**
+   * Validates a component against WIT interface requirements.
+   *
+   * @param componentHandle the native component handle
+   * @param witInterface the WIT interface to validate against
+   * @return true if valid, false otherwise
+   */
+  static native boolean nativeComponentValidate(long componentHandle, String witInterface);
+
+  /**
+   * Cleanups unused component instances in the engine.
+   *
+   * @param engineHandle the native component engine handle
+   * @return 0 on success, error code on failure
+   */
+  static native int nativeComponentEngineCleanupInstances(long engineHandle);
+
+  /**
+   * Checks if a component engine supports a specific feature.
+   *
+   * @param engineHandle the native component engine handle
+   * @param featureName the feature name to check
+   * @return true if supported, false otherwise
+   */
+  static native boolean nativeComponentEngineSupportsFeature(long engineHandle, String featureName);
+
+  /**
+   * Gets interface definition for a component export as JSON.
+   *
+   * @param componentHandle the native component handle
+   * @param exportName the export name
+   * @return JSON string of interface definition or null if not found
+   */
+  static native String nativeComponentGetExportInterface(long componentHandle, String exportName);
+
+  /**
+   * Creates a new WIT parser context.
+   *
+   * @return WIT parser handle on success, 0 on failure
+   */
+  static native long nativeWitParserNew();
+
+  /**
+   * Destroys a WIT parser context.
+   *
+   * @param parserHandle the WIT parser handle
+   */
+  static native void nativeWitParserDestroy(long parserHandle);
+
+  /**
+   * Parses a WIT interface definition.
+   *
+   * @param parserHandle the WIT parser handle
+   * @param witText the WIT text to parse
+   * @return interface handle on success, 0 on failure
+   */
+  static native long nativeWitParserParseInterface(long parserHandle, String witText);
+
+  /**
+   * Validates WIT interface syntax.
+   *
+   * @param parserHandle the WIT parser handle
+   * @param witText the WIT text to validate
+   * @return true if valid syntax, false otherwise
+   */
+  static native boolean nativeWitParserValidateSyntax(long parserHandle, String witText);
+
+  /**
    * JNI wrapper for component engine operations.
    *
    * <p>Manages the lifecycle of a native component engine and provides methods for loading and

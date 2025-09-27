@@ -448,6 +448,731 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
     return "WasmRuntime";
   }
 
+  // ===== SIMD OPERATIONS =====
+
+  @Override
+  public boolean isSimdSupported() {
+    validateRuntimeState();
+    return concurrencyManager.executeWithReadLock(nativeHandle, 10000,
+        () -> nativeIsSimdSupported(nativeHandle));
+  }
+
+  @Override
+  public String getSimdCapabilities() {
+    validateRuntimeState();
+    return concurrencyManager.executeWithReadLock(nativeHandle, 10000,
+        () -> nativeGetSimdCapabilities(nativeHandle));
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.SimdOperations.V128 simdAdd(
+      final ai.tegmentum.wasmtime4j.SimdOperations.V128 a,
+      final ai.tegmentum.wasmtime4j.SimdOperations.V128 b) throws WasmException {
+    JniValidation.requireNonNull(a, "vector a");
+    JniValidation.requireNonNull(b, "vector b");
+    validateRuntimeState();
+
+    return concurrencyManager.executeWithWriteLock(nativeHandle, 30000, () -> {
+      final byte[] result = nativeSimdAdd(nativeHandle, a.getData(), b.getData());
+      if (result == null) {
+        throw new WasmException("SIMD add operation failed");
+      }
+      return new ai.tegmentum.wasmtime4j.SimdOperations.V128(result);
+    });
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.SimdOperations.V128 simdSubtract(
+      final ai.tegmentum.wasmtime4j.SimdOperations.V128 a,
+      final ai.tegmentum.wasmtime4j.SimdOperations.V128 b) throws WasmException {
+    JniValidation.requireNonNull(a, "vector a");
+    JniValidation.requireNonNull(b, "vector b");
+    validateRuntimeState();
+
+    return concurrencyManager.executeWithWriteLock(nativeHandle, 30000, () -> {
+      final byte[] result = nativeSimdSubtract(nativeHandle, a.getData(), b.getData());
+      if (result == null) {
+        throw new WasmException("SIMD subtract operation failed");
+      }
+      return new ai.tegmentum.wasmtime4j.SimdOperations.V128(result);
+    });
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.SimdOperations.V128 simdMultiply(
+      final ai.tegmentum.wasmtime4j.SimdOperations.V128 a,
+      final ai.tegmentum.wasmtime4j.SimdOperations.V128 b) throws WasmException {
+    JniValidation.requireNonNull(a, "vector a");
+    JniValidation.requireNonNull(b, "vector b");
+    validateRuntimeState();
+
+    return concurrencyManager.executeWithWriteLock(nativeHandle, 30000, () -> {
+      final byte[] result = nativeSimdMultiply(nativeHandle, a.getData(), b.getData());
+      if (result == null) {
+        throw new WasmException("SIMD multiply operation failed");
+      }
+      return new ai.tegmentum.wasmtime4j.SimdOperations.V128(result);
+    });
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.SimdOperations.V128 simdDivide(
+      final ai.tegmentum.wasmtime4j.SimdOperations.V128 a,
+      final ai.tegmentum.wasmtime4j.SimdOperations.V128 b) throws WasmException {
+    JniValidation.requireNonNull(a, "vector a");
+    JniValidation.requireNonNull(b, "vector b");
+    validateRuntimeState();
+
+    return concurrencyManager.executeWithWriteLock(nativeHandle, 30000, () -> {
+      final byte[] result = nativeSimdDivide(nativeHandle, a.getData(), b.getData());
+      if (result == null) {
+        throw new WasmException("SIMD divide operation failed");
+      }
+      return new ai.tegmentum.wasmtime4j.SimdOperations.V128(result);
+    });
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.SimdOperations.V128 simdAddSaturated(
+      final ai.tegmentum.wasmtime4j.SimdOperations.V128 a,
+      final ai.tegmentum.wasmtime4j.SimdOperations.V128 b) throws WasmException {
+    JniValidation.requireNonNull(a, "vector a");
+    JniValidation.requireNonNull(b, "vector b");
+    validateRuntimeState();
+
+    return concurrencyManager.executeWithWriteLock(nativeHandle, 30000, () -> {
+      final byte[] result = nativeSimdAddSaturated(nativeHandle, a.getData(), b.getData());
+      if (result == null) {
+        throw new WasmException("SIMD saturated add operation failed");
+      }
+      return new ai.tegmentum.wasmtime4j.SimdOperations.V128(result);
+    });
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.SimdOperations.V128 simdAnd(
+      final ai.tegmentum.wasmtime4j.SimdOperations.V128 a,
+      final ai.tegmentum.wasmtime4j.SimdOperations.V128 b) throws WasmException {
+    JniValidation.requireNonNull(a, "vector a");
+    JniValidation.requireNonNull(b, "vector b");
+    validateRuntimeState();
+
+    return concurrencyManager.executeWithWriteLock(nativeHandle, 30000, () -> {
+      final byte[] result = nativeSimdAnd(nativeHandle, a.getData(), b.getData());
+      if (result == null) {
+        throw new WasmException("SIMD AND operation failed");
+      }
+      return new ai.tegmentum.wasmtime4j.SimdOperations.V128(result);
+    });
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.SimdOperations.V128 simdOr(
+      final ai.tegmentum.wasmtime4j.SimdOperations.V128 a,
+      final ai.tegmentum.wasmtime4j.SimdOperations.V128 b) throws WasmException {
+    JniValidation.requireNonNull(a, "vector a");
+    JniValidation.requireNonNull(b, "vector b");
+    validateRuntimeState();
+
+    return concurrencyManager.executeWithWriteLock(nativeHandle, 30000, () -> {
+      final byte[] result = nativeSimdOr(nativeHandle, a.getData(), b.getData());
+      if (result == null) {
+        throw new WasmException("SIMD OR operation failed");
+      }
+      return new ai.tegmentum.wasmtime4j.SimdOperations.V128(result);
+    });
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.SimdOperations.V128 simdXor(
+      final ai.tegmentum.wasmtime4j.SimdOperations.V128 a,
+      final ai.tegmentum.wasmtime4j.SimdOperations.V128 b) throws WasmException {
+    JniValidation.requireNonNull(a, "vector a");
+    JniValidation.requireNonNull(b, "vector b");
+    validateRuntimeState();
+
+    return concurrencyManager.executeWithWriteLock(nativeHandle, 30000, () -> {
+      final byte[] result = nativeSimdXor(nativeHandle, a.getData(), b.getData());
+      if (result == null) {
+        throw new WasmException("SIMD XOR operation failed");
+      }
+      return new ai.tegmentum.wasmtime4j.SimdOperations.V128(result);
+    });
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.SimdOperations.V128 simdNot(
+      final ai.tegmentum.wasmtime4j.SimdOperations.V128 a) throws WasmException {
+    JniValidation.requireNonNull(a, "vector a");
+    validateRuntimeState();
+
+    return concurrencyManager.executeWithWriteLock(nativeHandle, 30000, () -> {
+      final byte[] result = nativeSimdNot(nativeHandle, a.getData());
+      if (result == null) {
+        throw new WasmException("SIMD NOT operation failed");
+      }
+      return new ai.tegmentum.wasmtime4j.SimdOperations.V128(result);
+    });
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.SimdOperations.V128 simdEquals(
+      final ai.tegmentum.wasmtime4j.SimdOperations.V128 a,
+      final ai.tegmentum.wasmtime4j.SimdOperations.V128 b) throws WasmException {
+    JniValidation.requireNonNull(a, "vector a");
+    JniValidation.requireNonNull(b, "vector b");
+    validateRuntimeState();
+
+    return concurrencyManager.executeWithWriteLock(nativeHandle, 30000, () -> {
+      final byte[] result = nativeSimdEquals(nativeHandle, a.getData(), b.getData());
+      if (result == null) {
+        throw new WasmException("SIMD equals operation failed");
+      }
+      return new ai.tegmentum.wasmtime4j.SimdOperations.V128(result);
+    });
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.SimdOperations.V128 simdLessThan(
+      final ai.tegmentum.wasmtime4j.SimdOperations.V128 a,
+      final ai.tegmentum.wasmtime4j.SimdOperations.V128 b) throws WasmException {
+    JniValidation.requireNonNull(a, "vector a");
+    JniValidation.requireNonNull(b, "vector b");
+    validateRuntimeState();
+
+    return concurrencyManager.executeWithWriteLock(nativeHandle, 30000, () -> {
+      final byte[] result = nativeSimdLessThan(nativeHandle, a.getData(), b.getData());
+      if (result == null) {
+        throw new WasmException("SIMD less than operation failed");
+      }
+      return new ai.tegmentum.wasmtime4j.SimdOperations.V128(result);
+    });
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.SimdOperations.V128 simdGreaterThan(
+      final ai.tegmentum.wasmtime4j.SimdOperations.V128 a,
+      final ai.tegmentum.wasmtime4j.SimdOperations.V128 b) throws WasmException {
+    JniValidation.requireNonNull(a, "vector a");
+    JniValidation.requireNonNull(b, "vector b");
+    validateRuntimeState();
+
+    return concurrencyManager.executeWithWriteLock(nativeHandle, 30000, () -> {
+      final byte[] result = nativeSimdGreaterThan(nativeHandle, a.getData(), b.getData());
+      if (result == null) {
+        throw new WasmException("SIMD greater than operation failed");
+      }
+      return new ai.tegmentum.wasmtime4j.SimdOperations.V128(result);
+    });
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.SimdOperations.V128 simdLoad(
+      final ai.tegmentum.wasmtime4j.WasmMemory memory, final int offset) throws WasmException {
+    JniValidation.requireNonNull(memory, "memory");
+    validateRuntimeState();
+
+    return concurrencyManager.executeWithWriteLock(nativeHandle, 30000, () -> {
+      // Assuming memory has a handle method - this may need adjustment based on actual implementation
+      final long memoryHandle = ((ai.tegmentum.wasmtime4j.jni.JniMemory) memory).getNativeHandle();
+      final byte[] result = nativeSimdLoad(nativeHandle, memoryHandle, offset);
+      if (result == null) {
+        throw new WasmException("SIMD load operation failed");
+      }
+      return new ai.tegmentum.wasmtime4j.SimdOperations.V128(result);
+    });
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.SimdOperations.V128 simdLoadAligned(
+      final ai.tegmentum.wasmtime4j.WasmMemory memory, final int offset, final int alignment) throws WasmException {
+    JniValidation.requireNonNull(memory, "memory");
+    validateRuntimeState();
+
+    return concurrencyManager.executeWithWriteLock(nativeHandle, 30000, () -> {
+      final long memoryHandle = ((ai.tegmentum.wasmtime4j.jni.JniMemory) memory).getNativeHandle();
+      final byte[] result = nativeSimdLoadAligned(nativeHandle, memoryHandle, offset, alignment);
+      if (result == null) {
+        throw new WasmException("SIMD aligned load operation failed");
+      }
+      return new ai.tegmentum.wasmtime4j.SimdOperations.V128(result);
+    });
+  }
+
+  @Override
+  public void simdStore(
+      final ai.tegmentum.wasmtime4j.WasmMemory memory, final int offset,
+      final ai.tegmentum.wasmtime4j.SimdOperations.V128 vector) throws WasmException {
+    JniValidation.requireNonNull(memory, "memory");
+    JniValidation.requireNonNull(vector, "vector");
+    validateRuntimeState();
+
+    concurrencyManager.executeWithWriteLock(nativeHandle, 30000, () -> {
+      final long memoryHandle = ((ai.tegmentum.wasmtime4j.jni.JniMemory) memory).getNativeHandle();
+      final boolean success = nativeSimdStore(nativeHandle, memoryHandle, offset, vector.getData());
+      if (!success) {
+        throw new WasmException("SIMD store operation failed");
+      }
+      return null;
+    });
+  }
+
+  @Override
+  public void simdStoreAligned(
+      final ai.tegmentum.wasmtime4j.WasmMemory memory, final int offset,
+      final ai.tegmentum.wasmtime4j.SimdOperations.V128 vector, final int alignment) throws WasmException {
+    JniValidation.requireNonNull(memory, "memory");
+    JniValidation.requireNonNull(vector, "vector");
+    validateRuntimeState();
+
+    concurrencyManager.executeWithWriteLock(nativeHandle, 30000, () -> {
+      final long memoryHandle = ((ai.tegmentum.wasmtime4j.jni.JniMemory) memory).getNativeHandle();
+      final boolean success = nativeSimdStoreAligned(nativeHandle, memoryHandle, offset, vector.getData(), alignment);
+      if (!success) {
+        throw new WasmException("SIMD aligned store operation failed");
+      }
+      return null;
+    });
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.SimdOperations.V128 simdConvertI32ToF32(
+      final ai.tegmentum.wasmtime4j.SimdOperations.V128 vector) throws WasmException {
+    JniValidation.requireNonNull(vector, "vector");
+    validateRuntimeState();
+
+    return concurrencyManager.executeWithWriteLock(nativeHandle, 30000, () -> {
+      final byte[] result = nativeSimdConvertI32ToF32(nativeHandle, vector.getData());
+      if (result == null) {
+        throw new WasmException("SIMD i32 to f32 conversion failed");
+      }
+      return new ai.tegmentum.wasmtime4j.SimdOperations.V128(result);
+    });
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.SimdOperations.V128 simdConvertF32ToI32(
+      final ai.tegmentum.wasmtime4j.SimdOperations.V128 vector) throws WasmException {
+    JniValidation.requireNonNull(vector, "vector");
+    validateRuntimeState();
+
+    return concurrencyManager.executeWithWriteLock(nativeHandle, 30000, () -> {
+      final byte[] result = nativeSimdConvertF32ToI32(nativeHandle, vector.getData());
+      if (result == null) {
+        throw new WasmException("SIMD f32 to i32 conversion failed");
+      }
+      return new ai.tegmentum.wasmtime4j.SimdOperations.V128(result);
+    });
+  }
+
+  @Override
+  public int simdExtractLaneI32(
+      final ai.tegmentum.wasmtime4j.SimdOperations.V128 vector, final int lane) throws WasmException {
+    JniValidation.requireNonNull(vector, "vector");
+    validateRuntimeState();
+
+    return concurrencyManager.executeWithReadLock(nativeHandle, 30000, () ->
+        nativeSimdExtractLaneI32(nativeHandle, vector.getData(), lane));
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.SimdOperations.V128 simdReplaceLaneI32(
+      final ai.tegmentum.wasmtime4j.SimdOperations.V128 vector, final int lane, final int value) throws WasmException {
+    JniValidation.requireNonNull(vector, "vector");
+    validateRuntimeState();
+
+    return concurrencyManager.executeWithWriteLock(nativeHandle, 30000, () -> {
+      final byte[] result = nativeSimdReplaceLaneI32(nativeHandle, vector.getData(), lane, value);
+      if (result == null) {
+        throw new WasmException("SIMD replace lane i32 operation failed");
+      }
+      return new ai.tegmentum.wasmtime4j.SimdOperations.V128(result);
+    });
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.SimdOperations.V128 simdSplatI32(final int value) throws WasmException {
+    validateRuntimeState();
+
+    return concurrencyManager.executeWithWriteLock(nativeHandle, 30000, () -> {
+      final byte[] result = nativeSimdSplatI32(nativeHandle, value);
+      if (result == null) {
+        throw new WasmException("SIMD splat i32 operation failed");
+      }
+      return new ai.tegmentum.wasmtime4j.SimdOperations.V128(result);
+    });
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.SimdOperations.V128 simdSplatF32(final float value) throws WasmException {
+    validateRuntimeState();
+
+    return concurrencyManager.executeWithWriteLock(nativeHandle, 30000, () -> {
+      final byte[] result = nativeSimdSplatF32(nativeHandle, value);
+      if (result == null) {
+        throw new WasmException("SIMD splat f32 operation failed");
+      }
+      return new ai.tegmentum.wasmtime4j.SimdOperations.V128(result);
+    });
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.SimdOperations.V128 simdShuffle(
+      final ai.tegmentum.wasmtime4j.SimdOperations.V128 a,
+      final ai.tegmentum.wasmtime4j.SimdOperations.V128 b,
+      final byte[] indices) throws WasmException {
+    JniValidation.requireNonNull(a, "vector a");
+    JniValidation.requireNonNull(b, "vector b");
+    JniValidation.requireNonNull(indices, "indices");
+    validateRuntimeState();
+
+    return concurrencyManager.executeWithWriteLock(nativeHandle, 30000, () -> {
+      final byte[] result = nativeSimdShuffle(nativeHandle, a.getData(), b.getData(), indices);
+      if (result == null) {
+        throw new WasmException("SIMD shuffle operation failed");
+      }
+      return new ai.tegmentum.wasmtime4j.SimdOperations.V128(result);
+    });
+  }
+
+  // ===== ADVANCED SIMD OPERATIONS =====
+
+  @Override
+  public ai.tegmentum.wasmtime4j.SimdOperations.V128 simdFma(
+      final ai.tegmentum.wasmtime4j.SimdOperations.V128 a,
+      final ai.tegmentum.wasmtime4j.SimdOperations.V128 b,
+      final ai.tegmentum.wasmtime4j.SimdOperations.V128 c) throws WasmException {
+    JniValidation.requireNonNull(a, "vector a");
+    JniValidation.requireNonNull(b, "vector b");
+    JniValidation.requireNonNull(c, "vector c");
+    validateRuntimeState();
+
+    return concurrencyManager.executeWithWriteLock(nativeHandle, 30000, () -> {
+      final byte[] result = nativeSimdFma(nativeHandle, a.getData(), b.getData(), c.getData());
+      if (result == null) {
+        throw new WasmException("SIMD FMA operation failed");
+      }
+      return new ai.tegmentum.wasmtime4j.SimdOperations.V128(result);
+    });
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.SimdOperations.V128 simdFms(
+      final ai.tegmentum.wasmtime4j.SimdOperations.V128 a,
+      final ai.tegmentum.wasmtime4j.SimdOperations.V128 b,
+      final ai.tegmentum.wasmtime4j.SimdOperations.V128 c) throws WasmException {
+    JniValidation.requireNonNull(a, "vector a");
+    JniValidation.requireNonNull(b, "vector b");
+    JniValidation.requireNonNull(c, "vector c");
+    validateRuntimeState();
+
+    return concurrencyManager.executeWithWriteLock(nativeHandle, 30000, () -> {
+      final byte[] result = nativeSimdFms(nativeHandle, a.getData(), b.getData(), c.getData());
+      if (result == null) {
+        throw new WasmException("SIMD FMS operation failed");
+      }
+      return new ai.tegmentum.wasmtime4j.SimdOperations.V128(result);
+    });
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.SimdOperations.V128 simdReciprocal(
+      final ai.tegmentum.wasmtime4j.SimdOperations.V128 a) throws WasmException {
+    JniValidation.requireNonNull(a, "vector a");
+    validateRuntimeState();
+
+    return concurrencyManager.executeWithWriteLock(nativeHandle, 30000, () -> {
+      final byte[] result = nativeSimdReciprocal(nativeHandle, a.getData());
+      if (result == null) {
+        throw new WasmException("SIMD reciprocal operation failed");
+      }
+      return new ai.tegmentum.wasmtime4j.SimdOperations.V128(result);
+    });
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.SimdOperations.V128 simdSqrt(
+      final ai.tegmentum.wasmtime4j.SimdOperations.V128 a) throws WasmException {
+    JniValidation.requireNonNull(a, "vector a");
+    validateRuntimeState();
+
+    return concurrencyManager.executeWithWriteLock(nativeHandle, 30000, () -> {
+      final byte[] result = nativeSimdSqrt(nativeHandle, a.getData());
+      if (result == null) {
+        throw new WasmException("SIMD sqrt operation failed");
+      }
+      return new ai.tegmentum.wasmtime4j.SimdOperations.V128(result);
+    });
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.SimdOperations.V128 simdRsqrt(
+      final ai.tegmentum.wasmtime4j.SimdOperations.V128 a) throws WasmException {
+    JniValidation.requireNonNull(a, "vector a");
+    validateRuntimeState();
+
+    return concurrencyManager.executeWithWriteLock(nativeHandle, 30000, () -> {
+      final byte[] result = nativeSimdRsqrt(nativeHandle, a.getData());
+      if (result == null) {
+        throw new WasmException("SIMD rsqrt operation failed");
+      }
+      return new ai.tegmentum.wasmtime4j.SimdOperations.V128(result);
+    });
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.SimdOperations.V128 simdPopcount(
+      final ai.tegmentum.wasmtime4j.SimdOperations.V128 a) throws WasmException {
+    JniValidation.requireNonNull(a, "vector a");
+    validateRuntimeState();
+
+    return concurrencyManager.executeWithWriteLock(nativeHandle, 30000, () -> {
+      final byte[] result = nativeSimdPopcount(nativeHandle, a.getData());
+      if (result == null) {
+        throw new WasmException("SIMD popcount operation failed");
+      }
+      return new ai.tegmentum.wasmtime4j.SimdOperations.V128(result);
+    });
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.SimdOperations.V128 simdShlVariable(
+      final ai.tegmentum.wasmtime4j.SimdOperations.V128 a,
+      final ai.tegmentum.wasmtime4j.SimdOperations.V128 b) throws WasmException {
+    JniValidation.requireNonNull(a, "vector a");
+    JniValidation.requireNonNull(b, "vector b");
+    validateRuntimeState();
+
+    return concurrencyManager.executeWithWriteLock(nativeHandle, 30000, () -> {
+      final byte[] result = nativeSimdShlVariable(nativeHandle, a.getData(), b.getData());
+      if (result == null) {
+        throw new WasmException("SIMD variable shift left operation failed");
+      }
+      return new ai.tegmentum.wasmtime4j.SimdOperations.V128(result);
+    });
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.SimdOperations.V128 simdShrVariable(
+      final ai.tegmentum.wasmtime4j.SimdOperations.V128 a,
+      final ai.tegmentum.wasmtime4j.SimdOperations.V128 b) throws WasmException {
+    JniValidation.requireNonNull(a, "vector a");
+    JniValidation.requireNonNull(b, "vector b");
+    validateRuntimeState();
+
+    return concurrencyManager.executeWithWriteLock(nativeHandle, 30000, () -> {
+      final byte[] result = nativeSimdShrVariable(nativeHandle, a.getData(), b.getData());
+      if (result == null) {
+        throw new WasmException("SIMD variable shift right operation failed");
+      }
+      return new ai.tegmentum.wasmtime4j.SimdOperations.V128(result);
+    });
+  }
+
+  @Override
+  public float simdHorizontalSum(
+      final ai.tegmentum.wasmtime4j.SimdOperations.V128 a) throws WasmException {
+    JniValidation.requireNonNull(a, "vector a");
+    validateRuntimeState();
+
+    return concurrencyManager.executeWithReadLock(nativeHandle, 30000, () ->
+        nativeSimdHorizontalSum(nativeHandle, a.getData()));
+  }
+
+  @Override
+  public float simdHorizontalMin(
+      final ai.tegmentum.wasmtime4j.SimdOperations.V128 a) throws WasmException {
+    JniValidation.requireNonNull(a, "vector a");
+    validateRuntimeState();
+
+    return concurrencyManager.executeWithReadLock(nativeHandle, 30000, () ->
+        nativeSimdHorizontalMin(nativeHandle, a.getData()));
+  }
+
+  @Override
+  public float simdHorizontalMax(
+      final ai.tegmentum.wasmtime4j.SimdOperations.V128 a) throws WasmException {
+    JniValidation.requireNonNull(a, "vector a");
+    validateRuntimeState();
+
+    return concurrencyManager.executeWithReadLock(nativeHandle, 30000, () ->
+        nativeSimdHorizontalMax(nativeHandle, a.getData()));
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.SimdOperations.V128 simdSelect(
+      final ai.tegmentum.wasmtime4j.SimdOperations.V128 mask,
+      final ai.tegmentum.wasmtime4j.SimdOperations.V128 a,
+      final ai.tegmentum.wasmtime4j.SimdOperations.V128 b) throws WasmException {
+    JniValidation.requireNonNull(mask, "mask");
+    JniValidation.requireNonNull(a, "vector a");
+    JniValidation.requireNonNull(b, "vector b");
+    validateRuntimeState();
+
+    return concurrencyManager.executeWithWriteLock(nativeHandle, 30000, () -> {
+      final byte[] result = nativeSimdSelect(nativeHandle, mask.getData(), a.getData(), b.getData());
+      if (result == null) {
+        throw new WasmException("SIMD select operation failed");
+      }
+      return new ai.tegmentum.wasmtime4j.SimdOperations.V128(result);
+    });
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.SimdOperations.V128 simdBlend(
+      final ai.tegmentum.wasmtime4j.SimdOperations.V128 a,
+      final ai.tegmentum.wasmtime4j.SimdOperations.V128 b,
+      final int mask) throws WasmException {
+    JniValidation.requireNonNull(a, "vector a");
+    JniValidation.requireNonNull(b, "vector b");
+    validateRuntimeState();
+
+    return concurrencyManager.executeWithWriteLock(nativeHandle, 30000, () -> {
+      final byte[] result = nativeSimdBlend(nativeHandle, a.getData(), b.getData(), mask);
+      if (result == null) {
+        throw new WasmException("SIMD blend operation failed");
+      }
+      return new ai.tegmentum.wasmtime4j.SimdOperations.V128(result);
+    });
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.SimdOperations.V128 simdRelaxedAdd(
+      final ai.tegmentum.wasmtime4j.SimdOperations.V128 a,
+      final ai.tegmentum.wasmtime4j.SimdOperations.V128 b) throws WasmException {
+    JniValidation.requireNonNull(a, "vector a");
+    JniValidation.requireNonNull(b, "vector b");
+    validateRuntimeState();
+
+    return concurrencyManager.executeWithWriteLock(nativeHandle, 30000, () -> {
+      final byte[] result = nativeSimdRelaxedAdd(nativeHandle, a.getData(), b.getData());
+      if (result == null) {
+        throw new WasmException("SIMD relaxed add operation failed");
+      }
+      return new ai.tegmentum.wasmtime4j.SimdOperations.V128(result);
+    });
+  }
+
+  // ===== WASI OPERATIONS =====
+
+  @Override
+  public ai.tegmentum.wasmtime4j.WasiContext createWasiContext() throws WasmException {
+    validateRuntimeState();
+    return concurrencyManager.executeWithWriteLock(nativeHandle, 30000, () -> {
+      final long wasiHandle = nativeCreateWasiContext(nativeHandle);
+      if (wasiHandle == 0) {
+        throw new WasmException("Failed to create WASI context");
+      }
+      return new ai.tegmentum.wasmtime4j.jni.JniWasiContextImpl(wasiHandle);
+    });
+  }
+
+  @Override
+  public <T> Linker<T> createLinker(Engine engine) throws WasmException {
+    if (engine == null) {
+      throw new IllegalArgumentException("Engine cannot be null");
+    }
+    validateRuntimeState();
+    return concurrencyManager.executeWithWriteLock(nativeHandle, 30000, () -> {
+      final long engineHandle = ((ai.tegmentum.wasmtime4j.jni.JniEngine) engine).getNativeHandle();
+      final long linkerHandle = nativeCreateLinker(nativeHandle, engineHandle);
+      if (linkerHandle == 0) {
+        throw new WasmException("Failed to create linker");
+      }
+      return new ai.tegmentum.wasmtime4j.jni.JniLinker<>(linkerHandle);
+    });
+  }
+
+  @Override
+  public void addWasiToLinker(Linker<ai.tegmentum.wasmtime4j.WasiContext> linker, ai.tegmentum.wasmtime4j.WasiContext context) throws WasmException {
+    if (linker == null) {
+      throw new IllegalArgumentException("Linker cannot be null");
+    }
+    if (context == null) {
+      throw new IllegalArgumentException("WasiContext cannot be null");
+    }
+    validateRuntimeState();
+
+    concurrencyManager.executeWithWriteLock(nativeHandle, 30000, () -> {
+      final long linkerHandle = ((ai.tegmentum.wasmtime4j.jni.JniLinker<?>) linker).getNativeHandle();
+      final long contextHandle = ((ai.tegmentum.wasmtime4j.jni.JniWasiContextImpl) context).getNativeHandle();
+
+      final int result = nativeAddWasiToLinker(nativeHandle, linkerHandle, contextHandle);
+      if (result != 0) {
+        throw new WasmException("Failed to add WASI imports to linker");
+      }
+      return null;
+    });
+  }
+
+  @Override
+  public void addWasiPreview2ToLinker(Linker<ai.tegmentum.wasmtime4j.WasiContext> linker, ai.tegmentum.wasmtime4j.WasiContext context) throws WasmException {
+    if (linker == null) {
+      throw new IllegalArgumentException("Linker cannot be null");
+    }
+    if (context == null) {
+      throw new IllegalArgumentException("WasiContext cannot be null");
+    }
+    validateRuntimeState();
+
+    concurrencyManager.executeWithWriteLock(nativeHandle, 30000, () -> {
+      final long linkerHandle = ((ai.tegmentum.wasmtime4j.jni.JniLinker<?>) linker).getNativeHandle();
+      final long contextHandle = ((ai.tegmentum.wasmtime4j.jni.JniWasiContextImpl) context).getNativeHandle();
+
+      final int result = nativeAddWasiPreview2ToLinker(nativeHandle, linkerHandle, contextHandle);
+      if (result != 0) {
+        throw new WasmException("Failed to add WASI Preview 2 imports to linker");
+      }
+      return null;
+    });
+  }
+
+  @Override
+  public void addComponentModelToLinker(Linker<ai.tegmentum.wasmtime4j.WasiContext> linker) throws WasmException {
+    if (linker == null) {
+      throw new IllegalArgumentException("Linker cannot be null");
+    }
+    validateRuntimeState();
+
+    concurrencyManager.executeWithWriteLock(nativeHandle, 30000, () -> {
+      final long linkerHandle = ((ai.tegmentum.wasmtime4j.jni.JniLinker<?>) linker).getNativeHandle();
+
+      final int result = nativeAddComponentModelToLinker(nativeHandle, linkerHandle);
+      if (result != 0) {
+        throw new WasmException("Failed to add Component Model imports to linker");
+      }
+      return null;
+    });
+  }
+
+  @Override
+  public boolean supportsComponentModel() {
+    try {
+      validateRuntimeState();
+      return concurrencyManager.executeWithReadLock(nativeHandle, 5000, () -> {
+        return nativeSupportsComponentModel(nativeHandle);
+      });
+    } catch (WasmException e) {
+      return false;
+    }
+  }
+
+  // ===== UTILITY METHODS =====
+
+  /**
+   * Validates the runtime state before performing operations.
+   *
+   * @throws WasmException if the runtime is in an invalid state
+   */
+  private void validateRuntimeState() throws WasmException {
+    if (isClosed()) {
+      throw new WasmException("Runtime has been closed");
+    }
+    if (nativeHandle == 0) {
+      throw new WasmException("Runtime has invalid native handle");
+    }
+  }
+
   // Native method declarations - these will be implemented in the native library
 
   /**
@@ -496,4 +1221,63 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
    * @param runtimeHandle the native runtime handle
    */
   private static native void nativeDestroyRuntime(long runtimeHandle);
+
+  // ===== SIMD NATIVE METHOD DECLARATIONS =====
+
+  private static native boolean nativeIsSimdSupported(long runtimeHandle);
+  private static native String nativeGetSimdCapabilities(long runtimeHandle);
+  private static native byte[] nativeSimdAdd(long runtimeHandle, byte[] a, byte[] b);
+  private static native byte[] nativeSimdSubtract(long runtimeHandle, byte[] a, byte[] b);
+  private static native byte[] nativeSimdMultiply(long runtimeHandle, byte[] a, byte[] b);
+  private static native byte[] nativeSimdDivide(long runtimeHandle, byte[] a, byte[] b);
+  private static native byte[] nativeSimdAddSaturated(long runtimeHandle, byte[] a, byte[] b);
+  private static native byte[] nativeSimdAnd(long runtimeHandle, byte[] a, byte[] b);
+  private static native byte[] nativeSimdOr(long runtimeHandle, byte[] a, byte[] b);
+  private static native byte[] nativeSimdXor(long runtimeHandle, byte[] a, byte[] b);
+  private static native byte[] nativeSimdNot(long runtimeHandle, byte[] a);
+  private static native byte[] nativeSimdEquals(long runtimeHandle, byte[] a, byte[] b);
+  private static native byte[] nativeSimdLessThan(long runtimeHandle, byte[] a, byte[] b);
+  private static native byte[] nativeSimdGreaterThan(long runtimeHandle, byte[] a, byte[] b);
+  private static native byte[] nativeSimdLoad(long runtimeHandle, long memoryHandle, int offset);
+  private static native byte[] nativeSimdLoadAligned(long runtimeHandle, long memoryHandle, int offset, int alignment);
+  private static native boolean nativeSimdStore(long runtimeHandle, long memoryHandle, int offset, byte[] vector);
+  private static native boolean nativeSimdStoreAligned(long runtimeHandle, long memoryHandle, int offset, byte[] vector, int alignment);
+  private static native byte[] nativeSimdConvertI32ToF32(long runtimeHandle, byte[] vector);
+  private static native byte[] nativeSimdConvertF32ToI32(long runtimeHandle, byte[] vector);
+  private static native int nativeSimdExtractLaneI32(long runtimeHandle, byte[] vector, int lane);
+  private static native byte[] nativeSimdReplaceLaneI32(long runtimeHandle, byte[] vector, int lane, int value);
+  private static native byte[] nativeSimdSplatI32(long runtimeHandle, int value);
+  private static native byte[] nativeSimdSplatF32(long runtimeHandle, float value);
+  private static native byte[] nativeSimdShuffle(long runtimeHandle, byte[] a, byte[] b, byte[] indices);
+
+  // ===== ADVANCED SIMD NATIVE METHOD DECLARATIONS =====
+
+  private static native byte[] nativeSimdFma(long runtimeHandle, byte[] a, byte[] b, byte[] c);
+  private static native byte[] nativeSimdFms(long runtimeHandle, byte[] a, byte[] b, byte[] c);
+  private static native byte[] nativeSimdReciprocal(long runtimeHandle, byte[] a);
+  private static native byte[] nativeSimdSqrt(long runtimeHandle, byte[] a);
+  private static native byte[] nativeSimdRsqrt(long runtimeHandle, byte[] a);
+  private static native byte[] nativeSimdPopcount(long runtimeHandle, byte[] a);
+  private static native byte[] nativeSimdShlVariable(long runtimeHandle, byte[] a, byte[] b);
+  private static native byte[] nativeSimdShrVariable(long runtimeHandle, byte[] a, byte[] b);
+  private static native float nativeSimdHorizontalSum(long runtimeHandle, byte[] a);
+  private static native float nativeSimdHorizontalMin(long runtimeHandle, byte[] a);
+  private static native float nativeSimdHorizontalMax(long runtimeHandle, byte[] a);
+  private static native byte[] nativeSimdSelect(long runtimeHandle, byte[] mask, byte[] a, byte[] b);
+  private static native byte[] nativeSimdBlend(long runtimeHandle, byte[] a, byte[] b, int mask);
+  private static native byte[] nativeSimdRelaxedAdd(long runtimeHandle, byte[] a, byte[] b);
+
+  // ===== WASI NATIVE METHOD DECLARATIONS =====
+
+  private static native long nativeCreateWasiContext(long runtimeHandle);
+
+  private static native long nativeCreateLinker(long runtimeHandle, long engineHandle);
+
+  private static native int nativeAddWasiToLinker(long runtimeHandle, long linkerHandle, long contextHandle);
+
+  private static native int nativeAddWasiPreview2ToLinker(long runtimeHandle, long linkerHandle, long contextHandle);
+
+  private static native int nativeAddComponentModelToLinker(long runtimeHandle, long linkerHandle);
+
+  private static native boolean nativeSupportsComponentModel(long runtimeHandle);
 }

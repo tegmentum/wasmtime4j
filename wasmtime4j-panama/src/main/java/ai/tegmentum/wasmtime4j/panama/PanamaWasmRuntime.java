@@ -311,6 +311,140 @@ public final class PanamaWasmRuntime implements WasmRuntime {
     }
   }
 
+  /**
+   * Deserializes a module from serialized bytes.
+   *
+   * @param engine the engine to use for deserialization
+   * @param bytes the serialized module bytes
+   * @return the deserialized Module
+   * @throws WasmException if deserialization fails
+   */
+  @Override
+  public Module deserializeModule(final Engine engine, final byte[] bytes) throws WasmException {
+    ensureNotClosed();
+
+    if (engine == null) {
+      throw new IllegalArgumentException("Engine cannot be null");
+    }
+    if (bytes == null) {
+      throw new IllegalArgumentException("Serialized bytes cannot be null");
+    }
+    if (bytes.length == 0) {
+      throw new IllegalArgumentException("Serialized bytes cannot be empty");
+    }
+
+    try {
+      // Get NativeFunctionBindings
+      NativeFunctionBindings nativeFunctions = NativeFunctionBindings.getInstance();
+
+      // Create a temporary serializer for this operation
+      java.lang.foreign.MemorySegment serializerPtr = nativeFunctions.serializerNew();
+      if (serializerPtr == null || serializerPtr.equals(java.lang.foreign.MemorySegment.NULL)) {
+        throw new WasmException("Failed to create serializer");
+      }
+
+      try {
+        // Get engine pointer from Panama engine
+        if (!(engine instanceof PanamaEngine)) {
+          throw new IllegalArgumentException("Engine must be a PanamaEngine instance");
+        }
+        java.lang.foreign.MemorySegment enginePtr = ((PanamaEngine) engine).getEnginePointer();
+
+        // Allocate memory for the serialized bytes
+        ArenaResourceManager resourceManager = ((PanamaEngine) engine).getResourceManager();
+        ArenaResourceManager.ManagedMemorySegment serializedBytesSegment =
+            resourceManager.allocate(bytes.length);
+        serializedBytesSegment.getSegment().asByteBuffer().put(bytes);
+
+        // Allocate output pointers
+        ArenaResourceManager.ManagedMemorySegment resultBufferPtr =
+            resourceManager.allocate(MemoryLayouts.C_POINTER);
+        ArenaResourceManager.ManagedMemorySegment resultSizePtr =
+            resourceManager.allocate(MemoryLayouts.C_SIZE_T);
+
+        // Call native deserialization
+        int result = nativeFunctions.serializerDeserialize(
+            serializerPtr,
+            enginePtr,
+            serializedBytesSegment.getSegment(),
+            bytes.length,
+            resultBufferPtr.getSegment(),
+            resultSizePtr.getSegment());
+
+        if (result != 0) {
+          throw new WasmException("Module deserialization failed with error code: " + result);
+        }
+
+        // Extract result
+        java.lang.foreign.MemorySegment resultBuffer =
+            (java.lang.foreign.MemorySegment) MemoryLayouts.C_POINTER.varHandle().get(resultBufferPtr.getSegment(), 0);
+        long resultSize =
+            (Long) MemoryLayouts.C_SIZE_T.varHandle().get(resultSizePtr.getSegment(), 0);
+
+        if (resultBuffer == null || resultBuffer.equals(java.lang.foreign.MemorySegment.NULL) || resultSize == 0) {
+          throw new WasmException("Deserialization returned empty result");
+        }
+
+        try {
+          // Copy result bytes
+          byte[] moduleBytes = new byte[(int) resultSize];
+          resultBuffer.asByteBuffer().get(moduleBytes);
+
+          // Compile the deserialized bytes into a module
+          return compileModule(engine, moduleBytes);
+
+        } finally {
+          // Free the native buffer
+          nativeFunctions.serializerFreeBuffer(resultBuffer, resultSize);
+        }
+
+      } finally {
+        // Clean up the serializer
+        nativeFunctions.serializerDestroy(serializerPtr);
+      }
+
+    } catch (Exception e) {
+      if (e instanceof WasmException) {
+        throw e;
+      }
+      throw exceptionMapper.mapException(e);
+    }
+  }
+
+  /**
+   * Deserializes a module from a file.
+   *
+   * @param engine the engine to use for deserialization
+   * @param path the path to the serialized module file
+   * @return the deserialized Module
+   * @throws WasmException if deserialization fails
+   */
+  @Override
+  public Module deserializeModuleFile(final Engine engine, final java.nio.file.Path path) throws WasmException {
+    ensureNotClosed();
+
+    if (engine == null) {
+      throw new IllegalArgumentException("Engine cannot be null");
+    }
+    if (path == null) {
+      throw new IllegalArgumentException("Path cannot be null");
+    }
+
+    try {
+      // Read the file
+      byte[] bytes = java.nio.file.Files.readAllBytes(path);
+      return deserializeModule(engine, bytes);
+
+    } catch (java.io.IOException e) {
+      throw new WasmException("Failed to read serialized module file: " + path, e);
+    } catch (Exception e) {
+      if (e instanceof WasmException) {
+        throw e;
+      }
+      throw exceptionMapper.mapException(e);
+    }
+  }
+
   @Override
   public void close() {
     if (closed) {
@@ -491,6 +625,174 @@ public final class PanamaWasmRuntime implements WasmRuntime {
       return panamaModule.instantiate();
     } catch (Exception e) {
       throw exceptionMapper.mapException(e);
+    }
+  }
+
+  // ===== WASI OPERATIONS =====
+
+  @Override
+  public ai.tegmentum.wasmtime4j.WasiContext createWasiContext() throws WasmException {
+    ensureNotClosed();
+
+    try (Arena tempArena = Arena.ofConfined()) {
+      // Call native function to create WASI context
+      var wasiHandle = WasmtimeBindings.wasi_preview2_context_new(
+          memoryManager.getMainSegment(),
+          true,  // enable_networking
+          true,  // enable_filesystem
+          true,  // enable_process
+          32,    // max_async_operations
+          30000, // default_timeout_ms
+          true   // enable_component_model
+      );
+
+      if (wasiHandle.address() == 0) {
+        throw new WasmException("Failed to create WASI context");
+      }
+
+      return new PanamaWasiContextImpl(wasiHandle, memoryManager.createArena());
+    } catch (Exception e) {
+      throw exceptionMapper.mapException(e);
+    }
+  }
+
+  @Override
+  public <T> Linker<T> createLinker(Engine engine) throws WasmException {
+    if (engine == null) {
+      throw new IllegalArgumentException("Engine cannot be null");
+    }
+    ensureNotClosed();
+
+    try (Arena tempArena = Arena.ofConfined()) {
+      // Cast to PanamaEngine to get native handle
+      if (!(engine instanceof PanamaEngine)) {
+        throw new IllegalArgumentException("Engine must be a PanamaEngine instance for Panama runtime");
+      }
+
+      PanamaEngine panamaEngine = (PanamaEngine) engine;
+      var linkerHandle = WasmtimeBindings.wasmtime_linker_new(
+          memoryManager.getMainSegment(),
+          panamaEngine.getNativeHandle()
+      );
+
+      if (linkerHandle.address() == 0) {
+        throw new WasmException("Failed to create linker");
+      }
+
+      return new PanamaLinker<>(linkerHandle, memoryManager.createArena());
+    } catch (Exception e) {
+      throw exceptionMapper.mapException(e);
+    }
+  }
+
+  @Override
+  public void addWasiToLinker(Linker<ai.tegmentum.wasmtime4j.WasiContext> linker, ai.tegmentum.wasmtime4j.WasiContext context) throws WasmException {
+    if (linker == null) {
+      throw new IllegalArgumentException("Linker cannot be null");
+    }
+    if (context == null) {
+      throw new IllegalArgumentException("WasiContext cannot be null");
+    }
+    ensureNotClosed();
+
+    try (Arena tempArena = Arena.ofConfined()) {
+      // Cast to Panama implementations
+      if (!(linker instanceof PanamaLinker)) {
+        throw new IllegalArgumentException("Linker must be a PanamaLinker instance for Panama runtime");
+      }
+      if (!(context instanceof PanamaWasiContextImpl)) {
+        throw new IllegalArgumentException("WasiContext must be a PanamaWasiContextImpl instance for Panama runtime");
+      }
+
+      PanamaLinker<?> panamaLinker = (PanamaLinker<?>) linker;
+      PanamaWasiContextImpl panamaContext = (PanamaWasiContextImpl) context;
+
+      var result = WasmtimeBindings.wasmtime_linker_define_wasi(
+          memoryManager.getMainSegment(),
+          panamaLinker.getNativeHandle(),
+          panamaContext.getNativeHandle()
+      );
+
+      if (result != 0) {
+        throw new WasmException("Failed to add WASI imports to linker");
+      }
+    } catch (Exception e) {
+      throw exceptionMapper.mapException(e);
+    }
+  }
+
+  @Override
+  public void addWasiPreview2ToLinker(Linker<ai.tegmentum.wasmtime4j.WasiContext> linker, ai.tegmentum.wasmtime4j.WasiContext context) throws WasmException {
+    if (linker == null) {
+      throw new IllegalArgumentException("Linker cannot be null");
+    }
+    if (context == null) {
+      throw new IllegalArgumentException("WasiContext cannot be null");
+    }
+    ensureNotClosed();
+
+    try (Arena tempArena = Arena.ofConfined()) {
+      // Cast to Panama implementations
+      if (!(linker instanceof PanamaLinker)) {
+        throw new IllegalArgumentException("Linker must be a PanamaLinker instance for Panama runtime");
+      }
+      if (!(context instanceof PanamaWasiContextImpl)) {
+        throw new IllegalArgumentException("WasiContext must be a PanamaWasiContextImpl instance for Panama runtime");
+      }
+
+      PanamaLinker<?> panamaLinker = (PanamaLinker<?>) linker;
+      PanamaWasiContextImpl panamaContext = (PanamaWasiContextImpl) context;
+
+      var result = WasmtimeBindings.wasi_preview2_add_to_linker(
+          memoryManager.getMainSegment(),
+          panamaLinker.getNativeHandle(),
+          panamaContext.getNativeHandle()
+      );
+
+      if (result != 0) {
+        throw new WasmException("Failed to add WASI Preview 2 imports to linker");
+      }
+    } catch (Exception e) {
+      throw exceptionMapper.mapException(e);
+    }
+  }
+
+  @Override
+  public void addComponentModelToLinker(Linker<ai.tegmentum.wasmtime4j.WasiContext> linker) throws WasmException {
+    if (linker == null) {
+      throw new IllegalArgumentException("Linker cannot be null");
+    }
+    ensureNotClosed();
+
+    try (Arena tempArena = Arena.ofConfined()) {
+      // Cast to Panama implementation
+      if (!(linker instanceof PanamaLinker)) {
+        throw new IllegalArgumentException("Linker must be a PanamaLinker instance for Panama runtime");
+      }
+
+      PanamaLinker<?> panamaLinker = (PanamaLinker<?>) linker;
+
+      var result = WasmtimeBindings.wasmtime_linker_define_component_model(
+          memoryManager.getMainSegment(),
+          panamaLinker.getNativeHandle()
+      );
+
+      if (result != 0) {
+        throw new WasmException("Failed to add Component Model imports to linker");
+      }
+    } catch (Exception e) {
+      throw exceptionMapper.mapException(e);
+    }
+  }
+
+  @Override
+  public boolean supportsComponentModel() {
+    try {
+      ensureNotClosed();
+      // Query the native library for component model support
+      return WasmtimeBindings.wasmtime_supports_component_model(memoryManager.getMainSegment());
+    } catch (Exception e) {
+      return false;
     }
   }
 

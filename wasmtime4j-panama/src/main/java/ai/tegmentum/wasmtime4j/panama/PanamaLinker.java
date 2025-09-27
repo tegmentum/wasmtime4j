@@ -82,6 +82,12 @@ public final class PanamaLinker implements Linker, AutoCloseable {
   private static final MethodHandle INSTANTIATE;
   private static final MethodHandle ENABLE_WASI;
   private static final MethodHandle DESTROY_LINKER;
+  // Advanced resolution method handles
+  private static final MethodHandle HAS_IMPORT;
+  private static final MethodHandle RESOLVE_DEPENDENCIES;
+  private static final MethodHandle VALIDATE_IMPORTS;
+  private static final MethodHandle DESTROY_DEPENDENCY_GRAPH;
+  private static final MethodHandle DESTROY_VALIDATION_ISSUES;
 
   static {
     // Initialize method handles - these would be loaded from the native library
@@ -164,6 +170,41 @@ public final class PanamaLinker implements Linker, AutoCloseable {
       DESTROY_LINKER =
           PanamaNativeLibrary.findFunction(
               "wasmtime4j_linker_destroy", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+
+      // Advanced resolution method handles
+      HAS_IMPORT =
+          PanamaNativeLibrary.findFunction(
+              "wasmtime4j_linker_has_import",
+              FunctionDescriptor.of(
+                  ValueLayout.JAVA_INT,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS));
+      RESOLVE_DEPENDENCIES =
+          PanamaNativeLibrary.findFunction(
+              "wasmtime4j_linker_resolve_dependencies",
+              FunctionDescriptor.of(
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.JAVA_LONG));
+      VALIDATE_IMPORTS =
+          PanamaNativeLibrary.findFunction(
+              "wasmtime4j_linker_validate_imports",
+              FunctionDescriptor.of(
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.JAVA_LONG,
+                  ValueLayout.ADDRESS));
+      DESTROY_DEPENDENCY_GRAPH =
+          PanamaNativeLibrary.findFunction(
+              "wasmtime4j_dependency_graph_destroy",
+              FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+      DESTROY_VALIDATION_ISSUES =
+          PanamaNativeLibrary.findFunction(
+              "wasmtime4j_validation_issues_destroy",
+              FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
     } catch (final Exception e) {
       throw new ExceptionInInitializerError(
           "Failed to initialize Panama linker: " + e.getMessage());
@@ -544,6 +585,157 @@ public final class PanamaLinker implements Linker, AutoCloseable {
   }
 
   @Override
+  public boolean hasImport(final String moduleName, final String name) {
+    PanamaValidation.requireNonBlank(moduleName, "moduleName");
+    PanamaValidation.requireNonBlank(name, "name");
+    ensureNotClosed();
+
+    try {
+      final MemorySegment moduleNameSegment = memoryManager.allocateString(moduleName);
+      final MemorySegment importNameSegment = memoryManager.allocateString(name);
+
+      final int result = (int) HAS_IMPORT.invokeExact(linkerHandle, moduleNameSegment, importNameSegment);
+      return result == 1;
+    } catch (final Throwable e) {
+      throw PanamaExceptionMapper.mapException(e);
+    }
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.DependencyResolution resolveDependencies(final ai.tegmentum.wasmtime4j.Module... modules) throws WasmException {
+    PanamaValidation.requireNonNull(modules, "modules");
+    if (modules.length == 0) {
+      throw new IllegalArgumentException("modules array cannot be empty");
+    }
+    ensureNotClosed();
+
+    try {
+      // Convert modules to native handles
+      final MemorySegment moduleHandlesSegment = memoryManager.allocatePointerArray(modules.length);
+      for (int i = 0; i < modules.length; i++) {
+        if (!(modules[i] instanceof PanamaModule)) {
+          throw new IllegalArgumentException("All modules must be Panama module instances");
+        }
+        final PanamaModule panamaModule = (PanamaModule) modules[i];
+        moduleHandlesSegment.setAtIndex(C_POINTER, i, panamaModule.getHandle());
+      }
+
+      final MemorySegment graphHandle = (MemorySegment) RESOLVE_DEPENDENCIES.invokeExact(
+          linkerHandle, moduleHandlesSegment, (long) modules.length);
+
+      if (graphHandle.equals(MemorySegment.NULL)) {
+        throw new WasmException("Failed to resolve dependencies");
+      }
+
+      // Convert native dependency graph to Java objects
+      final ai.tegmentum.wasmtime4j.DependencyResolution result = convertDependencyGraph(graphHandle, modules);
+
+      // Clean up native graph
+      DESTROY_DEPENDENCY_GRAPH.invokeExact(graphHandle);
+
+      return result;
+    } catch (final WasmException e) {
+      throw e;
+    } catch (final Throwable e) {
+      throw PanamaExceptionMapper.mapException(e);
+    }
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.ImportValidation validateImports(final ai.tegmentum.wasmtime4j.Module... modules) {
+    PanamaValidation.requireNonNull(modules, "modules");
+    if (modules.length == 0) {
+      throw new IllegalArgumentException("modules array cannot be empty");
+    }
+    ensureNotClosed();
+
+    try {
+      // Convert modules to native handles
+      final MemorySegment moduleHandlesSegment = memoryManager.allocatePointerArray(modules.length);
+      for (int i = 0; i < modules.length; i++) {
+        if (!(modules[i] instanceof PanamaModule)) {
+          throw new IllegalArgumentException("All modules must be Panama module instances");
+        }
+        final PanamaModule panamaModule = (PanamaModule) modules[i];
+        moduleHandlesSegment.setAtIndex(C_POINTER, i, panamaModule.getHandle());
+      }
+
+      final MemorySegment issueCountSegment = memoryManager.allocateSize();
+      final MemorySegment validationResult = (MemorySegment) VALIDATE_IMPORTS.invokeExact(
+          linkerHandle, moduleHandlesSegment, (long) modules.length, issueCountSegment);
+
+      if (validationResult.equals(MemorySegment.NULL)) {
+        throw new RuntimeException("Failed to validate imports");
+      }
+
+      final long issueCount = issueCountSegment.get(C_LONG, 0);
+
+      // Convert native validation result to Java objects
+      final ai.tegmentum.wasmtime4j.ImportValidation result = convertValidationResult(validationResult, issueCount, modules);
+
+      // Clean up native validation result
+      DESTROY_VALIDATION_ISSUES.invokeExact(validationResult);
+
+      return result;
+    } catch (final Throwable e) {
+      throw PanamaExceptionMapper.mapException(e);
+    }
+  }
+
+  @Override
+  public java.util.List<ai.tegmentum.wasmtime4j.ImportInfo> getImportRegistry() {
+    ensureNotClosed();
+
+    try {
+      // For now, return empty list - would need native function to get registry
+      return java.util.Collections.emptyList();
+    } catch (final Throwable e) {
+      throw PanamaExceptionMapper.mapException(e);
+    }
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.InstantiationPlan createInstantiationPlan(final ai.tegmentum.wasmtime4j.Module... modules) throws WasmException {
+    final ai.tegmentum.wasmtime4j.DependencyResolution resolution = resolveDependencies(modules);
+
+    if (!resolution.isResolutionSuccessful()) {
+      throw new WasmException("Cannot create instantiation plan: dependency resolution failed");
+    }
+
+    // Create instantiation steps based on the resolved order
+    final java.util.List<ai.tegmentum.wasmtime4j.InstantiationStep> steps = new java.util.ArrayList<>();
+    final java.util.List<ai.tegmentum.wasmtime4j.Module> instantiationOrder = resolution.getInstantiationOrder();
+
+    for (int i = 0; i < instantiationOrder.size(); i++) {
+      final ai.tegmentum.wasmtime4j.Module module = instantiationOrder.get(i);
+
+      // Extract import/export information for this module
+      final java.util.List<String> requiredImports = extractRequiredImports(module);
+      final java.util.List<String> providedExports = extractProvidedExports(module);
+
+      final ai.tegmentum.wasmtime4j.InstantiationStep step = new ai.tegmentum.wasmtime4j.InstantiationStep(
+          i + 1, // 1-based step number
+          module,
+          java.util.Optional.of("module_" + i), // Generate a default name
+          requiredImports,
+          providedExports,
+          "Instantiate " + module.getName().orElse("unnamed module")
+      );
+
+      steps.add(step);
+    }
+
+    final ai.tegmentum.wasmtime4j.InstantiationPlan plan = new ai.tegmentum.wasmtime4j.InstantiationPlan(
+        steps,
+        resolution,
+        resolution.getAnalysisTime(), // Use same duration for planning
+        true // executable since resolution was successful
+    );
+
+    return plan;
+  }
+
+  @Override
   public void close() {
     if (closed.compareAndSet(false, true)) {
       try {
@@ -628,5 +820,70 @@ public final class PanamaLinker implements Linker, AutoCloseable {
     // This would create a callback that can be called from native code
     // For now, return a placeholder
     return MemorySegment.NULL;
+  }
+
+  /**
+   * Converts native dependency graph to Java DependencyResolution object.
+   */
+  private ai.tegmentum.wasmtime4j.DependencyResolution convertDependencyGraph(
+      final MemorySegment graphHandle,
+      final ai.tegmentum.wasmtime4j.Module[] modules) {
+
+    // For now, create a simplified version
+    // In a full implementation, this would extract data from the native graph
+    final java.util.List<ai.tegmentum.wasmtime4j.Module> instantiationOrder = java.util.Arrays.asList(modules);
+    final java.util.List<ai.tegmentum.wasmtime4j.DependencyEdge> dependencies = java.util.Collections.emptyList();
+    final java.time.Duration analysisTime = java.time.Duration.ofMillis(1);
+
+    return new ai.tegmentum.wasmtime4j.DependencyResolution(
+        instantiationOrder,
+        dependencies,
+        false, // hasCircularDependencies
+        java.util.Collections.emptyList(), // circularDependencyChains
+        modules.length,
+        0, // resolvedDependencies
+        analysisTime,
+        true // resolutionSuccessful
+    );
+  }
+
+  /**
+   * Converts native validation result to Java ImportValidation object.
+   */
+  private ai.tegmentum.wasmtime4j.ImportValidation convertValidationResult(
+      final MemorySegment validationResult,
+      final long issueCount,
+      final ai.tegmentum.wasmtime4j.Module[] modules) {
+
+    final java.util.List<ai.tegmentum.wasmtime4j.ImportIssue> issues = java.util.Collections.emptyList();
+    final java.util.List<ai.tegmentum.wasmtime4j.ImportInfo> validatedImports = java.util.Collections.emptyList();
+    final java.time.Duration validationTime = java.time.Duration.ofMillis(1);
+
+    return new ai.tegmentum.wasmtime4j.ImportValidation(
+        issueCount == 0, // valid if no issues
+        issues,
+        validatedImports,
+        modules.length, // totalImports
+        modules.length, // validImports (simplified)
+        validationTime
+    );
+  }
+
+  /**
+   * Extracts required imports from a module.
+   */
+  private java.util.List<String> extractRequiredImports(final ai.tegmentum.wasmtime4j.Module module) {
+    // This would be implemented by querying the module's imports
+    // For now, return empty list
+    return java.util.Collections.emptyList();
+  }
+
+  /**
+   * Extracts provided exports from a module.
+   */
+  private java.util.List<String> extractProvidedExports(final ai.tegmentum.wasmtime4j.Module module) {
+    // This would be implemented by querying the module's exports
+    // For now, return empty list
+    return java.util.Collections.emptyList();
   }
 }

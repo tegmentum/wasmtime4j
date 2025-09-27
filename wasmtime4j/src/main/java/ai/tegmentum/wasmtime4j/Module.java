@@ -187,23 +187,16 @@ public interface Module extends Closeable {
     try {
       // Basic WebAssembly magic number validation
       if (wasmBytes.length < 8) {
-        return ModuleValidationResult.failure(
-            List.of("WebAssembly bytecode too short (minimum 8 bytes required)"));
+        return ModuleValidationResult.failure(List.of("WebAssembly bytecode too short (minimum 8 bytes required)"));
       }
 
       // Check WebAssembly magic number (0x00 0x61 0x73 0x6D)
-      if (wasmBytes[0] != 0x00
-          || wasmBytes[1] != 0x61
-          || wasmBytes[2] != 0x73
-          || wasmBytes[3] != 0x6D) {
+      if (wasmBytes[0] != 0x00 || wasmBytes[1] != 0x61 || wasmBytes[2] != 0x73 || wasmBytes[3] != 0x6D) {
         return ModuleValidationResult.failure(List.of("Invalid WebAssembly magic number"));
       }
 
       // Check WebAssembly version (0x01 0x00 0x00 0x00 for version 1)
-      if (wasmBytes[4] != 0x01
-          || wasmBytes[5] != 0x00
-          || wasmBytes[6] != 0x00
-          || wasmBytes[7] != 0x00) {
+      if (wasmBytes[4] != 0x01 || wasmBytes[5] != 0x00 || wasmBytes[6] != 0x00 || wasmBytes[7] != 0x00) {
         return ModuleValidationResult.failure(List.of("Unsupported WebAssembly version"));
       }
 
@@ -216,8 +209,7 @@ public interface Module extends Closeable {
         return ModuleValidationResult.success();
       } catch (Exception e) {
         // If compilation fails, return validation failure with the error message
-        return ModuleValidationResult.failure(
-            List.of("Compilation validation failed: " + e.getMessage()));
+        return ModuleValidationResult.failure(List.of("Compilation validation failed: " + e.getMessage()));
       }
 
     } catch (Exception e) {
@@ -307,107 +299,6 @@ public interface Module extends Closeable {
   boolean isValid();
 
   /**
-   * Gets the number of import definitions in this module.
-   *
-   * <p>Returns the total count of all imports (functions, globals, memories, tables) required by
-   * this module.
-   *
-   * @return the number of imports
-   * @since 1.0.0
-   */
-  int getImportCount();
-
-  /**
-   * Gets the number of export definitions in this module.
-   *
-   * <p>Returns the total count of all exports (functions, globals, memories, tables) provided by
-   * this module.
-   *
-   * @return the number of exports
-   * @since 1.0.0
-   */
-  int getExportCount();
-
-  /**
-   * Gets the number of function exports in this module.
-   *
-   * <p>Returns the count of exported functions only, excluding other export types.
-   *
-   * @return the number of function exports
-   * @since 1.0.0
-   */
-  int getFunctionExportCount();
-
-  /**
-   * Gets the number of memory exports in this module.
-   *
-   * <p>Returns the count of exported memories only, excluding other export types.
-   *
-   * @return the number of memory exports
-   * @since 1.0.0
-   */
-  int getMemoryExportCount();
-
-  /**
-   * Gets the number of table exports in this module.
-   *
-   * <p>Returns the count of exported tables only, excluding other export types.
-   *
-   * @return the number of table exports
-   * @since 1.0.0
-   */
-  int getTableExportCount();
-
-  /**
-   * Gets the number of global exports in this module.
-   *
-   * <p>Returns the count of exported globals only, excluding other export types.
-   *
-   * @return the number of global exports
-   * @since 1.0.0
-   */
-  int getGlobalExportCount();
-
-  /**
-   * Gets the size of this compiled module in bytes.
-   *
-   * <p>Returns the total size of the compiled module data, which may be different from the original
-   * WebAssembly bytecode size due to compilation optimizations and metadata.
-   *
-   * @return the module size in bytes
-   * @since 1.0.0
-   */
-  long getSizeBytes();
-
-  /**
-   * Serializes this compiled module to bytes for caching or distribution.
-   *
-   * <p>The serialized data contains the compiled module in a format that can be stored to disk,
-   * transmitted over network, or cached for later deserialization. The exact format is
-   * implementation-specific and tied to the engine configuration.
-   *
-   * <p>Serialized modules can only be deserialized with an engine that has the same configuration
-   * as the original engine used for compilation.
-   *
-   * @return the serialized module data
-   * @throws WasmException if serialization fails
-   * @throws UnsupportedOperationException if the module cannot be serialized
-   * @since 1.0.0
-   */
-  byte[] serialize() throws WasmException;
-
-  /**
-   * Checks if this module can be serialized.
-   *
-   * <p>Some modules may not support serialization due to engine configuration or module
-   * characteristics.
-   *
-   * @return true if the module can be serialized, false otherwise
-   * @since 1.0.0
-   */
-  boolean isSerializable();
-
-  /**
    * Closes the module and releases associated resources.
    *
    * <p>After closing, the module becomes invalid and should not be used.
@@ -429,42 +320,60 @@ public interface Module extends Closeable {
   }
 
   /**
-   * Compiles WebAssembly Text (WAT) format into a Module.
+   * Serializes this compiled module to a byte array for caching or distribution.
    *
-   * <p>This method accepts WebAssembly modules in text format and compiles them to executable
-   * bytecode. WAT compilation includes parsing, validation, and compilation to the same optimized
-   * form as binary WebAssembly.
+   * <p>Serialized modules can be stored to disk, sent over the network, or cached
+   * for faster startup times. The serialized data includes the compiled code and
+   * all necessary metadata for instantiation.
    *
-   * @param engine the engine to use for compilation
-   * @param watText the WebAssembly text format source
-   * @return a compiled Module
-   * @throws WasmException if compilation fails due to syntax errors or invalid WAT
-   * @throws IllegalArgumentException if engine or watText is null
+   * @return the serialized module data
+   * @throws WasmException if serialization fails
    * @since 1.0.0
    */
-  static Module compileWat(final Engine engine, final String watText) throws WasmException {
-    return WasmRuntimeFactory.create().compileModuleWat(engine, watText);
+  byte[] serialize() throws WasmException;
+
+  /**
+   * Deserializes a module from previously serialized bytes.
+   *
+   * <p>This method can be used to quickly load a previously compiled module
+   * without going through the compilation process again. The bytes must have
+   * been created by a compatible version of the same engine.
+   *
+   * @param engine the engine to use for deserialization
+   * @param bytes the serialized module data
+   * @return the deserialized Module
+   * @throws WasmException if deserialization fails or data is invalid
+   * @throws IllegalArgumentException if engine or bytes is null
+   * @since 1.0.0
+   */
+  static Module deserialize(final Engine engine, final byte[] bytes) throws WasmException {
+    return WasmRuntimeFactory.create().deserializeModule(engine, bytes);
   }
 
   /**
-   * Deserializes a previously serialized Module using the provided engine.
+   * Deserializes a module from a file containing serialized module data.
    *
-   * <p>The serialized data must have been created by a module compiled with an engine that has the
-   * same configuration as the provided engine. Deserialization is typically much faster than
-   * compilation from WebAssembly bytecode.
-   *
-   * <p>This method enables efficient caching and distribution of compiled modules, allowing
-   * applications to avoid recompilation overhead when loading previously compiled modules.
-   *
-   * @param engine the engine to use for deserialization (must match original engine config)
-   * @param serializedBytes the serialized module data
-   * @return a deserialized Module ready for instantiation
-   * @throws WasmException if deserialization fails
-   * @throws IllegalArgumentException if engine or serializedBytes is null
+   * @param engine the engine to use for deserialization
+   * @param path the path to the serialized module file
+   * @return the deserialized Module
+   * @throws WasmException if deserialization fails or file cannot be read
+   * @throws IllegalArgumentException if engine or path is null
    * @since 1.0.0
    */
-  static Module deserialize(final Engine engine, final byte[] serializedBytes)
-      throws WasmException {
-    return WasmRuntimeFactory.create().deserializeModule(engine, serializedBytes);
+  static Module deserializeFile(final Engine engine, final java.nio.file.Path path) throws WasmException {
+    return WasmRuntimeFactory.create().deserializeModuleFile(engine, path);
+  }
+
+  /**
+   * Checks if this module can be serialized.
+   *
+   * <p>Some modules may not be serializable depending on their compilation
+   * settings or the engine configuration.
+   *
+   * @return true if this module can be serialized
+   * @since 1.0.0
+   */
+  default boolean isSerializable() {
+    return true;
   }
 }
