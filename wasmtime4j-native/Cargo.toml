@@ -41,6 +41,7 @@ env_logger = "0.10"
 
 # Memory management utilities
 once_cell = "1.19"
+lazy_static = "1.4"
 
 # Thread pools and parallel execution
 rayon = "1.8"
@@ -143,7 +144,7 @@ async = ["wasmtime/async"]
 profiling = ["wasmtime/profiling"]
 
 # Advanced networking protocols
-advanced-networking = ["tokio-tungstenite", "h2", "tonic"]
+advanced-networking = ["tokio-tungstenite", "h2", "tonic", "hyper", "http", "prost", "tokio-rustls", "rustls", "webpki-roots"]
 
 # WebSocket support
 websocket = ["tokio-tungstenite"]

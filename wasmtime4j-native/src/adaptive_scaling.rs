@@ -142,6 +142,7 @@ pub struct TimeFeatures {
 }
 
 /// Machine learning prediction model
+#[derive(Debug, Clone)]
 pub struct PredictionModel {
     /// Model type
     model_type: ModelType,
@@ -818,7 +819,7 @@ impl Default for ScalingConfig {
             hysteresis_factor: 0.1,
             scaling_cooldown: Duration::from_secs(30),
             predictive_scaling_enabled: true,
-            prediction_horizon: Duration::from_mins(5),
+            prediction_horizon: Duration::from_secs(5 * 60),
             auto_tuning_enabled: true,
             learning_rate: 0.01,
             resource_weight: 0.6,
@@ -832,7 +833,7 @@ impl Default for TrainingConfig {
         Self {
             training_window_size: 1000,
             min_training_samples: 50,
-            training_frequency: Duration::from_mins(10),
+            training_frequency: Duration::from_secs(10 * 60),
             learning_rate: 0.01,
             regularization_factor: 0.001,
             early_stopping_threshold: 0.001,
@@ -849,7 +850,7 @@ impl Default for ResourceMonitoringConfig {
             memory_monitoring_enabled: true,
             network_monitoring_enabled: false,
             disk_monitoring_enabled: false,
-            history_retention: Duration::from_hours(1),
+            history_retention: Duration::from_secs(1 * 60 * 60),
             alerting_thresholds: AlertingThresholds {
                 cpu_threshold: 0.9,
                 memory_threshold: 0.9,
@@ -877,7 +878,7 @@ impl Default for CollectionConfig {
     fn default() -> Self {
         Self {
             collection_interval: Duration::from_millis(100),
-            retention_period: Duration::from_hours(2),
+            retention_period: Duration::from_secs(2 * 60 * 60),
             detailed_profiling: false,
             aggregation_window: Duration::from_secs(10),
         }
@@ -901,6 +902,7 @@ impl AdaptiveScalingManager {
             affinity_manager,
         )?);
         let metrics_collector = Arc::new(PerformanceMetricsCollector::new(CollectionConfig::default())?);
+        let initial_pool_size = config.initial_pool_size;
 
         Ok(Self {
             config,
@@ -910,8 +912,8 @@ impl AdaptiveScalingManager {
             scaling_executor,
             metrics_collector,
             scaling_history: Arc::new(ParkingRwLock::new(VecDeque::new())),
-            current_pool_size: Arc::new(AtomicUsize::new(config.initial_pool_size)),
-            target_pool_size: Arc::new(AtomicUsize::new(config.initial_pool_size)),
+            current_pool_size: Arc::new(AtomicUsize::new(initial_pool_size)),
+            target_pool_size: Arc::new(AtomicUsize::new(initial_pool_size)),
             scaling_in_progress: Arc::new(AtomicBool::new(false)),
             manager_thread: None,
             shutdown: Arc::new(AtomicBool::new(false)),
@@ -941,7 +943,7 @@ impl AdaptiveScalingManager {
 
         // Wait for management thread
         if let Some(handle) = self.manager_thread.take() {
-            handle.join().map_err(|_| WasmtimeError::Threading {
+            handle.join().map_err(|_| WasmtimeError::Concurrency {
                 message: "Failed to join management thread".to_string(),
             })??;
         }
@@ -1037,12 +1039,12 @@ impl ResourceMonitor {
         })
     }
 
-    pub fn start(&mut self) -> WasmtimeResult<()> {
+    pub fn start(&self) -> WasmtimeResult<()> {
         // Implementation would start monitoring thread
         Ok(())
     }
 
-    pub fn stop(&mut self) -> WasmtimeResult<()> {
+    pub fn stop(&self) -> WasmtimeResult<()> {
         self.shutdown.store(true, Ordering::Release);
         Ok(())
     }
@@ -1135,7 +1137,7 @@ impl ScalingDecisionEngine {
     pub fn new() -> WasmtimeResult<Self> {
         let algorithms: Vec<Box<dyn ScalingAlgorithm + Send + Sync>> = vec![
             Box::new(ThresholdBasedAlgorithm::new()),
-            Box::new(PredictiveScalingAlgorithm::new(Duration::from_mins(5), 0.8)),
+            Box::new(PredictiveScalingAlgorithm::new(Duration::from_secs(5 * 60), 0.8)),
         ];
 
         Ok(Self {
@@ -1175,12 +1177,12 @@ impl PerformanceMetricsCollector {
         })
     }
 
-    pub fn start(&mut self) -> WasmtimeResult<()> {
+    pub fn start(&self) -> WasmtimeResult<()> {
         // Implementation would start collection thread
         Ok(())
     }
 
-    pub fn stop(&mut self) -> WasmtimeResult<()> {
+    pub fn stop(&self) -> WasmtimeResult<()> {
         self.shutdown.store(true, Ordering::Release);
         Ok(())
     }
@@ -1514,7 +1516,7 @@ mod tests {
                 },
             },
             confidence: 0.8,
-            horizon: Duration::from_mins(5),
+            horizon: Duration::from_secs(5 * 60),
             predicted_at: SystemTime::now(),
             feature_contributions: HashMap::new(),
         };
@@ -1528,7 +1530,7 @@ mod tests {
 
     #[test]
     fn test_predictive_algorithm_decision() {
-        let algorithm = PredictiveScalingAlgorithm::new(Duration::from_mins(5), 0.8);
+        let algorithm = PredictiveScalingAlgorithm::new(Duration::from_secs(5 * 60), 0.8);
         let metrics = SystemMetrics::default();
 
         let prediction = PredictionResult {
@@ -1553,7 +1555,7 @@ mod tests {
                 },
             },
             confidence: 0.9,
-            horizon: Duration::from_mins(5),
+            horizon: Duration::from_secs(5 * 60),
             predicted_at: SystemTime::now(),
             feature_contributions: HashMap::new(),
         };

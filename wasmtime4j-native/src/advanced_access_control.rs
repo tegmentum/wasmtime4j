@@ -1235,8 +1235,8 @@ impl CapabilityBasedAccessControl {
     /// Create a new capability-based access control system
     pub fn new(config: CapabilityAccessConfig, audit_log_path: &std::path::Path) -> WasmtimeResult<Self> {
         let audit_logger = Arc::new(AuditLogger::new(audit_log_path)
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::SecurityViolation,
+            .map_err(|e| WasmtimeError::Security {
+                message:
                 format!("Failed to create audit logger: {}", e),
             ))?);
 
@@ -1398,15 +1398,15 @@ impl CapabilityBasedAccessControl {
     /// Get principal capabilities
     fn get_principal_capabilities(&self, principal_id: &str) -> WasmtimeResult<PrincipalCapabilities> {
         let caps = self.principal_capabilities.read()
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::SecurityViolation,
+            .map_err(|e| WasmtimeError::Security {
+                message:
                 format!("Principal capabilities lock error: {}", e),
-            ))?;
+            })?;
 
         caps.get(principal_id)
             .cloned()
-            .ok_or_else(|| WasmtimeError::new(
-                ErrorCode::SecurityViolation,
+            .ok_or_else(|| WasmtimeError::Security {
+                message:
                 format!("Principal {} not found", principal_id),
             ))
     }
@@ -1523,10 +1523,10 @@ impl CapabilityBasedAccessControl {
     /// Evaluate policies
     fn evaluate_policies(&self, principal_id: &str, capability_id: &str, context: &AccessContext) -> WasmtimeResult<AccessDecision> {
         let policies = self.policies.read()
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::SecurityViolation,
+            .map_err(|e| WasmtimeError::Security {
+                message:
                 format!("Policies lock error: {}", e),
-            ))?;
+            })?;
 
         let mut applicable_policies = Vec::new();
         let mut final_decision = DecisionResult::NotApplicable;
@@ -1640,10 +1640,10 @@ impl CapabilityBasedAccessControl {
     fn get_cached_decision(&self, principal_id: &str, capability_id: &str, context: &AccessContext) -> WasmtimeResult<Option<CachedDecision>> {
         let cache_key = self.generate_cache_key(principal_id, capability_id, context)?;
         let cache = self.decision_cache.read()
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::SecurityViolation,
+            .map_err(|e| WasmtimeError::Security {
+                message:
                 format!("Decision cache lock error: {}", e),
-            ))?;
+            })?;
 
         if let Some(cached) = cache.get(&cache_key) {
             if SystemTime::now() < cached.expires_at {
@@ -1658,10 +1658,10 @@ impl CapabilityBasedAccessControl {
     fn cache_decision(&self, principal_id: &str, capability_id: &str, context: &AccessContext, decision: &AccessDecision) -> WasmtimeResult<()> {
         let cache_key = self.generate_cache_key(principal_id, capability_id, context)?;
         let mut cache = self.decision_cache.write()
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::SecurityViolation,
+            .map_err(|e| WasmtimeError::Security {
+                message:
                 format!("Decision cache write lock error: {}", e),
-            ))?;
+            })?;
 
         // Remove expired entries if cache is full
         if cache.len() >= self.config.max_cache_size {
@@ -1740,8 +1740,8 @@ impl CapabilityBasedAccessControl {
         };
 
         self.audit_logger.log_event(audit_entry)
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::SecurityViolation,
+            .map_err(|e| WasmtimeError::Security {
+                message:
                 format!("Audit logging error: {}", e),
             ))
     }
@@ -1749,10 +1749,10 @@ impl CapabilityBasedAccessControl {
     /// Update access statistics
     fn update_access_statistics(&self, principal_id: &str, capability_id: &str, decision: &AccessDecision, decision_time: Duration) -> WasmtimeResult<()> {
         let mut stats = self.access_stats.lock()
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::SecurityViolation,
+            .map_err(|e| WasmtimeError::Security {
+                message:
                 format!("Access statistics lock error: {}", e),
-            ))?;
+            })?;
 
         stats.total_requests += 1;
 
@@ -1806,10 +1806,10 @@ impl CapabilityBasedAccessControl {
     /// Update cache hit statistics
     fn update_cache_hit_stats(&self) -> WasmtimeResult<()> {
         let mut stats = self.access_stats.lock()
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::SecurityViolation,
+            .map_err(|e| WasmtimeError::Security {
+                message:
                 format!("Cache hit stats lock error: {}", e),
-            ))?;
+            })?;
 
         // Update cache hit rate calculation
         let total_with_cache_hit = stats.total_requests + 1;
@@ -1822,10 +1822,10 @@ impl CapabilityBasedAccessControl {
     /// Grant capability to principal
     pub fn grant_capability(&self, principal_id: &str, capability_grant: CapabilityGrant) -> WasmtimeResult<()> {
         let mut principals = self.principal_capabilities.write()
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::SecurityViolation,
+            .map_err(|e| WasmtimeError::Security {
+                message:
                 format!("Principal capabilities write lock error: {}", e),
-            ))?;
+            })?;
 
         let principal = principals.entry(principal_id.to_string()).or_insert_with(|| PrincipalCapabilities {
             principal_id: principal_id.to_string(),
@@ -1848,10 +1848,10 @@ impl CapabilityBasedAccessControl {
     /// Revoke capability from principal
     pub fn revoke_capability(&self, principal_id: &str, capability_id: &str) -> WasmtimeResult<()> {
         let mut principals = self.principal_capabilities.write()
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::SecurityViolation,
+            .map_err(|e| WasmtimeError::Security {
+                message:
                 format!("Principal capabilities revoke lock error: {}", e),
-            ))?;
+            })?;
 
         if let Some(principal) = principals.get_mut(principal_id) {
             principal.direct_capabilities.remove(capability_id);
@@ -1865,10 +1865,10 @@ impl CapabilityBasedAccessControl {
     /// Get access statistics
     pub fn get_access_statistics(&self) -> WasmtimeResult<AccessStatistics> {
         let stats = self.access_stats.lock()
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::SecurityViolation,
+            .map_err(|e| WasmtimeError::Security {
+                message:
                 format!("Access statistics read lock error: {}", e),
-            ))?;
+            })?;
 
         Ok(stats.clone())
     }

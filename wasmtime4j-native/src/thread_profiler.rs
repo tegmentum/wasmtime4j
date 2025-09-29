@@ -1371,7 +1371,7 @@ impl Default for ProfilerConfig {
             cache_profiling: false, // Can be expensive
             contention_analysis: true,
             sampling_rate: 100.0, // 100 Hz
-            retention_period: Duration::from_hours(24),
+            retention_period: Duration::from_secs(24 * 60 * 60),
             enable_alerts: true,
             thresholds: PerformanceThresholds::default(),
             max_overhead_percentage: 5.0,
@@ -1408,7 +1408,7 @@ impl Default for DashboardConfig {
 impl Default for HistoricalConfig {
     fn default() -> Self {
         Self {
-            retention_period: Duration::from_days(7),
+            retention_period: Duration::from_secs(7 * 24 * 60 * 60),
             collection_granularity: Duration::from_secs(10),
             compression_enabled: true,
             aggregation_functions: vec![
@@ -1426,7 +1426,7 @@ impl Default for AlertConfig {
         Self {
             email_notifications: false,
             webhook_notifications: true,
-            cooldown_period: Duration::from_mins(5),
+            cooldown_period: Duration::from_secs(5 * 60),
             max_active_alerts: 100,
             severity_filters: vec![
                 AlertSeverity::Warning,
@@ -1478,7 +1478,7 @@ impl ThreadProfiler {
         self.shutdown.store(true, Ordering::Release);
 
         if let Some(handle) = self.profiler_thread.take() {
-            handle.join().map_err(|_| WasmtimeError::Threading {
+            handle.join().map_err(|_| WasmtimeError::Concurrency {
                 message: "Failed to join profiler thread".to_string(),
             })??;
         }

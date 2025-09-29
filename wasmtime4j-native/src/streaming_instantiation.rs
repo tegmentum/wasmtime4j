@@ -686,7 +686,7 @@ impl StreamingInstantiationManager {
             message: "Failed to acquire streams write lock".to_string(),
         })?;
 
-        let stream = streams.get_mut(&stream_id).ok_or_else(|| WasmtimeError::InvalidArgument {
+        let stream = streams.get_mut(&stream_id).ok_or_else(|| WasmtimeError::InvalidParameter {
             message: format!("Stream {:?} not found", stream_id),
         })?;
 
@@ -727,7 +727,7 @@ impl StreamingInstantiationManager {
             message: "Failed to acquire streams write lock".to_string(),
         })?;
 
-        let stream = streams.get_mut(&stream_id).ok_or_else(|| WasmtimeError::InvalidArgument {
+        let stream = streams.get_mut(&stream_id).ok_or_else(|| WasmtimeError::InvalidParameter {
             message: format!("Stream {:?} not found", stream_id),
         })?;
 
@@ -759,7 +759,7 @@ impl StreamingInstantiationManager {
             message: "Failed to acquire streams read lock".to_string(),
         })?;
 
-        let stream = streams.get(&stream_id).ok_or_else(|| WasmtimeError::InvalidArgument {
+        let stream = streams.get(&stream_id).ok_or_else(|| WasmtimeError::InvalidParameter {
             message: format!("Stream {:?} not found", stream_id),
         })?;
 

@@ -222,16 +222,14 @@ impl CfiValidator {
     /// Basic CFI validation - check function pointer validity
     fn validate_basic_cfi(&self, _from_addr: u64, to_addr: u64) -> WasmtimeResult<()> {
         let whitelist = self.function_whitelist.read()
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::SecurityViolation,
-                format!("CFI lock error: {}", e),
+            .map_err(|e| WasmtimeError::Security {
+                message: format!("CFI lock error: {}", e),
             ))?;
 
         if !whitelist.contains(&to_addr) {
             self.violation_count.fetch_add(1, Ordering::SeqCst);
-            return Err(WasmtimeError::new(
-                ErrorCode::SecurityViolation,
-                format!("CFI violation: invalid function target 0x{:x}", to_addr),
+            return Err(WasmtimeError::Security {
+                message: format!("CFI violation: invalid function target 0x{:x}", to_addr),
             ));
         }
 
@@ -245,26 +243,24 @@ impl CfiValidator {
 
         // Check expected control flow
         let expected = self.expected_cfg.read()
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::SecurityViolation,
-                format!("CFI lock error: {}", e),
+            .map_err(|e| WasmtimeError::Security {
+                message: format!("CFI lock error: {}", e),
             ))?;
 
         if let Some(valid_targets) = expected.get(&from_addr) {
             if !valid_targets.contains(&to_addr) {
                 self.violation_count.fetch_add(1, Ordering::SeqCst);
-                return Err(WasmtimeError::new(
-                    ErrorCode::SecurityViolation,
+                return Err(WasmtimeError::Security {
+                    message:
                     format!("CFI violation: invalid control flow from 0x{:x} to 0x{:x}", from_addr, to_addr),
-                ));
+                });
             }
         }
 
         // Update runtime CFG
         let mut runtime = self.runtime_cfg.write()
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::SecurityViolation,
-                format!("CFI lock error: {}", e),
+            .map_err(|e| WasmtimeError::Security {
+                message: format!("CFI lock error: {}", e),
             ))?;
 
         runtime.entry(from_addr).or_insert_with(HashSet::new).insert(to_addr);
@@ -306,19 +302,18 @@ impl CfiValidator {
     /// Validate indirect branch targets
     fn validate_indirect_branch_targets(&self, from_addr: u64, to_addr: u64) -> WasmtimeResult<()> {
         let mut cache = self.indirect_call_cache.write()
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::SecurityViolation,
-                format!("CFI cache lock error: {}", e),
+            .map_err(|e| WasmtimeError::Security {
+                message: format!("CFI cache lock error: {}", e),
             ))?;
 
         // Check if this indirect call pattern has been seen before
         if let Some(&cached_target) = cache.get(&from_addr) {
             if cached_target != to_addr {
                 self.violation_count.fetch_add(1, Ordering::SeqCst);
-                return Err(WasmtimeError::new(
-                    ErrorCode::SecurityViolation,
+                return Err(WasmtimeError::Security {
+                    message:
                     format!("CFI violation: indirect branch target mismatch at 0x{:x}", from_addr),
-                ));
+                });
             }
         } else {
             cache.insert(from_addr, to_addr);
@@ -330,9 +325,8 @@ impl CfiValidator {
     /// Add a valid function address to the whitelist
     pub fn add_valid_function(&self, addr: u64) -> WasmtimeResult<()> {
         let mut whitelist = self.function_whitelist.write()
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::SecurityViolation,
-                format!("CFI whitelist lock error: {}", e),
+            .map_err(|e| WasmtimeError::Security {
+                message: format!("CFI whitelist lock error: {}", e),
             ))?;
 
         whitelist.insert(addr);
@@ -342,9 +336,8 @@ impl CfiValidator {
     /// Add expected control flow edge
     pub fn add_expected_flow(&self, from_addr: u64, to_addr: u64) -> WasmtimeResult<()> {
         let mut expected = self.expected_cfg.write()
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::SecurityViolation,
-                format!("CFI expected flow lock error: {}", e),
+            .map_err(|e| WasmtimeError::Security {
+                message: format!("CFI expected flow lock error: {}", e),
             ))?;
 
         expected.entry(from_addr).or_insert_with(HashSet::new).insert(to_addr);
@@ -359,16 +352,14 @@ impl CfiValidator {
     /// Reset CFI validator state
     pub fn reset(&self) -> WasmtimeResult<()> {
         let mut runtime = self.runtime_cfg.write()
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::SecurityViolation,
-                format!("CFI runtime reset lock error: {}", e),
+            .map_err(|e| WasmtimeError::Security {
+                message: format!("CFI runtime reset lock error: {}", e),
             ))?;
         runtime.clear();
 
         let mut cache = self.indirect_call_cache.write()
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::SecurityViolation,
-                format!("CFI cache reset lock error: {}", e),
+            .map_err(|e| WasmtimeError::Security {
+                message: format!("CFI cache reset lock error: {}", e),
             ))?;
         cache.clear();
 
@@ -439,19 +430,19 @@ impl MemoryTagger {
 
         {
             let mut metadata = self.allocation_metadata.write()
-                .map_err(|e| WasmtimeError::new(
-                    ErrorCode::MemoryError,
+                .map_err(|e| WasmtimeError::Memory {
+                    message:
                     format!("Memory tagging metadata lock error: {}", e),
-                ))?;
+                })?;
             metadata.insert(addr, allocation_info);
         }
 
         {
             let mut tags = self.tag_assignments.write()
-                .map_err(|e| WasmtimeError::new(
-                    ErrorCode::MemoryError,
+                .map_err(|e| WasmtimeError::Memory {
+                    message:
                     format!("Memory tagging assignments lock error: {}", e),
-                ))?;
+                })?;
             tags.insert(addr, tag);
         }
 
@@ -463,32 +454,32 @@ impl MemoryTagger {
         // Check for use-after-free
         {
             let freed = self.freed_addresses.read()
-                .map_err(|e| WasmtimeError::new(
-                    ErrorCode::MemoryError,
+                .map_err(|e| WasmtimeError::Memory {
+                    message:
                     format!("Memory tagging freed addresses lock error: {}", e),
-                ))?;
+                })?;
             if freed.contains(&addr) {
-                return Err(WasmtimeError::new(
-                    ErrorCode::MemoryError,
+                return Err(WasmtimeError::Memory {
+                    message:
                     format!("Use-after-free detected at address 0x{:x}", addr),
-                ));
+                });
             }
         }
 
         // Validate tag
         let tags = self.tag_assignments.read()
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::MemoryError,
+            .map_err(|e| WasmtimeError::Memory {
+                message:
                 format!("Memory tagging validation lock error: {}", e),
             ))?;
 
         if let Some(&actual_tag) = tags.get(&addr) {
             if actual_tag != expected_tag {
-                return Err(WasmtimeError::new(
-                    ErrorCode::MemoryError,
+                return Err(WasmtimeError::Memory {
+                    message:
                     format!("Memory tag mismatch at 0x{:x}: expected {} got {}",
                             addr, expected_tag, actual_tag),
-                ));
+                });
             }
         }
 
@@ -500,29 +491,29 @@ impl MemoryTagger {
         // Remove from active allocations
         {
             let mut metadata = self.allocation_metadata.write()
-                .map_err(|e| WasmtimeError::new(
-                    ErrorCode::MemoryError,
+                .map_err(|e| WasmtimeError::Memory {
+                    message:
                     format!("Memory tagging metadata free lock error: {}", e),
-                ))?;
+                })?;
             metadata.remove(&addr);
         }
 
         {
             let mut tags = self.tag_assignments.write()
-                .map_err(|e| WasmtimeError::new(
-                    ErrorCode::MemoryError,
+                .map_err(|e| WasmtimeError::Memory {
+                    message:
                     format!("Memory tagging assignments free lock error: {}", e),
-                ))?;
+                })?;
             tags.remove(&addr);
         }
 
         // Add to freed addresses for use-after-free detection
         {
             let mut freed = self.freed_addresses.write()
-                .map_err(|e| WasmtimeError::new(
-                    ErrorCode::MemoryError,
+                .map_err(|e| WasmtimeError::Memory {
+                    message:
                     format!("Memory tagging freed list lock error: {}", e),
-                ))?;
+                })?;
             freed.insert(addr);
         }
 
@@ -565,8 +556,8 @@ impl MemoryTagger {
     /// Clean up old freed addresses to prevent memory leak
     pub fn cleanup_freed_addresses(&self, max_age: Duration) -> WasmtimeResult<u32> {
         let mut freed = self.freed_addresses.write()
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::MemoryError,
+            .map_err(|e| WasmtimeError::Memory {
+                message:
                 format!("Memory tagging cleanup lock error: {}", e),
             ))?;
 
@@ -584,14 +575,14 @@ impl MemoryTagger {
     /// Get memory tagging statistics
     pub fn get_statistics(&self) -> WasmtimeResult<MemoryTaggingStatistics> {
         let metadata = self.allocation_metadata.read()
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::MemoryError,
+            .map_err(|e| WasmtimeError::Memory {
+                message:
                 format!("Memory tagging stats lock error: {}", e),
             ))?;
 
         let freed = self.freed_addresses.read()
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::MemoryError,
+            .map_err(|e| WasmtimeError::Memory {
+                message:
                 format!("Memory tagging stats freed lock error: {}", e),
             ))?;
 
@@ -670,9 +661,8 @@ impl SpectreMitigator {
         };
 
         let mut history = self.branch_history.write()
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::SecurityViolation,
-                format!("Spectre branch history lock error: {}", e),
+            .map_err(|e| WasmtimeError::Security {
+                message: format!("Spectre branch history lock error: {}", e),
             ))?;
 
         // Keep history bounded
@@ -716,10 +706,10 @@ impl SpectreMitigator {
                 .count();
 
             if mispredictions as f64 / recent_branches.len() as f64 > 0.3 {
-                return Err(WasmtimeError::new(
-                    ErrorCode::SecurityViolation,
+                return Err(WasmtimeError::Security {
+                    message:
                     "Potential Spectre attack detected: excessive branch mispredictions".to_string(),
-                ));
+                });
             }
         }
 
@@ -775,8 +765,8 @@ impl SpectreMitigator {
 
         // Limit speculative execution depth
         if current_depth > 100 {
-            return Err(WasmtimeError::new(
-                ErrorCode::SecurityViolation,
+            return Err(WasmtimeError::Security {
+                message:
                 "Excessive speculative execution depth detected".to_string(),
             ));
         }
@@ -794,9 +784,8 @@ impl SpectreMitigator {
     /// Insert serialization point to prevent speculation
     pub fn insert_serialization_point(&self, addr: u64) -> WasmtimeResult<()> {
         let mut points = self.serialization_points.write()
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::SecurityViolation,
-                format!("Spectre serialization points lock error: {}", e),
+            .map_err(|e| WasmtimeError::Security {
+                message: format!("Spectre serialization points lock error: {}", e),
             ))?;
 
         points.insert(addr);
@@ -965,9 +954,8 @@ impl AdvancedSandbox {
         };
 
         let mut domains = self.protection_domains.write()
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::SecurityViolation,
-                format!("Protection domains lock error: {}", e),
+            .map_err(|e| WasmtimeError::Security {
+                message: format!("Protection domains lock error: {}", e),
             ))?;
 
         domains.insert(domain_id, domain);
@@ -979,16 +967,15 @@ impl AdvancedSandbox {
         // Verify domain exists
         {
             let domains = self.protection_domains.read()
-                .map_err(|e| WasmtimeError::new(
-                    ErrorCode::SecurityViolation,
+                .map_err(|e| WasmtimeError::Security {
+                    message:
                     format!("Protection domains read lock error: {}", e),
-                ))?;
+                })?;
 
             if !domains.contains_key(&domain_id) {
-                return Err(WasmtimeError::new(
-                    ErrorCode::InvalidParameter,
-                    format!("Protection domain {} does not exist", domain_id),
-                ));
+                return Err(WasmtimeError::InvalidParameter {
+                    message: format!("Protection domain {} does not exist", domain_id),
+                });
             }
         }
 
@@ -1005,9 +992,8 @@ impl AdvancedSandbox {
         };
 
         let mut instances = self.sandbox_instances.write()
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::SecurityViolation,
-                format!("Sandbox instances lock error: {}", e),
+            .map_err(|e| WasmtimeError::Security {
+                message: format!("Sandbox instances lock error: {}", e),
             ))?;
 
         instances.insert(sandbox_id, instance);
@@ -1017,34 +1003,30 @@ impl AdvancedSandbox {
     /// Validate access within a sandbox
     pub fn validate_sandbox_access(&self, sandbox_id: &str, capability: &SecurityCapability) -> WasmtimeResult<()> {
         let instances = self.sandbox_instances.read()
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::SecurityViolation,
-                format!("Sandbox instances read lock error: {}", e),
+            .map_err(|e| WasmtimeError::Security {
+                message: format!("Sandbox instances read lock error: {}", e),
             ))?;
 
         let instance = instances.get(sandbox_id)
-            .ok_or_else(|| WasmtimeError::new(
-                ErrorCode::InvalidParameter,
+            .ok_or_else(|| WasmtimeError::InvalidParameter {
+                message:
                 format!("Sandbox {} not found", sandbox_id),
             ))?;
 
         let domains = self.protection_domains.read()
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::SecurityViolation,
-                format!("Protection domains access lock error: {}", e),
+            .map_err(|e| WasmtimeError::Security {
+                message: format!("Protection domains access lock error: {}", e),
             ))?;
 
         let domain = domains.get(&instance.domain_id)
-            .ok_or_else(|| WasmtimeError::new(
-                ErrorCode::SecurityViolation,
-                format!("Protection domain {} not found", instance.domain_id),
+            .ok_or_else(|| WasmtimeError::Security {
+                message: format!("Protection domain {} not found", instance.domain_id),
             ))?;
 
         if !domain.capabilities.contains(capability) {
             self.violation_counter.fetch_add(1, Ordering::SeqCst);
-            return Err(WasmtimeError::new(
-                ErrorCode::SecurityViolation,
-                format!("Sandbox {} lacks capability {:?}", sandbox_id, capability),
+            return Err(WasmtimeError::Security {
+                message: format!("Sandbox {} lacks capability {:?}", sandbox_id, capability),
             ));
         }
 
@@ -1068,8 +1050,8 @@ impl AdvancedSandbox {
     /// Configure Intel Memory Protection Keys
     fn configure_intel_mpk(&self) -> WasmtimeResult<()> {
         if !self.hardware_capabilities.intel_mpk {
-            return Err(WasmtimeError::new(
-                ErrorCode::UnsupportedFeature,
+            return Err(WasmtimeError::UnsupportedFeature {
+                message:
                 "Intel MPK not supported on this hardware".to_string(),
             ));
         }
@@ -1085,8 +1067,8 @@ impl AdvancedSandbox {
     /// Configure ARM Pointer Authentication
     fn configure_arm_pointer_auth(&self) -> WasmtimeResult<()> {
         if !self.hardware_capabilities.arm_pointer_auth {
-            return Err(WasmtimeError::new(
-                ErrorCode::UnsupportedFeature,
+            return Err(WasmtimeError::UnsupportedFeature {
+                message:
                 "ARM Pointer Authentication not supported on this hardware".to_string(),
             ));
         }
@@ -1102,8 +1084,8 @@ impl AdvancedSandbox {
     /// Configure Intel CET
     fn configure_intel_cet(&self) -> WasmtimeResult<()> {
         if !self.hardware_capabilities.intel_cet {
-            return Err(WasmtimeError::new(
-                ErrorCode::UnsupportedFeature,
+            return Err(WasmtimeError::UnsupportedFeature {
+                message:
                 "Intel CET not supported on this hardware".to_string(),
             ));
         }
@@ -1119,8 +1101,8 @@ impl AdvancedSandbox {
     /// Configure virtualization-based security
     fn configure_virtualization(&self) -> WasmtimeResult<()> {
         if !self.hardware_capabilities.virtualization {
-            return Err(WasmtimeError::new(
-                ErrorCode::UnsupportedFeature,
+            return Err(WasmtimeError::UnsupportedFeature {
+                message:
                 "Hardware virtualization not supported".to_string(),
             ));
         }
@@ -1142,15 +1124,13 @@ impl AdvancedSandbox {
     /// Get sandbox statistics
     pub fn get_sandbox_statistics(&self) -> WasmtimeResult<SandboxStatistics> {
         let instances = self.sandbox_instances.read()
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::SecurityViolation,
-                format!("Sandbox statistics lock error: {}", e),
+            .map_err(|e| WasmtimeError::Security {
+                message: format!("Sandbox statistics lock error: {}", e),
             ))?;
 
         let domains = self.protection_domains.read()
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::SecurityViolation,
-                format!("Domain statistics lock error: {}", e),
+            .map_err(|e| WasmtimeError::Security {
+                message: format!("Domain statistics lock error: {}", e),
             ))?;
 
         Ok(SandboxStatistics {
@@ -1164,9 +1144,8 @@ impl AdvancedSandbox {
     /// Clean up expired sandbox instances
     pub fn cleanup_expired_sandboxes(&self, max_idle_time: Duration) -> WasmtimeResult<u32> {
         let mut instances = self.sandbox_instances.write()
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::SecurityViolation,
-                format!("Sandbox cleanup lock error: {}", e),
+            .map_err(|e| WasmtimeError::Security {
+                message: format!("Sandbox cleanup lock error: {}", e),
             ))?;
 
         let now = SystemTime::now();
@@ -1220,15 +1199,13 @@ impl SecurityHardeningManager {
     /// Create a new security hardening manager
     pub fn new(config: SecurityHardeningConfig, audit_log_path: &std::path::Path) -> WasmtimeResult<Self> {
         let audit_logger = Arc::new(AuditLogger::new(audit_log_path)
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::SecurityViolation,
-                format!("Failed to create audit logger: {}", e),
+            .map_err(|e| WasmtimeError::Security {
+                message: format!("Failed to create audit logger: {}", e),
             ))?);
 
         let access_control = Arc::new(AccessControlEngine::new(audit_log_path)
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::SecurityViolation,
-                format!("Failed to create access control engine: {}", e),
+            .map_err(|e| WasmtimeError::Security {
+                message: format!("Failed to create access control engine: {}", e),
             ))?);
 
         let cfi_validator = CfiValidator::new(config.cfi_level);
@@ -1272,12 +1249,11 @@ impl SecurityHardeningManager {
         // Access control validation
         let capability = SecurityCapability::Execute("*".to_string());
         if self.access_control.check_capability(session_id, &capability, "function_call")
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::SecurityViolation,
-                format!("Access control error: {}", e),
+            .map_err(|e| WasmtimeError::Security {
+                message: format!("Access control error: {}", e),
             ))? == false {
-            return Err(WasmtimeError::new(
-                ErrorCode::SecurityViolation,
+            return Err(WasmtimeError::Security {
+                message:
                 "Function call not authorized".to_string(),
             ));
         }
@@ -1298,12 +1274,11 @@ impl SecurityHardeningManager {
         // Access control validation for memory access
         let capability = SecurityCapability::Read("*".to_string());
         if self.access_control.check_capability(session_id, &capability, &format!("memory:0x{:x}", addr))
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::SecurityViolation,
-                format!("Memory access control error: {}", e),
+            .map_err(|e| WasmtimeError::Security {
+                message: format!("Memory access control error: {}", e),
             ))? == false {
-            return Err(WasmtimeError::new(
-                ErrorCode::SecurityViolation,
+            return Err(WasmtimeError::Security {
+                message:
                 "Memory access not authorized".to_string(),
             ));
         }
@@ -1349,9 +1324,8 @@ impl SecurityHardeningManager {
         let freed_memory = self.memory_tagger.cleanup_freed_addresses(Duration::from_secs(3600))?;
         let expired_sandboxes = self.advanced_sandbox.cleanup_expired_sandboxes(Duration::from_secs(3600))?;
         let expired_sessions = self.access_control.cleanup_expired_sessions()
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::SecurityViolation,
-                format!("Session cleanup error: {}", e),
+            .map_err(|e| WasmtimeError::Security {
+                message: format!("Session cleanup error: {}", e),
             ))?;
 
         Ok(SecurityCleanupReport {

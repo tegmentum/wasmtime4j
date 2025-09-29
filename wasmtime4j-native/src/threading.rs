@@ -280,7 +280,7 @@ impl WasmThread {
     /// Wait for thread completion
     pub fn join(&mut self) -> WasmtimeResult<()> {
         if let Some(handle) = self.join_handle.take() {
-            handle.join().map_err(|_| WasmtimeError::Threading {
+            handle.join().map_err(|_| WasmtimeError::Concurrency {
                 message: "Thread join failed".to_string(),
             })??;
         }
@@ -413,7 +413,7 @@ impl WasmThreadPool {
         engine: &Engine,
     ) -> WasmtimeResult<Arc<WasmThread>> {
         if self.shutdown.load(Ordering::Acquire) {
-            return Err(WasmtimeError::Threading {
+            return Err(WasmtimeError::Concurrency {
                 message: "Thread pool is shutting down".to_string(),
             });
         }

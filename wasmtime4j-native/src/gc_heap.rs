@@ -47,8 +47,9 @@ pub struct GcHeap {
     weak_refs: RwLock<HashMap<ObjectId, Vec<Weak<GcObjectEntry>>>>,
     /// Collection state tracking
     collection_state: Mutex<CollectionState>,
-    /// Integration with Wasmtime GC operations (optional for coordination)
-    wasmtime_integration: Option<Arc<Mutex<crate::gc_operations::WasmtimeGcOperations>>>,
+    // TODO: Re-enable when gc_operations module is available
+    // Integration with Wasmtime GC operations (optional for coordination)
+    // wasmtime_integration: Option<Arc<Mutex<crate::gc_operations::WasmtimeGcOperations>>>,
 }
 
 /// GC heap configuration
@@ -162,14 +163,16 @@ impl GcHeap {
             stats: Mutex::new(GcHeapStats::default()),
             weak_refs: RwLock::new(HashMap::new()),
             collection_state: Mutex::new(CollectionState::default()),
-            wasmtime_integration: None, // Will be set when GC operations are available
         }
     }
 
     /// Set Wasmtime GC integration for real GC coordination
+    // TODO: Re-enable when gc_operations module is available
+    /*
     pub fn set_wasmtime_integration(&mut self, integration: Arc<Mutex<crate::gc_operations::WasmtimeGcOperations>>) {
         self.wasmtime_integration = Some(integration);
     }
+    */
 
     /// Allocate a new struct object
     pub fn allocate_struct(
@@ -179,19 +182,19 @@ impl GcHeap {
     ) -> WasmtimeResult<Arc<GcObjectEntry>> {
         // Validate field count
         if field_values.len() != type_def.fields.len() {
-            return Err(WasmtimeError::from_string(&format!(
+            return Err(WasmtimeError::InvalidParameter { message: format!(
                 "Field count mismatch: expected {}, got {}",
                 type_def.fields.len(),
                 field_values.len()
-            )));
+            )});
         }
 
         // Validate field types
         for (i, (field_def, value)) in type_def.fields.iter().zip(field_values.iter()).enumerate() {
             self.type_registry.validate_value_type(value, &field_def.field_type)
-                .map_err(|e| WasmtimeError::from_string(&format!(
+                .map_err(|e| WasmtimeError::InvalidParameter { message: format!(
                     "Field {} validation failed: {}", i, e
-                )))?;
+                )})?;
         }
 
         let object = GcObject::Struct {
@@ -211,9 +214,9 @@ impl GcHeap {
         // Validate all elements against the array's element type
         for (i, element) in elements.iter().enumerate() {
             self.type_registry.validate_value_type(element, &type_def.element_type)
-                .map_err(|e| WasmtimeError::from_string(&format!(
+                .map_err(|e| WasmtimeError::InvalidParameter { message: format!(
                     "Element {} validation failed: {}", i, e
-                )))?;
+                )})?;
         }
 
         let length = elements.len() as u32;
@@ -230,9 +233,9 @@ impl GcHeap {
     pub fn allocate_i31(&self, value: i32) -> WasmtimeResult<Arc<GcObjectEntry>> {
         // Validate that value fits in 31 bits (signed)
         if value < -(1 << 30) || value >= (1 << 30) {
-            return Err(WasmtimeError::from_string(&format!(
+            return Err(WasmtimeError::InvalidParameter { message: format!(
                 "I31 value {} out of range (must fit in 31 bits signed)", value
-            )));
+            )});
         }
 
         let object = GcObject::I31(value);
@@ -247,14 +250,14 @@ impl GcHeap {
                 self.type_registry.validate_struct_field_access(type_def.type_id, field_index)?;
 
                 if field_index as usize >= fields.len() {
-                    return Err(WasmtimeError::from_string(&format!(
+                    return Err(WasmtimeError::InvalidParameter { message: format!(
                         "Field index {} out of bounds", field_index
-                    )));
+                    )});
                 }
 
                 Ok(fields[field_index as usize].clone())
             },
-            _ => Err(WasmtimeError::from_string("Object is not a struct")),
+            _ => Err(WasmtimeError::Type { message: "Object is not a struct".to_string() }),
         }
     }
 
@@ -271,9 +274,9 @@ impl GcHeap {
                 let field_def = self.type_registry.validate_struct_field_access(type_def.type_id, field_index)?;
 
                 if !field_def.mutable {
-                    return Err(WasmtimeError::from_string(&format!(
+                    return Err(WasmtimeError::InvalidParameter { message: format!(
                         "Field {} is immutable", field_index
-                    )));
+                    )});
                 }
 
                 // Validate value type
@@ -283,7 +286,7 @@ impl GcHeap {
                 // For now, return success to indicate validation passed
                 Ok(())
             },
-            _ => Err(WasmtimeError::from_string("Object is not a struct")),
+            _ => Err(WasmtimeError::Type { message: "Object is not a struct".to_string() }),
         }
     }
 
@@ -295,14 +298,14 @@ impl GcHeap {
                 self.type_registry.validate_array_element_access(type_def.type_id, element_index, *length)?;
 
                 if element_index as usize >= elements.len() {
-                    return Err(WasmtimeError::from_string(&format!(
+                    return Err(WasmtimeError::InvalidParameter { message: format!(
                         "Element index {} out of bounds", element_index
-                    )));
+                    )});
                 }
 
                 Ok(elements[element_index as usize].clone())
             },
-            _ => Err(WasmtimeError::from_string("Object is not an array")),
+            _ => Err(WasmtimeError::Type { message: "Object is not an array".to_string() }),
         }
     }
 
@@ -319,7 +322,7 @@ impl GcHeap {
                 self.type_registry.validate_array_element_access(type_def.type_id, element_index, *length)?;
 
                 if !type_def.mutable {
-                    return Err(WasmtimeError::from_string("Array is immutable"));
+                    return Err(WasmtimeError::InvalidParameter { message:"Array is immutable".to_string() });
                 }
 
                 // Validate value type
@@ -329,7 +332,7 @@ impl GcHeap {
                 // For now, return success to indicate validation passed
                 Ok(())
             },
-            _ => Err(WasmtimeError::from_string("Object is not an array")),
+            _ => Err(WasmtimeError::Type { message: "Object is not an array".to_string() }),
         }
     }
 
@@ -337,7 +340,7 @@ impl GcHeap {
     pub fn get_array_length(&self, object: &GcObjectEntry) -> WasmtimeResult<u32> {
         match &object.object {
             GcObject::Array { length, .. } => Ok(*length),
-            _ => Err(WasmtimeError::from_string("Object is not an array")),
+            _ => Err(WasmtimeError::Type { message: "Object is not an array".to_string() }),
         }
     }
 
@@ -345,14 +348,14 @@ impl GcHeap {
     pub fn get_i31_value(&self, object: &GcObjectEntry) -> WasmtimeResult<i32> {
         match &object.object {
             GcObject::I31(value) => Ok(*value),
-            _ => Err(WasmtimeError::from_string("Object is not an I31")),
+            _ => Err(WasmtimeError::Type { message: "Object is not an I31".to_string() }),
         }
     }
 
     /// Create a weak reference to an object
     pub fn create_weak_reference(&self, object_id: ObjectId) -> WasmtimeResult<GcWeakReference> {
         if !self.config.weak_references {
-            return Err(WasmtimeError::from_string("Weak references are disabled"));
+            return Err(WasmtimeError::InvalidParameter { message:"Weak references are disabled".to_string() });
         }
 
         // Verify object exists
@@ -367,7 +370,7 @@ impl GcHeap {
     /// Get object by ID
     pub fn get_object(&self, object_id: ObjectId) -> WasmtimeResult<Arc<GcObjectEntry>> {
         let objects = self.objects.read()
-            .map_err(|_| WasmtimeError::from_string("Failed to acquire objects lock"))?;
+            .map_err(|_| WasmtimeError::Concurrency { message: "Failed to acquire objects lock".to_string() })?;
 
         for generation_objects in objects.values() {
             if let Some(object) = generation_objects.get(&object_id) {
@@ -375,7 +378,7 @@ impl GcHeap {
             }
         }
 
-        Err(WasmtimeError::from_string(&format!("Object {} not found", object_id)))
+        Err(WasmtimeError::InvalidParameter { message: format!("Object {} not found", object_id) })
     }
 
     /// Trigger garbage collection with real Wasmtime GC coordination
@@ -385,10 +388,10 @@ impl GcHeap {
         // Check if collection is already in progress
         {
             let mut state = self.collection_state.lock()
-                .map_err(|_| WasmtimeError::from_string("Failed to acquire collection state lock"))?;
+                .map_err(|_| WasmtimeError::Concurrency { message: "Failed to acquire collection state lock".to_string() })?;
 
             if state.collection_in_progress {
-                return Err(WasmtimeError::from_string("Collection already in progress"));
+                return Err(WasmtimeError::Resource { message: "Collection already in progress".to_string() });
             }
 
             state.collection_in_progress = true;
@@ -400,7 +403,7 @@ impl GcHeap {
         // Update collection state
         {
             let mut state = self.collection_state.lock()
-                .map_err(|_| WasmtimeError::from_string("Failed to acquire collection state lock"))?;
+                .map_err(|_| WasmtimeError::Concurrency { message: "Failed to acquire collection state lock".to_string() })?;
 
             state.collection_in_progress = false;
             state.last_collection = Some(start_time);
@@ -411,7 +414,7 @@ impl GcHeap {
         // Update statistics
         {
             let mut stats = self.stats.lock()
-                .map_err(|_| WasmtimeError::from_string("Failed to acquire stats lock"))?;
+                .map_err(|_| WasmtimeError::Concurrency { message: "Failed to acquire stats lock".to_string() })?;
 
             stats.total_gc_time += collection_time;
             match trigger {
@@ -427,7 +430,7 @@ impl GcHeap {
     /// Get current heap statistics
     pub fn get_stats(&self) -> WasmtimeResult<GcHeapStats> {
         let stats = self.stats.lock()
-            .map_err(|_| WasmtimeError::from_string("Failed to acquire stats lock"))?;
+            .map_err(|_| WasmtimeError::Concurrency { message: "Failed to acquire stats lock".to_string() })?;
 
         Ok(stats.clone())
     }
@@ -435,7 +438,7 @@ impl GcHeap {
     /// Check if heap pressure warrants collection
     pub fn should_collect(&self) -> WasmtimeResult<bool> {
         let stats = self.stats.lock()
-            .map_err(|_| WasmtimeError::from_string("Failed to acquire stats lock"))?;
+            .map_err(|_| WasmtimeError::Concurrency { message: "Failed to acquire stats lock".to_string() })?;
 
         let heap_usage_ratio = stats.current_heap_size as f64 / self.config.max_heap_size as f64;
 
@@ -447,7 +450,7 @@ impl GcHeap {
     fn allocate_object(&self, object: GcObject, generation: Generation) -> WasmtimeResult<Arc<GcObjectEntry>> {
         let object_id = {
             let mut next_id = self.next_object_id.lock()
-                .map_err(|_| WasmtimeError::from_string("Failed to acquire object ID lock"))?;
+                .map_err(|_| WasmtimeError::Concurrency { message: "Failed to acquire object ID lock".to_string() })?;
             let id = *next_id;
             *next_id += 1;
             id
@@ -469,21 +472,21 @@ impl GcHeap {
         // Add to appropriate generation
         {
             let mut objects = self.objects.write()
-                .map_err(|_| WasmtimeError::from_string("Failed to acquire objects lock"))?;
+                .map_err(|_| WasmtimeError::Concurrency { message: "Failed to acquire objects lock".to_string() })?;
 
             if let Some(gen_objects) = objects.get_mut(&generation) {
                 gen_objects.insert(object_id, entry.clone());
             } else {
-                return Err(WasmtimeError::from_string(&format!(
+                return Err(WasmtimeError::InvalidParameter { message: format!(
                     "Invalid generation: {}", generation
-                )));
+                )});
             }
         }
 
         // Update statistics
         {
             let mut stats = self.stats.lock()
-                .map_err(|_| WasmtimeError::from_string("Failed to acquire stats lock"))?;
+                .map_err(|_| WasmtimeError::Concurrency { message: "Failed to acquire stats lock".to_string() })?;
 
             stats.total_allocated += 1;
             stats.bytes_allocated += size_bytes as u64;
@@ -519,12 +522,9 @@ impl GcHeap {
         let start_objects = self.count_total_objects()?;
         let start_bytes = self.get_current_heap_size()?;
 
-        // If we have Wasmtime integration, coordinate with it
-        let collected = if let Some(ref wasmtime_integration) = self.wasmtime_integration {
-            // In a real implementation, we would trigger Wasmtime's GC here
-            // For now, we'll perform our own tracking cleanup
-            self.coordinate_with_wasmtime_gc(wasmtime_integration)?
-        } else {
+        // If we have Wasmtime integration, coordinate with it (TODO: implement integration)
+        // For now, we'll perform our own tracking cleanup (placeholder implementation)
+        let collected = {
             // Fallback to our own mark-and-sweep for compatibility
             self.mark_reachable_objects()?;
             self.sweep_unreachable_objects()?
@@ -545,6 +545,8 @@ impl GcHeap {
     }
 
     /// Coordinate with Wasmtime's GC system
+    // TODO: Re-enable when gc_operations module is available
+    /*
     fn coordinate_with_wasmtime_gc(
         &self,
         _wasmtime_integration: &Arc<Mutex<crate::gc_operations::WasmtimeGcOperations>>
@@ -563,7 +565,7 @@ impl GcHeap {
             weak_refs.retain(|_, refs| {
                 refs.retain(|weak_ref| weak_ref.strong_count() > 0);
                 !refs.is_empty()
-            });
+            )});
         }
 
         // Update our object tracking to match Wasmtime's state
@@ -575,13 +577,14 @@ impl GcHeap {
             bytes: collected_bytes,
         })
     }
+    */
 
     /// Mark all reachable objects (compatibility mode when Wasmtime integration unavailable)
     fn mark_reachable_objects(&self) -> WasmtimeResult<()> {
         // This is used as a fallback when Wasmtime GC integration is not available
         // In practice, Wasmtime handles the actual GC marking and sweeping
         let objects = self.objects.read()
-            .map_err(|_| WasmtimeError::from_string("Failed to acquire objects lock"))?;
+            .map_err(|_| WasmtimeError::Concurrency { message: "Failed to acquire objects lock".to_string() })?;
 
         for generation_objects in objects.values() {
             for object in generation_objects.values() {
@@ -621,7 +624,7 @@ impl GcHeap {
     /// Count total objects across all generations
     fn count_total_objects(&self) -> WasmtimeResult<u64> {
         let objects = self.objects.read()
-            .map_err(|_| WasmtimeError::from_string("Failed to acquire objects lock"))?;
+            .map_err(|_| WasmtimeError::Concurrency { message: "Failed to acquire objects lock".to_string() })?;
 
         let count = objects.values()
             .map(|gen_objects| gen_objects.len() as u64)
@@ -633,7 +636,7 @@ impl GcHeap {
     /// Get current heap size
     fn get_current_heap_size(&self) -> WasmtimeResult<usize> {
         let stats = self.stats.lock()
-            .map_err(|_| WasmtimeError::from_string("Failed to acquire stats lock"))?;
+            .map_err(|_| WasmtimeError::Concurrency { message: "Failed to acquire stats lock".to_string() })?;
 
         Ok(stats.current_heap_size)
     }

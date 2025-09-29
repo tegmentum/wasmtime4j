@@ -832,10 +832,10 @@ impl ThreatDetector {
         execution_data: &ExecutionData,
     ) -> WasmtimeResult<Option<Vec<ThreatEvent>>> {
         let baselines = self.baselines.read()
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::SecurityViolation,
+            .map_err(|e| WasmtimeError::Security {
+                message:
                 format!("Baselines lock error: {}", e),
-            ))?;
+            })?;
 
         let baseline = match baselines.get(source_id) {
             Some(baseline) => baseline,
@@ -907,10 +907,10 @@ impl ThreatDetector {
         execution_data: &ExecutionData,
     ) -> WasmtimeResult<Option<Vec<ThreatEvent>>> {
         let patterns = self.pattern_recognizer.attack_patterns.read()
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::SecurityViolation,
+            .map_err(|e| WasmtimeError::Security {
+                message:
                 format!("Attack patterns lock error: {}", e),
-            ))?;
+            })?;
 
         let mut detected_threats = Vec::new();
 
@@ -951,10 +951,10 @@ impl ThreatDetector {
         execution_data: &ExecutionData,
     ) -> WasmtimeResult<Option<Vec<ThreatEvent>>> {
         let threat_intel = self.threat_intelligence.read()
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::SecurityViolation,
+            .map_err(|e| WasmtimeError::Security {
+                message:
                 format!("Threat intelligence lock error: {}", e),
-            ))?;
+            })?;
 
         let mut intel_threats = Vec::new();
 
@@ -1009,10 +1009,10 @@ impl ThreatDetector {
         };
 
         let mut baselines = self.baselines.write()
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::SecurityViolation,
+            .map_err(|e| WasmtimeError::Security {
+                message:
                 format!("Baselines write lock error: {}", e),
-            ))?;
+            })?;
 
         baselines.insert(source_id.to_string(), baseline);
         Ok(())
@@ -1137,10 +1137,10 @@ impl ThreatDetector {
     /// Add a threat to active tracking
     fn add_active_threat(&self, threat: ThreatEvent) -> WasmtimeResult<()> {
         let mut active_threats = self.active_threats.write()
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::SecurityViolation,
+            .map_err(|e| WasmtimeError::Security {
+                message:
                 format!("Active threats lock error: {}", e),
-            ))?;
+            })?;
 
         // Remove oldest threats if we exceed the maximum
         if active_threats.len() >= self.config.max_active_threats {
@@ -1158,10 +1158,10 @@ impl ThreatDetector {
     /// Update detection statistics
     fn update_detection_statistics(&self, threats: &[ThreatEvent]) -> WasmtimeResult<()> {
         let mut stats = self.detection_stats.lock()
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::SecurityViolation,
+            .map_err(|e| WasmtimeError::Security {
+                message:
                 format!("Detection statistics lock error: {}", e),
-            ))?;
+            })?;
 
         stats.total_threats += threats.len() as u64;
 
@@ -1176,10 +1176,10 @@ impl ThreatDetector {
     /// Get current detection statistics
     pub fn get_detection_statistics(&self) -> WasmtimeResult<DetectionStatistics> {
         let stats = self.detection_stats.lock()
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::SecurityViolation,
+            .map_err(|e| WasmtimeError::Security {
+                message:
                 format!("Detection statistics read lock error: {}", e),
-            ))?;
+            })?;
 
         Ok(stats.clone())
     }
@@ -1187,10 +1187,10 @@ impl ThreatDetector {
     /// Add a new detection rule
     pub fn add_detection_rule(&self, rule: DetectionRule) -> WasmtimeResult<()> {
         let mut rules = self.detection_rules.write()
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::SecurityViolation,
+            .map_err(|e| WasmtimeError::Security {
+                message:
                 format!("Detection rules lock error: {}", e),
-            ))?;
+            })?;
 
         rules.push(rule);
         Ok(())
@@ -1199,10 +1199,10 @@ impl ThreatDetector {
     /// Add an attack pattern
     pub fn add_attack_pattern(&self, pattern: AttackPattern) -> WasmtimeResult<()> {
         let mut patterns = self.pattern_recognizer.attack_patterns.write()
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::SecurityViolation,
+            .map_err(|e| WasmtimeError::Security {
+                message:
                 format!("Attack patterns lock error: {}", e),
-            ))?;
+            })?;
 
         patterns.insert(pattern.pattern_id.clone(), pattern);
         Ok(())
@@ -1211,10 +1211,10 @@ impl ThreatDetector {
     /// Update threat intelligence database
     pub fn update_threat_intelligence(&self, intel_update: ThreatIntelligenceUpdate) -> WasmtimeResult<()> {
         let mut threat_intel = self.threat_intelligence.write()
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::SecurityViolation,
+            .map_err(|e| WasmtimeError::Security {
+                message:
                 format!("Threat intelligence lock error: {}", e),
-            ))?;
+            })?;
 
         for indicator in intel_update.indicators {
             threat_intel.threat_indicators.insert(

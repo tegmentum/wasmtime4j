@@ -675,6 +675,9 @@ pub mod dependency_resolution {
     }
 }
 
+// Re-export dependency resolution types at module level
+pub use dependency_resolution::{SemanticVersion, VersionConstraint};
+
 /// Component orchestrator for managing component graphs and lifecycle
 pub struct ComponentOrchestrator {
     /// Enhanced component engine

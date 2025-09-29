@@ -551,7 +551,6 @@ pub struct AtomicOperationBatcher {
 }
 
 /// Batched atomic operation
-#[derive(Debug)]
 pub struct BatchedAtomicOperation {
     /// Operation type
     operation_type: AtomicOperationType,
@@ -783,31 +782,28 @@ impl<T> AdvancedRwLock<T> {
 
         // Wait for notification or timeout
         let mutex = ParkingMutex::new(());
-        let guard = mutex.lock();
+        let mut guard = mutex.lock();
 
-        let result = if let Some(timeout_duration) = timeout {
-            condition.wait_for(&guard, timeout_duration)
-        } else {
-            condition.wait(&guard);
-            Ok(())
-        };
-
-        match result {
-            Ok(()) => {
-                // Try to acquire the lock
-                if let Some(read_guard) = self.data.try_read() {
-                    self.reader_count.fetch_add(1, Ordering::Release);
-                    self.update_read_statistics(start_time.elapsed());
-                    Ok(read_guard)
-                } else {
-                    Err(WasmtimeError::Concurrency {
-                        message: "Failed to acquire read lock after notification".to_string(),
-                    })
-                }
+        if let Some(timeout_duration) = timeout {
+            let wait_result = condition.wait_for(&mut guard, timeout_duration);
+            if wait_result.timed_out() {
+                return Err(WasmtimeError::Timeout {
+                    message: "Read lock acquisition timed out".to_string(),
+                });
             }
-            Err(_) => Err(WasmtimeError::Timeout {
-                message: "Read lock acquisition timed out".to_string(),
-            }),
+        } else {
+            condition.wait(&mut guard);
+        }
+
+        // Try to acquire the lock after wait
+        if let Some(read_guard) = self.data.try_read() {
+            self.reader_count.fetch_add(1, Ordering::Release);
+            self.update_read_statistics(start_time.elapsed());
+            Ok(read_guard)
+        } else {
+            Err(WasmtimeError::Concurrency {
+                message: "Failed to acquire read lock after notification".to_string(),
+            })
         }
     }
 
@@ -829,37 +825,35 @@ impl<T> AdvancedRwLock<T> {
 
         // Wait for notification or timeout
         let mutex = ParkingMutex::new(());
-        let guard = mutex.lock();
+        let mut guard = mutex.lock();
 
-        let result = if let Some(timeout_duration) = timeout {
-            condition.wait_for(&guard, timeout_duration)
-        } else {
-            condition.wait(&guard);
-            Ok(())
-        };
-
-        match result {
-            Ok(()) => {
-                // Try to acquire the lock
-                if let Some(write_guard) = self.data.try_write() {
-                    self.writer_waiting.store(false, Ordering::Release);
-                    self.update_write_statistics(start_time.elapsed());
-                    Ok(write_guard)
-                } else {
-                    Err(WasmtimeError::Concurrency {
-                        message: "Failed to acquire write lock after notification".to_string(),
-                    })
-                }
+        if let Some(timeout_duration) = timeout {
+            let wait_result = condition.wait_for(&mut guard, timeout_duration);
+            if wait_result.timed_out() {
+                return Err(WasmtimeError::Timeout {
+                    message: "Write lock acquisition timed out".to_string(),
+                });
             }
-            Err(_) => Err(WasmtimeError::Timeout {
-                message: "Write lock acquisition timed out".to_string(),
-            }),
+        } else {
+            condition.wait(&mut guard);
+        }
+
+        // Try to acquire the lock after wait
+        if let Some(write_guard) = self.data.try_write() {
+            self.writer_waiting.store(false, Ordering::Release);
+            self.update_write_statistics(start_time.elapsed());
+            Ok(write_guard)
+        } else {
+            Err(WasmtimeError::Concurrency {
+                message: "Failed to acquire write lock after notification".to_string(),
+            })
         }
     }
 
     /// Update read lock statistics
     fn update_read_statistics(&self, hold_time: Duration) {
-        if let Ok(mut stats) = self.statistics.write() {
+        {
+            let mut stats = self.statistics.write();
             stats.read_locks_acquired += 1;
             let total_reads = stats.read_locks_acquired;
             stats.avg_read_hold_time = Duration::from_nanos(
@@ -870,7 +864,8 @@ impl<T> AdvancedRwLock<T> {
 
     /// Update write lock statistics
     fn update_write_statistics(&self, hold_time: Duration) {
-        if let Ok(mut stats) = self.statistics.write() {
+        {
+            let mut stats = self.statistics.write();
             stats.write_locks_acquired += 1;
             let total_writes = stats.write_locks_acquired;
             stats.avg_write_hold_time = Duration::from_nanos(
@@ -948,10 +943,9 @@ impl AdvancedCondvar {
     }
 
     /// Wait with predicate to prevent spurious wakeups
-    pub fn wait_with_predicate<F, G>(&self, mutex_guard: &G, predicate: F) -> WasmtimeResult<()>
+    pub fn wait_with_predicate<F, T>(&self, mutex_guard: &mut parking_lot::MutexGuard<T>, predicate: F) -> WasmtimeResult<()>
     where
         F: Fn() -> bool + Send + Sync + 'static,
-        G: std::ops::Deref<Target = ()>,
     {
         let thread_id = thread::current().id();
         let start_time = Instant::now();
@@ -1003,15 +997,14 @@ impl AdvancedCondvar {
     }
 
     /// Wait with timeout and predicate
-    pub fn wait_timeout_with_predicate<F, G>(
+    pub fn wait_timeout_with_predicate<F, T>(
         &self,
-        mutex_guard: &G,
+        mutex_guard: &mut parking_lot::MutexGuard<T>,
         timeout: Duration,
         predicate: F,
     ) -> WasmtimeResult<bool>
     where
         F: Fn() -> bool + Send + Sync + 'static,
-        G: std::ops::Deref<Target = ()>,
     {
         let thread_id = thread::current().id();
         let start_time = Instant::now();
@@ -1052,7 +1045,7 @@ impl AdvancedCondvar {
             // Wait for notification or timeout
             let wait_result = self.condvar.wait_for(mutex_guard, remaining_time);
 
-            if wait_result.is_err() {
+            if wait_result.timed_out() {
                 // Timeout occurred
                 break;
             }
@@ -1103,7 +1096,8 @@ impl AdvancedCondvar {
 
     /// Update wait statistics
     fn update_wait_statistics(&self, wait_time: Duration) {
-        if let Ok(mut stats) = self.statistics.write() {
+        {
+            let mut stats = self.statistics.write();
             stats.total_waits += 1;
             let total_waits = stats.total_waits;
             stats.avg_wait_time = Duration::from_nanos(
@@ -1117,21 +1111,24 @@ impl AdvancedCondvar {
 
     /// Update signal statistics
     fn update_signal_statistics(&self) {
-        if let Ok(mut stats) = self.statistics.write() {
+        {
+            let mut stats = self.statistics.write();
             stats.total_signals += 1;
         }
     }
 
     /// Update broadcast statistics
     fn update_broadcast_statistics(&self) {
-        if let Ok(mut stats) = self.statistics.write() {
+        {
+            let mut stats = self.statistics.write();
             stats.total_broadcasts += 1;
         }
     }
 
     /// Update timeout statistics
     fn update_timeout_statistics(&self) {
-        if let Ok(mut stats) = self.statistics.write() {
+        {
+            let mut stats = self.statistics.write();
             stats.timeouts += 1;
         }
     }
@@ -1162,7 +1159,8 @@ impl AdvancedSemaphore {
 
         // Update statistics
         if self.config.collect_statistics {
-            if let Ok(mut stats) = self.statistics.write() {
+            {
+            let mut stats = self.statistics.write();
                 stats.acquire_attempts += 1;
             }
         }
@@ -1179,7 +1177,8 @@ impl AdvancedSemaphore {
                 ) {
                     Ok(_) => {
                         if self.config.collect_statistics {
-                            if let Ok(mut stats) = self.statistics.write() {
+                            {
+            let mut stats = self.statistics.write();
                                 stats.successful_acquires += 1;
                             }
                         }
@@ -1239,7 +1238,8 @@ impl AdvancedSemaphore {
 
         // Update statistics
         if self.config.collect_statistics {
-            if let Ok(mut stats) = self.statistics.write() {
+            {
+            let mut stats = self.statistics.write();
                 stats.releases += 1;
             }
         }
@@ -1267,7 +1267,8 @@ impl AdvancedSemaphore {
 
             // Update peak waiters
             if self.config.collect_statistics {
-                if let Ok(mut stats) = self.statistics.write() {
+                {
+            let mut stats = self.statistics.write();
                     stats.current_waiters += 1;
                     if stats.current_waiters > stats.peak_waiters {
                         stats.peak_waiters = stats.current_waiters;
@@ -1277,11 +1278,18 @@ impl AdvancedSemaphore {
         }
 
         // Wait for notification or timeout
-        let guard = mutex.lock();
+        let mut guard = mutex.lock();
         let result = if let Some(timeout_duration) = timeout {
-            condition.wait_for(&guard, timeout_duration)
+            let wait_result = condition.wait_for(&mut guard, timeout_duration);
+            if wait_result.timed_out() {
+                Err(WasmtimeError::Timeout {
+                    message: "Semaphore acquisition timed out".to_string(),
+                })
+            } else {
+                Ok(())
+            }
         } else {
-            condition.wait(&guard);
+            condition.wait(&mut guard);
             Ok(())
         };
 
@@ -1291,7 +1299,8 @@ impl AdvancedSemaphore {
             queue.retain(|req| req.thread_id != thread_id);
 
             if self.config.collect_statistics {
-                if let Ok(mut stats) = self.statistics.write() {
+                {
+            let mut stats = self.statistics.write();
                     stats.current_waiters = stats.current_waiters.saturating_sub(1);
                 }
             }
@@ -1300,7 +1309,8 @@ impl AdvancedSemaphore {
         match result {
             Ok(()) => {
                 if self.config.collect_statistics {
-                    if let Ok(mut stats) = self.statistics.write() {
+                    {
+            let mut stats = self.statistics.write();
                         stats.successful_acquires += 1;
                     }
                 }
@@ -1312,7 +1322,8 @@ impl AdvancedSemaphore {
             }
             Err(_) => {
                 if self.config.collect_statistics {
-                    if let Ok(mut stats) = self.statistics.write() {
+                    {
+            let mut stats = self.statistics.write();
                         stats.failed_acquires += 1;
                     }
                 }
@@ -1370,7 +1381,8 @@ impl<'a> Drop for SemaphorePermit<'a> {
         // Update hold time statistics
         if self.semaphore.config.collect_statistics {
             let hold_time = self.acquired_at.elapsed();
-            if let Ok(mut stats) = self.semaphore.statistics.write() {
+            {
+                let mut stats = self.semaphore.statistics.write();
                 let total_acquires = stats.successful_acquires;
                 if total_acquires > 0 {
                     stats.avg_hold_time = Duration::from_nanos(

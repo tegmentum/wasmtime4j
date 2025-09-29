@@ -1,4 +1,4 @@
-use crate::error::{Error, Result};
+use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::ffi_common::*;
 use crate::jni_bindings::*;
 use crate::panama_ffi::*;

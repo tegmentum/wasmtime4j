@@ -5,18 +5,18 @@
 //! huge pages, NUMA awareness, and comprehensive monitoring.
 
 use jni::objects::{JClass, JObject, JString, JByteArray};
-use jni::sys::{jlong, jint, jboolean, jdoubleArray, jobjectArray};
+use jni::sys::{jlong, jint, jboolean, jdoubleArray, jobjectArray, jobject};
 use jni::JNIEnv;
 use std::ptr;
 use std::ffi::c_void;
 
 use crate::memory::{PlatformMemoryAllocator, PlatformMemoryConfig, PageSize, PlatformMemoryPoolStats, PlatformMemoryInfo, PlatformMemoryLeak};
-use crate::error::jni_utils;
+use crate::error::{jni_utils, WasmtimeError, WasmtimeResult};
 
 /// Creates a new platform memory allocator
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_memory_PlatformMemoryManager_nativeCreate(
-    env: JNIEnv,
+    mut env: JNIEnv,
     _class: JClass,
     enable_huge_pages: jboolean,
     numa_node: jint,
@@ -29,7 +29,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_memory_PlatformMemoryMan
     alignment: jint,
     page_size: jint,
 ) -> jlong {
-    jni_utils::jni_call(&env, || {
+    jni_utils::jni_try_ptr(&mut env, || {
         let config = PlatformMemoryConfig {
             enable_huge_pages: enable_huge_pages != 0,
             numa_node,
@@ -49,94 +49,79 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_memory_PlatformMemoryMan
             },
         };
 
-        match PlatformMemoryAllocator::new(config) {
-            Ok(allocator) => {
-                let boxed = Box::new(allocator);
-                Box::into_raw(boxed) as jlong
-            }
-            Err(e) => {
-                jni_utils::throw_runtime_exception(&env, &format!("Failed to create platform allocator: {}", e));
-                0
-            }
-        }
-    }).unwrap_or(0)
+        let allocator = PlatformMemoryAllocator::new(config)
+            .map_err(|e| WasmtimeError::RuntimeError {
+                message: format!("Failed to create platform allocator: {}", e)
+            })?;
+        Ok(Box::new(allocator))
+    }) as jlong
 }
 
 /// Allocates memory with platform optimizations
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_memory_PlatformMemoryManager_nativeAllocate(
-    env: JNIEnv,
+    mut env: JNIEnv,
     _class: JClass,
     handle: jlong,
     size: jlong,
     alignment: jint,
 ) -> jlong {
-    jni_utils::jni_call(&env, || {
+    jni_utils::jni_try_with_default(&mut env, 0, || {
         if handle == 0 {
-            jni_utils::throw_illegal_argument(&env, "Invalid allocator handle");
-            return 0;
+            return Err(WasmtimeError::InvalidParameter { message: "Invalid allocator handle".to_string() });
         }
 
         let allocator = unsafe { &*(handle as *const PlatformMemoryAllocator) };
         let alignment_opt = if alignment == 0 { None } else { Some(alignment as usize) };
 
-        match allocator.allocate(size as usize, alignment_opt) {
-            Ok(ptr) => ptr.as_ptr() as jlong,
-            Err(e) => {
-                jni_utils::throw_runtime_exception(&env, &format!("Memory allocation failed: {}", e));
-                0
-            }
-        }
-    }).unwrap_or(0)
+        let ptr = allocator.allocate(size as usize, alignment_opt)
+            .map_err(|e| WasmtimeError::RuntimeError {
+                message: format!("Memory allocation failed: {}", e)
+            })?;
+        Ok(ptr.as_ptr() as jlong)
+    })
 }
 
 /// Deallocates platform memory
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_memory_PlatformMemoryManager_nativeDeallocate(
-    env: JNIEnv,
+    mut env: JNIEnv,
     _class: JClass,
     handle: jlong,
     ptr: jlong,
 ) -> jboolean {
-    jni_utils::jni_call(&env, || {
+    jni_utils::jni_try_with_default(&mut env, 0, || {
         if handle == 0 {
-            jni_utils::throw_illegal_argument(&env, "Invalid allocator handle");
-            return 0;
+            return Err(WasmtimeError::InvalidParameter { message: "Invalid allocator handle".to_string() });
         }
 
         if ptr == 0 {
-            jni_utils::throw_illegal_argument(&env, "Invalid pointer");
-            return 0;
+            return Err(WasmtimeError::InvalidParameter { message: "Invalid pointer".to_string() });
         }
 
         let allocator = unsafe { &*(handle as *const PlatformMemoryAllocator) };
 
-        if let Some(non_null_ptr) = std::ptr::NonNull::new(ptr as *mut c_void) {
-            match allocator.deallocate(non_null_ptr) {
-                Ok(_) => 1,
-                Err(e) => {
-                    jni_utils::throw_runtime_exception(&env, &format!("Memory deallocation failed: {}", e));
-                    0
-                }
-            }
-        } else {
-            jni_utils::throw_illegal_argument(&env, "Null pointer provided");
-            0
-        }
-    }).unwrap_or(0)
+        let non_null_ptr = std::ptr::NonNull::new(ptr as *mut c_void)
+            .ok_or_else(|| WasmtimeError::InvalidParameter { message: "Null pointer provided".to_string() })?;
+
+        allocator.deallocate(non_null_ptr)
+            .map_err(|e| WasmtimeError::RuntimeError {
+                message: format!("Memory deallocation failed: {}", e)
+            })?;
+        Ok(1)
+    })
 }
 
 /// Gets platform memory statistics
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_memory_PlatformMemoryManager_nativeGetStats(
-    env: JNIEnv,
+    mut env: JNIEnv,
     _class: JClass,
     handle: jlong,
-) -> JObject {
-    jni_utils::jni_call(&env, || {
+) -> jobject {
+    match (|| -> WasmtimeResult<_> {
         if handle == 0 {
-            jni_utils::throw_illegal_argument(&env, "Invalid allocator handle");
-            return JObject::null();
+            return Err(WasmtimeError::InvalidParameter { message: "Invalid allocator handle".to_string() });
         }
 
         let allocator = unsafe { &*(handle as *const PlatformMemoryAllocator) };
@@ -144,210 +129,213 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_memory_PlatformMemoryMan
 
         // Create Java MemoryStats object
         let stats_class = env.find_class("ai/tegmentum/wasmtime4j/jni/memory/PlatformMemoryManager$MemoryStats")
-            .expect("Failed to find MemoryStats class");
+            .map_err(|_| WasmtimeError::RuntimeError { message: "Failed to find MemoryStats class".to_string() })?;
 
         let constructor_signature = "(JJJJJJDDJD)V";
         let stats_object = env.new_object(stats_class, constructor_signature, &[
-            stats.total_allocated.into(),
-            stats.total_freed.into(),
-            stats.current_usage.into(),
-            stats.peak_usage.into(),
-            stats.allocation_count.into(),
-            stats.deallocation_count.into(),
+            (stats.total_allocated as jlong).into(),
+            (stats.total_freed as jlong).into(),
+            (stats.current_usage as jlong).into(),
+            (stats.peak_usage as jlong).into(),
+            (stats.allocation_count as jlong).into(),
+            (stats.deallocation_count as jlong).into(),
             stats.fragmentation_ratio.into(),
             stats.compression_ratio.into(),
-            stats.deduplication_savings.into(),
-            stats.huge_pages_used.into(),
+            (stats.deduplication_savings as jlong).into(),
+            (stats.huge_pages_used as jlong).into(),
             stats.numa_hit_rate.into(),
-        ]).expect("Failed to create MemoryStats object");
+        ]).map_err(|_| WasmtimeError::RuntimeError { message: "Failed to create MemoryStats object".to_string() })?;
 
-        stats_object
-    }).unwrap_or(JObject::null())
+        Ok(stats_object)
+    })() {
+        Ok(obj) => obj.into_raw(),
+        Err(e) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+            std::ptr::null_mut()
+        }
+    }
 }
 
 /// Gets platform memory information
 #[no_mangle]
-pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_memory_PlatformMemoryManager_nativeGetPlatformInfo(
-    env: JNIEnv,
-    _class: JClass,
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_memory_PlatformMemoryManager_nativeGetPlatformInfo<'a>(
+    mut env: JNIEnv<'a>,
+    _class: JClass<'a>,
     handle: jlong,
-) -> JObject {
-    jni_utils::jni_call(&env, || {
+) -> jobject {
+    jni_utils::jni_try_object(&mut env, |env| {
         if handle == 0 {
-            jni_utils::throw_illegal_argument(&env, "Invalid allocator handle");
-            return JObject::null();
+            return Err(WasmtimeError::InvalidParameter { message: "Invalid allocator handle".to_string() });
         }
 
         let allocator = unsafe { &*(handle as *const PlatformMemoryAllocator) };
-        let info = &allocator.memory_info;
+        let info = allocator.memory_info();
 
         // Create Java PlatformInfo object
         let info_class = env.find_class("ai/tegmentum/wasmtime4j/jni/memory/PlatformMemoryManager$PlatformInfo")
-            .expect("Failed to find PlatformInfo class");
+            .map_err(|_| WasmtimeError::RuntimeError { message: "Failed to find PlatformInfo class".to_string() })?;
 
         let constructor_signature = "(JJJJIIIZZ)V";
         let info_object = env.new_object(info_class, constructor_signature, &[
-            info.total_physical_memory.into(),
-            info.available_memory.into(),
-            info.page_size.into(),
-            info.huge_page_size.into(),
-            info.numa_nodes.into(),
-            info.cpu_cores.into(),
-            info.cache_line_size.into(),
+            (info.total_physical_memory as jlong).into(),
+            (info.available_memory as jlong).into(),
+            (info.page_size as jlong).into(),
+            (info.huge_page_size as jlong).into(),
+            (info.numa_nodes as jint).into(),
+            (info.cpu_cores as jint).into(),
+            (info.cache_line_size as jint).into(),
             (info.supports_huge_pages as i32).into(),
             (info.supports_numa as i32).into(),
-        ]).expect("Failed to create PlatformInfo object");
+        ]).map_err(|_| WasmtimeError::RuntimeError { message: "Failed to create PlatformInfo object".to_string() })?;
 
-        info_object
-    }).unwrap_or(JObject::null())
+        Ok(unsafe { JObject::from_raw(info_object.into_raw()) })
+    })
 }
 
 /// Detects platform memory leaks
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_memory_PlatformMemoryManager_nativeDetectLeaks(
-    env: JNIEnv,
+    mut env: JNIEnv,
     _class: JClass,
     handle: jlong,
 ) -> jobjectArray {
-    jni_utils::jni_call(&env, || {
+    jni_utils::jni_try_object(&mut env, |env| {
         if handle == 0 {
-            jni_utils::throw_illegal_argument(&env, "Invalid allocator handle");
-            return std::ptr::null_mut();
+            return Err(WasmtimeError::InvalidParameter { message: "Invalid allocator handle".to_string() });
         }
 
         let allocator = unsafe { &*(handle as *const PlatformMemoryAllocator) };
 
-        match allocator.detect_leaks() {
-            Ok(leaks) => {
-                // Create Java array of MemoryLeak objects
-                let leak_class = env.find_class("ai/tegmentum/wasmtime4j/jni/memory/PlatformMemoryManager$MemoryLeak")
-                    .expect("Failed to find MemoryLeak class");
+        let leaks = allocator.detect_leaks()
+            .map_err(|e| WasmtimeError::RuntimeError {
+                message: format!("Leak detection failed: {}", e)
+            })?;
 
-                let leak_array = env.new_object_array(leaks.len() as i32, leak_class, JObject::null())
-                    .expect("Failed to create leak array");
+        // Create Java array of MemoryLeak objects
+        let leak_class = env.find_class("ai/tegmentum/wasmtime4j/jni/memory/PlatformMemoryManager$MemoryLeak")
+            .map_err(|_| WasmtimeError::RuntimeError { message: "Failed to find MemoryLeak class".to_string() })?;
 
-                // Note: Full implementation would create individual MemoryLeak objects
-                // This is a simplified version that returns empty array
-                leak_array.into_raw()
-            }
-            Err(e) => {
-                jni_utils::throw_runtime_exception(&env, &format!("Leak detection failed: {}", e));
-                std::ptr::null_mut()
-            }
-        }
-    }).unwrap_or(std::ptr::null_mut())
+        let leak_array = env.new_object_array(leaks.len() as i32, leak_class, JObject::null())
+            .map_err(|_| WasmtimeError::RuntimeError { message: "Failed to create leak array".to_string() })?;
+
+        // Note: Full implementation would create individual MemoryLeak objects
+        // This is a simplified version that returns empty array
+        Ok(unsafe { JObject::from_raw(leak_array.into_raw()) })
+    })
 }
 
 /// Prefetches platform memory for cache optimization
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_memory_PlatformMemoryManager_nativePrefetch(
-    env: JNIEnv,
+    mut env: JNIEnv,
     _class: JClass,
     handle: jlong,
     ptr: jlong,
     size: jlong,
 ) -> jboolean {
-    jni_utils::jni_call(&env, || {
+    jni_utils::jni_try_with_default(&mut env, 0, || {
         if handle == 0 {
-            jni_utils::throw_illegal_argument(&env, "Invalid allocator handle");
-            return 0;
+            return Err(WasmtimeError::InvalidParameter { message: "Invalid allocator handle".to_string() });
         }
 
         if ptr == 0 {
-            jni_utils::throw_illegal_argument(&env, "Invalid pointer");
-            return 0;
+            return Err(WasmtimeError::InvalidParameter { message: "Invalid pointer".to_string() });
         }
 
         let allocator = unsafe { &*(handle as *const PlatformMemoryAllocator) };
 
         match allocator.prefetch_memory(ptr as *const c_void, size as usize) {
-            Ok(_) => 1,
-            Err(_) => 0, // Prefetch failure is not critical
+            Ok(_) => Ok(1),
+            Err(_) => Ok(0), // Prefetch failure is not critical
         }
-    }).unwrap_or(0)
+    })
 }
 
 /// Compresses data using platform-specific compression
 #[no_mangle]
-pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_memory_PlatformMemoryManager_nativeCompress(
-    env: JNIEnv,
-    _class: JClass,
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_memory_PlatformMemoryManager_nativeCompress<'a>(
+    mut env: JNIEnv<'a>,
+    _class: JClass<'a>,
     handle: jlong,
-    data: JByteArray,
-) -> JByteArray {
-    jni_utils::jni_call(&env, || {
+    data: JByteArray<'a>,
+) -> jobject {
+    jni_utils::jni_try_object(&mut env, |env| {
         if handle == 0 {
-            jni_utils::throw_illegal_argument(&env, "Invalid allocator handle");
-            return JByteArray::from(JObject::null());
+            return Err(WasmtimeError::InvalidParameter { message: "Invalid allocator handle".to_string() });
         }
 
         let allocator = unsafe { &*(handle as *const PlatformMemoryAllocator) };
 
         // Convert Java byte array to Rust slice
-        let data_len = env.get_array_length(data).expect("Failed to get array length") as usize;
-        let mut data_bytes = vec![0u8; data_len];
-        env.get_byte_array_region(data, 0, &mut data_bytes).expect("Failed to read byte array");
+        let data_len = env.get_array_length(&data)
+            .map_err(|_| WasmtimeError::RuntimeError { message: "Failed to get array length".to_string() })? as usize;
+        let mut data_bytes = vec![0i8; data_len];
+        env.get_byte_array_region(data, 0, &mut data_bytes)
+            .map_err(|_| WasmtimeError::RuntimeError { message: "Failed to read byte array".to_string() })?;
 
-        match allocator.compress_memory(&data_bytes) {
-            Ok(compressed) => {
-                // Create Java byte array for compressed data
-                let compressed_array = env.new_byte_array(compressed.len() as i32)
-                    .expect("Failed to create compressed array");
-                env.set_byte_array_region(compressed_array, 0, &compressed)
-                    .expect("Failed to set compressed array");
-                compressed_array
-            }
-            Err(e) => {
-                jni_utils::throw_runtime_exception(&env, &format!("Compression failed: {}", e));
-                JByteArray::from(JObject::null())
-            }
-        }
-    }).unwrap_or(JByteArray::from(JObject::null()))
+        let data_bytes_u8: Vec<u8> = data_bytes.iter().map(|&x| x as u8).collect();
+        let compressed = allocator.compress_memory(&data_bytes_u8)
+            .map_err(|e| WasmtimeError::RuntimeError {
+                message: format!("Compression failed: {}", e)
+            })?;
+
+        // Create Java byte array for compressed data
+        let compressed_array = env.new_byte_array(compressed.len() as i32)
+            .map_err(|_| WasmtimeError::RuntimeError { message: "Failed to create compressed array".to_string() })?;
+        let compressed_i8: Vec<i8> = compressed.iter().map(|&x| x as i8).collect();
+        env.set_byte_array_region(&compressed_array, 0, &compressed_i8)
+            .map_err(|_| WasmtimeError::RuntimeError { message: "Failed to set compressed array".to_string() })?;
+        Ok(unsafe { JObject::from_raw(compressed_array.into_raw()) })
+    })
 }
 
 /// Performs memory deduplication
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_memory_PlatformMemoryManager_nativeDeduplicate(
-    env: JNIEnv,
+    mut env: JNIEnv,
     _class: JClass,
     handle: jlong,
     data: JByteArray,
 ) -> jlong {
-    jni_utils::jni_call(&env, || {
+    // Extract array operations before jni_try_with_default to avoid borrowing conflicts
+    let data_len = match env.get_array_length(&data) {
+        Ok(len) => len as usize,
+        Err(_) => return 0,
+    };
+    let mut data_bytes = vec![0i8; data_len];
+    if env.get_byte_array_region(data, 0, &mut data_bytes).is_err() {
+        return 0;
+    }
+
+    jni_utils::jni_try_with_default(&mut env, 0, || {
         if handle == 0 {
-            jni_utils::throw_illegal_argument(&env, "Invalid allocator handle");
-            return 0;
+            return Err(WasmtimeError::InvalidParameter { message: "Invalid allocator handle".to_string() });
         }
 
         let allocator = unsafe { &*(handle as *const PlatformMemoryAllocator) };
 
-        // Convert Java byte array to Rust slice
-        let data_len = env.get_array_length(data).expect("Failed to get array length") as usize;
-        let mut data_bytes = vec![0u8; data_len];
-        env.get_byte_array_region(data, 0, &mut data_bytes).expect("Failed to read byte array");
-
-        match allocator.deduplicate_memory(&data_bytes) {
-            Ok(ptr) => ptr as jlong,
-            Err(e) => {
-                jni_utils::throw_runtime_exception(&env, &format!("Deduplication failed: {}", e));
-                0
-            }
-        }
-    }).unwrap_or(0)
+        let data_bytes_u8: Vec<u8> = data_bytes.iter().map(|&x| x as u8).collect();
+        let ptr = allocator.deduplicate_memory(&data_bytes_u8)
+            .map_err(|e| WasmtimeError::RuntimeError {
+                message: format!("Deduplication failed: {}", e)
+            })?;
+        Ok(ptr as jlong)
+    })
 }
 
 /// Destroys a platform memory allocator
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_memory_PlatformMemoryManager_nativeDestroy(
-    env: JNIEnv,
+    mut env: JNIEnv,
     _class: JClass,
     handle: jlong,
 ) {
-    jni_utils::jni_call(&env, || {
+    jni_utils::jni_try_void(&mut env, || {
         if handle != 0 {
             unsafe {
                 let _ = Box::from_raw(handle as *mut PlatformMemoryAllocator);
             }
         }
+        Ok(())
     });
 }

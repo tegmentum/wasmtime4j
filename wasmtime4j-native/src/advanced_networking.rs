@@ -47,7 +47,8 @@ use prost::Message as ProstMessage;
 
 // TLS dependencies
 use tokio_rustls::{TlsAcceptor, TlsConnector, client::TlsStream as ClientTlsStream, server::TlsStream as ServerTlsStream};
-use rustls::{ClientConfig, ServerConfig, Certificate, PrivateKey};
+use rustls::{ClientConfig, ServerConfig};
+use rustls::pki_types::{CertificateDer, PrivateKeyDer};
 use webpki_roots;
 
 use crate::error::{WasmtimeError, WasmtimeResult};

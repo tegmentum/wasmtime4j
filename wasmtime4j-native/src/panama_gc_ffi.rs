@@ -11,10 +11,14 @@
 
 use std::sync::Arc;
 use crate::error::{WasmtimeError, WasmtimeResult};
-use crate::gc::{WasmGcRuntime, StructOperationResult, ArrayOperationResult, RefOperationResult};
+// TODO: Re-enable when gc module is available
+// use crate::gc::{WasmGcRuntime, StructOperationResult, ArrayOperationResult, RefOperationResult};
 use crate::gc_types::{StructTypeDefinition, ArrayTypeDefinition, FieldDefinition, FieldType, GcValue, GcReferenceType};
 use crate::gc_heap::{GcHeapConfig, ObjectId};
 use crate::shared_ffi::{FFI_SUCCESS, FFI_ERROR};
+
+// TODO: Re-enable all GC FFI functions when gc module is available
+/*
 
 /// Panama FFI function for creating a GC runtime
 #[no_mangle]
@@ -379,7 +383,7 @@ pub struct GcStatsFFI {
 
 fn create_gc_runtime_internal(engine_handle: i64) -> WasmtimeResult<WasmGcRuntime> {
     if engine_handle == 0 {
-        return Err(WasmtimeError::from_string("Invalid engine handle"));
+        return Err(WasmtimeError::InvalidParameter { message:"Invalid engine handle".to_string() });
     }
 
     // In a real implementation, we would get the engine from the handle
@@ -398,7 +402,7 @@ fn register_struct_type_internal(
     field_mutabilities: *const u8,
 ) -> WasmtimeResult<u32> {
     if runtime_handle == 0 {
-        return Err(WasmtimeError::from_string("Invalid runtime handle"));
+        return Err(WasmtimeError::InvalidParameter { message:"Invalid runtime handle".to_string() });
     }
 
     let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
@@ -481,7 +485,7 @@ fn register_array_type_internal(
     mutable: u8,
 ) -> WasmtimeResult<u32> {
     if runtime_handle == 0 {
-        return Err(WasmtimeError::from_string("Invalid runtime handle"));
+        return Err(WasmtimeError::InvalidParameter { message:"Invalid runtime handle".to_string() });
     }
 
     let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
@@ -500,7 +504,7 @@ fn register_array_type_internal(
         1 => FieldType::I64,
         2 => FieldType::F32,
         3 => FieldType::F64,
-        _ => return Err(WasmtimeError::from_string("Invalid element type")),
+        _ => return Err(WasmtimeError::InvalidParameter { message:"Invalid element type")),
     };
 
     let array_def = ArrayTypeDefinition {
@@ -520,7 +524,7 @@ fn struct_new_internal(
     field_count: i32,
 ) -> WasmtimeResult<ObjectId> {
     if runtime_handle == 0 {
-        return Err(WasmtimeError::from_string("Invalid runtime handle"));
+        return Err(WasmtimeError::InvalidParameter { message:"Invalid runtime handle".to_string() });
     }
 
     let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
@@ -549,13 +553,13 @@ fn struct_new_internal(
     if result.success {
         Ok(result.object_id.unwrap_or(0))
     } else {
-        Err(WasmtimeError::from_string(&result.error.unwrap_or_default()))
+        Err(WasmtimeError::InvalidParameter { message:&result.error.unwrap_or_default()))
     }
 }
 
 fn struct_new_default_internal(runtime_handle: i64, type_id: i32) -> WasmtimeResult<ObjectId> {
     if runtime_handle == 0 {
-        return Err(WasmtimeError::from_string("Invalid runtime handle"));
+        return Err(WasmtimeError::InvalidParameter { message:"Invalid runtime handle".to_string() });
     }
 
     let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
@@ -566,7 +570,7 @@ fn struct_new_default_internal(runtime_handle: i64, type_id: i32) -> WasmtimeRes
     if result.success {
         Ok(result.object_id.unwrap_or(0))
     } else {
-        Err(WasmtimeError::from_string(&result.error.unwrap_or_default()))
+        Err(WasmtimeError::InvalidParameter { message:&result.error.unwrap_or_default()))
     }
 }
 
@@ -576,7 +580,7 @@ fn struct_get_internal(
     field_index: i32,
 ) -> WasmtimeResult<(i64, i32)> {
     if runtime_handle == 0 {
-        return Err(WasmtimeError::from_string("Invalid runtime handle"));
+        return Err(WasmtimeError::InvalidParameter { message:"Invalid runtime handle".to_string() });
     }
 
     let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
@@ -593,10 +597,10 @@ fn struct_get_internal(
                 _ => Ok((0, 0)),
             }
         } else {
-            Err(WasmtimeError::from_string("No value returned"))
+            Err(WasmtimeError::InvalidParameter { message:"No value returned"))
         }
     } else {
-        Err(WasmtimeError::from_string(&result.error.unwrap_or_default()))
+        Err(WasmtimeError::InvalidParameter { message:&result.error.unwrap_or_default()))
     }
 }
 
@@ -608,7 +612,7 @@ fn struct_set_internal(
     value_type: i32,
 ) -> WasmtimeResult<()> {
     if runtime_handle == 0 {
-        return Err(WasmtimeError::from_string("Invalid runtime handle"));
+        return Err(WasmtimeError::InvalidParameter { message:"Invalid runtime handle".to_string() });
     }
 
     let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
@@ -626,14 +630,14 @@ fn struct_set_internal(
     if result.success {
         Ok(())
     } else {
-        Err(WasmtimeError::from_string(&result.error.unwrap_or_default()))
+        Err(WasmtimeError::InvalidParameter { message:&result.error.unwrap_or_default()))
     }
 }
 
 // Simplified implementations for other functions (following similar patterns)
 fn array_new_internal(runtime_handle: i64, type_id: i32, elements_ptr: *const i64, element_count: i32) -> WasmtimeResult<ObjectId> {
     if runtime_handle == 0 {
-        return Err(WasmtimeError::from_string("Invalid runtime handle"));
+        return Err(WasmtimeError::InvalidParameter { message:"Invalid runtime handle".to_string() });
     }
 
     let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
@@ -666,7 +670,7 @@ fn array_new_internal(runtime_handle: i64, type_id: i32, elements_ptr: *const i6
     if result.success {
         Ok(result.object_id.unwrap_or(0))
     } else {
-        Err(WasmtimeError::from_string(&result.error.unwrap_or_default()))
+        Err(WasmtimeError::InvalidParameter { message:&result.error.unwrap_or_default()))
     }
 }
 
@@ -687,7 +691,7 @@ fn array_set_internal(runtime_handle: i64, object_id: i64, element_index: i32, v
 
 fn array_len_internal(runtime_handle: i64, object_id: i64) -> WasmtimeResult<u32> {
     if runtime_handle == 0 {
-        return Err(WasmtimeError::from_string("Invalid runtime handle"));
+        return Err(WasmtimeError::InvalidParameter { message:"Invalid runtime handle".to_string() });
     }
 
     let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
@@ -697,13 +701,13 @@ fn array_len_internal(runtime_handle: i64, object_id: i64) -> WasmtimeResult<u32
     if result.success {
         Ok(result.length.unwrap_or(0))
     } else {
-        Err(WasmtimeError::from_string(&result.error.unwrap_or_default()))
+        Err(WasmtimeError::InvalidParameter { message:&result.error.unwrap_or_default()))
     }
 }
 
 fn i31_new_internal(runtime_handle: i64, value: i32) -> WasmtimeResult<ObjectId> {
     if runtime_handle == 0 {
-        return Err(WasmtimeError::from_string("Invalid runtime handle"));
+        return Err(WasmtimeError::InvalidParameter { message:"Invalid runtime handle".to_string() });
     }
 
     let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
@@ -713,7 +717,7 @@ fn i31_new_internal(runtime_handle: i64, value: i32) -> WasmtimeResult<ObjectId>
     if result.success {
         Ok(result.cast_result.unwrap_or(0))
     } else {
-        Err(WasmtimeError::from_string(&result.error.unwrap_or_default()))
+        Err(WasmtimeError::InvalidParameter { message:&result.error.unwrap_or_default()))
     }
 }
 
@@ -773,3 +777,5 @@ fn get_gc_stats_internal(runtime_handle: i64) -> WasmtimeResult<GcStatsFFI> {
         max_heap_size: 0,
     })
 }
+
+*/

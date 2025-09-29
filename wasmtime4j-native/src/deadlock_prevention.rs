@@ -684,7 +684,7 @@ pub struct PreventionManager {
     /// Prevention configuration
     config: PreventionConfig,
     /// Prevention strategies
-    strategies: Vec<Box<dyn PreventionStrategy + Send + Sync>>,
+    strategies: Vec<Box<dyn PreventionStrategyTrait + Send + Sync>>,
     /// Resource allocator
     resource_allocator: Arc<SafeResourceAllocator>,
     /// Prevention statistics
@@ -943,7 +943,7 @@ pub struct RecoveryCoordinator {
     /// Recovery configuration
     config: RecoveryConfig,
     /// Recovery strategies
-    strategies: Vec<Box<dyn RecoveryStrategy + Send + Sync>>,
+    strategies: Vec<Box<dyn RecoveryStrategyTrait + Send + Sync>>,
     /// Active recovery operations
     active_recoveries: Arc<ParkingRwLock<HashMap<u64, ActiveRecovery>>>,
     /// Recovery history
@@ -1544,7 +1544,7 @@ impl DeadlockPreventionSystem {
         self.shutdown.store(true, Ordering::Release);
 
         if let Some(handle) = self.detection_thread.take() {
-            handle.join().map_err(|_| WasmtimeError::Threading {
+            handle.join().map_err(|_| WasmtimeError::Concurrency {
                 message: "Failed to join detection thread".to_string(),
             })??;
         }

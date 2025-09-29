@@ -59,24 +59,46 @@ pub enum WasmtimeError {
 
     /// WebAssembly instance creation and management errors
     #[error("Instance error: {message}")]
-    Instance { 
+    Instance {
         /// Error message describing the instance-related error
-        message: String 
+        message: String
     },
 
-    /// Memory access and management errors
+    /// WebAssembly function errors
+    #[error("Function error: {message}")]
+    Function {
+        /// Error message describing the function error
+        message: String,
+    },
+
+    /// WebAssembly memory errors
     #[error("Memory error: {message}")]
-    Memory { 
-        /// Error message describing the memory access error
-        message: String 
+    Memory {
+        /// Error message describing the memory error
+        message: String,
     },
 
-    /// Function invocation errors
-    #[error("Function invocation failed: {message}")]
-    Function { 
-        /// Error message describing the function invocation error
-        message: String 
+    /// WebAssembly table errors
+    #[error("Table error: {message}")]
+    Table {
+        /// Error message describing the table error
+        message: String,
     },
+
+    /// WebAssembly global errors
+    #[error("Global error: {message}")]
+    Global {
+        /// Error message describing the global error
+        message: String,
+    },
+
+    /// WebAssembly linker errors
+    #[error("Linker error: {message}")]
+    Linker {
+        /// Error message describing the linker error
+        message: String,
+    },
+
 
     /// Import/Export resolution errors
     #[error("Import/Export error: {message}")]
@@ -178,6 +200,227 @@ pub enum WasmtimeError {
         /// List of individual errors
         errors: Vec<WasmtimeError>,
     },
+
+    /// WebAssembly instantiation errors
+    #[error("Instantiation error: {message}")]
+    Instantiation {
+        /// Error message describing the instantiation error
+        message: String,
+    },
+
+    /// Network-related errors
+    #[error("Network error: {message}")]
+    Network {
+        /// Error message describing the network error
+        message: String,
+    },
+
+    /// Process-related errors
+    #[error("Process error: {message}")]
+    Process {
+        /// Error message describing the process error
+        message: String,
+    },
+
+    /// Caller context errors
+    #[error("Caller context error: {message}")]
+    CallerContextError {
+        /// Error message describing the caller context error
+        message: String,
+    },
+
+    /// Type mismatch errors
+    #[error("Type mismatch: expected {expected}, got {actual}")]
+    TypeMismatch {
+        /// Expected type description
+        expected: String,
+        /// Actual type description
+        actual: String,
+    },
+
+    /// Function execution errors
+    #[error("Execution error: {message}")]
+    ExecutionError {
+        /// Error message describing the execution error
+        message: String,
+    },
+
+    /// Serialization/deserialization errors
+    #[error("Serialization error: {message}")]
+    SerializationError {
+        /// Error message describing the serialization error
+        message: String,
+    },
+
+    /// Invalid state errors
+    #[error("Invalid state: {message}")]
+    InvalidState {
+        /// Error message describing the invalid state
+        message: String,
+    },
+
+    /// Validation errors
+    #[error("Validation error: {message}")]
+    ValidationError {
+        /// Error message describing the validation error
+        message: String,
+    },
+
+    /// Runtime errors
+    #[error("Runtime error: {message}")]
+    RuntimeError {
+        /// Error message describing the runtime error
+        message: String,
+    },
+
+    /// Invalid data errors
+    #[error("Invalid data: {message}")]
+    InvalidData {
+        /// Error message describing the invalid data error
+        message: String,
+    },
+
+    /// I/O errors with custom message
+    #[error("I/O error: {message}")]
+    IO {
+        /// Error message describing the I/O error
+        message: String,
+    },
+
+    /// UTF-8 encoding errors
+    #[error("UTF-8 error: {message}")]
+    Utf8Error {
+        /// Error message describing the UTF-8 error
+        message: String,
+    },
+
+    /// Invalid operation errors
+    #[error("Invalid operation: {message}")]
+    InvalidOperation {
+        /// Error message describing the invalid operation
+        message: String,
+    },
+
+    /// Access denied errors
+    #[error("Access denied: {message}")]
+    AccessDenied {
+        /// Error message describing the access denied error
+        message: String,
+    },
+
+    /// Timeout errors
+    #[error("Timeout: {message}")]
+    Timeout {
+        /// Error message describing the timeout error
+        message: String,
+    },
+
+    /// Resource limit errors
+    #[error("Resource limit: {message}")]
+    ResourceLimit {
+        /// Error message describing the resource limit error
+        message: String,
+    },
+
+    /// Cryptographic errors
+    #[error("Cryptographic error: {message}")]
+    Cryptographic {
+        /// Error message describing the cryptographic error
+        message: String,
+    },
+
+    /// Serialization errors (alternative naming)
+    #[error("Serialization error: {message}")]
+    Serialization {
+        /// Error message describing the serialization error
+        message: String,
+    },
+
+    /// Quota exceeded errors
+    #[error("Quota exceeded: {message}")]
+    QuotaExceeded {
+        /// Error message describing the quota exceeded error
+        message: String,
+    },
+
+    /// Unsupported feature errors
+    #[error("Unsupported feature: {message}")]
+    UnsupportedFeature {
+        /// Error message describing the unsupported feature error
+        message: String,
+    },
+
+    /// System errors
+    #[error("System error: {message}")]
+    SystemError {
+        /// Error message describing the system error
+        message: String,
+    },
+
+    /// Compilation errors (alternative naming)
+    #[error("Compilation error: {message}")]
+    CompilationError {
+        /// Error message describing the compilation error
+        message: String,
+    },
+}
+
+impl Clone for WasmtimeError {
+    fn clone(&self) -> Self {
+        match self {
+            WasmtimeError::Compilation { message } => WasmtimeError::Compilation { message: message.clone() },
+            WasmtimeError::Validation { message } => WasmtimeError::Validation { message: message.clone() },
+            WasmtimeError::Module { message } => WasmtimeError::Module { message: message.clone() },
+            WasmtimeError::Runtime { message, backtrace: _ } => WasmtimeError::Runtime { message: message.clone(), backtrace: None },
+            WasmtimeError::EngineConfig { message } => WasmtimeError::EngineConfig { message: message.clone() },
+            WasmtimeError::Store { message } => WasmtimeError::Store { message: message.clone() },
+            WasmtimeError::Instance { message } => WasmtimeError::Instance { message: message.clone() },
+            WasmtimeError::Function { message } => WasmtimeError::Function { message: message.clone() },
+            WasmtimeError::Memory { message } => WasmtimeError::Memory { message: message.clone() },
+            WasmtimeError::Table { message } => WasmtimeError::Table { message: message.clone() },
+            WasmtimeError::Global { message } => WasmtimeError::Global { message: message.clone() },
+            WasmtimeError::Linker { message } => WasmtimeError::Linker { message: message.clone() },
+            WasmtimeError::Component { message } => WasmtimeError::Component { message: message.clone() },
+            WasmtimeError::Interface { message } => WasmtimeError::Interface { message: message.clone() },
+            WasmtimeError::Internal { message } => WasmtimeError::Internal { message: message.clone() },
+            WasmtimeError::Execution { message } => WasmtimeError::Execution { message: message.clone() },
+            WasmtimeError::ExportNotFound { name } => WasmtimeError::ExportNotFound { name: name.clone() },
+            WasmtimeError::Multiple { summary, errors } => WasmtimeError::Multiple { summary: summary.clone(), errors: errors.clone() },
+            WasmtimeError::Instantiation { message } => WasmtimeError::Instantiation { message: message.clone() },
+            WasmtimeError::Network { message } => WasmtimeError::Network { message: message.clone() },
+            WasmtimeError::Process { message } => WasmtimeError::Process { message: message.clone() },
+            WasmtimeError::CallerContextError { message } => WasmtimeError::CallerContextError { message: message.clone() },
+            WasmtimeError::TypeMismatch { expected, actual } => WasmtimeError::TypeMismatch { expected: expected.clone(), actual: actual.clone() },
+            WasmtimeError::ExecutionError { message } => WasmtimeError::ExecutionError { message: message.clone() },
+            WasmtimeError::SerializationError { message } => WasmtimeError::SerializationError { message: message.clone() },
+            WasmtimeError::InvalidState { message } => WasmtimeError::InvalidState { message: message.clone() },
+            WasmtimeError::ValidationError { message } => WasmtimeError::ValidationError { message: message.clone() },
+            WasmtimeError::RuntimeError { message } => WasmtimeError::RuntimeError { message: message.clone() },
+            WasmtimeError::InvalidData { message } => WasmtimeError::InvalidData { message: message.clone() },
+            WasmtimeError::IO { message } => WasmtimeError::IO { message: message.clone() },
+            WasmtimeError::Utf8Error { message } => WasmtimeError::Utf8Error { message: message.clone() },
+            WasmtimeError::InvalidOperation { message } => WasmtimeError::InvalidOperation { message: message.clone() },
+            WasmtimeError::AccessDenied { message } => WasmtimeError::AccessDenied { message: message.clone() },
+            WasmtimeError::Timeout { message } => WasmtimeError::Timeout { message: message.clone() },
+            WasmtimeError::ResourceLimit { message } => WasmtimeError::ResourceLimit { message: message.clone() },
+            WasmtimeError::Cryptographic { message } => WasmtimeError::Cryptographic { message: message.clone() },
+            WasmtimeError::Serialization { message } => WasmtimeError::Serialization { message: message.clone() },
+            WasmtimeError::QuotaExceeded { message } => WasmtimeError::QuotaExceeded { message: message.clone() },
+            WasmtimeError::UnsupportedFeature { message } => WasmtimeError::UnsupportedFeature { message: message.clone() },
+            WasmtimeError::SystemError { message } => WasmtimeError::SystemError { message: message.clone() },
+            WasmtimeError::CompilationError { message } => WasmtimeError::CompilationError { message: message.clone() },
+            // Handle the special Io variant with source field
+            WasmtimeError::Io { source } => WasmtimeError::InvalidParameter { message: format!("I/O error: {}", source) },
+            // Handle missing Clone cases for existing variants
+            WasmtimeError::ImportExport { message } => WasmtimeError::ImportExport { message: message.clone() },
+            WasmtimeError::Type { message } => WasmtimeError::Type { message: message.clone() },
+            WasmtimeError::Resource { message } => WasmtimeError::Resource { message: message.clone() },
+            WasmtimeError::InvalidParameter { message } => WasmtimeError::InvalidParameter { message: message.clone() },
+            WasmtimeError::Concurrency { message } => WasmtimeError::Concurrency { message: message.clone() },
+            WasmtimeError::Wasi { message } => WasmtimeError::Wasi { message: message.clone() },
+            WasmtimeError::Security { message } => WasmtimeError::Security { message: message.clone() },
+        }
+    }
 }
 
 /// Result type for wasmtime4j operations
@@ -225,8 +468,20 @@ pub enum ErrorCode {
     ComponentError = -17,
     /// Interface definition or binding error
     InterfaceError = -18,
+    /// Network operation error
+    NetworkError = -19,
+    /// Process execution error
+    ProcessError = -20,
     /// Internal system error
-    InternalError = -19,
+    InternalError = -21,
+    /// Security violation error
+    SecurityViolation = -22,
+    /// Invalid data format error
+    InvalidData = -23,
+    /// I/O operation error
+    IOError = -24,
+    /// Unsupported operation error
+    UnsupportedOperation = -25,
 }
 
 // The impl WasmtimeError block is defined below to avoid duplication
@@ -274,6 +529,32 @@ impl WasmtimeError {
             WasmtimeError::Execution { .. } => ErrorCode::FunctionError,
             WasmtimeError::ExportNotFound { .. } => ErrorCode::ImportExportError,
             WasmtimeError::Multiple { .. } => ErrorCode::InternalError,
+            WasmtimeError::Instantiation { .. } => ErrorCode::InstanceError,
+            WasmtimeError::Network { .. } => ErrorCode::NetworkError,
+            WasmtimeError::Process { .. } => ErrorCode::ProcessError,
+            WasmtimeError::CallerContextError { .. } => ErrorCode::FunctionError,
+            WasmtimeError::TypeMismatch { .. } => ErrorCode::TypeError,
+            WasmtimeError::ExecutionError { .. } => ErrorCode::FunctionError,
+            WasmtimeError::SerializationError { .. } => ErrorCode::InternalError,
+            WasmtimeError::InvalidState { .. } => ErrorCode::InternalError,
+            WasmtimeError::ValidationError { .. } => ErrorCode::ValidationError,
+            WasmtimeError::RuntimeError { .. } => ErrorCode::RuntimeError,
+            WasmtimeError::Table { .. } => ErrorCode::RuntimeError,
+            WasmtimeError::Global { .. } => ErrorCode::RuntimeError,
+            WasmtimeError::Linker { .. } => ErrorCode::ImportExportError,
+            WasmtimeError::InvalidData { .. } => ErrorCode::InvalidParameterError,
+            WasmtimeError::IO { .. } => ErrorCode::IoError,
+            WasmtimeError::Utf8Error { .. } => ErrorCode::InvalidParameterError,
+            WasmtimeError::InvalidOperation { .. } => ErrorCode::InvalidParameterError,
+            WasmtimeError::AccessDenied { .. } => ErrorCode::SecurityViolation,
+            WasmtimeError::Timeout { .. } => ErrorCode::RuntimeError,
+            WasmtimeError::ResourceLimit { .. } => ErrorCode::ResourceError,
+            WasmtimeError::Cryptographic { .. } => ErrorCode::SecurityViolation,
+            WasmtimeError::Serialization { .. } => ErrorCode::InternalError,
+            WasmtimeError::QuotaExceeded { .. } => ErrorCode::ResourceError,
+            WasmtimeError::UnsupportedFeature { .. } => ErrorCode::UnsupportedOperation,
+            WasmtimeError::SystemError { .. } => ErrorCode::InternalError,
+            WasmtimeError::CompilationError { .. } => ErrorCode::CompilationError,
         }
     }
 
@@ -507,15 +788,36 @@ macro_rules! validate_slice_bounds {
 macro_rules! validate_ptr_not_null {
     ($ptr:expr, $name:expr) => {
         if $ptr.is_null() {
-            return Err(WasmtimeError::invalid_parameter(
-                format!("{} pointer cannot be null", $name)
-            ));
+            return Err(WasmtimeError::InvalidParameter {
+                message: format!("{} pointer cannot be null", $name)
+            });
+        }
+    };
+}
+
+/// Validates that a pointer is not null for C functions returning c_int
+///
+/// This macro performs defensive validation for C functions that return
+/// error codes as c_int instead of Result types.
+///
+/// # Returns
+///
+/// Returns error code as i32 if pointer is null
+#[macro_export]
+macro_rules! validate_ptr_not_null_c {
+    ($ptr:expr, $name:expr) => {
+        if $ptr.is_null() {
+            log::error!("{} pointer cannot be null", $name);
+            let error = WasmtimeError::InvalidParameter {
+                message: format!("{} pointer cannot be null", $name)
+            };
+            return error.to_error_code() as i32;
         }
     };
 }
 
 /// Validates that an array/slice is not empty
-/// 
+///
 /// This macro performs defensive validation to ensure arrays or slices
 /// have at least one element before processing.
 /// 
@@ -1353,6 +1655,12 @@ pub mod jni_utils {
             WasmtimeError::Execution { .. } => "ai/tegmentum/wasmtime4j/WasmExecutionException",
             WasmtimeError::ExportNotFound { .. } => "ai/tegmentum/wasmtime4j/WasmExportNotFoundException",
             WasmtimeError::Multiple { .. } => "ai/tegmentum/wasmtime4j/WasmMultipleException",
+            WasmtimeError::TypeMismatch { .. } => "ai/tegmentum/wasmtime4j/WasmTypeMismatchException",
+            WasmtimeError::ExecutionError { .. } => "ai/tegmentum/wasmtime4j/WasmExecutionException",
+            WasmtimeError::SerializationError { .. } => "ai/tegmentum/wasmtime4j/WasmSerializationException",
+            WasmtimeError::InvalidState { .. } => "ai/tegmentum/wasmtime4j/WasmInvalidStateException",
+            WasmtimeError::ValidationError { .. } => "ai/tegmentum/wasmtime4j/WasmValidationException",
+            WasmtimeError::RuntimeError { .. } => "ai/tegmentum/wasmtime4j/WasmRuntimeException",
             _ => "ai/tegmentum/wasmtime4j/WasmException",
         }
     }
@@ -1374,7 +1682,7 @@ pub mod jni_utils {
 
     #[cfg(feature = "jni-bindings")]
     /// Execute operation with JNI exception throwing, returning pointer for success
-    pub fn jni_try_ptr<F, T>(mut env: jni::JNIEnv, operation: F) -> *mut c_void
+    pub fn jni_try_ptr<F, T>(env: &mut jni::JNIEnv, operation: F) -> *mut c_void
     where
         F: FnOnce() -> WasmtimeResult<Box<T>>,
     {
@@ -1384,7 +1692,7 @@ pub mod jni_utils {
                 Box::into_raw(result) as *mut c_void
             }
             Err(error) => {
-                throw_jni_exception(&mut env, &error);
+                throw_jni_exception(env, &error);
                 std::ptr::null_mut()
             }
         }
@@ -1392,7 +1700,7 @@ pub mod jni_utils {
 
     #[cfg(feature = "jni-bindings")]
     /// Execute operation with JNI exception throwing, returning error code
-    pub fn jni_try_code<F>(mut env: jni::JNIEnv, operation: F) -> i32
+    pub fn jni_try_code<F>(env: &mut jni::JNIEnv, operation: F) -> i32
     where
         F: FnOnce() -> WasmtimeResult<()>,
     {
@@ -1402,7 +1710,7 @@ pub mod jni_utils {
                 ErrorCode::Success as i32
             }
             Err(error) => {
-                throw_jni_exception(&mut env, &error);
+                throw_jni_exception(env, &error);
                 error.to_error_code() as i32
             }
         }
@@ -1410,7 +1718,7 @@ pub mod jni_utils {
 
     #[cfg(feature = "jni-bindings")]
     /// Execute operation with JNI exception throwing, returning typed result
-    pub fn jni_try<F, T>(mut env: jni::JNIEnv, operation: F) -> (ErrorCode, T)
+    pub fn jni_try<F, T>(env: &mut jni::JNIEnv, operation: F) -> (ErrorCode, T)
     where
         F: FnOnce() -> WasmtimeResult<T>,
         T: Default,
@@ -1421,7 +1729,7 @@ pub mod jni_utils {
                 (ErrorCode::Success, result)
             }
             Err(error) => {
-                throw_jni_exception(&mut env, &error);
+                throw_jni_exception(env, &error);
                 (error.to_error_code(), T::default())
             }
         }
@@ -1449,7 +1757,7 @@ pub mod jni_utils {
 
     #[cfg(feature = "jni-bindings")]
     /// Execute operation with JNI exception throwing, returning boolean result
-    pub fn jni_try_bool<F>(mut env: jni::JNIEnv, operation: F) -> bool
+    pub fn jni_try_bool<F>(env: &mut jni::JNIEnv, operation: F) -> bool
     where
         F: FnOnce() -> WasmtimeResult<bool>,
     {
@@ -1459,7 +1767,7 @@ pub mod jni_utils {
                 result
             }
             Err(error) => {
-                throw_jni_exception(&mut env, &error);
+                throw_jni_exception(env, &error);
                 false
             }
         }
@@ -1467,7 +1775,7 @@ pub mod jni_utils {
 
     #[cfg(feature = "jni-bindings")]
     /// Execute operation with JNI exception throwing, returning default value on error
-    pub fn jni_try_with_default<F, T>(mut env: jni::JNIEnv, default_value: T, operation: F) -> T
+    pub fn jni_try_with_default<F, T>(env: &mut jni::JNIEnv, default_value: T, operation: F) -> T
     where
         F: FnOnce() -> WasmtimeResult<T>,
     {
@@ -1477,7 +1785,7 @@ pub mod jni_utils {
                 result
             }
             Err(error) => {
-                throw_jni_exception(&mut env, &error);
+                throw_jni_exception(env, &error);
                 default_value
             }
         }
@@ -1485,7 +1793,7 @@ pub mod jni_utils {
 
     #[cfg(feature = "jni-bindings")]
     /// Execute operation with JNI exception throwing, returning void
-    pub fn jni_try_void<F>(mut env: jni::JNIEnv, operation: F)
+    pub fn jni_try_void<F>(env: &mut jni::JNIEnv, operation: F)
     where
         F: FnOnce() -> WasmtimeResult<()>,
     {
@@ -1494,27 +1802,32 @@ pub mod jni_utils {
                 clear_last_error();
             }
             Err(error) => {
-                throw_jni_exception(&mut env, &error);
+                throw_jni_exception(env, &error);
             }
         }
     }
 
     #[cfg(feature = "jni-bindings")]
     /// Execute operation with JNI exception throwing, returning JNI object as raw jobject
-    pub fn jni_try_object<F>(mut env: jni::JNIEnv, operation: F) -> jni::sys::jobject
+    pub fn jni_try_object<F>(env: &mut jni::JNIEnv, operation: F) -> jni::sys::jobject
     where
-        F: FnOnce() -> WasmtimeResult<jni::objects::JObject<'static>>,
+        F: FnOnce(&mut jni::JNIEnv) -> WasmtimeResult<jni::objects::JObject<'static>>,
     {
-        match operation() {
+        match operation(env) {
             Ok(result) => {
                 clear_last_error();
                 result.as_raw()
             }
             Err(error) => {
-                throw_jni_exception(&mut env, &error);
+                throw_jni_exception(env, &error);
                 std::ptr::null_mut()
             }
         }
+    }
+
+    /// Convert error to error code for FFI interfaces
+    pub fn error_to_code(error: &WasmtimeError) -> i32 {
+        error.to_error_code() as i32
     }
 }
 

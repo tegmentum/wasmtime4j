@@ -1030,8 +1030,8 @@ impl CryptoValidationEngine {
 
         // Check if we have the minimum required signatures
         if signatures.len() < self.config.min_required_signatures {
-            return Err(WasmtimeError::new(
-                ErrorCode::ValidationFailure,
+            return Err(WasmtimeError::Validation {
+                message:
                 format!(
                     "Insufficient signatures: {} provided, {} required",
                     signatures.len(),
@@ -1182,8 +1182,8 @@ impl CryptoValidationEngine {
             }
             _ => {
                 // Other algorithms would be implemented here
-                Err(WasmtimeError::new(
-                    ErrorCode::UnsupportedFeature,
+                Err(WasmtimeError::UnsupportedFeature {
+                    message:
                     format!("Algorithm {:?} not yet implemented", algorithm),
                 ))
             }
@@ -1274,10 +1274,10 @@ impl CryptoValidationEngine {
     /// Determine trust level for a public key
     fn determine_trust_level(&self, public_key: &[u8]) -> WasmtimeResult<TrustLevel> {
         let trust_store = self.trust_store.read()
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::SecurityViolation,
+            .map_err(|e| WasmtimeError::Security {
+                message:
                 format!("Trust store lock error: {}", e),
-            ))?;
+            })?;
 
         if trust_store.base_store.is_key_trusted(public_key) {
             // Check specific trust level if available
@@ -1343,10 +1343,10 @@ impl CryptoValidationEngine {
         validation_time: Duration,
     ) -> WasmtimeResult<()> {
         let mut stats = self.validation_stats.lock()
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::SecurityViolation,
+            .map_err(|e| WasmtimeError::Security {
+                message:
                 format!("Validation statistics lock error: {}", e),
-            ))?;
+            })?;
 
         stats.total_validations += 1;
 
@@ -1375,10 +1375,10 @@ impl CryptoValidationEngine {
     /// Get validation statistics
     pub fn get_validation_statistics(&self) -> WasmtimeResult<ValidationStatistics> {
         let stats = self.validation_stats.lock()
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::SecurityViolation,
+            .map_err(|e| WasmtimeError::Security {
+                message:
                 format!("Validation statistics read lock error: {}", e),
-            ))?;
+            })?;
 
         Ok(stats.clone())
     }
@@ -1386,10 +1386,10 @@ impl CryptoValidationEngine {
     /// Add trusted certificate to the trust store
     pub fn add_trusted_certificate(&self, cert_data: &[u8], trust_level: TrustLevel) -> WasmtimeResult<()> {
         let mut trust_store = self.trust_store.write()
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::SecurityViolation,
+            .map_err(|e| WasmtimeError::Security {
+                message:
                 format!("Trust store write lock error: {}", e),
-            ))?;
+            })?;
 
         // In a full implementation, would parse the certificate
         let fingerprint = hex::encode(&digest::digest(&digest::SHA256, cert_data).as_ref()[0..8]);

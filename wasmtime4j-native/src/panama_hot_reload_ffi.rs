@@ -1,8 +1,8 @@
 //! Panama Foreign Function Interface bindings for Hot Reload operations (Java 23+)
 
-use crate::hot_reload::{HotReloadManager, HotReloadConfig, SwapStrategy, LoadRequest, LoadPriority, ValidationConfig};
-use crate::component_orchestration::dependency_resolution::SemanticVersion;
-use crate::component_core::EnhancedComponentEngine;
+use crate::hot_reload::{HotReloadManager, HotReloadConfig, SwapStrategy, LoadRequest, LoadPriority, ValidationConfig, SemanticVersion};
+use crate::engine::Engine;
+
 use crate::error::{WasmtimeError, WasmtimeResult};
 use std::sync::Arc;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
@@ -28,7 +28,7 @@ pub extern "C" fn panama_create_hot_reload_manager(
     }
 
     unsafe {
-        let engine_ptr = engine_ptr as *const EnhancedComponentEngine;
+        let engine_ptr = engine_ptr as *const Engine;
         if engine_ptr.is_null() {
             return ptr::null_mut();
         }

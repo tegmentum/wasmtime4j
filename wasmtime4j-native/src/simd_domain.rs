@@ -6,6 +6,7 @@
 
 use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::simd::{V128, V256, V512, PlatformCapabilities};
+#[cfg(target_arch = "x86_64")]
 use std::arch::x86_64::*;
 #[cfg(target_arch = "aarch64")]
 use std::arch::aarch64::*;
@@ -23,7 +24,7 @@ pub mod domain {
         /// Creates a new vectorized image processing instance
         pub fn new(capabilities: &PlatformCapabilities) -> Self {
             VectorizedImageProcessing {
-                capabilities: *capabilities,
+                capabilities: capabilities.clone(),
             }
         }
 
@@ -32,7 +33,7 @@ pub mod domain {
                                width: usize, height: usize) -> WasmtimeResult<()> {
             let pixel_count = width * height;
             if rgb.len() < pixel_count * 3 || grayscale.len() < pixel_count {
-                return Err(WasmtimeError::InvalidParameter("Buffer size too small".to_string()));
+                return Err(WasmtimeError::InvalidParameter { message: "Buffer size too small".to_string() });
             }
 
             #[cfg(target_arch = "x86_64")]
@@ -271,7 +272,7 @@ pub mod domain {
         pub fn gaussian_blur(&self, input: &[f32], output: &mut [f32],
                             width: usize, height: usize, sigma: f32) -> WasmtimeResult<()> {
             if input.len() < width * height || output.len() < width * height {
-                return Err(WasmtimeError::InvalidParameter("Buffer size too small".to_string()));
+                return Err(WasmtimeError::InvalidParameter { message: "Buffer size too small".to_string() });
             }
 
             // Generate 1D Gaussian kernel
@@ -437,7 +438,7 @@ pub mod domain {
         pub fn sobel_edge_detection(&self, input: &[f32], output: &mut [f32],
                                    width: usize, height: usize) -> WasmtimeResult<()> {
             if input.len() < width * height || output.len() < width * height {
-                return Err(WasmtimeError::InvalidParameter("Buffer size too small".to_string()));
+                return Err(WasmtimeError::InvalidParameter { message: "Buffer size too small".to_string() });
             }
 
             // Sobel kernels
@@ -495,7 +496,7 @@ pub mod domain {
                                     width: usize, height: usize) -> WasmtimeResult<()> {
             let pixel_count = width * height;
             if input.len() < pixel_count || output.len() < pixel_count {
-                return Err(WasmtimeError::InvalidParameter("Buffer size too small".to_string()));
+                return Err(WasmtimeError::InvalidParameter { message: "Buffer size too small".to_string() });
             }
 
             // Calculate histogram
@@ -518,7 +519,7 @@ pub mod domain {
             let mut lut = [0u8; 256];
             for i in 0..256 {
                 if cdf[i] > cdf_min {
-                    lut[i] = (((cdf[i] - cdf_min) as f32 / (pixel_count - cdf_min) as f32) * 255.0).round() as u8;
+                    lut[i] = (((cdf[i] - cdf_min) as f32 / (pixel_count - cdf_min as usize) as f32) * 255.0).round() as u8;
                 } else {
                     lut[i] = 0;
                 }
@@ -587,7 +588,7 @@ pub mod domain {
                                width: usize, height: usize, sigma_spatial: f32,
                                sigma_intensity: f32, kernel_size: usize) -> WasmtimeResult<()> {
             if input.len() < width * height || output.len() < width * height {
-                return Err(WasmtimeError::InvalidParameter("Buffer size too small".to_string()));
+                return Err(WasmtimeError::InvalidParameter { message: "Buffer size too small".to_string() });
             }
 
             let half_size = kernel_size / 2;
@@ -643,7 +644,7 @@ pub mod domain {
         /// Creates a new vectorized signal processing instance
         pub fn new(capabilities: &PlatformCapabilities) -> Self {
             VectorizedSignalProcessing {
-                capabilities: *capabilities,
+                capabilities: capabilities.clone(),
             }
         }
 
@@ -651,7 +652,7 @@ pub mod domain {
         pub fn fft(&self, real: &mut [f32], imag: &mut [f32]) -> WasmtimeResult<()> {
             let n = real.len();
             if n != imag.len() || !n.is_power_of_two() {
-                return Err(WasmtimeError::InvalidParameter("FFT requires power-of-two length arrays".to_string()));
+                return Err(WasmtimeError::InvalidParameter { message: "FFT requires power-of-two length arrays".to_string() });
             }
 
             // Bit-reversal permutation
@@ -850,7 +851,7 @@ pub mod domain {
         pub fn digital_filter(&self, input: &[f32], output: &mut [f32],
                              coefficients: &[f32], filter_type: FilterType) -> WasmtimeResult<()> {
             if input.len() != output.len() {
-                return Err(WasmtimeError::InvalidParameter("Input and output length mismatch".to_string()));
+                return Err(WasmtimeError::InvalidParameter { message: "Input and output length mismatch".to_string() });
             }
 
             match filter_type {
@@ -951,7 +952,7 @@ pub mod domain {
         fn iir_filter(&self, input: &[f32], output: &mut [f32], coefficients: &[f32]) -> WasmtimeResult<()> {
             let n = input.len();
             if coefficients.len() % 2 != 0 {
-                return Err(WasmtimeError::InvalidParameter("IIR coefficients must be even length".to_string()));
+                return Err(WasmtimeError::InvalidParameter { message: "IIR coefficients must be even length".to_string() });
             }
 
             let filter_len = coefficients.len() / 2;
@@ -1048,7 +1049,7 @@ pub mod domain {
             let result_len = n1 + n2 - 1;
 
             if result.len() < result_len {
-                return Err(WasmtimeError::InvalidParameter("Result buffer too small".to_string()));
+                return Err(WasmtimeError::InvalidParameter { message: "Result buffer too small".to_string() });
             }
 
             // Initialize result
@@ -1070,7 +1071,7 @@ pub mod domain {
         pub fn power_spectral_density(&self, signal: &[f32], psd: &mut [f32],
                                     window_size: usize, overlap: f32) -> WasmtimeResult<()> {
             if !window_size.is_power_of_two() {
-                return Err(WasmtimeError::InvalidParameter("Window size must be power of two".to_string()));
+                return Err(WasmtimeError::InvalidParameter { message: "Window size must be power of two".to_string() });
             }
 
             let n = signal.len();
@@ -1080,7 +1081,7 @@ pub mod domain {
             // Initialize PSD accumulator
             let fft_size = window_size / 2 + 1;
             if psd.len() < fft_size {
-                return Err(WasmtimeError::InvalidParameter("PSD buffer too small".to_string()));
+                return Err(WasmtimeError::InvalidParameter { message: "PSD buffer too small".to_string() });
             }
 
             for i in 0..fft_size {
@@ -1151,7 +1152,7 @@ pub mod domain {
         /// Creates a new vectorized audio processing instance
         pub fn new(capabilities: &PlatformCapabilities) -> Self {
             VectorizedAudioProcessing {
-                capabilities: *capabilities,
+                capabilities: capabilities.clone(),
                 signal_processor: VectorizedSignalProcessing::new(capabilities),
             }
         }
@@ -1163,7 +1164,7 @@ pub mod domain {
             let output_len = (input.len() as f64 * ratio) as usize;
 
             if output.len() < output_len {
-                return Err(WasmtimeError::InvalidParameter("Output buffer too small".to_string()));
+                return Err(WasmtimeError::InvalidParameter { message: "Output buffer too small".to_string() });
             }
 
             // Linear interpolation resampling
@@ -1188,7 +1189,7 @@ pub mod domain {
         pub fn multiband_equalizer(&self, input: &[f32], output: &mut [f32],
                                   bands: &[EqualizerBand], sample_rate: u32) -> WasmtimeResult<()> {
             if input.len() != output.len() {
-                return Err(WasmtimeError::InvalidParameter("Input and output length mismatch".to_string()));
+                return Err(WasmtimeError::InvalidParameter { message: "Input and output length mismatch".to_string() });
             }
 
             // Initialize output with input
@@ -1281,7 +1282,7 @@ pub mod domain {
         pub fn compressor(&self, input: &[f32], output: &mut [f32],
                          settings: &CompressorSettings) -> WasmtimeResult<()> {
             if input.len() != output.len() {
-                return Err(WasmtimeError::InvalidParameter("Input and output length mismatch".to_string()));
+                return Err(WasmtimeError::InvalidParameter { message: "Input and output length mismatch".to_string() });
             }
 
             let attack_coeff = (-1.0 / (settings.attack_time * settings.sample_rate as f32)).exp();
@@ -1319,7 +1320,7 @@ pub mod domain {
         pub fn reverb(&self, input: &[f32], output: &mut [f32],
                      impulse_response: &[f32], dry_wet_mix: f32) -> WasmtimeResult<()> {
             if input.len() != output.len() {
-                return Err(WasmtimeError::InvalidParameter("Input and output length mismatch".to_string()));
+                return Err(WasmtimeError::InvalidParameter { message: "Input and output length mismatch".to_string() });
             }
 
             // Convolution reverb

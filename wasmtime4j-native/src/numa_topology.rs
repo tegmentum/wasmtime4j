@@ -837,7 +837,7 @@ impl AdvancedNumaTopology {
             cores_per_node.push(NodeCpuInfo {
                 node_id,
                 physical_cores,
-                logical_cores: cpu_ranges,
+                logical_cores,
                 core_frequencies,
                 cache_hierarchy,
                 core_capabilities,

@@ -77,7 +77,7 @@ impl Default for PlatformMemoryConfig {
 }
 
 /// Page size options for memory allocation
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum PageSize {
     Default,
     Small,      // 4KB
@@ -210,6 +210,7 @@ pub struct MemoryConfig {
 }
 
 /// Platform-specific memory allocator with advanced optimizations
+#[derive(Debug)]
 pub struct PlatformMemoryAllocator {
     config: PlatformMemoryConfig,
     memory_info: PlatformMemoryInfo,
@@ -223,6 +224,7 @@ pub struct PlatformMemoryAllocator {
 }
 
 /// Memory pool for efficient allocation/deallocation
+#[derive(Debug)]
 struct PlatformMemoryPool {
     pool_size: usize,
     free_blocks: VecDeque<(*mut c_void, usize)>,
@@ -232,6 +234,7 @@ struct PlatformMemoryPool {
 }
 
 /// NUMA topology detection and management
+#[derive(Debug)]
 struct PlatformNumaTopology {
     node_count: u32,
     core_count: u32,
@@ -240,6 +243,7 @@ struct PlatformNumaTopology {
 }
 
 /// NUMA node information
+#[derive(Debug)]
 struct PlatformNumaNode {
     id: u32,
     memory_total: u64,
@@ -248,6 +252,7 @@ struct PlatformNumaNode {
 }
 
 /// Memory leak detector
+#[derive(Debug)]
 struct PlatformMemoryLeakDetector {
     allocations: Arc<Mutex<HashMap<*mut c_void, (usize, SystemTime)>>>,
     suspected_leaks: Arc<Mutex<Vec<PlatformMemoryLeak>>>,
@@ -859,6 +864,7 @@ impl Memory {
             inner: wasmtime_memory,
             metadata: Arc::new(RwLock::new(metadata)),
             config,
+            platform_allocator: None,
         }
     }
 
@@ -1150,6 +1156,11 @@ impl PlatformMemoryAllocator {
             supports_huge_pages: true,
             supports_numa: true,
         })
+    }
+
+    /// Get platform memory information
+    pub fn memory_info(&self) -> &PlatformMemoryInfo {
+        &self.memory_info
     }
 
     /// Allocates memory with platform-specific optimizations

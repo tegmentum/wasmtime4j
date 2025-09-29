@@ -27,13 +27,56 @@ use std::ffi::{CStr, CString};
 use wasmtime::{Engine, Store, component::{Component, Instance, Linker}};
 
 use crate::error::{WasmtimeError, WasmtimeResult};
-use crate::component_core::{EnhancedComponentEngine, ComponentInstanceInfo, ComponentStoreData};
-use crate::component_orchestration::dependency_resolution::{SemanticVersion, ComponentVersionRegistry};
+use crate::engine::Engine as WasmtimeEngine;
+// TODO: Re-enable when component modules are available
+// use crate::component_core::{EnhancedComponentEngine, ComponentInstanceInfo, ComponentStoreData};
+// use crate::component_orchestration::dependency_resolution::{SemanticVersion, ComponentVersionRegistry};
+
+// Placeholder types until the real modules are available
+// struct EnhancedComponentEngine; // Replaced with real Engine
+#[derive(Debug, Clone)]
+struct ComponentInstanceInfo;
+struct ComponentStoreData;
+struct ComponentVersionRegistry;
+
+impl ComponentVersionRegistry {
+    fn new() -> Self {
+        ComponentVersionRegistry
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct SemanticVersion {
+    major: u32,
+    minor: u32,
+    patch: u32,
+}
+
+impl SemanticVersion {
+    pub fn parse(version_str: &str) -> Result<Self, String> {
+        // Simple placeholder implementation
+        let parts: Vec<&str> = version_str.split('.').collect();
+        if parts.len() != 3 {
+            return Err("Invalid version format".to_string());
+        }
+        Ok(SemanticVersion {
+            major: parts[0].parse().map_err(|_| "Invalid major version")?,
+            minor: parts[1].parse().map_err(|_| "Invalid minor version")?,
+            patch: parts[2].parse().map_err(|_| "Invalid patch version")?,
+        })
+    }
+}
+
+impl std::fmt::Display for SemanticVersion {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}.{}.{}", self.major, self.minor, self.patch)
+    }
+}
 
 /// Advanced hot reload manager for dynamic component updates
 pub struct HotReloadManager {
     /// Component engine for loading new components
-    engine: Arc<EnhancedComponentEngine>,
+    engine: Arc<WasmtimeEngine>,
     /// Active component versions
     active_versions: Arc<RwLock<HashMap<String, Vec<ComponentVersion>>>>,
     /// Component update strategies
@@ -55,7 +98,7 @@ pub struct HotReloadManager {
 }
 
 /// Component version information
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct ComponentVersion {
     /// Version identifier
     pub version_id: String,
@@ -167,7 +210,7 @@ pub struct BackgroundComponentLoader {
 }
 
 /// Component load request
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct LoadRequest {
     pub request_id: String,
     pub component_name: String,
@@ -198,7 +241,7 @@ pub struct ValidationConfig {
 }
 
 /// Load operation result
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct LoadResult {
     pub request_id: String,
     pub component_name: String,
@@ -221,7 +264,7 @@ pub struct ValidationResults {
 }
 
 /// Cached component information
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct CachedComponent {
     pub component: Arc<Component>,
     pub metadata: CachedComponentMetadata,
@@ -503,7 +546,7 @@ impl Default for ComponentVersionConfig {
 
 impl HotReloadManager {
     /// Create a new hot reload manager
-    pub fn new(engine: Arc<EnhancedComponentEngine>, config: HotReloadConfig) -> WasmtimeResult<Self> {
+    pub fn new(engine: Arc<WasmtimeEngine>, config: HotReloadConfig) -> WasmtimeResult<Self> {
         let version_registry = Arc::new(ComponentVersionRegistry::new());
         let component_loader = Arc::new(BackgroundComponentLoader::new(&config)?);
         let health_monitor = Arc::new(ComponentHealthMonitor::new(HealthMonitorConfig {
@@ -923,7 +966,7 @@ impl BackgroundComponentLoader {
     ) {
         if let Ok(mut cache_write) = cache.write() {
             if let Ok(metadata) = fs::metadata(file_path) {
-                if let (Ok(modified), Ok(size)) = (metadata.modified(), metadata.len()) {
+                if let (Ok(modified), size) = (metadata.modified(), metadata.len()) {
                     let cached_component = CachedComponent {
                         component,
                         metadata: CachedComponentMetadata {
@@ -983,7 +1026,7 @@ mod uuid {
 // C FFI exports for JNI integration
 #[no_mangle]
 pub extern "C" fn create_hot_reload_manager(
-    engine_ptr: *mut EnhancedComponentEngine,
+    engine_ptr: *mut WasmtimeEngine,
 ) -> *mut HotReloadManager {
     if engine_ptr.is_null() {
         return std::ptr::null_mut();

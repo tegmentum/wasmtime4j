@@ -190,7 +190,10 @@ pub struct StreamingCompiler {
 }
 
 /// Global registry for streaming compilers
-static COMPILER_REGISTRY: RwLock<HashMap<u64, Weak<StreamingCompiler>>> = RwLock::new(HashMap::new());
+lazy_static::lazy_static! {
+    static ref COMPILER_REGISTRY: RwLock<HashMap<u64, Weak<StreamingCompiler>>> =
+        RwLock::new(HashMap::new());
+}
 static COMPILER_ID_COUNTER: AtomicU64 = AtomicU64::new(1);
 
 impl StreamingCompiler {
@@ -400,7 +403,7 @@ impl StreamingCompiler {
                     })?;
 
                     if buffer.is_empty() {
-                        return Err(WasmtimeError::InvalidArgument {
+                        return Err(WasmtimeError::InvalidParameter {
                             message: "No data provided for compilation".to_string(),
                         });
                     }
@@ -510,7 +513,7 @@ impl StreamingCompiler {
                     self.feed_chunk(&buffer[..bytes_read])?;
                 }
                 Err(e) => {
-                    return Err(WasmtimeError::Io {
+                    return Err(WasmtimeError::IO {
                         message: format!("Failed to read streaming data: {}", e),
                     });
                 }
@@ -528,7 +531,7 @@ impl StreamingCompiler {
         })?;
 
         if buffer.is_empty() {
-            return Ok(Err(WasmtimeError::InvalidArgument {
+            return Ok(Err(WasmtimeError::InvalidParameter {
                 message: "No data to compile".to_string(),
             }));
         }
@@ -688,9 +691,9 @@ pub unsafe extern "C" fn wasmtime4j_streaming_compiler_create(
     config_ptr: *const StreamingCompilerConfig,
     compiler_out: *mut *mut c_void,
 ) -> c_int {
-    crate::validate_ptr_not_null!(engine_ptr, "engine");
-    crate::validate_ptr_not_null!(config_ptr, "config");
-    crate::validate_ptr_not_null!(compiler_out, "compiler_out");
+    crate::validate_ptr_not_null_c!(engine_ptr, "engine");
+    crate::validate_ptr_not_null_c!(config_ptr, "config");
+    crate::validate_ptr_not_null_c!(compiler_out, "compiler_out");
 
     *compiler_out = ptr::null_mut();
 
@@ -716,7 +719,7 @@ pub unsafe extern "C" fn wasmtime4j_streaming_compiler_create(
         }
         Err(e) => {
             log::error!("Failed to create streaming compiler: {:?}", e);
-            crate::error::ffi_utils::error_to_code(&e)
+            e.to_error_code() as i32
         }
     }
 }
@@ -728,8 +731,8 @@ pub unsafe extern "C" fn wasmtime4j_streaming_compiler_feed_chunk(
     data_ptr: *const c_uchar,
     data_len: usize,
 ) -> c_int {
-    crate::validate_ptr_not_null!(compiler_ptr, "compiler");
-    crate::validate_ptr_not_null!(data_ptr, "data");
+    crate::validate_ptr_not_null_c!(compiler_ptr, "compiler");
+    crate::validate_ptr_not_null_c!(data_ptr, "data");
 
     let result = || -> WasmtimeResult<()> {
         let compiler = &*(compiler_ptr as *const Arc<StreamingCompiler>);
@@ -741,7 +744,7 @@ pub unsafe extern "C" fn wasmtime4j_streaming_compiler_feed_chunk(
         Ok(()) => 0, // Success
         Err(e) => {
             log::error!("Failed to feed chunk: {:?}", e);
-            crate::error::ffi_utils::error_to_code(&e)
+            e.to_error_code() as i32
         }
     }
 }
@@ -752,8 +755,8 @@ pub unsafe extern "C" fn wasmtime4j_streaming_compiler_complete(
     compiler_ptr: *mut c_void,
     module_out: *mut *mut c_void,
 ) -> c_int {
-    crate::validate_ptr_not_null!(compiler_ptr, "compiler");
-    crate::validate_ptr_not_null!(module_out, "module_out");
+    crate::validate_ptr_not_null_c!(compiler_ptr, "compiler");
+    crate::validate_ptr_not_null_c!(module_out, "module_out");
 
     *module_out = ptr::null_mut();
 
@@ -772,7 +775,7 @@ pub unsafe extern "C" fn wasmtime4j_streaming_compiler_complete(
         }
         Err(e) => {
             log::error!("Failed to complete streaming compilation: {:?}", e);
-            crate::error::ffi_utils::error_to_code(&e)
+            e.to_error_code() as i32
         }
     }
 }
@@ -783,8 +786,8 @@ pub unsafe extern "C" fn wasmtime4j_streaming_compiler_get_progress(
     compiler_ptr: *mut c_void,
     progress_out: *mut f64,
 ) -> c_int {
-    crate::validate_ptr_not_null!(compiler_ptr, "compiler");
-    crate::validate_ptr_not_null!(progress_out, "progress_out");
+    crate::validate_ptr_not_null_c!(compiler_ptr, "compiler");
+    crate::validate_ptr_not_null_c!(progress_out, "progress_out");
 
     let result = || -> WasmtimeResult<()> {
         let compiler = &*(compiler_ptr as *const Arc<StreamingCompiler>);
@@ -796,7 +799,7 @@ pub unsafe extern "C" fn wasmtime4j_streaming_compiler_get_progress(
         Ok(()) => 0, // Success
         Err(e) => {
             log::error!("Failed to get progress: {:?}", e);
-            crate::error::ffi_utils::error_to_code(&e)
+            e.to_error_code() as i32
         }
     }
 }
@@ -808,8 +811,8 @@ pub unsafe extern "C" fn wasmtime4j_streaming_compiler_cancel(
     may_interrupt: c_int,
     cancelled_out: *mut c_int,
 ) -> c_int {
-    crate::validate_ptr_not_null!(compiler_ptr, "compiler");
-    crate::validate_ptr_not_null!(cancelled_out, "cancelled_out");
+    crate::validate_ptr_not_null_c!(compiler_ptr, "compiler");
+    crate::validate_ptr_not_null_c!(cancelled_out, "cancelled_out");
 
     let result = || -> WasmtimeResult<()> {
         let compiler = &*(compiler_ptr as *const Arc<StreamingCompiler>);
@@ -822,7 +825,7 @@ pub unsafe extern "C" fn wasmtime4j_streaming_compiler_cancel(
         Ok(()) => 0, // Success
         Err(e) => {
             log::error!("Failed to cancel compilation: {:?}", e);
-            crate::error::ffi_utils::error_to_code(&e)
+            e.to_error_code() as i32
         }
     }
 }
@@ -833,8 +836,8 @@ pub unsafe extern "C" fn wasmtime4j_streaming_compiler_is_done(
     compiler_ptr: *mut c_void,
     is_done_out: *mut c_int,
 ) -> c_int {
-    crate::validate_ptr_not_null!(compiler_ptr, "compiler");
-    crate::validate_ptr_not_null!(is_done_out, "is_done_out");
+    crate::validate_ptr_not_null_c!(compiler_ptr, "compiler");
+    crate::validate_ptr_not_null_c!(is_done_out, "is_done_out");
 
     let result = || -> WasmtimeResult<()> {
         let compiler = &*(compiler_ptr as *const Arc<StreamingCompiler>);
@@ -846,7 +849,7 @@ pub unsafe extern "C" fn wasmtime4j_streaming_compiler_is_done(
         Ok(()) => 0, // Success
         Err(e) => {
             log::error!("Failed to check if done: {:?}", e);
-            crate::error::ffi_utils::error_to_code(&e)
+            e.to_error_code() as i32
         }
     }
 }
@@ -860,11 +863,11 @@ pub unsafe extern "C" fn wasmtime4j_streaming_compiler_get_statistics(
     progress_out: *mut f64,
     memory_usage_out: *mut u64,
 ) -> c_int {
-    crate::validate_ptr_not_null!(compiler_ptr, "compiler");
-    crate::validate_ptr_not_null!(bytes_processed_out, "bytes_processed_out");
-    crate::validate_ptr_not_null!(bytes_received_out, "bytes_received_out");
-    crate::validate_ptr_not_null!(progress_out, "progress_out");
-    crate::validate_ptr_not_null!(memory_usage_out, "memory_usage_out");
+    crate::validate_ptr_not_null_c!(compiler_ptr, "compiler");
+    crate::validate_ptr_not_null_c!(bytes_processed_out, "bytes_processed_out");
+    crate::validate_ptr_not_null_c!(bytes_received_out, "bytes_received_out");
+    crate::validate_ptr_not_null_c!(progress_out, "progress_out");
+    crate::validate_ptr_not_null_c!(memory_usage_out, "memory_usage_out");
 
     let result = || -> WasmtimeResult<()> {
         let compiler = &*(compiler_ptr as *const Arc<StreamingCompiler>);
@@ -882,7 +885,7 @@ pub unsafe extern "C" fn wasmtime4j_streaming_compiler_get_statistics(
         Ok(()) => 0, // Success
         Err(e) => {
             log::error!("Failed to get statistics: {:?}", e);
-            crate::error::ffi_utils::error_to_code(&e)
+            e.to_error_code() as i32
         }
     }
 }

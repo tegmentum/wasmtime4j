@@ -715,8 +715,8 @@ impl LogEncryption {
     pub fn new() -> WasmtimeResult<Self> {
         let rng = SystemRandom::new();
         let key = aead::Key::new(&aead::CHACHA20_POLY1305, &aead::Key::generate(&aead::CHACHA20_POLY1305, &rng)
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::CryptographicError,
+            .map_err(|e| WasmtimeError::Cryptographic {
+                message:
                 format!("Failed to generate encryption key: {:?}", e),
             ))?);
 
@@ -731,19 +731,19 @@ impl LogEncryption {
     pub fn encrypt(&self, data: &[u8]) -> WasmtimeResult<(Vec<u8>, Vec<u8>)> {
         let mut nonce_bytes = [0u8; 12];
         self.rng.fill(&mut nonce_bytes)
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::CryptographicError,
+            .map_err(|e| WasmtimeError::Cryptographic {
+                message:
                 format!("Failed to generate nonce: {:?}", e),
-            ))?;
+            })?;
 
         let nonce = aead::Nonce::assume_unique_for_key(nonce_bytes);
         let mut encrypted_data = data.to_vec();
 
         self.key.seal_in_place_append_tag(&nonce, aead::Aad::empty(), &mut encrypted_data)
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::CryptographicError,
+            .map_err(|e| WasmtimeError::Cryptographic {
+                message:
                 format!("Encryption failed: {:?}", e),
-            ))?;
+            })?;
 
         Ok((encrypted_data, nonce_bytes.to_vec()))
     }
@@ -751,17 +751,17 @@ impl LogEncryption {
     /// Decrypt log data
     pub fn decrypt(&self, encrypted_data: &[u8], nonce_bytes: &[u8]) -> WasmtimeResult<Vec<u8>> {
         let nonce = aead::Nonce::try_assume_unique_for_key(nonce_bytes)
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::CryptographicError,
+            .map_err(|e| WasmtimeError::Cryptographic {
+                message:
                 format!("Invalid nonce: {:?}", e),
-            ))?;
+            })?;
 
         let mut decrypted_data = encrypted_data.to_vec();
         let plaintext = self.key.open_in_place(&nonce, aead::Aad::empty(), &mut decrypted_data)
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::CryptographicError,
+            .map_err(|e| WasmtimeError::Cryptographic {
+                message:
                 format!("Decryption failed: {:?}", e),
-            ))?;
+            })?;
 
         Ok(plaintext.to_vec())
     }
@@ -781,10 +781,10 @@ impl LogSigning {
     pub fn new() -> WasmtimeResult<Self> {
         let rng = SystemRandom::new();
         let hmac_key = hmac::Key::generate(hmac::HMAC_SHA256, &rng)
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::CryptographicError,
+            .map_err(|e| WasmtimeError::Cryptographic {
+                message:
                 format!("Failed to generate HMAC key: {:?}", e),
-            ))?;
+            })?;
 
         Ok(Self {
             hmac_key,
@@ -795,16 +795,16 @@ impl LogSigning {
     /// Sign log entry with chaining
     pub fn sign_entry(&self, entry: &ComprehensiveAuditEvent) -> WasmtimeResult<DigitalSignature> {
         let entry_json = serde_json::to_string(entry)
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::SerializationError,
+            .map_err(|e| WasmtimeError::Serialization {
+                message:
                 format!("Failed to serialize entry: {}", e),
-            ))?;
+            })?;
 
         let last_sig = self.last_signature.lock()
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::SecurityViolation,
+            .map_err(|e| WasmtimeError::Security {
+                message:
                 format!("Last signature lock error: {}", e),
-            ))?;
+            })?;
 
         let mut sign_data = last_sig.clone();
         sign_data.extend(entry_json.as_bytes());
@@ -815,10 +815,10 @@ impl LogSigning {
         // Update last signature for chaining
         drop(last_sig);
         let mut last_sig = self.last_signature.lock()
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::SecurityViolation,
+            .map_err(|e| WasmtimeError::Security {
+                message:
                 format!("Last signature update lock error: {}", e),
-            ))?;
+            })?;
         *last_sig = signature_bytes.clone();
 
         Ok(DigitalSignature {
@@ -833,19 +833,19 @@ impl LogSigning {
     /// Verify log entry signature
     pub fn verify_entry(&self, entry: &ComprehensiveAuditEvent, signature: &DigitalSignature, previous_signature: &[u8]) -> WasmtimeResult<bool> {
         let entry_json = serde_json::to_string(entry)
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::SerializationError,
+            .map_err(|e| WasmtimeError::Serialization {
+                message:
                 format!("Failed to serialize entry for verification: {}", e),
-            ))?;
+            })?;
 
         let mut verify_data = previous_signature.to_vec();
         verify_data.extend(entry_json.as_bytes());
 
         let signature_bytes = general_purpose::STANDARD.decode(&signature.signature)
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::ValidationFailure,
+            .map_err(|e| WasmtimeError::Validation {
+                message:
                 format!("Failed to decode signature: {}", e),
-            ))?;
+            })?;
 
         match hmac::verify(&self.hmac_key, &verify_data, &signature_bytes) {
             Ok(()) => Ok(true),
@@ -1593,10 +1593,9 @@ impl ComprehensiveAuditLogger {
         // Add event to window
         {
             let mut window = self.correlation_engine.event_window.write()
-                .map_err(|e| WasmtimeError::new(
-                    ErrorCode::SecurityViolation,
-                    format!("Event window lock error: {}", e),
-                ))?;
+                .map_err(|e| WasmtimeError::Security {
+                    message: format!("Event window lock error: {}", e),
+                })?;
 
             window.push_back(event.clone());
 
@@ -1613,10 +1612,10 @@ impl ComprehensiveAuditLogger {
 
         // Check correlation rules
         let rules = self.correlation_engine.rules.read()
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::SecurityViolation,
+            .map_err(|e| WasmtimeError::Security {
+                message:
                 format!("Correlation rules lock error: {}", e),
-            ))?;
+            })?;
 
         for rule in rules.iter().filter(|r| r.enabled) {
             self.check_correlation_rule(rule, event)?;
@@ -1635,10 +1634,10 @@ impl ComprehensiveAuditLogger {
     /// Check real-time monitoring alerts
     fn check_real_time_alerts(&self, event: &ComprehensiveAuditEvent) -> WasmtimeResult<()> {
         let rules = self.real_time_monitor.alert_rules.read()
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::SecurityViolation,
+            .map_err(|e| WasmtimeError::Security {
+                message:
                 format!("Alert rules lock error: {}", e),
-            ))?;
+            })?;
 
         for rule in rules.iter().filter(|r| r.enabled) {
             if self.event_matches_alert_rule(event, rule)? {
@@ -1689,10 +1688,10 @@ impl ComprehensiveAuditLogger {
 
         // Store alert
         let mut active_alerts = self.real_time_monitor.active_alerts.write()
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::SecurityViolation,
+            .map_err(|e| WasmtimeError::Security {
+                message:
                 format!("Active alerts lock error: {}", e),
-            ))?;
+            })?;
 
         active_alerts.insert(alert.alert_id.clone(), alert.clone());
 
@@ -1710,10 +1709,10 @@ impl ComprehensiveAuditLogger {
     /// Update audit statistics
     fn update_audit_statistics(&self, event: &ComprehensiveAuditEvent) -> WasmtimeResult<()> {
         let mut stats = self.audit_stats.lock()
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::SecurityViolation,
+            .map_err(|e| WasmtimeError::Security {
+                message:
                 format!("Audit statistics lock error: {}", e),
-            ))?;
+            })?;
 
         stats.total_events += 1;
         *stats.events_by_type.entry(event.base_entry.event_type.clone()).or_insert(0) += 1;
@@ -1725,10 +1724,10 @@ impl ComprehensiveAuditLogger {
     /// Get audit statistics
     pub fn get_audit_statistics(&self) -> WasmtimeResult<AuditStatistics> {
         let stats = self.audit_stats.lock()
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::SecurityViolation,
+            .map_err(|e| WasmtimeError::Security {
+                message:
                 format!("Audit statistics read lock error: {}", e),
-            ))?;
+            })?;
 
         Ok(stats.clone())
     }
@@ -1738,8 +1737,8 @@ impl ComprehensiveAuditLogger {
         if let Some(processor) = self.compliance_processors.get(&query.framework) {
             processor.generate_report(query)
         } else {
-            Err(WasmtimeError::new(
-                ErrorCode::InvalidParameter,
+            Err(WasmtimeError::InvalidParameter {
+                message:
                 format!("No processor available for compliance framework: {:?}", query.framework),
             ))
         }

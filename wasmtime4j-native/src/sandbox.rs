@@ -19,7 +19,7 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use serde::{Deserialize, Serialize};
 
 /// Capability represents a specific permission or resource access right
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Capability {
     /// Memory access with size limits
     MemoryAccess {
@@ -73,7 +73,7 @@ pub enum Capability {
 }
 
 /// File system permissions for sandboxed access
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct FilePermissions {
     /// Read permission
     pub read: bool,
@@ -140,7 +140,7 @@ pub struct SecurityContext {
     /// Unique identifier for this context
     pub id: String,
     /// Granted capabilities
-    pub capabilities: HashSet<Capability>,
+    pub capabilities: Vec<Capability>,
     /// Security level (higher = more restricted)
     pub security_level: u32,
     /// Context metadata
@@ -156,7 +156,7 @@ impl SecurityContext {
     pub fn new(id: String, security_level: u32) -> Self {
         Self {
             id,
-            capabilities: HashSet::new(),
+            capabilities: Vec::new(),
             security_level,
             metadata: HashMap::new(),
             created_at: SystemTime::now(),
@@ -166,17 +166,17 @@ impl SecurityContext {
 
     /// Grant a capability to this context
     pub fn grant_capability(&mut self, capability: Capability) {
-        self.capabilities.insert(capability);
+        self.capabilities.push(capability);
     }
 
     /// Revoke a capability from this context
     pub fn revoke_capability(&mut self, capability: &Capability) {
-        self.capabilities.remove(capability);
+        self.capabilities.retain(|c| c != capability);
     }
 
     /// Check if a capability is granted
     pub fn has_capability(&self, capability: &Capability) -> bool {
-        self.capabilities.contains(capability)
+        self.capabilities.iter().any(|c| c == capability)
     }
 
     /// Check if the context has expired
@@ -291,7 +291,7 @@ pub struct SandboxManager {
 #[derive(Debug)]
 pub struct SandboxedInstance {
     /// The underlying WebAssembly instance
-    pub instance: Instance,
+    pub instance: Option<Instance>,
     /// Security context for this instance
     pub context: SecurityContext,
     /// Resource usage tracking
@@ -303,7 +303,7 @@ pub struct SandboxedInstance {
 }
 
 /// Resource usage tracking for instances
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct ResourceUsage {
     /// Memory usage in bytes
     pub memory_used: usize,
@@ -385,20 +385,18 @@ impl SandboxManager {
     ) -> WasmtimeResult<String> {
         // Check if context has expired
         if context.is_expired() {
-            return Err(WasmtimeError::new(
-                ErrorCode::SecurityViolation,
-                "Security context has expired".to_string(),
-            ));
+            return Err(WasmtimeError::Security {
+                message: "Security context has expired".to_string(),
+            });
         }
 
         // Check concurrent instance limits
         if let Some(max_concurrent) = self.config.max_concurrent_modules {
             let instances = self.instances.read().unwrap();
             if instances.len() >= max_concurrent {
-                return Err(WasmtimeError::new(
-                    ErrorCode::ResourceExhausted,
-                    "Maximum concurrent instances reached".to_string(),
-                ));
+                return Err(WasmtimeError::ResourceLimit {
+                    message: "Maximum concurrent instances reached".to_string(),
+                });
             }
         }
 
@@ -408,11 +406,16 @@ impl SandboxManager {
 
         // Create sandboxed instance (placeholder - would integrate with actual instance creation)
         let sandboxed_instance = SandboxedInstance {
-            instance: Instance::new(), // Placeholder
+            instance: None, // Placeholder
             context: context.clone(),
             resource_usage: ResourceUsage {
+                memory_used: 0,
+                cpu_time_ms: 0,
+                instructions_executed: 0,
+                syscalls_made: 0,
+                file_operations: 0,
+                network_operations: 0,
                 start_time: Instant::now(),
-                ..Default::default()
             },
             created_at: Instant::now(),
             last_activity: Instant::now(),
@@ -447,17 +450,15 @@ impl SandboxManager {
     ) -> WasmtimeResult<bool> {
         let contexts = self.contexts.read().unwrap();
         let context = contexts.get(instance_id)
-            .ok_or_else(|| WasmtimeError::new(
-                ErrorCode::InvalidParameter,
-                format!("Unknown instance ID: {}", instance_id),
-            ))?;
+            .ok_or_else(|| WasmtimeError::InvalidParameter {
+                message: format!("Unknown instance ID: {}", instance_id),
+            })?;
 
         // Check if context has expired
         if context.is_expired() {
-            return Err(WasmtimeError::new(
-                ErrorCode::SecurityViolation,
-                "Security context has expired".to_string(),
-            ));
+            return Err(WasmtimeError::Security {
+                message: "Security context has expired".to_string(),
+            });
         }
 
         let granted = context.has_capability(capability);
@@ -474,10 +475,9 @@ impl SandboxManager {
         }
 
         if self.config.strict_mode && !granted {
-            return Err(WasmtimeError::new(
-                ErrorCode::SecurityViolation,
-                format!("Capability not granted: {:?}", capability),
-            ));
+            return Err(WasmtimeError::Security {
+                message: format!("Capability not granted: {:?}", capability),
+            });
         }
 
         Ok(granted)
@@ -491,10 +491,9 @@ impl SandboxManager {
     ) -> WasmtimeResult<()> {
         let mut instances = self.instances.write().unwrap();
         let instance = instances.get_mut(instance_id)
-            .ok_or_else(|| WasmtimeError::new(
-                ErrorCode::InvalidParameter,
-                format!("Unknown instance ID: {}", instance_id),
-            ))?;
+            .ok_or_else(|| WasmtimeError::InvalidParameter {
+                message: format!("Unknown instance ID: {}", instance_id),
+            })?;
 
         // Update instance resource usage
         instance.resource_usage = usage_update;
@@ -517,33 +516,33 @@ impl SandboxManager {
         // Check memory limit
         if let Some(max_memory) = limits.max_memory {
             if usage.memory_used > max_memory {
-                return Err(WasmtimeError::new(
-                    ErrorCode::ResourceExhausted,
+                return Err(WasmtimeError::ResourceLimit {
+                    message:
                     format!("Memory limit exceeded for instance {}: {} > {}",
                         instance_id, usage.memory_used, max_memory),
-                ));
+                });
             }
         }
 
         // Check CPU time limit
         if let Some(max_cpu_time) = limits.max_cpu_time {
             if usage.cpu_time_ms > max_cpu_time {
-                return Err(WasmtimeError::new(
-                    ErrorCode::ResourceExhausted,
+                return Err(WasmtimeError::ResourceLimit {
+                    message:
                     format!("CPU time limit exceeded for instance {}: {} > {}",
                         instance_id, usage.cpu_time_ms, max_cpu_time),
-                ));
+                });
             }
         }
 
         // Check instruction limit
         if let Some(max_instructions) = limits.max_instructions {
             if usage.instructions_executed > max_instructions {
-                return Err(WasmtimeError::new(
-                    ErrorCode::ResourceExhausted,
+                return Err(WasmtimeError::ResourceLimit {
+                    message:
                     format!("Instruction limit exceeded for instance {}: {} > {}",
                         instance_id, usage.instructions_executed, max_instructions),
-                ));
+                });
             }
         }
 
@@ -650,10 +649,9 @@ impl CapabilityAuditor {
     /// Export audit log to JSON
     pub fn export_json(&self) -> WasmtimeResult<String> {
         serde_json::to_string_pretty(&self.audit_log)
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::SerializationError,
-                format!("Failed to serialize audit log: {}", e),
-            ))
+            .map_err(|e| WasmtimeError::Serialization {
+                message: format!("Failed to serialize audit log: {}", e),
+            })
     }
 
     /// Clear the audit log

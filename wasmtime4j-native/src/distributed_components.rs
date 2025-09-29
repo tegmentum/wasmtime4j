@@ -2506,12 +2506,12 @@ pub struct SecurityCapabilities {
     /// Certificate authorities
     pub trusted_cas: HashSet<String>,
     /// Security level
-    pub security_level: SecurityLevel,
+    pub security_level: DistributedSecurityLevel,
 }
 
-/// Security level classification
+/// Security level classification for distributed components
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub enum SecurityLevel {
+pub enum DistributedSecurityLevel {
     /// Basic security features
     Basic = 1,
     /// Standard security with encryption
@@ -2618,9 +2618,9 @@ pub struct EndpointSecurity {
     pub access_control: AccessControl,
 }
 
-/// Authentication methods
+/// Authentication methods for distributed components
 #[derive(Debug, Clone)]
-pub enum AuthenticationMethod {
+pub enum DistributedAuthenticationMethod {
     None,
     ApiKey,
     OAuth2,
@@ -4404,9 +4404,9 @@ pub struct GeographicIndex {
     compliance_mappings: HashMap<String, Vec<String>>,
 }
 
-/// Geographic location
+/// Geographic region information
 #[derive(Debug, Clone)]
-pub struct GeographicLocation {
+pub struct GeographicRegion {
     /// Country code
     pub country: String,
     /// Region/state
@@ -5316,9 +5316,9 @@ pub enum UpdateStrategy {
     Manual,
 }
 
-/// Conflict resolution strategies
+/// Distributed conflict resolution strategies
 #[derive(Debug, Clone)]
-pub enum ConflictResolution {
+pub enum DistributedConflictResolution {
     /// Use local version
     Local,
     /// Use remote version
@@ -5361,9 +5361,9 @@ pub struct SecureChannel {
     pub qos: QualityOfService,
 }
 
-/// Encryption context
+/// Distributed encryption context
 #[derive(Debug, Clone)]
-pub struct EncryptionContext {
+pub struct DistributedEncryptionContext {
     /// Encryption algorithm
     pub algorithm: String,
     /// Key material
@@ -5423,9 +5423,9 @@ pub enum ReliabilityLevel {
     AtMostOnce,
 }
 
-/// Retry configuration
+/// Distributed retry configuration
 #[derive(Debug, Clone)]
-pub struct RetryConfig {
+pub struct DistributedRetryConfig {
     /// Maximum retry attempts
     pub max_attempts: u32,
     /// Initial retry delay
@@ -5466,9 +5466,9 @@ pub trait AuthenticationProvider {
     fn supported_methods(&self) -> Vec<AuthenticationMethod>;
 }
 
-/// Authentication result
+/// Distributed authentication result
 #[derive(Debug, Clone)]
-pub struct AuthenticationResult {
+pub struct DistributedAuthenticationResult {
     /// Success flag
     pub success: bool,
     /// Access token
@@ -6177,9 +6177,9 @@ pub struct MetricsData {
     pub tags: HashMap<String, String>,
 }
 
-/// Metric value types
+/// Monitoring metric value types
 #[derive(Debug, Clone)]
-pub enum MetricValue {
+pub enum MonitoringMetricValue {
     Counter(u64),
     Gauge(f64),
     Histogram(Vec<f64>),
@@ -7121,7 +7121,7 @@ mod tests {
                     encryption_algorithms: HashSet::new(),
                     auth_methods: HashSet::new(),
                     trusted_cas: HashSet::new(),
-                    security_level: SecurityLevel::Standard,
+                    security_level: DistributedSecurityLevel::Standard,
                 },
                 performance: PerformanceCapabilities {
                     cpu_score: 1000.0,
@@ -7142,9 +7142,9 @@ mod tests {
 
     #[test]
     fn test_security_level_ordering() {
-        assert!(SecurityLevel::Maximum > SecurityLevel::High);
-        assert!(SecurityLevel::High > SecurityLevel::Standard);
-        assert!(SecurityLevel::Standard > SecurityLevel::Basic);
+        assert!(DistributedSecurityLevel::Maximum > DistributedSecurityLevel::High);
+        assert!(DistributedSecurityLevel::High > DistributedSecurityLevel::Standard);
+        assert!(DistributedSecurityLevel::Standard > DistributedSecurityLevel::Basic);
     }
 
     #[test]

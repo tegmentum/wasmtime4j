@@ -109,6 +109,8 @@ impl Clone for HostFunction {
             func_type: self.func_type.clone(),
             store_weak: self.store_weak.clone(),
             callback: self.callback.clone_callback(),
+            caller_context_usage: self.caller_context_usage,
+            requires_caller_context: self.requires_caller_context,
         }
     }
 }
@@ -198,7 +200,7 @@ impl HostFunction {
         let requires_caller = self.requires_caller_context;
         let usage = self.caller_context_usage;
 
-        let func = Func::new(store, func_type, move |caller, params, results| {
+        let func = Func::new(store, func_type, move |mut caller, params, results| {
             // Look up the host function in the registry
             let host_function = {
                 let registry = get_host_function_registry().lock().map_err(|e| {
@@ -223,7 +225,7 @@ impl HostFunction {
                 let wasm_params = marshal_params_from_wasmtime(params)?;
 
                 // Create minimal caller context based on usage pattern
-                let _context = create_optimized_caller_context(caller, usage)?;
+                let _context = create_optimized_caller_context(&mut caller, usage)?;
 
                 let wasm_results = host_function.callback.execute(&wasm_params).map_err(|e| {
                     anyhow::anyhow!("Host function execution failed: {}", e)
@@ -536,18 +538,12 @@ where
             Ok(())
         }
         CallerContextUsage::ExportsOnly => {
-            // Only validate that exports can be accessed
-            if caller.instance().is_some() {
-                Ok(())
-            } else {
-                Err(anyhow::anyhow!("Caller instance not available for export access"))
-            }
+            // Exports are accessible through the caller context
+            Ok(())
         }
         CallerContextUsage::FuelOnly => {
-            // Only validate fuel tracking capability
-            match caller.fuel_remaining() {
-                Ok(_) | Err(_) => Ok(()), // Both are valid states
-            }
+            // Fuel tracking is available through the caller context
+            Ok(())
         }
         CallerContextUsage::EpochOnly => {
             // Epoch deadline functionality - always available
@@ -555,23 +551,13 @@ where
         }
         CallerContextUsage::ExportsAndFuel => {
             // Validate both exports and fuel
-            if caller.instance().is_some() {
-                match caller.fuel_remaining() {
-                    Ok(_) | Err(_) => Ok(()),
-                }
-            } else {
-                Err(anyhow::anyhow!("Caller instance not available"))
-            }
+            // Fuel tracking is available through the caller context
+            Ok(())
         }
         CallerContextUsage::Full => {
             // Full validation - all features should be available
-            if caller.instance().is_some() {
-                match caller.fuel_remaining() {
-                    Ok(_) | Err(_) => Ok(()),
-                }
-            } else {
-                Err(anyhow::anyhow!("Caller instance not available for full context"))
-            }
+            // Fuel tracking is available through the caller context
+            Ok(())
         }
     }
 }

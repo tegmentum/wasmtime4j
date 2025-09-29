@@ -62,6 +62,18 @@ pub enum AuditSeverity {
     Fatal,
 }
 
+impl std::fmt::Display for AuditSeverity {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            AuditSeverity::Info => write!(f, "INFO"),
+            AuditSeverity::Warning => write!(f, "WARNING"),
+            AuditSeverity::Error => write!(f, "ERROR"),
+            AuditSeverity::Critical => write!(f, "CRITICAL"),
+            AuditSeverity::Fatal => write!(f, "FATAL"),
+        }
+    }
+}
+
 /// Audit event record
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AuditEvent {
@@ -411,7 +423,6 @@ pub enum CorrelationAction {
 }
 
 /// Alert manager for real-time notifications
-#[derive(Debug)]
 pub struct AlertManager {
     /// Alert handlers
     handlers: Vec<Box<dyn AlertHandler + Send>>,
@@ -458,7 +469,7 @@ pub struct Alert {
 }
 
 /// Audit statistics
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct AuditStatistics {
     /// Total events logged
     pub total_events: u64,
@@ -476,16 +487,29 @@ pub struct AuditStatistics {
     pub last_updated: SystemTime,
 }
 
+impl Default for AuditStatistics {
+    fn default() -> Self {
+        Self {
+            total_events: 0,
+            events_by_type: HashMap::new(),
+            events_by_severity: HashMap::new(),
+            events_by_hour: VecDeque::new(),
+            total_alerts: 0,
+            total_violations: 0,
+            last_updated: SystemTime::UNIX_EPOCH,
+        }
+    }
+}
+
 impl AuditLogger {
     /// Create a new audit logger
     pub fn new(config: AuditLoggerConfig) -> WasmtimeResult<Self> {
         // Create log directory if it doesn't exist
         if let Some(parent) = config.log_file_path.parent() {
             std::fs::create_dir_all(parent)
-                .map_err(|e| WasmtimeError::new(
-                    ErrorCode::IOError,
-                    format!("Failed to create log directory: {}", e),
-                ))?;
+                .map_err(|e| WasmtimeError::IO {
+                    message: format!("Failed to create log directory: {}", e),
+                })?;
         }
 
         // Open log file
@@ -493,10 +517,9 @@ impl AuditLogger {
             .create(true)
             .append(true)
             .open(&config.log_file_path)
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::IOError,
-                format!("Failed to open log file: {}", e),
-            ))?;
+            .map_err(|e| WasmtimeError::IO {
+                message: format!("Failed to open log file: {}", e),
+            })?;
 
         let log_writer = BufWriter::new(log_file);
 
@@ -504,7 +527,7 @@ impl AuditLogger {
             config,
             event_buffer: Arc::new(Mutex::new(VecDeque::new())),
             log_writer: Arc::new(Mutex::new(log_writer)),
-            correlator: Arc::new(Mutex::new(EventCorrelator::new(Duration::from_minutes(5)))),
+            correlator: Arc::new(Mutex::new(EventCorrelator::new(Duration::from_secs(5 * 60)))),
             alert_manager: Arc::new(Mutex::new(AlertManager::new())),
             stats: Arc::new(RwLock::new(AuditStatistics::default())),
         })
@@ -557,23 +580,21 @@ impl AuditLogger {
         let mut writer = self.log_writer.lock().unwrap();
         for event in events {
             let event_json = serde_json::to_string(&event)
-                .map_err(|e| WasmtimeError::new(
-                    ErrorCode::SerializationError,
+                .map_err(|e| WasmtimeError::Serialization {
+                    message:
                     format!("Failed to serialize audit event: {}", e),
-                ))?;
+                })?;
 
             writeln!(writer, "{}", event_json)
-                .map_err(|e| WasmtimeError::new(
-                    ErrorCode::IOError,
-                    format!("Failed to write audit event: {}", e),
-                ))?;
+                .map_err(|e| WasmtimeError::IO {
+                    message: format!("Failed to write audit event: {}", e),
+                })?;
         }
 
         writer.flush()
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::IOError,
-                format!("Failed to flush audit log: {}", e),
-            ))?;
+            .map_err(|e| WasmtimeError::IO {
+                message: format!("Failed to flush audit log: {}", e),
+            })?;
 
         Ok(())
     }

@@ -21,10 +21,10 @@ use crate::validate_ptr_not_null;
 /// Create experimental features configuration
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_experimental_JniExperimentalFeatures_nativeCreateExperimentalFeatures(
-    env: JNIEnv,
+    mut env: JNIEnv,
     _class: JClass,
 ) -> jlong {
-    crate::error::handle_result_with_default(&env, 0, || {
+    crate::error::jni_utils::jni_try_with_default(&mut env, 0, || {
         // Create both experimental and advanced features
         let exp_config = exp_core::create_experimental_features_config()?;
         let adv_features = adv_core::create_advanced_features()?;
@@ -41,19 +41,23 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_experimental_JniExperime
 /// Enable experimental feature
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_experimental_JniExperimentalFeatures_nativeEnableExperimentalFeature(
-    env: JNIEnv,
+    mut env: JNIEnv,
     _class: JClass,
     handle: jlong,
     feature_key: JString,
 ) {
-    crate::error::handle_result(&env, || {
+    // Extract string conversion before jni_try_void to avoid borrowing conflicts
+    let feature_key_str: String = match env.get_string(&feature_key) {
+        Ok(s) => s.into(),
+        Err(_) => return,
+    };
+
+    crate::error::jni_utils::jni_try_void(&mut env, || {
         if handle == 0 {
-            return Err(WasmtimeError::InvalidArgument {
+            return Err(WasmtimeError::InvalidParameter {
                 message: "Experimental features handle cannot be null".to_string(),
             });
         }
-
-        let feature_key_str: String = env.get_string(feature_key)?.into();
 
         log::info!("Enabling experimental feature: {} (handle: {})", feature_key_str, handle);
 
@@ -90,19 +94,23 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_experimental_JniExperime
 /// Disable experimental feature
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_experimental_JniExperimentalFeatures_nativeDisableExperimentalFeature(
-    env: JNIEnv,
+    mut env: JNIEnv,
     _class: JClass,
     handle: jlong,
     feature_key: JString,
 ) {
-    crate::error::handle_result(&env, || {
+    // Extract string conversion before jni_try_void to avoid borrowing conflicts
+    let feature_key_str: String = match env.get_string(&feature_key) {
+        Ok(s) => s.into(),
+        Err(_) => return,
+    };
+
+    crate::error::jni_utils::jni_try_void(&mut env, || {
         if handle == 0 {
-            return Err(WasmtimeError::InvalidArgument {
+            return Err(WasmtimeError::InvalidParameter {
                 message: "Experimental features handle cannot be null".to_string(),
             });
         }
-
-        let feature_key_str: String = env.get_string(feature_key)?.into();
 
         log::info!("Disabling experimental feature: {} (handle: {})", feature_key_str, handle);
 
@@ -114,16 +122,16 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_experimental_JniExperime
 /// Configure stack switching
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_experimental_JniExperimentalFeatures_nativeConfigureStackSwitching(
-    env: JNIEnv,
+    mut env: JNIEnv,
     _class: JClass,
     handle: jlong,
     stack_size: jlong,
     max_stacks: jint,
     strategy: jint,
 ) {
-    crate::error::handle_result(&env, || {
+    crate::error::jni_utils::jni_try_void(&mut env, || {
         if handle == 0 {
-            return Err(WasmtimeError::InvalidArgument {
+            return Err(WasmtimeError::InvalidParameter {
                 message: "Experimental features handle cannot be null".to_string(),
             });
         }
@@ -143,16 +151,16 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_experimental_JniExperime
 /// Configure call/cc
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_experimental_JniExperimentalFeatures_nativeConfigureCallCc(
-    env: JNIEnv,
+    mut env: JNIEnv,
     _class: JClass,
     handle: jlong,
     max_continuations: jint,
     storage_strategy: jint,
     compression_enabled: jint,
 ) {
-    crate::error::handle_result(&env, || {
+    crate::error::jni_utils::jni_try_void(&mut env, || {
         if handle == 0 {
-            return Err(WasmtimeError::InvalidArgument {
+            return Err(WasmtimeError::InvalidParameter {
                 message: "Experimental features handle cannot be null".to_string(),
             });
         }
@@ -172,7 +180,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_experimental_JniExperime
 /// Configure advanced security
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_experimental_JniExperimentalFeatures_nativeConfigureAdvancedSecurity(
-    env: JNIEnv,
+    mut env: JNIEnv,
     _class: JClass,
     handle: jlong,
     security_level: jint,
@@ -180,9 +188,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_experimental_JniExperime
     enable_resource_limits: jint,
     max_memory_mb: jint,
 ) {
-    crate::error::handle_result(&env, || {
+    crate::error::jni_utils::jni_try_void(&mut env, || {
         if handle == 0 {
-            return Err(WasmtimeError::InvalidArgument {
+            return Err(WasmtimeError::InvalidParameter {
                 message: "Experimental features handle cannot be null".to_string(),
             });
         }
@@ -204,7 +212,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_experimental_JniExperime
 /// Configure advanced profiling
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_experimental_JniExperimentalFeatures_nativeConfigureAdvancedProfiling(
-    env: JNIEnv,
+    mut env: JNIEnv,
     _class: JClass,
     handle: jlong,
     enable_perf_counters: jint,
@@ -212,9 +220,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_experimental_JniExperime
     granularity: jint,
     sampling_interval: jlong,
 ) {
-    crate::error::handle_result(&env, || {
+    crate::error::jni_utils::jni_try_void(&mut env, || {
         if handle == 0 {
-            return Err(WasmtimeError::InvalidArgument {
+            return Err(WasmtimeError::InvalidParameter {
                 message: "Experimental features handle cannot be null".to_string(),
             });
         }
@@ -236,13 +244,13 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_experimental_JniExperime
 /// Start profiling session
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_experimental_JniExperimentalFeatures_nativeStartProfiling(
-    env: JNIEnv,
+    mut env: JNIEnv,
     _class: JClass,
     handle: jlong,
 ) {
-    crate::error::handle_result(&env, || {
+    crate::error::jni_utils::jni_try_void(&mut env, || {
         if handle == 0 {
-            return Err(WasmtimeError::InvalidArgument {
+            return Err(WasmtimeError::InvalidParameter {
                 message: "Experimental features handle cannot be null".to_string(),
             });
         }
@@ -258,13 +266,13 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_experimental_JniExperime
 /// Stop profiling session
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_experimental_JniExperimentalFeatures_nativeStopProfiling(
-    env: JNIEnv,
+    mut env: JNIEnv,
     _class: JClass,
     handle: jlong,
 ) {
-    crate::error::handle_result(&env, || {
+    crate::error::jni_utils::jni_try_void(&mut env, || {
         if handle == 0 {
-            return Err(WasmtimeError::InvalidArgument {
+            return Err(WasmtimeError::InvalidParameter {
                 message: "Experimental features handle cannot be null".to_string(),
             });
         }
@@ -280,13 +288,13 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_experimental_JniExperime
 /// Get profiling results
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_experimental_JniExperimentalFeatures_nativeGetProfilingResults(
-    env: JNIEnv,
+    mut env: JNIEnv,
     _class: JClass,
     handle: jlong,
 ) -> jstring {
-    crate::error::handle_result_with_default(&env, ptr::null_mut(), || {
+    match (|| -> Result<String, WasmtimeError> {
         if handle == 0 {
-            return Err(WasmtimeError::InvalidArgument {
+            return Err(WasmtimeError::InvalidParameter {
                 message: "Experimental features handle cannot be null".to_string(),
             });
         }
@@ -297,19 +305,26 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_experimental_JniExperime
             handle
         );
 
-        let jresults = env.new_string(&results)?;
-        Ok(jresults.into_inner())
-    })
+        Ok(results)
+    })() {
+        Ok(results) => {
+            match env.new_string(&results) {
+                Ok(jstring) => jstring.into_raw(),
+                Err(_) => ptr::null_mut(),
+            }
+        },
+        Err(_) => ptr::null_mut(),
+    }
 }
 
 /// Destroy experimental features
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_experimental_JniExperimentalFeatures_nativeDestroy(
-    env: JNIEnv,
+    mut env: JNIEnv,
     _class: JClass,
     handle: jlong,
 ) {
-    crate::error::handle_result(&env, || {
+    crate::error::jni_utils::jni_try_void(&mut env, || {
         if handle == 0 {
             return Ok(());
         }

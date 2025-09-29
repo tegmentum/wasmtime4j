@@ -15,12 +15,17 @@ use jni::sys::{jboolean, jint, jlong, jobject, jstring};
 use jni::{JNIEnv, JavaVM};
 use std::sync::Arc;
 use crate::error::{WasmtimeError, WasmtimeResult};
-use crate::gc::{WasmGcRuntime, StructOperationResult, ArrayOperationResult, RefOperationResult};
+// TODO: Re-enable when gc module is available
+// use crate::gc::{WasmGcRuntime, StructOperationResult, ArrayOperationResult, RefOperationResult};
 use crate::gc_types::{StructTypeDefinition, ArrayTypeDefinition, FieldDefinition, FieldType, GcValue, GcReferenceType, GcTypeConverter};
 use crate::simd::{V256, V512};
 use crate::gc_heap::{GcHeapConfig, ObjectId};
-use crate::gc_operations::{WasmtimeGcOperations, RealStructOperationResult, RealArrayOperationResult, RealRefOperationResult};
+// TODO: Re-enable when gc_operations module is available
+// use crate::gc_operations::{WasmtimeGcOperations, RealStructOperationResult, RealArrayOperationResult, RealRefOperationResult};
 use crate::shared_ffi::{FFI_SUCCESS, FFI_ERROR};
+
+// TODO: Re-enable all GC bindings when gc and gc_operations modules are available
+/*
 
 /// JNI binding for creating a GC runtime
 #[no_mangle]
@@ -46,7 +51,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_WasmGcRuntimeJni_createR
 /// JNI binding for destroying a GC runtime
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_WasmGcRuntimeJni_destroyRuntime(
-    _env: JNIEnv,
+    _mut env: JNIEnv,
     _class: JClass,
     runtime_handle: jlong,
 ) -> jint {
@@ -1299,12 +1304,12 @@ fn create_weak_reference_advanced_internal(
     }
 }
 
-fn collect_garbage_advanced_internal(
-    env: &mut JNIEnv,
+fn collect_garbage_advanced_internal<'a>(
+    env: &'a mut JNIEnv<'a>,
     runtime_handle: jlong,
     max_pause_millis: Option<u64>,
     concurrent: bool,
-) -> WasmtimeResult<JObject> {
+) -> WasmtimeResult<JObject<'a>> {
     if runtime_handle == 0 {
         return Err(WasmtimeError::from_string("Invalid runtime handle"));
     }
@@ -1414,3 +1419,5 @@ fn create_v512_value_internal(
     // In the future, this would integrate with proper V512 GC object support
     Ok(1) // Placeholder object ID
 }
+
+*/

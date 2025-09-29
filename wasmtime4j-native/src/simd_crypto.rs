@@ -5,6 +5,7 @@
 
 use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::simd::{V128, V256, V512, PlatformCapabilities};
+#[cfg(target_arch = "x86_64")]
 use std::arch::x86_64::*;
 #[cfg(target_arch = "aarch64")]
 use std::arch::aarch64::*;
@@ -111,24 +112,24 @@ pub mod crypto {
                     }
                 } else {
                     // Software key expansion fallback
-                    self.expand_key_software(&mut round_keys, key)?;
+                    Self::expand_key_software(&mut round_keys, key)?;
                 }
             }
 
             #[cfg(not(target_arch = "x86_64"))]
             {
                 // Software key expansion for non-x86 architectures
-                self.expand_key_software(&mut round_keys, key)?;
+                Self::expand_key_software(&mut round_keys, key)?;
             }
 
             Ok(VectorizedAES128 {
                 round_keys,
-                capabilities: *capabilities,
+                capabilities: capabilities.clone(),
             })
         }
 
         /// Software key expansion fallback
-        fn expand_key_software(&self, round_keys: &mut [V128; 11], key: &[u8; 16]) -> WasmtimeResult<()> {
+        fn expand_key_software(round_keys: &mut [V128; 11], key: &[u8; 16]) -> WasmtimeResult<()> {
             // AES S-box for software implementation
             const SBOX: [u8; 256] = [
                 0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76,
@@ -772,24 +773,24 @@ pub mod crypto {
                     }
                 } else {
                     // Software key expansion fallback
-                    self.expand_key_256_software(&mut round_keys, key)?;
+                    Self::expand_key_256_software(&mut round_keys, key)?;
                 }
             }
 
             #[cfg(not(target_arch = "x86_64"))]
             {
                 // Software key expansion for non-x86 architectures
-                self.expand_key_256_software(&mut round_keys, key)?;
+                Self::expand_key_256_software(&mut round_keys, key)?;
             }
 
             Ok(VectorizedAES256 {
                 round_keys,
-                capabilities: *capabilities,
+                capabilities: capabilities.clone(),
             })
         }
 
         /// Software AES-256 key expansion
-        fn expand_key_256_software(&self, round_keys: &mut [V128; 15], key: &[u8; 32]) -> WasmtimeResult<()> {
+        fn expand_key_256_software(round_keys: &mut [V128; 15], key: &[u8; 32]) -> WasmtimeResult<()> {
             // AES S-box (same as AES-128)
             const SBOX: [u8; 256] = [
                 0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76,
@@ -910,7 +911,7 @@ pub mod crypto {
         /// Creates a new vectorized SHA-256 instance
         pub fn new(capabilities: &PlatformCapabilities) -> Self {
             VectorizedSHA256 {
-                capabilities: *capabilities,
+                capabilities: capabilities.clone(),
             }
         }
 
@@ -1225,7 +1226,7 @@ pub mod crypto {
         /// Creates a new vectorized RSA instance
         pub fn new(capabilities: &PlatformCapabilities) -> Self {
             VectorizedRSA {
-                capabilities: *capabilities,
+                capabilities: capabilities.clone(),
             }
         }
 
@@ -1239,7 +1240,7 @@ pub mod crypto {
                 return Ok(V256::from_bytes([1; 32])); // Return 1 for base^0
             }
             if Self::is_zero(modulus) || Self::is_one(modulus) {
-                return Err(WasmtimeError::InvalidParameter("Invalid modulus".to_string()));
+                return Err(WasmtimeError::InvalidParameter { message: "Invalid modulus".to_string() });
             }
 
             #[cfg(target_arch = "x86_64")]
@@ -1511,7 +1512,7 @@ pub mod crypto {
         /// Creates a new vectorized ECC instance
         pub fn new(capabilities: &PlatformCapabilities) -> Self {
             VectorizedECC {
-                capabilities: *capabilities,
+                capabilities: capabilities.clone(),
             }
         }
 

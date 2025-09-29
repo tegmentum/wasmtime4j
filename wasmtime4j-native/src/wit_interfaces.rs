@@ -14,6 +14,7 @@
 
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
+use std::time::Duration;
 use std::fmt;
 
 use wasmtime::{
@@ -1009,6 +1010,9 @@ pub mod interface_negotiation {
         }
     }
 }
+
+// Re-export interface negotiation types at module level
+pub use interface_negotiation::{InterfaceNegotiationManager, NegotiableInterface, InterfaceCapabilities};
 
 /// WIT interface manager for handling component interfaces
 pub struct WitInterfaceManager {
