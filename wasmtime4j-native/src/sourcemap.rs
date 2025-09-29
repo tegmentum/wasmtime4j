@@ -186,33 +186,32 @@ impl SourceMap {
     /// Validate the source map structure
     pub fn validate(&self) -> WasmtimeResult<()> {
         if self.version != SOURCEMAP_VERSION {
-            return Err(WasmtimeError::new(
-                ErrorCode::InvalidData,
-                format!("Unsupported source map version: {}", self.version),
-            ));
+            return Err(WasmtimeError::InvalidParameter {
+                message: format!("Unsupported source map version: {}", self.version),
+            });
         }
 
         if self.sources.is_empty() {
-            return Err(WasmtimeError::new(
-                ErrorCode::InvalidData,
+            return Err(WasmtimeError::InvalidData {
+                message:
                 "Source map must contain at least one source file".to_string(),
-            ));
+            });
         }
 
         if self.mappings.is_empty() {
-            return Err(WasmtimeError::new(
-                ErrorCode::InvalidData,
+            return Err(WasmtimeError::InvalidData {
+                message:
                 "Source map must contain mappings".to_string(),
-            ));
+            });
         }
 
         // Validate sources_content if present
         if let Some(ref content) = self.sources_content {
             if content.len() != self.sources.len() {
-                return Err(WasmtimeError::new(
-                    ErrorCode::InvalidData,
+                return Err(WasmtimeError::InvalidData {
+                    message:
                     "Sources content length must match sources length".to_string(),
-                ));
+                });
             }
         }
 
@@ -375,10 +374,10 @@ impl SourceMapParser {
     /// Parse a source map from JSON string
     pub fn parse(&self, json_data: &str) -> WasmtimeResult<SourceMap> {
         if json_data.len() > MAX_SOURCEMAP_SIZE {
-            return Err(WasmtimeError::new(
-                ErrorCode::InvalidData,
+            return Err(WasmtimeError::InvalidData {
+                message:
                 format!("Source map too large: {} bytes", json_data.len()),
-            ));
+            });
         }
 
         // Parse JSON (simplified - in real implementation would use serde_json)
@@ -391,18 +390,17 @@ impl SourceMapParser {
     /// Parse source map from binary data
     pub fn parse_binary(&self, binary_data: &[u8]) -> WasmtimeResult<SourceMap> {
         if binary_data.len() > MAX_SOURCEMAP_SIZE {
-            return Err(WasmtimeError::new(
-                ErrorCode::InvalidData,
+            return Err(WasmtimeError::InvalidData {
+                message:
                 format!("Source map too large: {} bytes", binary_data.len()),
-            ));
+            });
         }
 
         // Convert binary to string and parse
         let json_str = std::str::from_utf8(binary_data).map_err(|e| {
-            WasmtimeError::new(
-                ErrorCode::InvalidData,
-                format!("Invalid UTF-8 in source map: {}", e),
-            )
+            WasmtimeError::InvalidData {
+                message: format!("Invalid UTF-8 in source map: {}", e),
+            }
         })?;
 
         self.parse(json_str)
@@ -576,10 +574,10 @@ impl SourceMapParser {
                     if let Some(next_char) = chars.next() {
                         current_char = next_char;
                     } else {
-                        return Err(WasmtimeError::new(
-                            ErrorCode::InvalidData,
+                        return Err(WasmtimeError::InvalidData {
+                            message:
                             "Incomplete VLQ sequence".to_string(),
-                        ));
+                        });
                     }
                 }
             }
@@ -605,10 +603,9 @@ impl SourceMapParser {
             '0'..='9' => Ok(ch as u8 - b'0' + 52),
             '+' => Ok(62),
             '/' => Ok(63),
-            _ => Err(WasmtimeError::new(
-                ErrorCode::InvalidData,
-                format!("Invalid base64 character: {}", ch),
-            )),
+            _ => Err(WasmtimeError::InvalidData {
+                message: format!("Invalid base64 character: {}", ch),
+            }),
         }
     }
 
@@ -697,11 +694,11 @@ impl DwarfParser {
     }
 
     /// Get function symbol for address
-    pub fn get_function_symbol(
+    pub fn get_function_symbol<'a>(
         &self,
-        dwarf_info: &DwarfInfo,
+        dwarf_info: &'a DwarfInfo,
         address: u64,
-    ) -> Option<&DwarfFunction> {
+    ) -> Option<&'a DwarfFunction> {
         for function in dwarf_info.functions.values() {
             if address >= function.low_pc && address < function.high_pc {
                 return Some(function);
@@ -1275,10 +1272,10 @@ impl SourceMapIntegration {
         let validation = self.validator.validate_source_map(&source_map);
 
         if !validation.is_valid() {
-            return Err(WasmtimeError::new(
-                ErrorCode::InvalidData,
+            return Err(WasmtimeError::InvalidData {
+                message:
                 format!("Source map validation failed: {:?}", validation.errors),
-            ));
+            });
         }
 
         Ok(Arc::new(source_map))

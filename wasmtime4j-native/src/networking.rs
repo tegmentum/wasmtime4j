@@ -109,6 +109,7 @@ pub struct TcpListenerWrapper {
     listener: AsyncTcpListener,
     local_addr: SocketAddr,
     created_at: Instant,
+    last_activity: Instant,
     accepted_connections: u64,
     status: ConnectionStatus,
 }
@@ -366,6 +367,7 @@ impl NetworkManager {
             listener,
             local_addr,
             created_at: Instant::now(),
+            last_activity: Instant::now(),
             accepted_connections: 0,
             status: ConnectionStatus::Active,
         };

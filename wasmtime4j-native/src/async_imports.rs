@@ -757,7 +757,7 @@ pub mod core {
 
         let module_name_str = std::ffi::CStr::from_ptr(module_name)
             .to_str()
-            .map_err(|_| WasmtimeError::InvalidArgument {
+            .map_err(|_| WasmtimeError::InvalidParameter {
                 message: "Invalid module name".to_string(),
             })?
             .to_string();

@@ -63,7 +63,7 @@ fn enable_experimental_feature_impl(
 
     let feature_key_str = unsafe { CStr::from_ptr(feature_key) }
         .to_str()
-        .map_err(|e| WasmtimeError::InvalidArgument {
+        .map_err(|e| WasmtimeError::InvalidParameter {
             message: format!("Invalid feature key string: {}", e),
         })?;
 
@@ -121,7 +121,7 @@ fn disable_experimental_feature_impl(
 
     let feature_key_str = unsafe { CStr::from_ptr(feature_key) }
         .to_str()
-        .map_err(|e| WasmtimeError::InvalidArgument {
+        .map_err(|e| WasmtimeError::InvalidParameter {
             message: format!("Invalid feature key string: {}", e),
         })?;
 
@@ -324,7 +324,7 @@ fn get_profiling_results_impl(handle: *const c_void) -> WasmtimeResult<*const c_
         handle
     );
 
-    let c_results = CString::new(results).map_err(|e| WasmtimeError::InvalidArgument {
+    let c_results = CString::new(results).map_err(|e| WasmtimeError::InvalidParameter {
         message: format!("Failed to create result string: {}", e),
     })?;
 

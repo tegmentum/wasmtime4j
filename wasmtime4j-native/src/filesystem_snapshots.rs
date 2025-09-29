@@ -102,7 +102,7 @@ pub struct RetentionPolicy {
 }
 
 /// Complete snapshot representation
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Snapshot {
     /// Unique snapshot ID
     pub id: u64,
@@ -1335,7 +1335,7 @@ impl FilesystemSnapshotManager {
 
             // Recursively scan subdirectories
             if entry_type == SnapshotEntryType::Directory {
-                self.scan_directory_recursive(root_path, &path, entries, options).await?;
+                Box::pin(self.scan_directory_recursive(root_path, &path, entries, options)).await?;
             }
         }
 
@@ -1679,13 +1679,7 @@ impl FilesystemSnapshotManager {
 
         if options.preserve_timestamps {
             if let (Some(accessed), Some(modified)) = (metadata.accessed, metadata.modified) {
-                let file = std::fs::File::open(path).map_err(|e| {
-                    WasmtimeError::Wasi {
-                        message: format!("Failed to open file for timestamp update: {}", e),
-                    }
-                })?;
-
-                file.set_times(filetime::FileTime::from_system_time(accessed), filetime::FileTime::from_system_time(modified))
+                filetime::set_file_times(path, filetime::FileTime::from_system_time(accessed), filetime::FileTime::from_system_time(modified))
                     .map_err(|e| {
                         WasmtimeError::Wasi {
                             message: format!("Failed to set file timestamps: {}", e),

@@ -41,7 +41,7 @@ struct Node<T> {
 }
 
 /// Queue performance statistics
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Default)]
 struct QueueStatistics {
     /// Total enqueue operations
     enqueues: AtomicU64,
@@ -88,7 +88,7 @@ struct HashNode<K, V> {
 }
 
 /// Hash table performance statistics
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Default)]
 struct HashTableStatistics {
     /// Total insert operations
     inserts: AtomicU64,
@@ -121,7 +121,7 @@ pub struct WaitFreeRingBuffer<T> {
 }
 
 /// Ring buffer performance statistics
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Default)]
 struct RingBufferStatistics {
     /// Total write operations
     writes: AtomicU64,
@@ -252,7 +252,7 @@ struct BatchStatistics {
     avg_execution_time: Duration,
 }
 
-impl<T> LockFreeQueue<T> {
+impl<T: Clone> LockFreeQueue<T> {
     /// Create a new lock-free queue
     pub fn new() -> Self {
         let dummy = Owned::new(Node {
@@ -444,23 +444,22 @@ where
         let bucket_index = self.get_bucket_index(hash);
         let guard = &epoch::pin();
 
-        let new_node = Owned::new(HashNode {
-            key: key.clone(),
-            value: value.clone(),
-            hash,
-            next: Atomic::null(),
-            marked: AtomicBool::new(false),
-        });
-
         loop {
             let bucket = &self.buckets[bucket_index];
             let head = bucket.load(Ordering::Acquire, guard);
 
             if head.is_null() {
                 // Empty bucket, try to insert as first node
+                let new_node = Owned::new(HashNode {
+                    key: key.clone(),
+                    value: value.clone(),
+                    hash,
+                    next: Atomic::null(),
+                    marked: AtomicBool::new(false),
+                });
                 match bucket.compare_exchange_weak(
                     head,
-                    new_node.clone().into_shared(guard),
+                    new_node.into_shared(guard),
                     Ordering::Release,
                     Ordering::Relaxed,
                     guard,
@@ -508,10 +507,16 @@ where
                     let next = current_node.next.load(Ordering::Acquire, guard);
                     if next.is_null() {
                         // End of chain, insert new node
-                        new_node.next.store(Shared::null(), Ordering::Relaxed);
+                        let new_node = Owned::new(HashNode {
+                            key: key.clone(),
+                            value: value.clone(),
+                            hash,
+                            next: Atomic::null(),
+                            marked: AtomicBool::new(false),
+                        });
                         match current_node.next.compare_exchange_weak(
                             next,
-                            new_node.clone().into_shared(guard),
+                            new_node.into_shared(guard),
                             Ordering::Release,
                             Ordering::Relaxed,
                             guard,
@@ -996,6 +1001,7 @@ impl MemoryOrderingOptimizer {
             Ordering::Acquire => Ordering::Acquire,
             Ordering::Release => Ordering::Release,
             Ordering::Relaxed => Ordering::Relaxed,
+            _ => Ordering::AcqRel, // Default to AcqRel for any future ordering variants
         }
     }
 

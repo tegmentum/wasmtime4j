@@ -2826,12 +2826,12 @@ pub struct OptimizationGoals {
     /// Objective weights
     pub weights: HashMap<String, f64>,
     /// Constraints
-    pub constraints: OptimizationConstraints,
+    pub constraints: ComponentOptimizationConstraints,
 }
 
-/// Optimization constraints
+/// Component optimization constraints
 #[derive(Debug, Clone)]
-pub struct OptimizationConstraints {
+pub struct ComponentOptimizationConstraints {
     /// Resource limits
     pub resource_limits: HashMap<String, f64>,
     /// Performance requirements

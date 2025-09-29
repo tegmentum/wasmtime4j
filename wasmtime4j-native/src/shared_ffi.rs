@@ -409,6 +409,8 @@ pub mod error_mapping {
 /// This module provides consolidated implementations for WebAssembly Component Model operations,
 /// eliminating code duplication between interface implementations while maintaining
 /// defensive programming practices and consistent error handling.
+// TODO: Re-enable when component module is available
+/*
 pub mod component {
     use crate::component::{ComponentEngine, Component};
     use crate::error::{WasmtimeResult, WasmtimeError};
@@ -556,6 +558,7 @@ pub mod component {
         }
     }
 }
+*/
 
 /// Memory operations shared between JNI and Panama FFI implementations
 /// 

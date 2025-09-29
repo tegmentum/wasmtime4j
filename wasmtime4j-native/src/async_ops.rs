@@ -21,7 +21,7 @@ use std::path::{Path, PathBuf};
 use std::net::{SocketAddr, TcpListener, TcpStream, UdpSocket};
 use std::os::raw::{c_char, c_int, c_void, c_uint, c_ulong};
 
-use tokio::sync::{mpsc, oneshot, Semaphore};
+use tokio::sync::{mpsc, oneshot, Semaphore, Mutex as AsyncMutex};
 use tokio::time::{timeout, sleep, Interval};
 use tokio::io::{AsyncRead, AsyncWrite, AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener as AsyncTcpListener, TcpStream as AsyncTcpStream, UdpSocket as AsyncUdpSocket};
@@ -44,7 +44,7 @@ pub struct AsyncOperationsManager {
     /// Semaphore for limiting concurrent operations
     operation_semaphore: Arc<Semaphore>,
     /// Async file handles
-    file_handles: Arc<RwLock<HashMap<u64, Arc<Mutex<AsyncFile>>>>>,
+    file_handles: Arc<RwLock<HashMap<u64, Arc<AsyncMutex<AsyncFile>>>>>,
     /// Async network connections
     network_connections: Arc<RwLock<HashMap<u64, AsyncNetworkConnection>>>,
     /// Async timers
@@ -125,7 +125,7 @@ pub enum AsyncOperationResult {
 pub struct AsyncFileIOOperation {
     id: u64,
     operation_type: AsyncFileIOType,
-    file_handle: Arc<Mutex<AsyncFile>>,
+    file_handle: Arc<AsyncMutex<AsyncFile>>,
     status: Arc<Mutex<AsyncOperationStatus>>,
     result: Arc<Mutex<Option<AsyncOperationResult>>>,
     cancel_tx: Option<oneshot::Sender<()>>,
@@ -186,7 +186,7 @@ pub enum AsyncTimerType {
 }
 
 /// Statistics for async operations
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct AsyncOperationStats {
     /// Total operations started
     total_started: u64,
@@ -245,7 +245,7 @@ impl AsyncOperationsManager {
                 message: format!("Failed to open file {}: {}", file_path.display(), e),
             })?;
 
-        let file_handle = Arc::new(Mutex::new(file));
+        let file_handle = Arc::new(AsyncMutex::new(file));
 
         // Store file handle
         {
@@ -277,16 +277,20 @@ impl AsyncOperationsManager {
                 *status_guard = AsyncOperationStatus::Running;
             }
 
-            let read_future = async {
-                let mut file_guard = file_handle.lock().unwrap();
-                let mut buffer = vec![0u8; buffer_size];
+            let read_future = {
+                let file_handle_clone = file_handle.clone();
+                async move {
+                    let mut buffer = vec![0u8; buffer_size];
 
-                match file_guard.read(&mut buffer).await {
-                    Ok(bytes_read) => {
-                        buffer.truncate(bytes_read);
-                        AsyncOperationResult::Success(Some(buffer))
-                    },
-                    Err(e) => AsyncOperationResult::Error(format!("Read failed: {}", e)),
+                    // Use tokio::sync::Mutex which provides Send-compatible guards
+                    let mut file_guard = file_handle_clone.lock().await;
+                    match file_guard.read(&mut buffer).await {
+                        Ok(bytes_read) => {
+                            buffer.truncate(bytes_read);
+                            AsyncOperationResult::Success(Some(buffer))
+                        },
+                        Err(e) => AsyncOperationResult::Error(format!("Read failed: {}", e)),
+                    }
                 }
             };
 
@@ -379,7 +383,7 @@ impl AsyncOperationsManager {
                 message: format!("Failed to open file for writing {}: {}", file_path.display(), e),
             })?;
 
-        let file_handle = Arc::new(Mutex::new(file));
+        let file_handle = Arc::new(AsyncMutex::new(file));
 
         // Store file handle
         {
@@ -411,18 +415,22 @@ impl AsyncOperationsManager {
                 *status_guard = AsyncOperationStatus::Running;
             }
 
-            let write_future = async {
-                let mut file_guard = file_handle.lock().unwrap();
+            let write_future = {
+                let file_handle_clone = file_handle.clone();
+                async move {
+                    // Use tokio::sync::Mutex which provides Send-compatible guards
+                    let mut file_guard = file_handle_clone.lock().await;
 
-                match file_guard.write_all(&data).await {
-                    Ok(_) => {
-                        if let Err(e) = file_guard.flush().await {
-                            AsyncOperationResult::Error(format!("Flush failed: {}", e))
-                        } else {
-                            AsyncOperationResult::Number(data.len() as i64)
-                        }
-                    },
-                    Err(e) => AsyncOperationResult::Error(format!("Write failed: {}", e)),
+                    match file_guard.write_all(&data).await {
+                        Ok(_) => {
+                            if let Err(e) = file_guard.flush().await {
+                                AsyncOperationResult::Error(format!("Flush failed: {}", e))
+                            } else {
+                                AsyncOperationResult::Number(data.len() as i64)
+                            }
+                        },
+                        Err(e) => AsyncOperationResult::Error(format!("Write failed: {}", e)),
+                    }
                 }
             };
 
@@ -652,7 +660,7 @@ impl AsyncOperationsManager {
     /// Get operation statistics
     pub fn get_stats(&self) -> AsyncOperationStats {
         let stats = self.stats.lock().unwrap();
-        stats.clone()
+        (*stats).clone()
     }
 }
 

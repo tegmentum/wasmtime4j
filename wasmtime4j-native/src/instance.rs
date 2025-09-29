@@ -412,7 +412,7 @@ impl Instance {
                     }
 
                     func.call(&mut ctx, &wasm_params, &mut results)
-                        .map_err(|e| WasmtimeError::from_runtime_error(e))?;
+                        .map_err(|e| WasmtimeError::Runtime { message: e.to_string(), backtrace: None })?;
                     Ok(results)
                 }
                 _ => Err(WasmtimeError::Function {
@@ -806,7 +806,7 @@ pub mod core {
 
     /// Core function to call exported function with type checking and parameter conversion
     pub fn call_exported_function(
-        instance: &Instance,
+        instance: &mut Instance,
         store: &mut Store,
         name: &str,
         params: &[WasmValue],
@@ -1469,17 +1469,17 @@ pub mod ffi_core {
 
     /// Core function to check if instance has export
     pub fn has_export(instance: &Instance, name: &str) -> bool {
-        instance.has_export(name)
+        instance.exports_map.contains_key(name)
     }
 
     /// Core function to get exports
-    pub fn get_exports(instance: &Instance) -> &[ExportBinding] {
-        instance.exports()
+    pub fn get_exports(instance: &Instance) -> Vec<ExportBinding> {
+        instance.exports_map.values().cloned().collect()
     }
 
     /// Core function to dispose instance
     pub fn dispose_instance(instance: &mut Instance) {
-        instance.dispose()
+        let _ = instance.dispose();
     }
 
     /// Core function to check if instance is disposed
@@ -1561,7 +1561,7 @@ pub unsafe extern "C" fn wasmtime4j_instance_has_export(
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_instance_export_count(instance_ptr: *const c_void) -> usize {
     match ffi_core::get_instance_ref(instance_ptr) {
-        Ok(instance) => core::get_exports(instance).len(),
+        Ok(instance) => ffi_core::get_exports(instance).len(),
         Err(_) => 0,
     }
 }
@@ -1590,7 +1590,7 @@ pub unsafe extern "C" fn wasmtime4j_instance_dispose(instance_ptr: *mut c_void) 
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_instance_is_disposed(instance_ptr: *const c_void) -> c_int {
     match ffi_core::get_instance_ref(instance_ptr) {
-        Ok(instance) => if core::is_disposed(instance) { 1 } else { 0 },
+        Ok(instance) => if ffi_core::is_disposed(instance) { 1 } else { 0 },
         Err(_) => FFI_ERROR,
     }
 }
@@ -1614,7 +1614,7 @@ pub unsafe extern "C" fn wasmtime4j_instance_call_i32_function(
     }
 
     match (
-        core::get_instance_ref(instance_ptr),
+        core::get_instance_mut(instance_ptr as *mut c_void),
         crate::store::core::get_store_mut(store_ptr),
         CStr::from_ptr(function_name).to_str()
     ) {
@@ -1630,7 +1630,7 @@ pub unsafe extern "C" fn wasmtime4j_instance_call_i32_function(
 
             match instance.call_export_function(store, name_str, &param_values) {
                 Ok(results) => {
-                    if let Some(WasmValue::I32(result)) = results.into_iter().next() {
+                    if let Some(WasmValue::I32(result)) = results.values.into_iter().next() {
                         result
                     } else {
                         0
@@ -1673,9 +1673,8 @@ pub unsafe extern "C" fn wasmtime4j_instance_call_i32_function_no_params(
 pub unsafe extern "C" fn wasmtime4j_instance_created_at_micros(instance_ptr: *const c_void) -> u64 {
     match ffi_core::get_instance_ref(instance_ptr) {
         Ok(instance) => {
-            let metadata = core::get_metadata(instance);
-            metadata.created_at.duration_since(std::time::UNIX_EPOCH)
-                .unwrap_or_default()
+            let metadata = ffi_core::get_metadata(instance);
+            metadata.created_at.elapsed()
                 .as_micros() as u64
         },
         Err(_) => 0,
@@ -1690,7 +1689,7 @@ pub unsafe extern "C" fn wasmtime4j_instance_created_at_micros(instance_ptr: *co
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_instance_metadata_export_count(instance_ptr: *const c_void) -> usize {
     match ffi_core::get_instance_ref(instance_ptr) {
-        Ok(instance) => core::get_metadata(instance).exports.len(),
+        Ok(instance) => ffi_core::get_metadata(instance).export_count,
         Err(_) => 0,
     }
 }

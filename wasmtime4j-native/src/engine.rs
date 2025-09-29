@@ -508,15 +508,45 @@ impl Default for Engine {
 
                 match WasmtimeEngine::new(&config) {
                     Ok(wasmtime_engine) => Engine {
-                        engine: Arc::new(wasmtime_engine),
+                        inner: Arc::new(wasmtime_engine),
+                        config_summary: EngineConfigSummary {
+                            strategy: "Cranelift".to_string(),
+                            opt_level: "None".to_string(),
+                            debug_info: false,
+                            wasm_threads: false,
+                            wasm_reference_types: false,
+                            wasm_simd: false,
+                            wasm_bulk_memory: false,
+                            wasm_multi_value: false,
+                            fuel_enabled: false,
+                            max_memory_pages: None,
+                            max_stack_size: None,
+                            epoch_interruption: false,
+                            max_instances: None,
+                        },
                     },
                     Err(_) => {
                         // Last resort: create engine with completely default wasmtime config
                         // This should virtually never fail unless the system is severely broken
                         let default_config = Config::default();
                         Engine {
-                            engine: Arc::new(WasmtimeEngine::new(&default_config)
+                            inner: Arc::new(WasmtimeEngine::new(&default_config)
                                 .unwrap_or_else(|_| panic!("Critical: Cannot create fallback engine - system unusable"))),
+                            config_summary: EngineConfigSummary {
+                                strategy: "Default".to_string(),
+                                opt_level: "None".to_string(),
+                                debug_info: false,
+                                wasm_threads: false,
+                                wasm_reference_types: false,
+                                wasm_simd: false,
+                                wasm_bulk_memory: false,
+                                wasm_multi_value: false,
+                                fuel_enabled: false,
+                                max_memory_pages: None,
+                                max_stack_size: None,
+                                epoch_interruption: false,
+                                max_instances: None,
+                            },
                         }
                     }
                 }
@@ -660,8 +690,7 @@ mod tests {
 // Native C exports for JNI and Panama FFI consumption
 //
 
-use std::os::raw::{c_void, c_char, c_int};
-use std::ffi::CString;
+use std::os::raw::{c_void, c_int};
 use crate::shared_ffi::{FFI_SUCCESS, FFI_ERROR};
 
 /// Create a new engine with default configuration

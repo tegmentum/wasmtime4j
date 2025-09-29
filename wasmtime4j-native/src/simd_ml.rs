@@ -6,6 +6,7 @@
 
 use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::simd::{V128, V256, V512, PlatformCapabilities};
+#[cfg(target_arch = "x86_64")]
 use std::arch::x86_64::*;
 #[cfg(target_arch = "aarch64")]
 use std::arch::aarch64::*;
@@ -50,7 +51,7 @@ pub mod ml {
         /// Creates a new vectorized matrix operations instance
         pub fn new(capabilities: &PlatformCapabilities) -> Self {
             VectorizedMatrix {
-                capabilities: *capabilities,
+                capabilities: capabilities.clone(),
             }
         }
 
@@ -60,18 +61,19 @@ pub mod ml {
                              c: &mut [f32], dims_c: &MatrixDimensions) -> WasmtimeResult<()> {
             // Validate dimensions
             if !dims_a.can_multiply(dims_b) {
-                return Err(WasmtimeError::InvalidParameter(
-                    format!("Matrix dimensions incompatible: {}x{} * {}x{}",
-                           dims_a.rows, dims_a.cols, dims_b.rows, dims_b.cols)));
+                return Err(WasmtimeError::InvalidParameter {
+                    message: format!("Matrix dimensions incompatible: {}x{} * {}x{}",
+                           dims_a.rows, dims_a.cols, dims_b.rows, dims_b.cols),
+                });
             }
 
             if dims_c.rows != dims_a.rows || dims_c.cols != dims_b.cols {
-                return Err(WasmtimeError::InvalidParameter("Output matrix dimensions incorrect".to_string()));
+                return Err(WasmtimeError::InvalidParameter { message: "Output matrix dimensions incorrect".to_string() });
             }
 
             // Validate buffer sizes
             if a.len() < dims_a.total_elements() || b.len() < dims_b.total_elements() || c.len() < dims_c.total_elements() {
-                return Err(WasmtimeError::InvalidParameter("Buffer size too small".to_string()));
+                return Err(WasmtimeError::InvalidParameter { message: "Buffer size too small".to_string() });
             }
 
             #[cfg(target_arch = "x86_64")]
@@ -339,7 +341,7 @@ pub mod ml {
         pub fn matrix_transpose(&self, input: &[f32], dims_in: &MatrixDimensions,
                                output: &mut [f32], dims_out: &MatrixDimensions) -> WasmtimeResult<()> {
             if dims_in.rows != dims_out.cols || dims_in.cols != dims_out.rows {
-                return Err(WasmtimeError::InvalidParameter("Transpose dimension mismatch".to_string()));
+                return Err(WasmtimeError::InvalidParameter { message: "Transpose dimension mismatch".to_string() });
             }
 
             #[cfg(target_arch = "x86_64")]
@@ -451,7 +453,7 @@ pub mod ml {
         pub fn matrix_elementwise(&self, op: ElementwiseOp, a: &[f32], b: &[f32],
                                  result: &mut [f32], length: usize) -> WasmtimeResult<()> {
             if a.len() < length || b.len() < length || result.len() < length {
-                return Err(WasmtimeError::InvalidParameter("Buffer size too small".to_string()));
+                return Err(WasmtimeError::InvalidParameter { message: "Buffer size too small".to_string() });
             }
 
             #[cfg(target_arch = "x86_64")]
@@ -582,7 +584,7 @@ pub mod ml {
         /// Creates a new vectorized convolution operations instance
         pub fn new(capabilities: &PlatformCapabilities) -> Self {
             VectorizedConvolution {
-                capabilities: *capabilities,
+                capabilities: capabilities.clone(),
             }
         }
 
@@ -618,13 +620,14 @@ pub mod ml {
             let expected_width = (input_dims.width + 2 * padding - kernel_dims.width) / stride + 1;
 
             if output_dims.height != expected_height || output_dims.width != expected_width {
-                return Err(WasmtimeError::InvalidParameter(
-                    format!("Output dimensions incorrect: expected {}x{}, got {}x{}",
-                           expected_height, expected_width, output_dims.height, output_dims.width)));
+                return Err(WasmtimeError::InvalidParameter {
+                    message: format!("Output dimensions incorrect: expected {}x{}, got {}x{}",
+                           expected_height, expected_width, output_dims.height, output_dims.width),
+                });
             }
 
             if input_dims.channels != kernel_dims.channels {
-                return Err(WasmtimeError::InvalidParameter("Input and kernel channel count mismatch".to_string()));
+                return Err(WasmtimeError::InvalidParameter { message: "Input and kernel channel count mismatch".to_string() });
             }
 
             Ok(())
@@ -819,7 +822,7 @@ pub mod ml {
                                stride: usize, padding: usize) -> WasmtimeResult<()> {
             // Depthwise convolution: each input channel is convolved with its own kernel
             if kernel_dims.channels != 1 || input_dims.channels != output_dims.channels {
-                return Err(WasmtimeError::InvalidParameter("Invalid depthwise convolution dimensions".to_string()));
+                return Err(WasmtimeError::InvalidParameter { message: "Invalid depthwise convolution dimensions".to_string() });
             }
 
             // Process each channel separately
@@ -886,7 +889,7 @@ pub mod ml {
         /// Creates a new vectorized neural network layers instance
         pub fn new(capabilities: &PlatformCapabilities) -> Self {
             VectorizedNeuralLayers {
-                capabilities: *capabilities,
+                capabilities: capabilities.clone(),
                 matrix_ops: VectorizedMatrix::new(capabilities),
             }
         }
@@ -896,13 +899,13 @@ pub mod ml {
                             output: &mut [f32], input_size: usize, output_size: usize) -> WasmtimeResult<()> {
             // Validate dimensions
             if input.len() < input_size || output.len() < output_size {
-                return Err(WasmtimeError::InvalidParameter("Buffer size too small".to_string()));
+                return Err(WasmtimeError::InvalidParameter { message: "Buffer size too small".to_string() });
             }
             if weights.len() < input_size * output_size {
-                return Err(WasmtimeError::InvalidParameter("Weight matrix too small".to_string()));
+                return Err(WasmtimeError::InvalidParameter { message: "Weight matrix too small".to_string() });
             }
             if bias.len() < output_size {
-                return Err(WasmtimeError::InvalidParameter("Bias vector too small".to_string()));
+                return Err(WasmtimeError::InvalidParameter { message: "Bias vector too small".to_string() });
             }
 
             // Matrix multiplication: output = input * weights + bias
@@ -932,7 +935,7 @@ pub mod ml {
         pub fn activation(&self, func: ActivationFunction, input: &[f32],
                          output: &mut [f32], length: usize) -> WasmtimeResult<()> {
             if input.len() < length || output.len() < length {
-                return Err(WasmtimeError::InvalidParameter("Buffer size too small".to_string()));
+                return Err(WasmtimeError::InvalidParameter { message: "Buffer size too small".to_string() });
             }
 
             #[cfg(target_arch = "x86_64")]
@@ -1272,7 +1275,7 @@ pub mod ml {
                          mean: &[f32], variance: &[f32], scale: &[f32], bias: &[f32],
                          batch_size: usize, feature_size: usize, epsilon: f32) -> WasmtimeResult<()> {
             if input.len() < batch_size * feature_size || output.len() < batch_size * feature_size {
-                return Err(WasmtimeError::InvalidParameter("Buffer size too small".to_string()));
+                return Err(WasmtimeError::InvalidParameter { message: "Buffer size too small".to_string() });
             }
 
             for batch in 0..batch_size {

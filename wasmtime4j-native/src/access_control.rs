@@ -48,7 +48,7 @@ pub struct Role {
     /// Role description
     pub description: Option<String>,
     /// Permissions granted by this role
-    pub permissions: HashSet<Permission>,
+    pub permissions: Vec<Permission>,
     /// Parent roles (for role hierarchy)
     pub parent_roles: HashSet<String>,
     /// Role attributes
@@ -56,7 +56,7 @@ pub struct Role {
 }
 
 /// Permission definition
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Permission {
     /// Resource type being protected
     pub resource_type: String,
@@ -328,10 +328,16 @@ impl RbacEngine {
         let mut hierarchy = HashSet::new();
         hierarchy.insert(role_id.to_string());
 
-        if let Some(role) = self.roles.get(role_id) {
-            for parent_id in &role.parent_roles {
-                hierarchy.extend(self.get_role_hierarchy(parent_id));
-            }
+        // Extract parent role IDs to avoid borrowing conflict
+        let parent_role_ids: Vec<String> = if let Some(role) = self.roles.get(role_id) {
+            role.parent_roles.iter().cloned().collect()
+        } else {
+            Vec::new()
+        };
+
+        // Make recursive calls after extracting parent IDs
+        for parent_id in parent_role_ids {
+            hierarchy.extend(self.get_role_hierarchy(&parent_id));
         }
 
         self.role_hierarchy.insert(role_id.to_string(), hierarchy.clone());
@@ -339,9 +345,9 @@ impl RbacEngine {
     }
 
     /// Get all permissions for a user
-    pub fn get_user_permissions(&mut self, user_id: &str) -> HashSet<Permission> {
+    pub fn get_user_permissions(&mut self, user_id: &str) -> Vec<Permission> {
         let roles = self.get_user_roles(user_id);
-        let mut permissions = HashSet::new();
+        let mut permissions = Vec::new();
 
         for role_id in roles {
             if let Some(role) = self.roles.get(&role_id) {
@@ -355,7 +361,7 @@ impl RbacEngine {
     /// Check if a user has a specific permission
     pub fn has_permission(&mut self, user_id: &str, permission: &Permission) -> bool {
         let user_permissions = self.get_user_permissions(user_id);
-        user_permissions.contains(permission)
+        user_permissions.iter().any(|p| p == permission)
     }
 
     /// Authorize an access request using RBAC
@@ -708,10 +714,9 @@ impl SessionManager {
             if token.verify_signature(&self.hmac_secret)? {
                 Ok(Some(token.clone()))
             } else {
-                Err(WasmtimeError::new(
-                    ErrorCode::SecurityViolation,
-                    "Token signature verification failed".to_string(),
-                ))
+                Err(WasmtimeError::Security {
+                    message: "Token signature verification failed".to_string(),
+                })
             }
         } else {
             Ok(None)

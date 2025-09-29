@@ -19,7 +19,7 @@ use crate::error::{WasmtimeError, WasmtimeResult};
 #[derive(Debug, Clone)]
 pub struct Module {
     inner: Arc<WasmtimeModule>,
-    metadata: ModuleMetadata,
+    pub metadata: ModuleMetadata,
 }
 
 /// Comprehensive module metadata for introspection and validation
@@ -778,8 +778,8 @@ mod tests {
 //
 
 use std::os::raw::{c_void, c_char, c_int};
-use std::ffi::{CStr, CString};
-use crate::shared_ffi::{FFI_SUCCESS, FFI_ERROR};
+use std::ffi::CStr;
+use crate::shared_ffi::FFI_ERROR;
 
 /// Module core functions for interface implementations
 pub mod ffi_core {
@@ -816,32 +816,47 @@ pub mod ffi_core {
 
     /// Core function to check if module has export
     pub fn has_export(module: &Module, name: &str) -> bool {
-        module.has_export(name)
+        module.metadata.exports.iter().any(|export| export.name == name)
     }
 
     /// Core function to check if module has import
     pub fn has_import(module: &Module, module_name: &str, name: &str) -> bool {
-        module.has_import(module_name, name)
+        // Check imports using the module's metadata
+        module.metadata.imports.iter().any(|import| {
+            import.module == module_name && import.name == name
+        })
     }
 
     /// Core function to get function exports
     pub fn get_function_exports(module: &Module) -> Vec<ExportInfo> {
-        module.function_exports()
+        module.metadata.exports.iter()
+            .filter(|export| matches!(export.export_type, ExportKind::Function(_)))
+            .cloned()
+            .collect()
     }
 
     /// Core function to get memory exports
     pub fn get_memory_exports(module: &Module) -> Vec<ExportInfo> {
-        module.memory_exports()
+        module.metadata.exports.iter()
+            .filter(|export| matches!(export.export_type, ExportKind::Memory(_, _, _)))
+            .cloned()
+            .collect()
     }
 
     /// Core function to get table exports
     pub fn get_table_exports(module: &Module) -> Vec<ExportInfo> {
-        module.table_exports()
+        module.metadata.exports.iter()
+            .filter(|export| matches!(export.export_type, ExportKind::Table(_, _, _)))
+            .cloned()
+            .collect()
     }
 
     /// Core function to get global exports
     pub fn get_global_exports(module: &Module) -> Vec<ExportInfo> {
-        module.global_exports()
+        module.metadata.exports.iter()
+            .filter(|export| matches!(export.export_type, ExportKind::Global(_, _)))
+            .cloned()
+            .collect()
     }
 }
 
@@ -962,7 +977,7 @@ pub unsafe extern "C" fn wasmtime4j_module_has_import(
         Ok(module) => {
             match (CStr::from_ptr(module_name).to_str(), CStr::from_ptr(name).to_str()) {
                 (Ok(mod_str), Ok(name_str)) => {
-                    if core::has_import(module, mod_str, name_str) { 1 } else { 0 }
+                    if ffi_core::has_import(module, mod_str, name_str) { 1 } else { 0 }
                 },
                 _ => FFI_ERROR,
             }
@@ -1031,7 +1046,7 @@ pub unsafe extern "C" fn wasmtime4j_module_memory_export_count(module_ptr: *cons
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_module_table_export_count(module_ptr: *const c_void) -> usize {
     match ffi_core::get_module_ref(module_ptr) {
-        Ok(module) => core::get_table_exports(module).len(),
+        Ok(module) => ffi_core::get_table_exports(module).len(),
         Err(_) => 0,
     }
 }
@@ -1044,7 +1059,7 @@ pub unsafe extern "C" fn wasmtime4j_module_table_export_count(module_ptr: *const
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_module_global_export_count(module_ptr: *const c_void) -> usize {
     match ffi_core::get_module_ref(module_ptr) {
-        Ok(module) => core::get_global_exports(module).len(),
+        Ok(module) => ffi_core::get_global_exports(module).len(),
         Err(_) => 0,
     }
 }

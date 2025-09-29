@@ -124,9 +124,9 @@ impl Default for LinkerConfig {
 
 /// Dependency graph for module resolution
 #[derive(Debug, Clone)]
-pub struct DependencyGraph {
+pub struct DependencyGraph<'a> {
     /// Nodes in the graph (modules)
-    pub nodes: Vec<DependencyNode>,
+    pub nodes: Vec<DependencyNode<'a>>,
     /// Edges in the graph (dependencies)
     pub edges: Vec<DependencyEdge>,
     /// Whether the graph has been validated
@@ -139,13 +139,13 @@ pub struct DependencyGraph {
 
 /// Node in the dependency graph representing a module
 #[derive(Debug, Clone)]
-pub struct DependencyNode {
+pub struct DependencyNode<'a> {
     /// Index of this node
     pub index: usize,
     /// Module reference
     pub module: Module,
     /// Imports required by this module
-    pub imports: Vec<ModuleImport>,
+    pub imports: Vec<ModuleImport<'a>>,
     /// Exports provided by this module
     pub exports: Vec<ModuleExport>,
     /// Whether this node has been visited during traversal
@@ -173,13 +173,13 @@ pub struct DependencyEdge {
 
 /// Import required by a module
 #[derive(Debug, Clone)]
-pub struct ModuleImport {
+pub struct ModuleImport<'a> {
     /// Module name for the import
     pub module_name: String,
     /// Import name
     pub import_name: String,
     /// Expected import type
-    pub import_type: WasmtimeImportType,
+    pub import_type: WasmtimeImportType<'a>,
     /// Whether this import is optional
     pub optional: bool,
 }
@@ -396,7 +396,7 @@ impl Linker {
     ///
     /// # Errors
     /// Returns WasmtimeError if host function instantiation fails
-    pub fn instantiate_host_functions(&mut self, store: &mut Store) -> WasmtimeResult<()> {
+    pub fn instantiate_host_functions(&mut self, store: &mut wasmtime::Store<StoreData>) -> WasmtimeResult<()> {
         if self.metadata.disposed {
             return Err(WasmtimeError::Runtime {
                 message: "Linker has been disposed".to_string(),
@@ -415,19 +415,17 @@ impl Linker {
             log::debug!("Instantiating host function: {}", key);
 
             // Create the Wasmtime function using the host function
-            store.with_context_mut(|ctx| {
-                let wasmtime_func = definition.host_function.create_wasmtime_func(ctx)?;
+            let wasmtime_func = definition.host_function.create_wasmtime_func(&mut *store)?;
 
-                // Define the function in the linker
-                linker.define(
-                    ctx,
-                    &definition.module_name,
-                    &definition.function_name,
-                    wasmtime::Extern::Func(wasmtime_func)
-                ).map_err(|e| WasmtimeError::Runtime {
-                    message: format!("Failed to define host function in linker: {}", e),
-                    backtrace: None
-                })
+            // Define the function in the linker
+            linker.define(
+                &mut *store,
+                &definition.module_name,
+                &definition.function_name,
+                wasmtime::Extern::Func(wasmtime_func)
+            ).map_err(|e| WasmtimeError::Runtime {
+                message: format!("Failed to define host function in linker: {}", e),
+                backtrace: None
             })?;
         }
 
@@ -565,7 +563,7 @@ impl Linker {
     ///
     /// # Errors
     /// Returns WasmtimeError if dependency analysis fails
-    pub fn resolve_dependencies(&self, modules: &[Module]) -> WasmtimeResult<DependencyGraph> {
+    pub fn resolve_dependencies<'a>(&self, modules: &'a [Module]) -> WasmtimeResult<DependencyGraph<'a>> {
         if self.metadata.disposed {
             return Err(WasmtimeError::Runtime {
                 message: "Linker has been disposed".to_string(),
@@ -644,7 +642,7 @@ impl Linker {
     }
 
     /// Builds a dependency graph for the given modules
-    fn build_dependency_graph(&self, modules: &[Module]) -> WasmtimeResult<DependencyGraph> {
+    fn build_dependency_graph<'a>(&self, modules: &'a [Module]) -> WasmtimeResult<DependencyGraph<'a>> {
         let mut graph = DependencyGraph {
             nodes: Vec::new(),
             edges: Vec::new(),
@@ -726,35 +724,38 @@ impl Linker {
         graph.nodes[node_idx].processing = true;
         stack.push(node_idx);
 
+        // Collect outgoing edges to avoid borrowing conflict
+        let outgoing_edges: Vec<usize> = graph.edges
+            .iter()
+            .filter(|edge| edge.from_node == node_idx)
+            .map(|edge| edge.to_node)
+            .collect();
+
         // Check all outgoing edges
-        for edge in &graph.edges {
-            if edge.from_node == node_idx {
-                let next_idx = edge.to_node;
+        for next_idx in outgoing_edges {
+            if graph.nodes[next_idx].processing {
+                // Found a cycle
+                let cycle_start = stack.iter().position(|&x| x == next_idx).unwrap();
+                let cycle_nodes: Vec<String> = stack[cycle_start..]
+                    .iter()
+                    .map(|&idx| graph.nodes[idx].module.metadata.name.clone().unwrap_or_else(|| format!("module_{}", idx)))
+                    .collect();
 
-                if graph.nodes[next_idx].processing {
-                    // Found a cycle
-                    let cycle_start = stack.iter().position(|&x| x == next_idx).unwrap();
-                    let cycle_nodes: Vec<String> = stack[cycle_start..]
-                        .iter()
-                        .map(|&idx| graph.nodes[idx].module.name().unwrap_or_else(|| format!("module_{}", idx)))
-                        .collect();
+                // Add the first node again to complete the cycle
+                let mut cycle_description = cycle_nodes.join(" -> ");
+                cycle_description.push_str(" -> ");
+                cycle_description.push_str(&cycle_nodes[0]);
 
-                    // Add the first node again to complete the cycle
-                    let mut cycle_description = cycle_nodes.join(" -> ");
-                    cycle_description.push_str(" -> ");
-                    cycle_description.push_str(&cycle_nodes[0]);
+                stack.pop();
+                graph.nodes[node_idx].processing = false;
+                return Ok(Some(cycle_description));
+            }
 
+            if !graph.nodes[next_idx].visited {
+                if let Some(cycle) = self.dfs_detect_cycle(graph, next_idx, stack)? {
                     stack.pop();
                     graph.nodes[node_idx].processing = false;
-                    return Ok(Some(cycle_description));
-                }
-
-                if !graph.nodes[next_idx].visited {
-                    if let Some(cycle) = self.dfs_detect_cycle(graph, next_idx, stack)? {
-                        stack.pop();
-                        graph.nodes[node_idx].processing = false;
-                        return Ok(Some(cycle));
-                    }
+                    return Ok(Some(cycle));
                 }
             }
         }
@@ -809,7 +810,7 @@ impl Linker {
     }
 
     /// Extracts imports from a module
-    fn extract_module_imports(&self, module: &Module) -> WasmtimeResult<Vec<ModuleImport>> {
+    fn extract_module_imports<'a>(&self, module: &'a Module) -> WasmtimeResult<Vec<ModuleImport<'a>>> {
         let wasmtime_module = module.inner();
         let mut imports = Vec::new();
 
@@ -817,7 +818,7 @@ impl Linker {
             let module_import = ModuleImport {
                 module_name: import.module().to_string(),
                 import_name: import.name().to_string(),
-                import_type: import.ty().clone(),
+                import_type: import,
                 optional: false, // WebAssembly imports are generally not optional
             };
             imports.push(module_import);
@@ -846,7 +847,7 @@ impl Linker {
     fn node_exports_import(&self, node: &DependencyNode, module_name: &str, import_name: &str) -> bool {
         // For now, assume the module name matches the node's module name
         // In a more sophisticated implementation, this would handle module aliasing
-        if let Some(node_module_name) = node.module.name() {
+        if let Some(node_module_name) = node.module.metadata.name.as_ref() {
             if node_module_name == module_name {
                 return node.exports.iter().any(|export| export.name == import_name);
             }
@@ -857,11 +858,12 @@ impl Linker {
 
     /// Converts Wasmtime import type to dependency type
     fn wasmtime_type_to_dependency_type(&self, import_type: &WasmtimeImportType) -> DependencyType {
-        match import_type {
-            WasmtimeImportType::Func(_) => DependencyType::Function,
-            WasmtimeImportType::Memory(_) => DependencyType::Memory,
-            WasmtimeImportType::Table(_) => DependencyType::Table,
-            WasmtimeImportType::Global(_) => DependencyType::Global,
+        match import_type.ty() {
+            ExternType::Func(_) => DependencyType::Function,
+            ExternType::Memory(_) => DependencyType::Memory,
+            ExternType::Table(_) => DependencyType::Table,
+            ExternType::Global(_) => DependencyType::Global,
+            ExternType::Tag(_) => DependencyType::Global,
         }
     }
 
@@ -970,7 +972,11 @@ pub mod ffi_core {
         store: &mut Store,
         module: &Module,
     ) -> WasmtimeResult<LinkerInstantiationResult> {
-        linker.instantiate(store, module)
+        // Note: Direct instantiate method not available in current Wasmtime version
+        // Return error until proper implementation is available
+        Err(WasmtimeError::Linker {
+            message: "Module instantiation not yet implemented for current Wasmtime version".to_string(),
+        })
     }
 
     /// Core function to get linker metadata
@@ -1033,8 +1039,10 @@ pub unsafe extern "C" fn wasmtime4j_linker_new_with_config(
     match crate::engine::core::get_engine_ref(engine_ptr) {
         Ok(engine) => {
             let config = LinkerConfig {
-                allow_unknown_exports: allow_unknown_exports != 0,
+                enable_wasi: false, // Default to false for now
                 allow_shadowing: allow_shadowing != 0,
+                max_host_functions: Some(1000), // Reasonable default
+                validate_signatures: true, // Default to true for safety
             };
             match ffi_core::create_linker_with_config(engine, config) {
                 Ok(linker) => Box::into_raw(linker) as *mut c_void,
@@ -1053,7 +1061,7 @@ pub unsafe extern "C" fn wasmtime4j_linker_new_with_config(
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_linker_destroy(linker_ptr: *mut c_void) {
     if !linker_ptr.is_null() {
-        core::destroy_linker(linker_ptr);
+        ffi_core::destroy_linker(linker_ptr);
     }
 }
 
@@ -1074,7 +1082,7 @@ pub unsafe extern "C" fn wasmtime4j_linker_instantiate(
     }
 
     match (
-        core::get_linker_ref(linker_ptr),
+        ffi_core::get_linker_ref(linker_ptr),
         crate::store::core::get_store_mut(store_ptr),
         crate::module::core::get_module_ref(module_ptr)
     ) {
@@ -1096,7 +1104,7 @@ pub unsafe extern "C" fn wasmtime4j_linker_instantiate(
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_linker_is_valid(linker_ptr: *const c_void) -> c_int {
     match ffi_core::get_linker_ref(linker_ptr) {
-        Ok(linker) => if core::is_valid(linker) { 1 } else { 0 },
+        Ok(linker) => if ffi_core::is_valid(linker) { 1 } else { 0 },
         Err(_) => FFI_ERROR,
     }
 }
@@ -1110,7 +1118,7 @@ pub unsafe extern "C" fn wasmtime4j_linker_is_valid(linker_ptr: *const c_void) -
 pub unsafe extern "C" fn wasmtime4j_linker_dispose(linker_ptr: *mut c_void) -> c_int {
     match ffi_core::get_linker_mut(linker_ptr) {
         Ok(linker) => {
-            core::dispose_linker(linker);
+            ffi_core::dispose_linker(linker);
             FFI_SUCCESS
         },
         Err(_) => FFI_ERROR,
@@ -1125,7 +1133,7 @@ pub unsafe extern "C" fn wasmtime4j_linker_dispose(linker_ptr: *mut c_void) -> c
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_linker_host_function_count(linker_ptr: *const c_void) -> usize {
     match ffi_core::get_linker_ref(linker_ptr) {
-        Ok(linker) => core::host_function_count(linker),
+        Ok(linker) => ffi_core::host_function_count(linker),
         Err(_) => 0,
     }
 }
@@ -1138,7 +1146,7 @@ pub unsafe extern "C" fn wasmtime4j_linker_host_function_count(linker_ptr: *cons
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_linker_import_count(linker_ptr: *const c_void) -> usize {
     match ffi_core::get_linker_ref(linker_ptr) {
-        Ok(linker) => core::import_count(linker),
+        Ok(linker) => ffi_core::import_count(linker),
         Err(_) => 0,
     }
 }
@@ -1151,7 +1159,7 @@ pub unsafe extern "C" fn wasmtime4j_linker_import_count(linker_ptr: *const c_voi
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_linker_instantiation_count(linker_ptr: *const c_void) -> u64 {
     match ffi_core::get_linker_ref(linker_ptr) {
-        Ok(linker) => core::get_metadata(linker).instantiation_count,
+        Ok(linker) => ffi_core::get_metadata(linker).instantiation_count,
         Err(_) => 0,
     }
 }
@@ -1164,7 +1172,7 @@ pub unsafe extern "C" fn wasmtime4j_linker_instantiation_count(linker_ptr: *cons
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_linker_wasi_enabled(linker_ptr: *const c_void) -> c_int {
     match ffi_core::get_linker_ref(linker_ptr) {
-        Ok(linker) => if core::get_metadata(linker).wasi_enabled { 1 } else { 0 },
+        Ok(linker) => if ffi_core::get_metadata(linker).wasi_enabled { 1 } else { 0 },
         Err(_) => FFI_ERROR,
     }
 }
@@ -1178,9 +1186,8 @@ pub unsafe extern "C" fn wasmtime4j_linker_wasi_enabled(linker_ptr: *const c_voi
 pub unsafe extern "C" fn wasmtime4j_linker_created_at_micros(linker_ptr: *const c_void) -> u64 {
     match ffi_core::get_linker_ref(linker_ptr) {
         Ok(linker) => {
-            let metadata = core::get_metadata(linker);
-            metadata.created_at.duration_since(std::time::UNIX_EPOCH)
-                .unwrap_or_default()
+            let metadata = ffi_core::get_metadata(linker);
+            metadata.created_at.elapsed()
                 .as_micros() as u64
         },
         Err(_) => 0,

@@ -732,7 +732,6 @@ pub struct AtomicManagerConfig {
 }
 
 /// Queued atomic operation
-#[derive(Debug)]
 pub struct QueuedAtomicOperation {
     /// Atomic operation
     pub operation: AtomicOperation,

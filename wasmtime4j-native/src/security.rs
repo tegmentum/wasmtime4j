@@ -18,6 +18,7 @@ use std::time::{SystemTime, UNIX_EPOCH, Duration};
 use std::sync::{Arc, RwLock, Mutex};
 use std::fs::{File, OpenOptions};
 use std::io::{Write, BufWriter};
+use crate::ErrorCode;
 use ring::{digest, signature, rand, hmac};
 use ring::signature::{Ed25519KeyPair, KeyPair, UnparsedPublicKey, VerificationAlgorithm};
 use ring::rand::SystemRandom;
@@ -25,6 +26,7 @@ use base64::{Engine as _, engine::general_purpose};
 use serde::{Deserialize, Serialize};
 use sha2::{Sha256, Digest};
 use chrono::{DateTime, Utc};
+use crate::error::{WasmtimeError, WasmtimeResult};
 
 /// Supported signature algorithms for module verification
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -572,10 +574,10 @@ impl SignatureAlgorithm {
             "ed25519" => Ok(SignatureAlgorithm::Ed25519),
             "rsa-sha256" => Ok(SignatureAlgorithm::RsaSha256),
             "ecdsa-p256-sha256" => Ok(SignatureAlgorithm::EcdsaP256Sha256),
-            _ => Err(WasmtimeError::new(
-                ErrorCode::InvalidParameter,
+            _ => Err(WasmtimeError::InvalidParameter {
+                message:
                 format!("Unsupported signature algorithm: {}", s),
-            )),
+            }),
         }
     }
 }
@@ -624,19 +626,17 @@ impl ModuleSignature {
     /// Decode the signature bytes
     pub fn signature_bytes(&self) -> WasmtimeResult<Vec<u8>> {
         general_purpose::STANDARD.decode(&self.signature)
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::ValidationFailure,
-                format!("Failed to decode signature: {}", e),
-            ))
+            .map_err(|e| WasmtimeError::Validation {
+                message: format!("Failed to decode signature: {}", e),
+            })
     }
 
     /// Decode the public key bytes
     pub fn public_key_bytes(&self) -> WasmtimeResult<Vec<u8>> {
         general_purpose::STANDARD.decode(&self.public_key)
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::ValidationFailure,
-                format!("Failed to decode public key: {}", e),
-            ))
+            .map_err(|e| WasmtimeError::Validation {
+                message: format!("Failed to decode public key: {}", e),
+            })
     }
 
     /// Get the signature algorithm
@@ -738,31 +738,29 @@ impl TrustStore {
     /// Load trust store from file
     pub fn load_from_file<P: AsRef<Path>>(path: P) -> WasmtimeResult<Self> {
         let content = std::fs::read_to_string(path)
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::IOError,
+            .map_err(|e| WasmtimeError::IO {
+                message:
                 format!("Failed to read trust store file: {}", e),
-            ))?;
+            })?;
 
         serde_json::from_str(&content)
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::ValidationFailure,
-                format!("Failed to parse trust store: {}", e),
-            ))
+            .map_err(|e| WasmtimeError::Validation {
+                message: format!("Failed to parse trust store: {}", e),
+            })
     }
 
     /// Save trust store to file
     pub fn save_to_file<P: AsRef<Path>>(&self, path: P) -> WasmtimeResult<()> {
         let content = serde_json::to_string_pretty(self)
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::SerializationError,
+            .map_err(|e| WasmtimeError::Serialization {
+                message:
                 format!("Failed to serialize trust store: {}", e),
-            ))?;
+            })?;
 
         std::fs::write(path, content)
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::IOError,
-                format!("Failed to write trust store file: {}", e),
-            ))
+            .map_err(|e| WasmtimeError::IO {
+                message: format!("Failed to write trust store file: {}", e),
+            })
     }
 }
 
@@ -866,16 +864,16 @@ impl ModuleSigner {
     pub fn new() -> WasmtimeResult<Self> {
         let rng = SystemRandom::new();
         let pkcs8_bytes = Ed25519KeyPair::generate_pkcs8(&rng)
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::CryptographicError,
+            .map_err(|e| WasmtimeError::Cryptographic {
+                message:
                 format!("Failed to generate key pair: {}", e),
-            ))?;
+            })?;
 
         let key_pair = Ed25519KeyPair::from_pkcs8(pkcs8_bytes.as_ref())
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::CryptographicError,
+            .map_err(|e| WasmtimeError::Cryptographic {
+                message:
                 format!("Failed to create key pair: {}", e),
-            ))?;
+            })?;
 
         Ok(Self {
             key_pair,
@@ -887,10 +885,10 @@ impl ModuleSigner {
     /// Create a module signer from existing PKCS#8 key material
     pub fn from_pkcs8(pkcs8_bytes: &[u8]) -> WasmtimeResult<Self> {
         let key_pair = Ed25519KeyPair::from_pkcs8(pkcs8_bytes)
-            .map_err(|e| WasmtimeError::new(
-                ErrorCode::CryptographicError,
+            .map_err(|e| WasmtimeError::Cryptographic {
+                message:
                 format!("Failed to load key pair: {}", e),
-            ))?;
+            })?;
 
         Ok(Self {
             key_pair,
@@ -1008,25 +1006,23 @@ impl ModuleVerifier {
                 );
 
                 public_key.verify(module_hash.as_ref(), &signature_bytes)
-                    .map_err(|e| WasmtimeError::new(
-                        ErrorCode::CryptographicError,
+                    .map_err(|e| WasmtimeError::Cryptographic {
+                        message:
                         format!("Signature verification failed: {}", e),
-                    ))?;
+                    })?;
             }
             _ => {
-                return Err(WasmtimeError::new(
-                    ErrorCode::UnsupportedFeature,
-                    format!("Signature algorithm {} not yet implemented", algorithm.as_str()),
-                ));
+                return Err(WasmtimeError::UnsupportedFeature {
+                    message: format!("Signature algorithm {} not yet implemented", algorithm.as_str()),
+                });
             }
         }
 
         // Check trust store
         if !self.trust_store.is_key_trusted(&public_key_bytes) {
-            return Err(WasmtimeError::new(
-                ErrorCode::SecurityViolation,
-                "Public key is not trusted".to_string(),
-            ));
+            return Err(WasmtimeError::Security {
+                message: "Public key is not trusted".to_string(),
+            });
         }
 
         // Validate certificate chain if required
@@ -1034,10 +1030,9 @@ impl ModuleVerifier {
             if let Some(cert_chain) = &signature.certificate_chain {
                 self.validate_certificate_chain(cert_chain)?;
             } else {
-                return Err(WasmtimeError::new(
-                    ErrorCode::SecurityViolation,
-                    "Certificate chain required but not provided".to_string(),
-                ));
+                return Err(WasmtimeError::Security {
+                    message: "Certificate chain required but not provided".to_string(),
+                });
             }
         }
 
@@ -1054,10 +1049,10 @@ impl ModuleVerifier {
             Some(sig) => self.verify_module(module_bytes, sig),
             None => {
                 if self.require_signatures {
-                    Err(WasmtimeError::new(
-                        ErrorCode::SecurityViolation,
+                    Err(WasmtimeError::Security {
+                        message:
                         "Module signature required but not provided".to_string(),
-                    ))
+                    })
                 } else {
                     Ok(true) // Allow unsigned modules if not required
                 }
@@ -1156,10 +1151,10 @@ impl ModuleSecurityPolicy {
         // Check algorithm
         let algorithm = signature.algorithm()?;
         if !self.allowed_algorithms.contains(&algorithm) {
-            return Err(WasmtimeError::new(
-                ErrorCode::SecurityViolation,
+            return Err(WasmtimeError::Security {
+                message:
                 format!("Signature algorithm {} not allowed by policy", algorithm.as_str()),
-            ));
+            });
         }
 
         // Check signature age
@@ -1170,10 +1165,10 @@ impl ModuleSecurityPolicy {
                 .as_secs();
 
             if now.saturating_sub(signature.timestamp) > max_age {
-                return Err(WasmtimeError::new(
-                    ErrorCode::SecurityViolation,
+                return Err(WasmtimeError::Security {
+                    message:
                     "Signature is too old".to_string(),
-                ));
+                });
             }
         }
 

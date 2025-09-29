@@ -4,10 +4,28 @@
 //! and intelligent cache resource allocation strategies for maximum performance.
 
 use std::collections::{HashMap, HashSet, VecDeque};
+use std::ffi::CStr;
 use std::fs;
 use std::sync::{Arc, Mutex, RwLock};
 use std::time::{Duration, Instant};
 use crate::error::{WasmtimeError, WasmtimeResult};
+
+/// Cache replacement policy strategies
+#[derive(Debug, Clone, Copy)]
+pub enum CacheReplacementPolicy {
+    /// Least Recently Used
+    LRU,
+    /// Least Frequently Used
+    LFU,
+    /// First In First Out
+    FIFO,
+    /// Pseudo Least Recently Used
+    PLRU,
+    /// Random replacement
+    Random,
+    /// Not Most Recently Used
+    NMRU,
+}
 
 /// Advanced CPU cache management system
 #[derive(Debug, Clone)]
@@ -1337,10 +1355,10 @@ impl CachePartitioningManager {
         for level_info in levels {
             // Most modern caches use LRU or pseudo-LRU
             let policy = match level_info.level {
-                1 => CacheReplacementPolicy::Lru,
-                2 => CacheReplacementPolicy::Lru,
-                3 => CacheReplacementPolicy::TreePseudoLru,
-                _ => CacheReplacementPolicy::Lru,
+                1 => CacheReplacementPolicy::LRU,
+                2 => CacheReplacementPolicy::LRU,
+                3 => CacheReplacementPolicy::PLRU,
+                _ => CacheReplacementPolicy::LRU,
             };
             policies.insert(level_info.level, policy);
         }
@@ -1545,7 +1563,7 @@ impl CachePartitioningManager {
         };
 
         // Find available ways (not already allocated)
-        let mut allocated_ways = HashSet::new();
+        let mut allocated_ways: HashSet<u32> = HashSet::new();
         for partition in &self.partitions {
             if partition.cache_level == cache_level && partition.cache_instance_id == cache_instance_id {
                 allocated_ways.extend(&partition.allocated_ways);

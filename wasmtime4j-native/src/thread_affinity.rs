@@ -577,7 +577,7 @@ impl ThreadAffinityManager {
                     topology,
                 )
             })
-            .map_err(|e| WasmtimeError::Threading {
+            .map_err(|e| WasmtimeError::Concurrency {
                 message: format!("Failed to start affinity management thread: {}", e),
             })?;
 
@@ -980,7 +980,7 @@ impl ThreadAffinityManager {
                 CPU_SET(core_id, &mut cpu_set);
 
                 if pthread_setaffinity_np(pthread_id, mem::size_of::<cpu_set_t>(), &cpu_set) != 0 {
-                    return Err(WasmtimeError::Threading {
+                    return Err(WasmtimeError::Concurrency {
                         message: format!("Failed to set CPU affinity for core {}", core_id),
                     });
                 }

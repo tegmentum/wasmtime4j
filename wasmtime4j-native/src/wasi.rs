@@ -390,7 +390,7 @@ impl WasiContext {
 
     /// Add WASI imports to a Wasmtime linker
     /// This method will be implemented when the proper API is determined
-    pub fn add_to_linker<T>(
+    pub fn add_to_generic_linker<T>(
         _linker: &mut Linker<T>,
         _get_ctx: impl Fn(&mut T) -> &mut WasiCtx + Send + Sync + Copy + 'static,
     ) -> WasmtimeResult<()> {
@@ -494,7 +494,7 @@ impl Default for WasiContext {
             Ok(context) => context,
             Err(_) => {
                 // Fallback to minimal WASI context that should always work
-                let builder = WasiCtxBuilder::new();
+                let mut builder = WasiCtxBuilder::new();
                 let wasi_ctx = builder.build();
 
                 WasiContext {
@@ -2591,30 +2591,26 @@ impl WasiContext {
             // Note: wasmtime_wasi::add_to_linker might not be available in this version
             // use wasmtime_wasi::add_to_linker;
 
-            store.with_context_mut(|ctx| {
-                // Get the linker guard
-                let mut linker_guard = linker.inner()
-                    .map_err(|e| WasmtimeError::Runtime {
-                        message: format!("Failed to get linker: {}", e),
-                        backtrace: None,
-                    })?;
+            // Get the linker guard
+            let mut linker_guard = linker.inner()
+                .map_err(|e| WasmtimeError::Runtime {
+                    message: format!("Failed to get linker: {}", e),
+                    backtrace: None,
+                })?;
 
-                // Add WASI imports using wasmtime-wasi
-                let wasi_ctx = self.inner.lock()
-                    .map_err(|e| WasmtimeError::Runtime {
-                        message: format!("Failed to lock WASI context: {}", e),
-                        backtrace: None,
-                    })?;
+            // Add WASI imports using wasmtime-wasi
+            let wasi_ctx = self.inner.lock()
+                .map_err(|e| WasmtimeError::Runtime {
+                    message: format!("Failed to lock WASI context: {}", e),
+                    backtrace: None,
+                })?;
 
-                // This would normally add all WASI imports to the linker
-                // For now, we'll simulate this by logging the operation
-                log::debug!("Adding WASI imports to linker");
+            // This would normally add all WASI imports to the linker
+            // For now, we'll simulate this by logging the operation
+            log::debug!("Adding WASI imports to linker");
 
-                // TODO: Implement actual WASI import addition when wasmtime-wasi supports it
-                // add_to_linker(&mut linker_guard, |_| &wasi_ctx)?;
-
-                Ok(())
-            })?
+            // TODO: Implement actual WASI import addition when wasmtime-wasi supports it
+            // add_to_linker(&mut linker_guard, |_| &wasi_ctx)?;
         }
 
         #[cfg(not(feature = "wasi"))]

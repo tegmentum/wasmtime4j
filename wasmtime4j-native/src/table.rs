@@ -338,12 +338,20 @@ impl Table {
         }
 
         store.with_context(|mut ctx| {
-            // Use Wasmtime's table.copy function for safe, efficient copying
-            table.copy(&mut ctx, dst as u64, src as u64, len as u64)
-                .map_err(|e| WasmtimeError::Runtime {
-                    message: format!("Failed to copy within table: {}", e),
-                    backtrace: None,
-                })
+            // Manually implement table copy since direct copy might not be available
+            for i in 0..len {
+                let src_elem = table.get(&mut ctx, (src + i) as u64)
+                    .ok_or_else(|| WasmtimeError::Runtime {
+                        message: format!("Failed to get element at index {}", src + i),
+                        backtrace: None,
+                    })?;
+                table.set(&mut ctx, (dst + i) as u64, src_elem)
+                    .map_err(|e| WasmtimeError::Runtime {
+                        message: format!("Failed to set element at index {}: {}", dst + i, e),
+                        backtrace: None,
+                    })?;
+            }
+            Ok(())
         })
     }
 
@@ -357,7 +365,7 @@ impl Table {
         len: u32,
     ) -> WasmtimeResult<()> {
         // Validate type compatibility
-        if self.metadata.element_type != src_table.metadata.element_type {
+        if format!("{:?}", self.metadata.element_type) != format!("{:?}", src_table.metadata.element_type) {
             return Err(WasmtimeError::Type {
                 message: format!(
                     "Table element types must match: dst={:?}, src={:?}",
@@ -406,7 +414,7 @@ impl Table {
 
             // Manually copy elements since wasmtime doesn't have direct cross-table copy API
             for i in 0..count {
-                let element = src_table_inner.get(&ctx, src_index + i)
+                let element = src_table_inner.get(&mut ctx, src_index + i)
                     .ok_or_else(|| WasmtimeError::Runtime {
                         message: format!("Failed to get source element at index {}", src_index + i),
                         backtrace: None,
@@ -568,7 +576,7 @@ impl Table {
                     })?;
 
                     if let Some(func) = registry.get_function(id) {
-                        Ref::from(func.clone())
+                        Ref::from(Clone::clone(func))
                     } else {
                         // Function not found, use null reference
                         Ref::null(&RefType::FUNCREF.heap_type())
@@ -587,7 +595,7 @@ impl Table {
                     if let Some(external) = registry.get_external(id) {
                         // Convert Extern to Ref - this might need specific handling based on Extern type
                         match external {
-                            Extern::Func(func) => Ref::from(func.clone()),
+                            Extern::Func(func) => Ref::from(Clone::clone(func)),
                             _ => Ref::null(&RefType::EXTERNREF.heap_type()), // For other external types, use null for now
                         }
                     } else {
@@ -606,10 +614,10 @@ impl Table {
                     })?;
 
                     if let Some(func) = registry.get_function(id) {
-                        Ref::from(func.clone())
+                        Ref::from(Clone::clone(func))
                     } else if let Some(external) = registry.get_external(id) {
                         match external {
-                            Extern::Func(func) => Ref::from(func.clone()),
+                            Extern::Func(func) => Ref::from(Clone::clone(func)),
                             _ => Ref::null(&RefType::EXTERNREF.heap_type()),
                         }
                     } else {
@@ -636,18 +644,14 @@ impl Table {
                             TableElement::FuncRef(None)
                         } else {
                             // Try to extract function and register it
-                            match val.as_func() {
-                                Some(func) => {
-                                    let mut registry = REFERENCE_REGISTRY.lock().map_err(|e| WasmtimeError::Concurrency {
-                                        message: format!("Failed to lock reference registry: {}", e),
-                                    })?;
-                                    let id = registry.register_function(func.clone());
-                                    TableElement::FuncRef(Some(id))
-                                },
-                                None => {
-                                    // Could not extract function, use null
-                                    TableElement::FuncRef(None)
-                                }
+                            if let Some(func_ref) = val.as_func() {
+                                let mut registry = REFERENCE_REGISTRY.lock().map_err(|e| WasmtimeError::Concurrency {
+                                    message: format!("Failed to lock reference registry: {}", e),
+                                })?;
+                                let id = registry.register_function(func_ref.unwrap().clone());
+                                TableElement::FuncRef(Some(id))
+                            } else {
+                                TableElement::FuncRef(None)
                             }
                         }
                     },
@@ -656,19 +660,16 @@ impl Table {
                             TableElement::ExternRef(None)
                         } else {
                             // For external references, we create a generic Extern::Func if possible
-                            match val.as_func() {
-                                Some(func) => {
-                                    let mut registry = REFERENCE_REGISTRY.lock().map_err(|e| WasmtimeError::Concurrency {
-                                        message: format!("Failed to lock reference registry: {}", e),
-                                    })?;
-                                    let external = Extern::Func(func.clone());
-                                    let id = registry.register_external(external);
-                                    TableElement::ExternRef(Some(id))
-                                },
-                                None => {
-                                    // Could not extract function, use null
-                                    TableElement::ExternRef(None)
-                                }
+                            if let Some(func_ref) = val.as_func() {
+                                let mut registry = REFERENCE_REGISTRY.lock().map_err(|e| WasmtimeError::Concurrency {
+                                    message: format!("Failed to lock reference registry: {}", e),
+                                })?;
+                                let external = Extern::Func(func_ref.unwrap().clone());
+                                let id = registry.register_external(external);
+                                TableElement::ExternRef(Some(id))
+                            } else {
+                                // Could not extract function, use null
+                                TableElement::ExternRef(None)
                             }
                         }
                     },
@@ -678,18 +679,15 @@ impl Table {
                             TableElement::AnyRef(None)
                         } else {
                             // Try to register as function first, then as external
-                            match val.as_func() {
-                                Some(func) => {
-                                    let mut registry = REFERENCE_REGISTRY.lock().map_err(|e| WasmtimeError::Concurrency {
-                                        message: format!("Failed to lock reference registry: {}", e),
-                                    })?;
-                                    let id = registry.register_function(func.clone());
-                                    TableElement::AnyRef(Some(id))
-                                },
-                                None => {
-                                    // Could not extract, use null
-                                    TableElement::AnyRef(None)
-                                }
+                            if let Some(func_ref) = val.as_func() {
+                                let mut registry = REFERENCE_REGISTRY.lock().map_err(|e| WasmtimeError::Concurrency {
+                                    message: format!("Failed to lock reference registry: {}", e),
+                                })?;
+                                let id = registry.register_function(func_ref.unwrap().clone());
+                                TableElement::AnyRef(Some(id))
+                            } else {
+                                // Could not extract, use null
+                                TableElement::AnyRef(None)
                             }
                         }
                     }

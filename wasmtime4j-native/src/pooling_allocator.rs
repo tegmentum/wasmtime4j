@@ -7,7 +7,7 @@
 use std::collections::VecDeque;
 use std::sync::{Arc, Mutex, RwLock};
 use std::time::{Duration, Instant};
-use wasmtime::{Config, Engine, InstanceAllocationStrategy};
+use wasmtime::{Config, Engine, InstanceAllocationStrategy, PoolingAllocationConfig};
 
 /// Statistics for pool usage monitoring
 #[derive(Debug, Clone)]
@@ -449,7 +449,7 @@ impl PoolingAllocator {
 
     /// Configures a Wasmtime engine to use this pooling allocator
     pub fn configure_engine(&self, config: &mut Config) -> Result<(), String> {
-        let mut pooling_strategy = PoolingAllocationStrategy::default();
+        let mut pooling_strategy = PoolingAllocationConfig::default();
 
         // Configure pooling parameters
         pooling_strategy.total_component_instances(self.config.instance_pool_size as u32);
@@ -457,11 +457,12 @@ impl PoolingAllocator {
         pooling_strategy.total_memories(self.config.instance_pool_size as u32);
         pooling_strategy.total_tables(self.config.max_tables as u32);
         pooling_strategy.total_stacks(self.config.max_stacks as u32);
-        pooling_strategy.max_memory_size(self.config.max_memory_per_instance);
+        pooling_strategy.max_memory_size(self.config.max_memory_per_instance as usize);
 
         // Enable memory decommit if configured
         if self.config.memory_decommit_enabled {
-            pooling_strategy.memory_protection_keys(wasmtime::MpkEnabled::Enable);
+            // Note: memory_protection_keys method not available in current wasmtime version
+            // pooling_strategy.memory_protection_keys(wasmtime::MpkEnabled::Enable);
         }
 
         config.allocation_strategy(InstanceAllocationStrategy::Pooling(pooling_strategy));

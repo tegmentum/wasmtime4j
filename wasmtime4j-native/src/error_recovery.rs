@@ -321,7 +321,7 @@ impl ErrorCorrelation {
 
     fn add_error(&mut self, error: &ErrorEvent) {
         // Track error patterns
-        let pattern_key = format!("{}:{}", error.category as u8, error.severity as u8);
+        let pattern_key = format!("{}:{}", error.category.clone() as u8, error.severity.clone() as u8);
         *self.error_patterns.entry(pattern_key).or_insert(0) += 1;
 
         // Track component correlations
@@ -360,7 +360,7 @@ impl ErrorCorrelation {
         }
 
         // Check for cascading failure patterns
-        let cascade_window = Duration::from_minutes(5);
+        let cascade_window = Duration::from_secs(5 * 60);
         let recent_cascade_errors: Vec<&ErrorEvent> = self.temporal_patterns
             .iter()
             .filter(|e| {

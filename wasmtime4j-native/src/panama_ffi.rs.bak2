@@ -19,13 +19,13 @@ pub mod engine {
     
     /// Create a new Wasmtime engine with default configuration (Panama FFI version)
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_engine_create() -> *mut c_void {
+    pub extern "C" fn wasmtime4j_engine_create() -> *mut c_void {
         ffi_utils::ffi_try_ptr(|| core::create_engine())
     }
 
     /// Create a new Wasmtime engine with custom configuration (Panama FFI version)
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_engine_create_with_config(
+    pub extern "C" fn wasmtime4j_engine_create_with_config(
         strategy: c_int,
         opt_level: c_int,
         debug_info: c_int,
@@ -77,7 +77,7 @@ pub mod engine {
 
     /// Check if fuel consumption is enabled (Panama FFI version)
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_engine_is_fuel_enabled(engine_ptr: *mut c_void) -> c_int {
+    pub extern "C" fn wasmtime4j_engine_is_fuel_enabled(engine_ptr: *mut c_void) -> c_int {
         match unsafe { core::get_engine_ref(engine_ptr) } {
             Ok(engine) => if core::is_fuel_enabled(engine) { 1 } else { 0 },
             Err(_) => -1,
@@ -86,7 +86,7 @@ pub mod engine {
 
     /// Check if epoch interruption is enabled (Panama FFI version)
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_engine_is_epoch_interruption_enabled(engine_ptr: *mut c_void) -> c_int {
+    pub extern "C" fn wasmtime4j_engine_is_epoch_interruption_enabled(engine_ptr: *mut c_void) -> c_int {
         match unsafe { core::get_engine_ref(engine_ptr) } {
             Ok(engine) => if core::is_epoch_interruption_enabled(engine) { 1 } else { 0 },
             Err(_) => -1,
@@ -95,7 +95,7 @@ pub mod engine {
 
     /// Get memory limit in pages (Panama FFI version)
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_engine_get_memory_limit(engine_ptr: *mut c_void) -> c_int {
+    pub extern "C" fn wasmtime4j_engine_get_memory_limit(engine_ptr: *mut c_void) -> c_int {
         match unsafe { core::get_engine_ref(engine_ptr) } {
             Ok(engine) => core::get_memory_limit(engine).map(|limit| limit as c_int).unwrap_or(-1),
             Err(_) => -1,
@@ -104,7 +104,7 @@ pub mod engine {
 
     /// Get stack size limit in bytes (Panama FFI version)
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_engine_get_stack_limit(engine_ptr: *mut c_void) -> c_int {
+    pub extern "C" fn wasmtime4j_engine_get_stack_limit(engine_ptr: *mut c_void) -> c_int {
         match unsafe { core::get_engine_ref(engine_ptr) } {
             Ok(engine) => core::get_stack_limit(engine).map(|limit| limit as c_int).unwrap_or(-1),
             Err(_) => -1,
@@ -113,7 +113,7 @@ pub mod engine {
 
     /// Get maximum instances limit (Panama FFI version)
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_engine_get_max_instances(engine_ptr: *mut c_void) -> c_int {
+    pub extern "C" fn wasmtime4j_engine_get_max_instances(engine_ptr: *mut c_void) -> c_int {
         match unsafe { core::get_engine_ref(engine_ptr) } {
             Ok(engine) => core::get_max_instances(engine).map(|limit| limit as c_int).unwrap_or(-1),
             Err(_) => -1,
@@ -154,7 +154,7 @@ pub mod engine {
 
     /// Get engine reference count for debugging (Panama FFI version)
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_engine_get_reference_count(engine_ptr: *mut c_void) -> c_int {
+    pub extern "C" fn wasmtime4j_engine_get_reference_count(engine_ptr: *mut c_void) -> c_int {
         // Demonstrate shared error handling utilities
         match error_handling::validate_void_pointer_as::<crate::engine::Engine>(engine_ptr, "engine") {
             Ok(_) => {
@@ -283,7 +283,7 @@ pub mod module {
 
     /// Compile a WebAssembly module from WAT (WebAssembly Text format)
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_module_compile_wat(
+    pub extern "C" fn wasmtime4j_module_compile_wat(
         engine_ptr: *mut c_void,
         wat_text: *const c_char,
         module_ptr: *mut *mut c_void,
@@ -303,7 +303,7 @@ pub mod module {
 
     /// Validate WebAssembly bytecode without compiling
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_module_validate(
+    pub extern "C" fn wasmtime4j_module_validate(
         wasm_bytes: *const u8,
         wasm_size: usize,
     ) -> c_int {
@@ -315,7 +315,7 @@ pub mod module {
 
     /// Get module size in bytes
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_module_get_size(module_ptr: *mut c_void) -> usize {
+    pub extern "C" fn wasmtime4j_module_get_size(module_ptr: *mut c_void) -> usize {
         let result = crate::shared_ffi::module::get_module_size_shared(module_ptr);
         let (_, size) = crate::shared_ffi::module::size_result_to_ffi_result(result);
         size
@@ -323,7 +323,7 @@ pub mod module {
 
     /// Get module name (if available)
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_module_get_name(module_ptr: *mut c_void) -> *mut c_char {
+    pub extern "C" fn wasmtime4j_module_get_name(module_ptr: *mut c_void) -> *mut c_char {
         match crate::shared_ffi::module::get_module_name_shared(module_ptr) {
             Ok(Some(name)) => {
                 match std::ffi::CString::new(name) {
@@ -337,7 +337,7 @@ pub mod module {
 
     /// Get number of exports
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_module_get_export_count(module_ptr: *mut c_void) -> c_int {
+    pub extern "C" fn wasmtime4j_module_get_export_count(module_ptr: *mut c_void) -> c_int {
         let result = crate::shared_ffi::module::get_export_count_shared(module_ptr);
         let (_, count) = crate::shared_ffi::module::count_result_to_ffi_result(result);
         count
@@ -345,7 +345,7 @@ pub mod module {
 
     /// Get number of imports
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_module_get_import_count(module_ptr: *mut c_void) -> c_int {
+    pub extern "C" fn wasmtime4j_module_get_import_count(module_ptr: *mut c_void) -> c_int {
         let result = crate::shared_ffi::module::get_import_count_shared(module_ptr);
         let (_, count) = crate::shared_ffi::module::count_result_to_ffi_result(result);
         count
@@ -353,7 +353,7 @@ pub mod module {
 
     /// Get number of functions
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_module_get_function_count(module_ptr: *mut c_void) -> c_int {
+    pub extern "C" fn wasmtime4j_module_get_function_count(module_ptr: *mut c_void) -> c_int {
         let result = crate::shared_ffi::module::get_function_count_shared(module_ptr);
         let (_, count) = crate::shared_ffi::module::count_result_to_ffi_result(result);
         count
@@ -361,7 +361,7 @@ pub mod module {
 
     /// Check if module has a specific export
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_module_has_export(
+    pub extern "C" fn wasmtime4j_module_has_export(
         module_ptr: *mut c_void,
         name: *const c_char,
     ) -> c_int {
@@ -373,7 +373,7 @@ pub mod module {
 
     /// Serialize a module for caching
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_module_serialize(
+    pub extern "C" fn wasmtime4j_module_serialize(
         module_ptr: *mut c_void,
         data_ptr: *mut *mut u8,
         len_ptr: *mut usize,
@@ -396,7 +396,7 @@ pub mod module {
 
     /// Deserialize a module from cache
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_module_deserialize(
+    pub extern "C" fn wasmtime4j_module_deserialize(
         engine_ptr: *mut c_void,
         data_ptr: *const u8,
         len: usize,
@@ -421,7 +421,7 @@ pub mod module {
 
     /// Validate module functionality (defensive check)
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_module_validate_functionality(module_ptr: *mut c_void) -> c_int {
+    pub extern "C" fn wasmtime4j_module_validate_functionality(module_ptr: *mut c_void) -> c_int {
         crate::shared_ffi::module::validation_result_to_ffi_code(
             crate::shared_ffi::module::validate_module_functionality_shared(module_ptr)
         )
@@ -429,7 +429,7 @@ pub mod module {
 
     /// Free serialized data
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_module_free_serialized_data(data_ptr: *mut u8, len: usize) {
+    pub extern "C" fn wasmtime4j_module_free_serialized_data(data_ptr: *mut u8, len: usize) {
         if !data_ptr.is_null() && len > 0 {
             unsafe {
                 drop(Box::from_raw(std::slice::from_raw_parts_mut(data_ptr, len)));
@@ -439,7 +439,7 @@ pub mod module {
 
     /// Free C string returned by module functions
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_module_free_string(str_ptr: *mut c_char) {
+    pub extern "C" fn wasmtime4j_module_free_string(str_ptr: *mut c_char) {
         if !str_ptr.is_null() {
             unsafe {
                 drop(std::ffi::CString::from_raw(str_ptr));
@@ -449,7 +449,7 @@ pub mod module {
     
     /// Destroy a WebAssembly module (Panama FFI version)
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_module_destroy(module_ptr: *mut c_void) {
+    pub extern "C" fn wasmtime4j_module_destroy(module_ptr: *mut c_void) {
         crate::shared_ffi::module::destroy_module_shared(module_ptr);
     }
 }
@@ -1004,7 +1004,7 @@ pub mod component {
     
     /// Create an enhanced component engine (Panama FFI version)
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_enhanced_component_engine_create() -> *mut c_void {
+    pub extern "C" fn wasmtime4j_enhanced_component_engine_create() -> *mut c_void {
         use crate::error::ffi_utils;
         ffi_utils::ffi_try_ptr(|| crate::component_core::core::create_enhanced_component_engine())
     }
@@ -1109,7 +1109,7 @@ pub mod component {
 
     /// Load component using enhanced engine (Panama FFI version)
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_enhanced_component_load_from_bytes(
+    pub extern "C" fn wasmtime4j_enhanced_component_load_from_bytes(
         enhanced_engine_ptr: *mut c_void,
         wasm_bytes: *const u8,
         wasm_size: usize,
@@ -1137,7 +1137,7 @@ pub mod component {
 
     /// Get component metrics from enhanced engine (Panama FFI version)
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_enhanced_component_get_metrics(
+    pub extern "C" fn wasmtime4j_enhanced_component_get_metrics(
         enhanced_engine_ptr: *mut c_void,
         metrics_ptr: *mut *mut c_void,
     ) -> c_int {
@@ -1284,7 +1284,7 @@ pub mod memory {
 
     /// Create a new WebAssembly memory with default configuration (Panama FFI version)
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_memory_create(
+    pub extern "C" fn wasmtime4j_memory_create(
         store_ptr: *mut c_void,
         initial_pages: c_uint,
         memory_ptr: *mut *mut c_void,
@@ -1304,7 +1304,7 @@ pub mod memory {
 
     /// Create a new WebAssembly memory with configuration (Panama FFI version)
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_memory_create_with_config(
+    pub extern "C" fn wasmtime4j_memory_create_with_config(
         store_ptr: *mut c_void,
         initial_pages: c_uint,
         maximum_pages: c_uint,
@@ -1349,7 +1349,7 @@ pub mod memory {
 
     /// Get memory size in pages (Panama FFI version)
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_memory_size_pages(
+    pub extern "C" fn wasmtime4j_memory_size_pages(
         memory_ptr: *mut c_void,
         store_ptr: *mut c_void,
         size_out: *mut c_uint,
@@ -1370,7 +1370,7 @@ pub mod memory {
 
     /// Get memory size in bytes (Panama FFI version)
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_memory_size_bytes(
+    pub extern "C" fn wasmtime4j_memory_size_bytes(
         memory_ptr: *mut c_void,
         store_ptr: *mut c_void,
         size_out: *mut usize,
@@ -1391,7 +1391,7 @@ pub mod memory {
 
     /// Grow memory by additional pages (Panama FFI version)
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_memory_grow(
+    pub extern "C" fn wasmtime4j_memory_grow(
         memory_ptr: *mut c_void,
         store_ptr: *mut c_void,
         additional_pages: c_uint,
@@ -1413,7 +1413,7 @@ pub mod memory {
 
     /// Read bytes from memory with bounds checking (Panama FFI version)
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_memory_read_bytes(
+    pub extern "C" fn wasmtime4j_memory_read_bytes(
         memory_ptr: *mut c_void,
         store_ptr: *mut c_void,
         offset: usize,
@@ -1442,7 +1442,7 @@ pub mod memory {
 
     /// Write bytes to memory with bounds checking (Panama FFI version)
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_memory_write_bytes(
+    pub extern "C" fn wasmtime4j_memory_write_bytes(
         memory_ptr: *mut c_void,
         store_ptr: *mut c_void,
         offset: usize,
@@ -1468,7 +1468,7 @@ pub mod memory {
 
     /// Read typed value from memory with alignment checking (Panama FFI version)
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_memory_read_u32(
+    pub extern "C" fn wasmtime4j_memory_read_u32(
         memory_ptr: *mut c_void,
         store_ptr: *mut c_void,
         offset: usize,
@@ -1496,7 +1496,7 @@ pub mod memory {
 
     /// Write typed value to memory with alignment checking (Panama FFI version)
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_memory_write_u32(
+    pub extern "C" fn wasmtime4j_memory_write_u32(
         memory_ptr: *mut c_void,
         store_ptr: *mut c_void,
         offset: usize,
@@ -1514,7 +1514,7 @@ pub mod memory {
 
     /// Get memory usage statistics (Panama FFI version)
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_memory_get_usage(
+    pub extern "C" fn wasmtime4j_memory_get_usage(
         memory_ptr: *mut c_void,
         store_ptr: *mut c_void,
         current_bytes_out: *mut usize,
@@ -1561,7 +1561,7 @@ pub mod memory {
 
     /// Create a memory registry (Panama FFI version)
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_memory_registry_create(registry_ptr: *mut *mut c_void) -> c_int {
+    pub extern "C" fn wasmtime4j_memory_registry_create(registry_ptr: *mut *mut c_void) -> c_int {
         ffi_utils::ffi_try_code(|| {
             let registry = MemoryRegistry::new();
             
@@ -1575,7 +1575,7 @@ pub mod memory {
 
     /// Register a memory in the registry (Panama FFI version)
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_memory_registry_register(
+    pub extern "C" fn wasmtime4j_memory_registry_register(
         registry_ptr: *mut c_void,
         memory_ptr: *mut c_void,
         memory_id_out: *mut c_uint,
@@ -1596,7 +1596,7 @@ pub mod memory {
 
     /// Get memory from registry (Panama FFI version)
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_memory_registry_get(
+    pub extern "C" fn wasmtime4j_memory_registry_get(
         registry_ptr: *mut c_void,
         memory_id: c_uint,
         memory_ptr: *mut *mut c_void,
@@ -1618,7 +1618,7 @@ pub mod memory {
 
     /// Destroy a memory instance (Panama FFI version)
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_memory_destroy(memory_ptr: *mut c_void) {
+    pub extern "C" fn wasmtime4j_memory_destroy(memory_ptr: *mut c_void) {
         // SAFETY IMPROVEMENT: Using safe resource destruction with validation
         unsafe {
             crate::ffi_common::memory_utils::destroy_ffi_resource::<Memory>(memory_ptr, "Memory");
@@ -1627,7 +1627,7 @@ pub mod memory {
 
     /// Destroy a memory registry (Panama FFI version)
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_memory_registry_destroy(registry_ptr: *mut c_void) {
+    pub extern "C" fn wasmtime4j_memory_registry_destroy(registry_ptr: *mut c_void) {
         if !registry_ptr.is_null() {
             unsafe {
                 let _ = Box::from_raw(registry_ptr as *mut MemoryRegistry);
@@ -1650,7 +1650,7 @@ pub mod global {
 
     /// Create a new WebAssembly global variable (Panama FFI version)
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_global_create(
+    pub extern "C" fn wasmtime4j_global_create(
         store_ptr: *mut c_void,
         value_type: c_int,
         mutability: c_int,
@@ -1716,7 +1716,7 @@ pub mod global {
 
     /// Get global variable value (Panama FFI version)
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_global_get(
+    pub extern "C" fn wasmtime4j_global_get(
         global_ptr: *mut c_void,
         store_ptr: *mut c_void,
         i32_value: *mut c_int,
@@ -1748,7 +1748,7 @@ pub mod global {
 
     /// Set global variable value (Panama FFI version)
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_global_set(
+    pub extern "C" fn wasmtime4j_global_set(
         global_ptr: *mut c_void,
         store_ptr: *mut c_void,
         value_type: c_int,
@@ -1795,7 +1795,7 @@ pub mod global {
 
     /// Get global variable metadata (Panama FFI version)
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_global_metadata(
+    pub extern "C" fn wasmtime4j_global_metadata(
         global_ptr: *mut c_void,
         value_type: *mut c_int,
         mutability: *mut c_int,
@@ -1847,7 +1847,7 @@ pub mod global {
 
     /// Destroy a global variable (Panama FFI version)
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_global_destroy(global_ptr: *mut c_void) {
+    pub extern "C" fn wasmtime4j_global_destroy(global_ptr: *mut c_void) {
         unsafe {
             core::destroy_global(global_ptr);
         }
@@ -1867,7 +1867,7 @@ pub mod table {
 
     /// Create a new WebAssembly table (Panama FFI version)
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_table_create(
+    pub extern "C" fn wasmtime4j_table_create(
         store_ptr: *mut c_void,
         element_type: c_int,
         initial_size: c_uint,
@@ -1907,7 +1907,7 @@ pub mod table {
 
     /// Get table size (Panama FFI version)
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_table_size(
+    pub extern "C" fn wasmtime4j_table_size(
         table_ptr: *mut c_void,
         store_ptr: *mut c_void,
         size: *mut c_uint,
@@ -1930,7 +1930,7 @@ pub mod table {
 
     /// Get table element (Panama FFI version)
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_table_get(
+    pub extern "C" fn wasmtime4j_table_get(
         table_ptr: *mut c_void,
         store_ptr: *mut c_void,
         index: c_uint,
@@ -1959,7 +1959,7 @@ pub mod table {
 
     /// Set table element (Panama FFI version)
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_table_set(
+    pub extern "C" fn wasmtime4j_table_set(
         table_ptr: *mut c_void,
         store_ptr: *mut c_void,
         index: c_uint,
@@ -1990,7 +1990,7 @@ pub mod table {
 
     /// Grow table (Panama FFI version)
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_table_grow(
+    pub extern "C" fn wasmtime4j_table_grow(
         table_ptr: *mut c_void,
         store_ptr: *mut c_void,
         delta: c_uint,
@@ -2028,7 +2028,7 @@ pub mod table {
 
     /// Fill table range (Panama FFI version)
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_table_fill(
+    pub extern "C" fn wasmtime4j_table_fill(
         table_ptr: *mut c_void,
         store_ptr: *mut c_void,
         dst: c_uint,
@@ -2060,7 +2060,7 @@ pub mod table {
 
     /// Get table metadata (Panama FFI version)
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_table_metadata(
+    pub extern "C" fn wasmtime4j_table_metadata(
         table_ptr: *mut c_void,
         element_type: *mut c_int,
         initial_size: *mut c_uint,
@@ -2113,7 +2113,7 @@ pub mod table {
 
     /// Destroy a table (Panama FFI version)
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_table_destroy(table_ptr: *mut c_void) {
+    pub extern "C" fn wasmtime4j_table_destroy(table_ptr: *mut c_void) {
         unsafe {
             core::destroy_table(table_ptr);
         }
@@ -2121,7 +2121,7 @@ pub mod table {
 
     /// Get the last error message as a C string
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_get_last_error_message() -> *mut c_char {
+    pub extern "C" fn wasmtime4j_get_last_error_message() -> *mut c_char {
         crate::error::ffi_utils::get_last_error_message()
     }
 
@@ -2138,7 +2138,7 @@ pub mod table {
 
     /// Clear any stored error state in the native library
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_clear_error_state() {
+    pub extern "C" fn wasmtime4j_clear_error_state() {
         crate::error::ffi_utils::clear_last_error();
     }
 }
@@ -2155,7 +2155,7 @@ pub mod function {
 
     /// Get function from instance export (Panama FFI version)
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_func_get(
+    pub extern "C" fn wasmtime4j_func_get(
         instance_ptr: *mut c_void,
         store_ptr: *mut c_void,
         name: *const c_char,
@@ -2184,7 +2184,7 @@ pub mod function {
 
     /// Get function parameter types (Panama FFI version)
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_func_get_param_types(
+    pub extern "C" fn wasmtime4j_func_get_param_types(
         func_ptr: *mut c_void,
         store_ptr: *mut c_void,
         types_ptr: *mut *mut c_int,
@@ -2216,7 +2216,7 @@ pub mod function {
 
     /// Get function result types (Panama FFI version)
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_func_get_result_types(
+    pub extern "C" fn wasmtime4j_func_get_result_types(
         func_ptr: *mut c_void,
         store_ptr: *mut c_void,
         types_ptr: *mut *mut c_int,
@@ -2248,7 +2248,7 @@ pub mod function {
 
     /// Call WebAssembly function (Panama FFI version)
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_func_call(
+    pub extern "C" fn wasmtime4j_func_call(
         func_ptr: *mut c_void,
         store_ptr: *mut c_void,
         params_ptr: *const c_void,
@@ -2285,7 +2285,7 @@ pub mod function {
 
     /// Get function type (Panama FFI version)
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_func_type(
+    pub extern "C" fn wasmtime4j_func_type(
         func_ptr: *mut c_void,
         store_ptr: *mut c_void,
     ) -> *mut c_void {
@@ -2303,7 +2303,7 @@ pub mod function {
 
     /// Free function type (Panama FFI version)
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_func_type_destroy(func_type_ptr: *mut c_void) {
+    pub extern "C" fn wasmtime4j_func_type_destroy(func_type_ptr: *mut c_void) {
         if !func_type_ptr.is_null() {
             unsafe {
                 let _ = Box::from_raw(func_type_ptr as *mut wasmtime::FuncType);
@@ -2313,7 +2313,7 @@ pub mod function {
 
     /// Free parameter/result types array (Panama FFI version)
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_func_free_types_array(types_ptr: *mut c_int, count: usize) {
+    pub extern "C" fn wasmtime4j_func_free_types_array(types_ptr: *mut c_int, count: usize) {
         if !types_ptr.is_null() && count > 0 {
             unsafe {
                 let _ = Box::from_raw(std::slice::from_raw_parts_mut(types_ptr, count));
@@ -2323,7 +2323,7 @@ pub mod function {
 
     /// Destroy a function handle (Panama FFI version)
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_func_destroy(func_ptr: *mut c_void) {
+    pub extern "C" fn wasmtime4j_func_destroy(func_ptr: *mut c_void) {
         if !func_ptr.is_null() {
             unsafe {
                 let _ = Box::from_raw(func_ptr as *mut wasmtime::Func);
@@ -2704,7 +2704,7 @@ pub mod caller {
 
     /// Get fuel consumed by the caller if fuel metering is enabled (Panama FFI version)
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_caller_get_fuel(
+    pub extern "C" fn wasmtime4j_caller_get_fuel(
         caller_ptr: *mut c_void,
         fuel_out: *mut c_ulong,
     ) -> c_int {
@@ -2734,7 +2734,7 @@ pub mod caller {
 
     /// Get fuel remaining in the caller if fuel metering is enabled (Panama FFI version)
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_caller_get_fuel_remaining(
+    pub extern "C" fn wasmtime4j_caller_get_fuel_remaining(
         caller_ptr: *mut c_void,
         fuel_out: *mut c_ulong,
     ) -> c_int {
@@ -2756,7 +2756,7 @@ pub mod caller {
 
     /// Add fuel to the caller (Panama FFI version)
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_caller_add_fuel(
+    pub extern "C" fn wasmtime4j_caller_add_fuel(
         caller_ptr: *mut c_void,
         fuel: c_ulong,
     ) -> c_int {
@@ -2773,7 +2773,7 @@ pub mod caller {
 
     /// Set epoch deadline for the caller (Panama FFI version)
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_caller_set_epoch_deadline(
+    pub extern "C" fn wasmtime4j_caller_set_epoch_deadline(
         caller_ptr: *mut c_void,
         deadline: c_ulong,
     ) -> c_int {
@@ -2790,7 +2790,7 @@ pub mod caller {
 
     /// Check if the caller has an active epoch deadline (Panama FFI version)
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_caller_has_epoch_deadline(
+    pub extern "C" fn wasmtime4j_caller_has_epoch_deadline(
         caller_ptr: *mut c_void,
     ) -> c_int {
         if caller_ptr.is_null() {
@@ -2807,7 +2807,7 @@ pub mod caller {
 
     /// Check if caller has an export with the given name (Panama FFI version)
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_caller_has_export(
+    pub extern "C" fn wasmtime4j_caller_has_export(
         caller_ptr: *mut c_void,
         name: *const c_char,
     ) -> c_int {
@@ -2830,7 +2830,7 @@ pub mod caller {
 
     /// Get memory export from caller by name (Panama FFI version)
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_caller_get_memory(
+    pub extern "C" fn wasmtime4j_caller_get_memory(
         caller_ptr: *mut c_void,
         name: *const c_char,
         memory_out: *mut *mut c_void,
@@ -2860,7 +2860,7 @@ pub mod caller {
 
     /// Get function export from caller by name (Panama FFI version)
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_caller_get_function(
+    pub extern "C" fn wasmtime4j_caller_get_function(
         caller_ptr: *mut c_void,
         name: *const c_char,
         function_out: *mut *mut c_void,
@@ -2889,7 +2889,7 @@ pub mod caller {
 
     /// Get global export from caller by name (Panama FFI version)
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_caller_get_global(
+    pub extern "C" fn wasmtime4j_caller_get_global(
         caller_ptr: *mut c_void,
         name: *const c_char,
         global_out: *mut *mut c_void,
@@ -2918,7 +2918,7 @@ pub mod caller {
 
     /// Get table export from caller by name (Panama FFI version)
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_caller_get_table(
+    pub extern "C" fn wasmtime4j_caller_get_table(
         caller_ptr: *mut c_void,
         name: *const c_char,
         table_out: *mut *mut c_void,

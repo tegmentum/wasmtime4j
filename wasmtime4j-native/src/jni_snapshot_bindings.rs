@@ -29,7 +29,7 @@ static mut JVM: Option<JavaVM> = None;
 /// Initialize JNI snapshot bindings
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiFilesystemSnapshot_nativeInitSnapshotManager(
-    env: JNIEnv,
+    mut env: JNIEnv,
     _class: JClass,
 ) -> jint {
     // Store JVM reference for callbacks
@@ -51,7 +51,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiFilesystemSnaps
 /// Cleanup JNI snapshot bindings
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiFilesystemSnapshot_nativeCleanupSnapshotManager(
-    _env: JNIEnv,
+    mut env: JNIEnv,
     _class: JClass,
 ) {
     unsafe {
@@ -63,7 +63,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiFilesystemSnaps
 /// Create an advanced snapshot with comprehensive options
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiFilesystemSnapshot_nativeCreateAdvancedSnapshot(
-    env: JNIEnv,
+    mut env: JNIEnv,
     _class: JClass,
     context_handle: jlong,
     snapshot_handle: jlong,
@@ -80,7 +80,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiFilesystemSnaps
     description: JString,
 ) -> jobject {
     let result = create_advanced_snapshot_impl(
-        env,
+        &mut env,
         context_handle,
         snapshot_handle,
         root_path,
@@ -100,7 +100,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiFilesystemSnaps
         Ok(obj) => obj,
         Err(e) => {
             log::error!("Failed to create advanced snapshot: {}", e);
-            create_error_result(&env, -1, 0, 0)
+            create_error_result(&mut env, -1, 0, 0)
         }
     }
 }
@@ -108,7 +108,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiFilesystemSnaps
 /// Legacy snapshot creation method for backward compatibility
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiFilesystemSnapshot_nativeCreateSnapshot(
-    env: JNIEnv,
+    mut env: JNIEnv,
     _class: JClass,
     context_handle: jlong,
     snapshot_handle: jlong,
@@ -122,8 +122,12 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiFilesystemSnaps
 ) -> jobject {
     let snapshot_type = if full_snapshot != 0 { 0 } else { 1 }; // 0=FULL, 1=INCREMENTAL
 
+    // Prepare string parameters before the function call
+    let empty_name = env.new_string("").unwrap();
+    let empty_description = env.new_string("").unwrap();
+
     let result = create_advanced_snapshot_impl(
-        env,
+        &mut env,
         context_handle,
         snapshot_handle,
         root_path,
@@ -135,15 +139,15 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiFilesystemSnaps
         encryption_key,
         1, // enable_deduplication (default true)
         1, // enable_integrity_checking (default true)
-        env.new_string("").unwrap(), // empty name
-        env.new_string("").unwrap(), // empty description
+        empty_name,
+        empty_description,
     );
 
     match result {
         Ok(obj) => obj,
         Err(e) => {
             log::error!("Failed to create legacy snapshot: {}", e);
-            create_error_result(&env, -1, 0, 0)
+            create_error_result(&mut env, -1, 0, 0)
         }
     }
 }
@@ -151,7 +155,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiFilesystemSnaps
 /// Restore from snapshot with advanced options
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiFilesystemSnapshot_nativeRestoreSnapshot(
-    env: JNIEnv,
+    mut env: JNIEnv,
     _class: JClass,
     context_handle: jlong,
     snapshot_handle: jlong,
@@ -184,18 +188,18 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiFilesystemSnaps
 /// Validate snapshot integrity
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiFilesystemSnapshot_nativeVerifySnapshot(
-    env: JNIEnv,
+    mut env: JNIEnv,
     _class: JClass,
     context_handle: jlong,
     snapshot_handle: jlong,
 ) -> jobject {
-    let result = verify_snapshot_impl(env, context_handle, snapshot_handle);
+    let result = verify_snapshot_impl(&mut env, context_handle, snapshot_handle);
 
     match result {
         Ok(obj) => obj,
         Err(e) => {
             log::error!("Failed to verify snapshot: {}", e);
-            create_verify_error_result(&env, -1)
+            create_verify_error_result(&mut env, -1)
         }
     }
 }
@@ -203,12 +207,12 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiFilesystemSnaps
 /// Delete snapshot
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiFilesystemSnapshot_nativeDeleteSnapshot(
-    env: JNIEnv,
+    mut env: JNIEnv,
     _class: JClass,
     context_handle: jlong,
     snapshot_handle: jlong,
 ) -> jint {
-    let result = delete_snapshot_impl(env, context_handle, snapshot_handle);
+    let result = delete_snapshot_impl(&mut env, context_handle, snapshot_handle);
 
     match result {
         Ok(_) => 0, // Success
@@ -222,16 +226,16 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiFilesystemSnaps
 /// Get comprehensive snapshot metrics
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiFilesystemSnapshot_nativeGetMetrics(
-    env: JNIEnv,
+    mut env: JNIEnv,
     _class: JClass,
 ) -> jobject {
-    let result = get_metrics_impl(env);
+    let result = get_metrics_impl(&mut env);
 
     match result {
         Ok(obj) => obj,
         Err(e) => {
             log::error!("Failed to get metrics: {}", e);
-            create_metrics_error_result(&env)
+            create_metrics_error_result(&mut env)
         }
     }
 }
@@ -239,16 +243,16 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiFilesystemSnaps
 /// Optimize storage by cleaning up deduplication blocks
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiFilesystemSnapshot_nativeOptimizeStorage(
-    env: JNIEnv,
+    mut env: JNIEnv,
     _class: JClass,
 ) -> jobject {
-    let result = optimize_storage_impl(env);
+    let result = optimize_storage_impl(&mut env);
 
     match result {
         Ok(obj) => obj,
         Err(e) => {
             log::error!("Failed to optimize storage: {}", e);
-            create_optimization_error_result(&env, -1, 0, 0, 0)
+            create_optimization_error_result(&mut env, -1, 0, 0, 0)
         }
     }
 }
@@ -256,12 +260,12 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiFilesystemSnaps
 /// Validate snapshot chain integrity
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiFilesystemSnapshot_nativeValidateSnapshotChain(
-    env: JNIEnv,
+    mut env: JNIEnv,
     _class: JClass,
     context_handle: jlong,
     snapshot_handle: jlong,
 ) -> jint {
-    let result = validate_snapshot_chain_impl(env, context_handle, snapshot_handle);
+    let result = validate_snapshot_chain_impl(&mut env, context_handle, snapshot_handle);
 
     match result {
         Ok(_) => 0, // Valid chain
@@ -275,7 +279,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiFilesystemSnaps
 // Implementation functions
 
 fn create_advanced_snapshot_impl(
-    env: JNIEnv,
+    env: &mut JNIEnv,
     _context_handle: jlong,
     snapshot_handle: jlong,
     root_path: JString,
@@ -291,11 +295,11 @@ fn create_advanced_snapshot_impl(
     description: JString,
 ) -> WasmtimeResult<jobject> {
     // Convert JNI parameters to Rust types
-    let root_path_str: String = env.get_string(root_path)?.into();
+    let root_path_str: String = env.get_string(&root_path)?.into();
     let root_path = Path::new(&root_path_str);
 
-    let name_str: String = env.get_string(name)?.into();
-    let description_str: String = env.get_string(description)?.into();
+    let name_str: String = env.get_string(&name)?.into();
+    let description_str: String = env.get_string(&description)?.into();
 
     let encryption_key_bytes = if !encryption_key.is_null() {
         Some(env.convert_byte_array(encryption_key)?)
@@ -372,11 +376,11 @@ fn create_advanced_snapshot_impl(
         })?;
 
     // Create result object
-    create_snapshot_result(&env, 0, snapshot.size_info.stored_size, snapshot.size_info.file_count as i64)
+    Ok(create_snapshot_result(env, 0, snapshot.size_info.stored_size, snapshot.size_info.file_count as i64))
 }
 
 fn restore_snapshot_impl(
-    env: JNIEnv,
+    mut env: JNIEnv,
     _context_handle: jlong,
     snapshot_handle: jlong,
     target_path: JString,
@@ -385,7 +389,7 @@ fn restore_snapshot_impl(
     preserve_timestamps: jboolean,
     verify_integrity: jboolean,
 ) -> WasmtimeResult<()> {
-    let target_path_str: String = env.get_string(target_path)?.into();
+    let target_path_str: String = env.get_string(&target_path)?.into();
 
     let options = RestoreOptions {
         target_path: target_path_str.into(),
@@ -404,7 +408,7 @@ fn restore_snapshot_impl(
 }
 
 fn verify_snapshot_impl(
-    env: JNIEnv,
+    env: &mut JNIEnv,
     _context_handle: jlong,
     snapshot_handle: jlong,
 ) -> WasmtimeResult<jobject> {
@@ -420,11 +424,11 @@ fn verify_snapshot_impl(
 
     let result = runtime.block_on(manager.validate_snapshot(snapshot_handle as u64, options))?;
 
-    create_verify_result(&env, &result)
+    create_verify_result(env, &result)
 }
 
 fn delete_snapshot_impl(
-    _env: JNIEnv,
+    _env: &mut JNIEnv,
     _context_handle: jlong,
     snapshot_handle: jlong,
 ) -> WasmtimeResult<()> {
@@ -435,15 +439,15 @@ fn delete_snapshot_impl(
     Ok(())
 }
 
-fn get_metrics_impl(env: JNIEnv) -> WasmtimeResult<jobject> {
+fn get_metrics_impl(env: &mut JNIEnv) -> WasmtimeResult<jobject> {
     let manager = FilesystemSnapshotManager::global();
     let runtime = get_runtime_handle();
 
     let metrics = runtime.block_on(manager.get_metrics());
-    create_metrics_result(&env, &metrics)
+    create_metrics_result(env, &metrics)
 }
 
-fn optimize_storage_impl(env: JNIEnv) -> WasmtimeResult<jobject> {
+fn optimize_storage_impl(env: &mut JNIEnv) -> WasmtimeResult<jobject> {
     // This would integrate with the deduplication engine optimization
     let manager = FilesystemSnapshotManager::global();
     let _runtime = get_runtime_handle();
@@ -453,11 +457,11 @@ fn optimize_storage_impl(env: JNIEnv) -> WasmtimeResult<jobject> {
     let space_reclaimed = 500 * 1024 * 1024u64; // 500MB
     let optimization_time = 2500u64; // 2.5 seconds
 
-    create_optimization_result(&env, 0, blocks_removed, space_reclaimed, optimization_time)
+    Ok(create_optimization_result(env, 0, blocks_removed, space_reclaimed, optimization_time))
 }
 
 fn validate_snapshot_chain_impl(
-    _env: JNIEnv,
+    _env: &mut JNIEnv,
     _context_handle: jlong,
     snapshot_handle: jlong,
 ) -> WasmtimeResult<()> {
@@ -484,7 +488,7 @@ fn validate_snapshot_chain_impl(
 
 // Helper functions to create JNI result objects
 
-fn create_snapshot_result(env: &JNIEnv, error_code: i32, snapshot_size: u64, file_count: i64) -> jobject {
+fn create_snapshot_result(env: &mut JNIEnv, error_code: i32, snapshot_size: u64, file_count: i64) -> jobject {
     let class = env.find_class("ai/tegmentum/wasmtime4j/jni/wasi/WasiFilesystemSnapshot$SnapshotCreateResult")
         .expect("Failed to find SnapshotCreateResult class");
 
@@ -498,14 +502,14 @@ fn create_snapshot_result(env: &JNIEnv, error_code: i32, snapshot_size: u64, fil
         ],
     ).expect("Failed to create SnapshotCreateResult object");
 
-    result.into_inner()
+    result.into_raw()
 }
 
-fn create_error_result(env: &JNIEnv, error_code: i32, snapshot_size: u64, file_count: i64) -> jobject {
+fn create_error_result(env: &mut JNIEnv, error_code: i32, snapshot_size: u64, file_count: i64) -> jobject {
     create_snapshot_result(env, error_code, snapshot_size, file_count)
 }
 
-fn create_verify_result(env: &JNIEnv, result: &ValidationResult) -> WasmtimeResult<jobject> {
+fn create_verify_result(env: &mut JNIEnv, result: &ValidationResult) -> WasmtimeResult<jobject> {
     let class = env.find_class("ai/tegmentum/wasmtime4j/jni/wasi/WasiFilesystemSnapshot$SnapshotVerifyResult")?;
 
     let obj = env.new_object(
@@ -521,10 +525,10 @@ fn create_verify_result(env: &JNIEnv, result: &ValidationResult) -> WasmtimeResu
         ],
     )?;
 
-    Ok(obj.into_inner())
+    Ok(obj.into_raw())
 }
 
-fn create_verify_error_result(env: &JNIEnv, error_code: i32) -> jobject {
+fn create_verify_error_result(env: &mut JNIEnv, error_code: i32) -> jobject {
     let class = env.find_class("ai/tegmentum/wasmtime4j/jni/wasi/WasiFilesystemSnapshot$SnapshotVerifyResult")
         .expect("Failed to find SnapshotVerifyResult class");
 
@@ -541,10 +545,10 @@ fn create_verify_error_result(env: &JNIEnv, error_code: i32) -> jobject {
         ],
     ).expect("Failed to create SnapshotVerifyResult object");
 
-    result.into_inner()
+    result.into_raw()
 }
 
-fn create_metrics_result(env: &JNIEnv, metrics: &SnapshotMetrics) -> WasmtimeResult<jobject> {
+fn create_metrics_result(env: &mut JNIEnv, metrics: &SnapshotMetrics) -> WasmtimeResult<jobject> {
     let class = env.find_class("ai/tegmentum/wasmtime4j/jni/wasi/WasiFilesystemSnapshot$SnapshotNativeMetrics")?;
 
     let obj = env.new_object(
@@ -565,10 +569,10 @@ fn create_metrics_result(env: &JNIEnv, metrics: &SnapshotMetrics) -> WasmtimeRes
         ],
     )?;
 
-    Ok(obj.into_inner())
+    Ok(obj.into_raw())
 }
 
-fn create_metrics_error_result(env: &JNIEnv) -> jobject {
+fn create_metrics_error_result(env: &mut JNIEnv) -> jobject {
     let class = env.find_class("ai/tegmentum/wasmtime4j/jni/wasi/WasiFilesystemSnapshot$SnapshotNativeMetrics")
         .expect("Failed to find SnapshotNativeMetrics class");
 
@@ -590,11 +594,11 @@ fn create_metrics_error_result(env: &JNIEnv) -> jobject {
         ],
     ).expect("Failed to create SnapshotNativeMetrics object");
 
-    result.into_inner()
+    result.into_raw()
 }
 
 fn create_optimization_result(
-    env: &JNIEnv,
+    env: &mut JNIEnv,
     error_code: i32,
     blocks_removed: u64,
     space_reclaimed: u64,
@@ -614,11 +618,11 @@ fn create_optimization_result(
         ],
     ).expect("Failed to create OptimizationNativeResult object");
 
-    result.into_inner()
+    result.into_raw()
 }
 
 fn create_optimization_error_result(
-    env: &JNIEnv,
+    env: &mut JNIEnv,
     error_code: i32,
     blocks_removed: u64,
     space_reclaimed: u64,

@@ -443,12 +443,14 @@ impl ProcessManager {
                 ProcessPriority::High => -10,
                 ProcessPriority::Realtime => -20,
             };
-            cmd.pre_exec(move || {
-                unsafe {
-                    libc::setpriority(libc::PRIO_PROCESS, 0, priority_value);
-                }
-                Ok(())
-            });
+            unsafe {
+                cmd.pre_exec(move || {
+                    unsafe {
+                        libc::setpriority(libc::PRIO_PROCESS, 0, priority_value);
+                    }
+                    Ok(())
+                })
+            };
         }
 
         // Spawn the process

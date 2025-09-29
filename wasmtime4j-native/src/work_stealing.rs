@@ -80,7 +80,7 @@ pub struct WorkStealingTask {
     /// Unique task identifier
     pub id: TaskId,
     /// Task payload (function to execute)
-    pub payload: Box<dyn FnOnce() -> WasmtimeResult<()> + Send + 'static>,
+    pub payload: Box<dyn FnOnce() -> WasmtimeResult<()> + Send + Sync + 'static>,
     /// Task priority (higher values = higher priority)
     pub priority: TaskPriority,
     /// CPU affinity hint for optimal placement
@@ -300,6 +300,12 @@ pub struct WorkerContext {
     /// Current task being executed
     pub current_task: Arc<Atomic<WorkStealingTask>>,
 }
+
+// SAFETY: WorkerContext contains crossbeam work-stealing queue types that are designed
+// for multi-threaded use. The Worker and Stealer types are internally synchronized
+// and safe to send between threads in the work-stealing context.
+unsafe impl Send for WorkerContext {}
+unsafe impl Sync for WorkerContext {}
 
 /// Worker identifier type
 pub type WorkerId = usize;
@@ -658,14 +664,16 @@ impl WorkStealingScheduler {
 
         for worker_id in 0..self.config.initial_workers {
             let worker_context = self.create_worker_context(worker_id)?;
-            let thread_handle = self.spawn_worker_thread(worker_context.clone())?;
+            let worker_context_for_thread = self.create_worker_context(worker_id)?;
+            let thread_handle = self.spawn_worker_thread(worker_context_for_thread)?;
 
             workers.push(worker_context);
             worker_threads.push(thread_handle);
         }
 
         // Update statistics
-        if let Ok(mut stats) = self.statistics.write() {
+        {
+            let mut stats = self.statistics.write();
             stats.active_workers = self.config.initial_workers;
             stats.peak_worker_count = self.config.initial_workers;
         }
@@ -740,7 +748,7 @@ impl WorkStealingScheduler {
                     topology,
                 )
             })
-            .map_err(|e| WasmtimeError::Threading {
+            .map_err(|e| WasmtimeError::Concurrency {
                 message: format!("Failed to spawn worker thread: {}", e),
             })?;
 
@@ -764,7 +772,7 @@ impl WorkStealingScheduler {
         while !shutdown.load(Ordering::Acquire) {
             // Update worker state and activity
             context.last_activity.store(
-                Instant::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos() as u64,
+                std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos() as u64,
                 Ordering::Release
             );
 
@@ -813,16 +821,18 @@ impl WorkStealingScheduler {
         // Store current task reference
         let task_ptr = Arc::into_raw(task.clone()) as *const WorkStealingTask;
         context.current_task.store(
-            unsafe { Shared::from_raw(task_ptr) },
+            unsafe { Shared::from(task_ptr as *const _) },
             Ordering::Release
         );
 
         // Execute the task
         let result = {
-            let payload = std::ptr::replace(
-                &task.payload as *const _ as *mut _,
-                Box::new(|| Ok(()))
-            );
+            let payload = unsafe {
+                std::ptr::replace(
+                    &task.payload as *const _ as *mut _,
+                    Box::new(|| Ok(()))
+                )
+            };
             payload()
         };
 
@@ -832,7 +842,8 @@ impl WorkStealingScheduler {
         let execution_time = start_time.elapsed();
 
         // Update worker statistics
-        if let Ok(mut stats) = context.statistics.write() {
+        {
+            let mut stats = context.statistics.write();
             stats.tasks_executed += 1;
             stats.total_execution_time += execution_time;
 
@@ -887,12 +898,14 @@ impl WorkStealingScheduler {
                 match target_worker.stealer.steal() {
                     crossbeam::deque::Steal::Success(task) => {
                         // Successfully stole a task
-                        if let Ok(mut stats) = context.statistics.write() {
+                        {
+                            let mut stats = context.statistics.write();
                             stats.tasks_stolen += 1;
                             stats.total_stealing_time += start_time.elapsed();
                         }
 
-                        if let Ok(mut target_stats) = target_worker.statistics.write() {
+                        {
+                            let mut target_stats = target_worker.statistics.write();
                             target_stats.tasks_lost_to_stealing += 1;
                         }
 
@@ -915,7 +928,8 @@ impl WorkStealingScheduler {
         }
 
         // Update stealing time even if unsuccessful
-        if let Ok(mut stats) = context.statistics.write() {
+        {
+            let mut stats = context.statistics.write();
             stats.total_stealing_time += start_time.elapsed();
         }
 
@@ -986,7 +1000,7 @@ impl WorkStealingScheduler {
     /// Submit a task to the scheduler
     pub fn submit_task(&self, task: WorkStealingTask) -> WasmtimeResult<TaskId> {
         if self.shutdown.load(Ordering::Acquire) {
-            return Err(WasmtimeError::Threading {
+            return Err(WasmtimeError::Concurrency {
                 message: "Scheduler is shutting down".to_string(),
             });
         }
@@ -1014,7 +1028,8 @@ impl WorkStealingScheduler {
         }
 
         // Update statistics
-        if let Ok(mut stats) = self.statistics.write() {
+        {
+            let mut stats = self.statistics.write();
             stats.total_tasks_submitted += 1;
         }
 
@@ -1028,7 +1043,7 @@ impl WorkStealingScheduler {
 
         let workers = self.workers.read();
         if workers.is_empty() {
-            return Err(WasmtimeError::Threading {
+            return Err(WasmtimeError::Concurrency {
                 message: "No workers available".to_string(),
             });
         }
@@ -1042,7 +1057,7 @@ impl WorkStealingScheduler {
     fn submit_task_least_loaded(&self, task: Arc<WorkStealingTask>) -> WasmtimeResult<()> {
         let workers = self.workers.read();
         if workers.is_empty() {
-            return Err(WasmtimeError::Threading {
+            return Err(WasmtimeError::Concurrency {
                 message: "No workers available".to_string(),
             });
         }
@@ -1053,7 +1068,7 @@ impl WorkStealingScheduler {
             .enumerate()
             .map(|(idx, worker)| (idx, worker.queue.len()))
             .min_by_key(|(_, len)| *len)
-            .ok_or_else(|| WasmtimeError::Threading {
+            .ok_or_else(|| WasmtimeError::Concurrency {
                 message: "Failed to find least loaded worker".to_string(),
             })?;
 
@@ -1065,7 +1080,7 @@ impl WorkStealingScheduler {
     fn submit_task_numa_aware(&self, task: Arc<WorkStealingTask>) -> WasmtimeResult<()> {
         let workers = self.workers.read();
         if workers.is_empty() {
-            return Err(WasmtimeError::Threading {
+            return Err(WasmtimeError::Concurrency {
                 message: "No workers available".to_string(),
             });
         }
@@ -1090,7 +1105,7 @@ impl WorkStealingScheduler {
     fn submit_task_cache_aware(&self, task: Arc<WorkStealingTask>) -> WasmtimeResult<()> {
         let workers = self.workers.read();
         if workers.is_empty() {
-            return Err(WasmtimeError::Threading {
+            return Err(WasmtimeError::Concurrency {
                 message: "No workers available".to_string(),
             });
         }
@@ -1131,9 +1146,7 @@ impl WorkStealingScheduler {
 
     /// Get current scheduler statistics
     pub fn get_statistics(&self) -> WasmtimeResult<WorkStealingStatistics> {
-        let stats = self.statistics.read().map_err(|_| WasmtimeError::Concurrency {
-            message: "Failed to acquire statistics lock".to_string(),
-        })?;
+        let stats = self.statistics.read();
         Ok(stats.clone())
     }
 

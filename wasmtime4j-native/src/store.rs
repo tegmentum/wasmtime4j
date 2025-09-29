@@ -1091,7 +1091,7 @@ pub mod ffi_core {
         }
 
         if let Some(memory) = memory_limit_bytes {
-            builder = builder.memory_limit_bytes(memory);
+            builder = builder.memory_limit(memory);
         }
 
         if let Some(timeout) = execution_timeout {
@@ -1276,7 +1276,7 @@ pub unsafe extern "C" fn wasmtime4j_store_consume_fuel(
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_store_fuel_remaining(store_ptr: *const c_void) -> u64 {
     match ffi_core::get_store_ref(store_ptr) {
-        Ok(store) => match core::fuel_remaining(store) {
+        Ok(store) => match ffi_core::fuel_remaining(store) {
             Ok(Some(fuel)) => fuel,
             Ok(None) => 0, // Fuel not enabled
             Err(_) => 0,

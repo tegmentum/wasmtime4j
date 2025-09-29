@@ -7,6 +7,7 @@ use std::collections::{HashMap, VecDeque};
 use std::sync::{Arc, Mutex, RwLock};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use std::thread;
+use std::os::raw::c_char;
 
 /// Function execution profile data
 #[derive(Debug, Clone)]

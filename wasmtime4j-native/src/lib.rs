@@ -42,8 +42,6 @@ pub mod threading;
 pub mod streaming_compiler;
 
 // Additional core functionality for comprehensive API coverage
-pub mod caller;
-pub mod serialization;
 
 // Advanced threading optimizations and work-stealing refinements
 pub mod work_stealing;
@@ -145,13 +143,15 @@ pub mod networking;
 // Platform-specific optimizations for maximum performance
 pub mod numa_topology;
 pub mod cpu_cache_management;
-pub mod memory_bandwidth_optimization;
-pub mod cpu_microarchitecture_detection;
-pub mod platform_config;
+// TODO: Advanced performance optimization modules need missing type implementations
+// pub mod memory_bandwidth_optimization;
+// pub mod cpu_microarchitecture_detection;
+// pub mod platform_config;
 
 // Advanced networking protocols (WebSocket, HTTP/2, gRPC)
 #[cfg(feature = "advanced-networking")]
-pub mod advanced_networking;
+// TODO: Fix tungstenite dependency issues
+// pub mod advanced_networking;
 
 // Enhanced filesystem operations
 pub mod filesystem;
@@ -173,19 +173,25 @@ pub mod sourcemap;
 
 // Component model support for WASI Preview 2
 #[cfg(feature = "component-model")]
-pub mod component;
+// TODO: Fix wasmtime::wat usage
+// pub mod component;
 #[cfg(feature = "component-model")]
-pub mod component_core;
+// TODO: Re-enable when component module is available
+// pub mod component_core;
 #[cfg(feature = "component-model")]
-pub mod wit_interfaces;
+// TODO: Re-enable when component module is available
+// pub mod wit_interfaces;
 #[cfg(feature = "component-model")]
-pub mod component_orchestration;
+// TODO: Re-enable when component module is available
+// pub mod component_orchestration;
 #[cfg(feature = "component-model")]
 pub mod component_resources;
 #[cfg(feature = "component-model")]
-pub mod distributed_components;
+// TODO: Advanced distributed features need missing type implementations
+// pub mod distributed_components;
 #[cfg(feature = "component-model")]
-pub mod component_composition;
+// TODO: Re-enable when component module is available
+// pub mod component_composition;
 
 // Experimental modules for cutting-edge WebAssembly proposals
 // pub mod exceptions;
@@ -201,13 +207,16 @@ pub mod hot_reload;
 // pub mod debug_server;
 
 // Debugging support module
-pub mod debug;
+// TODO: Advanced debugging features need missing type implementations
+// pub mod debug;
 
 // WebAssembly GC implementation
 pub mod gc_types;
 pub mod gc_heap;
-pub mod gc_operations;
-pub mod gc;
+// TODO: Fix wasmtime::I31Ref usage
+// pub mod gc_operations;
+// TODO: Re-enable when gc_operations module is available
+// pub mod gc;
 
 // Re-export core types for convenience
 pub use engine::{Engine, EngineBuilder, WasmFeature};
@@ -222,9 +231,9 @@ pub use table::{Table, TableElement, TableMetadata};
 pub use linker::{Linker, LinkerMetadata, LinkerConfig, LinkerInstantiationResult, HostFunctionDefinition, ImportDefinition, ImportType};
 
 // Re-export additional core functionality
-pub use caller::{CallerContext, CallableWithContext, CallerContextCallback, create_host_function_with_context};
+pub use caller::{CallerContext, CallerExport, CallerExportType, ExportCounts};
 pub use serialization::{
-    ModuleSerializer, SerializationConfig, SerializedModule, SerializedModuleMetadata, CacheStatistics
+    ModuleSerializer, SerializationConfig, ModuleSizeInfo, SerializationStats, CacheInfo, ValidationLevel
 };
 
 // Re-export advanced threading functionality
@@ -267,14 +276,11 @@ pub use wasi::{
 
 // Re-export async runtime functionality
 pub use async_runtime::{
-    MultiRuntimeSystem, WorkStealingPool, AsyncOperationManager,
-    AsyncOperationHandle, AsyncOperationType, AsyncOperationStatus,
-    ExecutionTask, TaskType, TaskPayload, ExecutionContext, Priority,
-    CompilationOptions, GCType, ProgressInfo,
-    AsyncCallback, ProgressCallback,
-    get_multi_runtime_system, get_work_stealing_pool, get_async_operation_manager,
-    get_runtime_handle, compile_module_async, execute_function_parallel,
-    instantiate_module_concurrent, execute_parallel_gc
+    AsyncOperation, AsyncOperationType, AsyncOperationStatus,
+    AsyncFunctionCallContext, AsyncCompilationContext, CompilationOptions,
+    get_async_runtime, get_runtime_handle, execute_async_function_call,
+    compile_module_async, cancel_async_operation, get_operation_status,
+    wait_for_operation
 };
 
 // Re-export async operations functionality
@@ -297,6 +303,8 @@ pub use networking::{
 };
 
 // Re-export advanced networking functionality
+// TODO: Re-enable when advanced_networking module is implemented
+/*
 #[cfg(feature = "advanced-networking")]
 pub use advanced_networking::{
     AdvancedNetworkManager, AdvancedNetworkConfig, WebSocketConnection, WebSocketConnectionType,
@@ -304,6 +312,7 @@ pub use advanced_networking::{
     NetworkPerformanceMonitor, ProtocolMetrics, ConnectionMetrics, ThroughputMetrics,
     AdvancedConnectionPool, TlsConfiguration
 };
+*/
 
 // Re-export filesystem functionality
 pub use filesystem::{
@@ -335,6 +344,8 @@ pub use wasi_security::{
 };
 
 // Component model re-exports
+// TODO: Re-enable when component module is implemented
+/*
 #[cfg(feature = "component-model")]
 pub use component::{
     ComponentEngine, Component, ComponentMetadata, ComponentStoreData,
@@ -342,25 +353,35 @@ pub use component::{
     ComponentValueType, ComponentTypeKind, FieldType, CaseType,
     ResourceManager, HostInterface, InstanceInfo
 };
+*/
 
+// TODO: Re-enable when component_core module is available
+/*
 #[cfg(feature = "component-model")]
 pub use component_core::{
     EnhancedComponentEngine, ComponentInstanceInfo, ComponentMetrics,
     ComponentInterface, ComponentFunction
 };
+*/
 
+// TODO: Re-enable when wit_interfaces module is available
+/*
 #[cfg(feature = "component-model")]
 pub use wit_interfaces::{
     WitInterfaceManager, WitInterface, WitMethod, WitParameter, WitType,
     WitTypeKind, PrimitiveType, CompositeType, ValidationResult, ValidationStatus
 };
+*/
 
+// TODO: Re-enable when component_orchestration module is available
+/*
 #[cfg(feature = "component-model")]
 pub use component_orchestration::{
     ComponentOrchestrator, ComponentGraph, ComponentNode, ComponentConfiguration,
     ManagedComponent, ComponentState, HealthStatus, ComponentChannel,
     ComponentMessage, MessagePayload, LoadBalancingStrategy
 };
+*/
 
 #[cfg(feature = "component-model")]
 pub use component_resources::{
@@ -369,12 +390,15 @@ pub use component_resources::{
 };
 
 #[cfg(feature = "component-model")]
-pub use distributed_components::{
-    DistributedComponentManager, ComponentDiscoveryService, ComponentAdvertisement,
-    NodeInfo, NodeCapabilities, SecureCommunicationManager, DistributedSyncService,
-    ComponentBackupService, NetworkTopologyManager
-};
+// TODO: Re-enable when distributed_components module is implemented
+// pub use distributed_components::{
+//     DistributedComponentManager, ComponentDiscoveryService, ComponentAdvertisement,
+//     NodeInfo, NodeCapabilities, SecureCommunicationManager, DistributedSyncService,
+//     ComponentBackupService, NetworkTopologyManager
+// };
 
+// TODO: Re-enable when component_composition module is available
+/*
 #[cfg(feature = "component-model")]
 pub use component_composition::{
     ComponentCompositionManager, ComponentDependencyGraph, GraphNode, GraphEdge,
@@ -383,6 +407,7 @@ pub use component_composition::{
     CompositionSpecification, CompositionResult, ComposedApplication,
     GraphAnalysisResult, OptimizationGoals, OptimizationResults
 };
+*/
 //
 // pub use type_introspection::{
 //     IntrospectionValueType, MemoryTypeInfo, TableTypeInfo, GlobalTypeInfo, FuncTypeInfo,
@@ -438,9 +463,12 @@ pub use component_composition::{
 // };
 
 // Re-export WebAssembly GC types for garbage collection support
+// TODO: Re-enable when gc module is available
+/*
 pub use gc::{
     WasmGcRuntime, StructOperationResult, ArrayOperationResult, RefOperationResult, WasmtimeGcRef
 };
+*/
 
 // Re-export source map integration functionality
 pub use sourcemap::{
@@ -467,14 +495,14 @@ pub use shared_ffi::{
     validation, error_mapping
 };
 
-// Re-export debugging functionality
-pub use debug::{
-    DebugSession, DebugSessionId, Breakpoint, BreakpointId, BreakpointType,
-    ExecutionState as DebugExecutionState, ExecutionStateType, StackFrame, Variable, VariableValue, VariableScope,
-    MemoryInspector, MemoryInfo, VariableInspector, ProfilingData, FunctionProfile,
-    DebugEventHandler, ExecutionResult, StepType, EvaluationResult,
-    create_debug_session, get_debug_session, close_debug_session, get_active_debug_sessions
-};
+// TODO: Re-enable debugging functionality when debug module is implemented
+// pub use debug::{
+//     DebugSession, DebugSessionId, Breakpoint, BreakpointId, BreakpointType,
+//     ExecutionState as DebugExecutionState, ExecutionStateType, StackFrame, Variable, VariableValue, VariableScope,
+//     MemoryInspector, MemoryInfo, VariableInspector, ProfilingData, FunctionProfile as DebugFunctionProfile,
+//     DebugEventHandler, ExecutionResult as DebugExecutionResult, StepType, EvaluationResult,
+//     create_debug_session, get_debug_session, close_debug_session, get_active_debug_sessions
+// };
 
 // Re-export enterprise features for production use
 pub use pooling_allocator::{
@@ -484,8 +512,8 @@ pub use module_cache::{
     ModuleCache, ModuleCacheConfig, CacheStatistics, CacheEntryMetadata
 };
 pub use profiler::{
-    PerformanceProfiler, ProfilerConfig, FunctionProfile, RealTimeMetrics,
-    CompilationMetrics, PerformanceDashboard, RegressionDetection, RegressionSeverity
+    PerformanceProfiler, ProfilerConfig as ProfilerConfiguration, FunctionProfile, RealTimeMetrics,
+    CompilationMetrics, PerformanceDashboard as ProfilerDashboard, RegressionDetection, RegressionSeverity
 };
 pub use resource_manager::{
     ResourceManager as ProductionResourceManager, ResourceQuota, ResourceUsage, ResourceViolation,
@@ -516,20 +544,22 @@ pub use numa_topology::{
 };
 pub use cpu_cache_management::{
     CachePartitioningManager, CachePartition, CacheAffinityPolicy, PartitionType,
-    AffinityStrategy, CacheTopology, InterferenceDetectionAlgorithm
+    AffinityStrategy, CacheTopology
+    // InterferenceDetectionAlgorithm is private, cannot be re-exported
 };
-pub use memory_bandwidth_optimization::{
-    MemoryBandwidthOptimizer, BandwidthAllocationPolicy, CacheAwareAllocationStrategy,
-    MemoryTopology, BandwidthOptimizationReport, OptimizationRecommendation
-};
-pub use cpu_microarchitecture_detection::{
-    CpuMicroarchitectureDetector, ArchitectureInfo, FeatureDetectionResults,
-    PerformanceCharacteristics, X86FeatureSet, ArmFeatureSet, RiscVFeatureSet
-};
-pub use platform_config::{
-    PlatformConfig, PlatformInfo, CpuOptimization, MemoryHierarchyConfig, NumaConfig,
-    ThreadAffinityConfig, PowerManagementConfig, Architecture, OsType
-};
+// TODO: Re-enable when modules are implemented
+// pub use memory_bandwidth_optimization::{
+//     MemoryBandwidthOptimizer, BandwidthAllocationPolicy, CacheAwareAllocationStrategy,
+//     MemoryTopology, BandwidthOptimizationReport, OptimizationRecommendation
+// };
+// pub use cpu_microarchitecture_detection::{
+//     CpuMicroarchitectureDetector, ArchitectureInfo, FeatureDetectionResults,
+//     PerformanceCharacteristics, X86FeatureSet, ArmFeatureSet, RiscVFeatureSet
+// };
+// pub use platform_config::{
+//     PlatformConfig, PlatformInfo, CpuOptimization, MemoryHierarchyConfig, NumaConfig,
+//     ThreadAffinityConfig, PowerManagementConfig, Architecture, OsType
+// };
 
 // pub use debug_server::{
 //     DebugServer, DebugSession, Breakpoint, ExecutionContext, StackFrame,

@@ -321,9 +321,9 @@ pub fn get_operation_status(operation: &AsyncOperation) -> AsyncOperationStatus 
     match operation.status.lock() {
         Ok(status) => status.clone(),
         Err(_) => {
-            error!("Failed to acquire status lock for operation {}", operation.id);
+            error!("Failed to acquire status lock for operation {}: Lock poisoning detected", operation.id);
             // Return error status if we can't read the lock
-            AsyncOperationStatus::Error("Lock poisoning detected".to_string())
+            AsyncOperationStatus::Failed
         }
     }
 }
