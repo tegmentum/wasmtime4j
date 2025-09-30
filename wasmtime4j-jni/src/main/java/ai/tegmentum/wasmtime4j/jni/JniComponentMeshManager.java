@@ -403,7 +403,7 @@ public final class JniComponentMeshManager implements AutoCloseable {
 
   private static native void nativeClose(long handle);
 
-  // Supporting classes (to be defined in separate files)
+  /** Service endpoint information for component mesh. */
   public static final class ServiceEndpoint {
     private final String serviceId;
     private final String serviceName;
@@ -413,6 +413,17 @@ public final class JniComponentMeshManager implements AutoCloseable {
     private final double weight;
     private final String version;
 
+    /**
+     * Creates a new service endpoint.
+     *
+     * @param serviceId the service ID
+     * @param serviceName the service name
+     * @param addresses list of service addresses
+     * @param metadata service metadata
+     * @param healthStatus health status of the service
+     * @param weight routing weight
+     * @param version service version
+     */
     public ServiceEndpoint(
         final String serviceId,
         final String serviceName,
@@ -459,6 +470,7 @@ public final class JniComponentMeshManager implements AutoCloseable {
     }
   }
 
+  /** Health status of a service endpoint. */
   public enum ServiceHealthStatus {
     HEALTHY,
     DEGRADED,
@@ -468,12 +480,21 @@ public final class JniComponentMeshManager implements AutoCloseable {
     STOPPING
   }
 
+  /** Criteria for discovering services in the mesh. */
   public static final class ServiceDiscoveryCriteria {
     private final String serviceName;
     private final List<String> protocols;
     private final String minVersion;
     private final List<String> capabilities;
 
+    /**
+     * Creates service discovery criteria.
+     *
+     * @param serviceName the service name to discover
+     * @param protocols supported protocols
+     * @param minVersion minimum version requirement
+     * @param capabilities required capabilities
+     */
     public ServiceDiscoveryCriteria(
         final String serviceName,
         final List<String> protocols,
@@ -502,6 +523,7 @@ public final class JniComponentMeshManager implements AutoCloseable {
     }
   }
 
+  /** Context information for a mesh request. */
   public static final class RequestContext {
     private final String requestId;
     private final String clientId;
@@ -509,6 +531,15 @@ public final class JniComponentMeshManager implements AutoCloseable {
     private final RequestPriority priority;
     private final long timeoutMs;
 
+    /**
+     * Creates request context.
+     *
+     * @param requestId the request ID
+     * @param clientId the client ID
+     * @param metadata request metadata
+     * @param priority request priority
+     * @param timeoutMs timeout in milliseconds
+     */
     public RequestContext(
         final String requestId,
         final String clientId,
@@ -543,6 +574,7 @@ public final class JniComponentMeshManager implements AutoCloseable {
     }
   }
 
+  /** Priority levels for mesh requests. */
   public enum RequestPriority {
     LOW,
     NORMAL,
@@ -551,11 +583,19 @@ public final class JniComponentMeshManager implements AutoCloseable {
     EMERGENCY
   }
 
+  /** Configuration for a stream processing pipeline. */
   public static final class StreamPipelineConfig {
     private final String name;
     private final List<StreamProcessorConfig> processors;
     private final Map<String, String> routingConfig;
 
+    /**
+     * Creates stream pipeline configuration.
+     *
+     * @param name the pipeline name
+     * @param processors list of stream processors
+     * @param routingConfig routing configuration
+     */
     public StreamPipelineConfig(
         final String name,
         final List<StreamProcessorConfig> processors,
@@ -578,11 +618,19 @@ public final class JniComponentMeshManager implements AutoCloseable {
     }
   }
 
+  /** Configuration for a stream processor. */
   public static final class StreamProcessorConfig {
     private final String name;
     private final String processorType;
     private final Map<String, String> parameters;
 
+    /**
+     * Creates stream processor configuration.
+     *
+     * @param name the processor name
+     * @param processorType the processor type
+     * @param parameters processor parameters
+     */
     public StreamProcessorConfig(
         final String name, final String processorType, final Map<String, String> parameters) {
       this.name = JniValidation.requireNonNull(name, "name");
@@ -603,6 +651,7 @@ public final class JniComponentMeshManager implements AutoCloseable {
     }
   }
 
+  /** CDN configuration for content delivery. */
   public static final class CdnConfig {
     private final List<String> edgeLocations;
     private final Map<String, Object> cachePolicy;
@@ -630,6 +679,7 @@ public final class JniComponentMeshManager implements AutoCloseable {
     }
   }
 
+  /** Component analytics information. */
   public static final class ComponentAnalytics {
     private final String componentId;
     private final Map<String, Object> performanceMetrics;
@@ -665,6 +715,7 @@ public final class JniComponentMeshManager implements AutoCloseable {
     }
   }
 
+  /** Security policy configuration. */
   public static final class SecurityPolicy {
     private final String name;
     private final Map<String, Object> encryptionConfig;
@@ -700,6 +751,7 @@ public final class JniComponentMeshManager implements AutoCloseable {
     }
   }
 
+  /** Cluster information for federation. */
   public static final class ClusterInfo {
     private final String clusterId;
     private final String name;
@@ -734,6 +786,7 @@ public final class JniComponentMeshManager implements AutoCloseable {
     }
   }
 
+  /** Configuration for joining a cluster. */
   public static final class ClusterJoinConfig {
     private final String authToken;
     private final boolean secureConnection;
@@ -759,6 +812,7 @@ public final class JniComponentMeshManager implements AutoCloseable {
     }
   }
 
+  /** Configuration for component federation. */
   public static final class ComponentFederationConfig {
     private final List<String> targetClusters;
     private final String replicationStrategy;
@@ -787,6 +841,7 @@ public final class JniComponentMeshManager implements AutoCloseable {
     }
   }
 
+  /** Stream event information. */
   public static final class StreamEvent {
     private final String eventId;
     private final String eventType;
@@ -828,6 +883,7 @@ public final class JniComponentMeshManager implements AutoCloseable {
     }
   }
 
+  /** Statistics for mesh operations. */
   public static final class MeshStatistics {
     private final long totalServices;
     private final long activeServices;
