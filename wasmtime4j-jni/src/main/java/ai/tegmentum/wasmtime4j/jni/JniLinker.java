@@ -497,7 +497,8 @@ public final class JniLinker extends JniResource implements Linker {
       final java.util.List<String> providedExports = extractProvidedExports(module);
 
       final String moduleName = module.getName();
-      final String displayName = (moduleName != null && !moduleName.isEmpty()) ? moduleName : "unnamed module";
+      final String displayName =
+          (moduleName != null && !moduleName.isEmpty()) ? moduleName : "unnamed module";
       final ai.tegmentum.wasmtime4j.InstantiationStep step =
           new ai.tegmentum.wasmtime4j.InstantiationStep(
               i + 1, // 1-based step number

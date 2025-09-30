@@ -562,7 +562,7 @@ public final class PanamaAdvancedProfiler implements AutoCloseable {
             fileNameSegment,
             element.getLineNumber() > 0 ? element.getLineNumber() : 0,
             executionTime.toNanos() / stackTrace.length // Distribute time across stack
-        );
+            );
       }
 
       // Also record in Java flame graph generator

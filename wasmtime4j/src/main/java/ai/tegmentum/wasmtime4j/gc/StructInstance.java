@@ -1,8 +1,5 @@
 package ai.tegmentum.wasmtime4j.gc;
 
-import java.util.List;
-import java.util.Optional;
-
 /**
  * WebAssembly GC struct instance.
  *
