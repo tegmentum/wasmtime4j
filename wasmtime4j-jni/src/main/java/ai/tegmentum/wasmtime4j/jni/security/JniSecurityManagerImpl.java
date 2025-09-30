@@ -106,7 +106,51 @@ public final class JniSecurityManagerImpl implements SecurityManager {
     LOGGER.info("JNI Security Manager initialized with native handle: " + nativeSecurityHandle);
   }
 
+  // SecurityManager interface methods
+
   @Override
+  public void initialize(final SecurityPolicy policy) {
+    this.securityPolicy = policy;
+    LOGGER.info("Security policy initialized");
+  }
+
+  @Override
+  public boolean checkAccess(final AccessRequest request) {
+    final AuthorizationDecision decision = authorize(request);
+    return decision != null && decision.getDecision() == AuthorizationDecision.Decision.PERMIT;
+  }
+
+  @Override
+  public SecurityContext getCurrentContext() {
+    // Return the first active context or create a default one
+    if (activeContexts.isEmpty()) {
+      return createSecurityContext("default", 0);
+    }
+    return activeContexts.values().iterator().next();
+  }
+
+  @Override
+  public void shutdown() {
+    LOGGER.info("Shutting down security manager");
+    activeContexts.clear();
+    activeSandboxes.clear();
+    activeSessions.clear();
+    roles.clear();
+    if (nativeSecurityHandle != 0) {
+      nativeDestroySecurity(nativeSecurityHandle);
+    }
+  }
+
+  // Extended security manager methods
+
+  /**
+   * Verifies module signature using cryptographic verification.
+   *
+   * @param moduleBytes the module bytecode to verify
+   * @param signature the signature to verify (may be null if not required)
+   * @return true if signature is valid or not required, false otherwise
+   * @throws SecurityException if verification fails and signatures are required
+   */
   public boolean verifyModuleSignature(final byte[] moduleBytes, final ModuleSignature signature)
       throws SecurityException {
     if (!requireSignatures && signature == null) {
@@ -166,7 +210,14 @@ public final class JniSecurityManagerImpl implements SecurityManager {
     }
   }
 
-  @Override
+  // @Override removed - not in base interface
+  /**
+   * Signs a WebAssembly module using the configured signing key.
+   *
+   * @param moduleBytes the module bytecode to sign
+   * @return the module signature
+   * @throws SecurityException if signing fails
+   */
   public ModuleSignature signModule(final byte[] moduleBytes) throws SecurityException {
     try {
       // For demo purposes, we'll use a placeholder private key
@@ -214,7 +265,14 @@ public final class JniSecurityManagerImpl implements SecurityManager {
     }
   }
 
-  @Override
+  // @Override removed - not in base interface
+  /**
+   * Creates a new security context with the specified security level.
+   *
+   * @param contextId the context identifier
+   * @param securityLevel the security level (0-100)
+   * @return the created security context
+   */
   public SecurityContext createSecurityContext(final String contextId, final int securityLevel) {
     final SecurityContext context =
         SecurityContext.builder(contextId, securityLevel)
@@ -237,7 +295,13 @@ public final class JniSecurityManagerImpl implements SecurityManager {
     return context;
   }
 
-  @Override
+  // @Override removed - not in base interface
+  /**
+   * Authorizes an access request based on security policies.
+   *
+   * @param request the access request to authorize
+   * @return the authorization decision
+   */
   public AuthorizationDecision authorize(final AccessRequest request) {
     try {
       // Basic authorization logic - in production this would be more sophisticated
@@ -273,7 +337,14 @@ public final class JniSecurityManagerImpl implements SecurityManager {
     }
   }
 
-  @Override
+  // @Override removed - not in base interface
+  /**
+   * Creates a new security sandbox for a module.
+   *
+   * @param moduleId the module identifier
+   * @param context the security context
+   * @return the sandbox identifier
+   */
   public String createSandbox(final String moduleId, final SecurityContext context)
       throws SecurityException {
     try {
@@ -319,7 +390,14 @@ public final class JniSecurityManagerImpl implements SecurityManager {
     }
   }
 
-  @Override
+  // @Override removed - not in base interface
+  /**
+   * Checks if a sandbox has a specific capability.
+   *
+   * @param sandboxId the sandbox identifier
+   * @param capability the capability to check
+   * @return true if the sandbox has the capability
+   */
   public boolean hasCapability(final String sandboxId, final Capability capability)
       throws SecurityException {
     try {
@@ -353,7 +431,12 @@ public final class JniSecurityManagerImpl implements SecurityManager {
     }
   }
 
-  @Override
+  // @Override removed - not in base interface
+  /**
+   * Logs a security audit event.
+   *
+   * @param event the audit event to log
+   */
   public void logAuditEvent(final AuditEvent event) {
     if (!auditLoggingEnabled) {
       return;
@@ -372,7 +455,14 @@ public final class JniSecurityManagerImpl implements SecurityManager {
     }
   }
 
-  @Override
+  // @Override removed - not in base interface
+  /**
+   * Generates a compliance report for security auditing.
+   *
+   * @param startTime the report start time
+   * @param endTime the report end time
+   * @return the compliance report
+   */
   public ComplianceReport generateComplianceReport(
       final ComplianceFramework framework, final Instant startTime, final Instant endTime) {
     return ComplianceReport.builder()
@@ -384,19 +474,26 @@ public final class JniSecurityManagerImpl implements SecurityManager {
         .build();
   }
 
-  @Override
+  // @Override removed - not in base interface
   public void addTrustedKey(final String fingerprint, final byte[] publicKey) {
     // Implementation would add key to native trust store
     LOGGER.info("Trusted key added: " + fingerprint);
   }
 
-  @Override
+  // @Override removed - not in base interface
   public void revokeKey(final String fingerprint) {
     // Implementation would revoke key from native trust store
     LOGGER.info("Key revoked: " + fingerprint);
   }
 
-  @Override
+  // @Override removed - not in base interface
+  /**
+   * Creates a new authentication session.
+   *
+   * @param userId the user identifier
+   * @param scopes the session scopes
+   * @return the session token
+   */
   public SessionToken createSession(final String userId, final Set<String> scopes)
       throws SecurityException {
     final SessionToken token =
@@ -421,7 +518,13 @@ public final class JniSecurityManagerImpl implements SecurityManager {
     return token;
   }
 
-  @Override
+  // @Override removed - not in base interface
+  /**
+   * Validates an authentication session token.
+   *
+   * @param tokenId the session token identifier
+   * @return the session token if valid, empty otherwise
+   */
   public Optional<SessionToken> validateSession(final String tokenId) {
     final SessionToken token = activeSessions.get(tokenId);
     if (token != null && Instant.now().isBefore(token.getExpiresAt())) {
@@ -430,7 +533,12 @@ public final class JniSecurityManagerImpl implements SecurityManager {
     return Optional.empty();
   }
 
-  @Override
+  // @Override removed - not in base interface
+  /**
+   * Revokes an authentication session.
+   *
+   * @param tokenId the session token identifier
+   */
   public void revokeSession(final String tokenId) {
     final SessionToken removed = activeSessions.remove(tokenId);
     if (removed != null) {
@@ -445,31 +553,36 @@ public final class JniSecurityManagerImpl implements SecurityManager {
     }
   }
 
-  @Override
+  // @Override removed - not in base interface
   public void addRole(final Role role) {
     roles.put(role.getId(), role);
     LOGGER.info("Role added: " + role.getId());
   }
 
-  @Override
+  // @Override removed - not in base interface
   public void assignRole(final String userId, final String roleId) {
     // Implementation would assign role to user
     LOGGER.info("Role " + roleId + " assigned to user " + userId);
   }
 
-  @Override
+  // @Override removed - not in base interface
   public void removeRole(final String userId, final String roleId) {
     // Implementation would remove role from user
     LOGGER.info("Role " + roleId + " removed from user " + userId);
   }
 
-  @Override
+  // @Override removed - not in base interface
   public void addAbacPolicy(final AbacPolicy policy) {
     // Implementation would add ABAC policy
     LOGGER.info("ABAC policy added: " + policy.getId());
   }
 
-  @Override
+  // @Override removed - not in base interface
+  /**
+   * Removes a security sandbox and releases its resources.
+   *
+   * @param sandboxId the sandbox identifier
+   */
   public void removeSandbox(final String sandboxId) {
     // Implementation would remove sandbox via native call
     logAuditEvent(
@@ -484,7 +597,12 @@ public final class JniSecurityManagerImpl implements SecurityManager {
     LOGGER.info("Sandbox removed: " + sandboxId);
   }
 
-  @Override
+  // @Override removed - not in base interface
+  /**
+   * Gets current security statistics.
+   *
+   * @return the security statistics
+   */
   public SecurityStatistics getSecurityStatistics() {
     return SecurityStatistics.builder()
         .auditEventCount(auditEventCounter.get())
@@ -493,7 +611,12 @@ public final class JniSecurityManagerImpl implements SecurityManager {
         .build();
   }
 
-  @Override
+  // @Override removed - not in base interface
+  /**
+   * Performs security cleanup including expired contexts and sessions.
+   *
+   * @return the number of items cleaned up
+   */
   public int performSecurityCleanup() {
     int cleanedUp = 0;
 
@@ -531,47 +654,50 @@ public final class JniSecurityManagerImpl implements SecurityManager {
     return cleanedUp;
   }
 
-  @Override
+  // @Override removed - not in base interface
   public void saveTrustStore(final Path path) throws SecurityException {
     // Implementation would save trust store to file
     LOGGER.info("Trust store saved to: " + path);
   }
 
-  @Override
+  // @Override removed - not in base interface
   public void loadTrustStore(final Path path) throws SecurityException {
     // Implementation would load trust store from file
     LOGGER.info("Trust store loaded from: " + path);
   }
 
-  @Override
+  // @Override removed - not in base interface
   public void setSecurityPolicy(final SecurityPolicy policy) {
     this.securityPolicy = policy;
     LOGGER.info("Security policy updated");
   }
 
-  @Override
+  // @Override removed - not in base interface
   public SecurityPolicy getSecurityPolicy() {
     return securityPolicy;
   }
 
-  @Override
+  // @Override removed - not in base interface
   public void setAuditLoggingEnabled(final boolean enabled) {
     // Audit logging state is set at construction time for JNI implementation
     LOGGER.info("Audit logging enabled: " + enabled);
   }
 
-  @Override
+  // @Override removed - not in base interface
   public boolean isAuditLoggingEnabled() {
     return auditLoggingEnabled;
   }
 
-  @Override
+  // @Override removed - not in base interface
   public void flushAuditLog() {
     // Implementation would flush native audit buffers
     LOGGER.info("Audit log flushed");
   }
 
-  @Override
+  // @Override removed - not in base interface
+  /**
+   * Closes the security manager and releases all resources.
+   */
   public void close() {
     // Cleanup native resources
     if (nativeSecurityHandle != 0) {
