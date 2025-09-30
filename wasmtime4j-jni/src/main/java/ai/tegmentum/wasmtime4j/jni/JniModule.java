@@ -701,9 +701,9 @@ public final class JniModule extends JniResource implements Module {
    * metadata or debugging purposes.
    *
    * @return a map of custom section names to their data
-   * @deprecated Use {@link #getCustomSectionMetadata()} for comprehensive custom section access
    * @throws JniException if custom sections cannot be retrieved
    * @throws JniResourceException if this module has been closed
+   * @deprecated Use {@link #getCustomSectionMetadata()} for comprehensive custom section access
    */
   @Override
   @Deprecated
