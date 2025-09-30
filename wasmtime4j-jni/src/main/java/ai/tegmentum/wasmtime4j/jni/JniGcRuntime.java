@@ -1,6 +1,5 @@
 package ai.tegmentum.wasmtime4j.jni;
 
-import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.gc.ArrayInstance;
 import ai.tegmentum.wasmtime4j.gc.ArrayType;
 import ai.tegmentum.wasmtime4j.gc.FieldDefinition;
@@ -259,7 +258,8 @@ public final class JniGcRuntime implements GcRuntime {
       final JniStructInstance jniStruct = (JniStructInstance) struct;
       final Object nativeValue = convertGcValueToNative(value);
 
-      final int result = structSetNative(nativeHandle, jniStruct.getObjectId(), fieldIndex, nativeValue);
+      final int result =
+          structSetNative(nativeHandle, jniStruct.getObjectId(), fieldIndex, nativeValue);
       if (result != 0) {
         throw new GcException("Failed to set struct field");
       }
@@ -326,7 +326,8 @@ public final class JniGcRuntime implements GcRuntime {
       }
 
       final Object nativeValue = convertGcValueToNative(value);
-      final int result = arraySetNative(nativeHandle, jniArray.getObjectId(), elementIndex, nativeValue);
+      final int result =
+          arraySetNative(nativeHandle, jniArray.getObjectId(), elementIndex, nativeValue);
       if (result != 0) {
         throw new GcException("Failed to set array element");
       }
@@ -526,6 +527,16 @@ public final class JniGcRuntime implements GcRuntime {
 
   // ========== Advanced Reference Type Operations ==========
 
+  /**
+   * Casts a GC object to a struct instance of the specified type.
+   *
+   * @param object the object to cast
+   * @param targetStructType the target struct type
+   * @return the cast struct instance
+   * @throws GcException if the runtime is disposed
+   * @throws ClassCastException if the cast fails
+   * @throws IllegalArgumentException if object or targetStructType is null
+   */
   public StructInstance refCastStruct(final GcObject object, final StructType targetStructType) {
     validateNotDisposed();
     validateNotNull(object, "object");
@@ -551,6 +562,16 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
+  /**
+   * Casts a GC object to an array instance of the specified type.
+   *
+   * @param object the object to cast
+   * @param targetArrayType the target array type
+   * @return the cast array instance
+   * @throws GcException if the runtime is disposed
+   * @throws ClassCastException if the cast fails
+   * @throws IllegalArgumentException if object or targetArrayType is null
+   */
   public ArrayInstance refCastArray(final GcObject object, final ArrayType targetArrayType) {
     validateNotDisposed();
     validateNotNull(object, "object");
@@ -577,6 +598,15 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
+  /**
+   * Tests if a GC object can be cast to the specified struct type.
+   *
+   * @param object the object to test
+   * @param targetStructType the target struct type
+   * @return true if the object can be cast to the target type
+   * @throws GcException if the runtime is disposed
+   * @throws IllegalArgumentException if object or targetStructType is null
+   */
   public boolean refTestStruct(final GcObject object, final StructType targetStructType) {
     validateNotDisposed();
     validateNotNull(object, "object");
@@ -597,6 +627,15 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
+  /**
+   * Tests if a GC object can be cast to the specified array type.
+   *
+   * @param object the object to test
+   * @param targetArrayType the target array type
+   * @return true if the object can be cast to the target type
+   * @throws GcException if the runtime is disposed
+   * @throws IllegalArgumentException if object or targetArrayType is null
+   */
   public boolean refTestArray(final GcObject object, final ArrayType targetArrayType) {
     validateNotDisposed();
     validateNotNull(object, "object");
@@ -617,7 +656,15 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
-  public GcReferenceType getRuntimeType(final GcObject object) {
+  /**
+   * Gets the runtime type of a GC object.
+   *
+   * @param object the object to query
+   * @return the runtime reference type of the object
+   * @throws GcException if the runtime is disposed
+   * @throws IllegalArgumentException if object is null
+   */
+  public GcReferenceType getRuntimeTypeNative(final GcObject object) {
     validateNotDisposed();
     validateNotNull(object, "object");
 
@@ -628,7 +675,7 @@ public final class JniGcRuntime implements GcRuntime {
       }
 
       final long objectId = getObjectId(object);
-      final int typeId = getRuntimeType(nativeHandle, objectId);
+      final int typeId = getRuntimeTypeNative(nativeHandle, objectId);
 
       return convertNativeToReferenceType(typeId);
     } finally {
@@ -636,6 +683,14 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
+  /**
+   * Casts a GC object to the specified type, returning empty if the object is null.
+   *
+   * @param object the object to cast (may be null)
+   * @param targetType the target reference type
+   * @return an Optional containing the cast object, or empty if the object is null
+   * @throws ClassCastException if the cast fails for non-null objects
+   */
   public Optional<GcObject> refCastNullable(
       final GcObject object, final GcReferenceType targetType) {
     if (object == null || isNull(object)) {
@@ -651,6 +706,16 @@ public final class JniGcRuntime implements GcRuntime {
 
   // ========== Complex Type Operations ==========
 
+  /**
+   * Creates a packed struct instance with custom field alignment.
+   *
+   * @param structType the struct type definition
+   * @param fieldValues the field values
+   * @param customAlignment custom alignment for each field (field index to alignment in bytes)
+   * @return the created packed struct instance
+   * @throws GcException if the runtime is disposed or creation fails
+   * @throws IllegalArgumentException if any parameter is null
+   */
   public StructInstance createPackedStruct(
       final StructType structType,
       final List<GcValue> fieldValues,
@@ -674,7 +739,7 @@ public final class JniGcRuntime implements GcRuntime {
               .mapToInt(Map.Entry::getValue)
               .toArray();
 
-      final long objectId = structNewPacked(nativeHandle, typeId, nativeValues, alignments);
+      final long objectId = structNewPackedNative(nativeHandle, typeId, nativeValues, alignments);
       if (objectId == 0) {
         throw new GcException("Failed to create packed struct instance");
       }
@@ -685,7 +750,16 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
-  
+  /**
+   * Creates a variable-length array instance with flexible elements.
+   *
+   * @param arrayType the array type definition
+   * @param baseLength the base length of the array
+   * @param flexibleElements additional flexible elements beyond the base length
+   * @return the created variable-length array instance
+   * @throws GcException if the runtime is disposed or creation fails
+   * @throws IllegalArgumentException if arrayType or flexibleElements is null
+   */
   public ArrayInstance createVariableLengthArray(
       final ArrayType arrayType, final int baseLength, final List<GcValue> flexibleElements) {
     validateNotDisposed();
@@ -702,7 +776,7 @@ public final class JniGcRuntime implements GcRuntime {
       final Object[] nativeFlexibleElements = convertGcValuesToNative(flexibleElements);
 
       final long objectId =
-          arrayNewVariableLength(nativeHandle, typeId, baseLength, nativeFlexibleElements);
+          arrayNewVariableLengthNative(nativeHandle, typeId, baseLength, nativeFlexibleElements);
       if (objectId == 0) {
         throw new GcException("Failed to create variable-length array instance");
       }
@@ -714,7 +788,15 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
-  
+  /**
+   * Creates a nested array instance containing other GC objects.
+   *
+   * @param arrayType the array type definition
+   * @param nestedElements the nested GC objects to include
+   * @return the created nested array instance
+   * @throws GcException if the runtime is disposed or creation fails
+   * @throws IllegalArgumentException if arrayType or nestedElements is null
+   */
   public ArrayInstance createNestedArray(
       final ArrayType arrayType, final List<GcObject> nestedElements) {
     validateNotDisposed();
@@ -730,7 +812,7 @@ public final class JniGcRuntime implements GcRuntime {
       final int typeId = registerArrayTypeInternal(arrayType);
       final long[] nestedObjectIds = nestedElements.stream().mapToLong(this::getObjectId).toArray();
 
-      final long objectId = arrayNewNested(nativeHandle, typeId, nestedObjectIds);
+      final long objectId = arrayNewNestedNative(nativeHandle, typeId, nestedObjectIds);
       if (objectId == 0) {
         throw new GcException("Failed to create nested array instance");
       }
@@ -741,7 +823,17 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
-  
+  /**
+   * Copies elements from one array to another.
+   *
+   * @param sourceArray the source array
+   * @param sourceIndex the starting index in the source array
+   * @param destArray the destination array
+   * @param destIndex the starting index in the destination array
+   * @param length the number of elements to copy
+   * @throws GcException if the runtime is disposed or the operation fails
+   * @throws IllegalArgumentException if sourceArray or destArray is null
+   */
   public void copyArrayElements(
       final ArrayInstance sourceArray,
       final int sourceIndex,
@@ -762,7 +854,8 @@ public final class JniGcRuntime implements GcRuntime {
       final long destObjectId = getObjectId(destArray);
 
       final int result =
-          arrayCopy(nativeHandle, sourceObjectId, sourceIndex, destObjectId, destIndex, length);
+          arrayCopyNative(
+              nativeHandle, sourceObjectId, sourceIndex, destObjectId, destIndex, length);
       if (result != 0) {
         throw new GcException("Failed to copy array elements");
       }
@@ -771,7 +864,16 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
-  
+  /**
+   * Fills array elements with a specific value.
+   *
+   * @param array the array to fill
+   * @param startIndex the starting index
+   * @param length the number of elements to fill
+   * @param value the value to fill with
+   * @throws GcException if the runtime is disposed or the operation fails
+   * @throws IllegalArgumentException if array or value is null
+   */
   public void fillArrayElements(
       final ArrayInstance array, final int startIndex, final int length, final GcValue value) {
     validateNotDisposed();
@@ -787,7 +889,7 @@ public final class JniGcRuntime implements GcRuntime {
       final long objectId = getObjectId(array);
       final Object nativeValue = convertGcValueToNative(value);
 
-      final int result = arrayFill(nativeHandle, objectId, startIndex, length, nativeValue);
+      final int result = arrayFillNative(nativeHandle, objectId, startIndex, length, nativeValue);
       if (result != 0) {
         throw new GcException("Failed to fill array elements");
       }
@@ -798,8 +900,7 @@ public final class JniGcRuntime implements GcRuntime {
 
   // ========== Type Registration and Management ==========
 
-  
-  public int registerRecursiveType(final String typeName, final Object typeDefinition) {
+  public int registerRecursiveTypeNative(final String typeName, final Object typeDefinition) {
     validateNotDisposed();
     validateNotNull(typeName, "typeName");
     validateNotNull(typeDefinition, "typeDefinition");
@@ -813,7 +914,7 @@ public final class JniGcRuntime implements GcRuntime {
       // Convert type definition to native format
       final byte[] nativeDefinition = serializeTypeDefinition(typeDefinition);
 
-      final int typeId = registerRecursiveType(nativeHandle, typeName, nativeDefinition);
+      final int typeId = registerRecursiveTypeNative(nativeHandle, typeName, nativeDefinition);
       if (typeId < 0) {
         throw new GcException("Failed to register recursive type");
       }
@@ -824,8 +925,7 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
-  
-  public Map<String, Integer> createTypeHierarchy(
+  public Map<String, Integer> createTypeHierarchyNative(
       final Object baseType, final List<Object> derivedTypes) {
     validateNotDisposed();
     validateNotNull(baseType, "baseType");
@@ -842,7 +942,7 @@ public final class JniGcRuntime implements GcRuntime {
           derivedTypes.stream().map(this::serializeTypeDefinition).toArray(byte[][]::new);
 
       final Object nativeHierarchy =
-          createTypeHierarchy(nativeHandle, nativeBaseType, nativeDerivedTypes);
+          createTypeHierarchyNative(nativeHandle, nativeBaseType, nativeDerivedTypes);
       return deserializeTypeHierarchy(nativeHierarchy);
     } finally {
       lock.readLock().unlock();
@@ -851,8 +951,7 @@ public final class JniGcRuntime implements GcRuntime {
 
   // ========== Garbage Collection Control ==========
 
-  
-  public GcStats collectGarbageIncremental(final long maxPauseMillis) {
+  public GcStats collectGarbageIncrementalNative(final long maxPauseMillis) {
     validateNotDisposed();
 
     lock.readLock().lock();
@@ -861,15 +960,14 @@ public final class JniGcRuntime implements GcRuntime {
         throw new GcException("GC runtime has been disposed");
       }
 
-      final Object nativeStats = collectGarbageIncremental(nativeHandle, maxPauseMillis);
+      final Object nativeStats = collectGarbageIncrementalNative(nativeHandle, maxPauseMillis);
       return convertNativeToGcStats(nativeStats);
     } finally {
       lock.readLock().unlock();
     }
   }
 
-  
-  public GcStats collectGarbageConcurrent() {
+  public GcStats collectGarbageConcurrentNative() {
     validateNotDisposed();
 
     lock.readLock().lock();
@@ -878,15 +976,15 @@ public final class JniGcRuntime implements GcRuntime {
         throw new GcException("GC runtime has been disposed");
       }
 
-      final Object nativeStats = collectGarbageConcurrent(nativeHandle);
+      final Object nativeStats = collectGarbageConcurrentNative(nativeHandle);
       return convertNativeToGcStats(nativeStats);
     } finally {
       lock.readLock().unlock();
     }
   }
 
-  
-  public void configureGcStrategy(final String strategy, final Map<String, Object> parameters) {
+  public void configureGcStrategyNative(
+      final String strategy, final Map<String, Object> parameters) {
     validateNotDisposed();
     validateNotNull(strategy, "strategy");
     validateNotNull(parameters, "parameters");
@@ -900,7 +998,7 @@ public final class JniGcRuntime implements GcRuntime {
       final String[] paramKeys = parameters.keySet().toArray(new String[0]);
       final Object[] paramValues = parameters.values().toArray();
 
-      final int result = configureGcStrategy(nativeHandle, strategy, paramKeys, paramValues);
+      final int result = configureGcStrategyNative(nativeHandle, strategy, paramKeys, paramValues);
       if (result != 0) {
         throw new GcException("Failed to configure GC strategy: " + strategy);
       }
@@ -909,8 +1007,7 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
-  
-  public boolean monitorGcPressure(final double pressureThreshold) {
+  public boolean monitorGcPressureNative(final double pressureThreshold) {
     validateNotDisposed();
 
     lock.readLock().lock();
@@ -919,7 +1016,7 @@ public final class JniGcRuntime implements GcRuntime {
         throw new GcException("GC runtime has been disposed");
       }
 
-      return monitorGcPressure(nativeHandle, pressureThreshold);
+      return monitorGcPressureNative(nativeHandle, pressureThreshold);
     } finally {
       lock.readLock().unlock();
     }
@@ -927,8 +1024,7 @@ public final class JniGcRuntime implements GcRuntime {
 
   // ========== Advanced Memory Management ==========
 
-  
-  public WeakGcReference createWeakReference(
+  public WeakGcReference createWeakReferenceNative(
       final GcObject object, final Runnable finalizationCallback) {
     validateNotDisposed();
     validateNotNull(object, "object");
@@ -940,7 +1036,7 @@ public final class JniGcRuntime implements GcRuntime {
       }
 
       final long objectId = getObjectId(object);
-      final long weakRefId = createWeakReference(nativeHandle, objectId);
+      final long weakRefId = createWeakReferenceNative(nativeHandle, objectId);
       if (weakRefId == 0) {
         throw new GcException("Failed to create weak reference");
       }
@@ -951,8 +1047,7 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
-  
-  public void registerFinalizationCallback(final GcObject object, final Runnable callback) {
+  public void registerFinalizationCallbackNative(final GcObject object, final Runnable callback) {
     validateNotDisposed();
     validateNotNull(object, "object");
     validateNotNull(callback, "callback");
@@ -964,7 +1059,7 @@ public final class JniGcRuntime implements GcRuntime {
       }
 
       final long objectId = getObjectId(object);
-      final int result = registerFinalizationCallback(nativeHandle, objectId, callback);
+      final int result = registerFinalizationCallbackNative(nativeHandle, objectId, callback);
       if (result != 0) {
         throw new GcException("Failed to register finalization callback");
       }
@@ -973,8 +1068,7 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
-  
-  public int runFinalization() {
+  public int runFinalizationNative() {
     validateNotDisposed();
 
     lock.readLock().lock();
@@ -983,7 +1077,7 @@ public final class JniGcRuntime implements GcRuntime {
         throw new GcException("GC runtime has been disposed");
       }
 
-      return runFinalization(nativeHandle);
+      return runFinalizationNative(nativeHandle);
     } finally {
       lock.readLock().unlock();
     }
@@ -991,8 +1085,7 @@ public final class JniGcRuntime implements GcRuntime {
 
   // ========== Host Integration ==========
 
-  
-  public GcObject integrateHostObject(final Object hostObject, final GcReferenceType gcType) {
+  public GcObject integrateHostObjectNative(final Object hostObject, final GcReferenceType gcType) {
     validateNotDisposed();
     validateNotNull(hostObject, "hostObject");
     validateNotNull(gcType, "gcType");
@@ -1004,7 +1097,7 @@ public final class JniGcRuntime implements GcRuntime {
       }
 
       final int typeId = convertReferenceTypeToNative(gcType);
-      final long objectId = integrateHostObject(nativeHandle, hostObject, typeId);
+      final long objectId = integrateHostObjectNative(nativeHandle, hostObject, typeId);
       if (objectId == 0) {
         throw new GcException("Failed to integrate host object");
       }
@@ -1015,8 +1108,7 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
-  
-  public Object extractHostObject(final GcObject gcObject) {
+  public Object extractHostObjectNative(final GcObject gcObject) {
     validateNotDisposed();
     validateNotNull(gcObject, "gcObject");
 
@@ -1027,7 +1119,7 @@ public final class JniGcRuntime implements GcRuntime {
       }
 
       final long objectId = getObjectId(gcObject);
-      final Object hostObject = extractHostObject(nativeHandle, objectId);
+      final Object hostObject = extractHostObjectNative(nativeHandle, objectId);
       if (hostObject == null) {
         throw new GcException("Failed to extract host object or object is not host-integrated");
       }
@@ -1038,8 +1130,7 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
-  
-  public Object createSharingBridge(final List<GcObject> objects) {
+  public Object createSharingBridgeNative(final List<GcObject> objects) {
     validateNotDisposed();
     validateNotNull(objects, "objects");
 
@@ -1051,7 +1142,7 @@ public final class JniGcRuntime implements GcRuntime {
 
       final long[] objectIds = objects.stream().mapToLong(this::getObjectId).toArray();
 
-      final Object bridge = createSharingBridge(nativeHandle, objectIds);
+      final Object bridge = createSharingBridgeNative(nativeHandle, objectIds);
       if (bridge == null) {
         throw new GcException("Failed to create sharing bridge");
       }
@@ -1064,8 +1155,7 @@ public final class JniGcRuntime implements GcRuntime {
 
   // ========== Debugging and Profiling ==========
 
-  
-  public GcHeapInspection inspectHeap() {
+  public GcHeapInspection inspectHeapNative() {
     validateNotDisposed();
 
     lock.readLock().lock();
@@ -1074,15 +1164,14 @@ public final class JniGcRuntime implements GcRuntime {
         throw new GcException("GC runtime has been disposed");
       }
 
-      final Object nativeInspection = inspectHeap(nativeHandle);
+      final Object nativeInspection = inspectHeapNative(nativeHandle);
       return new JniGcHeapInspection(nativeInspection);
     } finally {
       lock.readLock().unlock();
     }
   }
 
-  
-  public ObjectLifecycleTracker trackObjectLifecycles(final List<GcObject> objects) {
+  public ObjectLifecycleTracker trackObjectLifecyclesNative(final List<GcObject> objects) {
     validateNotDisposed();
     validateNotNull(objects, "objects");
 
@@ -1094,7 +1183,7 @@ public final class JniGcRuntime implements GcRuntime {
 
       final long[] objectIds = objects.stream().mapToLong(this::getObjectId).toArray();
 
-      final long trackerId = trackObjectLifecycles(nativeHandle, objectIds);
+      final long trackerId = trackObjectLifecyclesNative(nativeHandle, objectIds);
       if (trackerId == 0) {
         throw new GcException("Failed to create lifecycle tracker");
       }
@@ -1105,8 +1194,7 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
-  
-  public MemoryLeakAnalysis detectMemoryLeaks() {
+  public MemoryLeakAnalysis detectMemoryLeaksNative() {
     validateNotDisposed();
 
     lock.readLock().lock();
@@ -1115,15 +1203,14 @@ public final class JniGcRuntime implements GcRuntime {
         throw new GcException("GC runtime has been disposed");
       }
 
-      final Object nativeAnalysis = detectMemoryLeaks(nativeHandle);
+      final Object nativeAnalysis = detectMemoryLeaksNative(nativeHandle);
       return new JniMemoryLeakAnalysis(nativeAnalysis);
     } finally {
       lock.readLock().unlock();
     }
   }
 
-  
-  public GcProfiler startProfiling() {
+  public GcProfiler startProfilingNative() {
     validateNotDisposed();
 
     lock.readLock().lock();
@@ -1132,7 +1219,7 @@ public final class JniGcRuntime implements GcRuntime {
         throw new GcException("GC runtime has been disposed");
       }
 
-      final long profilerId = startProfiling(nativeHandle);
+      final long profilerId = startProfilingNative(nativeHandle);
       if (profilerId == 0) {
         throw new GcException("Failed to start profiling");
       }
@@ -1145,8 +1232,7 @@ public final class JniGcRuntime implements GcRuntime {
 
   // ========== Safety and Validation ==========
 
-  
-  public ReferenceSafetyResult validateReferenceSafety(final List<GcObject> rootObjects) {
+  public ReferenceSafetyResult validateReferenceSafetyNative(final List<GcObject> rootObjects) {
     validateNotDisposed();
     validateNotNull(rootObjects, "rootObjects");
 
@@ -1158,15 +1244,14 @@ public final class JniGcRuntime implements GcRuntime {
 
       final long[] objectIds = rootObjects.stream().mapToLong(this::getObjectId).toArray();
 
-      final Object nativeResult = validateReferenceSafety(nativeHandle, objectIds);
+      final Object nativeResult = validateReferenceSafetyNative(nativeHandle, objectIds);
       return new JniReferenceSafetyResult(nativeResult);
     } finally {
       lock.readLock().unlock();
     }
   }
 
-  
-  public boolean enforceTypeSafety(final String operation, final List<Object> operands) {
+  public boolean enforceTypeSafetyNative(final String operation, final List<Object> operands) {
     validateNotDisposed();
     validateNotNull(operation, "operation");
     validateNotNull(operands, "operands");
@@ -1178,14 +1263,13 @@ public final class JniGcRuntime implements GcRuntime {
       }
 
       final Object[] nativeOperands = operands.toArray();
-      return enforceTypeSafety(nativeHandle, operation, nativeOperands);
+      return enforceTypeSafetyNative(nativeHandle, operation, nativeOperands);
     } finally {
       lock.readLock().unlock();
     }
   }
 
-  
-  public MemoryCorruptionAnalysis detectMemoryCorruption() {
+  public MemoryCorruptionAnalysis detectMemoryCorruptionNative() {
     validateNotDisposed();
 
     lock.readLock().lock();
@@ -1194,15 +1278,14 @@ public final class JniGcRuntime implements GcRuntime {
         throw new GcException("GC runtime has been disposed");
       }
 
-      final Object nativeAnalysis = detectMemoryCorruption(nativeHandle);
+      final Object nativeAnalysis = detectMemoryCorruptionNative(nativeHandle);
       return new JniMemoryCorruptionAnalysis(nativeAnalysis);
     } finally {
       lock.readLock().unlock();
     }
   }
 
-  
-  public GcInvariantValidation validateInvariants() {
+  public GcInvariantValidation validateInvariantsNative() {
     validateNotDisposed();
 
     lock.readLock().lock();
@@ -1211,7 +1294,7 @@ public final class JniGcRuntime implements GcRuntime {
         throw new GcException("GC runtime has been disposed");
       }
 
-      final Object nativeValidation = validateInvariants(nativeHandle);
+      final Object nativeValidation = validateInvariantsNative(nativeHandle);
       return new JniGcInvariantValidation(nativeValidation);
     } finally {
       lock.readLock().unlock();
@@ -1227,7 +1310,7 @@ public final class JniGcRuntime implements GcRuntime {
     lock.writeLock().lock();
     try {
       if (!disposed) {
-        destroyRuntime(nativeHandle);
+        destroyRuntimeNative(nativeHandle);
         disposed = true;
         LOGGER.fine("Disposed JNI GC runtime with handle: " + nativeHandle);
       }
@@ -1504,13 +1587,17 @@ public final class JniGcRuntime implements GcRuntime {
   private static native Object getGcStatsNative(long runtimeHandle);
 
   // Advanced reference type operations
-  private static native long refCastStructNative(long runtimeHandle, long objectId, int targetTypeId);
+  private static native long refCastStructNative(
+      long runtimeHandle, long objectId, int targetTypeId);
 
-  private static native long refCastArrayNative(long runtimeHandle, long objectId, int targetTypeId);
+  private static native long refCastArrayNative(
+      long runtimeHandle, long objectId, int targetTypeId);
 
-  private static native boolean refTestStructNative(long runtimeHandle, long objectId, int targetTypeId);
+  private static native boolean refTestStructNative(
+      long runtimeHandle, long objectId, int targetTypeId);
 
-  private static native boolean refTestArrayNative(long runtimeHandle, long objectId, int targetTypeId);
+  private static native boolean refTestArrayNative(
+      long runtimeHandle, long objectId, int targetTypeId);
 
   private static native int getRuntimeTypeNative(long runtimeHandle, long objectId);
 
@@ -1521,7 +1608,8 @@ public final class JniGcRuntime implements GcRuntime {
   private static native long arrayNewVariableLengthNative(
       long runtimeHandle, int typeId, int baseLength, Object[] flexibleElements);
 
-  private static native long arrayNewNestedNative(long runtimeHandle, int typeId, long[] nestedObjectIds);
+  private static native long arrayNewNestedNative(
+      long runtimeHandle, int typeId, long[] nestedObjectIds);
 
   private static native int arrayCopyNative(
       long runtimeHandle,
@@ -1542,14 +1630,16 @@ public final class JniGcRuntime implements GcRuntime {
       long runtimeHandle, byte[] baseType, byte[][] derivedTypes);
 
   // Garbage collection control
-  private static native Object collectGarbageIncrementalNative(long runtimeHandle, long maxPauseMillis);
+  private static native Object collectGarbageIncrementalNative(
+      long runtimeHandle, long maxPauseMillis);
 
   private static native Object collectGarbageConcurrentNative(long runtimeHandle);
 
   private static native int configureGcStrategyNative(
       long runtimeHandle, String strategy, String[] paramKeys, Object[] paramValues);
 
-  private static native boolean monitorGcPressureNative(long runtimeHandle, double pressureThreshold);
+  private static native boolean monitorGcPressureNative(
+      long runtimeHandle, double pressureThreshold);
 
   // Advanced memory management
   private static native long createWeakReferenceNative(long runtimeHandle, long objectId);
@@ -1560,7 +1650,8 @@ public final class JniGcRuntime implements GcRuntime {
   private static native int runFinalizationNative(long runtimeHandle);
 
   // Host integration
-  private static native long integrateHostObjectNative(long runtimeHandle, Object hostObject, int typeId);
+  private static native long integrateHostObjectNative(
+      long runtimeHandle, Object hostObject, int typeId);
 
   private static native Object extractHostObjectNative(long runtimeHandle, long objectId);
 

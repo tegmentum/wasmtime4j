@@ -165,8 +165,7 @@ public final class WasiExperimentalProcess {
             if (result.errorCode != 0) {
               final WasiErrorCode errorCode = WasiErrorCode.fromErrnoOrNull(result.errorCode);
               throw new WasiException(
-                  errorCode != null ? errorCode : WasiErrorCode.EIO,
-                  "create_sandboxed_process");
+                  errorCode != null ? errorCode : WasiErrorCode.EIO, "create_sandboxed_process");
             }
 
             // Track active process
@@ -252,8 +251,7 @@ public final class WasiExperimentalProcess {
             if (result.errorCode != 0) {
               final WasiErrorCode errorCode = WasiErrorCode.fromErrnoOrNull(result.errorCode);
               throw new WasiException(
-                  errorCode != null ? errorCode : WasiErrorCode.EIO,
-                  "create_resource_monitor");
+                  errorCode != null ? errorCode : WasiErrorCode.EIO, "create_resource_monitor");
             }
 
             // Track resource monitor
@@ -308,12 +306,10 @@ public final class WasiExperimentalProcess {
     final ProcessInfo targetProcess = activeProcesses.get(targetProcessHandle);
 
     if (sourceProcess == null) {
-      throw new WasiException(
-          WasiErrorCode.EBADF, "ipc_channel_operation");
+      throw new WasiException(WasiErrorCode.EBADF, "ipc_channel_operation");
     }
     if (targetProcess == null) {
-      throw new WasiException(
-          WasiErrorCode.EBADF, "ipc_channel_operation");
+      throw new WasiException(WasiErrorCode.EBADF, "ipc_channel_operation");
     }
 
     LOGGER.fine(
@@ -342,8 +338,7 @@ public final class WasiExperimentalProcess {
             if (result.errorCode != 0) {
               final WasiErrorCode errorCode = WasiErrorCode.fromErrnoOrNull(result.errorCode);
               throw new WasiException(
-                  errorCode != null ? errorCode : WasiErrorCode.EIO,
-                  "create_ipc_channel");
+                  errorCode != null ? errorCode : WasiErrorCode.EIO, "create_ipc_channel");
             }
 
             // Track IPC handle
@@ -424,8 +419,7 @@ public final class WasiExperimentalProcess {
             if (result.errorCode != 0) {
               final WasiErrorCode errorCode = WasiErrorCode.fromErrnoOrNull(result.errorCode);
               throw new WasiException(
-                  errorCode != null ? errorCode : WasiErrorCode.EIO,
-                  "register_system_service");
+                  errorCode != null ? errorCode : WasiErrorCode.EIO, "register_system_service");
             }
 
             // Track system service
@@ -541,8 +535,7 @@ public final class WasiExperimentalProcess {
             if (result.errorCode != 0) {
               final WasiErrorCode errorCode = WasiErrorCode.fromErrnoOrNull(result.errorCode);
               throw new WasiException(
-                  errorCode != null ? errorCode : WasiErrorCode.EIO,
-                  "get_process_resource_usage");
+                  errorCode != null ? errorCode : WasiErrorCode.EIO, "get_process_resource_usage");
             }
 
             return new ProcessResourceUsage(
@@ -599,8 +592,7 @@ public final class WasiExperimentalProcess {
             if (result != 0) {
               final WasiErrorCode errorCode = WasiErrorCode.fromErrnoOrNull(result);
               throw new WasiException(
-                  errorCode != null ? errorCode : WasiErrorCode.EIO,
-                  "terminate_process");
+                  errorCode != null ? errorCode : WasiErrorCode.EIO, "terminate_process");
             }
 
             // Update process state
@@ -1071,7 +1063,10 @@ public final class WasiExperimentalProcess {
         final byte[] data,
         final String clientId) {
       this.operation = operation;
-      this.parameters = parameters != null ? Collections.unmodifiableMap(new HashMap<>(parameters)) : Collections.emptyMap();
+      this.parameters =
+          parameters != null
+              ? Collections.unmodifiableMap(new HashMap<>(parameters))
+              : Collections.emptyMap();
       this.data = data != null ? data.clone() : new byte[0];
       this.clientId = clientId;
     }

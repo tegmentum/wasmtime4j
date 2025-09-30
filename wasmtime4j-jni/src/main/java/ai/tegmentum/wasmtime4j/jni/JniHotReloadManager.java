@@ -1,7 +1,6 @@
 package ai.tegmentum.wasmtime4j.jni;
 
 import ai.tegmentum.wasmtime4j.exception.WasmRuntimeException;
-import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
