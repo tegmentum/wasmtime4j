@@ -22,13 +22,18 @@ import ai.tegmentum.wasmtime4j.ComponentOrchestrator;
 import ai.tegmentum.wasmtime4j.ComponentRegistry;
 import ai.tegmentum.wasmtime4j.ComponentSimple;
 import ai.tegmentum.wasmtime4j.ComponentValidationResult;
+import ai.tegmentum.wasmtime4j.EngineConfig;
+import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
+import ai.tegmentum.wasmtime4j.StreamingCompiler;
+import ai.tegmentum.wasmtime4j.WasmFeature;
 import ai.tegmentum.wasmtime4j.WitCompatibilityResult;
 import ai.tegmentum.wasmtime4j.WitSupportInfo;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -117,7 +122,71 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
 
   @Override
   public EngineConfig getConfig() {
-    return config;
+    // ComponentEngine doesn't map directly to EngineConfig
+    // Return a basic EngineConfig instance
+    return new EngineConfig();
+  }
+
+  @Override
+  public Store createStore() throws WasmException {
+    ensureNotClosed();
+    throw new UnsupportedOperationException("ComponentEngine does not support Store creation - use regular Engine");
+  }
+
+  @Override
+  public Store createStore(final Object data) throws WasmException {
+    ensureNotClosed();
+    throw new UnsupportedOperationException("ComponentEngine does not support Store creation - use regular Engine");
+  }
+
+  @Override
+  public Module compileModule(final byte[] wasmBytes) throws WasmException {
+    ensureNotClosed();
+    throw new UnsupportedOperationException(
+        "ComponentEngine does not support Module compilation - use compileComponent() instead");
+  }
+
+  @Override
+  public StreamingCompiler createStreamingCompiler() throws WasmException {
+    ensureNotClosed();
+    throw new UnsupportedOperationException("ComponentEngine does not support StreamingCompiler");
+  }
+
+  @Override
+  public boolean supportsFeature(final WasmFeature feature) {
+    JniValidation.requireNonNull(feature, "feature");
+    // Delegate to native engine if available
+    return nativeEngine != null && nativeEngine.isValid();
+  }
+
+  @Override
+  public int getMemoryLimitPages() {
+    return 0; // No limit
+  }
+
+  @Override
+  public long getStackSizeLimit() {
+    return 0; // Default
+  }
+
+  @Override
+  public boolean isFuelEnabled() {
+    return false;
+  }
+
+  @Override
+  public boolean isEpochInterruptionEnabled() {
+    return false;
+  }
+
+  @Override
+  public int getMaxInstances() {
+    return 0; // Unlimited
+  }
+
+  @Override
+  public long getReferenceCount() {
+    return loadedComponents.size();
   }
 
   @Override
@@ -129,7 +198,7 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
       final JniComponent.JniComponentHandle componentHandle =
           nativeEngine.loadComponentFromBytes(componentBytes);
       final String componentId = generateComponentId();
-      final ComponentSimple component = new JniComponentImpl(componentHandle, this, componentId);
+      final ComponentSimple component = new JniComponentImpl(componentHandle, this);
       loadedComponents.put(componentId, component);
       return component;
     } catch (final Exception e) {
@@ -147,7 +216,7 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
     try {
       final JniComponent.JniComponentHandle componentHandle =
           nativeEngine.loadComponentFromBytes(componentBytes);
-      final ComponentSimple component = new JniComponentImpl(componentHandle, this, name);
+      final ComponentSimple component = new JniComponentImpl(componentHandle, this);
       loadedComponents.put(name, component);
       return component;
     } catch (final Exception e) {
@@ -155,7 +224,13 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
     }
   }
 
-  @Override
+  /**
+   * Loads a component from raw WebAssembly component bytes.
+   *
+   * @param wasmBytes the WebAssembly component bytes
+   * @return the compiled Component
+   * @throws WasmException if loading fails
+   */
   public Component loadComponentFromBytes(final byte[] wasmBytes) throws WasmException {
     JniValidation.requireNonEmpty(wasmBytes, "wasmBytes");
     ensureNotClosed();
@@ -169,7 +244,14 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
     }
   }
 
-  @Override
+  /**
+   * Loads a component from raw WebAssembly component bytes with metadata.
+   *
+   * @param wasmBytes the WebAssembly component bytes
+   * @param metadata the component metadata
+   * @return the compiled Component
+   * @throws WasmException if loading fails
+   */
   public Component loadComponentFromBytes(final byte[] wasmBytes, final ComponentMetadata metadata)
       throws WasmException {
     JniValidation.requireNonEmpty(wasmBytes, "wasmBytes");
@@ -185,7 +267,13 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
     }
   }
 
-  @Override
+  /**
+   * Loads a component from a file.
+   *
+   * @param filePath the path to the WebAssembly component file
+   * @return the compiled Component
+   * @throws WasmException if loading fails
+   */
   public Component loadComponentFromFile(final String filePath) throws WasmException {
     JniValidation.requireNonEmpty(filePath, "filePath");
     ensureNotClosed();
@@ -199,7 +287,14 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
     }
   }
 
-  @Override
+  /**
+   * Loads a component asynchronously from a URL.
+   *
+   * @param url the URL to load the component from
+   * @param loadConfig the component load configuration
+   * @return a CompletableFuture that completes with the loaded Component
+   * @throws WasmException if loading fails
+   */
   public CompletableFuture<Component> loadComponentFromUrl(
       final String url, final ComponentLoadConfig loadConfig) throws WasmException {
     JniValidation.requireNonEmpty(url, "url");
@@ -208,8 +303,9 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
 
     // For now, return a future that completes with an unsupported operation
     // Full implementation would involve HTTP client integration
-    return CompletableFuture.failedFuture(
-        new UnsupportedOperationException("URL loading not yet implemented"));
+    final CompletableFuture<Component> future = new CompletableFuture<>();
+    future.completeExceptionally(new UnsupportedOperationException("URL loading not yet implemented"));
+    return future;
   }
 
   @Override
@@ -389,14 +485,18 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
 
     } catch (final Exception e) {
       LOGGER.warning("Component validation failed: " + e.getMessage());
-      return new ComponentValidationResult(
-          false, List.of("Validation error: " + e.getMessage()), Collections.emptyList());
+      final List<String> errorList = new ArrayList<>();
+      errorList.add("Validation error: " + e.getMessage());
+      return new ComponentValidationResult(false, errorList, Collections.emptyList());
     }
   }
 
   @Override
   public WitSupportInfo getWitSupportInfo() {
-    return new WitSupportInfo(true, "1.0", Set.of("wit", "component-model"));
+    final Set<String> features = new HashSet<>();
+    features.add("wit");
+    features.add("component-model");
+    return new WitSupportInfo(true, "1.0", features);
   }
 
   @Override
