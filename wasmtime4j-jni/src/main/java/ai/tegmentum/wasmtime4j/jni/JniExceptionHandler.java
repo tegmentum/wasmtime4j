@@ -630,7 +630,13 @@ public final class JniExceptionHandler implements AutoCloseable {
         return this;
       }
 
-      public Builder maxUnwindDepth(final int depth) {
+      /**
+       * Sets maximum exception unwind depth.
+       *
+       * @param depth the maximum unwind depth (must be positive)
+       * @return this builder
+       * @throws IllegalArgumentException if depth is not positive
+       */      public Builder maxUnwindDepth(final int depth) {
         if (depth <= 0) {
           throw new IllegalArgumentException("Max unwind depth must be positive");
         }
