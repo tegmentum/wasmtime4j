@@ -378,7 +378,8 @@ public final class JniLinker extends JniResource implements Linker {
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
-      throw new WasmException("Unexpected error checking import: " + e.getMessage(), e);
+      // Wrap checked exception as RuntimeException since interface doesn't declare throws
+      throw new RuntimeException("Unexpected error checking import: " + e.getMessage(), e);
     }
   }
 
