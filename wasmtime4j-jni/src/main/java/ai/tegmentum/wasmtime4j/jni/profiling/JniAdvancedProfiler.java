@@ -85,6 +85,7 @@ public final class JniAdvancedProfiler implements AutoCloseable {
   private static native void nativeReset(long profilerHandle);
 
   // Statistics holder for native data transfer
+  /** Profiler statistics holder. */
   public static final class ProfilerStatistics {
     public final long totalSamples;
     public final long functionCalls;
@@ -94,6 +95,17 @@ public final class JniAdvancedProfiler implements AutoCloseable {
     public final double cpuUsagePercent;
     public final long activeThreads;
 
+    /**
+     * Creates profiler statistics.
+     *
+     * @param totalSamples total number of samples collected
+     * @param functionCalls total function calls
+     * @param totalExecutionTimeNanos total execution time in nanoseconds
+     * @param memoryAllocations total memory allocations
+     * @param totalAllocatedBytes total allocated bytes
+     * @param cpuUsagePercent CPU usage percentage
+     * @param activeThreads number of active threads
+     */
     public ProfilerStatistics(
         final long totalSamples,
         final long functionCalls,
@@ -116,6 +128,11 @@ public final class JniAdvancedProfiler implements AutoCloseable {
     this(AdvancedProfiler.ProfilerConfiguration.builder().build());
   }
 
+  /**
+   * Creates an advanced profiler with custom configuration.
+   *
+   * @param config the profiler configuration
+   */
   public JniAdvancedProfiler(final AdvancedProfiler.ProfilerConfiguration config) {
     this.config = Objects.requireNonNull(config);
     this.flameGraphGenerator = new FlameGraphGenerator();
