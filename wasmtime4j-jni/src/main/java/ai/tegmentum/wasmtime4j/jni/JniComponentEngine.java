@@ -107,13 +107,16 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
     }
   }
 
-  @Override
   public String getId() {
     return engineId;
   }
 
+  public ComponentEngineConfig getComponentConfig() {
+    return config;
+  }
+
   @Override
-  public ComponentEngineConfig getConfig() {
+  public EngineConfig getConfig() {
     return config;
   }
 

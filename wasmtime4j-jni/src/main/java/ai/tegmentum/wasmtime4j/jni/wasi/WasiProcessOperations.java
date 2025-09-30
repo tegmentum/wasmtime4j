@@ -524,7 +524,8 @@ public final class WasiProcessOperations {
      * Gets the process ID.
      *
      * @return the process ID, or -1 if unavailable
-     */    public long getPid() {
+     */
+    public long getPid() {
       // In Java 8, there's no direct way to get PID from Process
       // Use reflection to try to get it from platform-specific implementation
       try {
