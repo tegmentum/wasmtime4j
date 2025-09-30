@@ -804,6 +804,15 @@ public final class WasiAdvancedNetworking {
     public final int headerTableSize;
     public final long connectionTimeoutMs;
 
+    /**
+     * Creates HTTP/2 options.
+     *
+     * @param maxConcurrentStreams maximum concurrent streams
+     * @param windowSize window size in bytes
+     * @param enableServerPush whether to enable server push
+     * @param headerTableSize header table size in bytes
+     * @param connectionTimeoutMs connection timeout in milliseconds
+     */
     public Http2Options(
         final int maxConcurrentStreams,
         final int windowSize,
@@ -830,6 +839,15 @@ public final class WasiAdvancedNetworking {
     public final long keepAliveIntervalMs;
     public final String congestionControl;
 
+    /**
+     * Creates HTTP/3 options.
+     *
+     * @param maxBidirectionalStreams maximum bidirectional streams
+     * @param maxUnidirectionalStreams maximum unidirectional streams
+     * @param idleTimeoutMs idle timeout in milliseconds
+     * @param keepAliveIntervalMs keep-alive interval in milliseconds
+     * @param congestionControl congestion control algorithm (may be null)
+     */
     public Http3Options(
         final int maxBidirectionalStreams,
         final int maxUnidirectionalStreams,
@@ -854,6 +872,13 @@ public final class WasiAdvancedNetworking {
     public final long pingIntervalMs;
     public final boolean compression;
 
+    /**
+     * Creates WebSocket options.
+     *
+     * @param maxFrameSize maximum frame size in bytes
+     * @param pingIntervalMs ping interval in milliseconds
+     * @param compression whether compression is enabled
+     */
     public WebSocketOptions(
         final int maxFrameSize, final long pingIntervalMs, final boolean compression) {
       this.maxFrameSize = Math.min(MAX_WEBSOCKET_FRAME_SIZE, Math.max(1024, maxFrameSize));
@@ -875,6 +900,16 @@ public final class WasiAdvancedNetworking {
     public final boolean tlsEnabled;
     public final long createdAt;
 
+    /**
+     * Creates connection information.
+     *
+     * @param handle the connection handle
+     * @param host the host address
+     * @param port the port number
+     * @param protocolType the protocol type
+     * @param tlsEnabled whether TLS is enabled
+     * @param createdAt creation timestamp
+     */
     public ConnectionInfo(
         final long handle,
         final String host,
@@ -899,6 +934,15 @@ public final class WasiAdvancedNetworking {
     public volatile WebSocketState state;
     public final long createdAt;
 
+    /**
+     * Creates WebSocket information.
+     *
+     * @param handle the WebSocket handle
+     * @param uri the WebSocket URI
+     * @param selectedProtocol the selected protocol
+     * @param state the WebSocket state
+     * @param createdAt creation timestamp
+     */
     public WebSocketInfo(
         final long handle,
         final String uri,
@@ -921,6 +965,15 @@ public final class WasiAdvancedNetworking {
     public final int streamId;
     public final boolean serverPush;
 
+    /**
+     * Creates HTTP/2 response.
+     *
+     * @param statusCode the HTTP status code
+     * @param headers the response headers (may be null)
+     * @param body the response body
+     * @param streamId the stream ID
+     * @param serverPush whether this is a server push
+     */
     public Http2Response(
         final int statusCode,
         final Map<String, String> headers,
@@ -941,6 +994,13 @@ public final class WasiAdvancedNetworking {
     public final WebSocketMessageType messageType;
     public final boolean isFinal;
 
+    /**
+     * Creates WebSocket message.
+     *
+     * @param bytesReceived number of bytes received
+     * @param messageType the message type
+     * @param isFinal whether this is the final fragment
+     */
     public WebSocketMessage(
         final int bytesReceived, final WebSocketMessageType messageType, final boolean isFinal) {
       this.bytesReceived = bytesReceived;
@@ -957,6 +1017,15 @@ public final class WasiAdvancedNetworking {
     public final boolean isLoopback;
     public final String[] addresses;
 
+    /**
+     * Creates network interface information.
+     *
+     * @param name the interface name
+     * @param description the interface description
+     * @param isUp whether the interface is up
+     * @param isLoopback whether this is a loopback interface
+     * @param addresses the interface addresses (may be null)
+     */
     public NetworkInterface(
         final String name,
         final String description,

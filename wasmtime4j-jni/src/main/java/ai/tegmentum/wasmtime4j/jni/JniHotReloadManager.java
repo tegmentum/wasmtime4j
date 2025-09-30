@@ -1,6 +1,5 @@
 package ai.tegmentum.wasmtime4j.jni;
 
-import ai.tegmentum.wasmtime4j.exception.WasmRuntimeException;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -85,7 +84,7 @@ public final class JniHotReloadManager implements AutoCloseable {
             config.getCacheSize());
 
     if (this.nativeHandle == 0) {
-      throw new WasmRuntimeException("Failed to create native hot reload manager");
+      throw new RuntimeException("Failed to create native hot reload manager");
     }
 
     logger.info("Hot reload manager created successfully");
@@ -130,7 +129,7 @@ public final class JniHotReloadManager implements AutoCloseable {
             actualStrategy.getParam3());
 
     if (operationId == null) {
-      throw new WasmRuntimeException("Failed to start hot swap operation");
+      throw new RuntimeException("Failed to start hot swap operation");
     }
 
     logger.info(String.format("Hot swap operation started: %s", operationId));
@@ -225,7 +224,7 @@ public final class JniHotReloadManager implements AutoCloseable {
                     request.getValidationConfig().getTimeoutSecs());
 
             if (requestId == null) {
-              throw new WasmRuntimeException("Failed to submit component load request");
+              throw new RuntimeException("Failed to submit component load request");
             }
 
             logger.fine(String.format("Component load request submitted: %s", requestId));
@@ -250,7 +249,7 @@ public final class JniHotReloadManager implements AutoCloseable {
 
     final HotReloadMetrics metrics = nativeGetMetrics(nativeHandle);
     if (metrics == null) {
-      throw new WasmRuntimeException("Failed to retrieve hot reload metrics");
+      throw new RuntimeException("Failed to retrieve hot reload metrics");
     }
 
     return metrics;

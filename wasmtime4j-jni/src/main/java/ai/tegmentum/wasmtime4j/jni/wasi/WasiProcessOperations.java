@@ -97,15 +97,16 @@ public final class WasiProcessOperations {
     LOGGER.fine("Getting current process ID");
 
     try {
-      // In Java, we use the process handle to get the PID
-      final long pid = ProcessHandle.current().pid();
+      // In Java 8, we use ManagementFactory to get the PID
+      final String jvmName = java.lang.management.ManagementFactory.getRuntimeMXBean().getName();
+      final long pid = Long.parseLong(jvmName.split("@")[0]);
 
       LOGGER.fine(() -> String.format("Current process ID: %d", pid));
       return pid;
 
     } catch (final Exception e) {
       LOGGER.log(Level.WARNING, "Failed to get current process ID", e);
-      throw new WasiException("Failed to get process ID: " + e.getMessage(), WasiErrorCode.EIO);
+      throw new WasiException(WasiErrorCode.EIO, "Failed to get process ID: " + e.getMessage());
     }
   }
 
@@ -132,7 +133,7 @@ public final class WasiProcessOperations {
     JniValidation.requireNonNull(environment, "environment");
 
     if (childProcesses.size() >= MAX_CHILD_PROCESSES) {
-      throw new WasiException("Maximum number of child processes reached", WasiErrorCode.EMFILE);
+      throw new WasiException(WasiErrorCode.EMFILE, "Maximum number of child processes reached");
     }
 
     LOGGER.fine(
@@ -172,8 +173,8 @@ public final class WasiProcessOperations {
             LOGGER.fine(
                 () ->
                     String.format(
-                        "Process spawned successfully: handle=%d, pid=%d",
-                        processHandle, process.pid()));
+                        "Process spawned successfully: handle=%d",
+                        processHandle));
 
             return processHandle;
 
@@ -202,7 +203,7 @@ public final class WasiProcessOperations {
       final long processHandle, final int timeoutSeconds) {
     final ProcessInfo processInfo = childProcesses.get(processHandle);
     if (processInfo == null) {
-      throw new WasiException("Invalid process handle: " + processHandle, WasiErrorCode.EBADF);
+      throw new WasiException(WasiErrorCode.EBADF, "Invalid process handle: " + processHandle);
     }
 
     JniValidation.requireNonNegative(timeoutSeconds, "timeoutSeconds");
@@ -264,7 +265,7 @@ public final class WasiProcessOperations {
   public void terminateProcess(final long processHandle, final int signal) {
     final ProcessInfo processInfo = childProcesses.get(processHandle);
     if (processInfo == null) {
-      throw new WasiException("Invalid process handle: " + processHandle, WasiErrorCode.EBADF);
+      throw new WasiException(WasiErrorCode.EBADF, "Invalid process handle: " + processHandle);
     }
 
     LOGGER.fine(
@@ -290,10 +291,10 @@ public final class WasiProcessOperations {
 
     } catch (final InterruptedException e) {
       Thread.currentThread().interrupt();
-      throw new WasiException("Process termination interrupted", WasiErrorCode.EINTR);
+      throw new WasiException(WasiErrorCode.EINTR, "Process termination interrupted");
     } catch (final Exception e) {
       LOGGER.log(Level.WARNING, "Failed to terminate process", e);
-      throw new WasiException("Process termination failed: " + e.getMessage(), WasiErrorCode.EIO);
+      throw new WasiException(WasiErrorCode.EIO, "Process termination failed: " + e.getMessage());
     }
   }
 
@@ -324,7 +325,7 @@ public final class WasiProcessOperations {
     } catch (final Exception e) {
       LOGGER.log(Level.WARNING, "Failed to get environment variable: " + name, e);
       throw new WasiException(
-          "Failed to get environment variable: " + e.getMessage(), WasiErrorCode.EIO);
+          WasiErrorCode.EIO, "Failed to get environment variable: " + e.getMessage());
     }
   }
 
@@ -357,7 +358,7 @@ public final class WasiProcessOperations {
     } catch (final Exception e) {
       LOGGER.log(Level.WARNING, "Failed to set environment variable: " + name, e);
       throw new WasiException(
-          "Failed to set environment variable: " + e.getMessage(), WasiErrorCode.EIO);
+          WasiErrorCode.EIO, "Failed to set environment variable: " + e.getMessage());
     }
   }
 
@@ -379,7 +380,7 @@ public final class WasiProcessOperations {
     } catch (final Exception e) {
       LOGGER.log(Level.WARNING, "Failed to get environment variables", e);
       throw new WasiException(
-          "Failed to get environment variables: " + e.getMessage(), WasiErrorCode.EIO);
+          WasiErrorCode.EIO, "Failed to get environment variables: " + e.getMessage());
     }
   }
 
@@ -413,14 +414,14 @@ public final class WasiProcessOperations {
           break;
         default:
           LOGGER.warning("Unsupported signal: " + signal);
-          throw new WasiException("Unsupported signal: " + signal, WasiErrorCode.EINVAL);
+          throw new WasiException(WasiErrorCode.EINVAL, "Unsupported signal: " + signal);
       }
 
       LOGGER.fine(() -> String.format("Signal raised: %d", signal));
 
     } catch (final Exception e) {
       LOGGER.log(Level.WARNING, "Failed to raise signal", e);
-      throw new WasiException("Failed to raise signal: " + e.getMessage(), WasiErrorCode.EIO);
+      throw new WasiException(WasiErrorCode.EIO, "Failed to raise signal: " + e.getMessage());
     }
   }
 
@@ -509,8 +510,8 @@ public final class WasiProcessOperations {
       this.handle = handle;
       this.process = process;
       this.command = command;
-      this.arguments = List.copyOf(arguments);
-      this.environment = Map.copyOf(environment);
+      this.arguments = new ArrayList<>(arguments);
+      this.environment = new ConcurrentHashMap<>(environment);
       this.workingDirectory = workingDirectory;
       this.startTime = System.currentTimeMillis();
     }
@@ -520,7 +521,18 @@ public final class WasiProcessOperations {
     }
 
     public long getPid() {
-      return process.pid();
+      // In Java 8, there's no direct way to get PID from Process
+      // Use reflection to try to get it from platform-specific implementation
+      try {
+        if (process.getClass().getName().equals("java.lang.UNIXProcess")) {
+          final java.lang.reflect.Field pidField = process.getClass().getDeclaredField("pid");
+          pidField.setAccessible(true);
+          return pidField.getInt(process);
+        }
+      } catch (final Exception e) {
+        // Ignore - return -1 as fallback
+      }
+      return -1;
     }
 
     @Override
