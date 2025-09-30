@@ -38,7 +38,7 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
   @Override
   public WasiContext setArgv(String[] argv) {
     Objects.requireNonNull(argv, "Command line arguments cannot be null");
-    ensureValid();
+    ensureNotClosed();
 
     try {
       final int result = nativeSetArgv(nativeHandle, argv);
@@ -58,7 +58,7 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
   public WasiContext setEnv(String key, String value) {
     Objects.requireNonNull(key, "Environment variable key cannot be null");
     Objects.requireNonNull(value, "Environment variable value cannot be null");
-    ensureValid();
+    ensureNotClosed();
 
     try {
       final int result = nativeSetEnv(nativeHandle, key, value);
@@ -77,7 +77,7 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
   @Override
   public WasiContext setEnv(Map<String, String> env) {
     Objects.requireNonNull(env, "Environment variables map cannot be null");
-    ensureValid();
+    ensureNotClosed();
 
     for (Map.Entry<String, String> entry : env.entrySet()) {
       setEnv(entry.getKey(), entry.getValue());
@@ -87,7 +87,7 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
 
   @Override
   public WasiContext inheritEnv() {
-    ensureValid();
+    ensureNotClosed();
 
     try {
       final int result = nativeInheritEnv(nativeHandle);
@@ -105,7 +105,7 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
 
   @Override
   public WasiContext inheritStdio() {
-    ensureValid();
+    ensureNotClosed();
 
     try {
       final int result = nativeInheritStdio(nativeHandle);
@@ -124,7 +124,7 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
   @Override
   public WasiContext setStdin(Path path) {
     Objects.requireNonNull(path, "Stdin path cannot be null");
-    ensureValid();
+    ensureNotClosed();
 
     try {
       final int result = nativeSetStdin(nativeHandle, path.toString());
@@ -143,7 +143,7 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
   @Override
   public WasiContext setStdout(Path path) {
     Objects.requireNonNull(path, "Stdout path cannot be null");
-    ensureValid();
+    ensureNotClosed();
 
     try {
       final int result = nativeSetStdout(nativeHandle, path.toString());
@@ -162,7 +162,7 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
   @Override
   public WasiContext setStderr(Path path) {
     Objects.requireNonNull(path, "Stderr path cannot be null");
-    ensureValid();
+    ensureNotClosed();
 
     try {
       final int result = nativeSetStderr(nativeHandle, path.toString());
@@ -182,7 +182,7 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
   public WasiContext preopenedDir(Path hostPath, String guestPath) throws WasmException {
     Objects.requireNonNull(hostPath, "Host path cannot be null");
     Objects.requireNonNull(guestPath, "Guest path cannot be null");
-    ensureValid();
+    ensureNotClosed();
 
     try {
       final int result = nativePreopenedDir(nativeHandle, hostPath.toString(), guestPath);
@@ -202,7 +202,7 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
   public WasiContext preopenedDirReadOnly(Path hostPath, String guestPath) throws WasmException {
     Objects.requireNonNull(hostPath, "Host path cannot be null");
     Objects.requireNonNull(guestPath, "Guest path cannot be null");
-    ensureValid();
+    ensureNotClosed();
 
     try {
       final int result = nativePreopenedDirReadOnly(nativeHandle, hostPath.toString(), guestPath);
@@ -221,7 +221,7 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
   @Override
   public WasiContext setWorkingDirectory(String workingDir) {
     Objects.requireNonNull(workingDir, "Working directory cannot be null");
-    ensureValid();
+    ensureNotClosed();
 
     try {
       final int result = nativeSetWorkingDirectory(nativeHandle, workingDir);
@@ -239,7 +239,7 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
 
   @Override
   public WasiContext setNetworkEnabled(boolean enabled) {
-    ensureValid();
+    ensureNotClosed();
 
     try {
       final int result = nativeSetNetworkEnabled(nativeHandle, enabled);
@@ -260,7 +260,7 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
     if (maxFds < -1) {
       throw new IllegalArgumentException("Maximum file descriptors must be >= -1");
     }
-    ensureValid();
+    ensureNotClosed();
 
     try {
       final int result = nativeSetMaxOpenFiles(nativeHandle, maxFds);
@@ -280,7 +280,7 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
 
   @Override
   public WasiContext setAsyncIoEnabled(boolean enabled) {
-    ensureValid();
+    ensureNotClosed();
 
     try {
       final int result = nativeSetAsyncIoEnabled(nativeHandle, enabled);
@@ -301,7 +301,7 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
     if (maxOps < -1) {
       throw new IllegalArgumentException("Maximum async operations must be >= -1");
     }
-    ensureValid();
+    ensureNotClosed();
 
     try {
       final int result = nativeSetMaxAsyncOperations(nativeHandle, maxOps);
@@ -322,7 +322,7 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
     if (timeoutMs < -1) {
       throw new IllegalArgumentException("Async timeout must be >= -1");
     }
-    ensureValid();
+    ensureNotClosed();
 
     try {
       final int result = nativeSetAsyncTimeout(nativeHandle, timeoutMs);
@@ -340,7 +340,7 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
 
   @Override
   public WasiContext setComponentModelEnabled(boolean enabled) {
-    ensureValid();
+    ensureNotClosed();
 
     try {
       final int result = nativeSetComponentModelEnabled(nativeHandle, enabled);
@@ -358,7 +358,7 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
 
   @Override
   public WasiContext setProcessEnabled(boolean enabled) {
-    ensureValid();
+    ensureNotClosed();
 
     try {
       final int result = nativeSetProcessEnabled(nativeHandle, enabled);
@@ -377,7 +377,7 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
   @Override
   public WasiContext setFilesystemWorkingDir(Path workingDir) {
     Objects.requireNonNull(workingDir, "Filesystem working directory cannot be null");
-    ensureValid();
+    ensureNotClosed();
 
     try {
       final int result = nativeSetFilesystemWorkingDir(nativeHandle, workingDir.toString());
@@ -399,7 +399,7 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
     Objects.requireNonNull(hostPath, "Host path cannot be null");
     Objects.requireNonNull(guestPath, "Guest path cannot be null");
     Objects.requireNonNull(permissions, "Permissions cannot be null");
-    ensureValid();
+    ensureNotClosed();
 
     try {
       final int result =

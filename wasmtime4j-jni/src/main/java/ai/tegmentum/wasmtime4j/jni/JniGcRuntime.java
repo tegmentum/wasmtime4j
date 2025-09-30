@@ -1265,7 +1265,7 @@ public final class JniGcRuntime implements GcRuntime {
 
     final String[] fieldTypes =
         structType.getFields().stream()
-            .map(field -> field.getType().toString())
+            .map(field -> field.getFieldType().toString())
             .toArray(String[]::new);
 
     final Boolean[] fieldMutabilities =
