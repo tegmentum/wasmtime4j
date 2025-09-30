@@ -802,6 +802,13 @@ public final class WasiNetworkOperations {
     public volatile String remoteAddress;
     public volatile int remotePort;
 
+    /**
+     * Creates socket info.
+     *
+     * @param handle the socket handle
+     * @param type the socket type
+     * @param addressFamily the address family
+     */
     public SocketInfo(final long handle, final SocketType type, final int addressFamily) {
       this.handle = handle;
       this.type = type;
@@ -816,6 +823,13 @@ public final class WasiNetworkOperations {
     public final String sourceAddress;
     public final int sourcePort;
 
+    /**
+     * Creates UDP datagram information.
+     *
+     * @param bytesReceived number of bytes received
+     * @param sourceAddress source IP address
+     * @param sourcePort source port number
+     */
     public UdpDatagram(final int bytesReceived, final String sourceAddress, final int sourcePort) {
       this.bytesReceived = bytesReceived;
       this.sourceAddress = sourceAddress;

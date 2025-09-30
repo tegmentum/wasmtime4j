@@ -544,6 +544,17 @@ public final class JniDiagnosticsCollector implements DiagnosticsCollector {
     public final double errorRate;
     public final int nativeCrashes;
 
+    /**
+     * Creates native diagnostics analysis.
+     *
+     * @param averageExecutionTime average execution time
+     * @param jniCallOverhead JNI call overhead
+     * @param memoryFragmentation memory fragmentation percentage
+     * @param memoryUsagePercent memory usage percentage
+     * @param threadContentionRate thread contention rate
+     * @param errorRate error rate
+     * @param nativeCrashes number of native crashes
+     */
     public NativeDiagnosticsAnalysis(
         final double averageExecutionTime,
         final double jniCallOverhead,
@@ -572,6 +583,17 @@ public final class JniDiagnosticsCollector implements DiagnosticsCollector {
     public final String[] warnings;
     public final long timestamp;
 
+    /**
+     * Creates native health check result.
+     *
+     * @param overallHealth overall health score (0-100)
+     * @param memoryHealth memory health score (0-100)
+     * @param threadHealth thread health score (0-100)
+     * @param jniHealth JNI health score (0-100)
+     * @param recommendations list of recommendations
+     * @param warnings list of warnings
+     * @param timestamp result timestamp
+     */
     public NativeHealthCheckResult(
         final double overallHealth,
         final double memoryHealth,
@@ -600,6 +622,17 @@ public final class JniDiagnosticsCollector implements DiagnosticsCollector {
     private final String[] warnings;
     private final Instant timestamp;
 
+    /**
+     * Creates JNI-specific health check result.
+     *
+     * @param overallHealth overall health score (0-100)
+     * @param memoryHealth memory health score (0-100)
+     * @param threadHealth thread health score (0-100)
+     * @param jniHealth JNI health score (0-100)
+     * @param recommendations list of recommendations
+     * @param warnings list of warnings
+     * @param timestamp result timestamp
+     */
     public JniHealthCheckResult(
         final double overallHealth,
         final double memoryHealth,
