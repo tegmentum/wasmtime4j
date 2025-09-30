@@ -823,6 +823,11 @@ public final class WasiExperimentalProcess {
       return new SandboxConfig(SandboxType.MINIMAL, SandboxCapabilities.NONE, false, false, false);
     }
 
+    /**
+     * Creates standard sandbox configuration.
+     *
+     * @return standard sandbox configuration
+     */
     public static SandboxConfig standard() {
       return new SandboxConfig(
           SandboxType.STANDARD,
@@ -882,6 +887,16 @@ public final class WasiExperimentalProcess {
     public final long networkThresholdBytesPerSecond;
     public final boolean enableDetailedStats;
 
+    /**
+     * Creates resource monitoring configuration.
+     *
+     * @param intervalSeconds monitoring interval in seconds
+     * @param memoryThresholdBytes memory threshold in bytes
+     * @param cpuThresholdPercent CPU threshold percentage
+     * @param ioThresholdBytesPerSecond I/O threshold in bytes per second
+     * @param networkThresholdBytesPerSecond network threshold in bytes per second
+     * @param enableDetailedStats whether detailed statistics are enabled
+     */
     public ResourceMonitoringConfig(
         final long intervalSeconds,
         final long memoryThresholdBytes,
@@ -983,6 +998,20 @@ public final class WasiExperimentalProcess {
     public final Duration executionTime;
     public final Instant lastUpdated;
 
+    /**
+     * Creates process resource usage information.
+     *
+     * @param cpuUsagePercent CPU usage percentage
+     * @param memoryUsageBytes memory usage in bytes
+     * @param ioReadBytes I/O read bytes
+     * @param ioWriteBytes I/O write bytes
+     * @param networkRxBytes network received bytes
+     * @param networkTxBytes network transmitted bytes
+     * @param fileDescriptorCount file descriptor count
+     * @param threadCount thread count
+     * @param executionTime execution time
+     * @param lastUpdated last update timestamp
+     */
     public ProcessResourceUsage(
         final double cpuUsagePercent,
         final long memoryUsageBytes,
@@ -1176,6 +1205,16 @@ public final class WasiExperimentalProcess {
     public final String serviceId;
     public final long registeredAt;
 
+    /**
+     * Creates system service information.
+     *
+     * @param serviceName the service name
+     * @param metadata the service metadata
+     * @param handler the service request handler
+     * @param state the service state
+     * @param serviceId the service ID
+     * @param registeredAt registration timestamp
+     */
     public SystemServiceInfo(
         final String serviceName,
         final SystemServiceMetadata metadata,
