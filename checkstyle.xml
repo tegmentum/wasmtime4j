@@ -50,7 +50,12 @@
             <property name="allowByTailComment" value="true"/>
             <property name="allowNonPrintableEscapes" value="true"/>
         </module>
-        <module name="AvoidStarImport"/>
+        <module name="AvoidStarImport">
+            <!-- Allow star imports for common testing frameworks -->
+            <property name="excludes" value="org.junit.jupiter.api,org.junit.jupiter.api.Assertions,org.junit.jupiter.api.condition,org.mockito.Mockito,org.mockito.ArgumentMatchers"/>
+            <!-- Allow star imports for Panama FFI which has many types -->
+            <property name="allowStaticMemberImports" value="true"/>
+        </module>
         <module name="OneTopLevelClass"/>
         <module name="NoLineWrap">
             <property name="tokens" value="PACKAGE_DEF, IMPORT, STATIC_IMPORT"/>
