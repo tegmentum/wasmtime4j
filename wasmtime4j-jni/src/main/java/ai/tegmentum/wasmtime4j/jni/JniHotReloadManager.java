@@ -105,7 +105,9 @@ public final class JniHotReloadManager implements AutoCloseable {
    */
   public String startHotSwap(
       final String componentName, final String targetVersion, final SwapStrategy strategy) {
-    JniValidation.checkNotClosed(closed, "Hot reload manager");
+    if (closed) {
+      throw new IllegalStateException("Hot reload manager has been closed");
+    }
 
     if (componentName == null || componentName.trim().isEmpty()) {
       throw new IllegalArgumentException("Component name cannot be null or empty");
@@ -145,7 +147,9 @@ public final class JniHotReloadManager implements AutoCloseable {
    * @throws IllegalStateException if this manager has been closed
    */
   public HotSwapStatus getSwapStatus(final String operationId) {
-    JniValidation.checkNotClosed(closed, "Hot reload manager");
+    if (closed) {
+      throw new IllegalStateException("Hot reload manager has been closed");
+    }
 
     if (operationId == null || operationId.trim().isEmpty()) {
       throw new IllegalArgumentException("Operation ID cannot be null or empty");
@@ -163,7 +167,9 @@ public final class JniHotReloadManager implements AutoCloseable {
    * @throws IllegalStateException if this manager has been closed
    */
   public boolean cancelHotSwap(final String operationId) {
-    JniValidation.checkNotClosed(closed, "Hot reload manager");
+    if (closed) {
+      throw new IllegalStateException("Hot reload manager has been closed");
+    }
 
     if (operationId == null || operationId.trim().isEmpty()) {
       throw new IllegalArgumentException("Operation ID cannot be null or empty");
@@ -191,7 +197,9 @@ public final class JniHotReloadManager implements AutoCloseable {
    * @throws IllegalStateException if this manager has been closed
    */
   public CompletableFuture<String> loadComponentAsync(final LoadRequest request) {
-    JniValidation.checkNotClosed(closed, "Hot reload manager");
+    if (closed) {
+      throw new IllegalStateException("Hot reload manager has been closed");
+    }
 
     if (request == null) {
       throw new IllegalArgumentException("Load request cannot be null");
@@ -237,7 +245,9 @@ public final class JniHotReloadManager implements AutoCloseable {
    * @throws IllegalStateException if this manager has been closed
    */
   public HotReloadMetrics getMetrics() {
-    JniValidation.checkNotClosed(closed, "Hot reload manager");
+    if (closed) {
+      throw new IllegalStateException("Hot reload manager has been closed");
+    }
 
     final HotReloadMetrics metrics = nativeGetMetrics(nativeHandle);
     if (metrics == null) {
@@ -254,7 +264,9 @@ public final class JniHotReloadManager implements AutoCloseable {
    * @throws IllegalStateException if this manager has been closed
    */
   public long getNativeHandle() {
-    JniValidation.checkNotClosed(closed, "Hot reload manager");
+    if (closed) {
+      throw new IllegalStateException("Hot reload manager has been closed");
+    }
     return nativeHandle;
   }
 
