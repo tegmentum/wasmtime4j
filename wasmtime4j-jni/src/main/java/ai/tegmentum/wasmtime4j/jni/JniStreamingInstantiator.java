@@ -49,7 +49,7 @@ public final class JniStreamingInstantiator implements StreamingInstantiator {
    * @throws IllegalArgumentException if store is null
    */
   @Override
-  public CompletableFuture<Instance> instantiate(final Store<?> store) {
+  public CompletableFuture<Instance> instantiate(final Store store) {
     JniValidation.requireNonNull(store, "store");
 
     return CompletableFuture.supplyAsync(
@@ -73,7 +73,7 @@ public final class JniStreamingInstantiator implements StreamingInstantiator {
    * @throws IllegalArgumentException if store is null
    */
   @Override
-  public Instance instantiateSync(final Store<?> store) throws WasmException {
+  public Instance instantiateSync(final Store store) throws WasmException {
     JniValidation.requireNonNull(store, "store");
 
     try {
@@ -97,7 +97,7 @@ public final class JniStreamingInstantiator implements StreamingInstantiator {
    * @throws IllegalArgumentException if store or linker is null
    */
   @Override
-  public CompletableFuture<Instance> instantiate(final Store<?> store, final Linker linker) {
+  public CompletableFuture<Instance> instantiate(final Store store, final Linker linker) {
     JniValidation.requireNonNull(store, "store");
     JniValidation.requireNonNull(linker, "linker");
 
@@ -123,7 +123,7 @@ public final class JniStreamingInstantiator implements StreamingInstantiator {
    * @throws IllegalArgumentException if store or linker is null
    */
   @Override
-  public Instance instantiateSync(final Store<?> store, final Linker linker) throws WasmException {
+  public Instance instantiateSync(final Store store, final Linker linker) throws WasmException {
     JniValidation.requireNonNull(store, "store");
     JniValidation.requireNonNull(linker, "linker");
 

@@ -126,7 +126,7 @@ public final class WasiPreview1Operations {
 
     } catch (final Exception e) {
       LOGGER.log(Level.WARNING, "fd_read failed for fd " + fd, e);
-      throw new WasiException("fd_read failed: " + e.getMessage(), WasiErrorCode.EIO);
+      throw new WasiException(WasiErrorCode.EIO, "fd_read");
     }
   }
 
@@ -170,7 +170,7 @@ public final class WasiPreview1Operations {
 
     } catch (final Exception e) {
       LOGGER.log(Level.WARNING, "fd_write failed for fd " + fd, e);
-      throw new WasiException("fd_write failed: " + e.getMessage(), WasiErrorCode.EIO);
+      throw new WasiException(WasiErrorCode.EIO, "fd_write");
     }
   }
 
@@ -198,7 +198,7 @@ public final class WasiPreview1Operations {
 
     } catch (final Exception e) {
       LOGGER.log(Level.WARNING, "fd_seek failed for fd " + fd, e);
-      throw new WasiException("fd_seek failed: " + e.getMessage(), WasiErrorCode.EIO);
+      throw new WasiException(WasiErrorCode.EIO, "fd_seek");
     }
   }
 
@@ -221,7 +221,7 @@ public final class WasiPreview1Operations {
 
     } catch (final Exception e) {
       LOGGER.log(Level.WARNING, "fd_close failed for fd " + fd, e);
-      throw new WasiException("fd_close failed: " + e.getMessage(), WasiErrorCode.EIO);
+      throw new WasiException(WasiErrorCode.EIO, "fd_close");
     }
   }
 
@@ -267,7 +267,7 @@ public final class WasiPreview1Operations {
 
     } catch (final Exception e) {
       LOGGER.log(Level.WARNING, "path_open failed for path " + path, e);
-      throw new WasiException("path_open failed: " + e.getMessage(), WasiErrorCode.EIO);
+      throw new WasiException(WasiErrorCode.EIO, "path_open");
     }
   }
 
@@ -292,7 +292,7 @@ public final class WasiPreview1Operations {
 
     } catch (final Exception e) {
       LOGGER.log(Level.WARNING, "path_create_directory failed for path " + path, e);
-      throw new WasiException("path_create_directory failed: " + e.getMessage(), WasiErrorCode.EIO);
+      throw new WasiException(WasiErrorCode.EIO, "path_create_directory");
     }
   }
 
@@ -348,7 +348,7 @@ public final class WasiPreview1Operations {
 
     } catch (final Exception e) {
       LOGGER.log(Level.WARNING, "environ_sizes_get failed", e);
-      throw new WasiException("environ_sizes_get failed: " + e.getMessage(), WasiErrorCode.EIO);
+      throw new WasiException(WasiErrorCode.EIO, "environ_sizes_get");
     }
   }
 
@@ -403,7 +403,7 @@ public final class WasiPreview1Operations {
 
     } catch (final Exception e) {
       LOGGER.log(Level.WARNING, "args_sizes_get failed", e);
-      throw new WasiException("args_sizes_get failed: " + e.getMessage(), WasiErrorCode.EIO);
+      throw new WasiException(WasiErrorCode.EIO, "args_sizes_get");
     }
   }
 
@@ -428,7 +428,7 @@ public final class WasiPreview1Operations {
 
     } catch (final Exception e) {
       LOGGER.log(Level.WARNING, "clock_time_get failed", e);
-      throw new WasiException("clock_time_get failed: " + e.getMessage(), WasiErrorCode.EIO);
+      throw new WasiException(WasiErrorCode.EIO, "clock_time_get");
     }
   }
 
@@ -451,7 +451,7 @@ public final class WasiPreview1Operations {
 
     } catch (final Exception e) {
       LOGGER.log(Level.WARNING, "clock_res_get failed", e);
-      throw new WasiException("clock_res_get failed: " + e.getMessage(), WasiErrorCode.EIO);
+      throw new WasiException(WasiErrorCode.EIO, "clock_res_get");
     }
   }
 
@@ -474,7 +474,7 @@ public final class WasiPreview1Operations {
 
     } catch (final Exception e) {
       LOGGER.log(Level.WARNING, "random_get failed", e);
-      throw new WasiException("random_get failed: " + e.getMessage(), WasiErrorCode.EIO);
+      throw new WasiException(WasiErrorCode.EIO, "random_get");
     }
   }
 
@@ -504,14 +504,14 @@ public final class WasiPreview1Operations {
   /** Validates that a file descriptor is valid. */
   private void validateFileDescriptor(final int fd) {
     if (fd < 0) {
-      throw new WasiException("Invalid file descriptor: " + fd, WasiErrorCode.EBADF);
+      throw new WasiException(WasiErrorCode.EBADF, "fd_seek", "fd=" + fd);
     }
   }
 
   /** Validates that a whence value is valid. */
   private void validateWhence(final int whence) {
     if (whence < 0 || whence > 2) {
-      throw new WasiException("Invalid whence value: " + whence, WasiErrorCode.EINVAL);
+      throw new WasiException(WasiErrorCode.EINVAL, "fd_seek", "whence=" + whence);
     }
   }
 
