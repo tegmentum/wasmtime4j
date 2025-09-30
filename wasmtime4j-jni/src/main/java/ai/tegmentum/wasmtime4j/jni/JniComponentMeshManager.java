@@ -657,6 +657,13 @@ public final class JniComponentMeshManager implements AutoCloseable {
     private final Map<String, Object> cachePolicy;
     private final boolean enabled;
 
+    /**
+     * Creates CDN configuration.
+     *
+     * @param edgeLocations list of edge locations
+     * @param cachePolicy cache policy configuration
+     * @param enabled whether CDN is enabled
+     */
     public CdnConfig(
         final List<String> edgeLocations,
         final Map<String, Object> cachePolicy,
@@ -686,6 +693,14 @@ public final class JniComponentMeshManager implements AutoCloseable {
     private final List<String> anomalies;
     private final List<String> recommendations;
 
+    /**
+     * Creates component analytics.
+     *
+     * @param componentId the component ID
+     * @param performanceMetrics performance metrics map
+     * @param anomalies detected anomalies
+     * @param recommendations optimization recommendations
+     */
     public ComponentAnalytics(
         final String componentId,
         final Map<String, Object> performanceMetrics,
@@ -722,6 +737,14 @@ public final class JniComponentMeshManager implements AutoCloseable {
     private final List<String> accessControlRules;
     private final boolean enabled;
 
+    /**
+     * Creates security policy.
+     *
+     * @param name policy name
+     * @param encryptionConfig encryption configuration
+     * @param accessControlRules access control rules
+     * @param enabled whether policy is enabled
+     */
     public SecurityPolicy(
         final String name,
         final Map<String, Object> encryptionConfig,
@@ -758,6 +781,14 @@ public final class JniComponentMeshManager implements AutoCloseable {
     private final String version;
     private final List<String> endpoints;
 
+    /**
+     * Creates cluster information.
+     *
+     * @param clusterId the cluster ID
+     * @param name cluster name
+     * @param version cluster version
+     * @param endpoints cluster endpoints
+     */
     public ClusterInfo(
         final String clusterId,
         final String name,
@@ -792,6 +823,13 @@ public final class JniComponentMeshManager implements AutoCloseable {
     private final boolean secureConnection;
     private final long timeoutMs;
 
+    /**
+     * Creates cluster join configuration.
+     *
+     * @param authToken authentication token
+     * @param secureConnection whether to use secure connection
+     * @param timeoutMs connection timeout in milliseconds
+     */
     public ClusterJoinConfig(
         final String authToken, final boolean secureConnection, final long timeoutMs) {
       this.authToken = JniValidation.requireNonNull(authToken, "authToken");
@@ -818,6 +856,13 @@ public final class JniComponentMeshManager implements AutoCloseable {
     private final String replicationStrategy;
     private final String consistencyLevel;
 
+    /**
+     * Creates component federation configuration.
+     *
+     * @param targetClusters list of target clusters
+     * @param replicationStrategy replication strategy
+     * @param consistencyLevel consistency level
+     */
     public ComponentFederationConfig(
         final List<String> targetClusters,
         final String replicationStrategy,
@@ -849,6 +894,15 @@ public final class JniComponentMeshManager implements AutoCloseable {
     private final byte[] payload;
     private final Map<String, String> metadata;
 
+    /**
+     * Creates stream event.
+     *
+     * @param eventId the event ID
+     * @param eventType event type
+     * @param timestamp event timestamp
+     * @param payload event payload
+     * @param metadata event metadata
+     */
     public StreamEvent(
         final String eventId,
         final String eventType,
@@ -891,6 +945,15 @@ public final class JniComponentMeshManager implements AutoCloseable {
     private final double errorRate;
     private final long totalRequests;
 
+    /**
+     * Creates mesh statistics.
+     *
+     * @param totalServices total number of services
+     * @param activeServices number of active services
+     * @param avgResponseTime average response time
+     * @param errorRate error rate
+     * @param totalRequests total number of requests
+     */
     public MeshStatistics(
         final long totalServices,
         final long activeServices,
