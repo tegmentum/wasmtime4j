@@ -252,9 +252,8 @@ public final class WasiExperimentalProcess {
             if (result.errorCode != 0) {
               final WasiErrorCode errorCode = WasiErrorCode.fromErrnoOrNull(result.errorCode);
               throw new WasiException(
-                  "Failed to create resource monitor: "
-                      + (errorCode != null ? errorCode.getDescription() : "Unknown error"),
-                  errorCode != null ? errorCode : WasiErrorCode.EIO);
+                  errorCode != null ? errorCode : WasiErrorCode.EIO,
+                  "create_resource_monitor");
             }
 
             // Track resource monitor
@@ -310,11 +309,11 @@ public final class WasiExperimentalProcess {
 
     if (sourceProcess == null) {
       throw new WasiException(
-          "Invalid source process handle: " + sourceProcessHandle, WasiErrorCode.EBADF);
+          WasiErrorCode.EBADF, "ipc_channel_operation");
     }
     if (targetProcess == null) {
       throw new WasiException(
-          "Invalid target process handle: " + targetProcessHandle, WasiErrorCode.EBADF);
+          WasiErrorCode.EBADF, "ipc_channel_operation");
     }
 
     LOGGER.fine(
@@ -343,9 +342,8 @@ public final class WasiExperimentalProcess {
             if (result.errorCode != 0) {
               final WasiErrorCode errorCode = WasiErrorCode.fromErrnoOrNull(result.errorCode);
               throw new WasiException(
-                  "Failed to create IPC channel: "
-                      + (errorCode != null ? errorCode.getDescription() : "Unknown error"),
-                  errorCode != null ? errorCode : WasiErrorCode.EIO);
+                  errorCode != null ? errorCode : WasiErrorCode.EIO,
+                  "create_ipc_channel");
             }
 
             // Track IPC handle
@@ -396,7 +394,7 @@ public final class WasiExperimentalProcess {
     JniValidation.requireNonNull(serviceHandler, "serviceHandler");
 
     if (systemServices.containsKey(serviceName)) {
-      throw new WasiException("Service already registered: " + serviceName, WasiErrorCode.EEXIST);
+      throw new WasiException(WasiErrorCode.EEXIST, "register_system_service");
     }
 
     LOGGER.info(
@@ -426,9 +424,8 @@ public final class WasiExperimentalProcess {
             if (result.errorCode != 0) {
               final WasiErrorCode errorCode = WasiErrorCode.fromErrnoOrNull(result.errorCode);
               throw new WasiException(
-                  "Failed to register system service: "
-                      + (errorCode != null ? errorCode.getDescription() : "Unknown error"),
-                  errorCode != null ? errorCode : WasiErrorCode.EIO);
+                  errorCode != null ? errorCode : WasiErrorCode.EIO,
+                  "register_system_service");
             }
 
             // Track system service
@@ -544,9 +541,8 @@ public final class WasiExperimentalProcess {
             if (result.errorCode != 0) {
               final WasiErrorCode errorCode = WasiErrorCode.fromErrnoOrNull(result.errorCode);
               throw new WasiException(
-                  "Failed to get process resource usage: "
-                      + (errorCode != null ? errorCode.getDescription() : "Unknown error"),
-                  errorCode != null ? errorCode : WasiErrorCode.EIO);
+                  errorCode != null ? errorCode : WasiErrorCode.EIO,
+                  "get_process_resource_usage");
             }
 
             return new ProcessResourceUsage(
@@ -603,9 +599,8 @@ public final class WasiExperimentalProcess {
             if (result != 0) {
               final WasiErrorCode errorCode = WasiErrorCode.fromErrnoOrNull(result);
               throw new WasiException(
-                  "Failed to terminate process: "
-                      + (errorCode != null ? errorCode.getDescription() : "Unknown error"),
-                  errorCode != null ? errorCode : WasiErrorCode.EIO);
+                  errorCode != null ? errorCode : WasiErrorCode.EIO,
+                  "terminate_process");
             }
 
             // Update process state

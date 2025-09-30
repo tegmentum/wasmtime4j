@@ -292,7 +292,7 @@ public final class JniGcRuntime implements GcRuntime {
             "Element index out of bounds: " + elementIndex + " >= " + jniArray.getLength());
       }
 
-      final Object nativeValue = arrayGetNative(nativeHandle, jniArray.getObjectId(), elementIndex);
+      final Object nativeValue = arrayGet(nativeHandle, jniArray.getObjectId(), elementIndex);
       return convertNativeToGcValue(nativeValue);
     } finally {
       lock.readLock().unlock();
@@ -326,7 +326,7 @@ public final class JniGcRuntime implements GcRuntime {
       }
 
       final Object nativeValue = convertGcValueToNative(value);
-      final int result = arraySetNative(nativeHandle, jniArray.getObjectId(), elementIndex, nativeValue);
+      final int result = arraySet(nativeHandle, jniArray.getObjectId(), elementIndex, nativeValue);
       if (result != 0) {
         throw new GcException("Failed to set array element");
       }
@@ -403,7 +403,7 @@ public final class JniGcRuntime implements GcRuntime {
       final long objectId = getObjectId(object);
       final int targetTypeId = convertReferenceTypeToNative(targetType);
 
-      return refTestNative(nativeHandle, objectId, targetTypeId);
+      return refTest(nativeHandle, objectId, targetTypeId);
     } finally {
       lock.readLock().unlock();
     }
@@ -429,7 +429,7 @@ public final class JniGcRuntime implements GcRuntime {
       final long objectId1 = getObjectId(obj1);
       final long objectId2 = getObjectId(obj2);
 
-      return refEqNative(nativeHandle, objectId1, objectId2);
+      return refEq(nativeHandle, objectId1, objectId2);
     } finally {
       lock.readLock().unlock();
     }
@@ -450,7 +450,7 @@ public final class JniGcRuntime implements GcRuntime {
       }
 
       final long objectId = getObjectId(object);
-      return refIsNullNative(nativeHandle, objectId);
+      return refIsNull(nativeHandle, objectId);
     } finally {
       lock.readLock().unlock();
     }
@@ -500,7 +500,7 @@ public final class JniGcRuntime implements GcRuntime {
         throw new GcException("GC runtime has been disposed");
       }
 
-      final Object nativeStats = collectGarbageNative(nativeHandle);
+      final Object nativeStats = collectGarbage(nativeHandle);
       return convertNativeToGcStats(nativeStats);
     } finally {
       lock.readLock().unlock();
@@ -517,7 +517,7 @@ public final class JniGcRuntime implements GcRuntime {
         throw new GcException("GC runtime has been disposed");
       }
 
-      final Object nativeStats = getGcStatsNative(nativeHandle);
+      final Object nativeStats = getGcStats(nativeHandle);
       return convertNativeToGcStats(nativeStats);
     } finally {
       lock.readLock().unlock();
@@ -540,7 +540,7 @@ public final class JniGcRuntime implements GcRuntime {
       final long objectId = getObjectId(object);
       final int targetTypeId = registerStructTypeInternal(targetStructType);
 
-      final long castObjectId = refCastStructNative(nativeHandle, objectId, targetTypeId);
+      final long castObjectId = refCastStruct(nativeHandle, objectId, targetTypeId);
       if (castObjectId == 0) {
         throw new ClassCastException("Struct cast failed");
       }
@@ -565,7 +565,7 @@ public final class JniGcRuntime implements GcRuntime {
       final long objectId = getObjectId(object);
       final int targetTypeId = registerArrayTypeInternal(targetArrayType);
 
-      final long castObjectId = refCastArrayNative(nativeHandle, objectId, targetTypeId);
+      final long castObjectId = refCastArray(nativeHandle, objectId, targetTypeId);
       if (castObjectId == 0) {
         throw new ClassCastException("Array cast failed");
       }
@@ -591,7 +591,7 @@ public final class JniGcRuntime implements GcRuntime {
       final long objectId = getObjectId(object);
       final int targetTypeId = registerStructTypeInternal(targetStructType);
 
-      return refTestStructNative(nativeHandle, objectId, targetTypeId);
+      return refTestStruct(nativeHandle, objectId, targetTypeId);
     } finally {
       lock.readLock().unlock();
     }
@@ -611,7 +611,7 @@ public final class JniGcRuntime implements GcRuntime {
       final long objectId = getObjectId(object);
       final int targetTypeId = registerArrayTypeInternal(targetArrayType);
 
-      return refTestArrayNative(nativeHandle, objectId, targetTypeId);
+      return refTestArray(nativeHandle, objectId, targetTypeId);
     } finally {
       lock.readLock().unlock();
     }
@@ -1391,7 +1391,7 @@ public final class JniGcRuntime implements GcRuntime {
   private GcObject createGcObjectFromId(final long objectId, final GcReferenceType type) {
     switch (type) {
       case I31_REF:
-        final int value = i31GetNative(nativeHandle, objectId, true);
+        final int value = i31Get(nativeHandle, objectId, true);
         return new JniI31Instance(this, objectId, value);
       case STRUCT_REF:
         // Would need type information to create proper struct instance
@@ -1739,12 +1739,12 @@ public final class JniGcRuntime implements GcRuntime {
 
     @Override
     public int getSignedValue() {
-      return runtime.i31GetNative(runtime.nativeHandle, getObjectId(), true);
+      return runtime.i31Get(runtime.nativeHandle, getObjectId(), true);
     }
 
     @Override
     public int getUnsignedValue() {
-      return runtime.i31GetNative(runtime.nativeHandle, getObjectId(), false);
+      return runtime.i31Get(runtime.nativeHandle, getObjectId(), false);
     }
   }
 

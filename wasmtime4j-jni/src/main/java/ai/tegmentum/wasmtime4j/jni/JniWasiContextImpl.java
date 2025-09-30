@@ -48,14 +48,14 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
     try {
       final int result = nativeSetArgv(nativeHandle, argv);
       if (result != 0) {
-        throw new WasmException("Failed to set command line arguments");
+        throw new RuntimeException("Failed to set command line arguments");
       }
       return this;
     } catch (Exception e) {
-      if (e instanceof WasmException) {
-        throw e;
+      if (e instanceof RuntimeException) {
+        throw (RuntimeException) e;
       }
-      throw new WasmException("Failed to set command line arguments", e);
+      throw new RuntimeException("Failed to set command line arguments", e);
     }
   }
 
@@ -68,14 +68,14 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
     try {
       final int result = nativeSetEnv(nativeHandle, key, value);
       if (result != 0) {
-        throw new WasmException("Failed to set environment variable");
+        throw new RuntimeException("Failed to set environment variable");
       }
       return this;
     } catch (Exception e) {
-      if (e instanceof WasmException) {
-        throw e;
+      if (e instanceof RuntimeException) {
+        throw (RuntimeException) e;
       }
-      throw new WasmException("Failed to set environment variable", e);
+      throw new RuntimeException("Failed to set environment variable", e);
     }
   }
 
@@ -97,14 +97,14 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
     try {
       final int result = nativeInheritEnv(nativeHandle);
       if (result != 0) {
-        throw new WasmException("Failed to inherit environment variables");
+        throw new RuntimeException("Failed to inherit environment variables");
       }
       return this;
     } catch (Exception e) {
-      if (e instanceof WasmException) {
-        throw e;
+      if (e instanceof RuntimeException) {
+        throw (RuntimeException) e;
       }
-      throw new WasmException("Failed to inherit environment variables", e);
+      throw new RuntimeException("Failed to inherit environment variables", e);
     }
   }
 
@@ -115,14 +115,14 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
     try {
       final int result = nativeInheritStdio(nativeHandle);
       if (result != 0) {
-        throw new WasmException("Failed to inherit stdio");
+        throw new RuntimeException("Failed to inherit stdio");
       }
       return this;
     } catch (Exception e) {
-      if (e instanceof WasmException) {
-        throw e;
+      if (e instanceof RuntimeException) {
+        throw (RuntimeException) e;
       }
-      throw new WasmException("Failed to inherit stdio", e);
+      throw new RuntimeException("Failed to inherit stdio", e);
     }
   }
 
@@ -134,14 +134,14 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
     try {
       final int result = nativeSetStdin(nativeHandle, path.toString());
       if (result != 0) {
-        throw new WasmException("Failed to set stdin path");
+        throw new RuntimeException("Failed to set stdin path");
       }
       return this;
     } catch (Exception e) {
-      if (e instanceof WasmException) {
-        throw e;
+      if (e instanceof RuntimeException) {
+        throw (RuntimeException) e;
       }
-      throw new WasmException("Failed to set stdin path", e);
+      throw new RuntimeException("Failed to set stdin path", e);
     }
   }
 
@@ -153,14 +153,14 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
     try {
       final int result = nativeSetStdout(nativeHandle, path.toString());
       if (result != 0) {
-        throw new WasmException("Failed to set stdout path");
+        throw new RuntimeException("Failed to set stdout path");
       }
       return this;
     } catch (Exception e) {
-      if (e instanceof WasmException) {
-        throw e;
+      if (e instanceof RuntimeException) {
+        throw (RuntimeException) e;
       }
-      throw new WasmException("Failed to set stdout path", e);
+      throw new RuntimeException("Failed to set stdout path", e);
     }
   }
 
@@ -172,14 +172,14 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
     try {
       final int result = nativeSetStderr(nativeHandle, path.toString());
       if (result != 0) {
-        throw new WasmException("Failed to set stderr path");
+        throw new RuntimeException("Failed to set stderr path");
       }
       return this;
     } catch (Exception e) {
-      if (e instanceof WasmException) {
-        throw e;
+      if (e instanceof RuntimeException) {
+        throw (RuntimeException) e;
       }
-      throw new WasmException("Failed to set stderr path", e);
+      throw new RuntimeException("Failed to set stderr path", e);
     }
   }
 
@@ -231,14 +231,14 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
     try {
       final int result = nativeSetWorkingDirectory(nativeHandle, workingDir);
       if (result != 0) {
-        throw new WasmException("Failed to set working directory");
+        throw new RuntimeException("Failed to set working directory");
       }
       return this;
     } catch (Exception e) {
-      if (e instanceof WasmException) {
-        throw e;
+      if (e instanceof RuntimeException) {
+        throw (RuntimeException) e;
       }
-      throw new WasmException("Failed to set working directory", e);
+      throw new RuntimeException("Failed to set working directory", e);
     }
   }
 
@@ -249,14 +249,14 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
     try {
       final int result = nativeSetNetworkEnabled(nativeHandle, enabled);
       if (result != 0) {
-        throw new WasmException("Failed to set network enabled state");
+        throw new RuntimeException("Failed to set network enabled state");
       }
       return this;
     } catch (Exception e) {
-      if (e instanceof WasmException) {
-        throw e;
+      if (e instanceof RuntimeException) {
+        throw (RuntimeException) e;
       }
-      throw new WasmException("Failed to set network enabled state", e);
+      throw new RuntimeException("Failed to set network enabled state", e);
     }
   }
 
@@ -270,14 +270,14 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
     try {
       final int result = nativeSetMaxOpenFiles(nativeHandle, maxFds);
       if (result != 0) {
-        throw new WasmException("Failed to set maximum open files");
+        throw new RuntimeException("Failed to set maximum open files");
       }
       return this;
     } catch (Exception e) {
-      if (e instanceof WasmException) {
-        throw e;
+      if (e instanceof RuntimeException) {
+        throw (RuntimeException) e;
       }
-      throw new WasmException("Failed to set maximum open files", e);
+      throw new RuntimeException("Failed to set maximum open files", e);
     }
   }
 
@@ -290,14 +290,14 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
     try {
       final int result = nativeSetAsyncIoEnabled(nativeHandle, enabled);
       if (result != 0) {
-        throw new WasmException("Failed to set async I/O enabled state");
+        throw new RuntimeException("Failed to set async I/O enabled state");
       }
       return this;
     } catch (Exception e) {
-      if (e instanceof WasmException) {
-        throw e;
+      if (e instanceof RuntimeException) {
+        throw (RuntimeException) e;
       }
-      throw new WasmException("Failed to set async I/O enabled state", e);
+      throw new RuntimeException("Failed to set async I/O enabled state", e);
     }
   }
 
@@ -311,14 +311,14 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
     try {
       final int result = nativeSetMaxAsyncOperations(nativeHandle, maxOps);
       if (result != 0) {
-        throw new WasmException("Failed to set maximum async operations");
+        throw new RuntimeException("Failed to set maximum async operations");
       }
       return this;
     } catch (Exception e) {
-      if (e instanceof WasmException) {
-        throw e;
+      if (e instanceof RuntimeException) {
+        throw (RuntimeException) e;
       }
-      throw new WasmException("Failed to set maximum async operations", e);
+      throw new RuntimeException("Failed to set maximum async operations", e);
     }
   }
 
@@ -332,14 +332,14 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
     try {
       final int result = nativeSetAsyncTimeout(nativeHandle, timeoutMs);
       if (result != 0) {
-        throw new WasmException("Failed to set async timeout");
+        throw new RuntimeException("Failed to set async timeout");
       }
       return this;
     } catch (Exception e) {
-      if (e instanceof WasmException) {
-        throw e;
+      if (e instanceof RuntimeException) {
+        throw (RuntimeException) e;
       }
-      throw new WasmException("Failed to set async timeout", e);
+      throw new RuntimeException("Failed to set async timeout", e);
     }
   }
 
@@ -350,14 +350,14 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
     try {
       final int result = nativeSetComponentModelEnabled(nativeHandle, enabled);
       if (result != 0) {
-        throw new WasmException("Failed to set component model enabled state");
+        throw new RuntimeException("Failed to set component model enabled state");
       }
       return this;
     } catch (Exception e) {
-      if (e instanceof WasmException) {
-        throw e;
+      if (e instanceof RuntimeException) {
+        throw (RuntimeException) e;
       }
-      throw new WasmException("Failed to set component model enabled state", e);
+      throw new RuntimeException("Failed to set component model enabled state", e);
     }
   }
 
@@ -368,14 +368,14 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
     try {
       final int result = nativeSetProcessEnabled(nativeHandle, enabled);
       if (result != 0) {
-        throw new WasmException("Failed to set process enabled state");
+        throw new RuntimeException("Failed to set process enabled state");
       }
       return this;
     } catch (Exception e) {
-      if (e instanceof WasmException) {
-        throw e;
+      if (e instanceof RuntimeException) {
+        throw (RuntimeException) e;
       }
-      throw new WasmException("Failed to set process enabled state", e);
+      throw new RuntimeException("Failed to set process enabled state", e);
     }
   }
 
@@ -387,14 +387,14 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
     try {
       final int result = nativeSetFilesystemWorkingDir(nativeHandle, workingDir.toString());
       if (result != 0) {
-        throw new WasmException("Failed to set filesystem working directory");
+        throw new RuntimeException("Failed to set filesystem working directory");
       }
       return this;
     } catch (Exception e) {
-      if (e instanceof WasmException) {
-        throw e;
+      if (e instanceof RuntimeException) {
+        throw (RuntimeException) e;
       }
-      throw new WasmException("Failed to set filesystem working directory", e);
+      throw new RuntimeException("Failed to set filesystem working directory", e);
     }
   }
 
