@@ -81,7 +81,7 @@ public final class JniExceptionHandler implements AutoCloseable {
    * @throws WasmExceptionHandlingException if native creation fails
    */
   public JniExceptionHandler(final ExceptionHandlingConfig config, final GcRuntime gcRuntime) {
-    JniValidation.validateNotNull(config, "Exception handling config");
+    JniValidation.requireNonNull(config, "Exception handling config");
 
     this.handlerId = NEXT_HANDLER_ID.getAndIncrement();
     this.gcRuntime = gcRuntime; // Nullable - GC support is optional
@@ -137,9 +137,9 @@ public final class JniExceptionHandler implements AutoCloseable {
   public WasmExceptionHandlingException.ExceptionTag createExceptionTag(
       final String name, final List<WasmValueType> parameterTypes, final boolean isGcAware) {
     validateNotClosed();
-    JniValidation.validateNotNull(name, "Exception tag name");
-    JniValidation.validateNotEmpty(name.trim(), "Exception tag name");
-    JniValidation.validateNotNull(parameterTypes, "Parameter types");
+    JniValidation.requireNonNull(name, "Exception tag name");
+    JniValidation.requireNonEmpty(name.trim(), "Exception tag name");
+    JniValidation.requireNonNull(parameterTypes, "Parameter types");
 
     final String trimmedName = name.trim();
 
@@ -203,8 +203,8 @@ public final class JniExceptionHandler implements AutoCloseable {
       final WasmExceptionHandlingException.ExceptionTag tag,
       final WasmExceptionHandlingException.ExceptionPayload payload) {
     validateNotClosed();
-    JniValidation.validateNotNull(tag, "Exception tag");
-    JniValidation.validateNotNull(payload, "Exception payload");
+    JniValidation.requireNonNull(tag, "Exception tag");
+    JniValidation.requireNonNull(payload, "Exception payload");
 
     // Validate payload matches tag parameter types
     validatePayload(tag, payload);
@@ -262,8 +262,8 @@ public final class JniExceptionHandler implements AutoCloseable {
       final WasmExceptionHandlingException.ExceptionTag tag,
       final ExceptionHandlerCallback handler) {
     validateNotClosed();
-    JniValidation.validateNotNull(tag, "Exception tag");
-    JniValidation.validateNotNull(handler, "Exception handler callback");
+    JniValidation.requireNonNull(tag, "Exception tag");
+    JniValidation.requireNonNull(handler, "Exception handler callback");
 
     try {
       // Store the callback for native code to invoke
@@ -322,7 +322,7 @@ public final class JniExceptionHandler implements AutoCloseable {
    */
   public String captureStackTrace(final WasmExceptionHandlingException.ExceptionTag tag) {
     validateNotClosed();
-    JniValidation.validateNotNull(tag, "Exception tag");
+    JniValidation.requireNonNull(tag, "Exception tag");
 
     try {
       final String trace = nativeCaptureStackTrace(nativeHandle, tag.getNativeHandle());
