@@ -664,7 +664,7 @@ public final class JniGcRuntime implements GcRuntime {
    * @throws GcException if the runtime is disposed
    * @throws IllegalArgumentException if object is null
    */
-  public GcReferenceType getRuntimeTypeNative(final GcObject object) {
+  public GcReferenceType getRuntimeType(final GcObject object) {
     validateNotDisposed();
     validateNotNull(object, "object");
 
@@ -698,7 +698,7 @@ public final class JniGcRuntime implements GcRuntime {
     }
 
     try {
-      return Optional.of(refCastNative(object, targetType));
+      return Optional.of(refCast(object, targetType));
     } catch (ClassCastException e) {
       throw e; // Re-throw cast exceptions for non-null objects
     }
@@ -900,7 +900,7 @@ public final class JniGcRuntime implements GcRuntime {
 
   // ========== Type Registration and Management ==========
 
-  public int registerRecursiveTypeNative(final String typeName, final Object typeDefinition) {
+  public int registerRecursiveType(final String typeName, final Object typeDefinition) {
     validateNotDisposed();
     validateNotNull(typeName, "typeName");
     validateNotNull(typeDefinition, "typeDefinition");
@@ -925,7 +925,7 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
-  public Map<String, Integer> createTypeHierarchyNative(
+  public Map<String, Integer> createTypeHierarchy(
       final Object baseType, final List<Object> derivedTypes) {
     validateNotDisposed();
     validateNotNull(baseType, "baseType");
@@ -951,7 +951,7 @@ public final class JniGcRuntime implements GcRuntime {
 
   // ========== Garbage Collection Control ==========
 
-  public GcStats collectGarbageIncrementalNative(final long maxPauseMillis) {
+  public GcStats collectGarbageIncremental(final long maxPauseMillis) {
     validateNotDisposed();
 
     lock.readLock().lock();
@@ -967,7 +967,7 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
-  public GcStats collectGarbageConcurrentNative() {
+  public GcStats collectGarbageConcurrent() {
     validateNotDisposed();
 
     lock.readLock().lock();
@@ -983,7 +983,7 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
-  public void configureGcStrategyNative(
+  public void configureGcStrategy(
       final String strategy, final Map<String, Object> parameters) {
     validateNotDisposed();
     validateNotNull(strategy, "strategy");
@@ -1007,7 +1007,7 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
-  public boolean monitorGcPressureNative(final double pressureThreshold) {
+  public boolean monitorGcPressure(final double pressureThreshold) {
     validateNotDisposed();
 
     lock.readLock().lock();
@@ -1024,7 +1024,7 @@ public final class JniGcRuntime implements GcRuntime {
 
   // ========== Advanced Memory Management ==========
 
-  public WeakGcReference createWeakReferenceNative(
+  public WeakGcReference createWeakReference(
       final GcObject object, final Runnable finalizationCallback) {
     validateNotDisposed();
     validateNotNull(object, "object");
@@ -1047,7 +1047,7 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
-  public void registerFinalizationCallbackNative(final GcObject object, final Runnable callback) {
+  public void registerFinalizationCallback(final GcObject object, final Runnable callback) {
     validateNotDisposed();
     validateNotNull(object, "object");
     validateNotNull(callback, "callback");
@@ -1068,7 +1068,7 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
-  public int runFinalizationNative() {
+  public int runFinalization() {
     validateNotDisposed();
 
     lock.readLock().lock();
@@ -1085,7 +1085,7 @@ public final class JniGcRuntime implements GcRuntime {
 
   // ========== Host Integration ==========
 
-  public GcObject integrateHostObjectNative(final Object hostObject, final GcReferenceType gcType) {
+  public GcObject integrateHostObject(final Object hostObject, final GcReferenceType gcType) {
     validateNotDisposed();
     validateNotNull(hostObject, "hostObject");
     validateNotNull(gcType, "gcType");
@@ -1108,7 +1108,7 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
-  public Object extractHostObjectNative(final GcObject gcObject) {
+  public Object extractHostObject(final GcObject gcObject) {
     validateNotDisposed();
     validateNotNull(gcObject, "gcObject");
 
@@ -1130,7 +1130,7 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
-  public Object createSharingBridgeNative(final List<GcObject> objects) {
+  public Object createSharingBridge(final List<GcObject> objects) {
     validateNotDisposed();
     validateNotNull(objects, "objects");
 
@@ -1155,7 +1155,7 @@ public final class JniGcRuntime implements GcRuntime {
 
   // ========== Debugging and Profiling ==========
 
-  public GcHeapInspection inspectHeapNative() {
+  public GcHeapInspection inspectHeap() {
     validateNotDisposed();
 
     lock.readLock().lock();
@@ -1171,7 +1171,7 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
-  public ObjectLifecycleTracker trackObjectLifecyclesNative(final List<GcObject> objects) {
+  public ObjectLifecycleTracker trackObjectLifecycles(final List<GcObject> objects) {
     validateNotDisposed();
     validateNotNull(objects, "objects");
 
@@ -1194,7 +1194,7 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
-  public MemoryLeakAnalysis detectMemoryLeaksNative() {
+  public MemoryLeakAnalysis detectMemoryLeaks() {
     validateNotDisposed();
 
     lock.readLock().lock();
@@ -1210,7 +1210,7 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
-  public GcProfiler startProfilingNative() {
+  public GcProfiler startProfiling() {
     validateNotDisposed();
 
     lock.readLock().lock();
@@ -1232,7 +1232,7 @@ public final class JniGcRuntime implements GcRuntime {
 
   // ========== Safety and Validation ==========
 
-  public ReferenceSafetyResult validateReferenceSafetyNative(final List<GcObject> rootObjects) {
+  public ReferenceSafetyResult validateReferenceSafety(final List<GcObject> rootObjects) {
     validateNotDisposed();
     validateNotNull(rootObjects, "rootObjects");
 
@@ -1251,7 +1251,7 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
-  public boolean enforceTypeSafetyNative(final String operation, final List<Object> operands) {
+  public boolean enforceTypeSafety(final String operation, final List<Object> operands) {
     validateNotDisposed();
     validateNotNull(operation, "operation");
     validateNotNull(operands, "operands");
@@ -1269,7 +1269,7 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
-  public MemoryCorruptionAnalysis detectMemoryCorruptionNative() {
+  public MemoryCorruptionAnalysis detectMemoryCorruption() {
     validateNotDisposed();
 
     lock.readLock().lock();
@@ -1285,7 +1285,7 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
-  public GcInvariantValidation validateInvariantsNative() {
+  public GcInvariantValidation validateInvariants() {
     validateNotDisposed();
 
     lock.readLock().lock();
@@ -1348,7 +1348,7 @@ public final class JniGcRuntime implements GcRuntime {
         structType.getFields().stream().map(FieldDefinition::isMutable).toArray(Boolean[]::new);
 
     final int typeId =
-        registerStructType(
+        registerStructTypeNative(
             nativeHandle,
             structType.getName() != null ? structType.getName() : "",
             fieldNames,
@@ -1366,7 +1366,7 @@ public final class JniGcRuntime implements GcRuntime {
     final int elementTypeId = convertFieldTypeToNative(arrayType.getElementType());
 
     final int typeId =
-        registerArrayType(
+        registerArrayTypeNative(
             nativeHandle,
             arrayType.getName() != null ? arrayType.getName() : "",
             elementTypeId,
