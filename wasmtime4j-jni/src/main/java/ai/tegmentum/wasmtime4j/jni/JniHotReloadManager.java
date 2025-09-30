@@ -454,6 +454,13 @@ public final class JniHotReloadManager implements AutoCloseable {
         return this;
       }
 
+      /**
+       * Sets the debounce delay in milliseconds for change detection.
+       *
+       * @param delayMs the debounce delay in milliseconds
+       * @return this builder
+       * @throws IllegalArgumentException if delayMs is negative
+       */
       public Builder debounceDelayMs(final long delayMs) {
         if (delayMs < 0) {
           throw new IllegalArgumentException("Debounce delay must be non-negative");
@@ -462,11 +469,24 @@ public final class JniHotReloadManager implements AutoCloseable {
         return this;
       }
 
+      /**
+       * Enables or disables precompilation for hot reload.
+       *
+       * @param enabled true to enable precompilation
+       * @return this builder
+       */
       public Builder precompilationEnabled(final boolean enabled) {
         this.precompilationEnabled = enabled;
         return this;
       }
 
+      /**
+       * Sets the maximum number of reload attempts.
+       *
+       * @param attempts the maximum number of reload attempts
+       * @return this builder
+       * @throws IllegalArgumentException if attempts is less than 1
+       */
       public Builder maxReloadAttempts(final int attempts) {
         if (attempts < 1) {
           throw new IllegalArgumentException("Max reload attempts must be positive");
@@ -475,6 +495,13 @@ public final class JniHotReloadManager implements AutoCloseable {
         return this;
       }
 
+      /**
+       * Sets the health check interval in seconds.
+       *
+       * @param intervalSecs the health check interval in seconds
+       * @return this builder
+       * @throws IllegalArgumentException if intervalSecs is less than 1
+       */
       public Builder healthCheckIntervalSecs(final long intervalSecs) {
         if (intervalSecs < 1) {
           throw new IllegalArgumentException("Health check interval must be positive");
@@ -483,6 +510,13 @@ public final class JniHotReloadManager implements AutoCloseable {
         return this;
       }
 
+      /**
+       * Sets the number of loader threads.
+       *
+       * @param threadCount the number of loader threads
+       * @return this builder
+       * @throws IllegalArgumentException if threadCount is less than 1
+       */
       public Builder loaderThreadCount(final int threadCount) {
         if (threadCount < 1) {
           throw new IllegalArgumentException("Loader thread count must be positive");
@@ -491,6 +525,13 @@ public final class JniHotReloadManager implements AutoCloseable {
         return this;
       }
 
+      /**
+       * Sets the cache size for compiled modules.
+       *
+       * @param size the cache size
+       * @return this builder
+       * @throws IllegalArgumentException if size is less than 1
+       */
       public Builder cacheSize(final int size) {
         if (size < 1) {
           throw new IllegalArgumentException("Cache size must be positive");
@@ -581,7 +622,14 @@ public final class JniHotReloadManager implements AutoCloseable {
     private final int status;
     private final float progress;
 
-    // Constructor called from native code
+    /**
+     * Creates a new hot swap status (called from native code).
+     *
+     * @param operationId the operation ID
+     * @param componentName the component name
+     * @param status the status code
+     * @param progress the progress value
+     */
     public HotSwapStatus(
         final String operationId,
         final String componentName,
@@ -644,6 +692,15 @@ public final class JniHotReloadManager implements AutoCloseable {
     private final LoadPriority priority;
     private final ValidationConfig validationConfig;
 
+    /**
+     * Creates a new load request.
+     *
+     * @param componentName the component name
+     * @param componentPath the component path
+     * @param version the version
+     * @param priority the load priority (null defaults to NORMAL)
+     * @param validationConfig the validation configuration (null defaults to default config)
+     */
     public LoadRequest(
         final String componentName,
         final String componentPath,
@@ -658,6 +715,11 @@ public final class JniHotReloadManager implements AutoCloseable {
           validationConfig != null ? validationConfig : ValidationConfig.getDefault();
     }
 
+    /**
+     * Validates the load request.
+     *
+     * @throws IllegalArgumentException if any required field is null or empty
+     */
     public void validate() {
       if (componentName == null || componentName.trim().isEmpty()) {
         throw new IllegalArgumentException("Component name cannot be null or empty");
@@ -708,6 +770,15 @@ public final class JniHotReloadManager implements AutoCloseable {
     private final boolean validatePerformance;
     private final long timeoutSecs;
 
+    /**
+     * Creates a new validation configuration.
+     *
+     * @param validateInterfaces true to validate interfaces
+     * @param validateDependencies true to validate dependencies
+     * @param validateSecurity true to validate security
+     * @param validatePerformance true to validate performance
+     * @param timeoutSecs the validation timeout in seconds
+     */
     public ValidationConfig(
         final boolean validateInterfaces,
         final boolean validateDependencies,
@@ -758,7 +829,18 @@ public final class JniHotReloadManager implements AutoCloseable {
     private final long componentsLoaded;
     private final float cacheEfficiency;
 
-    // Constructor called from native code
+    /**
+     * Creates new hot reload metrics (called from native code).
+     *
+     * @param totalSwaps total number of swaps
+     * @param successfulSwaps number of successful swaps
+     * @param failedSwaps number of failed swaps
+     * @param rollbacks number of rollbacks
+     * @param avgSwapTimeMs average swap time in milliseconds
+     * @param currentActiveSwaps current number of active swaps
+     * @param componentsLoaded number of components loaded
+     * @param cacheEfficiency cache efficiency ratio
+     */
     public HotReloadMetrics(
         final long totalSwaps,
         final long successfulSwaps,
