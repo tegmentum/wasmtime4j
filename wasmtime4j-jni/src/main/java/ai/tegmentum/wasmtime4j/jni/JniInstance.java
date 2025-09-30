@@ -108,6 +108,39 @@ public final class JniInstance extends JniResource implements Instance {
     }
   }
 
+  @Override
+  public Optional<WasmFunction> getFunction(final int index) {
+    ensureNotClosed();
+
+    if (index < 0) {
+      return Optional.empty();
+    }
+
+    try {
+      final String[] exportNames = getExportNames();
+      if (index >= exportNames.length) {
+        return Optional.empty();
+      }
+
+      // Find the index-th function export
+      int functionIndex = 0;
+      for (final String exportName : exportNames) {
+        final Optional<WasmFunction> function = getFunction(exportName);
+        if (function.isPresent()) {
+          if (functionIndex == index) {
+            return function;
+          }
+          functionIndex++;
+        }
+      }
+
+      return Optional.empty();
+    } catch (final RuntimeException e) {
+      LOGGER.warning("Failed to get function by index " + index + ": " + e.getMessage());
+      return Optional.empty();
+    }
+  }
+
   /**
    * Gets a memory export by name.
    *
@@ -134,6 +167,39 @@ public final class JniInstance extends JniResource implements Instance {
     }
   }
 
+  @Override
+  public Optional<WasmMemory> getMemory(final int index) {
+    ensureNotClosed();
+
+    if (index < 0) {
+      return Optional.empty();
+    }
+
+    try {
+      final String[] exportNames = getExportNames();
+      if (index >= exportNames.length) {
+        return Optional.empty();
+      }
+
+      // Find the index-th memory export
+      int memoryIndex = 0;
+      for (final String exportName : exportNames) {
+        final Optional<WasmMemory> memory = getMemory(exportName);
+        if (memory.isPresent()) {
+          if (memoryIndex == index) {
+            return memory;
+          }
+          memoryIndex++;
+        }
+      }
+
+      return Optional.empty();
+    } catch (final RuntimeException e) {
+      LOGGER.warning("Failed to get memory by index " + index + ": " + e.getMessage());
+      return Optional.empty();
+    }
+  }
+
   /**
    * Gets a table export by name.
    *
@@ -157,6 +223,39 @@ public final class JniInstance extends JniResource implements Instance {
       throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error getting table: " + name, e);
+    }
+  }
+
+  @Override
+  public Optional<WasmTable> getTable(final int index) {
+    ensureNotClosed();
+
+    if (index < 0) {
+      return Optional.empty();
+    }
+
+    try {
+      final String[] exportNames = getExportNames();
+      if (index >= exportNames.length) {
+        return Optional.empty();
+      }
+
+      // Find the index-th table export
+      int tableIndex = 0;
+      for (final String exportName : exportNames) {
+        final Optional<WasmTable> table = getTable(exportName);
+        if (table.isPresent()) {
+          if (tableIndex == index) {
+            return table;
+          }
+          tableIndex++;
+        }
+      }
+
+      return Optional.empty();
+    } catch (final RuntimeException e) {
+      LOGGER.warning("Failed to get table by index " + index + ": " + e.getMessage());
+      return Optional.empty();
     }
   }
 
@@ -294,6 +393,39 @@ public final class JniInstance extends JniResource implements Instance {
       throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error getting global: " + name, e);
+    }
+  }
+
+  @Override
+  public Optional<WasmGlobal> getGlobal(final int index) {
+    ensureNotClosed();
+
+    if (index < 0) {
+      return Optional.empty();
+    }
+
+    try {
+      final String[] exportNames = getExportNames();
+      if (index >= exportNames.length) {
+        return Optional.empty();
+      }
+
+      // Find the index-th global export
+      int globalIndex = 0;
+      for (final String exportName : exportNames) {
+        final Optional<WasmGlobal> global = getGlobal(exportName);
+        if (global.isPresent()) {
+          if (globalIndex == index) {
+            return global;
+          }
+          globalIndex++;
+        }
+      }
+
+      return Optional.empty();
+    } catch (final RuntimeException e) {
+      LOGGER.warning("Failed to get global by index " + index + ": " + e.getMessage());
+      return Optional.empty();
     }
   }
 
@@ -571,138 +703,6 @@ public final class JniInstance extends JniResource implements Instance {
           );
     } catch (final RuntimeException e) {
       throw new WasmException("Failed to get instance statistics", e);
-    }
-  }
-
-  @Override
-  public Optional<WasmFunction> getFunction(final int index) {
-    ensureNotClosed();
-
-    if (index < 0) {
-      return Optional.empty();
-    }
-
-    try {
-      final String[] exportNames = getExportNames();
-      if (index >= exportNames.length) {
-        return Optional.empty();
-      }
-
-      // Find the index-th function export
-      int functionIndex = 0;
-      for (final String exportName : exportNames) {
-        final Optional<WasmFunction> function = getFunction(exportName);
-        if (function.isPresent()) {
-          if (functionIndex == index) {
-            return function;
-          }
-          functionIndex++;
-        }
-      }
-
-      return Optional.empty();
-    } catch (final RuntimeException e) {
-      LOGGER.warning("Failed to get function by index " + index + ": " + e.getMessage());
-      return Optional.empty();
-    }
-  }
-
-  @Override
-  public Optional<WasmMemory> getMemory(final int index) {
-    ensureNotClosed();
-
-    if (index < 0) {
-      return Optional.empty();
-    }
-
-    try {
-      final String[] exportNames = getExportNames();
-      if (index >= exportNames.length) {
-        return Optional.empty();
-      }
-
-      // Find the index-th memory export
-      int memoryIndex = 0;
-      for (final String exportName : exportNames) {
-        final Optional<WasmMemory> memory = getMemory(exportName);
-        if (memory.isPresent()) {
-          if (memoryIndex == index) {
-            return memory;
-          }
-          memoryIndex++;
-        }
-      }
-
-      return Optional.empty();
-    } catch (final RuntimeException e) {
-      LOGGER.warning("Failed to get memory by index " + index + ": " + e.getMessage());
-      return Optional.empty();
-    }
-  }
-
-  @Override
-  public Optional<WasmTable> getTable(final int index) {
-    ensureNotClosed();
-
-    if (index < 0) {
-      return Optional.empty();
-    }
-
-    try {
-      final String[] exportNames = getExportNames();
-      if (index >= exportNames.length) {
-        return Optional.empty();
-      }
-
-      // Find the index-th table export
-      int tableIndex = 0;
-      for (final String exportName : exportNames) {
-        final Optional<WasmTable> table = getTable(exportName);
-        if (table.isPresent()) {
-          if (tableIndex == index) {
-            return table;
-          }
-          tableIndex++;
-        }
-      }
-
-      return Optional.empty();
-    } catch (final RuntimeException e) {
-      LOGGER.warning("Failed to get table by index " + index + ": " + e.getMessage());
-      return Optional.empty();
-    }
-  }
-
-  @Override
-  public Optional<WasmGlobal> getGlobal(final int index) {
-    ensureNotClosed();
-
-    if (index < 0) {
-      return Optional.empty();
-    }
-
-    try {
-      final String[] exportNames = getExportNames();
-      if (index >= exportNames.length) {
-        return Optional.empty();
-      }
-
-      // Find the index-th global export
-      int globalIndex = 0;
-      for (final String exportName : exportNames) {
-        final Optional<WasmGlobal> global = getGlobal(exportName);
-        if (global.isPresent()) {
-          if (globalIndex == index) {
-            return global;
-          }
-          globalIndex++;
-        }
-      }
-
-      return Optional.empty();
-    } catch (final RuntimeException e) {
-      LOGGER.warning("Failed to get global by index " + index + ": " + e.getMessage());
-      return Optional.empty();
     }
   }
 

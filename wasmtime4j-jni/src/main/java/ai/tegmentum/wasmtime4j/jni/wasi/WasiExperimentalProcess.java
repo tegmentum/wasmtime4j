@@ -6,6 +6,9 @@ import ai.tegmentum.wasmtime4j.jni.wasi.exception.WasiErrorCode;
 import ai.tegmentum.wasmtime4j.jni.wasi.exception.WasiException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -162,9 +165,8 @@ public final class WasiExperimentalProcess {
             if (result.errorCode != 0) {
               final WasiErrorCode errorCode = WasiErrorCode.fromErrnoOrNull(result.errorCode);
               throw new WasiException(
-                  "Failed to create sandboxed process: "
-                      + (errorCode != null ? errorCode.getDescription() : "Unknown error"),
-                  errorCode != null ? errorCode : WasiErrorCode.EIO);
+                  errorCode != null ? errorCode : WasiErrorCode.EIO,
+                  "create_sandboxed_process");
             }
 
             // Track active process
@@ -217,13 +219,11 @@ public final class WasiExperimentalProcess {
 
     final ProcessInfo process = activeProcesses.get(processHandle);
     if (process == null) {
-      throw new WasiException("Invalid process handle: " + processHandle, WasiErrorCode.EBADF);
+      throw new WasiException(WasiErrorCode.EBADF, "process_operation");
     }
 
     if (monitoringConfig.intervalSeconds > MAX_MONITORING_INTERVAL_SECONDS) {
-      throw new WasiException(
-          "Monitoring interval too large: " + monitoringConfig.intervalSeconds,
-          WasiErrorCode.EINVAL);
+      throw new WasiException(WasiErrorCode.EINVAL, "create_resource_monitor");
     }
 
     LOGGER.fine(
@@ -492,8 +492,8 @@ public final class WasiExperimentalProcess {
                   new SystemServiceMetadata(
                       result.version,
                       result.description,
-                      List.of(result.capabilities),
-                      List.of(result.endpoints),
+                      Arrays.asList(result.capabilities),
+                      Arrays.asList(result.endpoints),
                       result.port,
                       result.secure);
 
@@ -530,7 +530,7 @@ public final class WasiExperimentalProcess {
       final long processHandle) {
     final ProcessInfo process = activeProcesses.get(processHandle);
     if (process == null) {
-      throw new WasiException("Invalid process handle: " + processHandle, WasiErrorCode.EBADF);
+      throw new WasiException(WasiErrorCode.EBADF, "process_operation");
     }
 
     LOGGER.fine(() -> String.format("Getting resource usage: process=%d", processHandle));
@@ -581,7 +581,7 @@ public final class WasiExperimentalProcess {
       final long processHandle, final int timeoutSeconds) {
     final ProcessInfo process = activeProcesses.get(processHandle);
     if (process == null) {
-      throw new WasiException("Invalid process handle: " + processHandle, WasiErrorCode.EBADF);
+      throw new WasiException(WasiErrorCode.EBADF, "process_operation");
     }
 
     if (process.state == ProcessState.TERMINATED) {
@@ -976,8 +976,8 @@ public final class WasiExperimentalProcess {
         final boolean secure) {
       this.version = version;
       this.description = description;
-      this.capabilities = List.copyOf(capabilities);
-      this.endpoints = List.copyOf(endpoints);
+      this.capabilities = Collections.unmodifiableList(new java.util.ArrayList<>(capabilities));
+      this.endpoints = Collections.unmodifiableList(new java.util.ArrayList<>(endpoints));
       this.port = port;
       this.secure = secure;
     }
@@ -1076,7 +1076,7 @@ public final class WasiExperimentalProcess {
         final byte[] data,
         final String clientId) {
       this.operation = operation;
-      this.parameters = parameters != null ? Map.copyOf(parameters) : Collections.emptyMap();
+      this.parameters = parameters != null ? Collections.unmodifiableMap(new HashMap<>(parameters)) : Collections.emptyMap();
       this.data = data != null ? data.clone() : new byte[0];
       this.clientId = clientId;
     }
@@ -1104,7 +1104,7 @@ public final class WasiExperimentalProcess {
         final long createdAt) {
       this.handle = handle;
       this.executable = executable;
-      this.arguments = List.copyOf(arguments);
+      this.arguments = Collections.unmodifiableList(new java.util.ArrayList<>(arguments));
       this.systemProcessId = systemProcessId;
       this.state = state;
       this.sandboxConfig = sandboxConfig;
