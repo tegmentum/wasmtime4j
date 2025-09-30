@@ -86,13 +86,13 @@ public final class WasiAdvancedNetworkOperations {
    */
   public WasiAdvancedNetworkOperations(
       final WasiContext wasiContext, final ExecutorService executorService) {
-    this.wasiContext = JniValidation.requireNonNull(wasiContext, "WASI context");
-    this.executorService = JniValidation.requireNonNull(executorService, "Executor service");
+    JniValidation.requireNonNull(wasiContext, "WASI context");
+    JniValidation.requireNonNull(executorService, "Executor service");
 
-    LOGGER.log(
-        Level.INFO,
-        "Advanced network operations initialized for WASI context: {0}",
-        wasiContext.getContextId());
+    this.wasiContext = wasiContext;
+    this.executorService = executorService;
+
+    LOGGER.log(Level.INFO, "Advanced network operations initialized for WASI context");
   }
 
   /**

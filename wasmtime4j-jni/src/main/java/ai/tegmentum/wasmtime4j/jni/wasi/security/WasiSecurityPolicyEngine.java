@@ -394,8 +394,7 @@ public final class WasiSecurityPolicyEngine {
       this.networkAccessAllowed = builder.networkAccessAllowed;
       this.allowedHosts = Collections.unmodifiableSet(new HashSet<>(builder.allowedHosts));
       this.allowedPorts = Collections.unmodifiableSet(new HashSet<>(builder.allowedPorts));
-      this.allowedProtocols =
-          Collections.unmodifiableSet(new HashSet<>(builder.allowedProtocols));
+      this.allowedProtocols = Collections.unmodifiableSet(new HashSet<>(builder.allowedProtocols));
       this.maxFileSize = builder.maxFileSize;
       this.symbolicLinksAllowed = builder.symbolicLinksAllowed;
       this.executeAllowed = builder.executeAllowed;

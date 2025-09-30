@@ -7,16 +7,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.EnumSet;
-import java.util.Collections;
-import java.util.HashSet;import java.util.Map;
-import java.util.Collections;
-import java.util.HashSet;import java.util.Set;
-import java.util.Collections;
-import java.util.HashSet;import java.util.concurrent.ConcurrentHashMap;
-import java.util.Collections;
-import java.util.HashSet;import java.util.logging.Logger;
-import java.util.Collections;
 import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Logger;
+
 /**
  * Configurable directory access control system for WASI file operations.
  *
@@ -162,7 +158,8 @@ public final class WasiDirectoryAccessControl {
     validatePathBasics(normalizedPath);
 
     final DirectoryAccessRule rule =
-        new DirectoryAccessRule(EnumCollections.unmodifiableSet(new HashSet<>(permissions)), recursive, true);
+        new DirectoryAccessRule(
+            EnumCollections.unmodifiableSet(new HashSet<>(permissions)), recursive, true);
 
     directoryRules.put(normalizedPath, rule);
 
@@ -187,7 +184,8 @@ public final class WasiDirectoryAccessControl {
 
     final DirectoryAccessRule existingRule = directoryRules.get(normalizedPath);
     if (existingRule != null) {
-      final Set<WasiFileOperation> remainingPermissions = EnumCollections.unmodifiableSet(new HashSet<>(existingRule.permissions));
+      final Set<WasiFileOperation> remainingPermissions =
+          EnumCollections.unmodifiableSet(new HashSet<>(existingRule.permissions));
       remainingPermissions.removeAll(permissions);
 
       if (remainingPermissions.isEmpty()) {
@@ -268,7 +266,9 @@ public final class WasiDirectoryAccessControl {
 
     for (final Map.Entry<Path, DirectoryAccessRule> entry : directoryRules.entrySet()) {
       if (entry.getValue().enabled) {
-        result.put(entry.getKey().toString(), EnumCollections.unmodifiableSet(new HashSet<>(entry.getValue()).permissions));
+        result.put(
+            entry.getKey().toString(),
+            EnumCollections.unmodifiableSet(new HashSet<>(entry.getValue()).permissions));
       }
     }
 
@@ -465,7 +465,8 @@ public final class WasiDirectoryAccessControl {
 
       final Path path = Paths.get(directoryPath).toAbsolutePath().normalize();
       final DirectoryAccessRule rule =
-          new DirectoryAccessRule(EnumCollections.unmodifiableSet(new HashSet<>(permissions)), recursive, true);
+          new DirectoryAccessRule(
+              EnumCollections.unmodifiableSet(new HashSet<>(permissions)), recursive, true);
       directoryRules.put(path, rule);
       return this;
     }

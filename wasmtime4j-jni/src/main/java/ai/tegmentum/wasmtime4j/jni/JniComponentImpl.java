@@ -24,6 +24,7 @@ import ai.tegmentum.wasmtime4j.ComponentStateTransitionConfig;
 import ai.tegmentum.wasmtime4j.ComponentValidationConfig;
 import ai.tegmentum.wasmtime4j.ComponentValidationResult;
 import ai.tegmentum.wasmtime4j.ComponentVersion;
+import ai.tegmentum.wasmtime4j.HotSwapStrategy;
 import ai.tegmentum.wasmtime4j.WitCompatibilityResult;
 import ai.tegmentum.wasmtime4j.WitInterfaceDefinition;
 import ai.tegmentum.wasmtime4j.WitInterfaceIntrospection;
