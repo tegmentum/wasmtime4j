@@ -118,7 +118,7 @@ public final class WasiExperimentalProcess {
     JniValidation.requireNonNull(resourceLimits, "resourceLimits");
 
     if (activeProcesses.size() >= MAX_CONCURRENT_PROCESSES) {
-      throw new WasiException("Maximum concurrent processes exceeded", WasiErrorCode.ENOMEM);
+      throw new WasiException(WasiErrorCode.ENOMEM, "spawn_process");
     }
 
     LOGGER.info(

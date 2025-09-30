@@ -36,6 +36,11 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
   }
 
   @Override
+  protected String getResourceType() {
+    return "WasiContext";
+  }
+
+  @Override
   public WasiContext setArgv(String[] argv) {
     Objects.requireNonNull(argv, "Command line arguments cannot be null");
     ensureNotClosed();
@@ -427,7 +432,7 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
   }
 
   @Override
-  protected void doCleanup() {
+  protected void doClose() throws Exception {
     if (nativeHandle != 0) {
       nativeCleanup(nativeHandle);
     }

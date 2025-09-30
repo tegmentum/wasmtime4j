@@ -63,29 +63,6 @@ public final class JniStreamingInstantiator implements StreamingInstantiator {
   }
 
   /**
-   * Instantiates the WebAssembly module synchronously.
-   *
-   * <p>This method blocks until instantiation is complete and returns the new instance.
-   *
-   * @param store the store to create the instance in
-   * @return the new instance
-   * @throws WasmException if instantiation fails
-   * @throws IllegalArgumentException if store is null
-   */
-  @Override
-  public Instance instantiateSync(final Store store) throws WasmException {
-    JniValidation.requireNonNull(store, "store");
-
-    try {
-      // Use the standard instantiation process
-      // In a real implementation, this would use optimized instantiation paths
-      return module.instantiate(store);
-    } catch (final Exception e) {
-      throw new WasmException("Failed to instantiate streaming module: " + e.getMessage(), e);
-    }
-  }
-
-  /**
    * Instantiates the WebAssembly module with the given store and linker.
    *
    * <p>This method creates a new instance using the provided store and linker for import
@@ -109,6 +86,29 @@ public final class JniStreamingInstantiator implements StreamingInstantiator {
             throw new RuntimeException("Failed to instantiate module with linker", e);
           }
         });
+  }
+
+  /**
+   * Instantiates the WebAssembly module synchronously.
+   *
+   * <p>This method blocks until instantiation is complete and returns the new instance.
+   *
+   * @param store the store to create the instance in
+   * @return the new instance
+   * @throws WasmException if instantiation fails
+   * @throws IllegalArgumentException if store is null
+   */
+  @Override
+  public Instance instantiateSync(final Store store) throws WasmException {
+    JniValidation.requireNonNull(store, "store");
+
+    try {
+      // Use the standard instantiation process
+      // In a real implementation, this would use optimized instantiation paths
+      return module.instantiate(store);
+    } catch (final Exception e) {
+      throw new WasmException("Failed to instantiate streaming module: " + e.getMessage(), e);
+    }
   }
 
   /**
