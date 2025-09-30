@@ -7,23 +7,17 @@ import ai.tegmentum.wasmtime4j.config.ResourceLimits;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.exception.JniExceptionHandler;
 import java.time.Duration;
+import java.util.Collections;
 import java.util.EnumSet;
-import java.util.Collections;
-import java.util.HashSet;import java.util.HashMap;
-import java.util.Collections;
-import java.util.HashSet;import java.util.Map;
-import java.util.Collections;
-import java.util.HashSet;import java.util.Objects;
-import java.util.Collections;
-import java.util.HashSet;import java.util.Set;
-import java.util.Collections;
-import java.util.HashSet;import java.util.concurrent.ConcurrentHashMap;
-import java.util.Collections;
-import java.util.HashSet;import java.util.logging.Level;
-import java.util.Collections;
-import java.util.HashSet;import java.util.logging.Logger;
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 /**
  * JNI implementation of advanced configuration capabilities for wasmtime4j.
  *

@@ -3,15 +3,13 @@ package ai.tegmentum.wasmtime4j.jni.wasi.security;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import ai.tegmentum.wasmtime4j.jni.wasi.exception.WasiPermissionException;
 import java.nio.file.Path;
-import java.util.Set;
-import java.util.Collections;
-import java.util.HashSet;import java.util.concurrent.ConcurrentHashMap;
-import java.util.Collections;
-import java.util.HashSet;import java.util.logging.Logger;
-import java.util.Collections;
-import java.util.HashSet;import java.util.regex.Pattern;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Logger;
+import java.util.regex.Pattern;
+
 /**
  * JNI implementation of WASI security validation with comprehensive protection against common
  * attacks.
@@ -73,9 +71,12 @@ public final class WasiSecurityValidator {
     this.maxPathLength = builder.maxPathLength;
     this.allowAbsolutePaths = builder.allowAbsolutePaths;
     this.allowSymbolicLinks = builder.allowSymbolicLinks;
-    this.forbiddenPathComponents = Collections.unmodifiableSet(new HashSet<>(builder.forbiddenPathComponents));
-    this.allowedEnvironmentPatterns = Collections.unmodifiableSet(new HashSet<>(builder.allowedEnvironmentPatterns));
-    this.forbiddenEnvironmentNames = Collections.unmodifiableSet(new HashSet<>(builder.forbiddenEnvironmentNames));
+    this.forbiddenPathComponents =
+        Collections.unmodifiableSet(new HashSet<>(builder.forbiddenPathComponents));
+    this.allowedEnvironmentPatterns =
+        Collections.unmodifiableSet(new HashSet<>(builder.allowedEnvironmentPatterns));
+    this.forbiddenEnvironmentNames =
+        Collections.unmodifiableSet(new HashSet<>(builder.forbiddenEnvironmentNames));
 
     LOGGER.info(
         String.format(

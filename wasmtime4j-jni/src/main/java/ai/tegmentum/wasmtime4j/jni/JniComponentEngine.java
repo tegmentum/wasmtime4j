@@ -275,7 +275,10 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
     } catch (final Exception e) {
       LOGGER.warning("Failed to check component compatibility: " + e.getMessage());
       return new WitCompatibilityResult(
-          false, "Compatibility check failed: " + e.getMessage(), Collections.emptySet(), Collections.emptySet());
+          false,
+          "Compatibility check failed: " + e.getMessage(),
+          Collections.emptySet(),
+          Collections.emptySet());
     }
   }
 
