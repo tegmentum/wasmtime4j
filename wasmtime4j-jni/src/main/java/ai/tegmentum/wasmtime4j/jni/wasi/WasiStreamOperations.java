@@ -451,7 +451,13 @@ public final class WasiStreamOperations {
     public final long resourceHandle;
     public final long createdAt;
 
-    public StreamInfo(final long handle, final StreamType type, final long resourceHandle) {
+    /**
+     * Creates stream info.
+     *
+     * @param handle the stream handle
+     * @param type the stream type
+     * @param resourceHandle the resource handle
+     */    public StreamInfo(final long handle, final StreamType type, final long resourceHandle) {
       this.handle = handle;
       this.type = type;
       this.resourceHandle = resourceHandle;
