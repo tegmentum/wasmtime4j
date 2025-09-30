@@ -1728,7 +1728,8 @@ public final class JniGcRuntime implements GcRuntime {
 
     @Override
     public I31Type getType() {
-      return I31Type.getInstance();
+      // I31Type is a utility class, not an instantiatable type
+      return null;
     }
 
     @Override
