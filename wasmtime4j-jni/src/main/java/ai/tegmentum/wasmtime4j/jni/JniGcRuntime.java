@@ -1879,11 +1879,20 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
+  /** JNI implementation of struct instance for GC runtime. */
   public static class JniStructInstance extends JniGcObject implements StructInstance {
     private final JniGcRuntime runtime;
     private final StructType structType;
     private final int typeId;
 
+    /**
+     * Creates a new JNI struct instance.
+     *
+     * @param runtime the GC runtime
+     * @param objectId the object ID
+     * @param structType the struct type
+     * @param typeId the type ID
+     */
     public JniStructInstance(
         final JniGcRuntime runtime,
         final long objectId,
@@ -1916,12 +1925,22 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
+  /** JNI implementation of array instance for GC runtime. */
   public static class JniArrayInstance extends JniGcObject implements ArrayInstance {
     private final JniGcRuntime runtime;
     private final ArrayType arrayType;
     private final int typeId;
     private final int length;
 
+    /**
+     * Creates a new JNI array instance.
+     *
+     * @param runtime the GC runtime
+     * @param objectId the object ID
+     * @param arrayType the array type
+     * @param typeId the type ID
+     * @param length the array length
+     */
     public JniArrayInstance(
         final JniGcRuntime runtime,
         final long objectId,
@@ -1956,10 +1975,18 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
+  /** JNI implementation of i31 instance for GC runtime. */
   public static class JniI31Instance extends JniGcObject implements I31Instance {
     private final JniGcRuntime runtime;
     private final int value;
 
+    /**
+     * Creates a new JNI i31 instance.
+     *
+     * @param runtime the GC runtime
+     * @param objectId the object ID
+     * @param value the i31 value
+     */
     public JniI31Instance(final JniGcRuntime runtime, final long objectId, final int value) {
       super(objectId);
       this.runtime = runtime;
