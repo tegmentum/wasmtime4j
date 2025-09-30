@@ -23,7 +23,7 @@ public final class PlatformMemoryManager implements AutoCloseable {
   private long nativeHandle;
   private boolean closed = false;
 
-  // Configuration for platform-specific memory management
+  /** Configuration for platform-specific memory management. */
   public static final class Config {
     public boolean enableHugePages = true;
     public int numaNode = -1; // -1 for automatic
@@ -36,6 +36,7 @@ public final class PlatformMemoryManager implements AutoCloseable {
     public int alignmentBytes = 64; // Cache line alignment
     public PageSize pageSize = PageSize.DEFAULT;
 
+    /** Page size options for memory allocation. */
     public enum PageSize {
       DEFAULT(0),
       SMALL(1), // 4KB
@@ -54,7 +55,7 @@ public final class PlatformMemoryManager implements AutoCloseable {
     }
   }
 
-  // Memory allocation information
+  /** Memory allocation information. */
   public static final class AllocationInfo {
     public final long ptr;
     public final long size;
@@ -82,7 +83,7 @@ public final class PlatformMemoryManager implements AutoCloseable {
     }
   }
 
-  // Platform memory information
+  /** Platform memory information. */
   public static final class PlatformInfo {
     public final long totalPhysicalMemory;
     public final long availableMemory;
@@ -116,7 +117,7 @@ public final class PlatformMemoryManager implements AutoCloseable {
     }
   }
 
-  // Memory pool statistics
+  /** Memory pool statistics. */
   public static final class MemoryStats {
     public final long totalAllocated;
     public final long totalFreed;
@@ -156,7 +157,7 @@ public final class PlatformMemoryManager implements AutoCloseable {
     }
   }
 
-  // Memory leak information
+  /** Memory leak information. */
   public static final class MemoryLeak {
     public final AllocationInfo allocationInfo;
     public final long ageMillis;
@@ -181,7 +182,7 @@ public final class PlatformMemoryManager implements AutoCloseable {
   }
 
   /**
-   * Creates a new platform memory manager with specific configuration
+   * Creates a new platform memory manager with specific configuration.
    *
    * @param config Configuration for platform-specific memory management
    * @throws IllegalArgumentException if configuration is invalid
@@ -211,7 +212,7 @@ public final class PlatformMemoryManager implements AutoCloseable {
   }
 
   /**
-   * Allocates memory with platform-specific optimizations
+   * Allocates memory with platform-specific optimizations.
    *
    * @param size Size in bytes to allocate
    * @param alignment Memory alignment requirement (0 for default)
@@ -237,7 +238,7 @@ public final class PlatformMemoryManager implements AutoCloseable {
   }
 
   /**
-   * Deallocates previously allocated memory
+   * Deallocates previously allocated memory.
    *
    * @param ptr Pointer to memory to deallocate
    * @throws IllegalArgumentException if ptr is 0
@@ -258,7 +259,7 @@ public final class PlatformMemoryManager implements AutoCloseable {
   }
 
   /**
-   * Gets current memory allocation statistics
+   * Gets current memory allocation statistics.
    *
    * @return Memory statistics
    */
@@ -268,7 +269,7 @@ public final class PlatformMemoryManager implements AutoCloseable {
   }
 
   /**
-   * Gets platform memory information
+   * Gets platform memory information.
    *
    * @return Platform memory information
    */
@@ -278,7 +279,7 @@ public final class PlatformMemoryManager implements AutoCloseable {
   }
 
   /**
-   * Detects potential memory leaks
+   * Detects potential memory leaks.
    *
    * @return Array of detected memory leaks
    */
@@ -288,7 +289,7 @@ public final class PlatformMemoryManager implements AutoCloseable {
   }
 
   /**
-   * Prefetches memory region for improved cache performance
+   * Prefetches memory region for improved cache performance.
    *
    * @param ptr Pointer to memory region
    * @param size Size of memory region in bytes
@@ -310,7 +311,7 @@ public final class PlatformMemoryManager implements AutoCloseable {
   }
 
   /**
-   * Compresses data using platform-specific compression
+   * Compresses data using platform-specific compression.
    *
    * @param data Data to compress
    * @return Compressed data
@@ -337,7 +338,7 @@ public final class PlatformMemoryManager implements AutoCloseable {
   }
 
   /**
-   * Performs memory deduplication on data
+   * Performs memory deduplication on data.
    *
    * @param data Data to deduplicate
    * @return Pointer to deduplicated memory (may be shared)
@@ -360,7 +361,7 @@ public final class PlatformMemoryManager implements AutoCloseable {
   }
 
   /**
-   * Checks if the memory manager has been closed
+   * Checks if the memory manager has been closed.
    *
    * @return true if closed, false otherwise
    */
