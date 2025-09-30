@@ -448,6 +448,7 @@ public final class WasiSecurityPolicyEngine {
       return new Builder();
     }
 
+    /** Builder for WASI security policy. */
     public static final class Builder {
       private final Set<Path> allowedDirectories = ConcurrentHashMap.newKeySet();
       private final Set<WasiFileOperation> allowedOperations = ConcurrentHashMap.newKeySet();
@@ -476,6 +477,12 @@ public final class WasiSecurityPolicyEngine {
         return this;
       }
 
+      /**
+       * Adds a writable environment variable.
+       *
+       * @param name the environment variable name
+       * @return this builder
+       */
       public Builder addWritableEnvironmentVariable(final String name) {
         writableEnvironmentVariables.add(name);
         allowedEnvironmentVariables.add(name); // Writable implies readable
@@ -733,6 +740,15 @@ public final class WasiSecurityPolicyEngine {
     public final int activeContexts;
     public final long threatCount;
 
+    /**
+     * Creates security statistics.
+     *
+     * @param totalEvents total security events
+     * @param deniedAccesses number of denied accesses
+     * @param totalResourceUsage total resource usage
+     * @param activeContexts number of active contexts
+     * @param threatCount number of threats detected
+     */
     public SecurityStatistics(
         final long totalEvents,
         final long deniedAccesses,
@@ -756,6 +772,16 @@ public final class WasiSecurityPolicyEngine {
     public final boolean granted;
     public final String reason;
 
+    /**
+     * Creates an audit event.
+     *
+     * @param contextId the context identifier
+     * @param resource the resource accessed
+     * @param operation the operation performed
+     * @param timestamp the event timestamp
+     * @param granted whether access was granted
+     * @param reason the reason for the decision
+     */
     public AuditEvent(
         final String contextId,
         final String resource,
