@@ -708,7 +708,8 @@ public final class WasiAdvancedNetworkOperations {
      * Creates a copy of the network metrics.
      *
      * @return a deep copy of the network metrics
-     */    public AdvancedNetworkMetrics copy() {
+     */
+    public AdvancedNetworkMetrics copy() {
       final AdvancedNetworkMetrics copy = new AdvancedNetworkMetrics();
       for (final Map.Entry<Integer, ProtocolMetrics> entry : protocolMetrics.entrySet()) {
         copy.protocolMetrics.put(entry.getKey(), entry.getValue().copy());

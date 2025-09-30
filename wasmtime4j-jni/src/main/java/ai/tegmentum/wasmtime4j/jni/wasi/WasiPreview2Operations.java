@@ -672,7 +672,8 @@ public final class WasiPreview2Operations {
      * @param statusCode the HTTP status code
      * @param headers the response headers (may be null)
      * @param body the response body (may be null)
-     */    public WasiHttpResponse(
+     */
+    public WasiHttpResponse(
         final int statusCode, final Map<String, String> headers, final ByteBuffer body) {
       this.statusCode = statusCode;
       this.headers = headers != null ? Map.copyOf(headers) : Collections.emptyMap();
