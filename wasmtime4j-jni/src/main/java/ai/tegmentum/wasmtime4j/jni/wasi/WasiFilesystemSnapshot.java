@@ -662,6 +662,14 @@ public final class WasiFilesystemSnapshot {
     public final boolean encryptionEnabled;
     public final byte[] encryptionKey;
 
+    /**
+     * Creates snapshot options.
+     *
+     * @param includeHiddenFiles whether to include hidden files
+     * @param compressionLevel compression level (0-9)
+     * @param encryptionEnabled whether encryption is enabled
+     * @param encryptionKey encryption key (may be null)
+     */
     public SnapshotOptions(
         final boolean includeHiddenFiles,
         final int compressionLevel,
@@ -685,6 +693,14 @@ public final class WasiFilesystemSnapshot {
     public final boolean preserveTimestamps;
     public final boolean verifyIntegrity;
 
+    /**
+     * Creates restore options.
+     *
+     * @param overwriteExisting whether to overwrite existing files
+     * @param preservePermissions whether to preserve permissions
+     * @param preserveTimestamps whether to preserve timestamps
+     * @param verifyIntegrity whether to verify integrity
+     */
     public RestoreOptions(
         final boolean overwriteExisting,
         final boolean preservePermissions,
@@ -710,6 +726,15 @@ public final class WasiFilesystemSnapshot {
     public final SnapshotMetadata metadata;
     public final long createdAt;
 
+    /**
+     * Creates snapshot information.
+     *
+     * @param handle the snapshot handle
+     * @param rootPath the root path
+     * @param type the snapshot type
+     * @param snapshotSize the snapshot size
+     * @param metadata the snapshot metadata
+     */
     public SnapshotInfo(
         final long handle,
         final String rootPath,
@@ -738,6 +763,18 @@ public final class WasiFilesystemSnapshot {
     public volatile long snapshotSize;
     public volatile int fileCount;
 
+    /**
+     * Creates snapshot metadata.
+     *
+     * @param handle the snapshot handle
+     * @param rootPath the root path
+     * @param type the snapshot type
+     * @param createdAt creation timestamp
+     * @param includeHiddenFiles whether hidden files are included
+     * @param compressionLevel compression level
+     * @param encryptionEnabled whether encryption is enabled
+     * @param baseSnapshotHandle base snapshot handle (may be null)
+     */
     public SnapshotMetadata(
         final long handle,
         final String rootPath,
@@ -766,6 +803,15 @@ public final class WasiFilesystemSnapshot {
     public final int missingFiles;
     public final int checksumMismatch;
 
+    /**
+     * Creates snapshot verification result.
+     *
+     * @param isValid whether the snapshot is valid
+     * @param checkedFiles number of checked files
+     * @param corruptedFiles number of corrupted files
+     * @param missingFiles number of missing files
+     * @param checksumMismatch number of checksum mismatches
+     */
     public SnapshotVerificationResult(
         final boolean isValid,
         final int checkedFiles,
@@ -786,6 +832,13 @@ public final class WasiFilesystemSnapshot {
     public final long snapshotSize;
     public final int fileCount;
 
+    /**
+     * Creates snapshot creation result.
+     *
+     * @param errorCode the error code
+     * @param snapshotSize the snapshot size
+     * @param fileCount the file count
+     */
     public SnapshotCreateResult(final int errorCode, final long snapshotSize, final int fileCount) {
       this.errorCode = errorCode;
       this.snapshotSize = snapshotSize;
@@ -802,6 +855,16 @@ public final class WasiFilesystemSnapshot {
     public final int missingFiles;
     public final int checksumMismatch;
 
+    /**
+     * Creates snapshot verification result.
+     *
+     * @param errorCode the error code
+     * @param isValid whether the snapshot is valid
+     * @param checkedFiles number of checked files
+     * @param corruptedFiles number of corrupted files
+     * @param missingFiles number of missing files
+     * @param checksumMismatch number of checksum mismatches
+     */
     public SnapshotVerifyResult(
         final int errorCode,
         final boolean isValid,
@@ -825,6 +888,7 @@ public final class WasiFilesystemSnapshot {
     public volatile long totalBytesProcessed;
     public volatile int filesProcessed;
 
+    /** Creates snapshot performance metrics with default values. */
     public SnapshotPerformanceMetrics() {
       this.snapshotCreationTimeMs = 0;
       this.snapshotRestoreTimeMs = 0;
@@ -839,6 +903,7 @@ public final class WasiFilesystemSnapshot {
     public volatile long bytesDeduplicatedCompressionStatistics;
     public volatile double deduplicationRatio;
 
+    /** Creates deduplication statistics with default values. */
     public DeduplicationStatistics() {
       this.duplicateBlocksFound = 0;
       this.bytesDeduplicatedCompressionStatistics = 0;
@@ -853,6 +918,7 @@ public final class WasiFilesystemSnapshot {
     public volatile double compressionRatio;
     public volatile String compressionAlgorithm;
 
+    /** Creates compression statistics with default values. */
     public CompressionStatistics() {
       this.originalSize = 0;
       this.compressedSize = 0;
