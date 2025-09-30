@@ -562,8 +562,12 @@ public final class PanamaHotReloadManager implements AutoCloseable {
 
   @Override
   public boolean equals(final Object obj) {
-    if (this == obj) return true;
-    if (!(obj instanceof PanamaHotReloadManager)) return false;
+    if (this == obj) {
+      return true;
+    }
+    if (!(obj instanceof PanamaHotReloadManager)) {
+      return false;
+    }
     final PanamaHotReloadManager other = (PanamaHotReloadManager) obj;
     return Objects.equals(nativeHandle, other.nativeHandle);
   }

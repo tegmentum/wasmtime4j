@@ -3,6 +3,7 @@ package ai.tegmentum.wasmtime4j.jni;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.gc.ArrayInstance;
 import ai.tegmentum.wasmtime4j.gc.ArrayType;
+import ai.tegmentum.wasmtime4j.gc.FieldType;
 import ai.tegmentum.wasmtime4j.gc.GcException;
 import ai.tegmentum.wasmtime4j.gc.GcHeapInspection;
 import ai.tegmentum.wasmtime4j.gc.GcInvariantValidation;
@@ -13,15 +14,17 @@ import ai.tegmentum.wasmtime4j.gc.GcRuntime;
 import ai.tegmentum.wasmtime4j.gc.GcStats;
 import ai.tegmentum.wasmtime4j.gc.GcValue;
 import ai.tegmentum.wasmtime4j.gc.I31Instance;
+import ai.tegmentum.wasmtime4j.gc.I31Type;
 import ai.tegmentum.wasmtime4j.gc.MemoryCorruptionAnalysis;
 import ai.tegmentum.wasmtime4j.gc.MemoryLeakAnalysis;
 import ai.tegmentum.wasmtime4j.gc.ObjectLifecycleTracker;
 import ai.tegmentum.wasmtime4j.gc.ReferenceSafetyResult;
+import ai.tegmentum.wasmtime4j.gc.ReferenceGraph;
 import ai.tegmentum.wasmtime4j.gc.StructInstance;
 import ai.tegmentum.wasmtime4j.gc.StructType;
 import ai.tegmentum.wasmtime4j.gc.WeakGcReference;
 import ai.tegmentum.wasmtime4j.jni.exception.JniException;
-import ai.tegmentum.wasmtime4j.jni.nativelib.NativeLibraryManager;
+import ai.tegmentum.wasmtime4j.jni.nativelib.NativeLibraryLoader;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -46,7 +49,7 @@ public final class JniGcRuntime implements GcRuntime {
   private volatile boolean disposed = false;
 
   static {
-    NativeLibraryManager.loadLibrary();
+    NativeLibraryLoader.loadLibrary();
   }
 
   /**
@@ -1813,27 +1816,27 @@ public final class JniGcRuntime implements GcRuntime {
 
     @Override
     public Map<String, Long> getObjectTypeDistribution() {
-      return Map.of();
+      return Collections.emptyMap();
     }
 
     @Override
     public Map<String, Long> getMemoryUsageByType() {
-      return Map.of();
+      return Collections.emptyMap();
     }
 
     @Override
     public List<StructInstanceInfo> getStructInstances() {
-      return List.of();
+      return Collections.emptyList();
     }
 
     @Override
     public List<ArrayInstanceInfo> getArrayInstances() {
-      return List.of();
+      return Collections.emptyList();
     }
 
     @Override
     public List<I31InstanceInfo> getI31Instances() {
-      return List.of();
+      return Collections.emptyList();
     }
 
     @Override
@@ -1853,7 +1856,7 @@ public final class JniGcRuntime implements GcRuntime {
 
     @Override
     public List<RootObjectInfo> getRootObjects() {
-      return List.of();
+      return Collections.emptyList();
     }
   }
 
@@ -1871,27 +1874,27 @@ public final class JniGcRuntime implements GcRuntime {
 
     @Override
     public List<Long> getTrackedObjects() {
-      return List.of();
+      return Collections.emptyList();
     }
 
     @Override
     public List<LifecycleEvent> getLifecycleEvents(final long objectId) {
-      return List.of();
+      return Collections.emptyList();
     }
 
     @Override
     public Map<Long, ObjectStatus> getObjectStatuses() {
-      return Map.of();
+      return Collections.emptyMap();
     }
 
     @Override
     public Map<Long, AccessStatistics> getAccessStatistics() {
-      return Map.of();
+      return Collections.emptyMap();
     }
 
     @Override
     public Map<Long, List<ReferenceChange>> getReferenceHistory() {
-      return Map.of();
+      return Collections.emptyMap();
     }
 
     @Override
@@ -1937,22 +1940,22 @@ public final class JniGcRuntime implements GcRuntime {
 
     @Override
     public List<PotentialLeak> getPotentialLeaks() {
-      return List.of();
+      return Collections.emptyList();
     }
 
     @Override
     public List<CircularReference> getCircularReferences() {
-      return List.of();
+      return Collections.emptyList();
     }
 
     @Override
     public List<LongLivedObject> getLongLivedObjects() {
-      return List.of();
+      return Collections.emptyList();
     }
 
     @Override
     public List<HighlyReferencedObject> getHighlyReferencedObjects() {
-      return List.of();
+      return Collections.emptyList();
     }
 
     @Override
@@ -1967,7 +1970,7 @@ public final class JniGcRuntime implements GcRuntime {
 
     @Override
     public List<LeakRecommendation> getRecommendations() {
-      return List.of();
+      return Collections.emptyList();
     }
   }
 
@@ -2040,7 +2043,7 @@ public final class JniGcRuntime implements GcRuntime {
 
     @Override
     public List<SafetyViolation> getSafetyViolations() {
-      return List.of();
+      return Collections.emptyList();
     }
 
     @Override
@@ -2050,17 +2053,17 @@ public final class JniGcRuntime implements GcRuntime {
 
     @Override
     public Map<ViolationType, Integer> getViolationStatistics() {
-      return Map.of();
+      return Collections.emptyMap();
     }
 
     @Override
     public List<SafetyRecommendation> getRecommendations() {
-      return List.of();
+      return Collections.emptyList();
     }
 
     @Override
     public List<DangerousReferencePattern> getDangerousPatterns() {
-      return List.of();
+      return Collections.emptyList();
     }
   }
 
@@ -2091,7 +2094,7 @@ public final class JniGcRuntime implements GcRuntime {
 
     @Override
     public List<CorruptionIssue> getCorruptionIssues() {
-      return List.of();
+      return Collections.emptyList();
     }
 
     @Override
@@ -2111,7 +2114,7 @@ public final class JniGcRuntime implements GcRuntime {
 
     @Override
     public List<CorruptionRecommendation> getRecommendations() {
-      return List.of();
+      return Collections.emptyList();
     }
   }
 
@@ -2142,7 +2145,7 @@ public final class JniGcRuntime implements GcRuntime {
 
     @Override
     public List<InvariantViolation> getViolations() {
-      return List.of();
+      return Collections.emptyList();
     }
 
     @Override
@@ -2152,12 +2155,12 @@ public final class JniGcRuntime implements GcRuntime {
 
     @Override
     public Map<InvariantCategory, CategoryValidation> getCategoryResults() {
-      return Map.of();
+      return Collections.emptyMap();
     }
 
     @Override
     public List<CriticalInvariantResult> getCriticalInvariants() {
-      return List.of();
+      return Collections.emptyList();
     }
 
     @Override
@@ -2167,7 +2170,7 @@ public final class JniGcRuntime implements GcRuntime {
 
     @Override
     public Map<InvariantCategory, Object> getSpecificValidators() {
-      return Map.of();
+      return Collections.emptyMap();
     }
   }
 }

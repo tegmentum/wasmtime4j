@@ -60,7 +60,7 @@ public final class JniDebugSession implements DebugSession {
 
       // We would need to resolve instance handles back to Instance objects
       // For now, create empty list - in real implementation this would be properly handled
-      this.instances = List.of();
+      this.instances = Collections.emptyList();
 
       LOGGER.log(
           Level.FINE,
@@ -91,7 +91,7 @@ public final class JniDebugSession implements DebugSession {
 
       // We would need to resolve instance handle back to Instance object
       // For now, create empty list - in real implementation this would be properly handled
-      this.instances = List.of();
+      this.instances = Collections.emptyList();
 
       LOGGER.log(Level.FINE, "Created JNI debug session {0} with config", sessionId);
     } catch (final Exception e) {
@@ -104,7 +104,7 @@ public final class JniDebugSession implements DebugSession {
     this.sessionId = "debug-session-" + SESSION_ID_COUNTER.getAndIncrement();
     this.debugger = Objects.requireNonNull(debugger, "debugger cannot be null");
     this.nativeHandle = nativeHandle;
-    this.instances = List.of();
+    this.instances = Collections.emptyList();
     this.eventListeners = new CopyOnWriteArrayList<>();
     this.closed = false;
 
@@ -179,14 +179,14 @@ public final class JniDebugSession implements DebugSession {
   @Override
   public List<Breakpoint> getBreakpoints() {
     if (closed) {
-      return List.of();
+      return Collections.emptyList();
     }
 
     try {
       return nativeGetBreakpoints(nativeHandle);
     } catch (final Exception e) {
       LOGGER.log(Level.WARNING, "Failed to get breakpoints", e);
-      return List.of();
+      return Collections.emptyList();
     }
   }
 

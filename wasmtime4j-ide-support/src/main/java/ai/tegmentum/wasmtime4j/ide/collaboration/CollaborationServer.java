@@ -282,8 +282,12 @@ public final class CollaborationServer {
 
     @Override
     public boolean equals(final Object obj) {
-      if (this == obj) return true;
-      if (obj == null || getClass() != obj.getClass()) return false;
+      if (this == obj) {
+        return true;
+      }
+      if (obj == null || getClass() != obj.getClass()) {
+        return false;
+      }
       final Developer developer = (Developer) obj;
       return Objects.equals(id, developer.id);
     }
@@ -349,7 +353,9 @@ public final class CollaborationServer {
     }
 
     public void broadcast(final CollaborationMessage message, final Developer exclude) {
-      if (isClosed) return;
+      if (isClosed) {
+        return;
+      }
 
       try {
         final String json = server.getObjectMapper().writeValueAsString(message);

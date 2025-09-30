@@ -234,7 +234,7 @@ public final class JniDebugger implements Debugger {
       return nativeGetDebugInfo(nativeHandle);
     } catch (final Exception e) {
       LOGGER.log(Level.WARNING, "Failed to get debug info", e);
-      return List.of();
+      return Collections.emptyList();
     }
   }
 
@@ -917,7 +917,7 @@ public final class JniDebugger implements Debugger {
 
     @Override
     public List<TraceEvent> getEvents() {
-      return List.of();
+      return Collections.emptyList();
     }
 
     @Override

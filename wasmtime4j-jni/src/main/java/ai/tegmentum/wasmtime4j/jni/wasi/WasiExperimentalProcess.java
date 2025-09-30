@@ -1076,7 +1076,7 @@ public final class WasiExperimentalProcess {
         final byte[] data,
         final String clientId) {
       this.operation = operation;
-      this.parameters = parameters != null ? Map.copyOf(parameters) : Map.of();
+      this.parameters = parameters != null ? Map.copyOf(parameters) : Collections.emptyMap();
       this.data = data != null ? data.clone() : new byte[0];
       this.clientId = clientId;
     }

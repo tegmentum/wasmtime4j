@@ -103,7 +103,7 @@ public final class JniExperimentalFeatures extends JniResource {
           config.isAdvancedSandboxingEnabled() ? 1 : 0,
           config.isResourceLimitingEnabled() ? 1 : 0,
           1024 // Default 1GB memory limit
-          );
+      );
 
       // Configure profiling features
       if (config.isAdvancedProfilingEnabled()) {
@@ -112,7 +112,7 @@ public final class JniExperimentalFeatures extends JniResource {
             config.isExecutionTracingEnabled() ? 1 : 0,
             config.getProfilingGranularity().ordinal(),
             1000 // 1ms sampling interval
-            );
+        );
       }
 
       LOGGER.info(

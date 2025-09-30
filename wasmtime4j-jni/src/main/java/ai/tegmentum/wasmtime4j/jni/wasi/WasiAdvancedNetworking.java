@@ -928,7 +928,7 @@ public final class WasiAdvancedNetworking {
         final int streamId,
         final boolean serverPush) {
       this.statusCode = statusCode;
-      this.headers = headers != null ? Map.copyOf(headers) : Map.of();
+      this.headers = headers != null ? Map.copyOf(headers) : Collections.emptyMap();
       this.body = body;
       this.streamId = streamId;
       this.serverPush = serverPush;

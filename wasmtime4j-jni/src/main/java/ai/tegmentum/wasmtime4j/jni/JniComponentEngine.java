@@ -275,7 +275,7 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
     } catch (final Exception e) {
       LOGGER.warning("Failed to check component compatibility: " + e.getMessage());
       return new WitCompatibilityResult(
-          false, "Compatibility check failed: " + e.getMessage(), Set.of(), Set.of());
+          false, "Compatibility check failed: " + e.getMessage(), Collections.emptySet(), Collections.emptySet());
     }
   }
 
@@ -384,7 +384,7 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
     } catch (final Exception e) {
       LOGGER.warning("Component validation failed: " + e.getMessage());
       return new ComponentValidationResult(
-          false, List.of("Validation error: " + e.getMessage()), List.of());
+          false, List.of("Validation error: " + e.getMessage()), Collections.emptyList());
     }
   }
 

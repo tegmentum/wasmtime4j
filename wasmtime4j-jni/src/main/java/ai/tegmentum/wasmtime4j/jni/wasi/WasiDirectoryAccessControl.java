@@ -7,11 +7,16 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.EnumSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Logger;
-
+import java.util.Collections;
+import java.util.HashSet;import java.util.Map;
+import java.util.Collections;
+import java.util.HashSet;import java.util.Set;
+import java.util.Collections;
+import java.util.HashSet;import java.util.concurrent.ConcurrentHashMap;
+import java.util.Collections;
+import java.util.HashSet;import java.util.logging.Logger;
+import java.util.Collections;
+import java.util.HashSet;
 /**
  * Configurable directory access control system for WASI file operations.
  *
@@ -157,7 +162,7 @@ public final class WasiDirectoryAccessControl {
     validatePathBasics(normalizedPath);
 
     final DirectoryAccessRule rule =
-        new DirectoryAccessRule(EnumSet.copyOf(permissions), recursive, true);
+        new DirectoryAccessRule(EnumCollections.unmodifiableSet(new HashSet<>(permissions)), recursive, true);
 
     directoryRules.put(normalizedPath, rule);
 
@@ -182,7 +187,7 @@ public final class WasiDirectoryAccessControl {
 
     final DirectoryAccessRule existingRule = directoryRules.get(normalizedPath);
     if (existingRule != null) {
-      final Set<WasiFileOperation> remainingPermissions = EnumSet.copyOf(existingRule.permissions);
+      final Set<WasiFileOperation> remainingPermissions = EnumCollections.unmodifiableSet(new HashSet<>(existingRule.permissions));
       remainingPermissions.removeAll(permissions);
 
       if (remainingPermissions.isEmpty()) {
@@ -238,19 +243,19 @@ public final class WasiDirectoryAccessControl {
     // Check for explicit rule
     final DirectoryAccessRule explicitRule = directoryRules.get(normalizedPath);
     if (explicitRule != null && explicitRule.enabled) {
-      return EnumSet.copyOf(explicitRule.permissions);
+      return EnumCollections.unmodifiableSet(new HashSet<>(explicitRule.permissions));
     }
 
     // Check for inherited rule
     if (allowInheritance) {
       final DirectoryAccessRule inheritedRule = findInheritedRule(normalizedPath);
       if (inheritedRule != null) {
-        return EnumSet.copyOf(inheritedRule.permissions);
+        return EnumCollections.unmodifiableSet(new HashSet<>(inheritedRule.permissions));
       }
     }
 
     // Return global defaults
-    return EnumSet.copyOf(globalDefaultPermissions);
+    return EnumCollections.unmodifiableSet(new HashSet<>(globalDefaultPermissions));
   }
 
   /**
@@ -263,7 +268,7 @@ public final class WasiDirectoryAccessControl {
 
     for (final Map.Entry<Path, DirectoryAccessRule> entry : directoryRules.entrySet()) {
       if (entry.getValue().enabled) {
-        result.put(entry.getKey().toString(), EnumSet.copyOf(entry.getValue().permissions));
+        result.put(entry.getKey().toString(), EnumCollections.unmodifiableSet(new HashSet<>(entry.getValue()).permissions));
       }
     }
 
@@ -381,7 +386,7 @@ public final class WasiDirectoryAccessControl {
 
     DirectoryAccessRule(
         final Set<WasiFileOperation> permissions, final boolean recursive, final boolean enabled) {
-      this.permissions = EnumSet.copyOf(permissions);
+      this.permissions = EnumCollections.unmodifiableSet(new HashSet<>(permissions));
       this.recursive = recursive;
       this.enabled = enabled;
     }
@@ -460,7 +465,7 @@ public final class WasiDirectoryAccessControl {
 
       final Path path = Paths.get(directoryPath).toAbsolutePath().normalize();
       final DirectoryAccessRule rule =
-          new DirectoryAccessRule(EnumSet.copyOf(permissions), recursive, true);
+          new DirectoryAccessRule(EnumCollections.unmodifiableSet(new HashSet<>(permissions)), recursive, true);
       directoryRules.put(path, rule);
       return this;
     }

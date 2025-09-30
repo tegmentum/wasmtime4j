@@ -490,9 +490,15 @@ final class RealWebAssemblyModuleIT {
           final boolean complexWorking = testComplexCalculations(instance);
 
           int totalFunctions = 0;
-          if (instance.getFunction("add").isPresent()) totalFunctions++;
-          if (instance.getFunction("multiply").isPresent()) totalFunctions++;
-          if (instance.getFunction("factorial").isPresent()) totalFunctions++;
+          if (instance.getFunction("add").isPresent()) {
+            totalFunctions++;
+          }
+          if (instance.getFunction("multiply").isPresent()) {
+            totalFunctions++;
+          }
+          if (instance.getFunction("factorial").isPresent()) {
+            totalFunctions++;
+          }
 
           return new FunctionsModuleTestResult(
               addWorking, multiplyWorking, factorialWorking, complexWorking, totalFunctions);

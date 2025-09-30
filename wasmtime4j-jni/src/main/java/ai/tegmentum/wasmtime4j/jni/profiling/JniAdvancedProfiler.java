@@ -245,7 +245,9 @@ public final class JniAdvancedProfiler implements AutoCloseable {
    * @param allocationId allocation ID to deallocate
    */
   public void recordMemoryDeallocation(final long allocationId) {
-    if (!profiling) return;
+    if (!profiling) {
+      return;
+    }
 
     nativeRecordMemoryDeallocation(nativeProfilerHandle, allocationId);
   }
@@ -397,7 +399,7 @@ public final class JniAdvancedProfiler implements AutoCloseable {
           element.getFileName() != null ? element.getFileName() : "unknown",
           element.getLineNumber() > 0 ? element.getLineNumber() : 0,
           executionTime.toNanos() / stackTrace.length // Distribute time across stack
-          );
+      );
     }
 
     // Also record in Java flame graph generator
